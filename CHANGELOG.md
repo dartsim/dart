@@ -852,6 +852,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     against an independent global gradient-descent minimizer of the tet
     objective, with a tetrahedral-bar step benchmark. Internal solver
     groundwork only; not wired into the deformable world step.
+  - Added internal experimental VBD acceleration and damping primitives:
+    adaptive inertial/previous-step initialization (gravity-projected
+    acceleration blend), Chebyshev semi-iterative weights and over-relaxation,
+    and stiffness-proportional Rayleigh damping for the per-vertex block, each
+    unit-tested. These are standalone helpers, not yet threaded through a
+    multi-step VBD stepping loop.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

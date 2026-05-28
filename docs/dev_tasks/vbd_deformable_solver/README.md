@@ -55,6 +55,16 @@
 - [ ] Phase 5: VBD acceleration — adaptive inertial/previous-step initialization
       and optional Chebyshev semi-iterative acceleration — plus the VBD damping
       model.
+  - [x] Acceleration/damping primitives sub-slice: `adaptiveInitialPosition`
+        (gravity-projected previous-acceleration blend, clamped to
+        `[0, ||a_ext||]`, with first-step inertial fallback),
+        `chebyshevOmega`/`applyChebyshev` (the semi-iterative weight recurrence
+        and affine over-relaxation), and `addRayleighDamping`
+        (stiffness-proportional `(k_d/h) H_elastic` Hessian/force), with unit
+        tests for each.
+  - [ ] Remaining Phase 5 work: thread these through a multi-step VBD stepping
+        loop (initialization at step start, Chebyshev across sweeps, damping in
+        the per-vertex assembly) once the solver-stepping slice (Phase 6) lands.
 - [ ] Phase 6: wire VBD as a DART-owned, selectable deformable solver path in
       the experimental World step and add integration tests.
 - [ ] Phase 7: vertex-based contact and friction (reusing the existing
@@ -208,6 +218,22 @@ of the same tet objective. It is a single-body CPU driver only; multi-body
 coupling, damping, acceleration, contact, friction, multithreaded/GPU execution,
 and any wiring into `World::step()` are not implemented.
 
+For the acceleration/damping primitives sub-slice, keep the verification
+language precise: it covers the pure-function `adaptiveInitialPosition`,
+`chebyshevOmega`, `applyChebyshev`, and `addRayleighDamping` helpers, with tests
+for the first-step inertial fallback, free-fall saturation, supported-body
+gravity drop, partial-alignment blend, the Chebyshev weight recurrence and its
+boundedness, the affine over-relaxation (identity at unit weight), the scaled
+damping Hessian/force, dissipativity, and the zero-coefficient no-op. These are
+standalone helpers; they are not yet threaded through a multi-step VBD stepping
+loop (no step-start initialization, cross-sweep Chebyshev, or in-assembly
+damping yet), which depends on the Phase 6 solver-stepping slice.
+
+Local gate (Phase 5 acceleration/damping primitives, first pass) on 2026-05-28:
+the focused target build and 9 `test_vbd_acceleration` cases passing. These are
+constant-time pure helpers, so no separate microbenchmark is added; their effect
+will be measured in the Phase 6 step-loop benchmarks.
+
 Local gate (Phase 4 Neo-Hookean kernel + tetrahedral driver, first pass) on
 2026-05-28: the focused target build, 7 `test_vbd_neo_hookean` cases and 5
 `test_vbd_tet_mesh_descent` cases passing. Kernel benchmark smoke (CPU scaling
@@ -232,8 +258,8 @@ color range.
 pixi run cmake build/default/cpp/Release
 pixi run cmake --build build/default/cpp/Release --target \
   test_vbd_vertex_block_kernel test_vbd_vertex_coloring test_vbd_block_descent \
-  test_vbd_neo_hookean test_vbd_tet_mesh_descent bm_vbd_vertex_block_kernel \
-  bm_vbd_block_descent bm_vbd_neo_hookean
+  test_vbd_neo_hookean test_vbd_tet_mesh_descent test_vbd_acceleration \
+  bm_vbd_vertex_block_kernel bm_vbd_block_descent bm_vbd_neo_hookean
 ctest --test-dir build/default/cpp/Release -R '^test_vbd_' --output-on-failure
 ./build/default/cpp/Release/bin/bm_vbd_vertex_block_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ./build/default/cpp/Release/bin/bm_vbd_block_descent --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'

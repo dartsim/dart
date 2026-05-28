@@ -3,8 +3,8 @@
 ## Last Session Summary
 
 Started PLAN-082: implementing Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as a DART-owned deformable solver in the experimental World. Landed
-Phases 0-4 with all gates green (lint clean, focused build, 39 tests across
-5 binaries, benchmark smoke):
+Phases 0-4 and the Phase 5 acceleration/damping primitives with all gates green
+(lint clean, focused build, 48 tests across 6 binaries, benchmark smoke):
 
 - Phase 0 grounding: PLAN-082 dashboard entry and numbered plan file, the
   `chen-2024-vbd` references catalog entry plus comparative `tinyvbd`/`gaia`
@@ -22,6 +22,9 @@ Phases 0-4 with all gates green (lint clean, focused build, 39 tests across
   exact 3x3 Hessian (FD-verified, inversion-stable), and a `blockDescentTetMesh`
   volumetric driver (tet adjacency + tet coloring) validated to converge to an
   independent global gradient-descent minimizer of the tet objective.
+- Phase 5 (primitives) `detail/deformable_vbd/acceleration.hpp`:
+  `adaptiveInitialPosition`, `chebyshevOmega`/`applyChebyshev`, and
+  `addRayleighDamping`, each unit-tested. Not yet threaded through a step loop.
 
 Key grounding fact: VBD minimizes the **same** variational implicit-Euler
 objective the existing experimental deformable solver already minimizes with a
@@ -39,14 +42,17 @@ pushes/PRs require explicit approval.
 ## Immediate Next Step
 
 Phases 0-4 are complete (mass-spring and tetrahedral Neo-Hookean block descent
-both converge to independent reference minimizers). Next:
+both converge to independent reference minimizers), and the Phase 5
+acceleration/damping primitives exist as tested standalone helpers.
 
-- Phase 5: adaptive inertial/previous-step initialization
-  (`a_tilde = clamp(a_prev . g_hat, 0, ||a_ext||)`,
-  `x_init = x^t + h v^t + h^2 g_hat a_tilde`), optional Chebyshev acceleration
-  (`omega_1=1, omega_2=2/(2-rho^2), omega_n=4/(4-rho^2 omega_{n-1})`,
-  `x^n = omega_n (x_bar^n - x^{n-2}) + x^{n-2}`), and Rayleigh damping
-  (`H += (k_d/h) d2E/dx^2`, force `-= (k_d/h) d2E/dx^2 (x - x^t)`).
+Next: Phase 6 solver wiring — build a multi-step VBD stepping loop that, per
+step, computes inertial targets, applies `adaptiveInitialPosition`, runs the
+colored block-descent sweeps with `applyChebyshev` over-relaxation and
+`addRayleighDamping` in the per-vertex assembly, then updates velocities
+`v = (x - x^t)/h`. Decide how to expose VBD as a DART-owned, selectable inner
+solver behind the algorithm-neutral `DeformableDynamicsStage` (no `vbd`
+vocabulary in public signatures), and add integration tests comparing a few
+stepped frames against the existing gradient-descent stage on a shared scene.
 
 ## Context That Would Be Lost
 
