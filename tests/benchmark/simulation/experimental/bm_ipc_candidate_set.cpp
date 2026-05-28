@@ -42,6 +42,40 @@ struct MeshFixture
   std::vector<sx::DeformableSurfaceTriangle> triangles;
 };
 
+struct SweepPairFixture
+{
+  std::vector<dc::detail::SweepItem> lhsItems;
+  std::vector<dc::detail::SweepItem> rhsItems;
+};
+
+//==============================================================================
+dc::detail::SweepItem makeSweepItem(
+    const std::size_t id, const double minX, const double maxX)
+{
+  return dc::detail::SweepItem{
+      id,
+      dc::detail::CandidateAabb{
+          Eigen::Vector3d(minX, 0.0, 0.0), Eigen::Vector3d(maxX, 1.0, 1.0)}};
+}
+
+//==============================================================================
+SweepPairFixture makeExpiredPrefixSweepPairs(const int count)
+{
+  SweepPairFixture fixture;
+  fixture.lhsItems.reserve(static_cast<std::size_t>(count));
+  fixture.rhsItems.reserve(static_cast<std::size_t>(count));
+
+  for (int i = 0; i < count; ++i) {
+    const double x = static_cast<double>(i);
+    fixture.lhsItems.push_back(
+        makeSweepItem(static_cast<std::size_t>(i), x, x + 0.25));
+    fixture.rhsItems.push_back(
+        makeSweepItem(static_cast<std::size_t>(i), x + 0.125, x + 0.375));
+  }
+
+  return fixture;
+}
+
 //==============================================================================
 MeshFixture makeClothGrid(const int resolution)
 {
@@ -204,6 +238,38 @@ void runSweepScratchCandidateSetBenchmark(
 }
 
 } // namespace
+
+//==============================================================================
+static void BM_IpcCandidateSetCrossSweepExpiredPrefix(benchmark::State& state)
+{
+  auto fixture = makeExpiredPrefixSweepPairs(static_cast<int>(state.range(0)));
+
+  std::size_t pairCount = 0;
+  for (auto _ : state) {
+    pairCount = 0;
+    dc::detail::visitSweepPairs(
+        fixture.lhsItems,
+        fixture.rhsItems,
+        [&](std::size_t lhsId, std::size_t rhsId) {
+          ++pairCount;
+          benchmark::DoNotOptimize(lhsId);
+          benchmark::DoNotOptimize(rhsId);
+        });
+    benchmark::DoNotOptimize(pairCount);
+  }
+
+  state.counters["lhs_items"] = static_cast<double>(fixture.lhsItems.size());
+  state.counters["rhs_items"] = static_cast<double>(fixture.rhsItems.size());
+  state.counters["visited_pairs"] = static_cast<double>(pairCount);
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations()
+          * (fixture.lhsItems.size() + fixture.rhsItems.size())));
+}
+BENCHMARK(BM_IpcCandidateSetCrossSweepExpiredPrefix)
+    ->Arg(64)
+    ->Arg(256)
+    ->Arg(1024);
 
 //==============================================================================
 static void BM_IpcCandidateSetSweepCloth(benchmark::State& state)

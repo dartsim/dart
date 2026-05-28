@@ -80,9 +80,17 @@ The world-stage same-body surface-contact line search owns this scratch per
 body, alongside the reusable candidate set. This removes per-trial sweep-vector
 allocation from the CCD line-search path while preserving the existing
 return-by-value and reusable-candidate overloads as wrappers. It is still
-scaffolding: sweep-pair traversal remains simple O(n^2) over sorted active
-AABBs, and inter-body/deformable-rigid contact, barrier assembly, projected
-Newton, and friction are not implemented yet.
+scaffolding: inter-body/deformable-rigid mesh contact, barrier assembly,
+projected Newton, and friction are not implemented yet.
+
+The sweep-pair traversal sub-slice optimizes internal cross-set sweep traversal
+used by experimental surface candidate generation and inter-body surface CCD
+checks. Sorted right-hand-side AABBs whose maximum x coordinate is already
+behind the current left-hand-side minimum x are skipped as a prefix instead of
+rescanned. This is not a full sweep-and-prune active set: a long early
+right-hand-side interval can still keep later expired items in the scan. This
+preserves visitor semantics and leaves same-set edge-edge self traversal, exact
+distance filters, topology filters, and public APIs unchanged.
 
 The inter-body surface-contact CCD sub-slice adds stage-start deformable
 surface snapshots and a cross-surface point-triangle/edge-edge CCD limiter
@@ -122,15 +130,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-ground-barrier-ccd` - stacked on
-`feature/ipc-interbody-surface-ccd`, adding a static ground-barrier CCD
-line-search limiter.
+`feature/ipc-sweep-pair-traversal` - stacked on
+`feature/ipc-ground-barrier-ccd`, optimizing internal cross-set sweep-pair
+traversal.
 
 ## Immediate Next Step
 
 After this sub-slice lands, continue Phase 2 with deformable-rigid mesh
-contact candidates, broader solver-wired CCD coverage, and allocation-free
-sweep-pair traversal for larger meshes.
+contact candidates, broader solver-wired CCD coverage, and stronger spatial
+acceleration for larger meshes.
 
 ## Context That Would Be Lost
 
@@ -184,6 +192,11 @@ cmake --build build/default/cpp/Release --target test_deformable_body bm_deforma
 cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
 ./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.StaticGroundBarrier*:DeformableBody.ActiveStaticGroundContactAllowsTangentialMotion:DeformableBody.ActiveDirichletNodesDoNotBlockGroundBarrierSolve:DeformableBody.StaticCollisionRequiresGroundBarrierOptIn'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticGroundBarrierCcdStage'
+cmake --build build/default/cpp/Release --target test_contact_candidate_set test_continuous_collision_step test_deformable_body bm_ipc_candidate_set bm_ipc_motion_aware_candidate_set bm_deformable_body
+./build/default/cpp/Release/bin/test_contact_candidate_set --gtest_filter='IpcContactCandidateSet.VisitSweepPairsMatchesNaiveReference:IpcContactCandidateSet.*Sweep*:IpcContactCandidateSet.*Reusable*:IpcContactCandidateSet.MotionAware*'
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SurfaceContactCcd*:DeformableBody.InterBodySurfaceContactCcd*:DeformableBody.SurfaceFreeParticlesKeepFastPath:DeformableBody.SurfaceContactScratchIsPerBody:DeformableBody.StageMetadataUsesDeformableDomain'
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcCandidateSet(CrossSweepExpiredPrefix|(Scratch|Reusable)?Sweep)'
+./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcMotionAwareCandidateSet(Scratch|Reusable)?Sweep'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
@@ -193,5 +206,5 @@ set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
 `feature/ipc-motion-aware-candidates` for swept candidate culling,
 `feature/ipc-candidate-buffer-reuse` for reusable candidate buffers, or
 `feature/ipc-ccd-line-search`, `feature/ipc-sweep-scratch`, or
-`feature/ipc-interbody-surface-ccd`, or `feature/ipc-ground-barrier-ccd` for
-the immediate stacked bases.
+`feature/ipc-interbody-surface-ccd`, `feature/ipc-ground-barrier-ccd`, or
+`feature/ipc-sweep-pair-traversal` for the immediate stacked bases.

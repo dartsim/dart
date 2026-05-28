@@ -308,13 +308,18 @@ void visitSweepPairs(
   sortSweepItems(lhsItems);
   sortSweepItems(rhsItems);
 
+  std::size_t rhsBegin = 0;
   for (const auto& lhs : lhsItems) {
-    for (const auto& rhs : rhsItems) {
+    while (rhsBegin < rhsItems.size()
+           && rhsItems[rhsBegin].aabb.max.x() < lhs.aabb.min.x()) {
+      ++rhsBegin;
+    }
+
+    for (std::size_t rhsIndex = rhsBegin; rhsIndex < rhsItems.size();
+         ++rhsIndex) {
+      const auto& rhs = rhsItems[rhsIndex];
       if (rhs.aabb.min.x() > lhs.aabb.max.x()) {
         break;
-      }
-      if (rhs.aabb.max.x() < lhs.aabb.min.x()) {
-        continue;
       }
       if (lhs.aabb.overlaps(rhs.aabb)) {
         visitor(lhs.id, rhs.id);
