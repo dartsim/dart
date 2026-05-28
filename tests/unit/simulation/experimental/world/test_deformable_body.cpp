@@ -83,6 +83,36 @@ sx::DeformableBodyOptions makeSurfaceCrossingBodyOptions(
 }
 
 //==============================================================================
+sx::DeformableBodyOptions makeVolumetricInteriorNodeCrossingOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 2.0),
+         Eigen::Vector3d(0.0, 0.0, 0.5)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.fixedNodes = {0, 1, 2, 3};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{0, 3, 1},
+         sx::DeformableSurfaceTriangle{1, 3, 2},
+         sx::DeformableSurfaceTriangle{2, 3, 0}};
+  options.tetrahedra
+      = {sx::DeformableTetrahedron{0, 1, 2, 4},
+         sx::DeformableTetrahedron{0, 1, 3, 4},
+         sx::DeformableTetrahedron{1, 2, 3, 4},
+         sx::DeformableTetrahedron{2, 0, 3, 4}};
+  return options;
+}
+
+//==============================================================================
 void expectNoExactPointTriangleCrossing(
     const Eigen::Vector3d& pointStart,
     const Eigen::Vector3d& pointEnd,
@@ -823,6 +853,29 @@ TEST(DeformableBody, SurfaceContactCcdReportsCustomStageStats)
   EXPECT_GT(stats.surfaceContactCcdHits, 0u);
   EXPECT_GT(stats.surfaceContactCcdLimitedSteps, 0u);
   EXPECT_EQ(stats.surfaceContactCcdIndeterminateCount, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdIgnoresVolumetricInteriorNodes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "volumetric_interior", makeVolumetricInteriorNodeCrossingOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(4).z(), 0.0);
+  EXPECT_GT(stats.surfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(stats.surfaceContactPointTriangleCandidates, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdLimitedSteps, 0u);
 }
 
 //==============================================================================

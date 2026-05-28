@@ -217,9 +217,11 @@ edge-edge motion-aware candidate generation inside `DeformableDynamicsStage`,
 primitive CCD status propagation so iteration exhaustion is treated as
 uncertainty rather than a certified miss, line-search step shortening before
 Armijo evaluation, and zero-step rejection for nodes already inside the
-internal separation band. It does not yet cover reusable sweep-item scratch
-buffers, inter-body contact, deformable-rigid contact, IPC barrier assembly,
-projected Newton, friction, or full scene-level contact behavior.
+internal separation band. For volumetric bodies, it filters point-triangle CCD
+points to nodes referenced by the boundary surface so interior tetrahedral nodes
+do not over-limit surface contact. It does not yet cover reusable sweep-item
+scratch buffers, inter-body contact, deformable-rigid contact, IPC barrier
+assembly, projected Newton, friction, or full scene-level contact behavior.
 
 Current primitive-distance local gates:
 
@@ -328,7 +330,8 @@ cmake --build build/default/cpp/Release --target test_primitive_ccd test_continu
 
 The surface-contact CCD gate should prove that a surface-only body with no
 springs and no static ground no longer tunnels through its own surface topology,
-that primitive CCD iteration exhaustion is visible as indeterminate status, that
+that volumetric interior nodes are not treated as surface contact points, that
+primitive CCD iteration exhaustion is visible as indeterminate status, that
 custom-stage stats report candidate builds and CCD checks/hits/limited trials,
 that initial separation-band hits reject the trial, and that bodies without
 surface topology keep the free-particle fast path.
@@ -342,6 +345,10 @@ no-contact surface stage, about 5.1 us for a one-pair crossing stage, and about
 build, point-triangle candidate, CCD hit, and CCD-limited-step counters. CPU
 scaling was enabled, so treat these as local smoke numbers rather than a final
 performance claim.
+
+The Codex-review follow-up on 2026-05-27 added the volumetric interior-node
+filter regression and passed `DeformableBody.SurfaceContactCcd*` with 4 focused
+tests after rebuilding `test_deformable_body` and `bm_deformable_body`.
 
 Current CCD step-bound local gates:
 
