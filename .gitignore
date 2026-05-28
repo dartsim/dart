@@ -83,25 +83,5 @@ dist/
 # ImGui configuration
 imgui.ini
 
-# Temporary directory for dependencies
-.deps/
-
-# Language server and editor cache
-.cache/
-
 # Gazebo physics plugins
 /libgz-physics-*.so
-
-# Python distribution artifacts
-dist/
-*.egg-info
-
-# Python wheel files
-*.whl
-
-# pixi environments
-.pixi
-
-# ImGui configuration
-imgui.ini
-.cache/
