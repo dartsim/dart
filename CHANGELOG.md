@@ -858,6 +858,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     the projected-Newton solve, and the conservative CCD line search, with a
     benchmark methodology and baseline tracker. Initial measurements show the
     scene assembly is O(N^2) (no broad phase yet).
+  - Optimized rigid IPC barrier assembly with a conservative world-AABB
+    broad-phase cull that skips surface pairs already beyond the activation
+    distance. The cull is behavior-preserving (covered by an equivalence
+    regression) and drops the measured scene-assembly complexity from O(N^2) to
+    O(N) (~4.4x faster at 32 bodies, widening with scene size).
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

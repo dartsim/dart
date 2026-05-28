@@ -66,25 +66,34 @@ single number.
 | ReducedBarrier PointEdge                 | ~8.2 µs  |
 | ReducedBarrier EdgeEdge                  | ~7.3 µs  |
 | ReducedBarrier PointPoint                | ~6.0 µs  |
-| AssembleBarrierSystem N=1                | ~0.23 ms |
-| AssembleBarrierSystem N=8                | ~5.8 ms  |
-| AssembleBarrierSystem N=32               | ~64 ms   |
+| AssembleBarrierSystem N=1 (broad-phase)  | ~0.21 ms |
+| AssembleBarrierSystem N=8 (broad-phase)  | ~3.5 ms  |
+| AssembleBarrierSystem N=32 (broad-phase) | ~14.7 ms |
 | ProjectedNewtonSolve (8 iters, two-body) | ~47 µs   |
 | LineSearchStepBound (triangle crossing)  | ~16 µs   |
 
+## Resolved performance findings
+
+- **Scene assembly was O(N²); now O(N).** The original `assembleRigidIpcBarrierSystem`
+  evaluated every surface-primitive pair with no broad phase
+  (`~63098 · N²`, RMS 7%). A conservative world-AABB cull now skips surface pairs
+  whose AABB lower-bound distance already reaches the activation distance (where
+  every barrier is provably inactive), so each body only does the expensive
+  barrier evaluation against its spatial neighbors. Re-measured complexity:
+  `~455531 · N` (RMS 4%) — linear. At N=32, ~64 ms dropped to ~14.7 ms (~4.4x),
+  widening with N. The cull is behavior-preserving (covered by
+  `RigidIpcBarrier.SceneAssemblyBroadPhaseIsBehaviorPreserving`).
+
 ## Open performance findings
 
-- **Scene assembly is O(N²).** `BM_RigidIpcAssembleBarrierSystem` reports
-  `~63098 · N²` (RMS 7%): the assembly compares all surface-primitive pairs with
-  no broad phase. The reference stays fast precisely because it uses a spatial
-  broad phase (hash grid / BVH) to cull non-adjacent pairs. A conservative
-  broad-phase cull before barrier assembly is the first required optimization to
-  make multi-body scenes (and any reference/paper comparison) tractable. The
-  deformable domain already has a candidate-set/broad-phase pattern
-  (`bm_ipc_candidate_set`, `bm_ipc_motion_aware_candidate_set`) to reuse.
+- **Pair enumeration is still all-pairs O(N²) AABB tests.** The cull removes the
+  dominant per-pair barrier work but still iterates every surface pair to test
+  AABBs (cheap, ~ns each, not dominant at the measured N). A spatial index
+  (uniform grid / sort-and-sweep, reusing the deformable candidate-set pattern)
+  is the follow-up to make the enumeration itself sub-quadratic for large scenes.
 - **Per-primitive barrier kernels cost ~6–8 µs.** Dominated by the
   reduced-coordinate chain rule plus PSD eigen-projection. A candidate later
-  optimization once the broad phase bounds the active set.
+  optimization now that the broad phase bounds the active set.
 
 ## Status against the manifest
 

@@ -1160,6 +1160,57 @@ TEST(RigidIpcBarrier, SceneAssemblySkipsStaticStaticPairs)
 }
 
 //==============================================================================
+// The conservative broad-phase cull must be behavior-preserving: adding a body
+// far outside the activation distance contributes nothing to the assembled
+// system, and a within-activation pair is never wrongly culled.
+TEST(RigidIpcBarrier, SceneAssemblyBroadPhaseIsBehaviorPreserving)
+{
+  expdetail::RigidIpcBarrierOptions options;
+  options.squaredActivationDistance = 1.0;
+
+  expdetail::RigidIpcBarrierSurface dynamicNear;
+  dynamicNear.dynamic = true;
+  dynamicNear.pose.position = Eigen::Vector3d(0.0, 0.0, 0.25);
+  dynamicNear.vertices.push_back(Eigen::Vector3d::Zero());
+
+  expdetail::RigidIpcBarrierSurface staticNear;
+  staticNear.dynamic = false;
+  staticNear.vertices.push_back(Eigen::Vector3d::Zero());
+
+  // Far outside the activation distance (1.0) from both near bodies.
+  expdetail::RigidIpcBarrierSurface farDynamic;
+  farDynamic.dynamic = true;
+  farDynamic.pose.position = Eigen::Vector3d(0.0, 0.0, 100.0);
+  farDynamic.vertices.push_back(Eigen::Vector3d::Zero());
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> nearOnly{
+      dynamicNear, staticNear};
+  const std::array<expdetail::RigidIpcBarrierSurface, 3> nearPlusFar{
+      dynamicNear, staticNear, farDynamic};
+
+  const auto nearAssembly
+      = expdetail::assembleRigidIpcBarrierSystem(nearOnly, options);
+  const auto withFarAssembly
+      = expdetail::assembleRigidIpcBarrierSystem(nearPlusFar, options);
+
+  // The within-activation pair is genuinely active (not culled).
+  EXPECT_GT(nearAssembly.activeConstraints.size(), 0u);
+
+  // The far body adds no active constraints and does not perturb the near-pair
+  // value or gradient; its own dynamic DOF block stays exactly zero.
+  EXPECT_EQ(
+      withFarAssembly.activeConstraints.size(),
+      nearAssembly.activeConstraints.size());
+  EXPECT_DOUBLE_EQ(withFarAssembly.value, nearAssembly.value);
+  ASSERT_EQ(nearAssembly.gradient.size(), 6);
+  ASSERT_EQ(withFarAssembly.gradient.size(), 12);
+  const Eigen::VectorXd nearBlockDelta
+      = withFarAssembly.gradient.head(6) - nearAssembly.gradient;
+  EXPECT_TRUE(nearBlockDelta.isZero(0.0));
+  EXPECT_TRUE(withFarAssembly.gradient.tail(6).isZero(0.0));
+}
+
+//==============================================================================
 TEST(RigidIpcBarrier, LineSearchLimitsFaceVertexCrossing)
 {
   expdetail::RigidIpcBarrierSurface pointStart;

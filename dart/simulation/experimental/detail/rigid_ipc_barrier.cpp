@@ -134,6 +134,50 @@ std::vector<SurfaceEdge> buildSurfaceEdges(
   return edges;
 }
 
+/// World-space axis-aligned bounding box of a surface's transformed vertices.
+struct SurfaceWorldAabb
+{
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+  bool valid = false;
+};
+
+SurfaceWorldAabb computeSurfaceWorldAabb(const RigidIpcBarrierSurface& surface)
+{
+  SurfaceWorldAabb aabb;
+  if (surface.vertices.empty()) {
+    return aabb;
+  }
+  Eigen::Vector3d lo
+      = transformRigidIpcPoint(surface.vertices[0], surface.pose);
+  Eigen::Vector3d hi = lo;
+  for (std::size_t i = 1; i < surface.vertices.size(); ++i) {
+    const Eigen::Vector3d p
+        = transformRigidIpcPoint(surface.vertices[i], surface.pose);
+    lo = lo.cwiseMin(p);
+    hi = hi.cwiseMax(p);
+  }
+  aabb.min = lo;
+  aabb.max = hi;
+  aabb.valid = true;
+  return aabb;
+}
+
+/// Lower bound on the squared distance between two surfaces.
+///
+/// Each surface lies inside its world AABB, so the AABB-AABB gap never exceeds
+/// the true minimum surface distance. A pair whose value reaches the squared
+/// activation distance therefore cannot host an active barrier (the kernel is
+/// inactive once `squaredDistance >= squaredActivationDistance`) and can be
+/// skipped without changing the assembled system.
+double surfaceAabbSquaredDistance(
+    const SurfaceWorldAabb& a, const SurfaceWorldAabb& b)
+{
+  const Eigen::Vector3d gap
+      = (a.min - b.max).cwiseMax(b.min - a.max).cwiseMax(0.0);
+  return gap.squaredNorm();
+}
+
 PointTransformDerivatives pointTransformDerivatives(
     const Eigen::Vector3d& localPoint, const RigidIpcPose& pose)
 {
@@ -1541,8 +1585,11 @@ RigidIpcBarrierAssembly assembleRigidIpcBarrierSystem(
 
   std::vector<std::vector<SurfaceEdge>> surfaceEdges;
   surfaceEdges.reserve(surfaces.size());
+  std::vector<SurfaceWorldAabb> surfaceAabbs;
+  surfaceAabbs.reserve(surfaces.size());
   for (const RigidIpcBarrierSurface& surface : surfaces) {
     surfaceEdges.push_back(buildSurfaceEdges(surface));
+    surfaceAabbs.push_back(computeSurfaceWorldAabb(surface));
   }
 
   std::vector<Eigen::Triplet<double>> triplets;
@@ -1551,6 +1598,18 @@ RigidIpcBarrierAssembly assembleRigidIpcBarrierSystem(
     for (std::size_t bodyB = bodyA + 1; bodyB < surfaces.size(); ++bodyB) {
       const RigidIpcBarrierSurface& b = surfaces[bodyB];
       if (!a.dynamic && !b.dynamic) {
+        continue;
+      }
+
+      // Conservative broad-phase cull: skip surface pairs whose world AABBs are
+      // already at or beyond the activation distance, where every primitive
+      // barrier is inactive. This is behavior-preserving (the AABB gap lower
+      // bounds the true surface distance) and removes the dominant all-pairs
+      // barrier-evaluation cost for spatially separated bodies.
+      if (surfaceAabbs[bodyA].valid && surfaceAabbs[bodyB].valid
+          && surfaceAabbSquaredDistance(
+                 surfaceAabbs[bodyA], surfaceAabbs[bodyB])
+                 >= options.squaredActivationDistance) {
         continue;
       }
 
