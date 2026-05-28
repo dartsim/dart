@@ -83,9 +83,17 @@ inline double nonnegativeFiniteStiffness(const double stiffness)
 inline double safeSquaredBarrierDistance(
     const double squaredDistance, const double squaredActivationDistance)
 {
-  const double scale = std::max(1.0, squaredActivationDistance);
-  const double floor = std::max(
-      std::numeric_limits<double>::min(), kBarrierDistanceFloorScale * scale);
+  const double activeInteriorLimit
+      = std::nextafter(squaredActivationDistance, 0.0);
+  if (!(activeInteriorLimit > 0.0)) {
+    return std::max(squaredDistance, squaredActivationDistance);
+  }
+
+  const double floor = std::min(
+      std::max(
+          std::numeric_limits<double>::denorm_min(),
+          kBarrierDistanceFloorScale * squaredActivationDistance),
+      activeInteriorLimit);
   return std::max(squaredDistance, floor);
 }
 
