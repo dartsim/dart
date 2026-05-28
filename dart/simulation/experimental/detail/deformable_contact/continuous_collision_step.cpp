@@ -77,6 +77,7 @@ void accumulateStats(
   total.edgeEdgeChecks += addend.edgeEdgeChecks;
   total.hits += addend.hits;
   total.misses += addend.misses;
+  total.indeterminate += addend.indeterminate;
   total.zeroStepCount += addend.zeroStepCount;
 }
 
@@ -88,6 +89,11 @@ void considerCandidate(
 {
   accumulateStats(aggregate.stats, candidate.stats);
   if (!candidate.hit) {
+    aggregate.indeterminate
+        = aggregate.indeterminate || candidate.indeterminate;
+    if (candidate.indeterminate) {
+      aggregate.stepBound = 0.0;
+    }
     return;
   }
 
@@ -138,6 +144,12 @@ ContinuousCollisionStepResult pointTriangleStepBound(
         result,
         nativeResult.timeOfImpact,
         ContinuousCollisionPrimitive::PointTriangle);
+  } else if (
+      nativeResult.status
+      == collision::native::CcdPrimitiveStatus::Indeterminate) {
+    result.indeterminate = true;
+    result.stepBound = 0.0;
+    ++result.stats.indeterminate;
   } else {
     ++result.stats.misses;
   }
@@ -178,6 +190,12 @@ ContinuousCollisionStepResult edgeEdgeStepBound(
         result,
         nativeResult.timeOfImpact,
         ContinuousCollisionPrimitive::EdgeEdge);
+  } else if (
+      nativeResult.status
+      == collision::native::CcdPrimitiveStatus::Indeterminate) {
+    result.indeterminate = true;
+    result.stepBound = 0.0;
+    ++result.stats.indeterminate;
   } else {
     ++result.stats.misses;
   }
