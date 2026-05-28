@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779989806706,
+  "lastUpdate": 1779996773227,
   "repoUrl": "https://github.com/dartsim/dart",
   "entries": {
     "DART Performance": [
@@ -2512,6 +2512,198 @@ window.BENCHMARK_DATA = {
             "value": 136462198.66667604,
             "unit": "ns/iter",
             "extra": "iterations: 3\ncpu: 136448886.22222278 ns\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jslee02@users.noreply.github.com",
+            "name": "Jeongseok (JS) Lee",
+            "username": "jslee02"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "92a0ff8b92a3c9bd01a798739223e6e5eda399b3",
+          "message": "Add IPC tangent stencil scaffolding (#2724)",
+          "timestamp": "2026-05-28T11:43:31-07:00",
+          "tree_id": "acc833900f178d33ee18efbd4348146f0bbf6f31",
+          "url": "https://github.com/dartsim/dart/commit/92a0ff8b92a3c9bd01a798739223e6e5eda399b3"
+        },
+        "date": 1779996654233,
+        "tool": "googlecpp",
+        "benches": [
+          {
+            "name": "BM_WorldUpdateKinematics/32/8",
+            "value": 420513.2148636484,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 420472.79112975736 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldUpdateKinematics/128/8",
+            "value": 4036096.4641833566,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4035672.507163326 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldUpdateKinematics/128/32",
+            "value": 46742594.23333448,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 46739953.69999998 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/32/8",
+            "value": 421878.8514044232,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 421854.9317426761 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/128/8",
+            "value": 4013435.8514287025,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4013178.6571428515 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/128/32",
+            "value": 46778920.76666316,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 46774356.60000005 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/32/8",
+            "value": 567430.2144732036,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 526731.3547056622 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/128/8",
+            "value": 3964391.620879074,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 3837116.2252747137 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/128/32",
+            "value": 42319046.121213324,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 41868823.03030292 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/128",
+            "value": 101403.10496638139,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 101395.25641581712 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/1024",
+            "value": 1092500.2255286565,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1092441.597494124 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/4096",
+            "value": 8334739.458333506,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 8334049.940476176 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/128",
+            "value": 202301.61961899555,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 176344.57459178555 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/1024",
+            "value": 1403364.3057040998,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1250784.18983957 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/4096",
+            "value": 9133536.335366165,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 8557810.408536598 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactShapedSequential/1024/16",
+            "value": 61205.43916732855,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 61203.61825417638 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactShapedSequential/4096/16",
+            "value": 243487.65895652116,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 243468.83286956523 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactShapedSequential/1024/64",
+            "value": 246589.64197533834,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 246573.51022927577 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactShapedParallel/1024/16",
+            "value": 77628.30806589422,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 10025.666961225956 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactShapedParallel/4096/16",
+            "value": 261252.14762125895,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 10689.063217893106 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactShapedParallel/1024/64",
+            "value": 270271.24795905873,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 19627.14816348891 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactIslandShapedSequential/4/512/64",
+            "value": 452800.95077718113,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 452766.7244170953 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactIslandShapedSequential/8/512/64",
+            "value": 902958.8212903152,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 902905.8406451619 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactIslandShapedSequential/16/512/64",
+            "value": 1805810.5128866911,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 1805688.136597923 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactIslandShapedParallel/4/512/64",
+            "value": 184385.27718999924,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 6237.162439999935 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactIslandShapedParallel/8/512/64",
+            "value": 361052.4614999986,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 9448.935279999943 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_ContactIslandShapedParallel/16/512/64",
+            "value": 696249.5112000168,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 11727.658800000994 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10",
+            "value": 127902623.69999254,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 127893758.70000015 ns\nthreads: 1"
           }
         ]
       }
