@@ -133,6 +133,35 @@ void expectCandidatesEqual(
 }
 
 //==============================================================================
+void expectStatsEqual(
+    const dc::ContactCandidateStats& actual,
+    const dc::ContactCandidateStats& expected)
+{
+  EXPECT_EQ(actual.pointCount, expected.pointCount);
+  EXPECT_EQ(actual.triangleCount, expected.triangleCount);
+  EXPECT_EQ(actual.edgeCount, expected.edgeCount);
+  EXPECT_EQ(actual.broadPhaseOverlapCount, expected.broadPhaseOverlapCount);
+  EXPECT_EQ(actual.exactDistanceCheckCount, expected.exactDistanceCheckCount);
+  EXPECT_EQ(
+      actual.incidentPointTriangleRejectCount,
+      expected.incidentPointTriangleRejectCount);
+  EXPECT_EQ(
+      actual.adjacentEdgeEdgeRejectCount, expected.adjacentEdgeEdgeRejectCount);
+  EXPECT_EQ(
+      actual.pointTriangleCandidateCount, expected.pointTriangleCandidateCount);
+  EXPECT_EQ(actual.edgeEdgeCandidateCount, expected.edgeEdgeCandidateCount);
+}
+
+//==============================================================================
+void expectCandidateSetsEqualIncludingStats(
+    const dc::ContactCandidateSet& actual,
+    const dc::ContactCandidateSet& expected)
+{
+  expectCandidatesEqual(actual, expected);
+  expectStatsEqual(actual.stats, expected.stats);
+}
+
+//==============================================================================
 void expectSweepMatchesBruteForce(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<sx::DeformableSurfaceTriangle>& triangles,
@@ -147,6 +176,7 @@ void expectSweepMatchesBruteForce(
       = dc::buildContactCandidatesBruteForce(positions, triangles, options);
 
   expectCandidatesEqual(sweep, brute);
+  EXPECT_GT(sweep.stats.broadPhaseOverlapCount, 0u);
   EXPECT_TRUE(
       std::is_sorted(
           sweep.pointTriangleCandidates.begin(),
@@ -172,6 +202,7 @@ void expectMotionAwareSweepMatchesBruteForce(
       start, end, triangles, options);
 
   expectCandidatesEqual(sweep, brute);
+  expectStatsEqual(sweep.stats, brute.stats);
   EXPECT_TRUE(
       std::is_sorted(
           sweep.pointTriangleCandidates.begin(),
@@ -581,4 +612,208 @@ TEST(
   EXPECT_TRUE(
       std::is_sorted(
           first.edgeEdgeCandidates.begin(), first.edgeEdgeCandidates.end()));
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, ReusableBuildersMatchReturnWrappers)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+      {-1.0, 0.0, 0.7},
+      {1.0, 0.0, 0.7},
+      {0.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {-0.5, -0.5, 0.7},
+  };
+  auto end = start;
+  end[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+  end[4].z() = -0.7;
+  end[5].z() = -0.7;
+  end[8] = Eigen::Vector3d(-0.5, -0.5, -0.7);
+
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 2},
+      {4, 5, 8},
+      {6, 7, 8},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.1;
+
+  dc::ContactCandidateSet reusable;
+  dc::buildContactCandidatesBruteForce(start, triangles, options, reusable);
+  expectCandidateSetsEqualIncludingStats(
+      reusable,
+      dc::buildContactCandidatesBruteForce(start, triangles, options));
+
+  dc::buildContactCandidatesSweep(start, triangles, options, reusable);
+  expectCandidateSetsEqualIncludingStats(
+      reusable, dc::buildContactCandidatesSweep(start, triangles, options));
+
+  dc::buildMotionAwareContactCandidatesBruteForce(
+      start, end, triangles, options, reusable);
+  expectCandidateSetsEqualIncludingStats(
+      reusable,
+      dc::buildMotionAwareContactCandidatesBruteForce(
+          start, end, triangles, options));
+
+  dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options, reusable);
+  expectCandidateSetsEqualIncludingStats(
+      reusable,
+      dc::buildMotionAwareContactCandidatesSweep(
+          start, end, triangles, options));
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, ReusableBuildersClearStaleStateAndPreserveCapacity)
+{
+  const std::vector<Eigen::Vector3d> dense = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.25, 0.25, 0.0},
+      {1.25, 0.25, 0.0},
+      {0.25, 1.25, 0.0},
+      {0.5, 0.5, 0.05},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> denseTriangles = {
+      {0, 1, 2},
+      {3, 5, 4},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 1.0;
+  options.excludeIncidentPointTriangles = false;
+  options.excludeAdjacentEdges = false;
+
+  dc::ContactCandidateSet reusable;
+  reusable.surfaceEdges.reserve(64);
+  reusable.pointTriangleCandidates.reserve(64);
+  reusable.edgeEdgeCandidates.reserve(64);
+  const auto surfaceCapacity = reusable.surfaceEdges.capacity();
+  const auto pointTriangleCapacity
+      = reusable.pointTriangleCandidates.capacity();
+  const auto edgeEdgeCapacity = reusable.edgeEdgeCandidates.capacity();
+
+  dc::buildContactCandidatesSweep(dense, denseTriangles, options, reusable);
+  ASSERT_FALSE(reusable.surfaceEdges.empty());
+  ASSERT_FALSE(reusable.pointTriangleCandidates.empty());
+  ASSERT_FALSE(reusable.edgeEdgeCandidates.empty());
+  ASSERT_GT(reusable.stats.pointTriangleCandidateCount, 0u);
+  ASSERT_GT(reusable.stats.edgeEdgeCandidateCount, 0u);
+
+  const std::vector<Eigen::Vector3d> empty;
+  const std::vector<sx::DeformableSurfaceTriangle> noTriangles;
+  options.excludeIncidentPointTriangles = true;
+  options.excludeAdjacentEdges = true;
+  dc::buildContactCandidatesSweep(empty, noTriangles, options, reusable);
+
+  EXPECT_TRUE(reusable.surfaceEdges.empty());
+  EXPECT_TRUE(reusable.pointTriangleCandidates.empty());
+  EXPECT_TRUE(reusable.edgeEdgeCandidates.empty());
+  EXPECT_EQ(reusable.stats.pointCount, 0u);
+  EXPECT_EQ(reusable.stats.triangleCount, 0u);
+  EXPECT_EQ(reusable.stats.edgeCount, 0u);
+  EXPECT_EQ(reusable.stats.broadPhaseOverlapCount, 0u);
+  EXPECT_EQ(reusable.stats.exactDistanceCheckCount, 0u);
+  EXPECT_EQ(reusable.stats.incidentPointTriangleRejectCount, 0u);
+  EXPECT_EQ(reusable.stats.adjacentEdgeEdgeRejectCount, 0u);
+  EXPECT_EQ(reusable.stats.pointTriangleCandidateCount, 0u);
+  EXPECT_EQ(reusable.stats.edgeEdgeCandidateCount, 0u);
+  EXPECT_GE(reusable.surfaceEdges.capacity(), surfaceCapacity);
+  EXPECT_GE(reusable.pointTriangleCandidates.capacity(), pointTriangleCapacity);
+  EXPECT_GE(reusable.edgeEdgeCandidates.capacity(), edgeEdgeCapacity);
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, ReusableBuildersHandleTopologyChanges)
+{
+  const std::vector<Eigen::Vector3d> first = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.5, 0.5, 0.1},
+      {1.5, 0.5, 0.1},
+      {0.5, 1.5, 0.1},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> firstTriangles = {
+      {0, 1, 2},
+      {3, 5, 4},
+  };
+
+  const std::vector<Eigen::Vector3d> second = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 0.02},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> secondTriangles
+      = {{0, 1, 2}};
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.2;
+
+  dc::ContactCandidateSet reusable;
+  dc::buildContactCandidatesSweep(first, firstTriangles, options, reusable);
+  ASSERT_EQ(reusable.surfaceEdges.size(), 6u);
+
+  dc::buildContactCandidatesSweep(second, secondTriangles, options, reusable);
+  const auto fresh
+      = dc::buildContactCandidatesSweep(second, secondTriangles, options);
+
+  expectCandidateSetsEqualIncludingStats(reusable, fresh);
+  ASSERT_EQ(reusable.surfaceEdges.size(), 3u);
+  EXPECT_TRUE(containsPointTriangle(reusable, 3, 0));
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, ReusableMotionAwareBuildersPreserveCapacity)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+  };
+  auto end = start;
+  end[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {{0, 1, 2}};
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+
+  dc::ContactCandidateSet reusable;
+  reusable.surfaceEdges.reserve(32);
+  reusable.pointTriangleCandidates.reserve(32);
+  reusable.edgeEdgeCandidates.reserve(32);
+  const auto surfaceCapacity = reusable.surfaceEdges.capacity();
+  const auto pointTriangleCapacity
+      = reusable.pointTriangleCandidates.capacity();
+  const auto edgeEdgeCapacity = reusable.edgeEdgeCandidates.capacity();
+
+  dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options, reusable);
+  expectCandidateSetsEqualIncludingStats(
+      reusable,
+      dc::buildMotionAwareContactCandidatesSweep(
+          start, end, triangles, options));
+
+  dc::buildMotionAwareContactCandidatesSweep(
+      std::vector<Eigen::Vector3d>{},
+      std::vector<Eigen::Vector3d>{},
+      std::vector<sx::DeformableSurfaceTriangle>{},
+      options,
+      reusable);
+  EXPECT_TRUE(reusable.surfaceEdges.empty());
+  EXPECT_TRUE(reusable.pointTriangleCandidates.empty());
+  EXPECT_TRUE(reusable.edgeEdgeCandidates.empty());
+  EXPECT_EQ(reusable.stats.pointTriangleCandidateCount, 0u);
+  EXPECT_EQ(reusable.stats.edgeEdgeCandidateCount, 0u);
+  EXPECT_GE(reusable.surfaceEdges.capacity(), surfaceCapacity);
+  EXPECT_GE(reusable.pointTriangleCandidates.capacity(), pointTriangleCapacity);
+  EXPECT_GE(reusable.edgeEdgeCandidates.capacity(), edgeEdgeCapacity);
 }

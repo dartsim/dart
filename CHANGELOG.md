@@ -786,6 +786,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     start/end swept primitive AABBs, preserving fast point-triangle and
     edge-edge crossings that static endpoint candidate filters miss, with
     regression tests and benchmark counters for future CCD line-search wiring.
+  - Added reusable internal IPC contact-candidate builder overloads that clear
+    stale candidate state while preserving candidate vector capacity, with
+    regression tests and return-wrapper versus reusable-buffer benchmark
+    counters for future solver-owned contact buffers.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

@@ -137,6 +137,25 @@ void runMotionAwareCandidateBenchmark(
   recordCounters(state, fixture, candidates);
 }
 
+//==============================================================================
+template <typename Builder>
+void runReusableMotionAwareCandidateBenchmark(
+    benchmark::State& state, const MotionFixture& fixture, Builder&& builder)
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+  options.exactDistanceFilter = true;
+
+  dc::ContactCandidateSet candidates;
+  for (auto _ : state) {
+    builder(fixture.start, fixture.end, fixture.triangles, options, candidates);
+    benchmark::DoNotOptimize(candidates.pointTriangleCandidates.data());
+    benchmark::DoNotOptimize(candidates.edgeEdgeCandidates.data());
+  }
+
+  recordCounters(state, fixture, candidates);
+}
+
 } // namespace
 
 //==============================================================================
@@ -145,7 +164,15 @@ static void BM_IpcMotionAwareCandidateSetSweepFallingPoints(
 {
   const auto fixture = makeFallingPointCorpus(static_cast<int>(state.range(0)));
   runMotionAwareCandidateBenchmark(
-      state, fixture, dc::buildMotionAwareContactCandidatesSweep);
+      state,
+      fixture,
+      [](const auto& start,
+         const auto& end,
+         const auto& triangles,
+         const auto& options) {
+        return dc::buildMotionAwareContactCandidatesSweep(
+            start, end, triangles, options);
+      });
 }
 BENCHMARK(BM_IpcMotionAwareCandidateSetSweepFallingPoints)
     ->Arg(16)
@@ -158,7 +185,15 @@ static void BM_IpcMotionAwareCandidateSetBruteForceFallingPoints(
 {
   const auto fixture = makeFallingPointCorpus(static_cast<int>(state.range(0)));
   runMotionAwareCandidateBenchmark(
-      state, fixture, dc::buildMotionAwareContactCandidatesBruteForce);
+      state,
+      fixture,
+      [](const auto& start,
+         const auto& end,
+         const auto& triangles,
+         const auto& options) {
+        return dc::buildMotionAwareContactCandidatesBruteForce(
+            start, end, triangles, options);
+      });
 }
 BENCHMARK(BM_IpcMotionAwareCandidateSetBruteForceFallingPoints)
     ->Arg(16)
@@ -171,8 +206,59 @@ static void BM_IpcMotionAwareCandidateSetSweepCoherentTranslation(
   const auto fixture
       = makeCoherentTranslationCorpus(static_cast<int>(state.range(0)));
   runMotionAwareCandidateBenchmark(
-      state, fixture, dc::buildMotionAwareContactCandidatesSweep);
+      state,
+      fixture,
+      [](const auto& start,
+         const auto& end,
+         const auto& triangles,
+         const auto& options) {
+        return dc::buildMotionAwareContactCandidatesSweep(
+            start, end, triangles, options);
+      });
 }
 BENCHMARK(BM_IpcMotionAwareCandidateSetSweepCoherentTranslation)
+    ->Arg(16)
+    ->Arg(64);
+
+//==============================================================================
+static void BM_IpcMotionAwareCandidateSetReusableSweepFallingPoints(
+    benchmark::State& state)
+{
+  const auto fixture = makeFallingPointCorpus(static_cast<int>(state.range(0)));
+  runReusableMotionAwareCandidateBenchmark(
+      state,
+      fixture,
+      [](const auto& start,
+         const auto& end,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates) {
+        dc::buildMotionAwareContactCandidatesSweep(
+            start, end, triangles, options, candidates);
+      });
+}
+BENCHMARK(BM_IpcMotionAwareCandidateSetReusableSweepFallingPoints)
+    ->Arg(16)
+    ->Arg(64)
+    ->Arg(128);
+
+//==============================================================================
+static void BM_IpcMotionAwareCandidateSetReusableBruteForceFallingPoints(
+    benchmark::State& state)
+{
+  const auto fixture = makeFallingPointCorpus(static_cast<int>(state.range(0)));
+  runReusableMotionAwareCandidateBenchmark(
+      state,
+      fixture,
+      [](const auto& start,
+         const auto& end,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates) {
+        dc::buildMotionAwareContactCandidatesBruteForce(
+            start, end, triangles, options, candidates);
+      });
+}
+BENCHMARK(BM_IpcMotionAwareCandidateSetReusableBruteForceFallingPoints)
     ->Arg(16)
     ->Arg(64);

@@ -51,8 +51,12 @@
         start/end swept-AABB point-triangle and edge-edge candidate assembly,
         endpoint-distance metadata, static-miss crossing regressions, and
         `bm_ipc_motion_aware_candidate_set`.
-  - [ ] Remaining Phase 2 work: candidate-buffer integration, solver-owned
-        contact buffers, and solver-wired CCD line search.
+  - [x] Internal candidate-buffer reuse sub-slice: reusable output overloads
+        for static and motion-aware candidate builders, stale-state reset,
+        capacity-preserving candidate storage, regression tests, and
+        return-wrapper versus reusable-buffer benchmark counters.
+  - [ ] Remaining Phase 2 work: solver-owned contact buffers and solver-wired
+        CCD line search.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -93,11 +97,11 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with candidate-buffer integration, solver-owned contact
-   buffers, and solver-wired CCD line search. The current primitive kernels,
-   candidate sets, analytic Hessians, clamped-log barrier kernels, tangent
-   stencils, motion-aware swept candidate culling, and CCD step-bound helpers
-   are internal scaffolding only and are not yet wired into `World::step()`.
+1. Continue Phase 2 with solver-owned contact buffers and solver-wired CCD line
+   search. The current primitive kernels, candidate sets, analytic Hessians,
+   clamped-log barrier kernels, tangent stencils, motion-aware swept candidate
+   culling, reusable candidate-output buffers, and CCD step-bound helpers are
+   internal scaffolding only and are not yet wired into `World::step()`.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -191,6 +195,15 @@ brute-force swept-AABB oracle. It does not yet cover solver-owned persistent
 contact buffers, barrier assembly, solver-wired CCD line search, projected
 Newton, friction, or scene-level IPC contact behavior.
 
+For the candidate-buffer reuse sub-slice, keep the verification language
+precise: it covers internal reusable-output overloads for static and
+motion-aware candidate builders, clearing stale state across changing topology,
+preserving candidate vector capacity, and keeping existing return-by-value
+wrappers behavior-equivalent. It does not yet cover reusable sweep-item scratch
+buffers, solver-owned persistent contact caches, barrier assembly,
+solver-wired CCD line search, projected Newton, friction, or scene-level IPC
+contact behavior.
+
 Current primitive-distance local gates:
 
 ```bash
@@ -256,6 +269,35 @@ were about 17.9 us versus 84.9 us. The 128-pair swept path was about 40.6 us,
 and the coherent-translation inflation probes were about 3.9 us for 16 pairs
 and 22.0 us for 64 pairs. CPU scaling was enabled, so treat these as local
 smoke numbers rather than a final performance claim.
+
+Current candidate-buffer reuse local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_contact_candidate_set test_continuous_collision_step bm_ipc_candidate_set bm_ipc_motion_aware_candidate_set
+./build/default/cpp/Release/bin/test_contact_candidate_set
+ctest --test-dir build/default/cpp/Release -R '^(test_contact_candidate_set|test_continuous_collision_step)$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcCandidateSet'
+./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcMotionAwareCandidateSet'
+```
+
+The candidate-buffer gate should prove that reusable-output overloads match the
+return-by-value wrappers, reset stale stats/candidates across empty and
+topology-changing rebuilds, and preserve candidate vector capacity. Benchmark
+evidence should compare return wrappers with reusable-output variants while
+stating that temporary sweep-item arrays are still rebuilt per call.
+
+The first local candidate-buffer reuse gate pass on 2026-05-27 passed the
+focused target build, 16 `test_contact_candidate_set` cases, the CTest
+registration path for `test_contact_candidate_set` and
+`test_continuous_collision_step`, and `bm_ipc_candidate_set` plus
+`bm_ipc_motion_aware_candidate_set` smoke runs. The motion-aware benchmark
+reported reusable sweep timings slightly faster than the return-wrapper path on
+the checked falling-point workloads: 16 pairs were about 3.0 us versus 3.4 us,
+64 pairs were about 19.1 us versus 20.7 us, and 128 pairs were about 50.6 us
+versus 57.4 us. Reusable brute-force swept-AABB timings were about 7.2 us
+versus 7.7 us at 16 pairs and about 100.8 us versus 104.8 us at 64 pairs. CPU
+scaling was enabled, so treat these as local smoke numbers rather than a final
+performance claim.
 
 Current CCD step-bound local gates:
 

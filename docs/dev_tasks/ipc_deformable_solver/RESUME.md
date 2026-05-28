@@ -55,6 +55,13 @@ endpoint squared distance as representative metadata. It is still scaffolding:
 the swept candidates are not wired into `World::step()`, solver-owned contact
 buffers, barrier assembly, projected Newton, or friction.
 
+The candidate-buffer reuse sub-slice adds reusable-output overloads for static
+and motion-aware candidate builders. The overloads clear stale candidates and
+stats while preserving candidate vector capacity, and the return-by-value
+builders remain wrappers. It is still scaffolding: temporary sweep-item arrays
+are rebuilt per call, and the buffers are not yet owned by `World::step()` or a
+persistent IPC contact cache.
+
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
 incident/adjacent filtering, exact activation-distance filtering through the
@@ -73,14 +80,14 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-motion-aware-candidates` - stacked on
-`feature/ipc-tangent-stencils`, adding internal conservative swept candidate
-culling for future IPC CCD line-search wiring.
+`feature/ipc-candidate-buffer-reuse` - stacked on
+`feature/ipc-motion-aware-candidates`, adding reusable candidate-output
+overloads for future IPC CCD line-search wiring.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with candidate-buffer integration,
-solver-owned contact buffers, and solver-wired CCD line search.
+After this sub-slice lands, continue Phase 2 with solver-owned contact buffers
+and solver-wired CCD line search.
 
 ## Context That Would Be Lost
 
@@ -116,6 +123,9 @@ cmake --build build/default/cpp/Release --target test_tangent_stencil bm_ipc_tan
 cmake --build build/default/cpp/Release --target test_contact_candidate_set test_continuous_collision_step bm_ipc_motion_aware_candidate_set
 ./build/default/cpp/Release/bin/test_contact_candidate_set
 ctest --test-dir build/default/cpp/Release -R '^(test_contact_candidate_set|test_continuous_collision_step)$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcMotionAwareCandidateSet'
+cmake --build build/default/cpp/Release --target test_contact_candidate_set test_continuous_collision_step bm_ipc_candidate_set bm_ipc_motion_aware_candidate_set
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcCandidateSet'
 ./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcMotionAwareCandidateSet'
 ```
 

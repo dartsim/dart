@@ -182,6 +182,15 @@ inline SurfaceEdge makeSurfaceEdge(std::size_t a, std::size_t b)
 }
 
 //==============================================================================
+inline void clearContactCandidateSet(ContactCandidateSet& candidates)
+{
+  candidates.surfaceEdges.clear();
+  candidates.pointTriangleCandidates.clear();
+  candidates.edgeEdgeCandidates.clear();
+  candidates.stats = ContactCandidateStats{};
+}
+
+//==============================================================================
 inline CandidateAabb makePointAabb(
     const Eigen::Vector3d& point, const double margin)
 {
@@ -556,10 +565,11 @@ inline void finishCandidateSet(ContactCandidateSet& candidates)
 } // namespace detail
 
 //==============================================================================
-inline std::vector<SurfaceEdge> makeUniqueSurfaceEdges(
-    std::span<const DeformableSurfaceTriangle> triangles)
+inline void buildUniqueSurfaceEdges(
+    std::span<const DeformableSurfaceTriangle> triangles,
+    std::vector<SurfaceEdge>& edges)
 {
-  std::vector<SurfaceEdge> edges;
+  edges.clear();
   edges.reserve(3 * triangles.size());
 
   for (const auto& triangle : triangles) {
@@ -570,17 +580,26 @@ inline std::vector<SurfaceEdge> makeUniqueSurfaceEdges(
 
   std::sort(edges.begin(), edges.end());
   edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+}
+
+//==============================================================================
+inline std::vector<SurfaceEdge> makeUniqueSurfaceEdges(
+    std::span<const DeformableSurfaceTriangle> triangles)
+{
+  std::vector<SurfaceEdge> edges;
+  buildUniqueSurfaceEdges(triangles, edges);
   return edges;
 }
 
 //==============================================================================
-inline ContactCandidateSet buildContactCandidatesBruteForce(
+inline void buildContactCandidatesBruteForce(
     std::span<const Eigen::Vector3d> positions,
     std::span<const DeformableSurfaceTriangle> triangles,
-    const ContactCandidateOptions& options)
+    const ContactCandidateOptions& options,
+    ContactCandidateSet& candidates)
 {
-  ContactCandidateSet candidates;
-  candidates.surfaceEdges = makeUniqueSurfaceEdges(triangles);
+  detail::clearContactCandidateSet(candidates);
+  buildUniqueSurfaceEdges(triangles, candidates.surfaceEdges);
   candidates.stats.pointCount = positions.size();
   candidates.stats.triangleCount = triangles.size();
   candidates.stats.edgeCount = candidates.surfaceEdges.size();
@@ -601,17 +620,28 @@ inline ContactCandidateSet buildContactCandidatesBruteForce(
   }
 
   detail::finishCandidateSet(candidates);
-  return candidates;
 }
 
 //==============================================================================
-inline ContactCandidateSet buildContactCandidatesSweep(
+inline ContactCandidateSet buildContactCandidatesBruteForce(
     std::span<const Eigen::Vector3d> positions,
     std::span<const DeformableSurfaceTriangle> triangles,
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
-  candidates.surfaceEdges = makeUniqueSurfaceEdges(triangles);
+  buildContactCandidatesBruteForce(positions, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline void buildContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ContactCandidateSet& candidates)
+{
+  detail::clearContactCandidateSet(candidates);
+  buildUniqueSurfaceEdges(triangles, candidates.surfaceEdges);
   candidates.stats.pointCount = positions.size();
   candidates.stats.triangleCount = triangles.size();
   candidates.stats.edgeCount = candidates.surfaceEdges.size();
@@ -669,6 +699,16 @@ inline ContactCandidateSet buildContactCandidatesSweep(
       });
 
   detail::finishCandidateSet(candidates);
+}
+
+//==============================================================================
+inline ContactCandidateSet buildContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options)
+{
+  ContactCandidateSet candidates;
+  buildContactCandidatesSweep(positions, triangles, options, candidates);
   return candidates;
 }
 
@@ -682,16 +722,17 @@ inline ContactCandidateSet buildContactCandidatesSweep(
 /// candidate `squaredDistance` fields therefore store the minimum endpoint
 /// squared distance only as representative metadata. Conservative CCD remains
 /// the downstream safety gate.
-inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
+inline void buildMotionAwareContactCandidatesBruteForce(
     std::span<const Eigen::Vector3d> positionsStart,
     std::span<const Eigen::Vector3d> positionsEnd,
     std::span<const DeformableSurfaceTriangle> triangles,
-    const ContactCandidateOptions& options)
+    const ContactCandidateOptions& options,
+    ContactCandidateSet& candidates)
 {
   assert(positionsStart.size() == positionsEnd.size());
 
-  ContactCandidateSet candidates;
-  candidates.surfaceEdges = makeUniqueSurfaceEdges(triangles);
+  detail::clearContactCandidateSet(candidates);
+  buildUniqueSurfaceEdges(triangles, candidates.surfaceEdges);
   candidates.stats.pointCount = positionsStart.size();
   candidates.stats.triangleCount = triangles.size();
   candidates.stats.edgeCount = candidates.surfaceEdges.size();
@@ -755,6 +796,18 @@ inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
   }
 
   detail::finishCandidateSet(candidates);
+}
+
+//==============================================================================
+inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options)
+{
+  ContactCandidateSet candidates;
+  buildMotionAwareContactCandidatesBruteForce(
+      positionsStart, positionsEnd, triangles, options, candidates);
   return candidates;
 }
 
@@ -765,16 +818,17 @@ inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
 /// The `exactDistanceFilter` flag is intentionally not used for endpoint
 /// rejection here. The builder records endpoint distances as metadata only so
 /// fast crossings are not culled before the conservative CCD line-search gate.
-inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
+inline void buildMotionAwareContactCandidatesSweep(
     std::span<const Eigen::Vector3d> positionsStart,
     std::span<const Eigen::Vector3d> positionsEnd,
     std::span<const DeformableSurfaceTriangle> triangles,
-    const ContactCandidateOptions& options)
+    const ContactCandidateOptions& options,
+    ContactCandidateSet& candidates)
 {
   assert(positionsStart.size() == positionsEnd.size());
 
-  ContactCandidateSet candidates;
-  candidates.surfaceEdges = makeUniqueSurfaceEdges(triangles);
+  detail::clearContactCandidateSet(candidates);
+  buildUniqueSurfaceEdges(triangles, candidates.surfaceEdges);
   candidates.stats.pointCount = positionsStart.size();
   candidates.stats.triangleCount = triangles.size();
   candidates.stats.edgeCount = candidates.surfaceEdges.size();
@@ -847,6 +901,18 @@ inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
       });
 
   detail::finishCandidateSet(candidates);
+}
+
+//==============================================================================
+inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options)
+{
+  ContactCandidateSet candidates;
+  buildMotionAwareContactCandidatesSweep(
+      positionsStart, positionsEnd, triangles, options, candidates);
   return candidates;
 }
 
