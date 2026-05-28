@@ -95,7 +95,26 @@ compute::RigidBodyStateBatch makeStateBatch()
       4.0,
       0.0,
   };
-  state.angularVelocity.assign(18, 0.0);
+  state.angularVelocity = {
+      0.01,
+      0.02,
+      0.03,
+      -0.02,
+      0.01,
+      0.04,
+      0.0,
+      0.0,
+      0.0,
+      0.03,
+      -0.01,
+      0.02,
+      0.04,
+      0.02,
+      -0.01,
+      -0.03,
+      0.01,
+      0.02,
+  };
   return state;
 }
 
@@ -159,6 +178,20 @@ TEST(CudaRigidBodyStateBatch, RejectsMismatchedModelBeforeCudaRuntime)
 
   EXPECT_THROW(
       cuda::integrateRigidBodyStateBatchLinearCuda(state, model, force, 0.01),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(CudaRigidBodyStateBatch, RejectsInvalidFullStateBeforeCudaRuntime)
+{
+  auto state = makeStateBatch();
+  const auto model = makeModelBatch();
+  const auto force = makeForceBatch();
+
+  state.orientation.pop_back();
+
+  EXPECT_THROW(
+      cuda::integrateRigidBodyStateBatchCuda(state, model, force, 0.01),
       sx::InvalidArgumentException);
 }
 
@@ -230,4 +263,37 @@ TEST(CudaRigidBodyStateBatch, RolloutRejectsInvalidSizesBeforeCudaRuntime)
   EXPECT_THROW(
       cuda::rolloutRigidBodyStateBatchLinearCuda(state, model, force, 0.01, 4),
       sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(CudaRigidBodyStateBatch, MatchesCpuFullIntegration)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  auto cudaState = makeStateBatch();
+  auto cpuState = cudaState;
+  const auto model = makeModelBatch();
+  const auto force = makeForceBatch();
+  constexpr double dt = 0.125;
+  constexpr std::size_t steps = 4;
+
+  for (std::size_t step = 0; step < steps; ++step) {
+    compute::integrateRigidBodyStateBatch(cpuState, model, force, dt);
+  }
+  cuda::rolloutRigidBodyStateBatchCuda(cudaState, model, force, dt, steps);
+
+  ASSERT_EQ(cudaState.position.size(), cpuState.position.size());
+  ASSERT_EQ(cudaState.linearVelocity.size(), cpuState.linearVelocity.size());
+  ASSERT_EQ(cudaState.orientation.size(), cpuState.orientation.size());
+
+  for (std::size_t i = 0; i < cpuState.position.size(); ++i) {
+    EXPECT_NEAR(cudaState.position[i], cpuState.position[i], 1e-12) << i;
+    EXPECT_NEAR(cudaState.linearVelocity[i], cpuState.linearVelocity[i], 1e-12)
+        << i;
+  }
+  for (std::size_t i = 0; i < cpuState.orientation.size(); ++i) {
+    EXPECT_NEAR(cudaState.orientation[i], cpuState.orientation[i], 1e-12) << i;
+  }
 }

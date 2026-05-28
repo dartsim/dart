@@ -100,6 +100,8 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "tinkertoy": (),
     "drag_and_drop": (),
     "empty": (),
+    "experimental_deformable_gui": (),
+    "experimental_rigid_body_gui": (),
     "simple_frames": (),
     "soft_bodies": (),
     "point_cloud": (),
@@ -430,6 +432,23 @@ def _has_linux_display(env: Mapping[str, str]) -> bool:
     return bool(env.get("DISPLAY") or env.get("WAYLAND_DISPLAY"))
 
 
+def _append_filament_dimension_arg(
+    args: list[str],
+    flag: str,
+    env_name: str,
+    headless_default: str,
+    headless: bool,
+) -> None:
+    if _has_arg(args, flag):
+        return
+
+    value = os.environ.get(env_name)
+    if not value and headless:
+        value = headless_default
+    if value:
+        args.extend([flag, value])
+
+
 def _prepare_filament_run_args(
     run_args: list[str],
     scene: str,
@@ -451,24 +470,12 @@ def _prepare_filament_run_args(
         args.append("--headless")
     if headless and not _has_arg(args, "--frames"):
         args.extend(["--frames", os.environ.get("DART_GUI_FILAMENT_FRAMES", "10")])
-    if not _has_arg(args, "--width"):
-        args.extend(
-            [
-                "--width",
-                os.environ.get(
-                    "DART_GUI_FILAMENT_WIDTH", "640" if headless else "1280"
-                ),
-            ]
-        )
-    if not _has_arg(args, "--height"):
-        args.extend(
-            [
-                "--height",
-                os.environ.get(
-                    "DART_GUI_FILAMENT_HEIGHT", "480" if headless else "720"
-                ),
-            ]
-        )
+    _append_filament_dimension_arg(
+        args, "--width", "DART_GUI_FILAMENT_WIDTH", "640", headless
+    )
+    _append_filament_dimension_arg(
+        args, "--height", "DART_GUI_FILAMENT_HEIGHT", "480", headless
+    )
     if headless:
         screenshot = os.environ.get("DART_GUI_FILAMENT_SCREENSHOT")
         if _has_arg(args, "--screenshot"):
@@ -491,12 +498,16 @@ def _prepare_filament_run_args(
 
 def _prepend_runtime_library_path(env: dict[str, str], build_dir: Path) -> None:
     lib_dir = build_dir / "lib"
+    simulation_experimental_dir = build_dir / "dart" / "simulation" / "experimental"
     if sys.platform.startswith("linux"):
         _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
+        _prepend_env_path(env, "LD_LIBRARY_PATH", simulation_experimental_dir)
     elif sys.platform == "darwin":
         _prepend_env_path(env, "DYLD_LIBRARY_PATH", lib_dir)
+        _prepend_env_path(env, "DYLD_LIBRARY_PATH", simulation_experimental_dir)
     elif os.name == "nt":
         _prepend_env_path(env, "PATH", lib_dir)
+        _prepend_env_path(env, "PATH", simulation_experimental_dir)
 
 
 def _runtime_env(

@@ -35,6 +35,7 @@
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
+#include <dart/gui/detail/gui_scale.hpp>
 #include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/detail/simulation_stepper.hpp>
@@ -1099,6 +1100,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   context.ui.framebufferScale = Eigen::Vector2d(2.0, 2.0);
   context.ui.fontSize = 14.0;
   context.ui.fontGlobalScale = 1.25;
+  context.ui.userScale = 1.2;
+  context.ui.dpiScale = 1.25;
   context.ui.uiScale = 1.5;
   context.ui.fontTextureSize = std::array<int, 2>{512, 256};
   context.lighting.headlightsEnabled = &headlights;
@@ -1122,6 +1125,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(context.ui.framebufferScale.isApprox(Eigen::Vector2d(2.0, 2.0)));
   EXPECT_DOUBLE_EQ(context.ui.fontSize, 14.0);
   EXPECT_DOUBLE_EQ(context.ui.fontGlobalScale, 1.25);
+  EXPECT_DOUBLE_EQ(context.ui.userScale, 1.2);
+  EXPECT_DOUBLE_EQ(context.ui.dpiScale, 1.25);
   EXPECT_DOUBLE_EQ(context.ui.uiScale, 1.5);
   ASSERT_TRUE(context.ui.fontTextureSize.has_value());
   EXPECT_EQ((*context.ui.fontTextureSize)[0], 512);
@@ -1842,6 +1847,44 @@ TEST(FilamentSceneExtraction, GizmoRotationHandleDrivesTargetFrame)
 
 TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 {
+  char implicitExecutable[] = "dartsim";
+  char* implicitArgv[] = {implicitExecutable};
+  const auto implicitOptions = dart::gui::detail::parseOptions(
+      1, implicitArgv, std::optional<dart::gui::RunOptions>{});
+
+  EXPECT_EQ(implicitOptions.run.width, 1280);
+  EXPECT_EQ(implicitOptions.run.height, 720);
+  EXPECT_FALSE(implicitOptions.windowWidthExplicit);
+  EXPECT_FALSE(implicitOptions.windowHeightExplicit);
+
+  char headlessExecutable[] = "dartsim";
+  char headlessOption[] = "--headless";
+  char* headlessArgv[] = {headlessExecutable, headlessOption};
+  const auto headlessOptions = dart::gui::detail::parseOptions(
+      2, headlessArgv, std::optional<dart::gui::RunOptions>{});
+
+  EXPECT_EQ(headlessOptions.run.width, 1280);
+  EXPECT_EQ(headlessOptions.run.height, 720);
+  EXPECT_FALSE(headlessOptions.windowWidthExplicit);
+  EXPECT_FALSE(headlessOptions.windowHeightExplicit);
+
+  dart::gui::RunOptions unrelatedDefaults;
+  unrelatedDefaults.maxFrames = 4;
+  unrelatedDefaults.renderBackend = "noop";
+  char unrelatedExecutable[] = "dartsim";
+  char* unrelatedArgv[] = {unrelatedExecutable};
+  const auto unrelatedOptions = dart::gui::detail::parseOptions(
+      1,
+      unrelatedArgv,
+      std::optional<dart::gui::RunOptions>{unrelatedDefaults});
+
+  EXPECT_EQ(unrelatedOptions.run.width, 1280);
+  EXPECT_EQ(unrelatedOptions.run.height, 720);
+  EXPECT_EQ(unrelatedOptions.run.maxFrames, 4);
+  EXPECT_EQ(unrelatedOptions.run.renderBackend, "noop");
+  EXPECT_FALSE(unrelatedOptions.windowWidthExplicit);
+  EXPECT_FALSE(unrelatedOptions.windowHeightExplicit);
+
   dart::gui::RunOptions defaults;
   defaults.width = 1280;
   defaults.height = 960;
@@ -1853,6 +1896,8 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 
   EXPECT_EQ(defaultOptions.run.width, 1280);
   EXPECT_EQ(defaultOptions.run.height, 960);
+  EXPECT_TRUE(defaultOptions.windowWidthExplicit);
+  EXPECT_TRUE(defaultOptions.windowHeightExplicit);
 
   char overrideExecutable[] = "fetch";
   char widthOption[] = "--width";
@@ -1866,6 +1911,21 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 
   EXPECT_EQ(overrideOptions.run.width, 640);
   EXPECT_EQ(overrideOptions.run.height, 480);
+  EXPECT_TRUE(overrideOptions.windowWidthExplicit);
+  EXPECT_TRUE(overrideOptions.windowHeightExplicit);
+
+  char widthOnlyExecutable[] = "fetch";
+  char widthOnlyOption[] = "--width";
+  char widthOnlyValue[] = "1000";
+  char* widthOnlyArgv[]
+      = {widthOnlyExecutable, widthOnlyOption, widthOnlyValue};
+  const auto widthOnlyOptions = dart::gui::detail::parseOptions(
+      3, widthOnlyArgv, std::optional<dart::gui::RunOptions>{defaults});
+
+  EXPECT_EQ(widthOnlyOptions.run.width, 1000);
+  EXPECT_EQ(widthOnlyOptions.run.height, 960);
+  EXPECT_TRUE(widthOnlyOptions.windowWidthExplicit);
+  EXPECT_TRUE(widthOnlyOptions.windowHeightExplicit);
 
   char depthExecutable[] = "fetch";
   char renderOutputOption[] = "--render-output";
@@ -2316,7 +2376,8 @@ TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
       = readSourceFile(kDartGuiDirectory / "detail" / "ui_frame.cpp");
   EXPECT_NE(uiFrameSource.find("renderViewportPaneLabels"), std::string::npos);
   EXPECT_NE(
-      uiFrameSource.find("renderViewportPaneLabels(viewport, guiScale)"),
+      uiFrameSource.find(
+          "renderViewportPaneLabels(viewport, guiScale.effectiveScale)"),
       std::string::npos);
   EXPECT_NE(
       uiFrameSource.find("viewportPaneLabelState(viewport, i)"),
@@ -5869,6 +5930,130 @@ TEST(
   EXPECT_NE(descriptor.renderResourceVersion, 0u);
 }
 
+TEST(
+    FilamentSceneExtraction,
+    MakeDeformableSurfaceRenderable_GridSurface_ReturnsDynamicMeshDescriptor)
+{
+  const auto triangles = dart::gui::makeGridSurfaceTriangles(2u, 2u);
+  ASSERT_EQ(triangles.size(), 2u);
+  EXPECT_TRUE(triangles[0].isApprox(Eigen::Vector3i(0, 1, 2)));
+  EXPECT_TRUE(triangles[1].isApprox(Eigen::Vector3i(1, 3, 2)));
+
+  const std::vector<Eigen::Vector3d> positions{
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0),
+      Eigen::Vector3d(1.0, 1.0, 0.0)};
+  dart::gui::DeformableSurfaceRenderOptions options;
+  options.version = 7u;
+  options.surfaceColor = Eigen::Vector4d(0.4, 0.7, 0.9, 0.85);
+  options.boundsPadding = 0.05;
+
+  const auto descriptor = dart::gui::makeDeformableSurfaceRenderable(
+      42u, positions, triangles, options);
+  ASSERT_TRUE(descriptor.has_value());
+  EXPECT_EQ(descriptor->id, 42u);
+  EXPECT_EQ(descriptor->geometry.kind, ShapeKind::Mesh);
+  EXPECT_TRUE(descriptor->material.rgba.isApprox(options.surfaceColor));
+  EXPECT_TRUE(descriptor->material.visible);
+  EXPECT_TRUE(descriptor->material.castsShadows);
+  EXPECT_TRUE(descriptor->material.receivesShadows);
+  EXPECT_EQ(descriptor->shapeVersion, options.version);
+  EXPECT_NE(descriptor->renderResourceVersion, 0u);
+  EXPECT_EQ(descriptor->geometry.triangleVertices.size(), positions.size());
+  EXPECT_EQ(descriptor->geometry.triangleIndices.size(), triangles.size());
+  EXPECT_EQ(descriptor->geometry.triangleNormals.size(), positions.size());
+  EXPECT_TRUE(descriptor->geometry.meshUsesMaterialColors);
+  EXPECT_EQ(descriptor->geometry.meshAlphaMode, MeshAlphaMode::ShapeAlpha);
+  ASSERT_EQ(descriptor->geometry.meshMaterials.size(), 1u);
+  EXPECT_TRUE(descriptor->geometry.meshMaterials.front().diffuse.isApprox(
+      options.surfaceColor));
+  ASSERT_EQ(descriptor->geometry.meshParts.size(), 1u);
+  EXPECT_EQ(
+      descriptor->geometry.meshParts.front().vertexCount, positions.size());
+  EXPECT_EQ(
+      descriptor->geometry.meshParts.front().triangleCount, triangles.size());
+  EXPECT_TRUE(descriptor->geometry.hasLocalBounds);
+  EXPECT_TRUE(descriptor->geometry.localBoundsMin.isApprox(
+      Eigen::Vector3d(-0.05, -0.05, -0.05)));
+  EXPECT_TRUE(descriptor->geometry.localBoundsMax.isApprox(
+      Eigen::Vector3d(1.05, 1.05, 0.05)));
+  for (const auto& normal : descriptor->geometry.triangleNormals) {
+    EXPECT_TRUE(normal.isApprox(Eigen::Vector3d::UnitZ()));
+  }
+
+  auto movedPositions = positions;
+  movedPositions[3].z() = 0.2;
+  const auto movedDescriptor = dart::gui::makeDeformableSurfaceRenderable(
+      42u, movedPositions, triangles, options);
+  ASSERT_TRUE(movedDescriptor.has_value());
+  EXPECT_EQ(movedDescriptor->id, descriptor->id);
+  EXPECT_NE(
+      movedDescriptor->renderResourceVersion,
+      descriptor->renderResourceVersion);
+}
+
+TEST(
+    FilamentSceneExtraction,
+    RenderableExtractor_LineSegmentVertexMutation_RebuildsDynamicGeometry)
+{
+  auto world = World::create("world");
+  auto line = std::make_shared<LineSegmentShape>(2.0f);
+  const std::size_t first = line->addVertex(Eigen::Vector3d(0.0, 0.0, 0.0));
+  const std::size_t second = line->addVertex(Eigen::Vector3d(1.0, 0.0, 0.0));
+  line->addConnection(first, second);
+
+  auto frame = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "dynamic_line");
+  frame->setShape(line);
+  frame->getVisualAspect(true);
+  world->addSimpleFrame(frame);
+
+  dart::gui::RenderableExtractor extractor;
+  const auto before = extractor.extract(*world);
+  ASSERT_EQ(before.size(), 1u);
+  ASSERT_EQ(before.front().geometry.lineVertices.size(), 2u);
+
+  line->setVertex(second, Eigen::Vector3d(1.0, 0.5, 0.0));
+
+  const auto after = extractor.extract(*world);
+  ASSERT_EQ(after.size(), 1u);
+  ASSERT_EQ(after.front().geometry.lineVertices.size(), 2u);
+  EXPECT_EQ(after.front().id, before.front().id);
+  EXPECT_NE(
+      after.front().renderResourceVersion,
+      before.front().renderResourceVersion);
+  EXPECT_TRUE(after.front().geometry.lineVertices[1].isApprox(
+      Eigen::Vector3d(1.0, 0.5, 0.0)));
+}
+
+TEST(
+    FilamentSceneExtraction,
+    MakeDeformableSurfaceRenderable_InvalidTopology_ReturnsNullopt)
+{
+  const std::vector<Eigen::Vector3d> positions{
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0)};
+  const std::vector<Eigen::Vector3i> validTriangle{Eigen::Vector3i(0, 1, 2)};
+  const std::vector<Eigen::Vector3i> outOfRangeTriangle{
+      Eigen::Vector3i(0, 1, 3)};
+  const std::vector<Eigen::Vector3i> negativeTriangle{
+      Eigen::Vector3i(0, -1, 2)};
+
+  EXPECT_FALSE(
+      dart::gui::makeDeformableSurfaceRenderable(0u, positions, validTriangle)
+          .has_value());
+  EXPECT_FALSE(
+      dart::gui::makeDeformableSurfaceRenderable(
+          5u, positions, outOfRangeTriangle)
+          .has_value());
+  EXPECT_FALSE(
+      dart::gui::makeDeformableSurfaceRenderable(
+          5u, positions, negativeTriangle)
+          .has_value());
+}
+
 TEST(FilamentSceneExtraction, ApplyDebugVisualStyle_SimpleFrame_DisablesShadows)
 {
   auto world = World::create("world");
@@ -7247,6 +7432,10 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 {
   const auto nativeWindowSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "native_window.cpp");
+  const auto applicationSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
+  const auto scenesSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "scenes.cpp");
 
   dart::gui::RunOptions options;
   EXPECT_EQ(options.windowTitle, "dartsim");
@@ -7326,6 +7515,228 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_NE(
       nativeWindowSource.find("options.windowTitle.c_str()"),
       std::string::npos);
+  EXPECT_NE(
+      nativeWindowSource.find("glfwGetWindowContentScale"), std::string::npos);
+  EXPECT_NE(nativeWindowSource.find("glfwSetWindowSize"), std::string::npos);
+  EXPECT_NE(
+      nativeWindowSource.find("guiScale.effectiveScale"), std::string::npos);
+  EXPECT_NE(
+      nativeWindowSource.find("(std::max)(xScale, yScale)"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("!automaticWindowSizeResolved"),
+      std::string::npos);
+  EXPECT_EQ(
+      scenesSource.find("options.run.width) * options.run.guiScale"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, GuiScale_SeparatesUserScaleFromDpiScale)
+{
+  EXPECT_NEAR(
+      dart::gui::detail::normalizeGuiUserScale(
+          std::numeric_limits<double>::quiet_NaN()),
+      1.0,
+      1e-12);
+  EXPECT_NEAR(dart::gui::detail::normalizeGuiUserScale(0.25), 0.5, 1e-12);
+  EXPECT_NEAR(dart::gui::detail::normalizeGuiUserScale(10.0), 4.0, 1e-12);
+
+  EXPECT_EQ(dart::gui::detail::parseGuiDpiScaleOverride(""), std::nullopt);
+  EXPECT_EQ(dart::gui::detail::parseGuiDpiScaleOverride("2x"), std::nullopt);
+
+  const auto overrideScale = dart::gui::detail::parseGuiDpiScaleOverride("2.5");
+  ASSERT_TRUE(overrideScale.has_value());
+  EXPECT_NEAR(*overrideScale, 2.5, 1e-12);
+  EXPECT_NEAR(*dart::gui::detail::parseGuiDpiScaleOverride("12.0"), 4.0, 1e-12);
+
+  const dart::gui::detail::GuiScaleState scale
+      = dart::gui::detail::makeGuiScaleState(1.5, 2.0);
+  EXPECT_NEAR(scale.userScale, 1.5, 1e-12);
+  EXPECT_NEAR(scale.dpiScale, 2.0, 1e-12);
+  EXPECT_NEAR(scale.effectiveScale, 3.0, 1e-12);
+
+  const dart::gui::detail::GuiWindowSize explicitSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1280, 720, 2.0, 0, 0, false, false);
+  EXPECT_EQ(explicitSize.width, 1280);
+  EXPECT_EQ(explicitSize.height, 720);
+
+  const dart::gui::detail::GuiWindowSize automaticDefaultSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1280, 720, 1.0, 0, 0, true, true);
+  EXPECT_EQ(automaticDefaultSize.width, 1600);
+  EXPECT_EQ(automaticDefaultSize.height, 900);
+
+  const dart::gui::detail::GuiWindowSize scaledSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1280, 720, 2.0, 0, 0, true, true);
+  EXPECT_EQ(scaledSize.width, 3200);
+  EXPECT_EQ(scaledSize.height, 1800);
+
+  const dart::gui::detail::GuiWindowSize oneExplicitDimension
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1000, 720, 2.0, 0, 0, false, true);
+  EXPECT_EQ(oneExplicitDimension.width, 1000);
+  EXPECT_EQ(oneExplicitDimension.height, 1800);
+
+  const dart::gui::detail::GuiWindowSize largerBaseSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1920, 1080, 1.0, 0, 0, true, true);
+  EXPECT_EQ(largerBaseSize.width, 1920);
+  EXPECT_EQ(largerBaseSize.height, 1080);
+
+  const dart::gui::detail::GuiWindowSize clampedSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1280, 720, 2.0, 2000, 1200, true, true);
+  EXPECT_EQ(clampedSize.width, 1700);
+  EXPECT_EQ(clampedSize.height, 1020);
+
+  const dart::gui::detail::GuiWindowSize clampedSmallMonitorSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1280, 720, 1.0, 1200, 800, true, true);
+  EXPECT_EQ(clampedSmallMonitorSize.width, 1020);
+  EXPECT_EQ(clampedSmallMonitorSize.height, 680);
+
+  const dart::gui::detail::GuiWindowSize largeMonitorSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1280, 720, 1.0, 6144, 3840, true, true);
+  EXPECT_EQ(largeMonitorSize.width, 4301);
+  EXPECT_EQ(largeMonitorSize.height, 2688);
+
+  const dart::gui::detail::GuiWindowSize largeMonitorHiDpiSize
+      = dart::gui::detail::resolveAutomaticGuiWindowSize(
+          1280, 720, 2.0, 6144, 3840, true, true);
+  EXPECT_EQ(largeMonitorHiDpiSize.width, 5222);
+  EXPECT_EQ(largeMonitorHiDpiSize.height, 3264);
+}
+
+TEST(FilamentSceneExtraction, GuiScale_AutomaticWindowSizingCoversScaleRange)
+{
+  using dart::gui::detail::resolveAutomaticGuiWindowSize;
+
+  const std::array<double, 15> scales = {
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.1,
+      1.25,
+      1.333333333333,
+      1.5,
+      1.75,
+      2.0,
+      2.5,
+      3.0,
+      4.0,
+      std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::quiet_NaN(),
+  };
+  const std::array<std::array<int, 2>, 7> monitorSizes = {{
+      {0, 0},
+      {1024, 768},
+      {1600, 900},
+      {1920, 1080},
+      {2560, 1440},
+      {3840, 2160},
+      {6144, 3840},
+  }};
+
+  for (const auto& monitorSize : monitorSizes) {
+    const int maxWidth = monitorSize[0];
+    const int maxHeight = monitorSize[1];
+    int previousWidth = 0;
+    int previousHeight = 0;
+    for (const double scale : scales) {
+      const auto size = resolveAutomaticGuiWindowSize(
+          1280, 720, scale, maxWidth, maxHeight, true, true);
+      EXPECT_GT(size.width, 0);
+      EXPECT_GT(size.height, 0);
+
+      if (maxWidth > 0) {
+        EXPECT_LE(
+            size.width,
+            static_cast<int>(std::lround(static_cast<double>(maxWidth) * 0.85)))
+            << "scale=" << scale << " maxWidth=" << maxWidth;
+      }
+      if (maxHeight > 0) {
+        EXPECT_LE(
+            size.height,
+            static_cast<int>(
+                std::lround(static_cast<double>(maxHeight) * 0.85)))
+            << "scale=" << scale << " maxHeight=" << maxHeight;
+      }
+
+      if (std::isfinite(scale) && scale >= 1.0) {
+        EXPECT_GE(size.width, previousWidth)
+            << "scale=" << scale << " maxWidth=" << maxWidth;
+        EXPECT_GE(size.height, previousHeight)
+            << "scale=" << scale << " maxHeight=" << maxHeight;
+        previousWidth = size.width;
+        previousHeight = size.height;
+      }
+    }
+  }
+
+  const auto scaleOneSize
+      = resolveAutomaticGuiWindowSize(1280, 720, 1.0, 3840, 2160, true, true);
+  for (const double scale : {0.0, 0.25, 0.5, 0.75}) {
+    const auto subUnitySize = resolveAutomaticGuiWindowSize(
+        1280, 720, scale, 3840, 2160, true, true);
+    EXPECT_EQ(subUnitySize.width, scaleOneSize.width);
+    EXPECT_EQ(subUnitySize.height, scaleOneSize.height);
+  }
+
+  const auto explicitSize
+      = resolveAutomaticGuiWindowSize(1280, 720, 8.0, 3840, 2160, false, false);
+  EXPECT_EQ(explicitSize.width, 1280);
+  EXPECT_EQ(explicitSize.height, 720);
+
+  for (const double scale : {1.0, 1.25, 1.5, 2.0, 3.0, 4.0}) {
+    const auto oneAutomaticDimension = resolveAutomaticGuiWindowSize(
+        1000, 720, scale, 3840, 2160, false, true);
+    EXPECT_EQ(oneAutomaticDimension.width, 1000);
+    EXPECT_GT(oneAutomaticDimension.height, 0);
+    EXPECT_LE(oneAutomaticDimension.height, 1836);
+  }
+}
+
+TEST(FilamentSceneExtraction, GuiScale_NormalizesUserAndDpiScaleRange)
+{
+  const auto normalizedScale = [](double scale) {
+    if (!std::isfinite(scale) || scale <= 0.0) {
+      return 1.0;
+    }
+    return std::clamp(scale, 0.5, 4.0);
+  };
+  const std::array<double, 11> values = {
+      -2.0,
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.5,
+      2.0,
+      4.0,
+      8.0,
+      std::numeric_limits<double>::quiet_NaN(),
+  };
+
+  for (const double userScale : values) {
+    for (const double dpiScale : values) {
+      const dart::gui::detail::GuiScaleState scale
+          = dart::gui::detail::makeGuiScaleState(userScale, dpiScale);
+      EXPECT_NEAR(scale.userScale, normalizedScale(userScale), 1e-12);
+      EXPECT_NEAR(scale.dpiScale, normalizedScale(dpiScale), 1e-12);
+      EXPECT_NEAR(
+          scale.effectiveScale, scale.userScale * scale.dpiScale, 1e-12);
+      EXPECT_GE(scale.userScale, 0.5);
+      EXPECT_LE(scale.userScale, 4.0);
+      EXPECT_GE(scale.dpiScale, 0.5);
+      EXPECT_LE(scale.dpiScale, 4.0);
+      EXPECT_GE(scale.effectiveScale, 0.25);
+      EXPECT_LE(scale.effectiveScale, 16.0);
+    }
+  }
 }
 
 TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)

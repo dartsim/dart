@@ -74,7 +74,6 @@ public:
       MaterialResources& materialResources,
       const dart::gui::RunOptions& options,
       DartScene& dartScene,
-      const dart::gui::OrbitCameraController& cameraController,
       SelectionController& selectionController,
       InitialSceneState& sceneState,
       std::optional<Renderable>& selectionDebugOverlay,
@@ -99,7 +98,6 @@ private:
   MaterialResources& mMaterialResources;
   const dart::gui::RunOptions& mOptions;
   DartScene& mDartScene;
-  const dart::gui::OrbitCameraController& mCameraController;
   SelectionController& mSelectionController;
   InitialSceneState& mSceneState;
   std::optional<Renderable>& mSelectionDebugOverlay;

@@ -94,14 +94,14 @@ dart::gui::OrbitCameraControllerInput makeOrbitCameraControllerInput(
     bool leftMousePressed,
     bool rightMousePressed,
     bool middleMousePressed,
-    bool suppressLeftMouseOrbit,
+    bool suppressCameraMouse,
     bool dragModifierDown,
     const dart::gui::OrbitCameraControlOptions& controls);
 
 void updateCameraController(
     GLFWwindow* window,
     dart::gui::OrbitCameraController& controller,
-    bool suppressLeftMouseOrbit = false,
+    bool suppressCameraMouse = false,
     const dart::gui::OrbitCameraControlOptions& controls
     = dart::gui::OrbitCameraControlOptions{});
 

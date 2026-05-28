@@ -18,10 +18,11 @@ the first publication), open it directly with the link above.
            style="border: 1px solid #d0d7de; border-radius: 6px;"></iframe>
 
 It is scoped to experimental World performance only: kinematics updates,
-world-step throughput with sequential vs parallel compute executors, and
-rigid-body step scaling. It intentionally excludes unrelated solver, SIMD, and
-robot-loader benchmark surfaces so the headline charts stay focused on the
-experimental World.
+world-step throughput with sequential vs parallel compute executors,
+rigid-body step scaling, the contact-shaped and contact-island scalable-compute
+proxies, and the Phase 5 CPU baseline row. It intentionally excludes unrelated
+solver, SIMD, and robot-loader benchmark surfaces so the headline charts stay
+focused on the experimental World.
 
 The dashboard is built entirely on GitHub infrastructure. A GitHub Actions
 workflow runs DART's benchmark suites and hands the Google Benchmark JSON to

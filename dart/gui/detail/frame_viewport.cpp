@@ -330,11 +330,9 @@ FrameViewport updateFrameViewport(
     int defaultHeight,
     double worldTimeStep,
     bool showUi,
-    double guiScale,
     const dart::gui::OrbitCameraControlOptions& cameraControls,
     const dart::gui::ViewportLayoutOptions& layoutOptions)
 {
-  (void)guiScale;
   int width = defaultWidth;
   int height = defaultHeight;
   if (window != nullptr) {
@@ -370,12 +368,12 @@ FrameViewport updateFrameViewport(
     const bool cursorOverActivePane
         = cursorPane.has_value()
           && *cursorPane == activeViewportPaneIndex(viewport);
-    const bool suppressCameraOrbit
+    const bool suppressCameraMouse
         = selectionController.isDraggingSelection()
           || isSceneMouseInputCapturedByUi(showUi, imguiIo)
           || !cursorOverActivePane;
     updateCameraController(
-        window, cameraController, suppressCameraOrbit, cameraControls);
+        window, cameraController, suppressCameraMouse, cameraControls);
   }
 
   return viewport;

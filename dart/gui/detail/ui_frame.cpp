@@ -32,6 +32,7 @@
 
 #include <dart/gui/detail/debug_overlay.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
+#include <dart/gui/detail/gui_scale.hpp>
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/native_window.hpp>
@@ -136,7 +137,7 @@ std::string compactDebugLabel(std::string text)
 void renderDebugLabels(
     const std::vector<dart::gui::DebugLabelDescriptor>& labels,
     const FrameViewport& viewport,
-    double guiScale)
+    double effectiveScale)
 {
   if (labels.empty()) {
     return;
@@ -147,7 +148,7 @@ void renderDebugLabels(
     return;
   }
 
-  const float scale = static_cast<float>(std::max(0.5, guiScale));
+  const float scale = static_cast<float>(std::max(0.5, effectiveScale));
   const ImVec2 padding(4.0f * scale, 2.0f * scale);
   const ImU32 background
       = ImGui::ColorConvertFloat4ToU32(ImVec4(0.02f, 0.02f, 0.02f, 0.58f));
@@ -415,7 +416,7 @@ void updateFrameUi(
     DebugOverlayController& debugOverlays,
     std::vector<dart::gui::Panel>& panels,
     dart::gui::ViewerLifecycleState& lifecycle,
-    double guiScale,
+    const GuiScaleState& guiScale,
     dart::gui::ProfileAccumulator& profile,
     bool showPerfHud,
     PerfHudState& perfHud,
@@ -450,7 +451,9 @@ void updateFrameUi(
       imguiIo.DisplayFramebufferScale.x, imguiIo.DisplayFramebufferScale.y);
   uiState.fontSize = ImGui::GetFontSize();
   uiState.fontGlobalScale = imguiIo.FontGlobalScale;
-  uiState.uiScale = guiScale;
+  uiState.userScale = guiScale.userScale;
+  uiState.dpiScale = guiScale.dpiScale;
+  uiState.uiScale = guiScale.effectiveScale;
   if (imguiIo.Fonts != nullptr) {
     unsigned char* pixels = nullptr;
     int width = 0;
@@ -491,7 +494,7 @@ void updateFrameUi(
       debugOverlays.staticOptions,
       debugOverlays.contactOptions,
       lifecycle,
-      guiScale,
+      guiScale.effectiveScale,
       dartScene.dockingEnabled);
   if (debugOptionsChanged) {
     refreshStaticDebugOverlay(
@@ -504,7 +507,7 @@ void updateFrameUi(
         debugOverlays);
   }
   renderApplicationPanels(
-      panels, panelContext, guiScale, dartScene.dockingEnabled);
+      panels, panelContext, guiScale.effectiveScale, dartScene.dockingEnabled);
   updateViewportPaneActivation(
       dartScene.viewportPaneActivation,
       window,
@@ -513,9 +516,10 @@ void updateFrameUi(
       true,
       cameraController,
       dartScene.onViewportPaneActivated);
-  renderViewportPaneLabels(viewport, guiScale);
+  renderViewportPaneLabels(viewport, guiScale.effectiveScale);
   if (dartScene.debugLabels) {
-    renderDebugLabels(dartScene.debugLabels(), viewport, guiScale);
+    renderDebugLabels(
+        dartScene.debugLabels(), viewport, guiScale.effectiveScale);
   }
   if (showPerfHud) {
     drawPerfHud(perfHud, profile, backendName);

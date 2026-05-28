@@ -208,6 +208,22 @@ audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_
 check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
+lint-compute-backend-boundaries = { cmd = [
+  "python",
+  "scripts/check_compute_backend_boundaries.py",
+] }
+lint-no-gpu-runtime-dependencies = { cmd = [
+  "python",
+  "scripts/check_no_gpu_runtime_dependencies.py",
+] }
+lint-phase5-cuda-benchmark-contract = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_benchmark_contract.py",
+] }
+lint-phase5-cuda-workflow = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_workflow.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -229,6 +245,10 @@ lint = { depends-on = [
   "audit-collision-compat-facades",
   "check-native-collision-superset",
   "lint-api-boundaries",
+  "lint-compute-backend-boundaries",
+  "lint-no-gpu-runtime-dependencies",
+  "lint-phase5-cuda-benchmark-contract",
+  "lint-phase5-cuda-workflow",
   "sync-ai-commands",
 ] }
 
@@ -262,6 +282,22 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
 check-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
+check-compute-backend-boundaries = { cmd = [
+  "python",
+  "scripts/check_compute_backend_boundaries.py",
+] }
+check-no-gpu-runtime-dependencies = { cmd = [
+  "python",
+  "scripts/check_no_gpu_runtime_dependencies.py",
+] }
+check-phase5-cuda-benchmark-contract = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_benchmark_contract.py",
+] }
+check-phase5-cuda-workflow = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_workflow.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -288,6 +324,10 @@ check-lint = { depends-on = [
   "audit-collision-compat-facades",
   "check-docs-policy",
   "check-api-boundaries",
+  "check-compute-backend-boundaries",
+  "check-no-gpu-runtime-dependencies",
+  "check-phase5-cuda-benchmark-contract",
+  "check-phase5-cuda-workflow",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
@@ -786,6 +826,9 @@ BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-cuda
 "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
+  --benchmark_filter='BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/1024/128/10$' \
+  --benchmark_min_time=1ms
+"${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
   --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
   --benchmark_min_time=0.001s
 """,
@@ -796,6 +839,21 @@ ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-c
 ], args = [
   { arg = "build_type", default = "Release" },
 ] }
+
+bm-phase5-cuda-full = { cmd = ["bash", "-lc", """
+set -euo pipefail
+mkdir -p .benchmark_results
+python scripts/run_cpp_benchmark.py \
+  --target bm_cuda_rigid_body_state_batch \
+  --build-type Release \
+  -- \
+  --benchmark_filter='BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/4096/128/100$' \
+  --benchmark_min_time=1ms \
+  --benchmark_repetitions=3 \
+  --benchmark_report_aggregates_only=true \
+  --benchmark_out=.benchmark_results/phase5_cuda_ci_full.json \
+  --benchmark_out_format=json
+"""], depends-on = [{ task = "build-cuda", args = ["Release"] }] }
 
 test-math = { cmd = """
     ctest \
@@ -1041,6 +1099,11 @@ bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
 bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
   "config",
 ] }
+bm-compute-check = { cmd = "python scripts/check_compute_graph_benchmarks.py", depends-on = [
+  "config",
+] }
+bm-phase5-cuda-packet = { cmd = "python scripts/write_phase5_cuda_packet.py" }
+bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
 bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
   "config",
 ] }
@@ -1622,6 +1685,14 @@ test-all = { cmd = """
     python scripts/test_all.py
 """ }
 
+# ABI check (Linux only). Requires libabigail. Examples:
+# - Default (compare HEAD to latest matching major tag):
+#     pixi run abi-check
+# - Compare tags: pixi run abi-check --from v6.16.0 --to v6.16.2
+# - Compare refs: pixi run abi-check --from v6.16.0 --to HEAD
+# - Override via env: DART_ABI_FROM=v6.16.0 DART_ABI_TO=origin/main pixi run abi-check
+abi-check = { cmd = "python scripts/abi_check.py" }
+
 test-dartpy-install = { cmd = """
     python scripts/test_dartpy_install.py
 """ }
@@ -1717,6 +1788,7 @@ ctest \
 
 [target.linux-64.dependencies]
 lcov = ">=1.16,<2"
+libabigail = ">=2.9,<3"
 mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 libgl-devel = ">=1.7.0,<2"
@@ -2197,6 +2269,7 @@ libode = ">=0.16.6,<0.17"
 #
 # Usage:
 #   pixi run -e cuda test-cuda
+#   pixi run -e cuda bm-phase5-cuda-full
 #
 
 [feature.cuda]

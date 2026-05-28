@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/detail/gui_scale.hpp>
 #include <dart/gui/detail/native_window.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -46,10 +47,116 @@
   #include <GLFW/glfw3native.h>
 #endif
 
+#include <algorithm>
 #include <ostream>
 #include <utility>
 
 namespace dart::gui::detail {
+namespace {
+
+struct MonitorWorkArea
+{
+  int x = 0;
+  int y = 0;
+  int width = 0;
+  int height = 0;
+};
+
+double resolveMonitorDpiScale(GLFWmonitor* monitor)
+{
+  if (const auto overrideScale = guiDpiScaleOverrideFromEnvironment()) {
+    return *overrideScale;
+  }
+
+  if (monitor == nullptr) {
+    return 1.0;
+  }
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3)
+  float xScale = 1.0f;
+  float yScale = 1.0f;
+  glfwGetMonitorContentScale(monitor, &xScale, &yScale);
+  return normalizeGuiDpiScale((std::max)(xScale, yScale));
+#else
+  return 1.0;
+#endif
+}
+
+MonitorWorkArea resolveMonitorWorkArea(GLFWmonitor* monitor)
+{
+  MonitorWorkArea workArea;
+  if (monitor == nullptr) {
+    return workArea;
+  }
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3)
+  glfwGetMonitorWorkarea(
+      monitor, &workArea.x, &workArea.y, &workArea.width, &workArea.height);
+  if (workArea.width <= 0 || workArea.height <= 0) {
+    workArea.width = 0;
+    workArea.height = 0;
+  }
+#else
+  const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+  if (mode != nullptr) {
+    workArea.width = mode->width;
+    workArea.height = mode->height;
+  }
+#endif
+
+  return workArea;
+}
+
+GLFWmonitor* resolveWindowMonitor(GLFWwindow* window)
+{
+  GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+  if (window == nullptr) {
+    return primaryMonitor;
+  }
+
+  int windowX = 0;
+  int windowY = 0;
+  int windowWidth = 0;
+  int windowHeight = 0;
+  glfwGetWindowPos(window, &windowX, &windowY);
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
+  if (windowWidth <= 0 || windowHeight <= 0) {
+    return primaryMonitor;
+  }
+
+  int monitorCount = 0;
+  GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+  GLFWmonitor* bestMonitor = primaryMonitor;
+  int bestOverlapArea = 0;
+  for (int i = 0; i < monitorCount; ++i) {
+    GLFWmonitor* monitor = monitors[i];
+    const MonitorWorkArea workArea = resolveMonitorWorkArea(monitor);
+    if (workArea.width <= 0 || workArea.height <= 0) {
+      continue;
+    }
+
+    const int overlapWidth = (std::max)(0,
+                                        (std::min)(windowX + windowWidth,
+                                                   workArea.x + workArea.width)
+                                            - (std::max)(windowX, workArea.x));
+    const int overlapHeight
+        = (std::max)(0,
+                     (std::min)(windowY + windowHeight,
+                                workArea.y + workArea.height)
+                         - (std::max)(windowY, workArea.y));
+    const int overlapArea = overlapWidth * overlapHeight;
+    if (overlapArea > bestOverlapArea) {
+      bestOverlapArea = overlapArea;
+      bestMonitor = monitor;
+    }
+  }
+
+  return bestMonitor;
+}
+
+} // namespace
 
 ApplicationWindow::ApplicationWindow(GLFWwindow* window) : mWindow(window) {}
 
@@ -88,7 +195,10 @@ void ApplicationWindow::reset(GLFWwindow* window)
 }
 
 ApplicationWindow createApplicationWindow(
-    const dart::gui::RunOptions& options, std::ostream& errors)
+    const dart::gui::RunOptions& options,
+    bool automaticWindowWidth,
+    bool automaticWindowHeight,
+    std::ostream& errors)
 {
   if (options.headless) {
     return {};
@@ -102,10 +212,23 @@ ApplicationWindow createApplicationWindow(
     return {};
   }
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  GLFWwindow* window = glfwCreateWindow(
+  GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+  const MonitorWorkArea workArea = resolveMonitorWorkArea(primaryMonitor);
+  const GuiScaleState guiScale = makeGuiScaleState(
+      options.guiScale, resolveMonitorDpiScale(primaryMonitor));
+  const GuiWindowSize windowSize = resolveAutomaticGuiWindowSize(
       options.width,
       options.height,
+      guiScale.effectiveScale,
+      workArea.width,
+      workArea.height,
+      automaticWindowWidth,
+      automaticWindowHeight);
+
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  GLFWwindow* window = glfwCreateWindow(
+      windowSize.width,
+      windowSize.height,
       options.windowTitle.c_str(),
       nullptr,
       nullptr);
@@ -130,6 +253,59 @@ void* getNativeWindow(GLFWwindow* window)
   (void)window;
   return nullptr;
 #endif
+}
+
+double resolveWindowDpiScale(GLFWwindow* window)
+{
+  if (const auto overrideScale = guiDpiScaleOverrideFromEnvironment()) {
+    return *overrideScale;
+  }
+
+  if (window == nullptr) {
+    return 1.0;
+  }
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3)
+  float xScale = 1.0f;
+  float yScale = 1.0f;
+  glfwGetWindowContentScale(window, &xScale, &yScale);
+  return normalizeGuiDpiScale((std::max)(xScale, yScale));
+#else
+  return 1.0;
+#endif
+}
+
+void resizeAutomaticApplicationWindow(
+    GLFWwindow* window,
+    const dart::gui::RunOptions& options,
+    const GuiScaleState& guiScale,
+    bool automaticWindowWidth,
+    bool automaticWindowHeight)
+{
+  if (window == nullptr || (!automaticWindowWidth && !automaticWindowHeight)) {
+    return;
+  }
+
+  const MonitorWorkArea workArea
+      = resolveMonitorWorkArea(resolveWindowMonitor(window));
+  const GuiWindowSize targetSize = resolveAutomaticGuiWindowSize(
+      options.width,
+      options.height,
+      guiScale.effectiveScale,
+      workArea.width,
+      workArea.height,
+      automaticWindowWidth,
+      automaticWindowHeight);
+
+  int windowWidth = targetSize.width;
+  int windowHeight = targetSize.height;
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
+  if (windowWidth == targetSize.width && windowHeight == targetSize.height) {
+    return;
+  }
+
+  glfwSetWindowSize(window, targetSize.width, targetSize.height);
 }
 
 bool shouldContinueApplicationLoop(bool headless, GLFWwindow* window)

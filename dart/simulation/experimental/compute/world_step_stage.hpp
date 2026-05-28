@@ -44,6 +44,25 @@
 
 namespace dart::simulation::experimental::compute {
 
+/// Summary of the most recent deformable solver execution.
+struct DeformableSolverStats
+{
+  std::size_t bodyCount = 0;
+  std::size_t nodeCount = 0;
+  std::size_t edgeCount = 0;
+  std::size_t objectiveEvaluations = 0;
+  std::size_t solverIterations = 0;
+  std::size_t lineSearchTrials = 0;
+  std::size_t rejectedLineSearchCandidates = 0;
+  std::size_t acceptedLineSearchSteps = 0;
+  std::size_t initialProjectionCount = 0;
+
+  void reset() noexcept
+  {
+    *this = {};
+  }
+};
+
 /// Experimental contract for one stage in the World step pipeline.
 class DART_EXPERIMENTAL_API WorldStepStage
 {
@@ -99,7 +118,7 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
-/// Default unconstrained rigid-body integration stage for the experimental
+/// Per-entity unconstrained rigid-body integration stage for the experimental
 /// World.
 class DART_EXPERIMENTAL_API RigidBodyIntegrationStage final
   : public WorldStepStage
@@ -123,11 +142,11 @@ private:
 /// Instead of per-entity component access, this stage extracts a
 /// `RigidBodyStateBatch` (plus the immutable `RigidBodyModelBatch`), runs the
 /// scalar-generic SoA integrator, and applies the result back to the World. The
-/// world-space dynamics are frame-independent, so for frame-coupled rigid
-/// bodies (a rigid body parented to another rigid body), where the
-/// local-transform bookkeeping must run parent-before-child, this stage defers
-/// to `RigidBodyIntegrationStage`. It is the experimental seam through which
-/// the later SIMD and device batch paths drive a live World step.
+/// world-space dynamics are frame-independent, so the integration runs in flat
+/// SoA order; frame-coupled rigid bodies only require parent-before-child
+/// local-transform bookkeeping after state write-back. This is the experimental
+/// seam through which the later SIMD and device batch paths drive a live World
+/// step.
 class DART_EXPERIMENTAL_API BatchedRigidBodyIntegrationStage final
   : public WorldStepStage
 {
@@ -176,6 +195,25 @@ public:
 
 private:
   std::size_t m_iterations;
+};
+
+/// Default deformable-body dynamics stage.
+///
+/// This stage advances point-mass deformable bodies through the default
+/// experimental World pipeline. The public stage name is intentionally
+/// algorithm-neutral; contact/barrier details remain implementation internals.
+class DART_EXPERIMENTAL_API DeformableDynamicsStage final
+  : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+
+  [[nodiscard]] const DeformableSolverStats& getLastStats() const noexcept;
+
+private:
+  DeformableSolverStats m_lastStats;
 };
 
 } // namespace dart::simulation::experimental::compute

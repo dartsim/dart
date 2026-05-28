@@ -373,7 +373,7 @@ OrbitCameraControllerInput makeOrbitCameraControllerInput(
     bool leftMousePressed,
     bool rightMousePressed,
     bool middleMousePressed,
-    bool suppressLeftMouseOrbit,
+    bool suppressCameraMouse,
     bool dragModifierDown,
     const dart::gui::OrbitCameraControlOptions& controls)
 {
@@ -382,10 +382,12 @@ OrbitCameraControllerInput makeOrbitCameraControllerInput(
   input.cursorY = cursorY;
   input.locked = controls.locked;
   const bool leftMouse
-      = leftMousePressed && !suppressLeftMouseOrbit && !dragModifierDown;
+      = leftMousePressed && !suppressCameraMouse && !dragModifierDown;
+  const bool rightOrMiddleMouse
+      = !suppressCameraMouse && (rightMousePressed || middleMousePressed);
   input.orbit = leftMouse && controls.mouseMode == OrbitCameraMouseMode::Orbit;
   input.pan = (leftMouse && controls.mouseMode == OrbitCameraMouseMode::Pan)
-              || rightMousePressed || middleMousePressed;
+              || rightOrMiddleMouse;
   input.zoom = leftMouse && controls.mouseMode == OrbitCameraMouseMode::Zoom;
   return input;
 }
@@ -393,7 +395,7 @@ OrbitCameraControllerInput makeOrbitCameraControllerInput(
 void updateCameraController(
     GLFWwindow* window,
     dart::gui::OrbitCameraController& controller,
-    bool suppressLeftMouseOrbit,
+    bool suppressCameraMouse,
     const dart::gui::OrbitCameraControlOptions& controls)
 {
   if (window == nullptr) {
@@ -410,7 +412,7 @@ void updateCameraController(
       glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS,
       glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS,
       glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS,
-      suppressLeftMouseOrbit,
+      suppressCameraMouse,
       isDragModifierDown(window),
       controls);
   updateOrbitCameraController(controller, input);
