@@ -99,12 +99,24 @@ active-friction diagnostics from the opt-in runtime stage.
 
 ## Current Branch
 
-`feature/rigid-ipc-manifest` - local branch with uncommitted manifest/planning
-and tooling changes. It now has local merge commit `5fb54c60e5d`, merging
-`origin/feature/ipc-rigid-surface-ccd` from PR #2732 after the latest IPC
-branch refresh; prior local merges brought in PR #2731 and PR #2730. The local
-branch still tracks the older `origin/feature/ipc-tangent-stencils`; no PR is
-open for this current branch.
+`feature/rigid-ipc-manifest` - local branch, committed and currently `0 behind`
+/ `48 ahead` of `origin/main` after merging the latest `origin/main` (merge
+commit integrates the parallel deformable IPC effort, PLAN-081). No PR is open
+yet (push/PR deferred per maintainer choice). Stale upstream tracking was
+cleared. This session added, on top of the earlier uncommitted work (now the
+checkpoint commit "Add opt-in experimental rigid IPC contact stage with lagged
+friction"):
+
+- Phase 4d runtime friction-behavior regression.
+- First rigid IPC performance benchmark (`bm_rigid_ipc_solver`) + methodology
+  ([`benchmarks.md`](benchmarks.md)).
+- Broad-phase AABB cull for barrier assembly (O(N^2) -> O(N), behavior-preserving
+  with an equivalence regression).
+- `origin/main` merge with documented conflict resolutions.
+- Isolated correctness tests for the rigid CCD pose primitives.
+
+All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
+(23/23), `check-lint`, and the manifest checks.
 
 ## Immediate Next Step
 
@@ -122,8 +134,10 @@ optimize until DART beats them. This is gated on completing the algorithm's
 correctness (rigorous interval CCD, corpus parity, production convergence). The
 first DART-owned rigid IPC benchmark (`bm_rigid_ipc_solver`) and the comparison
 methodology, baseline snapshot, and open findings live in
-[`benchmarks.md`](benchmarks.md); it already shows scene assembly is O(N^2)
-(no broad phase), the first optimization target. Phase 3 convergence/contact
+[`benchmarks.md`](benchmarks.md). The first optimization (broad-phase AABB cull,
+scene assembly O(N^2) -> O(N)) has landed; the next perf targets are a spatial
+index for the residual all-pairs enumeration, the per-primitive kernel cost, and
+the first DART-rigid-vs-IPC comparison benchmark. Phase 3 convergence/contact
 corpus criteria, Phase 2 corpus parity, and Phase 1 runtime example coverage
 remain open fallback slices.
 
