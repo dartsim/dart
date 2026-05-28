@@ -86,6 +86,10 @@ DART-owned implementation.
 - The durable scene inventory lives in
   [`../../plans/081-deformable-implicit-barrier-solver/ipc_scene_corpus_manifest.json`](../../plans/081-deformable-implicit-barrier-solver/ipc_scene_corpus_manifest.json).
   This dev task links to it instead of duplicating row-level state.
+- The durable per-figure showcase plan lives in
+  [`../../plans/081-deformable-implicit-barrier-solver/ipc-paper-figure-showcase.md`](../../plans/081-deformable-implicit-barrier-solver/ipc-paper-figure-showcase.md).
+  Every IPC kernel slice must advance at least one row there toward `landed`
+  before the stack can claim PLAN-081 completion.
 - The manifest uses upstream commit
   `573d2c7e04104d3f9baf526bdaee7745891a571a` and tracks 154 `.txt` scene paths:
   144 regular scene files plus 10 symlink aliases under the SQP benchmark

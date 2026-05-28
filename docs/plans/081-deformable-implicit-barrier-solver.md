@@ -36,6 +36,13 @@
   is the machine-checkable source of truth for every audited upstream
   `IPC/input` `.txt` scene path, including symlink aliases, target type,
   expected invariant, profiling requirement, and visual evidence requirement.
+- IPC paper figure showcase plan:
+  [`081-deformable-implicit-barrier-solver/ipc-paper-figure-showcase.md`](081-deformable-implicit-barrier-solver/ipc-paper-figure-showcase.md)
+  enumerates the paper figures and benchmark tables (Fig. 2, 4, 5, 7, 8, 10,
+  11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 23, Table 1) that DART must
+  reproduce as examples, tests, or benchmark reports, with per-row
+  prerequisite kernels, performance targets, and `Status` tracking. Every
+  paper-parity slice should advance at least one row toward `landed`.
 - Implementation tracking: the first C++ slice is complete in this plan; future
   slices continue from the workstreams below. Because full IPC parity is now a
   multi-session implementation, start a new `docs/dev_tasks/` folder when that
