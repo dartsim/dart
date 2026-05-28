@@ -74,18 +74,19 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Keep the merged Phase 0-4 foundation plus the Phase 5 CUDA MVP
-  (PRs #2698, #2710, #2712, all on `main`) in
-  `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
-  the default experimental `World::step` path now preserves the rigid-body
-  contact/multibody solver pipeline, while the batched SoA rigid-body stage
-  remains an explicit unconstrained path and benchmark/prototype seam. Phase 5
-  is closed with a GO: `CI CUDA / CUDA Build` compiles the CUDA targets on a
-  GitHub-hosted `ubuntu-latest` runner (green on `main`), and because the project
-  does not maintain a self-hosted GPU runner, the go/no-go runtime packet is
-  measured manually on a CUDA host. The recorded GO (2026-05-28, RTX 5000 Ada):
-  speedup 109.6x at 4096/128/100 with final-state error 1.78e-15, packet
-  accepted. Keep CUDA private and non-required. The sidecar package shape,
+- Next step: Phases 0-5 are complete and merged to `main` (PRs #2698, #2710,
+  #2712); the dev-task folder has been retired, so PLAN-030 plus
+  [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
+  are now the durable trackers. The default experimental `World::step` path
+  preserves the rigid-body contact/multibody solver pipeline, while the batched
+  SoA rigid-body stage remains an explicit unconstrained path and
+  benchmark/prototype seam. Phase 5 is closed with a GO: `CI CUDA / CUDA Build`
+  compiles the CUDA targets on a GitHub-hosted `ubuntu-latest` runner (green on
+  `main`), and because the project does not maintain a self-hosted GPU runner,
+  the go/no-go runtime packet is measured manually on a CUDA host. The recorded
+  GO (2026-05-28, RTX 5000 Ada): speedup 109.6x at 4096/128/100 with final-state
+  error 1.78e-15, packet accepted (see the owner doc's "Recorded Phase 5
+  Go/No-Go"). Keep CUDA private and non-required. The sidecar package shape,
   go/no-go threshold, `bm-phase5-gpu-packet-check` /
   `check-compute-backend-boundaries` / `check-no-gpu-runtime-dependencies`
   evidence gates, and the `check-phase5-cuda-benchmark-contract` row contract
@@ -95,6 +96,16 @@ its own line so status updates remain git-history friendly.
   gate and never reintroduces a self-hosted GPU runner. Phase 3's speedup surface
   is the checked contact-island benchmark, not the trivial Euler rigid-body
   rows.
+- Phase 6 backlog (unblocked by the Phase 5 GO, unstarted; each item needs its
+  own design note and gate before work starts): broaden GPU stage coverage
+  beyond the single rigid-body integration stage; promote auto-scheduling from
+  resource-access metadata behind a verified scheduler contract (honest
+  declarations, deferred structural changes, deterministic reductions, cost
+  gate); heterogeneous batches and single-scene contact/constraint GPU work
+  (Pattern B, only after Pattern A evidence justifies it); and differentiable
+  state types if differentiability is promoted from a deferred to a committed
+  capability. Rationale for each lives in
+  [`../design/compute_backend_research.md`](../design/compute_backend_research.md).
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and

@@ -221,6 +221,22 @@ single-host evidence by design: the project does not maintain GPU CI, so the
 packet is reproducible on any CUDA host rather than gated on a project-owned
 runner.
 
+## Cross-Cutting Invariants
+
+These held for every phase of the experimental scalable-compute work and remain
+binding for follow-on (Phase 6) work:
+
+- Synchronous `World::step()` stays deterministic and unchanged in semantics;
+  sequential execution is the reference path. The classic
+  `dart::simulation::World` is not modified.
+- Executor injection through the abstract `ComputeExecutor` is the only public
+  concurrency seam. No `entt`, `comps`, thread-pool, GPU device, stream, kernel,
+  memory-pool, or solver-registry type enters the public API.
+- Every phase exit cites a checked-in benchmark baseline through `bm`,
+  `bm-check`, or `bm-compute-check` — not a vague "benchmark green."
+- When dartpy gains a parallel or batched step, it releases the GIL around the
+  step and forbids Python callbacks inside compute nodes.
+
 ## GPU Packaging Shape
 
 GPU support must be an optional sidecar, not a dependency of the core install:
