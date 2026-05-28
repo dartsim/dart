@@ -78,9 +78,17 @@
         opted-in static box collision shapes triangulated into stationary
         surface snapshots with physical box edges for deformable line-search
         CCD limiting.
-  - [ ] Remaining Phase 2 work: non-box/deforming/moving rigid surface
-        coverage, broader solver-wired CCD line-search coverage, and stronger
-        spatial acceleration for larger meshes.
+  - [x] Internal moving rigid box surface CCD line-search sub-slice: free
+        (non-static) opted-in box obstacles whose end-of-step transform is
+        predicted from velocity (mirroring the rigid position integrator that
+        runs after the deformable stage) and whose swept motion is tiled by
+        overlapping static pose samples, so the deformable cannot settle in or
+        tunnel through the obstacle's swept corridor. One-way, timing-agnostic
+        conservative limiter with focused regressions and benchmark counters.
+  - [ ] Remaining Phase 2 work: non-box/deforming rigid surface coverage,
+        timing-aware (non-over-conservative) moving-obstacle CCD, broader
+        solver-wired CCD line-search coverage, and stronger spatial
+        acceleration for larger meshes.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -302,6 +310,29 @@ implement rigid collision response, moving obstacle contact, arbitrary mesh
 obstacles, barrier/contact forces, friction, projected Newton, adaptive
 barrier stiffness, no-intersection/no-inversion guarantees, solver selection,
 or full IPC paper parity.
+
+For the moving rigid box surface CCD line-search sub-slice, keep the
+verification language precise: it covers free (non-static) opted-in box
+obstacles collected at `DeformableDynamicsStage` start, whose end-of-step
+transform is predicted from `comps::Velocity` using the exact
+`integrateRigidBodyPosition` formula (so the prediction matches the pose
+`RigidBodyPositionStage` applies after the deformable stage), and whose swept
+motion is tiled by overlapping static pose samples spaced at most one box
+min-half-extent apart (capped at 64 samples). The deformable line-search
+limiter reuses the static-pose point-triangle and edge-edge CCD reducers over
+those samples. The moving collector is disjoint from the static one
+(`entt::exclude<StaticBodyTag>`), so a body is never limited or counted twice.
+It is a one-way, timing-agnostic conservative limiter: it never misses a
+penetration but is more conservative than a timing-aware sweep for fast
+obstacles, and it does not implement rigid collision response, two-way
+coupling, contact forces, friction, projected Newton, arbitrary mesh
+obstacles, kinematically scripted (velocity-free `setTransform`) obstacles,
+or full IPC paper parity. The sample count is capped (64); past the cap the
+sampled boxes are isotropically inflated to keep consecutive samples
+overlapping, so the swept corridor stays covered (more over-conservative)
+rather than opening tunnelable gaps. Coverage is exact along the box min axis
+for axis-aligned motion; diagonal motion leaves a bounded, half-extent-scale
+thin-corner under-coverage inherent to box supersampling.
 
 Current primitive-distance local gates:
 

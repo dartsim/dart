@@ -539,6 +539,71 @@ struct DeformableStaticRigidSurfaceCcdWorld
 };
 
 //==============================================================================
+struct DeformableMovingRigidSurfaceCcdWorld
+{
+  DeformableMovingRigidSurfaceCcdWorld(int boxCount, bool crossing)
+  {
+    boxCount = std::max(boxCount, 0);
+
+    sx::DeformableBodyOptions movingOptions;
+    movingOptions.edgeStiffness = 0.0;
+    movingOptions.damping = 0.0;
+
+    constexpr double spacing = 3.0;
+    const int nodeCount = std::max(boxCount, 1);
+    for (int i = 0; i < nodeCount; ++i) {
+      const double offset = spacing * static_cast<double>(i);
+      movingOptions.positions.push_back(
+          Eigen::Vector3d(offset - 1.0, 0.0, 0.0));
+      movingOptions.velocities.push_back(
+          Eigen::Vector3d(crossing ? 20.0 : -1.0, 0.0, 0.0));
+      movingOptions.masses.push_back(1.0);
+
+      if (i < boxCount) {
+        // Free (non-static) obstacle moving toward the node when crossing, so
+        // the deformable stage predicts its swept motion and limits against it.
+        sx::RigidBodyOptions boxOptions;
+        boxOptions.isStatic = false;
+        boxOptions.position = Eigen::Vector3d(offset, 0.0, 0.0);
+        auto box = world.addRigidBody(
+            "moving_surface_ccd_box_" + std::to_string(i), boxOptions);
+        box.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
+        box.setDeformableSurfaceCcdObstacle(true);
+        box.setLinearVelocity(Eigen::Vector3d(crossing ? -2.0 : 2.0, 0.0, 0.0));
+        boxes.push_back(box);
+      }
+    }
+
+    initialPositions = movingOptions.positions;
+    initialVelocities = movingOptions.velocities;
+    movingBody = world.addDeformableBody("surface_ccd_points", movingOptions);
+    this->nodeCount = movingBody.getNodeCount();
+    this->boxCount = static_cast<std::size_t>(boxCount);
+
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    for (std::size_t i = 0; i < initialPositions.size(); ++i) {
+      movingBody.setPosition(i, initialPositions[i]);
+      movingBody.setVelocity(i, initialVelocities[i]);
+    }
+  }
+
+  sx::World world;
+  sx::DeformableBody movingBody;
+  std::vector<sx::RigidBody> boxes;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
+  std::size_t nodeCount = 0;
+  std::size_t boxCount = 0;
+};
+
+//==============================================================================
 struct RigidOnlyWorld
 {
   explicit RigidOnlyWorld(int staticBodyCount)
@@ -888,6 +953,65 @@ void BM_DeformableStaticRigidSurfaceCcdStage(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableMovingRigidSurfaceCcdStage(benchmark::State& state)
+{
+  const auto boxCount = static_cast<int>(state.range(0));
+  const bool crossing = state.range(1) != 0;
+  DeformableMovingRigidSurfaceCcdWorld fixture(boxCount, crossing);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.movingBody.getPosition(fixture.nodeCount - 1u).x());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["moving_surface_boxes"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdBoxCount);
+  state.counters["moving_surface_samples"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdSampleCount);
+  state.counters["moving_surface_triangles"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdTriangleCount);
+  state.counters["moving_surface_edges"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdEdgeCount);
+  state.counters["crossing"] = crossing ? 1.0 : 0.0;
+  state.counters["candidate_builds"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["pt_candidates"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["ee_candidates"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdEdgeEdgeCandidates);
+  state.counters["ccd_pt_checks"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdPointTriangleChecks);
+  state.counters["ccd_ee_checks"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdEdgeEdgeChecks);
+  state.counters["ccd_hits"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdHits);
+  state.counters["ccd_indeterminate"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdIndeterminateCount);
+  state.counters["ccd_limited_steps"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdLimitedSteps);
+  state.counters["ccd_zero_steps"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdZeroStepCount);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.counters["line_search_rejects"]
+      = static_cast<double>(stats.rejectedLineSearchCandidates);
+  state.counters["accepted_steps"]
+      = static_cast<double>(stats.acceptedLineSearchSteps);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableSceneLoad(benchmark::State& state)
 {
   const auto scenePath = benchmarkScenePath();
@@ -985,6 +1109,13 @@ BENCHMARK(BM_DeformableStaticGroundBarrierCcdStage)
     ->Args({32, 1});
 
 BENCHMARK(BM_DeformableStaticRigidSurfaceCcdStage)
+    ->Args({0, 1})
+    ->Args({1, 0})
+    ->Args({1, 1})
+    ->Args({8, 1})
+    ->Args({32, 1});
+
+BENCHMARK(BM_DeformableMovingRigidSurfaceCcdStage)
     ->Args({0, 1})
     ->Args({1, 0})
     ->Args({1, 1})

@@ -818,6 +818,15 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     line-search limiter, with point-triangle and physical box-edge CCD
     regressions and benchmark counters. This is a CCD limiter only, not rigid
     contact response or IPC parity.
+  - Added internal experimental moving rigid box surface CCD limiting for free
+    (non-static) deformable-surface CCD obstacles: the deformable stage predicts
+    each obstacle's end-of-step transform from its velocity (mirroring the rigid
+    position integrator that runs after the deformable stage) and tiles the
+    swept motion with overlapping static pose samples so the deformable cannot
+    settle in or tunnel through the obstacle's swept corridor, with focused
+    regressions and benchmark counters. This is a one-way conservative CCD
+    limiter only (timing-agnostic, no rigid contact response or two-way
+    coupling) and is not IPC parity.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

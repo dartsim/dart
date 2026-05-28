@@ -142,15 +142,19 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-rigid-surface-ccd` - stacked on
-`feature/ipc-sweep-pair-traversal`, adding an explicitly opted-in static box
-surface CCD limiter for deformable line searches.
+`feature/ipc-moving-rigid-surface-ccd` - based on `main` (the IPC stack
+#2723-#2732 has landed), adding a moving rigid box surface CCD limiter: free
+(non-static) opted-in box obstacles whose end-of-step transform is predicted
+from velocity and whose swept motion is tiled by overlapping static pose
+samples for the deformable line-search limiter.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with non-box/deforming/moving
-rigid surface contact candidates, broader solver-wired CCD coverage, and
-stronger spatial acceleration for larger meshes.
+After this sub-slice lands, continue Phase 2 with non-box/deforming rigid
+surface coverage, a timing-aware (non-over-conservative) moving-obstacle CCD,
+broader solver-wired CCD coverage, and stronger spatial acceleration. The
+moving-obstacle limiter is one-way and timing-agnostic; two-way contact forces
+and coupled rigid/deformable solves remain Phase 3.
 
 ## Context That Would Be Lost
 
@@ -166,7 +170,7 @@ stronger spatial acceleration for larger meshes.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-ccd-line-search
+git checkout feature/ipc-moving-rigid-surface-ccd
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
@@ -214,6 +218,9 @@ cmake --build build/default/cpp/Release --target test_deformable_body test_seria
 ./build/default/cpp/Release/bin/test_serialization --gtest_filter='Serialization.PreservesRigidBodyCollisionComponents'
 PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'collision_query'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticRigidSurfaceCcdStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.MovingRigidSurfaceCcd*:DeformableBody.MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableMovingRigidSurfaceCcdStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
