@@ -17,6 +17,9 @@ Phases 0-3 with all gates green (24 lints clean, focused build, 27 tests across
 - Phase 3 `detail/deformable_vbd/block_descent.hpp`: colored Gauss-Seidel
   mass-spring driver, validated to converge to an independent gradient-descent
   minimizer of the same objective.
+- Phase 4 (kernel) `detail/deformable_vbd/neo_hookean.hpp`: Stable Neo-Hookean
+  tetrahedral energy, analytic Piola stress, and per-vertex force + exact 3x3
+  Hessian (FD-verified, inversion-stable). Not yet wired into the driver.
 
 Key grounding fact: VBD minimizes the **same** variational implicit-Euler
 objective the existing experimental deformable solver already minimizes with a
@@ -33,15 +36,20 @@ pushes/PRs require explicit approval.
 
 ## Immediate Next Step
 
-Land Phase 4: Stable Neo-Hookean tetrahedral energy and its per-vertex
-force/Hessian, extending the block kernel + driver to volumetric tetrahedral
-meshes. Energy density `Psi = mu*0.5(||F||^2 - 3) + lambda*0.5(det F - a)^2`
-with `a = 1 + mu/lambda`, per-tet `E = A*Psi`, `F = Ds Dm^{-1}`. Map the
-9-vector `dE/dF` and 9x9 `d2E/dF2` to each vertex's 3-DOF block via `dF/dx_i`
-(the `Dm^{-1}` rows; vertex 0 uses the negated row sum). Lame params from
-`DeformableMaterial`: `mu = E/(2(1+nu))`, `lambda = E*nu/((1+nu)(1-2nu))`. Add
-`test_vbd_neo_hookean` (finite-difference force/Hessian, rest-state-is-minimum,
-inversion robustness) and `bm_vbd_neo_hookean`.
+Two tracks remain open:
+
+1. Phase 4 remainder: wire the Neo-Hookean tetrahedral blocks
+   (`neo_hookean.hpp::addNeoHookeanTetTerm`) into the block-descent driver. Add
+   tet incident-adjacency and tet-induced vertex coloring (use
+   `VertexAdjacency::addTetrahedron`), then a `blockDescentTetMesh` (or extend
+   the driver to accept tets), and validate a volumetric solve converges to a
+   reference minimizer like the mass-spring case.
+2. Phase 5: adaptive inertial/previous-step initialization
+   (`a_tilde = clamp(a_prev . g_hat, 0, ||a_ext||)`,
+   `x_init = x^t + h v^t + h^2 g_hat a_tilde`), optional Chebyshev acceleration
+   (`omega_1=1, omega_2=2/(2-rho^2), omega_n=4/(4-rho^2 omega_{n-1})`,
+   `x^n = omega_n (x_bar^n - x^{n-2}) + x^{n-2}`), and Rayleigh damping
+   (`H += (k_d/h) d2E/dx^2`, force `-= (k_d/h) d2E/dx^2 (x - x^t)`).
 
 ## Context That Would Be Lost
 

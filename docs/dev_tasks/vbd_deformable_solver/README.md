@@ -35,6 +35,18 @@
         and `bm_vbd_block_descent`.
 - [ ] Phase 4: FEM hyperelastic energy (Stable Neo-Hookean tetrahedra) and its
       per-vertex force/Hessian contributions.
+  - [x] Stable Neo-Hookean kernel sub-slice: Lame-from-Young/Poisson
+        conversion, the tetrahedral rest-shape (`Dm^{-1}`, rest volume) and
+        deformation gradient, the Smith-2018 energy density
+        `Psi = (mu/2)(||F||^2 - 3) + (lambda/2)(det F - a)^2` with
+        `a = 1 + mu/lambda`, the analytic first Piola stress, and the per-vertex
+        force plus exact 3x3 Hessian (assembled column-wise from the analytic
+        stress differential), with finite-difference force/Hessian regression
+        tests, rest-state equilibrium, inversion stability, and
+        `bm_vbd_neo_hookean`.
+  - [ ] Remaining Phase 4 work: wire the tetrahedral Neo-Hookean blocks into the
+        block-descent driver (tet adjacency + tet coloring) and validate a
+        volumetric solve.
 - [ ] Phase 5: VBD acceleration — adaptive inertial/previous-step initialization
       and optional Chebyshev semi-iterative acceleration — plus the VBD damping
       model.
@@ -168,6 +180,23 @@ update (same-color independence). It is a single-body CPU driver only; it does
 not yet cover FEM energy, damping, acceleration, multi-body coupling, contact,
 friction, multithreaded or GPU execution, or any wiring into `World::step()`.
 
+For the Stable Neo-Hookean kernel sub-slice, keep the verification language
+precise: it covers the Lame conversion, the tetrahedral rest-shape and
+deformation gradient, the energy density and analytic first Piola stress, and
+the per-vertex force plus the exact (non-PSD-projected) 3x3 Hessian, with tests
+that the rest state has zero stress/force, the force and Hessian match finite
+differences in stretched and inverted configurations, the energy/force/Hessian
+stay finite under element inversion, and the inertia-anchored block is
+positive-definite. It is a per-tetrahedron kernel only; the tetrahedral blocks
+are not yet wired into the block-descent driver (no tet adjacency/coloring or
+volumetric solve yet), and damping, acceleration, contact, and friction are not
+implemented.
+
+Local gate (Phase 4 Neo-Hookean kernel, first pass) on 2026-05-28: the focused
+target build, 7 `test_vbd_neo_hookean` cases passing, and benchmark smoke (CPU
+scaling enabled) of ~12 ns energy density, ~8.8 ns Piola stress, and ~146 ns for
+the full per-vertex force-plus-Hessian block.
+
 Local gate (Phases 1-3, first pass) on 2026-05-28: `pixi run cmake`
 reconfigure, the focused target build, 12 `test_vbd_vertex_block_kernel` cases,
 10 `test_vbd_vertex_coloring` cases, and 5 `test_vbd_block_descent` cases all
@@ -184,11 +213,10 @@ color range.
 pixi run cmake build/default/cpp/Release
 pixi run cmake --build build/default/cpp/Release --target \
   test_vbd_vertex_block_kernel test_vbd_vertex_coloring test_vbd_block_descent \
-  bm_vbd_vertex_block_kernel bm_vbd_block_descent
-./build/default/cpp/Release/bin/test_vbd_vertex_block_kernel
-./build/default/cpp/Release/bin/test_vbd_vertex_coloring
-./build/default/cpp/Release/bin/test_vbd_block_descent
+  test_vbd_neo_hookean bm_vbd_vertex_block_kernel bm_vbd_block_descent \
+  bm_vbd_neo_hookean
 ctest --test-dir build/default/cpp/Release -R '^test_vbd_' --output-on-failure
 ./build/default/cpp/Release/bin/bm_vbd_vertex_block_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ./build/default/cpp/Release/bin/bm_vbd_block_descent --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
+./build/default/cpp/Release/bin/bm_vbd_neo_hookean --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ```

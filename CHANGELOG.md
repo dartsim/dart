@@ -840,6 +840,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     independent gradient-descent minimizer, same-color independence, and a
     grid-step benchmark. This is internal solver groundwork only and is not yet
     wired into the deformable world step.
+  - Added an internal experimental Stable Neo-Hookean tetrahedral energy kernel
+    for VBD (energy density, analytic first Piola stress, and per-vertex force
+    plus exact 3x3 Hessian via the analytic stress differential), with
+    finite-difference force/Hessian regression tests, rest-state equilibrium,
+    element-inversion stability, and a microbenchmark. The tetrahedral blocks
+    are not yet wired into the block-descent driver.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

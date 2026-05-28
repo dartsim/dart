@@ -60,6 +60,11 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_vbd_neo_hookean
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_neo_hookean.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )
