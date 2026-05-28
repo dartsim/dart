@@ -232,6 +232,32 @@ TEST(IpcBarrierKernel, ScalarGuardsNonPositiveDistanceAsActiveRepulsion)
 }
 
 //==============================================================================
+TEST(IpcBarrierKernel, ScalarSafetyFloorStaysInsideTinyActivationBand)
+{
+  constexpr double kSquaredActivationDistance = 1e-24;
+
+  const auto zeroDistance
+      = dc::c2ClampedLogBarrier(0.0, kSquaredActivationDistance);
+  EXPECT_TRUE(zeroDistance.active);
+  EXPECT_GT(zeroDistance.safeSquaredDistance, 0.0);
+  EXPECT_LT(zeroDistance.safeSquaredDistance, kSquaredActivationDistance);
+  EXPECT_TRUE(std::isfinite(zeroDistance.value));
+  EXPECT_TRUE(std::isfinite(zeroDistance.firstDerivative));
+  EXPECT_TRUE(std::isfinite(zeroDistance.secondDerivative));
+  EXPECT_GT(zeroDistance.value, 0.0);
+  EXPECT_LT(zeroDistance.firstDerivative, 0.0);
+  EXPECT_GT(zeroDistance.secondDerivative, 0.0);
+
+  const auto interiorDistance = dc::c2ClampedLogBarrier(
+      0.25 * kSquaredActivationDistance, kSquaredActivationDistance);
+  EXPECT_TRUE(interiorDistance.active);
+  EXPECT_DOUBLE_EQ(
+      interiorDistance.safeSquaredDistance, 0.25 * kSquaredActivationDistance);
+  EXPECT_GT(interiorDistance.value, 0.0);
+  EXPECT_LT(interiorDistance.firstDerivative, 0.0);
+}
+
+//==============================================================================
 TEST(IpcBarrierKernel, PointTriangleDerivativesMatchFiniteDifferences)
 {
   const dc::Vector12d x = stack(
