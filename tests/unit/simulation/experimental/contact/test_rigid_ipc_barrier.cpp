@@ -33,11 +33,14 @@
 #include <dart/simulation/experimental/detail/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Eigenvalues>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <limits>
+#include <numbers>
 #include <span>
 #include <vector>
 
@@ -1761,4 +1764,92 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveTreatsNoDofsAsConverged)
       result.status, expdetail::RigidIpcProjectedNewtonSolveStatus::NoDofs);
   EXPECT_EQ(result.stats.acceptedSteps, 0u);
   EXPECT_EQ(result.assembly.gradient.size(), 0);
+}
+
+//==============================================================================
+// Isolated correctness tests for the rigid CCD pose geometry primitives that
+// every rigid IPC barrier/CCD path depends on.
+TEST(RigidIpcCcdGeometry, RotationVectorToMatrixMatchesAngleAxis)
+{
+  // Zero rotation is the identity.
+  EXPECT_TRUE(
+      expdetail::rigidIpcRotationVectorToMatrix(Eigen::Vector3d::Zero())
+          .isApprox(Eigen::Matrix3d::Identity()));
+
+  // Arbitrary rotation vectors must match Eigen's axis-angle construction and
+  // stay orthonormal/right-handed.
+  const std::array<Eigen::Vector3d, 4> rotations{
+      Eigen::Vector3d(0.0, 0.0, std::numbers::pi / 2.0),
+      Eigen::Vector3d(std::numbers::pi / 3.0, 0.0, 0.0),
+      Eigen::Vector3d(0.3, -0.7, 1.1),
+      Eigen::Vector3d(-1.5, 0.4, 0.2)};
+  for (const Eigen::Vector3d& r : rotations) {
+    const double angle = r.norm();
+    const Eigen::Vector3d axis = r / angle;
+    const Eigen::Matrix3d expected
+        = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
+    const Eigen::Matrix3d actual = expdetail::rigidIpcRotationVectorToMatrix(r);
+    EXPECT_TRUE(actual.isApprox(expected, 1e-12));
+    EXPECT_TRUE((actual * actual.transpose())
+                    .isApprox(Eigen::Matrix3d::Identity(), 1e-12));
+    EXPECT_NEAR(actual.determinant(), 1.0, 1e-12);
+  }
+
+  // A quarter turn about +z maps +x to +y.
+  const Eigen::Matrix3d rz = expdetail::rigidIpcRotationVectorToMatrix(
+      Eigen::Vector3d(0.0, 0.0, std::numbers::pi / 2.0));
+  EXPECT_TRUE((rz * Eigen::Vector3d::UnitX())
+                  .isApprox(Eigen::Vector3d::UnitY(), 1e-12));
+}
+
+//==============================================================================
+TEST(RigidIpcCcdGeometry, TransformPointAppliesRotationThenTranslation)
+{
+  expdetail::RigidIpcPose pose;
+  pose.position = Eigen::Vector3d(1.0, -2.0, 0.5);
+  pose.rotation = Eigen::Vector3d(0.2, 0.5, -0.3);
+
+  const Eigen::Matrix3d r
+      = expdetail::rigidIpcRotationVectorToMatrix(pose.rotation);
+  const Eigen::Vector3d local(0.7, 0.1, -0.4);
+  const Eigen::Vector3d expected = r * local + pose.position;
+
+  EXPECT_TRUE(
+      expdetail::transformRigidIpcPoint(local, pose).isApprox(expected, 1e-12));
+
+  // Identity pose leaves the point unchanged.
+  EXPECT_TRUE(
+      expdetail::transformRigidIpcPoint(local, expdetail::RigidIpcPose{})
+          .isApprox(local, 1e-12));
+}
+
+//==============================================================================
+TEST(RigidIpcCcdGeometry, InterpolatePoseIsLinearInPositionAndRotationVector)
+{
+  expdetail::RigidIpcPose start;
+  start.position = Eigen::Vector3d(0.0, 1.0, 2.0);
+  start.rotation = Eigen::Vector3d(0.1, -0.2, 0.3);
+  expdetail::RigidIpcPose end;
+  end.position = Eigen::Vector3d(2.0, -1.0, 0.0);
+  end.rotation = Eigen::Vector3d(-0.3, 0.4, 0.9);
+
+  const auto at0 = expdetail::interpolateRigidIpcPose(start, end, 0.0);
+  EXPECT_TRUE(at0.position.isApprox(start.position));
+  EXPECT_TRUE(at0.rotation.isApprox(start.rotation));
+
+  const auto at1 = expdetail::interpolateRigidIpcPose(start, end, 1.0);
+  EXPECT_TRUE(at1.position.isApprox(end.position));
+  EXPECT_TRUE(at1.rotation.isApprox(end.rotation));
+
+  const auto mid = expdetail::interpolateRigidIpcPose(start, end, 0.5);
+  EXPECT_TRUE(mid.position.isApprox(0.5 * (start.position + end.position)));
+  EXPECT_TRUE(mid.rotation.isApprox(0.5 * (start.rotation + end.rotation)));
+
+  // The swept transform overload equals transforming at the interpolated pose.
+  const Eigen::Vector3d local(0.3, -0.6, 0.2);
+  const auto interpPose = expdetail::interpolateRigidIpcPose(start, end, 0.37);
+  EXPECT_TRUE(
+      expdetail::transformRigidIpcPoint(local, start, end, 0.37)
+          .isApprox(
+              expdetail::transformRigidIpcPoint(local, interpPose), 1e-12));
 }
