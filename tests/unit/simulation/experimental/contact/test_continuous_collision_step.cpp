@@ -323,3 +323,42 @@ TEST(IpcContinuousCollisionStep, CandidateSetChoosesDeterministicMinimum)
   EXPECT_EQ(first.stats.edgeEdgeChecks, 1u);
   EXPECT_EQ(first.stats.hits, 2u);
 }
+
+//==============================================================================
+TEST(IpcContinuousCollisionStep, MotionAwareCandidatesRecoverFastCrossing)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+  };
+  auto end = start;
+  end[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {{0, 1, 2}};
+
+  dc::ContactCandidateOptions candidateOptions;
+  candidateOptions.activationDistance = 0.05;
+  candidateOptions.exactDistanceFilter = true;
+
+  const auto staticCandidates
+      = dc::buildContactCandidatesSweep(start, triangles, candidateOptions);
+  const auto staticResult
+      = dc::contactCandidateStepBound(start, end, triangles, staticCandidates);
+  EXPECT_FALSE(staticResult.hit);
+
+  const auto motionCandidates = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, candidateOptions);
+  ASSERT_EQ(motionCandidates.pointTriangleCandidates.size(), 1u);
+
+  const auto motionResult
+      = dc::contactCandidateStepBound(start, end, triangles, motionCandidates);
+  EXPECT_TRUE(motionResult.hit);
+  EXPECT_EQ(
+      motionResult.limitingPrimitive,
+      dc::ContinuousCollisionPrimitive::PointTriangle);
+  EXPECT_NEAR(motionResult.stepBound, 0.5, 1e-2);
+  EXPECT_EQ(motionResult.stats.pointTriangleChecks, 1u);
+  EXPECT_EQ(motionResult.stats.hits, 1u);
+}

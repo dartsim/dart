@@ -30,6 +30,11 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_ipc_motion_aware_candidate_set
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_ipc_motion_aware_candidate_set.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_ipc_continuous_collision_step
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ipc_continuous_collision_step.cpp
   )
