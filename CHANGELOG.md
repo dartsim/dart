@@ -765,6 +765,23 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     foundation for upstream-style tetra mesh scene records, scripted
     Dirichlet/Neumann boundary conditions, restart diagnostics, benchmarks, and
     headless GUI scene capture.
+  - Added internal experimental IPC primitive-distance kernels for
+    point-triangle and edge-edge squared distances, closest-feature
+    classification, derivative regression tests, edge-edge mollifier
+    derivatives, and a microbenchmark surface for future deformable contact
+    assembly.
+  - Replaced internal experimental IPC finite-difference distance Hessian
+    placeholders with feature-wise analytic point-triangle and edge-edge
+    Hessian paths, reducing local Hessian microbenchmark timings for future
+    deformable contact assembly.
+  - Added internal experimental IPC contact candidate assembly for
+    point-triangle and edge-edge primitive pairs with deterministic surface-edge
+    extraction, incident/adjacent filtering, sweep-versus-brute-force
+    regression tests, and indexed/brute-force benchmark counters.
+  - Added internal experimental IPC conservative continuous-collision step
+    bounds for point-triangle and edge-edge primitive candidate pairs by
+    wrapping native primitive CCD, with exact-CCD regression tests, sampled
+    safety checks, and benchmark counters.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

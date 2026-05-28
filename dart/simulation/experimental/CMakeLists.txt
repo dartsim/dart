@@ -65,6 +65,7 @@ add_library(${target_name}
   comps/multibody.cpp
   comps/name.cpp
   comps/rigid_body.cpp
+  detail/deformable_contact/continuous_collision_step.cpp
   frame/fixed_frame.cpp
   frame/frame.cpp
   frame/free_frame.cpp

@@ -21,17 +21,45 @@ diagnostics JSON, replay/load benchmarks, and `experimental_deformable_gui
 --deformable-scene` headless capture. It still ignores/reports contact and
 friction directives and must not be described as IPC scene parity.
 
+The primitive-distance kernel sub-slice starts PLAN-081 Phase 2 with internal
+point-triangle and edge-edge squared-distance kernels, closest-feature
+classification, gradients, the first solver-facing Hessian contract, IPC-style
+edge-edge mollifier derivatives, feature-region regression tests, and
+`bm_ipc_distance_kernels`.
+
+The analytic-Hessian optimization sub-slice replaces the finite-difference
+distance Hessian placeholder with feature-wise exact point-triangle and
+edge-edge Hessian paths for vertex, edge, face, and interior closest features.
+It is still scaffolding: tangent bases, solver-wired CCD line search, barrier
+assembly, projected Newton, and friction are not implemented yet.
+
+The candidate-set sub-slice adds deterministic unique surface-edge extraction,
+internal point-triangle and edge-edge primitive candidate assembly,
+incident/adjacent filtering, exact activation-distance filtering through the
+primitive distance kernels, sweep-versus-brute-force regression tests, and
+`bm_ipc_candidate_set`. It is still scaffolding: candidates are not wired into
+`World::step()`, conservative CCD, barrier assembly, projected Newton, or
+friction.
+
+The CCD step-bound sub-slice adds conservative internal point-triangle and
+edge-edge normalized step bounds through native primitive CCD, initial
+separation-band handling, deterministic minimum aggregation over assembled
+candidate sets, exact-CCD regression checks where available, sampled safety
+checks before the returned bound, and `bm_ipc_continuous_collision_step`. It is
+still scaffolding: the bounds are not wired into `World::step()`, motion-aware
+candidate culling, barrier assembly, projected Newton, or friction.
+
 ## Current Branch
 
-`feature/ipc-scene-boundary-diagnostics` - stacked on
-`feature/ipc-mesh-material-state`, adding contact-free scene/boundary/replay
-scaffolding.
+`feature/ipc-deformable-contact-kernels` - bundles the primitive-distance,
+analytic-Hessian, candidate-set, and CCD step-bound sub-slices for landing the
+IPC deformable contact kernels on `main`.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue the rest of PLAN-081 Slice 1: broader
-scene-option coverage, BE/NM state, output-file compatibility decisions, and
-additional contact-free mesh scene replays with focused tests.
+After this branch lands, continue Phase 2 with tangent bases, motion-aware
+candidate culling, barrier/candidate integration, solver-owned contact buffers,
+and solver-wired CCD line search.
 
 ## Context That Would Be Lost
 
@@ -47,12 +75,20 @@ additional contact-free mesh scene replays with focused tests.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-scene-boundary-diagnostics
+git checkout feature/ipc-deformable-contact-kernels
 git status && git log -3 --oneline
-cmake --build build/default/cpp/Release --target test_deformable_scene_io
-./build/default/cpp/Release/bin/test_deformable_scene_io
+cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
+ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_distance_kernels --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_ipc_candidate_set
+./build/default/cpp/Release/bin/test_contact_candidate_set
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcCandidateSet'
+cmake --build build/default/cpp/Release --target test_continuous_collision_step bm_ipc_continuous_collision_step
+./build/default/cpp/Release/bin/test_continuous_collision_step
+./build/default/cpp/Release/bin/bm_ipc_continuous_collision_step --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
 ```
 
-Switch to `feature/ipc-paper-corpus-manifest` only when updating the scene
-corpus manifest itself, or to `feature/ipc-mesh-material-state` when reviewing
-the stacked mesh/material-state base.
+Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
+scene replay base, `feature/ipc-paper-corpus-manifest` only when updating the
+scene corpus manifest itself, or `feature/ipc-mesh-material-state` when
+reviewing the stacked mesh/material-state base.
