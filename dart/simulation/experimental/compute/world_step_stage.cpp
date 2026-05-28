@@ -59,6 +59,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <cmath>
@@ -1216,6 +1217,361 @@ double minimumStaticGroundHeight(double groundTop)
 }
 
 //==============================================================================
+double staticGroundBarrierCcdClearanceTolerance()
+{
+  return 1e-12;
+}
+
+//==============================================================================
+double cross2d(const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs)
+{
+  return lhs.x() * rhs.y() - lhs.y() * rhs.x();
+}
+
+//==============================================================================
+struct TimeInterval
+{
+  double begin{0.0};
+  double end{1.0};
+};
+
+//==============================================================================
+std::vector<Eigen::Vector2d> projectedBoxFootprint(
+    const StaticGroundBarrier& barrier)
+{
+  std::vector<Eigen::Vector2d> points;
+  points.reserve(8);
+  for (const double xSign : {-1.0, 1.0}) {
+    for (const double ySign : {-1.0, 1.0}) {
+      for (const double zSign : {-1.0, 1.0}) {
+        const Eigen::Vector3d local(
+            xSign * barrier.halfExtents.x(),
+            ySign * barrier.halfExtents.y(),
+            zSign * barrier.halfExtents.z());
+        const Eigen::Vector3d world = barrier.center + barrier.rotation * local;
+        points.push_back(world.head<2>());
+      }
+    }
+  }
+
+  constexpr double tolerance = 1e-12;
+  std::sort(
+      points.begin(),
+      points.end(),
+      [](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
+        return std::tie(lhs.x(), lhs.y()) < std::tie(rhs.x(), rhs.y());
+      });
+  points.erase(
+      std::unique(
+          points.begin(),
+          points.end(),
+          [](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
+            return (lhs - rhs).squaredNorm() <= tolerance * tolerance;
+          }),
+      points.end());
+
+  if (points.size() <= 2) {
+    return points;
+  }
+
+  std::vector<Eigen::Vector2d> hull;
+  hull.reserve(points.size() * 2);
+  for (const auto& point : points) {
+    while (hull.size() >= 2
+           && cross2d(hull.back() - hull[hull.size() - 2], point - hull.back())
+                  <= tolerance) {
+      hull.pop_back();
+    }
+    hull.push_back(point);
+  }
+
+  const auto lowerSize = hull.size();
+  for (auto it = points.rbegin() + 1; it != points.rend(); ++it) {
+    while (hull.size() > lowerSize
+           && cross2d(hull.back() - hull[hull.size() - 2], *it - hull.back())
+                  <= tolerance) {
+      hull.pop_back();
+    }
+    hull.push_back(*it);
+  }
+  if (!hull.empty()) {
+    hull.pop_back();
+  }
+
+  return hull;
+}
+
+//==============================================================================
+std::optional<TimeInterval> clipSegmentToConvexFootprint(
+    const Eigen::Vector2d& start,
+    const Eigen::Vector2d& end,
+    const std::vector<Eigen::Vector2d>& footprint)
+{
+  if (footprint.size() < 3) {
+    return std::nullopt;
+  }
+
+  constexpr double tolerance = 1e-12;
+  const Eigen::Vector2d direction = end - start;
+  double intervalBegin = 0.0;
+  double intervalEnd = 1.0;
+
+  for (std::size_t i = 0; i < footprint.size(); ++i) {
+    const Eigen::Vector2d& a = footprint[i];
+    const Eigen::Vector2d& b = footprint[(i + 1) % footprint.size()];
+    const Eigen::Vector2d edge = b - a;
+    const double valueAtStart = cross2d(edge, start - a);
+    const double slope = cross2d(edge, direction);
+
+    if (std::abs(slope) <= tolerance) {
+      if (valueAtStart < -tolerance) {
+        return std::nullopt;
+      }
+      continue;
+    }
+
+    const double boundaryT = (-tolerance - valueAtStart) / slope;
+    if (slope > 0.0) {
+      intervalBegin = std::max(intervalBegin, boundaryT);
+    } else {
+      intervalEnd = std::min(intervalEnd, boundaryT);
+    }
+
+    if (intervalBegin > intervalEnd) {
+      return std::nullopt;
+    }
+  }
+
+  return TimeInterval{
+      std::clamp(intervalBegin, 0.0, 1.0), std::clamp(intervalEnd, 0.0, 1.0)};
+}
+
+//==============================================================================
+std::optional<TimeInterval> sphereFootprintInterval(
+    const StaticGroundBarrier& barrier,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end)
+{
+  const Eigen::Vector2d origin = start.head<2>() - barrier.center.head<2>();
+  const Eigen::Vector2d direction = end.head<2>() - start.head<2>();
+  const double a = direction.squaredNorm();
+  const double b = 2.0 * origin.dot(direction);
+  const double c = origin.squaredNorm() - barrier.radius * barrier.radius;
+  constexpr double tolerance = 1e-14;
+
+  if (a <= tolerance) {
+    if (c <= tolerance) {
+      return TimeInterval{0.0, 1.0};
+    }
+    return std::nullopt;
+  }
+
+  const double discriminant = b * b - 4.0 * a * c;
+  if (discriminant < -tolerance) {
+    return std::nullopt;
+  }
+
+  const double root = std::sqrt(std::max(0.0, discriminant));
+  double intervalBegin = (-b - root) / (2.0 * a);
+  double intervalEnd = (-b + root) / (2.0 * a);
+  if (intervalBegin > intervalEnd) {
+    std::swap(intervalBegin, intervalEnd);
+  }
+
+  intervalBegin = std::max(intervalBegin, 0.0);
+  intervalEnd = std::min(intervalEnd, 1.0);
+  if (intervalBegin > intervalEnd) {
+    return std::nullopt;
+  }
+
+  return TimeInterval{intervalBegin, intervalEnd};
+}
+
+//==============================================================================
+std::optional<TimeInterval> staticGroundBarrierFootprintInterval(
+    const StaticGroundBarrier& barrier,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end)
+{
+  switch (barrier.shape) {
+    case StaticGroundBarrier::Shape::Box:
+      return clipSegmentToConvexFootprint(
+          start.head<2>(), end.head<2>(), projectedBoxFootprint(barrier));
+    case StaticGroundBarrier::Shape::Sphere:
+      return sphereFootprintInterval(barrier, start, end);
+  }
+
+  return std::nullopt;
+}
+
+//==============================================================================
+std::optional<double> staticGroundClearanceAt(
+    const Eigen::Vector3d& position,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  ++stats.staticGroundBarrierCcdSampleChecks;
+  const auto groundTop = staticGroundTopAt(position, barriers);
+  if (!groundTop.has_value()) {
+    return std::nullopt;
+  }
+  return position.z() - minimumStaticGroundHeight(*groundTop);
+}
+
+//==============================================================================
+Eigen::Vector3d interpolatePoint(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end, double t)
+{
+  return start + t * (end - start);
+}
+
+//==============================================================================
+bool isStaticGroundBarrierCcdHit(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double t,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const auto clearance = staticGroundClearanceAt(
+      interpolatePoint(start, end, t), barriers, stats);
+  return clearance.has_value()
+         && *clearance < -staticGroundBarrierCcdClearanceTolerance();
+}
+
+//==============================================================================
+std::optional<double> verticalStaticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const auto startClearance = staticGroundClearanceAt(start, barriers, stats);
+  const auto endClearance = staticGroundClearanceAt(end, barriers, stats);
+  const double tolerance = staticGroundBarrierCcdClearanceTolerance();
+  if (startClearance.has_value() && *startClearance < -tolerance) {
+    return 0.0;
+  }
+  if (!endClearance.has_value() || *endClearance >= -tolerance) {
+    return std::nullopt;
+  }
+  if (!startClearance.has_value()) {
+    return std::nullopt;
+  }
+
+  const double denominator = *startClearance - *endClearance;
+  if (!(denominator > 0.0) || !std::isfinite(denominator)) {
+    return std::nullopt;
+  }
+
+  return std::clamp(*startClearance / denominator, 0.0, 1.0);
+}
+
+//==============================================================================
+std::optional<double> firstStaticGroundBarrierHitInInterval(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const TimeInterval& interval,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const double tolerance = staticGroundBarrierCcdClearanceTolerance();
+  if (isStaticGroundBarrierCcdHit(
+          start, end, interval.begin, barriers, stats)) {
+    return interval.begin;
+  }
+  if (interval.end <= interval.begin) {
+    return std::nullopt;
+  }
+
+  constexpr int minimizationIterations = 48;
+  double lo = interval.begin;
+  double hi = interval.end;
+  const auto clearanceOrInfinity = [&](double t) {
+    const auto clearance = staticGroundClearanceAt(
+        interpolatePoint(start, end, t), barriers, stats);
+    return clearance.has_value() ? *clearance
+                                 : std::numeric_limits<double>::infinity();
+  };
+
+  for (int iteration = 0; iteration < minimizationIterations; ++iteration) {
+    const double third = (hi - lo) / 3.0;
+    const double midA = lo + third;
+    const double midB = hi - third;
+    if (clearanceOrInfinity(midA) < clearanceOrInfinity(midB)) {
+      hi = midB;
+    } else {
+      lo = midA;
+    }
+  }
+
+  double hitT = 0.5 * (lo + hi);
+  const auto minClearance = staticGroundClearanceAt(
+      interpolatePoint(start, end, hitT), barriers, stats);
+  if (!minClearance.has_value() || *minClearance >= -tolerance) {
+    return std::nullopt;
+  }
+
+  constexpr int bisectionIterations = 32;
+  lo = interval.begin;
+  hi = hitT;
+  for (int iteration = 0; iteration < bisectionIterations; ++iteration) {
+    const double mid = 0.5 * (lo + hi);
+    if (isStaticGroundBarrierCcdHit(start, end, mid, barriers, stats)) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+
+  return std::clamp(hi, 0.0, 1.0);
+}
+
+//==============================================================================
+std::optional<double> continuousStaticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  if (isStaticGroundBarrierCcdHit(start, end, 0.0, barriers, stats)) {
+    return 0.0;
+  }
+
+  std::optional<double> stepBound;
+  for (const auto& barrier : barriers) {
+    const auto interval
+        = staticGroundBarrierFootprintInterval(barrier, start, end);
+    if (!interval.has_value()) {
+      continue;
+    }
+
+    const auto hit = firstStaticGroundBarrierHitInInterval(
+        start, end, *interval, barriers, stats);
+    if (hit.has_value()) {
+      stepBound = stepBound.has_value() ? std::min(*stepBound, *hit) : hit;
+    }
+  }
+
+  return stepBound;
+}
+
+//==============================================================================
+std::optional<double> staticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  constexpr double planarTolerance = 1e-14;
+  if ((end.head<2>() - start.head<2>()).squaredNorm()
+      <= planarTolerance * planarTolerance) {
+    return verticalStaticGroundBarrierStepBound(start, end, barriers, stats);
+  }
+  return continuousStaticGroundBarrierStepBound(start, end, barriers, stats);
+}
+
+//==============================================================================
 double staticGroundBarrierActivationDistance()
 {
   return 2e-2;
@@ -1583,6 +1939,68 @@ bool applyInterBodySurfaceContactCcdLimit(
 }
 
 //==============================================================================
+bool applyStaticGroundBarrierCcdLimit(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (barriers.empty()) {
+    return true;
+  }
+
+  bool hit = false;
+  double stepBound = 1.0;
+  for (std::size_t node = 0; node < current.size(); ++node) {
+    if (fixed[node] != 0u) {
+      continue;
+    }
+
+    ++stats.staticGroundBarrierCcdNodeChecks;
+    const auto nodeStepBound = staticGroundBarrierStepBound(
+        current[node], candidate[node], barriers, stats);
+    if (!nodeStepBound.has_value()) {
+      continue;
+    }
+
+    ++stats.staticGroundBarrierCcdHits;
+    if (*nodeStepBound <= 0.0) {
+      ++stats.staticGroundBarrierCcdZeroStepCount;
+      return false;
+    }
+    hit = true;
+    stepBound = std::min(stepBound, *nodeStepBound);
+  }
+
+  if (!hit) {
+    return true;
+  }
+
+  stepBound = std::clamp(stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    ++stats.staticGroundBarrierCcdZeroStepCount;
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    ++stats.staticGroundBarrierCcdZeroStepCount;
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.staticGroundBarrierCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
 bool isBoundaryActiveAtStepStart(double time, double start, double end)
 {
   // Contact-free scene controls intentionally use step-start sampling. Later
@@ -1820,6 +2238,16 @@ void advanceDeformableBody(
                 scratch.gradient,
                 scratch.activeFixed,
                 contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && applyStaticGroundBarrierCcdLimit(
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                barriers,
                 stats,
                 step,
                 scratch.candidate,
@@ -2249,6 +2677,7 @@ void DeformableDynamicsStage::execute(
   const auto barriers = collectStaticGroundBarriers(world);
   const auto timeStep = world.getTimeStep();
   const auto gravity = world.getGravity();
+  m_lastStats.staticGroundBarrierCount = barriers.size();
 
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);

@@ -62,6 +62,22 @@ void expectVectorNear(
 }
 
 //==============================================================================
+sx::DeformableBodyOptions makeSingleNodeBodyOptions(
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& velocity,
+    bool fixed = false)
+{
+  sx::DeformableBodyOptions options;
+  options.positions = {position};
+  options.velocities = {velocity};
+  options.masses = {1.0};
+  if (fixed) {
+    options.fixedNodes = {0};
+  }
+  return options;
+}
+
+//==============================================================================
 sx::DeformableBodyOptions makeSurfaceCrossingBodyOptions(
     double pointHeight = 1.0, double pointVelocity = -20.0)
 {
@@ -905,6 +921,209 @@ TEST(DeformableBody, StaticCollisionRequiresGroundBarrierOptIn)
 
   EXPECT_LT(body.getPosition(0).z(), 0.25);
   EXPECT_LT(body.getPosition(0).z(), 1.0);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdLimitsFastFallingNode)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "falling_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -20.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).z(), 1e-4 - 1e-12);
+  EXPECT_LT(body.getPosition(0).z(), 1.0);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 1u);
+  EXPECT_GT(stats.staticGroundBarrierCcdNodeChecks, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdSampleChecks, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdCatchesFiniteFootprintFlyThrough)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("finite_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.05)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "fast_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, -0.2), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), -0.5);
+  EXPECT_NEAR(body.getPosition(0).z(), -0.2, 1e-12);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdCatchesNarrowOffsetFootprint)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.022, 0.0, -0.05);
+  auto ground = world.addRigidBody("narrow_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.005, 0.5, 0.05)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "fast_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, -0.2), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), 0.017);
+  EXPECT_NEAR(body.getPosition(0).z(), -0.2, 1e-12);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdLimitsSphereTopSurface)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  sphereOptions.position = Eigen::Vector3d::Zero();
+  auto sphere = world.addRigidBody("sphere_ground", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "falling_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -20.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).z(), 0.5001 - 1e-12);
+  EXPECT_LT(body.getPosition(0).z(), 1.0);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdIgnoresOrdinaryStaticShapes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto obstacle = world.addRigidBody("ordinary_static_box", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.05)));
+  ASSERT_FALSE(obstacle.isDeformableGroundBarrier());
+
+  auto body = world.addDeformableBody(
+      "fast_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, -0.2), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).x(), 0.5);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdNodeChecks, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdSkipsFixedNodes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "fixed_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(0.0, 0.0, -0.5),
+          Eigen::Vector3d(0.0, 0.0, -20.0),
+          true));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_NEAR(body.getPosition(0).z(), -0.5, 1e-12);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 1u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdNodeChecks, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdHits, 0u);
 }
 
 //==============================================================================
