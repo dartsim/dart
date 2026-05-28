@@ -408,6 +408,14 @@ struct DART_COLLISION_NATIVE_API CcdOption
   }
 };
 
+enum class CcdPrimitiveStatus
+{
+  Unknown,
+  Hit,
+  Miss,
+  Indeterminate,
+};
+
 /// Result of a primitive-level continuous collision query (point-triangle,
 /// edge-edge). Reports only a conservative time of impact in [0, 1]; the
 /// contact configuration can be reconstructed by the caller from the input
@@ -415,6 +423,7 @@ struct DART_COLLISION_NATIVE_API CcdOption
 struct DART_COLLISION_NATIVE_API CcdPrimitiveResult
 {
   bool hit = false;
+  CcdPrimitiveStatus status = CcdPrimitiveStatus::Unknown;
 
   /// Conservative time of impact in [0, 1]: a lower bound on the true first
   /// contact time. Never overshoots a real collision.
@@ -428,6 +437,7 @@ struct DART_COLLISION_NATIVE_API CcdPrimitiveResult
   void clear()
   {
     hit = false;
+    status = CcdPrimitiveStatus::Unknown;
     timeOfImpact = 1.0;
   }
 };

@@ -37,6 +37,8 @@
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <dart/collision/native/narrow_phase/primitive_ccd.hpp>
+
 #include <gtest/gtest.h>
 
 #include <limits>
@@ -44,6 +46,7 @@
 
 namespace sx = dart::simulation::experimental;
 namespace compute = dart::simulation::experimental::compute;
+namespace nc = dart::collision::native;
 
 namespace {
 
@@ -56,6 +59,77 @@ void expectVectorNear(
   EXPECT_NEAR(actual.x(), expected.x(), tolerance);
   EXPECT_NEAR(actual.y(), expected.y(), tolerance);
   EXPECT_NEAR(actual.z(), expected.z(), tolerance);
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeSurfaceCrossingBodyOptions(
+    double pointHeight = 1.0, double pointVelocity = -20.0)
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, pointHeight)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, pointVelocity)};
+  options.masses = {1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeVolumetricInteriorNodeCrossingOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 2.0),
+         Eigen::Vector3d(0.0, 0.0, 0.5)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.fixedNodes = {0, 1, 2, 3};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{0, 3, 1},
+         sx::DeformableSurfaceTriangle{1, 3, 2},
+         sx::DeformableSurfaceTriangle{2, 3, 0}};
+  options.tetrahedra
+      = {sx::DeformableTetrahedron{0, 1, 2, 4},
+         sx::DeformableTetrahedron{0, 1, 3, 4},
+         sx::DeformableTetrahedron{1, 2, 3, 4},
+         sx::DeformableTetrahedron{2, 0, 3, 4}};
+  return options;
+}
+
+//==============================================================================
+void expectNoExactPointTriangleCrossing(
+    const Eigen::Vector3d& pointStart,
+    const Eigen::Vector3d& pointEnd,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  nc::CcdOption option;
+  option.tolerance = 1e-8;
+  option.maxIterations = 64;
+  option.minSeparation = 0.0;
+  option.advancement = nc::CcdAdvancement::Conservative;
+
+  nc::CcdPrimitiveResult exact;
+  EXPECT_FALSE(
+      nc::pointTriangleCcdExact(
+          pointStart, pointEnd, a, a, b, b, c, c, option, exact));
 }
 
 //==============================================================================
@@ -734,13 +808,164 @@ TEST(DeformableBody, StaticCollisionRequiresGroundBarrierOptIn)
 }
 
 //==============================================================================
+TEST(DeformableBody, SurfaceContactCcdPreventsFastPointTriangleCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  auto body = world.addDeformableBody(
+      "surface_crossing", makeSurfaceCrossingBodyOptions());
+  const Eigen::Vector3d pointStart = body.getPosition(3);
+
+  world.step();
+
+  EXPECT_GT(body.getPosition(3).z(), 0.0);
+  EXPECT_LT(body.getPosition(3).z(), pointStart.z());
+  expectNoExactPointTriangleCrossing(
+      pointStart,
+      body.getPosition(3),
+      body.getPosition(0),
+      body.getPosition(1),
+      body.getPosition(2));
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdReportsCustomStageStats)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "surface_crossing", makeSurfaceCrossingBodyOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(3).z(), 0.0);
+  EXPECT_GT(stats.surfaceContactCandidateBuilds, 0u);
+  EXPECT_GT(stats.surfaceContactPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.surfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.surfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdIndeterminateCount, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdIgnoresVolumetricInteriorNodes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "volumetric_interior", makeVolumetricInteriorNodeCrossingOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(4).z(), 0.0);
+  EXPECT_GT(stats.surfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(stats.surfaceContactPointTriangleCandidates, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdRejectsInitialSeparationBand)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "surface_initial_band", makeSurfaceCrossingBodyOptions(5e-5, -1.0));
+  const Eigen::Vector3d pointStart = body.getPosition(3);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  expectVectorNear(body.getPosition(3), pointStart, 1e-12);
+  EXPECT_GT(stats.surfaceContactCcdZeroStepCount, 0u);
+  EXPECT_EQ(stats.acceptedLineSearchSteps, 0u);
+  EXPECT_GT(stats.rejectedLineSearchCandidates, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceFreeParticlesKeepFastPath)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.25);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero()};
+  options.velocities = {Eigen::Vector3d(0.0, 0.0, 2.0)};
+  auto body = world.addDeformableBody("free_particle", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  expectVectorNear(body.getPosition(0), Eigen::Vector3d(0.0, 0.0, 0.5));
+  EXPECT_EQ(stage.getLastStats().surfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(stage.getLastStats().solverIterations, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactScratchIsPerBody)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto surfaced = world.addDeformableBody(
+      "surface_crossing", makeSurfaceCrossingBodyOptions());
+
+  sx::DeformableBodyOptions freeOptions;
+  freeOptions.positions = {Eigen::Vector3d(3.0, 0.0, 0.0)};
+  freeOptions.velocities = {Eigen::Vector3d(0.0, 0.0, 5.0)};
+  auto free = world.addDeformableBody("free_particle", freeOptions);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  EXPECT_GT(surfaced.getPosition(3).z(), 0.0);
+  expectVectorNear(free.getPosition(0), Eigen::Vector3d(3.0, 0.0, 0.5));
+  EXPECT_EQ(stage.getLastStats().bodyCount, 2u);
+  EXPECT_GT(stage.getLastStats().surfaceContactCandidateBuilds, 0u);
+}
+
+//==============================================================================
 TEST(DeformableBody, StageMetadataUsesDeformableDomain)
 {
   compute::DeformableDynamicsStage stage;
 
   EXPECT_EQ(stage.getName(), "deformable_dynamics");
-  EXPECT_EQ(
-      stage.getMetadata().domain, compute::ComputeStageDomain::DeformableBody);
+  const auto metadata = stage.getMetadata();
+  EXPECT_EQ(metadata.domain, compute::ComputeStageDomain::DeformableBody);
+
+  bool readsTopology = false;
+  for (const auto& resource : metadata.resources) {
+    if (resource.resource == "deformable_body.topology") {
+      readsTopology = resource.mode == compute::ComputeAccessMode::Read;
+    }
+  }
+  EXPECT_TRUE(readsTopology);
 }
 
 //==============================================================================

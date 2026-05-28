@@ -275,6 +275,68 @@ struct DeformableTetraMeshWorld
 };
 
 //==============================================================================
+struct DeformableSurfaceContactWorld
+{
+  DeformableSurfaceContactWorld(int pairCount, bool crossing)
+  {
+    pairCount = std::max(pairCount, 1);
+
+    sx::DeformableBodyOptions options;
+    options.edgeStiffness = 0.0;
+    options.damping = 0.0;
+
+    constexpr double spacing = 3.0;
+    for (int i = 0; i < pairCount; ++i) {
+      const auto base = static_cast<std::size_t>(4 * i);
+      const double offset = spacing * static_cast<double>(i);
+      options.positions.push_back(Eigen::Vector3d(offset - 1.0, -1.0, 0.0));
+      options.positions.push_back(Eigen::Vector3d(offset + 1.0, -1.0, 0.0));
+      options.positions.push_back(Eigen::Vector3d(offset, 1.0, 0.0));
+      options.positions.push_back(Eigen::Vector3d(offset, 0.0, 1.0));
+
+      options.velocities.push_back(Eigen::Vector3d::Zero());
+      options.velocities.push_back(Eigen::Vector3d::Zero());
+      options.velocities.push_back(Eigen::Vector3d::Zero());
+      options.velocities.push_back(
+          Eigen::Vector3d(0.0, 0.0, crossing ? -20.0 : 1.0));
+
+      for (int node = 0; node < 4; ++node) {
+        options.masses.push_back(1.0);
+      }
+      options.fixedNodes.push_back(base);
+      options.fixedNodes.push_back(base + 1u);
+      options.fixedNodes.push_back(base + 2u);
+      options.surfaceTriangles.push_back({base, base + 1u, base + 2u});
+    }
+
+    initialPositions = options.positions;
+    initialVelocities = options.velocities;
+    body = world.addDeformableBody("surface_contact", options);
+    nodeCount = body.getNodeCount();
+    surfaceTriangleCount = body.getSurfaceTriangleCount();
+
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    for (std::size_t i = 0; i < initialPositions.size(); ++i) {
+      body.setPosition(i, initialPositions[i]);
+      body.setVelocity(i, initialVelocities[i]);
+    }
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
+  std::size_t nodeCount = 0;
+  std::size_t surfaceTriangleCount = 0;
+};
+
+//==============================================================================
 struct RigidOnlyWorld
 {
   explicit RigidOnlyWorld(int staticBodyCount)
@@ -419,6 +481,56 @@ void BM_DeformableGridStage(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableSurfaceContactStage(benchmark::State& state)
+{
+  const auto pairCount = static_cast<int>(state.range(0));
+  const bool crossing = state.range(1) != 0;
+  DeformableSurfaceContactWorld fixture(pairCount, crossing);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["surface_triangles"]
+      = static_cast<double>(fixture.surfaceTriangleCount);
+  state.counters["crossing"] = crossing ? 1.0 : 0.0;
+  state.counters["candidate_builds"]
+      = static_cast<double>(stats.surfaceContactCandidateBuilds);
+  state.counters["pt_candidates"]
+      = static_cast<double>(stats.surfaceContactPointTriangleCandidates);
+  state.counters["ee_candidates"]
+      = static_cast<double>(stats.surfaceContactEdgeEdgeCandidates);
+  state.counters["ccd_pt_checks"]
+      = static_cast<double>(stats.surfaceContactCcdPointTriangleChecks);
+  state.counters["ccd_ee_checks"]
+      = static_cast<double>(stats.surfaceContactCcdEdgeEdgeChecks);
+  state.counters["ccd_hits"] = static_cast<double>(stats.surfaceContactCcdHits);
+  state.counters["ccd_indeterminate"]
+      = static_cast<double>(stats.surfaceContactCcdIndeterminateCount);
+  state.counters["ccd_limited_steps"]
+      = static_cast<double>(stats.surfaceContactCcdLimitedSteps);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.counters["line_search_rejects"]
+      = static_cast<double>(stats.rejectedLineSearchCandidates);
+  state.counters["accepted_steps"]
+      = static_cast<double>(stats.acceptedLineSearchSteps);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableSceneLoad(benchmark::State& state)
 {
   const auto scenePath = benchmarkScenePath();
@@ -497,6 +609,11 @@ BENCHMARK(BM_DeformableGridStage)
     ->Args({32, 16, 0})
     ->Args({16, 8, 1})
     ->Args({32, 16, 1});
+
+BENCHMARK(BM_DeformableSurfaceContactStage)
+    ->Args({1, 0})
+    ->Args({1, 1})
+    ->Args({32, 1});
 
 BENCHMARK(BM_DeformableSceneLoad);
 

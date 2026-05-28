@@ -795,6 +795,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     stale candidate state while preserving candidate vector capacity, with
     regression tests and return-wrapper versus reusable-buffer benchmark
     counters for future solver-owned contact buffers.
+  - Wired internal IPC motion-aware surface-contact candidates into the
+    deformable line search as a conservative per-body CCD limiter, with
+    primitive-CCD uncertainty status, no-edge surface-contact regressions, and
+    focused benchmark counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

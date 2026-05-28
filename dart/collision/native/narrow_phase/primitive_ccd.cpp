@@ -207,12 +207,14 @@ bool accdAdvance(
   const double gap0 = d - minSeparation;
   if (gap0 <= 0.0) {
     result.hit = true;
+    result.status = CcdPrimitiveStatus::Hit;
     result.timeOfImpact = 0.0;
     return true;
   }
 
   if (lp <= kEpsilon) {
     // No relative motion: the clearance is constant, so no new contact forms.
+    result.status = CcdPrimitiveStatus::Miss;
     return false;
   }
 
@@ -229,6 +231,7 @@ bool accdAdvance(
     const double clearance = d - minSeparation;
     if (clearance <= convergeAbs) {
       result.hit = true;
+      result.status = CcdPrimitiveStatus::Hit;
       result.timeOfImpact = t;
       return true;
     }
@@ -244,9 +247,11 @@ bool accdAdvance(
     if (t + clearance / lp >= 1.0) {
       if (distAt(1.0) - minSeparation <= convergeAbs) {
         result.hit = true;
+        result.status = CcdPrimitiveStatus::Hit;
         result.timeOfImpact = 1.0;
         return true;
       }
+      result.status = CcdPrimitiveStatus::Miss;
       return false;
     }
 
@@ -256,9 +261,8 @@ bool accdAdvance(
 
   // Exhausted the iteration budget without converging to contact or proving
   // none can occur -- a slow, near-tangential approach that has not been shown
-  // to close to minSeparation in [0, 1]. Reporting a hit here would be a false
-  // positive (the gap may never actually reach contact), so report no contact;
-  // callers needing a sharper answer can raise option.maxIterations.
+  // to close to minSeparation in [0, 1].
+  result.status = CcdPrimitiveStatus::Indeterminate;
   return false;
 }
 
@@ -512,10 +516,12 @@ bool pointTriangleCcdExact(
     const Eigen::Vector3d c = cStart + t * dc;
     if (pointInsideTriangle(p, a, b, c, slack)) {
       result.hit = true;
+      result.status = CcdPrimitiveStatus::Hit;
       result.timeOfImpact = std::clamp(t, 0.0, 1.0);
       return true;
     }
   }
+  result.status = CcdPrimitiveStatus::Miss;
   return false;
 }
 
@@ -615,10 +621,12 @@ bool edgeEdgeCcdExact(
   for (const double t : candidates) {
     if (contactAt(t)) {
       result.hit = true;
+      result.status = CcdPrimitiveStatus::Hit;
       result.timeOfImpact = std::clamp(t, 0.0, 1.0);
       return true;
     }
   }
+  result.status = CcdPrimitiveStatus::Miss;
   return false;
 }
 

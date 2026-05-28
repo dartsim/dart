@@ -64,12 +64,14 @@ struct ContinuousCollisionStepStats
   std::size_t edgeEdgeChecks = 0;
   std::size_t hits = 0;
   std::size_t misses = 0;
+  std::size_t indeterminate = 0;
   std::size_t zeroStepCount = 0;
 };
 
 struct ContinuousCollisionStepResult
 {
   bool hit = false;
+  bool indeterminate = false;
   double stepBound = 1.0;
   ContinuousCollisionPrimitive limitingPrimitive
       = ContinuousCollisionPrimitive::None;

@@ -45,6 +45,8 @@
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
+#include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -55,12 +57,15 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
 #include <cmath>
 
 namespace dart::simulation::experimental::compute {
+
+namespace dc = dart::simulation::experimental::detail::deformable_contact;
 
 namespace {
 
@@ -709,6 +714,97 @@ struct StaticGroundBarrier
 };
 
 //==============================================================================
+struct DeformableContactSolverScratch
+{
+  std::vector<DeformableSurfaceTriangle> surfaceTriangles;
+  std::vector<std::uint8_t> surfaceContactPointMask;
+  dc::ContactCandidateSet candidates;
+};
+
+//==============================================================================
+double surfaceContactMinSeparation()
+{
+  return 1e-4;
+}
+
+//==============================================================================
+double surfaceContactTolerance()
+{
+  return 1e-6;
+}
+
+//==============================================================================
+dc::ContactCandidateOptions makeSurfaceContactCandidateOptions()
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance
+      = surfaceContactMinSeparation() + surfaceContactTolerance();
+  options.exactDistanceFilter = true;
+  options.excludeIncidentPointTriangles = true;
+  options.excludeAdjacentEdges = true;
+  return options;
+}
+
+//==============================================================================
+dc::ContinuousCollisionStepOptions makeSurfaceContactCcdOptions()
+{
+  dc::ContinuousCollisionStepOptions options;
+  options.minSeparation = surfaceContactMinSeparation();
+  options.tolerance = surfaceContactTolerance();
+  options.maxIterations = 128;
+  return options;
+}
+
+//==============================================================================
+void syncSurfaceContactTopology(
+    std::span<const comps::DeformableSurfaceTriangle> source,
+    std::size_t nodeCount,
+    bool restrictPointsToReferencedSurfaceNodes,
+    DeformableContactSolverScratch& scratch)
+{
+  scratch.surfaceTriangles.clear();
+  scratch.surfaceTriangles.reserve(source.size());
+  if (restrictPointsToReferencedSurfaceNodes) {
+    scratch.surfaceContactPointMask.assign(nodeCount, 0u);
+  } else {
+    scratch.surfaceContactPointMask.clear();
+  }
+
+  for (const auto& triangle : source) {
+    scratch.surfaceTriangles.push_back(
+        DeformableSurfaceTriangle{
+            triangle.nodeA, triangle.nodeB, triangle.nodeC});
+    if (restrictPointsToReferencedSurfaceNodes) {
+      scratch.surfaceContactPointMask[triangle.nodeA] = 1u;
+      scratch.surfaceContactPointMask[triangle.nodeB] = 1u;
+      scratch.surfaceContactPointMask[triangle.nodeC] = 1u;
+    }
+  }
+}
+
+//==============================================================================
+void filterSurfaceContactPointCandidates(
+    dc::ContactCandidateSet& candidates,
+    std::span<const std::uint8_t> pointMask)
+{
+  if (pointMask.empty()) {
+    return;
+  }
+
+  auto& pointTriangleCandidates = candidates.pointTriangleCandidates;
+  pointTriangleCandidates.erase(
+      std::remove_if(
+          pointTriangleCandidates.begin(),
+          pointTriangleCandidates.end(),
+          [&](const dc::PointTriangleCandidate& candidate) {
+            return candidate.point >= pointMask.size()
+                   || pointMask[candidate.point] == 0u;
+          }),
+      pointTriangleCandidates.end());
+  candidates.stats.pointTriangleCandidateCount = pointTriangleCandidates.size();
+}
+
+//==============================================================================
 std::optional<double> boxTopAt(
     const StaticGroundBarrier& barrier, const Eigen::Vector3d& position)
 {
@@ -1021,6 +1117,95 @@ double gradientNormSquared(
 }
 
 //==============================================================================
+double buildLineSearchCandidate(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    double step,
+    std::vector<Eigen::Vector3d>& candidate)
+{
+  double directionalDerivative = 0.0;
+  for (std::size_t i = 0; i < current.size(); ++i) {
+    candidate[i] = current[i];
+    if (fixed[i] == 0u) {
+      candidate[i] += step * direction[i];
+      directionalDerivative += gradient[i].dot(candidate[i] - current[i]);
+    }
+  }
+  return directionalDerivative;
+}
+
+//==============================================================================
+bool applySurfaceContactCcdLimit(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (contactScratch.surfaceTriangles.empty()) {
+    return true;
+  }
+
+  ++stats.surfaceContactCandidateBuilds;
+  dc::buildMotionAwareContactCandidatesSweep(
+      current,
+      candidate,
+      contactScratch.surfaceTriangles,
+      makeSurfaceContactCandidateOptions(),
+      contactScratch.candidates);
+  filterSurfaceContactPointCandidates(
+      contactScratch.candidates, contactScratch.surfaceContactPointMask);
+  stats.surfaceContactPointTriangleCandidates
+      += contactScratch.candidates.pointTriangleCandidates.size();
+  stats.surfaceContactEdgeEdgeCandidates
+      += contactScratch.candidates.edgeEdgeCandidates.size();
+
+  const auto result = dc::contactCandidateStepBound(
+      current,
+      candidate,
+      contactScratch.surfaceTriangles,
+      contactScratch.candidates,
+      makeSurfaceContactCcdOptions());
+  stats.surfaceContactCcdPointTriangleChecks
+      += result.stats.pointTriangleChecks;
+  stats.surfaceContactCcdEdgeEdgeChecks += result.stats.edgeEdgeChecks;
+  stats.surfaceContactCcdHits += result.stats.hits;
+  stats.surfaceContactCcdMisses += result.stats.misses;
+  stats.surfaceContactCcdIndeterminateCount += result.stats.indeterminate;
+  stats.surfaceContactCcdZeroStepCount += result.stats.zeroStepCount;
+
+  if (result.indeterminate) {
+    return false;
+  }
+
+  if (!result.hit) {
+    return true;
+  }
+
+  const double stepBound = std::clamp(result.stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.surfaceContactCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
 bool isBoundaryActiveAtStepStart(double time, double start, double end)
 {
   // Contact-free scene controls intentionally use step-start sampling. Later
@@ -1130,7 +1315,9 @@ void prepareDeformableBoundaryConditions(
 void advanceDeformableBody(
     comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
+    const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
+    DeformableContactSolverScratch& contactScratch,
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
@@ -1143,6 +1330,11 @@ void advanceDeformableBody(
 
   stats.nodeCount += nodeCount;
   stats.edgeCount += model.edges.size();
+  syncSurfaceContactTopology(
+      topology.surfaceTriangles,
+      nodeCount,
+      !topology.tetrahedra.empty(),
+      contactScratch);
 
   scratch.inertialTargets.resize(nodeCount);
   scratch.next.resize(nodeCount);
@@ -1174,7 +1366,8 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  if (model.edges.empty() && barriers.empty()) {
+  if (model.edges.empty() && barriers.empty()
+      && contactScratch.surfaceTriangles.empty()) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
         scratch.next[i] = scratch.inertialTargets[i];
@@ -1222,17 +1415,25 @@ void advanceDeformableBody(
       bool accepted = false;
       for (std::size_t ls = 0; ls < maxLineSearchIterations; ++ls) {
         ++stats.lineSearchTrials;
-        double directionalDerivative = 0.0;
-        for (std::size_t i = 0; i < nodeCount; ++i) {
-          scratch.candidate[i] = scratch.next[i];
-          if (scratch.activeFixed[i] == 0u) {
-            scratch.candidate[i] += step * scratch.direction[i];
-            directionalDerivative += scratch.gradient[i].dot(
-                scratch.candidate[i] - scratch.next[i]);
-          }
-        }
+        double directionalDerivative = buildLineSearchCandidate(
+            scratch.next,
+            scratch.direction,
+            scratch.gradient,
+            scratch.activeFixed,
+            step,
+            scratch.candidate);
 
-        if (directionalDerivative < -1e-24
+        if (applySurfaceContactCcdLimit(
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && directionalDerivative < -1e-24
             && satisfiesStaticGroundBarrier(
                 scratch.candidate, scratch.activeFixed, barriers)) {
           ++stats.objectiveEvaluations;
@@ -1633,6 +1834,7 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
           | ComputeStageAcceleration::DataLocality,
       {{"deformable_body.state", ComputeAccessMode::ReadWrite},
        {"deformable_body.model", ComputeAccessMode::Read},
+       {"deformable_body.topology", ComputeAccessMode::Read},
        {"deformable_body.boundary_conditions", ComputeAccessMode::Read},
        {"static_collision_geometry", ComputeAccessMode::Read}}};
 }
@@ -1647,7 +1849,8 @@ void DeformableDynamicsStage::execute(
   auto view = registry.view<
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
-      comps::DeformableSpringModel>();
+      comps::DeformableSpringModel,
+      comps::DeformableMeshTopology>();
   if (view.begin() == view.end()) {
     return;
   }
@@ -1659,8 +1862,11 @@ void DeformableDynamicsStage::execute(
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);
     const auto& model = view.get<comps::DeformableSpringModel>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
     auto& scratch
         = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+    auto& contactScratch
+        = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
     const auto* boundaryConditions
         = registry.try_get<comps::DeformableBoundaryConditions>(entity);
     ++m_lastStats.bodyCount;
@@ -1672,7 +1878,15 @@ void DeformableDynamicsStage::execute(
         scratch,
         m_lastStats);
     advanceDeformableBody(
-        state, model, scratch, gravity, timeStep, barriers, m_lastStats);
+        state,
+        model,
+        topology,
+        scratch,
+        contactScratch,
+        gravity,
+        timeStep,
+        barriers,
+        m_lastStats);
   }
 }
 
