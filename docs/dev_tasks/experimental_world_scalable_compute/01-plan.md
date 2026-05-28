@@ -43,7 +43,7 @@ order below:
    solver land. A contact/constraint-shaped benchmark proxy is a Phase 0
    prerequisite, not a Phase 5 deliverable.
 
-## Current Baseline After Phase 0-4
+## Current Baseline After Phase 0-5
 
 - `World` owns one `entt::registry`; public handles are thin views; `step()`
   takes an injectable `compute::ComputeExecutor`. After the rigid-body dynamics
@@ -67,7 +67,8 @@ order below:
   are implemented. The checked contact-island benchmark now supplies the
   compute-bound speedup proxy, and future solver/contact work must extend that
   benchmark surface rather than rely on trivial rigid-body rows. The GPU
-  prototype waits for GPU runner/build-import CI prerequisites.
+  prototype is closed with a recorded GO (109.6x at 4096/128/100) on manual
+  CUDA-host evidence; GPU CI is build/import only on a GitHub-hosted runner.
 
 ## Cross-Cutting Invariants
 
@@ -299,15 +300,17 @@ Exit criteria:
   dependencies while explicitly opt-in sidecar Pixi features remain allowed; the
   benchmark-contract check proves any optional CUDA benchmark uses the
   packet-compatible `BM_Phase5RigidBodyBatchGpu/4096/128/100` go/no-go row; and
-  `pixi run check-phase5-cuda-workflow` proves the manual CUDA workflow still
-  runs the same gates, full-row task, packet checker, and artifact upload path.
+  `pixi run check-phase5-cuda-workflow` proves `ci_cuda.yml` keeps the
+  `cuda-build` build/import gate on a GitHub-hosted runner and never reintroduces
+  a self-hosted GPU runner.
 
-External dependency: GPU CI requires a GPU runner that the project does not have
-today. Local CUDA hardware is useful for spikes but is not enough to satisfy the
-Phase 5 build/import gate. Treat runner provisioning and the GPU build/import CI
-path as maintainer/infrastructure-owned prerequisites; the durable sidecar
-package shape and go/no-go threshold live in
-`docs/design/scalable_compute_decisions.md`.
+Runner policy: the project does not maintain a self-hosted GPU runner (too
+tedious to maintain). The build/import gate needs no GPU and runs on a
+GitHub-hosted `ubuntu-latest` runner; the go/no-go runtime packet is measured
+manually on any CUDA host and recorded in
+`docs/design/scalable_compute_decisions.md`, where the durable sidecar package
+shape and go/no-go threshold also live. The recorded result is a GO (109.6x at
+`worldCount=4096 bodyCount=128 stepCount=100`).
 
 ### Phase 6 — Reassess (gated by Phase 5 evidence)
 

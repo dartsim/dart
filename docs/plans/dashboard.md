@@ -79,23 +79,20 @@ its own line so status updates remain git-history friendly.
   `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
   the default experimental `World::step` path now preserves the rigid-body
   contact/multibody solver pipeline, while the batched SoA rigid-body stage
-  remains an explicit unconstrained path and benchmark/prototype seam. PRs now
-  exercise CUDA-on configure and target builds through `CI CUDA / CUDA Build`
-  (green on `main`); the one open Phase 5 prerequisite is a project-owned
-  self-hosted runner labeled `cuda` (none exist as of 2026-05-28) so manual
-  `CI CUDA / CUDA Runtime Smoke` can produce the measured go/no-go packet.
-  Runtime evidence otherwise requires `pixi run -e cuda test-cuda` on a CUDA
-  host; a 2026-05-28 local spike recorded speedup 109.6x at 4096/128/100 with
-  final-state error 1.78e-15 (useful local evidence only, not Phase 5 closure).
-  Keep CUDA private and non-required until runner stability and representative
-  workload benchmarks justify the Phase 6 GPU track. The sidecar package shape,
+  remains an explicit unconstrained path and benchmark/prototype seam. Phase 5
+  is closed with a GO: `CI CUDA / CUDA Build` compiles the CUDA targets on a
+  GitHub-hosted `ubuntu-latest` runner (green on `main`), and because the project
+  does not maintain a self-hosted GPU runner, the go/no-go runtime packet is
+  measured manually on a CUDA host. The recorded GO (2026-05-28, RTX 5000 Ada):
+  speedup 109.6x at 4096/128/100 with final-state error 1.78e-15, packet
+  accepted. Keep CUDA private and non-required. The sidecar package shape,
   go/no-go threshold, `bm-phase5-gpu-packet-check` /
   `check-compute-backend-boundaries` / `check-no-gpu-runtime-dependencies`
   evidence gates, and the `check-phase5-cuda-benchmark-contract` row contract
-  are recorded in the owner doc. The manual CUDA workflow writes and validates
-  the Phase 5 packet artifact through `bm-phase5-cuda-full` and
-  `bm-phase5-cuda-packet` when a self-hosted CUDA runner is available, with
-  `check-phase5-cuda-workflow` guarding that wiring. Phase 3's speedup surface
+  are recorded in the owner doc. To refresh the packet on any CUDA host, run
+  `bm-phase5-cuda-full` then `bm-phase5-cuda-packet`;
+  `check-phase5-cuda-workflow` guards that `ci_cuda.yml` keeps the build/import
+  gate and never reintroduces a self-hosted GPU runner. Phase 3's speedup surface
   is the checked contact-island benchmark, not the trivial Euler rigid-body
   rows.
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
