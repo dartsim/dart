@@ -114,6 +114,10 @@ friction"):
   with an equivalence regression).
 - `origin/main` merge with documented conflict resolutions.
 - Isolated correctness tests for the rigid CCD pose primitives.
+- Same-scene `World::step()` comparison benchmark (sequential impulse vs rigid
+  IPC) establishing baseline #1: the rigid IPC scaffold is currently ~3 orders
+  of magnitude slower per step and scales super-linearly (see
+  [`benchmarks.md`](benchmarks.md)). This is the optimization gap to close.
 
 All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
 (23/23), `check-lint`, and the manifest checks.
