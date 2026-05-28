@@ -2,8 +2,10 @@
 
 ## Status
 
-- Phases 1 and 2 complete; Phase 3 closeout and non-`7/*` audit pending. See
-  [`01_progress.md`](01_progress.md) for per-branch verdicts and deletion log.
+- Phases 1, 2, and the Phase 3 non-`7/*` audit are complete; the abi-check
+  extraction PR (verdict from `issue/1026_abi_stability`) is the remaining
+  follow-up. See [`01_progress.md`](01_progress.md) for per-branch verdicts and
+  deletion log.
 
 ## Objective
 
