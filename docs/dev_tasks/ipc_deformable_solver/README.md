@@ -43,7 +43,11 @@
         edge-edge barrier gradients/Hessians, explicit-threshold edge-edge
         mollifier product-rule derivatives, finite-difference regression tests,
         and `bm_ipc_barrier_kernel`.
-  - [ ] Remaining Phase 2 work: tangent bases, motion-aware candidate culling,
+  - [x] Internal tangent-stencil sub-slice: upstream-style point-triangle,
+        edge-edge, point-edge, and point-point tangent bases, closest-point
+        parameters, tangent projection matrices, tangent metric matrices,
+        regression tests, and `bm_ipc_tangent_stencil`.
+  - [ ] Remaining Phase 2 work: motion-aware candidate culling,
         candidate-buffer integration, solver-owned contact buffers, and
         solver-wired CCD line search.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
@@ -86,11 +90,11 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with tangent bases, motion-aware candidate culling,
-   candidate-buffer integration, solver-owned contact buffers, and
-   solver-wired CCD line search. The current primitive kernels, candidate sets,
-   analytic Hessians, clamped-log barrier kernels, and CCD step-bound helpers
-   are internal scaffolding only and are not yet wired into `World::step()`.
+1. Continue Phase 2 with motion-aware candidate culling, candidate-buffer
+   integration, solver-owned contact buffers, and solver-wired CCD line search.
+   The current primitive kernels, candidate sets, analytic Hessians,
+   clamped-log barrier kernels, tangent stencils, and CCD step-bound helpers are
+   internal scaffolding only and are not yet wired into `World::step()`.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -167,6 +171,15 @@ projected Newton, candidate-buffer assembly, solver-owned contact caches,
 tangent bases, friction, solver-wired CCD line search, or scene-level IPC
 contact behavior.
 
+For the tangent-stencil sub-slice, keep the verification language precise: it
+covers internal point-triangle, edge-edge, point-edge, and point-point tangent
+bases, closest-point parameters, tangent projection matrices, and tangent
+metric matrices for future contact/friction assembly. It does not yet cover
+friction energy/gradient/Hessian, lagged friction convergence, barrier
+stiffness adaptation, PSD projection, projected Newton, candidate-buffer
+assembly, solver-owned contact caches, solver-wired CCD line search, or
+scene-level IPC contact behavior.
+
 Current primitive-distance local gates:
 
 ```bash
@@ -237,3 +250,11 @@ scalar path, 557 ns for a point-triangle barrier value/gradient/Hessian query,
 286 ns for an edge-edge barrier query, and 810 ns for a mollified edge-edge
 barrier query. CPU scaling was enabled, so treat these as local smoke numbers
 rather than a final performance claim.
+
+Current tangent-stencil local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_tangent_stencil bm_ipc_tangent_stencil
+./build/default/cpp/Release/bin/test_tangent_stencil
+./build/default/cpp/Release/bin/bm_ipc_tangent_stencil --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+```
