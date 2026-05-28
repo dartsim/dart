@@ -18,12 +18,11 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
-#include <dart/math/random.hpp>
-
 #include <dart/io/read.hpp>
 
 #include <Eigen/Core>
 
+#include <cmath>
 #include <stdexcept>
 
 namespace dart::examples::demos {
@@ -49,9 +48,12 @@ dart::simulation::WorldPtr createRigidChainWorld()
   }
   chain->setName(kRigidChainName);
 
+  // Deterministic initial pose: a damped sine across DOFs keeps the chain
+  // visually curved without random state, so the cross-language golden parity
+  // smoke can reproduce it.
   Eigen::VectorXd initialPose(chain->getNumDofs());
   for (Eigen::Index i = 0; i < initialPose.size(); ++i) {
-    initialPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+    initialPose[i] = 0.4 * std::sin(0.7 * static_cast<double>(i));
   }
   chain->setPositions(initialPose);
 

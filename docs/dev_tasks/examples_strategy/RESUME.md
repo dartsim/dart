@@ -28,19 +28,16 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
 1. **Grow Python breadth toward C++ coverage.** Add Python scene modules for
    the categories the 11-scene Python runner currently lacks; targets are
    listed in PLAN-103's "Resolved Decisions" section.
-2. **Extend the golden set.** `boxes` is now wired (Python mirror already
-   existed; fixture regenerated; C++ test is now table-driven over multiple
-   scenes). Remaining: add `rigid_chain` and `operational_space_control`
-   mirrors by `(1)` writing the Python scene, `(2)` adding the id to
-   `GOLDEN_SCENE_IDS` in `helpers.py`, `(3)` regenerating via
-   `python -m examples.demos.golden._generate`, `(4)` appending the expected
-   skeleton state in `goldenScenes()` in
+2. **Extend the golden set.** `boxes` and `rigid_chain` are now wired. The C++
+   `rigid_chain` scene replaced `dart::math::Random::uniform` with a
+   deterministic damped-sine initial pose so cross-language state matches; the
+   Python mirror loads `dart://sample/skel/chain.skel` via
+   `dartpy.utils.SkelParser.read_world` and applies the same sine. Remaining:
+   add `operational_space_control` by `(1)` writing its Python mirror,
+   `(2)` adding the id to `GOLDEN_SCENE_IDS` in `helpers.py`,
+   `(3)` regenerating via `python -m examples.demos.golden._generate`,
+   `(4)` appending the expected skeleton state in `goldenScenes()` in
    `tests/unit/gui/test_demos_golden_parity.cpp`.
-   Blocker for `rigid_chain`: the C++ scene calls
-   `dart::math::Random::uniform` to set the initial pose, so the world state is
-   non-deterministic across runs. Either replace the random init with a fixed
-   pose in `examples/demos/scenes/rigid_chain.cpp` (preferred — golden parity
-   relies on determinism) or skip it.
 3. **PLAN-012 + PLAN-101 work.** Cloud Colab smoke (PLAN-012) and editor scene
    loading (PLAN-101) unblock conditions 2 and 3 of the retire-later checklist.
 

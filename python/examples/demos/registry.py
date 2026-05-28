@@ -14,6 +14,7 @@ from .scenes.cartpole_mpc import SCENE as CARTPOLE_MPC
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.kr5_arm import SCENE as KR5_ARM
 from .scenes.legged_balance import SCENE as LEGGED_BALANCE
+from .scenes.rigid_chain import SCENE as RIGID_CHAIN
 from .scenes.sensor_descriptors import SCENE as SENSOR_DESCRIPTORS
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
@@ -26,6 +27,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         HELLO_WORLD,
         # Rigid Body
         BOXES,
+        RIGID_CHAIN,
         # Rigid Body (Experimental)
         SX_ARTICULATED,
         SX_FLOATING_BASE,
