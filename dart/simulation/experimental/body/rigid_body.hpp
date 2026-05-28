@@ -221,6 +221,19 @@ public:
   /// Return whether this body is opted in as a deformable ground barrier.
   [[nodiscard]] bool isDeformableGroundBarrier() const;
 
+  /// Set whether this static box acts as a stationary surface obstacle for the
+  /// experimental deformable CCD line-search limiter.
+  ///
+  /// Only static bodies with box collision shapes contribute. The body-space
+  /// box is triangulated into world-space triangles for conservative primitive
+  /// CCD. This does not change rigid-body collision behavior, apply contact or
+  /// barrier forces, provide friction, support moving obstacles, or support
+  /// non-box collision shapes.
+  void setDeformableSurfaceCcdObstacle(bool enabled);
+
+  /// Return whether this body is opted in as a deformable surface CCD obstacle.
+  [[nodiscard]] bool isDeformableSurfaceCcdObstacle() const;
+
   /// Get this body's collision shape, if one is attached.
   [[nodiscard]] std::optional<CollisionShape> getCollisionShape() const;
 

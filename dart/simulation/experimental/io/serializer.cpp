@@ -203,6 +203,8 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerComponentIfNeeded<comps::RigidBodyTag>(registry);
   registerComponentIfNeeded<comps::StaticBodyTag>(registry);
   registerComponentIfNeeded<comps::CollisionGeometry>(registry);
+  registerComponentIfNeeded<comps::DeformableGroundBarrierTag>(registry);
+  registerComponentIfNeeded<comps::DeformableSurfaceCcdObstacleTag>(registry);
   registerComponentIfNeeded<comps::ContactMaterial>(registry);
   registerComponentIfNeeded<comps::DeformableBodyTag>(registry);
   comps::registerDeformableBodySerializers(registry);

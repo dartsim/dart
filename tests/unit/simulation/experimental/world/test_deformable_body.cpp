@@ -43,6 +43,8 @@
 
 #include <limits>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 namespace sx = dart::simulation::experimental;
 namespace compute = dart::simulation::experimental::compute;
@@ -270,6 +272,55 @@ sx::DeformableBodyOptions makeSingleTetrahedronBody()
   options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
   return options;
 }
+
+//==============================================================================
+sx::RigidBody addStaticSurfaceCcdBox(
+    sx::World& world,
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Quaterniond& orientation = Eigen::Quaterniond::Identity())
+{
+  sx::RigidBodyOptions options;
+  options.isStatic = true;
+  options.position = position;
+  options.orientation = orientation;
+  auto body = world.addRigidBody(name, options);
+  body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  body.setDeformableSurfaceCcdObstacle(true);
+  return body;
+}
+
+//==============================================================================
+class MoveRigidBodyStage final : public compute::WorldStepStage
+{
+public:
+  MoveRigidBodyStage(sx::RigidBody body, const Eigen::Isometry3d& transform)
+    : m_body(body), m_transform(transform)
+  {
+  }
+
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "move_rigid_body";
+  }
+
+  [[nodiscard]] compute::ComputeStageMetadata getMetadata()
+      const noexcept override
+  {
+    return {compute::ComputeStageDomain::Kinematics};
+  }
+
+  void execute(
+      sx::World& /*world*/, compute::ComputeExecutor& /*executor*/) override
+  {
+    m_body.setTransform(m_transform);
+  }
+
+private:
+  sx::RigidBody m_body;
+  Eigen::Isometry3d m_transform;
+};
 
 } // namespace
 
@@ -1282,6 +1333,183 @@ TEST(DeformableBody, InterBodySurfaceContactCcdUsesStageStartSnapshot)
   EXPECT_GT(movingFirstZ, 0.0);
   EXPECT_GT(obstacleFirstZ, 0.0);
   EXPECT_NEAR(movingFirstZ, obstacleFirstZ, 1e-12);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdLimitsPointOnlySideCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addStaticSurfaceCcdBox(
+      world,
+      "static_box",
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.05, 1.0, 1.0));
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), -0.05);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdTriangleCount, 12u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdEdgeCount, 12u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdRequiresOptIn)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  auto box = world.addRigidBody("ordinary_static_box", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
+  ASSERT_FALSE(box.isDeformableSurfaceCcdObstacle());
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).x(), 0.5);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdHits, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdChecksPhysicalBoxEdges)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addStaticSurfaceCcdBox(
+      world,
+      "thin_box",
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.5, 0.05, 0.5));
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-0.5, -1.0, -0.5),
+         Eigen::Vector3d(-0.5, -1.0, 0.5),
+         Eigen::Vector3d(-0.7, -1.0, 0.0)};
+  options.velocities
+      = {Eigen::Vector3d(0.0, 20.0, 0.0),
+         Eigen::Vector3d(0.0, 20.0, 0.0),
+         Eigen::Vector3d(0.0, 20.0, 0.0)};
+  options.masses = {1.0, 1.0, 1.0};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  auto body = world.addDeformableBody("moving_edge", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).y(), -0.05);
+  EXPECT_GT(stats.staticRigidSurfaceCcdEdgeEdgeCandidates, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdEdgeEdgeChecks, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdUsesStageStartTransform)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto box = addStaticSurfaceCcdBox(
+      world,
+      "moved_box",
+      Eigen::Vector3d(10.0, 0.0, 0.0),
+      Eigen::Vector3d(0.05, 1.0, 1.0));
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  Eigen::Isometry3d movedTransform = Eigen::Isometry3d::Identity();
+  movedTransform.translation() = Eigen::Vector3d::Zero();
+  MoveRigidBodyStage moveBox(box, movedTransform);
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(moveBox);
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), -0.05);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdHandlesRotatedBoxSide)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addStaticSurfaceCcdBox(
+      world,
+      "rotated_box",
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.05, 1.0, 1.0),
+      Eigen::Quaterniond(
+          Eigen::AngleAxisd(
+              0.25 * 3.14159265358979323846, Eigen::Vector3d::UnitZ())));
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, -1.0, 0.0), Eigen::Vector3d(20.0, 20.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), 0.0);
+  EXPECT_LT(body.getPosition(0).y(), 0.0);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+  EXPECT_GT(body.getPosition(0).y(), -1.0);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
 }
 
 //==============================================================================

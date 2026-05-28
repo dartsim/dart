@@ -55,4 +55,11 @@ struct DeformableGroundBarrierTag
   DART_EXPERIMENTAL_TAG_COMPONENT(DeformableGroundBarrierTag);
 };
 
+/// Tag marking static box collision geometry as a stationary surface obstacle
+/// for the experimental deformable CCD line-search limiter.
+struct DeformableSurfaceCcdObstacleTag
+{
+  DART_EXPERIMENTAL_TAG_COMPONENT(DeformableSurfaceCcdObstacleTag);
+};
+
 } // namespace dart::simulation::experimental::comps
