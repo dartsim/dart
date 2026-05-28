@@ -164,7 +164,12 @@ void runCandidateSetBenchmark(
 static void BM_IpcCandidateSetSweepCloth(benchmark::State& state)
 {
   const auto fixture = makeClothGrid(static_cast<int>(state.range(0)));
-  runCandidateSetBenchmark(state, fixture, dc::buildContactCandidatesSweep);
+  runCandidateSetBenchmark(
+      state,
+      fixture,
+      [](const auto& positions, const auto& triangles, const auto& options) {
+        return dc::buildContactCandidatesSweep(positions, triangles, options);
+      });
 }
 BENCHMARK(BM_IpcCandidateSetSweepCloth)->Arg(8)->Arg(16)->Arg(24);
 
@@ -173,7 +178,12 @@ static void BM_IpcCandidateSetBruteForceCloth(benchmark::State& state)
 {
   const auto fixture = makeClothGrid(static_cast<int>(state.range(0)));
   runCandidateSetBenchmark(
-      state, fixture, dc::buildContactCandidatesBruteForce);
+      state,
+      fixture,
+      [](const auto& positions, const auto& triangles, const auto& options) {
+        return dc::buildContactCandidatesBruteForce(
+            positions, triangles, options);
+      });
 }
 BENCHMARK(BM_IpcCandidateSetBruteForceCloth)->Arg(8)->Arg(16);
 
@@ -181,7 +191,12 @@ BENCHMARK(BM_IpcCandidateSetBruteForceCloth)->Arg(8)->Arg(16);
 static void BM_IpcCandidateSetSweepTetraSurface(benchmark::State& state)
 {
   const auto fixture = makeTetraSurfaceGrid(static_cast<int>(state.range(0)));
-  runCandidateSetBenchmark(state, fixture, dc::buildContactCandidatesSweep);
+  runCandidateSetBenchmark(
+      state,
+      fixture,
+      [](const auto& positions, const auto& triangles, const auto& options) {
+        return dc::buildContactCandidatesSweep(positions, triangles, options);
+      });
 }
 BENCHMARK(BM_IpcCandidateSetSweepTetraSurface)->Arg(4)->Arg(8)->Arg(12);
 
@@ -190,6 +205,11 @@ static void BM_IpcCandidateSetBruteForceTetraSurface(benchmark::State& state)
 {
   const auto fixture = makeTetraSurfaceGrid(static_cast<int>(state.range(0)));
   runCandidateSetBenchmark(
-      state, fixture, dc::buildContactCandidatesBruteForce);
+      state,
+      fixture,
+      [](const auto& positions, const auto& triangles, const auto& options) {
+        return dc::buildContactCandidatesBruteForce(
+            positions, triangles, options);
+      });
 }
 BENCHMARK(BM_IpcCandidateSetBruteForceTetraSurface)->Arg(4)->Arg(8);
