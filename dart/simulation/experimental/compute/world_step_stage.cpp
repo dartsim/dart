@@ -719,6 +719,7 @@ struct DeformableContactSolverScratch
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
   std::vector<std::uint8_t> surfaceContactPointMask;
   dc::ContactCandidateSet candidates;
+  dc::detail::ContactCandidateSweepScratch sweepScratch;
 };
 
 //==============================================================================
@@ -1158,7 +1159,8 @@ bool applySurfaceContactCcdLimit(
       candidate,
       contactScratch.surfaceTriangles,
       makeSurfaceContactCandidateOptions(),
-      contactScratch.candidates);
+      contactScratch.candidates,
+      contactScratch.sweepScratch);
   filterSurfaceContactPointCandidates(
       contactScratch.candidates, contactScratch.surfaceContactPointMask);
   stats.surfaceContactPointTriangleCandidates

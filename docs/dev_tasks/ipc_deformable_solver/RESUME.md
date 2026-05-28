@@ -70,9 +70,19 @@ scratch, disables the no-edge/no-ground fast path when surface contact topology
 exists, shortens accepted trials before Armijo evaluation, and rejects zero-step
 initial separation-band hits. For volumetric bodies, the point-triangle CCD
 candidate path is filtered to boundary-surface nodes so interior tetrahedral
-nodes do not over-limit surface contact. It is still scaffolding: reusable
-sweep-item scratch, inter-body contact, deformable-rigid contact, barrier
-assembly, projected Newton, and friction are not implemented yet.
+nodes do not over-limit surface contact. It is still scaffolding:
+inter-body contact, deformable-rigid contact, barrier assembly, projected
+Newton, and friction are not implemented yet.
+
+The sweep-scratch reuse sub-slice adds reusable internal point/triangle/edge
+sweep-item arrays for static and motion-aware contact candidate sweep builders.
+The world-stage same-body surface-contact line search owns this scratch per
+body, alongside the reusable candidate set. This removes per-trial sweep-vector
+allocation from the CCD line-search path while preserving the existing
+return-by-value and reusable-candidate overloads as wrappers. It is still
+scaffolding: sweep-pair traversal remains simple O(n^2) over sorted active
+AABBs, and inter-body/deformable-rigid contact, barrier assembly, projected
+Newton, and friction are not implemented yet.
 
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
@@ -92,15 +102,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-ccd-line-search` - stacked on
-`feature/ipc-candidate-buffer-reuse`, adding per-body same-surface CCD
-line-search limiting for future IPC contact wiring.
+`feature/ipc-sweep-scratch` - stacked on `feature/ipc-ccd-line-search`, adding
+reusable sweep-item scratch for IPC contact candidate builders and per-body
+surface-contact line-search reuse.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with reusable sweep-item scratch,
-inter-body and deformable-rigid contact candidates, and broader solver-wired
-CCD coverage.
+After this sub-slice lands, continue Phase 2 with inter-body and
+deformable-rigid contact candidates, broader solver-wired CCD coverage, and
+allocation-free sweep-pair traversal for larger meshes.
 
 ## Context That Would Be Lost
 
@@ -144,11 +154,16 @@ cmake --build build/default/cpp/Release --target test_primitive_ccd test_continu
 ./build/default/cpp/Release/bin/test_primitive_ccd --gtest_filter='PointTriangleCcd.*'
 ./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SurfaceContactCcd*:DeformableBody.SurfaceFreeParticlesKeepFastPath:DeformableBody.SurfaceContactScratchIsPerBody:DeformableBody.StageMetadataUsesDeformableDomain'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableSurfaceContactStage'
+cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_ipc_candidate_set bm_ipc_motion_aware_candidate_set
+./build/default/cpp/Release/bin/test_contact_candidate_set --gtest_filter='IpcContactCandidateSet.*Reusable*:IpcContactCandidateSet.*SweepScratch*'
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcCandidateSet(Reusable|Scratch)?Sweep'
+./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcMotionAwareCandidateSet(Reusable|Scratch)?Sweep'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
 scene replay base, `feature/ipc-deformable-contact-kernels` for the candidate
 set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
 `feature/ipc-tangent-stencils` for tangent scaffolding,
-`feature/ipc-motion-aware-candidates` for swept candidate culling, or
-`feature/ipc-candidate-buffer-reuse` for the immediate stacked base.
+`feature/ipc-motion-aware-candidates` for swept candidate culling,
+`feature/ipc-candidate-buffer-reuse` for reusable candidate buffers, or
+`feature/ipc-ccd-line-search` for the immediate stacked base.

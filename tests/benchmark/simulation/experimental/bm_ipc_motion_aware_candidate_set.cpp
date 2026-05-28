@@ -147,6 +147,7 @@ void runReusableMotionAwareCandidateBenchmark(
   options.exactDistanceFilter = true;
 
   dc::ContactCandidateSet candidates;
+  builder(fixture.start, fixture.end, fixture.triangles, options, candidates);
   for (auto _ : state) {
     builder(fixture.start, fixture.end, fixture.triangles, options, candidates);
     benchmark::DoNotOptimize(candidates.pointTriangleCandidates.data());
@@ -154,6 +155,45 @@ void runReusableMotionAwareCandidateBenchmark(
   }
 
   recordCounters(state, fixture, candidates);
+}
+
+//==============================================================================
+template <typename Builder>
+void runSweepScratchMotionAwareCandidateBenchmark(
+    benchmark::State& state, const MotionFixture& fixture, Builder&& builder)
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+  options.exactDistanceFilter = true;
+
+  dc::ContactCandidateSet candidates;
+  dc::detail::ContactCandidateSweepScratch scratch;
+  builder(
+      fixture.start,
+      fixture.end,
+      fixture.triangles,
+      options,
+      candidates,
+      scratch);
+  for (auto _ : state) {
+    builder(
+        fixture.start,
+        fixture.end,
+        fixture.triangles,
+        options,
+        candidates,
+        scratch);
+    benchmark::DoNotOptimize(candidates.pointTriangleCandidates.data());
+    benchmark::DoNotOptimize(candidates.edgeEdgeCandidates.data());
+  }
+
+  recordCounters(state, fixture, candidates);
+  state.counters["scratch_point_capacity"]
+      = static_cast<double>(scratch.pointItems.capacity());
+  state.counters["scratch_triangle_capacity"]
+      = static_cast<double>(scratch.triangleItems.capacity());
+  state.counters["scratch_edge_capacity"]
+      = static_cast<double>(scratch.edgeItems.capacity());
 }
 
 } // namespace
@@ -243,6 +283,29 @@ BENCHMARK(BM_IpcMotionAwareCandidateSetReusableSweepFallingPoints)
     ->Arg(128);
 
 //==============================================================================
+static void BM_IpcMotionAwareCandidateSetScratchSweepFallingPoints(
+    benchmark::State& state)
+{
+  const auto fixture = makeFallingPointCorpus(static_cast<int>(state.range(0)));
+  runSweepScratchMotionAwareCandidateBenchmark(
+      state,
+      fixture,
+      [](const auto& start,
+         const auto& end,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates,
+         auto& scratch) {
+        dc::buildMotionAwareContactCandidatesSweep(
+            start, end, triangles, options, candidates, scratch);
+      });
+}
+BENCHMARK(BM_IpcMotionAwareCandidateSetScratchSweepFallingPoints)
+    ->Arg(16)
+    ->Arg(64)
+    ->Arg(128);
+
+//==============================================================================
 static void BM_IpcMotionAwareCandidateSetReusableBruteForceFallingPoints(
     benchmark::State& state)
 {
@@ -260,5 +323,28 @@ static void BM_IpcMotionAwareCandidateSetReusableBruteForceFallingPoints(
       });
 }
 BENCHMARK(BM_IpcMotionAwareCandidateSetReusableBruteForceFallingPoints)
+    ->Arg(16)
+    ->Arg(64);
+
+//==============================================================================
+static void BM_IpcMotionAwareCandidateSetScratchSweepCoherentTranslation(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeCoherentTranslationCorpus(static_cast<int>(state.range(0)));
+  runSweepScratchMotionAwareCandidateBenchmark(
+      state,
+      fixture,
+      [](const auto& start,
+         const auto& end,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates,
+         auto& scratch) {
+        dc::buildMotionAwareContactCandidatesSweep(
+            start, end, triangles, options, candidates, scratch);
+      });
+}
+BENCHMARK(BM_IpcMotionAwareCandidateSetScratchSweepCoherentTranslation)
     ->Arg(16)
     ->Arg(64);
