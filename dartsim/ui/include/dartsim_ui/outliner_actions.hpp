@@ -102,7 +102,7 @@ struct OutlinerActionResult
 [[nodiscard]] std::vector<OutlinerRow> buildOutlinerRows(
     const SimEngine& engine, const OutlinerState& state);
 
-/// Label used for an ImGui-style tree row button.
+/// Label used for a panel tree row button.
 [[nodiscard]] std::string outlinerButtonLabel(const OutlinerRow& row);
 [[nodiscard]] std::string outlinerExpansionButtonLabel(const OutlinerRow& row);
 

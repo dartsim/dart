@@ -7,7 +7,7 @@
 # This file is provided under the "BSD-style" License.
 
 # GUI layer for the dartsim simulator: wires the headless editor engine
-# (dartsim/engine) to the backend-hidden Dear ImGui panels exposed by dart-gui.
+# (dartsim/engine) to the backend-hidden GUI panels exposed by dart-gui.
 # Kept as a separate library because dartsim/app is restricted to a single
 # main.cpp by dart_gui_add_application. See
 # docs/design/dartsim_gui_simulator.md.
