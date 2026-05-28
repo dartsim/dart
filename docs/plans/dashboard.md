@@ -74,14 +74,19 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Keep the merged Phase 0-4 foundation in
+- Next step: Keep the merged Phase 0-4 foundation plus the Phase 5 CUDA MVP
+  (PRs #2698, #2710, #2712, all on `main`) in
   `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
   the default experimental `World::step` path now preserves the rigid-body
   contact/multibody solver pipeline, while the batched SoA rigid-body stage
   remains an explicit unconstrained path and benchmark/prototype seam. PRs now
-  exercise CUDA-on configure and target builds through `CI CUDA / CUDA Build`;
-  runtime evidence still requires `pixi run -e cuda test-cuda` on a CUDA host or
-  manual `CI CUDA / CUDA Runtime Smoke` on a self-hosted runner labeled `cuda`.
+  exercise CUDA-on configure and target builds through `CI CUDA / CUDA Build`
+  (green on `main`); the one open Phase 5 prerequisite is a project-owned
+  self-hosted runner labeled `cuda` (none exist as of 2026-05-28) so manual
+  `CI CUDA / CUDA Runtime Smoke` can produce the measured go/no-go packet.
+  Runtime evidence otherwise requires `pixi run -e cuda test-cuda` on a CUDA
+  host; a 2026-05-28 local spike recorded speedup 109.6x at 4096/128/100 with
+  final-state error 1.78e-15 (useful local evidence only, not Phase 5 closure).
   Keep CUDA private and non-required until runner stability and representative
   workload benchmarks justify the Phase 6 GPU track. The sidecar package shape,
   go/no-go threshold, `bm-phase5-gpu-packet-check` /

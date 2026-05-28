@@ -61,8 +61,24 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
   private build-tree CUDA wrapper over the force-driven `RigidBodyStateBatch`
   SoA path, a parity unit test, a packet-compatible end-to-end smoke benchmark,
   and a manual/non-required GitHub workflow that writes and validates the Phase 5
-  packet artifact. Remaining: run that workflow on a project-owned GPU runner
-  and use representative workload results for the CUDA-versus-SYCL decision.
+  packet artifact. PRs #2698 (Phases 0-4), #2710 (opt-in CUDA smoke path), and
+  #2712 (CUDA gates) are all merged to `main`; the `CI CUDA / CUDA Build`
+  build-import gate runs CUDA-on configure + `build-cuda` on standard
+  `ubuntu-latest` and is green on `main` HEAD, so no GPU runner is needed for the
+  compile/import half. Remaining (and the ONLY open Phase 5 item): provision a
+  project-owned self-hosted runner labeled `cuda` so the `CI CUDA / CUDA Runtime
+  Smoke` job (`runs-on: [self-hosted, dartsim, cuda]`, `workflow_dispatch`-only)
+  can produce the measured go/no-go packet, then use representative workload
+  results for the CUDA-versus-SYCL decision. As of 2026-05-28 the project owns 11
+  self-hosted runners, all labeled `self-hosted,Linux,X64,dartsim,docker`; none
+  carry a `cuda`/`gpu` label, so this prerequisite remains maintainer/
+  infrastructure-owned. A local CUDA-host spike on 2026-05-28 (RTX 5000 Ada,
+  nvcc 12.4) re-verified the path end to end: parity test 1/1, and a packet
+  accepted at `worldCount=4096 bodyCount=128 stepCount=100`,
+  speedup=109.6x (CPU 4129 ms vs GPU 38 ms full-workload median),
+  maxFinalStateAbsError=1.78e-15. This is useful local evidence only and does
+  not close Phase 5 without the project-owned runner producing the same packet
+  in CI.
 - [ ] Phase 6: Reassess — broaden GPU, auto-scheduling, Pattern B, differentiable
       state (each gated; gated on Phase 5 evidence).
 
@@ -106,8 +122,10 @@ framework or touching the classic World.
 
 ## Immediate Next Steps
 
-(Phases 0-2 and Phase 4 are done, and Phase 3's determinism gate and topological
-sort are in; see `RESUME.md`.)
+(Phases 0-4 and the Phase 5 MVP are implemented and merged to `main` via PRs
+#2698, #2710, and #2712. The only open Phase 5 item is the project-owned `cuda`
+runner; Phase 6 is gated on Phase 5 closure evidence. A 2026-05-28 verification
+run on `main` confirmed every achievable gate is green; see `RESUME.md`.)
 
 1. Preserve the current default `World::step` solver pipeline
    (`RigidBodyVelocityStage` -> `RigidBodyContactStage` ->

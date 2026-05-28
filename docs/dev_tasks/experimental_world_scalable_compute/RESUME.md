@@ -61,15 +61,19 @@ the Phase 5 CPU-baseline smoke row.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute-cuda-reconcile` — PR #2712 branch,
-merged through current `origin/main` (`ac0bf480361`) as of 2026-05-26. PR #2712
-is open, non-draft, and carries the Phase 5 packet gates and full-batch
-benchmark contract on top of the merged opt-in CUDA smoke path from PR #2710.
-CUDA remains off by default and is enabled through the `cuda` Pixi environment
-or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`. Because `.github/workflows/ci_cuda.yml`
-now exists on the default branch via PR #2710, maintainers can dispatch the
-workflow; PR #2712 extends that workflow to run the Phase 5 packet gates and
-upload packet artifacts once a project-owned CUDA runner is available.
+`main`. All three scalable-compute PRs are merged: **#2698** (Phases 0-4
+foundation), **#2710** (opt-in CUDA smoke path, merged 2026-05-25), and
+**#2712** (experimental scalable compute CUDA gates, merged 2026-05-27). There is
+no longer an open PR for this task; the Phase 5 packet gates, full-batch
+benchmark contract, and the extended `ci_cuda.yml` workflow all live on the
+default branch. CUDA remains off by default and is enabled through the `cuda`
+Pixi environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`. The `CI CUDA / CUDA
+Build` job runs CUDA-on configure + `build-cuda` on standard `ubuntu-latest`
+(no GPU) on every push to `main`/`release-*` and on path-filtered PRs, and is
+green on `main` HEAD. The `CI CUDA / CUDA Runtime Smoke` job
+(`runs-on: [self-hosted, dartsim, cuda]`, `workflow_dispatch`-only) is what
+produces the measured Phase 5 go/no-go packet artifact, and it can only run once
+a project-owned runner labeled `cuda` exists.
 
 ## Immediate Next Step
 
@@ -77,11 +81,16 @@ upload packet artifacts once a project-owned CUDA runner is available.
 full free-body dynamic step and frame-coupled rigid-body parenting. The default
 experimental `World::step` pipeline selects the merged contact/multibody solver
 pipeline; keep the batched stage as the explicit unconstrained SoA path behind
-the executor seam. The immediate external step is to finish managing PR #2712:
-wait for current CI to leave the GitHub queue, fix any failures, and keep review
-threads resolved. After PR #2712 is mergeable, a maintainer still needs to merge
-it before the extended manual CUDA workflow exists on the default branch. The
-natural next steps, in rough order:
+the executor seam. PR #2712 is merged, so all in-repo Phase 0-5 deliverables now
+live on `main` and there is no open PR to manage. The only remaining external
+step is infrastructure-owned: provision a project-owned self-hosted runner
+labeled `cuda`, then dispatch `CI CUDA` (`workflow_dispatch`) against a candidate
+ref so the `CUDA Runtime Smoke` job runs `test-cuda`, the policy gates,
+`bm-phase5-cuda-full`, the packet writer, and the packet checker, and uploads
+`phase5_cuda_ci_full.json` + `phase5_cuda_packet.json` as the project-owned
+go/no-go artifact. Registering such a runner against the `dartsim/dart` org is a
+maintainer/security decision and is intentionally NOT done from an agent session.
+The natural next steps, in rough order:
 
 1. Phase 3's deliverables are implemented: determinism gate (bitwise for
    map-only), cost gate (`ParallelExecutor::setInlineThreshold`), explicit-SIMD
@@ -140,6 +149,31 @@ Keep `entt` internal and the public handle API unchanged.
   `pixi run bm-compute-check` plus the performance dashboard keep the full
   expected compute benchmark corpus reproducible.
 - Current validation evidence:
+  - 2026-05-28 full re-verification on `main` (`7f88f2a2908`, all three PRs
+    merged): the four policy gates `check-compute-backend-boundaries`,
+    `check-no-gpu-runtime-dependencies`, `check-phase5-cuda-benchmark-contract`,
+    and `check-phase5-cuda-workflow` all passed; 66 Python checker unit tests
+    passed; `bm-phase5-gpu-packet-check --write-template` writes a false-default
+    template and `--input` correctly rejects it (numeric-error guard). The
+    `dart_experimental_tests` build (Release) succeeded and
+    `ctest -L simulation-experimental` was 21/21 green in 0.36 s.
+    `bm-compute-check --benchmark-min-time 1ms` checked all 34 rows and enforced
+    the contact-island speedup gate (`BM_ContactIslandShaped/16/512/64`
+    parallel/sequential = 0.198, well under the 0.95 bound; 4-island 0.430,
+    8-island 0.293). The trivial Euler `BM_RigidBodyStep` rows stayed
+    overhead-bound (parallel/sequential > 1), confirming why they must not pick
+    backends. A local CUDA-host spike (RTX 5000 Ada, nvcc 12.4) ran
+    `pixi run -e cuda test-cuda` (parity test 1/1) and `bm-phase5-cuda-full`,
+    then generated and validated a packet that was accepted:
+    `worldCount=4096 bodyCount=128 stepCount=100`, CPU baseline median 4129.16 ms
+    vs GPU full-workload median 37.67 ms (speedup 109.6x, >= the 1.25x gate),
+    `maxFinalStateAbsError=1.78e-15` within the Phase 2 tolerance contract. A
+    `gh` check confirmed `CI CUDA` is green on `main` HEAD and that the org owns
+    11 self-hosted runners labeled `self-hosted,Linux,X64,dartsim,docker` with no
+    `cuda`/`gpu` runner, so the Phase 5 runtime-closure prerequisite is still
+    open. This local packet is useful evidence only and does not close Phase 5;
+    the authoritative artifact must come from the `CUDA Runtime Smoke` CI job on
+    a project-owned `cuda` runner.
   - After the latest `origin/main` merge, `pixi run lint` passed and
     `pixi run docs-build` passed with the known generated-stub `None_` autodoc
     warnings.
@@ -249,8 +283,11 @@ git status && git log -5 --oneline
 Then read `01-plan.md`. The remaining work is not another Euler-integration
 cleanup: keep `pixi run bm-compute-check`, the dashboard contact-shaped proxy
 surface, the contact-island speedup surface, and the Phase 5 CPU-baseline surface
-green; provision a project GPU runner plus build/import CI before closing Phase 5.
-The GPU runner/CI prerequisites are owned by project maintainers/infrastructure;
+green. The CUDA build/import CI (`CI CUDA / CUDA Build` on `ubuntu-latest`)
+already exists and is green on `main`; the one prerequisite still open before
+closing Phase 5 is a project-owned self-hosted runner labeled `cuda` so the
+`CUDA Runtime Smoke` job can produce the measured go/no-go packet in CI.
+The GPU runner prerequisite is owned by project maintainers/infrastructure;
 the package shape, pre-registered go/no-go threshold, and
 `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
 `--input <packet.json>`, `bm-phase5-cuda-packet`, plus
