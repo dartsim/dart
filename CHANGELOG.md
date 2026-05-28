@@ -758,6 +758,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     ground-barrier contact with feasibility line search, rigid-body barrier
     opt-in controls, a Filament GUI example for long-horizon visual inspection,
     and focused unit/benchmark coverage.
+  - Added experimental deformable mesh/material state for surface triangles,
+    tetrahedra, positive rest volumes, material validation, density-based
+    tetrahedral mass assembly, serialization, and GUI surface rendering.
+  - Added a contact-free experimental deformable scene loader/replay
+    foundation for upstream-style tetra mesh scene records, scripted
+    Dirichlet/Neumann boundary conditions, restart diagnostics, benchmarks, and
+    headless GUI scene capture.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

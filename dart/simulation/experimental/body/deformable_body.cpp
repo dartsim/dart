@@ -240,4 +240,98 @@ DeformableEdge DeformableBody::getEdge(std::size_t edge) const
   return DeformableEdge{internal.nodeA, internal.nodeB, internal.restLength};
 }
 
+//==============================================================================
+std::size_t DeformableBody::getSurfaceTriangleCount() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid deformable body handle");
+
+  return m_world->getRegistry()
+      .get<comps::DeformableMeshTopology>(toEntity(m_entityId))
+      .surfaceTriangles.size();
+}
+
+//==============================================================================
+DeformableSurfaceTriangle DeformableBody::getSurfaceTriangle(
+    std::size_t triangle) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid deformable body handle");
+
+  const auto& topology
+      = m_world->getRegistry().get<comps::DeformableMeshTopology>(
+          toEntity(m_entityId));
+  DART_EXPERIMENTAL_THROW_T_IF(
+      triangle >= topology.surfaceTriangles.size(),
+      OutOfRangeException,
+      "DeformableBody surface triangle index {} is out of range",
+      triangle);
+
+  const auto& internal = topology.surfaceTriangles[triangle];
+  return DeformableSurfaceTriangle{
+      internal.nodeA, internal.nodeB, internal.nodeC};
+}
+
+//==============================================================================
+std::size_t DeformableBody::getTetrahedronCount() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid deformable body handle");
+
+  return m_world->getRegistry()
+      .get<comps::DeformableMeshTopology>(toEntity(m_entityId))
+      .tetrahedra.size();
+}
+
+//==============================================================================
+DeformableTetrahedron DeformableBody::getTetrahedron(
+    std::size_t tetrahedron) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid deformable body handle");
+
+  const auto& topology
+      = m_world->getRegistry().get<comps::DeformableMeshTopology>(
+          toEntity(m_entityId));
+  DART_EXPERIMENTAL_THROW_T_IF(
+      tetrahedron >= topology.tetrahedra.size(),
+      OutOfRangeException,
+      "DeformableBody tetrahedron index {} is out of range",
+      tetrahedron);
+
+  const auto& internal = topology.tetrahedra[tetrahedron];
+  return DeformableTetrahedron{
+      internal.nodeA, internal.nodeB, internal.nodeC, internal.nodeD};
+}
+
+//==============================================================================
+double DeformableBody::getTetrahedronRestVolume(std::size_t tetrahedron) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid deformable body handle");
+
+  const auto& topology
+      = m_world->getRegistry().get<comps::DeformableMeshTopology>(
+          toEntity(m_entityId));
+  DART_EXPERIMENTAL_THROW_T_IF(
+      tetrahedron >= topology.tetrahedronRestVolumes.size(),
+      OutOfRangeException,
+      "DeformableBody tetrahedron index {} is out of range",
+      tetrahedron);
+
+  return topology.tetrahedronRestVolumes[tetrahedron];
+}
+
+//==============================================================================
+DeformableMaterialProperties DeformableBody::getMaterialProperties() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid deformable body handle");
+
+  const auto& material = m_world->getRegistry().get<comps::DeformableMaterial>(
+      toEntity(m_entityId));
+  return DeformableMaterialProperties{
+      material.density, material.youngsModulus, material.poissonRatio};
+}
+
 } // namespace dart::simulation::experimental

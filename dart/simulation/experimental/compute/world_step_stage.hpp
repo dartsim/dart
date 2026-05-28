@@ -50,6 +50,8 @@ struct DeformableSolverStats
   std::size_t bodyCount = 0;
   std::size_t nodeCount = 0;
   std::size_t edgeCount = 0;
+  std::size_t activeDirichletNodeCount = 0;
+  std::size_t activeNeumannNodeCount = 0;
   std::size_t objectiveEvaluations = 0;
   std::size_t solverIterations = 0;
   std::size_t lineSearchTrials = 0;

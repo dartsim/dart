@@ -68,6 +68,15 @@ public:
   [[nodiscard]] std::size_t getEdgeCount() const;
   [[nodiscard]] DeformableEdge getEdge(std::size_t edge) const;
 
+  [[nodiscard]] std::size_t getSurfaceTriangleCount() const;
+  [[nodiscard]] DeformableSurfaceTriangle getSurfaceTriangle(
+      std::size_t triangle) const;
+  [[nodiscard]] std::size_t getTetrahedronCount() const;
+  [[nodiscard]] DeformableTetrahedron getTetrahedron(
+      std::size_t tetrahedron) const;
+  [[nodiscard]] double getTetrahedronRestVolume(std::size_t tetrahedron) const;
+  [[nodiscard]] DeformableMaterialProperties getMaterialProperties() const;
+
 private:
   friend class World;
 

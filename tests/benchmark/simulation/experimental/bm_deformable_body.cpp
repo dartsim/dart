@@ -35,12 +35,15 @@
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Core>
 #include <benchmark/benchmark.h>
 
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -50,6 +53,125 @@
 namespace sx = dart::simulation::experimental;
 
 namespace {
+
+//==============================================================================
+constexpr std::string_view kBenchmarkCubeMsh = R"msh($MeshFormat
+4.1 0 8
+$EndMeshFormat
+$Nodes
+1 8 1 8
+3 0 0 8
+1
+2
+3
+4
+5
+6
+7
+8
+0.000000e+00 0.000000e+00 0.000000e+00
+1.000000e+00 0.000000e+00 0.000000e+00
+1.000000e+00 0.000000e+00 1.000000e+00
+0.000000e+00 0.000000e+00 1.000000e+00
+0.000000e+00 1.000000e+00 0.000000e+00
+1.000000e+00 1.000000e+00 0.000000e+00
+1.000000e+00 1.000000e+00 1.000000e+00
+0.000000e+00 1.000000e+00 1.000000e+00
+$EndNodes
+$Elements
+1 6 1 6
+3 0 4 6
+1 1 5 7 6
+2 4 7 3 1
+3 1 5 8 7
+4 4 7 1 8
+5 3 1 7 2
+6 7 1 6 2
+$EndElements
+$Surface
+12
+1 5 6
+1 6 2
+1 8 5
+3 1 2
+3 2 7
+4 1 3
+4 3 7
+4 7 8
+4 8 1
+5 7 6
+5 8 7
+7 2 6
+$EndSurface
+)msh";
+
+//==============================================================================
+std::filesystem::path benchmarkScenePath()
+{
+  static const auto scenePath = [] {
+    const auto root = std::filesystem::temp_directory_path()
+                      / "dart_ipc_scene_replay_benchmark";
+    std::filesystem::create_directories(root / "input" / "tetMeshes");
+    {
+      std::ofstream mesh(root / "input" / "tetMeshes" / "cube.msh");
+      mesh << kBenchmarkCubeMsh;
+    }
+    {
+      std::ofstream scene(root / "scene.txt");
+      scene << R"scene(
+turnOffGravity
+time 1.0 0.01
+shapes input 1
+input/tetMeshes/cube.msh 0 0 0  0 0 0  1 1 1 DBC -0.1 -0.1 -0.1  0.1 1.1 1.1  0.25 0 0  0 0 0  NBC 0.9 -0.1 -0.1  1.1 1.1 1.1  -0.2 0 0
+ground 0.1 0
+)scene";
+    }
+    return root / "scene.txt";
+  }();
+  return scenePath;
+}
+
+//==============================================================================
+sx::io::DeformableSceneLoadOptions makeBenchmarkSceneLoadOptions()
+{
+  sx::io::DeformableSceneLoadOptions options;
+  options.assetRoot = benchmarkScenePath().parent_path();
+  options.structuralSpringStiffness = 80.0;
+  options.damping = 0.05;
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeTetraMeshOptions(int tetrahedronCount)
+{
+  tetrahedronCount = std::max(tetrahedronCount, 1);
+
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 40.0;
+  options.damping = 0.2;
+  options.material.density = 12.0;
+
+  for (int i = 0; i < tetrahedronCount; ++i) {
+    const auto base = static_cast<std::size_t>(4 * i);
+    const double offset = 0.18 * static_cast<double>(i);
+    options.positions.push_back(Eigen::Vector3d(offset, 0.0, 1.0));
+    options.positions.push_back(Eigen::Vector3d(offset + 0.08, 0.0, 1.0));
+    options.positions.push_back(Eigen::Vector3d(offset, 0.08, 1.0));
+    options.positions.push_back(Eigen::Vector3d(offset, 0.0, 1.08));
+    for (int node = 0; node < 4; ++node) {
+      options.velocities.push_back(Eigen::Vector3d::Zero());
+    }
+    options.tetrahedra.push_back({base, base + 1u, base + 2u, base + 3u});
+    options.edges.push_back({base, base + 1u, -1.0});
+    options.edges.push_back({base, base + 2u, -1.0});
+    options.edges.push_back({base, base + 3u, -1.0});
+    options.edges.push_back({base + 1u, base + 2u, -1.0});
+    options.edges.push_back({base + 1u, base + 3u, -1.0});
+    options.edges.push_back({base + 2u, base + 3u, -1.0});
+  }
+
+  return options;
+}
 
 //==============================================================================
 struct DeformableGridWorld
@@ -125,6 +247,34 @@ struct DeformableGridWorld
 };
 
 //==============================================================================
+struct DeformableTetraMeshWorld
+{
+  explicit DeformableTetraMeshWorld(int tetrahedronCount)
+  {
+    auto options = makeTetraMeshOptions(tetrahedronCount);
+    body = world.addDeformableBody("tetra_mesh", options);
+    nodeCount = body.getNodeCount();
+    edgeCount = body.getEdgeCount();
+    surfaceTriangleCount = body.getSurfaceTriangleCount();
+    this->tetrahedronCount = body.getTetrahedronCount();
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      totalMass += body.getMass(i);
+    }
+
+    world.setTimeStep(1.0 / 240.0);
+    world.enterSimulationMode();
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::size_t nodeCount = 0;
+  std::size_t edgeCount = 0;
+  std::size_t surfaceTriangleCount = 0;
+  std::size_t tetrahedronCount = 0;
+  double totalMass = 0.0;
+};
+
+//==============================================================================
 struct RigidOnlyWorld
 {
   explicit RigidOnlyWorld(int staticBodyCount)
@@ -183,6 +333,50 @@ void BM_DeformableGridStep(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableTetraMeshSetup(benchmark::State& state)
+{
+  const auto tetrahedronCount = static_cast<int>(state.range(0));
+
+  for (auto _ : state) {
+    sx::World world;
+    auto body = world.addDeformableBody(
+        "tetra_mesh", makeTetraMeshOptions(tetrahedronCount));
+    benchmark::DoNotOptimize(body.getSurfaceTriangleCount());
+    benchmark::DoNotOptimize(body.getMass(body.getNodeCount() - 1u));
+  }
+
+  state.counters["tetrahedra"] = static_cast<double>(tetrahedronCount);
+  state.counters["nodes"] = static_cast<double>(4 * tetrahedronCount);
+  state.counters["surface_triangles"]
+      = static_cast<double>(4 * tetrahedronCount);
+  state.counters["contact_constraints"] = 0.0;
+}
+
+//==============================================================================
+void BM_DeformableTetraMeshStep(benchmark::State& state)
+{
+  const auto tetrahedronCount = static_cast<int>(state.range(0));
+  DeformableTetraMeshWorld fixture(tetrahedronCount);
+
+  for (auto _ : state) {
+    fixture.world.step();
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["edges"] = static_cast<double>(fixture.edgeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["surface_triangles"]
+      = static_cast<double>(fixture.surfaceTriangleCount);
+  state.counters["fixed_nodes"] = 0.0;
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableGridStage(benchmark::State& state)
 {
   const auto columns = static_cast<int>(state.range(0));
@@ -203,7 +397,11 @@ void BM_DeformableGridStage(benchmark::State& state)
   const auto& stats = deformableStage.getLastStats();
   state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
   state.counters["edges"] = static_cast<double>(fixture.edgeCount);
+  state.counters["tetrahedra"] = 0.0;
+  state.counters["surface_triangles"] = 0.0;
+  state.counters["fixed_nodes"] = 2.0;
   state.counters["ground"] = withGround ? 1.0 : 0.0;
+  state.counters["contact_constraints"] = 0.0;
   state.counters["objective_evals"]
       = static_cast<double>(stats.objectiveEvaluations);
   state.counters["solver_iterations"]
@@ -220,6 +418,64 @@ void BM_DeformableGridStage(benchmark::State& state)
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
 
+//==============================================================================
+void BM_DeformableSceneLoad(benchmark::State& state)
+{
+  const auto scenePath = benchmarkScenePath();
+  const auto options = makeBenchmarkSceneLoadOptions();
+
+  for (auto _ : state) {
+    sx::World world;
+    const auto info = sx::io::loadDeformableScene(world, scenePath, options);
+    auto nodeCount = info.bodies[0].nodeCount;
+    benchmark::DoNotOptimize(nodeCount);
+  }
+
+  state.counters["scenes"] = 1.0;
+  state.counters["nodes"] = 8.0;
+  state.counters["tetrahedra"] = 6.0;
+  state.counters["surface_triangles"] = 12.0;
+  state.counters["spring_edges"] = 19.0;
+  state.counters["dbc_regions"] = 1.0;
+  state.counters["nbc_regions"] = 1.0;
+  state.counters["unsupported_directives"] = 1.0;
+  state.counters["contact_constraints"] = 0.0;
+}
+
+//==============================================================================
+void BM_DeformableSceneReplay(benchmark::State& state)
+{
+  sx::World world;
+  const auto info = sx::io::loadDeformableScene(
+      world, benchmarkScenePath(), makeBenchmarkSceneLoadOptions());
+  world.enterSimulationMode();
+
+  for (auto _ : state) {
+    world.step();
+    benchmark::DoNotOptimize(world.getFrame());
+  }
+
+  const auto diagnostics = sx::io::collectDeformableSceneDiagnostics(world);
+  state.counters["scenes"] = 1.0;
+  state.counters["nodes"] = static_cast<double>(diagnostics.nodeCount);
+  state.counters["tetrahedra"]
+      = static_cast<double>(diagnostics.tetrahedronCount);
+  state.counters["surface_triangles"]
+      = static_cast<double>(diagnostics.surfaceTriangleCount);
+  state.counters["spring_edges"]
+      = static_cast<double>(info.bodies[0].body.getEdgeCount());
+  state.counters["dbc_regions"]
+      = static_cast<double>(diagnostics.dirichletConditionCount);
+  state.counters["nbc_regions"]
+      = static_cast<double>(diagnostics.neumannConditionCount);
+  state.counters["unsupported_directives"]
+      = static_cast<double>(info.warnings.size());
+  state.counters["contact_constraints"] = 0.0;
+  state.counters["frames"] = static_cast<double>(world.getFrame());
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * diagnostics.nodeCount));
+}
+
 } // namespace
 
 BENCHMARK(BM_WorldStepWithoutDeformables)->Arg(0)->Arg(32);
@@ -231,11 +487,19 @@ BENCHMARK(BM_DeformableGridStep)
     ->Args({16, 8, 1})
     ->Args({32, 16, 1});
 
+BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
+
+BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
+
 BENCHMARK(BM_DeformableGridStage)
     ->Args({8, 4, 0})
     ->Args({16, 8, 0})
     ->Args({32, 16, 0})
     ->Args({16, 8, 1})
     ->Args({32, 16, 1});
+
+BENCHMARK(BM_DeformableSceneLoad);
+
+BENCHMARK(BM_DeformableSceneReplay);
 
 BENCHMARK_MAIN();

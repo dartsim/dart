@@ -899,8 +899,8 @@ void makeInitialPositionsFeasible(
 
 //==============================================================================
 double addStaticGroundBarrierEnergy(
-    const comps::DeformableNodeState& state,
     const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
     std::vector<Eigen::Vector3d>* gradient)
 {
@@ -913,7 +913,7 @@ double addStaticGroundBarrierEnergy(
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
-    if (state.fixed[i] != 0u) {
+    if (fixed[i] != 0u) {
       continue;
     }
 
@@ -953,6 +953,7 @@ double evaluateDeformableObjective(
     const comps::DeformableSpringModel& model,
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient)
@@ -967,7 +968,7 @@ double evaluateDeformableObjective(
   double energy = 0.0;
   const double invDt2 = 1.0 / (timeStep * timeStep);
   for (std::size_t i = 0; i < positions.size(); ++i) {
-    if (state.fixed[i] != 0u) {
+    if (fixed[i] != 0u) {
       continue;
     }
 
@@ -992,16 +993,16 @@ double evaluateDeformableObjective(
     if (gradient != nullptr) {
       const Eigen::Vector3d springGradient
           = model.stiffness * stretch * direction;
-      if (state.fixed[edge.nodeA] == 0u) {
+      if (fixed[edge.nodeA] == 0u) {
         (*gradient)[edge.nodeA] -= springGradient;
       }
-      if (state.fixed[edge.nodeB] == 0u) {
+      if (fixed[edge.nodeB] == 0u) {
         (*gradient)[edge.nodeB] += springGradient;
       }
     }
   }
 
-  energy += addStaticGroundBarrierEnergy(state, positions, barriers, gradient);
+  energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
   return energy;
 }
 
@@ -1017,6 +1018,112 @@ double gradientNormSquared(
     }
   }
   return normSquared;
+}
+
+//==============================================================================
+bool isBoundaryActiveAtStepStart(double time, double start, double end)
+{
+  // Contact-free scene controls intentionally use step-start sampling. Later
+  // force-work slices can add partial-step integration when needed.
+  return time >= start && time < end;
+}
+
+//==============================================================================
+double elapsedBoundaryTime(
+    double time, double timeStep, double start, double end)
+{
+  const double nextTime = std::min(time + timeStep, end);
+  return std::max(0.0, nextTime - start);
+}
+
+//==============================================================================
+Eigen::Vector3d boundaryVelocity(
+    const comps::DeformableDirichletBoundary& boundary,
+    const Eigen::Vector3d& referencePosition)
+{
+  return boundary.linearVelocity
+         + boundary.angularVelocity.cross(referencePosition - boundary.center);
+}
+
+//==============================================================================
+void prepareDeformableBoundaryConditions(
+    comps::DeformableNodeState& state,
+    const comps::DeformableBoundaryConditions* boundaryConditions,
+    double time,
+    double timeStep,
+    comps::DeformableSolverScratch& scratch,
+    DeformableSolverStats& stats)
+{
+  const auto nodeCount = state.positions.size();
+  scratch.previousStepPositions = state.positions;
+  scratch.externalAccelerations.assign(nodeCount, Eigen::Vector3d::Zero());
+  scratch.activeFixed = state.fixed;
+
+  if (boundaryConditions == nullptr) {
+    return;
+  }
+
+  std::vector<std::uint8_t> countedDirichlet(nodeCount, 0u);
+  for (const auto& boundary : boundaryConditions->dirichlet) {
+    if (!isBoundaryActiveAtStepStart(
+            time, boundary.startTime, boundary.endTime)) {
+      continue;
+    }
+
+    DART_EXPERIMENTAL_THROW_T_IF(
+        boundary.nodes.size() != boundary.referencePositions.size(),
+        InvalidArgumentException,
+        "Serialized deformable Dirichlet boundary has mismatched node and "
+        "reference-position counts");
+    const double elapsed = elapsedBoundaryTime(
+        time, timeStep, boundary.startTime, boundary.endTime);
+    for (std::size_t i = 0; i < boundary.nodes.size(); ++i) {
+      const auto node = boundary.nodes[i];
+      DART_EXPERIMENTAL_THROW_T_IF(
+          node >= nodeCount,
+          InvalidArgumentException,
+          "Serialized deformable Dirichlet boundary references out-of-range "
+          "node {}",
+          node);
+
+      const auto velocity
+          = boundaryVelocity(boundary, boundary.referencePositions[i]);
+      state.positions[node]
+          = boundary.referencePositions[i] + elapsed * velocity;
+      state.velocities[node] = velocity;
+      scratch.activeFixed[node] = 1u;
+      if (countedDirichlet[node] == 0u) {
+        countedDirichlet[node] = 1u;
+        ++stats.activeDirichletNodeCount;
+      }
+    }
+  }
+
+  std::vector<std::uint8_t> countedNeumann(nodeCount, 0u);
+  for (const auto& boundary : boundaryConditions->neumann) {
+    if (!isBoundaryActiveAtStepStart(
+            time, boundary.startTime, boundary.endTime)) {
+      continue;
+    }
+
+    for (const auto node : boundary.nodes) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          node >= nodeCount,
+          InvalidArgumentException,
+          "Serialized deformable Neumann boundary references out-of-range "
+          "node {}",
+          node);
+      if (scratch.activeFixed[node] != 0u) {
+        continue;
+      }
+
+      scratch.externalAccelerations[node] += boundary.acceleration;
+      if (countedNeumann[node] == 0u) {
+        countedNeumann[node] = 1u;
+        ++stats.activeNeumannNodeCount;
+      }
+    }
+  }
 }
 
 //==============================================================================
@@ -1042,23 +1149,34 @@ void advanceDeformableBody(
   scratch.gradient.resize(nodeCount);
   scratch.direction.resize(nodeCount);
   scratch.candidate.resize(nodeCount);
+  if (scratch.activeFixed.size() != nodeCount) {
+    scratch.activeFixed = state.fixed;
+  }
+  if (scratch.externalAccelerations.size() != nodeCount) {
+    scratch.externalAccelerations.assign(nodeCount, Eigen::Vector3d::Zero());
+  }
+  if (scratch.previousStepPositions.size() != nodeCount) {
+    scratch.previousStepPositions = state.positions;
+  }
 
   const double dampingScale = 1.0 / (1.0 + model.damping * timeStep);
   const Eigen::Vector3d gravityStep = gravity * timeStep * timeStep;
   for (std::size_t i = 0; i < nodeCount; ++i) {
     scratch.inertialTargets[i] = state.positions[i];
     scratch.next[i] = state.positions[i];
-    if (state.fixed[i] == 0u) {
+    if (scratch.activeFixed[i] == 0u) {
       scratch.inertialTargets[i]
-          += timeStep * dampingScale * state.velocities[i] + gravityStep;
+          += timeStep * dampingScale * state.velocities[i] + gravityStep
+             + timeStep * timeStep * scratch.externalAccelerations[i];
     }
   }
 
-  makeInitialPositionsFeasible(scratch.next, state.fixed, barriers, &stats);
+  makeInitialPositionsFeasible(
+      scratch.next, scratch.activeFixed, barriers, &stats);
 
   if (model.edges.empty() && barriers.empty()) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
-      if (state.fixed[i] == 0u) {
+      if (scratch.activeFixed[i] == 0u) {
         scratch.next[i] = scratch.inertialTargets[i];
       }
     }
@@ -1077,6 +1195,7 @@ void advanceDeformableBody(
           model,
           scratch.next,
           scratch.inertialTargets,
+          scratch.activeFixed,
           barriers,
           timeStep,
           &scratch.gradient);
@@ -1085,13 +1204,13 @@ void advanceDeformableBody(
       }
 
       const double gradSquared
-          = gradientNormSquared(scratch.gradient, state.fixed);
+          = gradientNormSquared(scratch.gradient, scratch.activeFixed);
       if (gradSquared <= gradientToleranceSquared) {
         break;
       }
 
       for (std::size_t i = 0; i < nodeCount; ++i) {
-        if (state.fixed[i] == 0u) {
+        if (scratch.activeFixed[i] == 0u) {
           scratch.direction[i]
               = -(timeStep * timeStep / state.masses[i]) * scratch.gradient[i];
         } else {
@@ -1106,7 +1225,7 @@ void advanceDeformableBody(
         double directionalDerivative = 0.0;
         for (std::size_t i = 0; i < nodeCount; ++i) {
           scratch.candidate[i] = scratch.next[i];
-          if (state.fixed[i] == 0u) {
+          if (scratch.activeFixed[i] == 0u) {
             scratch.candidate[i] += step * scratch.direction[i];
             directionalDerivative += scratch.gradient[i].dot(
                 scratch.candidate[i] - scratch.next[i]);
@@ -1115,13 +1234,14 @@ void advanceDeformableBody(
 
         if (directionalDerivative < -1e-24
             && satisfiesStaticGroundBarrier(
-                scratch.candidate, state.fixed, barriers)) {
+                scratch.candidate, scratch.activeFixed, barriers)) {
           ++stats.objectiveEvaluations;
           const double candidateEnergy = evaluateDeformableObjective(
               state,
               model,
               scratch.candidate,
               scratch.inertialTargets,
+              scratch.activeFixed,
               barriers,
               timeStep,
               nullptr);
@@ -1148,11 +1268,11 @@ void advanceDeformableBody(
   }
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
-    const Eigen::Vector3d previous = state.positions[i];
+    const Eigen::Vector3d previous = scratch.previousStepPositions[i];
     state.previousPositions[i] = previous;
-    if (state.fixed[i] != 0u) {
-      state.positions[i] = previous;
-      state.velocities[i].setZero();
+    if (scratch.activeFixed[i] != 0u) {
+      state.positions[i] = scratch.next[i];
+      state.velocities[i] = (state.positions[i] - previous) / timeStep;
       continue;
     }
     state.positions[i] = scratch.next[i];
@@ -1513,6 +1633,7 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
           | ComputeStageAcceleration::DataLocality,
       {{"deformable_body.state", ComputeAccessMode::ReadWrite},
        {"deformable_body.model", ComputeAccessMode::Read},
+       {"deformable_body.boundary_conditions", ComputeAccessMode::Read},
        {"static_collision_geometry", ComputeAccessMode::Read}}};
 }
 
@@ -1540,7 +1661,16 @@ void DeformableDynamicsStage::execute(
     const auto& model = view.get<comps::DeformableSpringModel>(entity);
     auto& scratch
         = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+    const auto* boundaryConditions
+        = registry.try_get<comps::DeformableBoundaryConditions>(entity);
     ++m_lastStats.bodyCount;
+    prepareDeformableBoundaryConditions(
+        state,
+        boundaryConditions,
+        world.getTime(),
+        timeStep,
+        scratch,
+        m_lastStats);
     advanceDeformableBody(
         state, model, scratch, gravity, timeStep, barriers, m_lastStats);
   }
