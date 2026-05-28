@@ -3,8 +3,8 @@
 ## Last Session Summary
 
 Started PLAN-082: implementing Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as a DART-owned deformable solver in the experimental World. Landed
-Phases 0-3 with all gates green (24 lints clean, focused build, 27 tests across
-3 binaries, benchmark smoke):
+Phases 0-4 with all gates green (lint clean, focused build, 39 tests across
+5 binaries, benchmark smoke):
 
 - Phase 0 grounding: PLAN-082 dashboard entry and numbered plan file, the
   `chen-2024-vbd` references catalog entry plus comparative `tinyvbd`/`gaia`
@@ -17,9 +17,11 @@ Phases 0-3 with all gates green (24 lints clean, focused build, 27 tests across
 - Phase 3 `detail/deformable_vbd/block_descent.hpp`: colored Gauss-Seidel
   mass-spring driver, validated to converge to an independent gradient-descent
   minimizer of the same objective.
-- Phase 4 (kernel) `detail/deformable_vbd/neo_hookean.hpp`: Stable Neo-Hookean
-  tetrahedral energy, analytic Piola stress, and per-vertex force + exact 3x3
-  Hessian (FD-verified, inversion-stable). Not yet wired into the driver.
+- Phase 4 `detail/deformable_vbd/neo_hookean.hpp` + `block_descent.hpp`: Stable
+  Neo-Hookean tetrahedral energy, analytic Piola stress, per-vertex force +
+  exact 3x3 Hessian (FD-verified, inversion-stable), and a `blockDescentTetMesh`
+  volumetric driver (tet adjacency + tet coloring) validated to converge to an
+  independent global gradient-descent minimizer of the tet objective.
 
 Key grounding fact: VBD minimizes the **same** variational implicit-Euler
 objective the existing experimental deformable solver already minimizes with a
@@ -31,25 +33,20 @@ ECS components, not a new data model.
 
 ## Current Branch
 
-`feature/vbd-solver-foundation` — Phases 0-3 landed. Local commits only;
+`feature/vbd-solver-foundation` — Phases 0-4 landed. Local commits only;
 pushes/PRs require explicit approval.
 
 ## Immediate Next Step
 
-Two tracks remain open:
+Phases 0-4 are complete (mass-spring and tetrahedral Neo-Hookean block descent
+both converge to independent reference minimizers). Next:
 
-1. Phase 4 remainder: wire the Neo-Hookean tetrahedral blocks
-   (`neo_hookean.hpp::addNeoHookeanTetTerm`) into the block-descent driver. Add
-   tet incident-adjacency and tet-induced vertex coloring (use
-   `VertexAdjacency::addTetrahedron`), then a `blockDescentTetMesh` (or extend
-   the driver to accept tets), and validate a volumetric solve converges to a
-   reference minimizer like the mass-spring case.
-2. Phase 5: adaptive inertial/previous-step initialization
-   (`a_tilde = clamp(a_prev . g_hat, 0, ||a_ext||)`,
-   `x_init = x^t + h v^t + h^2 g_hat a_tilde`), optional Chebyshev acceleration
-   (`omega_1=1, omega_2=2/(2-rho^2), omega_n=4/(4-rho^2 omega_{n-1})`,
-   `x^n = omega_n (x_bar^n - x^{n-2}) + x^{n-2}`), and Rayleigh damping
-   (`H += (k_d/h) d2E/dx^2`, force `-= (k_d/h) d2E/dx^2 (x - x^t)`).
+- Phase 5: adaptive inertial/previous-step initialization
+  (`a_tilde = clamp(a_prev . g_hat, 0, ||a_ext||)`,
+  `x_init = x^t + h v^t + h^2 g_hat a_tilde`), optional Chebyshev acceleration
+  (`omega_1=1, omega_2=2/(2-rho^2), omega_n=4/(4-rho^2 omega_{n-1})`,
+  `x^n = omega_n (x_bar^n - x^{n-2}) + x^{n-2}`), and Rayleigh damping
+  (`H += (k_d/h) d2E/dx^2`, force `-= (k_d/h) d2E/dx^2 (x - x^t)`).
 
 ## Context That Would Be Lost
 
@@ -84,8 +81,9 @@ git status && git log -8 --oneline
 pixi run cmake build/default/cpp/Release
 pixi run cmake --build build/default/cpp/Release --target \
   test_vbd_vertex_block_kernel test_vbd_vertex_coloring test_vbd_block_descent \
-  bm_vbd_vertex_block_kernel bm_vbd_block_descent
+  test_vbd_neo_hookean test_vbd_tet_mesh_descent bm_vbd_vertex_block_kernel \
+  bm_vbd_block_descent bm_vbd_neo_hookean
 ctest --test-dir build/default/cpp/Release -R '^test_vbd_' --output-on-failure
-./build/default/cpp/Release/bin/bm_vbd_vertex_block_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ./build/default/cpp/Release/bin/bm_vbd_block_descent --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
+./build/default/cpp/Release/bin/bm_vbd_neo_hookean --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ```

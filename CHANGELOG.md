@@ -844,8 +844,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     for VBD (energy density, analytic first Piola stress, and per-vertex force
     plus exact 3x3 Hessian via the analytic stress differential), with
     finite-difference force/Hessian regression tests, rest-state equilibrium,
-    element-inversion stability, and a microbenchmark. The tetrahedral blocks
-    are not yet wired into the block-descent driver.
+    element-inversion stability, and a microbenchmark.
+  - Wired the VBD Stable Neo-Hookean tetrahedral blocks into a single-body
+    block-descent driver (tet adjacency, tet-induced vertex coloring, and a
+    colored Gauss-Seidel volumetric solve), validated for rest stability,
+    residual convergence, monotone energy decrease, and converged-state parity
+    against an independent global gradient-descent minimizer of the tet
+    objective, with a tetrahedral-bar step benchmark. Internal solver
+    groundwork only; not wired into the deformable world step.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

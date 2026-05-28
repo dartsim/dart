@@ -33,8 +33,9 @@
         converged-state parity against an independent gradient-descent
         minimizer of the same objective, same-color independence regressions,
         and `bm_vbd_block_descent`.
-- [ ] Phase 4: FEM hyperelastic energy (Stable Neo-Hookean tetrahedra) and its
-      per-vertex force/Hessian contributions.
+- [x] Phase 4: FEM hyperelastic energy (Stable Neo-Hookean tetrahedra) and its
+      per-vertex force/Hessian contributions, wired into the block-descent
+      driver for a volumetric solve.
   - [x] Stable Neo-Hookean kernel sub-slice: Lame-from-Young/Poisson
         conversion, the tetrahedral rest-shape (`Dm^{-1}`, rest volume) and
         deformation gradient, the Smith-2018 energy density
@@ -44,9 +45,13 @@
         stress differential), with finite-difference force/Hessian regression
         tests, rest-state equilibrium, inversion stability, and
         `bm_vbd_neo_hookean`.
-  - [ ] Remaining Phase 4 work: wire the tetrahedral Neo-Hookean blocks into the
-        block-descent driver (tet adjacency + tet coloring) and validate a
-        volumetric solve.
+  - [x] Tetrahedral driver sub-slice: `TetMeshElement`/`TetAdjacency`,
+        `colorTetMesh`, the colored Gauss-Seidel `blockDescentTetMesh` driver
+        accumulating inertia + incident-tet Neo-Hookean blocks, and the
+        `tetMeshObjective` evaluator, validated for rest-stability, residual
+        convergence, monotone energy decrease, and converged-state parity
+        against an independent global gradient-descent minimizer of the tet
+        objective, plus a `BM_VbdTetMeshStep` benchmark.
 - [ ] Phase 5: VBD acceleration — adaptive inertial/previous-step initialization
       and optional Chebyshev semi-iterative acceleration — plus the VBD damping
       model.
@@ -192,10 +197,24 @@ are not yet wired into the block-descent driver (no tet adjacency/coloring or
 volumetric solve yet), and damping, acceleration, contact, and friction are not
 implemented.
 
-Local gate (Phase 4 Neo-Hookean kernel, first pass) on 2026-05-28: the focused
-target build, 7 `test_vbd_neo_hookean` cases passing, and benchmark smoke (CPU
-scaling enabled) of ~12 ns energy density, ~8.8 ns Piola stress, and ~146 ns for
-the full per-vertex force-plus-Hessian block.
+For the tetrahedral driver sub-slice, keep the verification language precise: it
+covers the tet element/adjacency structures, tet-induced vertex coloring, the
+colored Gauss-Seidel `blockDescentTetMesh` driver accumulating inertia plus
+incident-tet Neo-Hookean blocks, and the `tetMeshObjective` evaluator, with
+tests that the rest configuration stays at rest, the residual is driven to zero,
+the objective decreases monotonically per sweep, the mesh coloring is proper,
+and the converged state matches an independent global gradient-descent minimizer
+of the same tet objective. It is a single-body CPU driver only; multi-body
+coupling, damping, acceleration, contact, friction, multithreaded/GPU execution,
+and any wiring into `World::step()` are not implemented.
+
+Local gate (Phase 4 Neo-Hookean kernel + tetrahedral driver, first pass) on
+2026-05-28: the focused target build, 7 `test_vbd_neo_hookean` cases and 5
+`test_vbd_tet_mesh_descent` cases passing. Kernel benchmark smoke (CPU scaling
+enabled) of ~12 ns energy density, ~8.8 ns Piola stress, and ~146 ns for the
+full per-vertex force-plus-Hessian block. Tetrahedral 20-sweep step smoke of
+~0.30 ms (20 verts, 24 tets, 5 colors), ~1.18 ms (68 verts, 96 tets), and
+~5.1 ms (260 verts, 384 tets, 6 colors).
 
 Local gate (Phases 1-3, first pass) on 2026-05-28: `pixi run cmake`
 reconfigure, the focused target build, 12 `test_vbd_vertex_block_kernel` cases,
@@ -213,8 +232,8 @@ color range.
 pixi run cmake build/default/cpp/Release
 pixi run cmake --build build/default/cpp/Release --target \
   test_vbd_vertex_block_kernel test_vbd_vertex_coloring test_vbd_block_descent \
-  test_vbd_neo_hookean bm_vbd_vertex_block_kernel bm_vbd_block_descent \
-  bm_vbd_neo_hookean
+  test_vbd_neo_hookean test_vbd_tet_mesh_descent bm_vbd_vertex_block_kernel \
+  bm_vbd_block_descent bm_vbd_neo_hookean
 ctest --test-dir build/default/cpp/Release -R '^test_vbd_' --output-on-failure
 ./build/default/cpp/Release/bin/bm_vbd_vertex_block_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ./build/default/cpp/Release/bin/bm_vbd_block_descent --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'

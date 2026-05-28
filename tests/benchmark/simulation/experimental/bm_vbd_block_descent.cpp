@@ -153,4 +153,112 @@ static void BM_VbdColorGrid(benchmark::State& state)
 }
 BENCHMARK(BM_VbdColorGrid)->Arg(8)->Arg(16)->Arg(32);
 
+namespace {
+
+// A tetrahedral bar of `cubes` unit cubes stacked along z, each split into six
+// Kuhn tetrahedra sharing the main diagonal. The k=0 ring is pinned.
+struct TetBarScene
+{
+  std::vector<Vec3> positions;
+  std::vector<double> masses;
+  std::vector<std::uint8_t> fixed;
+  std::vector<Vec3> inertialTargets;
+  std::vector<vbd::TetMeshElement> tets;
+  vbd::VertexColoring coloring;
+  vbd::TetAdjacency adjacency;
+  double mu = 3000.0;
+  double lambda = 6000.0;
+  double timeStep = 0.01;
+};
+
+TetBarScene makeTetBar(int cubes)
+{
+  TetBarScene scene;
+  const auto index = [](int i, int j, int k) {
+    return static_cast<std::uint32_t>(((k * 2) + j) * 2 + i);
+  };
+  for (int k = 0; k <= cubes; ++k) {
+    for (int j = 0; j < 2; ++j) {
+      for (int i = 0; i < 2; ++i) {
+        scene.positions.emplace_back(i, j, k);
+        scene.masses.push_back(1.0);
+        scene.fixed.push_back(k == 0 ? 1u : 0u);
+      }
+    }
+  }
+  scene.inertialTargets = scene.positions;
+  for (std::size_t v = 0; v < scene.positions.size(); ++v) {
+    if (scene.fixed[v] == 0u) {
+      scene.inertialTargets[v] += Vec3(0.02, -0.03, 0.0);
+    }
+  }
+
+  static const int kuhn[6][4]
+      = {{0, 1, 3, 7},
+         {0, 3, 2, 7},
+         {0, 2, 6, 7},
+         {0, 6, 4, 7},
+         {0, 4, 5, 7},
+         {0, 5, 1, 7}};
+  for (int c = 0; c < cubes; ++c) {
+    std::array<std::uint32_t, 8> corner{};
+    for (int n = 0; n < 8; ++n) {
+      const int i = n & 1;
+      const int j = (n >> 1) & 1;
+      const int k = c + ((n >> 2) & 1);
+      corner[static_cast<std::size_t>(n)] = index(i, j, k);
+    }
+    for (const auto& t : kuhn) {
+      const std::array<std::uint32_t, 4> v
+          = {corner[t[0]], corner[t[1]], corner[t[2]], corner[t[3]]};
+      vbd::TetRestShape rest = vbd::makeTetRestShape(
+          {scene.positions[v[0]],
+           scene.positions[v[1]],
+           scene.positions[v[2]],
+           scene.positions[v[3]]});
+      scene.tets.push_back({v, rest});
+    }
+  }
+  scene.coloring = vbd::colorTetMesh(scene.positions.size(), scene.tets);
+  scene.adjacency
+      = vbd::TetAdjacency::build(scene.positions.size(), scene.tets);
+  return scene;
+}
+
+} // namespace
+
+//==============================================================================
+// One implicit-Euler step (20 VBD sweeps) on a tetrahedral Neo-Hookean bar.
+static void BM_VbdTetMeshStep(benchmark::State& state)
+{
+  const int cubes = static_cast<int>(state.range(0));
+  const TetBarScene base = makeTetBar(cubes);
+  vbd::BlockDescentOptions options;
+  options.iterations = 20;
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    std::vector<Vec3> positions = base.positions;
+    state.ResumeTiming();
+    vbd::BlockDescentStats stats = vbd::blockDescentTetMesh(
+        positions,
+        base.masses,
+        base.fixed,
+        base.inertialTargets,
+        base.tets,
+        base.mu,
+        base.lambda,
+        base.timeStep,
+        base.coloring,
+        base.adjacency,
+        options);
+    benchmark::DoNotOptimize(stats.finalResidualNormSquared);
+    benchmark::DoNotOptimize(positions);
+  }
+  state.counters["vertices"] = static_cast<double>(base.positions.size());
+  state.counters["tets"] = static_cast<double>(base.tets.size());
+  state.counters["colors"] = static_cast<double>(base.coloring.colorCount());
+}
+BENCHMARK(BM_VbdTetMeshStep)->Arg(4)->Arg(16)->Arg(64);
+
 BENCHMARK_MAIN();

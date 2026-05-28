@@ -32,11 +32,14 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/deformable_vbd/neo_hookean.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_coloring.hpp>
 
 #include <Eigen/Core>
 
+#include <array>
+#include <utility>
 #include <vector>
 
 #include <cstddef>
@@ -248,6 +251,195 @@ inline double massSpringObjective(
     const double length = (positions[spring.b] - positions[spring.a]).norm();
     const double stretch = length - spring.restLength;
     energy += 0.5 * springStiffness * stretch * stretch;
+  }
+  return energy;
+}
+
+//==============================================================================
+/// One tetrahedral element for the Neo-Hookean block-descent driver, with its
+/// rest shape precomputed once via makeTetRestShape.
+struct TetMeshElement
+{
+  std::array<std::uint32_t, 4> vertices{0, 0, 0, 0};
+  TetRestShape rest;
+};
+
+/// Per-vertex incident-tetrahedron lists. `incidentTets[v]` holds, for each
+/// tetrahedron touching vertex `v`, the tet index and the vertex's local index
+/// (0..3) within that tet.
+struct TetAdjacency
+{
+  std::vector<std::vector<std::pair<std::uint32_t, std::uint8_t>>> incidentTets;
+
+  static TetAdjacency build(
+      std::size_t vertexCount, const std::vector<TetMeshElement>& tets)
+  {
+    TetAdjacency adjacency;
+    adjacency.incidentTets.resize(vertexCount);
+    for (std::uint32_t t = 0; t < tets.size(); ++t) {
+      for (std::uint8_t local = 0; local < 4; ++local) {
+        const std::uint32_t vertex = tets[t].vertices[local];
+        if (vertex < vertexCount) {
+          adjacency.incidentTets[vertex].emplace_back(t, local);
+        }
+      }
+    }
+    return adjacency;
+  }
+};
+
+/// Build the vertex-graph coloring induced by a tetrahedral mesh (each tet is a
+/// 4-vertex clique in the vertex graph).
+inline VertexColoring colorTetMesh(
+    std::size_t vertexCount, const std::vector<TetMeshElement>& tets)
+{
+  VertexAdjacency adjacency(vertexCount);
+  for (const TetMeshElement& tet : tets) {
+    adjacency.addTetrahedron(
+        tet.vertices[0], tet.vertices[1], tet.vertices[2], tet.vertices[3]);
+  }
+  return greedyColorVertices(adjacency);
+}
+
+namespace detail {
+
+//==============================================================================
+/// Assemble the inertia + incident-tetrahedron Neo-Hookean block for one free
+/// vertex at the current positions.
+inline VertexBlock assembleTetVertexBlock(
+    std::uint32_t vertex,
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<TetMeshElement>& tets,
+    const TetAdjacency& adjacency,
+    double mu,
+    double lambda,
+    double timeStep)
+{
+  VertexBlock block;
+  addInertiaTerm(
+      block,
+      masses[vertex],
+      timeStep,
+      positions[vertex],
+      inertialTargets[vertex]);
+  for (const auto& [tetIndex, localVertex] : adjacency.incidentTets[vertex]) {
+    const TetMeshElement& tet = tets[tetIndex];
+    const std::array<Eigen::Vector3d, 4> tetPositions
+        = {positions[tet.vertices[0]],
+           positions[tet.vertices[1]],
+           positions[tet.vertices[2]],
+           positions[tet.vertices[3]]};
+    addNeoHookeanTetTerm(
+        block, localVertex, tet.rest, tetPositions, mu, lambda);
+  }
+  return block;
+}
+
+} // namespace detail
+
+//==============================================================================
+/// Run graph-colored Gauss-Seidel block coordinate descent on a single
+/// tetrahedral Stable Neo-Hookean body, minimizing
+///   G(x) = sum_i (m_i / (2 h^2)) ||x_i - y_i||^2 + sum_t A_t Psi(F_t(x)).
+///
+/// Same-color vertices share no tetrahedron, so the serial within-color sweep
+/// is numerically identical to the parallel Jacobi update. `positions` is
+/// updated in place. `coloring` and `adjacency` must be built for `tets` (see
+/// colorTetMesh / TetAdjacency::build).
+inline BlockDescentStats blockDescentTetMesh(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<TetMeshElement>& tets,
+    double mu,
+    double lambda,
+    double timeStep,
+    const VertexColoring& coloring,
+    const TetAdjacency& adjacency,
+    const BlockDescentOptions& options)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = detail::assembleTetVertexBlock(
+            vertex,
+            positions,
+            masses,
+            inertialTargets,
+            tets,
+            adjacency,
+            mu,
+            lambda,
+            timeStep);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    const VertexBlock block = detail::assembleTetVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        tets,
+        adjacency,
+        mu,
+        lambda,
+        timeStep);
+    residualNormSquared += block.force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
+//==============================================================================
+/// Evaluate the variational implicit-Euler objective for a tetrahedral
+/// Neo-Hookean body. Provided for convergence/energy-decrease verification.
+inline double tetMeshObjective(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<TetMeshElement>& tets,
+    double mu,
+    double lambda,
+    double timeStep)
+{
+  double energy = 0.0;
+  const double invDt2 = 1.0 / (timeStep * timeStep);
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    const Eigen::Vector3d delta = positions[i] - inertialTargets[i];
+    energy += 0.5 * masses[i] * invDt2 * delta.squaredNorm();
+  }
+  for (const TetMeshElement& tet : tets) {
+    const std::array<Eigen::Vector3d, 4> tetPositions
+        = {positions[tet.vertices[0]],
+           positions[tet.vertices[1]],
+           positions[tet.vertices[2]],
+           positions[tet.vertices[3]]};
+    const Eigen::Matrix3d F
+        = deformationGradient(tet.rest.restShapeInverse, tetPositions);
+    energy
+        += tet.rest.restVolume * stableNeoHookeanEnergyDensity(F, mu, lambda);
   }
   return energy;
 }
