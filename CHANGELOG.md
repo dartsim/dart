@@ -774,6 +774,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     placeholders with feature-wise analytic point-triangle and edge-edge
     Hessian paths, reducing local Hessian microbenchmark timings for future
     deformable contact assembly.
+  - Added internal experimental IPC clamped-log barrier kernel scaffolding for
+    point-triangle and edge-edge primitive candidates, including raw analytic
+    gradients/Hessians, edge-edge mollifier product-rule derivatives, regression
+    tests, and microbenchmark coverage.
   - Added internal experimental IPC contact candidate assembly for
     point-triangle and edge-edge primitive pairs with deterministic surface-edge
     extraction, incident/adjacent filtering, sweep-versus-brute-force
