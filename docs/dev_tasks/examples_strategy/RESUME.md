@@ -33,10 +33,15 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
    deterministic damped-sine initial pose so cross-language state matches; the
    Python mirror loads `dart://sample/skel/chain.skel` via
    `dartpy.utils.SkelParser.read_world` and applies the same sine. Remaining:
-   add `operational_space_control` by `(1)` writing its Python mirror,
-   `(2)` adding the id to `GOLDEN_SCENE_IDS` in `helpers.py`,
-   `(3)` regenerating via `python -m examples.demos.golden._generate`,
-   `(4)` appending the expected skeleton state in `goldenScenes()` in
+   `operational_space_control` is blocked on missing dartpy bindings — the
+   controller needs `Skeleton::getMassMatrix`,
+   `Skeleton::getCoriolisAndGravityForces`, `Skeleton::setForces`, and
+   `BodyNode::getLinearVelocity(offset)`, none of which are exposed in
+   `python/dartpy/dynamics/{skeleton,body_node}.cpp`. Adding those bindings
+   (plus regenerating the `dartpy.utils` stubs that the import test enforces)
+   is the prerequisite; once they exist, follow the same four steps used for
+   `boxes`/`rigid_chain` to wire the Python mirror, regenerate the fixture,
+   and append the expected state to `goldenScenes()` in
    `tests/unit/gui/test_demos_golden_parity.cpp`.
 3. **PLAN-012 + PLAN-101 work.** Cloud Colab smoke (PLAN-012) and editor scene
    loading (PLAN-101) unblock conditions 2 and 3 of the retire-later checklist.
