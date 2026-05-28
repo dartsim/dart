@@ -58,6 +58,16 @@ struct DeformableSolverStats
   std::size_t rejectedLineSearchCandidates = 0;
   std::size_t acceptedLineSearchSteps = 0;
   std::size_t initialProjectionCount = 0;
+  std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactPointTriangleCandidates = 0;
+  std::size_t surfaceContactEdgeEdgeCandidates = 0;
+  std::size_t surfaceContactCcdPointTriangleChecks = 0;
+  std::size_t surfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t surfaceContactCcdHits = 0;
+  std::size_t surfaceContactCcdMisses = 0;
+  std::size_t surfaceContactCcdIndeterminateCount = 0;
+  std::size_t surfaceContactCcdLimitedSteps = 0;
+  std::size_t surfaceContactCcdZeroStepCount = 0;
 
   void reset() noexcept
   {

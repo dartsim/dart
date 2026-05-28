@@ -73,6 +73,7 @@ TEST(PointTriangleCcd, DirectDropHit)
 
   EXPECT_TRUE(hit);
   EXPECT_TRUE(result.isHit());
+  EXPECT_EQ(result.status, CcdPrimitiveStatus::Hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
   EXPECT_LE(result.timeOfImpact, 0.5);
   EXPECT_NEAR(result.timeOfImpact, 0.5, 1e-2);
@@ -98,6 +99,30 @@ TEST(PointTriangleCcd, MissBesideTriangle)
 
   EXPECT_FALSE(hit);
   EXPECT_FALSE(result.isHit());
+  EXPECT_EQ(result.status, CcdPrimitiveStatus::Miss);
+}
+
+TEST(PointTriangleCcd, IterationExhaustionIsIndeterminate)
+{
+  CcdOption option;
+  option.maxIterations = 1;
+  CcdPrimitiveResult result;
+
+  const bool hit = pointTriangleCcd(
+      Eigen::Vector3d(0, 0, 1),
+      Eigen::Vector3d(0, 0, -1),
+      kA,
+      kA,
+      kB,
+      kB,
+      kC,
+      kC,
+      option,
+      result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.isHit());
+  EXPECT_EQ(result.status, CcdPrimitiveStatus::Indeterminate);
 }
 
 TEST(PointTriangleCcd, BothMoving)
