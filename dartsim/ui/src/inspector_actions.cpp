@@ -109,23 +109,38 @@ bool hasSingleAxisJoint(const SceneObject& object)
 
 InspectorNumericProperty numeric(
     InspectorNumericPropertyKind kind,
+    std::string section,
     std::string label,
     double value,
     double minimum,
     double maximum,
     bool editable)
 {
-  return {kind, std::move(label), value, minimum, maximum, editable};
+  return {
+      kind,
+      std::move(label),
+      std::move(section),
+      value,
+      minimum,
+      maximum,
+      editable};
 }
 
 InspectorEnumProperty enumProperty(
     InspectorEnumPropertyKind kind,
+    std::string section,
     std::string label,
     int value,
     std::vector<InspectorEnumChoice> choices,
     bool editable)
 {
-  return {kind, std::move(label), value, std::move(choices), editable};
+  return {
+      kind,
+      std::move(label),
+      std::move(section),
+      value,
+      std::move(choices),
+      editable};
 }
 
 std::vector<InspectorEnumChoice> shapeTypeChoices()
@@ -221,6 +236,7 @@ void appendTransformProperties(
   const Eigen::Vector3d position = object.transform.translation();
   properties.push_back(numeric(
       InspectorNumericPropertyKind::TranslationX,
+      "Transform",
       "x",
       position.x(),
       -10.0,
@@ -228,6 +244,7 @@ void appendTransformProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::TranslationY,
+      "Transform",
       "y",
       position.y(),
       -10.0,
@@ -235,6 +252,7 @@ void appendTransformProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::TranslationZ,
+      "Transform",
       "z",
       position.z(),
       -10.0,
@@ -253,6 +271,7 @@ void appendShapeProperties(
     case ShapeType::Box:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "shape x",
           shape.dimensions.x(),
           minPositive,
@@ -260,6 +279,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionY,
+          "Shape",
           "shape y",
           shape.dimensions.y(),
           minPositive,
@@ -267,6 +287,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionZ,
+          "Shape",
           "shape z",
           shape.dimensions.z(),
           minPositive,
@@ -276,6 +297,7 @@ void appendShapeProperties(
     case ShapeType::Sphere:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "radius",
           shape.dimensions.x(),
           minPositive,
@@ -286,6 +308,7 @@ void appendShapeProperties(
     case ShapeType::Capsule:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "radius",
           shape.dimensions.x(),
           minPositive,
@@ -293,6 +316,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionY,
+          "Shape",
           "height",
           shape.dimensions.y(),
           minPositive,
@@ -302,6 +326,7 @@ void appendShapeProperties(
     case ShapeType::Plane:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "normal x",
           shape.dimensions.x(),
           -1.0,
@@ -309,6 +334,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionY,
+          "Shape",
           "normal y",
           shape.dimensions.y(),
           -1.0,
@@ -316,6 +342,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionZ,
+          "Shape",
           "normal z",
           shape.dimensions.z(),
           -1.0,
@@ -332,6 +359,7 @@ void appendJointAxisProperties(
 {
   properties.push_back(numeric(
       InspectorNumericPropertyKind::JointAxisX,
+      "Joint",
       "axis x",
       object.jointAxis.x(),
       -1.0,
@@ -339,6 +367,7 @@ void appendJointAxisProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::JointAxisY,
+      "Joint",
       "axis y",
       object.jointAxis.y(),
       -1.0,
@@ -346,6 +375,7 @@ void appendJointAxisProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::JointAxisZ,
+      "Joint",
       "axis z",
       object.jointAxis.z(),
       -1.0,
@@ -360,6 +390,7 @@ void appendSensorProperties(
 {
   properties.push_back(numeric(
       InspectorNumericPropertyKind::SensorRange,
+      "Sensor",
       "range",
       object.sensor.range,
       0.001,
@@ -367,6 +398,7 @@ void appendSensorProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::SensorFieldOfView,
+      "Sensor",
       "field of view",
       object.sensor.fieldOfView,
       1.0,
@@ -374,6 +406,7 @@ void appendSensorProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::SensorUpdateRate,
+      "Sensor",
       "update rate",
       object.sensor.updateRate,
       0.001,
@@ -388,6 +421,7 @@ void appendCollisionProperties(
 {
   properties.push_back(numeric(
       InspectorNumericPropertyKind::CollisionFriction,
+      "Collision",
       "collision friction",
       object.collision.friction,
       0.0,
@@ -395,6 +429,7 @@ void appendCollisionProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::CollisionRestitution,
+      "Collision",
       "collision restitution",
       object.collision.restitution,
       0.0,
@@ -431,6 +466,7 @@ InspectorStatus buildStatusForObject(
   if (object.type == ObjectType::RigidBody) {
     status.numericProperties.push_back(numeric(
         InspectorNumericPropertyKind::Mass,
+        "Physical",
         "mass",
         object.mass,
         0.01,
@@ -440,6 +476,7 @@ InspectorStatus buildStatusForObject(
   if (hasSingleDofJoint(object)) {
     status.numericProperties.push_back(numeric(
         InspectorNumericPropertyKind::JointPosition,
+        "Joint",
         "joint",
         object.jointPosition,
         -3.14159,
@@ -449,6 +486,7 @@ InspectorStatus buildStatusForObject(
   if (object.type == ObjectType::Link && object.parentLink != kNoObject) {
     status.enumProperties.push_back(enumProperty(
         InspectorEnumPropertyKind::JointKind,
+        "Joint",
         "joint kind",
         static_cast<int>(object.jointType),
         jointKindChoices(),
@@ -460,6 +498,7 @@ InspectorStatus buildStatusForObject(
   if (object.type == ObjectType::Sensor) {
     status.enumProperties.push_back(enumProperty(
         InspectorEnumPropertyKind::SensorKind,
+        "Sensor",
         "sensor kind",
         static_cast<int>(object.sensor.kind),
         sensorKindChoices(),
@@ -472,13 +511,14 @@ InspectorStatus buildStatusForObject(
   if (isShapeEditable(object.type)) {
     status.enumProperties.push_back(enumProperty(
         InspectorEnumPropertyKind::ShapeType,
+        "Shape",
         "shape",
         static_cast<int>(object.shape.type),
         shapeTypeChoices(),
         editable));
     appendShapeProperties(status.numericProperties, object, editable);
-    status.colorProperty
-        = InspectorColorProperty{"color", object.shape.color, editable};
+    status.colorProperty = InspectorColorProperty{
+        "color", "Material", object.shape.color, editable};
   }
 
   return status;

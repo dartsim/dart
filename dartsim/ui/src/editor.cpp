@@ -512,23 +512,46 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 }
 
-void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
+void appendInspectorSection(
+    std::vector<std::string>& sections, const std::string& section)
 {
-  const InspectorStatus status = buildInspectorStatus(app.engine);
-  if (!status.hasSelection) {
-    ui.text("(no selection)");
+  if (section.empty()) {
     return;
   }
-  ui.text(status.selectionSummary);
-  ui.text((status.selectionCount > 1u ? "Primary: " : "Name: ") + status.name);
-  ui.text("Type: " + status.type);
+  if (std::find(sections.begin(), sections.end(), section) == sections.end()) {
+    sections.push_back(section);
+  }
+}
 
-  if (status.locked) {
-    ui.text("Inspector locked during Simulation Mode");
+std::vector<std::string> inspectorSections(const InspectorStatus& status)
+{
+  std::vector<std::string> sections;
+  for (const InspectorEnumProperty& property : status.enumProperties) {
+    appendInspectorSection(sections, property.section);
+  }
+  for (const InspectorNumericProperty& property : status.numericProperties) {
+    appendInspectorSection(sections, property.section);
+  }
+  if (status.colorProperty.has_value()) {
+    appendInspectorSection(sections, status.colorProperty->section);
+  }
+  return sections;
+}
+
+void buildInspectorSection(
+    dart::gui::PanelBuilder& ui,
+    EditorApp& app,
+    const InspectorStatus& status,
+    const std::string& section)
+{
+  if (!ui.collapsingHeader(section, true)) {
     return;
   }
 
   for (const InspectorEnumProperty& property : status.enumProperties) {
+    if (property.section != section) {
+      continue;
+    }
     std::vector<std::string_view> choices;
     choices.reserve(property.choices.size());
     int selectedIndex = 0;
@@ -550,17 +573,43 @@ void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 
   for (const InspectorNumericProperty& property : status.numericProperties) {
+    if (property.section != section) {
+      continue;
+    }
     double value = property.value;
     if (ui.slider(property.label, value, property.minimum, property.maximum)) {
       app.note(setInspectorNumericProperty(app.engine, property.kind, value)
                    .message);
     }
   }
-  if (status.colorProperty.has_value()) {
+
+  if (status.colorProperty.has_value()
+      && status.colorProperty->section == section) {
     Eigen::Vector4d color = status.colorProperty->rgba;
     if (ui.colorEdit(status.colorProperty->label, color)) {
       app.note(setInspectorShapeColor(app.engine, color).message);
     }
+  }
+}
+
+void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  const InspectorStatus status = buildInspectorStatus(app.engine);
+  if (!status.hasSelection) {
+    ui.text("(no selection)");
+    return;
+  }
+  ui.text(status.selectionSummary);
+  ui.text((status.selectionCount > 1u ? "Primary: " : "Name: ") + status.name);
+  ui.text("Type: " + status.type);
+
+  if (status.locked) {
+    ui.text("Inspector locked during Simulation Mode");
+    return;
+  }
+
+  for (const std::string& section : inspectorSections(status)) {
+    buildInspectorSection(ui, app, status, section);
   }
 
   ui.separator();

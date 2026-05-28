@@ -73,6 +73,7 @@ void appendOutlinerRows(
           depth,
           object->name,
           objectTypeLabel(object->type),
+          objectTypeIcon(object->type),
           engine.selection().isSelected(id),
           object->visible,
           hasChildren,
@@ -180,6 +181,29 @@ std::string objectTypeLabel(ObjectType type)
   return "Object";
 }
 
+std::string objectTypeIcon(ObjectType type)
+{
+  switch (type) {
+    case ObjectType::RigidBody:
+      return "RB";
+    case ObjectType::MultiBody:
+      return "MB";
+    case ObjectType::Link:
+      return "LK";
+    case ObjectType::Joint:
+      return "JT";
+    case ObjectType::FreeFrame:
+      return "FF";
+    case ObjectType::FixedFrame:
+      return "FX";
+    case ObjectType::Sensor:
+      return "SN";
+    case ObjectType::Collision:
+      return "CO";
+  }
+  return "OB";
+}
+
 std::vector<OutlinerRow> buildOutlinerRows(const SimEngine& engine)
 {
   const SceneModel& model = engine.objects().model();
@@ -207,6 +231,8 @@ std::string outlinerButtonLabel(const OutlinerRow& row)
 {
   std::string label(static_cast<std::size_t>(row.depth) * 2u, ' ');
   label += row.selected ? "* " : "  ";
+  label += row.icon;
+  label += " ";
   label += row.name;
   label += " [";
   label += row.type;

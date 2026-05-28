@@ -77,6 +77,7 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(rows[0].depth, 0);
   EXPECT_EQ(rows[0].name, "arm");
   EXPECT_EQ(rows[0].type, "MultiBody");
+  EXPECT_EQ(rows[0].icon, "MB");
   EXPECT_TRUE(rows[0].hasChildren);
   EXPECT_FALSE(rows[0].selected);
 
@@ -85,6 +86,7 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(rows[1].depth, 1);
   EXPECT_EQ(rows[1].name, "base");
   EXPECT_EQ(rows[1].type, "Link");
+  EXPECT_EQ(rows[1].icon, "LK");
   EXPECT_TRUE(rows[1].hasChildren);
   EXPECT_TRUE(rows[1].selected);
 
@@ -98,15 +100,24 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(rows[3].depth, 0);
   EXPECT_EQ(rows[3].name, "box");
   EXPECT_TRUE(rows[3].visible);
+  EXPECT_EQ(rows[3].icon, "RB");
   EXPECT_EQ(
       ui::outlinerButtonLabel(rows[3]),
-      "  box [RigidBody]##outliner-" + std::to_string(box));
+      "  RB box [RigidBody]##outliner-" + std::to_string(box));
 
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::Joint), "Joint");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FreeFrame), "FreeFrame");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FixedFrame), "FixedFrame");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::Sensor), "Sensor");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::Collision), "Collision");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::RigidBody), "RB");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::MultiBody), "MB");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Link), "LK");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Joint), "JT");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::FreeFrame), "FF");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::FixedFrame), "FX");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Sensor), "SN");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Collision), "CO");
 }
 
 TEST(DartsimOutlinerActions, ExpandCollapseStateFiltersDescendants)

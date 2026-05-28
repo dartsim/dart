@@ -172,14 +172,29 @@ TEST(DartsimInspectorActions, RigidBodyPropertiesEditThroughUndoableCommands)
   ASSERT_NE(
       findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
       nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX)
+          ->section,
+      "Transform");
   ASSERT_NE(
       findNumeric(status, ui::InspectorNumericPropertyKind::Mass), nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::Mass)->section,
+      "Physical");
   ASSERT_NE(
       findNumeric(status, ui::InspectorNumericPropertyKind::ShapeDimensionX),
       nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::ShapeDimensionX)
+          ->section,
+      "Shape");
   ASSERT_NE(
       findEnum(status, ui::InspectorEnumPropertyKind::ShapeType), nullptr);
+  EXPECT_EQ(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType)->section,
+      "Shape");
   ASSERT_TRUE(status.colorProperty.has_value());
+  EXPECT_EQ(status.colorProperty->section, "Material");
 
   EXPECT_TRUE(
       ui::setInspectorNumericProperty(
@@ -455,6 +470,11 @@ TEST(
       = findEnum(status, ui::InspectorEnumPropertyKind::SensorKind);
   ASSERT_NE(sensorKind, nullptr);
   EXPECT_EQ(sensorKind->label, "sensor kind");
+  EXPECT_EQ(sensorKind->section, "Sensor");
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorRange)
+          ->section,
+      "Sensor");
   ASSERT_EQ(sensorKind->choices.size(), 3u);
   EXPECT_EQ(sensorKind->choices[0].label, "Camera");
   EXPECT_EQ(sensorKind->choices[1].label, "Range");
@@ -530,7 +550,15 @@ TEST(
       findNumeric(status, ui::InspectorNumericPropertyKind::Mass), nullptr);
   ASSERT_NE(
       findEnum(status, ui::InspectorEnumPropertyKind::ShapeType), nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::CollisionFriction)
+          ->section,
+      "Collision");
+  EXPECT_EQ(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType)->section,
+      "Shape");
   ASSERT_TRUE(status.colorProperty.has_value());
+  EXPECT_EQ(status.colorProperty->section, "Material");
 
   EXPECT_TRUE(
       ui::setInspectorNumericProperty(

@@ -76,6 +76,7 @@ struct InspectorNumericProperty
   InspectorNumericPropertyKind kind
       = InspectorNumericPropertyKind::TranslationX;
   std::string label;
+  std::string section;
   double value = 0.0;
   double minimum = 0.0;
   double maximum = 1.0;
@@ -85,6 +86,7 @@ struct InspectorNumericProperty
 struct InspectorColorProperty
 {
   std::string label;
+  std::string section;
   Eigen::Vector4d rgba = Eigen::Vector4d(1.0, 1.0, 1.0, 1.0);
   bool editable = false;
 };
@@ -99,6 +101,7 @@ struct InspectorEnumProperty
 {
   InspectorEnumPropertyKind kind = InspectorEnumPropertyKind::ShapeType;
   std::string label;
+  std::string section;
   int value = 0;
   std::vector<InspectorEnumChoice> choices;
   bool editable = false;

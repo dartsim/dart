@@ -5587,7 +5587,8 @@ TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringSimulationMode)
   const auto editorSource
       = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
 
-  const auto inspectorStart = editorSource.find("void buildInspector");
+  const auto inspectorStart = editorSource.find(
+      "void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)");
   ASSERT_NE(inspectorStart, std::string::npos);
   const auto canEditCheck = editorSource.find(
       "const InspectorStatus status = buildInspectorStatus(app.engine);");
@@ -5597,14 +5598,14 @@ TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringSimulationMode)
   const auto lockMessage
       = editorSource.find("Inspector locked during Simulation Mode", lockGuard);
   ASSERT_NE(lockMessage, std::string::npos);
-  const auto firstSlider
-      = editorSource.find("ui.slider(property.label", inspectorStart);
+  const auto sectionBuild = editorSource.find(
+      "buildInspectorSection(ui, app, status, section);", inspectorStart);
   const auto deleteButton
       = editorSource.find("ui.button(\"Delete##inspector\")", inspectorStart);
-  ASSERT_NE(firstSlider, std::string::npos);
+  ASSERT_NE(sectionBuild, std::string::npos);
   ASSERT_NE(deleteButton, std::string::npos);
 
-  EXPECT_LT(lockGuard, firstSlider);
+  EXPECT_LT(lockGuard, sectionBuild);
   EXPECT_LT(lockGuard, deleteButton);
 }
 
@@ -5619,6 +5620,9 @@ TEST(FilamentSceneExtraction, DartsimInspectorUsesEnumChoiceControls)
   EXPECT_NE(panelHeader.find("select("), std::string::npos);
   EXPECT_NE(panelSource.find("ImGui::BeginCombo("), std::string::npos);
   EXPECT_NE(editorSource.find("status.enumProperties"), std::string::npos);
+  EXPECT_NE(editorSource.find("inspectorSections(status)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.collapsingHeader(section"), std::string::npos);
   EXPECT_NE(editorSource.find("ui.select(property.label"), std::string::npos);
   EXPECT_NE(editorSource.find("setInspectorEnumProperty("), std::string::npos);
 }
