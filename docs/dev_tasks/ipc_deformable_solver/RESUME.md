@@ -68,9 +68,11 @@ line-search limiting. It adds primitive CCD status propagation so iteration
 exhaustion is treated as uncertainty, uses per-body reusable contact candidate
 scratch, disables the no-edge/no-ground fast path when surface contact topology
 exists, shortens accepted trials before Armijo evaluation, and rejects zero-step
-initial separation-band hits. It is still scaffolding: inter-body contact,
-deformable-rigid contact, barrier assembly, projected Newton, and friction are
-not implemented yet.
+initial separation-band hits. For volumetric bodies, the point-triangle CCD
+candidate path is filtered to boundary-surface nodes so interior tetrahedral
+nodes do not over-limit surface contact. It is still scaffolding:
+inter-body contact, deformable-rigid contact, barrier assembly, projected
+Newton, and friction are not implemented yet.
 
 The sweep-scratch reuse sub-slice adds reusable internal point/triangle/edge
 sweep-item arrays for static and motion-aware contact candidate sweep builders.

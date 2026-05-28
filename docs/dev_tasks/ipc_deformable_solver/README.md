@@ -221,7 +221,9 @@ edge-edge motion-aware candidate generation inside `DeformableDynamicsStage`,
 primitive CCD status propagation so iteration exhaustion is treated as
 uncertainty rather than a certified miss, line-search step shortening before
 Armijo evaluation, and zero-step rejection for nodes already inside the
-internal separation band. It does not yet cover inter-body contact,
+internal separation band. For volumetric bodies, it filters point-triangle CCD
+points to nodes referenced by the boundary surface so interior tetrahedral nodes
+do not over-limit surface contact. It does not yet cover inter-body contact,
 deformable-rigid contact, IPC barrier assembly, projected Newton, friction, or
 full scene-level contact behavior.
 
@@ -340,7 +342,8 @@ cmake --build build/default/cpp/Release --target test_primitive_ccd test_continu
 
 The surface-contact CCD gate should prove that a surface-only body with no
 springs and no static ground no longer tunnels through its own surface topology,
-that primitive CCD iteration exhaustion is visible as indeterminate status, that
+that volumetric interior nodes are not treated as surface contact points, that
+primitive CCD iteration exhaustion is visible as indeterminate status, that
 custom-stage stats report candidate builds and CCD checks/hits/limited trials,
 that initial separation-band hits reject the trial, and that bodies without
 surface topology keep the free-particle fast path.
@@ -354,6 +357,10 @@ no-contact surface stage, about 5.1 us for a one-pair crossing stage, and about
 build, point-triangle candidate, CCD hit, and CCD-limited-step counters. CPU
 scaling was enabled, so treat these as local smoke numbers rather than a final
 performance claim.
+
+The Codex-review follow-up on 2026-05-27 added the volumetric interior-node
+filter regression and passed `DeformableBody.SurfaceContactCcd*` with 4 focused
+tests after rebuilding `test_deformable_body` and `bm_deformable_body`.
 
 Current sweep-scratch reuse local gates:
 
@@ -372,22 +379,22 @@ smaller topologies, that capacities are retained for reuse, and that the
 world-stage surface-contact benchmark still reports the same CCD/candidate
 activity after moving the line search onto per-body sweep scratch.
 
-The first local sweep-scratch gate pass on 2026-05-27 passed the focused target
-build, 6 filtered `test_contact_candidate_set` cases, and 6 filtered
+The latest local sweep-scratch gate pass on 2026-05-27 passed the focused target
+build, 6 filtered `test_contact_candidate_set` cases, and 7 filtered
 `test_deformable_body` cases. The benchmark smoke reported representative
-static sweep timings of about 408 us, 409 us, and 399 us for return-wrapper,
+static sweep timings of about 0.30 ms, 0.37 ms, and 0.37 ms for return-wrapper,
 reusable-candidate, and reusable-candidate-plus-scratch cloth resolution 16;
-about 87.9 us, 79.9 us, and 67.2 us for tetra-surface resolution 8; motion-aware
-falling-points resolution 128 at about 54.1 us, 51.7 us, and 50.0 us; and
-coherent-translation resolution 64 at about 28.2 us for the return wrapper and
-25.4 us for reusable scratch. The deformable surface-contact stage smoke
-reported about 0.54 us for a one-pair no-contact stage, about 4.0 us for a
-one-pair crossing stage, and about 0.155 ms for 32 crossing pairs with matching
+about 80 us, 81 us, and 78 us for tetra-surface resolution 8; motion-aware
+falling-points resolution 128 at about 48.2 us, 48.6 us, and 44.2 us; and
+coherent-translation resolution 64 at about 25.8 us for the return wrapper and
+22.0 us for reusable scratch. The deformable surface-contact stage smoke
+reported about 0.44 us for a one-pair no-contact stage, about 3.5 us for a
+one-pair crossing stage, and about 0.13 ms for 32 crossing pairs with matching
 candidate/CCD counters. CPU scaling was enabled, so treat these as local smoke
 numbers rather than final performance claims. `perf stat` could not run because
 `perf_event_paranoid=4`; `/usr/bin/time -v` on the motion-aware 128-pair
-reusable-versus-scratch benchmark reported 0.20 s elapsed, 99% CPU, 4400 KB max
-RSS, 0 major page faults, and 379 minor page faults.
+reusable-versus-scratch benchmark reported 0.12 s elapsed, 98% CPU, 4400 KB max
+RSS, 0 major page faults, and 380 minor page faults.
 
 Current CCD step-bound local gates:
 

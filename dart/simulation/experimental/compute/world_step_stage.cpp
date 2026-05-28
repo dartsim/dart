@@ -717,6 +717,7 @@ struct StaticGroundBarrier
 struct DeformableContactSolverScratch
 {
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
+  std::vector<std::uint8_t> surfaceContactPointMask;
   dc::ContactCandidateSet candidates;
   dc::detail::ContactCandidateSweepScratch sweepScratch;
 };
@@ -758,15 +759,50 @@ dc::ContinuousCollisionStepOptions makeSurfaceContactCcdOptions()
 //==============================================================================
 void syncSurfaceContactTopology(
     std::span<const comps::DeformableSurfaceTriangle> source,
+    std::size_t nodeCount,
+    bool restrictPointsToReferencedSurfaceNodes,
     DeformableContactSolverScratch& scratch)
 {
   scratch.surfaceTriangles.clear();
   scratch.surfaceTriangles.reserve(source.size());
+  if (restrictPointsToReferencedSurfaceNodes) {
+    scratch.surfaceContactPointMask.assign(nodeCount, 0u);
+  } else {
+    scratch.surfaceContactPointMask.clear();
+  }
+
   for (const auto& triangle : source) {
     scratch.surfaceTriangles.push_back(
         DeformableSurfaceTriangle{
             triangle.nodeA, triangle.nodeB, triangle.nodeC});
+    if (restrictPointsToReferencedSurfaceNodes) {
+      scratch.surfaceContactPointMask[triangle.nodeA] = 1u;
+      scratch.surfaceContactPointMask[triangle.nodeB] = 1u;
+      scratch.surfaceContactPointMask[triangle.nodeC] = 1u;
+    }
   }
+}
+
+//==============================================================================
+void filterSurfaceContactPointCandidates(
+    dc::ContactCandidateSet& candidates,
+    std::span<const std::uint8_t> pointMask)
+{
+  if (pointMask.empty()) {
+    return;
+  }
+
+  auto& pointTriangleCandidates = candidates.pointTriangleCandidates;
+  pointTriangleCandidates.erase(
+      std::remove_if(
+          pointTriangleCandidates.begin(),
+          pointTriangleCandidates.end(),
+          [&](const dc::PointTriangleCandidate& candidate) {
+            return candidate.point >= pointMask.size()
+                   || pointMask[candidate.point] == 0u;
+          }),
+      pointTriangleCandidates.end());
+  candidates.stats.pointTriangleCandidateCount = pointTriangleCandidates.size();
 }
 
 //==============================================================================
@@ -1125,6 +1161,8 @@ bool applySurfaceContactCcdLimit(
       makeSurfaceContactCandidateOptions(),
       contactScratch.candidates,
       contactScratch.sweepScratch);
+  filterSurfaceContactPointCandidates(
+      contactScratch.candidates, contactScratch.surfaceContactPointMask);
   stats.surfaceContactPointTriangleCandidates
       += contactScratch.candidates.pointTriangleCandidates.size();
   stats.surfaceContactEdgeEdgeCandidates
@@ -1294,7 +1332,11 @@ void advanceDeformableBody(
 
   stats.nodeCount += nodeCount;
   stats.edgeCount += model.edges.size();
-  syncSurfaceContactTopology(topology.surfaceTriangles, contactScratch);
+  syncSurfaceContactTopology(
+      topology.surfaceTriangles,
+      nodeCount,
+      !topology.tetrahedra.empty(),
+      contactScratch);
 
   scratch.inertialTargets.resize(nodeCount);
   scratch.next.resize(nodeCount);
