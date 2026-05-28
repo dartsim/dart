@@ -850,6 +850,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added bounded outer lagged-friction passes to the internal rigid IPC
     projected-Newton solve, including a zero-iteration friction disable,
     refreshed momentum-balance diagnostics, and runtime active-pass counts.
+  - Added a runtime regression proving lagged rigid IPC friction observably
+    brakes a tangential slide at an activated mesh contact relative to the
+    frictionless solve, and reports active friction constraints/passes.
+  - Added the first rigid IPC performance benchmark (`bm_rigid_ipc_solver`)
+    covering the per-primitive reduced barrier kernels, scene-level assembly,
+    the projected-Newton solve, and the conservative CCD line search, with a
+    benchmark methodology and baseline tracker. Initial measurements show the
+    scene assembly is O(N^2) (no broad phase yet).
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

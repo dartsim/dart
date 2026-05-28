@@ -119,9 +119,13 @@ Performance pillar is now in scope (maintainer directive): benchmark the rigid
 IPC path against the current DART rigid contact path, the audited reference
 (`/tmp/rigid-ipc` `tools/benchmark.py`), and the paper scene families, then
 optimize until DART beats them. This is gated on completing the algorithm's
-correctness (rigorous interval CCD, corpus parity, production convergence).
-Phase 3 convergence/contact corpus criteria, Phase 2 corpus parity, and Phase 1
-runtime example coverage remain open fallback slices.
+correctness (rigorous interval CCD, corpus parity, production convergence). The
+first DART-owned rigid IPC benchmark (`bm_rigid_ipc_solver`) and the comparison
+methodology, baseline snapshot, and open findings live in
+[`benchmarks.md`](benchmarks.md); it already shows scene assembly is O(N^2)
+(no broad phase), the first optimization target. Phase 3 convergence/contact
+corpus criteria, Phase 2 corpus parity, and Phase 1 runtime example coverage
+remain open fallback slices.
 
 ## Context That Would Be Lost
 

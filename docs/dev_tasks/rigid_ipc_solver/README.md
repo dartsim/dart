@@ -204,7 +204,10 @@ DART-owned implementation.
 - Performance rows are not complete until DART records benchmark packets
   against the current DART rigid contact path, the audited reference
   implementation, and the paper scene families. Slower rows need an explicit
-  accepted tradeoff instead of a parity claim.
+  accepted tradeoff instead of a parity claim. The benchmark harness,
+  comparison methodology, baseline snapshot, and open performance findings are
+  tracked in [`benchmarks.md`](benchmarks.md); `bm_rigid_ipc_solver` is the
+  first DART-owned rigid IPC benchmark.
 - Keep public DART names method/capability based. Internal code may cite the
   paper and upstream paths for tests and manifest provenance, but user-facing
   APIs should not expose upstream project names as solver identities.
