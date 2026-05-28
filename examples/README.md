@@ -13,11 +13,9 @@ standalone programs:
   copy-pasteable template for setting up an executable, CMake-based C++ project
   that links DART.
 - A few **standalone GUI examples** remain separate because of special build
-  needs, because their sources are reused by the test suite, or because they
-  landed upstream after the demos consolidation: `atlas_simbicon`,
-  `collision_sandbox`, `experimental_deformable_gui`, and `wam_ikfast`.
-  `gui_scene_diagnostics` is a headless GUI-descriptor inspector rather than a
-  viewer scene.
+  needs or because their sources are reused by the test suite: `atlas_simbicon`,
+  `collision_sandbox`, and `wam_ikfast`. `gui_scene_diagnostics` is a headless
+  GUI-descriptor inspector rather than a viewer scene.
 - **Headless / CLI examples**: `csv_logger`, `headless_simulation`,
   `speed_test`, and `unified_loading` are console programs and stay standalone.
 

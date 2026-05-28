@@ -50,6 +50,7 @@ set(demos_scene_sources
   "${CMAKE_CURRENT_LIST_DIR}/scenes/g1_puppet.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/human_joint_limits.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_rigid_body_gui.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_deformable.cpp"
 )
 
 add_library(demos_scenes STATIC ${demos_scene_sources})

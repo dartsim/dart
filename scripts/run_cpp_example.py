@@ -79,7 +79,6 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "atlas_simbicon": (),
     "collision_sandbox": (),
     "wam_ikfast": (),
-    "experimental_deformable_gui": (),
     "gui_scene_diagnostics": (),
 }
 
@@ -115,6 +114,7 @@ _DEMOS_SCENE_IDS = (
     "simulation_event_handler",
     "rigid_shapes",
     "experimental_rigid_body",
+    "experimental_deformable",
     "capsule_ground_contact",
     "hardcoded_design",
     "box_stacking",

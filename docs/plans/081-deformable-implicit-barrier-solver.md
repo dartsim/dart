@@ -119,9 +119,9 @@
   test directory or a new registered test directory is added explicitly.
 - `pixi run lint`, `pixi run build`, focused C++ test build/run, and
   `pixi run check-api-boundaries` pass.
-- `experimental_deformable_gui` renders a long-horizon headless Filament frame
-  sequence that visibly exercises fixed anchors, spring deformation, and the
-  explicit static ground barrier.
+- The `experimental_deformable` demos scene renders a long-horizon headless
+  Filament frame sequence that visibly exercises fixed anchors, spring
+  deformation, and the explicit static ground barrier.
 - `bm_deformable_body` records node/edge throughput for spring grids with and
   without the static-ground barrier, a rigid-only/no-deformable baseline, and
   stage-level solver counters so performance changes have a local
@@ -142,11 +142,11 @@
   footprint, active-contact sliding, static-ground barrier feasibility,
   ordinary static collision opt-out behavior, determinism, stage metadata, and
   binary serialization.
-- `experimental_deformable_gui` can be run with:
-  `pixi run ex experimental_deformable_gui --headless --frames 180 --width 960 --height 540 --out /tmp/experimental_deformable_gui_frames --screenshot /tmp/experimental_deformable_gui.ppm`.
-  Use `--deformable-view combined`, `--deformable-view surface`, and
-  `--deformable-view points` when recording final visual evidence for renderer
-  or example changes.
+- The `experimental_deformable` demos scene can be run with:
+  `pixi run demos -- --scene experimental_deformable --headless --frames 180 --width 960 --height 540 --screenshot /tmp/experimental_deformable.ppm`.
+  Toggle the `Surface Mesh`, `Point Masses`, and `Spring Edges` checkboxes in
+  the scene's panel when recording final visual evidence for renderer or
+  example changes.
 - Reusable deformable rendering is covered by `UNIT_gui_FilamentSceneExtraction`
   for the `dart::gui` descriptor path.
 - `bm_deformable_body` can be run with:

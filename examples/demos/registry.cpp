@@ -233,6 +233,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Soft Bodies",
        "Soft-body simulation with recorded-state playback.",
        &makeSoftBodiesScene});
+  scenes.push_back(
+      {"experimental_deformable",
+       "Experimental Deformable",
+       "Soft Bodies",
+       "A spring-net deformable body on the experimental physics solver.",
+       &makeExperimentalDeformableScene});
 
   // Robots
   scenes.push_back(

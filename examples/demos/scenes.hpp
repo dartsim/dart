@@ -57,6 +57,7 @@ dart::gui::ApplicationOptions makeFetchScene();
 dart::gui::ApplicationOptions makeAtlasPuppetScene();
 dart::gui::ApplicationOptions makeHuboPuppetScene();
 dart::gui::ApplicationOptions makeExperimentalRigidBodyScene();
+dart::gui::ApplicationOptions makeExperimentalDeformableScene();
 dart::gui::ApplicationOptions makeG1PuppetScene();
 dart::gui::ApplicationOptions makeHumanJointLimitsScene();
 
