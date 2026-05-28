@@ -1115,13 +1115,135 @@ TEST(DartsimViewportActions, CameraPresetsPreserveTargetAndDistance)
   dart::gui::OrbitCamera invalid = current;
   invalid.target
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
+  invalid.up = Eigen::Vector3d::Zero();
+  invalid.yaw = std::numeric_limits<double>::quiet_NaN();
+  invalid.pitch = std::numeric_limits<double>::infinity();
   invalid.distance = -1.0;
   const auto perspective = ui::applyViewportCameraAction(
       engine, invalid, ui::ViewportCameraActionKind::Perspective);
   ASSERT_TRUE(perspective.ok);
   ASSERT_TRUE(perspective.camera.has_value());
   EXPECT_TRUE(perspective.camera->target.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(perspective.camera->up.isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_NEAR(perspective.camera->yaw, -0.78, 1e-12);
+  EXPECT_NEAR(perspective.camera->pitch, 0.42, 1e-12);
   EXPECT_GE(perspective.camera->distance, 0.8);
+}
+
+TEST(DartsimViewportActions, RejectsUnknownViewportActions)
+{
+  SimEngine engine;
+
+  ui::ViewportLayerFilterState filters;
+  const auto layer = ui::setViewportLayerVisible(
+      filters, static_cast<ui::ViewportLayerKind>(999), false);
+  EXPECT_TRUE(layer.ok);
+  EXPECT_EQ(layer.message, "Unknown hidden");
+
+  const auto camera = ui::applyViewportCameraAction(
+      engine, testCamera(), static_cast<ui::ViewportCameraActionKind>(999));
+  EXPECT_FALSE(camera.ok);
+  EXPECT_EQ(camera.message, "Unknown camera action");
+
+  ui::ViewportCameraControlState controls;
+  const auto control = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      static_cast<ui::ViewportCameraControlActionKind>(999));
+  EXPECT_FALSE(control.ok);
+  EXPECT_EQ(control.message, "Unknown camera control");
+
+  ui::ViewportLayoutState layout;
+  const auto layoutResult = ui::applyViewportLayoutAction(
+      layout, static_cast<ui::ViewportLayoutActionKind>(999));
+  EXPECT_FALSE(layoutResult.ok);
+  EXPECT_EQ(layoutResult.message, "Unknown viewport layout");
+
+  const auto paneAction = ui::viewportPaneActivationAction(
+      static_cast<dart::gui::ViewportPaneKind>(999));
+  EXPECT_FALSE(paneAction.has_value());
+
+  const auto paneResult = ui::applyViewportPaneActivation(
+      layout, static_cast<dart::gui::ViewportPaneKind>(999));
+  EXPECT_FALSE(paneResult.ok);
+  EXPECT_EQ(paneResult.message, "Unknown viewport pane");
+
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(static_cast<ui::ViewportPaneKind>(999)),
+      ui::ViewportCameraActionKind::Perspective);
+}
+
+TEST(DartsimViewportActions, CameraControlsAndTrackingAreViewOnly)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+
+  auto actions
+      = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_TRUE(actions[0].checked);
+  EXPECT_FALSE(actions[3].enabled);
+  EXPECT_EQ(actions[3].disabledReason, "No visible selected object");
+
+  auto tracked
+      = ui::trackedSelectionCamera(engine, testCamera(), filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "Selection tracking off");
+
+  controls.trackSelection = true;
+  tracked = ui::trackedSelectionCamera(engine, testCamera(), filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "No visible selected object");
+
+  controls.lockCamera = true;
+  tracked = ui::trackedSelectionCamera(engine, testCamera(), filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "Camera locked");
+
+  const dart::gui::OrbitCameraControlOptions lockedOptions
+      = ui::viewportCameraControlOptions(controls);
+  EXPECT_TRUE(lockedOptions.locked);
+  EXPECT_EQ(lockedOptions.mouseMode, dart::gui::OrbitCameraMouseMode::Orbit);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+  controls.lockCamera = false;
+  controls.mouseMode = dart::gui::OrbitCameraMouseMode::Zoom;
+  actions = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_TRUE(actions[2].checked);
+  EXPECT_TRUE(actions[3].enabled);
+
+  const dart::gui::OrbitCamera current = testCamera();
+  tracked = ui::trackedSelectionCamera(engine, current, filters, controls);
+  ASSERT_TRUE(tracked.ok);
+  ASSERT_TRUE(tracked.camera.has_value());
+  EXPECT_TRUE(tracked.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 0.5)));
+  EXPECT_EQ(tracked.camera->distance, current.distance);
+
+  const auto toggled = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_TRUE(toggled.ok);
+  EXPECT_EQ(toggled.message, "Selection tracking off");
+  EXPECT_FALSE(controls.trackSelection);
+
+  controls.mouseMode = static_cast<dart::gui::OrbitCameraMouseMode>(999);
+  const ui::ViewportStatus status = ui::buildViewportStatus(
+      engine, filters, controls, ui::ViewportLayoutState{});
+  EXPECT_EQ(status.cameraModeLabel, "Camera Mode");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }
 
 TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
@@ -1181,10 +1303,28 @@ TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
   EXPECT_NEAR(frontCamera.camera->pitch, 0.0, 1e-12);
 
   result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateRightPane);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Right Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Right);
+  actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_TRUE(actions[4].checked);
+
+  result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateTopPane);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Top Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Top);
+  actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_TRUE(actions[5].checked);
+
+  result = ui::applyViewportLayoutAction(
       layout, ui::ViewportLayoutActionKind::SingleView);
   EXPECT_TRUE(result.ok);
   EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
-  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Front);
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Top);
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
 }
@@ -1251,6 +1391,30 @@ TEST(DartsimViewportActions, ViewportLayoutRemembersIndependentPaneCameras)
 
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, AllPaneCameraRejectsUnsupportedActions)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+
+  const auto result = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::Perspective,
+      filters,
+      layout);
+  EXPECT_FALSE(result.ok);
+  EXPECT_EQ(result.message, "Unsupported all-pane camera action");
 }
 
 TEST(DartsimViewportActions, AllPaneFitFramesSceneForRememberedPaneCameras)
@@ -1691,6 +1855,15 @@ TEST(DartsimViewportActions, ViewportStatusSummarizesViewOnlyState)
   engine.markProjectClean();
 
   ui::ViewportLayerFilterState filters;
+  const ui::ViewportStatus defaultStatus = ui::buildViewportStatus(
+      engine,
+      filters,
+      ui::ViewportCameraControlState{},
+      ui::ViewportLayoutState{});
+  EXPECT_EQ(
+      defaultStatus.visibleLayerLabel,
+      "Visible layers: Rigid Bodies, Links, Frames, Sensors, Collisions");
+
   ASSERT_TRUE(
       ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
           .ok);

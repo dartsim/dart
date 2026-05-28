@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 
 #include <cstdint>
@@ -810,4 +811,33 @@ TEST(DartsimWatchActions, ProjectEventsClearSessionWatchState)
   engine.newProject();
   EXPECT_TRUE(state.targets.empty());
   EXPECT_TRUE(state.series.empty());
+}
+
+TEST(DartsimWatchActions, ProjectLoadedClearsSessionWatchState)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_watch_project_loaded.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(commands::addRigidBody(ShapeType::Sphere));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  ui::WatchState state;
+  engine.events().subscribe(
+      [&state](const Event& event) { ui::handleWatchEvent(state, event); });
+
+  engine.execute(commands::addRigidBody(ShapeType::Box));
+  ASSERT_TRUE(ui::watchSelectedObjects(state, engine).ok);
+  ui::recordWatchSample(state, engine);
+  ASSERT_FALSE(state.targets.empty());
+  ASSERT_FALSE(state.series.empty());
+
+  ASSERT_TRUE(engine.loadProject(path.string()));
+  EXPECT_TRUE(state.targets.empty());
+  EXPECT_TRUE(state.series.empty());
+
+  std::filesystem::remove(path);
 }
