@@ -154,7 +154,7 @@ acceleration for larger meshes.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-barrier-kernels
+git checkout feature/ipc-ccd-line-search
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
