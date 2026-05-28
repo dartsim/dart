@@ -802,6 +802,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added reusable internal sweep-item scratch for IPC static and motion-aware
     contact candidate builders and wired the deformable surface-contact line
     search to reuse it per body.
+  - Optimized internal IPC cross-set sweep-pair traversal used by experimental
+    surface candidate and CCD checks so the sorted right-hand-side AABB prefix
+    already expired for the current left-hand-side AABB is skipped.
   - Added internal inter-body deformable surface CCD line-search limiting with
     stage-start surface snapshots, cross-body point-triangle and edge-edge
     conservative CCD checks, focused regressions, and benchmark counters.

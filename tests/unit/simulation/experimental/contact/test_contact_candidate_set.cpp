@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 namespace sx = dart::simulation::experimental;
@@ -91,6 +92,51 @@ bool containsEdgeEdge(
       [&](const dc::EdgeEdgeCandidate& candidate) {
         return candidate.edgeA == edgeA && candidate.edgeB == edgeB;
       });
+}
+
+//==============================================================================
+dc::detail::SweepItem sweepItem(
+    std::size_t id, const Eigen::Vector3d& min, const Eigen::Vector3d& max)
+{
+  return dc::detail::SweepItem{id, dc::detail::CandidateAabb{min, max}};
+}
+
+//==============================================================================
+std::vector<std::pair<std::size_t, std::size_t>> visitSweepPairsOptimized(
+    std::vector<dc::detail::SweepItem> lhs,
+    std::vector<dc::detail::SweepItem> rhs)
+{
+  std::vector<std::pair<std::size_t, std::size_t>> pairs;
+  dc::detail::visitSweepPairs(
+      lhs, rhs, [&](std::size_t lhsId, std::size_t rhsId) {
+        pairs.emplace_back(lhsId, rhsId);
+      });
+  return pairs;
+}
+
+//==============================================================================
+std::vector<std::pair<std::size_t, std::size_t>> visitSweepPairsNaiveReference(
+    std::vector<dc::detail::SweepItem> lhs,
+    std::vector<dc::detail::SweepItem> rhs)
+{
+  dc::detail::sortSweepItems(lhs);
+  dc::detail::sortSweepItems(rhs);
+
+  std::vector<std::pair<std::size_t, std::size_t>> pairs;
+  for (const auto& lhsItem : lhs) {
+    for (const auto& rhsItem : rhs) {
+      if (rhsItem.aabb.min.x() > lhsItem.aabb.max.x()) {
+        break;
+      }
+      if (rhsItem.aabb.max.x() < lhsItem.aabb.min.x()) {
+        continue;
+      }
+      if (lhsItem.aabb.overlaps(rhsItem.aabb)) {
+        pairs.emplace_back(lhsItem.id, rhsItem.id);
+      }
+    }
+  }
+  return pairs;
 }
 
 //==============================================================================
@@ -213,6 +259,48 @@ void expectMotionAwareSweepMatchesBruteForce(
 }
 
 } // namespace
+
+//==============================================================================
+TEST(IpcContactCandidateSet, VisitSweepPairsMatchesNaiveReference)
+{
+  std::vector<dc::detail::SweepItem> lhs{
+      sweepItem(
+          2, Eigen::Vector3d(2.0, 0.0, 0.0), Eigen::Vector3d(3.0, 1.0, 1.0)),
+      sweepItem(
+          0, Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(1.0, 1.0, 1.0)),
+      sweepItem(
+          1, Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d(2.0, 1.0, 1.0)),
+  };
+  std::vector<dc::detail::SweepItem> rhs{
+      sweepItem(
+          20,
+          Eigen::Vector3d(-5.0, 5.0, 0.0),
+          Eigen::Vector3d(100.0, 6.0, 1.0)),
+      sweepItem(
+          21, Eigen::Vector3d(-4.0, 0.0, 0.0), Eigen::Vector3d(-3.5, 1.0, 1.0)),
+      sweepItem(
+          10, Eigen::Vector3d(-3.0, 0.0, 0.0), Eigen::Vector3d(-2.0, 1.0, 1.0)),
+      sweepItem(
+          12, Eigen::Vector3d(2.5, 0.0, 0.0), Eigen::Vector3d(2.75, 1.0, 1.0)),
+      sweepItem(
+          11, Eigen::Vector3d(0.5, 2.0, 0.0), Eigen::Vector3d(1.5, 3.0, 1.0)),
+      sweepItem(
+          14, Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d(1.25, 1.0, 1.0)),
+      sweepItem(
+          13, Eigen::Vector3d(4.0, 0.0, 0.0), Eigen::Vector3d(5.0, 1.0, 1.0)),
+  };
+
+  const auto pairs = visitSweepPairsOptimized(lhs, rhs);
+  const auto referencePairs = visitSweepPairsNaiveReference(lhs, rhs);
+
+  EXPECT_EQ(pairs, referencePairs);
+  const std::vector<std::pair<std::size_t, std::size_t>> expectedPairs{
+      {0, 14},
+      {1, 14},
+      {2, 12},
+  };
+  EXPECT_EQ(pairs, expectedPairs);
+}
 
 //==============================================================================
 TEST(IpcContactCandidateSet, DerivesUniqueSurfaceEdgesDeterministically)

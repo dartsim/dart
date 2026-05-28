@@ -70,9 +70,13 @@
   - [x] Internal static-ground-barrier CCD line-search sub-slice: analytic
         point-mass node sweeps against explicitly opted-in static rigid ground
         barriers, finite-footprint regressions, and benchmark counters.
+  - [x] Internal sweep-pair traversal sub-slice: optimized cross-set sorted
+        sweep traversal used by experimental surface candidate and CCD checks
+        so the expired right-hand-side AABB prefix is no longer rescanned for
+        every left-hand-side item.
   - [ ] Remaining Phase 2 work: deformable-rigid mesh contact candidates,
-        broader solver-wired CCD line-search coverage, and allocation-free
-        sweep-pair traversal for larger meshes.
+        broader solver-wired CCD line-search coverage, and stronger spatial
+        acceleration for larger meshes.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -119,8 +123,8 @@ DART-owned implementation.
 ## Immediate Next Steps
 
 1. Continue Phase 2 with deformable-rigid mesh contact candidates, broader
-   solver-wired CCD coverage, and allocation-free sweep-pair traversal for
-   larger meshes. The current primitive kernels, candidate sets, analytic
+   solver-wired CCD coverage, and stronger spatial acceleration for larger
+   meshes. The current primitive kernels, candidate sets, analytic
    Hessians, clamped-log barrier kernels, tangent stencils, motion-aware swept
    candidate culling, reusable candidate-output and sweep-item buffers,
    per-body surface-contact CCD limiter, inter-body surface CCD limiter, and
@@ -246,6 +250,17 @@ changing topologies, preserving scratch capacity, and per-body reuse in the
 same-body surface-contact line search. It does not yet remove the O(n^2)
 sweep-pair traversal itself, add deformable-rigid contact, or claim full IPC
 contact behavior.
+
+For the sweep-pair traversal sub-slice, keep the verification language precise:
+it covers internal cross-set sweep traversal used by experimental surface
+candidate generation and inter-body surface CCD checks. Sorted right-hand-side
+AABBs whose maximum x coordinate is already behind the current left-hand-side
+minimum x are skipped as a prefix instead of rescanned. This is not a full
+sweep-and-prune active set: a long early right-hand-side interval can still
+keep later expired items in the scan. It preserves the existing visitor pair
+semantics and does not change public APIs, exact distance filters, topology
+filters, same-set edge-edge self traversal, deformable-rigid contact, or full
+IPC contact behavior.
 
 For the inter-body surface-contact CCD line-search sub-slice, keep the
 verification language precise: it covers cross-surface point-triangle and
@@ -429,6 +444,40 @@ numbers rather than final performance claims. `perf stat` could not run because
 `perf_event_paranoid=4`; `/usr/bin/time -v` on the motion-aware 128-pair
 reusable-versus-scratch benchmark reported 0.12 s elapsed, 98% CPU, 4400 KB max
 RSS, 0 major page faults, and 380 minor page faults.
+
+Current sweep-pair traversal local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_contact_candidate_set test_continuous_collision_step test_deformable_body bm_ipc_candidate_set bm_ipc_motion_aware_candidate_set bm_deformable_body
+./build/default/cpp/Release/bin/test_contact_candidate_set --gtest_filter='IpcContactCandidateSet.VisitSweepPairsMatchesNaiveReference:IpcContactCandidateSet.*Sweep*:IpcContactCandidateSet.*Reusable*:IpcContactCandidateSet.MotionAware*'
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SurfaceContactCcd*:DeformableBody.InterBodySurfaceContactCcd*:DeformableBody.SurfaceFreeParticlesKeepFastPath:DeformableBody.SurfaceContactScratchIsPerBody:DeformableBody.StageMetadataUsesDeformableDomain'
+ctest --test-dir build/default/cpp/Release -R '^(test_contact_candidate_set|test_continuous_collision_step)$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcCandidateSet(CrossSweepExpiredPrefix|(Scratch|Reusable)?Sweep)'
+./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcMotionAwareCandidateSet(Scratch|Reusable)?Sweep'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_Deformable(SurfaceContactStage|InterBodySurfaceContactStage)'
+```
+
+The sweep-pair traversal gate should prove that optimized cross-set traversal
+still matches the naive helper reference, still matches brute-force/static and
+motion-aware candidate assembly, exercises the expired-prefix microbenchmark,
+preserves reusable builder behavior, and leaves solver-wired surface/inter-body
+CCD counters unchanged.
+
+The latest local sweep-pair traversal gate pass on 2026-05-27 passed the
+focused target build, 13 filtered `test_contact_candidate_set` cases, 11
+filtered `test_deformable_body` cases, and the
+`test_contact_candidate_set`/`test_continuous_collision_step` ctest subset.
+Representative benchmark smoke numbers included the direct expired-prefix
+cross-sweep case at about 1.1 us, 7.0 us, and 31.0 us for 64, 256, and 1024
+left/right items; static cloth resolution 16 at about 328 us, 312 us, and 315 us
+for return-wrapper, reusable-candidate, and reusable-candidate-plus-scratch
+paths; tetra-surface resolution 8 at about 50 us, 47 us, and 58 us;
+motion-aware falling-points resolution 128 at about 19.7 us, 20.3 us, and
+21.2 us; and coherent translation resolution 64 at about 16.7 us for the return
+path and 16.6 us for reusable scratch. The deformable surface/inter-body stage
+smokes preserved the expected candidate, CCD-hit, limited-step, and line-search
+counters. CPU scaling was enabled, so treat these as local smoke numbers rather
+than final performance claims.
 
 Current inter-body surface-contact CCD local gates:
 
