@@ -500,6 +500,32 @@ bool RigidBody::isDeformableGroundBarrier() const
 }
 
 //==============================================================================
+void RigidBody::setDeformableSurfaceCcdObstacle(bool enabled)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  auto& registry = getWorld()->getRegistry();
+  if (enabled) {
+    registry.get_or_emplace<comps::DeformableSurfaceCcdObstacleTag>(
+        getEntity());
+  } else {
+    registry.remove<comps::DeformableSurfaceCcdObstacleTag>(getEntity());
+  }
+}
+
+//==============================================================================
+bool RigidBody::isDeformableSurfaceCcdObstacle() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()
+      ->getRegistry()
+      .all_of<comps::DeformableSurfaceCcdObstacleTag>(getEntity());
+}
+
+//==============================================================================
 std::optional<CollisionShape> RigidBody::getCollisionShape() const
 {
   DART_EXPERIMENTAL_THROW_T_IF(

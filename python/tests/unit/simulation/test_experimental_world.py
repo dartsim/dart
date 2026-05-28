@@ -1949,6 +1949,11 @@ def test_experimental_collision_query():
     assert body_a.has_collision_shape
     assert body_a.collision_shape.type == sx.CollisionShapeType.SPHERE
     assert body_b.collision_shape.type == sx.CollisionShapeType.BOX
+    assert not body_b.is_deformable_surface_ccd_obstacle
+    body_b.is_deformable_surface_ccd_obstacle = True
+    assert body_b.is_deformable_surface_ccd_obstacle
+    body_b.is_deformable_surface_ccd_obstacle = False
+    assert not body_b.is_deformable_surface_ccd_obstacle
     assert world.add_rigid_body("c").collision_shape is None
 
     contacts = world.collide()

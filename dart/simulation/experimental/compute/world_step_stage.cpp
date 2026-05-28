@@ -54,6 +54,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -731,7 +732,7 @@ struct DeformableContactSolverScratch
 };
 
 //==============================================================================
-struct DeformableSurfaceSnapshot
+struct SurfaceContactSnapshot
 {
   entt::entity entity = entt::null;
   std::vector<Eigen::Vector3d> positions;
@@ -972,7 +973,7 @@ InterBodySurfaceContactResult interBodySurfaceContactStepBound(
     std::span<const DeformableSurfaceTriangle> currentTriangles,
     std::span<const std::uint8_t> currentPointMask,
     std::span<const dc::SurfaceEdge> currentEdges,
-    const DeformableSurfaceSnapshot& obstacle,
+    const SurfaceContactSnapshot& obstacle,
     const dc::ContactCandidateOptions& candidateOptions,
     const dc::ContinuousCollisionStepOptions& ccdOptions,
     DeformableContactSolverScratch& scratch)
@@ -1077,6 +1078,111 @@ InterBodySurfaceContactResult interBodySurfaceContactStepBound(
       });
 
   return aggregate;
+}
+
+//==============================================================================
+SurfaceContactSnapshot makeStaticBoxSurfaceCcdSnapshot(
+    entt::entity entity,
+    const Eigen::Vector3d& halfExtents,
+    const comps::Transform& transform)
+{
+  SurfaceContactSnapshot snapshot;
+  snapshot.entity = entity;
+  snapshot.positions.reserve(8);
+
+  const Eigen::Matrix3d rotation
+      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
+  const std::array<Eigen::Vector3d, 8> localVertices{
+      Eigen::Vector3d(-halfExtents.x(), -halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), -halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(-halfExtents.x(), halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(-halfExtents.x(), -halfExtents.y(), halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), -halfExtents.y(), halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), halfExtents.y(), halfExtents.z()),
+      Eigen::Vector3d(-halfExtents.x(), halfExtents.y(), halfExtents.z())};
+  for (const auto& local : localVertices) {
+    snapshot.positions.push_back(transform.position + rotation * local);
+  }
+
+  constexpr std::array<std::array<std::size_t, 3>, 12> kBoxTriangles{{
+      {{0, 3, 1}},
+      {{1, 3, 2}},
+      {{4, 5, 7}},
+      {{5, 6, 7}},
+      {{0, 1, 4}},
+      {{1, 5, 4}},
+      {{2, 3, 6}},
+      {{3, 7, 6}},
+      {{0, 4, 3}},
+      {{3, 4, 7}},
+      {{1, 2, 5}},
+      {{2, 6, 5}},
+  }};
+  snapshot.surfaceTriangles.reserve(kBoxTriangles.size());
+  for (const auto& triangle : kBoxTriangles) {
+    snapshot.surfaceTriangles.push_back(
+        DeformableSurfaceTriangle{triangle[0], triangle[1], triangle[2]});
+  }
+
+  constexpr std::array<std::array<std::size_t, 2>, 12> kBoxEdges{{
+      {{0, 1}},
+      {{1, 2}},
+      {{2, 3}},
+      {{0, 3}},
+      {{4, 5}},
+      {{5, 6}},
+      {{6, 7}},
+      {{4, 7}},
+      {{0, 4}},
+      {{1, 5}},
+      {{2, 6}},
+      {{3, 7}},
+  }};
+  snapshot.surfaceEdges.reserve(kBoxEdges.size());
+  for (const auto& edge : kBoxEdges) {
+    snapshot.surfaceEdges.push_back(
+        dc::detail::makeSurfaceEdge(edge[0], edge[1]));
+  }
+
+  return snapshot;
+}
+
+//==============================================================================
+std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
+    const World& world, DeformableSolverStats& stats)
+{
+  ++stats.staticRigidSurfaceCcdSnapshotBuilds;
+
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<SurfaceContactSnapshot> snapshots;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    if (geometry.shape.type != CollisionShapeType::Box
+        || !geometry.shape.halfExtents.allFinite()
+        || (geometry.shape.halfExtents.array() <= 0.0).any()
+        || !transform.position.allFinite()) {
+      continue;
+    }
+
+    auto snapshot = makeStaticBoxSurfaceCcdSnapshot(
+        entity, geometry.shape.halfExtents, transform);
+    stats.staticRigidSurfaceCcdTriangleCount
+        += snapshot.surfaceTriangles.size();
+    stats.staticRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
+    snapshots.push_back(std::move(snapshot));
+    ++stats.staticRigidSurfaceCcdBoxCount;
+  }
+
+  return snapshots;
 }
 
 //==============================================================================
@@ -1839,7 +1945,7 @@ bool applySurfaceContactCcdLimit(
 //==============================================================================
 bool applyInterBodySurfaceContactCcdLimit(
     entt::entity entity,
-    std::span<const DeformableSurfaceSnapshot> surfaceSnapshots,
+    std::span<const SurfaceContactSnapshot> surfaceSnapshots,
     const std::vector<Eigen::Vector3d>& current,
     const std::vector<Eigen::Vector3d>& direction,
     const std::vector<Eigen::Vector3d>& gradient,
@@ -1933,6 +2039,100 @@ bool applyInterBodySurfaceContactCcdLimit(
 
   step *= safeFraction;
   ++stats.interBodySurfaceContactCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
+bool applyStaticRigidSurfaceCcdLimit(
+    std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (rigidSurfaceSnapshots.empty()) {
+    return true;
+  }
+
+  if (contactScratch.surfaceTriangles.empty()) {
+    contactScratch.interBodyCurrentEdges.clear();
+  } else {
+    dc::buildUniqueSurfaceEdges(
+        contactScratch.surfaceTriangles, contactScratch.interBodyCurrentEdges);
+  }
+
+  ++stats.staticRigidSurfaceCcdCandidateBuilds;
+  bool hit = false;
+  bool indeterminate = false;
+  double stepBound = 1.0;
+
+  for (const auto& snapshot : rigidSurfaceSnapshots) {
+    if (snapshot.surfaceTriangles.empty()) {
+      continue;
+    }
+
+    const auto result = interBodySurfaceContactStepBound(
+        current,
+        candidate,
+        contactScratch.surfaceTriangles,
+        contactScratch.surfaceContactPointMask,
+        contactScratch.interBodyCurrentEdges,
+        snapshot,
+        makeSurfaceContactCandidateOptions(),
+        makeSurfaceContactCcdOptions(),
+        contactScratch);
+
+    stats.staticRigidSurfaceCcdPointTriangleCandidates
+        += result.pointTriangleCandidateCount;
+    stats.staticRigidSurfaceCcdEdgeEdgeCandidates
+        += result.edgeEdgeCandidateCount;
+    stats.staticRigidSurfaceCcdPointTriangleChecks
+        += result.stats.pointTriangleChecks;
+    stats.staticRigidSurfaceCcdEdgeEdgeChecks += result.stats.edgeEdgeChecks;
+    stats.staticRigidSurfaceCcdHits += result.stats.hits;
+    stats.staticRigidSurfaceCcdMisses += result.stats.misses;
+    stats.staticRigidSurfaceCcdIndeterminateCount += result.stats.indeterminate;
+    stats.staticRigidSurfaceCcdZeroStepCount += result.stats.zeroStepCount;
+
+    indeterminate = indeterminate || result.indeterminate;
+    if (result.indeterminate) {
+      stepBound = 0.0;
+    }
+    if (result.hit && (!hit || result.stepBound < stepBound)) {
+      hit = true;
+      stepBound = result.stepBound;
+    }
+  }
+
+  if (indeterminate) {
+    return false;
+  }
+
+  if (!hit) {
+    return true;
+  }
+
+  stepBound = std::clamp(stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    ++stats.staticRigidSurfaceCcdZeroStepCount;
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    ++stats.staticRigidSurfaceCcdZeroStepCount;
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.staticRigidSurfaceCcdLimitedSteps;
   directionalDerivative = buildLineSearchCandidate(
       current, direction, gradient, fixed, step, candidate);
   return true;
@@ -2114,7 +2314,8 @@ void advanceDeformableBody(
     const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
     DeformableContactSolverScratch& contactScratch,
-    std::span<const DeformableSurfaceSnapshot> surfaceSnapshots,
+    std::span<const SurfaceContactSnapshot> surfaceSnapshots,
+    std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
@@ -2163,7 +2364,7 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  if (model.edges.empty() && barriers.empty()
+  if (model.edges.empty() && barriers.empty() && rigidSurfaceSnapshots.empty()
       && contactScratch.surfaceTriangles.empty()) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
@@ -2233,6 +2434,17 @@ void advanceDeformableBody(
             && applyInterBodySurfaceContactCcdLimit(
                 entity,
                 surfaceSnapshots,
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && applyStaticRigidSurfaceCcdLimit(
+                rigidSurfaceSnapshots,
                 scratch.next,
                 scratch.direction,
                 scratch.gradient,
@@ -2675,6 +2887,8 @@ void DeformableDynamicsStage::execute(
   }
 
   const auto barriers = collectStaticGroundBarriers(world);
+  const auto rigidSurfaceSnapshots
+      = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
   const auto gravity = world.getGravity();
   m_lastStats.staticGroundBarrierCount = barriers.size();
@@ -2695,7 +2909,7 @@ void DeformableDynamicsStage::execute(
         m_lastStats);
   }
 
-  std::vector<DeformableSurfaceSnapshot> surfaceSnapshots;
+  std::vector<SurfaceContactSnapshot> surfaceSnapshots;
   for (const auto entity : view) {
     const auto& state = view.get<comps::DeformableNodeState>(entity);
     const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
@@ -2703,7 +2917,7 @@ void DeformableDynamicsStage::execute(
       continue;
     }
 
-    DeformableSurfaceSnapshot snapshot;
+    SurfaceContactSnapshot snapshot;
     snapshot.entity = entity;
     snapshot.positions = state.positions;
     copySurfaceContactTopology(
@@ -2733,6 +2947,7 @@ void DeformableDynamicsStage::execute(
         scratch,
         contactScratch,
         surfaceSnapshots,
+        rigidSurfaceSnapshots,
         gravity,
         timeStep,
         barriers,
