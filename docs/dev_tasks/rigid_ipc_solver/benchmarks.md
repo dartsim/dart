@@ -123,6 +123,55 @@ starting, active-set reuse) follow from here.
   reduced-coordinate chain rule plus PSD eigen-projection. A candidate later
   optimization now that the broad phase bounds the active set.
 
+## Optimization roadmap (CPU and GPU)
+
+The maintainer directive is to beat the incumbent, the reference, and the paper,
+optimizing both CPU and GPU. Baseline #1 shows the rigid IPC path is ~3 orders
+of magnitude slower per step than the incumbent, so the climb is large and
+sequenced. Correctness gates come first, because a performance win on a scene
+the solver cannot correctly run is not a win.
+
+Order of execution (bounded slices, each benchmarked and regression-guarded):
+
+1. **CPU hot-path, behavior-preserving first.**
+   - Swept broad-phase cull in the line search. NOTE: unlike the instantaneous
+     barrier assembly (where a single-pose AABB is exact), the line search
+     covers motion over the step and rigid bodies follow curved trajectories
+     (linear rotation-vector interpolation). An endpoint-union AABB is NOT
+     conservative — a rotating body can swing a vertex outside the box spanned
+     by its start/end poses, which is exactly the mid-step contact the curved
+     CCD must catch. A correct cull must expand each body's swept AABB by a
+     rotational motion bound (the ACCD speed bound: max vertex displacement off
+     the linear chord for the step's rotation-vector delta). Guard with a
+     swept-equivalence regression mixing near and far rotating bodies.
+   - Spatial index (uniform grid / sort-and-sweep) so pair enumeration itself
+     is sub-quadratic, reusing the deformable candidate-set pattern.
+   - Per-primitive kernel cost (~6–8 µs): reduce the reduced-coordinate chain
+     rule and PSD eigen-projection cost (skip projection when the local Hessian
+     is already PSD; cheaper 12x12 projection); these touch numerics, so gate on
+     finite-difference and solver regressions.
+2. **CPU solver-structure, behavior-aware.**
+   - Warm-start the projected-Newton solve from the previous step's pose delta
+     and active set; reuse the active set across iterations where the barrier
+     stays active; lag assembly recomputation. Each changes the iterate path, so
+     gate on convergence regressions and the activated-contact runtime tests.
+3. **Correctness gates (run in parallel; block reference/paper claims).**
+   - Rigorous interval-arithmetic CCD and direct-row corpus parity vs the
+     audited reference; production convergence criteria; robust multi-body
+     contact. Until these land, reference/paper comparisons are not meaningful.
+4. **Reference and paper comparison.**
+   - Port matched `tools/benchmark.py` scene families and the paper tables into
+     DART benchmarks; record per-scene ratios; a win requires faster-at-matched-
+     accuracy or an explicitly accepted tradeoff.
+5. **GPU, private and benchmark-gated (PLAN-082 Workstream 7).**
+   - GPU work stays out of the public facade (no device/stream/memory-pool
+     types) and follows the established Phase-5 CUDA pattern
+     (`build-cuda`, `lint-phase5-cuda-*`, `bm_cuda_*`). It is gated until the CPU
+     algorithm has a representative, correct workload — a GPU port of an
+     immature solver optimizes the wrong thing. Target the data-parallel hot
+     path (per-primitive barrier/friction kernels, CCD) once the CPU active set
+     and convergence are stable, with CPU-vs-GPU benchmark packets.
+
 ## Status against the manifest
 
 The 8 `benchmark-script` rows and 77 `comparison` rows in
