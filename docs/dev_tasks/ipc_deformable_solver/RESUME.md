@@ -33,6 +33,13 @@ edge-edge Hessian paths for vertex, edge, face, and interior closest features.
 It is still scaffolding: tangent bases, solver-wired CCD line search, barrier
 assembly, projected Newton, and friction are not implemented yet.
 
+The barrier-kernel sub-slice adds internal IPC C2 clamped-log scalar barriers
+over squared distances, raw analytic point-triangle and edge-edge barrier
+gradients/Hessians through the distance kernels, and explicit-threshold
+edge-edge mollifier product-rule derivatives. It is still scaffolding: barrier
+stiffness adaptation, PSD projection, candidate-buffer assembly, solver-wired
+CCD line search, projected Newton, and friction are not implemented yet.
+
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
 incident/adjacent filtering, exact activation-distance filtering through the
@@ -51,15 +58,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-distance-hessian-optimization` - stacked on
-`feature/ipc-deformable-contact-kernels`, adding feature-wise analytic
-distance Hessians for the next deformable contact slices.
+`feature/ipc-barrier-kernels` - stacked on
+`feature/ipc-distance-hessian-optimization`, adding internal clamped-log
+barrier kernel scaffolding for the next deformable contact slices.
 
 ## Immediate Next Step
 
 After this sub-slice lands, continue Phase 2 with tangent bases,
-motion-aware candidate culling, barrier/candidate integration,
-solver-owned contact buffers, and solver-wired CCD line search.
+motion-aware candidate culling, candidate-buffer integration, solver-owned
+contact buffers, and solver-wired CCD line search.
 
 ## Context That Would Be Lost
 
@@ -75,7 +82,7 @@ solver-owned contact buffers, and solver-wired CCD line search.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-deformable-contact-kernels
+git checkout feature/ipc-barrier-kernels
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
@@ -86,6 +93,9 @@ cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_i
 cmake --build build/default/cpp/Release --target test_continuous_collision_step bm_ipc_continuous_collision_step
 ./build/default/cpp/Release/bin/test_continuous_collision_step
 ./build/default/cpp/Release/bin/bm_ipc_continuous_collision_step --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+cmake --build build/default/cpp/Release --target test_barrier_kernel bm_ipc_barrier_kernel
+./build/default/cpp/Release/bin/test_barrier_kernel
+./build/default/cpp/Release/bin/bm_ipc_barrier_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked

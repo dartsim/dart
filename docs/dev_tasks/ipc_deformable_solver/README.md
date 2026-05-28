@@ -38,8 +38,13 @@
         separation-band handling, deterministic candidate aggregation, exact CCD
         regression tests, sampled safety checks, and
         `bm_ipc_continuous_collision_step`.
+  - [x] Internal barrier-kernel sub-slice: IPC C2 clamped-log scalar barrier
+        functions over squared distances, raw analytic point-triangle and
+        edge-edge barrier gradients/Hessians, explicit-threshold edge-edge
+        mollifier product-rule derivatives, finite-difference regression tests,
+        and `bm_ipc_barrier_kernel`.
   - [ ] Remaining Phase 2 work: tangent bases, motion-aware candidate culling,
-        barrier/candidate integration, solver-owned contact buffers, and
+        candidate-buffer integration, solver-owned contact buffers, and
         solver-wired CCD line search.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
@@ -82,10 +87,10 @@ DART-owned implementation.
 ## Immediate Next Steps
 
 1. Continue Phase 2 with tangent bases, motion-aware candidate culling,
-   barrier/candidate integration, solver-owned contact buffers, and
+   candidate-buffer integration, solver-owned contact buffers, and
    solver-wired CCD line search. The current primitive kernels, candidate sets,
-   analytic Hessians, and CCD step-bound helpers are internal scaffolding only
-   and are not yet wired into `World::step()`.
+   analytic Hessians, clamped-log barrier kernels, and CCD step-bound helpers
+   are internal scaffolding only and are not yet wired into `World::step()`.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -153,6 +158,15 @@ does not yet cover motion-aware broad-phase culling, barrier assembly,
 solver-wired CCD line search, projected Newton, friction, persistent contact
 caches, tangent bases, or scene-level IPC contact behavior.
 
+For the barrier-kernel sub-slice, keep the verification language precise: it
+covers internal C2 clamped-log scalar barrier functions over squared distances,
+raw point-triangle and edge-edge barrier gradients/Hessians through the existing
+distance kernels, and explicit-threshold edge-edge mollifier product-rule
+derivatives. It does not yet cover barrier stiffness adaptation, PSD projection,
+projected Newton, candidate-buffer assembly, solver-owned contact caches,
+tangent bases, friction, solver-wired CCD line search, or scene-level IPC
+contact behavior.
+
 Current primitive-distance local gates:
 
 ```bash
@@ -207,3 +221,19 @@ an edge-edge step-bound query, and about 0.13 ms, 1.81 ms, and 9.25 ms for the
 falling-patch candidate aggregate at resolutions 8, 16, and 24. CPU scaling was
 enabled, so treat these as local smoke numbers rather than a final performance
 claim.
+
+Current barrier-kernel local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_barrier_kernel bm_ipc_barrier_kernel
+./build/default/cpp/Release/bin/test_barrier_kernel
+./build/default/cpp/Release/bin/bm_ipc_barrier_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+```
+
+The first local barrier-kernel gate pass on 2026-05-27 passed the focused
+target build and 7 `test_barrier_kernel` cases. The latest benchmark smoke
+reported about 7.8 ns for the active scalar C2 barrier, 1.5 ns for the inactive
+scalar path, 557 ns for a point-triangle barrier value/gradient/Hessian query,
+286 ns for an edge-edge barrier query, and 810 ns for a mollified edge-edge
+barrier query. CPU scaling was enabled, so treat these as local smoke numbers
+rather than a final performance claim.
