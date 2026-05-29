@@ -142,19 +142,24 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-moving-rigid-surface-ccd` - based on `main` (the IPC stack
-#2723-#2732 has landed), adding a moving rigid box surface CCD limiter: free
-(non-static) opted-in box obstacles whose end-of-step transform is predicted
-from velocity and whose swept motion is tiled by overlapping static pose
-samples for the deformable line-search limiter.
+`feature/ipc-self-contact-barrier` - stacked on
+`feature/ipc-moving-rigid-surface-ccd` (#2738), adding IPC self-contact barrier
+FORCES: the deformable objective gains a clamped-log barrier energy/gradient
+term over the active self-contact point-triangle and edge-edge candidate set,
+so a surface folding onto itself is smoothly repelled (settles near d_hat). The
+first contact-force slice; the CCD limiters remain the hard no-penetration
+guarantee. First-order solve with fixed barrier stiffness.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with non-box/deforming rigid
-surface coverage, a timing-aware (non-over-conservative) moving-obstacle CCD,
-broader solver-wired CCD coverage, and stronger spatial acceleration. The
-moving-obstacle limiter is one-way and timing-agnostic; two-way contact forces
-and coupled rigid/deformable solves remain Phase 3.
+The keystone next slice is Phase 3 **projected Newton**: assemble the sparse
+barrier (+ inertia/elastic) Hessian with PSD projection and replace
+steepest descent, so stiff barriers converge cleanly (the first-order solve
+limits how stiff the barrier can be). Then adaptive barrier stiffness, barrier
+forces for rigid/codimensional obstacles, friction (Slice 6), and the scene
+corpus port (Slice 7). Per the standing directive, optimize CPU and GPU
+performance of the barrier/assembly/solve hot paths throughout (the per-candidate
+barrier and Hessian assembly are data-parallel GPU candidates).
 
 ## Context That Would Be Lost
 
@@ -170,7 +175,7 @@ and coupled rigid/deformable solves remain Phase 3.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-moving-rigid-surface-ccd
+git checkout feature/ipc-self-contact-barrier
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
@@ -221,6 +226,9 @@ PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m p
 cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
 ./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.MovingRigidSurfaceCcd*:DeformableBody.MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableMovingRigidSurfaceCcdStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SelfContactBarrier*'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableSelfContactBarrierStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked

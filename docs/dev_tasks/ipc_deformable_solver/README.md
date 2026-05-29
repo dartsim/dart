@@ -91,6 +91,21 @@
         acceleration for larger meshes.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
+  - [x] Self-contact barrier forces sub-slice: the deformable objective now adds
+        the IPC clamped-log barrier energy/gradient over the active self-contact
+        point-triangle and edge-edge candidate set (assembled per outer iteration
+        within d_hat), producing smooth repulsive contact forces so a surface
+        folding onto itself settles near d_hat instead of pinning at the CCD
+        minimum separation. First contact-FORCE slice (prior contact slices were
+        one-way CCD limiters). First-order steepest-descent solve with fixed
+        barrier stiffness; the CCD limiters remain the hard no-penetration
+        guarantee. Focused regressions + benchmark counters.
+  - [ ] Remaining Phase 3 work: projected Newton (sparse barrier Hessian
+        assembly + PSD projection, replacing steepest descent), adaptive barrier
+        stiffness, barrier forces for rigid/codimensional obstacles, complementarity
+        and solver-stat diagnostics. CPU and GPU performance optimization of the
+        barrier/assembly hot paths (the per-candidate barrier eval is data-parallel
+        and a GPU candidate).
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
 - [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
       examples, benchmarks, profiling artifacts, and headless Filament evidence.

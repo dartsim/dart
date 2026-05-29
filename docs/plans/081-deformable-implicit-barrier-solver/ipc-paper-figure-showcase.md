@@ -55,6 +55,14 @@ enabling infrastructure for the moving-obstacle figures (Fig. 8, 13, 15, 16,
 friction and timing-aware coupling that this one-way, timing-agnostic limiter
 does not provide.
 
+Progress note (contact forces): the deformable solve now adds IPC clamped-log
+self-contact barrier FORCES (point-triangle + edge-edge), so self-contact is
+smoothly repulsive rather than only CCD-limited — the first contact-force step
+toward the figures. All figure rows remain `planned`: they still require
+projected Newton (Phase 3, for stiff barriers to converge), barrier forces
+against rigid/codimensional obstacles, and friction (Phase 6, for the
+stick-slip / card-house / arch / roller figures).
+
 ## Showcase Catalog
 
 Status column: `planned` (not yet implemented), `in-progress` (PR open),

@@ -2138,3 +2138,150 @@ TEST(DeformableBody, MovingRigidSurfaceCcdMatchesRealizedMotionInFullPipeline)
       Eigen::Quaterniond::Identity(),
       halfExtents));
 }
+
+//==============================================================================
+// Two facing triangles in ONE deformable body: the lower triangle is fixed and
+// the upper triangle (directly above) is driven down into it. The self-contact
+// barrier must produce a repulsive force that keeps the surfaces apart, beyond
+// what the CCD min-separation alone would give.
+namespace {
+sx::DeformableBodyOptions makeTwoFacingTrianglesOptions(
+    double gap, double downwardVelocity)
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, gap),
+         Eigen::Vector3d(1.0, 0.0, gap),
+         Eigen::Vector3d(0.0, 1.0, gap)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -downwardVelocity),
+         Eigen::Vector3d(0.0, 0.0, -downwardVelocity),
+         Eigen::Vector3d(0.0, 0.0, -downwardVelocity)};
+  options.masses = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2}; // lower triangle is a fixed obstacle
+  options.edgeStiffness = 0.0;    // no springs: isolate the contact response
+  options.damping = 0.0;
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{3, 4, 5}};
+  return options;
+}
+
+double minUpperTriangleHeight(const sx::DeformableBody& body)
+{
+  return std::min(
+      {body.getPosition(3).z(),
+       body.getPosition(4).z(),
+       body.getPosition(5).z()});
+}
+} // namespace
+
+//==============================================================================
+TEST(DeformableBody, SelfContactBarrierKeepsDrivenSurfacesApart)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  // Start within the barrier activation band; drive the upper triangle hard
+  // enough that its free (barrier-free) target would penetrate the lower one.
+  auto body = world.addDeformableBody(
+      "facing_triangles", makeTwoFacingTrianglesOptions(0.015, 0.2));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(stats.selfContactBarrierCandidateBuilds, 0u);
+  EXPECT_GT(stats.selfContactBarrierActiveContacts, 0u);
+
+  // The barrier produces a strong repulsive force that holds the surfaces at a
+  // stable separation inside the activation band (d_hat = 2e-2), far beyond the
+  // CCD min-separation (1e-4) that CCD-only limiting would leave.
+  const double height = minUpperTriangleHeight(body);
+  EXPECT_GT(height, 5e-3); // clear repulsion, orders of magnitude above min-sep
+  EXPECT_LT(height, 2e-2); // settles within the barrier activation band
+}
+
+//==============================================================================
+TEST(DeformableBody, SelfContactBarrierInactiveWhenFarApart)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  // Gap far exceeds d_hat (2e-2); a tiny downward velocity keeps it that way.
+  auto body = world.addDeformableBody(
+      "facing_triangles_far", makeTwoFacingTrianglesOptions(0.5, 0.1));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.selfContactBarrierActiveContacts, 0u);
+  // The upper triangle reaches its free target (0.5 - 0.1 * 0.1 = 0.49).
+  EXPECT_NEAR(minUpperTriangleHeight(body), 0.49, 1e-6);
+}
+
+//==============================================================================
+TEST(DeformableBody, SelfContactBarrierIsDeterministic)
+{
+  const auto run = [] {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    auto body = world.addDeformableBody(
+        "facing_triangles", makeTwoFacingTrianglesOptions(0.015, 0.2));
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    return minUpperTriangleHeight(body);
+  };
+  EXPECT_DOUBLE_EQ(run(), run());
+}
+
+//==============================================================================
+// The self-contact barrier must use the same surface point mask as the CCD
+// path: a volumetric body's interior node (not a vertex of any surface
+// triangle) must never receive a barrier point-triangle force against its own
+// shell, even when it lies within the activation band.
+TEST(DeformableBody, SelfContactBarrierIgnoresVolumetricInteriorNodes)
+{
+  auto options = makeVolumetricInteriorNodeCrossingOptions();
+  // Place the interior apex (node 4) within d_hat (2e-2) of the bottom surface
+  // triangle and let it drift slowly; without the mask it would generate a
+  // spurious barrier contact against the shell.
+  options.positions[4] = Eigen::Vector3d(0.0, 0.0, 0.015);
+  options.velocities[4] = Eigen::Vector3d(0.0, 0.0, -0.05);
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody("volumetric_interior_barrier", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_TRUE(body.isValid());
+  EXPECT_GT(stats.selfContactBarrierCandidateBuilds, 0u); // barrier path ran
+  // The masked interior node produces no surface self-contact barrier force.
+  EXPECT_EQ(stats.selfContactBarrierActiveContacts, 0u);
+}

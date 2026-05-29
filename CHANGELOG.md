@@ -832,6 +832,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     regressions and benchmark counters. This is a one-way conservative CCD
     limiter only (timing-agnostic, no rigid contact response or two-way
     coupling) and is not IPC parity.
+  - Added internal experimental IPC self-contact barrier forces: the deformable
+    solve now adds the clamped-log barrier energy/gradient over the active
+    self-contact point-triangle and edge-edge candidate set (assembled per outer
+    iteration within the activation distance d_hat) as a new objective term, so
+    a deformable surface folding onto itself experiences smooth repulsive
+    contact forces and settles near d_hat instead of pinning at the CCD
+    minimum separation. The conservative CCD limiters remain the hard
+    no-penetration guarantee. First-order (steepest-descent) solve with fixed
+    barrier stiffness; projected Newton and adaptive stiffness are later slices.
+    Includes focused regressions and a benchmark with barrier counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
