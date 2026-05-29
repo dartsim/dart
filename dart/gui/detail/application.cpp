@@ -130,10 +130,10 @@ using dart::gui::detail::parseOptions;
 using dart::gui::detail::PerfHudState;
 using dart::gui::detail::pollApplicationInput;
 using dart::gui::detail::Renderable;
-using dart::gui::detail::runOffscreenParitySelfCheck;
 using dart::gui::detail::renderApplicationFrame;
 using dart::gui::detail::resizeAutomaticApplicationWindow;
 using dart::gui::detail::resolveWindowDpiScale;
+using dart::gui::detail::runOffscreenParitySelfCheck;
 using dart::gui::detail::SceneFrameUpdater;
 using dart::gui::detail::SceneLights;
 using dart::gui::detail::ScreenshotCapture;
@@ -707,12 +707,12 @@ int runGuiBackendApplicationImpl(
   if (runOptions.headless
       && isTruthyEnvironmentVariable("DART_GUI_OFFSCREEN_PARITY")) {
     if (std::string_view(renderContext.backendName) == "noop") {
-      std::cout
-          << "[offscreen-parity] SKIP: noop backend produces no pixels\n";
+      std::cout << "[offscreen-parity] SKIP: noop backend produces no pixels\n";
     } else {
       offscreenParitySucceeded = runOffscreenParitySelfCheck(
           renderContext,
-          static_cast<std::uint32_t>(runOptions.width > 0 ? runOptions.width : 1),
+          static_cast<std::uint32_t>(
+              runOptions.width > 0 ? runOptions.width : 1),
           static_cast<std::uint32_t>(
               runOptions.height > 0 ? runOptions.height : 1),
           std::cout);

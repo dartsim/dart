@@ -42,17 +42,18 @@
 #include <filament/View.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <ostream>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart::gui::detail {
 
 namespace {
 
 using ::filament::Engine;
-using ::filament::RenderTarget;
 using ::filament::Renderer;
+using ::filament::RenderTarget;
 using ::filament::Texture;
 using ::filament::View;
 using PixelBufferDescriptor = ::filament::backend::PixelBufferDescriptor;
@@ -125,8 +126,8 @@ int maxChannelDelta(
   int maxDelta = 0;
   for (std::uint32_t y = 0; y < height; ++y) {
     const std::size_t firstRow = static_cast<std::size_t>(y) * rowBytes;
-    const std::uint32_t secondY = flipSecondVertically ? (height - 1u - y) : y;
-    const std::size_t secondRow = static_cast<std::size_t>(secondY) * rowBytes;
+    const std::uint32_t sampleY = flipSecondVertically ? (height - 1u - y) : y;
+    const std::size_t secondRow = static_cast<std::size_t>(sampleY) * rowBytes;
     for (std::size_t i = 0; i < rowBytes; ++i) {
       const int delta = std::abs(
           static_cast<int>(first[firstRow + i])
@@ -228,8 +229,8 @@ bool runOffscreenParitySelfCheck(
     view->setRenderTarget(renderTarget);
     renderer.beginFrame(context.swapChain);
     renderer.render(view);
-    offscreenPixels
-        = readBackRgba(renderer, renderTarget, width, height, offscreenReadDone);
+    offscreenPixels = readBackRgba(
+        renderer, renderTarget, width, height, offscreenReadDone);
     renderer.endFrame();
     completeReadback(engine, offscreenReadDone);
   }
@@ -273,7 +274,8 @@ bool runOffscreenParitySelfCheck(
       << " contentRange=" << contentRange << " backend=" << context.backendName
       << (passed ? " PASS" : " FAIL") << "\n";
   if (!parity) {
-    log << "[offscreen-parity] offscreen render diverged from swapchain render\n";
+    log << "[offscreen-parity] offscreen render diverged from swapchain "
+           "render\n";
   }
   if (!nonTrivial) {
     log << "[offscreen-parity] content too uniform to be a meaningful parity "
