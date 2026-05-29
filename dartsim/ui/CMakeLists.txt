@@ -7,7 +7,7 @@
 # This file is provided under the "BSD-style" License.
 
 # GUI layer for the dartsim simulator: wires the headless editor engine
-# (dartsim/engine) to the backend-hidden Dear ImGui panels exposed by dart-gui.
+# (dartsim/engine) to the backend-hidden GUI panels exposed by dart-gui.
 # Kept as a separate library because dartsim/app is restricted to a single
 # main.cpp by dart_gui_add_application. See
 # docs/design/dartsim_gui_simulator.md.
@@ -23,6 +23,7 @@ add_library(
   STATIC
   src/console_actions.cpp
   src/editor.cpp
+  src/history_actions.cpp
   src/inspector_actions.cpp
   src/outliner_actions.cpp
   src/palette_actions.cpp
@@ -30,6 +31,7 @@ add_library(
   src/project_file_dialog.cpp
   src/relationship_actions.cpp
   src/simulation_actions.cpp
+  src/watch_actions.cpp
   src/viewport_actions.cpp
 )
 

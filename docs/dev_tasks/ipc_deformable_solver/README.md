@@ -128,6 +128,10 @@
         factorization repeats. Behavior-preserving (structural mismatch
         re-analyzes); ~halves the per-step solve on a settled 512-node grid
         (~21.7->~11.6 ms). Symbolic/numeric counters + reuse regression.
+  - [x] Convergence diagnostic: the stage reports `finalGradientResidualNorm`
+        (worst-case projected-Newton gradient norm at solve termination across
+        the step's bodies), surfaced on the grid/drape benchmarks toward the
+        paper's benchmark-statistics tables (Fig. 23 / Table 1).
   - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
         primitive into the solve via an optional executor + a GPU-vs-CPU perf
         gate), matrix-free CG for very large meshes, adaptive barrier stiffness,
@@ -136,7 +140,25 @@
         contact active set is rebuilt once per outer iteration and held fixed
         across the inner Newton/line-search step (standard IPC), rather than
         re-queried within the line search.
-- [ ] Phase 4: lagged smoothed friction and friction diagnostics.
+- [~] Phase 4: lagged smoothed friction and friction diagnostics.
+  - [x] Static-ground friction (first increment): lagged smoothed Coulomb
+        friction (IPC f0/f1 mollifier, velocity threshold epsv) opposing each
+        contacting node's tangential displacement, gated by
+        `DeformableMaterialProperties.frictionCoefficient` (default 0, additive).
+        Lagged normal force per outer iteration; PSD tangential friction Hessian
+        in the projected-Newton solve. Sliding-deceleration + no-contact-no-
+        friction regressions, drape friction benchmark, serialized coefficient.
+  - [x] Self-contact friction (point-triangle): reuses `frictionCoefficient`;
+        lagged normal force = barrier force on the point node, tangent
+        projection from the point-triangle tangent stencil, same f0/f1 mollifier
+        opposing the stencil's tangential relative displacement. Energy+gradient
+        only (self-contact friction Hessian deferred). Regression: a surface
+        sliding on another in self-contact decelerates vs the frictionless
+        control while staying separated.
+  - [ ] Remaining Phase 4 work: edge-edge self-contact friction and the
+        self-contact friction Hessian, codimensional-obstacle friction, friction
+        over non-flat (sphere/tilted) ground normals, and friction-specific
+        convergence/dissipation diagnostics.
 - [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
       examples, benchmarks, profiling artifacts, and headless Filament evidence.
 

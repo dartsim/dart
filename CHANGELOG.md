@@ -916,6 +916,35 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     settled 512-node grid (~21.7 ms to ~11.6 ms). Adds symbolic/numeric
     factorization counters and a regression asserting a steady step performs
     zero new symbolic analyses.
+  - Added an experimental IPC solver convergence diagnostic: the deformable
+    stage now reports `finalGradientResidualNorm`, the largest projected-Newton
+    gradient norm at solve termination across the step's bodies (near the
+    gradient tolerance means converged; a large value flags an iteration-cap or
+    stall), surfaced on the grid/drape stage benchmarks toward the paper's
+    benchmark-statistics tables (Fig. 23 / Table 1).
+  - Added experimental IPC lagged smoothed Coulomb friction for deformable
+    contact against static ground barriers (PLAN-081 Phase 4 first increment).
+    A new `DeformableMaterialProperties.frictionCoefficient` (default 0, so
+    existing behavior is unchanged) drives a friction force opposing each
+    contacting node's tangential displacement over the step. The IPC mollifier
+    (f0/f1, velocity threshold epsv) makes the force C1: it saturates at
+    mu \* normalForce when sliding and ramps smoothly to zero at rest. The normal
+    force is lagged once per outer iteration; the lagged friction Hessian is a
+    positive-semidefinite tangential 2x2 block, so it integrates cleanly into
+    the projected-Newton solve. Adds regressions (a sliding node decelerates
+    versus the frictionless control; friction is inactive without contact), a
+    friction variant of the drape benchmark, and serialization of the new
+    coefficient. Self-contact and codimensional friction are later increments.
+  - Extended experimental IPC friction to deformable SELF-CONTACT (point-triangle
+    pairs), reusing the same `frictionCoefficient`. The lagged normal force is
+    the barrier force magnitude on the point node, and the tangent projection
+    comes from the point-triangle tangent stencil; friction opposes the stencil's
+    tangential relative displacement with the same IPC f0/f1 mollifier. Adds a
+    regression (one surface sliding tangentially on another in self-contact
+    decelerates versus the frictionless control while the barrier keeps them
+    separated). Energy+gradient only for now (the self-contact friction Hessian,
+    edge-edge friction, and non-flat ground normals are later increments); the
+    line search on the friction-inclusive energy ensures descent.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

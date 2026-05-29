@@ -142,36 +142,44 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-sparse-newton-symbolic-reuse` - stacked on
-`feature/ipc-gpu-psd-projection` (#2743). Optimizes the sparse projected-Newton
-solve to reuse its fill-reducing symbolic factorization
-(`SimplicialLDLT::analyzePattern`) across iterations and steps whenever the
-Hessian sparsity pattern is unchanged (cached column/row index arrays compared
-in `computeProjectedNewtonDirection`, persistent solver in the per-body
-`DeformableContactSolverScratch`). Behavior-preserving (structural mismatch or
-failed factorization re-analyzes); ~halves the per-step solve on a settled
-512-node grid (~21.7 -> ~11.6 ms). Symbolic/numeric factorization counters +
-`SparseProjectedNewtonReusesSymbolicFactorization` regression (a steady step
-does zero new symbolic analyses).
+`feature/ipc-self-contact-friction` - stacked on `feature/ipc-ground-friction`
+(#2746). Extends IPC friction to deformable SELF-CONTACT (point-triangle pairs),
+reusing `frictionCoefficient`. Lagged normal force = barrier force magnitude on
+the point node (||result.gradient.head<3>()||); tangent projection (2x12) from
+`dc::pointTriangleTangentStencil`; friction opposes projection\*(4-node step
+displacement) with the same f0/f1 mollifier. Energy+gradient only (self-contact
+friction Hessian + edge-edge friction deferred); line search ensures descent.
+SelfContactFrictionContact/Inputs built once per outer iteration from the active
+barrier set; threaded through evaluateDeformableObjective. Test: a surface
+sliding tangentially on another in self-contact decelerates vs frictionless,
+barrier keeps them separated. 62 deformable tests pass.
+
+Prior: #2746 = ground friction (Phase 4 first increment). NOTE (from the #2745
+diagnostic): the stiff barrier-contact benchmarks
+(grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
+the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
+projected-Newton + line-search stall on very stiff barriers, present without
+friction (mu=0 == mu=0.5 residual). Not a friction bug; a known IPC-class
+limitation worth a future continuation/line-search-robustness slice.
 
 Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
 until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
-(self-contact barrier) <- #2740 (projected Newton, dense LDLT) <- #2741 (sparse
-Cholesky solve) <- #2742 (drape demo) <- #2743 (GPU PSD primitive).
+(self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
+Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
+reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction).
 
 ## Immediate Next Step
 
 User directive (2026-05-28): KEEP BUILDING the plan (Codex review batched for
-Saturday). The four sequenced steps (sparse, demo, reviews, GPU) are done; this
-symbolic-reuse slice is an extra CPU-perf win. REMAINING plan work, in rough
-priority: live GPU-backend injection (wire the CUDA PSD primitive + a GPU-vs-CPU
-perf gate into the solve via an optional executor, keeping world_step_stage
-GPU-free), matrix-free CG for very large meshes, adaptive barrier stiffness,
-barrier forces for rigid/codimensional obstacles (note: disturbs #2732 CCD test
-contracts -- not purely additive), friction (Slice 6: stick-slip / card-house /
-arch / roller figures -- the marquee paper feature, tangent stencils scaffolded
-in #2724), scene corpus port (Slice 7), Python facade (Slice 8). Per the
-standing directive, optimize CPU AND GPU throughout.
+Saturday). REMAINING plan work, in rough priority: remaining Phase 4 friction
+(self-contact + codimensional friction; non-flat ground normals; friction
+diagnostics), barrier-stall convergence robustness (continuation / better line
+search -- the high-residual finding above), live GPU-backend injection (wire the
+CUDA PSD primitive + a GPU-vs-CPU perf gate via an optional executor, keeping
+world_step_stage GPU-free), adaptive barrier stiffness, rigid/codimensional
+obstacle barrier forces (disturbs #2732 CCD contracts), scene corpus port
+(Phase 5), Python facade (Phase 8). Per the standing directive, optimize CPU AND
+GPU throughout.
 
 ## Context That Would Be Lost
 

@@ -4,7 +4,11 @@
 
 - [x] Phase 0: Start the tracked feature-parity plan from the post-MVP
       `dartsim` GUI.
-- [ ] Phase 1: Complete project lifecycle and edit-history foundations.
+- [ ] Phase 1: Complete project lifecycle and edit-history foundations. Edit
+      history now has tested labels, undo/redo counts, and clean-revision
+      tracking for saved states and divergent redo branches; project lifecycle
+      now has tested current-path/dirty labels plus session recent-project
+      actions and dirty-replacement confirmation prompts.
 - [ ] Phase 2: Add viewport picking, selection sync, transform gizmos, and a
       real outliner. Selection, visibility, keyboard movement, and transform
       gizmo seams are in progress, and the first expand/rename/context action
@@ -14,14 +18,43 @@
       palette seam now covers primitives, multibodies, links, and frames; the
       Inspector now has a tested property/action seam for transform, mass, joint,
       shape-dimension, color, and delete edits; and relationship actions now
-      attach/detach frames while preserving world transforms.
+      attach/detach frames while preserving world transforms, reparent links,
+      and make child links root links. Editor-owned collision descriptors can
+      now be authored, inspected, rendered, persisted, and moved as scene data.
 - [ ] Phase 4: Add simulation workbench panels for watch values, sensor views,
       charts, and console automation. A first tested Console command seam now
-      dispatches create/select/edit/project/simulation commands through the
-      existing action layers.
+      dispatches create/select/edit/project/relationship/simulation commands
+      through the existing action layers, and a tested Watch panel seam samples
+      selected object values plus bounded simulation chart series. Console
+      watch commands now register, remove, clear, and manually sample the same
+      session-local Watch state, chart signal choices are configurable, and
+      named Watch presets persist target/signal choices in the project
+      workspace. Editor-owned camera/range/contact sensor descriptors now exist
+      as authored scene objects, and Watch rows can display sensor descriptor
+      values plus transform values for collision descriptors. Simulation Mode
+      can now restart from its captured Edit Mode reset target without exiting
+      back to authoring mode, and replay navigation now supports first,
+      previous, next, and last frame actions. Selected Scene Tree rows can now
+      watch or unwatch objects through view-only context actions, and Console
+      `inspect` and `list` commands query Inspector and Scene Tree snapshots
+      without changing the current selection.
 - [ ] Phase 5: Add viewport controls, visibility filters, camera presets,
-      workflows, and multi-view layouts. A first tested View menu camera seam
-      now covers fit scene, focus selection, and canonical camera presets.
+      workflows, and multi-view layouts. Tested View menu camera seams now cover
+      fit scene, focus selection, canonical camera presets, Orbit/Pan/Zoom mouse
+      modes, selection tracking, and view-only layer filters for rigid bodies,
+      links, frames, sensor descriptors, and collision descriptors. A
+      renderer-neutral single/quad viewport layout seam now drives Filament pane
+      views, and the View menu
+      exposes the four-view
+      layout through tested editor actions. Four-view panes now show stable
+      labels plus an active-pane status affordance from the renderer-owned pane
+      geometry; clicking an inactive pane activates it while preserving that
+      pane's editor-owned camera, and each pane remembers its last camera
+      independently. The View menu can also lock interactive camera motion and
+      fit the full scene or focus the selected object across all four remembered
+      pane cameras at once, while the Viewport panel summarizes the active view
+      state and exposes the same view-only camera/layer controls outside the
+      menu.
 - [ ] Phase 6: Raise focused `dartsim` engine/UI coverage toward 95%+ and run
       specialized review passes before the completion PR.
 
@@ -43,22 +76,22 @@ persist their workspace through a tested, backend-hidden GUI.
 
 ## Feature Map
 
-| Area                     | Target Capability                                                                                                                                    | Current State                                                                                                                                                                                                                                                                   | Plan                                                                                                             |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Viewport selection       | Pick objects from the rendered scene, keep viewport/tree/inspector selection in sync, highlight selected objects, and apply undoable transform edits | Rendering provider exposes object ids; outliner and viewport selection now share `dartsim_ui/outliner_actions`; `dart::gui` has a renderer-neutral renderable selection bridge; viewport keyboard movement and transform gizmo commits go through `dartsim_ui/viewport_actions` | Add richer viewport state such as camera presets and fit/focus controls after outliner basics are stronger       |
-| Scene outliner           | Expandable hierarchy, object-type icons, inline rename, context actions, refresh, visibility toggles, and bidirectional selection sync               | Scene Tree now renders from `dartsim_ui/outliner_actions` rows with persistent expand/collapse state, inline rename over a backend-hidden text input, selected-row context actions, selection toggles, selection clear, and visibility actions                                  | Replace selected-row action buttons with a popup/menu affordance once the panel API exposes context menus        |
-| Project lifecycle        | New/open/save/save-as, current path, dirty marker, recent files, close/load prompts, progress/status events                                          | Phase 1 now has headless dirty/path/new/save/load state, blocks dirty replacement by default, routes Open and Save As through an injectable native `ProjectFileDialog` seam with an in-app project browser fallback                                                             | Add recent files, close/load confirmation prompts, and visible dirty-state affordances                           |
-| Edit history             | Named undo/redo history, transactions, dirty tracking from the last save point                                                                       | Snapshot undo/redo and macro commands exist                                                                                                                                                                                                                                     | Expose history labels/counts, track clean history index, and test redo preservation                              |
-| Creation palette         | Links, joints, collision shapes, sensors, frames, primitive rigid bodies, and predefined examples                                                    | `dartsim_ui/palette_actions` now exposes a tested, context-sensitive Create menu model for box/sphere/cylinder/capsule/plane rigid bodies, multibodies, root and fixed/revolute/prismatic child links, free/fixed frames, and starter example scenes with single-step undo      | Add richer inspector metadata before broadening into sensors or collision authoring                              |
-| Attach and relationships | Parent/child link attachment, joint relationship editing, safe detach/delete                                                                         | Frame attach/detach and link parent/root relationship actions now have undoable command support with invalid-pair and cycle rejection through a tested `dartsim_ui/relationship_actions` seam; valid actions preview the object names they will modify                          | Add richer joint relationship affordances after the primary link workflows land                                  |
-| Inspector                | Categorized property editor with defaults, read-only states, enum choices, and multi-selection behavior                                              | `dartsim_ui/inspector_actions` now builds a typed property model for the primary selection, exposes multi-selection summaries and Simulation Mode read-only states, routes primary-object property edits through undoable commands, and deletes a multi-selection as one macro  | Add richer grouping once more object types land                                                                  |
-| Scene explorer           | Tree refresh, rename, context actions, watch selection, selection sync                                                                               | Basic scene tree and rename exist                                                                                                                                                                                                                                               | Add context actions and selection-driven watch registration                                                      |
-| Simulation control       | Clear Edit Mode vs Simulation Mode boundary, play/pause/step/reset within Simulation Mode, initial-state reset, simulation status                    | Play/pause/step/reset and record/replay exist; `dartsim_ui/simulation_actions` now exposes tested panel status/actions, including captured Edit Mode reset target and replay status                                                                                             | Add richer timeline controls and status affordances once the panel API supports denser controls                  |
-| Watch/chart panels       | Watch list values and plotted simulation signals                                                                                                     | Console log panel only                                                                                                                                                                                                                                                          | Add headless signal registry, watch list, and chart data buffer before rendering widgets                         |
-| Sensor views             | Camera/range/contact-like sensor panes                                                                                                               | No sensor model in `dartsim` scene data                                                                                                                                                                                                                                         | Add sensor descriptors and simulated outputs only after scene model supports sensors                             |
-| Viewport controls        | rotate/pan/zoom modes, camera lock, front/side/top/perspective, fit view, four-view layout                                                           | View menu camera actions now compute fit scene, focus selection, perspective/front/back/left/right/top/bottom presets from `dartsim_ui/viewport_actions` and apply them through a renderer-neutral `PanelContext` camera setter                                                 | Add viewport mode toggles, camera lock, and multi-view layout state once the single-view camera workflow settles |
-| Visibility filters       | Show/hide links, joints, collisions, sensors, and frames                                                                                             | Per-object `visible` is undoable, wired into the outliner, and honored through hidden ancestors; no typed layer filters yet                                                                                                                                                     | Add layer visibility state and filter render items before broader UI wiring                                      |
-| Console automation       | Text commands for create/delete/select/save/load/simulation controls and debug messages                                                              | `dartsim_ui/console_actions` now tokenizes quoted commands and dispatches project lifecycle, Create menu, selection, visibility, rename/delete, Edit/Simulation mode, record, and replay commands through the same tested action seams used by the panels                       | Add relationship-specific commands and richer watch/chart registration after the command vocabulary stabilizes   |
+| Area                     | Target Capability                                                                                                                                    | Current State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Plan                                                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Viewport selection       | Pick objects from the rendered scene, keep viewport/tree/inspector selection in sync, highlight selected objects, and apply undoable transform edits | Rendering provider exposes object ids; outliner and viewport selection now share `dartsim_ui/outliner_actions`; `dart::gui` has a renderer-neutral renderable selection bridge; viewport keyboard movement and transform gizmo commits go through `dartsim_ui/viewport_actions`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Add richer viewport state such as camera presets and fit/focus controls after outliner basics are stronger |
+| Scene outliner           | Expandable hierarchy, object-type icons, inline rename, context actions, refresh, visibility toggles, and bidirectional selection sync               | Scene Tree now renders from `dartsim_ui/outliner_actions` rows with persistent expand/collapse state, inline rename over a backend-hidden text input, selected-row context actions, selection toggles, selection clear, and visibility actions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Replace selected-row action buttons with a popup/menu affordance once the panel API exposes context menus  |
+| Project lifecycle        | New/open/save/save-as, current path, dirty marker, recent files, close/load prompts, progress/status events                                          | Phase 1 now has headless dirty/path/new/save/load state, blocks dirty replacement by default, routes Open and Save As through an injectable native `ProjectFileDialog` seam with an in-app project browser fallback, exposes current project path/dirty labels through `dartsim_ui/project_actions`, tracks session recent projects for the File menu, and uses a tested confirmation request before New/Open/Open Recent can discard dirty edits                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Add an explicit close-project action if the application lifecycle grows a close-workspace command          |
+| Edit history             | Named undo/redo history, transactions, dirty tracking from the last save point                                                                       | Snapshot undo/redo and macro commands exist; the engine now exposes undo/redo counts, current and clean history revisions, clean history index, and a tested `dartsim_ui/history_actions` seam for Edit menu labels/actions that preserves redo state and locks edits in Simulation Mode                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Surface history status in a denser panel once the panel API supports compact history affordances           |
+| Creation palette         | Links, joints, collision shapes, sensors, frames, primitive rigid bodies, and predefined examples                                                    | `dartsim_ui/palette_actions` now exposes a tested, context-sensitive Create menu model for box/sphere/cylinder/capsule/plane rigid bodies, multibodies, root and fixed/revolute/prismatic child links, free/fixed frames, camera/range/contact sensor descriptors, collision shape descriptors, and starter example scenes with single-step undo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Add richer creation affordances once more authored object descriptors land                                 |
+| Attach and relationships | Parent/child link attachment, joint relationship editing, safe detach/delete                                                                         | Frame attach/detach and link parent/root relationship actions now have undoable command support with invalid-pair and cycle rejection through a tested `dartsim_ui/relationship_actions` seam; valid actions preview the object names they will modify                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Add richer joint relationship affordances after the primary link workflows land                            |
+| Inspector                | Categorized property editor with defaults, read-only states, enum choices, and multi-selection behavior                                              | `dartsim_ui/inspector_actions` now builds a typed property model for the primary selection, exposes multi-selection summaries and Simulation Mode read-only states, routes primary-object property edits through undoable commands, edits sensor descriptors and collision material descriptors, and deletes a multi-selection as one macro                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Add richer grouping once more object types land                                                            |
+| Scene explorer           | Tree refresh, rename, context actions, watch selection, selection sync                                                                               | Scene Tree now renders from tested outliner rows, supports selection sync, expansion state, inline rename, visibility toggles, selected-row edit actions, and selected-row Watch/Unwatch actions that reuse the session-local Watch panel state without dirtying the scene                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Replace selected-row action buttons with popup/menu affordances once the panel API exposes context menus   |
+| Simulation control       | Clear Edit Mode vs Simulation Mode boundary, play/pause/step/reset within Simulation Mode, initial-state reset, simulation status                    | Play/pause/step/reset and record/replay exist; `dartsim_ui/simulation_actions` now exposes tested panel status/actions, including captured Edit Mode reset target, in-mode simulation restart, replay status, and first/previous/next/last replay frame navigation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Add richer timeline controls and status affordances once the panel API supports denser controls            |
+| Watch/chart panels       | Watch list values and plotted simulation signals                                                                                                     | `dartsim_ui/watch_actions` now owns a session-local watch list, selected-object add/remove/clear actions, object value rows for transforms, rigid-body mass, single-axis link joints, authored sensor descriptor range/FOV/update-rate values, and collision descriptor transforms, plus bounded chart samples for configurable simulation time/frame and watched object x/y/z/mass/joint-position/sensor-descriptor series. The editor exposes this through a Watch panel using renderer-neutral `PanelBuilder::plotLines`, named Watch presets are persisted as project workspace metadata and can restore target/signal choices, and the Console can drive the same watch state and preset commands through `watch`/`unwatch`.                                                                                                                                                                                   | Add runtime sensor output series after experimental sensor APIs expose values                              |
+| Sensor views             | Camera/range/contact-like sensor panes                                                                                                               | Editor-owned camera/range/contact sensor descriptors can be authored, persisted, rendered, layer-filtered, inspected, and watched for configuration values. They intentionally do not produce simulated camera/range/contact output yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Add sensor output panes after runtime sensor data is exposed by the simulation layer                       |
+| Viewport controls        | rotate/pan/zoom modes, camera lock, front/side/top/perspective, fit view, four-view layout                                                           | View menu camera actions now compute fit scene, focus selection, perspective/front/back/left/right/top/bottom presets, Orbit/Pan/Zoom mouse modes, selected-object tracking, camera lock, and single/four-view layout from `dartsim_ui/viewport_actions`, then apply them through renderer-neutral camera and layout seams. Filament renders the active one or four pane views from the public layout provider, with active-pane camera input, cursor-pane picking/dragging, active-pane debug labels, visible pane labels, active-pane status, click-to-activate pane switching, editor-owned per-pane camera memory using the same pane geometry, all-pane fit/focus actions that preserve each pane's orientation while reframing the scene or selected object, and a Viewport panel backed by tested `ViewportStatus` labels for layout, active pane, camera mode/lock, tracking, visible layers, and selection | Add future joint filters after those object/render layers exist                                            |
+| Visibility filters       | Show/hide links, joints, collisions, sensors, and frames                                                                                             | Per-object `visible` is undoable, wired into the outliner, and honored through hidden ancestors; view-only layer filters now hide/show rigid bodies, links, frames, sensor descriptors, and collision descriptors without mutating scene visibility, dirty state, or undo history                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Add joint filters after joint render layers exist                                                          |
+| Console automation       | Text commands for create/delete/select/save/load/simulation controls and debug messages                                                              | `dartsim_ui/console_actions` now tokenizes quoted commands and dispatches project lifecycle, Create menu, selection, visibility, rename/delete, Inspector property queries, Scene Tree object lists, relationship edits, Edit/Simulation mode, record, replay, and watch/unwatch commands through the same tested action seams used by the panels                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Add richer query/export commands after the command vocabulary stabilizes                                   |
 
 ## Specialized Review Findings
 
@@ -98,11 +131,16 @@ persist their workspace through a tested, backend-hidden GUI.
   snapshot so later edit-mode changes are not reverted by a stale runtime
   snapshot.
 - The mode boundary now has a tested action view-model with explicit
-  "Enter Simulation Mode", "Resume Simulation", "Step Simulation", and "Return
-  to Edit Mode" commands. The editor chooses "Edit Mode" for authoring and
+  "Enter Simulation Mode", "Resume Simulation", "Step Simulation", "Restart
+  Simulation", and "Return to Edit Mode" commands. The editor chooses "Edit
+  Mode" for authoring and
   "Simulation Mode" for runtime playback, matching the existing engine state
-  names while making the play-mode boundary visible in menus and the Simulation
-  panel.
+  names while making the play-mode boundary visible in menus, Console help, and
+  enter/resume feedback.
+- Replay timeline controls now use the same tested simulation action seam. The
+  Simulation panel and Console can move to the first, previous, next, or last
+  replay frame, while active playback and recording reject replay scrubbing with
+  stable disabled reasons.
 - The Create menu now uses `dartsim_ui/palette_actions` instead of anonymous
   `editor.cpp` dispatch. The seam is context-sensitive, rejects Simulation Mode
   edits, creates every primitive rigid-body shape with useful defaults, creates
@@ -136,20 +174,99 @@ persist their workspace through a tested, backend-hidden GUI.
 - Console automation now uses `dartsim_ui/console_actions` instead of direct
   `editor.cpp` mutation. The seam parses quoted arguments, reports stable
   usage errors, resolves object targets by id/name/selection, and routes
-  project, create, select, visibility, rename/delete, simulation mode,
-  recording, and replay commands through the same headless action helpers as
-  the menu and panel UI.
-- Project open now starts from the backend-hidden native picker and falls back
-  to the in-app project browser/manual path modal when the native picker backend
-  fails or a selected path cannot be loaded. The native picker retries without a
-  parent window when that handle is rejected; extensionless explicit paths
-  resolve to `.dartsim` files when present.
+  project, create, select, visibility, rename/delete, Inspector property
+  snapshots, Scene Tree object lists, relationship edit, simulation mode,
+  recording, replay, and watch commands through the same headless action helpers
+  as the menu and panel UI.
+- Watch values and chart samples now use `dartsim_ui/watch_actions` instead of
+  direct panel state. The seam keeps watched objects session-local, preserves
+  missing objects until the user removes them, records bounded global
+  simulation series, and charts configurable watched object x/y/z/mass and
+  joint-position samples without mutating scene dirty state or undo history.
+  Console watch commands reuse this seam for add/remove/clear/manual sample and
+  chart-signal operations.
+- Scene Tree watch actions now reuse the same `dartsim_ui/watch_actions` seam:
+  selected rows expose Watch/Unwatch buttons that only mutate session-local
+  Watch state, remain usable in Simulation Mode, and do not dirty the project or
+  add undo history.
+- Watch presets now use the same tested seam plus persisted project workspace
+  metadata: saving/deleting presets is undoable and marks the project dirty,
+  applying a preset is view-only and restores current-project target ids plus
+  chart-signal choices, and project save/load round-trips the preset records.
+- Sensor descriptors are editor-owned scene data for now: the commands,
+  palette, inspector, scene I/O, viewport filters, Watch rows, and Console can
+  author and inspect camera/range/contact configurations, while simulated
+  sensor output remains future runtime work.
+- Collision descriptors are editor-owned scene data for now: the commands,
+  palette, inspector, scene I/O, viewport filters, Watch rows, and Console can
+  author and inspect collision shape/material metadata, while runtime contact
+  behavior remains future simulation-layer work.
+- Project open now starts from the in-app project browser/manual path modal so
+  the File menu invokes nativefiledialog-extended first, parented to the GUI
+  window, then falls back to the in-app project browser/manual path modal when
+  the platform picker or selected path fails. Browse still retries the native
+  picker without the parent when that handle is rejected, and reports failures
+  in-place; extensionless explicit paths resolve to `.dartsim` files when
+  present.
+- Project status now comes from `dartsim_ui/project_actions`: the Menu bar
+  shows the current project name with an unsaved marker, the action seam exposes
+  saved/dirty labels and the full path, and the File menu keeps a session-local
+  recent-project list that de-duplicates paths, marks the current project, and
+  respects the existing dirty-project guard when reopening a recent file.
+- Dirty project replacement now has a tested confirmation request layer in
+  `dartsim_ui/project_actions`: New Project, modal Open, and Open Recent defer
+  destructive replacement until the user confirms, while clean replacements and
+  macro/open-transaction rejection continue through the same action seam.
 - Viewport camera workflow controls now use the same action-seam pattern:
   `dartsim_ui/viewport_actions` computes fit scene, focus selection, and
   canonical camera preset requests from visible render items and selected
   frames, while `dart::gui::PanelContext` exposes only a public
   renderer-neutral `OrbitCamera` setter. These actions are view-only and do not
   dirty the project or add undo history.
+- Viewport layer filters live in `ViewportLayerFilterState` on the editor, not
+  in the scene model. The render provider, viewport picking, selected-label
+  bridge, camera fit/focus, transform gizmo, and keyboard movement all query
+  filtered viewport visibility through `dartsim_ui/viewport_actions`; outliner
+  visibility remains the undoable scene-authored visibility source of truth.
+- Viewport camera controls now expose Orbit, Pan, and Zoom mouse modes through
+  a renderer-neutral camera input seam, while selected-object tracking updates
+  the orbit-camera target from visible selected objects without mutating scene
+  state, dirty state, or undo history.
+- Camera lock now lives in the same view-only camera-control state. The generic
+  GUI control seam suppresses mouse and scroll camera input while locked, and
+  selected-object tracking pauses instead of moving the camera behind the user's
+  back.
+- The Viewport panel now reads a tested `ViewportStatus` view model instead of
+  reconstructing labels in `editor.cpp`. It shows layout, active pane, camera
+  mode/lock, tracking, visible layers, and filtered selection state, then reuses
+  the same camera-control and layer-filter actions as the View menu.
+- Viewport layout actions now provide a tested single-view vs four-view state
+  and active pane selection through `dartsim_ui/viewport_actions`. The editor
+  converts that state into the public `dart::gui::ViewportLayoutOptions` seam,
+  and `dart::gui` renders the requested pane cameras through multiple Filament
+  views without exposing backend types to `dartsim/ui`.
+- Four-view pane labels now come from the renderer-owned pane geometry instead
+  of editor/backend state. The overlay labels Perspective/Top/Front/Right panes
+  and highlights the active pane so the visible status matches the pane used for
+  camera input, picking, dragging, and debug labels.
+- Four-view pane activation also uses the renderer-owned pane geometry: clicking
+  an inactive pane switches the editor-owned active pane, carries the clicked
+  pane camera into the shared camera controller, and keeps the transition
+  view-only so scene dirty state and undo history stay unchanged.
+- Four-view pane cameras are now remembered in `ViewportLayoutState`: the
+  active pane stores its current orbit camera before menu/pane switches, inactive
+  panes restore their previous cameras, and unvisited panes still fall back to
+  canonical perspective/front/right/top presets.
+- Four-view fit/focus actions now update every remembered pane camera in one
+  view-only operation. Fit All Panes and Focus Selection in All Panes preserve
+  each pane's orientation while sharing the new scene or selection frame target,
+  reject hidden or missing inputs atomically, and return the updated active-pane
+  camera through the same renderer-neutral `OrbitCamera` seam.
+- Edit history now uses `dartsim_ui/history_actions` instead of direct
+  `editor.cpp` undo/redo calls. The seam exposes named menu labels, undo/redo
+  counts, dirty/clean labels, clean history index, and monotonic clean-history
+  revisions so a save point can be distinguished from a divergent redo branch
+  even when the undo cursor index matches.
 - The first review pass found and fixed root issues before this slice moved on:
   dirty project replacement is blocked by default, parent visibility hides
   descendant render items, project/selection state events are explicit, and
@@ -220,8 +337,7 @@ persist their workspace through a tested, backend-hidden GUI.
 
 1. Keep the filtered `dartsim/engine` + testable `dartsim/ui` line coverage
    above 95% while adding the next feature slices.
-2. Continue viewport workflow controls with visibility layer filters, camera
-   lock/modes, and multi-view layout after the single-view camera workflow
-   settles.
+2. Continue Phase 5 with cross-pane fit/focus polish for the renderer-side
+   four-view layout.
 3. Continue Phase 3 with richer relationship inspectors and grouping once more
    authored object metadata lands.

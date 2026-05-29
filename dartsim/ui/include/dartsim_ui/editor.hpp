@@ -35,7 +35,7 @@
 namespace dartsim::ui {
 
 /// Run the dartsim editor: build the headless SimEngine, wire it to the
-/// backend-hidden Dear ImGui panels (menu bar, Scene Tree, Inspector, Console,
+/// backend-hidden GUI panels (menu bar, Scene Tree, Inspector, Console,
 /// simulation controls + replay timeline), and start the GUI application.
 ///
 /// The GUI is a thin client over the engine; all edits go through engine
