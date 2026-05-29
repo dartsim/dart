@@ -113,6 +113,15 @@
         Fixed DOFs pinned at assembly time (unit diagonal, free-free blocks
         only); exact-dense parity preserved. 300-node-chain regression + sparse
         step/fallback benchmark counters (512/1152-node grids).
+  - [x] GPU PSD-projection primitive (prototype): an opt-in CUDA sidecar
+        (`projectSymmetricBlocksToPsdCuda`, `DART_ENABLE_EXPERIMENTAL_CUDA`)
+        batches the per-element symmetric eigendecomposition + eigenvalue clamp
+        (the projected-Newton hotspot) on the GPU via per-block cyclic Jacobi,
+        with an identical-semantics CPU reference and a CUDA equivalence test.
+        Standalone building block only: live-solver wiring needs an optional GPU
+        compute-backend injection path (keeping `world_step_stage` GPU-free per
+        the runtime-dependency policy), and the formal GPU-vs-CPU perf gate is a
+        follow-up.
   - [ ] Remaining Phase 3 work: symbolic-factorization reuse / matrix-free CG
         for the sparse solve (the current solve refactorizes from scratch each
         iteration; per-step cost is not yet optimized), adaptive barrier

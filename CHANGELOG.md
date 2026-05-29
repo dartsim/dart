@@ -876,6 +876,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     elasticity or friction). Adds a library-level drape regression
     (non-penetrating, conforming over the step) and a `BM_DeformableDrapeStage`
     benchmark of the multi-barrier solve.
+  - Added an optional CUDA primitive for the deformable solver's data-parallel
+    hotspot: `projectSymmetricBlocksToPsdCuda` batches the per-element PSD
+    projection (the symmetric eigendecomposition that the projected-Newton
+    assembly applies to every spring 6x6 and barrier 12x12 block) onto the GPU
+    via a per-block cyclic-Jacobi kernel, with an identical-semantics CPU
+    reference (`projectSymmetricBlocksToPsdReference`). It ships as part of the
+    opt-in `dart-simulation-experimental-cuda` sidecar (built only with
+    `DART_ENABLE_EXPERIMENTAL_CUDA=ON`); the default CPU runtime keeps no GPU
+    dependency. A CUDA unit test validates the GPU path against the CPU
+    reference for spring and barrier block sizes. This is the standalone,
+    validated building block: wiring it into the live solve needs an optional
+    GPU compute-backend injection path (so `world_step_stage` stays GPU-free per
+    the runtime-dependency policy) and is a later slice.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
