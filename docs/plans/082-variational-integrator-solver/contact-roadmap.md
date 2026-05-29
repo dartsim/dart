@@ -102,3 +102,20 @@ Before any Phase C work:
 Before committing C4 (hard barrier): a measured prototype showing acceptable
 RIQN iteration counts with barrier curvature injected into the ABI pass on
 sparse contact; otherwise stop at C3.
+
+## Recorded Decision (2026-05-28): NO-GO
+
+Phase C (contact/friction) stays **deferred**; neither entry gate is met:
+
+1. The contact-query-at-trial-configuration redesign is **not scoped** — today
+   `World::collide()` rebuilds the whole collision world once per step and
+   offers no distance/gradient query at an arbitrary trial `qᵏ⁺¹`, which every
+   contact rung needs inside the RIQN loop.
+2. No C2 single-contact robustness spike has been run.
+
+Reinforcing evidence: the A2 scaling benchmark (`bm_variational_integration`)
+showed the RIQN `Δt·M⁻¹` quasi-Newton's iteration count already degrades for
+long/stiff systems (≥~64 links); a stiff contact barrier (C4) would compound
+this, so even when Phase C opens it must start at the compliant/AL rungs
+(C1–C3), not the barrier. Revisit when gate 1 has a scoped owner and the RIQN
+convergence follow-ups (relative tolerance / acceleration) have landed.
