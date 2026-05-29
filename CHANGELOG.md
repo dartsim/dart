@@ -975,6 +975,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     straight down deflects down-slope, whereas the frictionless control (and any
     xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
     friction and friction-specific diagnostics remain later increments.
+  - Added experimental IPC friction diagnostics to the deformable solver stats
+    (PLAN-081 Phase 4). Each step now reports `frictionDissipation` (the IPC
+    Coulomb work mu \* normalForce \* f1(y) \* y summed over active friction
+    contacts at the converged iterate -- force times tangential slip, equal to
+    mu \* normalForce \* slip in the kinetic regime and ramped smoothly to zero
+    at rest by the f0/f1 mollifier) and `activeFrictionContacts` (the number of
+    static-ground and self-contact friction contacts carrying a nonzero lagged
+    normal force). Both are zero when friction is disabled and are computed once
+    per step outside the line-search hot path. Adds a regression that a sliding
+    ground-contact node reports positive dissipation over a nonzero active set
+    while the frictionless control reports zero. These feed the paper's friction
+    benchmark statistics (Fig. 23 / Table 1) alongside the existing
+    `finalGradientResidualNorm` convergence diagnostic.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

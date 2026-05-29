@@ -171,9 +171,15 @@
         ground (normal +z) reduces exactly to the previous xy tangent plane.
         Tilted-slope deflection regression; the barrier force itself stays a
         vertical height field.
-  - [ ] Remaining Phase 4 work: codimensional-obstacle friction (blocked on the
-        codimensional-obstacle barrier, a remaining Phase 3 item) and
-        friction-specific convergence/dissipation diagnostics.
+  - [x] Friction diagnostics: each step reports `frictionDissipation` (the IPC
+        Coulomb work mu _ normalForce _ f1(y) \* y summed over active friction
+        contacts at the converged iterate) and `activeFrictionContacts` (the
+        active static-ground + self-contact friction set size), both zero when
+        friction is disabled and computed outside the line-search hot path.
+        Sliding-dissipation regression; feeds the Fig-23/Table-1 statistics.
+  - [ ] Remaining Phase 4 work: codimensional-obstacle friction, blocked on the
+        codimensional-obstacle barrier (a remaining Phase 3 item) -- there is no
+        barrier to lag friction against yet.
 - [~] Phase 5: complete the upstream scene corpus as DART-native tests,
   examples, benchmarks, profiling artifacts, and headless Filament evidence.
   - [x] Scene-replay validation harness: the loader -> solver -> diagnostics

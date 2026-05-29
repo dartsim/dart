@@ -142,8 +142,53 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-nonflat-ground-friction` - stacked on
-`feature/ipc-edge-edge-self-friction` (#2752). Generalizes static-ground
+`feature/ipc-friction-diagnostics` - stacked on
+`feature/ipc-nonflat-ground-friction` (#2753). Adds FRICTION DIAGNOSTICS to
+`DeformableSolverStats` (C++-only struct, NOT bound to dartpy -> no stub regen):
+`frictionDissipation` (double) = IPC Coulomb work mu*lambda*f1(y)*y summed over
+active friction contacts at the converged iterate (= mu*lambda*slip in the
+kinetic regime, ramped to 0 at rest by the mollifier) and `activeFrictionContacts`
+(size_t) = count of ground + self-contact friction contacts with nonzero lagged
+normal force. New free fn `accumulateFrictionDiagnostics(...)` mirrors the two
+friction energies' slip measures (ground: u_T=(I-n n^T)(x-start); self-contact:
+projection*displacement); called ONCE after the outer solve loop (not the
+line-search hot path), using the persistent final lagged vectors
+(groundFrictionNormalForce/Direction, selfContactFrictionContacts) + converged
+scratch.next. Both zero when frictionCoefficient==0 (early return). Regression
+FrictionDiagnosticsReportSlidingDissipation (sliding ground node -> dissipation>0,
+active>=1; frictionless -> both exactly 0). 65 deformable tests, test-all 6/6.
+With non-flat normals + diagnostics done, Phase 4 is complete EXCEPT
+codimensional-obstacle friction (BLOCKED on the codim-obstacle barrier, a Phase-3
+item). Next: barrier-stall convergence robustness OR live GPU injection OR
+adaptive barrier stiffness (all larger/riskier) -- pick the most additive.
+
+Prior #2753 = non-flat ground-normal friction (static-ground
+friction follows the TRUE GEOMETRIC ground normal instead of a hardcoded xy
+tangent plane. KEY: the static-ground barrier is a vertical height field (force
+along +z) and stays that way; only the FRICTION term gains a per-node lagged
+normal. `boxContactAt`/`staticGroundContactAt` now return a `StaticGroundContact
+{top, normal}` (radial normal for a sphere; the +z-exit-face normal of the
+ray-march for a rotated/tilted box); `staticGroundTopAt` delegates to it so the
+6 CCD callers are unchanged. `computeStaticGroundNormalForces` outputs a
+parallel `normalDirection`; `GroundFrictionInputs` gains `laggedNormalDirection`;
+`addGroundFrictionEnergy` and the Newton ground-friction Hessian project against
+P = I - n n^T (energy/grad use u_T = (I - n n^T)(x - x_start); the Hessian is a
+PSD 3x3 tangent block scale*[ (f1/y)(P - T T^T) + f1' T T^T ], -> scale*(2/eps)P
+as y->0). For flat ground n = +z, P = diag(1,1,0) -> reduces EXACTLY to the old
+xy 2x2 block, so flat-ground friction tests are bit-identical. Regression
+GroundFrictionFollowsTiltedSlopeNormal: a node dropped straight down (-z) onto a
+45-deg tilted box deflects DOWN-SLOPE (+x ~= 0.017) because tilt-aware friction
+couples normal/tangential, whereas the frictionless control (and any xy-only
+tangent model) stays on x = 0. 64 deformable tests pass, test-all 6/6.
+CAVEAT/LESSON: the failure-then-fix flipped my predicted -x deflection to +x --
+the vertical height-field barrier exerts no x-force, so all x-motion comes from
+the tilted friction coupling; sign is +x (down-slope), validated empirically.
+ALSO: `cmake --build ... 2>&1 | tail` masks ninja's exit code (pipe returns
+tail's 0); redirect to a file and check $? separately. Eigen ternary needs both
+branches wrapped in Eigen::Vector3d (lazy-expr vs BasisReturnType type mismatch).
+NOTE: codimensional-obstacle friction (the next nominal Phase-4 item) is BLOCKED
+on the codim-obstacle barrier (a remaining Phase-3 item) -- no barrier to lag
+against -- so it is skipped; friction diagnostics is the next executable item.
 friction to follow the TRUE GEOMETRIC ground normal instead of a hardcoded xy
 tangent plane. KEY: the static-ground barrier is a vertical height field (force
 along +z) and stays that way; only the FRICTION term gains a per-node lagged
@@ -193,17 +238,18 @@ Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
 reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 (self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade)
 <- #2751 (self-contact friction Hessian) <- #2752 (edge-edge self-contact
-friction). (PR #2747 is another author's.)
+friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
+diagnostics). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 
 User directive (2026-05-28): KEEP BUILDING, NEVER STOP while a plan item remains,
 do everything in order (Codex review batched for Saturday). The three sequenced
 items (self-contact friction, Phase 5 harness, Phase 8 facade) are now done.
-REMAINING plan work, in rough priority: remaining Phase 4 (friction-specific
-convergence/dissipation diagnostics next; codimensional-obstacle friction is
-blocked on the codim-obstacle barrier); barrier-stall
-convergence robustness (the high-residual finding above); live GPU-backend
+REMAINING plan work, in rough priority: Phase 4 is now done except
+codimensional-obstacle friction (blocked on the codim-obstacle barrier);
+barrier-stall convergence robustness (the high-residual finding above; a strong
+next candidate -- additive, addresses a known limitation); live GPU-backend
 injection (wire the CUDA PSD primitive + a GPU-vs-CPU gate via an optional
 executor, world_step_stage stays GPU-free); adaptive barrier stiffness;
 rigid/codim obstacle barrier forces (disturbs #2732); remaining Phase 8 bindings
