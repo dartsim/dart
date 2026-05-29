@@ -39,7 +39,7 @@ def _create_cube(name: str, position: tuple, size: tuple, color: tuple, mass: fl
 
 
 def build() -> SceneSetup:
-    world = dart.utils.SkelParser.read_world(_GROUND_URI)
+    world = dart.io.SkelParser.read_world(_GROUND_URI)
     if world is None:
         raise RuntimeError(f"Failed to load {_GROUND_URI}")
     world.set_gravity([0.0, -9.81, 0.0])

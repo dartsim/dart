@@ -51,19 +51,23 @@ def test_runner_unknown_scene_exits() -> None:
         run(["--scene", "definitely_not_a_scene"], make_demo_scenes())
 
 
-def test_runner_screenshot_writes_snapshot(tmp_path: pathlib.Path) -> None:
+def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
+    """`--screenshot` writes a real PPM via the dartpy.gui Filament viewer
+    (PLAN-103 Phase 2 replacement for the old JSON state stub)."""
+
     scenes = make_demo_scenes()
-    # Pick the first scene that can build (a runnable one) so the snapshot is
-    # produced from real world state.
     target = scenes[0]
+    out = tmp_path / "snap.ppm"
     rc = run(
-        ["--scene", target.id, "--frames", "1", "--screenshot", str(tmp_path / "snap.json")],
+        ["--scene", target.id, "--frames", "1", "--headless",
+         "--width", "160", "--height", "120", "--screenshot", str(out)],
         scenes,
     )
-    # If the target scene cannot build its assets in this environment, the
-    # runner soft-fails (rc != 0); accept either outcome but the runner must
-    # not crash.
+    # Soft-fail (rc != 0) is acceptable when the scene's assets can't load
+    # in the test environment; what matters is the runner didn't crash.
     assert rc in (0, 1)
     if rc == 0:
-        snap = (tmp_path / "snap.json").read_text()
-        assert target.id in snap
+        data = out.read_bytes()
+        # PPM "P6" header + non-empty pixel payload (>1KB) for any valid frame.
+        assert data.startswith(b"P6"), f"not a PPM: {data[:8]!r}"
+        assert len(data) > 1024, f"PPM too small: {len(data)} bytes"

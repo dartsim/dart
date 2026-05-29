@@ -18,7 +18,7 @@ _CHAIN_NAME = "mixed_chain"
 
 
 def build() -> SceneSetup:
-    world = dart.utils.SkelParser.read_world(_URI)
+    world = dart.io.SkelParser.read_world(_URI)
     if world is None:
         raise RuntimeError(f"Failed to load {_URI}")
     world.set_gravity([0.0, -9.81, 0.0])

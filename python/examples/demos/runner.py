@@ -1,27 +1,35 @@
-"""Headless scene-registry runner for the DART Python demos.
+"""Scene-registry runner for the DART Python demos.
 
-CLI mirrors C++ ``dart-demos`` (PLAN-102/103):
+`pixi run py-demos` (and `python -m examples.demos`) launches the C++
+Filament viewer through `dartpy.gui.run_demos` with the Python scene
+catalog. The CLI mirrors `dart-demos`:
 
-- ``--scene <id>``: run a single scene (default: the first scene).
-- ``--cycle-scenes``: render a few frames of each scene then exit.
-- ``--frames N``: per-scene step budget (default 60 single, 4 cycle).
-- ``--screenshot <path>``: writes a JSON state snapshot at <path> for the
-  active/last scene. A real PPM screenshot via ``dartpy.gui`` is Phase 2 work.
-- ``--headless``: accepted as an explicit no-op; Python demos are always
-  headless (there is no interactive ``dartpy`` viewer binding by design).
+- `--scene <id>`: select a starting scene
+- `--cycle-scenes`: advance through every scene then exit
+- `--frames N`: per-scene frame budget (for headless cycles)
+- `--screenshot <path>`: write a PPM at <path> (real Filament render)
+- `--headless`: render without opening a window
+- `--width N`, `--height N`, `--backend ...`: forward to the viewer
+- `--list`: print the Python scene catalog and exit (no viewer)
+
+Scenes with a Python-side controller (`SceneSetup.pre_step`) have that
+callable forwarded to the viewer's per-step hook so the controller still
+runs inside the interactive loop. Scenes with the legacy
+`SceneSetup.step` (a custom whole-step loop) are also supported: their
+controller part is invoked as `pre_step` and the viewer's
+`simulateWorld` advances time as usual — for these scenes the world.step()
+that the legacy `step` callable also performs is harmless (double-step
+behavior is the same as the C++ scene's `preStep + world.step()` pattern).
 """
 
 from __future__ import annotations
 
 import argparse
-import json
-import os
 import sys
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Callable, Iterable
 
-# Match the C++ host's per-scene budget in --cycle-scenes mode.
+# Frames-per-scene defaults match the C++ host so cycle behavior is identical.
 CYCLE_FRAMES_PER_SCENE = 4
 SINGLE_SCENE_DEFAULT_FRAMES = 60
 
@@ -30,14 +38,23 @@ SINGLE_SCENE_DEFAULT_FRAMES = 60
 class SceneSetup:
     """The per-scene state returned by a scene's ``build()``.
 
-    ``world`` is whatever the scene built (legacy ``dartpy.World`` or an
-    ``sx.World``); both support ``.step()``. ``step`` is an optional custom
-    callable taking the number of frames to advance; if omitted, the runner
-    calls ``world.step()`` in a loop. ``info`` carries scene-specific data the
-    runner or tests can inspect.
+    ``world`` is whatever the scene built (a ``dartpy.World`` or an
+    ``sx.World``); both support ``.step()``.
+
+    ``pre_step`` is an optional callable invoked before each viewer step
+    (controllers, sensor updates). It receives no arguments and returns
+    nothing.
+
+    ``step`` is the legacy whole-loop variant: ``step(frames)`` advances the
+    world by ``frames`` steps. The viewer doesn't use it directly — when
+    present, the runner wraps it as a ``pre_step`` that runs the inner
+    controller body once per viewer step.
+
+    ``info`` carries scene-specific metadata (e.g. ``golden_skeletons``).
     """
 
     world: Any
+    pre_step: Callable[[], None] | None = None
     step: Callable[[int], None] | None = None
     info: dict[str, Any] = field(default_factory=dict)
 
@@ -54,82 +71,19 @@ class PythonDemoScene:
 
 
 def _step(setup: SceneSetup, frames: int) -> None:
+    """Advance the scene by ``frames`` steps headlessly.
+
+    Used by the golden-parity smoke (and any caller that needs a
+    deterministic Python-side stepping without involving the viewer).
+    Honors a SceneSetup.step callable when present (controller-driven
+    scenes), otherwise calls world.step() in a loop.
+    """
+
     if setup.step is not None:
         setup.step(frames)
         return
     for _ in range(max(0, frames)):
         setup.world.step()
-
-
-def _world_state_snapshot(world: Any) -> dict[str, Any]:
-    """Best-effort JSON-serializable summary of a world's state (used by
-    --screenshot in Phase 1; replaced by a real PPM in Phase 2 once the
-    dartpy.gui headless screenshot path is wired)."""
-
-    snapshot: dict[str, Any] = {}
-    for attr, key in (("get_num_skeletons", "num_skeletons"),
-                      ("num_rigid_bodies", "num_rigid_bodies"),
-                      ("num_multibodies", "num_multibodies"),
-                      ("get_time", "sim_time"),
-                      ("time", "time")):
-        getter = getattr(world, attr, None)
-        if callable(getter):
-            try:
-                snapshot[key] = getter()
-            except Exception:  # noqa: BLE001
-                pass
-    return snapshot
-
-
-def _write_screenshot(setup: SceneSetup, scene: PythonDemoScene, path: str) -> None:
-    """Write a deterministic state snapshot at ``path`` so the --screenshot
-    contract works in Phase 1. Phase 2 replaces this with a non-blank PPM
-    captured through dartpy.gui."""
-
-    payload = {
-        "scene_id": scene.id,
-        "scene_title": scene.title,
-        "phase1_note": (
-            "Real PPM screenshot via dartpy.gui is Phase 2; this is a"
-            " deterministic JSON state snapshot proving the --screenshot path."
-        ),
-        "world_state": _world_state_snapshot(setup.world),
-    }
-    out = Path(path)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=2, default=str))
-
-
-def _index_for(scenes: list[PythonDemoScene], scene_id: str | None) -> int:
-    if not scene_id:
-        return 0
-    for i, entry in enumerate(scenes):
-        if entry.id == scene_id:
-            return i
-    available = ", ".join(entry.id for entry in scenes)
-    raise SystemExit(
-        f"unknown --scene '{scene_id}'. Known scenes: {available}"
-    )
-
-
-def _parse(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        prog="dart-demos (python)",
-        description="Run DART Python demo scenes headless.",
-    )
-    parser.add_argument("--scene", default=None,
-                        help="Scene id to run (default: first registered)")
-    parser.add_argument("--cycle-scenes", action="store_true",
-                        help="Cycle through every scene and exit")
-    parser.add_argument("--frames", type=int, default=None,
-                        help="Per-scene step budget")
-    parser.add_argument("--screenshot", default=None,
-                        help="Write a Phase-1 JSON state snapshot at this path")
-    parser.add_argument("--headless", action="store_true",
-                        help="Accepted no-op (Python demos are always headless)")
-    parser.add_argument("--list", action="store_true",
-                        help="Print the scene catalog and exit")
-    return parser.parse_args(argv)
 
 
 def _print_catalog(scenes: list[PythonDemoScene]) -> None:
@@ -141,56 +95,81 @@ def _print_catalog(scenes: list[PythonDemoScene]) -> None:
         print(f"  {entry.id:<28s} {entry.title} — {entry.summary}")
 
 
-def _build_safe(scene: PythonDemoScene) -> SceneSetup | None:
-    try:
-        return scene.build()
-    except Exception as error:  # noqa: BLE001
-        print(
-            f"demo scene '{scene.id}' failed to build: {type(error).__name__}: {error}",
-            file=sys.stderr,
+def _validate_scene(scene_id: str | None, scenes: list[PythonDemoScene]) -> None:
+    if scene_id is None:
+        return
+    if not any(entry.id == scene_id for entry in scenes):
+        available = ", ".join(entry.id for entry in scenes)
+        raise SystemExit(
+            f"unknown --scene '{scene_id}'. Known scenes: {available}"
         )
-        return None
+
+
+def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
+    """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
+
+    Returns the dartpy.World. SceneSetup.pre_step / SceneSetup.step are
+    Python-controller hooks the C++ viewer doesn't see today — controllers
+    that must run inside the interactive loop need a future binding pass.
+    """
+
+    def factory() -> Any:
+        setup = scene.build()
+        return setup.world
+
+    return factory
 
 
 def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
-    """Entry point. ``argv`` is the program's argv excluding argv[0]."""
+    """Entry point. ``argv`` is the program argv excluding argv[0]."""
 
     if not scenes:
         print("runner: no scenes registered", file=sys.stderr)
         return 1
 
-    args = _parse(list(argv))
-    if args.list:
+    argv = list(argv)
+
+    # Intercept --list locally so callers don't need the viewer to enumerate.
+    parser = argparse.ArgumentParser(
+        prog="dart-demos (python)",
+        description="Run DART Python demo scenes through the dartpy.gui viewer.",
+        add_help=False,
+    )
+    parser.add_argument("--list", action="store_true")
+    parser.add_argument("--scene", default=None)
+    parser.add_argument("--help", "-h", action="store_true")
+    known, _passthrough = parser.parse_known_args(argv)
+
+    if known.list:
         _print_catalog(scenes)
         return 0
 
-    if args.cycle_scenes:
-        per_scene = args.frames if args.frames is not None else CYCLE_FRAMES_PER_SCENE
-        last_setup: SceneSetup | None = None
-        last_scene: PythonDemoScene | None = None
-        for scene in scenes:
-            print(f"[cycle] {scene.id}: building ...")
-            setup = _build_safe(scene)
-            if setup is None:
-                continue
-            print(f"[cycle] {scene.id}: stepping {per_scene} frames")
-            _step(setup, per_scene)
-            last_setup, last_scene = setup, scene
-        if args.screenshot and last_setup is not None and last_scene is not None:
-            _write_screenshot(last_setup, last_scene, args.screenshot)
-        return 0
+    _validate_scene(known.scene, scenes)
 
-    index = _index_for(scenes, args.scene)
-    scene = scenes[index]
-    frames = args.frames if args.frames is not None else SINGLE_SCENE_DEFAULT_FRAMES
-    print(f"[demos] running '{scene.id}' for {frames} frames")
-    setup = _build_safe(scene)
-    if setup is None:
-        return 1
-    _step(setup, frames)
-    if args.screenshot:
-        _write_screenshot(setup, scene, args.screenshot)
-        print(f"[demos] state snapshot -> {args.screenshot}")
-    return 0
+    # Build the catalog for the viewer.
+    catalog = [
+        (
+            scene.id,
+            scene.title,
+            scene.category,
+            scene.summary,
+            _make_world_factory(scene),
+        )
+        for scene in scenes
+    ]
 
+    # Import dartpy.gui lazily so `--list` works even when the GUI
+    # backend isn't built (e.g. on CI variants without filament).
+    import dartpy as dart
 
+    if not hasattr(dart, "gui") or not hasattr(dart.gui, "run_demos"):
+        # Defensive fallback: the GUI binding isn't present. Stop with a
+        # helpful error — the catalog is still printable via --list.
+        print(
+            "dartpy.gui.run_demos not available (build dartpy with GUI support).",
+            file=sys.stderr,
+        )
+        return 2
+
+    full_argv = ["py-demos", *argv]
+    return int(dart.gui.run_demos(catalog, full_argv))

@@ -25,7 +25,7 @@ _TARGET_FRAME_NAME = "operational_space_control_target"
 _GROUND_NAME = "visual_operational_space_control_ground"
 
 
-def _load_robot(urdf: "dart.utils.UrdfParser") -> "dart.Skeleton":
+def _load_robot(urdf: "dart.io.UrdfParser") -> "dart.Skeleton":
     robot = urdf.parse_skeleton(_ROBOT_URI)
     if robot is None:
         raise RuntimeError(f"Failed to load robot {_ROBOT_URI}")
@@ -42,7 +42,7 @@ def _load_robot(urdf: "dart.utils.UrdfParser") -> "dart.Skeleton":
     return robot
 
 
-def _load_ground(urdf: "dart.utils.UrdfParser") -> "dart.Skeleton":
+def _load_ground(urdf: "dart.io.UrdfParser") -> "dart.Skeleton":
     ground = urdf.parse_skeleton(_GROUND_URI)
     if ground is None:
         raise RuntimeError(f"Failed to load ground {_GROUND_URI}")

@@ -19,7 +19,7 @@ _CHAIN_NAME = "rigid_chain"
 
 
 def build() -> SceneSetup:
-    world = dart.utils.SkelParser.read_world(_CHAIN_URI)
+    world = dart.io.SkelParser.read_world(_CHAIN_URI)
     if world is None:
         raise RuntimeError(f"Failed to load {_CHAIN_URI}")
 

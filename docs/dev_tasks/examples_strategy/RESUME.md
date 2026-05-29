@@ -89,10 +89,26 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
   category; the standalone example directory is removed, and the references in
   `examples/CMakeLists.txt`, `examples/README.md`, `scripts/run_cpp_example.py`,
   and PLAN-081 are updated to the new scene path.
+- **`py-demos` is interactive (Phase 2 viewer)**: the runner now delegates to
+  `dartpy.gui.run_demos` (new C++ bindings in `python/dartpy/gui/viewer.cpp`)
+  so `pixi run py-demos` opens the same Filament + ImGui multi-scene viewer
+  as `pixi run demos`, with the Python scene catalog. The CLI is unchanged;
+  `--screenshot <path>` now writes a real PPM via Filament instead of a JSON
+  state stub (the old `_write_screenshot` JSON path is retired). Python-side
+  controllers attached as `SceneSetup.step` / `SceneSetup.pre_step` are
+  invoked by the headless runner used by golden-parity tests, but the
+  interactive viewer doesn't forward them yet — a future binding pass should
+  thread a Python `preStep` callable through `dart::gui::ApplicationOptions`.
 
 ## Build / Run / Verify
 
-- Python: `pixi run py-demos -- --cycle-scenes --frames 2` (cycles 11 scenes).
+- Python (interactive): `pixi run py-demos` opens the Filament viewer with
+  all 29 Python scenes (pick a scene from the Demos sidebar, same UX as
+  `pixi run demos`).
+- Python (headless): `pixi run py-demos -- --headless --cycle-scenes --frames 2`
+  cycles every scene through the real renderer and exits.
+- Python (single-scene screenshot): `pixi run py-demos -- --scene <id> --headless --width 640 --height 360 --screenshot <path>` writes a real PPM.
+- Python catalog only (no viewer): `pixi run py-demos -- --list`.
 - Python tests:
   `pixi run bash -lc 'export PYTHONPATH="$PWD/build/default/cpp/Release/python:$PWD/python"; python -m pytest python/tests/integration/test_demos_cycle.py python/tests/unit/test_golden_parity.py -v'`
 - C++ golden test:
