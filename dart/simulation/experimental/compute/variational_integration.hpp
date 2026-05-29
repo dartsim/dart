@@ -106,8 +106,10 @@ struct VariationalLoopConstraint
 /// joints; fixed time step. Other joint types and floating bases are rejected.
 ///
 /// Updates the multibody's joint positions, velocities, and accelerations in
-/// the registry, and advances `state`. Returns solve diagnostics. Throws
-/// InvalidOperationException if RIQN fails to reach `tolerance` within
+/// the registry, and advances `state`. Returns solve diagnostics. `tolerance`
+/// is a per-coordinate accuracy; convergence tests the residual L2 norm against
+/// `tolerance * sqrt(dofCount)` so the accuracy is uniform across chain
+/// lengths. Throws InvalidOperationException if RIQN fails to converge within
 /// `maxIterations` (non-convergence is a hard error, not a silent best-effort
 /// step).
 ///
@@ -116,13 +118,21 @@ struct VariationalLoopConstraint
 /// constraint manifold `g(q) = 0` (the paper's Sec. 5 extension), reusing the
 /// O(n) inverse-mass apply: `lambda = (J M^{-1} J^T)^{-1} (-g)`,
 /// `dq = M^{-1} J^T lambda`. This keeps closed loops satisfied each step.
+///
+/// The `dt * M^{-1}` quasi-Newton preconditioner is only an approximate inverse
+/// Jacobian, so the plain iteration's convergence rate degrades for long
+/// chains. When the generalized coordinates form a vector space (every movable
+/// joint is revolute/prismatic) the RIQN fixed-point iteration is accelerated
+/// with depth-m Anderson mixing, which keeps the iteration count bounded for
+/// large degree-of-freedom counts; spherical/floating coordinates live on a
+/// manifold where linear mixing is invalid and use the plain step.
 DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
     MultibodyVariationalState& state,
-    int maxIterations = 50,
+    int maxIterations = 100,
     double tolerance = 1e-10,
     const std::vector<VariationalLoopConstraint>& constraints = {});
 

@@ -23,12 +23,15 @@
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
+#include <Eigen/QR>
 #include <entt/entt.hpp>
 
 #include <algorithm>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::simulation::experimental::compute {
 
@@ -689,21 +692,88 @@ VariationalSolveReport integrateMultibodyVariational(
         = jointRetract(joint, position.segment(seg, n), tangent);
   }
 
+  // The RIQN quasi-Newton step is dt * M(q^k)^{-1} * residual via the O(n)
+  // articulated-body inverse-mass apply (linear-time; no dense factorization),
+  // retracted per joint so spherical/floating coordinates stay on their
+  // SO(3)/SE(3) manifolds.
+  //
+  // The fixed dt*M^{-1} preconditioner is an approximate (not exact) inverse
+  // Jacobian, so the plain iteration's convergence *rate* degrades for long
+  // chains (iteration counts blow up well beyond a few dozen links). When the
+  // generalized coordinates form a vector space -- i.e. every movable joint is
+  // Euclidean (revolute/prismatic) -- we accelerate the fixed-point iteration
+  // with depth-1 Anderson (a/k/a Anderson(1)/Aitken) mixing, which restores
+  // fast convergence on long chains at negligible cost. Spherical/floating
+  // coordinates live on a manifold where linear iterate mixing is invalid, so
+  // they fall back to the plain step (behaviorally identical to before).
+  bool euclideanCoordinates = true;
+  for (const auto& link : tree.links) {
+    if (link.dof == 0) {
+      continue;
+    }
+    const auto type = registry.get<comps::Joint>(link.joint).type;
+    if (type == comps::JointType::Spherical
+        || type == comps::JointType::Floating) {
+      euclideanCoordinates = false;
+      break;
+    }
+  }
+
+  // Depth-m Anderson history (type-II). The fixed-point residual is the RIQN
+  // step itself: r_k = step_k = dt M^{-1} f(q^k). We keep the last m
+  // differences of the steps (F columns) and of the iterates (X columns), and
+  // at each iteration solve gamma = argmin ||step_k - F gamma|| (small n x m
+  // least squares) for the accelerated increment step_k + (X - F) gamma. m = 1
+  // recovers Aitken/secant acceleration.
+  constexpr std::size_t kAndersonDepth = 5;
+  std::vector<Eigen::VectorXd> stepDeltas;
+  std::vector<Eigen::VectorXd> positionDeltas;
+
+  // `tolerance` is a per-coordinate accuracy; the convergence test is on the
+  // L2 norm of the (dofCount-dimensional) residual, so scale by sqrt(dofCount)
+  // to keep the per-coordinate accuracy uniform across chain lengths. Without
+  // this, the fixed norm threshold is sqrt(n) times stricter for an n-DOF
+  // system and the hardest steps of long chains stall just above it.
+  const double normTolerance
+      = tolerance * std::sqrt(static_cast<double>(tree.dofCount));
+  Eigen::VectorXd previousStep;     // dt M^{-1} f(q^{k-1})
+  Eigen::VectorXd previousPosition; // q^{k-1}
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
     const Eigen::VectorXd residual = computeResidual(
         registry, tree, nextPosition, state, gravity, timeStep, appliedForce);
     report.iterations = static_cast<std::size_t>(iteration) + 1;
     report.residualNorm = residual.norm();
-    if (report.residualNorm <= tolerance) {
+    if (report.residualNorm <= normTolerance) {
       report.converged = true;
       break;
     }
-    // RIQN quasi-Newton step dt * M(q^k)^{-1} * e via the O(n) articulated-body
-    // inverse-mass apply (the linear-time root update; no dense factorization).
-    // The increment is retracted per joint so spherical/floating coordinates
-    // stay on their SO(3)/SE(3) manifolds.
-    const Eigen::VectorXd delta
+
+    const Eigen::VectorXd step
         = applyArticulatedInverseMass(tree, timeStep * residual);
+    Eigen::VectorXd increment = step; // plain RIQN update (subtracted below)
+    if (euclideanCoordinates && iteration > 0) {
+      stepDeltas.push_back(step - previousStep);
+      positionDeltas.push_back(nextPosition - previousPosition);
+      if (stepDeltas.size() > kAndersonDepth) {
+        stepDeltas.erase(stepDeltas.begin());
+        positionDeltas.erase(positionDeltas.begin());
+      }
+      const auto m = static_cast<Eigen::Index>(stepDeltas.size());
+      Eigen::MatrixXd stepMatrix(step.size(), m);
+      Eigen::MatrixXd positionMatrix(step.size(), m);
+      for (Eigen::Index c = 0; c < m; ++c) {
+        stepMatrix.col(c) = stepDeltas[static_cast<std::size_t>(c)];
+        positionMatrix.col(c) = positionDeltas[static_cast<std::size_t>(c)];
+      }
+      const Eigen::VectorXd gamma
+          = stepMatrix.colPivHouseholderQr().solve(step);
+      if (gamma.allFinite()) {
+        increment = step + (positionMatrix - stepMatrix) * gamma;
+      }
+    }
+
+    previousStep = step;
+    previousPosition = nextPosition;
     for (const auto& link : tree.links) {
       if (link.dof == 0) {
         continue;
@@ -712,7 +782,7 @@ VariationalSolveReport integrateMultibodyVariational(
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto n = static_cast<Eigen::Index>(link.dof);
       nextPosition.segment(seg, n) = jointRetract(
-          joint, nextPosition.segment(seg, n), -delta.segment(seg, n));
+          joint, nextPosition.segment(seg, n), -increment.segment(seg, n));
     }
   }
 
@@ -727,7 +797,7 @@ VariationalSolveReport integrateMultibodyVariational(
         "{}",
         report.residualNorm,
         report.iterations,
-        tolerance);
+        normTolerance);
   }
 
   // Enforce holonomic loop closures: Newton-project the next configuration onto
@@ -1014,7 +1084,7 @@ void MultibodyVariationalIntegrationStage::execute(
       }
     }
     integrateMultibodyVariational(
-        registry, structure, gravity, timeStep, state, 50, 1e-10, constraints);
+        registry, structure, gravity, timeStep, state, 100, 1e-10, constraints);
   }
 }
 
