@@ -41,6 +41,7 @@
 #include <limits>
 #include <span>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <cassert>
@@ -160,6 +161,9 @@ struct ContactCandidateSweepScratch
   std::vector<SweepItem> pointItems;
   std::vector<SweepItem> triangleItems;
   std::vector<SweepItem> edgeItems;
+  // Reusable next-index live list for the cross-set sweep-and-prune traversal
+  // (sized to the right-hand-side item count per call).
+  std::vector<std::size_t> sweepLinks;
 };
 
 //==============================================================================
@@ -299,33 +303,76 @@ inline void sortSweepItems(std::span<SweepItem> items)
 }
 
 //==============================================================================
+// Cross-set broad-phase sweep ("sweep and prune"). For each lhs in ascending
+// min-x order, visits every rhs whose AABB overlaps it, in ascending rhs min-x
+// order. This is a full active-set sweep: an rhs whose max-x has fallen behind
+// the sweep line (max-x < lhs min-x, so it can never overlap this or a later
+// lhs since lhs min-x only grows) is unlinked from a live list, so a long-lived
+// early interval no longer forces the expired intervals behind it to be
+// rescanned for every lhs. The visited (lhs, rhs) sequence is identical to a
+// naive nested scan -- only the skipped non-overlapping work differs.
+// `linkScratch` is reusable next-index storage; it is resized to the rhs count.
+template <typename Visitor>
+void visitSweepPairs(
+    std::span<SweepItem> lhsItems,
+    std::span<SweepItem> rhsItems,
+    Visitor&& visitor,
+    std::vector<std::size_t>& linkScratch)
+{
+  sortSweepItems(lhsItems);
+  sortSweepItems(rhsItems);
+
+  // `count` doubles as the one-past-last "end" sentinel for the live list;
+  // `kNoPrev` marks "the current item is the live head" during a walk.
+  const std::size_t count = rhsItems.size();
+  constexpr std::size_t kNoPrev = std::numeric_limits<std::size_t>::max();
+  linkScratch.resize(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    linkScratch[i] = i + 1; // next live index; the last entry points at `count`
+  }
+  std::size_t head = 0; // when count == 0 this equals the end sentinel
+
+  for (const auto& lhs : lhsItems) {
+    std::size_t prev = kNoPrev;
+    std::size_t cur = head;
+    while (cur != count) {
+      const auto& rhs = rhsItems[cur];
+      if (rhs.aabb.min.x() > lhs.aabb.max.x()) {
+        break; // every remaining rhs starts after this lhs ends
+      }
+      if (rhs.aabb.max.x() < lhs.aabb.min.x()) {
+        // Expired for this and every later lhs: unlink from the live list so it
+        // is never revisited.
+        const std::size_t next = linkScratch[cur];
+        if (prev == kNoPrev) {
+          head = next;
+        } else {
+          linkScratch[prev] = next;
+        }
+        cur = next;
+        continue;
+      }
+      if (lhs.aabb.overlaps(rhs.aabb)) {
+        visitor(lhs.id, rhs.id);
+      }
+      prev = cur;
+      cur = linkScratch[cur];
+    }
+  }
+}
+
+//==============================================================================
+// Convenience overload that owns the live-list scratch, for tests and
+// standalone callers; hot paths pass reusable scratch via the overload above.
 template <typename Visitor>
 void visitSweepPairs(
     std::span<SweepItem> lhsItems,
     std::span<SweepItem> rhsItems,
     Visitor&& visitor)
 {
-  sortSweepItems(lhsItems);
-  sortSweepItems(rhsItems);
-
-  std::size_t rhsBegin = 0;
-  for (const auto& lhs : lhsItems) {
-    while (rhsBegin < rhsItems.size()
-           && rhsItems[rhsBegin].aabb.max.x() < lhs.aabb.min.x()) {
-      ++rhsBegin;
-    }
-
-    for (std::size_t rhsIndex = rhsBegin; rhsIndex < rhsItems.size();
-         ++rhsIndex) {
-      const auto& rhs = rhsItems[rhsIndex];
-      if (rhs.aabb.min.x() > lhs.aabb.max.x()) {
-        break;
-      }
-      if (lhs.aabb.overlaps(rhs.aabb)) {
-        visitor(lhs.id, rhs.id);
-      }
-    }
-  }
+  std::vector<std::size_t> linkScratch;
+  visitSweepPairs(
+      lhsItems, rhsItems, std::forward<Visitor>(visitor), linkScratch);
 }
 
 //==============================================================================
@@ -690,7 +737,8 @@ inline void buildContactCandidatesSweep(
         ++candidates.stats.broadPhaseOverlapCount;
         detail::maybeAddPointTriangleCandidate(
             candidates, positions, triangles, point, triangle, options);
-      });
+      },
+      scratch.sweepLinks);
 
   scratch.edgeItems.clear();
   scratch.edgeItems.reserve(candidates.surfaceEdges.size());
@@ -900,7 +948,8 @@ inline void buildMotionAwareContactCandidatesSweep(
             point,
             triangle,
             options);
-      });
+      },
+      scratch.sweepLinks);
 
   scratch.edgeItems.clear();
   scratch.edgeItems.reserve(candidates.surfaceEdges.size());

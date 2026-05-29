@@ -74,6 +74,14 @@
         sweep traversal used by experimental surface candidate and CCD checks
         so the expired right-hand-side AABB prefix is no longer rescanned for
         every left-hand-side item.
+  - [x] Internal active-set sweep-and-prune sub-slice: completed the cross-set
+        sweep into a full active-set traversal (a reusable next-index live list
+        that unlinks each right-hand-side AABB as its maximum x falls behind the
+        sweep line), removing the prior slice's limitation where a long-lived
+        early interval pinned the prefix cursor and forced the expired intervals
+        behind it to be rescanned for every left-hand-side item. The visited
+        pair sequence is identical to the naive scan (behavior-preserving), with
+        a staggered-expiry regression and a long-lived-interval microbenchmark.
   - [x] Internal static rigid surface CCD line-search sub-slice: explicitly
         opted-in static box collision shapes triangulated into stationary
         surface snapshots with physical box edges for deformable line-search
@@ -427,12 +435,27 @@ For the sweep-pair traversal sub-slice, keep the verification language precise:
 it covers internal cross-set sweep traversal used by experimental surface
 candidate generation and inter-body surface CCD checks. Sorted right-hand-side
 AABBs whose maximum x coordinate is already behind the current left-hand-side
-minimum x are skipped as a prefix instead of rescanned. This is not a full
-sweep-and-prune active set: a long early right-hand-side interval can still
-keep later expired items in the scan. It preserves the existing visitor pair
-semantics and does not change public APIs, exact distance filters, topology
-filters, same-set edge-edge self traversal, deformable-rigid contact, or full
-IPC contact behavior.
+minimum x are skipped as a prefix instead of rescanned. This was not yet a full
+sweep-and-prune active set (a long early right-hand-side interval could still
+keep later expired items in the scan); the follow-up active-set sub-slice
+removes that limitation. It preserves the existing visitor pair semantics and
+does not change public APIs, exact distance filters, topology filters, same-set
+edge-edge self traversal, deformable-rigid contact, or full IPC contact
+behavior.
+
+For the active-set sweep-and-prune sub-slice, keep the verification language
+precise: it replaces the cross-set prefix skip with a full active-set traversal
+(a reusable next-index live list whose entries are unlinked once their maximum x
+falls behind the sweep line), so expired right-hand-side AABBs behind a
+long-lived early interval are no longer rescanned for every left-hand-side item.
+It is behavior-preserving: the visited `(lhs, rhs)` pair sequence is identical
+to the naive nested scan (verified against the naive reference, including a
+staggered-expiry case), and it does not change public APIs, exact distance
+filters, topology filters, same-set edge-edge self traversal, candidate sets,
+solver-wired CCD limiters, barrier candidate assembly, or full IPC contact
+behavior. Benchmark evidence is the long-lived-interval microbenchmark
+(`BM_IpcCandidateSetCrossSweepLongLivedInterval`) staying near-linear where the
+prefix skip degraded toward quadratic.
 
 For the inter-body surface-contact CCD line-search sub-slice, keep the
 verification language precise: it covers cross-surface point-triangle and
