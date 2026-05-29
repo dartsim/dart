@@ -463,8 +463,21 @@ VariationalSolveReport integrateMultibodyVariational(
     state.bootstrapped = true;
   }
 
-  // Initial guess IG2 (explicit Euler); A1 joints are Euclidean.
-  Eigen::VectorXd nextPosition = position + timeStep * velocity;
+  // Initial guess IG3 (semi-implicit Euler from forward dynamics): far closer
+  // to the DEL root than explicit Euler, which keeps the RIQN iteration count
+  // low and roughly uniform across chain length. The forward-dynamics
+  // acceleration ddq = M(q)^{-1}(appliedForce - (C(q,qdot) qdot + g(q))) reuses
+  // the O(n) inverse-mass apply, so the initial guess stays linear-time. A1
+  // joints are Euclidean, so the guess uses plain vector arithmetic.
+  const Eigen::VectorXd bias = computeMultibodyInverseDynamics(
+      registry,
+      structure,
+      gravity,
+      Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount)));
+  const Eigen::VectorXd guessAcceleration
+      = applyArticulatedInverseMass(tree, appliedForce - bias);
+  Eigen::VectorXd nextPosition = position + timeStep * velocity
+                                 + timeStep * timeStep * guessAcceleration;
 
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
     const Eigen::VectorXd residual = computeResidual(

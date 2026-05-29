@@ -36,8 +36,12 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
       O(n) and the integrator scales linearly + converges in a few iterations for
       realistic DOF counts (≤~32), but the RIQN iteration count rises sharply for
       long chains (≥~64 links) at small `dt` — the known `Δt·M⁻¹` quasi-Newton
-      limitation. Improving large-chain convergence (IG3 initial guess, relative
-      tolerance, line-search/Anderson acceleration) is a tracked follow-up.
+      limitation. The IG3 (semi-implicit, forward-dynamics) initial guess is used
+      and helps continuous rollouts, but does **not** resolve the cliff: it is a
+      convergence-_rate_ issue (the fixed `Δt·M⁻¹` preconditioner), not a
+      starting-point one. Deeper mitigations (relative/scaled tolerance,
+      line-search/Anderson acceleration, or the exact recursive-Jacobian
+      preconditioner from the paper's Appendix) are tracked follow-ups.
 - [ ] Phase B1 — Floating base (manifold-correct RIQN retraction)
 - [ ] Phase B2 — Holonomic constraints (loop closures)
 - [ ] Phase C — Contact & friction (DEFERRED, separate go/no-go; see plan sidecar)
@@ -73,12 +77,17 @@ energy behavior on a passive chain before optimizing to O(n).
 
 ## Immediate Next Steps
 
-1. Add the SE(3) Lie-group calculus kernels (ported + unit-tested vs finite
-   differences) in the experimental `common`/`detail` math area.
-2. Implement DRNEA residual over `DynamicsTree`; unit-test the residual is ~0 at
-   the semi-implicit-consistent configuration for a 1-DOF pendulum.
-3. Implement the RIQN loop (dense placeholder) + the stage + selector; wire and
-   build.
-4. Add the energy helper + the analytic/energy/convergence/determinism tests.
+Phase A1 + A2 (core) are complete and verified. Remaining, in priority order
+(see `RESUME.md` for the full handoff):
+
+1. A1 finish: serialize `MultibodyVariationalState` (binary-format version bump +
+   bootstrap-done flag) + a save/load determinism round-trip test; optionally a
+   documented non-convergence error.
+2. A2 large-chain convergence (follow-up): relative/scaled tolerance,
+   line-search/Anderson acceleration, or the exact recursive-Jacobian
+   preconditioner (IG3 alone does not resolve the long-chain iteration cliff).
+3. Phase B1: floating base (manifold-correct RIQN retraction).
+4. Phase B2: holonomic constraints (loop closures).
+5. Phase C: contact/friction (deferred, go/no-go; see the plan sidecar).
 
 Code is the source of truth; keep this file lean and current.

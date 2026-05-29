@@ -36,8 +36,10 @@ Remaining, in priority order:
 1. **A2 large-chain convergence** (follow-up): `bm_variational_integration`
    confirms the inverse-mass kernel is O(n) (3% RMS) and the integrator scales
    linearly for ≤~32 DOF, but the RIQN iteration count rises for ≥~64-link
-   chains — improve via an IG3 (semi-implicit) initial guess, a relative/scaled
-   convergence tolerance, or line-search/Anderson acceleration.
+   chains. The IG3 (semi-implicit) initial guess is implemented and did not fix
+   the cliff (it is a convergence-_rate_ issue, not a starting-point one), so the
+   open mitigations are a relative/scaled convergence tolerance, line-search or
+   Anderson acceleration, or the exact recursive-Jacobian preconditioner.
 2. **A1 finish**: serialize `MultibodyVariationalState` (binary-format version
    bump + bootstrap-done flag) + a save/load determinism round-trip test;
    optionally promote RIQN non-convergence from a `converged=false` diagnostic to

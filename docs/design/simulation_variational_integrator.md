@@ -315,10 +315,14 @@ experiments (reference repo `experiments/`: `energy_conservation`, `convergence`
    per-iteration cost is O(n) (3% RMS linear fit on the inverse-mass kernel) and
    the integrator converges in a few iterations and scales linearly for
    realistic DOF counts (≤~32), but the RIQN iteration count rises sharply for
-   long chains (≥~64 links) at `Δt = 1 ms`. Mitigations (IG3 initial guess,
-   relative/scaled convergence tolerance, line-search or Anderson acceleration)
-   are tracked follow-ups; stiff contact barriers would compound this, so favor
-   compliant/AL contact and prototype any barrier on sparse contact first.
+   long chains (≥~64 links) at `Δt = 1 ms`. The IG3 (semi-implicit) initial
+   guess is used and helps continuous rollouts but does not resolve the cliff —
+   it is a convergence-_rate_ issue (the fixed `Δt·M⁻¹` preconditioner), not a
+   starting-point one. Deeper mitigations (relative/scaled convergence
+   tolerance, line-search or Anderson acceleration, or the exact
+   recursive-Jacobian preconditioner from the paper's Appendix) are tracked
+   follow-ups; stiff contact barriers would compound this, so favor compliant/AL
+   contact and prototype any barrier on sparse contact first.
 4. **Manifold RIQN increment for ball/free joints** has no correct reference
    template (open TODOs in the reference impl). Phase A (revolute/prismatic)
    avoids it; Phase B must solve it.
