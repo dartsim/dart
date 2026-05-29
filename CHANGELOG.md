@@ -935,6 +935,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     Experimental category) showing a box slide across static ground and be
     friction-braked to rest through the rigid IPC barrier solver, now viable
     thanks to the freeze-on-contact fix.
+  - Added a two-box-stack runtime regression proving the adaptive-stiffness fix
+    generalizes to multiple dynamic bodies and body-body contact: a stack of two
+    free boxes on static ground settles into a stable, intersection-free
+    equilibrium (simultaneous body-ground and body-body barriers, a single
+    scene-level adaptive kappa) instead of freezing, interpenetrating, or
+    separating.
   - Added internal experimental moving rigid box surface CCD limiting for free
     (non-static) deformable-surface CCD obstacles: the deformable stage predicts
     each obstacle's end-of-step transform from its velocity (mirroring the rigid

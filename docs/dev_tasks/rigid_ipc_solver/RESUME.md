@@ -205,11 +205,14 @@ friction braking, stable settling) instead of freezing. This unblocks
 sliding/friction/stacking demos and the contact corpus.
 
 Next slices, in rough priority:
-1. Verify the `sx_rigid_ipc` drop demo settles stably (not frozen) after the
-   full `pixi run build` (urdfdom 5.1 relink), and add a friction-slide GUI demo
-   now that sliding is viable.
+1. DONE: clean `pixi run build` (urdfdom 5.1 relink) restored dartpy; the
+   `sx_rigid_ipc` drop demo settles stably (z 0.6 -> 0.2503, last-100-step span
+   1.3e-5, gap > 0, no mid-air freeze); added + verified the `sx_rigid_ipc_slide`
+   friction-slide GUI demo (box advances ~0.44 m and brakes from 2.0 m/s to rest
+   with a positive gap). Both green in the demos-cycle smoke.
 2. Multi-body and body-body (not just body-ground) contact-dynamics regressions;
-   resting/stacking convergence.
+   resting/stacking convergence. (Adversarial review flagged body-body as
+   untested; the per-body bbox/mass adaptive-stiffness inputs still apply.)
 3. Continue Phase 4 (broader runtime friction fixture behavior) and Phase 2
    (rigorous interval CCD + corpus parity).
 

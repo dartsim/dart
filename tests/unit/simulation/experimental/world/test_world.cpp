@@ -3573,6 +3573,82 @@ TEST(World, RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics)
 
 // Test that the opt-in rigid IPC stage assembles active barrier constraints
 // from runtime mesh surfaces and pushes a dynamic body away from a static one.
+// Body-body generalization of the freeze fix: a stack of two free boxes on
+// static ground. This exercises multiple dynamic bodies in one solve (a 12-DOF
+// global system) plus simultaneous body-ground (A-ground) and body-body (B-A)
+// barrier contacts, all driven by a single scene-level adaptive kappa. The
+// stack must settle into a stable, intersection-free equilibrium rather than
+// freeze, interpenetrate, or fly apart.
+TEST(World, RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration)
+{
+  namespace sx = dart::simulation::experimental;
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+  // Box A rests just above the ground (bottom at z = 0.002); box B rests just
+  // above A (gap 0.002). Box half-height is 0.25, so a B-A center separation
+  // below 0.5 would mean interpenetration.
+  sx::RigidBodyOptions aOptions;
+  aOptions.mass = 1.0;
+  aOptions.position = Eigen::Vector3d(0.0, 0.0, 0.252);
+  auto boxA = world.addRigidBody("A", aOptions);
+  boxA.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+
+  sx::RigidBodyOptions bOptions;
+  bOptions.mass = 1.0;
+  bOptions.position = Eigen::Vector3d(0.0, 0.0, 0.754);
+  auto boxB = world.addRigidBody("B", bOptions);
+  boxB.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  constexpr int kSteps = 24;
+  double lastZa = 0.0;
+  double lastZb = 0.0;
+  for (int step = 0; step < kSteps; ++step) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+
+    // Multiple dynamic bodies feed the solve and a scene-level adaptive kappa
+    // (well above the old fixed value of 1) holds them apart.
+    EXPECT_EQ(stats.dynamicBodyCount, 2u) << "step " << step;
+    EXPECT_GT(stats.barrierStiffness, 100.0) << "step " << step;
+    // No freeze: every step makes progress and is written back.
+    EXPECT_TRUE(stats.resultApplied) << "step " << step;
+    EXPECT_FALSE(stats.failed) << "step " << step;
+
+    const double za = boxA.getTranslation().z();
+    const double zb = boxB.getTranslation().z();
+
+    // No penetration: A stays above the ground top (z = 0, A bottom = za -
+    // 0.25) and B stays above A (center separation >= box height 0.5).
+    EXPECT_GT(za, 0.25 - 1e-3) << "step " << step;
+    EXPECT_GT(zb - za, 0.5 - 1e-3) << "step " << step;
+    // No explosion: the stack stays near its initial configuration.
+    EXPECT_LT(za, 0.27) << "step " << step;
+    EXPECT_LT(zb, 0.78) << "step " << step;
+
+    lastZa = za;
+    lastZb = zb;
+  }
+
+  // Settled into a stable equilibrium: both boxes are still resting in a valid
+  // stack (A on the ground, B on A) at the end of the run.
+  EXPECT_NEAR(lastZa, 0.2501, 3e-3);
+  EXPECT_NEAR(lastZb, 0.7531, 3e-3);
+  EXPECT_GT(lastZb - lastZa, 0.5 - 1e-3);
+}
+
 TEST(World, RigidIpcContactStageSeparatesActivatedMeshBarrier)
 {
   namespace sx = dart::simulation::experimental;
