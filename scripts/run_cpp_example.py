@@ -76,9 +76,6 @@ class ExampleSpec:
 # reused by tests), plus `hello_world` as the minimal template.
 GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "hello_world": (),
-    "atlas_simbicon": (),
-    "collision_sandbox": (),
-    "wam_ikfast": (),
     "gui_scene_diagnostics": (),
 }
 
@@ -129,6 +126,7 @@ _DEMOS_SCENE_IDS = (
     "biped_stand",
     "operational_space_control",
     "atlas_puppet",
+    "atlas_simbicon",
     "hubo_puppet",
     "mixed_chain",
     "soft_bodies",
@@ -136,6 +134,8 @@ _DEMOS_SCENE_IDS = (
     "vehicle",
     "g1_puppet",
     "human_joint_limits",
+    "collision_sandbox",
+    "wam_ikfast",
 )
 
 REMOVED_EXAMPLES = {

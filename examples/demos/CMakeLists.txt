@@ -51,11 +51,19 @@ set(demos_scene_sources
   "${CMAKE_CURRENT_LIST_DIR}/scenes/human_joint_limits.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_rigid_body_gui.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_deformable.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/collision_sandbox.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/collision_sandbox/pair_registry.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_simbicon.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_simbicon/controller.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_simbicon/state.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_simbicon/state_machine.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_simbicon/terminal_condition.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/wam_ikfast.cpp"
 )
 
 add_library(demos_scenes STATIC ${demos_scene_sources})
 target_include_directories(demos_scenes PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
-target_link_libraries(demos_scenes PUBLIC dart-gui dart-io)
+target_link_libraries(demos_scenes PUBLIC dart-gui dart-io dart-collision-native)
 if(TARGET dart-simulation-experimental)
   target_link_libraries(demos_scenes PUBLIC dart-simulation-experimental)
 endif()

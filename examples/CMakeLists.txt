@@ -14,18 +14,8 @@ add_subdirectory(csv_logger)
 
 if(DART_BUILD_GUI OR NOT DART_IN_SOURCE_BUILD)
   # hello_world stays standalone as the minimal "link DART in a CMake project"
-  # template. Other GUI examples are consolidated into the dart-demos app
-  # (examples/demos); each is a registered scene switchable at runtime.
+  # template. Every other GUI example is a registered scene in the
+  # dart-demos app (examples/demos), switchable at runtime from the sidebar.
   add_subdirectory(hello_world)
   add_subdirectory(demos)
-
-  # Kept standalone (not in dart-demos). Tracked in docs/dev_tasks/demos_app/:
-  #   - atlas_simbicon / collision_sandbox: their controller and pair-registry
-  #     sources are reused by tests (tests/integration, tests/unit/collision),
-  #     so they stay multi-file standalone examples.
-  #   - wam_ikfast: depends on a generated IKFast library selected via
-  #     DART_WAM_IKFAST_LIB_PATH at configure time.
-  add_subdirectory(atlas_simbicon)
-  add_subdirectory(collision_sandbox)
-  add_subdirectory(wam_ikfast)
 endif()

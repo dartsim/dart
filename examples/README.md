@@ -11,11 +11,9 @@ standalone programs:
   DART's capabilities.
 - **`hello_world`** (`examples/hello_world/`) — kept standalone as the minimal,
   copy-pasteable template for setting up an executable, CMake-based C++ project
-  that links DART.
-- A few **standalone GUI examples** remain separate because of special build
-  needs or because their sources are reused by the test suite: `atlas_simbicon`,
-  `collision_sandbox`, and `wam_ikfast`. `gui_scene_diagnostics` is a headless
-  GUI-descriptor inspector rather than a viewer scene.
+  that links DART. Every other interactive GUI example is now a scene in
+  `dart-demos`. `gui_scene_diagnostics` is a headless GUI-descriptor inspector
+  rather than a viewer scene.
 - **Headless / CLI examples**: `csv_logger`, `headless_simulation`,
   `speed_test`, and `unified_loading` are console programs and stay standalone.
 
