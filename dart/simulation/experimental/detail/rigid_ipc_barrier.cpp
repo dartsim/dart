@@ -29,6 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_barrier.hpp>
 
@@ -39,6 +40,7 @@
 #include <array>
 #include <limits>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <cassert>
@@ -194,6 +196,37 @@ double surfaceMotionBound(
         rigidIpcPointTrajectorySpeedBound(localVertex, start.pose, end.pose));
   }
   return bound;
+}
+
+/// Enumerate candidate surface pairs with a sort-and-sweep broad phase, reusing
+/// the deformable IPC sweep utilities (PLAN-082 Workstream 8: shared IPC
+/// primitives). Each surface's world AABB is expanded by a per-surface margin;
+/// the sweep returns every pair whose expanded AABBs overlap, which is a
+/// superset of the pairs the exact distance/reach cull keeps, so callers must
+/// still apply that exact cull. This replaces the all-pairs O(N^2) enumeration
+/// with O(N log N + overlapping pairs) for large scenes. Surfaces with empty
+/// AABBs carry no primitives and are omitted (they contribute no constraints).
+std::vector<std::pair<std::size_t, std::size_t>> collectCandidateSurfacePairs(
+    std::span<const SurfaceWorldAabb> aabbs, std::span<const double> margins)
+{
+  namespace dcd = deformable_contact::detail;
+  std::vector<dcd::SweepItem> items;
+  items.reserve(aabbs.size());
+  for (std::size_t body = 0; body < aabbs.size(); ++body) {
+    if (!aabbs[body].valid) {
+      continue;
+    }
+    dcd::CandidateAabb aabb;
+    aabb.min = aabbs[body].min;
+    aabb.max = aabbs[body].max;
+    aabb.expand(margins[body]);
+    items.push_back(dcd::SweepItem{body, aabb});
+  }
+
+  std::vector<std::pair<std::size_t, std::size_t>> pairs;
+  dcd::visitSelfSweepPairs(
+      items, [&](std::size_t a, std::size_t b) { pairs.emplace_back(a, b); });
+  return pairs;
 }
 
 PointTransformDerivatives pointTransformDerivatives(
@@ -1611,19 +1644,28 @@ RigidIpcBarrierAssembly assembleRigidIpcBarrierSystem(
   }
 
   std::vector<Eigen::Triplet<double>> triplets;
-  for (std::size_t bodyA = 0; bodyA < surfaces.size(); ++bodyA) {
+  const double activationDistance
+      = std::sqrt(std::max(0.0, options.squaredActivationDistance));
+  const std::vector<double> surfaceMargins(
+      surfaces.size(), 0.5 * activationDistance);
+  const std::vector<std::pair<std::size_t, std::size_t>> candidatePairs
+      = collectCandidateSurfacePairs(surfaceAabbs, surfaceMargins);
+  for (const auto& candidatePair : candidatePairs) {
+    const std::size_t bodyA = candidatePair.first;
+    const std::size_t bodyB = candidatePair.second;
     const RigidIpcBarrierSurface& a = surfaces[bodyA];
-    for (std::size_t bodyB = bodyA + 1; bodyB < surfaces.size(); ++bodyB) {
+    {
       const RigidIpcBarrierSurface& b = surfaces[bodyB];
       if (!a.dynamic && !b.dynamic) {
         continue;
       }
 
-      // Conservative broad-phase cull: skip surface pairs whose world AABBs are
-      // already at or beyond the activation distance, where every primitive
-      // barrier is inactive. This is behavior-preserving (the AABB gap lower
-      // bounds the true surface distance) and removes the dominant all-pairs
-      // barrier-evaluation cost for spatially separated bodies.
+      // Exact broad-phase cull on the sweep candidates: skip surface pairs
+      // whose world AABBs are already at or beyond the activation distance,
+      // where every primitive barrier is inactive. This is behavior-preserving
+      // (the AABB gap lower bounds the true surface distance) and, with the
+      // sort-and-sweep candidate enumeration above, keeps the assembled system
+      // identical to the former all-pairs loop.
       if (surfaceAabbs[bodyA].valid && surfaceAabbs[bodyB].valid
           && surfaceAabbSquaredDistance(
                  surfaceAabbs[bodyA], surfaceAabbs[bodyB])
@@ -1853,22 +1895,32 @@ RigidIpcLineSearchResult computeRigidIpcLineSearchStepBound(
   // lands within the tolerance band of the activation threshold.
   const double convergeAbs = std::max(ccdOption.tolerance, 1e-12);
 
-  for (std::size_t bodyA = 0; bodyA < startSurfaces.size(); ++bodyA) {
+  std::vector<double> surfaceMargins(startSurfaces.size());
+  for (std::size_t body = 0; body < startSurfaces.size(); ++body) {
+    surfaceMargins[body]
+        = motionBounds[body] + 0.5 * (minSeparation + convergeAbs);
+  }
+  const std::vector<std::pair<std::size_t, std::size_t>> candidatePairs
+      = collectCandidateSurfacePairs(startAabbs, surfaceMargins);
+  for (const auto& candidatePair : candidatePairs) {
+    const std::size_t bodyA = candidatePair.first;
+    const std::size_t bodyB = candidatePair.second;
     const RigidIpcBarrierSurface& a0 = startSurfaces[bodyA];
     const RigidIpcBarrierSurface& a1 = endSurfaces[bodyA];
-    for (std::size_t bodyB = bodyA + 1; bodyB < startSurfaces.size(); ++bodyB) {
+    {
       const RigidIpcBarrierSurface& b0 = startSurfaces[bodyB];
       const RigidIpcBarrierSurface& b1 = endSurfaces[bodyB];
       if (!a0.dynamic && !b0.dynamic) {
         continue;
       }
 
-      // Conservative swept broad-phase cull. Each surface stays within its
-      // motion bound of its start AABB over the whole step, so if the start
-      // AABBs are farther apart than the combined motion bounds plus the
-      // minimum separation, no primitive pair can reach contact. This reuses
-      // the same curved-trajectory speed bound as the per-primitive CCD, so it
-      // never skips a pair the CCD below would otherwise limit the step on.
+      // Exact swept broad-phase cull on the sweep candidates. Each surface
+      // stays within its motion bound of its start AABB over the whole step, so
+      // if the start AABBs are farther apart than the combined motion bounds
+      // plus the minimum separation and CCD convergence tolerance, no primitive
+      // pair can reach contact. This reuses the same curved-trajectory speed
+      // bound as the per-primitive CCD, so it never skips a pair the CCD below
+      // would limit.
       if (startAabbs[bodyA].valid && startAabbs[bodyB].valid) {
         const double reach = motionBounds[bodyA] + motionBounds[bodyB]
                              + minSeparation + convergeAbs;

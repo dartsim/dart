@@ -880,6 +880,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     motion bound, the CCD convergence tolerance, and the minimum separation).
     The cull is behavior-preserving, with anti-tunneling, far-skip, and
     tolerance-band regressions.
+  - Replaced the rigid IPC barrier-assembly and line-search all-pairs O(N^2)
+    surface enumeration with a sort-and-sweep broad phase that reuses the
+    deformable IPC sweep utilities (shared IPC primitives), keeping the exact
+    distance/reach cull on the sweep candidates so the assembled system and
+    line-search result are unchanged while large multi-body scenes become
+    sub-quadratic.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

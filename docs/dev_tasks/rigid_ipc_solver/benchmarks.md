@@ -118,11 +118,15 @@ starting, active-set reuse) follow from here.
 
 ## Open performance findings
 
-- **Pair enumeration is still all-pairs O(N²) AABB tests.** The cull removes the
-  dominant per-pair barrier work but still iterates every surface pair to test
-  AABBs (cheap, ~ns each, not dominant at the measured N). A spatial index
-  (uniform grid / sort-and-sweep, reusing the deformable candidate-set pattern)
-  is the follow-up to make the enumeration itself sub-quadratic for large scenes.
+- [RESOLVED] **Pair enumeration was all-pairs O(N²).** The barrier assembly and
+  line search now enumerate candidate surface pairs with a sort-and-sweep broad
+  phase reusing the deformable IPC sweep utilities (`deformable_contact::detail`
+  sweep helpers — shared IPC primitives, Workstream 8), keeping the exact
+  distance/reach cull on the candidates so results are identical. Enumeration is
+  now O(N log N + overlapping pairs); it does not change the 1–4 body benchmark
+  (few pairs) but makes many-body paper scenes tractable. Promoting these sweep
+  helpers to a dedicated shared header is a future cleanup once a third user
+  appears.
 - **Per-primitive barrier kernels cost ~6–8 µs.** Dominated by the
   reduced-coordinate chain rule plus the 12x12 PSD eigen-projection
   (`projectToPsd`).
