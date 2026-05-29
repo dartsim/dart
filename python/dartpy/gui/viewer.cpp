@@ -94,7 +94,7 @@ void defGuiViewer(nb::module_& m)
           entry.summary = summary;
           // Capture the Python callable; on invocation, acquire the GIL,
           // call into Python, and unwrap the returned World pointer.
-          entry.factory = [factory]() {
+          entry.factory = [factory, scene_id = id]() {
             nb::gil_scoped_acquire gil;
             dart::gui::ApplicationOptions options;
             try {
@@ -104,7 +104,18 @@ void defGuiViewer(nb::module_& m)
             } catch (const std::exception& e) {
               // Surface the Python-side error to stderr so the demos host
               // can soft-fail on this scene the way the C++ catalog does.
-              fprintf(stderr, "py-demos factory error: %s\n", e.what());
+              fprintf(
+                  stderr,
+                  "py-demos factory error for scene '%s': %s\n",
+                  scene_id.c_str(),
+                  e.what());
+            }
+            // Always hand the viewer a valid (possibly empty) world so
+            // downstream null-pointer checks don't crash the host. The
+            // sidebar still lets the user pick another scene.
+            if (options.world == nullptr) {
+              options.world
+                  = dart::simulation::World::create(scene_id + "_placeholder");
             }
             return options;
           };

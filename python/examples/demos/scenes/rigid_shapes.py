@@ -59,7 +59,11 @@ def build() -> SceneSetup:
     _add_shape_skel(world, "cylinder",  dart.CylinderShape(0.13, 0.30),                  ( 0.6, 0.0, 0.6), (0.80, 0.30, 0.70))
     _add_shape_skel(world, "ellipsoid", dart.EllipsoidShape(np.array([0.20, 0.30, 0.18])), ( 1.2, 0.0, 0.6), (0.70, 0.55, 0.20))
     _add_shape_skel(world, "cone",      dart.ConeShape(0.16, 0.36),                      (-0.6, 0.6, 0.6), (0.10, 0.30, 0.85))
-    _add_shape_skel(world, "pyramid",   dart.PyramidShape(0.30, 0.20, 0.30),             ( 0.6, 0.6, 0.6), (0.90, 0.20, 0.30))
+    # PyramidShape is intentionally omitted: dart::dynamics::PyramidShape
+    # leaves computeInertia(mass) unimplemented (returns identity), so any
+    # dynamics on a pyramid body is silently broken. A second cone with a
+    # different size stands in to keep the seven-shape silhouette.
+    _add_shape_skel(world, "cone_2",    dart.ConeShape(0.13, 0.42),                      ( 0.6, 0.6, 0.6), (0.90, 0.20, 0.30))
 
     return SceneSetup(world=world, info={})
 
