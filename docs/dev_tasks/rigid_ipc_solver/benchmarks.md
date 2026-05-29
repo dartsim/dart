@@ -124,8 +124,17 @@ starting, active-set reuse) follow from here.
   (uniform grid / sort-and-sweep, reusing the deformable candidate-set pattern)
   is the follow-up to make the enumeration itself sub-quadratic for large scenes.
 - **Per-primitive barrier kernels cost ~6–8 µs.** Dominated by the
-  reduced-coordinate chain rule plus PSD eigen-projection. A candidate later
-  optimization now that the broad phase bounds the active set.
+  reduced-coordinate chain rule plus the 12x12 PSD eigen-projection
+  (`projectToPsd`).
+  - REJECTED experiment: an LDLT "already-PSD" fast path before the
+    eigendecomposition. Measured ~10–15% SLOWER per kernel (PointTriangle
+    ~7.9 → ~9.2 µs) and per step. The active reduced-coordinate Hessians are
+    typically indefinite (the rotational second-derivative term is not PSD), so
+    the LDLT check almost always fails and adds pure overhead before the
+    eigendecomposition still runs. The lever is therefore a cheaper projection
+    or fewer active-primitive evaluations, not skipping projection. Do not
+    re-try the LDLT fast path without first confirming the active Hessians are
+    usually PSD.
 
 ## Optimization roadmap (CPU and GPU)
 
