@@ -12,6 +12,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/comps/component_category.hpp>
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/export.hpp>
@@ -40,9 +41,14 @@ namespace dart::simulation::experimental::compute {
 /// step k-1. This is dynamic State, owned by the integrator and hidden from the
 /// public facade.
 ///
-/// **Internal Implementation Detail** - Not exposed in public API.
+/// **Internal Implementation Detail** - Not exposed in public API. Serialized
+/// (State category) so a saved/loaded trajectory resumes without
+/// re-bootstrapping the two-step history. It holds no entity references, so no
+/// remapping pass is needed.
 struct MultibodyVariationalState
 {
+  DART_EXPERIMENTAL_STATE_COMPONENT(MultibodyVariationalState);
+
   /// Whether `previousDeltaTransform`/`previousMomentum` have been seeded from
   /// a consistent prior step. The first integration bootstraps them from the
   /// current generalized velocity.

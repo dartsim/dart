@@ -23,6 +23,7 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -1009,4 +1010,67 @@ TEST(VariationalIntegration, LoopClosureRigidFamilyRejectedUnderVariational)
   world.setTimeStep(1e-3);
   world.enterSimulationMode();
   EXPECT_THROW(world.step(), sx::InvalidOperationException);
+}
+
+// PLAN-082 serialization gate: binary save/load round-trips the trajectory and
+// does NOT re-bootstrap the two-step discrete-mechanics history. A reference
+// pendulum runs 50 steps (establishing a non-trivial history), is saved, then
+// run 50 more; a fresh world loaded from the save and run 50 steps must reach
+// the bit-identical state. If MultibodyVariationalState were lost on load, the
+// integrator would re-bootstrap from the current velocity and diverge.
+TEST(VariationalIntegration, StateSerializationRoundTripsTrajectory)
+{
+  const auto buildPendulum = [](sx::World& world) {
+    world.setMultibodyIntegrationMethod("variational integrator");
+    auto robot = world.addMultibody("pendulum");
+    auto base = robot.addLink("base");
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "hinge";
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto bob = robot.addLink("bob", base, spec);
+    bob.setMass(1.0);
+    bob.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  };
+
+  sx::World reference;
+  buildPendulum(reference);
+  reference.setTimeStep(1e-3);
+  reference.enterSimulationMode();
+  reference.getMultibody("pendulum")
+      ->getJoints()[0]
+      .setPosition(Eigen::VectorXd::Constant(1, 1.0));
+  reference.updateKinematics();
+  for (int k = 0; k < 50; ++k) {
+    reference.step();
+  }
+
+  // Save mid-rollout: the two-step history is now bootstrapped and non-trivial.
+  std::stringstream buffer(std::ios::in | std::ios::out | std::ios::binary);
+  reference.saveBinary(buffer);
+
+  for (int k = 0; k < 50; ++k) {
+    reference.step();
+  }
+  const double referenceFinal
+      = reference.getMultibody("pendulum")->getJoints()[0].getPosition()[0];
+
+  // Load into a fresh world and continue. The integration family is a World
+  // option (not state), so re-select it; the variational history must come back
+  // from the save so the continuation is bit-identical.
+  sx::World loaded;
+  buffer.seekg(0);
+  loaded.loadBinary(buffer);
+  loaded.setMultibodyIntegrationMethod("variational integrator");
+  ASSERT_TRUE(loaded.getMultibody("pendulum").has_value());
+  for (int k = 0; k < 50; ++k) {
+    loaded.step();
+  }
+  const double loadedFinal
+      = loaded.getMultibody("pendulum")->getJoints()[0].getPosition()[0];
+
+  EXPECT_EQ(loadedFinal, referenceFinal); // bit-identical, no re-bootstrap
 }

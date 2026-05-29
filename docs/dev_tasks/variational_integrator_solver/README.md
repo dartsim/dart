@@ -6,7 +6,7 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
 
 ## Current Status
 
-- [~] **Phase A1 — Fixed-base MVP (dense solve, correctness-first)** ← core done + verified
+- [x] **Phase A1 — Fixed-base MVP (dense solve, correctness-first)** — done + verified
   - [x] SE(3) discrete-mechanics kernels (`detail/variational/discrete_mechanics_math.hpp`):
         `dexp⁻¹`/`dexpInvTranspose` **delegate to the exact
         `SE3::LeftJacobianInverse`**, plus `dAdT`/`dAdInvT`/`adInvRLinear`/`se3Exp`/
@@ -21,21 +21,24 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
         experimental suite build green (24/24).
   - [x] Tests: prismatic free-fall (accel = −9.81 to 1e-9), pendulum first-step
         accel, RIQN convergence, energy conserved over 1e5 steps, lie_group parity.
-  - [~] Two-step previous-configuration State — in-memory + bootstrap done;
-    **serialization (version bump + bootstrap-done flag) pending**.
+  - [x] Two-step previous-configuration State — in-memory + bootstrap +
+        **serialization**: `MultibodyVariationalState` is a registered State
+        component (binary format bumped to v3); save/load round-trips the
+        `bootstrapped` flag + `previousDeltaTransform`/`previousMomentum`.
   - [x] Integration-family **selector** (`World::setMultibodyIntegrationMethod`)
         so the VI runs on the default `step()` path by method name (pipeline
         substitution, not stage-append); covered by `SelectableThroughWorldStep`.
-  - [~] Determinism — run-to-run bit-identical rollout through `world.step()`
-    verified (`DeterministicAcrossRuns`); the **save/load** round-trip still
-    needs the VI-state serialization above.
+  - [x] Determinism & serialization — run-to-run bit-identical rollout through
+        `world.step()` (`DeterministicAcrossRuns`) and a binary save/load
+        round-trip that resumes the trajectory bit-identically without
+        re-bootstrapping history (`StateSerializationRoundTripsTrajectory`).
   - [x] Defined non-convergence **error** — `integrateMultibodyVariational`
         throws `InvalidOperationException` (residual/iterations/tolerance) instead
         of a silent best-effort step (`NonConvergenceRaisesDocumentedError`); mean
         RIQN iterations ≤8 and every step converges
         (`RiqnMeanIterationsWithinBudget`).
   - [x] **Headline symplectic gate** + **momentum**: `PassiveChainEnergyHasNo-
-    SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
+SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
         ≥50× better than semi-implicit Euler which drifts to ~39%) and
         `FloatingBaseConservesMomentum` (linear + world angular momentum to
         solver precision).
@@ -111,20 +114,18 @@ energy behavior on a passive chain before optimizing to O(n).
 
 ## Immediate Next Steps
 
-Phases A1, A2, B1, and B2 are complete and verified (B2 wired through the public
-API for Point closures); Phase C is a recorded NO-GO. Remaining, in priority
-order (see `RESUME.md` for the full handoff):
+All committed PLAN-082 phases (A1, A2, B1, B2) and their acceptance gates are
+complete and verified; Phase C is a recorded NO-GO. Remaining items are
+follow-ups beyond the original commitment, in priority order (see `RESUME.md`):
 
-1. **A1 finish**: serialize `MultibodyVariationalState` (binary-format version
-   bump + bootstrap-done flag) + a save/load determinism round-trip test so the
-   trajectory round-trips without re-bootstrapping history.
-2. **B2 public-model follow-ups**: support Distance closures through the public
+1. **B2 public-model follow-ups**: support Distance closures through the public
    API (needs a rest-length the `comps::LoopClosure` model does not yet carry)
    and Rigid closures (needs an orientation residual the solver does not yet
-   implement). The internal Distance path is already verified.
-3. **A2 large-chain convergence** (research follow-up): relative/scaled tolerance,
+   implement). Both are rejected today with documented errors; the internal
+   Distance path is already verified.
+2. **A2 large-chain convergence** (research follow-up): relative/scaled tolerance,
    line-search/Anderson acceleration, or the exact recursive-Jacobian
    preconditioner (IG3 alone does not resolve the long-chain iteration cliff).
-4. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
+3. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
 
 Code is the source of truth; keep this file lean and current.

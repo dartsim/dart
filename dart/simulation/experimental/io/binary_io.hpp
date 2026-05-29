@@ -64,7 +64,9 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 // Version history:
 //   1: Initial implementation
 //   2: World gravity serialized after timing metadata; Joint v1 migration
-constexpr std::uint32_t kBinaryFormatVersion = 2;
+//   3: MultibodyVariationalState (variational-integrator two-step history)
+//      registered as a serializable component
+constexpr std::uint32_t kBinaryFormatVersion = 3;
 
 //==============================================================================
 // Low-level Binary I/O for POD types
