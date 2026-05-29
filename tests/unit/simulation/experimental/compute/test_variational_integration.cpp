@@ -614,3 +614,99 @@ TEST(VariationalIntegration, PassiveChainEnergyHasNoSecularDrift)
       << "VI slope " << viSlope << " not >=50x better than semi-implicit slope "
       << seSlope;
 }
+
+// Phase B2 gate: the holonomic constraint Jacobian J = dg/dq used by the
+// loop-closure projection must match a central finite difference of the
+// residual g(q) w.r.t. the generalized coordinates. Exercises both row types
+// (a distance row and three point rows) and both endpoint kinds (a
+// link-vs-world anchor and a link-vs-link pair).
+TEST(VariationalIntegration, ConstraintJacobianMatchesFiniteDifference)
+{
+  sx::World world;
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+  const auto offset = [](double x) {
+    Eigen::Isometry3d t = Eigen::Isometry3d::Identity();
+    t.translation() = Eigen::Vector3d(x, 0.0, 0.0);
+    return t;
+  };
+  sx::JointSpec s1;
+  s1.name = "j1";
+  s1.type = sx::JointType::Revolute;
+  s1.axis = Eigen::Vector3d::UnitY();
+  s1.transformFromParent = offset(0.5);
+  auto link1 = robot.addLink("link1", base, s1);
+  link1.setMass(1.0);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  sx::JointSpec s2;
+  s2.name = "j2";
+  s2.type = sx::JointType::Revolute;
+  s2.axis = Eigen::Vector3d::UnitY();
+  s2.transformFromParent = offset(0.5);
+  auto link2 = robot.addLink("link2", link1, s2);
+  link2.setMass(1.0);
+  link2.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  auto joints = robot.getJoints();
+  ASSERT_EQ(joints.size(), 2u);
+  joints[0].setPosition(Eigen::VectorXd::Constant(1, 0.3));
+  joints[1].setPosition(Eigen::VectorXd::Constant(1, -0.5));
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+
+  std::vector<sxc::VariationalLoopConstraint> constraints;
+  // (1) distance: a point on link2 to a fixed world anchor (linkB == null).
+  sxc::VariationalLoopConstraint dist;
+  dist.linkA = structure.links[2];
+  dist.pointA = Eigen::Vector3d(0.1, 0.0, 0.0);
+  dist.linkB = entt::null;
+  dist.pointB = Eigen::Vector3d(0.4, 0.0, 0.1);
+  dist.distance = true;
+  dist.length = 0.0; // shifts g by a constant only; dg/dq is independent of it
+  constraints.push_back(dist);
+  // (2) point: a point on link2 coincident with a point on link1
+  // (link-vs-link).
+  sxc::VariationalLoopConstraint point;
+  point.linkA = structure.links[2];
+  point.pointA = Eigen::Vector3d::Zero();
+  point.linkB = structure.links[1];
+  point.pointB = Eigen::Vector3d(0.3, 0.0, 0.0);
+  point.distance = false;
+  constraints.push_back(point);
+
+  const auto lin = sxc::computeVariationalConstraintLinearization(
+      registry, structure, constraints);
+  const Eigen::Index rows = lin.residual.size();
+  const Eigen::Index dof = lin.jacobian.cols();
+  ASSERT_EQ(rows, 4); // 1 distance + 3 point
+  ASSERT_EQ(dof, 2);
+
+  const double eps = 1e-6;
+  Eigen::MatrixXd fd(rows, dof);
+  for (Eigen::Index j = 0; j < dof; ++j) {
+    const double q0 = joints[static_cast<std::size_t>(j)].getPosition()[0];
+    joints[static_cast<std::size_t>(j)].setPosition(
+        Eigen::VectorXd::Constant(1, q0 + eps));
+    const Eigen::VectorXd plus = sxc::computeVariationalConstraintLinearization(
+                                     registry, structure, constraints)
+                                     .residual;
+    joints[static_cast<std::size_t>(j)].setPosition(
+        Eigen::VectorXd::Constant(1, q0 - eps));
+    const Eigen::VectorXd minus
+        = sxc::computeVariationalConstraintLinearization(
+              registry, structure, constraints)
+              .residual;
+    joints[static_cast<std::size_t>(j)].setPosition(
+        Eigen::VectorXd::Constant(1, q0)); // restore
+    fd.col(j) = (plus - minus) / (2.0 * eps);
+  }
+
+  EXPECT_TRUE(fd.isApprox(lin.jacobian, 1e-6))
+      << "analytic J=\n"
+      << lin.jacobian << "\nfinite-difference=\n"
+      << fd;
+}

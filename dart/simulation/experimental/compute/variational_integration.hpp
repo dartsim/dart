@@ -142,6 +142,24 @@ computeMultibodyInverseMassProduct(
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& impulse);
 
+/// Holonomic loop-closure residual `g(q)` and its Jacobian `J = dg/dq`
+/// evaluated at the multibody's current configuration, for the given closures.
+/// The Jacobian columns are in the integrator's generalized-coordinate order
+/// (the same ordering as `computeMultibodyInverseMassProduct`). Exposed for
+/// finite-difference verification of the constraint Jacobian used by the
+/// constrained variational step (the impulse-based loop-closure projection).
+struct VariationalConstraintLinearization
+{
+  Eigen::VectorXd residual; ///< `g(q)`, stacked per constraint.
+  Eigen::MatrixXd jacobian; ///< `dg/dq` (rows = constraint dim, cols = DOF).
+};
+
+[[nodiscard]] DART_EXPERIMENTAL_API VariationalConstraintLinearization
+computeVariationalConstraintLinearization(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const std::vector<VariationalLoopConstraint>& constraints);
+
 /// Variational-integrator multibody stage (a peer of
 /// `MultibodyForwardDynamicsStage`, selected by the `variational integrator`
 /// integration-family method name).

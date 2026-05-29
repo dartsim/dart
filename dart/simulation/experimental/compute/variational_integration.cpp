@@ -855,6 +855,25 @@ Eigen::VectorXd computeMultibodyInverseMassProduct(
 }
 
 //==============================================================================
+VariationalConstraintLinearization computeVariationalConstraintLinearization(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const std::vector<VariationalLoopConstraint>& constraints)
+{
+  VariationalConstraintLinearization result;
+  if (structure.links.empty() || constraints.empty()) {
+    return result;
+  }
+  const VarTree tree = buildVarTree(registry, structure);
+  const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(tree);
+  auto [g, jac]
+      = constraintResidualAndJacobian(structure, tree, jacobians, constraints);
+  result.residual = std::move(g);
+  result.jacobian = std::move(jac);
+  return result;
+}
+
+//==============================================================================
 std::string_view MultibodyVariationalIntegrationStage::getName() const noexcept
 {
   return "multibody_variational_integration";
