@@ -31,12 +31,14 @@
  */
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/deformable_psd_backend.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <cuda_runtime_api.h>
 #include <dart/simulation/experimental/compute/cuda/deformable_psd_projection_cuda.cuh>
 
+#include <algorithm>
 #include <string_view>
 #include <vector>
 
@@ -204,6 +206,46 @@ void projectSymmetricBlocksToPsdCuda(
           deviceBlocks.byteSize(),
           cudaMemcpyDeviceToHost),
       "PSD block copy from device");
+}
+
+namespace {
+
+// Smallest batch the GPU path is worth: below this the host-to-device round
+// trip dominates the per-block eigensolves, so the CPU backend is faster.
+constexpr std::size_t kMinGpuBatchBlocks = 64;
+
+// Backend adapter matching compute::DeformablePsdBlockProjector. Offloads large
+// batches to the GPU and defers small batches (or the no-device case) to the
+// CPU backend, so installing this never changes results -- only where the
+// arithmetic runs.
+void cudaPsdBackendAdapter(
+    double* blocks, std::size_t dimension, std::size_t blockCount)
+{
+  if (blocks == nullptr || dimension == 0 || blockCount == 0) {
+    return;
+  }
+  if (blockCount < kMinGpuBatchBlocks || !isCudaRuntimeAvailable()) {
+    projectSymmetricBlocksToPsdCpu(blocks, dimension, blockCount);
+    return;
+  }
+  std::vector<double> buffer(
+      blocks, blocks + dimension * dimension * blockCount);
+  projectSymmetricBlocksToPsdCuda(buffer, dimension, blockCount);
+  std::copy(buffer.begin(), buffer.end(), blocks);
+}
+
+} // namespace
+
+//==============================================================================
+void installCudaDeformablePsdBackend()
+{
+  setDeformablePsdBlockProjector(&cudaPsdBackendAdapter);
+}
+
+//==============================================================================
+void restoreDefaultDeformablePsdBackend()
+{
+  setDeformablePsdBlockProjector(nullptr);
 }
 
 } // namespace dart::simulation::experimental::compute::cuda

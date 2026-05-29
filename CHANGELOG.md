@@ -1014,6 +1014,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     boundary surface and reads back the topology, rest volume, and node mass.
     Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
     increment.
+  - Wired an optional GPU backend into the experimental IPC deformable solver's
+    per-element PSD projection (PLAN-081 Phase 3). The projected-Newton assembly
+    now collects its per-element spring (6x6) and self-contact barrier (12x12)
+    Hessian blocks into one packed batch and projects them through a pluggable
+    backend (`compute::projectSymmetricBlocksToPsd`) before scattering, instead
+    of projecting each block inline. The default CPU backend is bit-identical to
+    the previous per-element projection, so behavior is unchanged. The optional
+    CUDA sidecar can install a GPU backend via `installCudaDeformablePsdBackend`
+    that offloads large batches to the device (and defers small batches or the
+    no-device case to the CPU backend), so the offload never changes results.
+    The default runtime never links CUDA -- the no-GPU-runtime-dependency check
+    still passes -- and the GPU path is validated against the CPU backend through
+    the core seam in the CUDA test suite.
   - Added an experimental IPC converged-ness diagnostic to the deformable solver
     stats. Each step now reports `finalStepInfinityNorm`, the largest last
     accepted per-node position update across the step's bodies. Unlike the
