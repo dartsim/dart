@@ -150,6 +150,20 @@ struct DeformableBoundaryConditions
   std::vector<DeformableNeumannBoundary> neumann;
 };
 
+/// Internal opt-in configuration selecting the Vertex Block Descent (VBD) inner
+/// solver for a deformable body.
+///
+/// This component is intentionally not serialized and is not exposed through
+/// the public facade: the public deformable stage stays algorithm-neutral, and
+/// which inner solver runs is an internal/explicit-opt-in decision rather than
+/// a leaked solver registry. When absent or `enabled == false`, the default
+/// gradient-descent solver runs.
+struct DeformableVbdConfig
+{
+  bool enabled = false;
+  std::size_t iterations = 20;
+};
+
 /// Transient scratch buffers reused by the default deformable solver.
 ///
 /// These buffers are intentionally not serialized; they are resized lazily from

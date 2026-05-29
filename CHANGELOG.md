@@ -866,6 +866,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     stability, Chebyshev no-op/convergence, and adaptive-init convergence.
     Internal solver groundwork only; not wired behind the deformable world
     stage.
+  - Wired VBD into the experimental deformable world stage as an internal,
+    opt-in inner solver for contact-free mass-spring bodies, selected per body
+    through a non-public `comps::DeformableVbdConfig` so the public deformable
+    stage stays algorithm-neutral. The stage caches the spring
+    coloring/adjacency per body and reuses the existing inertial-target setup
+    and write-back. Integration tests confirm the VBD path runs only when opted
+    in, the default solver runs otherwise, VBD agrees with the gradient-descent
+    solver on a contact-free scene, and a hanging chain is stable, with no
+    regression in the existing deformable suite. Tetrahedral, surface-contact,
+    ground-barrier, and rigid-obstacle bodies still use the default solver.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

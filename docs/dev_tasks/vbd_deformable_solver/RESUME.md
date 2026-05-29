@@ -3,9 +3,10 @@
 ## Last Session Summary
 
 Started PLAN-082: implementing Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as a DART-owned deformable solver in the experimental World. Landed
-Phases 0-4, the Phase 5 acceleration/damping primitives, and the Phase 6
-stepping loop with all gates green (lint clean, focused build, 55 tests across
-7 binaries, benchmark smoke):
+Phases 0-4, the Phase 5 acceleration/damping primitives, and Phase 6 (stepping
+loop + World solver wiring) with all gates green (lint clean, focused build,
+59 VBD tests across 8 binaries plus the 43-case deformable regression suite,
+benchmark smoke):
 
 - Phase 0 grounding: PLAN-082 dashboard entry and numbered plan file, the
   `chen-2024-vbd` references catalog entry plus comparative `tinyvbd`/`gaia`
@@ -30,6 +31,11 @@ stepping loop with all gates green (lint clean, focused build, 55 tests across
   performs one implicit-Euler step (inertial targets, adaptive warm start,
   colored sweeps + optional Chebyshev, velocity update), validated against the
   implicit-Euler free-fall trajectory and for multi-step stability.
+- Phase 6 (World wiring) `comps::DeformableVbdConfig` (opt-in, non-public) +
+  the VBD branch in `advanceDeformableBody` (world_step_stage.cpp): VBD now runs
+  inside `DeformableDynamicsStage` for contact-free mass-spring bodies.
+  `test_vbd_world_solver` confirms it matches the default solver, with no
+  regression in `test_deformable_body` (43 cases).
 
 Key grounding fact: VBD minimizes the **same** variational implicit-Euler
 objective the existing experimental deformable solver already minimizes with a
@@ -50,22 +56,28 @@ Phases 0-4 are complete (mass-spring and tetrahedral Neo-Hookean block descent
 both converge to independent reference minimizers), and the Phase 5
 acceleration/damping primitives exist as tested standalone helpers.
 
-The mass-spring stepping loop (`vbdStepMassSpring`) exists and is validated.
-Remaining Phase 6 work:
+VBD now runs as an opt-in inner solver inside `DeformableDynamicsStage` for
+contact-free mass-spring bodies (`comps::DeformableVbdConfig` selects it), and
+matches the default solver. Remaining work, in order:
 
-1. Thread `addRayleighDamping` into the block-descent assembly (needs the
-   per-vertex elastic Hessian and the displacement `x_i - x_i^t`), and add a
-   tetrahedral stepper (`vbdStepTetMesh`) mirroring the mass-spring one.
-2. Wire the stepper behind the algorithm-neutral `DeformableDynamicsStage` in
-   `compute/world_step_stage.cpp` as a DART-owned, explicitly-selectable inner
-   solver (no `vbd` vocabulary in public signatures). The existing stage already
-   computes inertial targets (around line 2352) and the spring/tet topology is
-   in `comps::Deformable*`; reuse them. Add World-level integration tests
-   comparing a few stepped frames against the existing gradient-descent stage on
-   a shared scene.
-3. Then Phase 7 (contact/friction reusing `deformable_contact`), Phase 8 (CPU
-   multithreaded color sweeps via the available Taskflow), Phase 9 (CUDA), and
-   Phase 10 (corpus + visual evidence + reference/paper-beating benchmarks).
+1. Extend the World VBD path to tetrahedral bodies (the stage would fetch
+   `comps::DeformableMaterial` for Lame params and reuse `blockDescentTetMesh`
+   /the combined springs+tets assembly), and thread Chebyshev + element damping
+   into the World path. Then decide the public solver-selection surface.
+2. Phase 7: contact/friction. VBD uses penalty contact (`E_c = 0.5 k_c d^2`);
+   wire a vertex-penalty contact block (reuse `deformable_contact` distance/CCD
+   kernels) into the per-vertex assembly so VBD handles ground/obstacle/self
+   contact, lifting the "contact-free" gate.
+3. Phase 8: multithread the color sweeps (Taskflow is available — same-color
+   vertices are independent, so each color is a parallel_for). Benchmark vs the
+   single-threaded path and the reference CPU numbers.
+4. Phase 9: CUDA backend behind the experimental compute boundary (per-color
+   kernels, CUDA-graph-recorded sweeps as in Gaia). Benchmark vs reference/paper
+   GPU numbers.
+5. Phase 10: reproduce the paper scenes as DART examples/tests/benchmarks with
+   profiling JSON and headless Filament visual evidence; the TinyVBD tilted
+   strand (20 verts, stiffness 1e8, mass ratio 1:1000) is the first
+   correctness/perf comparison target.
 
 ## Context That Would Be Lost
 
@@ -101,9 +113,9 @@ pixi run cmake build/default/cpp/Release
 pixi run cmake --build build/default/cpp/Release --target \
   test_vbd_vertex_block_kernel test_vbd_vertex_coloring test_vbd_block_descent \
   test_vbd_neo_hookean test_vbd_tet_mesh_descent test_vbd_acceleration \
-  test_vbd_stepper bm_vbd_vertex_block_kernel bm_vbd_block_descent \
-  bm_vbd_neo_hookean
-ctest --test-dir build/default/cpp/Release -R '^test_vbd_' --output-on-failure
+  test_vbd_stepper test_vbd_world_solver test_deformable_body \
+  bm_vbd_vertex_block_kernel bm_vbd_block_descent bm_vbd_neo_hookean
+ctest --test-dir build/default/cpp/Release -R '^test_vbd_|^test_deformable_body$' --output-on-failure
 ./build/default/cpp/Release/bin/bm_vbd_block_descent --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ./build/default/cpp/Release/bin/bm_vbd_neo_hookean --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ```

@@ -47,6 +47,7 @@
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -68,6 +69,7 @@
 namespace dart::simulation::experimental::compute {
 
 namespace dc = dart::simulation::experimental::detail::deformable_contact;
+namespace dvbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
 
@@ -2307,6 +2309,87 @@ void prepareDeformableBoundaryConditions(
 }
 
 //==============================================================================
+/// Transient cached topology for the experimental Vertex Block Descent inner
+/// solver: the spring list plus its vertex-graph coloring and incident-spring
+/// adjacency, rebuilt only when the spring topology changes. Defined here (not
+/// in comps) so the heavy kernel headers stay out of the component headers; it
+/// is stored per body and never serialized.
+struct DeformableVbdScratch
+{
+  std::vector<dvbd::SpringElement> springs;
+  dvbd::VertexColoring coloring;
+  dvbd::SpringAdjacency adjacency;
+  std::size_t cachedNodeCount = 0;
+  std::size_t cachedEdgeCount = 0;
+  bool initialized = false;
+};
+
+//==============================================================================
+/// Solve one implicit-Euler step for a contact-free mass-spring deformable body
+/// with the Vertex Block Descent inner solver: graph-colored Gauss-Seidel block
+/// coordinate descent on the same variational objective the default solver
+/// minimizes, warm-started at the inertial target. Fills `scratch.next`; the
+/// caller's write-back updates positions/velocities. This is the first VBD
+/// World-solver slice: it covers contact-free mass-spring bodies only and does
+/// not yet handle tetrahedra, ground barriers, rigid obstacles, or
+/// surface-contact CCD.
+void runVbdMassSpringSolve(
+    const comps::DeformableNodeState& state,
+    const comps::DeformableSpringModel& model,
+    comps::DeformableSolverScratch& scratch,
+    DeformableVbdScratch& vbdScratch,
+    double timeStep,
+    const comps::DeformableVbdConfig& config,
+    DeformableSolverStats& stats)
+{
+  const std::size_t nodeCount = scratch.next.size();
+
+  if (!vbdScratch.initialized || vbdScratch.cachedNodeCount != nodeCount
+      || vbdScratch.cachedEdgeCount != model.edges.size()) {
+    vbdScratch.springs.clear();
+    vbdScratch.springs.reserve(model.edges.size());
+    for (const auto& edge : model.edges) {
+      vbdScratch.springs.push_back(
+          {static_cast<std::uint32_t>(edge.nodeA),
+           static_cast<std::uint32_t>(edge.nodeB),
+           edge.restLength});
+    }
+    vbdScratch.coloring = dvbd::colorSprings(nodeCount, vbdScratch.springs);
+    vbdScratch.adjacency
+        = dvbd::SpringAdjacency::build(nodeCount, vbdScratch.springs);
+    vbdScratch.cachedNodeCount = nodeCount;
+    vbdScratch.cachedEdgeCount = model.edges.size();
+    vbdScratch.initialized = true;
+  }
+
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    if (scratch.activeFixed[i] == 0u) {
+      scratch.next[i] = scratch.inertialTargets[i];
+    }
+  }
+
+  dvbd::BlockDescentOptions options;
+  options.iterations = config.iterations;
+  options.clampSpringHessian = true;
+  const dvbd::BlockDescentStats result = dvbd::blockDescentMassSpring(
+      scratch.next,
+      state.masses,
+      scratch.activeFixed,
+      scratch.inertialTargets,
+      vbdScratch.springs,
+      model.stiffness,
+      timeStep,
+      vbdScratch.coloring,
+      vbdScratch.adjacency,
+      options);
+
+  ++stats.vbdBodyCount;
+  stats.vbdSweeps += result.iterations;
+  stats.vbdVertexUpdates += result.vertexUpdates;
+  stats.vbdResidualNormSquared = result.finalResidualNormSquared;
+}
+
+//==============================================================================
 void advanceDeformableBody(
     entt::entity entity,
     comps::DeformableNodeState& state,
@@ -2314,6 +2397,8 @@ void advanceDeformableBody(
     const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
     DeformableContactSolverScratch& contactScratch,
+    DeformableVbdScratch& vbdScratch,
+    const comps::DeformableVbdConfig* vbdConfig,
     std::span<const SurfaceContactSnapshot> surfaceSnapshots,
     std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
     const Eigen::Vector3d& gravity,
@@ -2364,8 +2449,13 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  if (model.edges.empty() && barriers.empty() && rigidSurfaceSnapshots.empty()
-      && contactScratch.surfaceTriangles.empty()) {
+  const bool contactFree = barriers.empty() && rigidSurfaceSnapshots.empty()
+                           && contactScratch.surfaceTriangles.empty();
+  if (vbdConfig != nullptr && vbdConfig->enabled && contactFree
+      && topology.tetrahedra.empty()) {
+    runVbdMassSpringSolve(
+        state, model, scratch, vbdScratch, timeStep, *vbdConfig, stats);
+  } else if (model.edges.empty() && contactFree) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
         scratch.next[i] = scratch.inertialTargets[i];
@@ -2939,6 +3029,9 @@ void DeformableDynamicsStage::execute(
         = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
     auto& contactScratch
         = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
+    auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(entity);
+    const auto* vbdConfig
+        = registry.try_get<comps::DeformableVbdConfig>(entity);
     advanceDeformableBody(
         entity,
         state,
@@ -2946,6 +3039,8 @@ void DeformableDynamicsStage::execute(
         topology,
         scratch,
         contactScratch,
+        vbdScratch,
+        vbdConfig,
         surfaceSnapshots,
         rigidSurfaceSnapshots,
         gravity,

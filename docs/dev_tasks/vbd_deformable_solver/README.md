@@ -73,9 +73,18 @@
         over-relaxation, velocity update, and previous-velocity bookkeeping),
         with tests for implicit-Euler free-fall, fixed vertices, multi-step
         stability, Chebyshev no-op/convergence, and adaptive-init convergence.
-  - [ ] Remaining Phase 6 work: thread element damping into the stepper, add a
-        tetrahedral stepper, and wire the stepper behind the algorithm-neutral
-        `DeformableDynamicsStage` with World-level integration tests.
+  - [x] World solver-wiring sub-slice: an internal, opt-in
+        `comps::DeformableVbdConfig` (not serialized, not public) selects the VBD
+        inner solver inside the algorithm-neutral `DeformableDynamicsStage` for
+        contact-free mass-spring bodies; the stage caches the spring
+        coloring/adjacency per body and reuses the existing inertial-target
+        setup and write-back. World-level integration tests confirm VBD runs
+        when opted in, the default solver runs otherwise, VBD matches the
+        gradient-descent solver on a contact-free scene, and a hanging chain is
+        stable, with no regression in the existing deformable suite.
+  - [ ] Remaining Phase 6 work: thread element damping and Chebyshev into the
+        World VBD path, extend it to tetrahedral and surface-contact bodies, and
+        decide the public solver-selection surface.
 - [ ] Phase 7: vertex-based contact and friction (reusing the existing
       `deformable_contact` distance/barrier/CCD kernels).
 - [ ] Phase 8: CPU performance optimization (SoA layout, multithreaded color
@@ -253,6 +262,22 @@ element damping, a tetrahedral stepper, and any wiring behind
 
 Local gate (Phase 6 stepping loop, first pass) on 2026-05-28: the focused target
 build and 7 `test_vbd_stepper` cases passing.
+
+For the World solver-wiring sub-slice, keep the verification language precise:
+it covers the internal opt-in `comps::DeformableVbdConfig`, the VBD branch in
+`advanceDeformableBody` for contact-free mass-spring bodies (no tetrahedra,
+ground barriers, rigid obstacles, or surface-contact topology), the per-body
+cached spring coloring/adjacency, and the new VBD stage stats. Tests confirm the
+VBD path runs only when opted in, the default gradient-descent path runs
+otherwise, VBD and the default solver agree on a contact-free mass-spring scene,
+and a hanging chain is stable over 200 steps, with the existing
+`test_deformable_body` suite (43 cases) still green. It does not yet cover
+tetrahedral, surface-contact, ground-barrier, or rigid-obstacle bodies under
+VBD, World-path damping/Chebyshev, or a public solver-selection API.
+
+Local gate (Phase 6 World solver wiring, first pass) on 2026-05-28: the library
+rebuild plus 4 `test_vbd_world_solver` cases and 43 `test_deformable_body` cases
+passing.
 
 Local gate (Phase 5 acceleration/damping primitives, first pass) on 2026-05-28:
 the focused target build and 9 `test_vbd_acceleration` cases passing. These are

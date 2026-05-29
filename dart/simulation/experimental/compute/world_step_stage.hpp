@@ -98,6 +98,10 @@ struct DeformableSolverStats
   std::size_t staticRigidSurfaceCcdIndeterminateCount = 0;
   std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
   std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t vbdBodyCount = 0;
+  std::size_t vbdSweeps = 0;
+  std::size_t vbdVertexUpdates = 0;
+  double vbdResidualNormSquared = 0.0;
 
   void reset() noexcept
   {
