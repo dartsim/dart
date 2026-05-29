@@ -926,6 +926,55 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     versus the frictionless control; friction is inactive without contact), a
     friction variant of the drape benchmark, and serialization of the new
     coefficient. Self-contact and codimensional friction are later increments.
+  - Extended experimental IPC friction to deformable SELF-CONTACT (point-triangle
+    pairs), reusing the same `frictionCoefficient`. The lagged normal force is
+    the barrier force magnitude on the point node, and the tangent projection
+    comes from the point-triangle tangent stencil; friction opposes the stencil's
+    tangential relative displacement with the same IPC f0/f1 mollifier. Adds a
+    regression (one surface sliding tangentially on another in self-contact
+    decelerates versus the frictionless control while the barrier keeps them
+    separated). Energy+gradient only for now (the self-contact friction Hessian,
+    edge-edge friction, and non-flat ground normals are later increments); the
+    line search on the friction-inclusive energy ensures descent.
+  - Added a deterministic scene-replay regression for the experimental
+    deformable scene pipeline (PLAN-081 Phase 5 validation harness): a
+    DART-native tutorial-style scene (one Dirichlet-anchored cube, one free cube
+    falling under gravity) is replayed for many frames through the real
+    loader -> solver -> diagnostics path, asserting the anchor stays put, the
+    free body falls, mass is conserved, the diagnostics are finite, and a second
+    identical replay reproduces the trajectory. This is the per-scene invariant
+    pattern the upstream ipc-sim/IPC corpus rows require; the full 154-scene port
+    additionally needs the upstream scene assets vendored and the
+    contact-capable solver (later phases), so the manifest rows stay `planned`.
+  - Exposed the experimental deformable-body API to `dartpy` (PLAN-081 Phase 8):
+    `World.add_deformable_body` / `get_deformable_body` / `has_deformable_body` /
+    `get_deformable_body_count`, and `DeformableBodyOptions`,
+    `DeformableMaterialProperties` (including `friction_coefficient`),
+    `DeformableEdge`, and `DeformableBody` (`node_count`, `edge_count`,
+    `node_position` / `set_node_position`, `node_velocity` / `set_node_velocity`,
+    `is_fixed_node`, `edge`, `material_properties`). Regenerated the type stubs
+    and added a Python regression that builds a spring strand, sets a friction
+    coefficient, steps the world, and reads the resulting state. Surface/tetra
+    topology and boundary-condition bindings remain a later increment.
+  - Added the lagged self-contact friction Hessian to the experimental IPC
+    projected-Newton solve, completing self-contact friction as a proper Newton
+    term (previously energy+gradient only). Per active point-triangle contact it
+    assembles a positive-semidefinite 12x12 block,
+    `projection^T * H_2x2 * projection` (the tangent-stencil projection times the
+    same PSD tangential matrix the ground-friction Hessian uses), scattered to
+    the four stencil nodes. Behavior-preserving (the line search still resolves
+    the same friction-inclusive energy); existing tests pass unchanged. The
+    edge-edge self-contact friction Hessian remains a later increment.
+  - Extended experimental IPC self-contact friction (force and Hessian) to
+    edge-edge contacts. The friction energy/gradient/Hessian are generic over a
+    four-node stencil + tangent projection, so only the lagged-contact assembly
+    is extended: active edge-edge barrier candidates contribute a friction
+    contact whose lagged normal force is the net barrier force on the first
+    edge and whose tangent projection comes from the edge-edge tangent stencil.
+    Adds a regression where one crossing edge slides over another in edge-edge
+    self-contact and decelerates versus the frictionless control while the
+    barrier holds them apart. Self-contact friction now covers both
+    point-triangle and edge-edge primitives.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

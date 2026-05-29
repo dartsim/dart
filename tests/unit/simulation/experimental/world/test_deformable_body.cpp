@@ -2729,3 +2729,150 @@ TEST(DeformableBody, GroundFrictionInactiveWithoutGroundContact)
   EXPECT_NEAR(body.getVelocity(0).x(), 2.0, 1e-6);
   EXPECT_NEAR(body.getPosition(0).x(), 2.0 * 0.01 * 10, 1e-3);
 }
+
+namespace {
+struct SelfContactSlideResult
+{
+  double centroidX = 0.0;
+  double minUpperZ = 0.0;
+};
+
+// Drive an upper triangle in self-contact with a fixed lower triangle, with a
+// tangential (+x) slide velocity and the given friction coefficient. Returns
+// the upper triangle's final centroid x and minimum height.
+SelfContactSlideResult runSelfContactFrictionSlide(
+    double frictionCoefficient, int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  // Lower triangle fixed at z=0; upper triangle just inside the barrier band.
+  auto options = makeTwoFacingTrianglesOptions(0.012, 0.1);
+  // Give the free (upper) triangle a tangential slide on top of the gentle
+  // downward press that keeps it in contact.
+  for (std::size_t i = 3; i < 6; ++i) {
+    options.velocities[i] = Eigen::Vector3d(0.5, 0.0, -0.1);
+  }
+  options.material.frictionCoefficient = frictionCoefficient;
+  auto body = world.addDeformableBody("facing_friction", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < steps; ++i) {
+    world.step(executor, pipeline);
+  }
+
+  const double centroidX = (body.getPosition(3).x() + body.getPosition(4).x()
+                            + body.getPosition(5).x())
+                           / 3.0;
+  const double minUpperZ = std::min(
+      {body.getPosition(3).z(),
+       body.getPosition(4).z(),
+       body.getPosition(5).z()});
+  return {centroidX, minUpperZ};
+}
+} // namespace
+
+//==============================================================================
+// Self-contact Coulomb friction (mu > 0) opposes one deformable surface sliding
+// tangentially against another while in self-contact: the upper triangle
+// travels less far than the frictionless control, while the barrier keeps the
+// surfaces separated.
+TEST(DeformableBody, SelfContactFrictionDeceleratesSlidingSurface)
+{
+  const auto frictionless = runSelfContactFrictionSlide(0.0, 20);
+  const auto frictional = runSelfContactFrictionSlide(0.8, 20);
+
+  // The self-contact barrier holds the upper surface above the lower (z=0).
+  EXPECT_GT(frictionless.minUpperZ, 0.0);
+  EXPECT_GT(frictional.minUpperZ, 0.0);
+
+  // Frictionless: the upper triangle slides tangentially essentially freely
+  // (the barrier force is normal, not tangential).
+  EXPECT_GT(frictionless.centroidX, 0.05);
+
+  // Friction opposes the tangential slide: shorter travel.
+  EXPECT_LT(frictional.centroidX, frictionless.centroidX);
+  EXPECT_GE(frictional.centroidX, 0.0); // not pushed backward
+}
+
+namespace {
+// Two near-orthogonal thin triangles whose long edges cross with a small
+// vertical gap form an edge-edge self-contact. The lower triangle is fixed; the
+// upper one is pressed down and slid tangentially with the given friction.
+SelfContactSlideResult runEdgeEdgeFrictionSlide(
+    double frictionCoefficient, int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  constexpr double gap = 0.012; // inside the self-contact band (d_hat = 2e-2)
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 0.0; // isolate the contact response (no springs)
+  options.damping = 0.0;
+  // Lower triangle: a thin sliver along x at z = 0.
+  options.positions = {
+      Eigen::Vector3d(-0.6, 0.0, 0.0),
+      Eigen::Vector3d(0.6, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 0.06, 0.0),
+      // Upper triangle: a thin sliver along y at z = gap (edge crosses above).
+      Eigen::Vector3d(0.0, -0.6, gap),
+      Eigen::Vector3d(0.0, 0.6, gap),
+      Eigen::Vector3d(0.06, 0.0, gap)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.5, 0.0, -0.1),
+         Eigen::Vector3d(0.5, 0.0, -0.1),
+         Eigen::Vector3d(0.5, 0.0, -0.1)};
+  options.masses = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{3, 4, 5}};
+  options.material.frictionCoefficient = frictionCoefficient;
+  auto body = world.addDeformableBody("crossing_edges", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < steps; ++i) {
+    world.step(executor, pipeline);
+  }
+
+  const double centroidX = (body.getPosition(3).x() + body.getPosition(4).x()
+                            + body.getPosition(5).x())
+                           / 3.0;
+  const double minUpperZ = std::min(
+      {body.getPosition(3).z(),
+       body.getPosition(4).z(),
+       body.getPosition(5).z()});
+  return {centroidX, minUpperZ};
+}
+} // namespace
+
+//==============================================================================
+// Edge-edge self-contact friction (mu > 0) opposes one crossing edge sliding
+// tangentially over another while the edge-edge barrier holds them apart.
+TEST(DeformableBody, EdgeEdgeSelfContactFrictionDeceleratesSlidingEdge)
+{
+  const auto frictionless = runEdgeEdgeFrictionSlide(0.0, 20);
+  const auto frictional = runEdgeEdgeFrictionSlide(0.8, 20);
+
+  // The edge-edge barrier keeps the upper edge above the lower (z = 0).
+  EXPECT_GT(frictionless.minUpperZ, 0.0);
+  EXPECT_GT(frictional.minUpperZ, 0.0);
+
+  // Frictionless: the upper edge slides tangentially essentially freely.
+  EXPECT_GT(frictionless.centroidX, 0.05);
+
+  // Friction opposes the tangential slide: shorter travel.
+  EXPECT_LT(frictional.centroidX, frictionless.centroidX);
+  EXPECT_GE(frictional.centroidX, 0.0);
+}

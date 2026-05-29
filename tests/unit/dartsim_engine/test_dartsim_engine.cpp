@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -360,6 +361,10 @@ TEST(CommandManager, InvalidCommandsAndLabelsAreStable)
   EXPECT_FALSE(commandManager.execute(nullptr));
   EXPECT_FALSE(commandManager.undo());
   EXPECT_FALSE(commandManager.redo());
+  EXPECT_EQ(commandManager.undoCount(), 0u);
+  EXPECT_EQ(commandManager.redoCount(), 0u);
+  EXPECT_EQ(commandManager.historyIndex(), 0u);
+  EXPECT_EQ(commandManager.currentRevision(), 0u);
   commandManager.endMacro();
   EXPECT_FALSE(commandManager.inMacro());
 
@@ -373,14 +378,31 @@ TEST(CommandManager, InvalidCommandsAndLabelsAreStable)
         objectManager.rebuild();
         selectionManager.select(id);
       }));
+  const CommandManager::HistoryRevision addRevision
+      = commandManager.currentRevision();
+  EXPECT_NE(addRevision, 0u);
+  EXPECT_EQ(commandManager.undoCount(), 1u);
+  EXPECT_EQ(commandManager.redoCount(), 0u);
+  EXPECT_EQ(commandManager.historyIndex(), 1u);
   EXPECT_EQ(commandManager.undoLabel(), "Add Body Directly");
   EXPECT_TRUE(commandManager.redoLabel().empty());
 
   ASSERT_TRUE(commandManager.undo());
+  EXPECT_EQ(commandManager.currentRevision(), 0u);
+  EXPECT_EQ(commandManager.undoCount(), 0u);
+  EXPECT_EQ(commandManager.redoCount(), 1u);
+  EXPECT_EQ(commandManager.historyIndex(), 0u);
   EXPECT_TRUE(commandManager.undoLabel().empty());
   EXPECT_EQ(commandManager.redoLabel(), "Add Body Directly");
 
+  ASSERT_TRUE(commandManager.redo());
+  EXPECT_EQ(commandManager.currentRevision(), addRevision);
+  EXPECT_EQ(commandManager.undoCount(), 1u);
+  EXPECT_EQ(commandManager.redoCount(), 0u);
+
   commandManager.clearHistory();
+  EXPECT_EQ(commandManager.currentRevision(), 0u);
+  EXPECT_EQ(commandManager.undoCount(), 0u);
   EXPECT_FALSE(commandManager.canRedo());
   EXPECT_TRUE(commandManager.redoLabel().empty());
 }
@@ -457,6 +479,182 @@ TEST(CommandManager, SetMassSanitizesInvalidValues)
   rigidBody = objects.world().getRigidBody(name);
   ASSERT_TRUE(rigidBody.has_value());
   EXPECT_DOUBLE_EQ(rigidBody->getMass(), 1e-9);
+}
+
+TEST(CommandManager, AddAndEditSensorDescriptors)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "parent")));
+  const ObjectId parent = selection.primary();
+  ASSERT_NE(parent, kNoObject);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addSensor(
+          SensorKind::Range,
+          parent,
+          translation(0.0, 0.0, 0.5),
+          "range_sensor")));
+  const ObjectId sensor = selection.primary();
+  ASSERT_NE(sensor, kNoObject);
+  const SceneObject* sensorObject = objects.model().find(sensor);
+  ASSERT_NE(sensorObject, nullptr);
+  EXPECT_EQ(sensorObject->type, ObjectType::Sensor);
+  EXPECT_EQ(sensorObject->parent, parent);
+  EXPECT_EQ(sensorObject->name, "range_sensor");
+  EXPECT_EQ(sensorObject->sensor.kind, SensorKind::Range);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.range, 10.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.fieldOfView, 60.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.updateRate, 30.0);
+
+  const std::optional<Eigen::Isometry3d> sensorWorld
+      = objects.worldTransformOf(sensor);
+  ASSERT_TRUE(sensorWorld.has_value());
+  EXPECT_TRUE(
+      sensorWorld->translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.5)));
+
+  const std::vector<RenderItem> items = objects.computeRenderItems();
+  const auto item = std::find_if(
+      items.begin(), items.end(), [sensor](const RenderItem& renderItem) {
+        return renderItem.id == sensor;
+      });
+  ASSERT_NE(item, items.end());
+  EXPECT_EQ(item->shape, ShapeType::Box);
+  EXPECT_TRUE(item->dimensions.isApprox(Eigen::Vector3d(0.28, 0.18, 0.16)));
+  EXPECT_TRUE(item->color.isApprox(Eigen::Vector4d(0.2, 0.75, 0.55, 1.0)));
+
+  const std::size_t beforeNoOp = commands.undoCount();
+  EXPECT_FALSE(
+      commands.execute(commands::setSensor(sensor, sensorObject->sensor)));
+  EXPECT_FALSE(
+      commands.execute(commands::setSensor(parent, sensorObject->sensor)));
+  EXPECT_FALSE(
+      commands.execute(commands::setSensor(999, sensorObject->sensor)));
+  EXPECT_EQ(commands.undoCount(), beforeNoOp);
+
+  SensorDesc edited;
+  edited.kind = SensorKind::Contact;
+  edited.range = -1.0;
+  edited.fieldOfView = 500.0;
+  edited.updateRate = std::numeric_limits<double>::quiet_NaN();
+  ASSERT_TRUE(commands.execute(commands::setSensor(sensor, edited)));
+  sensorObject = objects.model().find(sensor);
+  ASSERT_NE(sensorObject, nullptr);
+  EXPECT_EQ(sensorObject->sensor.kind, SensorKind::Contact);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.range, 10.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.fieldOfView, 179.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.updateRate, 30.0);
+  EXPECT_TRUE(
+      sensorObject->shape.color.isApprox(Eigen::Vector4d(0.9, 0.55, 0.2, 1.0)));
+
+  ASSERT_TRUE(commands.undo());
+  sensorObject = objects.model().find(sensor);
+  ASSERT_NE(sensorObject, nullptr);
+  EXPECT_EQ(sensorObject->sensor.kind, SensorKind::Range);
+  EXPECT_TRUE(sensorObject->shape.color.isApprox(
+      Eigen::Vector4d(0.2, 0.75, 0.55, 1.0)));
+
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(objects.model().find(sensor)->sensor.kind, SensorKind::Contact);
+
+  const std::size_t undoCount = commands.undoCount();
+  ASSERT_FALSE(commands.execute(commands::addSensor(SensorKind::Camera, 999)));
+  EXPECT_EQ(commands.undoCount(), undoCount);
+  EXPECT_EQ(selection.primary(), sensor);
+}
+
+TEST(CommandManager, AddAndEditCollisionDescriptors)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "parent")));
+  const ObjectId parent = selection.primary();
+  ASSERT_NE(parent, kNoObject);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addCollision(
+          ShapeType::Sphere,
+          parent,
+          translation(0.0, 0.0, 0.5),
+          "contact_proxy")));
+  const ObjectId collision = selection.primary();
+  ASSERT_NE(collision, kNoObject);
+  const SceneObject* collisionObject = objects.model().find(collision);
+  ASSERT_NE(collisionObject, nullptr);
+  EXPECT_EQ(collisionObject->type, ObjectType::Collision);
+  EXPECT_EQ(collisionObject->parent, parent);
+  EXPECT_EQ(collisionObject->name, "contact_proxy");
+  EXPECT_EQ(collisionObject->shape.type, ShapeType::Sphere);
+  EXPECT_TRUE(collisionObject->shape.color.isApprox(
+      Eigen::Vector4d(0.95, 0.35, 0.25, 0.45)));
+  EXPECT_DOUBLE_EQ(collisionObject->collision.friction, 0.8);
+  EXPECT_DOUBLE_EQ(collisionObject->collision.restitution, 0.0);
+
+  const std::optional<Eigen::Isometry3d> collisionWorld
+      = objects.worldTransformOf(collision);
+  ASSERT_TRUE(collisionWorld.has_value());
+  EXPECT_TRUE(
+      collisionWorld->translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.5)));
+
+  std::vector<RenderItem> items = objects.computeRenderItems();
+  auto item = std::find_if(
+      items.begin(), items.end(), [collision](const RenderItem& renderItem) {
+        return renderItem.id == collision;
+      });
+  ASSERT_NE(item, items.end());
+  EXPECT_EQ(item->shape, ShapeType::Sphere);
+
+  const std::size_t beforeNoOp = commands.undoCount();
+  EXPECT_FALSE(commands.execute(
+      commands::setCollision(collision, collisionObject->collision)));
+  EXPECT_FALSE(commands.execute(
+      commands::setCollision(parent, collisionObject->collision)));
+  EXPECT_FALSE(commands.execute(commands::setCollision(999, {})));
+  EXPECT_EQ(commands.undoCount(), beforeNoOp);
+
+  CollisionDesc edited;
+  edited.friction = -1.0;
+  edited.restitution = 2.0;
+  ASSERT_TRUE(commands.execute(commands::setCollision(collision, edited)));
+  collisionObject = objects.model().find(collision);
+  ASSERT_NE(collisionObject, nullptr);
+  EXPECT_DOUBLE_EQ(collisionObject->collision.friction, 0.8);
+  EXPECT_DOUBLE_EQ(collisionObject->collision.restitution, 1.0);
+
+  ShapeDesc shape = collisionObject->shape;
+  shape.type = ShapeType::Capsule;
+  shape.dimensions = Eigen::Vector3d(0.25, 0.75, 0.25);
+  ASSERT_TRUE(commands.execute(commands::setShape(collision, shape)));
+  collisionObject = objects.model().find(collision);
+  ASSERT_NE(collisionObject, nullptr);
+  EXPECT_EQ(collisionObject->shape.type, ShapeType::Capsule);
+  items = objects.computeRenderItems();
+  item = std::find_if(
+      items.begin(), items.end(), [collision](const RenderItem& renderItem) {
+        return renderItem.id == collision;
+      });
+  ASSERT_NE(item, items.end());
+  EXPECT_EQ(item->shape, ShapeType::Capsule);
+
+  ASSERT_TRUE(commands.undo());
+  EXPECT_EQ(objects.model().find(collision)->shape.type, ShapeType::Sphere);
+  ASSERT_TRUE(commands.undo());
+  EXPECT_DOUBLE_EQ(objects.model().find(collision)->collision.restitution, 0.0);
+  ASSERT_TRUE(commands.redo());
+  EXPECT_DOUBLE_EQ(objects.model().find(collision)->collision.restitution, 1.0);
+
+  const std::size_t undoCount = commands.undoCount();
+  ASSERT_FALSE(commands.execute(commands::addCollision(ShapeType::Box, 999)));
+  EXPECT_EQ(commands.undoCount(), undoCount);
+  EXPECT_EQ(selection.primary(), collision);
 }
 
 //==============================================================================
@@ -603,7 +801,13 @@ TEST(SceneIO, TextRoundTripIsStable)
   body.name = "Body With Spaces";
   body.transform = translation(1.5, -2.0, 0.25);
   body.mass = 3.0;
-  model.add(body);
+  const ObjectId bodyId = model.add(body);
+
+  WorkspaceWatchPreset preset;
+  preset.name = "motion";
+  preset.targets = {bodyId};
+  preset.chartSignals = {"simulation_time", "translation_z"};
+  model.workspace.watchPresets.push_back(preset);
 
   SceneObject mb;
   mb.type = ObjectType::MultiBody;
@@ -616,12 +820,49 @@ TEST(SceneIO, TextRoundTripIsStable)
   link.multiBody = mbId;
   model.add(link);
 
+  SceneObject sensor;
+  sensor.type = ObjectType::Sensor;
+  sensor.name = "range";
+  sensor.parent = bodyId;
+  sensor.sensor.kind = SensorKind::Range;
+  sensor.sensor.range = 12.5;
+  sensor.sensor.fieldOfView = 45.0;
+  sensor.sensor.updateRate = 20.0;
+  sensor.shape.dimensions = Eigen::Vector3d(0.28, 0.18, 0.16);
+  const ObjectId sensorId = model.add(sensor);
+
+  SceneObject collision;
+  collision.type = ObjectType::Collision;
+  collision.name = "contact_proxy";
+  collision.parent = bodyId;
+  collision.shape.type = ShapeType::Capsule;
+  collision.shape.dimensions = Eigen::Vector3d(0.25, 0.75, 0.25);
+  collision.collision.friction = 0.5;
+  collision.collision.restitution = 0.2;
+  const ObjectId collisionId = model.add(collision);
+
   const std::string text = scene_io::save(model);
 
   SceneModel loaded;
   ASSERT_TRUE(scene_io::load(text, loaded));
   EXPECT_EQ(loaded.size(), model.size());
   EXPECT_DOUBLE_EQ(loaded.timeStep, 0.002);
+  EXPECT_EQ(loaded.workspace.watchPresets, model.workspace.watchPresets);
+  const SceneObject* loadedSensor = loaded.find(sensorId);
+  ASSERT_NE(loadedSensor, nullptr);
+  EXPECT_EQ(loadedSensor->type, ObjectType::Sensor);
+  EXPECT_EQ(loadedSensor->parent, bodyId);
+  EXPECT_EQ(loadedSensor->sensor.kind, SensorKind::Range);
+  EXPECT_DOUBLE_EQ(loadedSensor->sensor.range, 12.5);
+  EXPECT_DOUBLE_EQ(loadedSensor->sensor.fieldOfView, 45.0);
+  EXPECT_DOUBLE_EQ(loadedSensor->sensor.updateRate, 20.0);
+  const SceneObject* loadedCollision = loaded.find(collisionId);
+  ASSERT_NE(loadedCollision, nullptr);
+  EXPECT_EQ(loadedCollision->type, ObjectType::Collision);
+  EXPECT_EQ(loadedCollision->parent, bodyId);
+  EXPECT_EQ(loadedCollision->shape.type, ShapeType::Capsule);
+  EXPECT_DOUBLE_EQ(loadedCollision->collision.friction, 0.5);
+  EXPECT_DOUBLE_EQ(loadedCollision->collision.restitution, 0.2);
 
   // Re-saving the loaded model yields identical text (stable round-trip).
   EXPECT_EQ(scene_io::save(loaded), text);
@@ -636,9 +877,9 @@ TEST(SceneIO, RejectsBadHeader)
 TEST(SceneIO, RejectsUnsupportedVersion)
 {
   SceneModel out;
-  // A v1 reader must reject a newer format version instead of parsing it with
-  // v1 rules (which would silently produce corrupt state).
-  EXPECT_FALSE(scene_io::load("dartsim-scene 2\ntimestep 0.001\n", out));
+  // A reader must reject newer format versions instead of parsing them with
+  // older rules (which would silently produce corrupt state).
+  EXPECT_FALSE(scene_io::load("dartsim-scene 4\ntimestep 0.001\n", out));
 }
 
 TEST(SceneIO, RejectsDuplicateObjectIds)
@@ -698,6 +939,13 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "timestep 0.001\n"
       "object\n"
       "id 7\n"
+      "type 99\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
       "parent bad\n"
       "end\n");
   expectRejects(
@@ -734,6 +982,103 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "object\n"
       "id 7\n"
       "shapetype bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorkind bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorkind 99\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorrange nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorfov nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorrate nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "collisionfriction nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "collisionrestitution nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorrange -1\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorfov 0.5\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorfov 180\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorrate 0\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 7\n"
+      "collisionfriction -1\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 7\n"
+      "collisionrestitution 1.5\n"
       "end\n");
   expectRejects(
       "dartsim-scene 1\n"
@@ -791,6 +1136,45 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "id 7\n"
       "jointpos nope\n"
       "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name bad preset\n"
+      "target nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name bad preset\n"
+      "signal\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name    \n"
+      "signal translation_z\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name duplicate\n"
+      "signal translation_z\n"
+      "end\n"
+      "watch-preset\n"
+      "name duplicate\n"
+      "signal simulation_time\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name bad signal\n"
+      "signal translation z\n"
+      "end\n");
 }
 
 TEST(SceneIO, RejectsUnterminatedObjectBlocks)
@@ -813,6 +1197,19 @@ TEST(SceneIO, RejectsUnterminatedObjectBlocks)
       "id 7\n"
       "object\n"
       "id 8\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name missing end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name nested\n"
+      "object\n"
+      "id 1\n"
       "end\n");
 }
 
@@ -850,6 +1247,42 @@ TEST(SceneIO, EmptyAndMalformedParentsAreHandled)
     EXPECT_EQ(out.find(id)->parent, kNoObject);
   }
   EXPECT_EQ(out.rootChildren().size(), 3u);
+}
+
+TEST(SceneIO, RerootsDescriptorsWithNonFrameParents)
+{
+  const std::string text
+      = "dartsim-scene 3\n"
+        "timestep 0.001\n"
+        "object\n"
+        "id 1\n"
+        "type 1\n"
+        "name arm\n"
+        "end\n"
+        "object\n"
+        "id 2\n"
+        "type 6\n"
+        "parent 1\n"
+        "name sensor\n"
+        "end\n"
+        "object\n"
+        "id 3\n"
+        "type 7\n"
+        "parent 1\n"
+        "name collision\n"
+        "end\n";
+
+  SceneModel out;
+  ASSERT_TRUE(scene_io::load(text, out));
+  ASSERT_EQ(out.size(), 3u);
+  const SceneObject* sensor = out.find(2);
+  ASSERT_NE(sensor, nullptr);
+  EXPECT_EQ(sensor->type, ObjectType::Sensor);
+  EXPECT_EQ(sensor->parent, kNoObject);
+  const SceneObject* collision = out.find(3);
+  ASSERT_NE(collision, nullptr);
+  EXPECT_EQ(collision->type, ObjectType::Collision);
+  EXPECT_EQ(collision->parent, kNoObject);
 }
 
 TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
@@ -1320,8 +1753,55 @@ TEST(SimEngine, EndToEndEditorLoop)
   EXPECT_GE(engine.recorder().recording().frameCount(), 6u);
 
   engine.loadRecordingIntoPlayer();
+  EXPECT_DOUBLE_EQ(engine.objects().world().getTime(), 0.0);
   ASSERT_TRUE(engine.replaySeek(0));
   EXPECT_DOUBLE_EQ(engine.objects().world().getTime(), 0.0);
+}
+
+TEST(SimEngine, ReplaySeekRequiresPausedSimulationModeAndNotifiesObservers)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+
+  int simulationChanges = 0;
+  engine.events().subscribe([&](const Event& event) {
+    if (event.type == EventType::SimulationChanged) {
+      ++simulationChanges;
+    }
+  });
+
+  engine.startRecording();
+  engine.simulation().step(3);
+  engine.stopRecording();
+
+  ASSERT_GT(engine.simulation().frameCount(), 0u);
+  engine.loadRecordingIntoPlayer();
+  EXPECT_EQ(simulationChanges, 1);
+  EXPECT_EQ(engine.player().currentIndex(), 0u);
+  EXPECT_EQ(engine.simulation().frameCount(), 0u);
+
+  ASSERT_TRUE(engine.replaySeek(2));
+  EXPECT_EQ(simulationChanges, 2);
+  EXPECT_EQ(engine.player().currentIndex(), 2u);
+  EXPECT_EQ(engine.simulation().frameCount(), 2u);
+
+  engine.simulation().play();
+  EXPECT_FALSE(engine.replaySeek(0));
+  EXPECT_EQ(engine.player().currentIndex(), 2u);
+  EXPECT_EQ(simulationChanges, 2);
+
+  engine.simulation().pause();
+  engine.startRecording();
+  EXPECT_FALSE(engine.replaySeek(0));
+  EXPECT_EQ(engine.player().currentIndex(), 2u);
+  EXPECT_EQ(simulationChanges, 2);
+
+  engine.stopRecording();
+  engine.simulation().reset();
+  EXPECT_FALSE(engine.replaySeek(0));
+  EXPECT_EQ(simulationChanges, 2);
 }
 
 TEST(SimEngine, NoOpCommandDoesNotSignalChange)
@@ -1535,6 +2015,92 @@ TEST(SimEngine, ResetConsumesSimulationSnapshotBeforeNextEdit)
   EXPECT_DOUBLE_EQ(afterReset->mass, 8.0);
 }
 
+TEST(SimEngine, RestartRestoresSnapshotInsideSimulationMode)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+
+  EXPECT_FALSE(engine.simulation().restart());
+
+  engine.simulation().play();
+  ASSERT_TRUE(engine.simulation().isRunning());
+  ASSERT_TRUE(engine.simulation().hasCapturedEditState());
+
+  engine.simulation().advance(0.04);
+  ASSERT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  ASSERT_GT(engine.simulation().frameCount(), 0u);
+  ASSERT_GT(engine.simulation().simTime(), 0.0);
+
+  EXPECT_TRUE(engine.simulation().restart());
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  EXPECT_TRUE(engine.simulation().isRunning());
+  EXPECT_TRUE(engine.simulation().hasCapturedEditState());
+  EXPECT_EQ(engine.simulation().frameCount(), 0u);
+  EXPECT_DOUBLE_EQ(engine.simulation().simTime(), 0.0);
+
+  engine.simulation().pause();
+  engine.simulation().step(2);
+  ASSERT_EQ(engine.simulation().frameCount(), 2u);
+
+  EXPECT_TRUE(engine.simulation().restart());
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  EXPECT_FALSE(engine.simulation().isRunning());
+  EXPECT_TRUE(engine.simulation().hasCapturedEditState());
+  EXPECT_EQ(engine.simulation().frameCount(), 0u);
+
+  engine.simulation().reset();
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Edit);
+  EXPECT_FALSE(engine.simulation().hasCapturedEditState());
+  EXPECT_FALSE(engine.simulation().restart());
+}
+
+TEST(SimEngine, RestartCapturesRecordingFrameAndNotifiesObservers)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+
+  int modeChanges = 0;
+  int recordingChanges = 0;
+  int simulationChanges = 0;
+  engine.events().subscribe([&](const Event& event) {
+    if (event.type == EventType::ModeChanged) {
+      ++modeChanges;
+    }
+    if (event.type == EventType::RecordingChanged) {
+      ++recordingChanges;
+    }
+    if (event.type == EventType::SimulationChanged) {
+      ++simulationChanges;
+    }
+  });
+
+  engine.startRecording();
+  ASSERT_EQ(recordingChanges, 1);
+
+  engine.simulation().step(2);
+  ASSERT_EQ(modeChanges, 1);
+  ASSERT_EQ(engine.recorder().recording().frameCount(), 3u);
+  ASSERT_EQ(engine.recorder().recording().frames().back().step, 2u);
+
+  modeChanges = 0;
+  recordingChanges = 0;
+  simulationChanges = 0;
+  ASSERT_TRUE(engine.simulation().restart());
+
+  EXPECT_EQ(modeChanges, 0);
+  EXPECT_EQ(recordingChanges, 1);
+  EXPECT_EQ(simulationChanges, 1);
+  ASSERT_EQ(engine.recorder().recording().frameCount(), 4u);
+  const RecordedFrame& restarted
+      = engine.recorder().recording().frames().back();
+  EXPECT_DOUBLE_EQ(restarted.time, 0.0);
+  EXPECT_EQ(restarted.step, 0u);
+}
+
 TEST(SimEngine, SimulationModeChangesEmitModeChanged)
 {
   SimEngine engine;
@@ -1574,16 +2140,93 @@ TEST(SimEngine, ProjectFileRoundTrip)
 
   SimEngine engine;
   engine.execute(commands::addRigidBody(ShapeType::Box, translation(1, 1, 1)));
+  const ObjectId box = engine.selection().primary();
+  engine.execute(
+      commands::addSensor(SensorKind::Camera, box, translation(0, 0, 0.5)));
+  const ObjectId sensor = engine.selection().primary();
+  engine.execute(
+      commands::addCollision(ShapeType::Sphere, box, translation(0, 0, -0.5)));
+  const ObjectId collision = engine.selection().primary();
   engine.execute(commands::addMultiBody("arm"));
+  WorkspaceWatchPreset preset;
+  preset.name = "motion";
+  preset.targets = {box};
+  preset.chartSignals = {"translation_z"};
+  engine.execute(commands::setWorkspaceWatchPresets({preset}));
   const std::size_t expected = engine.objects().model().size();
   ASSERT_TRUE(engine.saveProject(path.string()));
 
   SimEngine reloaded;
   ASSERT_TRUE(reloaded.loadProject(path.string()));
   EXPECT_EQ(reloaded.objects().model().size(), expected);
+  EXPECT_EQ(reloaded.objects().model().workspace.watchPresets.size(), 1u);
+  EXPECT_EQ(
+      reloaded.objects().model().workspace.watchPresets[0].name, "motion");
+  EXPECT_EQ(
+      reloaded.objects().model().workspace.watchPresets[0].targets[0], box);
+  const SceneObject* reloadedSensor = reloaded.objects().model().find(sensor);
+  ASSERT_NE(reloadedSensor, nullptr);
+  EXPECT_EQ(reloadedSensor->type, ObjectType::Sensor);
+  EXPECT_EQ(reloadedSensor->parent, box);
+  EXPECT_EQ(reloadedSensor->sensor.kind, SensorKind::Camera);
+  const SceneObject* reloadedCollision
+      = reloaded.objects().model().find(collision);
+  ASSERT_NE(reloadedCollision, nullptr);
+  EXPECT_EQ(reloadedCollision->type, ObjectType::Collision);
+  EXPECT_EQ(reloadedCollision->parent, box);
+  EXPECT_EQ(reloadedCollision->shape.type, ShapeType::Sphere);
   EXPECT_FALSE(reloaded.commands().canUndo()); // history cleared on load
 
   std::filesystem::remove(path);
+}
+
+TEST(SimEngine, WorkspaceWatchPresetCommandNormalizesInputs)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+
+  WorkspaceWatchPreset preset;
+  preset.name = " motion ";
+  preset.targets = {box, box, kNoObject};
+  preset.chartSignals = {"translation_z", "translation_z", "custom-signal"};
+  engine.execute(commands::setWorkspaceWatchPresets({preset}));
+
+  const auto& presets = engine.objects().model().workspace.watchPresets;
+  ASSERT_EQ(presets.size(), 1u);
+  EXPECT_EQ(presets[0].name, "motion");
+  ASSERT_EQ(presets[0].targets.size(), 1u);
+  EXPECT_EQ(presets[0].targets[0], box);
+  ASSERT_EQ(presets[0].chartSignals.size(), 2u);
+  EXPECT_EQ(presets[0].chartSignals[0], "translation_z");
+  EXPECT_EQ(presets[0].chartSignals[1], "custom-signal");
+
+  const WorkspaceSettings before = engine.objects().model().workspace;
+  const std::size_t undoCount = engine.commands().undoCount();
+  WorkspaceWatchPreset blankName;
+  blankName.name = "  ";
+  blankName.chartSignals = {"translation_z"};
+  engine.execute(commands::setWorkspaceWatchPresets({blankName}));
+  EXPECT_EQ(engine.objects().model().workspace, before);
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+
+  WorkspaceWatchPreset duplicateA;
+  duplicateA.name = "duplicate";
+  duplicateA.chartSignals = {"translation_z"};
+  WorkspaceWatchPreset duplicateB;
+  duplicateB.name = " duplicate ";
+  duplicateB.chartSignals = {"simulation_time"};
+  engine.execute(commands::setWorkspaceWatchPresets({duplicateA, duplicateB}));
+  EXPECT_EQ(engine.objects().model().workspace, before);
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+
+  WorkspaceWatchPreset badSignal;
+  badSignal.name = "bad";
+  badSignal.chartSignals = {"translation z"};
+  engine.execute(commands::setWorkspaceWatchPresets({badSignal}));
+  EXPECT_EQ(engine.objects().model().workspace, before);
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
 }
 
 TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
@@ -1610,6 +2253,9 @@ TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
 
   ASSERT_TRUE(engine.saveProject(path.string()));
   EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), engine.commands().historyIndex());
+  EXPECT_EQ(engine.cleanHistoryRevision(), engine.commands().currentRevision());
   EXPECT_TRUE(engine.hasProjectPath());
   EXPECT_EQ(engine.projectPath(), path.string());
   EXPECT_EQ(changes, 2);
@@ -1628,6 +2274,9 @@ TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
 
   ASSERT_TRUE(engine.saveProject());
   EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), engine.commands().historyIndex());
+  EXPECT_EQ(engine.cleanHistoryRevision(), engine.commands().currentRevision());
   EXPECT_EQ(lastEvent, EventType::ProjectSaved);
 
   engine.execute(commands::setMass(id, 4.0));
@@ -1637,6 +2286,44 @@ TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
   EXPECT_EQ(lastEvent, EventType::ProjectStateChanged);
 
   std::filesystem::remove(path);
+}
+
+TEST(SimEngine, CleanHistoryRevisionTracksSavePointAndRedoBranches)
+{
+  SimEngine engine;
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), 0u);
+  EXPECT_EQ(engine.cleanHistoryRevision(), 0u);
+
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  ASSERT_TRUE(engine.isProjectDirty());
+  ASSERT_FALSE(engine.isHistoryAtCleanState());
+  ASSERT_EQ(engine.commands().historyIndex(), 1u);
+
+  engine.markProjectClean();
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), 1u);
+  const CommandManager::HistoryRevision cleanRevision
+      = engine.cleanHistoryRevision();
+  EXPECT_EQ(cleanRevision, engine.commands().currentRevision());
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_FALSE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.commands().historyIndex(), 0u);
+  EXPECT_TRUE(engine.commands().canRedo());
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(2.0, 0.0, 1.0), "replacement"));
+  EXPECT_EQ(engine.commands().historyIndex(), engine.cleanHistoryIndex());
+  EXPECT_NE(engine.commands().currentRevision(), cleanRevision);
+  EXPECT_FALSE(engine.isHistoryAtCleanState());
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_FALSE(engine.commands().canRedo());
 }
 
 TEST(SimEngine, LoadAndNewProjectResetProjectState)
@@ -1865,6 +2552,48 @@ TEST(SimEngine, LoadProjectClearsRecordingAndPlayer)
   std::filesystem::remove(path);
 }
 
+TEST(SimEngine, ProjectReplacementIsRejectedDuringOpenMacro)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_macro_project_guard.dartsim";
+
+  SimEngine saved;
+  saved.execute(commands::addMultiBody("saved"));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.commands().beginMacro("Open Transaction");
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel transactionModel = engine.objects().model();
+  ASSERT_EQ(transactionModel.size(), 1u);
+
+  engine.newProject();
+  EXPECT_TRUE(engine.commands().inMacro());
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+  ASSERT_FALSE(engine.logger().entries().empty());
+  EXPECT_EQ(engine.logger().entries().back().level, LogLevel::Warning);
+  EXPECT_EQ(
+      engine.logger().entries().back().message,
+      "Cannot create a new project during an edit transaction");
+
+  EXPECT_FALSE(engine.loadProject(path.string()));
+  EXPECT_TRUE(engine.commands().inMacro());
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+  ASSERT_FALSE(engine.logger().entries().empty());
+  EXPECT_EQ(engine.logger().entries().back().level, LogLevel::Warning);
+  EXPECT_EQ(
+      engine.logger().entries().back().message,
+      "Cannot load a project during an edit transaction");
+
+  engine.commands().endMacro();
+  EXPECT_FALSE(engine.commands().inMacro());
+  EXPECT_TRUE(engine.commands().canUndo());
+
+  std::filesystem::remove(path);
+}
+
 //==============================================================================
 // Command macros (grouped, single-undo transactions)
 //==============================================================================
@@ -1893,6 +2622,33 @@ TEST(CommandManager, MacroGroupsIntoSingleUndo)
   EXPECT_EQ(objects.model().size(), 2u);
 }
 
+TEST(CommandManager, MacroRevisionsRestoreSavedUndoRedoCursor)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.beginMacro("Add Two Bodies");
+  commands.execute(commands::addRigidBody());
+  commands.execute(commands::addRigidBody());
+  commands.endMacro();
+
+  const CommandManager::HistoryRevision macroRevision
+      = commands.currentRevision();
+  ASSERT_NE(macroRevision, 0u);
+  EXPECT_EQ(commands.historyIndex(), 1u);
+
+  ASSERT_TRUE(commands.undo());
+  EXPECT_EQ(commands.currentRevision(), 0u);
+  EXPECT_EQ(commands.historyIndex(), 0u);
+  EXPECT_EQ(commands.redoCount(), 1u);
+
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(commands.currentRevision(), macroRevision);
+  EXPECT_EQ(commands.historyIndex(), 1u);
+  EXPECT_EQ(commands.undoCount(), 1u);
+}
+
 TEST(CommandManager, EmptyMacroAddsNoHistory)
 {
   ObjectManager objects;
@@ -1902,6 +2658,30 @@ TEST(CommandManager, EmptyMacroAddsNoHistory)
   commands.beginMacro("Nothing");
   commands.endMacro();
   EXPECT_FALSE(commands.canUndo());
+}
+
+TEST(CommandManager, NoOpMacroPreservesRedoBranch)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addRigidBody());
+  ASSERT_TRUE(commands.undo());
+  ASSERT_TRUE(commands.canRedo());
+  EXPECT_EQ(commands.redoCount(), 1u);
+
+  commands.beginMacro("No-op Transaction");
+  EXPECT_TRUE(
+      commands.execute("Do Nothing", [](ObjectManager&, SelectionManager&) {}));
+  commands.endMacro();
+
+  EXPECT_FALSE(commands.canUndo());
+  EXPECT_TRUE(commands.canRedo());
+  EXPECT_EQ(commands.redoCount(), 1u);
+
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(objects.model().size(), 1u);
 }
 
 TEST(CommandManager, NestedMacrosFlattenToOneEntry)

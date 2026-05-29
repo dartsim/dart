@@ -148,11 +148,53 @@
         Lagged normal force per outer iteration; PSD tangential friction Hessian
         in the projected-Newton solve. Sliding-deceleration + no-contact-no-
         friction regressions, drape friction benchmark, serialized coefficient.
-  - [ ] Remaining Phase 4 work: self-contact and codimensional-obstacle
-        friction, friction over non-flat (sphere/tilted) ground normals, and
-        friction-specific convergence/dissipation diagnostics.
-- [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
-      examples, benchmarks, profiling artifacts, and headless Filament evidence.
+  - [x] Self-contact friction (point-triangle): reuses `frictionCoefficient`;
+        lagged normal force = barrier force on the point node, tangent
+        projection from the point-triangle tangent stencil, same f0/f1 mollifier
+        opposing the stencil's tangential relative displacement. Regression: a
+        surface sliding on another in self-contact decelerates vs the
+        frictionless control while staying separated.
+  - [x] Self-contact friction Hessian: a PSD 12x12 block per point-triangle
+        contact (`projection^T * H_2x2 * projection`) in the projected-Newton
+        assembly, completing self-contact friction as a proper Newton term
+        (behavior-preserving; the line search still resolves the same energy).
+  - [x] Edge-edge self-contact friction (force + Hessian): the friction
+        energy/gradient/Hessian are generic over a four-node stencil, so only
+        the lagged-contact assembly is extended to edge-edge barrier candidates
+        (net edge force + edge-edge tangent stencil). Crossing-edge slide
+        regression. Self-contact friction now covers point-triangle and
+        edge-edge.
+  - [ ] Remaining Phase 4 work: codimensional-obstacle friction, friction over
+        non-flat (sphere/tilted) ground normals, and friction-specific
+        convergence/dissipation diagnostics.
+- [~] Phase 5: complete the upstream scene corpus as DART-native tests,
+  examples, benchmarks, profiling artifacts, and headless Filament evidence.
+  - [x] Scene-replay validation harness: the loader -> solver -> diagnostics
+        pipeline is exercised by a deterministic multi-frame replay regression
+        on a DART-native tutorial scene (anchor stays, free body falls, mass
+        conserved, reproducible) -- the per-scene invariant pattern corpus rows
+        use. Loader, Gmsh import, DBC/NBC, diagnostics JSON, restart, and the
+        `experimental_deformable_gui --deformable-scene` headless capture +
+        scene-load/replay benchmarks already exist.
+  - [ ] Remaining Phase 5 work (BLOCKED on prerequisites): port the 154 upstream
+        ipc-sim/IPC corpus scenes (`ipc_scene_corpus_manifest.json`, all
+        `planned`). Needs (a) the upstream scene assets vendored or fetched
+        (none are vendored today) and (b) the contact-capable solver for the
+        contact-heavy scenes (the loader currently ignores contact/friction
+        directives; barrier/CCD/friction land via Phases 3-4). Until then only
+        contact-free DBC/NBC tutorial-family scenes are replayable.
+- [~] Phase 8: Python facade for the deformable-body API.
+  - [x] Core bindings: `dartpy` exposes `World.add_deformable_body` /
+        `get_deformable_body` / `has_deformable_body` /
+        `get_deformable_body_count`, plus `DeformableBodyOptions`,
+        `DeformableMaterialProperties` (incl. `friction_coefficient`),
+        `DeformableEdge`, and `DeformableBody` (counts, per-node
+        position/velocity get/set, `is_fixed_node`, `edge`,
+        `material_properties`). Stubs regenerated; Python regression covers
+        create/configure/step/read.
+  - [ ] Remaining Phase 8 work: surface-triangle/tetrahedron and
+        boundary-condition (DBC/NBC) bindings, scene-loader Python access, and
+        diagnostics exposure.
 
 ## Goal
 

@@ -233,12 +233,12 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
 
 ```bash
 pixi run ex hello_world
-pixi run ex dartsim
 ```
 
 `scripts/run_cpp_example.py` centralizes example-specific CMake
-requirements so restored GUI examples and `dartsim` can use the same command
-shape.
+requirements so restored GUI examples can use the same command shape. The
+standalone `dartsim` editor is not an example — launch it with its dedicated
+task (below).
 
 To launch the standalone `dartsim` editor as a dockable workspace, use the
 dedicated task, which builds against the ImGui docking branch

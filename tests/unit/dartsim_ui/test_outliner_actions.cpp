@@ -36,6 +36,7 @@
 #include <dartsim_ui/outliner_actions.hpp>
 #include <gtest/gtest.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -76,6 +77,7 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(rows[0].depth, 0);
   EXPECT_EQ(rows[0].name, "arm");
   EXPECT_EQ(rows[0].type, "MultiBody");
+  EXPECT_EQ(rows[0].icon, "MB");
   EXPECT_TRUE(rows[0].hasChildren);
   EXPECT_FALSE(rows[0].selected);
 
@@ -84,6 +86,7 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(rows[1].depth, 1);
   EXPECT_EQ(rows[1].name, "base");
   EXPECT_EQ(rows[1].type, "Link");
+  EXPECT_EQ(rows[1].icon, "LK");
   EXPECT_TRUE(rows[1].hasChildren);
   EXPECT_TRUE(rows[1].selected);
 
@@ -97,13 +100,24 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(rows[3].depth, 0);
   EXPECT_EQ(rows[3].name, "box");
   EXPECT_TRUE(rows[3].visible);
+  EXPECT_EQ(rows[3].icon, "RB");
   EXPECT_EQ(
       ui::outlinerButtonLabel(rows[3]),
-      "  box [RigidBody]##outliner-" + std::to_string(box));
+      "  RB box [RigidBody]##outliner-" + std::to_string(box));
 
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::Joint), "Joint");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FreeFrame), "FreeFrame");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FixedFrame), "FixedFrame");
+  EXPECT_EQ(ui::objectTypeLabel(ObjectType::Sensor), "Sensor");
+  EXPECT_EQ(ui::objectTypeLabel(ObjectType::Collision), "Collision");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::RigidBody), "RB");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::MultiBody), "MB");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Link), "LK");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Joint), "JT");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::FreeFrame), "FF");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::FixedFrame), "FX");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Sensor), "SN");
+  EXPECT_EQ(ui::objectTypeIcon(ObjectType::Collision), "CO");
 }
 
 TEST(DartsimOutlinerActions, ExpandCollapseStateFiltersDescendants)
@@ -506,6 +520,57 @@ TEST(DartsimOutlinerActions, MoveSelectedByMovesPrimaryMovableObject)
   const ObjectId arm = engine.selection().primary();
   ASSERT_NE(arm, kNoObject);
   EXPECT_FALSE(ui::moveSelectedBy(engine, Eigen::Vector3d::UnitX()));
+}
+
+TEST(DartsimOutlinerActions, MoveSelectedByMovesParentedDescriptorsInWorldAxes)
+{
+  SimEngine engine;
+  Eigen::Isometry3d parentTransform = translation(1.0, 2.0, 0.5);
+  parentTransform.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, parentTransform, "body"));
+  const ObjectId parent = engine.selection().primary();
+  ASSERT_NE(parent, kNoObject);
+
+  const Eigen::Isometry3d localSensorTransform = translation(0.0, 1.0, 0.25);
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Range, parent, localSensorTransform, "range"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+
+  const Eigen::Isometry3d expectedWorld
+      = parentTransform * localSensorTransform;
+  ASSERT_TRUE(ui::moveSelectedBy(engine, Eigen::Vector3d(0.5, 0.0, 0.0)));
+  Eigen::Isometry3d movedWorld = expectedWorld;
+  movedWorld.translation() += Eigen::Vector3d(0.5, 0.0, 0.0);
+  const Eigen::Isometry3d expectedLocal
+      = parentTransform.inverse() * movedWorld;
+  const SceneObject* edited = engine.objects().model().find(sensor);
+  ASSERT_NE(edited, nullptr);
+  EXPECT_TRUE(edited->transform.matrix().isApprox(expectedLocal.matrix()));
+  const std::optional<Eigen::Isometry3d> updatedWorld
+      = engine.objects().worldTransformOf(sensor);
+  ASSERT_TRUE(updatedWorld.has_value());
+  EXPECT_TRUE(updatedWorld->matrix().isApprox(movedWorld.matrix()));
+
+  const Eigen::Isometry3d localCollisionTransform = translation(0.25, 0.0, 0.5);
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere, parent, localCollisionTransform, "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  const Eigen::Isometry3d expectedCollisionWorld
+      = parentTransform * localCollisionTransform;
+  ASSERT_TRUE(ui::moveSelectedBy(engine, Eigen::Vector3d(0.0, -0.5, 0.0)));
+  Eigen::Isometry3d movedCollisionWorld = expectedCollisionWorld;
+  movedCollisionWorld.translation() += Eigen::Vector3d(0.0, -0.5, 0.0);
+  const SceneObject* editedCollision = engine.objects().model().find(collision);
+  ASSERT_NE(editedCollision, nullptr);
+  EXPECT_TRUE(editedCollision->transform.matrix().isApprox(
+      (parentTransform.inverse() * movedCollisionWorld).matrix()));
 }
 
 TEST(DartsimOutlinerActions, MoveSelectedBySupportsFramesAndRejectsRunMode)

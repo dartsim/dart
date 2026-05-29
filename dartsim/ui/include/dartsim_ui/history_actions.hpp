@@ -30,53 +30,63 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dartsim_engine/name_manager.hpp>
-#include <dartsim_engine/scene_model.hpp>
+#pragma once
+
+#include <dartsim_engine/sim_engine.hpp>
 
 #include <string>
+#include <vector>
 
-namespace dartsim {
+#include <cstddef>
 
-std::string NameManager::defaultBaseName(ObjectType type)
+namespace dartsim::ui {
+
+struct HistoryStatus
 {
-  switch (type) {
-    case ObjectType::RigidBody:
-      return "Body";
-    case ObjectType::MultiBody:
-      return "MultiBody";
-    case ObjectType::Link:
-      return "Link";
-    case ObjectType::Joint:
-      return "Joint";
-    case ObjectType::FreeFrame:
-      return "FreeFrame";
-    case ObjectType::FixedFrame:
-      return "FixedFrame";
-    case ObjectType::Sensor:
-      return "Sensor";
-    case ObjectType::Collision:
-      return "Collision";
-  }
-  return "Object";
-}
+  bool canEditScene = true;
+  bool canUndo = false;
+  bool canRedo = false;
+  bool dirty = false;
+  bool atCleanHistoryState = true;
+  std::size_t undoCount = 0;
+  std::size_t redoCount = 0;
+  std::size_t historyIndex = 0;
+  std::size_t cleanHistoryIndex = 0;
+  CommandManager::HistoryRevision historyRevision = 0;
+  CommandManager::HistoryRevision cleanHistoryRevision = 0;
+  std::string undoLabel;
+  std::string redoLabel;
+  std::string undoMenuLabel = "Undo";
+  std::string redoMenuLabel = "Redo";
+  std::string dirtyLabel = "Saved";
+  std::string historyLabel;
+};
 
-std::string NameManager::makeUnique(
-    const SceneModel& model,
-    ObjectId parent,
-    std::string_view base,
-    ObjectId except)
+enum class HistoryActionKind
 {
-  const std::string baseName = base.empty() ? "Object" : std::string(base);
-  std::string candidate = baseName;
-  if (model.isNameAvailable(parent, candidate, except)) {
-    return candidate;
-  }
-  for (int suffix = 1;; ++suffix) {
-    std::string next = baseName + " " + std::to_string(suffix);
-    if (model.isNameAvailable(parent, next, except)) {
-      return next;
-    }
-  }
-}
+  Undo,
+  Redo,
+};
 
-} // namespace dartsim
+struct HistoryAction
+{
+  HistoryActionKind kind = HistoryActionKind::Undo;
+  std::string label;
+  bool enabled = false;
+  std::string disabledReason;
+};
+
+struct HistoryActionResult
+{
+  bool ok = false;
+  std::string message;
+  HistoryStatus status;
+};
+
+[[nodiscard]] HistoryStatus buildHistoryStatus(const SimEngine& engine);
+[[nodiscard]] std::vector<HistoryAction> buildHistoryActions(
+    const SimEngine& engine);
+HistoryActionResult applyHistoryAction(
+    SimEngine& engine, HistoryActionKind kind);
+
+} // namespace dartsim::ui

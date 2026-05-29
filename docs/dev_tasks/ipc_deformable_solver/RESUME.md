@@ -142,19 +142,24 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-ground-friction` - stacked on
-`feature/ipc-solver-convergence-diagnostic` (#2745). Phase 4 first increment:
-lagged smoothed Coulomb friction for static-ground contact, gated by
-`DeformableMaterialProperties.frictionCoefficient` (default 0 -> additive, no
-existing-test churn). IPC f0/f1 mollifier (velocity threshold epsv), normal
-force lagged once per outer iteration, friction energy+gradient in
-evaluateDeformableObjective and a PSD tangential 2x2 friction Hessian in
-computeProjectedNewtonDirection. Plumbed mu through options -> comps::
-DeformableMaterial -> serializer -> getter -> solver view. Tests: sliding node
-decelerates vs frictionless control; friction inactive without contact. Drape
-benchmark gains a mu=0.5 variant; 61 deformable tests pass.
+`feature/ipc-edge-edge-self-friction` - stacked on
+`feature/ipc-self-contact-friction-hessian` (#2751). Extends self-contact
+friction (force + Hessian) to EDGE-EDGE contacts. KEY: the friction
+energy/gradient/Hessian are generic over a SelfContactFrictionContact
+{4 nodes, projection, normalForce}, so ONLY buildSelfContactFrictionContacts is
+extended to also process edgeEdgeCandidates (lambda = net edgeEdgeBarrier force
+on edge A; projection from dc::edgeEdgeTangentStencil(ea0,ea1,eb0,eb1)).
+Regression EdgeEdgeSelfContactFrictionDeceleratesSlidingEdge (two near-orthogonal
+thin triangles whose long edges cross with a gap; the free edge decelerates with
+friction). Self-contact friction now covers PT + EE. 63 deformable tests pass.
 
-NOTE (from the #2745 diagnostic): the stiff barrier-contact benchmarks
+Prior #2751 = self-contact friction Hessian (PT). #2750 = Python facade (dartpy
+deformable bindings; forbids get_*/set_* names; regenerate stubs +
+api-boundary-inventory.md). #2749 = scene-replay harness.
+
+Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
+friction. NOTE (from the #2745
+diagnostic): the stiff barrier-contact benchmarks
 (grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
 the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
 projected-Newton + line-search stall on very stiff barriers, present without
@@ -165,20 +170,23 @@ Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
 until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 (self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
 Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
-reuse) <- #2745 (convergence diagnostic).
+reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
+(self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade)
+<- #2751 (self-contact friction Hessian). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 
-User directive (2026-05-28): KEEP BUILDING the plan (Codex review batched for
-Saturday). REMAINING plan work, in rough priority: remaining Phase 4 friction
-(self-contact + codimensional friction; non-flat ground normals; friction
-diagnostics), barrier-stall convergence robustness (continuation / better line
-search -- the high-residual finding above), live GPU-backend injection (wire the
-CUDA PSD primitive + a GPU-vs-CPU perf gate via an optional executor, keeping
-world_step_stage GPU-free), adaptive barrier stiffness, rigid/codimensional
-obstacle barrier forces (disturbs #2732 CCD contracts), scene corpus port
-(Phase 5), Python facade (Phase 8). Per the standing directive, optimize CPU AND
-GPU throughout.
+User directive (2026-05-28): KEEP BUILDING, NEVER STOP while a plan item remains,
+do everything in order (Codex review batched for Saturday). The three sequenced
+items (self-contact friction, Phase 5 harness, Phase 8 facade) are now done.
+REMAINING plan work, in rough priority: remaining Phase 4 (edge-edge/self-contact
+friction Hessian, non-flat ground normals, friction diagnostics); barrier-stall
+convergence robustness (the high-residual finding above); live GPU-backend
+injection (wire the CUDA PSD primitive + a GPU-vs-CPU gate via an optional
+executor, world_step_stage stays GPU-free); adaptive barrier stiffness;
+rigid/codim obstacle barrier forces (disturbs #2732); remaining Phase 8 bindings
+(surface/tetra + DBC/NBC + scene loader); upstream corpus port once assets are
+vendored. Optimize CPU AND GPU throughout.
 
 ## Context That Would Be Lost
 

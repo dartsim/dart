@@ -48,6 +48,7 @@
 #include "dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
+#include "dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -2200,6 +2201,139 @@ double addSelfContactBarrierEnergy(
 }
 
 //==============================================================================
+// A lagged self-contact friction contact: the four stencil nodes, the lagged
+// normal-force magnitude, and the tangent projection (2x12) that maps the
+// stacked four-node displacement to tangential relative motion. Computed once
+// per outer iteration (standard IPC lagging) at the current iterate.
+struct SelfContactFrictionContact
+{
+  std::array<std::size_t, 4> nodes{};
+  double normalForce = 0.0;
+  dc::Matrix2x12d projection = dc::Matrix2x12d::Zero();
+};
+
+struct SelfContactFrictionInputs
+{
+  double coefficient = 0.0; // mu
+  double epsilon = 0.0;     // epsv * timeStep
+  const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr;
+  const std::vector<SelfContactFrictionContact>* contacts = nullptr;
+};
+
+// Assemble the lagged self-contact friction set from the active point-triangle
+// and edge-edge barrier candidates at the current iterate. The lagged normal
+// force is the barrier force magnitude on the primitive's first feature (the
+// point node, or the net force on the first edge), and the tangent projection
+// comes from the matching point-triangle / edge-edge tangent stencil. The
+// downstream friction energy/gradient/Hessian are generic over the four-node
+// stencil, so both contact types share them.
+void buildSelfContactFrictionContacts(
+    const std::vector<Eigen::Vector3d>& positions,
+    const SelfContactBarrierInputs& barrier,
+    std::vector<SelfContactFrictionContact>& contacts)
+{
+  contacts.clear();
+  if (barrier.candidates == nullptr || barrier.triangles == nullptr
+      || barrier.stiffness <= 0.0
+      || !(barrier.squaredActivationDistance > 0.0)) {
+    return;
+  }
+
+  const auto& candidates = *barrier.candidates;
+  const auto& triangles = *barrier.triangles;
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    const auto& triangle = triangles[candidate.triangle];
+    const auto& p = positions[candidate.point];
+    const auto& a = positions[triangle.nodeA];
+    const auto& b = positions[triangle.nodeB];
+    const auto& c = positions[triangle.nodeC];
+    const auto result = dc::pointTriangleBarrier(
+        p, a, b, c, barrier.squaredActivationDistance, barrier.stiffness);
+    if (!result.active) {
+      continue;
+    }
+    SelfContactFrictionContact contact;
+    contact.nodes
+        = {candidate.point, triangle.nodeA, triangle.nodeB, triangle.nodeC};
+    contact.normalForce = result.gradient.template head<3>().norm();
+    contact.projection = dc::pointTriangleTangentStencil(p, a, b, c).projection;
+    contacts.push_back(contact);
+  }
+
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
+    const auto& a0 = positions[edgeA.nodeA];
+    const auto& a1 = positions[edgeA.nodeB];
+    const auto& b0 = positions[edgeB.nodeA];
+    const auto& b1 = positions[edgeB.nodeB];
+    const auto result = dc::edgeEdgeBarrier(
+        a0, a1, b0, b1, barrier.squaredActivationDistance, barrier.stiffness);
+    if (!result.active) {
+      continue;
+    }
+    SelfContactFrictionContact contact;
+    contact.nodes = {edgeA.nodeA, edgeA.nodeB, edgeB.nodeA, edgeB.nodeB};
+    // Lagged normal force = net barrier force on edge A (its two endpoints).
+    contact.normalForce = (result.gradient.template head<3>()
+                           + result.gradient.template segment<3>(3))
+                              .norm();
+    contact.projection = dc::edgeEdgeTangentStencil(a0, a1, b0, b1).projection;
+    contacts.push_back(contact);
+  }
+}
+
+// Add lagged smoothed Coulomb self-contact friction energy/gradient over the
+// active point-triangle contacts. The tangential relative displacement is
+// projection * (stacked four-node displacement over the step); the IPC f0/f1
+// mollifier gives a C1 force opposing it (saturating at mu * normalForce). The
+// lagged friction Hessian is a later increment, like the ground-friction path's
+// first cut; the line search on this energy still ensures descent.
+double addSelfContactFrictionEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const SelfContactFrictionInputs& friction,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (friction.coefficient <= 0.0 || friction.epsilon <= 0.0
+      || friction.stepStartPositions == nullptr
+      || friction.contacts == nullptr) {
+    return 0.0;
+  }
+
+  const auto& start = *friction.stepStartPositions;
+  double energy = 0.0;
+  for (const auto& contact : *friction.contacts) {
+    if (contact.normalForce <= 0.0) {
+      continue;
+    }
+    Eigen::Matrix<double, 12, 1> displacement;
+    for (int k = 0; k < 4; ++k) {
+      displacement.segment<3>(3 * k)
+          = positions[contact.nodes[k]] - start[contact.nodes[k]];
+    }
+    const Eigen::Vector2d tangent = contact.projection * displacement;
+    const double y = tangent.norm();
+    const double scale = friction.coefficient * contact.normalForce;
+    energy += scale * frictionF0(y, friction.epsilon);
+    if (gradient != nullptr) {
+      constexpr double tiny = 1e-12;
+      const double ratio = (y > tiny) ? frictionF1(y, friction.epsilon) / y
+                                      : 2.0 / friction.epsilon;
+      const Eigen::Matrix<double, 12, 1> g
+          = scale * ratio * (contact.projection.transpose() * tangent);
+      for (int k = 0; k < 4; ++k) {
+        if (fixed[contact.nodes[k]] != 0u) {
+          continue;
+        }
+        (*gradient)[contact.nodes[k]] += g.segment<3>(3 * k);
+      }
+    }
+  }
+  return energy;
+}
+
+//==============================================================================
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -2211,7 +2345,8 @@ double evaluateDeformableObjective(
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
     std::size_t* barrierActiveContacts = nullptr,
-    const GroundFrictionInputs* groundFriction = nullptr)
+    const GroundFrictionInputs* groundFriction = nullptr,
+    const SelfContactFrictionInputs* selfContactFriction = nullptr)
 {
   if (gradient != nullptr) {
     if (gradient->size() != positions.size()) {
@@ -2265,6 +2400,10 @@ double evaluateDeformableObjective(
   if (groundFriction != nullptr) {
     energy
         += addGroundFrictionEnergy(positions, fixed, *groundFriction, gradient);
+  }
+  if (selfContactFriction != nullptr) {
+    energy += addSelfContactFrictionEnergy(
+        positions, fixed, *selfContactFriction, gradient);
   }
   return energy;
 }
@@ -2877,6 +3016,7 @@ bool computeProjectedNewtonDirection(
     const std::vector<StaticGroundBarrier>& barriers,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
+    const SelfContactFrictionInputs* selfContactFriction,
     const double timeStep,
     const std::vector<Eigen::Vector3d>& gradient,
     std::vector<Eigen::Vector3d>& direction,
@@ -3111,6 +3251,63 @@ bool computeProjectedNewtonDirection(
     }
   }
 
+  // Lagged self-contact friction Hessian (point-triangle): a PSD 12x12 block
+  // per active contact, projection^T * H_2x2 * projection, scattered to the
+  // four stencil nodes (free-free only). Mirrors the ground-friction tangent
+  // Hessian through the contact's tangent projection; non-negative coefficients
+  // keep H_2x2 positive semidefinite, so the assembled block is PSD by
+  // construction.
+  if (selfContactFriction != nullptr && selfContactFriction->coefficient > 0.0
+      && selfContactFriction->epsilon > 0.0
+      && selfContactFriction->stepStartPositions != nullptr
+      && selfContactFriction->contacts != nullptr) {
+    const auto& start = *selfContactFriction->stepStartPositions;
+    const double epsilon = selfContactFriction->epsilon;
+    for (const auto& contact : *selfContactFriction->contacts) {
+      if (contact.normalForce <= 0.0) {
+        continue;
+      }
+      Eigen::Matrix<double, 12, 1> displacement;
+      for (int k = 0; k < 4; ++k) {
+        displacement.segment<3>(3 * k)
+            = positions[contact.nodes[k]] - start[contact.nodes[k]];
+      }
+      const Eigen::Vector2d tangent = contact.projection * displacement;
+      const double y = tangent.norm();
+      const double scale
+          = selfContactFriction->coefficient * contact.normalForce;
+      constexpr double tiny = 1e-12;
+      double f1OverY = 2.0 / epsilon;
+      double f1Prime = 2.0 / epsilon;
+      double tx = 0.0;
+      double ty = 0.0;
+      if (y > tiny) {
+        f1OverY = frictionF1(y, epsilon) / y;
+        f1Prime = (y < epsilon)
+                      ? (2.0 / epsilon - 2.0 * y / (epsilon * epsilon))
+                      : 0.0;
+        tx = tangent.x() / y;
+        ty = tangent.y() / y;
+      }
+      Eigen::Matrix2d tangentHessian;
+      tangentHessian(0, 0) = f1OverY * (1.0 - tx * tx) + f1Prime * tx * tx;
+      tangentHessian(0, 1) = (f1Prime - f1OverY) * tx * ty;
+      tangentHessian(1, 0) = tangentHessian(0, 1);
+      tangentHessian(1, 1) = f1OverY * (1.0 - ty * ty) + f1Prime * ty * ty;
+      const Eigen::Matrix<double, 12, 12> block
+          = scale * contact.projection.transpose() * tangentHessian
+            * contact.projection;
+      for (int bi = 0; bi < 4; ++bi) {
+        for (int bj = 0; bj < 4; ++bj) {
+          addBlock3(
+              contact.nodes[bi],
+              contact.nodes[bj],
+              block.block<3, 3>(3 * bi, 3 * bj));
+        }
+      }
+    }
+  }
+
   Eigen::SparseMatrix<double> hessian(dim, dim);
   hessian.setFromTriplets(triplets.begin(), triplets.end());
   hessian.makeCompressed();
@@ -3268,6 +3465,7 @@ void advanceDeformableBody(
     // the terminal-residual recompute below.
     bool brokeEarly = false;
     std::vector<double> groundFrictionNormalForce;
+    std::vector<SelfContactFrictionContact> selfContactFrictionContacts;
     const double frictionEpsilon
         = staticGroundFrictionVelocityThreshold() * timeStep;
     for (std::size_t iteration = 0; iteration < maxIterations; ++iteration) {
@@ -3321,6 +3519,19 @@ void advanceDeformableBody(
         groundFriction.laggedNormalForce = &groundFrictionNormalForce;
       }
 
+      // Lagged smoothed self-contact friction over the active point-triangle
+      // barrier set, sampled once per outer iteration. No-op without friction
+      // or a surface mesh.
+      SelfContactFrictionInputs selfContactFriction;
+      if (frictionCoefficient > 0.0 && contactBarrier.candidates != nullptr) {
+        buildSelfContactFrictionContacts(
+            scratch.next, contactBarrier, selfContactFrictionContacts);
+        selfContactFriction.coefficient = frictionCoefficient;
+        selfContactFriction.epsilon = frictionEpsilon;
+        selfContactFriction.stepStartPositions = &scratch.previousStepPositions;
+        selfContactFriction.contacts = &selfContactFrictionContacts;
+      }
+
       const double energy = evaluateDeformableObjective(
           state,
           model,
@@ -3332,7 +3543,8 @@ void advanceDeformableBody(
           &scratch.gradient,
           &contactBarrier,
           &stats.selfContactBarrierActiveContacts,
-          &groundFriction);
+          &groundFriction,
+          &selfContactFriction);
       if (!std::isfinite(energy)) {
         brokeEarly = true;
         break;
@@ -3444,7 +3656,8 @@ void advanceDeformableBody(
                 nullptr,
                 &contactBarrier,
                 nullptr,
-                &groundFriction);
+                &groundFriction,
+                &selfContactFriction);
             if (std::isfinite(candidateEnergy)
                 && candidateEnergy <= energy + armijo * directionalDerivative) {
               std::swap(scratch.next, scratch.candidate);
@@ -3473,6 +3686,7 @@ void advanceDeformableBody(
           barriers,
           &contactBarrier,
           &groundFriction,
+          &selfContactFriction,
           timeStep,
           scratch.gradient,
           scratch.direction,
@@ -3505,9 +3719,10 @@ void advanceDeformableBody(
     // step changed scratch.next *after* lastGradSquared was recorded at the top
     // of that iteration, so the stored residual is the pre-final-step value.
     // Recompute the gradient at the terminal iterate -- rebuilding the
-    // self-contact barrier active set and the lagged ground-friction inputs
-    // there so the residual matches the in-loop objective -- and use it, so the
-    // convergence diagnostic reports the residual at solve termination.
+    // self-contact barrier active set and the lagged ground / self-contact
+    // friction inputs there so the residual matches the in-loop objective -- and
+    // use it, so the convergence diagnostic reports the residual at solve
+    // termination.
     if (!brokeEarly) {
       SelfContactBarrierInputs terminalBarrier;
       if (!contactScratch.surfaceTriangles.empty()) {
@@ -3531,17 +3746,28 @@ void advanceDeformableBody(
         terminalBarrier.squaredActivationDistance = dHat * dHat;
         terminalBarrier.stiffness = selfContactBarrierStiffness();
       }
-      GroundFrictionInputs terminalFriction;
+      GroundFrictionInputs terminalGroundFriction;
       if (frictionCoefficient > 0.0 && !barriers.empty()) {
         computeStaticGroundNormalForces(
             scratch.next,
             scratch.activeFixed,
             barriers,
             groundFrictionNormalForce);
-        terminalFriction.coefficient = frictionCoefficient;
-        terminalFriction.epsilon = frictionEpsilon;
-        terminalFriction.stepStartPositions = &scratch.previousStepPositions;
-        terminalFriction.laggedNormalForce = &groundFrictionNormalForce;
+        terminalGroundFriction.coefficient = frictionCoefficient;
+        terminalGroundFriction.epsilon = frictionEpsilon;
+        terminalGroundFriction.stepStartPositions
+            = &scratch.previousStepPositions;
+        terminalGroundFriction.laggedNormalForce = &groundFrictionNormalForce;
+      }
+      SelfContactFrictionInputs terminalSelfContactFriction;
+      if (frictionCoefficient > 0.0 && terminalBarrier.candidates != nullptr) {
+        buildSelfContactFrictionContacts(
+            scratch.next, terminalBarrier, selfContactFrictionContacts);
+        terminalSelfContactFriction.coefficient = frictionCoefficient;
+        terminalSelfContactFriction.epsilon = frictionEpsilon;
+        terminalSelfContactFriction.stepStartPositions
+            = &scratch.previousStepPositions;
+        terminalSelfContactFriction.contacts = &selfContactFrictionContacts;
       }
       const double terminalEnergy = evaluateDeformableObjective(
           state,
@@ -3554,7 +3780,8 @@ void advanceDeformableBody(
           &scratch.gradient,
           &terminalBarrier,
           nullptr,
-          &terminalFriction);
+          &terminalGroundFriction,
+          &terminalSelfContactFriction);
       if (std::isfinite(terminalEnergy)) {
         lastGradSquared
             = gradientNormSquared(scratch.gradient, scratch.activeFixed);

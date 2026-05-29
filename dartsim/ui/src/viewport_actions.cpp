@@ -39,9 +39,13 @@
 #include <dartsim_ui/viewport_actions.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
+#include <optional>
+#include <utility>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dartsim::ui {
 
@@ -51,22 +55,135 @@ constexpr double kPi = 3.141592653589793238462643383279502884;
 constexpr double kMinCameraDistance = 0.8;
 constexpr double kMaxCameraDistance = 80.0;
 constexpr double kDefaultSceneRadius = 1.0;
+constexpr std::array<ViewportPaneKind, dart::gui::kMaxViewportPanes>
+    kLayoutPanes{
+        ViewportPaneKind::Perspective,
+        ViewportPaneKind::Top,
+        ViewportPaneKind::Front,
+        ViewportPaneKind::Right};
 
 bool isTransformable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor
+         || type == ObjectType::Collision;
 }
 
-const SceneObject* selectedTransformableObject(const SimEngine& engine)
+bool layerEnabled(
+    const ViewportLayerFilterState& filters, ViewportLayerKind kind)
+{
+  switch (kind) {
+    case ViewportLayerKind::RigidBodies:
+      return filters.rigidBodies;
+    case ViewportLayerKind::Links:
+      return filters.links;
+    case ViewportLayerKind::Frames:
+      return filters.frames;
+    case ViewportLayerKind::Sensors:
+      return filters.sensors;
+    case ViewportLayerKind::Collisions:
+      return filters.collisions;
+  }
+  return true;
+}
+
+void setLayerEnabled(
+    ViewportLayerFilterState& filters, ViewportLayerKind kind, bool visible)
+{
+  switch (kind) {
+    case ViewportLayerKind::RigidBodies:
+      filters.rigidBodies = visible;
+      break;
+    case ViewportLayerKind::Links:
+      filters.links = visible;
+      break;
+    case ViewportLayerKind::Frames:
+      filters.frames = visible;
+      break;
+    case ViewportLayerKind::Sensors:
+      filters.sensors = visible;
+      break;
+    case ViewportLayerKind::Collisions:
+      filters.collisions = visible;
+      break;
+  }
+}
+
+std::string layerLabel(ViewportLayerKind kind)
+{
+  switch (kind) {
+    case ViewportLayerKind::RigidBodies:
+      return "Rigid Bodies";
+    case ViewportLayerKind::Links:
+      return "Links";
+    case ViewportLayerKind::Frames:
+      return "Frames";
+    case ViewportLayerKind::Sensors:
+      return "Sensors";
+    case ViewportLayerKind::Collisions:
+      return "Collisions";
+  }
+  return "Unknown";
+}
+
+bool objectLayerEnabled(
+    ObjectType type, const ViewportLayerFilterState& filters)
+{
+  switch (type) {
+    case ObjectType::RigidBody:
+      return filters.rigidBodies;
+    case ObjectType::Link:
+      return filters.links;
+    case ObjectType::FreeFrame:
+    case ObjectType::FixedFrame:
+      return filters.frames;
+    case ObjectType::Sensor:
+      return filters.sensors;
+    case ObjectType::Collision:
+      return filters.collisions;
+    case ObjectType::MultiBody:
+    case ObjectType::Joint:
+      return false;
+  }
+  return false;
+}
+
+bool renderItemPassesLayer(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const RenderItem& item)
+{
+  const SceneObject* object = engine.objects().model().find(item.id);
+  return object != nullptr && objectLayerEnabled(object->type, filters);
+}
+
+const SceneObject* selectedTransformableObject(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
   const ObjectId selected = engine.selection().primary();
   const SceneObject* object = engine.objects().model().find(selected);
   if (object == nullptr || !isTransformable(object->type)
-      || selectedViewportRenderable(engine) == 0) {
+      || !isViewportObjectVisible(engine, selected, filters)) {
     return nullptr;
   }
   return object;
+}
+
+std::optional<Eigen::Isometry3d> localTransformForWorldTransform(
+    const SimEngine& engine,
+    const SceneObject& object,
+    const Eigen::Isometry3d& worldTransform)
+{
+  if (object.type == ObjectType::RigidBody || object.parent == kNoObject) {
+    return worldTransform;
+  }
+
+  const std::optional<Eigen::Isometry3d> parentWorld
+      = engine.objects().worldTransformOf(object.parent);
+  if (!parentWorld.has_value()) {
+    return std::nullopt;
+  }
+  return parentWorld->inverse() * worldTransform;
 }
 
 bool isFinitePositive(double value)
@@ -148,16 +265,18 @@ void includeRenderItemBounds(ViewportBounds& bounds, const RenderItem& item)
   }
 }
 
-ViewportBounds visibleSceneBounds(const SimEngine& engine)
+ViewportBounds visibleSceneBounds(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
   ViewportBounds bounds;
-  for (const RenderItem& item : engine.renderItems()) {
+  for (const RenderItem& item : filteredViewportRenderItems(engine, filters)) {
     includeRenderItemBounds(bounds, item);
   }
   return bounds;
 }
 
-ViewportBounds selectedRenderableBounds(const SimEngine& engine)
+ViewportBounds selectedRenderableBounds(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
   ViewportBounds bounds;
   const SelectionState selection = engine.selection().state();
@@ -166,7 +285,8 @@ ViewportBounds selectedRenderableBounds(const SimEngine& engine)
   }
 
   for (const ObjectId selected : selection.ids) {
-    for (const RenderItem& item : engine.renderItems()) {
+    for (const RenderItem& item :
+         filteredViewportRenderItems(engine, filters)) {
       if (item.id == selected) {
         includeRenderItemBounds(bounds, item);
         break;
@@ -191,15 +311,16 @@ bool isEffectivelyVisible(const SimEngine& engine, ObjectId id)
   return true;
 }
 
-ViewportBounds selectedFocusBounds(const SimEngine& engine)
+ViewportBounds selectedFocusBounds(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
-  ViewportBounds bounds = selectedRenderableBounds(engine);
+  ViewportBounds bounds = selectedRenderableBounds(engine, filters);
   for (const ObjectId selected : engine.selection().state().ids) {
     const SceneObject* object = engine.objects().model().find(selected);
     if (object == nullptr
         || (object->type != ObjectType::FreeFrame
             && object->type != ObjectType::FixedFrame)
-        || !isEffectivelyVisible(engine, selected)) {
+        || !isViewportObjectVisible(engine, selected, filters)) {
       continue;
     }
 
@@ -325,6 +446,180 @@ ViewportCameraAction makeCameraAction(
   return action;
 }
 
+ViewportCameraControlAction makeCameraControlAction(
+    ViewportCameraControlActionKind kind,
+    std::string label,
+    bool checked,
+    bool enabled = true,
+    std::string disabledReason = {})
+{
+  ViewportCameraControlAction action;
+  action.kind = kind;
+  action.label = std::move(label);
+  action.checked = checked;
+  action.enabled = enabled;
+  action.disabledReason = std::move(disabledReason);
+  return action;
+}
+
+std::string cameraMouseModeLabel(dart::gui::OrbitCameraMouseMode mode)
+{
+  switch (mode) {
+    case dart::gui::OrbitCameraMouseMode::Orbit:
+      return "Orbit Camera Mode";
+    case dart::gui::OrbitCameraMouseMode::Pan:
+      return "Pan Camera Mode";
+    case dart::gui::OrbitCameraMouseMode::Zoom:
+      return "Zoom Camera Mode";
+  }
+  return "Camera Mode";
+}
+
+ViewportLayoutAction makeViewportLayoutAction(
+    ViewportLayoutActionKind kind,
+    std::string label,
+    bool checked,
+    bool enabled = true,
+    std::string disabledReason = {})
+{
+  ViewportLayoutAction action;
+  action.kind = kind;
+  action.label = std::move(label);
+  action.checked = checked;
+  action.enabled = enabled;
+  action.disabledReason = std::move(disabledReason);
+  return action;
+}
+
+std::string viewportPaneLabel(ViewportPaneKind pane)
+{
+  switch (pane) {
+    case ViewportPaneKind::Perspective:
+      return "Perspective Pane";
+    case ViewportPaneKind::Front:
+      return "Front Pane";
+    case ViewportPaneKind::Right:
+      return "Right Pane";
+    case ViewportPaneKind::Top:
+      return "Top Pane";
+  }
+  return "Viewport Pane";
+}
+
+std::string viewportLayoutLabel(ViewportLayoutKind layout)
+{
+  switch (layout) {
+    case ViewportLayoutKind::Single:
+      return "Single View";
+    case ViewportLayoutKind::Quad:
+      return "Four View Layout";
+  }
+  return "Viewport Layout";
+}
+
+std::string visibleLayerSummary(const ViewportLayerFilterState& filters)
+{
+  std::string summary;
+  const auto appendLayer = [&summary](std::string label) {
+    if (!summary.empty()) {
+      summary += ", ";
+    }
+    summary += std::move(label);
+  };
+  if (filters.rigidBodies) {
+    appendLayer(layerLabel(ViewportLayerKind::RigidBodies));
+  }
+  if (filters.links) {
+    appendLayer(layerLabel(ViewportLayerKind::Links));
+  }
+  if (filters.frames) {
+    appendLayer(layerLabel(ViewportLayerKind::Frames));
+  }
+  if (filters.sensors) {
+    appendLayer(layerLabel(ViewportLayerKind::Sensors));
+  }
+  if (filters.collisions) {
+    appendLayer(layerLabel(ViewportLayerKind::Collisions));
+  }
+  return summary.empty() ? "none" : summary;
+}
+
+std::optional<ViewportPaneKind> viewportPaneForLayoutAction(
+    ViewportLayoutActionKind kind)
+{
+  switch (kind) {
+    case ViewportLayoutActionKind::ActivatePerspectivePane:
+      return ViewportPaneKind::Perspective;
+    case ViewportLayoutActionKind::ActivateFrontPane:
+      return ViewportPaneKind::Front;
+    case ViewportLayoutActionKind::ActivateRightPane:
+      return ViewportPaneKind::Right;
+    case ViewportLayoutActionKind::ActivateTopPane:
+      return ViewportPaneKind::Top;
+    case ViewportLayoutActionKind::SingleView:
+    case ViewportLayoutActionKind::QuadView:
+      return std::nullopt;
+  }
+  return std::nullopt;
+}
+
+std::size_t viewportPaneCameraSlot(ViewportPaneKind pane)
+{
+  switch (pane) {
+    case ViewportPaneKind::Perspective:
+      return 0u;
+    case ViewportPaneKind::Front:
+      return 1u;
+    case ViewportPaneKind::Right:
+      return 2u;
+    case ViewportPaneKind::Top:
+      return 3u;
+  }
+  return 0u;
+}
+
+std::optional<dart::gui::OrbitCamera> storedViewportPaneCamera(
+    const ViewportLayoutState& state, ViewportPaneKind pane)
+{
+  const std::size_t slot = viewportPaneCameraSlot(pane);
+  if (slot >= state.paneCameras.size()
+      || !state.paneCameras[slot].has_value()) {
+    return std::nullopt;
+  }
+  return sanitizedCurrentCamera(*state.paneCameras[slot]);
+}
+
+dart::gui::OrbitCamera defaultViewportPaneCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    ViewportPaneKind pane)
+{
+  const ViewportCameraActionResult camera = applyViewportCameraAction(
+      engine, currentCamera, viewportPaneCameraAction(pane), filters);
+  return camera.ok && camera.camera.has_value()
+             ? *camera.camera
+             : sanitizedCurrentCamera(currentCamera);
+}
+
+dart::gui::OrbitCamera cameraForViewportPane(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state,
+    ViewportPaneKind pane,
+    bool useCurrentForActivePane)
+{
+  if (useCurrentForActivePane && pane == state.activePane) {
+    return sanitizedCurrentCamera(currentCamera);
+  }
+  if (std::optional<dart::gui::OrbitCamera> stored
+      = storedViewportPaneCamera(state, pane)) {
+    return *stored;
+  }
+  return defaultViewportPaneCamera(engine, currentCamera, filters, pane);
+}
+
 } // namespace
 
 Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input)
@@ -347,6 +642,17 @@ Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input)
 
 bool moveSelectedFromViewport(SimEngine& engine, const ViewportMoveInput& input)
 {
+  return moveSelectedFromViewport(engine, ViewportLayerFilterState{}, input);
+}
+
+bool moveSelectedFromViewport(
+    SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportMoveInput& input)
+{
+  if (selectedTransformableObject(engine, filters) == nullptr) {
+    return false;
+  }
   return moveSelectedBy(engine, viewportMoveDelta(input));
 }
 
@@ -365,18 +671,33 @@ ViewportTransformGizmo makeViewportTransformGizmo()
 bool syncViewportTransformGizmo(
     ViewportTransformGizmo& state, const SimEngine& engine)
 {
+  return syncViewportTransformGizmo(state, engine, ViewportLayerFilterState{});
+}
+
+bool syncViewportTransformGizmo(
+    ViewportTransformGizmo& state,
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters)
+{
   if (state.target == nullptr) {
     state = makeViewportTransformGizmo();
   }
 
-  const SceneObject* object = selectedTransformableObject(engine);
+  const SceneObject* object = selectedTransformableObject(engine, filters);
   if (object == nullptr) {
     state.object = kNoObject;
     return false;
   }
 
   state.object = object->id;
-  state.target->setTransform(object->transform, dart::dynamics::Frame::World());
+  const std::optional<Eigen::Isometry3d> worldTransform
+      = engine.objects().worldTransformOf(object->id);
+  if (!worldTransform.has_value()) {
+    state.object = kNoObject;
+    return false;
+  }
+
+  state.target->setTransform(*worldTransform, dart::dynamics::Frame::World());
   state.gizmo.label = object->name + " Transform";
   return true;
 }
@@ -386,30 +707,175 @@ bool applyViewportTransformGizmo(
     ViewportTransformGizmo& state,
     const Eigen::Isometry3d& transform)
 {
+  return applyViewportTransformGizmo(
+      engine, state, ViewportLayerFilterState{}, transform);
+}
+
+bool applyViewportTransformGizmo(
+    SimEngine& engine,
+    ViewportTransformGizmo& state,
+    const ViewportLayerFilterState& filters,
+    const Eigen::Isometry3d& transform)
+{
   if (!engine.canEditScene() || !transform.matrix().allFinite()
       || state.object == kNoObject
       || engine.selection().primary() != state.object) {
     return false;
   }
 
-  const SceneObject* object = selectedTransformableObject(engine);
+  const SceneObject* object = selectedTransformableObject(engine, filters);
   if (object == nullptr || object->id != state.object) {
     return false;
   }
 
-  if (object->transform.matrix().isApprox(transform.matrix())) {
+  const std::optional<Eigen::Isometry3d> currentWorld
+      = engine.objects().worldTransformOf(object->id);
+  if (!currentWorld.has_value()
+      || currentWorld->matrix().isApprox(transform.matrix())) {
     return false;
   }
 
-  engine.execute(commands::setTransform(state.object, transform));
-  return syncViewportTransformGizmo(state, engine);
+  const std::optional<Eigen::Isometry3d> localTransform
+      = localTransformForWorldTransform(engine, *object, transform);
+  if (!localTransform.has_value()) {
+    return false;
+  }
+
+  engine.execute(commands::setTransform(state.object, *localTransform));
+  return syncViewportTransformGizmo(state, engine, filters);
+}
+
+std::vector<RenderItem> filteredViewportRenderItems(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  std::vector<RenderItem> items;
+  for (const RenderItem& item : engine.renderItems()) {
+    if (renderItemPassesLayer(engine, filters, item)) {
+      items.push_back(item);
+    }
+  }
+  return items;
+}
+
+bool isViewportObjectVisible(
+    const SimEngine& engine,
+    ObjectId id,
+    const ViewportLayerFilterState& filters)
+{
+  const SceneObject* object = engine.objects().model().find(id);
+  if (object == nullptr || !objectLayerEnabled(object->type, filters)
+      || !isEffectivelyVisible(engine, id)) {
+    return false;
+  }
+
+  if (object->type == ObjectType::RigidBody || object->type == ObjectType::Link
+      || object->type == ObjectType::Sensor
+      || object->type == ObjectType::Collision) {
+    const std::vector<RenderItem> items
+        = filteredViewportRenderItems(engine, filters);
+    return std::find_if(
+               items.begin(),
+               items.end(),
+               [id](const RenderItem& item) { return item.id == id; })
+           != items.end();
+  }
+
+  return object->type == ObjectType::FreeFrame
+         || object->type == ObjectType::FixedFrame;
+}
+
+bool selectViewportRenderable(
+    SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    dart::gui::RenderableId renderableId)
+{
+  if (renderableId == 0) {
+    return engine.select(kNoObject);
+  }
+
+  const ObjectId id = objectIdForRenderable(renderableId);
+  return isViewportObjectVisible(engine, id, filters)
+         && selectViewportRenderable(engine, renderableId);
+}
+
+dart::gui::RenderableId selectedViewportRenderable(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  const ObjectId selected = engine.selection().primary();
+  if (!isViewportObjectVisible(engine, selected, filters)) {
+    return 0;
+  }
+
+  const SceneObject* object = engine.objects().model().find(selected);
+  if (object == nullptr
+      || (object->type != ObjectType::RigidBody
+          && object->type != ObjectType::Link
+          && object->type != ObjectType::Sensor
+          && object->type != ObjectType::Collision)) {
+    return 0;
+  }
+  return renderableIdForObject(selected);
+}
+
+std::string selectedViewportLabel(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  const ObjectId selected = engine.selection().primary();
+  if (!isViewportObjectVisible(engine, selected, filters)) {
+    return "none";
+  }
+
+  const SceneObject* object = engine.objects().model().find(selected);
+  if (object == nullptr) {
+    return "none";
+  }
+
+  return object->name + " [" + objectTypeLabel(object->type) + "]";
+}
+
+std::vector<ViewportLayerFilterAction> buildViewportLayerFilterActions(
+    const ViewportLayerFilterState& filters)
+{
+  return {
+      {ViewportLayerKind::RigidBodies,
+       "Show Rigid Bodies",
+       layerEnabled(filters, ViewportLayerKind::RigidBodies)},
+      {ViewportLayerKind::Links,
+       "Show Links",
+       layerEnabled(filters, ViewportLayerKind::Links)},
+      {ViewportLayerKind::Frames,
+       "Show Frames",
+       layerEnabled(filters, ViewportLayerKind::Frames)},
+      {ViewportLayerKind::Sensors,
+       "Show Sensors",
+       layerEnabled(filters, ViewportLayerKind::Sensors)},
+      {ViewportLayerKind::Collisions,
+       "Show Collisions",
+       layerEnabled(filters, ViewportLayerKind::Collisions)},
+  };
+}
+
+ViewportLayerFilterActionResult setViewportLayerVisible(
+    ViewportLayerFilterState& filters, ViewportLayerKind kind, bool visible)
+{
+  setLayerEnabled(filters, kind, visible);
+  std::string message = layerLabel(kind);
+  message += visible ? " shown" : " hidden";
+  return {true, std::move(message)};
 }
 
 std::vector<ViewportCameraAction> buildViewportCameraActions(
     const SimEngine& engine)
 {
-  const bool hasVisibleScene = !engine.renderItems().empty();
-  const bool hasVisibleSelection = !selectedFocusBounds(engine).empty;
+  return buildViewportCameraActions(engine, ViewportLayerFilterState{});
+}
+
+std::vector<ViewportCameraAction> buildViewportCameraActions(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  const bool hasVisibleScene
+      = !filteredViewportRenderItems(engine, filters).empty();
+  const bool hasVisibleSelection = !selectedFocusBounds(engine, filters).empty;
 
   return {
       makeCameraAction(
@@ -433,15 +899,70 @@ std::vector<ViewportCameraAction> buildViewportCameraActions(
   };
 }
 
+std::vector<ViewportCameraAction> buildViewportAllPaneCameraActions(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state)
+{
+  const bool quad = state.layout == ViewportLayoutKind::Quad;
+  const std::vector<ViewportCameraAction> cameraActions
+      = buildViewportCameraActions(engine, filters);
+  const auto findAction
+      = [&cameraActions](
+            ViewportCameraActionKind kind) -> const ViewportCameraAction* {
+    const auto action = std::find_if(
+        cameraActions.begin(),
+        cameraActions.end(),
+        [kind](const ViewportCameraAction& candidate) {
+          return candidate.kind == kind;
+        });
+    return action == cameraActions.end() ? nullptr : &*action;
+  };
+  const auto makeAllPaneAction
+      = [quad, findAction](ViewportCameraActionKind kind, std::string label) {
+          if (!quad) {
+            return makeCameraAction(
+                kind, std::move(label), false, "Enable Four View Layout");
+          }
+          const ViewportCameraAction* source = findAction(kind);
+          if (source == nullptr) {
+            return makeCameraAction(
+                kind, std::move(label), false, "Unknown camera action");
+          }
+          if (!source->enabled) {
+            return makeCameraAction(
+                kind, std::move(label), false, source->disabledReason);
+          }
+          return makeCameraAction(kind, std::move(label));
+        };
+
+  return {
+      makeAllPaneAction(ViewportCameraActionKind::FitScene, "Fit All Panes"),
+      makeAllPaneAction(
+          ViewportCameraActionKind::FocusSelection,
+          "Focus Selection in All Panes"),
+  };
+}
+
 ViewportCameraActionResult applyViewportCameraAction(
     const SimEngine& engine,
     const dart::gui::OrbitCamera& currentCamera,
     ViewportCameraActionKind kind)
 {
+  return applyViewportCameraAction(
+      engine, currentCamera, kind, ViewportLayerFilterState{});
+}
+
+ViewportCameraActionResult applyViewportCameraAction(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    ViewportCameraActionKind kind,
+    const ViewportLayerFilterState& filters)
+{
   dart::gui::OrbitCamera camera = sanitizedCurrentCamera(currentCamera);
   switch (kind) {
     case ViewportCameraActionKind::FitScene: {
-      const ViewportBounds bounds = visibleSceneBounds(engine);
+      const ViewportBounds bounds = visibleSceneBounds(engine, filters);
       if (bounds.empty) {
         return {false, "No visible objects", std::nullopt};
       }
@@ -450,7 +971,7 @@ ViewportCameraActionResult applyViewportCameraAction(
       return {true, "Fit scene", camera};
     }
     case ViewportCameraActionKind::FocusSelection: {
-      const ViewportBounds bounds = selectedFocusBounds(engine);
+      const ViewportBounds bounds = selectedFocusBounds(engine, filters);
       if (bounds.empty) {
         return {false, "No visible selected object", std::nullopt};
       }
@@ -475,6 +996,350 @@ ViewportCameraActionResult applyViewportCameraAction(
   }
 
   return {false, "Unknown camera action", std::nullopt};
+}
+
+ViewportCameraActionResult applyViewportCameraActionToAllPanes(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    ViewportCameraActionKind kind,
+    const ViewportLayerFilterState& filters,
+    ViewportLayoutState& state)
+{
+  if (state.layout != ViewportLayoutKind::Quad) {
+    return {false, "Enable Four View Layout", std::nullopt};
+  }
+  if (kind != ViewportCameraActionKind::FitScene
+      && kind != ViewportCameraActionKind::FocusSelection) {
+    return {false, "Unsupported all-pane camera action", std::nullopt};
+  }
+
+  ViewportPaneCameraSlots updated = state.paneCameras;
+  for (const ViewportPaneKind pane : kLayoutPanes) {
+    const dart::gui::OrbitCamera paneCamera = cameraForViewportPane(
+        engine, currentCamera, filters, state, pane, true);
+    const ViewportCameraActionResult result
+        = applyViewportCameraAction(engine, paneCamera, kind, filters);
+    if (!result.ok || !result.camera.has_value()) {
+      return result;
+    }
+
+    const std::size_t slot = viewportPaneCameraSlot(pane);
+    if (slot < updated.size()) {
+      updated[slot] = *result.camera;
+    }
+  }
+
+  state.paneCameras = std::move(updated);
+  const std::optional<dart::gui::OrbitCamera> active
+      = storedViewportPaneCamera(state, state.activePane);
+  if (!active.has_value()) {
+    return {false, "Unknown viewport pane", std::nullopt};
+  }
+  if (kind == ViewportCameraActionKind::FitScene) {
+    return {true, "Fit all viewport panes", *active};
+  }
+  return {true, "Focused selection in all viewport panes", *active};
+}
+
+std::vector<ViewportCameraControlAction> buildViewportCameraControlActions(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls)
+{
+  const bool hasVisibleSelection = !selectedFocusBounds(engine, filters).empty;
+  return {
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::OrbitMode,
+          "Orbit Camera Mode",
+          controls.mouseMode == dart::gui::OrbitCameraMouseMode::Orbit),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::PanMode,
+          "Pan Camera Mode",
+          controls.mouseMode == dart::gui::OrbitCameraMouseMode::Pan),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::ZoomMode,
+          "Zoom Camera Mode",
+          controls.mouseMode == dart::gui::OrbitCameraMouseMode::Zoom),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::ToggleTrackSelection,
+          "Track Selection",
+          controls.trackSelection,
+          controls.trackSelection || hasVisibleSelection,
+          "No visible selected object"),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::ToggleCameraLock,
+          "Lock Camera",
+          controls.lockCamera),
+  };
+}
+
+ViewportCameraControlActionResult applyViewportCameraControlAction(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    ViewportCameraControlState& controls,
+    ViewportCameraControlActionKind kind)
+{
+  switch (kind) {
+    case ViewportCameraControlActionKind::OrbitMode:
+      controls.mouseMode = dart::gui::OrbitCameraMouseMode::Orbit;
+      return {true, cameraMouseModeLabel(controls.mouseMode)};
+    case ViewportCameraControlActionKind::PanMode:
+      controls.mouseMode = dart::gui::OrbitCameraMouseMode::Pan;
+      return {true, cameraMouseModeLabel(controls.mouseMode)};
+    case ViewportCameraControlActionKind::ZoomMode:
+      controls.mouseMode = dart::gui::OrbitCameraMouseMode::Zoom;
+      return {true, cameraMouseModeLabel(controls.mouseMode)};
+    case ViewportCameraControlActionKind::ToggleTrackSelection:
+      if (controls.trackSelection) {
+        controls.trackSelection = false;
+        return {true, "Selection tracking off"};
+      }
+      if (selectedFocusBounds(engine, filters).empty) {
+        return {false, "No visible selected object"};
+      }
+      controls.trackSelection = true;
+      return {true, "Selection tracking on"};
+    case ViewportCameraControlActionKind::ToggleCameraLock:
+      controls.lockCamera = !controls.lockCamera;
+      return {true, controls.lockCamera ? "Camera locked" : "Camera unlocked"};
+  }
+
+  return {false, "Unknown camera control"};
+}
+
+ViewportStatus buildViewportStatus(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls,
+    const ViewportLayoutState& layout)
+{
+  ViewportStatus status;
+  status.layoutLabel = "Layout: " + viewportLayoutLabel(layout.layout);
+  status.activePaneLabel
+      = "Active pane: " + viewportPaneLabel(layout.activePane);
+  status.cameraModeLabel = cameraMouseModeLabel(controls.mouseMode);
+  status.cameraLockLabel
+      = controls.lockCamera ? "Camera: locked" : "Camera: unlocked";
+  if (controls.lockCamera && controls.trackSelection) {
+    status.trackingLabel = "Selection tracking: paused";
+  } else {
+    status.trackingLabel = controls.trackSelection ? "Selection tracking: on"
+                                                   : "Selection tracking: off";
+  }
+  status.visibleLayerLabel = "Visible layers: " + visibleLayerSummary(filters);
+  status.selectionLabel
+      = "Selection: " + selectedViewportLabel(engine, filters);
+  return status;
+}
+
+dart::gui::OrbitCameraControlOptions viewportCameraControlOptions(
+    const ViewportCameraControlState& controls)
+{
+  dart::gui::OrbitCameraControlOptions options;
+  options.mouseMode = controls.mouseMode;
+  options.locked = controls.lockCamera;
+  return options;
+}
+
+ViewportCameraActionResult trackedSelectionCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls)
+{
+  if (!controls.trackSelection) {
+    return {false, "Selection tracking off", std::nullopt};
+  }
+  if (controls.lockCamera) {
+    return {false, "Camera locked", std::nullopt};
+  }
+
+  const ViewportBounds bounds = selectedFocusBounds(engine, filters);
+  if (bounds.empty) {
+    return {false, "No visible selected object", std::nullopt};
+  }
+
+  dart::gui::OrbitCamera camera = sanitizedCurrentCamera(currentCamera);
+  camera.target = boundsCenter(bounds);
+  return {true, "Tracking selection", camera};
+}
+
+std::vector<ViewportLayoutAction> buildViewportLayoutActions(
+    const ViewportLayoutState& state)
+{
+  const bool quad = state.layout == ViewportLayoutKind::Quad;
+  return {
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::SingleView,
+          "Single View",
+          state.layout == ViewportLayoutKind::Single),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::QuadView, "Four View Layout", quad),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivatePerspectivePane,
+          "Perspective Pane",
+          state.activePane == ViewportPaneKind::Perspective,
+          quad,
+          "Enable Four View Layout"),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivateFrontPane,
+          "Front Pane",
+          state.activePane == ViewportPaneKind::Front,
+          quad,
+          "Enable Four View Layout"),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivateRightPane,
+          "Right Pane",
+          state.activePane == ViewportPaneKind::Right,
+          quad,
+          "Enable Four View Layout"),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivateTopPane,
+          "Top Pane",
+          state.activePane == ViewportPaneKind::Top,
+          quad,
+          "Enable Four View Layout"),
+  };
+}
+
+ViewportLayoutActionResult applyViewportLayoutAction(
+    ViewportLayoutState& state, ViewportLayoutActionKind kind)
+{
+  switch (kind) {
+    case ViewportLayoutActionKind::SingleView:
+      state.layout = ViewportLayoutKind::Single;
+      return {true, "Single view layout"};
+    case ViewportLayoutActionKind::QuadView:
+      state.layout = ViewportLayoutKind::Quad;
+      return {true, "Four view layout"};
+    case ViewportLayoutActionKind::ActivatePerspectivePane:
+    case ViewportLayoutActionKind::ActivateFrontPane:
+    case ViewportLayoutActionKind::ActivateRightPane:
+    case ViewportLayoutActionKind::ActivateTopPane: {
+      const std::optional<ViewportPaneKind> pane
+          = viewportPaneForLayoutAction(kind);
+      if (!pane.has_value()) {
+        break;
+      }
+      if (state.layout != ViewportLayoutKind::Quad) {
+        return {false, "Enable Four View Layout"};
+      }
+      state.activePane = *pane;
+      return {true, viewportPaneLabel(*pane) + " active"};
+    }
+  }
+
+  return {false, "Unknown viewport layout"};
+}
+
+std::optional<ViewportLayoutActionKind> viewportPaneActivationAction(
+    dart::gui::ViewportPaneKind pane)
+{
+  switch (pane) {
+    case dart::gui::ViewportPaneKind::Perspective:
+      return ViewportLayoutActionKind::ActivatePerspectivePane;
+    case dart::gui::ViewportPaneKind::Front:
+      return ViewportLayoutActionKind::ActivateFrontPane;
+    case dart::gui::ViewportPaneKind::Right:
+      return ViewportLayoutActionKind::ActivateRightPane;
+    case dart::gui::ViewportPaneKind::Top:
+      return ViewportLayoutActionKind::ActivateTopPane;
+  }
+  return std::nullopt;
+}
+
+ViewportLayoutActionResult applyViewportPaneActivation(
+    ViewportLayoutState& state, dart::gui::ViewportPaneKind pane)
+{
+  const std::optional<ViewportLayoutActionKind> action
+      = viewportPaneActivationAction(pane);
+  if (!action.has_value()) {
+    return {false, "Unknown viewport pane"};
+  }
+  return applyViewportLayoutAction(state, *action);
+}
+
+ViewportCameraActionKind viewportPaneCameraAction(ViewportPaneKind pane)
+{
+  switch (pane) {
+    case ViewportPaneKind::Perspective:
+      return ViewportCameraActionKind::Perspective;
+    case ViewportPaneKind::Front:
+      return ViewportCameraActionKind::Front;
+    case ViewportPaneKind::Right:
+      return ViewportCameraActionKind::Right;
+    case ViewportPaneKind::Top:
+      return ViewportCameraActionKind::Top;
+  }
+  return ViewportCameraActionKind::Perspective;
+}
+
+void rememberViewportActivePaneCamera(
+    ViewportLayoutState& state, const dart::gui::OrbitCamera& camera)
+{
+  const std::size_t slot = viewportPaneCameraSlot(state.activePane);
+  if (slot < state.paneCameras.size()) {
+    state.paneCameras[slot] = sanitizedCurrentCamera(camera);
+  }
+}
+
+ViewportCameraActionResult activeViewportPaneCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state)
+{
+  const dart::gui::OrbitCamera camera = cameraForViewportPane(
+      engine, currentCamera, filters, state, state.activePane, false);
+  return {true, viewportPaneLabel(state.activePane) + " camera", camera};
+}
+
+dart::gui::ViewportLayoutOptions viewportLayoutOptions(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state)
+{
+  dart::gui::ViewportLayoutOptions options;
+  options.mode = state.layout == ViewportLayoutKind::Quad
+                     ? dart::gui::ViewportLayoutMode::Quad
+                     : dart::gui::ViewportLayoutMode::Single;
+  options.paneCount = options.mode == dart::gui::ViewportLayoutMode::Quad
+                          ? kLayoutPanes.size()
+                          : 1u;
+
+  for (std::size_t i = 0; i < options.paneCount; ++i) {
+    const ViewportPaneKind pane
+        = options.mode == dart::gui::ViewportLayoutMode::Quad
+              ? kLayoutPanes[i]
+              : state.activePane;
+    options.panes[i].active = pane == state.activePane;
+    switch (pane) {
+      case ViewportPaneKind::Perspective:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Perspective;
+        break;
+      case ViewportPaneKind::Front:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Front;
+        break;
+      case ViewportPaneKind::Right:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Right;
+        break;
+      case ViewportPaneKind::Top:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Top;
+        break;
+    }
+
+    if (options.mode == dart::gui::ViewportLayoutMode::Single
+        || pane == state.activePane) {
+      options.panes[i].camera = sanitizedCurrentCamera(currentCamera);
+      continue;
+    }
+
+    options.panes[i].camera = cameraForViewportPane(
+        engine, currentCamera, filters, state, pane, true);
+  }
+
+  return options;
 }
 
 } // namespace dartsim::ui
