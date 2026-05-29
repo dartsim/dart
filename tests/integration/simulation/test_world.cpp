@@ -108,8 +108,7 @@ public:
   ScopedCollisionFactoryDisabler(const ScopedCollisionFactoryDisabler&)
       = delete;
   ScopedCollisionFactoryDisabler& operator=(
-      const ScopedCollisionFactoryDisabler&)
-      = delete;
+      const ScopedCollisionFactoryDisabler&) = delete;
 
   ~ScopedCollisionFactoryDisabler()
   {
@@ -153,8 +152,7 @@ public:
   ScopedCollisionFactoryOverride(const ScopedCollisionFactoryOverride&)
       = delete;
   ScopedCollisionFactoryOverride& operator=(
-      const ScopedCollisionFactoryOverride&)
-      = delete;
+      const ScopedCollisionFactoryOverride&) = delete;
 
   ~ScopedCollisionFactoryOverride()
   {

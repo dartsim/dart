@@ -72,8 +72,7 @@ public:
       std::ostream& out,
       entt::entity entity,
       const entt::registry& registry,
-      const EntityMap& entityMap) const
-      = 0;
+      const EntityMap& entityMap) const = 0;
 
   // Read component data from binary stream and attach to entity
   // Note: The type name has already been read by the registry
@@ -95,8 +94,7 @@ public:
 
   // Check if an entity has this component type
   virtual bool hasComponent(
-      entt::entity entity, const entt::registry& registry) const
-      = 0;
+      entt::entity entity, const entt::registry& registry) const = 0;
 };
 
 //==============================================================================
@@ -286,8 +284,7 @@ protected:
   virtual void saveComponent(
       std::ostream& out,
       const ComponentT& component,
-      const EntityMap& entityMap) const
-      = 0;
+      const EntityMap& entityMap) const = 0;
   virtual void loadComponent(std::istream& in, ComponentT& component) const = 0;
   virtual void loadComponent(
       std::istream& in,

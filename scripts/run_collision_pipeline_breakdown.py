@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and run the collision pipeline breakdown benchmark, capture JSON, and append a summary."""
+
 from __future__ import annotations
 
 import argparse

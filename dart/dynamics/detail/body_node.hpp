@@ -299,9 +299,8 @@ void BodyNode::removeAllShapeNodesWith()
 template <typename AspectT, typename Func>
 void BodyNode::eachShapeNodeWith(Func func) const
 {
-  if constexpr (std::same_as<
-                    std::invoke_result_t<Func, const ShapeNode*>,
-                    bool>) {
+  if constexpr (
+      std::same_as<std::invoke_result_t<Func, const ShapeNode*>, bool>) {
     for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       const ShapeNode* shapeNode = getShapeNode(i);
       if (shapeNode->has<AspectT>()) {
