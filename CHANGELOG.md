@@ -1196,6 +1196,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     finite-difference force match, the Coulomb-capped sliding force, and a
     sliding particle decelerated to rest by kinetic friction.
     Vertex-triangle/edge-edge contact and self-collision remain future work.
+  - Added a `dart-demos` GUI scene `experimental_vbd` ("Deformable VBD
+    (Experimental)") that drives a contact-free hanging cloth through the VBD
+    inner solver, selected via the internal `comps::DeformableVbdConfig` through
+    `World::getRegistry()` so the public deformable facade stays
+    solver-agnostic. Run it with `pixi run demos -- --scene experimental_vbd`;
+    it joins the headless demo-cycle smoke test for visual-regression coverage.
+    This is the first user-runnable VBD visual showcase (PLAN-082 Phase 10).
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

@@ -173,6 +173,18 @@
 - [ ] Phase 10: complete the upstream example/scene corpus as DART-native
       tests, examples, benchmarks, profiling artifacts, and headless Filament
       visual evidence.
+  - [x] First user-runnable VBD GUI showcase: the `dart-demos` scene
+        `experimental_vbd` ("Deformable VBD (Experimental)") drives a
+        contact-free hanging cloth through the VBD inner solver (selected via
+        the internal `comps::DeformableVbdConfig` through `World::getRegistry()`
+        so the public facade stays solver-agnostic). Run with
+        `pixi run demos -- --scene experimental_vbd`. The scene joins the
+        headless demo-cycle smoke test, and a 960x720 headless Filament capture
+        renders the pinned curtain correctly (verified locally on
+        2026-05-29).
+  - [ ] Remaining Phase 10 work: the TinyVBD tilted-strand example, the paper
+        tetrahedral scenes, profiling JSON artifacts, and committed
+        before/after visual evidence.
 
 ## Goal
 

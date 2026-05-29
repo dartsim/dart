@@ -65,9 +65,25 @@ ECS components, not a new data model.
 
 ## Current Branch
 
-`feature/vbd-solver-foundation` — Phases 0-6, Phase 8a, and the Phase 9 CUDA
-mass-spring kernel landed. Local commits only; pushes/PRs require explicit
-approval.
+`feature/vbd-solver-foundation` — Phases 0-6, Phase 8a, the Phase 9 CUDA
+mass-spring/rollout/tet kernels, and the first Phase 10 GUI showcase landed.
+`origin/main` has been merged in (the examples→`dart-demos` restructure, the
+Eigen 5 SVD migration, and the expanded IPC solver); conflicts in
+`world_step_stage.{cpp,hpp}` and the experimental CMakeLists were resolved
+additively and all VBD + deformable tests stay green. Local commits only;
+pushes/PRs require explicit approval.
+
+Phase 10 (GUI) start: the `dart-demos` scene `experimental_vbd` drives a
+contact-free hanging cloth through the VBD inner solver, enabled by setting the
+internal `comps::DeformableVbdConfig` via `World::getRegistry()` (the public
+deformable facade stays solver-agnostic — same pattern as
+`test_vbd_world_solver`). Run it with `pixi run demos -- --scene
+experimental_vbd`. A headless 960x720 Filament capture renders the pinned
+curtain correctly. Note: on this machine `pixi run demos` currently hits a
+pre-existing OSG/fcl runtime lib-resolution issue that affects _all_ demo
+scenes (those libs live in the sibling `gazebo` pixi env, not `default`); the
+binary itself runs fine with a clean `LD_LIBRARY_PATH` (verified via direct
+execution). This is an environment/setup issue, not a VBD or scene defect.
 
 ## Immediate Next Step
 

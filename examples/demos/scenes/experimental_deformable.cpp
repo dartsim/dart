@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/body/deformable_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -509,6 +510,102 @@ void addDeformableDrape(ExampleState& state)
 }
 
 //==============================================================================
+// A contact-free hanging cloth (vertical curtain) for the Vertex Block Descent
+// solver: the top row is pinned and the sheet billows out of plane under an
+// initial sideways gust, then settles under gravity. No ground or obstacle is
+// present, so the World step routes this contact-free, tetrahedron-free
+// mass-spring body through the VBD inner solver (graph-colored Gauss-Seidel
+// block coordinate descent) instead of the default gradient solver.
+sx::DeformableBodyOptions makeVbdClothOptions(
+    int columns, int rows, std::vector<sx::DeformableEdge>& edges)
+{
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 120.0;
+  options.damping = 0.6;
+
+  const auto index = [columns](int col, int row) {
+    return static_cast<std::size_t>(row * columns + col);
+  };
+
+  constexpr double spacing = 0.06;
+  constexpr double topHeight = 1.25;
+  const double halfWidth = 0.5 * spacing * static_cast<double>(columns - 1);
+  for (int row = 0; row < rows; ++row) {
+    for (int col = 0; col < columns; ++col) {
+      const double x = spacing * static_cast<double>(col) - halfWidth;
+      const double z = topHeight - spacing * static_cast<double>(row);
+      // A small out-of-plane billow so the rest shape already reads as cloth.
+      const double y = 0.02 * std::sin(1.7 * static_cast<double>(col));
+      options.positions.push_back(Eigen::Vector3d(x, y, z));
+      // An initial sideways gust, strongest at the free bottom edge, to set the
+      // sheet swinging out of plane (purely a visual flourish).
+      const double gust
+          = 0.9 * static_cast<double>(row) / static_cast<double>(rows - 1);
+      options.velocities.push_back(
+          Eigen::Vector3d(
+              0.0, gust * std::sin(0.6 * static_cast<double>(col)), 0.0));
+      options.masses.push_back(0.03);
+    }
+  }
+
+  // Pin the entire top row so the curtain hangs.
+  for (int col = 0; col < columns; ++col) {
+    options.fixedNodes.push_back(index(col, 0));
+  }
+
+  for (int row = 0; row < rows; ++row) {
+    for (int col = 0; col < columns; ++col) {
+      if (col + 1 < columns) {
+        edges.push_back({index(col, row), index(col + 1, row), -1.0});
+      }
+      if (row + 1 < rows) {
+        edges.push_back({index(col, row), index(col, row + 1), -1.0});
+      }
+      if (col + 1 < columns && row + 1 < rows) {
+        edges.push_back({index(col, row), index(col + 1, row + 1), -1.0});
+        edges.push_back({index(col + 1, row), index(col, row + 1), -1.0});
+      }
+    }
+  }
+  options.edges = edges;
+
+  for (const auto& triangle : gui::makeGridSurfaceTriangles(columns, rows)) {
+    options.surfaceTriangles.push_back(
+        {static_cast<std::size_t>(triangle.x()),
+         static_cast<std::size_t>(triangle.y()),
+         static_cast<std::size_t>(triangle.z())});
+  }
+  return options;
+}
+
+//==============================================================================
+// Select the Vertex Block Descent inner solver for every deformable body in the
+// world. The public deformable facade is intentionally solver-agnostic, so the
+// selection is made here through the internal opt-in component, mirroring the
+// World-solver unit test. The default gradient solver runs when this component
+// is absent.
+void enableVbdSolver(sx::World& world, std::size_t iterations)
+{
+  auto& registry = world.getRegistry();
+  for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(
+        entity, sx::comps::DeformableVbdConfig{true, iterations, 0.0});
+  }
+}
+
+//==============================================================================
+void addVbdCloth(ExampleState& state)
+{
+  constexpr int columns = 17;
+  constexpr int rows = 13; // 221 contact-free mass-spring nodes
+
+  std::vector<sx::DeformableEdge> edges;
+  auto options = makeVbdClothOptions(columns, rows, edges);
+  auto body = state.physicsWorld.addDeformableBody("vbd_cloth", options);
+  appendDeformableVisual(state, body, "vbd_cloth");
+}
+
+//==============================================================================
 void addLoadedScene(ExampleState& state, const std::filesystem::path& scenePath)
 {
   sxio::DeformableSceneLoadOptions loadOptions;
@@ -531,11 +628,18 @@ std::shared_ptr<ExampleState> makeExampleState(const LaunchOptions& launch)
   state->renderWorld->setTimeStep(timeStep * state->stepsPerFrame);
 
   if (launch.scenePath.empty()) {
-    addGround(*state);
-    if (launch.sceneKind == "drape") {
-      addDeformableDrape(*state);
+    if (launch.sceneKind == "vbd") {
+      // No ground/obstacle: the body stays contact-free so the World step
+      // routes it through the Vertex Block Descent inner solver.
+      addVbdCloth(*state);
+      enableVbdSolver(state->physicsWorld, /*iterations=*/20);
     } else {
-      addDeformableNet(*state);
+      addGround(*state);
+      if (launch.sceneKind == "drape") {
+        addDeformableDrape(*state);
+      } else {
+        addDeformableNet(*state);
+      }
     }
   } else {
     addLoadedScene(*state, launch.scenePath);
@@ -620,6 +724,43 @@ gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
   return panel;
 }
 
+//==============================================================================
+gui::OrbitCamera makeVbdCamera()
+{
+  gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.8);
+  camera.yaw = -0.9;
+  camera.pitch = 0.12;
+  camera.distance = 2.4;
+  return camera;
+}
+
+//==============================================================================
+gui::Panel createVbdControlsPanel(const std::shared_ptr<ExampleState>& state)
+{
+  gui::Panel panel;
+  panel.title = "Deformable VBD";
+  panel.build = [state](gui::PanelBuilder& builder) {
+    builder.text("Inner solver: Vertex Block Descent");
+    builder.text("graph-colored Gauss-Seidel block descent");
+    builder.separator();
+    if (builder.button("Reset Scene")) {
+      state->reset();
+    }
+    builder.separator();
+    if (builder.checkbox("Surface Mesh", state->showSurfaceMesh)) {
+      state->applyVisualOptions();
+    }
+    if (builder.checkbox("Point Masses", state->showPointMasses)) {
+      state->applyVisualOptions();
+    }
+    if (builder.checkbox("Spring Edges", state->showSpringEdges)) {
+      state->applyVisualOptions();
+    }
+  };
+  return panel;
+}
+
 } // namespace
 
 dart::gui::ApplicationOptions makeExperimentalDeformableScene()
@@ -640,6 +781,31 @@ dart::gui::ApplicationOptions makeExperimentalDeformableScene()
     state->step();
   };
   options.panels.push_back(createControlsPanel(state));
+  options.keyboardActions = createKeyboardActions(state);
+  options.renderableProvider = [state]() {
+    return state->makeSurfaceRenderables();
+  };
+  return options;
+}
+
+dart::gui::ApplicationOptions makeExperimentalVbdDeformableScene()
+{
+  // dart-demos scene: a contact-free hanging cloth driven by the Vertex Block
+  // Descent inner solver (selected via the internal opt-in component, so the
+  // public deformable facade stays solver-agnostic).
+  LaunchOptions launch;
+  launch.sceneKind = "vbd";
+  const auto state = makeExampleState(launch);
+  (void)applyDeformableViewMode(state, launch.deformableView);
+
+  gui::ApplicationOptions options;
+  options.world = state->renderWorld;
+  options.camera = makeVbdCamera();
+  options.simulateWorld = false;
+  options.preStep = [state]() {
+    state->step();
+  };
+  options.panels.push_back(createVbdControlsPanel(state));
   options.keyboardActions = createKeyboardActions(state);
   options.renderableProvider = [state]() {
     return state->makeSurfaceRenderables();
