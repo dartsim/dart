@@ -95,6 +95,33 @@ computeMultibodyInverseDynamics(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration);
 
+/// Analytic inverse-dynamics partial derivatives, ∂τ/∂q and ∂τ/∂q̇, evaluated
+/// at the multibody's current `(q, q̇)` and the supplied generalized
+/// acceleration `qddot`, where `τ = M(q) qddot + C(q, q̇) q̇ + g(q)`.
+struct InverseDynamicsDerivatives
+{
+  Eigen::MatrixXd dTau_dq;    ///< ∂τ/∂q, size dof x dof
+  Eigen::MatrixXd dTau_dqdot; ///< ∂τ/∂q̇, size dof x dof
+  bool valid = false;         ///< false when the analytic path does not apply
+};
+
+/// Compute `∂τ/∂q` and `∂τ/∂q̇` analytically in `O(dof²)` via spatial-algebra
+/// (Recursive-Newton-Euler) derivative recursions, avoiding the `O(dof³)`
+/// finite differencing of the dynamics terms.
+///
+/// `valid` is true only when every movable joint has a constant unit-twist
+/// motion subspace (Fixed, Revolute, Prismatic, Screw). For trees containing
+/// configuration-dependent or manifold subspaces (Universal, Planar, Spherical,
+/// Floating), or a degenerate configuration, the result has `valid == false`
+/// and empty matrices, signalling the caller to fall back to finite
+/// differencing. `generalizedAcceleration` must match the movable DOF count.
+[[nodiscard]] DART_EXPERIMENTAL_API InverseDynamicsDerivatives
+computeMultibodyInverseDynamicsDerivatives(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& generalizedAcceleration);
+
 /// Compute the body-frame spatial Jacobian of one link of a multibody.
 ///
 /// The returned 6 x DOF matrix maps the multibody's generalized velocity to the

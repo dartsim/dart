@@ -1083,6 +1083,175 @@ void simulateMultibody(
   }
 }
 
+//==============================================================================
+// True when every movable joint of the tree has a single-DOF constant
+// unit-twist motion subspace (Fixed contributes no DOF). For these joints the
+// motion subspace S is configuration independent and the joint transform
+// derivative is ∂X/∂q = -crm(S) X, which the analytic RNEA-derivative recursion
+// below relies on. Other joint types (Universal/Planar configuration-dependent
+// subspaces; Spherical/Floating multi-DOF manifold subspaces) are rejected so
+// the caller falls back to finite differencing.
+bool treeSupportsAnalyticDerivatives(
+    const entt::registry& registry, const DynamicsTree& tree)
+{
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    if (tree.links[i].dof == 0) {
+      continue;
+    }
+    if (tree.links[i].dof != 1) {
+      return false;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
+    if (joint.type != comps::JointType::Revolute
+        && joint.type != comps::JointType::Prismatic
+        && joint.type != comps::JointType::Screw) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+// Analytic ∂τ/∂q and ∂τ/∂q̇ of inverse dynamics τ = ID(q, q̇, qddot) via
+// Recursive-Newton-Euler derivative recursions, for trees of constant
+// unit-twist joints (see treeSupportsAnalyticDerivatives). [angular; linear]
+// spatial convention; crm = motionCross, crf = forceCross; ∂X_i/∂q_i =
+// -crm(S_i) X_i. O(dof²): a down/up sweep per source coordinate.
+InverseDynamicsDerivatives rneaDerivatives(
+    const std::vector<LinkDynamics>& links,
+    const Vector6& baseAcceleration,
+    std::size_t dofCount,
+    const Eigen::VectorXd& qddot,
+    const Eigen::VectorXd& qdot)
+{
+  const auto count = links.size();
+  const auto n = static_cast<Eigen::Index>(dofCount);
+
+  // Forward pass: per-link spatial velocity v, acceleration a, force f, and the
+  // joint velocity contribution jv = S_i q̇_i.
+  std::vector<Vector6> v(count, Vector6::Zero());
+  std::vector<Vector6> a(count, Vector6::Zero());
+  std::vector<Vector6> f(count, Vector6::Zero());
+  std::vector<Vector6> jv(count, Vector6::Zero());
+  for (std::size_t i = 0; i < count; ++i) {
+    const auto& link = links[i];
+    if (link.parentIndex < 0) {
+      a[i] = link.parentToChild * baseAcceleration;
+    } else {
+      const auto p = static_cast<std::size_t>(link.parentIndex);
+      if (link.dof > 0) {
+        jv[i] = link.subspace * qdot.segment(link.dofOffset, link.dof);
+        a[i] = link.subspace * qddot.segment(link.dofOffset, link.dof);
+      }
+      v[i] = link.parentToChild * v[p] + jv[i];
+      a[i] += link.parentToChild * a[p] + motionCross(v[i]) * jv[i];
+    }
+    f[i] = link.inertia * a[i] + forceCross(v[i]) * (link.inertia * v[i]);
+  }
+
+  // Total accumulated force F_i = f_i + Σ_children X_c^T F_c (needed by the
+  // δ(X^T) term in the position-derivative backward sweep).
+  std::vector<Vector6> totalForce = f;
+  for (std::size_t r = 0; r < count; ++r) {
+    const auto i = count - 1 - r;
+    if (links[i].parentIndex >= 0) {
+      totalForce[static_cast<std::size_t>(links[i].parentIndex)]
+          += links[i].childToParentForce * totalForce[i];
+    }
+  }
+
+  InverseDynamicsDerivatives out;
+  out.dTau_dq = Eigen::MatrixXd::Zero(n, n);
+  out.dTau_dqdot = Eigen::MatrixXd::Zero(n, n);
+  out.valid = true;
+
+  for (std::size_t m = 0; m < count; ++m) {
+    if (links[m].dof == 0) {
+      continue;
+    }
+    const auto j = static_cast<Eigen::Index>(links[m].dofOffset);
+    const Vector6 subspaceM = links[m].subspace.col(0);
+
+    // ---------- ∂/∂q_j ----------
+    {
+      std::vector<Vector6> dv(count, Vector6::Zero());
+      std::vector<Vector6> da(count, Vector6::Zero());
+      std::vector<Vector6> df(count, Vector6::Zero());
+      for (std::size_t i = 0; i < count; ++i) {
+        const auto& link = links[i];
+        if (link.parentIndex >= 0) {
+          const auto p = static_cast<std::size_t>(link.parentIndex);
+          dv[i] = link.parentToChild * dv[p];
+          da[i] = link.parentToChild * da[p];
+          if (i == m) {
+            // ∂X_m/∂q_j = -crm(S_m) X_m acting on the parent motion/accel.
+            dv[i] += -motionCross(subspaceM) * (link.parentToChild * v[p]);
+            da[i] += -motionCross(subspaceM) * (link.parentToChild * a[p]);
+          }
+          da[i] += motionCross(dv[i]) * jv[i];
+        }
+        df[i] = link.inertia * da[i] + forceCross(dv[i]) * (link.inertia * v[i])
+                + forceCross(v[i]) * (link.inertia * dv[i]);
+      }
+      std::vector<Vector6> dForce = df;
+      for (std::size_t r = 0; r < count; ++r) {
+        const auto i = count - 1 - r;
+        const auto& link = links[i];
+        if (link.dof > 0) {
+          out.dTau_dq(static_cast<Eigen::Index>(link.dofOffset), j)
+              = link.subspace.col(0).dot(dForce[i]);
+        }
+        if (link.parentIndex >= 0) {
+          const auto p = static_cast<std::size_t>(link.parentIndex);
+          dForce[p] += link.childToParentForce * dForce[i];
+          if (i == m) {
+            // δ(X_m^T) F_m = X_m^T crf(S_m) F_m.
+            dForce[p] += link.childToParentForce
+                         * (forceCross(subspaceM) * totalForce[i]);
+          }
+        }
+      }
+    }
+
+    // ---------- ∂/∂q̇_j ----------
+    {
+      std::vector<Vector6> dv(count, Vector6::Zero());
+      std::vector<Vector6> da(count, Vector6::Zero());
+      std::vector<Vector6> df(count, Vector6::Zero());
+      for (std::size_t i = 0; i < count; ++i) {
+        const auto& link = links[i];
+        if (link.parentIndex >= 0) {
+          const auto p = static_cast<std::size_t>(link.parentIndex);
+          dv[i] = link.parentToChild * dv[p];
+          da[i] = link.parentToChild * da[p];
+          if (i == m) {
+            dv[i] += subspaceM;
+            da[i] += motionCross(v[i]) * subspaceM;
+          }
+          da[i] += motionCross(dv[i]) * jv[i];
+        }
+        df[i] = link.inertia * da[i] + forceCross(dv[i]) * (link.inertia * v[i])
+                + forceCross(v[i]) * (link.inertia * dv[i]);
+      }
+      std::vector<Vector6> dForce = df;
+      for (std::size_t r = 0; r < count; ++r) {
+        const auto i = count - 1 - r;
+        const auto& link = links[i];
+        if (link.dof > 0) {
+          out.dTau_dqdot(static_cast<Eigen::Index>(link.dofOffset), j)
+              = link.subspace.col(0).dot(dForce[i]);
+        }
+        if (link.parentIndex >= 0) {
+          dForce[static_cast<std::size_t>(link.parentIndex)]
+              += link.childToParentForce * dForce[i];
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
 } // namespace
 
 //==============================================================================
@@ -1166,6 +1335,47 @@ Eigen::VectorXd computeMultibodyInverseDynamics(
   }
 
   return tau;
+}
+
+//==============================================================================
+InverseDynamicsDerivatives computeMultibodyInverseDynamicsDerivatives(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& generalizedAcceleration)
+{
+  InverseDynamicsDerivatives result;
+  if (structure.links.empty()) {
+    return result;
+  }
+
+  const DynamicsTree tree = buildDynamicsTree(registry, structure);
+  if (tree.dofCount == 0
+      || generalizedAcceleration.size()
+             != static_cast<Eigen::Index>(tree.dofCount)
+      || !treeSupportsAnalyticDerivatives(registry, tree)) {
+    return result; // valid == false: caller falls back to finite differencing
+  }
+
+  Eigen::VectorXd qdot
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    if (tree.links[i].dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
+    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
+  }
+
+  Vector6 baseAcceleration = Vector6::Zero();
+  baseAcceleration.tail<3>() = -gravity;
+
+  return rneaDerivatives(
+      tree.links,
+      baseAcceleration,
+      tree.dofCount,
+      generalizedAcceleration,
+      qdot);
 }
 
 //==============================================================================

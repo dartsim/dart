@@ -199,51 +199,69 @@ StepDerivatives contactFreeStepDerivatives(
     return snapshot;
   };
 
-  // ∂q̇'/∂q = Δt * ( -Minv * (dM/dq_k * qddot) - Minv * (dc/dq_k) ), column k.
-  // ∂q̇'/∂q̇ = I + Δt * ( -Minv * (dc/dq̇_k) ), column k.
+  // Velocity-block Jacobians of the semi-implicit-Euler velocity update
+  //   q̇' = q̇ + Δt · M⁻¹ (τ − c),  with c = C(q,q̇) q̇ + g(q).
+  // Writing inverse dynamics as τ_ID = M(q) q̈ + c evaluated at the solved q̈,
+  // we have ∂(M q̈ + c)/∂q = ∂τ_ID/∂q and ∂c/∂q̇ = ∂τ_ID/∂q̇, so
+  //   ∂q̇'/∂q  = -Δt · M⁻¹ ∂τ_ID/∂q ,   ∂q̇'/∂q̇ = I - Δt · M⁻¹ ∂τ_ID/∂q̇ .
+  // The analytic O(dof²) RNEA derivatives are used when the tree supports them
+  // (constant unit-twist joints: revolute/prismatic/screw/fixed); otherwise the
+  // code falls back to O(dof³) central finite differencing of the dynamics
+  // terms (manifold / configuration-dependent joints), the original path.
   Eigen::MatrixXd dVelNext_dq = Eigen::MatrixXd::Zero(ndof, ndof);
   Eigen::MatrixXd dVelNext_dqdot = Eigen::MatrixXd::Identity(ndof, ndof);
 
-  for (Eigen::Index k = 0; k < ndof; ++k) {
-    const auto& coordinate = coordinates[static_cast<std::size_t>(k)];
-    auto& joint = registry.get<comps::Joint>(coordinate.joint);
+  const compute::InverseDynamicsDerivatives idDerivatives
+      = compute::computeMultibodyInverseDynamicsDerivatives(
+          registry, structure, gravity, qddot);
 
-    // --- Position perturbation: dM/dq_k and dc/dq_k. ---
-    {
-      const double original = joint.position[coordinate.local];
-      const double h = 1e-6 * (1.0 + std::abs(original));
+  if (idDerivatives.valid) {
+    dVelNext_dq.noalias() = -timeStep * (inverseMass * idDerivatives.dTau_dq);
+    dVelNext_dqdot.noalias()
+        = Eigen::MatrixXd::Identity(ndof, ndof)
+          - timeStep * (inverseMass * idDerivatives.dTau_dqdot);
+  } else {
+    for (Eigen::Index k = 0; k < ndof; ++k) {
+      const auto& coordinate = coordinates[static_cast<std::size_t>(k)];
+      auto& joint = registry.get<comps::Joint>(coordinate.joint);
 
-      joint.position[coordinate.local] = original + h;
-      const TermDerivative plus = evalTerms();
-      joint.position[coordinate.local] = original - h;
-      const TermDerivative minus = evalTerms();
-      joint.position[coordinate.local] = original; // restore exactly
+      // --- Position perturbation: dM/dq_k and dc/dq_k. ---
+      {
+        const double original = joint.position[coordinate.local];
+        const double h = 1e-6 * (1.0 + std::abs(original));
 
-      const Eigen::MatrixXd dMass
-          = (plus.massMatrix - minus.massMatrix) / (2.0 * h);
-      const Eigen::VectorXd dBias
-          = (plus.biasForces - minus.biasForces) / (2.0 * h);
+        joint.position[coordinate.local] = original + h;
+        const TermDerivative plus = evalTerms();
+        joint.position[coordinate.local] = original - h;
+        const TermDerivative minus = evalTerms();
+        joint.position[coordinate.local] = original; // restore exactly
 
-      dVelNext_dq.col(k)
-          = timeStep * (-inverseMass * (dMass * qddot) - inverseMass * dBias);
-    }
+        const Eigen::MatrixXd dMass
+            = (plus.massMatrix - minus.massMatrix) / (2.0 * h);
+        const Eigen::VectorXd dBias
+            = (plus.biasForces - minus.biasForces) / (2.0 * h);
 
-    // --- Velocity perturbation: dc/dq̇_k (the Coriolis velocity derivative).
-    // ---
-    {
-      const double original = joint.velocity[coordinate.local];
-      const double h = 1e-6 * (1.0 + std::abs(original));
+        dVelNext_dq.col(k)
+            = timeStep * (-inverseMass * (dMass * qddot) - inverseMass * dBias);
+      }
 
-      joint.velocity[coordinate.local] = original + h;
-      const TermDerivative plus = evalTerms();
-      joint.velocity[coordinate.local] = original - h;
-      const TermDerivative minus = evalTerms();
-      joint.velocity[coordinate.local] = original; // restore exactly
+      // --- Velocity perturbation: dc/dq̇_k (the Coriolis velocity derivative).
+      // ---
+      {
+        const double original = joint.velocity[coordinate.local];
+        const double h = 1e-6 * (1.0 + std::abs(original));
 
-      const Eigen::VectorXd dBias
-          = (plus.biasForces - minus.biasForces) / (2.0 * h);
+        joint.velocity[coordinate.local] = original + h;
+        const TermDerivative plus = evalTerms();
+        joint.velocity[coordinate.local] = original - h;
+        const TermDerivative minus = evalTerms();
+        joint.velocity[coordinate.local] = original; // restore exactly
 
-      dVelNext_dqdot.col(k) += timeStep * (-inverseMass * dBias);
+        const Eigen::VectorXd dBias
+            = (plus.biasForces - minus.biasForces) / (2.0 * h);
+
+        dVelNext_dqdot.col(k) += timeStep * (-inverseMass * dBias);
+      }
     }
   }
 
