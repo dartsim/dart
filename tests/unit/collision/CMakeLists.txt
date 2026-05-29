@@ -102,13 +102,16 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
       target_link_libraries(${test_name} PRIVATE dart)
     endif()
     if(test_name STREQUAL "test_collision_sandbox_pair_registry")
+      # Test owns its own copy of the pair_registry under sandbox/.
+      # Tests must not link sources directly out of examples/ — keeps the
+      # example and test build graphs decoupled (PLAN-102 follow-up).
       target_sources(${test_name}
         PRIVATE
-          ${CMAKE_SOURCE_DIR}/examples/collision_sandbox/pair_registry.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/sandbox/pair_registry.cpp
       )
       target_include_directories(${test_name}
         PRIVATE
-          ${CMAKE_SOURCE_DIR}/examples/collision_sandbox
+          ${CMAKE_CURRENT_SOURCE_DIR}/sandbox
       )
     endif()
     if(test_name STREQUAL "test_reference_backends")
