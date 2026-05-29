@@ -81,5 +81,11 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
       LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
       LABEL "simulation-experimental-cuda"
     )
+    dart_experimental_add_benchmark(
+      bm_vbd_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL "simulation-experimental-cuda"
+    )
   endif()
 endif()

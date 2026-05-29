@@ -882,7 +882,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     default gradient-descent solver on a matched contact-free mass-spring grid
     in the real World pipeline. With early termination, single-threaded VBD is
     roughly 2-4x faster per step than the default solver on the benchmarked
-    scenes. Multithreaded CPU sweeps and a GPU backend remain future work.
+    scenes. Multithreaded CPU sweeps remain future work.
+  - Added an experimental CUDA Vertex Block Descent mass-spring kernel
+    (`compute/cuda/vbd_block_descent_cuda`) behind `DART_ENABLE_EXPERIMENTAL_CUDA`:
+    a per-color parallel block-update kernel with an analytic SPD 3x3 solve and a
+    single-stream Gauss-Seidel sweep over colors. A device-skipping test confirms
+    the GPU result matches the CPU block-descent solve, and a GPU-vs-CPU
+    benchmark shows the GPU roughly 9x faster at 4k vertices and 26x faster at
+    16k vertices, scaling near-flat while the CPU path grows linearly. A
+    tetrahedral GPU kernel, device-resident rollout, and paper-scene comparisons
+    remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

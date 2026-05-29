@@ -112,6 +112,19 @@
         external TinyVBD/Gaia CPU reference numbers.
 - [ ] Phase 9: GPU (CUDA) VBD backend behind the experimental compute boundary
       with benchmarks targeting the reference/paper GPU numbers.
+  - [x] CUDA mass-spring kernel sub-slice: `compute/cuda/vbd_block_descent_cuda`
+        (a per-color block-update kernel with an analytic SPD 3x3 cofactor solve,
+        a single-stream Gauss-Seidel sweep over colors, and a host wrapper that
+        uploads once / launches per color per sweep / downloads once), added to
+        the experimental `-cuda` static target behind `DART_ENABLE_EXPERIMENTAL_CUDA`.
+        A device-skipping test confirms the GPU result matches the CPU
+        block-descent solve to 1e-6 and that fixed vertices stay put; a GPU-vs-CPU
+        benchmark shows the GPU ~9x faster at 4k vertices and ~26x faster at 16k
+        vertices, scaling near-flat while the CPU path grows linearly.
+  - [ ] Remaining Phase 9 work: a tetrahedral Neo-Hookean GPU kernel, CUDA-graph
+        capture of the per-color sweeps, device-resident multi-step rollout
+        (avoid per-step transfer), float/mixed precision, and benchmarking the
+        paper's tet scenes against the published RTX-4090 numbers.
 - [ ] Phase 10: complete the upstream example/scene corpus as DART-native
       tests, examples, benchmarks, profiling artifacts, and headless Filament
       visual evidence.
@@ -314,8 +327,28 @@ spring grid through the real World pipeline.
 
 This beats the in-repo gradient-descent reference solver on contact-free
 mass-spring scenes on a single CPU thread. It does NOT yet beat the external
-`TinyVBD`/`Gaia` CPU numbers (not built in this environment) or address GPU
-(Phase 9), which requires CUDA hardware; those remain open.
+`TinyVBD`/`Gaia` CPU numbers (not built in this environment).
+
+For the CUDA mass-spring kernel sub-slice, keep the verification language
+precise: it covers the device per-color block-update kernel (analytic SPD 3x3
+cofactor solve), the single-stream Gauss-Seidel sweep, and the host
+upload/launch/download wrapper. `test_vbd_block_descent_cuda` skips without a
+device; on the local NVIDIA RTX 5000 Ada GPU it confirms the GPU result matches
+the CPU block-descent solve to 1e-6 and fixed vertices stay put. It is
+mass-spring only (no tetrahedra, contact, damping, or device-resident rollout),
+uses double precision, and does not yet target the paper's tetrahedral scenes or
+the published RTX-4090 numbers.
+
+Local gate (Phase 9 CUDA mass-spring kernel, on 2026-05-28, NVIDIA RTX 5000 Ada
+Laptop GPU, CUDA build via `pixi run -e cuda`, treat as smoke):
+`test_vbd_block_descent_cuda` (2 cases) passing on the GPU. `bm_vbd_cuda`
+per-step times (20 sweeps, mass-spring grid) — CPU vs GPU: 32x32 (1024 verts)
+3.3 ms vs a 128 ms first-call CUDA-context-init warmup (not steady state); 64x64
+(4096 verts) 13.7 ms vs 1.5 ms (~9x); 128x128 (16384 verts) 57.0 ms vs 2.2 ms
+(~26x). The GPU scales near-flat with vertex count while the single-threaded CPU
+grows linearly, consistent with VBD's graph-colored GPU-throughput design. This
+is GPU-vs-our-own-CPU; it is not yet a comparison against the external
+TinyVBD/Gaia GPU numbers or the paper's tet-scene numbers.
 
 Local gate (Phase 5 acceleration/damping primitives, first pass) on 2026-05-28:
 the focused target build and 9 `test_vbd_acceleration` cases passing. These are

@@ -43,6 +43,12 @@ on contact-free mass-spring scenes.
   `DeformableVbdConfig::convergenceDisplacement`) + `bm_vbd_world_solver`. With
   early termination, single-threaded VBD is ~2-4x faster per step than the
   in-repo gradient-descent baseline on the spring-grid benchmark.
+- Phase 9 (GPU) `compute/cuda/vbd_block_descent_cuda.cu/.cuh`: a CUDA per-color
+  mass-spring block-update kernel (analytic SPD 3x3 solve, single-stream
+  Gauss-Seidel) in the `-cuda` target. `test_vbd_block_descent_cuda` (skips
+  without a device; ran on the local RTX 5000 Ada) matches the CPU solve to
+  1e-6; `bm_vbd_cuda` shows the GPU ~9x faster at 4k verts and ~26x at 16k
+  verts. Build/run with `pixi run -e cuda` against `build/cuda/cpp/Release`.
 
 Key grounding fact: VBD minimizes the **same** variational implicit-Euler
 objective the existing experimental deformable solver already minimizes with a
@@ -54,8 +60,9 @@ ECS components, not a new data model.
 
 ## Current Branch
 
-`feature/vbd-solver-foundation` — Phases 0-6 and Phase 8a landed. Local commits
-only; pushes/PRs require explicit approval.
+`feature/vbd-solver-foundation` — Phases 0-6, Phase 8a, and the Phase 9 CUDA
+mass-spring kernel landed. Local commits only; pushes/PRs require explicit
+approval.
 
 ## Immediate Next Step
 
@@ -81,9 +88,11 @@ matches the default solver. Remaining work, in order:
    independent, so each color is a parallel_for) and add SoA layout, then
    benchmark vs the external TinyVBD/Gaia CPU numbers (not built in this
    environment).
-4. Phase 9: CUDA backend behind the experimental compute boundary (per-color
-   kernels, CUDA-graph-recorded sweeps as in Gaia). Benchmark vs reference/paper
-   GPU numbers.
+4. Phase 9 (continued): the CUDA mass-spring kernel lands and is ~9-26x faster
+   than single-threaded CPU. Next: a tetrahedral Neo-Hookean GPU kernel,
+   CUDA-graph capture of the per-color sweeps, a device-resident multi-step
+   rollout (avoid per-step transfer), float/mixed precision, and benchmarking
+   the paper's tet scenes against the published RTX-4090 numbers.
 5. Phase 10: reproduce the paper scenes as DART examples/tests/benchmarks with
    profiling JSON and headless Filament visual evidence; the TinyVBD tilted
    strand (20 verts, stiffness 1e8, mass ratio 1:1000) is the first
