@@ -100,7 +100,10 @@ struct VariationalLoopConstraint
 /// joints; fixed time step. Other joint types and floating bases are rejected.
 ///
 /// Updates the multibody's joint positions, velocities, and accelerations in
-/// the registry, and advances `state`. Returns solve diagnostics.
+/// the registry, and advances `state`. Returns solve diagnostics. Throws
+/// InvalidOperationException if RIQN fails to reach `tolerance` within
+/// `maxIterations` (non-convergence is a hard error, not a silent best-effort
+/// step).
 ///
 /// When `constraints` is non-empty, holonomic loop closures are enforced after
 /// the unconstrained step by an impulse-based position projection onto the

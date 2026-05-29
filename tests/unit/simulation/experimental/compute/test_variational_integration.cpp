@@ -710,3 +710,159 @@ TEST(VariationalIntegration, ConstraintJacobianMatchesFiniteDifference)
       << lin.jacobian << "\nfinite-difference=\n"
       << fd;
 }
+
+// PLAN-082 convergence gate: RIQN converges in a small, bounded number of
+// iterations on a representative multi-link scene (mean <= 8 per the plan), and
+// every step reaches the tolerance (no silent non-convergence).
+TEST(VariationalIntegration, RiqnMeanIterationsWithinBudget)
+{
+  sx::World world;
+  auto robot = world.addMultibody("chain");
+  auto parent = robot.addLink("base");
+  for (int i = 0; i < 6; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(i == 0 ? 0.0 : 0.3, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "j" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+    parent = link;
+  }
+  const double dt = 1e-3;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  for (auto joint : robot.getJoints()) {
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.3));
+  }
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::Vector3d gravity = world.getGravity();
+
+  sxc::MultibodyVariationalState state;
+  const int steps = 2000;
+  std::size_t totalIters = 0;
+  std::size_t maxIters = 0;
+  for (int k = 0; k < steps; ++k) {
+    const auto report = sxc::integrateMultibodyVariational(
+        registry, structure, gravity, dt, state);
+    ASSERT_TRUE(report.converged)
+        << "step " << k << " residual " << report.residualNorm;
+    totalIters += report.iterations;
+    maxIters = std::max(maxIters, report.iterations);
+  }
+  const double meanIters = static_cast<double>(totalIters) / steps;
+  EXPECT_LE(meanIters, 8.0) << "mean RIQN iterations " << meanIters;
+  EXPECT_LE(maxIters, 50u) << "max RIQN iterations " << maxIters;
+}
+
+// PLAN-082 convergence gate: non-convergence is a documented hard error, not a
+// silent best-effort step. Forcing an impossible tolerance in a single
+// iteration must throw rather than write back a non-converged configuration.
+TEST(VariationalIntegration, NonConvergenceRaisesDocumentedError)
+{
+  sx::World world;
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+  bob.setMass(1.0);
+  bob.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  const double dt = 1e-3;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  bob.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 1.0));
+  world.updateKinematics();
+
+  sxc::MultibodyVariationalState state;
+  // A single RIQN iteration cannot drive the nonlinear residual below 1e-30.
+  EXPECT_THROW(
+      sxc::integrateMultibodyVariational(
+          world.getRegistry(),
+          structureOf(world),
+          world.getGravity(),
+          dt,
+          state,
+          /*maxIterations=*/1,
+          /*tolerance=*/1e-30),
+      sx::InvalidOperationException);
+}
+
+// PLAN-082 momentum gate: a force-free floating body (no gravity) conserves
+// both linear momentum (its COM advances at constant velocity) and angular
+// momentum, a Noether symmetry the variational integrator preserves by
+// construction. The body is a symmetric top (I_xx == I_yy) spinning about its
+// symmetry axis while translating, so the world angular momentum L = R (I .
+// omega) is an exact relative equilibrium and must hold to solver precision (a
+// spin-axis drift from a faulty SO(3) retraction would break it).
+TEST(VariationalIntegration, FloatingBaseConservesMomentum)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  auto robot = world.addMultibody("floater");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "float";
+  spec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, spec);
+  body.setMass(1.5);
+  const Eigen::Vector3d inertia(0.2, 0.2, 0.1); // symmetric about z
+  body.setInertia(inertia.asDiagonal());
+
+  const double dt = 1e-3;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  Eigen::VectorXd v0(6);
+  v0 << 0.5, -0.3, 0.2, 0.0, 0.0, 1.4; // [linear; angular]: translate + z-spin
+  body.getParentJoint().setVelocity(v0);
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::Vector3d gravity = world.getGravity();
+
+  const auto worldAngularMomentum = [&]() {
+    const Eigen::Matrix3d r = body.getTransform().linear();
+    const Eigen::Vector3d omega = body.getParentJoint().getVelocity().tail<3>();
+    return Eigen::Vector3d(r * (inertia.asDiagonal() * omega));
+  };
+
+  const Eigen::Vector3d l0 = worldAngularMomentum();
+  ASSERT_GT(l0.norm(), 1e-6);
+  Eigen::Vector3d previousCom = body.getTransform().translation();
+  Eigen::Vector3d previousStep = Eigen::Vector3d::Zero();
+  double maxAngularDrift = 0.0;
+  double maxLinearJerk = 0.0; // change in per-step COM displacement
+  sxc::MultibodyVariationalState state;
+  for (int k = 0; k < 5000; ++k) {
+    sxc::integrateMultibodyVariational(registry, structure, gravity, dt, state);
+    world.updateKinematics();
+    const Eigen::Vector3d com = body.getTransform().translation();
+    const Eigen::Vector3d stepDisp = com - previousCom;
+    if (k > 0) {
+      maxLinearJerk = std::max(maxLinearJerk, (stepDisp - previousStep).norm());
+    }
+    previousStep = stepDisp;
+    previousCom = com;
+    maxAngularDrift = std::max(
+        maxAngularDrift, (worldAngularMomentum() - l0).norm() / l0.norm());
+  }
+  // Linear momentum: COM velocity is constant, so the per-step displacement
+  // does not change (zero jerk) to solver precision.
+  EXPECT_LT(maxLinearJerk, 1e-9) << "linear-momentum jerk " << maxLinearJerk;
+  // Angular momentum: world L is conserved to solver precision.
+  EXPECT_LT(maxAngularDrift, 1e-8)
+      << "angular-momentum drift " << maxAngularDrift;
+}

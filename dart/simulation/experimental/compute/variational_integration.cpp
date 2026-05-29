@@ -715,6 +715,20 @@ VariationalSolveReport integrateMultibodyVariational(
     }
   }
 
+  // Non-convergence is a hard error, not a silent best-effort step: the caller
+  // must learn the forced-DEL root was not found rather than integrate a bogus
+  // (possibly NaN) configuration forward.
+  if (!report.converged) {
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "Variational integrator failed to converge: forced discrete "
+        "Euler-Lagrange residual {} after {} RIQN iterations exceeds tolerance "
+        "{}",
+        report.residualNorm,
+        report.iterations,
+        tolerance);
+  }
+
   // Enforce holonomic loop closures: Newton-project the next configuration onto
   // the constraint manifold g(q) = 0 (the paper's Sec. 5 extension),
   // impulse-based and reusing the O(n) inverse-mass apply.
