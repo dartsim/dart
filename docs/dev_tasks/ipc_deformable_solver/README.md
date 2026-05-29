@@ -159,8 +159,22 @@
         self-contact friction Hessian, codimensional-obstacle friction, friction
         over non-flat (sphere/tilted) ground normals, and friction-specific
         convergence/dissipation diagnostics.
-- [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
-      examples, benchmarks, profiling artifacts, and headless Filament evidence.
+- [~] Phase 5: complete the upstream scene corpus as DART-native tests,
+  examples, benchmarks, profiling artifacts, and headless Filament evidence.
+  - [x] Scene-replay validation harness: the loader -> solver -> diagnostics
+        pipeline is exercised by a deterministic multi-frame replay regression
+        on a DART-native tutorial scene (anchor stays, free body falls, mass
+        conserved, reproducible) -- the per-scene invariant pattern corpus rows
+        use. Loader, Gmsh import, DBC/NBC, diagnostics JSON, restart, and the
+        `experimental_deformable_gui --deformable-scene` headless capture +
+        scene-load/replay benchmarks already exist.
+  - [ ] Remaining Phase 5 work (BLOCKED on prerequisites): port the 154 upstream
+        ipc-sim/IPC corpus scenes (`ipc_scene_corpus_manifest.json`, all
+        `planned`). Needs (a) the upstream scene assets vendored or fetched
+        (none are vendored today) and (b) the contact-capable solver for the
+        contact-heavy scenes (the loader currently ignores contact/friction
+        directives; barrier/CCD/friction land via Phases 3-4). Until then only
+        contact-free DBC/NBC tutorial-family scenes are replayable.
 
 ## Goal
 
