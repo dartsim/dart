@@ -528,4 +528,75 @@ inline BlockDescentStats blockDescentMassSpringGround(
   return stats;
 }
 
+//==============================================================================
+/// Mass-spring block descent with half-space penalty contact and semi-implicit
+/// Coulomb friction. Like blockDescentMassSpringGround, but each contacting
+/// vertex also accumulates the friction term resisting its tangential
+/// displacement from `stepStartPositions` (the positions at the start of the
+/// step). `positions` is updated in place.
+inline BlockDescentStats blockDescentMassSpringGroundFriction(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<Eigen::Vector3d>& stepStartPositions,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    double timeStep,
+    const std::vector<ContactPlane>& planes,
+    double frictionCoeff,
+    const VertexColoring& coloring,
+    const SpringAdjacency& adjacency,
+    const BlockDescentOptions& options)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block = detail::assembleVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        springs,
+        adjacency,
+        springStiffness,
+        timeStep,
+        options.clampSpringHessian);
+    for (const ContactPlane& plane : planes) {
+      addHalfSpacePenaltyContact(block, positions[vertex], plane);
+      addHalfSpaceFriction(
+          block,
+          positions[vertex],
+          stepStartPositions[vertex],
+          plane,
+          frictionCoeff);
+    }
+    return block;
+  };
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
 } // namespace dart::simulation::experimental::detail::deformable_vbd

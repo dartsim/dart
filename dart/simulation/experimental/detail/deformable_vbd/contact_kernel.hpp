@@ -71,4 +71,46 @@ inline void addHalfSpacePenaltyContact(
       += plane.stiffness * (plane.normal * plane.normal.transpose());
 }
 
+//==============================================================================
+/// Add semi-implicit Coulomb friction for a vertex in contact with a static
+/// half-space to `block`. Friction resists the tangential displacement since
+/// the step start, `u = (I - n n^T)(x - x^t)`, as a tangential penalty
+/// `-k_c u` (sticking) clamped to the Coulomb limit `mu * lambda` with
+/// `lambda = k_c * penetration` the lagged normal-force magnitude (sliding):
+///   sticking (|k_c u| <= mu lambda):  f -= k_c u,        H += k_c (I - n n^T)
+///   sliding  (otherwise):             f -= mu lambda u/|u|,
+///                                     H += (mu lambda / |u|)(I - n n^T)
+/// Both Hessian contributions are positive-semidefinite (a scaled tangential
+/// projector). Inactive when the vertex is above the plane. `normal` is unit.
+inline void addHalfSpaceFriction(
+    VertexBlock& block,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& stepStartPosition,
+    const ContactPlane& plane,
+    double frictionCoeff)
+{
+  const double gap = plane.normal.dot(position) - plane.offset;
+  if (gap >= 0.0 || plane.stiffness <= 0.0 || frictionCoeff <= 0.0) {
+    return;
+  }
+  const double normalForce = plane.stiffness * (-gap);
+  const Eigen::Matrix3d tangent
+      = Eigen::Matrix3d::Identity() - plane.normal * plane.normal.transpose();
+  const Eigen::Vector3d delta = position - stepStartPosition;
+  const Eigen::Vector3d u = tangent * delta;
+  const double uNorm = u.norm();
+  if (uNorm <= 1e-12) {
+    block.hessian.noalias() += plane.stiffness * tangent;
+    return;
+  }
+  const double coulomb = frictionCoeff * normalForce;
+  if (plane.stiffness * uNorm <= coulomb) {
+    block.force.noalias() -= plane.stiffness * u;
+    block.hessian.noalias() += plane.stiffness * tangent;
+  } else {
+    block.force.noalias() -= (coulomb / uNorm) * u;
+    block.hessian.noalias() += (coulomb / uNorm) * tangent;
+  }
+}
+
 } // namespace dart::simulation::experimental::detail::deformable_vbd

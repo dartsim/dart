@@ -81,11 +81,12 @@ matches the default solver. Remaining work, in order:
    `comps::DeformableMaterial` for Lame params and reuse `blockDescentTetMesh`
    /the combined springs+tets assembly), and thread Chebyshev + element damping
    into the World path. Then decide the public solver-selection surface.
-2. Phase 7: half-space penalty contact lands (`contact_kernel.hpp` +
-   `blockDescentMassSpringGround`; bodies rest on the ground). Next:
-   vertex-triangle / edge-edge penalty contact (reuse `deformable_contact`
-   distance/CCD kernels), IPC-style lagged friction, self-collision, and wiring
-   contact into the World VBD path.
+2. Phase 7: half-space penalty contact + semi-implicit Coulomb friction land
+   (`contact_kernel.hpp`: `addHalfSpacePenaltyContact`, `addHalfSpaceFriction`;
+   drivers `blockDescentMassSpringGround[Friction]`; bodies rest on the ground,
+   sliding particles are stopped by friction). Next: vertex-triangle / edge-edge
+   penalty contact (reuse `deformable_contact` distance/CCD kernels),
+   self-collision, and wiring contact/friction into the World VBD path.
 3. Phase 8: residual early termination + multithreaded color sweeps
    (`parallelBlockDescentMassSpring`, std::barrier, ~3.5x at 8 threads) both
    land. Next: SoA layout, wire the parallel driver into the World stage, and

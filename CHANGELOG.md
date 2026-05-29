@@ -924,8 +924,15 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     ground/obstacle half-spaces instead of tunneling. Tests cover the
     finite-difference force match, inactivity above the plane, the
     positive-semidefinite contact Hessian, a particle resting on the ground, and
-    a spring net sagging onto the ground. Vertex-triangle/edge-edge contact,
-    friction, and self-collision remain future work.
+    a spring net sagging onto the ground.
+  - Added semi-implicit Coulomb friction for VBD half-space contact
+    (`addHalfSpaceFriction`: tangential penalty clamped to the Coulomb limit
+    `mu * lambda`, with a positive-semidefinite Hessian in both the sticking and
+    sliding regimes) and the contact+friction driver
+    `blockDescentMassSpringGroundFriction`. Tests cover the sticking-regime
+    finite-difference force match, the Coulomb-capped sliding force, and a
+    sliding particle decelerated to rest by kinetic friction.
+    Vertex-triangle/edge-edge contact and self-collision remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

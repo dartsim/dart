@@ -238,3 +238,101 @@ TEST(VbdContact, SpringNetRestsAboveGround)
     EXPECT_GT(p.y(), -0.02) << "node tunneled below the ground";
   }
 }
+
+//==============================================================================
+// In the sticking regime, friction is the gradient of the tangential penalty
+// energy 0.5 k_c ||T(x - x^t)||^2, so its force matches finite differences.
+TEST(VbdContact, FrictionStickingForceMatchesFiniteDifference)
+{
+  vbd::ContactPlane plane;
+  plane.normal = Vec3(0.0, 1.0, 0.0);
+  plane.offset = 0.0;
+  plane.stiffness = 1.0e4;
+  const Vec3 stepStart(0.0, -0.1, 0.0);    // penetrating
+  const Vec3 position(0.01, -0.1, -0.005); // small tangential move -> sticking
+
+  vbd::VertexBlock block;
+  vbd::addHalfSpaceFriction(block, position, stepStart, plane, 0.5);
+
+  const auto energy = [&](const Vec3& x) {
+    const Vec3 delta = x - stepStart;
+    const Vec3 u = delta - plane.normal.dot(delta) * plane.normal;
+    return 0.5 * plane.stiffness * u.squaredNorm();
+  };
+  const Vec3 numericForce = -numericGradient(energy, position);
+  EXPECT_NEAR((block.force - numericForce).norm(), 0.0, 1e-3);
+}
+
+//==============================================================================
+// In the sliding regime, the friction force magnitude is capped at the Coulomb
+// limit mu * lambda.
+TEST(VbdContact, FrictionSlidingForceIsCoulombCapped)
+{
+  vbd::ContactPlane plane;
+  plane.normal = Vec3(0.0, 1.0, 0.0);
+  plane.offset = 0.0;
+  plane.stiffness = 1.0e4;
+  const double penetration = 0.1;
+  const double frictionCoeff = 0.5;
+  const Vec3 stepStart(0.0, -penetration, 0.0);
+  const Vec3 position(0.5, -penetration, 0.0); // large tangential move -> slide
+
+  vbd::VertexBlock block;
+  vbd::addHalfSpaceFriction(block, position, stepStart, plane, frictionCoeff);
+
+  const double coulomb = frictionCoeff * plane.stiffness * penetration;
+  EXPECT_NEAR(block.force.norm(), coulomb, 1e-6);
+  // Friction opposes the tangential motion (-x here).
+  EXPECT_LT(block.force.x(), 0.0);
+}
+
+//==============================================================================
+// A particle sliding on the ground is decelerated to rest by kinetic friction.
+TEST(VbdContact, KineticFrictionStopsASlidingParticle)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, -0.001, 0.0)};
+  std::vector<double> masses = {1.0};
+  std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(1, springs);
+  const auto adjacency = vbd::SpringAdjacency::build(1, springs);
+
+  vbd::ContactPlane ground;
+  ground.normal = Vec3(0.0, 1.0, 0.0);
+  ground.offset = 0.0;
+  ground.stiffness = 1.0e5;
+  const std::vector<vbd::ContactPlane> planes = {ground};
+  const double frictionCoeff = 0.6;
+
+  const Vec3 gravity(0.0, -9.81, 0.0);
+  const double h = 0.01;
+  std::vector<Vec3> velocity = {Vec3(1.5, 0.0, 0.0)};
+  const double initialSpeed = velocity[0].x();
+  vbd::BlockDescentOptions options;
+  options.iterations = 30;
+
+  for (int step = 0; step < 400; ++step) {
+    std::vector<Vec3> inertialTargets = positions;
+    inertialTargets[0] = positions[0] + h * velocity[0] + h * h * gravity;
+    const std::vector<Vec3> stepStart = positions;
+    vbd::blockDescentMassSpringGroundFriction(
+        positions,
+        masses,
+        fixed,
+        inertialTargets,
+        stepStart,
+        springs,
+        0.0,
+        h,
+        planes,
+        frictionCoeff,
+        coloring,
+        adjacency,
+        options);
+    velocity[0] = (positions[0] - stepStart[0]) / h;
+    ASSERT_TRUE(positions[0].allFinite()) << "blew up at step " << step;
+  }
+
+  // Kinetic friction dissipates the tangential speed.
+  EXPECT_LT(std::abs(velocity[0].x()), 0.1 * initialSpeed);
+}

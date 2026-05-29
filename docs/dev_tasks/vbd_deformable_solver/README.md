@@ -95,9 +95,16 @@
         match, inactivity above the plane, PSD Hessian, a particle resting on
         the ground without tunneling, and a pinned spring net sagging onto the
         ground.
+  - [x] Coulomb friction sub-slice: `addHalfSpaceFriction` adds semi-implicit
+        Coulomb friction at a half-space contact (tangential penalty `-k_c u`
+        clamped to `mu * lambda`, PSD Hessian in both the sticking and sliding
+        regimes), plus the contact+friction driver
+        `blockDescentMassSpringGroundFriction`. Tests: sticking-force
+        finite-difference match, the Coulomb-capped sliding force, and a sliding
+        particle decelerated to rest by kinetic friction.
   - [ ] Remaining Phase 7 work: vertex-triangle / edge-edge penalty contact
-        (reusing the `deformable_contact` distance kernels), IPC-style lagged
-        friction, self-collision, and wiring contact into the World VBD path.
+        (reusing the `deformable_contact` distance kernels), self-collision, and
+        wiring contact/friction into the World VBD path.
 - [ ] Phase 8: CPU performance optimization (SoA layout, multithreaded color
       sweeps) with benchmarks targeting the reference CPU numbers.
   - [x] CPU baseline-comparison sub-slice: `bm_vbd_world_solver` steps the same
@@ -377,8 +384,19 @@ above the plane, the positive-semidefinite contact Hessian, a particle resting
 on the ground without tunneling, and a pinned spring net sagging onto the
 ground. It is half-space (ground/obstacle) penalty contact only:
 vertex-triangle / edge-edge contact, friction, self-collision, and World wiring
-are not implemented. Local gate on 2026-05-28: the focused target build and 4
-`test_vbd_contact` cases passing.
+are not implemented.
+
+For the Coulomb friction sub-slice, keep the verification language precise: it
+covers `addHalfSpaceFriction` (semi-implicit Coulomb friction at a half-space:
+sticking tangential penalty clamped to the Coulomb limit, PSD Hessian) and the
+contact+friction driver `blockDescentMassSpringGroundFriction`, with tests for
+the sticking-regime finite-difference force match, the Coulomb-capped sliding
+force, and a sliding particle decelerated to rest. It is half-space friction
+only; vertex-triangle/edge-edge friction and IPC-style lagged-friction
+convergence are not implemented.
+
+Local gate (Phase 7 half-space penalty contact + Coulomb friction, first pass)
+on 2026-05-28: the focused target build and 7 `test_vbd_contact` cases passing.
 
 Local gate (external TinyVBD reference comparison, on 2026-05-28, single CPU
 thread, compute-only, treat as smoke): the upstream `AnkaChan/TinyVBD` reference
