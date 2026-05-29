@@ -177,6 +177,78 @@ __global__ void vbdColorSweepKernel(
 }
 
 //==============================================================================
+// Predict the inertial target y = x + h v + h^2 g for every vertex, save the
+// step-start position, and warm-start the optimization at y. Fixed vertices
+// keep their position.
+__global__ void vbdInertialTargetKernel(
+    double* positions,
+    const double* velocities,
+    double* stepStartPositions,
+    double* inertialTargets,
+    const std::uint8_t* fixed,
+    double gx,
+    double gy,
+    double gz,
+    double timeStep,
+    std::uint32_t vertexCount)
+{
+  const std::uint32_t v = blockIdx.x * blockDim.x + threadIdx.x;
+  if (v >= vertexCount) {
+    return;
+  }
+  const std::uint32_t b = 3u * v;
+  const double px = positions[b];
+  const double py = positions[b + 1];
+  const double pz = positions[b + 2];
+  stepStartPositions[b] = px;
+  stepStartPositions[b + 1] = py;
+  stepStartPositions[b + 2] = pz;
+  if (fixed[v] != 0u) {
+    inertialTargets[b] = px;
+    inertialTargets[b + 1] = py;
+    inertialTargets[b + 2] = pz;
+    return;
+  }
+  const double h2 = timeStep * timeStep;
+  const double yx = px + timeStep * velocities[b] + h2 * gx;
+  const double yy = py + timeStep * velocities[b + 1] + h2 * gy;
+  const double yz = pz + timeStep * velocities[b + 2] + h2 * gz;
+  inertialTargets[b] = yx;
+  inertialTargets[b + 1] = yy;
+  inertialTargets[b + 2] = yz;
+  positions[b] = yx;
+  positions[b + 1] = yy;
+  positions[b + 2] = yz;
+}
+
+//==============================================================================
+// Backward-Euler velocity update v = (x - x^t) / h. Fixed vertices are held.
+__global__ void vbdVelocityUpdateKernel(
+    const double* positions,
+    double* velocities,
+    const double* stepStartPositions,
+    const std::uint8_t* fixed,
+    double timeStep,
+    std::uint32_t vertexCount)
+{
+  const std::uint32_t v = blockIdx.x * blockDim.x + threadIdx.x;
+  if (v >= vertexCount) {
+    return;
+  }
+  const std::uint32_t b = 3u * v;
+  if (fixed[v] != 0u) {
+    velocities[b] = 0.0;
+    velocities[b + 1] = 0.0;
+    velocities[b + 2] = 0.0;
+    return;
+  }
+  const double invDt = 1.0 / timeStep;
+  velocities[b] = (positions[b] - stepStartPositions[b]) * invDt;
+  velocities[b + 1] = (positions[b + 1] - stepStartPositions[b + 1]) * invDt;
+  velocities[b + 2] = (positions[b + 2] - stepStartPositions[b + 2]) * invDt;
+}
+
+//==============================================================================
 void throwIfCudaError(cudaError_t status, const char* operation)
 {
   if (status != cudaSuccess) {
@@ -291,6 +363,92 @@ void vbdStepMassSpringCuda(VbdCudaMassSpringProblem& problem)
   throwIfCudaError(cudaGetLastError(), "kernel launch");
   throwIfCudaError(cudaDeviceSynchronize(), "synchronize");
   dPositions.download(problem.positions);
+}
+
+//==============================================================================
+void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
+{
+  const std::size_t nodeCount = problem.nodeCount;
+  if (nodeCount == 0 || problem.colorOffsets.size() < 2) {
+    return;
+  }
+
+  DeviceArray<double> dPositions(problem.positions);
+  DeviceArray<double> dVelocities(problem.velocities);
+  DeviceArray<double> dMasses(problem.masses);
+  DeviceArray<std::uint8_t> dFixed(problem.fixed);
+  DeviceArray<std::uint32_t> dSpringA(problem.springA);
+  DeviceArray<std::uint32_t> dSpringB(problem.springB);
+  DeviceArray<double> dSpringRest(problem.springRest);
+  DeviceArray<std::uint32_t> dIncidentOffsets(problem.incidentOffsets);
+  DeviceArray<std::uint32_t> dIncidentSprings(problem.incidentSprings);
+  DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
+
+  // Per-step scratch kept resident on the device for the whole rollout.
+  const std::vector<double> zeros(3 * nodeCount, 0.0);
+  DeviceArray<double> dStepStart(zeros);
+  DeviceArray<double> dInertial(zeros);
+
+  const double invDt2 = 1.0 / (problem.timeStep * problem.timeStep);
+  const std::size_t colorCount = problem.colorOffsets.size() - 1;
+  constexpr unsigned int kThreads = 128;
+  const unsigned int vertexBlocks
+      = (static_cast<unsigned int>(nodeCount) + kThreads - 1) / kThreads;
+
+  for (std::size_t step = 0; step < problem.stepCount; ++step) {
+    vbdInertialTargetKernel<<<vertexBlocks, kThreads>>>(
+        dPositions.get(),
+        dVelocities.get(),
+        dStepStart.get(),
+        dInertial.get(),
+        dFixed.get(),
+        problem.gravity[0],
+        problem.gravity[1],
+        problem.gravity[2],
+        problem.timeStep,
+        static_cast<std::uint32_t>(nodeCount));
+
+    for (std::size_t iteration = 0; iteration < problem.iterations;
+         ++iteration) {
+      for (std::size_t color = 0; color < colorCount; ++color) {
+        const std::uint32_t begin = problem.colorOffsets[color];
+        const std::uint32_t end = problem.colorOffsets[color + 1];
+        if (end <= begin) {
+          continue;
+        }
+        const unsigned int count = end - begin;
+        const unsigned int blocks = (count + kThreads - 1) / kThreads;
+        vbdColorSweepKernel<<<blocks, kThreads>>>(
+            dPositions.get(),
+            dInertial.get(),
+            dMasses.get(),
+            dFixed.get(),
+            dSpringA.get(),
+            dSpringB.get(),
+            dSpringRest.get(),
+            dIncidentOffsets.get(),
+            dIncidentSprings.get(),
+            dColorVertices.get(),
+            begin,
+            end,
+            problem.stiffness,
+            invDt2);
+      }
+    }
+
+    vbdVelocityUpdateKernel<<<vertexBlocks, kThreads>>>(
+        dPositions.get(),
+        dVelocities.get(),
+        dStepStart.get(),
+        dFixed.get(),
+        problem.timeStep,
+        static_cast<std::uint32_t>(nodeCount));
+  }
+
+  throwIfCudaError(cudaGetLastError(), "rollout kernel launch");
+  throwIfCudaError(cudaDeviceSynchronize(), "rollout synchronize");
+  dPositions.download(problem.positions);
+  dVelocities.download(problem.velocities);
 }
 
 } // namespace dart::simulation::experimental::compute::cuda

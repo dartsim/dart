@@ -81,4 +81,40 @@ struct VbdCudaMassSpringProblem
 /// `problem.positions`. Throws on a CUDA error.
 void vbdStepMassSpringCuda(VbdCudaMassSpringProblem& problem);
 
+/// A device-resident multi-step mass-spring VBD rollout: the full step loop
+/// (inertial-target prediction, colored block-descent sweeps, velocity update)
+/// runs on the GPU for `stepCount` implicit-Euler steps with a single
+/// host-to-device upload and a single device-to-host download. This is the GPU
+/// performance shape that avoids per-step transfer, matching how the reference
+/// keeps state resident across steps.
+struct VbdCudaRolloutProblem
+{
+  std::size_t nodeCount = 0;
+  std::vector<double> positions;   ///< 3*nodeCount, updated in place.
+  std::vector<double> velocities;  ///< 3*nodeCount, updated in place.
+  std::vector<double> masses;      ///< nodeCount.
+  std::vector<std::uint8_t> fixed; ///< nodeCount.
+
+  std::vector<std::uint32_t> springA;
+  std::vector<std::uint32_t> springB;
+  std::vector<double> springRest;
+
+  std::vector<std::uint32_t> incidentOffsets;
+  std::vector<std::uint32_t> incidentSprings;
+
+  std::vector<std::uint32_t> colorOffsets;
+  std::vector<std::uint32_t> colorVertices;
+
+  double gravity[3] = {0.0, 0.0, 0.0};
+  double stiffness = 0.0;
+  double timeStep = 0.0;
+  std::size_t iterations = 0; ///< Sweeps per step.
+  std::size_t stepCount = 0;  ///< Implicit-Euler steps in the rollout.
+};
+
+/// Run a device-resident VBD mass-spring rollout. Uploads once, runs the full
+/// per-step pipeline on the GPU for `stepCount` steps, and downloads the final
+/// positions and velocities. Throws on a CUDA error.
+void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem);
+
 } // namespace dart::simulation::experimental::compute::cuda

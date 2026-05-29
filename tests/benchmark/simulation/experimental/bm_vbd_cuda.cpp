@@ -144,6 +144,39 @@ cuda::VbdCudaMassSpringProblem makeProblem(
   return problem;
 }
 
+cuda::VbdCudaRolloutProblem makeRolloutProblem(
+    const GridScene& scene, std::size_t iters, std::size_t steps)
+{
+  const cuda::VbdCudaMassSpringProblem single = makeProblem(scene, iters);
+  cuda::VbdCudaRolloutProblem problem;
+  problem.nodeCount = single.nodeCount;
+  for (const auto& p : scene.positions) {
+    problem.positions.push_back(p.x());
+    problem.positions.push_back(p.y());
+    problem.positions.push_back(p.z());
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+  }
+  problem.masses = single.masses;
+  problem.fixed = single.fixed;
+  problem.springA = single.springA;
+  problem.springB = single.springB;
+  problem.springRest = single.springRest;
+  problem.incidentOffsets = single.incidentOffsets;
+  problem.incidentSprings = single.incidentSprings;
+  problem.colorOffsets = single.colorOffsets;
+  problem.colorVertices = single.colorVertices;
+  problem.gravity[0] = 0.0;
+  problem.gravity[1] = -9.81;
+  problem.gravity[2] = 0.0;
+  problem.stiffness = scene.stiffness;
+  problem.timeStep = scene.timeStep;
+  problem.iterations = iters;
+  problem.stepCount = steps;
+  return problem;
+}
+
 } // namespace
 
 //==============================================================================
@@ -194,5 +227,31 @@ static void BM_VbdCudaStep(benchmark::State& state)
   state.counters["vertices"] = static_cast<double>(side * side);
 }
 BENCHMARK(BM_VbdCudaStep)->Arg(32)->Arg(64)->Arg(128);
+
+//==============================================================================
+// Device-resident rollout: one upload, `steps` full steps on the GPU, one
+// download. This is the steady-state GPU per-step cost without per-step
+// transfer or first-call warmup. Reports per-step time via a counter.
+static void BM_VbdCudaRollout(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("no CUDA device available");
+    return;
+  }
+  const int side = static_cast<int>(state.range(0));
+  const std::size_t steps = 50;
+  const GridScene scene = makeGrid(side);
+  const cuda::VbdCudaRolloutProblem base = makeRolloutProblem(scene, 20, steps);
+  for (auto _ : state) {
+    state.PauseTiming();
+    cuda::VbdCudaRolloutProblem problem = base;
+    state.ResumeTiming();
+    cuda::vbdRolloutMassSpringCuda(problem);
+    benchmark::DoNotOptimize(problem.positions);
+  }
+  state.counters["vertices"] = static_cast<double>(side * side);
+  state.counters["steps"] = static_cast<double>(steps);
+}
+BENCHMARK(BM_VbdCudaRollout)->Arg(32)->Arg(64)->Arg(128);
 
 BENCHMARK_MAIN();

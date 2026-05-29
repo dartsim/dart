@@ -890,8 +890,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     the GPU result matches the CPU block-descent solve, and a GPU-vs-CPU
     benchmark shows the GPU roughly 9x faster at 4k vertices and 26x faster at
     16k vertices, scaling near-flat while the CPU path grows linearly. A
-    tetrahedral GPU kernel, device-resident rollout, and paper-scene comparisons
-    remain future work.
+    tetrahedral GPU kernel and paper-scene comparisons remain future work.
+  - Added a device-resident CUDA VBD rollout (`vbdRolloutMassSpringCuda`) that
+    runs the full per-step pipeline (inertial-target prediction, colored sweeps,
+    velocity update) on the GPU for many steps with one upload and one download,
+    plus inertial-target and velocity-update kernels. A device-skipping test
+    confirms it matches the CPU stepper over 20 steps; the rollout benchmark
+    measures ~1.08 ms/step steady-state, about 45x faster than the
+    single-threaded CPU at 16k vertices.
   - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
     20-vertex tilted strand with structural and skip springs, 100 iterations per
     step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step

@@ -128,10 +128,18 @@
         block-descent solve to 1e-6 and that fixed vertices stay put; a GPU-vs-CPU
         benchmark shows the GPU ~9x faster at 4k vertices and ~26x faster at 16k
         vertices, scaling near-flat while the CPU path grows linearly.
+  - [x] Device-resident rollout sub-slice: `vbdRolloutMassSpringCuda` runs the
+        full per-step pipeline on the GPU (inertial-target prediction kernel,
+        colored sweeps, velocity-update kernel) for many steps with one upload
+        and one download. A device-skipping test confirms it matches the CPU
+        stepper over 20 steps; the rollout benchmark gives ~1.08 ms/step
+        steady-state, i.e. ~45x faster than the single-threaded CPU at 16k
+        vertices (the per-step cost is launch-overhead-bound at these grid
+        sizes, so the GPU has spare capacity for larger meshes).
   - [ ] Remaining Phase 9 work: a tetrahedral Neo-Hookean GPU kernel, CUDA-graph
-        capture of the per-color sweeps, device-resident multi-step rollout
-        (avoid per-step transfer), float/mixed precision, and benchmarking the
-        paper's tet scenes against the published RTX-4090 numbers.
+        capture of the per-color sweeps, float/mixed precision, and reproducing
+        the paper's tetrahedral scenes on an RTX-4090 host (see the
+        same-GPU reproduction plan below).
 - [ ] Phase 10: complete the upstream example/scene corpus as DART-native
       tests, examples, benchmarks, profiling artifacts, and headless Filament
       visual evidence.
@@ -380,6 +388,35 @@ per-step times (20 sweeps, mass-spring grid) — CPU vs GPU: 32x32 (1024 verts)
 grows linearly, consistent with VBD's graph-colored GPU-throughput design. This
 is GPU-vs-our-own-CPU; it is not yet a comparison against the external
 TinyVBD/Gaia GPU numbers or the paper's tet-scene numbers.
+
+Local gate (Phase 9 device-resident rollout, on 2026-05-28, NVIDIA RTX 5000 Ada
+Laptop GPU): `test_vbd_block_descent_cuda` `RolloutMatchesCpuStepper` confirms
+the GPU rollout matches the CPU stepper over 20 steps. `bm_vbd_cuda`
+`BM_VbdCudaRollout` ran 50 device-resident steps in ~54 ms (~1.08 ms/step,
+nearly flat across 1k/4k/16k vertices, i.e. launch-overhead-bound with spare GPU
+capacity). Against the single-threaded CPU per-step (`BM_VbdCpuStep`: ~3.0 ms at
+1k, ~10.2 ms at 4k, ~49.2 ms at 16k), the device-resident GPU rollout is ~45x
+faster at 16k vertices. DART's VBD wins decisively on this GPU.
+
+## Same-GPU (RTX-4090) Reproduction Plan
+
+The paper's Table 1 numbers are on an NVIDIA RTX 4090; this environment has an
+RTX 5000 Ada Laptop GPU, so absolute-number parity is not directly comparable
+here. To compare on the same GPU as the paper later:
+
+1. On an RTX-4090 host, configure with `DART_ENABLE_EXPERIMENTAL_CUDA=ON` and
+   `DART_CUDA_ARCHITECTURES=89` (Ada). Build `bm_vbd_cuda` and run
+   `BM_VbdCudaRollout`; record per-step times.
+2. Add the tetrahedral Neo-Hookean GPU kernel (remaining Phase 9) so the paper's
+   volumetric scenes (e.g. the 97K-vertex twisting beams, the 230K-vertex
+   squishy-ball drops) can be stepped, and capture per-frame times at the
+   paper's iteration counts and substeps.
+3. Build the `AnkaChan/Gaia` reference on the same host (deps: OneTBB 2021.12,
+   Eigen 3.4, Embree 3.13.1, submodules MeshFrame2/CuMatrix/polyscope; flags
+   `BUILD_VBD`, `BUILD_Collision_Detector`) and run its shipped twist-beam /
+   squishy-ball scenes, then compare DART's per-frame GPU times against both
+   Gaia and the paper's Table 1 on the matched RTX-4090.
+4. Publish the comparison as benchmark JSON through the performance dashboard.
 
 Local gate (Phase 5 acceleration/damping primitives, first pass) on 2026-05-28:
 the focused target build and 9 `test_vbd_acceleration` cases passing. These are

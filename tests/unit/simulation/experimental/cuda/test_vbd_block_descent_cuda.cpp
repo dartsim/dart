@@ -31,6 +31,7 @@
  */
 
 #include <dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/stepper.hpp>
 
 #include <dart/simulation/experimental/compute/cuda/vbd_block_descent_cuda.cuh>
 #include <gtest/gtest.h>
@@ -226,5 +227,102 @@ TEST(CudaVbdBlockDescent, FixedVerticesDoNotMoveOnGpu)
       EXPECT_NEAR((gpu - scene.positions[i]).norm(), 0.0, 1e-12)
           << "fixed vertex " << i;
     }
+  }
+}
+
+//==============================================================================
+// The device-resident GPU rollout (full per-step pipeline on the GPU for many
+// steps) matches the CPU stepper run for the same number of steps with the same
+// non-accelerated warm start.
+TEST(CudaVbdBlockDescent, RolloutMatchesCpuStepper)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const Scene scene = makeGrid(6);
+  const auto coloring
+      = vbd::colorSprings(scene.positions.size(), scene.springs);
+  const auto adjacency
+      = vbd::SpringAdjacency::build(scene.positions.size(), scene.springs);
+  const Vec3 gravity(0.0, -9.81, 0.0);
+  constexpr std::size_t steps = 20;
+  constexpr std::size_t iterations = 40;
+
+  // CPU stepper reference (no adaptive init / Chebyshev, matching the GPU
+  // rollout's plain warm start).
+  std::vector<Vec3> cpuPos = scene.positions;
+  std::vector<Vec3> cpuVel(cpuPos.size(), Vec3::Zero());
+  std::vector<Vec3> cpuPrevVel(cpuPos.size(), Vec3::Zero());
+  vbd::VbdStepOptions stepOptions;
+  stepOptions.iterations = iterations;
+  stepOptions.useAdaptiveInit = false;
+  stepOptions.useChebyshev = false;
+  for (std::size_t s = 0; s < steps; ++s) {
+    vbd::vbdStepMassSpring(
+        cpuPos,
+        cpuVel,
+        cpuPrevVel,
+        scene.masses,
+        scene.fixed,
+        scene.springs,
+        scene.stiffness,
+        gravity,
+        scene.timeStep,
+        coloring,
+        adjacency,
+        stepOptions,
+        s > 0);
+  }
+
+  // GPU device-resident rollout.
+  cuda::VbdCudaRolloutProblem problem;
+  problem.nodeCount = scene.positions.size();
+  problem.stiffness = scene.stiffness;
+  problem.timeStep = scene.timeStep;
+  problem.iterations = iterations;
+  problem.stepCount = steps;
+  problem.gravity[0] = gravity.x();
+  problem.gravity[1] = gravity.y();
+  problem.gravity[2] = gravity.z();
+  for (std::size_t i = 0; i < scene.positions.size(); ++i) {
+    problem.positions.push_back(scene.positions[i].x());
+    problem.positions.push_back(scene.positions[i].y());
+    problem.positions.push_back(scene.positions[i].z());
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+  }
+  problem.masses = scene.masses;
+  problem.fixed = scene.fixed;
+  for (const auto& spring : scene.springs) {
+    problem.springA.push_back(spring.a);
+    problem.springB.push_back(spring.b);
+    problem.springRest.push_back(spring.restLength);
+  }
+  problem.incidentOffsets.push_back(0);
+  for (std::size_t v = 0; v < scene.positions.size(); ++v) {
+    for (const std::uint32_t s : adjacency.incidentSprings[v]) {
+      problem.incidentSprings.push_back(s);
+    }
+    problem.incidentOffsets.push_back(
+        static_cast<std::uint32_t>(problem.incidentSprings.size()));
+  }
+  problem.colorOffsets.push_back(0);
+  for (const auto& group : coloring.groups) {
+    for (const std::uint32_t v : group) {
+      problem.colorVertices.push_back(v);
+    }
+    problem.colorOffsets.push_back(
+        static_cast<std::uint32_t>(problem.colorVertices.size()));
+  }
+  cuda::vbdRolloutMassSpringCuda(problem);
+
+  for (std::size_t i = 0; i < cpuPos.size(); ++i) {
+    const Vec3 gpu(
+        problem.positions[3 * i],
+        problem.positions[3 * i + 1],
+        problem.positions[3 * i + 2]);
+    EXPECT_NEAR((gpu - cpuPos[i]).norm(), 0.0, 1e-5) << "vertex " << i;
   }
 }
