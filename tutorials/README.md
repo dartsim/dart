@@ -4,12 +4,13 @@ The legacy OpenSceneGraph tutorial executables were removed with the renderer
 replacement. Maintained visualization coverage now lives in the Filament GUI
 implementation behind `dart::gui` and the restored GUI examples.
 
-From a source checkout, run:
+From a source checkout, launch the standalone editor:
 
 ```bash
-pixi run ex dartsim
+pixi run dartsim
 ```
 
-Pass `--scene <name>` for migrated scenes such as `atlas-simbicon`,
-`tinkertoy`, `mimic-pendulums`, `rigid-chain`, and contact examples. For the
+For migrated scene fixtures such as `atlas-simbicon`, `tinkertoy`,
+`mimic-pendulums`, `rigid-chain`, and contact examples, pass `--scene <name>`
+through the example runner (`pixi run ex dartsim --scene <name>`). For the
 current example catalog, see `examples/README.md`.

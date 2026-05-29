@@ -81,12 +81,14 @@ private:
 bool isTransformEditable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor
+         || type == ObjectType::Collision;
 }
 
 bool isShapeEditable(ObjectType type)
 {
-  return type == ObjectType::RigidBody || type == ObjectType::Link;
+  return type == ObjectType::RigidBody || type == ObjectType::Link
+         || type == ObjectType::Collision;
 }
 
 bool hasSingleDofJoint(const SceneObject& object)
@@ -107,23 +109,38 @@ bool hasSingleAxisJoint(const SceneObject& object)
 
 InspectorNumericProperty numeric(
     InspectorNumericPropertyKind kind,
+    std::string section,
     std::string label,
     double value,
     double minimum,
     double maximum,
     bool editable)
 {
-  return {kind, std::move(label), value, minimum, maximum, editable};
+  return {
+      kind,
+      std::move(label),
+      std::move(section),
+      value,
+      minimum,
+      maximum,
+      editable};
 }
 
 InspectorEnumProperty enumProperty(
     InspectorEnumPropertyKind kind,
+    std::string section,
     std::string label,
     int value,
     std::vector<InspectorEnumChoice> choices,
     bool editable)
 {
-  return {kind, std::move(label), value, std::move(choices), editable};
+  return {
+      kind,
+      std::move(label),
+      std::move(section),
+      value,
+      std::move(choices),
+      editable};
 }
 
 std::vector<InspectorEnumChoice> shapeTypeChoices()
@@ -148,6 +165,15 @@ std::vector<InspectorEnumChoice> jointKindChoices()
       {"Ball", static_cast<int>(JointKind::Ball)},
       {"Planar", static_cast<int>(JointKind::Planar)},
       {"Free", static_cast<int>(JointKind::Free)},
+  };
+}
+
+std::vector<InspectorEnumChoice> sensorKindChoices()
+{
+  return {
+      {"Camera", static_cast<int>(SensorKind::Camera)},
+      {"Range", static_cast<int>(SensorKind::Range)},
+      {"Contact", static_cast<int>(SensorKind::Contact)},
   };
 }
 
@@ -180,6 +206,17 @@ std::optional<JointKind> jointKindFromValue(int value)
   return std::nullopt;
 }
 
+std::optional<SensorKind> sensorKindFromValue(int value)
+{
+  switch (static_cast<SensorKind>(value)) {
+    case SensorKind::Camera:
+    case SensorKind::Range:
+    case SensorKind::Contact:
+      return static_cast<SensorKind>(value);
+  }
+  return std::nullopt;
+}
+
 ShapeDesc defaultShapeFor(ShapeType type, const Eigen::Vector4d& color)
 {
   ShapeDesc shape;
@@ -199,6 +236,7 @@ void appendTransformProperties(
   const Eigen::Vector3d position = object.transform.translation();
   properties.push_back(numeric(
       InspectorNumericPropertyKind::TranslationX,
+      "Transform",
       "x",
       position.x(),
       -10.0,
@@ -206,6 +244,7 @@ void appendTransformProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::TranslationY,
+      "Transform",
       "y",
       position.y(),
       -10.0,
@@ -213,6 +252,7 @@ void appendTransformProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::TranslationZ,
+      "Transform",
       "z",
       position.z(),
       -10.0,
@@ -231,6 +271,7 @@ void appendShapeProperties(
     case ShapeType::Box:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "shape x",
           shape.dimensions.x(),
           minPositive,
@@ -238,6 +279,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionY,
+          "Shape",
           "shape y",
           shape.dimensions.y(),
           minPositive,
@@ -245,6 +287,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionZ,
+          "Shape",
           "shape z",
           shape.dimensions.z(),
           minPositive,
@@ -254,6 +297,7 @@ void appendShapeProperties(
     case ShapeType::Sphere:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "radius",
           shape.dimensions.x(),
           minPositive,
@@ -264,6 +308,7 @@ void appendShapeProperties(
     case ShapeType::Capsule:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "radius",
           shape.dimensions.x(),
           minPositive,
@@ -271,6 +316,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionY,
+          "Shape",
           "height",
           shape.dimensions.y(),
           minPositive,
@@ -280,6 +326,7 @@ void appendShapeProperties(
     case ShapeType::Plane:
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionX,
+          "Shape",
           "normal x",
           shape.dimensions.x(),
           -1.0,
@@ -287,6 +334,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionY,
+          "Shape",
           "normal y",
           shape.dimensions.y(),
           -1.0,
@@ -294,6 +342,7 @@ void appendShapeProperties(
           editable));
       properties.push_back(numeric(
           InspectorNumericPropertyKind::ShapeDimensionZ,
+          "Shape",
           "normal z",
           shape.dimensions.z(),
           -1.0,
@@ -310,6 +359,7 @@ void appendJointAxisProperties(
 {
   properties.push_back(numeric(
       InspectorNumericPropertyKind::JointAxisX,
+      "Joint",
       "axis x",
       object.jointAxis.x(),
       -1.0,
@@ -317,6 +367,7 @@ void appendJointAxisProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::JointAxisY,
+      "Joint",
       "axis y",
       object.jointAxis.y(),
       -1.0,
@@ -324,6 +375,7 @@ void appendJointAxisProperties(
       editable));
   properties.push_back(numeric(
       InspectorNumericPropertyKind::JointAxisZ,
+      "Joint",
       "axis z",
       object.jointAxis.z(),
       -1.0,
@@ -331,9 +383,145 @@ void appendJointAxisProperties(
       editable));
 }
 
+void appendSensorProperties(
+    std::vector<InspectorNumericProperty>& properties,
+    const SceneObject& object,
+    bool editable)
+{
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::SensorRange,
+      "Sensor",
+      "range",
+      object.sensor.range,
+      0.001,
+      1000.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::SensorFieldOfView,
+      "Sensor",
+      "field of view",
+      object.sensor.fieldOfView,
+      1.0,
+      179.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::SensorUpdateRate,
+      "Sensor",
+      "update rate",
+      object.sensor.updateRate,
+      0.001,
+      1000.0,
+      editable));
+}
+
+void appendCollisionProperties(
+    std::vector<InspectorNumericProperty>& properties,
+    const SceneObject& object,
+    bool editable)
+{
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::CollisionFriction,
+      "Collision",
+      "collision friction",
+      object.collision.friction,
+      0.0,
+      10.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::CollisionRestitution,
+      "Collision",
+      "collision restitution",
+      object.collision.restitution,
+      0.0,
+      1.0,
+      editable));
+}
+
 const SceneObject* selectedObject(const SimEngine& engine)
 {
   return engine.objects().model().find(engine.selection().primary());
+}
+
+InspectorStatus buildStatusForObject(
+    const SimEngine& engine,
+    const SceneObject& object,
+    std::size_t selectionCount,
+    std::string selectionSummary,
+    bool canDelete)
+{
+  const bool editable = engine.canEditScene();
+  InspectorStatus status;
+  status.hasSelection = true;
+  status.selectionCount = selectionCount;
+  status.locked = !editable;
+  status.object = object.id;
+  status.name = object.name;
+  status.type = objectTypeLabel(object.type);
+  status.selectionSummary = std::move(selectionSummary);
+  status.canDelete = canDelete && editable;
+
+  if (isTransformEditable(object.type)) {
+    appendTransformProperties(status.numericProperties, object, editable);
+  }
+  if (object.type == ObjectType::RigidBody) {
+    status.numericProperties.push_back(numeric(
+        InspectorNumericPropertyKind::Mass,
+        "Physical",
+        "mass",
+        object.mass,
+        0.01,
+        100.0,
+        editable));
+  }
+  if (hasSingleDofJoint(object)) {
+    status.numericProperties.push_back(numeric(
+        InspectorNumericPropertyKind::JointPosition,
+        "Joint",
+        "joint",
+        object.jointPosition,
+        -3.14159,
+        3.14159,
+        editable));
+  }
+  if (object.type == ObjectType::Link && object.parentLink != kNoObject) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::JointKind,
+        "Joint",
+        "joint kind",
+        static_cast<int>(object.jointType),
+        jointKindChoices(),
+        editable));
+  }
+  if (hasSingleAxisJoint(object)) {
+    appendJointAxisProperties(status.numericProperties, object, editable);
+  }
+  if (object.type == ObjectType::Sensor) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::SensorKind,
+        "Sensor",
+        "sensor kind",
+        static_cast<int>(object.sensor.kind),
+        sensorKindChoices(),
+        editable));
+    appendSensorProperties(status.numericProperties, object, editable);
+  }
+  if (object.type == ObjectType::Collision) {
+    appendCollisionProperties(status.numericProperties, object, editable);
+  }
+  if (isShapeEditable(object.type)) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::ShapeType,
+        "Shape",
+        "shape",
+        static_cast<int>(object.shape.type),
+        shapeTypeChoices(),
+        editable));
+    appendShapeProperties(status.numericProperties, object, editable);
+    status.colorProperty = InspectorColorProperty{
+        "color", "Material", object.shape.color, editable};
+  }
+
+  return status;
 }
 
 bool hasSelectedAncestor(
@@ -428,74 +616,67 @@ void setAxisComponent(
   }
 }
 
+void setSensorComponent(
+    SensorDesc& sensor, InspectorNumericPropertyKind kind, double value)
+{
+  switch (kind) {
+    case InspectorNumericPropertyKind::SensorRange:
+      sensor.range = value;
+      break;
+    case InspectorNumericPropertyKind::SensorFieldOfView:
+      sensor.fieldOfView = value;
+      break;
+    case InspectorNumericPropertyKind::SensorUpdateRate:
+      sensor.updateRate = value;
+      break;
+    default:
+      break;
+  }
+}
+
+void setCollisionComponent(
+    CollisionDesc& collision, InspectorNumericPropertyKind kind, double value)
+{
+  switch (kind) {
+    case InspectorNumericPropertyKind::CollisionFriction:
+      collision.friction = value;
+      break;
+    case InspectorNumericPropertyKind::CollisionRestitution:
+      collision.restitution = value;
+      break;
+    default:
+      break;
+  }
+}
+
 } // namespace
 
 InspectorStatus buildInspectorStatus(const SimEngine& engine)
 {
-  InspectorStatus status;
   const SceneObject* object = selectedObject(engine);
   if (object == nullptr) {
-    return status;
+    return {};
   }
 
-  const bool editable = engine.canEditScene();
-  status.hasSelection = true;
-  status.selectionCount = engine.selection().selected().size();
-  status.locked = !editable;
-  status.object = object->id;
-  status.name = object->name;
-  status.type = objectTypeLabel(object->type);
-  status.selectionSummary = status.selectionCount == 1
-                                ? "1 selected"
-                                : std::to_string(status.selectionCount)
-                                      + " selected; primary: " + status.name;
-  status.canDelete = editable;
+  const std::size_t selectionCount = engine.selection().selected().size();
+  return buildStatusForObject(
+      engine,
+      *object,
+      selectionCount,
+      selectionCount == 1 ? "1 selected"
+                          : std::to_string(selectionCount)
+                                + " selected; primary: " + object->name,
+      true);
+}
 
-  if (isTransformEditable(object->type)) {
-    appendTransformProperties(status.numericProperties, *object, editable);
-  }
-  if (object->type == ObjectType::RigidBody) {
-    status.numericProperties.push_back(numeric(
-        InspectorNumericPropertyKind::Mass,
-        "mass",
-        object->mass,
-        0.01,
-        100.0,
-        editable));
-  }
-  if (hasSingleDofJoint(*object)) {
-    status.numericProperties.push_back(numeric(
-        InspectorNumericPropertyKind::JointPosition,
-        "joint",
-        object->jointPosition,
-        -3.14159,
-        3.14159,
-        editable));
-  }
-  if (object->type == ObjectType::Link && object->parentLink != kNoObject) {
-    status.enumProperties.push_back(enumProperty(
-        InspectorEnumPropertyKind::JointKind,
-        "joint kind",
-        static_cast<int>(object->jointType),
-        jointKindChoices(),
-        editable));
-  }
-  if (hasSingleAxisJoint(*object)) {
-    appendJointAxisProperties(status.numericProperties, *object, editable);
-  }
-  if (isShapeEditable(object->type)) {
-    status.enumProperties.push_back(enumProperty(
-        InspectorEnumPropertyKind::ShapeType,
-        "shape",
-        static_cast<int>(object->shape.type),
-        shapeTypeChoices(),
-        editable));
-    appendShapeProperties(status.numericProperties, *object, editable);
-    status.colorProperty
-        = InspectorColorProperty{"color", object->shape.color, editable};
+InspectorStatus buildInspectorObjectStatus(const SimEngine& engine, ObjectId id)
+{
+  const SceneObject* object = engine.objects().model().find(id);
+  if (object == nullptr) {
+    return {};
   }
 
-  return status;
+  return buildStatusForObject(engine, *object, 1, "1 object", false);
 }
 
 InspectorActionResult setInspectorNumericProperty(
@@ -556,6 +737,27 @@ InspectorActionResult setInspectorNumericProperty(
       engine.execute(commands::setJointAxis(object->id, axis));
       return result(true, "Updated joint axis");
     }
+    case InspectorNumericPropertyKind::SensorRange:
+    case InspectorNumericPropertyKind::SensorFieldOfView:
+    case InspectorNumericPropertyKind::SensorUpdateRate: {
+      if (object->type != ObjectType::Sensor) {
+        return result(false, "Unsupported property");
+      }
+      SensorDesc sensor = object->sensor;
+      setSensorComponent(sensor, kind, value);
+      engine.execute(commands::setSensor(object->id, sensor));
+      return result(true, "Updated sensor");
+    }
+    case InspectorNumericPropertyKind::CollisionFriction:
+    case InspectorNumericPropertyKind::CollisionRestitution: {
+      if (object->type != ObjectType::Collision) {
+        return result(false, "Unsupported property");
+      }
+      CollisionDesc collision = object->collision;
+      setCollisionComponent(collision, kind, value);
+      engine.execute(commands::setCollision(object->id, collision));
+      return result(true, "Updated collision");
+    }
   }
 
   return result(false, "Unsupported property");
@@ -597,6 +799,19 @@ InspectorActionResult setInspectorEnumProperty(
       }
       engine.execute(commands::setJointKind(object->id, *jointKind));
       return result(true, "Updated joint kind");
+    }
+    case InspectorEnumPropertyKind::SensorKind: {
+      if (object->type != ObjectType::Sensor) {
+        return result(false, "Unsupported property");
+      }
+      const std::optional<SensorKind> sensorKind = sensorKindFromValue(value);
+      if (!sensorKind.has_value()) {
+        return result(false, "Unsupported choice");
+      }
+      SensorDesc sensor = object->sensor;
+      sensor.kind = *sensorKind;
+      engine.execute(commands::setSensor(object->id, sensor));
+      return result(true, "Updated sensor kind");
     }
   }
 

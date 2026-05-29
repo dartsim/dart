@@ -3601,6 +3601,10 @@ void advanceDeformableBody(
 
     double lastGradSquared = 0.0;
     double lastAcceptedStepInfinityNorm = 0.0;
+    // Whether the solve left the loop via an early break (converged, stalled,
+    // or non-finite energy) rather than exhausting the iteration cap. It gates
+    // the terminal-residual recompute below.
+    bool brokeEarly = false;
     std::vector<double> groundFrictionNormalForce;
     std::vector<Eigen::Vector3d> groundFrictionNormalDirection;
     std::vector<SelfContactFrictionContact> selfContactFrictionContacts;
@@ -3686,6 +3690,7 @@ void advanceDeformableBody(
           &groundFriction,
           &selfContactFriction);
       if (!std::isfinite(energy)) {
+        brokeEarly = true;
         break;
       }
 
@@ -3693,6 +3698,7 @@ void advanceDeformableBody(
           = gradientNormSquared(scratch.gradient, scratch.activeFixed);
       lastGradSquared = gradSquared;
       if (gradSquared <= gradientToleranceSquared) {
+        brokeEarly = true;
         break;
       }
 
@@ -3867,7 +3873,83 @@ void advanceDeformableBody(
       }
 
       if (!accepted) {
+        brokeEarly = true;
         break;
+      }
+    }
+    // If the solve ran to the iteration cap, the final accepted line-search
+    // step changed scratch.next *after* lastGradSquared was recorded at the top
+    // of that iteration, so the stored residual is the pre-final-step value.
+    // Recompute the gradient at the terminal iterate -- rebuilding the
+    // self-contact barrier active set and the lagged ground / self-contact
+    // friction inputs there so the residual matches the in-loop objective -- and
+    // use it, so the convergence diagnostic reports the residual at solve
+    // termination.
+    if (!brokeEarly) {
+      SelfContactBarrierInputs terminalBarrier;
+      if (!contactScratch.surfaceTriangles.empty()) {
+        const double dHat = selfContactBarrierActivationDistance();
+        dc::ContactCandidateOptions barrierOptions;
+        barrierOptions.activationDistance = dHat;
+        barrierOptions.exactDistanceFilter = true;
+        barrierOptions.excludeIncidentPointTriangles = true;
+        barrierOptions.excludeAdjacentEdges = true;
+        dc::buildContactCandidatesSweep(
+            scratch.next,
+            contactScratch.surfaceTriangles,
+            barrierOptions,
+            contactScratch.barrierCandidates,
+            contactScratch.sweepScratch);
+        filterSurfaceContactPointCandidates(
+            contactScratch.barrierCandidates,
+            contactScratch.surfaceContactPointMask);
+        terminalBarrier.candidates = &contactScratch.barrierCandidates;
+        terminalBarrier.triangles = &contactScratch.surfaceTriangles;
+        terminalBarrier.squaredActivationDistance = dHat * dHat;
+        terminalBarrier.stiffness = selfContactBarrierStiffness();
+      }
+      GroundFrictionInputs terminalGroundFriction;
+      if (frictionCoefficient > 0.0 && !barriers.empty()) {
+        computeStaticGroundNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            barriers,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        terminalGroundFriction.coefficient = frictionCoefficient;
+        terminalGroundFriction.epsilon = frictionEpsilon;
+        terminalGroundFriction.stepStartPositions
+            = &scratch.previousStepPositions;
+        terminalGroundFriction.laggedNormalForce = &groundFrictionNormalForce;
+        terminalGroundFriction.laggedNormalDirection
+            = &groundFrictionNormalDirection;
+      }
+      SelfContactFrictionInputs terminalSelfContactFriction;
+      if (frictionCoefficient > 0.0 && terminalBarrier.candidates != nullptr) {
+        buildSelfContactFrictionContacts(
+            scratch.next, terminalBarrier, selfContactFrictionContacts);
+        terminalSelfContactFriction.coefficient = frictionCoefficient;
+        terminalSelfContactFriction.epsilon = frictionEpsilon;
+        terminalSelfContactFriction.stepStartPositions
+            = &scratch.previousStepPositions;
+        terminalSelfContactFriction.contacts = &selfContactFrictionContacts;
+      }
+      const double terminalEnergy = evaluateDeformableObjective(
+          state,
+          model,
+          scratch.next,
+          scratch.inertialTargets,
+          scratch.activeFixed,
+          barriers,
+          timeStep,
+          &scratch.gradient,
+          &terminalBarrier,
+          nullptr,
+          &terminalGroundFriction,
+          &terminalSelfContactFriction);
+      if (std::isfinite(terminalEnergy)) {
+        lastGradSquared
+            = gradientNormSquared(scratch.gradient, scratch.activeFixed);
       }
     }
     // Record the worst-case solve residual across the step's bodies (the

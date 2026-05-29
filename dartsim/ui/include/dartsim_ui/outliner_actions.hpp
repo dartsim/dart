@@ -52,6 +52,7 @@ struct OutlinerRow
   int depth = 0;
   std::string name;
   std::string type;
+  std::string icon;
   bool selected = false;
   bool visible = true;
   bool hasChildren = false;
@@ -92,6 +93,8 @@ struct OutlinerActionResult
 
 /// Human-readable object type label used by outliner and inspector panels.
 [[nodiscard]] std::string objectTypeLabel(ObjectType type);
+/// Compact object-type icon used by outliner rows.
+[[nodiscard]] std::string objectTypeIcon(ObjectType type);
 
 /// Build a deterministic, depth-first outliner snapshot from the scene model.
 [[nodiscard]] std::vector<OutlinerRow> buildOutlinerRows(
@@ -99,7 +102,7 @@ struct OutlinerActionResult
 [[nodiscard]] std::vector<OutlinerRow> buildOutlinerRows(
     const SimEngine& engine, const OutlinerState& state);
 
-/// Label used for an ImGui-style tree row button.
+/// Label used for a panel tree row button.
 [[nodiscard]] std::string outlinerButtonLabel(const OutlinerRow& row);
 [[nodiscard]] std::string outlinerExpansionButtonLabel(const OutlinerRow& row);
 
