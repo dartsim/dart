@@ -139,16 +139,21 @@ friction"):
   `python/examples/demos/registry.py` under the Experimental group.
 
 Known robustness gap (reproducible, next correctness target): the runtime IPC
-stage handles a clean drop-and-rest well (a box dropped from z=0.6 settles at
-z=0.262, gap ~0.012, stable over 300 steps), but a box that ends up DEEP in the
-barrier band freezes. Repro: box half-extent 0.25 started at z=0.258 (gap 0.008)
-on static ground with linear velocity (1,0,0); under gravity it sinks to z=0.251
-(gap 0.001) and then stops advancing entirely — it does not slide even
-frictionless. This is why a friction-slide GUI demo is not yet viable. Root
-cause is stiff-contact convergence (likely too few Newton iterations / no
-adaptive stiffness at small gaps), a Phase 3 "production convergence criteria /
-robust contact behavior" item. Note: `sx.compute` (stages/executor) is not
-exposed in Python, so stage diagnostics must be inspected from a C++ test.
+stage FREEZES a free rigid body once a barrier constraint becomes active,
+instead of producing continued contact dynamics. A box dropped from z=0.6
+settles at z=0.262 (gap ~0.012) and is then EXACTLY frozen for 300 steps — which
+looks like resting and makes the `sx_rigid_ipc` drop demo honest ("the barrier
+stops the box at the ground"), but is freeze-on-contact, not stable equilibrium.
+The same freeze blocks tangential motion: a box started at z=0.258 (gap 0.008)
+with linear velocity (1,0,0) sinks to z=0.251 (gap 0.001) and then does not
+slide at all, even frictionless — so a friction-slide GUI demo is not yet
+viable. Likely cause: the per-step projected-Newton solve returns non-converged
+(MaxIterations) once contact is active, so the opt-in stage skips the result
+(Phase 3q non-converged skip) and the pose never advances. Investigate from a
+C++ test (read `RigidIpcContactStage::getLastStats()`: status/converged/
+acceptedSteps/finalGradientNorm) — `sx.compute` is not exposed in Python. This
+is the top Phase 3 "production convergence criteria / robust contact behavior"
+item and gates sliding, friction demos, and corpus scenes.
 
 Next perf targets: a cheaper PSD projection or fewer active-primitive
 evaluations via primitive-level candidate sets (NOT an LDLT skip), then
