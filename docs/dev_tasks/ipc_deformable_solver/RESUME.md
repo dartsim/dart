@@ -142,19 +142,19 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-self-contact-friction` - stacked on `feature/ipc-ground-friction`
-(#2746). Extends IPC friction to deformable SELF-CONTACT (point-triangle pairs),
-reusing `frictionCoefficient`. Lagged normal force = barrier force magnitude on
-the point node (||result.gradient.head<3>()||); tangent projection (2x12) from
-`dc::pointTriangleTangentStencil`; friction opposes projection*(4-node step
-displacement) with the same f0/f1 mollifier. Energy+gradient only (self-contact
-friction Hessian + edge-edge friction deferred); line search ensures descent.
-SelfContactFrictionContact/Inputs built once per outer iteration from the active
-barrier set; threaded through evaluateDeformableObjective. Test: a surface
-sliding tangentially on another in self-contact decelerates vs frictionless,
-barrier keeps them separated. 62 deformable tests pass.
+`feature/ipc-scene-replay-harness` - stacked on
+`feature/ipc-self-contact-friction` (#2748). PLAN-081 Phase 5 validation
+harness: a deterministic multi-frame scene-replay regression
+(ReplaysTutorialSceneDeterministicallyWithSaneTrajectory in
+test_deformable_scene_io.cpp) exercising loader -> solver -> diagnostics on a
+DART-native tutorial scene (DBC-anchored cube stays, free cube falls under -Y
+gravity, mass conserved, reproducible across runs) -- the per-scene invariant
+pattern. NOTE: loader sets gravity to (0,-9.80665,0) i.e. Y-up (IPC convention).
+The full 154-scene upstream corpus port is BLOCKED on (a) assets not vendored
+(manifest is upstream-path-referenced + validator-frozen) and (b) the
+contact-capable solver (loader ignores contact directives). 12 scene-io tests.
 
-Prior: #2746 = ground friction (Phase 4 first increment). NOTE (from the #2745
+Prior #2748 = self-contact friction; #2746 = ground friction. NOTE (from the #2745
 diagnostic): the stiff barrier-contact benchmarks
 (grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
 the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
@@ -166,20 +166,24 @@ Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
 until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 (self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
 Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
-reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction).
+reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
+(self-contact friction). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 
-User directive (2026-05-28): KEEP BUILDING the plan (Codex review batched for
-Saturday). REMAINING plan work, in rough priority: remaining Phase 4 friction
-(self-contact + codimensional friction; non-flat ground normals; friction
-diagnostics), barrier-stall convergence robustness (continuation / better line
-search -- the high-residual finding above), live GPU-backend injection (wire the
-CUDA PSD primitive + a GPU-vs-CPU perf gate via an optional executor, keeping
-world_step_stage GPU-free), adaptive barrier stiffness, rigid/codimensional
-obstacle barrier forces (disturbs #2732 CCD contracts), scene corpus port
-(Phase 5), Python facade (Phase 8). Per the standing directive, optimize CPU AND
-GPU throughout.
+User directive (2026-05-28): KEEP BUILDING the plan, NEVER STOP while a plan item
+remains, do everything in order (Codex review batched for Saturday). NEXT per the
+order: **Phase 8 Python facade** (expose World.addDeformableBody + DeformableBody
+
+- DeformableBodyOptions incl. frictionCoefficient to dartpy, with pytest), since
+  Phase 5's full corpus port is asset/capability-blocked (harness landed). THEN the
+  remaining items: remaining Phase 4 (edge-edge/self-contact friction Hessian,
+  non-flat normals, friction diagnostics), barrier-stall convergence robustness
+  (the high-residual finding above), live GPU-backend injection (CUDA PSD primitive
+- GPU-vs-CPU gate via optional executor, world_step_stage stays GPU-free),
+  adaptive barrier stiffness, rigid/codim obstacle barrier forces (disturbs #2732),
+  and the upstream corpus port once assets are vendored. Optimize CPU AND GPU
+  throughout.
 
 ## Context That Would Be Lost
 
