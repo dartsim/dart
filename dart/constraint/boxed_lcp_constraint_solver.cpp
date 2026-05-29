@@ -249,8 +249,8 @@ void BoxedLcpConstraintSolver::syncLcpSolversFromBoxedSolvers()
       mLcpSolver = primarySolver;
     }
     configurePgsSolver(primarySolver, pgs->getOption());
-  } else if (std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(
-                 mBoxedLcpSolver)) {
+  } else if (
+      std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(mBoxedLcpSolver)) {
     if (!std::dynamic_pointer_cast<math::DantzigSolver>(mLcpSolver)) {
       mLcpSolver = std::make_shared<math::DantzigSolver>();
     }
@@ -271,8 +271,9 @@ void BoxedLcpConstraintSolver::syncLcpSolversFromBoxedSolvers()
         mSecondaryLcpSolver = secondarySolver;
       }
       configurePgsSolver(secondarySolver, pgs->getOption());
-    } else if (std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(
-                   mSecondaryBoxedLcpSolver)) {
+    } else if (
+        std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(
+            mSecondaryBoxedLcpSolver)) {
       if (!std::dynamic_pointer_cast<math::DantzigSolver>(
               mSecondaryLcpSolver)) {
         mSecondaryLcpSolver = std::make_shared<math::DantzigSolver>();

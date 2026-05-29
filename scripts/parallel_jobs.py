@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compute build parallelism for pixi tasks."""
+
 from __future__ import annotations
 
 import os
