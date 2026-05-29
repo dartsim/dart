@@ -1003,6 +1003,22 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("LoopClosureRuntimePolicy", fields);
       });
 
+  nb::class_<sim::MultibodyOptions>(m, "MultibodyOptions")
+      .def(
+          nb::new_([](const std::string& integrationFamily) {
+            return sim::MultibodyOptions{
+                .integrationFamily = integrationFamily};
+          }),
+          nb::arg("integration_family") = "semi-implicit")
+      .def_rw("integration_family", &sim::MultibodyOptions::integrationFamily)
+      .def("__repr__", [](const sim::MultibodyOptions& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "integration_family",
+            nb::cast<std::string>(nb::repr(nb::cast(self.integrationFamily))));
+        return format_repr("MultibodyOptions", fields);
+      });
+
   nb::class_<sim::LoopClosureResidual>(m, "LoopClosureResidual")
       .def_prop_ro(
           "value",
@@ -1625,10 +1641,10 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.setGravity(toVector3(gravity));
           })
       .def_prop_rw(
-          "multibody_integration_method",
-          &sim::World::getMultibodyIntegrationMethod,
-          [](sim::World& self, const std::string& method) {
-            self.setMultibodyIntegrationMethod(method);
+          "multibody_options",
+          &sim::World::getMultibodyOptions,
+          [](sim::World& self, const sim::MultibodyOptions& options) {
+            self.setMultibodyOptions(options);
           })
       .def_prop_ro("frame", &sim::World::getFrame)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)

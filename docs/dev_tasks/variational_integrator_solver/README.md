@@ -27,7 +27,8 @@ Paper experiment replication + measured results:
         **serialization**: `MultibodyVariationalState` is a registered State
         component (binary format bumped to v3); save/load round-trips the
         `bootstrapped` flag + `previousDeltaTransform`/`previousMomentum`.
-  - [x] Integration-family **selector** (`World::setMultibodyIntegrationMethod`)
+  - [x] Integration-family **selector** (`World::setMultibodyOptions`, a
+        `MultibodyOptions` value object)
         so the VI runs on the default `step()` path by method name (pipeline
         substitution, not stage-append); covered by `SelectableThroughWorldStep`.
   - [x] Determinism & serialization — run-to-run bit-identical rollout through

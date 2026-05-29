@@ -37,6 +37,7 @@
 #include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
+#include <dart/simulation/experimental/multibody/multibody_options.hpp>
 #include <dart/simulation/experimental/world_sync_stage.hpp>
 
 #include <Eigen/Geometry>
@@ -160,20 +161,21 @@ public:
       compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
-  // Solver / integration-family selection
+  // Multibody solver configuration
   //--------------------------------------------------------------------------
 
-  /// Select the integration family used for multibody dynamics on the default
-  /// `step()` path, by documented method-family name: `"semi-implicit"`
-  /// (default; articulated-body forward dynamics) or `"variational integrator"`
-  /// (the linear-time discrete-mechanics integrator). Throws
-  /// InvalidArgumentException for unknown names. Selecting by method name keeps
-  /// solver and stage types out of the public facade.
-  void setMultibodyIntegrationMethod(std::string_view method);
+  /// Set the multibody solver/integration configuration as a whole (see
+  /// `MultibodyOptions`). Configuration is by documented method-family name, so
+  /// new capabilities are added as `MultibodyOptions` fields rather than as new
+  /// World methods, and no solver/stage types are exposed. Throws
+  /// InvalidArgumentException for an unknown `integrationFamily`. Selection is
+  /// parsed to an internal representation here, so the per-step path carries no
+  /// configuration-parsing cost.
+  void setMultibodyOptions(const MultibodyOptions& options);
 
-  /// The configured multibody integration-family method name. Defaults to
-  /// `"semi-implicit"`.
-  [[nodiscard]] std::string getMultibodyIntegrationMethod() const;
+  /// The current multibody solver/integration configuration. The
+  /// `integrationFamily` defaults to `"semi-implicit"`.
+  [[nodiscard]] MultibodyOptions getMultibodyOptions() const;
 
   //--------------------------------------------------------------------------
   // Registry access

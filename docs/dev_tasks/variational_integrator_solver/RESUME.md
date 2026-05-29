@@ -33,7 +33,7 @@ The selector and the **O(n) ABI** (Phase A2 core) have landed:
 articulated-inertia sweep + forward acceleration sweep) drives RIQN and matches
 the dense `M⁻¹` to 1e-9 (`ArticulatedInverseMassMatchesDenseSolve`); the
 integrator is linear-time, symplectic (energy-conserving over 1e5 steps), and
-selectable via `World::setMultibodyIntegrationMethod("variational integrator")`.
+selectable via `World::setMultibodyOptions({.integrationFamily = "variational integrator"})`.
 All committed PLAN-082 phases (A1, A2, B1, B2), every acceptance gate, the
 paper-experiment replication, and the post-plan follow-ups are complete and
 verified: A1's symplectic headline / momentum / non-convergence-error /

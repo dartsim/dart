@@ -882,18 +882,21 @@ def test_experimental_world_gravity():
         world.gravity = (float("nan"), 0.0, 0.0)
 
 
-def test_experimental_multibody_integration_method_selector():
+def test_experimental_multibody_options_selector():
     sx = _simulation_experimental()
 
     world = sx.World()
-    # Default family; selectable by documented method-family name only.
-    assert world.multibody_integration_method == "semi-implicit"
-    world.multibody_integration_method = "variational integrator"
-    assert world.multibody_integration_method == "variational integrator"
+    # Solver config is a value object; selection is by documented method-family
+    # name only (no per-setting setters).
+    assert world.multibody_options.integration_family == "semi-implicit"
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert world.multibody_options.integration_family == "variational integrator"
     with pytest.raises(Exception):
-        world.multibody_integration_method = "nonsense"
+        world.multibody_options = sx.MultibodyOptions(integration_family="nonsense")
     # A rejected assignment leaves the previous valid selection in place.
-    assert world.multibody_integration_method == "variational integrator"
+    assert world.multibody_options.integration_family == "variational integrator"
 
     # The variational integrator runs on the default step() path.
     arm = world.add_multibody("pendulum")

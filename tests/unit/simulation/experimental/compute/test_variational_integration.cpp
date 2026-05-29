@@ -176,12 +176,13 @@ TEST(VariationalIntegration, PendulumConservesEnergyOverLongHorizon)
 TEST(VariationalIntegration, SelectableThroughWorldStep)
 {
   sx::World world;
-  EXPECT_EQ(world.getMultibodyIntegrationMethod(), "semi-implicit");
+  EXPECT_EQ(world.getMultibodyOptions().integrationFamily, "semi-implicit");
   EXPECT_THROW(
-      world.setMultibodyIntegrationMethod("nonsense"),
+      world.setMultibodyOptions({.integrationFamily = "nonsense"}),
       sx::InvalidArgumentException);
-  world.setMultibodyIntegrationMethod("variational integrator");
-  EXPECT_EQ(world.getMultibodyIntegrationMethod(), "variational integrator");
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily, "variational integrator");
 
   auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
@@ -292,7 +293,7 @@ TEST(VariationalIntegration, DeterministicAcrossRuns)
 {
   const auto rollout = []() {
     sx::World world;
-    world.setMultibodyIntegrationMethod("variational integrator");
+    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
     auto robot = world.addMultibody("chain");
     auto parent = robot.addLink("base");
     for (int i = 0; i < 3; ++i) {
@@ -889,7 +890,7 @@ TEST(VariationalIntegration, FloatingBaseConservesMomentum)
 TEST(VariationalIntegration, LoopClosureSolvedThroughWorldStep)
 {
   sx::World world;
-  world.setMultibodyIntegrationMethod("variational integrator");
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
   auto robot = world.addMultibody("arm");
   auto parent = robot.addLink("base");
   const double bend[5] = {0.0, 0.5, -0.5, 0.5, -0.5};
@@ -950,7 +951,7 @@ TEST(VariationalIntegration, LoopClosureSolvedThroughWorldStep)
 TEST(VariationalIntegration, LoopClosureCrossMultibodyRejectedUnderVariational)
 {
   sx::World world;
-  world.setMultibodyIntegrationMethod("variational integrator");
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
   const auto makeArm = [&](const char* name) {
     auto robot = world.addMultibody(name);
     auto base = robot.addLink(std::string(name) + "_base");
@@ -1077,7 +1078,7 @@ TEST(VariationalIntegration, RigidConstraintJacobianMatchesFiniteDifference)
 TEST(VariationalIntegration, LoopClosureRigidSolvedThroughWorldStep)
 {
   sx::World world;
-  world.setMultibodyIntegrationMethod("variational integrator");
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
   auto robot = world.addMultibody("arm");
   auto parent = robot.addLink("base");
   const Eigen::Vector3d axes[7]
@@ -1144,7 +1145,7 @@ TEST(VariationalIntegration, LoopClosureRigidSolvedThroughWorldStep)
 TEST(VariationalIntegration, LoopClosureDistanceSolvedThroughWorldStep)
 {
   sx::World world;
-  world.setMultibodyIntegrationMethod("variational integrator");
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
   auto robot = world.addMultibody("arm");
   auto base = robot.addLink("base");
   const auto offset = [](double x) {
@@ -1214,7 +1215,7 @@ TEST(VariationalIntegration, LoopClosureDistanceSolvedThroughWorldStep)
 TEST(VariationalIntegration, StateSerializationRoundTripsTrajectory)
 {
   const auto buildPendulum = [](sx::World& world) {
-    world.setMultibodyIntegrationMethod("variational integrator");
+    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
     auto robot = world.addMultibody("pendulum");
     auto base = robot.addLink("base");
     Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -1257,7 +1258,7 @@ TEST(VariationalIntegration, StateSerializationRoundTripsTrajectory)
   sx::World loaded;
   buffer.seekg(0);
   loaded.loadBinary(buffer);
-  loaded.setMultibodyIntegrationMethod("variational integrator");
+  loaded.setMultibodyOptions({.integrationFamily = "variational integrator"});
   ASSERT_TRUE(loaded.getMultibody("pendulum").has_value());
   for (int k = 0; k < 50; ++k) {
     loaded.step();
@@ -1315,6 +1316,37 @@ TEST(VariationalIntegration, LongChainConvergesWithinDefaultBudget)
     maxIters = std::max(maxIters, report.iterations);
   }
   EXPECT_LE(maxIters, 100u) << "max RIQN iterations " << maxIters;
+}
+
+// Zero default-path overhead: with the default ("semi-implicit") integration
+// family, stepping a multibody never engages the variational integrator. Its
+// per-multibody state component is created only by the variational stage's
+// execute(), so its absence after stepping proves none of the DRNEA/RIQN/ABI
+// machinery ran -- conventional solvers pay nothing for the VI feature.
+TEST(VariationalIntegration, DefaultPathDoesNotEngageVariationalIntegrator)
+{
+  sx::World world; // default family is "semi-implicit"
+  ASSERT_EQ(world.getMultibodyOptions().integrationFamily, "semi-implicit");
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+  bob.setMass(1.0);
+  bob.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  for (int k = 0; k < 50; ++k) {
+    world.step();
+  }
+  // The variational stage (hence its state component) is never instantiated.
+  EXPECT_EQ(
+      world.getRegistry().view<sxc::MultibodyVariationalState>().size(), 0u);
 }
 
 // Measurement harness (disabled in CI): mean/max RIQN iterations vs chain

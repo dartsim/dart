@@ -168,9 +168,11 @@ item names the artifact that verifies it.
 - **State serialization.** The two-step discrete-mechanics history is a
   registered, serialized component, so a binary save/load resumes a trajectory
   bit-identically without re-bootstrapping (`StateSerializationRoundTripsTrajectory`).
-- **Facade-safe integration-family selector.** The integrator is selected by the
-  documented method-family name (`World::setMultibodyIntegrationMethod`, also a
-  dartpy property) with no public exposure of solver/stage/component types;
+- **Facade-safe solver configuration.** The integrator is selected by the
+  documented method-family name through a `MultibodyOptions` value object
+  (`World::setMultibodyOptions`, `multibody_options` in dartpy) -- a categorized
+  config that future capabilities extend as fields rather than as new World
+  methods -- with no public exposure of solver/stage/component types;
   `check-api-boundaries` stays green.
 
 ## How It Maps Onto The Experimental World

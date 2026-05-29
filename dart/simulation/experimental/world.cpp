@@ -153,13 +153,15 @@ void validateLoopClosureKinematicsPolicySupport(const World& world)
 }
 
 //==============================================================================
-void validateLoopClosureDynamicsPolicySupport(const World& world)
+// `variationalSelected` is passed in (an enum comparison the caller already
+// has) rather than re-derived from a string here, so the per-step default path
+// carries no configuration-string work. The variational integrator solves a
+// supported subset of loop closures (see compute::bindVariationalLoopClosure);
+// the semi-implicit pipeline has no loop-closure solving stage and rejects
+// every Solve closure.
+void validateLoopClosureDynamicsPolicySupport(
+    const World& world, bool variationalSelected)
 {
-  // The variational integrator solves a supported subset of loop closures
-  // (see compute::bindVariationalLoopClosure); the semi-implicit pipeline has
-  // no loop-closure solving stage and rejects every Solve closure.
-  const bool variational
-      = world.getMultibodyIntegrationMethod() == "variational integrator";
   auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
   for (auto entity : view) {
     const auto& closure = view.get<comps::LoopClosure>(entity);
@@ -170,7 +172,7 @@ void validateLoopClosureDynamicsPolicySupport(const World& world)
     }
 
     const auto& name = view.get<comps::Name>(entity);
-    if (variational) {
+    if (variationalSelected) {
       const auto binding
           = compute::bindVariationalLoopClosure(world.getRegistry(), entity);
       DART_EXPERIMENTAL_THROW_T_IF(
@@ -1525,26 +1527,31 @@ void World::step(std::size_t count)
 }
 
 //==============================================================================
-void World::setMultibodyIntegrationMethod(std::string_view method)
+void World::setMultibodyOptions(const MultibodyOptions& options)
 {
-  if (method == "semi-implicit" || method == "semi-implicit Euler") {
+  const std::string& family = options.integrationFamily;
+  if (family == "semi-implicit" || family == "semi-implicit Euler") {
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
-  } else if (method == "variational integrator" || method == "variational") {
+  } else if (family == "variational integrator" || family == "variational") {
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
   } else {
     DART_EXPERIMENTAL_THROW_T(
         InvalidArgumentException,
-        "Unknown multibody integration method; supported method-family names "
-        "are 'semi-implicit' and 'variational integrator'");
+        "Unknown multibody integrationFamily '{}'; supported method-family "
+        "names are 'semi-implicit' and 'variational integrator'",
+        family);
   }
 }
 
 //==============================================================================
-std::string World::getMultibodyIntegrationMethod() const
+MultibodyOptions World::getMultibodyOptions() const
 {
-  return m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
-             ? "variational integrator"
-             : "semi-implicit";
+  MultibodyOptions options;
+  options.integrationFamily
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? "variational integrator"
+            : "semi-implicit";
+  return options;
 }
 
 //==============================================================================
@@ -1646,7 +1653,9 @@ void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
   validateLoopClosureKinematicsPolicySupport(*this);
-  validateLoopClosureDynamicsPolicySupport(*this);
+  validateLoopClosureDynamicsPolicySupport(
+      *this,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
 
   if (!m_simulationMode) {
     enterSimulationMode();
