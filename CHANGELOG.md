@@ -486,6 +486,11 @@
     `abidiff`. The task is diagnostic only and is not wired into CI; ABI
     stability between minor releases is still a deferred topic (see issue
     [#1026](https://github.com/dartsim/dart/issues/1026)).
+  - Added `pixi run lint-cmake` / `check-lint-cmake` CMake formatting with
+    `gersemi`, wired into the `lint` and `check-lint` chains so `CMakeLists.txt`
+    and `*.cmake` files are auto-formatted and CI-checked like every other
+    tracked file type. Configuration in `.gersemirc` matches DART's C++ style
+    (80-column, 2-space indent).
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.
