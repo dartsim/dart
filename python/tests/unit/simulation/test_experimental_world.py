@@ -882,6 +882,37 @@ def test_experimental_world_gravity():
         world.gravity = (float("nan"), 0.0, 0.0)
 
 
+def test_experimental_multibody_integration_method_selector():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    # Default family; selectable by documented method-family name only.
+    assert world.multibody_integration_method == "semi-implicit"
+    world.multibody_integration_method = "variational integrator"
+    assert world.multibody_integration_method == "variational integrator"
+    with pytest.raises(Exception):
+        world.multibody_integration_method = "nonsense"
+    # A rejected assignment leaves the previous valid selection in place.
+    assert world.multibody_integration_method == "variational integrator"
+
+    # The variational integrator runs on the default step() path.
+    arm = world.add_multibody("pendulum")
+    base = arm.add_link("base")
+    bob = arm.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge", type=sx.JointType.REVOLUTE, axis=(0.0, 1.0, 0.0)
+        ),
+    )
+    bob.mass = 1.0
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
+    world.time_step = 1e-3
+    world.enter_simulation_mode()
+    world.step(10)
+    assert world.time == pytest.approx(10e-3)
+
+
 def test_experimental_rigid_body_dynamic_quantities():
     sx = _simulation_experimental()
 

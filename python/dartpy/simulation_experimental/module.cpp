@@ -1616,6 +1616,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::World& self, const nb::handle& gravity) {
             self.setGravity(toVector3(gravity));
           })
+      .def_prop_rw(
+          "multibody_integration_method",
+          &sim::World::getMultibodyIntegrationMethod,
+          [](sim::World& self, const std::string& method) {
+            self.setMultibodyIntegrationMethod(method);
+          })
       .def_prop_ro("frame", &sim::World::getFrame)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
