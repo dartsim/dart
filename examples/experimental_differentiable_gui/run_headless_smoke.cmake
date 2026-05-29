@@ -18,12 +18,8 @@ file(REMOVE "${_screenshot}")
 
 execute_process(
   COMMAND
-    "${DART_DIFFERENTIABLE_GUI_EXECUTABLE}"
-    --headless
-    --frames "${_frames}"
-    --width "${_width}"
-    --height "${_height}"
-    --screenshot "${_screenshot}"
+    "${DART_DIFFERENTIABLE_GUI_EXECUTABLE}" --headless --frames "${_frames}"
+    --width "${_width}" --height "${_height}" --screenshot "${_screenshot}"
   RESULT_VARIABLE _result
   OUTPUT_VARIABLE _stdout
   ERROR_VARIABLE _stderr
@@ -68,7 +64,13 @@ if(_screenshot_size LESS _expected_size)
   )
 endif()
 
-file(READ "${_screenshot}" _pixel_sample OFFSET "${_header_size}" LIMIT 8192 HEX)
+file(
+  READ "${_screenshot}"
+  _pixel_sample
+  OFFSET "${_header_size}"
+  LIMIT 8192
+  HEX
+)
 if(NOT _pixel_sample MATCHES "[1-9a-fA-F]")
   message(FATAL_ERROR "${_screenshot} sample contains only zero-valued pixels")
 endif()

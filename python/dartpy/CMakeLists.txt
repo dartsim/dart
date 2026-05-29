@@ -388,7 +388,13 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # Copy pure-Python helpers into the build tree so tests can import them
-foreach(_py_file __init__.py _naming.py _layout.py _simulation_experimental_diff.py)
+foreach(
+  _py_file
+  __init__.py
+  _naming.py
+  _layout.py
+  _simulation_experimental_diff.py
+)
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
     ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}

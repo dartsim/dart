@@ -26,7 +26,11 @@ if(TARGET dart-simulation-experimental)
   endif()
 endif()
 
-if(NOT TARGET dart-gui OR NOT TARGET dart-simulation-experimental OR NOT _dart_diff_available)
+if(
+  NOT TARGET dart-gui
+  OR NOT TARGET dart-simulation-experimental
+  OR NOT _dart_diff_available
+)
   if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
     message(
       STATUS
@@ -42,7 +46,12 @@ dart_build_gui_example(${example_name} main.cpp)
 if(TARGET ${example_name})
   target_link_libraries(${example_name} PRIVATE dart-simulation-experimental)
 
-  if(DART_IN_SOURCE_BUILD AND BUILD_TESTING AND DART_BUILD_TESTS AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS)
+  if(
+    DART_IN_SOURCE_BUILD
+    AND BUILD_TESTING
+    AND DART_BUILD_TESTS
+    AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS
+  )
     add_test(
       NAME EXAMPLE_experimental_differentiable_gui_headless_smoke
       COMMAND

@@ -124,16 +124,14 @@ target_compile_definitions(
 # and can compile the detail-only differentiable code path. Differentiability
 # remains a runtime opt-in via WorldOptions::differentiable.
 if(DART_BUILD_DIFF)
-  target_sources(${target_name}
+  target_sources(
+    ${target_name}
     PRIVATE
       detail/contact_jacobians.cpp
       detail/smooth_jacobians.cpp
       diff/rollout.cpp
   )
-  target_compile_definitions(${target_name}
-    PUBLIC
-      DART_HAS_DIFF
-  )
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_DIFF)
 endif()
 
 if(DART_ENABLE_EXPERIMENTAL_CUDA)

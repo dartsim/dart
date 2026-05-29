@@ -10,6 +10,17 @@ Status legend: **PRESENT** (implemented + finite-difference checked),
 **PARTIAL** (partly implemented or unchecked), **GAP** (not started),
 **PREREQ** (blocked on a non-differentiability prerequisite).
 
+> **As-built note.** The per-row `GAP`/`PREREQ` labels below were the
+> **planning-time** gap analysis. As implemented (see `dashboard.md` PLAN-110 and
+> the dev-task), the first slices of WS1–WS5 **and** the boxed-LCP contact
+> prerequisite have all landed and are finite-difference-verified: opt-in seam,
+> contact-free Jacobians for all joint types, the analytic contact gradient
+> (frictionless + Coulomb friction + rotational/multi-contact), the
+> `applyStepVjp`/`diff::rollout` reverse pass, the dartpy `sx.diff` bridge,
+> mass/inertia/friction parameter derivatives, and the `ContactGradientMode`
+> refinement modes. Read the rows below as the original baseline, not the current
+> status; the dashboard and plan card own the current state.
+
 ## 1. Method Overview
 
 Reference: Werling, Omens, Lee, Exarchos, Liu, "Fast and Feature-Complete

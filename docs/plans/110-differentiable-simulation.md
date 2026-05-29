@@ -26,12 +26,15 @@
     (`LcpResult LcpSolver::solve(const LcpProblem&, VectorXd& x, const LcpOptions&)`),
     articulated-body dynamics `compute/multibody_dynamics.*` (`M, C, g`, link
     Jacobians), and the `tan-lcp` formulation.
-  - **The experimental contact path is currently sequential-impulse PGS, not a
-    boxed LCP** (verified: zero `dart/math/lcp/` usage under
-    `dart/simulation/experimental/`). The analytic contact gradient is undefined
-    until the LCP solve exists on the experimental path — see Dependencies.
+  - As built: an opt-in boxed-LCP rigid-body contact path landed on the
+    experimental `World` (`detail/boxed_lcp_contact.{hpp,cpp}` assembles the
+    Delassus system `A = J M⁻¹ Jᵀ` and solves it via the `dart/math/lcp` Dantzig
+    pivoting solver, behind `WorldOptions::contactSolverMethod == BoxedLcp`; the
+    default `SequentialImpulse` path is unchanged). The analytic contact gradient
+    is implemented on that seam (`detail/contact_jacobians.{hpp,cpp}`).
   - DART's manifold position integration (SO(3)/SE(3) exp/log) makes the position
-    Jacobian joint-type-keyed, not identity; the design captures this.
+    Jacobian joint-type-keyed, not identity; implemented in
+    `detail/smooth_jacobians.cpp`.
 
 ## Owner Docs
 
@@ -49,54 +52,54 @@
 
 ## Dependencies
 
-- **Hard prerequisite — PLAN-080 Workstream 4** (boxed-LCP contact + joint-limit
-  solving on the experimental `World`). This is **currently unstarted**: the
-  experimental contact path is sequential-impulse PGS, and PLAN-080's own next
-  step is still landing the rigid-body MVP. WS2–WS5 of this plan are therefore
-  **Blocked** until WS4 lands an LCP solve. To avoid a stall and avoid
-  re-touching WS4 later, PLAN-110 contributes a requirement _into_ PLAN-080 WS4:
-  the experimental LCP contact solve must emit `{A,b,lo,hi,findex,f}` as
-  first-class outputs (a snapshot-friendly, differentiation-ready seam), and
-  should target a pivoting (Dantzig-style) solver that yields a clean active set.
-- **WS1 is unblocked** — the contact-free articulated Jacobians (seams 3–5) do
-  not depend on WS4.
+- **Boxed-LCP contact prerequisite — landed in this work** (the PLAN-080
+  Workstream 4 seam, scoped opt-in here). The experimental `World` gained a
+  `BoxedLcp` contact method whose solve emits the `{A,b,lo,hi,findex,f}` snapshot
+  the analytic contact gradient differentiates, via a pivoting (Dantzig) solver
+  with a clean active set — exactly the differentiation-ready seam this plan
+  required. The default `SequentialImpulse` path is unchanged.
 - Coordinates with PLAN-030 (deferred GPU/batched differentiable track) and
   PLAN-081 (deferred differentiable-deformable track); neither blocks the
   rigid-body analytic CPU method.
 
 ## Workstreams
 
-Sequenced; slice detail in the dev-task roadmap. Each slice keeps
-`check-api-boundaries` green and flips gap-audit rows to PRESENT with
-finite-difference evidence.
+First slices of all five workstreams are implemented and verified (see the
+dashboard entry and `docs/dev_tasks/differentiable_simulation/`); each keeps
+`check-api-boundaries` green and is finite-difference-of-step validated. Slice
+detail lives in the dev-task roadmap.
 
-1. **Opt-in seam + contact-free Jacobians** (unblocked) — `WorldOptions::differentiable`
-   (default false; new options/constructor surface), nullable-sink snapshot
-   plumbing, the **chosen smooth-term derivative mechanism** (analytic
-   spatial-algebra recursion, the reserved autodiff-scalar path, or FD-of-dynamics
-   as an interim — decided and recorded at WS1 start), **joint-type-keyed position
-   Jacobians** (Euclidean `I`/`Δt·I`; SO(3)/SE(3) `dexp`/`dlog` + free-joint
-   coupling), `state_jacobian`/`control_jacobian` for the contact-free path, the
-   FD checker, and the zero-cost parity test. Enumerate which joint types ship.
-2. **Analytic contact gradient** (blocked on WS4) — clamping/separating/tied
-   classification, `A_CC` rank-revealing solve with CFM, `∂f_C/∂{A,b}`, friction
-   `findex` cone mapping (convention pinned to WS4's LCP), `∂(Jᵀf)/∂q`; target a
-   pivoting solver (iterative solvers out of scope for the analytic gradient).
-3. **Reverse product + PyTorch bridge** (blocked on WS2) — framework-neutral
-   `applyStepVjp`, the optional `sx.diff` submodule (`timestep`/`rollout`
-   `autograd.Function`, lazy torch), `state_vector`/`num_efforts` helpers, the
-   checkpointing knob (recompute vs. store) with a peak-memory test, dartpy stubs,
-   a torch-absent import test, Python tests, and a trajectory-optimization example.
-4. **Parameter derivatives** (blocked on WS2) — `PhysicalParameterSelector`
-   (mass/COM/inertia/friction with bounds), `parameter_jacobian`, a
-   system-identification example.
-5. **Refinement opt-in modes (split, separately gated)** —
-   - 5a elastic/restitution (approximate continuous-collision model; FD-checked
-     where defined; labeled approximate);
+1. **Opt-in seam + contact-free Jacobians** (implemented) — `WorldOptions::differentiable`
+   (default false) + `DART_BUILD_DIFF`, nullable-sink snapshot plumbing, the
+   smooth-term derivative mechanism (FD-of-terms over `computeMultibodyDynamicsTerms`
+   - analytic semi-implicit-Euler assembly), **joint-type-keyed position
+     Jacobians** (Euclidean `I`/`Δt·I`; SO(3)/SE(3) `dexp`/`dlog` + free-joint
+     coupling — all joint types), the FD checker, and the zero-cost parity test.
+2. **Analytic contact gradient** (implemented) — clamping/separating classification,
+   `A_CC` rank-revealing solve with CFM, `∂f_C/∂{A,b}`, friction `findex` cone
+   (upper-bound mapping), `∂(Jᵀf)/∂q`, rotational/off-COM and multi-contact; over
+   the `BoxedLcp` pivoting solve.
+3. **Reverse product + PyTorch bridge** (implemented) — framework-neutral
+   `applyStepVjp` and `diff::rollout`, the optional `sx.diff` submodule
+   (`timestep`/`rollout` `autograd.Function`, lazy torch), `state_vector`/
+   `num_efforts` helpers, dartpy stubs, a torch-absent import test, Python tests,
+   and a throw-to-target trajectory-optimization test.
+4. **Parameter derivatives** (implemented) — `PhysicalParameterSelector` +
+   `parameter_jacobian` for MASS, INERTIA, and FRICTION (COM excluded: no effect
+   on the rigid-body step → identically-zero gradient), with a system-identification
+   (mass-recovery) test.
+5. **Refinement opt-in modes** (implemented; split, separately gated) — `ContactGradientMode`:
+   - 5a elastic/restitution (FD-checked in a stable clamping regime; approximate
+     at the make/break instant);
    - 5b complementarity-aware saddle escape (heuristic; **no FD gate by
-     construction**; gated by a documented optimization-convergence benchmark);
-   - 5c pre-contact surrogate (backward-only; **no FD gate**; gated by a
-     documented trajectory-optimization task).
+     construction** — asserted to produce a non-zero direction where ANALYTIC stalls);
+   - 5c pre-contact surrogate (backward-only; **no FD gate** — asserted non-zero
+     toward-contact where ANALYTIC is zero).
+
+Remaining follow-ups (not workstreams): worked trajectory-optimization /
+system-identification example programs, the torch-autograd end-to-end test (needs
+torch in-env), a `DART_BUILD_DIFF` CI job, and minor robustness/coverage items —
+tracked in `docs/dev_tasks/differentiable_simulation/`.
 
 ## Acceptance Criteria
 
