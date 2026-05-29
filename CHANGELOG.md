@@ -873,6 +873,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `World::setRigidBodySolver()`, establishing the DART rigid baseline to beat.
     The rigid IPC scaffold is currently ~3 orders of magnitude slower per step,
     quantifying the optimization gap.
+  - Optimized the rigid IPC conservative line search with a swept broad-phase
+    cull that skips surface pairs whose start-pose AABBs are farther apart than
+    the bodies can move over the step, reusing the curved-trajectory speed bound
+    so it stays consistent with the per-primitive CCD (including a rotational
+    motion bound, the CCD convergence tolerance, and the minimum separation).
+    The cull is behavior-preserving, with anti-tunneling, far-skip, and
+    tolerance-band regressions.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

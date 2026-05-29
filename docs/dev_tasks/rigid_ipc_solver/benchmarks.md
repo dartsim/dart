@@ -134,16 +134,17 @@ the solver cannot correctly run is not a win.
 Order of execution (bounded slices, each benchmarked and regression-guarded):
 
 1. **CPU hot-path, behavior-preserving first.**
-   - Swept broad-phase cull in the line search. NOTE: unlike the instantaneous
-     barrier assembly (where a single-pose AABB is exact), the line search
-     covers motion over the step and rigid bodies follow curved trajectories
-     (linear rotation-vector interpolation). An endpoint-union AABB is NOT
-     conservative — a rotating body can swing a vertex outside the box spanned
-     by its start/end poses, which is exactly the mid-step contact the curved
-     CCD must catch. A correct cull must expand each body's swept AABB by a
-     rotational motion bound (the ACCD speed bound: max vertex displacement off
-     the linear chord for the step's rotation-vector delta). Guard with a
-     swept-equivalence regression mixing near and far rotating bodies.
+   - [DONE] Swept broad-phase cull in the line search. A correct cull cannot use
+     endpoint-union AABBs (a rotating body swings vertices outside the box
+     spanned by its start/end poses — the mid-step contact the curved CCD must
+     catch). The landed cull instead keeps each surface's START AABB and expands
+     the reach by the curved-trajectory speed bound `rigidIpcPointTrajectorySpeedBound`
+     (`||Δpos|| + ||Δrot||·||vertex||`, the same bound the per-primitive CCD
+     uses), plus the minimum separation and the CCD convergence tolerance. An
+     adversarial verification pass (>100M numerical samples plus a code audit)
+     confirmed the rotation bound and caught an off-by-`convergeAbs` reach bug
+     that was fixed before commit. Guarded by anti-tunneling (180° rotation
+     through a static point), far-skip, and tolerance-band regressions.
    - Spatial index (uniform grid / sort-and-sweep) so pair enumeration itself
      is sub-quadratic, reusing the deformable candidate-set pattern.
    - Per-primitive kernel cost (~6–8 µs): reduce the reduced-coordinate chain

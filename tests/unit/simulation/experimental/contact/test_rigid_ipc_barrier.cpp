@@ -1285,6 +1285,97 @@ TEST(RigidIpcBarrier, LineSearchLimitsVertexVertexCrossing)
 }
 
 //==============================================================================
+// The line-search swept broad-phase cull must use the rotational motion bound,
+// not endpoint AABBs: a body that rotates a far vertex through a static point
+// mid-step keeps both endpoints away from contact, so a naive start-AABB cull
+// would wrongly drop the pair (tunneling). The motion-bound cull must keep it,
+// while still skipping genuinely far, slow pairs.
+TEST(RigidIpcBarrier, LineSearchSweptCullKeepsRotatingContact)
+{
+  // Dynamic vertex one unit from the body origin, rotating 180 deg about +z:
+  // start (1,0,0) -> mid (0,1,0) -> end (-1,0,0). Both endpoints are ~1.41 from
+  // the static point at (0,1,0), but the mid-step arc passes through it.
+  expdetail::RigidIpcBarrierSurface rotatingStart;
+  rotatingStart.vertices.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+  expdetail::RigidIpcBarrierSurface rotatingEnd = rotatingStart;
+  rotatingEnd.pose.rotation = Eigen::Vector3d(0.0, 0.0, std::numbers::pi);
+
+  expdetail::RigidIpcBarrierSurface staticPoint;
+  staticPoint.dynamic = false;
+  staticPoint.vertices.push_back(Eigen::Vector3d(0.0, 1.0, 0.0));
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> start{
+      rotatingStart, staticPoint};
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> end{
+      rotatingEnd, staticPoint};
+  const auto result = expdetail::computeRigidIpcLineSearchStepBound(start, end);
+
+  // The rotating pair is not culled, and the curved CCD finds the mid-step hit.
+  EXPECT_EQ(result.stats.pointPointChecks, 1u);
+  EXPECT_TRUE(result.limited);
+  EXPECT_GT(result.stats.hits, 0u);
+  EXPECT_LT(result.stepBound, 1.0);
+  EXPECT_GT(result.stepBound, 0.0);
+}
+
+//==============================================================================
+TEST(RigidIpcBarrier, LineSearchSweptCullSkipsFarSlowPairs)
+{
+  // A nearly-stationary dynamic vertex far from a static point: the swept cull
+  // must skip the pair entirely (no CCD check, full step allowed).
+  expdetail::RigidIpcBarrierSurface dynamicStart;
+  dynamicStart.vertices.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+  expdetail::RigidIpcBarrierSurface dynamicEnd = dynamicStart;
+  dynamicEnd.pose.position = Eigen::Vector3d(0.01, 0.0, 0.0);
+
+  expdetail::RigidIpcBarrierSurface staticPoint;
+  staticPoint.dynamic = false;
+  staticPoint.vertices.push_back(Eigen::Vector3d(0.0, 10.0, 0.0));
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> start{
+      dynamicStart, staticPoint};
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> end{
+      dynamicEnd, staticPoint};
+  const auto result = expdetail::computeRigidIpcLineSearchStepBound(start, end);
+
+  EXPECT_EQ(result.stats.pointPointChecks, 0u);
+  EXPECT_FALSE(result.limited);
+  EXPECT_EQ(result.stats.hits, 0u);
+  EXPECT_DOUBLE_EQ(result.stepBound, 1.0);
+}
+
+//==============================================================================
+// Regression guard: the swept cull reach must include the CCD convergence
+// tolerance. curvedAccdAdvance reports a hit once the clearance reaches
+// convergeAbs (= max(tolerance, 1e-12)), so a pair whose true minimum distance
+// lands in (minSeparation, minSeparation + convergeAbs] must NOT be culled.
+// Here body A slides exactly one unit to x=1 while body B sits at x=1.0000005,
+// leaving a final gap of 5e-7 < the default tolerance 1e-6. Without the
+// convergeAbs term in the reach the pair is wrongly skipped (start AABB gap
+// 1.0000005 > reach 1.0); with it the pair is examined and the contact found.
+TEST(RigidIpcBarrier, LineSearchSweptCullKeepsContactWithinToleranceBand)
+{
+  expdetail::RigidIpcBarrierSurface movingStart;
+  movingStart.vertices.push_back(Eigen::Vector3d::Zero());
+  expdetail::RigidIpcBarrierSurface movingEnd = movingStart;
+  movingEnd.pose.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+
+  expdetail::RigidIpcBarrierSurface staticPoint;
+  staticPoint.dynamic = false;
+  staticPoint.pose.position = Eigen::Vector3d(1.0000005, 0.0, 0.0);
+  staticPoint.vertices.push_back(Eigen::Vector3d::Zero());
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> start{
+      movingStart, staticPoint};
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> end{
+      movingEnd, staticPoint};
+  const auto result = expdetail::computeRigidIpcLineSearchStepBound(start, end);
+
+  EXPECT_EQ(result.stats.pointPointChecks, 1u);
+  EXPECT_GT(result.stats.hits, 0u);
+}
+
+//==============================================================================
 TEST(RigidIpcBarrier, LineSearchRejectsInitialSeparationViolation)
 {
   expdetail::RigidIpcBarrierSurface point;
@@ -1342,12 +1433,18 @@ TEST(RigidIpcBarrier, LineSearchTreatsIterationExhaustionAsUnsafe)
 //==============================================================================
 TEST(RigidIpcBarrier, LineSearchChecksSupportedSurfacePrimitiveFamilies)
 {
-  expdetail::RigidIpcBarrierSurface bodyA = makeTriangleSurface(0.0);
-  expdetail::RigidIpcBarrierSurface bodyB = makeTriangleSurface(5.0);
+  // bodyA slides in x while bodyB stays a fixed small offset away in z: the
+  // pair is close enough that the swept broad phase examines it (exercising all
+  // primitive families), but the parallel-plane slide never produces a contact.
+  expdetail::RigidIpcBarrierSurface bodyAStart = makeTriangleSurface(0.0);
+  expdetail::RigidIpcBarrierSurface bodyAEnd = bodyAStart;
+  bodyAEnd.pose.position = Eigen::Vector3d(0.5, 0.0, 0.0);
+  expdetail::RigidIpcBarrierSurface bodyB = makeTriangleSurface(0.3);
 
-  const std::array<expdetail::RigidIpcBarrierSurface, 2> surfaces{bodyA, bodyB};
-  const auto result
-      = expdetail::computeRigidIpcLineSearchStepBound(surfaces, surfaces);
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> start{
+      bodyAStart, bodyB};
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> end{bodyAEnd, bodyB};
+  const auto result = expdetail::computeRigidIpcLineSearchStepBound(start, end);
 
   EXPECT_FALSE(result.limited);
   EXPECT_TRUE(result.allowsPositiveStep());
@@ -1595,7 +1692,10 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveAggregatesLineSearchDiagnostics)
   expdetail::RigidIpcBarrierSurface dynamicBody = makeTriangleSurface(0.0);
   dynamicBody.dynamic = true;
 
-  expdetail::RigidIpcBarrierSurface staticBody = makeTriangleSurface(10.0);
+  // Offset just in z so the body's dynamics-driven x slide stays within the
+  // swept broad-phase reach (the line search examines the pair every iteration)
+  // without ever producing a contact.
+  expdetail::RigidIpcBarrierSurface staticBody = makeTriangleSurface(0.3);
   staticBody.dynamic = false;
 
   expdetail::RigidIpcBodyDynamicsTerm dynamics;

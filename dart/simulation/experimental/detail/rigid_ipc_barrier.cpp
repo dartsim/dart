@@ -178,6 +178,24 @@ double surfaceAabbSquaredDistance(
   return gap.squaredNorm();
 }
 
+/// Conservative bound on how far any of a surface's points can move over the
+/// step, reusing the curved-CCD trajectory speed bound. Every world point of
+/// the surface stays within this distance of its start position for all t in
+/// [0, 1], so a pair whose start AABBs are farther apart than the sum of their
+/// motion bounds (plus the minimum separation) cannot reach contact during the
+/// step.
+double surfaceMotionBound(
+    const RigidIpcBarrierSurface& start, const RigidIpcBarrierSurface& end)
+{
+  double bound = 0.0;
+  for (const Eigen::Vector3d& localVertex : start.vertices) {
+    bound = std::max(
+        bound,
+        rigidIpcPointTrajectorySpeedBound(localVertex, start.pose, end.pose));
+  }
+  return bound;
+}
+
 PointTransformDerivatives pointTransformDerivatives(
     const Eigen::Vector3d& localPoint, const RigidIpcPose& pose)
 {
@@ -1816,10 +1834,24 @@ RigidIpcLineSearchResult computeRigidIpcLineSearchStepBound(
 
   std::vector<std::vector<SurfaceEdge>> surfaceEdges;
   surfaceEdges.reserve(startSurfaces.size());
+  std::vector<SurfaceWorldAabb> startAabbs;
+  startAabbs.reserve(startSurfaces.size());
+  std::vector<double> motionBounds;
+  motionBounds.reserve(startSurfaces.size());
   for (std::size_t body = 0; body < startSurfaces.size(); ++body) {
     assertMatchingSurfaceTopology(startSurfaces[body], endSurfaces[body]);
     surfaceEdges.push_back(buildSurfaceEdges(startSurfaces[body]));
+    startAabbs.push_back(computeSurfaceWorldAabb(startSurfaces[body]));
+    motionBounds.push_back(
+        surfaceMotionBound(startSurfaces[body], endSurfaces[body]));
   }
+
+  const double minSeparation = std::max(0.0, options.minSeparation);
+  // curvedAccdAdvance reports a hit once the clearance reaches convergeAbs, so
+  // the effective contact threshold is minSeparation + convergeAbs. The cull
+  // reach must include this term or it could skip a pair whose true distance
+  // lands within the tolerance band of the activation threshold.
+  const double convergeAbs = std::max(ccdOption.tolerance, 1e-12);
 
   for (std::size_t bodyA = 0; bodyA < startSurfaces.size(); ++bodyA) {
     const RigidIpcBarrierSurface& a0 = startSurfaces[bodyA];
@@ -1829,6 +1861,21 @@ RigidIpcLineSearchResult computeRigidIpcLineSearchStepBound(
       const RigidIpcBarrierSurface& b1 = endSurfaces[bodyB];
       if (!a0.dynamic && !b0.dynamic) {
         continue;
+      }
+
+      // Conservative swept broad-phase cull. Each surface stays within its
+      // motion bound of its start AABB over the whole step, so if the start
+      // AABBs are farther apart than the combined motion bounds plus the
+      // minimum separation, no primitive pair can reach contact. This reuses
+      // the same curved-trajectory speed bound as the per-primitive CCD, so it
+      // never skips a pair the CCD below would otherwise limit the step on.
+      if (startAabbs[bodyA].valid && startAabbs[bodyB].valid) {
+        const double reach = motionBounds[bodyA] + motionBounds[bodyB]
+                             + minSeparation + convergeAbs;
+        if (surfaceAabbSquaredDistance(startAabbs[bodyA], startAabbs[bodyB])
+            > reach * reach) {
+          continue;
+        }
       }
 
       for (std::size_t pointA = 0; pointA < a0.vertices.size(); ++pointA) {

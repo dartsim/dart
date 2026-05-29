@@ -65,6 +65,20 @@ rigidIpcRotationVectorToMatrix(const Eigen::Vector3d& rotation);
     const RigidIpcPose& end,
     double time);
 
+/// Conservative bound on how far a body-local point travels over the unit step
+/// under linear translation and rotation-vector interpolation.
+///
+/// Returns `||end.position - start.position|| + ||end.rotation -
+/// start.rotation|| * ||localPoint||`. This bounds the displacement of the
+/// transformed world point from its start position for every time in [0, 1]; it
+/// is the same motion bound the curved ACCD queries advance against, so reusing
+/// it for swept broad-phase culling stays consistent with the per-primitive
+/// CCD.
+[[nodiscard]] DART_EXPERIMENTAL_API double rigidIpcPointTrajectorySpeedBound(
+    const Eigen::Vector3d& localPoint,
+    const RigidIpcPose& start,
+    const RigidIpcPose& end);
+
 /// Residual for the rigid IPC point-edge contact equation at a parameterized
 /// time and edge coordinate.
 ///

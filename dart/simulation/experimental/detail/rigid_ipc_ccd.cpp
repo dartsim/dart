@@ -376,17 +376,6 @@ bool parameterBoxSubdivisionCcd(
   return ((p1 + d1 * s) - (p2 + d2 * t)).norm();
 }
 
-[[nodiscard]] double pointTrajectorySpeedBound(
-    const Eigen::Vector3d& localPoint,
-    const RigidIpcPose& poseStart,
-    const RigidIpcPose& poseEnd)
-{
-  const double translationSpeed
-      = (poseEnd.position - poseStart.position).norm();
-  const double angularSpeed = (poseEnd.rotation - poseStart.rotation).norm();
-  return translationSpeed + angularSpeed * localPoint.norm();
-}
-
 [[nodiscard]] double maxPointTrajectorySpeedBound(
     const std::array<Eigen::Vector3d, 3>& localPoints,
     const RigidIpcPose& poseStart,
@@ -395,7 +384,8 @@ bool parameterBoxSubdivisionCcd(
   double speed = 0.0;
   for (const Eigen::Vector3d& localPoint : localPoints) {
     speed = std::max(
-        speed, pointTrajectorySpeedBound(localPoint, poseStart, poseEnd));
+        speed,
+        rigidIpcPointTrajectorySpeedBound(localPoint, poseStart, poseEnd));
   }
   return speed;
 }
@@ -471,6 +461,16 @@ Eigen::Matrix3d rigidIpcRotationVectorToMatrix(const Eigen::Vector3d& rotation)
   }
 
   return Eigen::AngleAxisd(angle, rotation / angle).toRotationMatrix();
+}
+
+double rigidIpcPointTrajectorySpeedBound(
+    const Eigen::Vector3d& localPoint,
+    const RigidIpcPose& start,
+    const RigidIpcPose& end)
+{
+  const double translationSpeed = (end.position - start.position).norm();
+  const double angularSpeed = (end.rotation - start.rotation).norm();
+  return translationSpeed + angularSpeed * localPoint.norm();
 }
 
 RigidIpcPose interpolateRigidIpcPose(
@@ -749,7 +749,7 @@ bool rigidIpcPointTriangleCcd(
     collision::native::CcdPrimitiveResult& result)
 {
   const double speedBound
-      = pointTrajectorySpeedBound(point, pointPoseStart, pointPoseEnd)
+      = rigidIpcPointTrajectorySpeedBound(point, pointPoseStart, pointPoseEnd)
         + maxPointTrajectorySpeedBound(
             {triangleA, triangleB, triangleC},
             trianglePoseStart,
@@ -779,9 +779,10 @@ bool rigidIpcPointPointCcd(
     const collision::native::CcdOption& option,
     collision::native::CcdPrimitiveResult& result)
 {
-  const double speedBound
-      = pointTrajectorySpeedBound(pointA, pointAPoseStart, pointAPoseEnd)
-        + pointTrajectorySpeedBound(pointB, pointBPoseStart, pointBPoseEnd);
+  const double speedBound = rigidIpcPointTrajectorySpeedBound(
+                                pointA, pointAPoseStart, pointAPoseEnd)
+                            + rigidIpcPointTrajectorySpeedBound(
+                                pointB, pointBPoseStart, pointBPoseEnd);
 
   const auto distanceAt = [&](const double time) {
     return (transformRigidIpcPoint(pointA, pointAPoseStart, pointAPoseEnd, time)
@@ -805,7 +806,7 @@ bool rigidIpcPointEdgeCcd(
     collision::native::CcdPrimitiveResult& result)
 {
   const double speedBound
-      = pointTrajectorySpeedBound(point, pointPoseStart, pointPoseEnd)
+      = rigidIpcPointTrajectorySpeedBound(point, pointPoseStart, pointPoseEnd)
         + maxPointTrajectorySpeedBound(
             {edgeA, edgeB, Eigen::Vector3d::Zero()},
             edgePoseStart,
