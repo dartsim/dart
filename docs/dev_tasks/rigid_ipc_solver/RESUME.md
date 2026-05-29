@@ -138,12 +138,25 @@ friction"):
   demos-cycle smoke test. New Rigid IPC GUI examples register in
   `python/examples/demos/registry.py` under the Experimental group.
 
+Known robustness gap (reproducible, next correctness target): the runtime IPC
+stage handles a clean drop-and-rest well (a box dropped from z=0.6 settles at
+z=0.262, gap ~0.012, stable over 300 steps), but a box that ends up DEEP in the
+barrier band freezes. Repro: box half-extent 0.25 started at z=0.258 (gap 0.008)
+on static ground with linear velocity (1,0,0); under gravity it sinks to z=0.251
+(gap 0.001) and then stops advancing entirely — it does not slide even
+frictionless. This is why a friction-slide GUI demo is not yet viable. Root
+cause is stiff-contact convergence (likely too few Newton iterations / no
+adaptive stiffness at small gaps), a Phase 3 "production convergence criteria /
+robust contact behavior" item. Note: `sx.compute` (stages/executor) is not
+exposed in Python, so stage diagnostics must be inspected from a C++ test.
+
 Next perf targets: a cheaper PSD projection or fewer active-primitive
 evaluations via primitive-level candidate sets (NOT an LDLT skip), then
-warm-start/active-set reuse, then the gated GPU port. Biggest correctness gate
-for reference/paper parity: Phase 2 rigorous interval-arithmetic CCD + corpus
-parity. All work is pushed to `origin/feature/rigid-ipc-manifest`
-(sole-maintainer authorization, no PR-review gating).
+warm-start/active-set reuse, then the gated GPU port. Biggest correctness gates
+for reference/paper parity: stiff-contact convergence robustness (above) and
+Phase 2 rigorous interval-arithmetic CCD + corpus parity. All work is pushed to
+`origin/feature/rigid-ipc-manifest` (sole-maintainer authorization, no
+PR-review gating).
 
 All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
 (23/23), `check-lint`, and the manifest checks.
