@@ -249,6 +249,175 @@ __global__ void vbdVelocityUpdateKernel(
 }
 
 //==============================================================================
+// Minimal device 3-vector with the operations the Neo-Hookean tet term needs.
+struct DV3
+{
+  double x, y, z;
+};
+__device__ inline DV3 operator+(DV3 a, DV3 b)
+{
+  return {a.x + b.x, a.y + b.y, a.z + b.z};
+}
+__device__ inline DV3 operator*(double s, DV3 a)
+{
+  return {s * a.x, s * a.y, s * a.z};
+}
+__device__ inline double dot3(DV3 a, DV3 b)
+{
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+__device__ inline DV3 cross3(DV3 a, DV3 b)
+{
+  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+//==============================================================================
+// Accumulate one tetrahedron's Stable Neo-Hookean force and (full 3x3) Hessian
+// for local vertex `localVertex` into `f`/`H`. A device port of the analytic
+// CPU kernel (addNeoHookeanTetTerm); `dmInv` is the tet's Dm^{-1} row-major.
+__device__ inline void accumulateNeoHookeanTet(
+    int localVertex,
+    const double* dmInv,
+    double volume,
+    DV3 x0,
+    DV3 x1,
+    DV3 x2,
+    DV3 x3,
+    double mu,
+    double lambda,
+    double* f,
+    double* H)
+{
+  const DV3 g1 = {dmInv[0], dmInv[1], dmInv[2]};
+  const DV3 g2 = {dmInv[3], dmInv[4], dmInv[5]};
+  const DV3 g3 = {dmInv[6], dmInv[7], dmInv[8]};
+  const DV3 g0
+      = {-(g1.x + g2.x + g3.x), -(g1.y + g2.y + g3.y), -(g1.z + g2.z + g3.z)};
+  const DV3 g[4] = {g0, g1, g2, g3};
+  const DV3 X[4] = {x0, x1, x2, x3};
+
+  // F columns f_b = sum_i g[i].component(b) * X[i].
+  DV3 c0 = {0, 0, 0};
+  DV3 c1 = {0, 0, 0};
+  DV3 c2 = {0, 0, 0};
+  for (int i = 0; i < 4; ++i) {
+    c0 = c0 + g[i].x * X[i];
+    c1 = c1 + g[i].y * X[i];
+    c2 = c2 + g[i].z * X[i];
+  }
+  const DV3 cof0 = cross3(c1, c2);
+  const DV3 cof1 = cross3(c2, c0);
+  const DV3 cof2 = cross3(c0, c1);
+  const double j = dot3(c0, cof0);
+  const double a = 1.0 + mu / lambda;
+  const double jlambda = lambda * (j - a);
+
+  const DV3 p0 = mu * c0 + jlambda * cof0;
+  const DV3 p1 = mu * c1 + jlambda * cof1;
+  const DV3 p2 = mu * c2 + jlambda * cof2;
+  const DV3 gi = g[localVertex];
+  const DV3 pgi = gi.x * p0 + gi.y * p1 + gi.z * p2;
+  f[0] += -volume * pgi.x;
+  f[1] += -volume * pgi.y;
+  f[2] += -volume * pgi.z;
+
+  for (int d = 0; d < 3; ++d) {
+    const DV3 ed = {d == 0 ? 1.0 : 0.0, d == 1 ? 1.0 : 0.0, d == 2 ? 1.0 : 0.0};
+    const DV3 dc0 = gi.x * ed;
+    const DV3 dc1 = gi.y * ed;
+    const DV3 dc2 = gi.z * ed;
+    const double dj = dot3(cof0, dc0) + dot3(cof1, dc1) + dot3(cof2, dc2);
+    const DV3 dcof0 = cross3(dc1, c2) + cross3(c1, dc2);
+    const DV3 dcof1 = cross3(dc2, c0) + cross3(c2, dc0);
+    const DV3 dcof2 = cross3(dc0, c1) + cross3(c0, dc1);
+    const DV3 dp0 = mu * dc0 + (lambda * dj) * cof0 + jlambda * dcof0;
+    const DV3 dp1 = mu * dc1 + (lambda * dj) * cof1 + jlambda * dcof1;
+    const DV3 dp2 = mu * dc2 + (lambda * dj) * cof2 + jlambda * dcof2;
+    const DV3 col = volume * (gi.x * dp0 + gi.y * dp1 + gi.z * dp2);
+    H[0 * 3 + d] += col.x;
+    H[1 * 3 + d] += col.y;
+    H[2 * 3 + d] += col.z;
+  }
+}
+
+//==============================================================================
+// One Neo-Hookean tet VBD block update for every vertex of a single color.
+__global__ void vbdTetColorSweepKernel(
+    double* positions,
+    const double* inertialTargets,
+    const double* masses,
+    const std::uint8_t* fixed,
+    const std::uint32_t* tetVertices,
+    const double* tetRestShapeInverse,
+    const double* tetRestVolume,
+    const std::uint32_t* incidentTetOffsets,
+    const std::uint32_t* incidentTetIndex,
+    const std::uint8_t* incidentLocalVertex,
+    const std::uint32_t* colorVertices,
+    std::uint32_t colorBegin,
+    std::uint32_t colorEnd,
+    double mu,
+    double lambda,
+    double invDt2)
+{
+  const std::uint32_t slot = colorBegin + blockIdx.x * blockDim.x + threadIdx.x;
+  if (slot >= colorEnd) {
+    return;
+  }
+  const std::uint32_t v = colorVertices[slot];
+  if (fixed[v] != 0u) {
+    return;
+  }
+  const std::uint32_t b = 3u * v;
+  const double px = positions[b];
+  const double py = positions[b + 1];
+  const double pz = positions[b + 2];
+
+  const double coeff = masses[v] * invDt2;
+  double f[3]
+      = {-coeff * (px - inertialTargets[b]),
+         -coeff * (py - inertialTargets[b + 1]),
+         -coeff * (pz - inertialTargets[b + 2])};
+  double H[9] = {coeff, 0, 0, 0, coeff, 0, 0, 0, coeff};
+
+  const std::uint32_t begin = incidentTetOffsets[v];
+  const std::uint32_t end = incidentTetOffsets[v + 1];
+  for (std::uint32_t e = begin; e < end; ++e) {
+    const std::uint32_t tet = incidentTetIndex[e];
+    const int local = static_cast<int>(incidentLocalVertex[e]);
+    const std::uint32_t* tv = tetVertices + 4u * tet;
+    const auto loadVertex = [positions](std::uint32_t vertex) -> DV3 {
+      const std::uint32_t base = 3u * vertex;
+      return {positions[base], positions[base + 1], positions[base + 2]};
+    };
+    accumulateNeoHookeanTet(
+        local,
+        tetRestShapeInverse + 9u * tet,
+        tetRestVolume[tet],
+        loadVertex(tv[0]),
+        loadVertex(tv[1]),
+        loadVertex(tv[2]),
+        loadVertex(tv[3]),
+        mu,
+        lambda,
+        f,
+        H);
+  }
+
+  // Symmetrize and solve.
+  const double h01 = 0.5 * (H[1] + H[3]);
+  const double h02 = 0.5 * (H[2] + H[6]);
+  const double h12 = 0.5 * (H[5] + H[7]);
+  double dx;
+  double dy;
+  double dz;
+  solveSym3(H[0], h01, h02, H[4], h12, H[8], f[0], f[1], f[2], dx, dy, dz);
+  positions[b] = px + dx;
+  positions[b + 1] = py + dy;
+  positions[b + 2] = pz + dz;
+}
+
+//==============================================================================
 void throwIfCudaError(cudaError_t status, const char* operation)
 {
   if (status != cudaSuccess) {
@@ -449,6 +618,64 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
   throwIfCudaError(cudaDeviceSynchronize(), "rollout synchronize");
   dPositions.download(problem.positions);
   dVelocities.download(problem.velocities);
+}
+
+//==============================================================================
+void vbdStepTetMeshCuda(VbdCudaTetProblem& problem)
+{
+  const std::size_t nodeCount = problem.nodeCount;
+  if (nodeCount == 0 || problem.colorOffsets.size() < 2) {
+    return;
+  }
+
+  DeviceArray<double> dPositions(problem.positions);
+  DeviceArray<double> dInertial(problem.inertialTargets);
+  DeviceArray<double> dMasses(problem.masses);
+  DeviceArray<std::uint8_t> dFixed(problem.fixed);
+  DeviceArray<std::uint32_t> dTetVertices(problem.tetVertices);
+  DeviceArray<double> dTetRestShapeInverse(problem.tetRestShapeInverse);
+  DeviceArray<double> dTetRestVolume(problem.tetRestVolume);
+  DeviceArray<std::uint32_t> dIncidentTetOffsets(problem.incidentTetOffsets);
+  DeviceArray<std::uint32_t> dIncidentTetIndex(problem.incidentTetIndex);
+  DeviceArray<std::uint8_t> dIncidentLocalVertex(problem.incidentLocalVertex);
+  DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
+
+  const double invDt2 = 1.0 / (problem.timeStep * problem.timeStep);
+  const std::size_t colorCount = problem.colorOffsets.size() - 1;
+  constexpr unsigned int kThreads = 128;
+
+  for (std::size_t iteration = 0; iteration < problem.iterations; ++iteration) {
+    for (std::size_t color = 0; color < colorCount; ++color) {
+      const std::uint32_t begin = problem.colorOffsets[color];
+      const std::uint32_t end = problem.colorOffsets[color + 1];
+      if (end <= begin) {
+        continue;
+      }
+      const unsigned int count = end - begin;
+      const unsigned int blocks = (count + kThreads - 1) / kThreads;
+      vbdTetColorSweepKernel<<<blocks, kThreads>>>(
+          dPositions.get(),
+          dInertial.get(),
+          dMasses.get(),
+          dFixed.get(),
+          dTetVertices.get(),
+          dTetRestShapeInverse.get(),
+          dTetRestVolume.get(),
+          dIncidentTetOffsets.get(),
+          dIncidentTetIndex.get(),
+          dIncidentLocalVertex.get(),
+          dColorVertices.get(),
+          begin,
+          end,
+          problem.mu,
+          problem.lambda,
+          invDt2);
+    }
+  }
+
+  throwIfCudaError(cudaGetLastError(), "tet kernel launch");
+  throwIfCudaError(cudaDeviceSynchronize(), "tet synchronize");
+  dPositions.download(problem.positions);
 }
 
 } // namespace dart::simulation::experimental::compute::cuda

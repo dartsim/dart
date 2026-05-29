@@ -117,4 +117,38 @@ struct VbdCudaRolloutProblem
 /// positions and velocities. Throws on a CUDA error.
 void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem);
 
+/// A flattened tetrahedral Stable Neo-Hookean VBD problem for the GPU: SoA node
+/// state, per-tet topology and rest data, per-vertex incident-tet CSR, and the
+/// vertex-graph coloring. `tetRestShapeInverse` stores each tet's `Dm^{-1}` as
+/// 9 row-major doubles.
+struct VbdCudaTetProblem
+{
+  std::size_t nodeCount = 0;
+  std::vector<double> positions;       ///< 3*nodeCount, updated in place.
+  std::vector<double> inertialTargets; ///< 3*nodeCount.
+  std::vector<double> masses;          ///< nodeCount.
+  std::vector<std::uint8_t> fixed;     ///< nodeCount.
+
+  std::vector<std::uint32_t> tetVertices;  ///< 4*tetCount.
+  std::vector<double> tetRestShapeInverse; ///< 9*tetCount, row-major Dm^-1.
+  std::vector<double> tetRestVolume;       ///< tetCount.
+
+  std::vector<std::uint32_t> incidentTetOffsets; ///< nodeCount + 1 CSR.
+  std::vector<std::uint32_t> incidentTetIndex;   ///< flattened tet indices.
+  std::vector<std::uint8_t> incidentLocalVertex; ///< flattened local 0..3.
+
+  std::vector<std::uint32_t> colorOffsets;
+  std::vector<std::uint32_t> colorVertices;
+
+  double mu = 0.0;
+  double lambda = 0.0;
+  double timeStep = 0.0;
+  std::size_t iterations = 0;
+};
+
+/// Run `iterations` graph-colored Gauss-Seidel Stable Neo-Hookean VBD sweeps
+/// for a tetrahedral body on the GPU, copying the final positions back. Throws
+/// on a CUDA error.
+void vbdStepTetMeshCuda(VbdCudaTetProblem& problem);
+
 } // namespace dart::simulation::experimental::compute::cuda

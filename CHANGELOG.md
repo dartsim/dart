@@ -898,6 +898,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     confirms it matches the CPU stepper over 20 steps; the rollout benchmark
     measures ~1.08 ms/step steady-state, about 45x faster than the
     single-threaded CPU at 16k vertices.
+  - Added a CUDA Stable Neo-Hookean tetrahedral VBD kernel
+    (`vbdStepTetMeshCuda`) with a device port of the analytic per-vertex
+    force/Hessian and a tet-colored sweep. A device-skipping test confirms the
+    GPU tetrahedral solve matches the CPU `blockDescentTetMesh` to 1e-6,
+    extending the GPU win to the paper's volumetric domain. CUDA-graph capture,
+    mixed precision, and a tetrahedral GPU benchmark remain future work.
   - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
     20-vertex tilted strand with structural and skip springs, 100 iterations per
     step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step

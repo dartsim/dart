@@ -36,6 +36,7 @@
 #include <dart/simulation/experimental/compute/cuda/vbd_block_descent_cuda.cuh>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <vector>
 
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
@@ -324,5 +325,165 @@ TEST(CudaVbdBlockDescent, RolloutMatchesCpuStepper)
         problem.positions[3 * i + 1],
         problem.positions[3 * i + 2]);
     EXPECT_NEAR((gpu - cpuPos[i]).norm(), 0.0, 1e-5) << "vertex " << i;
+  }
+}
+
+namespace {
+
+struct TetScene
+{
+  std::vector<Vec3> positions;
+  std::vector<double> masses;
+  std::vector<std::uint8_t> fixed;
+  std::vector<Vec3> inertialTargets;
+  std::vector<vbd::TetMeshElement> tets;
+  double mu = 3000.0;
+  double lambda = 6000.0;
+  double timeStep = 0.01;
+};
+
+// A tetrahedral bar of `cubes` stacked unit cubes (six Kuhn tets each), bottom
+// ring pinned, inertial targets perturbed.
+TetScene makeTetBar(int cubes)
+{
+  TetScene scene;
+  const auto index = [](int i, int j, int k) {
+    return static_cast<std::uint32_t>(((k * 2) + j) * 2 + i);
+  };
+  for (int k = 0; k <= cubes; ++k) {
+    for (int j = 0; j < 2; ++j) {
+      for (int i = 0; i < 2; ++i) {
+        scene.positions.emplace_back(i, j, k);
+        scene.masses.push_back(1.0);
+        scene.fixed.push_back(k == 0 ? 1u : 0u);
+      }
+    }
+  }
+  scene.inertialTargets = scene.positions;
+  for (std::size_t v = 0; v < scene.positions.size(); ++v) {
+    if (scene.fixed[v] == 0u) {
+      scene.inertialTargets[v] += Vec3(0.02, -0.03, 0.01);
+    }
+  }
+  static const int kuhn[6][4]
+      = {{0, 1, 3, 7},
+         {0, 3, 2, 7},
+         {0, 2, 6, 7},
+         {0, 6, 4, 7},
+         {0, 4, 5, 7},
+         {0, 5, 1, 7}};
+  for (int c = 0; c < cubes; ++c) {
+    std::array<std::uint32_t, 8> corner{};
+    for (int n = 0; n < 8; ++n) {
+      corner[static_cast<std::size_t>(n)]
+          = index(n & 1, (n >> 1) & 1, c + ((n >> 2) & 1));
+    }
+    for (const auto& t : kuhn) {
+      const std::array<std::uint32_t, 4> v
+          = {corner[t[0]], corner[t[1]], corner[t[2]], corner[t[3]]};
+      const vbd::TetRestShape rest = vbd::makeTetRestShape(
+          {scene.positions[v[0]],
+           scene.positions[v[1]],
+           scene.positions[v[2]],
+           scene.positions[v[3]]});
+      scene.tets.push_back({v, rest});
+    }
+  }
+  return scene;
+}
+
+} // namespace
+
+//==============================================================================
+// The GPU tetrahedral Neo-Hookean solve matches the CPU tet block descent.
+TEST(CudaVbdBlockDescent, TetMeshMatchesCpu)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const TetScene scene = makeTetBar(4);
+  const std::size_t n = scene.positions.size();
+  const auto coloring = vbd::colorTetMesh(n, scene.tets);
+  const auto adjacency = vbd::TetAdjacency::build(n, scene.tets);
+  constexpr std::size_t iterations = 100;
+
+  // CPU reference, warm-started at the inertial target.
+  std::vector<Vec3> cpu = scene.inertialTargets;
+  for (std::size_t i = 0; i < n; ++i) {
+    if (scene.fixed[i] != 0u) {
+      cpu[i] = scene.positions[i];
+    }
+  }
+  vbd::BlockDescentOptions options;
+  options.iterations = iterations;
+  vbd::blockDescentTetMesh(
+      cpu,
+      scene.masses,
+      scene.fixed,
+      scene.inertialTargets,
+      scene.tets,
+      scene.mu,
+      scene.lambda,
+      scene.timeStep,
+      coloring,
+      adjacency,
+      options);
+
+  // GPU problem from the same data and warm start.
+  cuda::VbdCudaTetProblem problem;
+  problem.nodeCount = n;
+  problem.mu = scene.mu;
+  problem.lambda = scene.lambda;
+  problem.timeStep = scene.timeStep;
+  problem.iterations = iterations;
+  for (std::size_t i = 0; i < n; ++i) {
+    const Vec3 warm
+        = scene.fixed[i] != 0u ? scene.positions[i] : scene.inertialTargets[i];
+    problem.positions.push_back(warm.x());
+    problem.positions.push_back(warm.y());
+    problem.positions.push_back(warm.z());
+    problem.inertialTargets.push_back(scene.inertialTargets[i].x());
+    problem.inertialTargets.push_back(scene.inertialTargets[i].y());
+    problem.inertialTargets.push_back(scene.inertialTargets[i].z());
+  }
+  problem.masses = scene.masses;
+  problem.fixed = scene.fixed;
+  for (const auto& tet : scene.tets) {
+    for (int k = 0; k < 4; ++k) {
+      problem.tetVertices.push_back(tet.vertices[static_cast<std::size_t>(k)]);
+    }
+    for (int r = 0; r < 3; ++r) {
+      for (int c = 0; c < 3; ++c) {
+        problem.tetRestShapeInverse.push_back(tet.rest.restShapeInverse(r, c));
+      }
+    }
+    problem.tetRestVolume.push_back(tet.rest.restVolume);
+  }
+  problem.incidentTetOffsets.push_back(0);
+  for (std::size_t v = 0; v < n; ++v) {
+    for (const auto& [tetIndex, local] : adjacency.incidentTets[v]) {
+      problem.incidentTetIndex.push_back(tetIndex);
+      problem.incidentLocalVertex.push_back(local);
+    }
+    problem.incidentTetOffsets.push_back(
+        static_cast<std::uint32_t>(problem.incidentTetIndex.size()));
+  }
+  problem.colorOffsets.push_back(0);
+  for (const auto& group : coloring.groups) {
+    for (const std::uint32_t v : group) {
+      problem.colorVertices.push_back(v);
+    }
+    problem.colorOffsets.push_back(
+        static_cast<std::uint32_t>(problem.colorVertices.size()));
+  }
+  cuda::vbdStepTetMeshCuda(problem);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const Vec3 gpu(
+        problem.positions[3 * i],
+        problem.positions[3 * i + 1],
+        problem.positions[3 * i + 2]);
+    EXPECT_NEAR((gpu - cpu[i]).norm(), 0.0, 1e-6) << "vertex " << i;
   }
 }

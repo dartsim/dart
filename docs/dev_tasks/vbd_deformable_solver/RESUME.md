@@ -90,12 +90,13 @@ matches the default solver. Remaining work, in order:
    (`parallelBlockDescentMassSpring`, std::barrier, ~3.5x at 8 threads) both
    land. Next: SoA layout, wire the parallel driver into the World stage, and
    benchmark vs the external Gaia CPU numbers.
-4. Phase 9: the CUDA mass-spring kernel and the device-resident rollout
+4. Phase 9: the CUDA mass-spring kernel, the device-resident rollout
    (`vbdRolloutMassSpringCuda`, ~45x faster than single-threaded CPU at 16k
-   verts, steady-state) both land. Next: a tetrahedral Neo-Hookean GPU kernel,
-   CUDA-graph capture, float/mixed precision, and the RTX-4090 same-GPU
-   reproduction plan in the dev-task README (build on a 4090, add tet GPU
-   kernel, run paper scenes + Gaia, compare to Table 1).
+   verts), and the tetrahedral Neo-Hookean GPU kernel (`vbdStepTetMeshCuda`,
+   verified vs CPU) all land. Next: CUDA-graph capture, float/mixed precision, a
+   tetrahedral GPU benchmark, and the RTX-4090 same-GPU reproduction plan in the
+   dev-task README (build on a 4090, run paper scenes + Gaia, compare to
+   Table 1).
 5. Phase 10: reproduce the paper scenes as DART examples/tests/benchmarks with
    profiling JSON and headless Filament visual evidence; the TinyVBD tilted
    strand (20 verts, stiffness 1e8, mass ratio 1:1000) is the first

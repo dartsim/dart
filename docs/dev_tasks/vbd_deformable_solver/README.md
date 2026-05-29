@@ -147,9 +147,14 @@
         steady-state, i.e. ~45x faster than the single-threaded CPU at 16k
         vertices (the per-step cost is launch-overhead-bound at these grid
         sizes, so the GPU has spare capacity for larger meshes).
-  - [ ] Remaining Phase 9 work: a tetrahedral Neo-Hookean GPU kernel, CUDA-graph
-        capture of the per-color sweeps, float/mixed precision, and reproducing
-        the paper's tetrahedral scenes on an RTX-4090 host (see the
+  - [x] Tetrahedral GPU kernel sub-slice: `vbdStepTetMeshCuda` plus a device
+        port of the analytic Stable Neo-Hookean per-vertex force/Hessian
+        (`accumulateNeoHookeanTet`) and a tet-colored sweep kernel. A
+        device-skipping test confirms the GPU tetrahedral solve matches the CPU
+        `blockDescentTetMesh` to 1e-6 on a Kuhn-decomposed tet bar.
+  - [ ] Remaining Phase 9 work: CUDA-graph capture of the per-color sweeps,
+        float/mixed precision, a tetrahedral-GPU rollout/benchmark, and
+        reproducing the paper's tetrahedral scenes on an RTX-4090 host (see the
         same-GPU reproduction plan below).
 - [ ] Phase 10: complete the upstream example/scene corpus as DART-native
       tests, examples, benchmarks, profiling artifacts, and headless Filament
@@ -419,6 +424,12 @@ nearly flat across 1k/4k/16k vertices, i.e. launch-overhead-bound with spare GPU
 capacity). Against the single-threaded CPU per-step (`BM_VbdCpuStep`: ~3.0 ms at
 1k, ~10.2 ms at 4k, ~49.2 ms at 16k), the device-resident GPU rollout is ~45x
 faster at 16k vertices. DART's VBD wins decisively on this GPU.
+
+Local gate (Phase 9 tetrahedral GPU kernel, on 2026-05-28, NVIDIA RTX 5000 Ada
+Laptop GPU): `test_vbd_block_descent_cuda` `TetMeshMatchesCpu` confirms the GPU
+Stable Neo-Hookean tet solve matches the CPU `blockDescentTetMesh` to 1e-6 over
+100 iterations on a Kuhn-decomposed tet bar. The analytic per-vertex
+force/Hessian (the trickiest math) is thus verified on the device.
 
 ## Same-GPU (RTX-4090) Reproduction Plan
 
