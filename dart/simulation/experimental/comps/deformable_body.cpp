@@ -242,6 +242,7 @@ private:
     io::writePOD(output, component.density);
     io::writePOD(output, component.youngsModulus);
     io::writePOD(output, component.poissonRatio);
+    io::writePOD(output, component.frictionCoefficient);
   }
 
   void loadComponent(
@@ -250,6 +251,7 @@ private:
     io::readPOD(input, component.density);
     io::readPOD(input, component.youngsModulus);
     io::readPOD(input, component.poissonRatio);
+    io::readPOD(input, component.frictionCoefficient);
   }
 };
 

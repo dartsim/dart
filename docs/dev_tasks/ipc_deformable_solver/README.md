@@ -140,7 +140,17 @@
         contact active set is rebuilt once per outer iteration and held fixed
         across the inner Newton/line-search step (standard IPC), rather than
         re-queried within the line search.
-- [ ] Phase 4: lagged smoothed friction and friction diagnostics.
+- [~] Phase 4: lagged smoothed friction and friction diagnostics.
+  - [x] Static-ground friction (first increment): lagged smoothed Coulomb
+        friction (IPC f0/f1 mollifier, velocity threshold epsv) opposing each
+        contacting node's tangential displacement, gated by
+        `DeformableMaterialProperties.frictionCoefficient` (default 0, additive).
+        Lagged normal force per outer iteration; PSD tangential friction Hessian
+        in the projected-Newton solve. Sliding-deceleration + no-contact-no-
+        friction regressions, drape friction benchmark, serialized coefficient.
+  - [ ] Remaining Phase 4 work: self-contact and codimensional-obstacle
+        friction, friction over non-flat (sphere/tilted) ground normals, and
+        friction-specific convergence/dissipation diagnostics.
 - [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
       examples, benchmarks, profiling artifacts, and headless Filament evidence.
 

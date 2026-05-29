@@ -899,6 +899,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     gradient tolerance means converged; a large value flags an iteration-cap or
     stall), surfaced on the grid/drape stage benchmarks toward the paper's
     benchmark-statistics tables (Fig. 23 / Table 1).
+  - Added experimental IPC lagged smoothed Coulomb friction for deformable
+    contact against static ground barriers (PLAN-081 Phase 4 first increment).
+    A new `DeformableMaterialProperties.frictionCoefficient` (default 0, so
+    existing behavior is unchanged) drives a friction force opposing each
+    contacting node's tangential displacement over the step. The IPC mollifier
+    (f0/f1, velocity threshold epsv) makes the force C1: it saturates at
+    mu * normalForce when sliding and ramps smoothly to zero at rest. The normal
+    force is lagged once per outer iteration; the lagged friction Hessian is a
+    positive-semidefinite tangential 2x2 block, so it integrates cleanly into
+    the projected-Newton solve. Adds regressions (a sliding node decelerates
+    versus the frictionless control; friction is inactive without contact), a
+    friction variant of the drape benchmark, and serialization of the new
+    coefficient. Self-contact and codimensional friction are later increments.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

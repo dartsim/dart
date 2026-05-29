@@ -383,6 +383,12 @@ void validateDeformableMaterial(const DeformableMaterialProperties& material)
       InvalidArgumentException,
       "DeformableBodyOptions.material.poissonRatio must be finite and in "
       "(-1, 0.5)");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(material.frictionCoefficient)
+          || material.frictionCoefficient < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.frictionCoefficient must be finite and "
+      "non-negative");
 }
 
 //==============================================================================
@@ -652,6 +658,7 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
   data.material.density = options.material.density;
   data.material.youngsModulus = options.material.youngsModulus;
   data.material.poissonRatio = options.material.poissonRatio;
+  data.material.frictionCoefficient = options.material.frictionCoefficient;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);

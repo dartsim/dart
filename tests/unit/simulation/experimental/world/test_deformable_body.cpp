@@ -2627,3 +2627,105 @@ TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
   // The reused factorization still produces a finite, sane solve.
   EXPECT_TRUE(body.getPosition(kNodeCount - 1).allFinite());
 }
+
+namespace {
+struct GroundSlideResult
+{
+  double x = 0.0;
+  double vx = 0.0;
+  double z = 0.0;
+};
+
+// Slide a single node along a static ground barrier under gravity with the
+// given Coulomb friction coefficient, returning its final tangential position,
+// tangential velocity, and height after `steps` steps.
+GroundSlideResult runGroundFrictionSlide(double frictionCoefficient, int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  // Start inside the barrier band (d_hat = 2e-2) with a tangential velocity.
+  auto options = makeSingleNodeBodyOptions(
+      Eigen::Vector3d(0.0, 0.0, 0.01), Eigen::Vector3d(2.0, 0.0, 0.0));
+  options.material.frictionCoefficient = frictionCoefficient;
+  auto body = world.addDeformableBody("slider", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < steps; ++i) {
+    world.step(executor, pipeline);
+  }
+
+  const auto position = body.getPosition(0);
+  const auto velocity = body.getVelocity(0);
+  return {position.x(), velocity.x(), position.z()};
+}
+} // namespace
+
+//==============================================================================
+// Coulomb friction (mu > 0) opposes a node sliding while in static-ground
+// contact: it travels less far and ends slower than the frictionless control,
+// while staying in non-penetrating contact.
+TEST(DeformableBody, GroundFrictionDeceleratesSlidingNode)
+{
+  const auto frictionless = runGroundFrictionSlide(0.0, 30);
+  const auto frictional = runGroundFrictionSlide(0.8, 30);
+
+  EXPECT_GE(frictionless.z, -1e-3);
+  EXPECT_GE(frictional.z, -1e-3);
+
+  // The frictionless node slides essentially freely (gravity is vertical).
+  EXPECT_GT(frictionless.x, 0.4);
+  EXPECT_NEAR(frictionless.vx, 2.0, 0.2);
+
+  // Friction opposes the slide: shorter distance and lower final speed.
+  EXPECT_LT(frictional.x, frictionless.x);
+  EXPECT_LT(frictional.vx, frictionless.vx);
+  EXPECT_GE(frictional.x, 0.0); // not pushed backward
+}
+
+//==============================================================================
+// Friction is inactive without contact: a node above the barrier band has no
+// normal force, so a high friction coefficient does not slow its free slide.
+TEST(DeformableBody, GroundFrictionInactiveWithoutGroundContact)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto options = makeSingleNodeBodyOptions(
+      Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(2.0, 0.0, 0.0));
+  options.material.frictionCoefficient = 1.0;
+  auto body = world.addDeformableBody("floater", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < 10; ++i) {
+    world.step(executor, pipeline);
+  }
+
+  // Out of contact: slides freely at constant velocity (no friction force).
+  EXPECT_NEAR(body.getVelocity(0).x(), 2.0, 1e-6);
+  EXPECT_NEAR(body.getPosition(0).x(), 2.0 * 0.01 * 10, 1e-3);
+}
