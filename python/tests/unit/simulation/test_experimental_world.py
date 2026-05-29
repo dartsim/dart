@@ -2476,3 +2476,46 @@ def test_experimental_deformable_body_python_api():
     fetched = world.get_deformable_body("strand")
     assert fetched is not None
     assert fetched.node_count == 2
+
+
+def test_experimental_deformable_body_topology_python_api():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+
+    # A single unit-corner tetrahedron with an explicit boundary surface.
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.masses = [1.0, 1.0, 1.0, 1.0]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.surface_triangles = [
+        sx.DeformableSurfaceTriangle(0, 2, 1),
+        sx.DeformableSurfaceTriangle(0, 1, 3),
+        sx.DeformableSurfaceTriangle(0, 3, 2),
+        sx.DeformableSurfaceTriangle(1, 2, 3),
+    ]
+
+    body = world.add_deformable_body("tet", options)
+    assert body.is_valid
+    assert body.node_count == 4
+    assert body.surface_triangle_count == 4
+    assert body.tetrahedron_count == 1
+
+    triangle = body.surface_triangle(0)
+    assert (triangle.node_a, triangle.node_b, triangle.node_c) == (0, 2, 1)
+
+    tetrahedron = body.tetrahedron(0)
+    assert (
+        tetrahedron.node_a,
+        tetrahedron.node_b,
+        tetrahedron.node_c,
+        tetrahedron.node_d,
+    ) == (0, 1, 2, 3)
+
+    # The unit corner tetrahedron has volume 1/6.
+    assert body.tetrahedron_rest_volume(0) == pytest.approx(1.0 / 6.0)
+    assert body.node_mass(0) == pytest.approx(1.0)

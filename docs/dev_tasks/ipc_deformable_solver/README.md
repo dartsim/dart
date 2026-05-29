@@ -205,9 +205,15 @@
         position/velocity get/set, `is_fixed_node`, `edge`,
         `material_properties`). Stubs regenerated; Python regression covers
         create/configure/step/read.
-  - [ ] Remaining Phase 8 work: surface-triangle/tetrahedron and
-        boundary-condition (DBC/NBC) bindings, scene-loader Python access, and
-        diagnostics exposure.
+  - [x] Topology bindings: `dartpy` exposes `DeformableSurfaceTriangle` and
+        `DeformableTetrahedron`, the `DeformableBodyOptions` `surface_triangles`
+        / `tetrahedra` fields, and `DeformableBody` read accessors
+        (`surface_triangle_count` / `surface_triangle`, `tetrahedron_count` /
+        `tetrahedron` / `tetrahedron_rest_volume`, `node_mass`). Stubs and the
+        API boundary inventory regenerated; single-tetrahedron Python
+        regression.
+  - [ ] Remaining Phase 8 work: boundary-condition (DBC/NBC) bindings,
+        scene-loader Python access, and diagnostics exposure.
 
 ## Goal
 

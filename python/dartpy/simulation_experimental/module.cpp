@@ -1438,12 +1438,50 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw("node_b", &sim::DeformableEdge::nodeB)
       .def_rw("rest_length", &sim::DeformableEdge::restLength);
 
+  nb::class_<sim::DeformableSurfaceTriangle>(m, "DeformableSurfaceTriangle")
+      .def(
+          "__init__",
+          [](sim::DeformableSurfaceTriangle* self,
+             std::size_t nodeA,
+             std::size_t nodeB,
+             std::size_t nodeC) {
+            new (self) sim::DeformableSurfaceTriangle{nodeA, nodeB, nodeC};
+          },
+          nb::arg("node_a") = 0,
+          nb::arg("node_b") = 0,
+          nb::arg("node_c") = 0)
+      .def_rw("node_a", &sim::DeformableSurfaceTriangle::nodeA)
+      .def_rw("node_b", &sim::DeformableSurfaceTriangle::nodeB)
+      .def_rw("node_c", &sim::DeformableSurfaceTriangle::nodeC);
+
+  nb::class_<sim::DeformableTetrahedron>(m, "DeformableTetrahedron")
+      .def(
+          "__init__",
+          [](sim::DeformableTetrahedron* self,
+             std::size_t nodeA,
+             std::size_t nodeB,
+             std::size_t nodeC,
+             std::size_t nodeD) {
+            new (self) sim::DeformableTetrahedron{nodeA, nodeB, nodeC, nodeD};
+          },
+          nb::arg("node_a") = 0,
+          nb::arg("node_b") = 0,
+          nb::arg("node_c") = 0,
+          nb::arg("node_d") = 0)
+      .def_rw("node_a", &sim::DeformableTetrahedron::nodeA)
+      .def_rw("node_b", &sim::DeformableTetrahedron::nodeB)
+      .def_rw("node_c", &sim::DeformableTetrahedron::nodeC)
+      .def_rw("node_d", &sim::DeformableTetrahedron::nodeD);
+
   nb::class_<sim::DeformableBodyOptions>(m, "DeformableBodyOptions")
       .def(nb::init<>())
       .def_rw("positions", &sim::DeformableBodyOptions::positions)
       .def_rw("velocities", &sim::DeformableBodyOptions::velocities)
       .def_rw("masses", &sim::DeformableBodyOptions::masses)
       .def_rw("edges", &sim::DeformableBodyOptions::edges)
+      .def_rw(
+          "surface_triangles", &sim::DeformableBodyOptions::surfaceTriangles)
+      .def_rw("tetrahedra", &sim::DeformableBodyOptions::tetrahedra)
       .def_rw("fixed_nodes", &sim::DeformableBodyOptions::fixedNodes)
       .def_rw("edge_stiffness", &sim::DeformableBodyOptions::edgeStiffness)
       .def_rw("damping", &sim::DeformableBodyOptions::damping)
@@ -1454,6 +1492,11 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("name", &sim::DeformableBody::getName)
       .def_prop_ro("node_count", &sim::DeformableBody::getNodeCount)
       .def_prop_ro("edge_count", &sim::DeformableBody::getEdgeCount)
+      .def_prop_ro(
+          "surface_triangle_count",
+          &sim::DeformableBody::getSurfaceTriangleCount)
+      .def_prop_ro(
+          "tetrahedron_count", &sim::DeformableBody::getTetrahedronCount)
       .def("node_position", &sim::DeformableBody::getPosition, nb::arg("node"))
       .def(
           "set_node_position",
@@ -1466,8 +1509,21 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableBody::setVelocity,
           nb::arg("node"),
           nb::arg("velocity"))
+      .def("node_mass", &sim::DeformableBody::getMass, nb::arg("node"))
       .def("is_fixed_node", &sim::DeformableBody::isFixedNode, nb::arg("node"))
       .def("edge", &sim::DeformableBody::getEdge, nb::arg("edge"))
+      .def(
+          "surface_triangle",
+          &sim::DeformableBody::getSurfaceTriangle,
+          nb::arg("triangle"))
+      .def(
+          "tetrahedron",
+          &sim::DeformableBody::getTetrahedron,
+          nb::arg("tetrahedron"))
+      .def(
+          "tetrahedron_rest_volume",
+          &sim::DeformableBody::getTetrahedronRestVolume,
+          nb::arg("tetrahedron"))
       .def_prop_ro(
           "material_properties", &sim::DeformableBody::getMaterialProperties);
 

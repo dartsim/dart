@@ -975,6 +975,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     straight down deflects down-slope, whereas the frictionless control (and any
     xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
     friction and friction-specific diagnostics remain later increments.
+  - Extended the experimental deformable-body `dartpy` facade with surface and
+    tetrahedral topology (PLAN-081 Phase 8). Added `DeformableSurfaceTriangle`
+    and `DeformableTetrahedron` bindings, the `DeformableBodyOptions`
+    `surface_triangles` / `tetrahedra` fields, and `DeformableBody` read
+    accessors `surface_triangle_count` / `surface_triangle`,
+    `tetrahedron_count` / `tetrahedron` / `tetrahedron_rest_volume`, and
+    `node_mass`. Regenerated the type stubs and API boundary inventory, and
+    added a Python regression that builds a single tetrahedron with an explicit
+    boundary surface and reads back the topology, rest volume, and node mass.
+    Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
+    increment.
   - Added experimental IPC friction diagnostics to the deformable solver stats
     (PLAN-081 Phase 4). Each step now reports `frictionDissipation` (the IPC
     Coulomb work mu \* normalForce \* f1(y) \* y summed over active friction
