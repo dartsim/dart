@@ -132,6 +132,12 @@
         (worst-case projected-Newton gradient norm at solve termination across
         the step's bodies), surfaced on the grid/drape benchmarks toward the
         paper's benchmark-statistics tables (Fig. 23 / Table 1).
+  - [x] Converged-ness step-norm diagnostic: the stage also reports
+        `finalStepInfinityNorm` (largest last accepted per-node step across the
+        step's bodies). It shrinks toward zero at a feasible equilibrium even
+        when the near-singular barrier Hessian keeps the gradient residual
+        large, so it is the honest convergence companion for stiff
+        barrier-dominated problems. Behavior-preserving (diagnostic only).
   - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
         primitive into the solve via an optional executor + a GPU-vs-CPU perf
         gate), matrix-free CG for very large meshes, adaptive barrier stiffness,

@@ -3600,6 +3600,7 @@ void advanceDeformableBody(
     constexpr double minStep = 1e-12;
 
     double lastGradSquared = 0.0;
+    double lastAcceptedStepInfinityNorm = 0.0;
     std::vector<double> groundFrictionNormalForce;
     std::vector<Eigen::Vector3d> groundFrictionNormalDirection;
     std::vector<SelfContactFrictionContact> selfContactFrictionContacts;
@@ -3797,6 +3798,24 @@ void advanceDeformableBody(
                 &selfContactFriction);
             if (std::isfinite(candidateEnergy)
                 && candidateEnergy <= energy + armijo * directionalDerivative) {
+              // Record the accepted step's infinity norm (the actual per-node
+              // position change). It is the converged-ness measure for stiff
+              // barrier problems: it shrinks to ~0 at equilibrium even while
+              // the raw gradient norm stays large because the barrier Hessian
+              // is near-singular. scratch.candidate holds the new positions and
+              // scratch.next the prior iterate (the swap follows).
+              double stepInfinityNorm = 0.0;
+              for (std::size_t i = 0; i < nodeCount; ++i) {
+                if (scratch.activeFixed[i] != 0u) {
+                  continue;
+                }
+                stepInfinityNorm = std::max(
+                    stepInfinityNorm,
+                    (scratch.candidate[i] - scratch.next[i])
+                        .cwiseAbs()
+                        .maxCoeff());
+              }
+              lastAcceptedStepInfinityNorm = stepInfinityNorm;
               std::swap(scratch.next, scratch.candidate);
               ++stats.acceptedLineSearchSteps;
               return true;
@@ -3856,6 +3875,13 @@ void advanceDeformableBody(
     // benchmark statistics.
     stats.finalGradientResidualNorm
         = std::max(stats.finalGradientResidualNorm, std::sqrt(lastGradSquared));
+    // Converged-ness measure that stays meaningful for stiff barrier problems:
+    // the worst-case last accepted step (infinity norm) across the step's
+    // bodies. It tends to zero at equilibrium even when the gradient residual
+    // stays large because the barrier Hessian is near-singular, so it is the
+    // honest companion to finalGradientResidualNorm.
+    stats.finalStepInfinityNorm
+        = std::max(stats.finalStepInfinityNorm, lastAcceptedStepInfinityNorm);
 
     // Friction dissipation/active-contact diagnostics at the converged iterate,
     // using the final lagged ground normals and self-contact friction set.
