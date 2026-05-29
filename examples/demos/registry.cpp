@@ -111,16 +111,6 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Rigid Body",
        "Spawn assorted rigid shapes with a contact-point cloud.",
        &makeRigidShapesScene});
-  // Experimental physics solver (sx::World). Kept in one dedicated category
-  // so users can browse the experimental surface without sifting through the
-  // legacy Rigid Body / Soft Bodies trees.
-  scenes.push_back(
-      {"experimental_rigid_body",
-       "Rigid Body (Experimental)",
-       "Experimental",
-       "Falling rigid bodies on the experimental physics solver.",
-       &makeExperimentalRigidBodyScene});
-
   // Collision
   scenes.push_back(
       {"capsule_ground_contact",
@@ -254,13 +244,6 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Soft Bodies",
        "Soft-body simulation with recorded-state playback.",
        &makeSoftBodiesScene});
-  scenes.push_back(
-      {"experimental_deformable",
-       "Deformable Body (Experimental)",
-       "Experimental",
-       "A spring-net deformable body on the experimental physics solver.",
-       &makeExperimentalDeformableScene});
-
   // Robots
   scenes.push_back(
       {"g1_puppet",
@@ -280,6 +263,22 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Robots",
        "Drive a steerable car past obstacles.",
        &makeVehicleScene});
+
+  // Experimental physics solver (sx::World) — kept at the bottom of the
+  // catalog so the in-development surface doesn't push the canonical scenes
+  // off-screen in the Demos sidebar.
+  scenes.push_back(
+      {"experimental_rigid_body",
+       "Rigid Body (Experimental)",
+       "Experimental",
+       "Falling rigid bodies on the experimental physics solver.",
+       &makeExperimentalRigidBodyScene});
+  scenes.push_back(
+      {"experimental_deformable",
+       "Deformable Body (Experimental)",
+       "Experimental",
+       "A spring-net deformable body on the experimental physics solver.",
+       &makeExperimentalDeformableScene});
 
   return scenes;
 }

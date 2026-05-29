@@ -53,10 +53,6 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_CUBES,
         RIGID_SHAPES,
         ADD_DELETE_SKELS,
-        # Experimental physics solver (sx::World)
-        SX_ARTICULATED,
-        SX_FLOATING_BASE,
-        SX_CONTACT,
         # Collision
         CAPSULE_GROUND_CONTACT,
         # Constraints & Joints
@@ -79,4 +75,9 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         CARTPOLE_GYM_ENV,
         CARTPOLE_MPC,
         SENSOR_DESCRIPTORS,
+        # Experimental physics solver (sx::World) — kept at the bottom so the
+        # in-development surface doesn't push the canonical scenes off-screen.
+        SX_ARTICULATED,
+        SX_FLOATING_BASE,
+        SX_CONTACT,
     ]
