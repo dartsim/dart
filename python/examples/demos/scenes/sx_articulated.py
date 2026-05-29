@@ -1,11 +1,18 @@
-"""Articulated dynamics scene: a 2-DOF arm on the experimental World."""
+"""Articulated dynamics scene: a 2-DOF arm on the experimental World.
+
+Builds an sx::World (revolute shoulder + universal wrist) for physics, plus a
+parallel dart.simulation.World (via SxRenderBridge) of SimpleFrame box
+visuals so the C++ viewer can render the result.
+"""
 
 from __future__ import annotations
 
 import numpy as np
 
+import dartpy as dart
 import dartpy.simulation_experimental as sx
 
+from .._sx_bridge import SxRenderBridge
 from ..runner import PythonDemoScene, SceneSetup
 
 
@@ -47,7 +54,25 @@ def build() -> SceneSetup:
     fore.inertia = ((0.05, 0.0, 0.0), (0.0, 0.05, 0.0), (0.0, 0.0, 0.05))
 
     world.enter_simulation_mode()
-    return SceneSetup(world=world, info={"dofs": robot.num_dofs})
+
+    # Render bridge: a small box per link tracking the link's world transform.
+    bridge = SxRenderBridge(world, name="sx_articulated_render")
+    bridge.add_link_visual(
+        base, dart.BoxShape(np.array([0.18, 0.18, 0.18])),
+        (0.65, 0.65, 0.65), name="base_visual")
+    bridge.add_link_visual(
+        upper, dart.BoxShape(np.array([0.9, 0.12, 0.12])),
+        (0.20, 0.55, 0.90), name="upper_visual")
+    bridge.add_link_visual(
+        fore, dart.BoxShape(np.array([0.9, 0.10, 0.10])),
+        (0.30, 0.80, 0.45), name="fore_visual")
+    bridge.sync()
+
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        info={"sx_world": world, "dofs": robot.num_dofs},
+    )
 
 
 SCENE = PythonDemoScene(

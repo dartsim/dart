@@ -108,13 +108,17 @@ def _validate_scene(scene_id: str | None, scenes: list[PythonDemoScene]) -> None
 def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
-    Returns the dartpy.World. SceneSetup.pre_step / SceneSetup.step are
-    Python-controller hooks the C++ viewer doesn't see today — controllers
-    that must run inside the interactive loop need a future binding pass.
+    Returns either a dartpy.World or a (dartpy.World, pre_step) tuple. The
+    viewer binding inspects the return value: a bare World is treated as
+    physics-only; a (World, callable) tuple registers the callable as the
+    viewer's per-step hook (used by experimental-world scenes that own an
+    sx::World and a render-mirror dart::simulation::World).
     """
 
     def factory() -> Any:
         setup = scene.build()
+        if setup.pre_step is not None:
+            return (setup.world, setup.pre_step)
         return setup.world
 
     return factory

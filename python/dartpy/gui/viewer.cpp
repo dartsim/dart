@@ -97,13 +97,32 @@ void defGuiViewer(nb::module_& m)
           entry.factory = [factory, scene_id = id]() {
             nb::gil_scoped_acquire gil;
             dart::gui::ApplicationOptions options;
+            // Hold the Python pre_step callable (if any) alive past the
+            // factory call so the viewer's preStep can invoke it each
+            // frame. Captured by a stable shared_ptr so subsequent factory
+            // invocations don't tear it down mid-step.
+            auto pre_step_holder = std::make_shared<nb::callable>();
             try {
               nb::object result = factory();
-              options.world
-                  = nb::cast<dart::simulation::WorldPtr>(std::move(result));
+              // Accept either:
+              //   factory() -> World
+              //   factory() -> (World, pre_step_callable)
+              dart::simulation::WorldPtr world;
+              if (nb::isinstance<nb::tuple>(result)) {
+                nb::tuple t = nb::cast<nb::tuple>(result);
+                if (t.size() < 1) {
+                  throw std::runtime_error(
+                      "factory tuple must contain at least a World");
+                }
+                world = nb::cast<dart::simulation::WorldPtr>(t[0]);
+                if (t.size() >= 2 && !t[1].is_none()) {
+                  *pre_step_holder = nb::cast<nb::callable>(t[1]);
+                }
+              } else {
+                world = nb::cast<dart::simulation::WorldPtr>(std::move(result));
+              }
+              options.world = std::move(world);
             } catch (const std::exception& e) {
-              // Surface the Python-side error to stderr so the demos host
-              // can soft-fail on this scene the way the C++ catalog does.
               fprintf(
                   stderr,
                   "py-demos factory error for scene '%s': %s\n",
@@ -116,6 +135,17 @@ void defGuiViewer(nb::module_& m)
             if (options.world == nullptr) {
               options.world
                   = dart::simulation::World::create(scene_id + "_placeholder");
+            }
+            if (pre_step_holder && *pre_step_holder) {
+              options.preStep = [pre_step_holder]() {
+                nb::gil_scoped_acquire gil;
+                try {
+                  (*pre_step_holder)();
+                } catch (const std::exception& e) {
+                  fprintf(
+                      stderr, "py-demos pre_step error: %s\n", e.what());
+                }
+              };
             }
             return options;
           };
