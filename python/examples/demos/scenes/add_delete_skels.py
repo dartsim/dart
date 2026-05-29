@@ -33,8 +33,11 @@ def _create_cube(name: str, position: tuple, size: tuple, color: tuple, mass: fl
     sn.create_visual_aspect().set_color(list(color))
     sn.create_collision_aspect()
     sn.create_dynamics_aspect()
-    body.get_inertia().set_mass(mass)
-    body.get_inertia().set_moment(dart.BoxShape.compute_inertia_of(size_arr, mass))
+    body.set_inertia(dart.Inertia(
+        mass,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(size_arr, mass),
+    ))
     return skel
 
 

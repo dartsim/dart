@@ -40,8 +40,11 @@ def _add_shape_skel(world: "dart.World", name: str, shape: "dart.Shape",
     sn.create_visual_aspect().set_color(list(color))
     sn.create_collision_aspect()
     sn.create_dynamics_aspect()
-    body.get_inertia().set_mass(mass)
-    body.get_inertia().set_moment(shape.compute_inertia(mass))
+    body.set_inertia(dart.Inertia(
+        mass,
+        np.zeros(3),
+        shape.compute_inertia(mass),
+    ))
     world.add_skeleton(skel)
 
 

@@ -38,9 +38,11 @@ def _build_cart_pole_world() -> tuple[dart.World, Any, Any]:
     cn.create_visual_aspect().set_color([0.30, 0.50, 0.80])
     cn.create_collision_aspect()
     cn.create_dynamics_aspect()
-    cart_body.get_inertia().set_mass(1.0)
-    cart_body.get_inertia().set_moment(
-        dart.BoxShape.compute_inertia_of(np.array(_CART_EXTENT), 1.0))
+    cart_body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(np.array(_CART_EXTENT), 1.0),
+    ))
 
     pole_joint, pole_body = skel.create_revolute_joint_and_body_node_pair(
         cart_body)
@@ -54,9 +56,11 @@ def _build_cart_pole_world() -> tuple[dart.World, Any, Any]:
     pn.create_visual_aspect().set_color([0.90, 0.65, 0.30])
     pn.create_collision_aspect()
     pn.create_dynamics_aspect()
-    pole_body.get_inertia().set_mass(0.1)
-    pole_body.get_inertia().set_moment(
-        dart.BoxShape.compute_inertia_of(np.array(_POLE_EXTENT), 0.1))
+    pole_body.set_inertia(dart.Inertia(
+        0.1,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(np.array(_POLE_EXTENT), 0.1),
+    ))
 
     world.add_skeleton(skel)
     return world, cart_joint, pole_joint

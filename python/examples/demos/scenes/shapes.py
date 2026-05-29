@@ -41,8 +41,11 @@ def _make_box(
     sn.create_visual_aspect().set_color(list(color))
     sn.create_collision_aspect()
     sn.create_dynamics_aspect()
-    body.get_inertia().set_mass(1.0)
-    body.get_inertia().set_moment(dart.BoxShape.compute_inertia_of(size, 1.0))
+    body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(size, 1.0),
+    ))
     return skel
 
 
@@ -60,8 +63,11 @@ def _make_sphere(
     sn.create_visual_aspect().set_color(list(color))
     sn.create_collision_aspect()
     sn.create_dynamics_aspect()
-    body.get_inertia().set_mass(1.0)
-    body.get_inertia().set_moment(dart.SphereShape.compute_inertia_of(0.14, 1.0))
+    body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        dart.SphereShape.compute_inertia_of(0.14, 1.0),
+    ))
     return skel
 
 

@@ -35,8 +35,11 @@ def _pendulum(name: str, base_x: float, color: tuple) -> "dart.Skeleton":
         shape = dart.BoxShape(_LINK_SIZE)
         sn = body.create_shape_node(shape)
         sn.create_visual_aspect().set_color([color[0], color[1] + 0.1 * i, color[2]])
-        body.get_inertia().set_mass(0.5)
-        body.get_inertia().set_moment(dart.BoxShape.compute_inertia_of(_LINK_SIZE, 0.5))
+        body.set_inertia(dart.Inertia(
+            0.5,
+            np.zeros(3),
+            dart.BoxShape.compute_inertia_of(_LINK_SIZE, 0.5),
+        ))
         parent = body
     skel.set_positions([math.pi / 3.0, 0.0])
     return skel

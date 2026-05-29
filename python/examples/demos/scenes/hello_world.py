@@ -49,9 +49,11 @@ def _make_falling_box() -> dart.Skeleton:
     shape_node.create_dynamics_aspect()
 
     mass = 1.0
-    body.get_inertia().set_mass(mass)
-    body.get_inertia().set_moment(dart.BoxShape.compute_inertia_of(
-        np.array([0.3, 0.3, 0.3]), mass))
+    body.set_inertia(dart.Inertia(
+        mass,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(np.array([0.3, 0.3, 0.3]), mass),
+    ))
     return skel
 
 

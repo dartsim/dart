@@ -30,9 +30,11 @@ def _make_pendulum() -> dart.Skeleton:
     shape_node.create_visual_aspect().set_color([0.85, 0.45, 0.25])
     shape_node.create_collision_aspect()
     shape_node.create_dynamics_aspect()
-    body.get_inertia().set_mass(1.0)
-    body.get_inertia().set_moment(
-        dart.BoxShape.compute_inertia_of(np.array([0.05, 0.05, 1.0]), 1.0))
+    body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(np.array([0.05, 0.05, 1.0]), 1.0),
+    ))
     return skel
 
 

@@ -43,8 +43,11 @@ def _box(index: int, position: tuple) -> "dart.Skeleton":
     sn.create_visual_aspect().set_color([0.30 + 0.6 * hue, 0.55, 0.85 - 0.5 * hue])
     sn.create_collision_aspect()
     sn.create_dynamics_aspect()
-    body.get_inertia().set_mass(1.0)
-    body.get_inertia().set_moment(dart.BoxShape.compute_inertia_of(_BOX_SIZE, 1.0))
+    body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(_BOX_SIZE, 1.0),
+    ))
     return skel
 
 

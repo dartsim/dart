@@ -110,6 +110,10 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self) -> dart::dynamics::Inertia {
             return self.getInertia();
           })
+      .def(
+          "setInertia",
+          &BodyNode::setInertia,
+          nb::arg("inertia"))
       .def("getOrCreateIK", [](BodyNode& self) { return self.getOrCreateIK(); })
       .def(
           "getIK",

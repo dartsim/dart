@@ -31,9 +31,12 @@ def _make_box(index: int, position: tuple[float, float, float]) -> dart.Skeleton
         [0.35 + 0.5 * hue, 0.45, 0.9 - 0.4 * hue])
     shape_node.create_collision_aspect()
     shape_node.create_dynamics_aspect()
-    body.get_inertia().set_mass(1.0)
-    body.get_inertia().set_moment(dart.BoxShape.compute_inertia_of(
-        np.array([_BOX_EXTENT, _BOX_EXTENT, _BOX_EXTENT]), 1.0))
+    body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(
+        np.array([_BOX_EXTENT, _BOX_EXTENT, _BOX_EXTENT]), 1.0),
+    ))
     return skel
 
 

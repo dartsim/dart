@@ -59,8 +59,11 @@ def _make_capsule() -> "dart.Skeleton":
     sn.create_collision_aspect()
     sn.create_dynamics_aspect()
 
-    body.get_inertia().set_mass(1.0)
-    body.get_inertia().set_moment(shape.compute_inertia(1.0))
+    body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        shape.compute_inertia(1.0),
+    ))
     return skel
 
 

@@ -35,8 +35,11 @@ def build() -> SceneSetup:
         shape = dart.BoxShape(_LINK_SIZE)
         sn = body.create_shape_node(shape)
         sn.create_visual_aspect().set_color([0.30 + 0.12 * i, 0.55, 0.85 - 0.12 * i])
-        body.get_inertia().set_mass(1.0)
-        body.get_inertia().set_moment(dart.BoxShape.compute_inertia_of(_LINK_SIZE, 1.0))
+        body.set_inertia(dart.Inertia(
+            1.0,
+            np.zeros(3),
+            dart.BoxShape.compute_inertia_of(_LINK_SIZE, 1.0),
+        ))
         parent_body = body
 
     skel.set_positions([0.25 * math.sin(0.8 * i) for i in range(skel.get_num_dofs())])

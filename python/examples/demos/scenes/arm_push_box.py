@@ -29,9 +29,11 @@ def _make_arm() -> dart.Skeleton:
     shape_node.create_visual_aspect().set_color([0.40, 0.65, 0.30])
     shape_node.create_collision_aspect()
     shape_node.create_dynamics_aspect()
-    body.get_inertia().set_mass(1.0)
-    body.get_inertia().set_moment(
-        dart.BoxShape.compute_inertia_of(np.array([0.05, 0.05, 0.6]), 1.0))
+    body.set_inertia(dart.Inertia(
+        1.0,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(np.array([0.05, 0.05, 0.6]), 1.0),
+    ))
     return skel
 
 
@@ -46,9 +48,11 @@ def _make_box() -> dart.Skeleton:
     shape_node.create_visual_aspect().set_color([0.90, 0.50, 0.20])
     shape_node.create_collision_aspect()
     shape_node.create_dynamics_aspect()
-    body.get_inertia().set_mass(0.6)
-    body.get_inertia().set_moment(
-        dart.BoxShape.compute_inertia_of(np.array([0.18, 0.18, 0.18]), 0.6))
+    body.set_inertia(dart.Inertia(
+        0.6,
+        np.zeros(3),
+        dart.BoxShape.compute_inertia_of(np.array([0.18, 0.18, 0.18]), 0.6),
+    ))
     return skel
 
 
