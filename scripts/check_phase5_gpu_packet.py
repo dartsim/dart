@@ -19,12 +19,12 @@ extra metadata that Google Benchmark cannot prove by itself:
   "benchmarks": [...]
 }
 
-This checker is intentionally not wired into routine CI until DART has a
-project-owned GPU runner. It is the executable gate for the manual Phase 5
-benchmark report once the prototype exists.
+This checker is intentionally not wired into routine CI; the GPU go/no-go is run
+manually on a CUDA host rather than on a project-owned GPU runner. It is the
+executable gate for that manual Phase 5 benchmark packet.
 
 Use `--write-template <packet.json>` to create the manual evidence-packet shape,
-then fill in the measured benchmark rows and metadata from the GPU runner before
+then fill in the measured benchmark rows and metadata from the CUDA host before
 running the validator.
 """
 
@@ -198,7 +198,7 @@ def make_packet_template(
             "no_gpu_runtime_dependencies_passed": False,
             "phase5_benchmark_contract_passed": False,
             "notes": [
-                "Run on a project-owned GPU runner.",
+                "Run on a CUDA host (the project does not maintain GPU CI).",
                 (
                     "Set the evidence booleans to true only after the GPU "
                     + "build/import gate, backend-boundary check, "
