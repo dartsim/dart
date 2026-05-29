@@ -142,24 +142,34 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-projected-newton` - stacked on `feature/ipc-self-contact-barrier`
-(#2739), replacing mass-scaled steepest descent with a projected-Newton search
-direction: per-step Hessian (inertia + spring + self-contact barrier + static
-ground barrier) with per-element PSD projection, dense LDLT solve, and a
-steepest-descent fallback for large bodies / failed factorizations. Lets the
-stiff barrier converge cleanly; matches the analytic implicit-Euler spring step.
+`feature/ipc-sparse-newton-solve` - stacked on `feature/ipc-projected-newton`
+(#2740). Replaces the dense projected-Newton solve with SPARSE triplet assembly
+
+- sparse Cholesky (`SimplicialLDLT`, positive-diagonal guard), lifting the
+  256-node dense cap to thousands of nodes so paper-scale meshes stay on the
+  Newton path. Fixed DOFs are pinned at assembly time (unit diagonal, free-free
+  element blocks only), preserving exact dense parity; the steepest-descent
+  fallback and PD guard are unchanged. 300-node-chain regression + sparse-Newton
+  step/fallback counters on the grid scaling benchmark (512/1152-node grids).
+
+The prior branch `feature/ipc-projected-newton` (#2740) introduced the
+projected-Newton direction itself (dense LDLT). #2738/#2739/#2740 are open,
+stacked, and awaiting Codex review.
 
 ## Immediate Next Step
 
-Make projected Newton scale: **sparse Hessian assembly** + a sparse Cholesky or
-matrix-free CG solve (the current dense solve is capped at 256 nodes), then
-adaptive barrier stiffness and barrier forces for rigid/codimensional obstacles.
-After that: friction (Slice 6, the stick-slip / card-house / arch / roller
-figures), the scene corpus port (Slice 7), and the Python facade (Slice 8). Per
-the standing directive, optimize CPU AND GPU throughout: the per-element
-eigen-decomposition, Hessian assembly, candidate assembly, and linear solve are
-all data-parallel GPU candidates, and the experimental module already has CUDA
-backends to build on.
+Per the user-directed sequence (2026-05-28): next is a **visible IPC demo**
+(GUI/headless + benchmark advancing the paper-figure showcase), then let the
+review stack (#2738->#2740 + this sparse PR) land, then the **GPU optimization
+pass** (per-element PSD projection + Hessian assembly onto the CUDA backend).
+Sparse-solve perf follow-ups: symbolic-factorization reuse / matrix-free CG (the
+solve currently refactorizes from scratch each iteration), then adaptive barrier
+stiffness and barrier forces for rigid/codimensional obstacles. After that:
+friction (Slice 6, the stick-slip / card-house / arch / roller figures), the
+scene corpus port (Slice 7), and the Python facade (Slice 8). Per the standing
+directive, optimize CPU AND GPU throughout: the per-element eigen-decomposition,
+Hessian assembly, candidate assembly, and linear solve are all data-parallel GPU
+candidates, and the experimental module already has CUDA backends to build on.
 
 ## Context That Would Be Lost
 
@@ -175,7 +185,7 @@ backends to build on.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-projected-newton
+git checkout feature/ipc-sparse-newton-solve
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
@@ -229,6 +239,9 @@ cmake --build build/default/cpp/Release --target test_deformable_body bm_deforma
 cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
 ./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SelfContactBarrier*'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableSelfContactBarrierStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.*ProjectedNewton*:DeformableBody.SparseProjectedNewtonScalesBeyondDenseCap:DeformableBody.FixedSpringMatchesAnalyticImplicitEulerStep'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.02s --benchmark_filter='BM_DeformableGridStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked

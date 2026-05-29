@@ -54,6 +54,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
+#include <Eigen/SparseCholesky>
+#include <Eigen/SparseCore>
 #include <entt/entt.hpp>
 
 #include <algorithm>
@@ -2715,13 +2717,14 @@ Mat projectSymmetricToPsd(const Mat& matrix)
 }
 
 //==============================================================================
-// Assemble the dense per-step Hessian (inertia + spring + self-contact barrier
+// Assemble the sparse per-step Hessian (inertia + spring + self-contact barrier
 // + static ground barrier) with per-element PSD projection and solve
-// H d = -gradient for the projected-Newton search direction. Returns false so
-// the caller falls back to mass-scaled steepest descent when the body is too
-// large for the dense solve or the factorization fails. Sparse assembly is a
-// later slice; the per-element barrier/spring eigen-decompositions are
-// data-parallel GPU candidates.
+// H d = -gradient for the projected-Newton search direction via a sparse
+// Cholesky (LDL^T) factorization. Returns false so the caller falls back to
+// mass-scaled steepest descent when the body is too large for the solve or the
+// factorization is not positive definite. The per-element barrier/spring
+// eigen-decompositions and the triplet assembly are data-parallel GPU
+// candidates.
 bool computeProjectedNewtonDirection(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -2734,24 +2737,73 @@ bool computeProjectedNewtonDirection(
     std::vector<Eigen::Vector3d>& direction)
 {
   const std::size_t nodeCount = positions.size();
-  constexpr std::size_t kMaxDenseNodes = 256;
-  if (nodeCount == 0 || nodeCount > kMaxDenseNodes) {
+  // Sparse Cholesky scales to large meshes; the cap is a safety bound against
+  // pathological fill-in (a matrix-free CG / GPU solve is a later slice).
+  constexpr std::size_t kMaxSparseNodes = 20000;
+  if (nodeCount == 0 || nodeCount > kMaxSparseNodes) {
     return false;
   }
 
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
-  Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(dim, dim);
-  Eigen::VectorXd rhs = Eigen::VectorXd::Zero(dim);
   const double invDt2 = 1.0 / (timeStep * timeStep);
 
-  // Inertia: block diagonal, positive definite for free nodes.
+  // Right-hand side: -gradient on free DOFs, zero on pinned (fixed) DOFs.
+  Eigen::VectorXd rhs = Eigen::VectorXd::Zero(dim);
   for (std::size_t i = 0; i < nodeCount; ++i) {
-    const double m = state.masses[i] * invDt2;
+    if (fixed[i] != 0u) {
+      continue;
+    }
     for (int k = 0; k < 3; ++k) {
-      hessian(
+      rhs(static_cast<Eigen::Index>(3 * i + k)) = -gradient[i][k];
+    }
+  }
+
+  // Triplet assembly. Each fixed DOF is pinned with a lone unit diagonal and a
+  // zero right-hand side; only the free-free entries of each element block are
+  // emitted (a principal submatrix of a PSD block stays PSD), which decouples
+  // pinned DOFs from the free system exactly as zeroing a dense row/column
+  // would. Eigen sums duplicate triplets, giving standard additive assembly.
+  // The reserve below is a best-effort capacity hint only (it over-counts edges
+  // touching fixed nodes and omits ground-barrier diagonals); setFromTriplets
+  // sizes the matrix exactly from the actual triplet list regardless.
+  std::size_t tripletEstimate = 3 * nodeCount + 36 * model.edges.size();
+  if (contactBarrier != nullptr && contactBarrier->candidates != nullptr) {
+    tripletEstimate
+        += 144
+           * (contactBarrier->candidates->pointTriangleCandidates.size()
+              + contactBarrier->candidates->edgeEdgeCandidates.size());
+  }
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.reserve(tripletEstimate);
+
+  const auto isFree = [&](std::size_t node) {
+    return fixed[node] == 0u;
+  };
+  const auto addBlock3 = [&](std::size_t nodeRow,
+                             std::size_t nodeCol,
+                             const Eigen::Matrix3d& block) {
+    if (!isFree(nodeRow) || !isFree(nodeCol)) {
+      return;
+    }
+    for (int r = 0; r < 3; ++r) {
+      for (int c = 0; c < 3; ++c) {
+        triplets.emplace_back(
+            static_cast<Eigen::Index>(3 * nodeRow + r),
+            static_cast<Eigen::Index>(3 * nodeCol + c),
+            block(r, c));
+      }
+    }
+  };
+
+  // Inertia: block diagonal, positive definite for free nodes. Fixed DOFs get
+  // a unit diagonal so the global matrix stays positive definite.
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    const double diagonal = isFree(i) ? state.masses[i] * invDt2 : 1.0;
+    for (int k = 0; k < 3; ++k) {
+      triplets.emplace_back(
           static_cast<Eigen::Index>(3 * i + k),
-          static_cast<Eigen::Index>(3 * i + k))
-          += m;
+          static_cast<Eigen::Index>(3 * i + k),
+          diagonal);
     }
   }
 
@@ -2778,10 +2830,8 @@ bool computeProjectedNewtonDirection(
     const std::array<std::size_t, 2> nodes{edge.nodeA, edge.nodeB};
     for (int bi = 0; bi < 2; ++bi) {
       for (int bj = 0; bj < 2; ++bj) {
-        hessian.block<3, 3>(
-            static_cast<Eigen::Index>(3 * nodes[bi]),
-            static_cast<Eigen::Index>(3 * nodes[bj]))
-            += edgeHessian.block<3, 3>(3 * bi, 3 * bj);
+        addBlock3(
+            nodes[bi], nodes[bj], edgeHessian.block<3, 3>(3 * bi, 3 * bj));
       }
     }
   }
@@ -2799,10 +2849,8 @@ bool computeProjectedNewtonDirection(
       const dc::Matrix12d projected = projectSymmetricToPsd(blockHessian);
       for (int bi = 0; bi < 4; ++bi) {
         for (int bj = 0; bj < 4; ++bj) {
-          hessian.block<3, 3>(
-              static_cast<Eigen::Index>(3 * nodes[bi]),
-              static_cast<Eigen::Index>(3 * nodes[bj]))
-              += projected.block<3, 3>(3 * bi, 3 * bj);
+          addBlock3(
+              nodes[bi], nodes[bj], projected.block<3, 3>(3 * bi, 3 * bj));
         }
       }
     };
@@ -2840,12 +2888,12 @@ bool computeProjectedNewtonDirection(
     }
   }
 
-  // Static ground barrier Hessian (vertical scalar per active node, clamped).
+  // Static ground barrier Hessian (vertical scalar per active free node).
   if (!barriers.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
     constexpr double barrierScale = 25.0;
     for (std::size_t i = 0; i < nodeCount; ++i) {
-      if (fixed[i] != 0u) {
+      if (!isFree(i)) {
         continue;
       }
       const auto groundTop = staticGroundTopAt(positions[i], barriers);
@@ -2861,42 +2909,34 @@ bool computeProjectedNewtonDirection(
       const double second
           = -barrierScale
             * (2.0 * logRatio + 4.0 * offset / d - (offset * offset) / (d * d));
-      hessian(
+      triplets.emplace_back(
           static_cast<Eigen::Index>(3 * i + 2),
-          static_cast<Eigen::Index>(3 * i + 2))
-          += std::max(0.0, second);
+          static_cast<Eigen::Index>(3 * i + 2),
+          std::max(0.0, second));
     }
   }
 
-  // RHS = -gradient on free DOFs; pin fixed DOFs with an identity row.
-  for (std::size_t i = 0; i < nodeCount; ++i) {
-    for (int k = 0; k < 3; ++k) {
-      const auto row = static_cast<Eigen::Index>(3 * i + k);
-      if (fixed[i] != 0u) {
-        hessian.row(row).setZero();
-        hessian.col(row).setZero();
-        hessian(row, row) = 1.0;
-        rhs(row) = 0.0;
-      } else {
-        rhs(row) = -gradient[i][k];
-      }
-    }
-  }
+  Eigen::SparseMatrix<double> hessian(dim, dim);
+  hessian.setFromTriplets(triplets.begin(), triplets.end());
 
   // The inertia term (m/dt^2 on every free DOF, with positive node masses
   // enforced at construction) keeps the Hessian positive definite once the
   // spring/barrier blocks are PSD-projected, so no diagonal regularization is
-  // needed (it would perturb the otherwise-exact solve). The isPositive()
-  // guard mirrors the rest of the module (see the rigid-body LDLT solves):
-  // LDLT::info() only flags a zero/non-finite pivot, so an indefinite-but-
-  // finite factorization must be rejected explicitly. Either case falls back
-  // to steepest descent below.
-  Eigen::LDLT<Eigen::MatrixXd> ldlt(hessian);
-  if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
+  // needed (it would perturb the otherwise-exact solve). SimplicialLDLT's
+  // info() only flags a structural failure / exact-zero pivot, so the
+  // strictly-positive-D check is the actual positive-definiteness test (a
+  // negative pivot would otherwise factorize silently). This has the same
+  // intent as the dense LDLT isPositive() guard the rest of the module uses;
+  // the two verdicts can only differ for near-singular matrices, which the
+  // m/dt^2 inertia floor precludes here. Either failure falls back to steepest
+  // descent below. (info() is unchanged by solve(); the recheck is defensive,
+  // matching the rigid-body solves.)
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt(hessian);
+  if (ldlt.info() != Eigen::Success || (ldlt.vectorD().array() <= 0.0).any()) {
     return false;
   }
   const Eigen::VectorXd solution = ldlt.solve(rhs);
-  if (!solution.allFinite()) {
+  if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
     return false;
   }
 
@@ -3155,9 +3195,9 @@ void advanceDeformableBody(
         return false;
       };
 
-      // Projected-Newton search direction (PD Hessian solve); falls back to
-      // mass-scaled steepest descent if the dense solve is skipped or fails.
-      // Newton lets the stiff barrier term converge cleanly.
+      // Projected-Newton search direction (sparse PD Hessian solve); falls back
+      // to mass-scaled steepest descent if the sparse solve is skipped or
+      // fails. Newton lets the stiff barrier term converge cleanly.
       const bool newtonDirection = computeProjectedNewtonDirection(
           state,
           model,

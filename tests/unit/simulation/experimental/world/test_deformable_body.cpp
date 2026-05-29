@@ -2332,3 +2332,136 @@ TEST(DeformableBody, ProjectedNewtonSolvesSpringStepInFewIterations)
       = (inertialWeight * 2.0 + 100.0 * 1.0) / (inertialWeight + 100.0);
   expectVectorNear(body.getPosition(1), Eigen::Vector3d(expectedX, 0.0, 0.0));
 }
+
+//==============================================================================
+// Sparse projected Newton scales past the former dense 256-node cap: a 300-node
+// spring chain (well beyond the old limit) is solved on the Newton path. The
+// previous dense solver returned false for any body over 256 nodes, so this
+// whole body would have fallen back to steepest descent for every iteration;
+// the sparse Cholesky assembly now keeps it on the Newton path.
+TEST(DeformableBody, SparseProjectedNewtonScalesBeyondDenseCap)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  constexpr std::size_t kNodeCount = 300; // > the former 256-node dense cap
+  constexpr double spacing = 0.1;
+
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    options.positions.emplace_back(static_cast<double>(i) * spacing, 0.0, 0.0);
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  options.edges.reserve(kNodeCount - 1);
+  for (std::size_t i = 0; i + 1 < kNodeCount; ++i) {
+    options.edges.push_back(sx::DeformableEdge{i, i + 1, spacing});
+  }
+  options.edgeStiffness = 100.0;
+  options.fixedNodes = {0}; // anchor one end of the chain
+
+  auto body = world.addDeformableBody("sparse_chain", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  // The >256-node body is solved on the sparse Newton path; the old dense
+  // solver would have reported projectedNewtonSteps == 0 (all fallback).
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_GT(stats.projectedNewtonSteps, stats.projectedNewtonFallbacks);
+
+  // The solve stays finite, keeps the anchor pinned, and lets gravity sag the
+  // free end downward.
+  expectVectorNear(body.getPosition(0), Eigen::Vector3d::Zero());
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+  }
+  EXPECT_LT(body.getPosition(kNodeCount - 1).z(), 0.0);
+}
+
+//==============================================================================
+// Sparse projected Newton scales past the dense cap WITH active contact: a
+// 320-node grid (> the former 256-node cap) pressed onto a static ground
+// barrier is solved on the Newton path, so the sparse assembly's ground-barrier
+// Hessian scatter runs above the old cap. The barrier holds it non-penetrating.
+TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  // Ground barrier: static box whose top surface sits at z = 0.
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  // 20x16 = 320-node grid lying just inside the barrier activation band
+  // (d_hat = 2e-2), connected by structural springs along both axes.
+  constexpr std::size_t kColumns = 20;
+  constexpr std::size_t kRows = 16;
+  constexpr std::size_t kNodeCount = kColumns * kRows; // 320 > 256
+  constexpr double spacing = 0.1;
+  constexpr double restZ = 0.01; // inside (0, d_hat)
+
+  const auto index = [&](std::size_t c, std::size_t r) {
+    return r * kColumns + c;
+  };
+
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      options.positions.emplace_back(
+          static_cast<double>(c) * spacing,
+          static_cast<double>(r) * spacing,
+          restZ);
+    }
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      if (c + 1 < kColumns) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r), spacing});
+      }
+      if (r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c, r + 1), spacing});
+      }
+    }
+  }
+  options.edgeStiffness = 100.0;
+
+  auto body = world.addDeformableBody("sparse_grid", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int step = 0; step < 5; ++step) {
+    world.step(executor, pipeline);
+  }
+
+  const auto& stats = stage.getLastStats();
+  // The >256-node body is solved on the sparse Newton path with the ground
+  // barrier configured, so the sparse assembly's ground-barrier Hessian scatter
+  // runs above the former dense cap.
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 1u);
+
+  // Gravity presses the grid onto the barrier, which holds every node above the
+  // ground surface (z = 0) without penetration.
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+    EXPECT_GE(body.getPosition(i).z(), -1e-3);
+  }
+}

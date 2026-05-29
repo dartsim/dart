@@ -854,6 +854,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     eigen-decompositions are later slices. Includes focused regressions (Newton
     engaged, few-iteration convergence, analytic parity) and solver-step
     counters.
+  - Optimized the experimental IPC projected-Newton solve to assemble a SPARSE
+    per-step Hessian (Eigen triplet assembly) and factorize it with a sparse
+    Cholesky (`SimplicialLDLT`, guarded by a positive-diagonal check), lifting
+    the former 256-node dense-solve cap to thousands of nodes so paper-scale
+    deformable meshes are solved on the Newton path instead of falling back to
+    steepest descent. Fixed DOFs are pinned at assembly time (unit diagonal,
+    free-free element blocks only), preserving the exact dense result; the
+    steepest-descent fallback and PD guard are unchanged. The solve refactorizes
+    from scratch each iteration (per-step cost is not yet optimized);
+    symbolic-factorization reuse, matrix-free CG, and GPU offload of the
+    assembly/solve remain later perf slices. Adds a 300-node-chain regression
+    and a 320-node grid-on-ground-barrier regression (Newton engaged past the
+    old cap) plus sparse-Newton step/fallback counters on the scaling benchmark.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
