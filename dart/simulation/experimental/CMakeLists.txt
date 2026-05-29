@@ -50,6 +50,7 @@ add_library(
   compute/multibody_dynamics.cpp
   compute/parallel_executor.cpp
   compute/rigid_body_state_batch.cpp
+  compute/variational_integration.cpp
   compute/sequential_executor.cpp
   compute/world_batch.cpp
   compute/world_kinematics_graph.cpp
