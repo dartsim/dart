@@ -142,25 +142,33 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-friction-diagnostics` - stacked on
-`feature/ipc-nonflat-ground-friction` (#2753). Adds FRICTION DIAGNOSTICS to
-`DeformableSolverStats` (C++-only struct, NOT bound to dartpy -> no stub regen):
-`frictionDissipation` (double) = IPC Coulomb work mu*lambda*f1(y)*y summed over
-active friction contacts at the converged iterate (= mu*lambda*slip in the
-kinetic regime, ramped to 0 at rest by the mollifier) and `activeFrictionContacts`
-(size_t) = count of ground + self-contact friction contacts with nonzero lagged
-normal force. New free fn `accumulateFrictionDiagnostics(...)` mirrors the two
-friction energies' slip measures (ground: u_T=(I-n n^T)(x-start); self-contact:
-projection*displacement); called ONCE after the outer solve loop (not the
-line-search hot path), using the persistent final lagged vectors
-(groundFrictionNormalForce/Direction, selfContactFrictionContacts) + converged
-scratch.next. Both zero when frictionCoefficient==0 (early return). Regression
-FrictionDiagnosticsReportSlidingDissipation (sliding ground node -> dissipation>0,
-active>=1; frictionless -> both exactly 0). 65 deformable tests, test-all 6/6.
-With non-flat normals + diagnostics done, Phase 4 is complete EXCEPT
-codimensional-obstacle friction (BLOCKED on the codim-obstacle barrier, a Phase-3
-item). Next: barrier-stall convergence robustness OR live GPU injection OR
-adaptive barrier stiffness (all larger/riskier) -- pick the most additive.
+`feature/ipc-deformable-topology-bindings` - stacked on
+`feature/ipc-friction-diagnostics` (#2754). PHASE 8 increment: dartpy bindings
+for deformable SURFACE/TETRA TOPOLOGY. Adds DeformableSurfaceTriangle +
+DeformableTetrahedron classes, DeformableBodyOptions.surface*triangles/tetrahedra
+def_rw, and DeformableBody read accessors surface_triangle_count/surface_triangle,
+tetrahedron_count/tetrahedron/tetrahedron_rest_volume, node_mass (getMass was
+unbound). NO get*_/set\__ names (forbidden). MUST regen stubs
+(`pixi run generate-stubs`) AND `pixi run update-api-boundary-inventory` (it
+tracks public CLASS names: DeformableSurfaceTriangle/DeformableTetrahedron now
+listed) + verify `check-api-boundary-inventory` -- CI lint fails if stale.
+Python regression test_experimental_deformable_body_topology_python_api (unit
+tetra, explicit boundary surface, rest_volume==1/6, node_mass==1). 6/6 expected.
+Stack 17-deep (#2738-#2746,#2748-#2755). Remaining Phase 8: DBC/NBC bindings
+(need DeformableDirichlet/NeumannBoundaryCondition structs bound too),
+scene-loader Python access, diagnostics exposure.
+
+Prior #2754 = friction diagnostics: DeformableSolverStats gains
+`frictionDissipation` (sum mu*lambda*f1(y)*y over active friction contacts at the
+converged iterate = force*slip, ramped to 0 at rest) + `activeFrictionContacts`
+(count of ground+self-contact contacts w/ nonzero lagged normal force). New free
+fn `accumulateFrictionDiagnostics` mirrors the two friction energies' slip
+measures (ground u_T=(I-n n^T)(x-start); self-contact projection\*displacement),
+called ONCE after the outer loop (not the line-search hot path). Both 0 when
+mu==0. DeformableSolverStats is C++-ONLY (NOT bound to dartpy) -> no stub regen.
+Regression FrictionDiagnosticsReportSlidingDissipation. With non-flat normals +
+diagnostics done, Phase 4 is COMPLETE except codim-obstacle friction (BLOCKED on
+the codim-obstacle barrier, a Phase-3 item).
 
 Prior #2753 = non-flat ground-normal friction (static-ground
 friction follows the TRUE GEOMETRIC ground normal instead of a hardcoded xy
@@ -239,7 +247,8 @@ reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 (self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade)
 <- #2751 (self-contact friction Hessian) <- #2752 (edge-edge self-contact
 friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
-diagnostics). (PR #2747 is another author's.)
+diagnostics) <- #2755 (deformable surface/tetra topology bindings). (PR #2747 is
+another author's.)
 
 ## Immediate Next Step
 
