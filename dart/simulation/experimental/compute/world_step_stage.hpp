@@ -134,6 +134,15 @@ struct DeformableSolverStats
   // body hit the iteration cap or stalled. Feeds the paper's benchmark
   // statistics (Fig. 23 / Table 1).
   double finalGradientResidualNorm = 0.0;
+  // Friction diagnostics at the converged iterate, summed over the step's
+  // bodies and over both static-ground and self-contact friction. The
+  // dissipation is the IPC Coulomb work mu * lambda * f1(y) * y (force times
+  // tangential slip, smoothly ramped to zero at rest by the f0/f1 mollifier);
+  // the active count is the number of friction contacts carrying a nonzero
+  // lagged normal force. Both are zero when friction is disabled
+  // (frictionCoefficient == 0). Feed the paper's friction benchmark statistics.
+  double frictionDissipation = 0.0;
+  std::size_t activeFrictionContacts = 0;
 
   void reset() noexcept
   {

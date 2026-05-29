@@ -47,6 +47,7 @@
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
+#include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -58,6 +59,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
+#include <nanobind/stl/filesystem.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
@@ -1438,12 +1440,81 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw("node_b", &sim::DeformableEdge::nodeB)
       .def_rw("rest_length", &sim::DeformableEdge::restLength);
 
+  nb::class_<sim::DeformableSurfaceTriangle>(m, "DeformableSurfaceTriangle")
+      .def(
+          "__init__",
+          [](sim::DeformableSurfaceTriangle* self,
+             std::size_t nodeA,
+             std::size_t nodeB,
+             std::size_t nodeC) {
+            new (self) sim::DeformableSurfaceTriangle{nodeA, nodeB, nodeC};
+          },
+          nb::arg("node_a") = 0,
+          nb::arg("node_b") = 0,
+          nb::arg("node_c") = 0)
+      .def_rw("node_a", &sim::DeformableSurfaceTriangle::nodeA)
+      .def_rw("node_b", &sim::DeformableSurfaceTriangle::nodeB)
+      .def_rw("node_c", &sim::DeformableSurfaceTriangle::nodeC);
+
+  nb::class_<sim::DeformableTetrahedron>(m, "DeformableTetrahedron")
+      .def(
+          "__init__",
+          [](sim::DeformableTetrahedron* self,
+             std::size_t nodeA,
+             std::size_t nodeB,
+             std::size_t nodeC,
+             std::size_t nodeD) {
+            new (self) sim::DeformableTetrahedron{nodeA, nodeB, nodeC, nodeD};
+          },
+          nb::arg("node_a") = 0,
+          nb::arg("node_b") = 0,
+          nb::arg("node_c") = 0,
+          nb::arg("node_d") = 0)
+      .def_rw("node_a", &sim::DeformableTetrahedron::nodeA)
+      .def_rw("node_b", &sim::DeformableTetrahedron::nodeB)
+      .def_rw("node_c", &sim::DeformableTetrahedron::nodeC)
+      .def_rw("node_d", &sim::DeformableTetrahedron::nodeD);
+
+  nb::class_<sim::DeformableDirichletBoundaryCondition>(
+      m, "DeformableDirichletBoundaryCondition")
+      .def(nb::init<>())
+      .def_rw("nodes", &sim::DeformableDirichletBoundaryCondition::nodes)
+      .def_rw(
+          "linear_velocity",
+          &sim::DeformableDirichletBoundaryCondition::linearVelocity)
+      .def_rw(
+          "angular_velocity",
+          &sim::DeformableDirichletBoundaryCondition::angularVelocity)
+      .def_rw("center", &sim::DeformableDirichletBoundaryCondition::center)
+      .def_rw(
+          "start_time", &sim::DeformableDirichletBoundaryCondition::startTime)
+      .def_rw("end_time", &sim::DeformableDirichletBoundaryCondition::endTime);
+
+  nb::class_<sim::DeformableNeumannBoundaryCondition>(
+      m, "DeformableNeumannBoundaryCondition")
+      .def(nb::init<>())
+      .def_rw("nodes", &sim::DeformableNeumannBoundaryCondition::nodes)
+      .def_rw(
+          "acceleration",
+          &sim::DeformableNeumannBoundaryCondition::acceleration)
+      .def_rw("start_time", &sim::DeformableNeumannBoundaryCondition::startTime)
+      .def_rw("end_time", &sim::DeformableNeumannBoundaryCondition::endTime);
+
   nb::class_<sim::DeformableBodyOptions>(m, "DeformableBodyOptions")
       .def(nb::init<>())
       .def_rw("positions", &sim::DeformableBodyOptions::positions)
       .def_rw("velocities", &sim::DeformableBodyOptions::velocities)
       .def_rw("masses", &sim::DeformableBodyOptions::masses)
       .def_rw("edges", &sim::DeformableBodyOptions::edges)
+      .def_rw(
+          "surface_triangles", &sim::DeformableBodyOptions::surfaceTriangles)
+      .def_rw("tetrahedra", &sim::DeformableBodyOptions::tetrahedra)
+      .def_rw(
+          "dirichlet_boundary_conditions",
+          &sim::DeformableBodyOptions::dirichletBoundaryConditions)
+      .def_rw(
+          "neumann_boundary_conditions",
+          &sim::DeformableBodyOptions::neumannBoundaryConditions)
       .def_rw("fixed_nodes", &sim::DeformableBodyOptions::fixedNodes)
       .def_rw("edge_stiffness", &sim::DeformableBodyOptions::edgeStiffness)
       .def_rw("damping", &sim::DeformableBodyOptions::damping)
@@ -1454,6 +1525,11 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("name", &sim::DeformableBody::getName)
       .def_prop_ro("node_count", &sim::DeformableBody::getNodeCount)
       .def_prop_ro("edge_count", &sim::DeformableBody::getEdgeCount)
+      .def_prop_ro(
+          "surface_triangle_count",
+          &sim::DeformableBody::getSurfaceTriangleCount)
+      .def_prop_ro(
+          "tetrahedron_count", &sim::DeformableBody::getTetrahedronCount)
       .def("node_position", &sim::DeformableBody::getPosition, nb::arg("node"))
       .def(
           "set_node_position",
@@ -1466,10 +1542,111 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableBody::setVelocity,
           nb::arg("node"),
           nb::arg("velocity"))
+      .def("node_mass", &sim::DeformableBody::getMass, nb::arg("node"))
       .def("is_fixed_node", &sim::DeformableBody::isFixedNode, nb::arg("node"))
       .def("edge", &sim::DeformableBody::getEdge, nb::arg("edge"))
+      .def(
+          "surface_triangle",
+          &sim::DeformableBody::getSurfaceTriangle,
+          nb::arg("triangle"))
+      .def(
+          "tetrahedron",
+          &sim::DeformableBody::getTetrahedron,
+          nb::arg("tetrahedron"))
+      .def(
+          "tetrahedron_rest_volume",
+          &sim::DeformableBody::getTetrahedronRestVolume,
+          nb::arg("tetrahedron"))
       .def_prop_ro(
           "material_properties", &sim::DeformableBody::getMaterialProperties);
+
+  nb::class_<sim::io::DeformableSceneLoadOptions>(
+      m, "DeformableSceneLoadOptions")
+      .def(nb::init<>())
+      .def_rw("asset_root", &sim::io::DeformableSceneLoadOptions::assetRoot)
+      .def_rw(
+          "body_name_prefix",
+          &sim::io::DeformableSceneLoadOptions::bodyNamePrefix)
+      .def_rw(
+          "add_structural_springs",
+          &sim::io::DeformableSceneLoadOptions::addStructuralSprings)
+      .def_rw(
+          "structural_spring_stiffness",
+          &sim::io::DeformableSceneLoadOptions::structuralSpringStiffness)
+      .def_rw("damping", &sim::io::DeformableSceneLoadOptions::damping)
+      .def_rw(
+          "ignore_contact_directives",
+          &sim::io::DeformableSceneLoadOptions::ignoreContactDirectives);
+
+  nb::class_<sim::io::DeformableSceneBodyInfo>(m, "DeformableSceneBodyInfo")
+      .def_ro("name", &sim::io::DeformableSceneBodyInfo::name)
+      .def_ro("body", &sim::io::DeformableSceneBodyInfo::body)
+      .def_ro("node_count", &sim::io::DeformableSceneBodyInfo::nodeCount)
+      .def_ro(
+          "tetrahedron_count",
+          &sim::io::DeformableSceneBodyInfo::tetrahedronCount)
+      .def_ro(
+          "surface_triangle_count",
+          &sim::io::DeformableSceneBodyInfo::surfaceTriangleCount)
+      .def_ro(
+          "dirichlet_condition_count",
+          &sim::io::DeformableSceneBodyInfo::dirichletConditionCount)
+      .def_ro(
+          "neumann_condition_count",
+          &sim::io::DeformableSceneBodyInfo::neumannConditionCount);
+
+  nb::class_<sim::io::DeformableSceneInfo>(m, "DeformableSceneInfo")
+      .def_ro("duration", &sim::io::DeformableSceneInfo::duration)
+      .def_ro("time_step", &sim::io::DeformableSceneInfo::timeStep)
+      .def_ro("gravity_enabled", &sim::io::DeformableSceneInfo::gravityEnabled)
+      .def_ro("bodies", &sim::io::DeformableSceneInfo::bodies)
+      .def_ro("warnings", &sim::io::DeformableSceneInfo::warnings);
+
+  nb::class_<sim::io::DeformableSceneDiagnostics>(
+      m, "DeformableSceneDiagnostics")
+      .def_ro("frame", &sim::io::DeformableSceneDiagnostics::frame)
+      .def_ro("time", &sim::io::DeformableSceneDiagnostics::time)
+      .def_ro("body_count", &sim::io::DeformableSceneDiagnostics::bodyCount)
+      .def_ro("node_count", &sim::io::DeformableSceneDiagnostics::nodeCount)
+      .def_ro(
+          "tetrahedron_count",
+          &sim::io::DeformableSceneDiagnostics::tetrahedronCount)
+      .def_ro(
+          "surface_triangle_count",
+          &sim::io::DeformableSceneDiagnostics::surfaceTriangleCount)
+      .def_ro(
+          "dirichlet_condition_count",
+          &sim::io::DeformableSceneDiagnostics::dirichletConditionCount)
+      .def_ro(
+          "neumann_condition_count",
+          &sim::io::DeformableSceneDiagnostics::neumannConditionCount)
+      .def_ro("total_mass", &sim::io::DeformableSceneDiagnostics::totalMass)
+      .def_ro(
+          "max_displacement",
+          &sim::io::DeformableSceneDiagnostics::maxDisplacement)
+      .def_ro("min_z", &sim::io::DeformableSceneDiagnostics::minZ)
+      .def_ro("max_z", &sim::io::DeformableSceneDiagnostics::maxZ);
+
+  m.def(
+      "load_deformable_scene",
+      [](sim::World& world,
+         const std::filesystem::path& scenePath,
+         const sim::io::DeformableSceneLoadOptions& options) {
+        return sim::io::loadDeformableScene(world, scenePath, options);
+      },
+      nb::arg("world"),
+      nb::arg("scene_path"),
+      nb::arg("options") = sim::io::DeformableSceneLoadOptions{},
+      // The returned DeformableSceneInfo carries DeformableBody handles that
+      // hold a raw World*, so keep the World alive as long as the info (and the
+      // body handles read from it) lives, matching the keep-alive edge the
+      // World.add_deformable_body / get_deformable_body bindings use.
+      nb::keep_alive<0, 1>());
+
+  m.def(
+      "collect_deformable_scene_diagnostics",
+      &sim::io::collectDeformableSceneDiagnostics,
+      nb::arg("world"));
 
   nb::class_<sim::World>(m, "World")
       .def(

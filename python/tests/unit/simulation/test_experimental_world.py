@@ -2476,3 +2476,133 @@ def test_experimental_deformable_body_python_api():
     fetched = world.get_deformable_body("strand")
     assert fetched is not None
     assert fetched.node_count == 2
+
+
+def test_experimental_deformable_body_topology_python_api():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+
+    # A single unit-corner tetrahedron with an explicit boundary surface.
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.masses = [1.0, 1.0, 1.0, 1.0]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.surface_triangles = [
+        sx.DeformableSurfaceTriangle(0, 2, 1),
+        sx.DeformableSurfaceTriangle(0, 1, 3),
+        sx.DeformableSurfaceTriangle(0, 3, 2),
+        sx.DeformableSurfaceTriangle(1, 2, 3),
+    ]
+
+    body = world.add_deformable_body("tet", options)
+    assert body.is_valid
+    assert body.node_count == 4
+    assert body.surface_triangle_count == 4
+    assert body.tetrahedron_count == 1
+
+    triangle = body.surface_triangle(0)
+    assert (triangle.node_a, triangle.node_b, triangle.node_c) == (0, 2, 1)
+
+    tetrahedron = body.tetrahedron(0)
+    assert (
+        tetrahedron.node_a,
+        tetrahedron.node_b,
+        tetrahedron.node_c,
+        tetrahedron.node_d,
+    ) == (0, 1, 2, 3)
+
+    # The unit corner tetrahedron has volume 1/6.
+    assert body.tetrahedron_rest_volume(0) == pytest.approx(1.0 / 6.0)
+    assert body.node_mass(0) == pytest.approx(1.0)
+
+
+def test_experimental_deformable_body_boundary_conditions_python_api():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.1)
+    world.gravity = np.array([0.0, 0.0, 0.0])
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),  # Dirichlet-scripted
+        np.array([1.0, 0.0, 0.0]),  # Neumann-accelerated, free
+    ]
+    options.masses = [1.0, 1.0]
+
+    dirichlet = sx.DeformableDirichletBoundaryCondition()
+    dirichlet.nodes = [0]
+    dirichlet.linear_velocity = np.array([1.0, 0.0, 0.0])
+    options.dirichlet_boundary_conditions = [dirichlet]
+
+    neumann = sx.DeformableNeumannBoundaryCondition()
+    neumann.nodes = [1]
+    neumann.acceleration = np.array([0.0, 0.0, -10.0])
+    options.neumann_boundary_conditions = [neumann]
+
+    body = world.add_deformable_body("scripted", options)
+    assert body.is_valid
+
+    world.step()
+
+    # The Dirichlet node follows the scripted linear motion: x += vx * dt.
+    assert body.node_position(0)[0] == pytest.approx(0.1, abs=1e-9)
+    # The Neumann node accelerates downward under the applied acceleration.
+    assert body.node_position(1)[2] < 0.0
+
+
+def test_experimental_deformable_scene_loader_python_api(tmp_path):
+    sx = _simulation_experimental()
+
+    # A minimal single-tetrahedron Gmsh 4.1 mesh (no explicit surface section,
+    # so the loader derives the four boundary faces).
+    mesh_dir = tmp_path / "input" / "tetMeshes"
+    mesh_dir.mkdir(parents=True)
+    (mesh_dir / "tet.msh").write_text(
+        "$MeshFormat\n"
+        "4.1 0 8\n"
+        "$EndMeshFormat\n"
+        "$Nodes\n"
+        "1 4 1 4\n"
+        "3 0 0 4\n"
+        "1\n2\n3\n4\n"
+        "0.000000e+00 0.000000e+00 0.000000e+00\n"
+        "1.000000e+00 0.000000e+00 0.000000e+00\n"
+        "0.000000e+00 1.000000e+00 0.000000e+00\n"
+        "0.000000e+00 0.000000e+00 1.000000e+00\n"
+        "$EndNodes\n"
+        "$Elements\n"
+        "1 1 1 1\n"
+        "3 0 4 1\n"
+        "1 1 2 3 4\n"
+        "$EndElements\n"
+    )
+
+    scene_path = tmp_path / "scene.txt"
+    scene_path.write_text(
+        "time 0.5 0.1\n"
+        "shapes input 1\n"
+        "input/tetMeshes/tet.msh 0 0 0  0 0 0  1 1 1 material 6 100 0.2\n"
+    )
+
+    world = sx.World()
+    options = sx.DeformableSceneLoadOptions()
+    options.asset_root = str(tmp_path)
+    info = sx.load_deformable_scene(world, str(scene_path), options)
+
+    assert len(info.bodies) == 1
+    body_info = info.bodies[0]
+    assert body_info.node_count == 4
+    assert body_info.tetrahedron_count == 1
+    assert body_info.surface_triangle_count == 4
+    assert body_info.body.node_count == 4
+
+    diagnostics = sx.collect_deformable_scene_diagnostics(world)
+    assert diagnostics.body_count == 1
+    assert diagnostics.node_count == 4
+    assert diagnostics.tetrahedron_count == 1
+    # Unit corner tetrahedron volume 1/6 at density 6 has total mass 1.
+    assert diagnostics.total_mass == pytest.approx(1.0)

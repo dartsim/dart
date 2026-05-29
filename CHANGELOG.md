@@ -975,6 +975,67 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     self-contact and decelerates versus the frictionless control while the
     barrier holds them apart. Self-contact friction now covers both
     point-triangle and edge-edge primitives.
+  - Generalized experimental IPC static-ground friction to follow the true
+    geometric ground normal instead of a hardcoded xy tangent plane. Each
+    contacting node now lags the supporting barrier surface's normal (radial for
+    a sphere, the supporting-face normal for a rotated/tilted box), and the
+    friction energy, gradient, and tangential Hessian resolve against the plane
+    orthogonal to it (the Hessian is now a positive-semidefinite 3x3 tangent
+    block). For flat or box-top ground the normal is +z and the behavior reduces
+    exactly to the previous xy tangent plane, so existing flat-ground friction
+    tests are unchanged; the underlying barrier force stays a vertical height
+    field. Adds a regression on a 45-degree tilted slope where tilt-aware
+    friction couples the normal and tangential directions so a node dropped
+    straight down deflects down-slope, whereas the frictionless control (and any
+    xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
+    friction and friction-specific diagnostics remain later increments.
+  - Exposed the experimental deformable scene loader and replay diagnostics to
+    `dartpy`, completing the PLAN-081 Phase 8 Python facade. Added
+    `load_deformable_scene` and `collect_deformable_scene_diagnostics` module
+    functions, plus `DeformableSceneLoadOptions`, `DeformableSceneInfo`,
+    `DeformableSceneBodyInfo`, and `DeformableSceneDiagnostics` bindings, so a
+    contact-free tutorial-style scene file can be loaded into a `World` from
+    Python and its per-body counts, total mass, and bounds read back.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression that loads a single-tetrahedron scene and checks the reported
+    topology counts and total mass. (The loader still covers only the
+    contact-free subset; it is not IPC scene parity.)
+  - Extended the experimental deformable-body `dartpy` facade with scripted
+    boundary conditions (PLAN-081 Phase 8). Added
+    `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
+    `angular_velocity`, `center`, `start_time`, `end_time`) and
+    `DeformableNeumannBoundaryCondition` (`nodes`, `acceleration`, `start_time`,
+    `end_time`) bindings, plus the `DeformableBodyOptions`
+    `dirichlet_boundary_conditions` / `neumann_boundary_conditions` fields.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression where a Dirichlet-scripted node follows its prescribed linear
+    motion while a Neumann-accelerated node falls under the applied
+    acceleration. Scene-loader Python access and diagnostics exposure remain a
+    later increment.
+  - Extended the experimental deformable-body `dartpy` facade with surface and
+    tetrahedral topology (PLAN-081 Phase 8). Added `DeformableSurfaceTriangle`
+    and `DeformableTetrahedron` bindings, the `DeformableBodyOptions`
+    `surface_triangles` / `tetrahedra` fields, and `DeformableBody` read
+    accessors `surface_triangle_count` / `surface_triangle`,
+    `tetrahedron_count` / `tetrahedron` / `tetrahedron_rest_volume`, and
+    `node_mass`. Regenerated the type stubs and API boundary inventory, and
+    added a Python regression that builds a single tetrahedron with an explicit
+    boundary surface and reads back the topology, rest volume, and node mass.
+    Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
+    increment.
+  - Added experimental IPC friction diagnostics to the deformable solver stats
+    (PLAN-081 Phase 4). Each step now reports `frictionDissipation` (the IPC
+    Coulomb work mu \* normalForce \* f1(y) \* y summed over active friction
+    contacts at the converged iterate -- force times tangential slip, equal to
+    mu \* normalForce \* slip in the kinetic regime and ramped smoothly to zero
+    at rest by the f0/f1 mollifier) and `activeFrictionContacts` (the number of
+    static-ground and self-contact friction contacts carrying a nonzero lagged
+    normal force). Both are zero when friction is disabled and are computed once
+    per step outside the line-search hot path. Adds a regression that a sliding
+    ground-contact node reports positive dissipation over a nonzero active set
+    while the frictionless control reports zero. These feed the paper's friction
+    benchmark statistics (Fig. 23 / Table 1) alongside the existing
+    `finalGradientResidualNorm` convergence diagnostic.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
