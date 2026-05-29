@@ -29,7 +29,16 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
   - [~] Determinism — run-to-run bit-identical rollout through `world.step()`
     verified (`DeterministicAcrossRuns`); the **save/load** round-trip still
     needs the VI-state serialization above.
-  - [ ] Defined non-convergence **error** (currently reports `converged=false`).
+  - [x] Defined non-convergence **error** — `integrateMultibodyVariational`
+        throws `InvalidOperationException` (residual/iterations/tolerance) instead
+        of a silent best-effort step (`NonConvergenceRaisesDocumentedError`); mean
+        RIQN iterations ≤8 and every step converges
+        (`RiqnMeanIterationsWithinBudget`).
+  - [x] **Headline symplectic gate** + **momentum**: `PassiveChainEnergyHasNo-
+    SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
+        ≥50× better than semi-implicit Euler which drifts to ~39%) and
+        `FloatingBaseConservesMomentum` (linear + world angular momentum to
+        solver precision).
 - [x] **Phase A2 — O(n) impulse-based ABI** — RIQN uses the articulated-body
       inverse-mass solve (matches the dense `M⁻¹` to 1e-9,
       `ArticulatedInverseMassMatchesDenseSolve`). `bm_variational_integration`
@@ -51,15 +60,22 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
       `FloatingBaseTorqueFreeConservesEnergy` (tumbling asymmetric-inertia body
       conserves energy over 2e4 steps). Resolves the manifold-retraction gap the
       reference impl left as open TODOs.
-- [~] **Phase B2 — Holonomic constraints** — the constrained-VI _algorithm_ is
-  done + verified: holonomic loop closures (Point and Distance) enforced by an
-  impulse-based Newton projection onto `g(q)=0` reusing the O(n) ABI
-  (`λ = (J M⁻¹ Jᵀ)⁻¹(−g)`, `Δq = M⁻¹ Jᵀ λ`, via `VariationalLoopConstraint` on
-  `integrateMultibodyVariational`). `MaintainsDistanceLoopClosure` confirms a
-  Distance closure holds to 1e-6 while the 1-DOF arm swings under gravity.
-  Remaining integration: translate the World's `LoopClosure` components →
-  constraints in the stage and flip the loop-closure `Solve` validation so it
-  runs through `world.step()`.
+- [x] **Phase B2 — Holonomic constraints (loop closures)** — done + verified,
+      end-to-end through the public API. The constrained-VI algorithm enforces
+      holonomic closures by an impulse-based Newton projection onto `g(q)=0` reusing
+      the O(n) ABI (`λ = (J M⁻¹ Jᵀ)⁻¹(−g)`, `Δq = M⁻¹ Jᵀ λ`); the constraint
+      Jacobian is finite-difference-verified (`ConstraintJacobianMatchesFinite-
+Difference`). The World's `LoopClosure` components are wired into the
+      variational stage (`bindVariationalLoopClosure`, the single source of truth for
+      both the stage and the `Solve` validation), so a `Solve` Point closure runs
+      through `world.step()` under the variational method
+      (`LoopClosureSolvedThroughWorldStep`), while the semi-implicit path still
+      rejects `Solve` and unsupported closures (Rigid/Distance families, rigid-body
+      or cross-multibody endpoints) raise documented errors. **Scope today:** Point
+      closures with link/world endpoints on a single multibody. Distance (needs a
+      public rest-length field) and Rigid (needs an orientation residual) through the
+      public model are tracked follow-ups; the internal `VariationalLoopConstraint`
+      Distance path is already verified by `MaintainsDistanceLoopClosure`.
 - [x] **Phase C — Contact & friction: go/no-go = NO-GO** (deferred). Recorded in
       the plan sidecar; neither entry gate met (no contact-query-at-trial-config
       redesign; no C2 spike).
@@ -95,19 +111,18 @@ energy behavior on a passive chain before optimizing to O(n).
 
 ## Immediate Next Steps
 
-Phases A1, A2, B1, and the B2 constrained-VI algorithm are complete and
-verified; Phase C is a recorded NO-GO. Remaining, in priority order (see
-`RESUME.md` for the full handoff):
+Phases A1, A2, B1, and B2 are complete and verified (B2 wired through the public
+API for Point closures); Phase C is a recorded NO-GO. Remaining, in priority
+order (see `RESUME.md` for the full handoff):
 
-1. **Phase B2 integration**: the constraint algorithm (Jacobian `∂g/∂q` +
-   impulse-based projection onto `g(q)=0`) is done + verified; what remains is
-   wiring the World's `LoopClosure` components → `VariationalLoopConstraint`s in
-   the stage and flipping the loop-closure `Solve` validation so closures run
-   through `world.step()`.
-2. A1 finish: serialize `MultibodyVariationalState` (binary-format version bump +
-   bootstrap-done flag) + a save/load determinism round-trip test; optionally a
-   documented non-convergence error.
-3. A2 large-chain convergence (follow-up): relative/scaled tolerance,
+1. **A1 finish**: serialize `MultibodyVariationalState` (binary-format version
+   bump + bootstrap-done flag) + a save/load determinism round-trip test so the
+   trajectory round-trips without re-bootstrapping history.
+2. **B2 public-model follow-ups**: support Distance closures through the public
+   API (needs a rest-length the `comps::LoopClosure` model does not yet carry)
+   and Rigid closures (needs an orientation residual the solver does not yet
+   implement). The internal Distance path is already verified.
+3. **A2 large-chain convergence** (research follow-up): relative/scaled tolerance,
    line-search/Anderson acceleration, or the exact recursive-Jacobian
    preconditioner (IG3 alone does not resolve the long-chain iteration cliff).
 4. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).

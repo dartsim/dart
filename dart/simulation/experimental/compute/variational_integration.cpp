@@ -15,6 +15,7 @@
 #include "dart/simulation/experimental/comps/frame_types.hpp"
 #include "dart/simulation/experimental/comps/joint.hpp"
 #include "dart/simulation/experimental/comps/link.hpp"
+#include "dart/simulation/experimental/comps/loop_closure.hpp"
 #include "dart/simulation/experimental/comps/multibody.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
@@ -888,6 +889,91 @@ VariationalConstraintLinearization computeVariationalConstraintLinearization(
 }
 
 //==============================================================================
+VariationalLoopClosureBinding bindVariationalLoopClosure(
+    const entt::registry& registry, entt::entity closureEntity)
+{
+  using Status = VariationalLoopClosureBinding::Status;
+  VariationalLoopClosureBinding binding;
+
+  const auto* closure = registry.try_get<comps::LoopClosure>(closureEntity);
+  if (closure == nullptr || !closure->runtimePolicy.enabled
+      || closure->runtimePolicy.dynamics != ClosureDynamicsPolicy::Solve) {
+    return binding; // Ignored: no closure, disabled, or residual-only.
+  }
+
+  if (closure->family != LoopClosureFamily::Point) {
+    binding.status = Status::Unsupported;
+    binding.reason
+        = "the variational loop-closure solver supports only Point closures "
+          "(the Rigid and Distance families are not yet implemented)";
+    return binding;
+  }
+
+  // Resolve an endpoint frame to its owning multibody structure: entt::null for
+  // a world anchor, the structure entity for a link, or report failure for a
+  // non-link frame (e.g. a rigid body).
+  const auto resolve
+      = [&](entt::entity frame, entt::entity& structureOut) -> bool {
+    if (frame == entt::null) {
+      structureOut = entt::null; // world anchor
+      return true;
+    }
+    if (!registry.all_of<comps::Link>(frame)) {
+      return false; // rigid-body or other non-link frame
+    }
+    for (auto entity : registry.view<comps::MultibodyStructure>()) {
+      const auto& structure = registry.get<comps::MultibodyStructure>(entity);
+      if (std::find(structure.links.begin(), structure.links.end(), frame)
+          != structure.links.end()) {
+        structureOut = entity;
+        return true;
+      }
+    }
+    return false; // a link not owned by any structure (should not happen)
+  };
+
+  entt::entity structureA = entt::null;
+  entt::entity structureB = entt::null;
+  if (!resolve(closure->frameA, structureA)
+      || !resolve(closure->frameB, structureB)) {
+    binding.status = Status::Unsupported;
+    binding.reason
+        = "a variational loop-closure endpoint must be a multibody link or the "
+          "world frame (rigid-body endpoints are not supported)";
+    return binding;
+  }
+  if (structureA == entt::null && structureB == entt::null) {
+    binding.status = Status::Unsupported;
+    binding.reason
+        = "a variational loop closure must touch at least one multibody link";
+    return binding;
+  }
+  if (structureA != entt::null && structureB != entt::null
+      && structureA != structureB) {
+    binding.status = Status::Unsupported;
+    binding.reason
+        = "a variational loop closure spanning two multibodies is "
+          "not supported";
+    return binding;
+  }
+
+  binding.status = Status::Supported;
+  binding.structure = structureA != entt::null ? structureA : structureB;
+  // Point closure: g = endpointA - endpointB = 0. The endpoint expressed in a
+  // link body frame is offset.translation() (the frame IS the link body frame;
+  // a null link keeps the point in world coordinates as the anchor). Point
+  // ignores the offset orientation by construction; Rigid -- which would need
+  // it -- is rejected above.
+  binding.constraint.linkA = closure->frameA;
+  binding.constraint.pointA = closure->offsetA.translation();
+  binding.constraint.linkB = closure->frameB;
+  binding.constraint.pointB = closure->offsetB.translation();
+  binding.constraint.distance = false;
+  binding.constraint.length = 0.0;
+  return binding;
+}
+
+//==============================================================================
 std::string_view MultibodyVariationalIntegrationStage::getName() const noexcept
 {
   return "multibody_variational_integration";
@@ -910,12 +996,25 @@ void MultibodyVariationalIntegrationStage::execute(
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
+  // Gather enabled loop closures that request dynamic solving, grouped by the
+  // multibody they constrain. World::step validates the dynamics policy first,
+  // so by here every binding is Ignored or Supported (never Unsupported).
+  auto closures = registry.view<comps::LoopClosure>();
+
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
+    std::vector<VariationalLoopConstraint> constraints;
+    for (auto closureEntity : closures) {
+      const auto binding = bindVariationalLoopClosure(registry, closureEntity);
+      if (binding.status == VariationalLoopClosureBinding::Status::Supported
+          && binding.structure == entity) {
+        constraints.push_back(binding.constraint);
+      }
+    }
     integrateMultibodyVariational(
-        registry, structure, gravity, timeStep, state);
+        registry, structure, gravity, timeStep, state, 50, 1e-10, constraints);
   }
 }
 

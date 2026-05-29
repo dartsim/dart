@@ -163,6 +163,38 @@ computeVariationalConstraintLinearization(
     const comps::MultibodyStructure& structure,
     const std::vector<VariationalLoopConstraint>& constraints);
 
+/// Classification of one public loop closure (`comps::LoopClosure`) for the
+/// variational loop-closure solver. Point closures whose endpoints are links of
+/// a single multibody and/or a fixed world anchor are `Supported`; everything
+/// the variational stage cannot honestly enforce yet (the Rigid and Distance
+/// families, rigid-body endpoints, or a closure spanning two multibodies) is
+/// `Unsupported` with a human-readable `reason`.
+struct VariationalLoopClosureBinding
+{
+  enum class Status
+  {
+    Ignored,     ///< Disabled, or not requesting dynamic solving.
+    Supported,   ///< Translatable; `structure` and `constraint` are set.
+    Unsupported, ///< Requests solving but this stage cannot enforce it.
+  };
+
+  Status status = Status::Ignored;
+  entt::entity structure = entt::null; ///< Owning multibody (when Supported).
+  VariationalLoopConstraint
+      constraint;          ///< Translated closure (when Supported).
+  std::string_view reason; ///< Why rejected (when Unsupported).
+};
+
+/// Classify a loop closure (the `comps::LoopClosure` on `closureEntity`) for
+/// the variational loop-closure solver. The World's dynamics-policy validation
+/// uses it to accept/reject a `Solve` closure under the variational method, and
+/// the variational stage uses it to gather the constraints to enforce, so the
+/// two can never disagree. Returns `Ignored` when there is no such component,
+/// the closure is disabled, or it does not request `Solve`.
+[[nodiscard]] DART_EXPERIMENTAL_API VariationalLoopClosureBinding
+bindVariationalLoopClosure(
+    const entt::registry& registry, entt::entity closureEntity);
+
 /// Variational-integrator multibody stage (a peer of
 /// `MultibodyForwardDynamicsStage`, selected by the `variational integrator`
 /// integration-family method name).

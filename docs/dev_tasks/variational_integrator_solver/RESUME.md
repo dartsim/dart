@@ -34,33 +34,29 @@ articulated-inertia sweep + forward acceleration sweep) drives RIQN and matches
 the dense `M⁻¹` to 1e-9 (`ArticulatedInverseMassMatchesDenseSolve`); the
 integrator is linear-time, symplectic (energy-conserving over 1e5 steps), and
 selectable via `World::setMultibodyIntegrationMethod("variational integrator")`.
-Remaining, in priority order:
+Phases A1, A2, B1, B2 are complete and verified; A1's convergence/momentum/
+non-convergence-error gates and B1's manifold finite-difference gate are closed;
+B2 is wired through the public API (Point closures via `world.step()` under the
+variational method, semi-implicit still rejects `Solve`). Phase C is a recorded
+NO-GO. Remaining, in priority order:
 
-1. **A2 large-chain convergence** (follow-up): `bm_variational_integration`
-   confirms the inverse-mass kernel is O(n) (3% RMS) and the integrator scales
-   linearly for ≤~32 DOF, but the RIQN iteration count rises for ≥~64-link
-   chains. The IG3 (semi-implicit) initial guess is implemented and did not fix
-   the cliff (it is a convergence-_rate_ issue, not a starting-point one), so the
-   open mitigations are a relative/scaled convergence tolerance, line-search or
-   Anderson acceleration, or the exact recursive-Jacobian preconditioner.
-2. **A1 finish**: serialize `MultibodyVariationalState` (binary-format version
-   bump + bootstrap-done flag) + a save/load determinism round-trip test;
-   optionally promote RIQN non-convergence from a `converged=false` diagnostic to
-   a documented error.
-3. **Phase B1**: floating base — DONE. Floating + Spherical joints with
-   manifold-correct SE(3)/SO(3) RIQN retraction (`jointRetract`/
-   `jointLogDifference`), verified by free-fall + tumbling energy conservation.
-4. **Phase B2**: holonomic constraints (loop closures) — algorithm DONE. The
-   constraint Jacobian `∂g/∂q` (`worldPointJacobian` /
-   `constraintResidualAndJacobian`) and the impulse-based projection onto
-   `g(q)=0` reusing the O(n) ABI (`λ=(JM⁻¹Jᵀ)⁻¹(−g)`, `Δq=M⁻¹Jᵀλ`) ship via the
-   `constraints` parameter of `integrateMultibodyVariational`, verified by
-   `MaintainsDistanceLoopClosure`. **Remaining integration**: translate the
-   World's `LoopClosure` components → `VariationalLoopConstraint`s inside
-   `MultibodyVariationalIntegrationStage`, and flip the loop-closure `Solve`
-   validation so closures run through `world.step()`
-   (`johnson-murphey-2009` / `leyendecker-2008`).
-5. **Phase C**: contact/friction — recorded **NO-GO** (deferred, go/no-go; see
+1. **A1 finish (only open A1 gate)**: serialize `MultibodyVariationalState`
+   (binary-format version bump + `bootstrapped` flag + `previousDeltaTransform`/
+   `previousMomentum`) + a save/load round-trip test so the trajectory
+   round-trips without re-bootstrapping history.
+2. **B2 public-model follow-ups**: Distance closures through the public API need
+   a rest-length the `comps::LoopClosure` model does not carry; Rigid closures
+   need an orientation residual the solver does not implement. Both are rejected
+   today with documented errors (`bindVariationalLoopClosure`); the internal
+   Distance path is verified by `MaintainsDistanceLoopClosure`.
+   (`johnson-murphey-2009` / `leyendecker-2008`.)
+3. **A2 large-chain convergence** (research follow-up): the inverse-mass kernel
+   is O(n) (3% RMS) and the integrator scales linearly for ≤~32 DOF, but the RIQN
+   iteration count rises for ≥~64-link chains (the fixed `Δt·M⁻¹` quasi-Newton
+   rate). IG3 did not fix it; open mitigations are a relative/scaled tolerance,
+   line-search/Anderson acceleration, or the exact recursive-Jacobian
+   preconditioner.
+4. **Phase C**: contact/friction — recorded **NO-GO** (deferred, go/no-go; see
    the plan sidecar).
 
 ## Context That Would Be Lost

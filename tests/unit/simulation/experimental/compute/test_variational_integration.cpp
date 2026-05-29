@@ -12,6 +12,8 @@
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/variational_integration.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -865,4 +867,146 @@ TEST(VariationalIntegration, FloatingBaseConservesMomentum)
   // Angular momentum: world L is conserved to solver precision.
   EXPECT_LT(maxAngularDrift, 1e-8)
       << "angular-momentum drift " << maxAngularDrift;
+}
+
+// Phase B2 deliverable: a Point loop closure added through the public World API
+// is solved by the variational integrator on the default World::step() path.
+// The tip of a spatial 5-DOF arm is pinned to its rest-pose world position;
+// under gravity the arm flexes (internal DOF remain) while the pinned point
+// holds. The arm has a bent ("zigzag") rest shape so the 3-row point Jacobian
+// is full rank (a straight arm would be singular for a 3D point pin). Loop
+// closures are topology, so the closure is added in design mode; the rest-pose
+// tip position (all joints at zero) is the product of the link offsets,
+// computed here.
+TEST(VariationalIntegration, LoopClosureSolvedThroughWorldStep)
+{
+  sx::World world;
+  world.setMultibodyIntegrationMethod("variational integrator");
+  auto robot = world.addMultibody("arm");
+  auto parent = robot.addLink("base");
+  const double bend[5] = {0.0, 0.5, -0.5, 0.5, -0.5};
+  Eigen::Isometry3d tipFromBase = Eigen::Isometry3d::Identity();
+  for (int i = 0; i < 5; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.linear() = Eigen::AngleAxisd(bend[i], Eigen::Vector3d::UnitY())
+                          .toRotationMatrix();
+    offset.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "j" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = (i == 0) ? Eigen::Vector3d::UnitZ() : Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+    link.setMass(0.8);
+    link.setInertia(Eigen::Vector3d(0.02, 0.02, 0.02).asDiagonal());
+    parent = link;
+    tipFromBase = tipFromBase * offset; // joints at zero => relative == offset
+  }
+
+  auto tip = robot.getLinks().back();
+  Eigen::Isometry3d anchorFrame = Eigen::Isometry3d::Identity();
+  anchorFrame.translation() = tipFromBase.translation();
+  auto closure = world.addLoopClosure(
+      "pin",
+      {.frameA = tip,
+       .frameB = sx::Frame::world(),
+       .family = sx::LoopClosureFamily::Point,
+       .offsetB = anchorFrame});
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  auto joints = robot.getJoints();
+  ASSERT_EQ(joints.size(), 5u);
+
+  double maxResidual = 0.0;
+  double motion = 0.0;
+  for (int k = 0; k < 2000; ++k) {
+    world.step();
+    maxResidual = std::max(maxResidual, closure.computeResidual().norm);
+    for (auto joint : joints) {
+      motion = std::max(motion, std::abs(joint.getPosition()[0]));
+    }
+  }
+  EXPECT_LT(maxResidual, 1e-6); // tip stays pinned through world.step()
+  EXPECT_GT(motion, 1e-3);      // the arm still flexes under gravity
+}
+
+// Phase B2 deliverable (rejection): a Point closure spanning two multibodies
+// cannot be enforced by the per-multibody variational solver and must be
+// rejected at step time (the architect-flagged correctness trap), not silently
+// mishandled.
+TEST(VariationalIntegration, LoopClosureCrossMultibodyRejectedUnderVariational)
+{
+  sx::World world;
+  world.setMultibodyIntegrationMethod("variational integrator");
+  const auto makeArm = [&](const char* name) {
+    auto robot = world.addMultibody(name);
+    auto base = robot.addLink(std::string(name) + "_base");
+    sx::JointSpec spec;
+    spec.name = std::string(name) + "_j";
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::string(name) + "_link", base, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+    return link;
+  };
+  auto linkA = makeArm("a");
+  auto linkB = makeArm("b");
+
+  auto closure = world.addLoopClosure(
+      "cross",
+      {.frameA = linkA,
+       .frameB = linkB,
+       .family = sx::LoopClosureFamily::Point});
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+}
+
+// Phase B2 deliverable (rejection): the Rigid family (which needs an
+// orientation residual the solver does not implement) is rejected under the
+// variational method rather than silently dropping the orientation constraint.
+TEST(VariationalIntegration, LoopClosureRigidFamilyRejectedUnderVariational)
+{
+  sx::World world;
+  world.setMultibodyIntegrationMethod("variational integrator");
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "j";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+  spec.transformFromParent = offset;
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+  link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  auto closure = world.addLoopClosure(
+      "rigid",
+      {.frameA = link,
+       .frameB = sx::Frame::world(),
+       .family = sx::LoopClosureFamily::Rigid});
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
 }

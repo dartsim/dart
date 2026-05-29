@@ -155,6 +155,11 @@ void validateLoopClosureKinematicsPolicySupport(const World& world)
 //==============================================================================
 void validateLoopClosureDynamicsPolicySupport(const World& world)
 {
+  // The variational integrator solves a supported subset of loop closures
+  // (see compute::bindVariationalLoopClosure); the semi-implicit pipeline has
+  // no loop-closure solving stage and rejects every Solve closure.
+  const bool variational
+      = world.getMultibodyIntegrationMethod() == "variational integrator";
   auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
   for (auto entity : view) {
     const auto& closure = view.get<comps::LoopClosure>(entity);
@@ -165,6 +170,19 @@ void validateLoopClosureDynamicsPolicySupport(const World& world)
     }
 
     const auto& name = view.get<comps::Name>(entity);
+    if (variational) {
+      const auto binding
+          = compute::bindVariationalLoopClosure(world.getRegistry(), entity);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          binding.status
+              == compute::VariationalLoopClosureBinding::Status::Unsupported,
+          InvalidOperationException,
+          "LoopClosure '{}' cannot be solved by the variational integrator: {}",
+          name.name,
+          binding.reason);
+      continue; // Supported: the variational stage will enforce it.
+    }
+
     DART_EXPERIMENTAL_THROW_T(
         InvalidOperationException,
         "LoopClosure '{}' requests dynamic solving, but the active pipeline "
