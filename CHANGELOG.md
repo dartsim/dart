@@ -899,6 +899,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     distance/reach cull on the sweep candidates so the assembled system and
     line-search result are unchanged while large multi-body scenes become
     sub-quadratic.
+  - Added a `sx_rigid_ipc` Python demo scene (registered in the py-demos
+    Experimental category) showing a free box settle on static ground through
+    the opt-in rigid IPC barrier solver (`World.rigid_body_solver = IPC`).
   - Added internal experimental moving rigid box surface CCD limiting for free
     (non-static) deformable-surface CCD obstacles: the deformable stage predicts
     each obstacle's end-of-step transform from its velocity (mirroring the rigid
