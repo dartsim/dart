@@ -246,6 +246,92 @@ struct DeformableGridWorld
   std::size_t edgeCount = 0;
 };
 
+// A deformable mat draped over a raised box ground barrier onto the flat ground
+// (the experimental_deformable_gui "drape" demo's solver scenario). The mat is
+// started near its draped equilibrium so the benchmark measures the per-step
+// sparse-Newton solve under two active ground barriers rather than the dynamic
+// fall.
+struct DeformableDrapeWorld
+{
+  DeformableDrapeWorld(int columns, int rows)
+  {
+    columns = std::max(columns, 2);
+    rows = std::max(rows, 2);
+
+    constexpr double boxHalf = 0.30;
+    constexpr double boxTop = 0.24;
+    constexpr double spacing = 0.05;
+
+    sx::DeformableBodyOptions options;
+    options.edgeStiffness = 25.0;
+    options.damping = 1.5;
+
+    const auto index = [columns](int col, int row) {
+      return static_cast<std::size_t>(row * columns + col);
+    };
+
+    const double halfWidth = 0.5 * spacing * static_cast<double>(columns - 1);
+    const double halfDepth = 0.5 * spacing * static_cast<double>(rows - 1);
+    for (int row = 0; row < rows; ++row) {
+      for (int col = 0; col < columns; ++col) {
+        const double x = spacing * static_cast<double>(col) - halfWidth;
+        const double y = spacing * static_cast<double>(row) - halfDepth;
+        const bool overBox = std::abs(x) <= boxHalf && std::abs(y) <= boxHalf;
+        options.positions.push_back(
+            Eigen::Vector3d(x, y, overBox ? boxTop + 0.005 : 0.005));
+        options.velocities.push_back(Eigen::Vector3d::Zero());
+        options.masses.push_back(0.05);
+      }
+    }
+
+    for (int row = 0; row < rows; ++row) {
+      for (int col = 0; col < columns; ++col) {
+        if (col + 1 < columns) {
+          options.edges.push_back({index(col, row), index(col + 1, row), -1.0});
+        }
+        if (row + 1 < rows) {
+          options.edges.push_back({index(col, row), index(col, row + 1), -1.0});
+        }
+        if (col + 1 < columns && row + 1 < rows) {
+          options.edges.push_back(
+              {index(col, row), index(col + 1, row + 1), -1.0});
+          options.edges.push_back(
+              {index(col + 1, row), index(col, row + 1), -1.0});
+        }
+      }
+    }
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+    ground.setDeformableGroundBarrier(true);
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.isStatic = true;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5 * boxTop);
+    auto box = world.addRigidBody("step", boxOptions);
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(
+            Eigen::Vector3d(boxHalf, boxHalf, 0.5 * boxTop)));
+    box.setDeformableGroundBarrier(true);
+
+    body = world.addDeformableBody("drape", options);
+    nodeCount = body.getNodeCount();
+    edgeCount = body.getEdgeCount();
+
+    world.setTimeStep(1.0 / 120.0);
+    world.enterSimulationMode();
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::size_t nodeCount = 0;
+  std::size_t edgeCount = 0;
+};
+
 //==============================================================================
 struct DeformableTetraMeshWorld
 {
@@ -539,6 +625,140 @@ struct DeformableStaticRigidSurfaceCcdWorld
 };
 
 //==============================================================================
+struct DeformableMovingRigidSurfaceCcdWorld
+{
+  DeformableMovingRigidSurfaceCcdWorld(int boxCount, bool crossing)
+  {
+    boxCount = std::max(boxCount, 0);
+
+    sx::DeformableBodyOptions movingOptions;
+    movingOptions.edgeStiffness = 0.0;
+    movingOptions.damping = 0.0;
+
+    constexpr double spacing = 3.0;
+    const int nodeCount = std::max(boxCount, 1);
+    for (int i = 0; i < nodeCount; ++i) {
+      const double offset = spacing * static_cast<double>(i);
+      movingOptions.positions.push_back(
+          Eigen::Vector3d(offset - 1.0, 0.0, 0.0));
+      movingOptions.velocities.push_back(
+          Eigen::Vector3d(crossing ? 20.0 : -1.0, 0.0, 0.0));
+      movingOptions.masses.push_back(1.0);
+
+      if (i < boxCount) {
+        // Free (non-static) obstacle moving toward the node when crossing, so
+        // the deformable stage predicts its swept motion and limits against it.
+        sx::RigidBodyOptions boxOptions;
+        boxOptions.isStatic = false;
+        boxOptions.position = Eigen::Vector3d(offset, 0.0, 0.0);
+        auto box = world.addRigidBody(
+            "moving_surface_ccd_box_" + std::to_string(i), boxOptions);
+        box.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
+        box.setDeformableSurfaceCcdObstacle(true);
+        box.setLinearVelocity(Eigen::Vector3d(crossing ? -2.0 : 2.0, 0.0, 0.0));
+        boxes.push_back(box);
+      }
+    }
+
+    initialPositions = movingOptions.positions;
+    initialVelocities = movingOptions.velocities;
+    movingBody = world.addDeformableBody("surface_ccd_points", movingOptions);
+    this->nodeCount = movingBody.getNodeCount();
+    this->boxCount = static_cast<std::size_t>(boxCount);
+
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    for (std::size_t i = 0; i < initialPositions.size(); ++i) {
+      movingBody.setPosition(i, initialPositions[i]);
+      movingBody.setVelocity(i, initialVelocities[i]);
+    }
+  }
+
+  sx::World world;
+  sx::DeformableBody movingBody;
+  std::vector<sx::RigidBody> boxes;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
+  std::size_t nodeCount = 0;
+  std::size_t boxCount = 0;
+};
+
+//==============================================================================
+struct DeformableSelfContactBarrierWorld
+{
+  explicit DeformableSelfContactBarrierWorld(int pairCount)
+  {
+    pairCount = std::max(pairCount, 1);
+
+    sx::DeformableBodyOptions options;
+    options.edgeStiffness = 0.0;
+    options.damping = 0.0;
+
+    constexpr double gap = 0.015; // inside the barrier activation band (2e-2)
+    constexpr double spacing = 3.0;
+    for (int i = 0; i < pairCount; ++i) {
+      const double x = spacing * static_cast<double>(i);
+      const auto base = static_cast<std::size_t>(options.positions.size());
+      // Lower (fixed) triangle.
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 0.0, 0.0));
+      options.positions.push_back(Eigen::Vector3d(x + 1.0, 0.0, 0.0));
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 1.0, 0.0));
+      // Upper triangle driven down onto the lower one.
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 0.0, gap));
+      options.positions.push_back(Eigen::Vector3d(x + 1.0, 0.0, gap));
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 1.0, gap));
+      for (int k = 0; k < 3; ++k) {
+        options.velocities.push_back(Eigen::Vector3d::Zero());
+      }
+      for (int k = 0; k < 3; ++k) {
+        options.velocities.push_back(Eigen::Vector3d(0.0, 0.0, -0.2));
+      }
+      for (int k = 0; k < 6; ++k) {
+        options.masses.push_back(1.0);
+      }
+      options.fixedNodes.push_back(base + 0);
+      options.fixedNodes.push_back(base + 1);
+      options.fixedNodes.push_back(base + 2);
+      options.surfaceTriangles.push_back(
+          sx::DeformableSurfaceTriangle{base + 0, base + 1, base + 2});
+      options.surfaceTriangles.push_back(
+          sx::DeformableSurfaceTriangle{base + 3, base + 4, base + 5});
+    }
+
+    initialPositions = options.positions;
+    initialVelocities = options.velocities;
+    body = world.addDeformableBody("self_contact_barrier", options);
+    nodeCount = body.getNodeCount();
+    this->pairCount = static_cast<std::size_t>(pairCount);
+
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    for (std::size_t i = 0; i < initialPositions.size(); ++i) {
+      body.setPosition(i, initialPositions[i]);
+      body.setVelocity(i, initialVelocities[i]);
+    }
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
+  std::size_t nodeCount = 0;
+  std::size_t pairCount = 0;
+};
+
+//==============================================================================
 struct RigidOnlyWorld
 {
   explicit RigidOnlyWorld(int staticBodyCount)
@@ -678,6 +898,52 @@ void BM_DeformableGridStage(benchmark::State& state)
       = static_cast<double>(stats.acceptedLineSearchSteps);
   state.counters["initial_projections"]
       = static_cast<double>(stats.initialProjectionCount);
+  state.counters["projected_newton_steps"]
+      = static_cast<double>(stats.projectedNewtonSteps);
+  state.counters["projected_newton_fallbacks"]
+      = static_cast<double>(stats.projectedNewtonFallbacks);
+  state.counters["newton_symbolic_factorizations"]
+      = static_cast<double>(stats.projectedNewtonSymbolicFactorizations);
+  state.counters["newton_numeric_factorizations"]
+      = static_cast<double>(stats.projectedNewtonNumericFactorizations);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
+void BM_DeformableDrapeStage(benchmark::State& state)
+{
+  const auto columns = static_cast<int>(state.range(0));
+  const auto rows = static_cast<int>(state.range(1));
+  DeformableDrapeWorld fixture(columns, rows);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1).z());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["edges"] = static_cast<double>(fixture.edgeCount);
+  state.counters["ground_barriers"]
+      = static_cast<double>(stats.staticGroundBarrierCount);
+  state.counters["solver_iterations"]
+      = static_cast<double>(stats.solverIterations);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.counters["projected_newton_steps"]
+      = static_cast<double>(stats.projectedNewtonSteps);
+  state.counters["projected_newton_fallbacks"]
+      = static_cast<double>(stats.projectedNewtonFallbacks);
+  state.counters["newton_symbolic_factorizations"]
+      = static_cast<double>(stats.projectedNewtonSymbolicFactorizations);
+  state.counters["newton_numeric_factorizations"]
+      = static_cast<double>(stats.projectedNewtonNumericFactorizations);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -888,6 +1154,99 @@ void BM_DeformableStaticRigidSurfaceCcdStage(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableMovingRigidSurfaceCcdStage(benchmark::State& state)
+{
+  const auto boxCount = static_cast<int>(state.range(0));
+  const bool crossing = state.range(1) != 0;
+  DeformableMovingRigidSurfaceCcdWorld fixture(boxCount, crossing);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.movingBody.getPosition(fixture.nodeCount - 1u).x());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["moving_surface_boxes"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdBoxCount);
+  state.counters["moving_surface_samples"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdSampleCount);
+  state.counters["moving_surface_triangles"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdTriangleCount);
+  state.counters["moving_surface_edges"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdEdgeCount);
+  state.counters["crossing"] = crossing ? 1.0 : 0.0;
+  state.counters["candidate_builds"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["pt_candidates"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["ee_candidates"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdEdgeEdgeCandidates);
+  state.counters["ccd_pt_checks"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdPointTriangleChecks);
+  state.counters["ccd_ee_checks"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdEdgeEdgeChecks);
+  state.counters["ccd_hits"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdHits);
+  state.counters["ccd_indeterminate"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdIndeterminateCount);
+  state.counters["ccd_limited_steps"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdLimitedSteps);
+  state.counters["ccd_zero_steps"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdZeroStepCount);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.counters["line_search_rejects"]
+      = static_cast<double>(stats.rejectedLineSearchCandidates);
+  state.counters["accepted_steps"]
+      = static_cast<double>(stats.acceptedLineSearchSteps);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
+void BM_DeformableSelfContactBarrierStage(benchmark::State& state)
+{
+  const auto pairCount = static_cast<int>(state.range(0));
+  DeformableSelfContactBarrierWorld fixture(pairCount);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["pairs"] = static_cast<double>(fixture.pairCount);
+  state.counters["barrier_candidate_builds"]
+      = static_cast<double>(stats.selfContactBarrierCandidateBuilds);
+  state.counters["barrier_active_contacts"]
+      = static_cast<double>(stats.selfContactBarrierActiveContacts);
+  state.counters["solver_iterations"]
+      = static_cast<double>(stats.solverIterations);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableSceneLoad(benchmark::State& state)
 {
   const auto scenePath = benchmarkScenePath();
@@ -960,12 +1319,24 @@ BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
 
+// The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
+// dense-solve cap, so they exercise the sparse projected-Newton path; compare
+// projected_newton_steps against projected_newton_fallbacks to confirm Newton
+// stays engaged as the mesh scales.
 BENCHMARK(BM_DeformableGridStage)
     ->Args({8, 4, 0})
     ->Args({16, 8, 0})
     ->Args({32, 16, 0})
+    ->Args({48, 24, 0})
     ->Args({16, 8, 1})
-    ->Args({32, 16, 1});
+    ->Args({32, 16, 1})
+    ->Args({48, 24, 1});
+
+// The experimental_deformable_gui "drape" demo solver scenario: a mat draped
+// over a raised box ground barrier onto the flat ground (two active barriers).
+// The 18x16 (288-node) and 24x20 (480-node) mats exceed the former 256-node
+// dense-solve cap and are solved on the sparse projected-Newton path.
+BENCHMARK(BM_DeformableDrapeStage)->Args({18, 16})->Args({24, 20});
 
 BENCHMARK(BM_DeformableSurfaceContactStage)
     ->Args({1, 0})
@@ -990,6 +1361,15 @@ BENCHMARK(BM_DeformableStaticRigidSurfaceCcdStage)
     ->Args({1, 1})
     ->Args({8, 1})
     ->Args({32, 1});
+
+BENCHMARK(BM_DeformableMovingRigidSurfaceCcdStage)
+    ->Args({0, 1})
+    ->Args({1, 0})
+    ->Args({1, 1})
+    ->Args({8, 1})
+    ->Args({32, 1});
+
+BENCHMARK(BM_DeformableSelfContactBarrierStage)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableSceneLoad);
 

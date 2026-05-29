@@ -106,11 +106,18 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
       LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
       LABEL simulation-experimental-cuda
     )
+    dart_experimental_add_test(
+      test_deformable_psd_projection_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_deformable_psd_projection_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL simulation-experimental-cuda
+    )
   endif()
 
   # Create meta target for all unit tests
   # DART_ALL_TESTS now contains only the tests added by this module
-  add_custom_target(dart_experimental_tests
+  add_custom_target(
+    dart_experimental_tests
     DEPENDS ${DART_ALL_TESTS}
     COMMENT "Building all simulation-experimental unit tests"
   )
@@ -118,5 +125,8 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   list(LENGTH DART_ALL_TESTS num_tests)
   message(STATUS "simulation-experimental: Total ${num_tests} unit test(s)")
 else()
-  message(STATUS "simulation-experimental: Unit tests disabled (GTest not found)")
+  message(
+    STATUS
+    "simulation-experimental: Unit tests disabled (GTest not found)"
+  )
 endif()

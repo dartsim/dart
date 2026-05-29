@@ -34,7 +34,8 @@ set(component_name simulation-experimental)
 include(dart_defs)
 include(dart_experimental_dependencies)
 
-add_library(${target_name}
+add_library(
+  ${target_name}
   body/collision_body.cpp
   body/deformable_body.cpp
   body/rigid_body.cpp
@@ -80,7 +81,8 @@ add_library(${target_name}
   space/vector_mapper.cpp
   world.cpp
 )
-set_target_properties(${target_name}
+set_target_properties(
+  ${target_name}
   PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
     LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
@@ -89,7 +91,8 @@ set_target_properties(${target_name}
 dart_apply_strict_symbol_visibility(${target_name})
 dart_maybe_apply_coverage_config(${target_name})
 
-target_include_directories(${target_name}
+target_include_directories(
+  ${target_name}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -98,14 +101,10 @@ target_include_directories(${target_name}
 
 target_compile_features(${target_name} PUBLIC cxx_std_20)
 
-target_link_libraries(${target_name}
-  PUBLIC
-    dart
-    Eigen3::Eigen
-    EnTT::EnTT
-    spdlog::spdlog
-  PRIVATE
-    ${PROJECT_NAME}-collision-native
+target_link_libraries(
+  ${target_name}
+  PUBLIC dart Eigen3::Eigen EnTT::EnTT spdlog::spdlog
+  PRIVATE ${PROJECT_NAME}-collision-native
 )
 
 if(TARGET Taskflow::Taskflow)
@@ -114,9 +113,9 @@ elseif(TARGET Taskflow)
   target_link_libraries(${target_name} PRIVATE Taskflow)
 endif()
 
-target_compile_definitions(${target_name}
-  PRIVATE
-    DART_BUILDING_DART_EXPERIMENTAL
+target_compile_definitions(
+  ${target_name}
+  PRIVATE DART_BUILDING_DART_EXPERIMENTAL
 )
 
 # Opt-in differentiable simulation (PLAN-110). The diff sources are pure
@@ -141,41 +140,47 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
   find_package(CUDAToolkit REQUIRED)
 
   set(cuda_target_name ${target_name}-cuda)
-  add_library(${cuda_target_name} STATIC
+  add_library(
+    ${cuda_target_name}
+    STATIC
     compute/cuda/rigid_body_state_batch_cuda.cpp
     compute/cuda/rigid_body_state_batch_cuda.cu
+    compute/cuda/deformable_psd_projection_cuda.cpp
+    compute/cuda/deformable_psd_projection_cuda.cu
   )
   dart_maybe_apply_coverage_config(${cuda_target_name})
 
-  target_include_directories(${cuda_target_name}
-    PUBLIC
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  target_include_directories(
+    ${cuda_target_name}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
 
   target_compile_features(${cuda_target_name} PUBLIC cxx_std_20)
 
-  target_link_libraries(${cuda_target_name}
-    PUBLIC
-      ${target_name}
-    PRIVATE
-      CUDA::cudart
+  target_link_libraries(
+    ${cuda_target_name}
+    PUBLIC ${target_name}
+    PRIVATE CUDA::cudart
   )
 
-  target_compile_options(${cuda_target_name}
-    PRIVATE
-      $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+  target_compile_options(
+    ${cuda_target_name}
+    PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
   )
 
-  set_target_properties(${cuda_target_name} PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_STANDARD 17
-    CUDA_STANDARD_REQUIRED ON
-    FOLDER "${component_name}/cuda"
+  set_target_properties(
+    ${cuda_target_name}
+    PROPERTIES
+      POSITION_INDEPENDENT_CODE ON
+      CUDA_STANDARD 17
+      CUDA_STANDARD_REQUIRED ON
+      FOLDER "${component_name}/cuda"
   )
 
   if(DART_CUDA_ARCHITECTURES)
-    set_target_properties(${cuda_target_name} PROPERTIES
-      CUDA_ARCHITECTURES "${DART_CUDA_ARCHITECTURES}"
+    set_target_properties(
+      ${cuda_target_name}
+      PROPERTIES CUDA_ARCHITECTURES "${DART_CUDA_ARCHITECTURES}"
     )
   endif()
 endif()
@@ -190,5 +195,6 @@ install(
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
   DESTINATION include/dart/simulation/experimental
   COMPONENT headers
-  FILES_MATCHING PATTERN "*.hpp"
+  FILES_MATCHING
+  PATTERN "*.hpp"
 )

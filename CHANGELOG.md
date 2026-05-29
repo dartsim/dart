@@ -486,6 +486,11 @@
     `abidiff`. The task is diagnostic only and is not wired into CI; ABI
     stability between minor releases is still a deferred topic (see issue
     [#1026](https://github.com/dartsim/dart/issues/1026)).
+  - Added `pixi run lint-cmake` / `check-lint-cmake` CMake formatting with
+    `gersemi`, wired into the `lint` and `check-lint` chains so `CMakeLists.txt`
+    and `*.cmake` files are auto-formatted and CI-checked like every other
+    tracked file type. Configuration in `.gersemirc` matches DART's C++ style
+    (80-column, 2-space indent).
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.
@@ -836,6 +841,81 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     line-search limiter, with point-triangle and physical box-edge CCD
     regressions and benchmark counters. This is a CCD limiter only, not rigid
     contact response or IPC parity.
+  - Added internal experimental moving rigid box surface CCD limiting for free
+    (non-static) deformable-surface CCD obstacles: the deformable stage predicts
+    each obstacle's end-of-step transform from its velocity (mirroring the rigid
+    position integrator that runs after the deformable stage) and tiles the
+    swept motion with overlapping static pose samples so the deformable cannot
+    settle in or tunnel through the obstacle's swept corridor, with focused
+    regressions and benchmark counters. This is a one-way conservative CCD
+    limiter only (timing-agnostic, no rigid contact response or two-way
+    coupling) and is not IPC parity.
+  - Added internal experimental IPC self-contact barrier forces: the deformable
+    solve now adds the clamped-log barrier energy/gradient over the active
+    self-contact point-triangle and edge-edge candidate set (assembled per outer
+    iteration within the activation distance d_hat) as a new objective term, so
+    a deformable surface folding onto itself experiences smooth repulsive
+    contact forces and settles near d_hat instead of pinning at the CCD
+    minimum separation. The conservative CCD limiters remain the hard
+    no-penetration guarantee. First-order (steepest-descent) solve with fixed
+    barrier stiffness; projected Newton and adaptive stiffness are later slices.
+    Includes focused regressions and a benchmark with barrier counters.
+  - Added internal experimental IPC projected-Newton search direction for the
+    deformable solve: each iteration assembles the per-step Hessian (inertia +
+    spring + self-contact barrier + static ground barrier) with per-element
+    PSD projection and solves it (dense LDLT, guarded by a positive-definite
+    check) for a Newton direction, replacing mass-scaled steepest descent and
+    falling back to it when the dense solve is skipped (large bodies), fails,
+    or its line search cannot make progress. This lets the stiff barrier term
+    converge cleanly and matches the analytic implicit-Euler spring solution.
+    Sparse assembly and CPU/GPU optimization of the per-element
+    eigen-decompositions are later slices. Includes focused regressions (Newton
+    engaged, few-iteration convergence, analytic parity) and solver-step
+    counters.
+  - Optimized the experimental IPC projected-Newton solve to assemble a SPARSE
+    per-step Hessian (Eigen triplet assembly) and factorize it with a sparse
+    Cholesky (`SimplicialLDLT`, guarded by a positive-diagonal check), lifting
+    the former 256-node dense-solve cap to thousands of nodes so paper-scale
+    deformable meshes are solved on the Newton path instead of falling back to
+    steepest descent. Fixed DOFs are pinned at assembly time (unit diagonal,
+    free-free element blocks only), preserving the exact dense result; the
+    steepest-descent fallback and PD guard are unchanged. The solve refactorizes
+    from scratch each iteration (per-step cost is not yet optimized);
+    symbolic-factorization reuse, matrix-free CG, and GPU offload of the
+    assembly/solve remain later perf slices. Adds a 300-node-chain regression
+    and a 320-node grid-on-ground-barrier regression (Newton engaged past the
+    old cap) plus sparse-Newton step/fallback counters on the scaling benchmark.
+  - Added a `drape` showcase scene to the `experimental_deformable_gui` example
+    (`--deformable-scene-kind drape`): a 572-node deformable mat drapes over a
+    raised ground-barrier step onto the ground, exercising the landed IPC
+    contact pipeline (self-contact + ground barrier + sparse projected Newton)
+    at a mesh scale past the former 256-node cap. It is a DART-native showcase,
+    not a faithful paper-figure reproduction (mass-spring, no codimensional/FEM
+    elasticity or friction). Adds a library-level drape regression
+    (non-penetrating, conforming over the step) and a `BM_DeformableDrapeStage`
+    benchmark of the multi-barrier solve.
+  - Added an optional CUDA primitive for the deformable solver's data-parallel
+    hotspot: `projectSymmetricBlocksToPsdCuda` batches the per-element PSD
+    projection (the symmetric eigendecomposition that the projected-Newton
+    assembly applies to every spring 6x6 and barrier 12x12 block) onto the GPU
+    via a per-block cyclic-Jacobi kernel, with an identical-semantics CPU
+    reference (`projectSymmetricBlocksToPsdReference`). It ships as part of the
+    opt-in `dart-simulation-experimental-cuda` sidecar (built only with
+    `DART_ENABLE_EXPERIMENTAL_CUDA=ON`); the default CPU runtime keeps no GPU
+    dependency. A CUDA unit test validates the GPU path against the CPU
+    reference for spring and barrier block sizes. This is the standalone,
+    validated building block: wiring it into the live solve needs an optional
+    GPU compute-backend injection path (so `world_step_stage` stays GPU-free per
+    the runtime-dependency policy) and is a later slice.
+  - Optimized the experimental IPC sparse projected-Newton solve to reuse its
+    fill-reducing symbolic factorization (`SimplicialLDLT::analyzePattern`)
+    across iterations and steps whenever the assembled Hessian sparsity pattern
+    is unchanged, so the ordering runs once and only the numeric factorization
+    repeats. It is behavior-preserving (a structural mismatch or failed
+    factorization re-analyzes) and roughly halves the per-step solve on a
+    settled 512-node grid (~21.7 ms to ~11.6 ms). Adds symbolic/numeric
+    factorization counters and a regression asserting a steady step performs
+    zero new symbolic analyses.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
