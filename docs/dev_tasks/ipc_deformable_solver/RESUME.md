@@ -142,28 +142,40 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-bc-bindings` - stacked on
-`feature/ipc-deformable-topology-bindings` (#2755). PHASE 8 increment: dartpy
-bindings for scripted BOUNDARY CONDITIONS. Adds
-DeformableDirichletBoundaryCondition (nodes, linear_velocity, angular_velocity,
-center, start_time, end_time) + DeformableNeumannBoundaryCondition (nodes,
-acceleration, start_time, end_time) classes (nb::init<>() + def_rw), and
-DeformableBodyOptions.dirichlet_boundary_conditions/neumann_boundary_conditions.
-DBC node follows linear_velocity\*dt (a node in `nodes` is removed from the solve
-and scripted); NBC applies per-node acceleration. Regen stubs +
-update-api-boundary-inventory + check. Python test
-test_experimental_deformable_body_boundary_conditions_python_api (DBC node x->0.1
-after dt=0.1 at vx=1; NBC node falls under accel -z). 6/6 expected. Stack 18-deep
-(#2738-#2746,#2748-#2756). Remaining Phase 8: scene-loader Python access,
-diagnostics exposure. THEN riskier core items (barrier-stall robustness, GPU
-injection, adaptive stiffness, rigid/codim barriers).
+`feature/ipc-deformable-scene-loader-bindings` - stacked on
+`feature/ipc-deformable-bc-bindings` (#2756). FINAL Phase-8 increment: dartpy
+SCENE LOADER + DIAGNOSTICS. m.def free functions load_deformable_scene(world,
+scene_path, options) + collect_deformable_scene_diagnostics(world), and classes
+DeformableSceneLoadOptions (asset_root[path], body_name_prefix,
+add_structural_springs, structural_spring_stiffness, damping,
+ignore_contact_directives), DeformableSceneInfo (duration, time_step,
+gravity_enabled, bodies, warnings), DeformableSceneBodyInfo (name, body, *counts),
+DeformableSceneDiagnostics (frame, time, *counts, total_mass, max_displacement,
+min_z, max_z). Needed `#include <nanobind/stl/filesystem.h>` for the path<->str
+caster + the io header. io types are `sim::io::...` (sim=dart::simulation::
+experimental). Python test test_experimental_deformable_scene_loader_python_api
+writes a single-tet Gmsh msh + scene.txt into tmp_path, loads it, checks counts
+(4 nodes, 1 tet, 4 derived surface tris) + total_mass==1 (vol 1/6 \* density 6).
+Binary restart save/load (std::iostream) DEFERRED (needs a Python bytes API).
+PHASE 8 NOW COMPLETE -> README Phase 8 marked [x]. Stack 19-deep
+(#2738-#2746,#2748-#2757).
+NEXT (riskier core items, now the main remaining work; sequence carefully on the
+unreviewed stack): barrier-stall convergence robustness (the #2745 high-residual
+finding), live GPU-backend injection, adaptive barrier stiffness, rigid/codim
+obstacle barrier forces (disturbs #2732). Blocked: codim-obstacle friction,
+upstream corpus port (assets).
+
+Prior #2756 = DBC/NBC bindings (DeformableDirichletBoundaryCondition +
+DeformableNeumannBoundaryCondition classes + options
+dirichlet_boundary_conditions/neumann_boundary_conditions; DBC node follows
+linear_velocity\*dt, NBC applies per-node acceleration; Python regression).
 
 Prior #2755 = deformable surface/tetra topology bindings (DeformableSurfaceTriangle
 
 - DeformableTetrahedron classes, options surface*triangles/tetrahedra, body
   accessors surface_triangle_count/surface_triangle, tetrahedron_count/tetrahedron/
   tetrahedron_rest_volume, node_mass; regen stubs + inventory which tracks public
-  CLASS names; unit-tetra test). KEY dartpy facts: NO get*_/set\__ names allowed;
+  CLASS names; unit-tetra test). KEY dartpy facts: NO get*\_/set\_\_ names allowed;
   binding changes need `pixi run generate-stubs` AND
   `pixi run update-api-boundary-inventory` + `check-api-boundary-inventory`.
 
@@ -257,7 +269,8 @@ reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 <- #2751 (self-contact friction Hessian) <- #2752 (edge-edge self-contact
 friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
 diagnostics) <- #2755 (deformable surface/tetra topology bindings) <- #2756
-(deformable DBC/NBC bindings). (PR #2747 is another author's.)
+(deformable DBC/NBC bindings) <- #2757 (deformable scene-loader + diagnostics
+bindings). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 

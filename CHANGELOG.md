@@ -975,6 +975,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     straight down deflects down-slope, whereas the frictionless control (and any
     xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
     friction and friction-specific diagnostics remain later increments.
+  - Exposed the experimental deformable scene loader and replay diagnostics to
+    `dartpy`, completing the PLAN-081 Phase 8 Python facade. Added
+    `load_deformable_scene` and `collect_deformable_scene_diagnostics` module
+    functions, plus `DeformableSceneLoadOptions`, `DeformableSceneInfo`,
+    `DeformableSceneBodyInfo`, and `DeformableSceneDiagnostics` bindings, so a
+    contact-free tutorial-style scene file can be loaded into a `World` from
+    Python and its per-body counts, total mass, and bounds read back.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression that loads a single-tetrahedron scene and checks the reported
+    topology counts and total mass. (The loader still covers only the
+    contact-free subset; it is not IPC scene parity.)
   - Extended the experimental deformable-body `dartpy` facade with scripted
     boundary conditions (PLAN-081 Phase 8). Added
     `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,

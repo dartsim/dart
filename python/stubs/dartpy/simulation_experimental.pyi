@@ -14,6 +14,10 @@ __all__: list[str] = [
     "DeformableEdge",
     "DeformableMaterialProperties",
     "DeformableNeumannBoundaryCondition",
+    "DeformableSceneBodyInfo",
+    "DeformableSceneDiagnostics",
+    "DeformableSceneInfo",
+    "DeformableSceneLoadOptions",
     "DeformableSurfaceTriangle",
     "DeformableTetrahedron",
     "FixedFrame",
@@ -36,11 +40,15 @@ __all__: list[str] = [
     "StateVariable",
     "World",
     "WorldSyncStage",
+    "collect_deformable_scene_diagnostics",
+    "load_deformable_scene",
 ]
 
 
 from collections.abc import Sequence
 import enum
+import os
+import pathlib
 from typing import Annotated, overload
 
 import numpy
@@ -1114,6 +1122,124 @@ class DeformableBody:
 
     @property
     def material_properties(self) -> DeformableMaterialProperties: ...
+
+class DeformableSceneLoadOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def asset_root(self) -> pathlib.Path: ...
+
+    @asset_root.setter
+    def asset_root(self, arg: str | os.PathLike, /) -> None: ...
+
+    @property
+    def body_name_prefix(self) -> str: ...
+
+    @body_name_prefix.setter
+    def body_name_prefix(self, arg: str, /) -> None: ...
+
+    @property
+    def add_structural_springs(self) -> bool: ...
+
+    @add_structural_springs.setter
+    def add_structural_springs(self, arg: bool, /) -> None: ...
+
+    @property
+    def structural_spring_stiffness(self) -> float: ...
+
+    @structural_spring_stiffness.setter
+    def structural_spring_stiffness(self, arg: float, /) -> None: ...
+
+    @property
+    def damping(self) -> float: ...
+
+    @damping.setter
+    def damping(self, arg: float, /) -> None: ...
+
+    @property
+    def ignore_contact_directives(self) -> bool: ...
+
+    @ignore_contact_directives.setter
+    def ignore_contact_directives(self, arg: bool, /) -> None: ...
+
+class DeformableSceneBodyInfo:
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def body(self) -> DeformableBody: ...
+
+    @property
+    def node_count(self) -> int: ...
+
+    @property
+    def tetrahedron_count(self) -> int: ...
+
+    @property
+    def surface_triangle_count(self) -> int: ...
+
+    @property
+    def dirichlet_condition_count(self) -> int: ...
+
+    @property
+    def neumann_condition_count(self) -> int: ...
+
+class DeformableSceneInfo:
+    @property
+    def duration(self) -> float: ...
+
+    @property
+    def time_step(self) -> float: ...
+
+    @property
+    def gravity_enabled(self) -> bool: ...
+
+    @property
+    def bodies(self) -> list[DeformableSceneBodyInfo]: ...
+
+    @property
+    def warnings(self) -> list[str]: ...
+
+class DeformableSceneDiagnostics:
+    @property
+    def frame(self) -> int: ...
+
+    @property
+    def time(self) -> float: ...
+
+    @property
+    def body_count(self) -> int: ...
+
+    @property
+    def node_count(self) -> int: ...
+
+    @property
+    def tetrahedron_count(self) -> int: ...
+
+    @property
+    def surface_triangle_count(self) -> int: ...
+
+    @property
+    def dirichlet_condition_count(self) -> int: ...
+
+    @property
+    def neumann_condition_count(self) -> int: ...
+
+    @property
+    def total_mass(self) -> float: ...
+
+    @property
+    def max_displacement(self) -> float: ...
+
+    @property
+    def min_z(self) -> float: ...
+
+    @property
+    def max_z(self) -> float: ...
+
+def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
+
+def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnostics: ...
 
 class World:
     def __init__(self, time_step: float = ...) -> None: ...
