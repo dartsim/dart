@@ -34,6 +34,8 @@
 
 #include <dart/gui/viewer.hpp>
 
+#include <dart/common/logging.hpp>
+
 #include <filament/Engine.h>
 #include <filament/Renderer.h>
 #include <filament/View.h>
@@ -158,8 +160,7 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
         std::cerr << "[dart::gui] Filament backend '" << backendName(requested)
                   << "' unavailable; using '" << backendName(backend) << "'.\n";
       } else {
-        std::cout << "[dart::gui] Filament render backend: "
-                  << backendName(backend) << "\n";
+        DART_DEBUG("Filament render backend: {}", backendName(backend));
       }
       if (chosenName != nullptr) {
         *chosenName = backendName(backend);
