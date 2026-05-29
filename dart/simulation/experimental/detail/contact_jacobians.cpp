@@ -175,20 +175,100 @@ struct ContactScene
 };
 
 //==============================================================================
+// A single nonzero 6-column block of one contact-Jacobian row: the row's
+// contribution to one dynamic body's stacked twist [v; ω]. A frozen contact row
+// touches at most two bodies (its bodyA and bodyB), so each row carries at most
+// two of these. Storing J this way (instead of a dense rows x 6*nb matrix) is
+// what makes the assembly scale: products with the block-diagonal Minv and the
+// Delassus operator A = J Minv Jᵀ only ever touch the few bodies a contact
+// actually references, never the full 6*nb velocity space.
+struct JacobianBlock
+{
+  Eigen::Index body;                 // dynamic body (column) index
+  Eigen::Matrix<double, 6, 1> value; // [direction; arm x direction]
+};
+
+//==============================================================================
 // Stacked quantities derived from the (possibly perturbed) registry state for a
 // frozen scene. The LCP has `rows = n + 2*n` rows: the first n are normal rows,
 // the following 2*n are friction rows (two tangents per contact, friction row
 // 2*i+t owned by normal row i). The velocity space is the full 6-DOF-per-body
-// twist `[v; ω]` (size `vdofs = 6*nb`). Sizes: vFree is vdofs; J is rows x
-// vdofs; Minv is vdofs x vdofs; A is rows x rows; b is rows.
+// twist `[v; ω]` (size `vdofs = 6*nb`). The inverse mass/inertia (Minv) is
+// block-diagonal and lives on the ContactScene as per-body 3x3 blocks; it is
+// applied block-wise rather than as a dense 6*nb x 6*nb matrix. J is stored
+// block-sparsely (per row, the few nonzero body blocks). A is a dense rows x
+// rows matrix (the intrinsic LCP system size) but is ASSEMBLED block-sparsely
+// from J and Minv, so its cost is O(contacts) not O(bodies^2). b is rows.
 struct ContactTerms
 {
-  Eigen::VectorXd vFree; // free (gravity/force) twist, stacked 6*nb
-  Eigen::MatrixXd J;     // contact Jacobian (normal+friction), rows x 6*nb
-  Eigen::MatrixXd Minv;  // block-diagonal inverse mass/inertia, 6*nb x 6*nb
-  Eigen::MatrixXd A;     // Delassus operator J Minv Jᵀ (+ friction CFM), rows^2
-  Eigen::VectorXd b;     // rhs -(J vFree) + bias, rows
+  Eigen::VectorXd vFree;                     // free twist, stacked 6*nb
+  std::vector<std::vector<JacobianBlock>> J; // per row, nonzero body blocks
+  std::vector<std::vector<Eigen::Index>> rowsOfBody; // body -> rows touching it
+  Eigen::MatrixXd
+      A; // Delassus operator J Minv Jᵀ (+ friction CFM), rows x rows
+  Eigen::VectorXd b; // rhs -(J vFree) + bias, rows
 };
+
+//==============================================================================
+// Apply the block-diagonal inverse mass/inertia to one body's stacked twist
+// block: linear part scaled by inverse mass, angular part by the inverse world
+// inertia. Mirrors the dense Minv block layout (invMass*I, then invInertia).
+inline Eigen::Matrix<double, 6, 1> applyBodyMinv(
+    const ContactScene& scene,
+    Eigen::Index body,
+    const Eigen::Matrix<double, 6, 1>& twist)
+{
+  const auto b = static_cast<std::size_t>(body);
+  Eigen::Matrix<double, 6, 1> out;
+  out.head<3>() = scene.inverseMass[b] * twist.head<3>();
+  out.tail<3>() = scene.inverseWorldInertia[b] * twist.tail<3>();
+  return out;
+}
+
+//==============================================================================
+// Dot a block-sparse Jacobian row with a stacked 6*nb twist vector: sum the
+// row's body blocks against the corresponding body segments. This is the
+// block-sparse equivalent of J.row(r).dot(v).
+inline double rowDotTwist(
+    const std::vector<JacobianBlock>& row, const Eigen::VectorXd& twist)
+{
+  double value = 0.0;
+  for (const auto& block : row) {
+    value += block.value.dot(twist.segment<6>(6 * block.body));
+  }
+  return value;
+}
+
+//==============================================================================
+// Compute the stacked twist Minv Jᵀ f (size 6*nb) block-wise. (Jᵀ f) for a body
+// is the sum over the rows touching it of that row's block scaled by the row's
+// impulse; Minv is then applied per body. Only the bodies that contacts touch
+// are visited, so this is O(contacts) rather than the dense vdofs x rows
+// product. This is the impulse->velocity map used by the constrained next state
+// and the ∂x'/∂f contribution.
+inline Eigen::VectorXd minvJtTimes(
+    const ContactTerms& terms,
+    const ContactScene& scene,
+    Eigen::Index vdofs,
+    const Eigen::VectorXd& f)
+{
+  Eigen::VectorXd out = Eigen::VectorXd::Zero(vdofs);
+  const auto rows = static_cast<Eigen::Index>(terms.J.size());
+  for (Eigen::Index r = 0; r < rows; ++r) {
+    const double fr = f[r];
+    if (fr == 0.0) {
+      continue;
+    }
+    for (const auto& block : terms.J[static_cast<std::size_t>(r)]) {
+      out.segment<6>(6 * block.body) += fr * block.value;
+    }
+  }
+  for (Eigen::Index body = 0; body < vdofs / 6; ++body) {
+    out.segment<6>(6 * body)
+        = applyBodyMinv(scene, body, out.segment<6>(6 * body));
+  }
+  return out;
+}
 
 //==============================================================================
 ContactScene buildScene(
@@ -277,13 +357,19 @@ ContactScene buildScene(
 }
 
 //==============================================================================
-// Recompute the smooth contact terms (vFree, J, Minv, A, b) for the frozen
-// scene at the registry's current body state. The contact geometry (normal,
-// arms, body membership) is held fixed from the scene; only the
-// velocity-dependent bias and the free velocity read the live state. J is
-// configuration independent for a frozen normal contact, so it is constant
-// across perturbations; recomputing it keeps the assembly self-contained and
-// cheap (n is tiny).
+// Recompute the smooth contact terms (vFree, J, A, b) for the frozen scene at
+// the registry's current body state. The contact geometry (normal, arms, body
+// membership) is held fixed from the scene; only the velocity-dependent bias
+// and the free velocity read the live state. J is configuration independent for
+// a frozen normal contact, so it is constant across perturbations; recomputing
+// it keeps the assembly self-contained.
+//
+// SCALING: J is stored block-sparsely (each row keeps only the few body blocks
+// it touches) and the block-diagonal inverse mass/inertia is applied per body
+// from the scene. The Delassus operator A = J Minv Jᵀ is therefore assembled
+// only over row pairs that SHARE a body (independent contacts never couple), so
+// computeTerms is O(contacts) rather than the previous O(bodies^3) dense
+// rows x 6*nb x 6*nb products.
 ContactTerms computeTerms(
     const entt::registry& registry,
     const ContactScene& scene,
@@ -295,7 +381,6 @@ ContactTerms computeTerms(
   const Eigen::Index n = static_cast<Eigen::Index>(scene.contacts.size());
 
   ContactTerms terms;
-  terms.Minv = Eigen::MatrixXd::Zero(vdofs, vdofs);
   terms.vFree = Eigen::VectorXd::Zero(vdofs);
 
   // Current (pre-integration) twist, stacked like vFree. The forward boxed-LCP
@@ -318,9 +403,6 @@ ContactTerms computeTerms(
         = scene.inverseWorldInertia[static_cast<std::size_t>(k)];
 
     const Eigen::Index base = 6 * k;
-    terms.Minv.block<3, 3>(base, base) = invMass * Eigen::Matrix3d::Identity();
-    terms.Minv.block<3, 3>(base + 3, base + 3) = invInertia;
-
     vCurrent.segment<3>(base) = velocity.linear;
     vCurrent.segment<3>(base + 3) = velocity.angular;
 
@@ -333,29 +415,48 @@ ContactTerms computeTerms(
         = velocity.angular + timeStep * (invInertia * force.torque);
   }
 
-  // Contact Jacobian (full 6-DOF rows). A normal row maps the stacked body
-  // twists to (v_B + ω_B × armB - v_A - ω_A × armA) . n; a friction row uses
-  // the tangent direction. Row layout matches solveBoxedLcpContacts: normal
-  // rows [0, n), then friction rows n + 2*i (tangent1) and n + 2*i + 1
-  // (tangent2).
+  // Contact Jacobian (full 6-DOF rows), stored block-sparsely. A normal row
+  // maps the stacked body twists to (v_B + ω_B × armB - v_A - ω_A × armA) . n;
+  // a friction row uses the tangent direction. Row layout matches
+  // solveBoxedLcpContacts: normal rows [0, n), then friction rows n + 2*i
+  // (tangent1) and n + 2*i + 1 (tangent2). Each row keeps at most two body
+  // blocks (its bodyB with +direction, its bodyA with -direction). rowsOfBody
+  // is the inverse index used to assemble A only over coupled row pairs.
   const Eigen::Index rows = n + 2 * n;
-  terms.J = Eigen::MatrixXd::Zero(rows, vdofs);
+  terms.J.assign(static_cast<std::size_t>(rows), {});
+  terms.rowsOfBody.assign(static_cast<std::size_t>(nb), {});
   const auto fillRow = [&](Eigen::Index row,
                            const FrozenContact& contact,
                            const Eigen::Vector3d& direction) {
+    auto& rowBlocks = terms.J[static_cast<std::size_t>(row)];
+    const auto addBlock
+        = [&](Eigen::Index body, double sign, const Eigen::Vector3d& arm) {
+            Eigen::Matrix<double, 6, 1> value;
+            value.head<3>() = sign * direction;
+            value.tail<3>() = sign * arm.cross(direction);
+            // A row could in principle reference the same body for both A and
+            // B; sum into the existing block to keep the dense-J equivalence
+            // exact.
+            for (auto& existing : rowBlocks) {
+              if (existing.body == body) {
+                existing.value += value;
+                return;
+              }
+            }
+            rowBlocks.push_back({body, value});
+            terms.rowsOfBody[static_cast<std::size_t>(body)].push_back(row);
+          };
     if (!contact.staticB) {
-      const Eigen::Index base
-          = 6 * static_cast<Eigen::Index>(scene.bodyColumn.at(contact.bodyB));
-      terms.J.block<1, 3>(row, base) += direction.transpose();
-      terms.J.block<1, 3>(row, base + 3)
-          += contact.armB.cross(direction).transpose();
+      addBlock(
+          static_cast<Eigen::Index>(scene.bodyColumn.at(contact.bodyB)),
+          +1.0,
+          contact.armB);
     }
     if (!contact.staticA) {
-      const Eigen::Index base
-          = 6 * static_cast<Eigen::Index>(scene.bodyColumn.at(contact.bodyA));
-      terms.J.block<1, 3>(row, base) -= direction.transpose();
-      terms.J.block<1, 3>(row, base + 3)
-          -= contact.armA.cross(direction).transpose();
+      addBlock(
+          static_cast<Eigen::Index>(scene.bodyColumn.at(contact.bodyA)),
+          -1.0,
+          contact.armA);
     }
   };
   for (Eigen::Index i = 0; i < n; ++i) {
@@ -370,13 +471,49 @@ ContactTerms computeTerms(
   // solveBoxedLcpContacts). For a firmly resting (clamping) contact the
   // approach is non-negative, so the restitution bias is zero and contributes
   // no gradient. Friction rows carry no bias.
-  terms.A = terms.J * terms.Minv * terms.J.transpose();
+  //
+  // A(r,c) = Σ_b J_r[b]ᵀ Minv_b J_c[b], which is nonzero only when rows r and c
+  // share a body b. Iterating per body over the rows that touch it accumulates
+  // exactly these couplings (a row pair sharing two bodies gets a contribution
+  // from each), so A is filled in O(Σ_b rowsOfBody[b]^2) instead of by a dense
+  // triple product over the full velocity space.
+  terms.A = Eigen::MatrixXd::Zero(rows, rows);
+  for (Eigen::Index body = 0; body < nb; ++body) {
+    const auto& bodyRows = terms.rowsOfBody[static_cast<std::size_t>(body)];
+    for (const Eigen::Index r : bodyRows) {
+      // Find r's block for this body (each row has at most one block per body).
+      const auto& rBlocks = terms.J[static_cast<std::size_t>(r)];
+      const JacobianBlock* rBlock = nullptr;
+      for (const auto& blk : rBlocks) {
+        if (blk.body == body) {
+          rBlock = &blk;
+          break;
+        }
+      }
+      const Eigen::Matrix<double, 6, 1> Minv_r
+          = applyBodyMinv(scene, body, rBlock->value);
+      for (const Eigen::Index c : bodyRows) {
+        const auto& cBlocks = terms.J[static_cast<std::size_t>(c)];
+        for (const auto& blk : cBlocks) {
+          if (blk.body == body) {
+            terms.A(r, c) += blk.value.dot(Minv_r);
+            break;
+          }
+        }
+      }
+    }
+  }
   // Friction-row CFM, mirroring solveBoxedLcpContacts so the differentiated
   // system equals the forward step's.
   for (Eigen::Index row = n; row < rows; ++row) {
     terms.A(row, row) += terms.A(row, row) * kConstraintForceMixing;
   }
-  terms.b = -(terms.J * terms.vFree);
+
+  terms.b = Eigen::VectorXd::Zero(rows);
+  for (Eigen::Index row = 0; row < rows; ++row) {
+    terms.b[row]
+        = -rowDotTwist(terms.J[static_cast<std::size_t>(row)], terms.vFree);
+  }
 
   constexpr double restitutionThreshold = 1e-3;
   for (Eigen::Index i = 0; i < n; ++i) {
@@ -395,7 +532,8 @@ ContactTerms computeTerms(
     // the analytic restitution gradient stays correct. The make/break instant
     // (approach crossing -restitutionThreshold) is a non-smooth boundary and is
     // deliberately out of scope.
-    const double approach = terms.J.row(i).dot(vCurrent);
+    const double approach
+        = rowDotTwist(terms.J[static_cast<std::size_t>(i)], vCurrent);
     if (approach < -restitutionThreshold) {
       terms.b[i] += -contact.restitution * approach;
     }
@@ -467,9 +605,10 @@ Eigen::VectorXd constrainedNextState(
 {
   const Eigen::Index nb = static_cast<Eigen::Index>(scene.dynamicBodies.size());
   const Eigen::Index dofs = 3 * nb;
+  const Eigen::Index vdofs = 6 * nb;
   const ContactTerms t = computeTerms(registry, scene, gravity, timeStep);
   const Eigen::VectorXd f = solveBoxedLcp(scene, t);
-  const Eigen::VectorXd twistNext = t.vFree + t.Minv * (t.J.transpose() * f);
+  const Eigen::VectorXd twistNext = t.vFree + minvJtTimes(t, scene, vdofs, f);
 
   Eigen::VectorXd qdotNext(dofs);
   Eigen::VectorXd q(dofs);
@@ -504,6 +643,7 @@ StepDerivatives contactStepDerivatives(
   }
 
   const Eigen::Index dofs = 3 * nb;        // translational output DOFs per body
+  const Eigen::Index vdofs = 6 * nb;       // full 6-DOF twist per body
   const Eigen::Index stateSize = 2 * dofs; // [q; q̇]
   const Eigen::Index n = static_cast<Eigen::Index>(scene.contacts.size());
   const Eigen::Index rows = n + 2 * n; // normal rows then friction rows
@@ -702,7 +842,9 @@ StepDerivatives contactStepDerivatives(
   //   ∂f_C/∂z = Ahat⁻¹ (∂b_C/∂z - (∂A_CC/∂z + (∂A_CU/∂z) E) f_C).
   // ---------------------------------------------------------------------------
 
-  const Eigen::MatrixXd MinvJt = base.Minv * base.J.transpose(); // vdofs x rows
+  // ∂x'/∂f maps an impulse perturbation through the constant linear map Minv Jᵀ
+  // (applied block-wise via minvJtTimes from the base scene/terms), avoiding
+  // the dense vdofs x rows matrix that previously scaled with the body count.
 
   // Analytic ∂f/∂z over all rows from the central-differenced ∂A/∂z, ∂b/∂z.
   const auto frictionImpulseGradient
@@ -746,7 +888,7 @@ StepDerivatives contactStepDerivatives(
     const ContactTerms t = computeTerms(registry, scene, gravity, timeStep);
     // q̇' (linear part) = linearOf(vFree + Minv Jᵀ f_base)
     const Eigen::VectorXd qdotNext
-        = linearOf(t.vFree + t.Minv * (t.J.transpose() * baseF));
+        = linearOf(t.vFree + minvJtTimes(t, scene, vdofs, baseF));
     // q' = q + correction(penetration) + Δt q̇'. The penetration projection is
     // configuration dependent; we read the live positions for q and recompute
     // the projection contribution from the frozen contacts below.
@@ -805,7 +947,8 @@ StepDerivatives contactStepDerivatives(
 
     // ∂x'/∂f contribution: q̇' adds the linear part of Minv Jᵀ ∂f, q' adds Δt
     // times that.
-    const Eigen::VectorXd dQdot_f = linearOf(MinvJt * dfFull); // dofs
+    const Eigen::VectorXd dQdot_f
+        = linearOf(minvJtTimes(base, scene, vdofs, dfFull)); // dofs
     Eigen::VectorXd dxNext_f(stateSize);
     dxNext_f.head(dofs) = timeStep * dQdot_f;
     dxNext_f.tail(dofs) = dQdot_f;
@@ -845,7 +988,8 @@ StepDerivatives contactStepDerivatives(
       dfFull = frictionImpulseGradient(dA, db);
     }
 
-    const Eigen::VectorXd dQdot_f = linearOf(MinvJt * dfFull);
+    const Eigen::VectorXd dQdot_f
+        = linearOf(minvJtTimes(base, scene, vdofs, dfFull));
     Eigen::VectorXd dxNext_f(stateSize);
     dxNext_f.head(dofs) = timeStep * dQdot_f;
     dxNext_f.tail(dofs) = dQdot_f;
