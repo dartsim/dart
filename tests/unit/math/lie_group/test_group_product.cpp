@@ -270,11 +270,9 @@ TYPED_TEST(GroupProductTest, MatrixRepresentationsAreBlockDiagonal)
 
   typename Product::MatrixType expectedMatrix = Product::MatrixType::Zero();
   expectedMatrix.template block<SE3<S>::MatrixRepDim, SE3<S>::MatrixRepDim>(
-      0, 0)
-      = se3.toMatrix();
+      0, 0) = se3.toMatrix();
   expectedMatrix.template block<SO3<S>::MatrixRepDim, SO3<S>::MatrixRepDim>(
-      SE3<S>::MatrixRepDim, SE3<S>::MatrixRepDim)
-      = so3.toMatrix();
+      SE3<S>::MatrixRepDim, SE3<S>::MatrixRepDim) = so3.toMatrix();
   EXPECT_TRUE(product.toMatrix().isApprox(expectedMatrix));
 
   Matrix<S, Product::DoF, Product::DoF> expectedAdjoint
@@ -282,8 +280,7 @@ TYPED_TEST(GroupProductTest, MatrixRepresentationsAreBlockDiagonal)
   expectedAdjoint.template block<SE3<S>::DoF, SE3<S>::DoF>(0, 0)
       = se3.toAdjointMatrix();
   expectedAdjoint.template block<SO3<S>::DoF, SO3<S>::DoF>(
-      SE3<S>::DoF, SE3<S>::DoF)
-      = so3.toAdjointMatrix();
+      SE3<S>::DoF, SE3<S>::DoF) = so3.toAdjointMatrix();
   EXPECT_TRUE(product.toAdjointMatrix().isApprox(expectedAdjoint));
 }
 

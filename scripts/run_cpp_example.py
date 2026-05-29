@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and run a C++ example with optional runtime arguments."""
+
 from __future__ import annotations
 
 import argparse

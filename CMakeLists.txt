@@ -1163,7 +1163,7 @@ if(DART_VERBOSE)
   message(STATUS "[ Code Formatting ]")
 endif()
 
-find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-21 clang-format)
+find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-22 clang-format)
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
 list(LENGTH formatting_files formatting_files_length)

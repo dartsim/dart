@@ -3294,8 +3294,7 @@ bool computeProjectedNewtonDirection(
     const std::size_t offset = edgeBlocks.size();
     edgeBlocks.resize(offset + kEdgeBlockEntries);
     Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
-        edgeBlocks.data() + offset)
-        = edgeHessian;
+        edgeBlocks.data() + offset) = edgeHessian;
     edgeBlockNodes.push_back({edge.nodeA, edge.nodeB});
   }
   projectSymmetricBlocksToPsd(edgeBlocks.data(), 6, edgeBlockNodes.size());
@@ -3332,8 +3331,7 @@ bool computeProjectedNewtonDirection(
       const std::size_t offset = barrierBlocks.size();
       barrierBlocks.resize(offset + kBarrierBlockEntries);
       Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>(
-          barrierBlocks.data() + offset)
-          = blockHessian;
+          barrierBlocks.data() + offset) = blockHessian;
       barrierBlockNodes.push_back(nodes);
     };
     for (const auto& candidate : candidates.pointTriangleCandidates) {

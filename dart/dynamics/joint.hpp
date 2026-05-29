@@ -505,8 +505,7 @@ public:
 
   /// Set lower limit for acceleration
   virtual void setAccelerationLowerLimit(
-      std::size_t _index, double _acceleration)
-      = 0;
+      std::size_t _index, double _acceleration) = 0;
 
   /// Get lower limit for acceleration
   virtual double getAccelerationLowerLimit(std::size_t _index) const = 0;
@@ -520,8 +519,7 @@ public:
 
   /// Set upper limit for acceleration
   virtual void setAccelerationUpperLimit(
-      std::size_t _index, double _acceleration)
-      = 0;
+      std::size_t _index, double _acceleration) = 0;
 
   /// Get upper limit for acceleration
   virtual double getAccelerationUpperLimit(std::size_t _index) const = 0;
@@ -644,8 +642,7 @@ public:
       const Eigen::VectorXd& q0,
       const Eigen::VectorXd& v,
       double dt,
-      Eigen::VectorXd& result) const
-      = 0;
+      Eigen::VectorXd& result) const = 0;
 
   /// Convenience overload for integratePositions(q0, v, dt, result).
   Eigen::VectorXd integratePositions(
@@ -657,8 +654,7 @@ public:
   /// Return the difference of two generalized coordinates which are measured in
   /// the configuration space of this Skeleton.
   virtual Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
-      = 0;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
 
   /// \}
 
@@ -734,8 +730,7 @@ public:
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
   virtual math::Jacobian getRelativeJacobian(
-      const Eigen::VectorXd& positions) const
-      = 0;
+      const Eigen::VectorXd& positions) const = 0;
 
   /// Get time derivative of spatial Jacobian of the child BodyNode relative to
   /// the parent BodyNode expressed in the child BodyNode frame
@@ -887,8 +882,7 @@ protected:
   /// Set joint partial acceleration to _partialAcceleration
   virtual void setPartialAccelerationTo(
       Eigen::Vector6d& _partialAcceleration,
-      const Eigen::Vector6d& _childVelocity)
-      = 0;
+      const Eigen::Vector6d& _childVelocity) = 0;
   // TODO(JS): Rename with more informative name
 
   /// Add joint acceleration to _acc
@@ -900,14 +894,12 @@ protected:
   /// Add child's articulated inertia to parent's one
   virtual void addChildArtInertiaTo(
       Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia)
-      = 0;
+      const Eigen::Matrix6d& _childArtInertia) = 0;
 
   /// Add child's articulated inertia to parent's one. Forward dynamics routine.
   virtual void addChildArtInertiaImplicitTo(
       Eigen::Matrix6d& _parentArtInertiaImplicit,
-      const Eigen::Matrix6d& _childArtInertiaImplicit)
-      = 0;
+      const Eigen::Matrix6d& _childArtInertiaImplicit) = 0;
   // TODO(JS): rename to updateAInertiaChildAInertia()
 
   /// Update inverse of projected articulated body inertia
@@ -915,8 +907,7 @@ protected:
 
   /// Forward dynamics routine.
   virtual void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& _artInertia, double _timeStep)
-      = 0;
+      const Eigen::Matrix6d& _artInertia, double _timeStep) = 0;
   // TODO(JS): rename to updateAInertiaPsi()
 
   /// Add child's bias force to parent's one
@@ -924,20 +915,17 @@ protected:
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
-      const Eigen::Vector6d& _childPartialAcc)
-      = 0;
+      const Eigen::Vector6d& _childPartialAcc) = 0;
 
   /// Add child's bias impulse to parent's one
   virtual void addChildBiasImpulseTo(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasImpulse)
-      = 0;
+      const Eigen::Vector6d& _childBiasImpulse) = 0;
 
   /// Update joint total force
   virtual void updateTotalForce(
-      const Eigen::Vector6d& _bodyForce, double _timeStep)
-      = 0;
+      const Eigen::Vector6d& _bodyForce, double _timeStep) = 0;
   // TODO: rename
 
   /// Update joint total impulse
@@ -957,8 +945,7 @@ protected:
   /// @param _velocityChange
   virtual void updateVelocityChange(
       const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _velocityChange)
-      = 0;
+      const Eigen::Vector6d& _velocityChange) = 0;
 
   /// Update joint force for inverse dynamics.
   /// @param[in] _bodyForce Transmitting spatial body force from the parent
@@ -971,8 +958,7 @@ protected:
       const Eigen::Vector6d& _bodyForce,
       double _timeStep,
       bool _withDampingForces,
-      bool _withSpringForces)
-      = 0;
+      bool _withSpringForces) = 0;
 
   /// Update joint force for forward dynamics.
   /// @param[in] _bodyForce Transmitting spatial body force from the parent
@@ -985,8 +971,7 @@ protected:
       const Eigen::Vector6d& _bodyForce,
       double _timeStep,
       bool _withDampingForces,
-      bool _withSpringForces)
-      = 0;
+      bool _withSpringForces) = 0;
 
   /// Update joint impulses for inverse dynamics
   virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) = 0;
@@ -1007,44 +992,38 @@ protected:
   virtual void addChildBiasForceForInvMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce)
-      = 0;
+      const Eigen::Vector6d& _childBiasForce) = 0;
 
   /// Add child's bias force to parent's one
   virtual void addChildBiasForceForInvAugMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce)
-      = 0;
+      const Eigen::Vector6d& _childBiasForce) = 0;
 
   ///
   virtual void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& _bodyForce)
-      = 0;
+      const Eigen::Vector6d& _bodyForce) = 0;
 
   ///
   virtual void getInvMassMatrixSegment(
       Eigen::MatrixXd& _invMassMat,
       const std::size_t _col,
       const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _spatialAcc)
-      = 0;
+      const Eigen::Vector6d& _spatialAcc) = 0;
 
   ///
   virtual void getInvAugMassMatrixSegment(
       Eigen::MatrixXd& _invMassMat,
       const std::size_t _col,
       const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _spatialAcc)
-      = 0;
+      const Eigen::Vector6d& _spatialAcc) = 0;
 
   ///
   virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) = 0;
 
   ///
   virtual Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& _spatial)
-      = 0;
+      const Eigen::Vector6d& _spatial) = 0;
 
   /// \}
 
