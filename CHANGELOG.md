@@ -876,6 +876,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     solver on a contact-free scene, and a hanging chain is stable, with no
     regression in the existing deformable suite. Tetrahedral, surface-contact,
     ground-barrier, and rigid-obstacle bodies still use the default solver.
+  - Added residual-based early termination to the VBD block-descent solver (a
+    convergence-displacement threshold, exposed through the internal config) and
+    a `bm_vbd_world_solver` benchmark comparing the VBD inner solver against the
+    default gradient-descent solver on a matched contact-free mass-spring grid
+    in the real World pipeline. With early termination, single-threaded VBD is
+    roughly 2-4x faster per step than the default solver on the benchmarked
+    scenes. Multithreaded CPU sweeps and a GPU backend remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

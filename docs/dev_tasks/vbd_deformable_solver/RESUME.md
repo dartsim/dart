@@ -3,10 +3,12 @@
 ## Last Session Summary
 
 Started PLAN-082: implementing Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as a DART-owned deformable solver in the experimental World. Landed
-Phases 0-4, the Phase 5 acceleration/damping primitives, and Phase 6 (stepping
-loop + World solver wiring) with all gates green (lint clean, focused build,
-59 VBD tests across 8 binaries plus the 43-case deformable regression suite,
-benchmark smoke):
+Phases 0-4, the Phase 5 acceleration/damping primitives, Phase 6 (stepping loop
+and World solver wiring), and Phase 8a (CPU baseline comparison plus residual
+early termination) with all gates green: lint clean, focused build, 61 VBD tests
+across 8 binaries plus the 43-case deformable regression suite, and benchmark
+smoke showing VBD roughly 2-4x faster than the in-repo gradient-descent baseline
+on contact-free mass-spring scenes.
 
 - Phase 0 grounding: PLAN-082 dashboard entry and numbered plan file, the
   `chen-2024-vbd` references catalog entry plus comparative `tinyvbd`/`gaia`
@@ -36,6 +38,11 @@ benchmark smoke):
   inside `DeformableDynamicsStage` for contact-free mass-spring bodies.
   `test_vbd_world_solver` confirms it matches the default solver, with no
   regression in `test_deformable_body` (43 cases).
+- Phase 8a (CPU perf): residual early termination
+  (`BlockDescentOptions::convergenceDisplacement` /
+  `DeformableVbdConfig::convergenceDisplacement`) + `bm_vbd_world_solver`. With
+  early termination, single-threaded VBD is ~2-4x faster per step than the
+  in-repo gradient-descent baseline on the spring-grid benchmark.
 
 Key grounding fact: VBD minimizes the **same** variational implicit-Euler
 objective the existing experimental deformable solver already minimizes with a
@@ -47,8 +54,8 @@ ECS components, not a new data model.
 
 ## Current Branch
 
-`feature/vbd-solver-foundation` — Phases 0-4 landed. Local commits only;
-pushes/PRs require explicit approval.
+`feature/vbd-solver-foundation` — Phases 0-6 and Phase 8a landed. Local commits
+only; pushes/PRs require explicit approval.
 
 ## Immediate Next Step
 
@@ -68,9 +75,12 @@ matches the default solver. Remaining work, in order:
    wire a vertex-penalty contact block (reuse `deformable_contact` distance/CCD
    kernels) into the per-vertex assembly so VBD handles ground/obstacle/self
    contact, lifting the "contact-free" gate.
-3. Phase 8: multithread the color sweeps (Taskflow is available — same-color
-   vertices are independent, so each color is a parallel_for). Benchmark vs the
-   single-threaded path and the reference CPU numbers.
+3. Phase 8 (continued): residual early termination already lands and makes
+   single-threaded VBD ~2-4x faster than the in-repo baseline. Next, multithread
+   the color sweeps (Taskflow is available — same-color vertices are
+   independent, so each color is a parallel_for) and add SoA layout, then
+   benchmark vs the external TinyVBD/Gaia CPU numbers (not built in this
+   environment).
 4. Phase 9: CUDA backend behind the experimental compute boundary (per-color
    kernels, CUDA-graph-recorded sweeps as in Gaia). Benchmark vs reference/paper
    GPU numbers.

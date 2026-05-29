@@ -89,6 +89,27 @@
       `deformable_contact` distance/barrier/CCD kernels).
 - [ ] Phase 8: CPU performance optimization (SoA layout, multithreaded color
       sweeps) with benchmarks targeting the reference CPU numbers.
+  - [x] CPU baseline-comparison sub-slice: `bm_vbd_world_solver` steps the same
+        contact-free mass-spring grid through the real World pipeline with the
+        VBD inner solver and with the default gradient-descent solver. Honest
+        finding: fixed-iteration single-threaded VBD is currently SLOWER than
+        the early-terminating gradient-descent baseline on small, well-
+        conditioned scenes (it always runs its full sweep budget). This matches
+        the paper — VBD's wins are GPU throughput from graph coloring and
+        stiff/high-mass-ratio stability, not single-thread CPU speed. It
+        motivates the remaining Phase 8 work below.
+  - [x] Residual early-termination sub-slice: a `convergenceDisplacement`
+        option stops the block-descent sweeps once the largest per-vertex update
+        falls below a threshold (wired through `DeformableVbdConfig`), with tests
+        that early termination reaches the same converged state as the full
+        sweep budget and that it is disabled at threshold 0. With early
+        termination, single-threaded VBD now BEATS the in-repo gradient-descent
+        baseline solver by ~2-4x on the contact-free mass-spring grid
+        benchmark (it converges in fewer per-vertex Newton sweeps and skips the
+        baseline's line-search objective re-evaluations).
+  - [ ] Remaining Phase 8 work: SoA layout and multithreaded color sweeps
+        (Taskflow; same-color vertices are independent), then benchmark vs the
+        external TinyVBD/Gaia CPU reference numbers.
 - [ ] Phase 9: GPU (CUDA) VBD backend behind the experimental compute boundary
       with benchmarks targeting the reference/paper GPU numbers.
 - [ ] Phase 10: complete the upstream example/scene corpus as DART-native
@@ -278,6 +299,23 @@ VBD, World-path damping/Chebyshev, or a public solver-selection API.
 Local gate (Phase 6 World solver wiring, first pass) on 2026-05-28: the library
 rebuild plus 4 `test_vbd_world_solver` cases and 43 `test_deformable_body` cases
 passing.
+
+Local gate (Phase 8 CPU baseline comparison + early termination, on 2026-05-28,
+CPU scaling enabled, treat as smoke): `bm_vbd_world_solver` steps a pinned
+spring grid through the real World pipeline.
+
+- Fixed-iteration VBD (20 sweeps, no early termination) was SLOWER than the
+  early-terminating default gradient-descent solver: e.g. ~4.17 ms vs ~1.12 ms
+  at 24x24, because it always ran its full sweep budget.
+- After adding residual early termination (cap 50 sweeps, stop at 1e-6
+  displacement), single-threaded VBD BEATS the default solver: per-step times of
+  ~34 us vs ~77 us (8x8, 64 verts), ~152 us vs ~641 us (16x16, 256 verts), and
+  ~358 us vs ~1063 us (24x24, 576 verts) — roughly 2-4x faster.
+
+This beats the in-repo gradient-descent reference solver on contact-free
+mass-spring scenes on a single CPU thread. It does NOT yet beat the external
+`TinyVBD`/`Gaia` CPU numbers (not built in this environment) or address GPU
+(Phase 9), which requires CUDA hardware; those remain open.
 
 Local gate (Phase 5 acceleration/damping primitives, first pass) on 2026-05-28:
 the focused target build and 9 `test_vbd_acceleration` cases passing. These are

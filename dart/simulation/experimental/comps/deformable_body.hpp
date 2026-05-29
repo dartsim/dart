@@ -162,6 +162,9 @@ struct DeformableVbdConfig
 {
   bool enabled = false;
   std::size_t iterations = 20;
+  /// Stop sweeping early once the largest per-vertex update falls below this
+  /// length (0 disables early termination).
+  double convergenceDisplacement = 0.0;
 };
 
 /// Transient scratch buffers reused by the default deformable solver.

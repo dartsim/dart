@@ -38,6 +38,7 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <array>
 #include <utility>
 #include <vector>
@@ -94,9 +95,12 @@ inline VertexColoring colorSprings(
 /// Tuning for the block-descent sweep.
 struct BlockDescentOptions
 {
-  std::size_t iterations = 20;    ///< VBD sweeps over all colors per call.
+  std::size_t iterations = 20;    ///< Max VBD sweeps over all colors per call.
   double regularization = 0.0;    ///< Diagonal damping added to each block.
   bool clampSpringHessian = true; ///< PSD-project the spring Hessian blocks.
+  /// Stop early once the largest per-vertex update in a sweep falls below this
+  /// length (0 disables early termination and runs the full sweep budget).
+  double convergenceDisplacement = 0.0;
 };
 
 /// Outcome of a block-descent solve.
@@ -178,8 +182,11 @@ inline BlockDescentStats blockDescentMassSpring(
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
@@ -198,8 +205,12 @@ inline BlockDescentStats blockDescentMassSpring(
         const Eigen::Vector3d delta
             = solveVertexBlock(block, options.regularization);
         positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
     }
   }
 
@@ -364,8 +375,11 @@ inline BlockDescentStats blockDescentTetMesh(
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
@@ -381,9 +395,15 @@ inline BlockDescentStats blockDescentTetMesh(
             mu,
             lambda,
             timeStep);
-        positions[vertex] += solveVertexBlock(block, options.regularization);
+        const Eigen::Vector3d delta
+            = solveVertexBlock(block, options.regularization);
+        positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
     }
   }
 

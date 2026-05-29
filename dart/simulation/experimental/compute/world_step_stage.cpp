@@ -2371,6 +2371,7 @@ void runVbdMassSpringSolve(
   dvbd::BlockDescentOptions options;
   options.iterations = config.iterations;
   options.clampSpringHessian = true;
+  options.convergenceDisplacement = config.convergenceDisplacement;
   const dvbd::BlockDescentStats result = dvbd::blockDescentMassSpring(
       scratch.next,
       state.masses,

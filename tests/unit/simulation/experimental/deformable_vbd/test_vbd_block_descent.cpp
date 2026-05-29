@@ -379,3 +379,76 @@ TEST(VbdBlockDescent, SameColorUpdatesAreIndependent)
     EXPECT_NEAR((driver[i] - manual[i]).norm(), 0.0, 1e-15) << "vertex " << i;
   }
 }
+
+//==============================================================================
+// Residual-based early termination stops before the iteration cap yet reaches
+// the same converged state as running the full sweep budget.
+TEST(VbdBlockDescent, EarlyTerminationMatchesFullSweepResult)
+{
+  ChainScene full = makeChain(7, 1.0, 0.85);
+  ChainScene early = makeChain(7, 1.0, 0.85);
+  const auto coloring = vbd::colorSprings(full.positions.size(), full.springs);
+  const auto adjacency
+      = vbd::SpringAdjacency::build(full.positions.size(), full.springs);
+
+  vbd::BlockDescentOptions fullOptions;
+  fullOptions.iterations = 400;
+  vbd::blockDescentMassSpring(
+      full.positions,
+      full.masses,
+      full.fixed,
+      full.inertialTargets,
+      full.springs,
+      full.stiffness,
+      full.timeStep,
+      coloring,
+      adjacency,
+      fullOptions);
+
+  vbd::BlockDescentOptions earlyOptions;
+  earlyOptions.iterations = 400;
+  earlyOptions.convergenceDisplacement = 1e-9;
+  const vbd::BlockDescentStats stats = vbd::blockDescentMassSpring(
+      early.positions,
+      early.masses,
+      early.fixed,
+      early.inertialTargets,
+      early.springs,
+      early.stiffness,
+      early.timeStep,
+      coloring,
+      adjacency,
+      earlyOptions);
+
+  EXPECT_LT(stats.iterations, 400u);
+  for (std::size_t i = 0; i < full.positions.size(); ++i) {
+    EXPECT_NEAR((full.positions[i] - early.positions[i]).norm(), 0.0, 1e-6)
+        << "vertex " << i;
+  }
+}
+
+//==============================================================================
+TEST(VbdBlockDescent, DisabledEarlyTerminationRunsFullBudget)
+{
+  ChainScene scene = makeChain(5, 1.0, 0.85);
+  const auto coloring
+      = vbd::colorSprings(scene.positions.size(), scene.springs);
+  const auto adjacency
+      = vbd::SpringAdjacency::build(scene.positions.size(), scene.springs);
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 12;
+  options.convergenceDisplacement = 0.0; // disabled
+  const vbd::BlockDescentStats stats = vbd::blockDescentMassSpring(
+      scene.positions,
+      scene.masses,
+      scene.fixed,
+      scene.inertialTargets,
+      scene.springs,
+      scene.stiffness,
+      scene.timeStep,
+      coloring,
+      adjacency,
+      options);
+  EXPECT_EQ(stats.iterations, 12u);
+}
