@@ -64,7 +64,8 @@ function(dart_remove_stale_legacy_collision_artifacts component)
   # These components are now interface facades. Clean old shared/static
   # artifacts from reused build directories so package/link audits see the
   # current target graph instead of stale pre-facade libraries.
-  file(GLOB stale_legacy_collision_artifacts
+  file(
+    GLOB stale_legacy_collision_artifacts
     "${DART_BINARY_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_SHARED_LIBRARY_SUFFIX}*"
     "${DART_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_STATIC_LIBRARY_SUFFIX}"
     "${DART_BINARY_DIR}/bin/${CMAKE_SHARED_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_SHARED_LIBRARY_SUFFIX}*"
@@ -139,7 +140,8 @@ get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 # Add target
 dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 target_include_directories(
-  dart BEFORE
+  dart
+  BEFORE
   PUBLIC
     $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
@@ -150,27 +152,31 @@ if(_dart_extra_includes)
   list(REMOVE_DUPLICATES _dart_extra_includes)
   target_include_directories(dart PUBLIC ${_dart_extra_includes})
 endif()
-get_property(_dart_system_includes GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS)
+get_property(
+  _dart_system_includes
+  GLOBAL
+  PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS
+)
 if(_dart_system_includes)
   list(REMOVE_DUPLICATES _dart_system_includes)
   target_include_directories(dart SYSTEM PUBLIC ${_dart_system_includes})
 endif()
-target_link_libraries(
-  dart
-  PUBLIC
-    ${CMAKE_DL_LIBS}
-    Eigen3::Eigen
-    assimp
-)
+target_link_libraries(dart PUBLIC ${CMAKE_DL_LIBS} Eigen3::Eigen assimp)
 
 # assimp version detection for conditional compilation
 if(ASSIMP_VERSION_MAJOR)
-  target_compile_definitions(dart
-    PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR})
+  target_compile_definitions(
+    dart
+    PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR}
+  )
 endif()
 
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
-get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
+get_property(
+  _dart_extra_compile_options
+  GLOBAL
+  PROPERTY DART_EXTRA_COMPILE_OPTIONS
+)
 if(_dart_extra_compile_options)
   list(REMOVE_DUPLICATES _dart_extra_compile_options)
   target_compile_options(dart PRIVATE ${_dart_extra_compile_options})
@@ -197,7 +203,10 @@ if(spdlog_FOUND)
     target_link_libraries(dart PUBLIC spdlog::spdlog)
     target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
   else()
-    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
+    message(
+      WARNING
+      "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only"
+    )
     target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
   endif()
 else()
@@ -244,8 +253,10 @@ if(DART_ENABLE_SIMD)
 else()
   # Remove x86-specific flags when building on non-x86 architectures to keep
   # builds portable without enabling the SIMD option.
-  if(NOT dart_host_architecture STREQUAL "x86"
-     AND NOT dart_host_architecture STREQUAL "x86_64")
+  if(
+    NOT dart_host_architecture STREQUAL "x86"
+    AND NOT dart_host_architecture STREQUAL "x86_64"
+  )
     foreach(flag "-msse" "-msse2" "-msse3" "-mssse3")
       string(REPLACE "${flag}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     endforeach()
@@ -289,35 +300,39 @@ add_component_dependencies(${PROJECT_NAME} dart collision-native)
 # select external runtime backends; linking any of these components gives
 # downstream projects the canonical built-in DART collision stack.
 foreach(_dart_legacy_collision_component fcl bullet ode)
-  set(_dart_legacy_collision_target
-    "${PROJECT_NAME}-collision-${_dart_legacy_collision_component}")
+  set(
+    _dart_legacy_collision_target
+    "${PROJECT_NAME}-collision-${_dart_legacy_collision_component}"
+  )
   add_library(${_dart_legacy_collision_target} INTERFACE)
   target_link_libraries(${_dart_legacy_collision_target} INTERFACE dart)
   add_component_targets(
     ${PROJECT_NAME}
     collision-${_dart_legacy_collision_component}
-    ${_dart_legacy_collision_target})
+    ${_dart_legacy_collision_target}
+  )
   add_component_dependencies(
     ${PROJECT_NAME}
     collision-${_dart_legacy_collision_component}
-    dart)
+    dart
+  )
   dart_remove_stale_legacy_collision_artifacts(
-    ${_dart_legacy_collision_component})
+    ${_dart_legacy_collision_component}
+  )
 endforeach()
 unset(_dart_legacy_collision_component)
 unset(_dart_legacy_collision_target)
 
 if(MSVC)
-  set_target_properties(
-    dart PROPERTIES
-    STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
-  )
+  set_target_properties(dart PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
 if(DART_BUILD_PROFILE)
-  target_compile_definitions(dart PUBLIC
-    DART_PROFILE_ENABLE_TEXT=$<BOOL:${DART_PROFILE_BUILTIN}>
-    DART_PROFILE_ENABLE_TRACY=$<BOOL:${DART_PROFILE_TRACY}>
+  target_compile_definitions(
+    dart
+    PUBLIC
+      DART_PROFILE_ENABLE_TEXT=$<BOOL:${DART_PROFILE_BUILTIN}>
+      DART_PROFILE_ENABLE_TRACY=$<BOOL:${DART_PROFILE_TRACY}>
   )
 
   if(DART_PROFILE_TRACY)
