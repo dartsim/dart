@@ -36,6 +36,27 @@ The runner mirrors C++ `dart-demos` to keep the cross-language UX consistent:
 headless screenshot path; today it writes a deterministic JSON state snapshot
 so the contract works end-to-end.
 
+## Experimental IPC deformable scenes
+
+The `Experimental` category includes deformable-body scenes driven by the
+`dartpy.simulation_experimental` IPC solver (point-mass/spring with IPC-style
+clamped-log barriers, projected Newton, and conservative CCD):
+
+| Scene id                            | Shows                                             |
+| ----------------------------------- | ------------------------------------------------- |
+| `ipc_deformable_net`                | A pinned spring net sagging/swaying under gravity |
+| `ipc_deformable_drape`              | A mat draping over a step onto a ground barrier   |
+| `ipc_deformable_scripted_dirichlet` | A banner billowing under a scripted Dirichlet BC  |
+
+These are DART-native point-mass/spring showcases, **not** faithful IPC
+paper-figure reproductions (no FEM/codimensional elasticity). They share
+`_ipc_deformable_bridge.py`, which builds the grid topology and mirrors each
+deformable onto the render world as per-node spheres plus a spring wireframe
+(the dynamic surface-mesh render path is not yet exposed through
+`dartpy.gui.run_demos`). Add another deformable scene by building its
+`DeformableBodyOptions` with `build_grid_options(...)` and rendering it through
+`IpcDeformableBridge`.
+
 ## Add a scene
 
 1. Create `scenes/<name>.py` defining a module-level `SCENE` of type

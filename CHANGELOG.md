@@ -999,6 +999,23 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     regression that loads a single-tetrahedron scene and checks the reported
     topology counts and total mass. (The loader still covers only the
     contact-free subset; it is not IPC scene parity.)
+  - Added experimental IPC deformable scenes to the consolidated `py-demos`
+    standalone (`pixi run py-demos`): `ipc_deformable_net` (a pinned spring net
+    sagging under gravity), `ipc_deformable_drape` (a mat draping over a step
+    onto a ground barrier), and `ipc_deformable_scripted_dirichlet` (a banner
+    billowing under a scripted Dirichlet boundary condition), all under the
+    `Experimental` category. A shared `_ipc_deformable_bridge.py` builds the
+    grid topology and mirrors each `dartpy.simulation_experimental` deformable
+    body onto the Filament render world as per-node spheres plus a spring
+    wireframe (the dynamic surface-mesh render path is not yet exposed through
+    `dartpy.gui.run_demos`). To enable the drape, exposed
+    `RigidBody.is_deformable_ground_barrier` to `dartpy` (mirroring the existing
+    `is_deformable_surface_ccd_obstacle` property) so a static rigid box can be
+    tagged as a deformable ground barrier from Python; regenerated the type
+    stubs and added a binding regression. These are DART-native point-mass/spring
+    showcases, not faithful IPC paper-figure reproductions. The existing demos
+    cycle smoke covers the new scenes, plus a solver-free grid-builder topology
+    test.
   - Extended the experimental deformable-body `dartpy` facade with scripted
     boundary conditions (PLAN-081 Phase 8). Added
     `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
