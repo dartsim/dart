@@ -126,11 +126,24 @@ friction"):
 - Measured + rejected a PSD Cholesky fast path for `projectToPsd` (net ~15%
   slower; the active reduced Hessians are typically indefinite). See the
   "Per-primitive barrier kernels" finding in [`benchmarks.md`](benchmarks.md).
-  Next perf targets: spatial index for the residual all-pairs enumeration, a
-  cheaper PSD projection or fewer active-primitive evaluations (NOT an LDLT
-  skip), then warm-start/active-set reuse, then the gated GPU port. All work is
-  pushed to `origin/feature/rigid-ipc-manifest` (sole-maintainer authorization,
-  no PR-review gating).
+- Replaced the barrier-assembly and line-search all-pairs O(N^2) surface
+  enumeration with a sort-and-sweep broad phase reusing the deformable IPC sweep
+  utilities (`deformable_contact::detail`, shared IPC primitives, Workstream 8),
+  keeping the exact cull on candidates so results are identical.
+- Merged `origin/main` a second time (now 0 behind) to pick up the deformable
+  IPC advances and PR #2762 (Python `py-demos` framework).
+- Added the first Rigid IPC GUI example: `sx_rigid_ipc` py-demos scene
+  (Experimental category) — a free box settles on static ground via
+  `World.rigid_body_solver = IPC`; verified settling (z=0.262, stable) and the
+  demos-cycle smoke test. New Rigid IPC GUI examples register in
+  `python/examples/demos/registry.py` under the Experimental group.
+
+Next perf targets: a cheaper PSD projection or fewer active-primitive
+evaluations via primitive-level candidate sets (NOT an LDLT skip), then
+warm-start/active-set reuse, then the gated GPU port. Biggest correctness gate
+for reference/paper parity: Phase 2 rigorous interval-arithmetic CCD + corpus
+parity. All work is pushed to `origin/feature/rigid-ipc-manifest`
+(sole-maintainer authorization, no PR-review gating).
 
 All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
 (23/23), `check-lint`, and the manifest checks.
