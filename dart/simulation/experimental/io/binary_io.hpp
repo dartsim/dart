@@ -66,7 +66,9 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   2: World gravity serialized after timing metadata; Joint v1 migration
 //   3: MultibodyVariationalState (variational-integrator two-step history)
 //      registered as a serializable component
-constexpr std::uint32_t kBinaryFormatVersion = 3;
+//   4: LoopClosure gained a `distance` field (target separation for the
+//      Distance family)
+constexpr std::uint32_t kBinaryFormatVersion = 4;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

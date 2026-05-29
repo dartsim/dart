@@ -1194,6 +1194,7 @@ LoopClosure World::addLoopClosure(
   closure.frameB = resolveLoopClosureFrame(*this, spec.frameB, "frameB");
   closure.offsetA = spec.offsetA;
   closure.offsetB = spec.offsetB;
+  closure.distance = spec.distance;
 
   return LoopClosure(entity, this);
 }

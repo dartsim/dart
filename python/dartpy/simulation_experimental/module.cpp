@@ -324,12 +324,14 @@ sim::LoopClosureSpec makeLoopClosureSpec(
     const nb::handle& frameB,
     sim::LoopClosureFamily family,
     const nb::handle& offsetA,
-    const nb::handle& offsetB)
+    const nb::handle& offsetB,
+    double distance)
 {
   sim::LoopClosureSpec spec;
   spec.frameA = toFrameHandle(frameA);
   spec.frameB = toFrameHandle(frameB);
   spec.family = family;
+  spec.distance = distance;
 
   if (!offsetA.is_none()) {
     spec.offsetA = toIsometry(offsetA);
@@ -920,16 +922,18 @@ void defSimulationExperimentalModule(nb::module_& m)
                       const nb::handle& frameB,
                       sim::LoopClosureFamily family,
                       const nb::handle& offsetA,
-                      const nb::handle& offsetB) {
+                      const nb::handle& offsetB,
+                      double distance) {
             return makeLoopClosureSpec(
-                frameA, frameB, family, offsetA, offsetB);
+                frameA, frameB, family, offsetA, offsetB, distance);
           }),
           nb::arg("frame_a"),
           nb::arg("frame_b"),
           nb::arg("family") = sim::LoopClosureFamily::Rigid,
           nb::kw_only(),
           nb::arg("offset_a") = nb::none(),
-          nb::arg("offset_b") = nb::none())
+          nb::arg("offset_b") = nb::none(),
+          nb::arg("distance") = 0.0)
       .def_prop_rw(
           "frame_a",
           [](const sim::LoopClosureSpec& self) { return self.frameA; },
@@ -943,6 +947,7 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.frameB = toFrameHandle(frame);
           })
       .def_rw("family", &sim::LoopClosureSpec::family)
+      .def_rw("distance", &sim::LoopClosureSpec::distance)
       .def_prop_rw(
           "offset_a",
           [](const sim::LoopClosureSpec& self) {
@@ -1500,10 +1505,12 @@ void defSimulationExperimentalModule(nb::module_& m)
              const nb::handle& frameB,
              sim::LoopClosureFamily family,
              const nb::handle& offsetA,
-             const nb::handle& offsetB) {
+             const nb::handle& offsetB,
+             double distance) {
             return self.addLoopClosure(
                 toOptionalName(name),
-                makeLoopClosureSpec(frameA, frameB, family, offsetA, offsetB));
+                makeLoopClosureSpec(
+                    frameA, frameB, family, offsetA, offsetB, distance));
           },
           nb::arg("name") = nb::none(),
           nb::kw_only(),
@@ -1512,6 +1519,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("family") = sim::LoopClosureFamily::Rigid,
           nb::arg("offset_a") = nb::none(),
           nb::arg("offset_b") = nb::none(),
+          nb::arg("distance") = 0.0,
           nb::keep_alive<0, 1>())
       .def(
           "has_loop_closure",

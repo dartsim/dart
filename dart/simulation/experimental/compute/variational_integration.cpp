@@ -971,11 +971,11 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
     return binding; // Ignored: no closure, disabled, or residual-only.
   }
 
-  if (closure->family != LoopClosureFamily::Point) {
+  if (closure->family == LoopClosureFamily::Rigid) {
     binding.status = Status::Unsupported;
     binding.reason
-        = "the variational loop-closure solver supports only Point closures "
-          "(the Rigid and Distance families are not yet implemented)";
+        = "the variational loop-closure solver does not yet support the Rigid "
+          "family (it has no orientation residual); use Point or Distance";
     return binding;
   }
 
@@ -1029,17 +1029,19 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
 
   binding.status = Status::Supported;
   binding.structure = structureA != entt::null ? structureA : structureB;
-  // Point closure: g = endpointA - endpointB = 0. The endpoint expressed in a
-  // link body frame is offset.translation() (the frame IS the link body frame;
-  // a null link keeps the point in world coordinates as the anchor). Point
-  // ignores the offset orientation by construction; Rigid -- which would need
-  // it -- is rejected above.
+  // The endpoint expressed in a link body frame is offset.translation() (the
+  // frame IS the link body frame; a null link keeps the point in world
+  // coordinates as the anchor). Point/Distance ignore the offset orientation by
+  // construction; Rigid -- which would need it -- is rejected above. Point
+  // constrains the 3D offset to zero; Distance constrains the separation to the
+  // closure's target distance.
+  const bool isDistance = closure->family == LoopClosureFamily::Distance;
   binding.constraint.linkA = closure->frameA;
   binding.constraint.pointA = closure->offsetA.translation();
   binding.constraint.linkB = closure->frameB;
   binding.constraint.pointB = closure->offsetB.translation();
-  binding.constraint.distance = false;
-  binding.constraint.length = 0.0;
+  binding.constraint.distance = isDistance;
+  binding.constraint.length = isDistance ? closure->distance : 0.0;
   return binding;
 }
 

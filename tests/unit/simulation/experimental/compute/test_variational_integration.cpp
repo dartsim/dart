@@ -1019,6 +1019,74 @@ TEST(VariationalIntegration, LoopClosureRigidFamilyRejectedUnderVariational)
   EXPECT_THROW(world.step(), sx::InvalidOperationException);
 }
 
+// Phase B2 (Distance family through the public API): a Distance loop closure
+// added via addLoopClosure -- holding the tip of a 2-link arm at a fixed
+// distance from a world anchor -- is solved by the variational integrator on
+// the World::step() path while the arm swings under gravity.
+TEST(VariationalIntegration, LoopClosureDistanceSolvedThroughWorldStep)
+{
+  sx::World world;
+  world.setMultibodyIntegrationMethod("variational integrator");
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+  const auto offset = [](double x) {
+    Eigen::Isometry3d t = Eigen::Isometry3d::Identity();
+    t.translation() = Eigen::Vector3d(x, 0.0, 0.0);
+    return t;
+  };
+  sx::JointSpec s1;
+  s1.name = "j1";
+  s1.type = sx::JointType::Revolute;
+  s1.axis = Eigen::Vector3d::UnitY();
+  s1.transformFromParent = offset(0.5);
+  auto link1 = robot.addLink("link1", base, s1);
+  link1.setMass(1.0);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  sx::JointSpec s2;
+  s2.name = "j2";
+  s2.type = sx::JointType::Revolute;
+  s2.axis = Eigen::Vector3d::UnitY();
+  s2.transformFromParent = offset(0.5);
+  auto link2 = robot.addLink("link2", link1, s2);
+  link2.setMass(1.0);
+  link2.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  // Rest-pose tip (joints at zero) is the product of the link offsets.
+  const Eigen::Vector3d tip(1.0, 0.0, 0.0);
+  const Eigen::Vector3d anchorPoint(0.3, 0.0, 0.2);
+  const double length = (tip - anchorPoint).norm();
+  ASSERT_GT(length, 1e-3);
+  Eigen::Isometry3d anchorFrame = Eigen::Isometry3d::Identity();
+  anchorFrame.translation() = anchorPoint;
+
+  auto closure = world.addLoopClosure(
+      "distance",
+      {.frameA = link2,
+       .frameB = sx::Frame::world(),
+       .family = sx::LoopClosureFamily::Distance,
+       .offsetB = anchorFrame,
+       .distance = length});
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  double maxResidual = 0.0;
+  double motion = 0.0;
+  for (int k = 0; k < 3000; ++k) {
+    world.step();
+    maxResidual
+        = std::max(maxResidual, std::abs(closure.computeResidual().norm));
+    motion
+        = std::max(motion, std::abs(link1.getParentJoint().getPosition()[0]));
+  }
+  EXPECT_LT(maxResidual, 1e-6); // distance held through world.step()
+  EXPECT_GT(motion, 1e-3);      // the arm still swings under gravity
+}
+
 // PLAN-082 serialization gate: binary save/load round-trips the trajectory and
 // does NOT re-bootstrap the two-step discrete-mechanics history. A reference
 // pendulum runs 50 steps (establishing a non-trivial history), is saved, then
