@@ -120,6 +120,8 @@ struct DeformableSolverStats
   // evaluation), matching the cumulative semantics of solverIterations; it is
   // not the active-set size of a single iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t projectedNewtonFallbacks = 0;
 
   void reset() noexcept
   {

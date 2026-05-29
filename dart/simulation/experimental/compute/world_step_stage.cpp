@@ -51,6 +51,8 @@
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
@@ -2689,6 +2691,227 @@ void prepareDeformableBoundaryConditions(
 }
 
 //==============================================================================
+// Project a symmetric matrix onto the nearest positive-semidefinite matrix by
+// clamping negative eigenvalues to zero (per-element PSD projection, as in
+// IPC).
+template <typename Mat>
+Mat projectSymmetricToPsd(const Mat& matrix)
+{
+  const Mat symmetric = 0.5 * (matrix + matrix.transpose());
+  Eigen::SelfAdjointEigenSolver<Mat> solver(symmetric);
+  if (solver.info() != Eigen::Success) {
+    // Eigen-decomposition failed: drop this element's curvature rather than
+    // scatter a possibly-indefinite block. Returning zero is the conservative
+    // IPC choice and keeps the assembled Hessian positive definite (the
+    // inertia diagonal still supplies the free-DOF curvature).
+    return Mat::Zero();
+  }
+  auto eigenvalues = solver.eigenvalues();
+  for (Eigen::Index i = 0; i < eigenvalues.size(); ++i) {
+    eigenvalues[i] = std::max(0.0, eigenvalues[i]);
+  }
+  return solver.eigenvectors() * eigenvalues.asDiagonal()
+         * solver.eigenvectors().transpose();
+}
+
+//==============================================================================
+// Assemble the dense per-step Hessian (inertia + spring + self-contact barrier
+// + static ground barrier) with per-element PSD projection and solve
+// H d = -gradient for the projected-Newton search direction. Returns false so
+// the caller falls back to mass-scaled steepest descent when the body is too
+// large for the dense solve or the factorization fails. Sparse assembly is a
+// later slice; the per-element barrier/spring eigen-decompositions are
+// data-parallel GPU candidates.
+bool computeProjectedNewtonDirection(
+    const comps::DeformableNodeState& state,
+    const comps::DeformableSpringModel& model,
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<StaticGroundBarrier>& barriers,
+    const SelfContactBarrierInputs* contactBarrier,
+    const double timeStep,
+    const std::vector<Eigen::Vector3d>& gradient,
+    std::vector<Eigen::Vector3d>& direction)
+{
+  const std::size_t nodeCount = positions.size();
+  constexpr std::size_t kMaxDenseNodes = 256;
+  if (nodeCount == 0 || nodeCount > kMaxDenseNodes) {
+    return false;
+  }
+
+  const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
+  Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(dim, dim);
+  Eigen::VectorXd rhs = Eigen::VectorXd::Zero(dim);
+  const double invDt2 = 1.0 / (timeStep * timeStep);
+
+  // Inertia: block diagonal, positive definite for free nodes.
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    const double m = state.masses[i] * invDt2;
+    for (int k = 0; k < 3; ++k) {
+      hessian(
+          static_cast<Eigen::Index>(3 * i + k),
+          static_cast<Eigen::Index>(3 * i + k))
+          += m;
+    }
+  }
+
+  // Spring stretch Hessian per edge, PSD-projected over its 6x6 block.
+  constexpr double minLength = 1e-12;
+  for (const auto& edge : model.edges) {
+    const Eigen::Vector3d delta = positions[edge.nodeB] - positions[edge.nodeA];
+    const double length = delta.norm();
+    if (length <= minLength || !std::isfinite(length)) {
+      continue;
+    }
+    const Eigen::Vector3d dir = delta / length;
+    const Eigen::Matrix3d projection = dir * dir.transpose();
+    const double scale = std::max(0.0, 1.0 - edge.restLength / length);
+    const Eigen::Matrix3d block
+        = model.stiffness
+          * (projection + scale * (Eigen::Matrix3d::Identity() - projection));
+    Eigen::Matrix<double, 6, 6> edgeHessian;
+    edgeHessian.block<3, 3>(0, 0) = block;
+    edgeHessian.block<3, 3>(3, 3) = block;
+    edgeHessian.block<3, 3>(0, 3) = -block;
+    edgeHessian.block<3, 3>(3, 0) = -block;
+    edgeHessian = projectSymmetricToPsd(edgeHessian);
+    const std::array<std::size_t, 2> nodes{edge.nodeA, edge.nodeB};
+    for (int bi = 0; bi < 2; ++bi) {
+      for (int bj = 0; bj < 2; ++bj) {
+        hessian.block<3, 3>(
+            static_cast<Eigen::Index>(3 * nodes[bi]),
+            static_cast<Eigen::Index>(3 * nodes[bj]))
+            += edgeHessian.block<3, 3>(3 * bi, 3 * bj);
+      }
+    }
+  }
+
+  // Self-contact barrier Hessian per active contact, PSD-projected over 12x12.
+  if (contactBarrier != nullptr && contactBarrier->candidates != nullptr
+      && contactBarrier->triangles != nullptr && contactBarrier->stiffness > 0.0
+      && contactBarrier->squaredActivationDistance > 0.0) {
+    const auto& candidates = *contactBarrier->candidates;
+    const auto& triangles = *contactBarrier->triangles;
+    const double sqAct = contactBarrier->squaredActivationDistance;
+    const double kappa = contactBarrier->stiffness;
+    const auto scatter12 = [&](const dc::Matrix12d& blockHessian,
+                               const std::array<std::size_t, 4>& nodes) {
+      const dc::Matrix12d projected = projectSymmetricToPsd(blockHessian);
+      for (int bi = 0; bi < 4; ++bi) {
+        for (int bj = 0; bj < 4; ++bj) {
+          hessian.block<3, 3>(
+              static_cast<Eigen::Index>(3 * nodes[bi]),
+              static_cast<Eigen::Index>(3 * nodes[bj]))
+              += projected.block<3, 3>(3 * bi, 3 * bj);
+        }
+      }
+    };
+    for (const auto& candidate : candidates.pointTriangleCandidates) {
+      const auto& triangle = triangles[candidate.triangle];
+      const auto result = dc::pointTriangleBarrier(
+          positions[candidate.point],
+          positions[triangle.nodeA],
+          positions[triangle.nodeB],
+          positions[triangle.nodeC],
+          sqAct,
+          kappa);
+      if (!result.active) {
+        continue;
+      }
+      scatter12(
+          result.hessian,
+          {candidate.point, triangle.nodeA, triangle.nodeB, triangle.nodeC});
+    }
+    for (const auto& candidate : candidates.edgeEdgeCandidates) {
+      const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
+      const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
+      const auto result = dc::edgeEdgeBarrier(
+          positions[edgeA.nodeA],
+          positions[edgeA.nodeB],
+          positions[edgeB.nodeA],
+          positions[edgeB.nodeB],
+          sqAct,
+          kappa);
+      if (!result.active) {
+        continue;
+      }
+      scatter12(
+          result.hessian, {edgeA.nodeA, edgeA.nodeB, edgeB.nodeA, edgeB.nodeB});
+    }
+  }
+
+  // Static ground barrier Hessian (vertical scalar per active node, clamped).
+  if (!barriers.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    constexpr double barrierScale = 25.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (fixed[i] != 0u) {
+        continue;
+      }
+      const auto groundTop = staticGroundTopAt(positions[i], barriers);
+      if (!groundTop.has_value()) {
+        continue;
+      }
+      const double d = positions[i].z() - *groundTop;
+      if (d <= 0.0 || d >= activationDistance || !std::isfinite(d)) {
+        continue;
+      }
+      const double offset = d - activationDistance;
+      const double logRatio = std::log(d / activationDistance);
+      const double second
+          = -barrierScale
+            * (2.0 * logRatio + 4.0 * offset / d - (offset * offset) / (d * d));
+      hessian(
+          static_cast<Eigen::Index>(3 * i + 2),
+          static_cast<Eigen::Index>(3 * i + 2))
+          += std::max(0.0, second);
+    }
+  }
+
+  // RHS = -gradient on free DOFs; pin fixed DOFs with an identity row.
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    for (int k = 0; k < 3; ++k) {
+      const auto row = static_cast<Eigen::Index>(3 * i + k);
+      if (fixed[i] != 0u) {
+        hessian.row(row).setZero();
+        hessian.col(row).setZero();
+        hessian(row, row) = 1.0;
+        rhs(row) = 0.0;
+      } else {
+        rhs(row) = -gradient[i][k];
+      }
+    }
+  }
+
+  // The inertia term (m/dt^2 on every free DOF, with positive node masses
+  // enforced at construction) keeps the Hessian positive definite once the
+  // spring/barrier blocks are PSD-projected, so no diagonal regularization is
+  // needed (it would perturb the otherwise-exact solve). The isPositive()
+  // guard mirrors the rest of the module (see the rigid-body LDLT solves):
+  // LDLT::info() only flags a zero/non-finite pivot, so an indefinite-but-
+  // finite factorization must be rejected explicitly. Either case falls back
+  // to steepest descent below.
+  Eigen::LDLT<Eigen::MatrixXd> ldlt(hessian);
+  if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
+    return false;
+  }
+  const Eigen::VectorXd solution = ldlt.solve(rhs);
+  if (!solution.allFinite()) {
+    return false;
+  }
+
+  direction.resize(nodeCount);
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    if (fixed[i] != 0u) {
+      direction[i].setZero();
+    } else {
+      direction[i] = solution.segment<3>(static_cast<Eigen::Index>(3 * i));
+    }
+  }
+  return true;
+}
+
+//==============================================================================
 void advanceDeformableBody(
     entt::entity entity,
     comps::DeformableNodeState& state,
@@ -2817,110 +3040,150 @@ void advanceDeformableBody(
         break;
       }
 
-      for (std::size_t i = 0; i < nodeCount; ++i) {
-        if (scratch.activeFixed[i] == 0u) {
-          scratch.direction[i]
-              = -(timeStep * timeStep / state.masses[i]) * scratch.gradient[i];
-        } else {
-          scratch.direction[i].setZero();
+      // Mass-scaled steepest-descent direction: the graceful fallback used when
+      // the dense Newton solve is skipped/fails, or when the Newton line search
+      // cannot make progress.
+      const auto fillSteepestDescentDirection = [&]() {
+        for (std::size_t i = 0; i < nodeCount; ++i) {
+          if (scratch.activeFixed[i] == 0u) {
+            scratch.direction[i] = -(timeStep * timeStep / state.masses[i])
+                                   * scratch.gradient[i];
+          } else {
+            scratch.direction[i].setZero();
+          }
         }
-      }
+      };
 
-      double step = 1.0;
-      bool accepted = false;
-      for (std::size_t ls = 0; ls < maxLineSearchIterations; ++ls) {
-        ++stats.lineSearchTrials;
-        double directionalDerivative = buildLineSearchCandidate(
-            scratch.next,
-            scratch.direction,
-            scratch.gradient,
-            scratch.activeFixed,
-            step,
-            scratch.candidate);
+      // Armijo backtracking line search along scratch.direction, enforcing
+      // every CCD limiter and the static-ground barrier. Commits the accepted
+      // step into scratch.next and returns true on success.
+      const auto runLineSearch = [&]() -> bool {
+        double step = 1.0;
+        for (std::size_t ls = 0; ls < maxLineSearchIterations; ++ls) {
+          ++stats.lineSearchTrials;
+          double directionalDerivative = buildLineSearchCandidate(
+              scratch.next,
+              scratch.direction,
+              scratch.gradient,
+              scratch.activeFixed,
+              step,
+              scratch.candidate);
 
-        if (applySurfaceContactCcdLimit(
-                scratch.next,
-                scratch.direction,
-                scratch.gradient,
-                scratch.activeFixed,
-                contactScratch,
-                stats,
-                step,
+          if (applySurfaceContactCcdLimit(
+                  scratch.next,
+                  scratch.direction,
+                  scratch.gradient,
+                  scratch.activeFixed,
+                  contactScratch,
+                  stats,
+                  step,
+                  scratch.candidate,
+                  directionalDerivative)
+              && applyInterBodySurfaceContactCcdLimit(
+                  entity,
+                  surfaceSnapshots,
+                  scratch.next,
+                  scratch.direction,
+                  scratch.gradient,
+                  scratch.activeFixed,
+                  contactScratch,
+                  stats,
+                  step,
+                  scratch.candidate,
+                  directionalDerivative)
+              && applyStaticRigidSurfaceCcdLimit(
+                  rigidSurfaceSnapshots,
+                  scratch.next,
+                  scratch.direction,
+                  scratch.gradient,
+                  scratch.activeFixed,
+                  contactScratch,
+                  stats,
+                  step,
+                  scratch.candidate,
+                  directionalDerivative)
+              && applyMovingRigidSurfaceCcdLimit(
+                  movingRigidSurfaceSnapshots,
+                  scratch.next,
+                  scratch.direction,
+                  scratch.gradient,
+                  scratch.activeFixed,
+                  contactScratch,
+                  stats,
+                  step,
+                  scratch.candidate,
+                  directionalDerivative)
+              && applyStaticGroundBarrierCcdLimit(
+                  scratch.next,
+                  scratch.direction,
+                  scratch.gradient,
+                  scratch.activeFixed,
+                  barriers,
+                  stats,
+                  step,
+                  scratch.candidate,
+                  directionalDerivative)
+              && directionalDerivative < -1e-24
+              && satisfiesStaticGroundBarrier(
+                  scratch.candidate, scratch.activeFixed, barriers)) {
+            ++stats.objectiveEvaluations;
+            const double candidateEnergy = evaluateDeformableObjective(
+                state,
+                model,
                 scratch.candidate,
-                directionalDerivative)
-            && applyInterBodySurfaceContactCcdLimit(
-                entity,
-                surfaceSnapshots,
-                scratch.next,
-                scratch.direction,
-                scratch.gradient,
-                scratch.activeFixed,
-                contactScratch,
-                stats,
-                step,
-                scratch.candidate,
-                directionalDerivative)
-            && applyStaticRigidSurfaceCcdLimit(
-                rigidSurfaceSnapshots,
-                scratch.next,
-                scratch.direction,
-                scratch.gradient,
-                scratch.activeFixed,
-                contactScratch,
-                stats,
-                step,
-                scratch.candidate,
-                directionalDerivative)
-            && applyMovingRigidSurfaceCcdLimit(
-                movingRigidSurfaceSnapshots,
-                scratch.next,
-                scratch.direction,
-                scratch.gradient,
-                scratch.activeFixed,
-                contactScratch,
-                stats,
-                step,
-                scratch.candidate,
-                directionalDerivative)
-            && applyStaticGroundBarrierCcdLimit(
-                scratch.next,
-                scratch.direction,
-                scratch.gradient,
+                scratch.inertialTargets,
                 scratch.activeFixed,
                 barriers,
-                stats,
-                step,
-                scratch.candidate,
-                directionalDerivative)
-            && directionalDerivative < -1e-24
-            && satisfiesStaticGroundBarrier(
-                scratch.candidate, scratch.activeFixed, barriers)) {
-          ++stats.objectiveEvaluations;
-          const double candidateEnergy = evaluateDeformableObjective(
-              state,
-              model,
-              scratch.candidate,
-              scratch.inertialTargets,
-              scratch.activeFixed,
-              barriers,
-              timeStep,
-              nullptr,
-              &contactBarrier,
-              nullptr);
-          if (std::isfinite(candidateEnergy)
-              && candidateEnergy <= energy + armijo * directionalDerivative) {
-            std::swap(scratch.next, scratch.candidate);
-            accepted = true;
-            ++stats.acceptedLineSearchSteps;
+                timeStep,
+                nullptr,
+                &contactBarrier,
+                nullptr);
+            if (std::isfinite(candidateEnergy)
+                && candidateEnergy <= energy + armijo * directionalDerivative) {
+              std::swap(scratch.next, scratch.candidate);
+              ++stats.acceptedLineSearchSteps;
+              return true;
+            }
+          }
+
+          ++stats.rejectedLineSearchCandidates;
+          step *= 0.5;
+          if (step < minStep) {
             break;
           }
         }
+        return false;
+      };
 
-        ++stats.rejectedLineSearchCandidates;
-        step *= 0.5;
-        if (step < minStep) {
-          break;
-        }
+      // Projected-Newton search direction (PD Hessian solve); falls back to
+      // mass-scaled steepest descent if the dense solve is skipped or fails.
+      // Newton lets the stiff barrier term converge cleanly.
+      const bool newtonDirection = computeProjectedNewtonDirection(
+          state,
+          model,
+          scratch.next,
+          scratch.activeFixed,
+          barriers,
+          &contactBarrier,
+          timeStep,
+          scratch.gradient,
+          scratch.direction);
+      if (newtonDirection) {
+        ++stats.projectedNewtonSteps;
+      } else {
+        ++stats.projectedNewtonFallbacks;
+        fillSteepestDescentDirection();
+      }
+
+      bool accepted = runLineSearch();
+      if (!accepted && newtonDirection) {
+        // The Newton direction was finite but the line search could not make
+        // progress (an ill-conditioned barrier Hessian can round the
+        // directional derivative to ~0). Degrade gracefully to mass-scaled
+        // steepest descent within this iteration instead of stalling the solve.
+        ++stats.projectedNewtonFallbacks;
+        fillSteepestDescentDirection();
+        accepted = runLineSearch();
       }
 
       if (!accepted) {

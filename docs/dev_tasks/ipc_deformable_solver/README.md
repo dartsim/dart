@@ -100,12 +100,21 @@
         one-way CCD limiters). First-order steepest-descent solve with fixed
         barrier stiffness; the CCD limiters remain the hard no-penetration
         guarantee. Focused regressions + benchmark counters.
-  - [ ] Remaining Phase 3 work: projected Newton (sparse barrier Hessian
-        assembly + PSD projection, replacing steepest descent), adaptive barrier
-        stiffness, barrier forces for rigid/codimensional obstacles, complementarity
-        and solver-stat diagnostics. CPU and GPU performance optimization of the
-        barrier/assembly hot paths (the per-candidate barrier eval is data-parallel
-        and a GPU candidate).
+  - [x] Projected-Newton sub-slice: per-step Hessian assembly (inertia + spring + self-contact barrier + static ground barrier) with per-element PSD
+        projection and a dense LDLT solve for the Newton search direction,
+        replacing mass-scaled steepest descent (which remains the fallback for
+        large bodies or a failed factorization). Matches the analytic
+        implicit-Euler spring solution and converges the stiff barrier in few
+        iterations. Focused regressions + solver-step counters.
+  - [ ] Remaining Phase 3 work: SPARSE Hessian assembly + matrix-free/CG or
+        sparse Cholesky (the current solve is dense, capped at 256 nodes),
+        adaptive barrier stiffness, barrier forces for rigid/codimensional
+        obstacles, and complementarity/solver-stat diagnostics. CPU and GPU
+        performance optimization of the per-element eigen-decomposition,
+        Hessian assembly, and linear solve (all data-parallel GPU candidates).
+        Known approximation: the contact active set is rebuilt once per outer
+        iteration and held fixed across the inner Newton/line-search step
+        (standard IPC), rather than re-queried within the line search.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
 - [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
       examples, benchmarks, profiling artifacts, and headless Filament evidence.

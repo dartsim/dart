@@ -142,24 +142,24 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-self-contact-barrier` - stacked on
-`feature/ipc-moving-rigid-surface-ccd` (#2738), adding IPC self-contact barrier
-FORCES: the deformable objective gains a clamped-log barrier energy/gradient
-term over the active self-contact point-triangle and edge-edge candidate set,
-so a surface folding onto itself is smoothly repelled (settles near d_hat). The
-first contact-force slice; the CCD limiters remain the hard no-penetration
-guarantee. First-order solve with fixed barrier stiffness.
+`feature/ipc-projected-newton` - stacked on `feature/ipc-self-contact-barrier`
+(#2739), replacing mass-scaled steepest descent with a projected-Newton search
+direction: per-step Hessian (inertia + spring + self-contact barrier + static
+ground barrier) with per-element PSD projection, dense LDLT solve, and a
+steepest-descent fallback for large bodies / failed factorizations. Lets the
+stiff barrier converge cleanly; matches the analytic implicit-Euler spring step.
 
 ## Immediate Next Step
 
-The keystone next slice is Phase 3 **projected Newton**: assemble the sparse
-barrier (+ inertia/elastic) Hessian with PSD projection and replace
-steepest descent, so stiff barriers converge cleanly (the first-order solve
-limits how stiff the barrier can be). Then adaptive barrier stiffness, barrier
-forces for rigid/codimensional obstacles, friction (Slice 6), and the scene
-corpus port (Slice 7). Per the standing directive, optimize CPU and GPU
-performance of the barrier/assembly/solve hot paths throughout (the per-candidate
-barrier and Hessian assembly are data-parallel GPU candidates).
+Make projected Newton scale: **sparse Hessian assembly** + a sparse Cholesky or
+matrix-free CG solve (the current dense solve is capped at 256 nodes), then
+adaptive barrier stiffness and barrier forces for rigid/codimensional obstacles.
+After that: friction (Slice 6, the stick-slip / card-house / arch / roller
+figures), the scene corpus port (Slice 7), and the Python facade (Slice 8). Per
+the standing directive, optimize CPU AND GPU throughout: the per-element
+eigen-decomposition, Hessian assembly, candidate assembly, and linear solve are
+all data-parallel GPU candidates, and the experimental module already has CUDA
+backends to build on.
 
 ## Context That Would Be Lost
 
@@ -175,7 +175,7 @@ barrier and Hessian assembly are data-parallel GPU candidates).
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-self-contact-barrier
+git checkout feature/ipc-projected-newton
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
