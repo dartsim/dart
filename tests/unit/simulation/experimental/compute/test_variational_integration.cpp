@@ -10,10 +10,12 @@
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
+#include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -206,4 +208,73 @@ TEST(VariationalIntegration, SelectableThroughWorldStep)
       = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
   EXPECT_FALSE(std::isnan(energy));
   EXPECT_LT(std::abs(energy - energy0) / std::abs(energy0), 1e-2);
+}
+
+// The O(n) articulated-body inverse-mass apply that powers the RIQN step must
+// equal the dense mass-matrix solve M(q)^{-1} b to machine precision, on a
+// branchy mixed-joint chain at a non-trivial configuration.
+TEST(VariationalIntegration, ArticulatedInverseMassMatchesDenseSolve)
+{
+  sx::World world;
+  auto robot = world.addMultibody("chain");
+  auto base = robot.addLink("base");
+
+  const auto offset = [](double x) {
+    Eigen::Isometry3d t = Eigen::Isometry3d::Identity();
+    t.translation() = Eigen::Vector3d(x, 0.0, 0.0);
+    return t;
+  };
+  sx::JointSpec j1;
+  j1.name = "j1";
+  j1.type = sx::JointType::Revolute;
+  j1.axis = Eigen::Vector3d::UnitY();
+  j1.transformFromParent = offset(0.5);
+  auto l1 = robot.addLink("l1", base, j1);
+  sx::JointSpec j2;
+  j2.name = "j2";
+  j2.type = sx::JointType::Revolute;
+  j2.axis = Eigen::Vector3d::UnitZ();
+  j2.transformFromParent = offset(0.4);
+  auto l2 = robot.addLink("l2", l1, j2);
+  sx::JointSpec j3;
+  j3.name = "j3";
+  j3.type = sx::JointType::Prismatic;
+  j3.axis = Eigen::Vector3d::UnitX();
+  j3.transformFromParent = offset(0.3);
+  auto l3 = robot.addLink("l3", l2, j3);
+
+  for (auto link : {l1, l2, l3}) {
+    link.setMass(1.3);
+    link.setInertia(Eigen::Vector3d(0.1, 0.2, 0.15).asDiagonal());
+  }
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  l1.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.4));
+  l2.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.7));
+  l3.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.2));
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::MatrixXd massMatrix
+      = sxc::computeMultibodyDynamicsTerms(
+            registry, structure, world.getGravity())
+            .massMatrix;
+  ASSERT_EQ(massMatrix.rows(), 3);
+
+  const Eigen::LDLT<Eigen::MatrixXd> dense(massMatrix);
+  const std::vector<Eigen::VectorXd> rhs
+      = {(Eigen::VectorXd(3) << 1, 0, 0).finished(),
+         (Eigen::VectorXd(3) << 0, 1, 0).finished(),
+         (Eigen::VectorXd(3) << 0, 0, 1).finished(),
+         (Eigen::VectorXd(3) << 0.7, -1.3, 0.9).finished()};
+  for (const auto& b : rhs) {
+    const Eigen::VectorXd abi
+        = sxc::computeMultibodyInverseMassProduct(registry, structure, b);
+    const Eigen::VectorXd denseSolve = dense.solve(b);
+    EXPECT_TRUE(abi.isApprox(denseSolve, 1e-9))
+        << "b=" << b.transpose() << " abi=" << abi.transpose()
+        << " dense=" << denseSolve.transpose();
+  }
 }

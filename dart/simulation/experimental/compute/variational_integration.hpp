@@ -73,11 +73,10 @@ struct VariationalSolveReport
 /// `D2 Ld(q^{k-1}, q^k) + D1 Ld(q^k, q^{k+1}) + F^k = 0` for the next
 /// configuration by RIQN: the residual is evaluated in O(n) by a discrete
 /// recursive Newton-Euler sweep (DRNEA), and the quasi-Newton update applies
-/// the approximate inverse Jacobian `dt * M(q^k)^{-1}`. This Phase A1
-/// implementation computes `M(q^k)^{-1}` with a dense factorization (an O(n^3)
-/// placeholder; the O(n) impulse-based articulated-body-inertia solve is Phase
-/// A2). Gravity enters as a forcing-side spatial impulse (not a Lagrangian
-/// potential).
+/// the approximate inverse Jacobian `dt * M(q^k)^{-1}` via an O(n)
+/// articulated-body-inertia (ABA) inverse-mass solve, so the whole step is
+/// linear-time in the degree-of-freedom count. Gravity enters as a forcing-side
+/// spatial impulse (not a Lagrangian potential).
 ///
 /// Scope (Phase A1): fixed-base open chains with fixed, revolute, and prismatic
 /// joints; fixed time step. Other joint types and floating bases are rejected.
@@ -105,6 +104,18 @@ DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     const entt::registry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
+
+/// O(n) product `M(q)^{-1} * impulse` for one multibody at its current
+/// configuration, via the articulated-body algorithm (zero velocity/gravity).
+/// This is the linear-time inverse-mass apply that powers the variational
+/// integrator's RIQN step; exposed for testing against the dense mass-matrix
+/// solve. Throws InvalidArgumentException if `impulse` size does not equal the
+/// movable degree-of-freedom count.
+[[nodiscard]] DART_EXPERIMENTAL_API Eigen::VectorXd
+computeMultibodyInverseMassProduct(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& impulse);
 
 /// Variational-integrator multibody stage (a peer of
 /// `MultibodyForwardDynamicsStage`, selected by the `variational integrator`

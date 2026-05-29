@@ -335,6 +335,85 @@ Eigen::VectorXd computeResidual(
   return residual;
 }
 
+// O(n) articulated-body-inertia solve of M(q)^{-1} * b for the precomputed tree
+// (Featherstone ABA with zero velocity and gravity): a backward articulated-
+// inertia sweep followed by a forward acceleration sweep. This is the
+// linear-time RIQN quasi-Newton step (replacing a dense factorization) and
+// equals massMatrix.ldlt().solve(b) to machine precision (cross-checked by
+// test). Frames follow the [angular; linear] convention: parentToChild maps a
+// spatial motion parent->child, its transpose maps a spatial force
+// child->parent.
+Eigen::VectorXd applyArticulatedInverseMass(
+    const VarTree& tree, const Eigen::VectorXd& b)
+{
+  const std::size_t n = tree.links.size();
+  std::vector<Matrix6> articulatedInertia(n);
+  std::vector<Vector6> biasForce(n, Vector6::Zero());
+  std::vector<Eigen::MatrixXd> u(n); // U_i = I^A_i S_i        (6 x dof)
+  std::vector<Eigen::MatrixXd> dInverse(
+      n);                                 // (S_i^T U_i)^{-1}       (dof x dof)
+  std::vector<Eigen::VectorXd> uForce(n); // u_i = b_i - S_i^T p^A_i (dof)
+  std::vector<Matrix6> parentToChild(n, Matrix6::Identity());
+  for (std::size_t i = 0; i < n; ++i) {
+    articulatedInertia[i] = tree.links[i].inertia;
+  }
+
+  // Backward sweep: accumulate articulated inertia and bias toward the root.
+  for (std::size_t reverse = 0; reverse < n; ++reverse) {
+    const std::size_t i = n - 1 - reverse;
+    const VarLink& link = tree.links[i];
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      u[i] = articulatedInertia[i] * link.subspace;
+      const Eigen::MatrixXd d = link.subspace.transpose() * u[i];
+      dInverse[i] = d.inverse();
+      uForce[i]
+          = b.segment(seg, dof) - link.subspace.transpose() * biasForce[i];
+    }
+    if (link.parent >= 0) {
+      Matrix6 ia = articulatedInertia[i];
+      Vector6 pa = biasForce[i];
+      if (link.dof > 0) {
+        ia.noalias() -= u[i] * dInverse[i] * u[i].transpose();
+        pa.noalias() += u[i] * (dInverse[i] * uForce[i]);
+      }
+      parentToChild[i] = adjoint(link.currentRelative.inverse());
+      const Matrix6 forceToParent = parentToChild[i].transpose();
+      const auto p = static_cast<std::size_t>(link.parent);
+      articulatedInertia[p].noalias() += forceToParent * ia * parentToChild[i];
+      biasForce[p].noalias() += forceToParent * pa;
+    }
+  }
+
+  // Forward sweep: propagate spatial accelerations and read joint
+  // accelerations.
+  Eigen::VectorXd qddot
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  std::vector<Vector6> acceleration(n, Vector6::Zero());
+  for (std::size_t i = 0; i < n; ++i) {
+    const VarLink& link = tree.links[i];
+    if (link.parent < 0) {
+      acceleration[i].setZero();
+      continue;
+    }
+    const Vector6 parentAccel
+        = parentToChild[i]
+          * acceleration[static_cast<std::size_t>(link.parent)];
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      const Eigen::VectorXd jointAccel
+          = dInverse[i] * (uForce[i] - u[i].transpose() * parentAccel);
+      qddot.segment(seg, dof) = jointAccel;
+      acceleration[i] = parentAccel + link.subspace * jointAccel;
+    } else {
+      acceleration[i] = parentAccel;
+    }
+  }
+  return qddot;
+}
+
 } // namespace
 
 //==============================================================================
@@ -380,12 +459,6 @@ VariationalSolveReport integrateMultibodyVariational(
     state.bootstrapped = true;
   }
 
-  // Dense M(q^k) for the RIQN quasi-Newton step (Phase A1 placeholder; Phase A2
-  // replaces this with an O(n) impulse-based articulated-body-inertia solve).
-  const Eigen::MatrixXd massMatrix
-      = computeMultibodyDynamicsTerms(registry, structure, gravity).massMatrix;
-  const Eigen::LDLT<Eigen::MatrixXd> massSolver(massMatrix);
-
   // Initial guess IG2 (explicit Euler); A1 joints are Euclidean.
   Eigen::VectorXd nextPosition = position + timeStep * velocity;
 
@@ -398,7 +471,9 @@ VariationalSolveReport integrateMultibodyVariational(
       report.converged = true;
       break;
     }
-    nextPosition -= massSolver.solve(timeStep * residual);
+    // RIQN quasi-Newton step dt * M(q^k)^{-1} * e via the O(n) articulated-body
+    // inverse-mass apply (the linear-time root update; no dense factorization).
+    nextPosition -= applyArticulatedInverseMass(tree, timeStep * residual);
   }
 
   // Refresh the per-link scratch at the accepted configuration so the history
@@ -466,6 +541,26 @@ double computeMultibodyMechanicalEnergy(
     potential -= linkComp.mass.mass * gravity.dot(comWorld);
   }
   return kinetic + potential;
+}
+
+//==============================================================================
+Eigen::VectorXd computeMultibodyInverseMassProduct(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& impulse)
+{
+  if (structure.links.empty()) {
+    return {};
+  }
+  const VarTree tree = buildVarTree(registry, structure);
+  if (tree.dofCount == 0) {
+    return {};
+  }
+  DART_EXPERIMENTAL_THROW_T_IF(
+      impulse.size() != static_cast<Eigen::Index>(tree.dofCount),
+      InvalidArgumentException,
+      "Impulse dimension must match the multibody movable DOF count");
+  return applyArticulatedInverseMass(tree, impulse);
 }
 
 //==============================================================================
