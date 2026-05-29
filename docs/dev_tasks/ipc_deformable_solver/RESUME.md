@@ -142,8 +142,24 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-gpu-psd-backend-injection` - stacked on
-`feature/ipc-step-norm-diagnostic` (#2758). LIVE GPU PSD-BACKEND INJECTION
+`feature/ipc-gpu-psd-perf-gate` - stacked on
+`feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
+threshold tuning. New cuda test GpuVsCpuPerfGateAtSolverScale: projects 12x12
+barrier batches across {256,1024,4096,16384}, asserts GPU==CPU parity at every
+scale (hard gate), logs per-call wall time (informational, NOT asserted ->
+non-flaky). MEASURED on RTX 5000 Ada: 256 blocks ~0.4x (GPU slower), 1024 ~1.4x,
+4096 ~4x, 16384 ~9x -> crossover ~1k blocks. So raised the cuda adapter's
+kMinGpuBatchBlocks 64 -> 1024 (data-driven; small batches stay on CPU). Only
+touches the cuda test + the cuda adapter threshold -> CPU/default build
+unaffected; test-all for lint; 8/8 cuda tests pass. NOTE Phase-5 contract forbids
+new cuda-named BENCHMARK files -> this is a TEST. Stack 22-deep
+(#2738-#2746,#2748-#2760).
+NEXT remaining (all riskier/deeper, best after Codex reviews the base): resident
+GPU device buffers (avoid per-call cudaMalloc), matrix-free CG, adaptive barrier
+stiffness (TRAJECTORY-CHANGING, no public kappa knob), rigid/codim obstacle
+barrier forces (DISTURBS #2732). Blocked: codim-obstacle friction, corpus port.
+
+Prior #2759 = live GPU PSD-backend injection. LIVE GPU PSD-BACKEND INJECTION
 (user chose "full live wiring now" via AskUserQuestion). New core seam (NO CUDA
 dep): `compute/deformable_psd_backend.{hpp,cpp}` -- `projectSymmetricBlocksToPsd`
 dispatches to an injectable backend (default `projectSymmetricBlocksToPsdCpu`,
@@ -321,7 +337,7 @@ friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
 diagnostics) <- #2755 (deformable surface/tetra topology bindings) <- #2756
 (deformable DBC/NBC bindings) <- #2757 (deformable scene-loader + diagnostics
 bindings) <- #2758 (converged-ness step-norm diagnostic) <- #2759 (live GPU
-PSD-backend injection). (PR #2747 is another author's.)
+PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU perf gate + adapter threshold tuning).
 
 ## Immediate Next Step
 
