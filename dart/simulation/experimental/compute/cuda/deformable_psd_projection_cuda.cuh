@@ -93,6 +93,21 @@ void projectSymmetricBlocksToPsdReference(
 void installCudaDeformablePsdBackend();
 
 /// Restore the built-in CPU PSD projection backend installed by default.
+///
+/// Also releases the resident device buffer (see
+/// @ref deformablePsdResidentBufferAllocationCount), so uninstalling the GPU
+/// backend frees its device scratch.
 void restoreDefaultDeformablePsdBackend();
+
+/// Cumulative number of device-buffer allocations the resident PSD scratch has
+/// performed.
+///
+/// The GPU projection reuses one persistent device allocation across calls
+/// instead of allocating and freeing per call; it grows (and bumps this count)
+/// only when a batch needs more storage than the current capacity, and is
+/// freed by @ref restoreDefaultDeformablePsdBackend. This count therefore stays
+/// flat across same-or-smaller batches. Exposed (build-tree only) so tests can
+/// assert the per-call `cudaMalloc`/`cudaFree` round trip was removed.
+[[nodiscard]] std::size_t deformablePsdResidentBufferAllocationCount() noexcept;
 
 } // namespace dart::simulation::experimental::compute::cuda
