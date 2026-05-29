@@ -932,6 +932,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     pattern the upstream ipc-sim/IPC corpus rows require; the full 154-scene port
     additionally needs the upstream scene assets vendored and the
     contact-capable solver (later phases), so the manifest rows stay `planned`.
+  - Exposed the experimental deformable-body API to `dartpy` (PLAN-081 Phase 8):
+    `World.add_deformable_body` / `get_deformable_body` / `has_deformable_body` /
+    `get_deformable_body_count`, and `DeformableBodyOptions`,
+    `DeformableMaterialProperties` (including `friction_coefficient`),
+    `DeformableEdge`, and `DeformableBody` (`node_count`, `edge_count`,
+    `node_position` / `set_node_position`, `node_velocity` / `set_node_velocity`,
+    `is_fixed_node`, `edge`, `material_properties`). Regenerated the type stubs
+    and added a Python regression that builds a spring strand, sets a friction
+    coefficient, steps the world, and reads the resulting state. Surface/tetra
+    topology and boundary-condition bindings remain a later increment.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

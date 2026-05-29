@@ -142,19 +142,23 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-scene-replay-harness` - stacked on
-`feature/ipc-self-contact-friction` (#2748). PLAN-081 Phase 5 validation
-harness: a deterministic multi-frame scene-replay regression
-(ReplaysTutorialSceneDeterministicallyWithSaneTrajectory in
-test_deformable_scene_io.cpp) exercising loader -> solver -> diagnostics on a
-DART-native tutorial scene (DBC-anchored cube stays, free cube falls under -Y
-gravity, mass conserved, reproducible across runs) -- the per-scene invariant
-pattern. NOTE: loader sets gravity to (0,-9.80665,0) i.e. Y-up (IPC convention).
-The full 154-scene upstream corpus port is BLOCKED on (a) assets not vendored
-(manifest is upstream-path-referenced + validator-frozen) and (b) the
-contact-capable solver (loader ignores contact directives). 12 scene-io tests.
+`feature/ipc-deformable-python-facade` - stacked on
+`feature/ipc-scene-replay-harness` (#2749). PLAN-081 Phase 8: exposes the
+deformable-body API to dartpy in python/dartpy/simulation_experimental/module.cpp
+(World.add_deformable_body/get_deformable_body/has_deformable_body/
+get_deformable_body_count + DeformableBodyOptions, DeformableMaterialProperties
+incl friction_coefficient, DeformableEdge, DeformableBody with node_count,
+edge_count, node_position/set_node_position, node_velocity/set_node_velocity,
+is_fixed_node, edge, material_properties). KEY: the experimental dartpy API
+FORBIDS get_*/set_* method names (test_experimental_world.py forbidden list:
+get_position/set_position/get_name/...) -> use properties or node_* indexed
+methods. Stubs regenerated via `pixi run generate-stubs` (rebuilds dartpy +
+writes python/stubs/dartpy/*.pyi; the stub-tracking test enforces it). Python
+regression test_experimental_deformable_body_python_api. 50 python tests pass.
+Surface/tetra + DBC/NBC + scene-loader python bindings deferred.
 
-Prior #2748 = self-contact friction; #2746 = ground friction. NOTE (from the #2745
+Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
+friction. NOTE (from the #2745
 diagnostic): the stiff barrier-contact benchmarks
 (grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
 the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
@@ -167,23 +171,22 @@ until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 (self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
 Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
 reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
-(self-contact friction). (PR #2747 is another author's.)
+(self-contact friction) <- #2749 (scene-replay harness). (PR #2747 is another
+author's.)
 
 ## Immediate Next Step
 
-User directive (2026-05-28): KEEP BUILDING the plan, NEVER STOP while a plan item
-remains, do everything in order (Codex review batched for Saturday). NEXT per the
-order: **Phase 8 Python facade** (expose World.addDeformableBody + DeformableBody
-
-- DeformableBodyOptions incl. frictionCoefficient to dartpy, with pytest), since
-  Phase 5's full corpus port is asset/capability-blocked (harness landed). THEN the
-  remaining items: remaining Phase 4 (edge-edge/self-contact friction Hessian,
-  non-flat normals, friction diagnostics), barrier-stall convergence robustness
-  (the high-residual finding above), live GPU-backend injection (CUDA PSD primitive
-- GPU-vs-CPU gate via optional executor, world_step_stage stays GPU-free),
-  adaptive barrier stiffness, rigid/codim obstacle barrier forces (disturbs #2732),
-  and the upstream corpus port once assets are vendored. Optimize CPU AND GPU
-  throughout.
+User directive (2026-05-28): KEEP BUILDING, NEVER STOP while a plan item remains,
+do everything in order (Codex review batched for Saturday). The three sequenced
+items (self-contact friction, Phase 5 harness, Phase 8 facade) are now done.
+REMAINING plan work, in rough priority: remaining Phase 4 (edge-edge/self-contact
+friction Hessian, non-flat ground normals, friction diagnostics); barrier-stall
+convergence robustness (the high-residual finding above); live GPU-backend
+injection (wire the CUDA PSD primitive + a GPU-vs-CPU gate via an optional
+executor, world_step_stage stays GPU-free); adaptive barrier stiffness;
+rigid/codim obstacle barrier forces (disturbs #2732); remaining Phase 8 bindings
+(surface/tetra + DBC/NBC + scene loader); upstream corpus port once assets are
+vendored. Optimize CPU AND GPU throughout.
 
 ## Context That Would Be Lost
 
