@@ -31,6 +31,7 @@
  */
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/deformable_psd_backend.hpp>
 
 #include <dart/simulation/experimental/compute/cuda/deformable_psd_projection_cuda.cuh>
 #include <gtest/gtest.h>
@@ -187,4 +188,38 @@ TEST(
       }
     }
   }
+}
+
+//==============================================================================
+// The CUDA backend installs into the core PSD-projection seam that the
+// deformable projected-Newton assembly uses. Projecting a large batch through
+// the solver-facing compute::projectSymmetricBlocksToPsd entry point routes to
+// the GPU and matches the CPU reference, and restoring the default returns the
+// seam to the CPU backend (a bit-identical no-op for already-CPU results).
+TEST(CudaDeformablePsdProjection, BackendInjectionRoutesThroughCoreSeam)
+{
+  namespace compute = dart::simulation::experimental::compute;
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  constexpr std::size_t dim = 12;
+  constexpr std::size_t count = 256; // above the GPU batch threshold
+  const auto reference = makeSymmetricBlocks(dim, count);
+
+  std::vector<double> cpu = reference;
+  compute::projectSymmetricBlocksToPsdCpu(cpu.data(), dim, count);
+
+  cuda::installCudaDeformablePsdBackend();
+  std::vector<double> viaSeam = reference;
+  compute::projectSymmetricBlocksToPsd(viaSeam.data(), dim, count);
+  cuda::restoreDefaultDeformablePsdBackend();
+
+  EXPECT_LT(maxAbsDifference(cpu, viaSeam), 1e-9);
+
+  // After restore the seam is back on the CPU backend (identical to a direct
+  // CPU projection).
+  std::vector<double> afterRestore = reference;
+  compute::projectSymmetricBlocksToPsd(afterRestore.data(), dim, count);
+  EXPECT_LT(maxAbsDifference(cpu, afterRestore), 1e-12);
 }

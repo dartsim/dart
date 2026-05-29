@@ -43,6 +43,7 @@
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/compute_executor.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
+#include "dart/simulation/experimental/compute/deformable_psd_backend.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp"
@@ -3117,30 +3118,6 @@ void prepareDeformableBoundaryConditions(
 }
 
 //==============================================================================
-// Project a symmetric matrix onto the nearest positive-semidefinite matrix by
-// clamping negative eigenvalues to zero (per-element PSD projection, as in
-// IPC).
-template <typename Mat>
-Mat projectSymmetricToPsd(const Mat& matrix)
-{
-  const Mat symmetric = 0.5 * (matrix + matrix.transpose());
-  Eigen::SelfAdjointEigenSolver<Mat> solver(symmetric);
-  if (solver.info() != Eigen::Success) {
-    // Eigen-decomposition failed: drop this element's curvature rather than
-    // scatter a possibly-indefinite block. Returning zero is the conservative
-    // IPC choice and keeps the assembled Hessian positive definite (the
-    // inertia diagonal still supplies the free-DOF curvature).
-    return Mat::Zero();
-  }
-  auto eigenvalues = solver.eigenvalues();
-  for (Eigen::Index i = 0; i < eigenvalues.size(); ++i) {
-    eigenvalues[i] = std::max(0.0, eigenvalues[i]);
-  }
-  return solver.eigenvectors() * eigenvalues.asDiagonal()
-         * solver.eigenvectors().transpose();
-}
-
-//==============================================================================
 // Assemble the sparse per-step Hessian (inertia + spring + self-contact barrier
 // + static ground barrier) with per-element PSD projection and solve
 // H d = -gradient for the projected-Newton search direction via a sparse
@@ -3235,8 +3212,18 @@ bool computeProjectedNewtonDirection(
     }
   }
 
-  // Spring stretch Hessian per edge, PSD-projected over its 6x6 block.
+  // Spring stretch Hessian per edge, PSD-projected over its 6x6 block. The
+  // per-element projections are collected into one packed batch and projected
+  // through the pluggable PSD backend (CPU by default, optional GPU offload),
+  // then scattered. Batching is what lets a data-parallel backend amortize the
+  // per-block eigensolves; the CPU backend is bit-identical to the previous
+  // inline per-block projection.
   constexpr double minLength = 1e-12;
+  constexpr std::size_t kEdgeBlockEntries = 36; // 6x6
+  std::vector<double> edgeBlocks;
+  std::vector<std::array<std::size_t, 2>> edgeBlockNodes;
+  edgeBlocks.reserve(kEdgeBlockEntries * model.edges.size());
+  edgeBlockNodes.reserve(model.edges.size());
   for (const auto& edge : model.edges) {
     const Eigen::Vector3d delta = positions[edge.nodeB] - positions[edge.nodeA];
     const double length = delta.norm();
@@ -3249,13 +3236,23 @@ bool computeProjectedNewtonDirection(
     const Eigen::Matrix3d block
         = model.stiffness
           * (projection + scale * (Eigen::Matrix3d::Identity() - projection));
-    Eigen::Matrix<double, 6, 6> edgeHessian;
+    Eigen::Matrix<double, 6, 6, Eigen::RowMajor> edgeHessian;
     edgeHessian.block<3, 3>(0, 0) = block;
     edgeHessian.block<3, 3>(3, 3) = block;
     edgeHessian.block<3, 3>(0, 3) = -block;
     edgeHessian.block<3, 3>(3, 0) = -block;
-    edgeHessian = projectSymmetricToPsd(edgeHessian);
-    const std::array<std::size_t, 2> nodes{edge.nodeA, edge.nodeB};
+    const std::size_t offset = edgeBlocks.size();
+    edgeBlocks.resize(offset + kEdgeBlockEntries);
+    Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
+        edgeBlocks.data() + offset)
+        = edgeHessian;
+    edgeBlockNodes.push_back({edge.nodeA, edge.nodeB});
+  }
+  projectSymmetricBlocksToPsd(edgeBlocks.data(), 6, edgeBlockNodes.size());
+  for (std::size_t b = 0; b < edgeBlockNodes.size(); ++b) {
+    const Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>
+        edgeHessian(edgeBlocks.data() + b * kEdgeBlockEntries);
+    const auto& nodes = edgeBlockNodes[b];
     for (int bi = 0; bi < 2; ++bi) {
       for (int bj = 0; bj < 2; ++bj) {
         addBlock3(
@@ -3265,6 +3262,11 @@ bool computeProjectedNewtonDirection(
   }
 
   // Self-contact barrier Hessian per active contact, PSD-projected over 12x12.
+  // Active point-triangle and edge-edge blocks are collected into one packed
+  // batch, projected through the pluggable PSD backend (CPU by default,
+  // optional GPU offload), then scattered -- the same batching seam the spring
+  // blocks use. The CPU backend is bit-identical to the previous inline
+  // per-block projection.
   if (contactBarrier != nullptr && contactBarrier->candidates != nullptr
       && contactBarrier->triangles != nullptr && contactBarrier->stiffness > 0.0
       && contactBarrier->squaredActivationDistance > 0.0) {
@@ -3272,15 +3274,17 @@ bool computeProjectedNewtonDirection(
     const auto& triangles = *contactBarrier->triangles;
     const double sqAct = contactBarrier->squaredActivationDistance;
     const double kappa = contactBarrier->stiffness;
-    const auto scatter12 = [&](const dc::Matrix12d& blockHessian,
+    constexpr std::size_t kBarrierBlockEntries = 144; // 12x12
+    std::vector<double> barrierBlocks;
+    std::vector<std::array<std::size_t, 4>> barrierBlockNodes;
+    const auto collect12 = [&](const dc::Matrix12d& blockHessian,
                                const std::array<std::size_t, 4>& nodes) {
-      const dc::Matrix12d projected = projectSymmetricToPsd(blockHessian);
-      for (int bi = 0; bi < 4; ++bi) {
-        for (int bj = 0; bj < 4; ++bj) {
-          addBlock3(
-              nodes[bi], nodes[bj], projected.block<3, 3>(3 * bi, 3 * bj));
-        }
-      }
+      const std::size_t offset = barrierBlocks.size();
+      barrierBlocks.resize(offset + kBarrierBlockEntries);
+      Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>(
+          barrierBlocks.data() + offset)
+          = blockHessian;
+      barrierBlockNodes.push_back(nodes);
     };
     for (const auto& candidate : candidates.pointTriangleCandidates) {
       const auto& triangle = triangles[candidate.triangle];
@@ -3294,7 +3298,7 @@ bool computeProjectedNewtonDirection(
       if (!result.active) {
         continue;
       }
-      scatter12(
+      collect12(
           result.hessian,
           {candidate.point, triangle.nodeA, triangle.nodeB, triangle.nodeC});
     }
@@ -3311,8 +3315,21 @@ bool computeProjectedNewtonDirection(
       if (!result.active) {
         continue;
       }
-      scatter12(
+      collect12(
           result.hessian, {edgeA.nodeA, edgeA.nodeB, edgeB.nodeA, edgeB.nodeB});
+    }
+    projectSymmetricBlocksToPsd(
+        barrierBlocks.data(), 12, barrierBlockNodes.size());
+    for (std::size_t b = 0; b < barrierBlockNodes.size(); ++b) {
+      const Eigen::Map<const Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>
+          projected(barrierBlocks.data() + b * kBarrierBlockEntries);
+      const auto& nodes = barrierBlockNodes[b];
+      for (int bi = 0; bi < 4; ++bi) {
+        for (int bj = 0; bj < 4; ++bj) {
+          addBlock3(
+              nodes[bi], nodes[bj], projected.block<3, 3>(3 * bi, 3 * bj));
+        }
+      }
     }
   }
 
