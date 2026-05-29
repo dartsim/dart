@@ -3863,8 +3863,8 @@ void advanceDeformableBody(
     // of that iteration, so the stored residual is the pre-final-step value.
     // Recompute the gradient at the terminal iterate -- rebuilding the
     // self-contact barrier active set and the lagged ground / self-contact
-    // friction inputs there so the residual matches the in-loop objective -- and
-    // use it, so the convergence diagnostic reports the residual at solve
+    // friction inputs there so the residual matches the in-loop objective --
+    // and use it, so the convergence diagnostic reports the residual at solve
     // termination. This also refreshes the lagged friction inputs to the
     // terminal iterate for the dissipation diagnostic below.
     if (!brokeEarly) {
