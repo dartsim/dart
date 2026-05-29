@@ -111,10 +111,13 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Rigid Body",
        "Spawn assorted rigid shapes with a contact-point cloud.",
        &makeRigidShapesScene});
+  // Experimental physics solver (sx::World). Kept in one dedicated category
+  // so users can browse the experimental surface without sifting through the
+  // legacy Rigid Body / Soft Bodies trees.
   scenes.push_back(
       {"experimental_rigid_body",
-       "Experimental Rigid Body",
-       "Rigid Body",
+       "Rigid Body (Experimental)",
+       "Experimental",
        "Falling rigid bodies on the experimental physics solver.",
        &makeExperimentalRigidBodyScene});
 
@@ -235,8 +238,8 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        &makeSoftBodiesScene});
   scenes.push_back(
       {"experimental_deformable",
-       "Experimental Deformable",
-       "Soft Bodies",
+       "Deformable Body (Experimental)",
+       "Experimental",
        "A spring-net deformable body on the experimental physics solver.",
        &makeExperimentalDeformableScene});
 

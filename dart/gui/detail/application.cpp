@@ -239,23 +239,37 @@ dart::gui::Panel makeDemoSidebarPanel(
     }
     builder.separator();
 
+    // Tree-style catalog: each category is a collapsible header, scenes
+    // within are indented list rows (selectable text instead of buttons).
     std::string lastCategory;
     bool categoryOpen = true;
+    bool inCategory = false;
     for (std::size_t i = 0; i < scenes.size(); ++i) {
       const auto& entry = scenes[i];
       if (i == 0 || entry.category != lastCategory) {
+        if (inCategory) {
+          builder.unindent();
+          inCategory = false;
+        }
         lastCategory = entry.category;
         categoryOpen = builder.collapsingHeader(entry.category, true);
+        if (categoryOpen) {
+          builder.indent();
+          inCategory = true;
+        }
       }
       if (!categoryOpen) {
         continue;
       }
       const bool isActive = static_cast<int>(i) == activeIndex;
-      const std::string label
-          = (isActive ? "> " : "  ") + entry.title + "##demo_" + entry.id;
-      if (builder.button(label) && !isActive && context.lifecycle != nullptr) {
+      const std::string label = entry.title + "##demo_" + entry.id;
+      if (builder.selectable(label, isActive) && !isActive
+          && context.lifecycle != nullptr) {
         dart::gui::requestSceneSwitch(*context.lifecycle, entry.id);
       }
+    }
+    if (inCategory) {
+      builder.unindent();
     }
   };
   return panel;

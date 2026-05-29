@@ -53,7 +53,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_CUBES,
         RIGID_SHAPES,
         ADD_DELETE_SKELS,
-        # Rigid Body (Experimental)
+        # Experimental physics solver (sx::World)
         SX_ARTICULATED,
         SX_FLOATING_BASE,
         SX_CONTACT,

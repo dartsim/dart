@@ -53,7 +53,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_articulated",
     title="Articulated Dynamics (sx)",
-    category="Rigid Body (Experimental)",
+    category="Experimental",
     summary="A revolute + universal arm exercising the experimental World.",
     build=build,
 )

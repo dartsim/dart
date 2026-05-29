@@ -68,6 +68,26 @@ public:
 
   virtual bool button(std::string_view label) = 0;
 
+  /// A selectable text row. Renders like a list item (text + hover/active
+  /// highlight) instead of a button. Useful for navigation panels (e.g. the
+  /// built-in demo catalog sidebar).
+  virtual bool selectable(std::string_view label, bool selected = false)
+  {
+    (void)selected;
+    return button(label);
+  }
+
+  /// Push/pop a horizontal indent in points. Lets callers visually nest
+  /// list items under a category heading (tree-style).
+  virtual void indent(double width = 12.0)
+  {
+    (void)width;
+  }
+  virtual void unindent(double width = 12.0)
+  {
+    (void)width;
+  }
+
   virtual bool checkbox(std::string_view label, bool& value) = 0;
 
   virtual bool textInput(std::string_view label, std::string& value)
