@@ -31,6 +31,7 @@
  */
 
 #include <dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp>
 
 #include <Eigen/Core>
 #include <benchmark/benchmark.h>
@@ -352,5 +353,40 @@ static void BM_VbdTinyStrandStep(benchmark::State& state)
   state.counters["springs"] = static_cast<double>(base.springs.size());
 }
 BENCHMARK(BM_VbdTinyStrandStep);
+
+//==============================================================================
+// Thread-scaling of the colored Gauss-Seidel sweep on a large spring grid: one
+// step (20 sweeps) at increasing worker-thread counts. Same-color vertices are
+// independent, so this is VBD's CPU parallelism in action.
+static void BM_VbdParallelGridStep(benchmark::State& state)
+{
+  const int side = 96;
+  const unsigned int threads = static_cast<unsigned int>(state.range(0));
+  const GridScene base = makeGrid(side);
+  vbd::BlockDescentOptions options;
+  options.iterations = 20;
+  for (auto _ : state) {
+    state.PauseTiming();
+    std::vector<Vec3> positions = base.positions;
+    state.ResumeTiming();
+    vbd::BlockDescentStats stats = vbd::parallelBlockDescentMassSpring(
+        positions,
+        base.masses,
+        base.fixed,
+        base.inertialTargets,
+        base.springs,
+        base.stiffness,
+        base.timeStep,
+        base.coloring,
+        base.adjacency,
+        options,
+        threads);
+    benchmark::DoNotOptimize(stats.finalResidualNormSquared);
+    benchmark::DoNotOptimize(positions);
+  }
+  state.counters["threads"] = threads;
+  state.counters["vertices"] = static_cast<double>(side * side);
+}
+BENCHMARK(BM_VbdParallelGridStep)->Arg(1)->Arg(2)->Arg(4)->Arg(8);
 
 BENCHMARK_MAIN();

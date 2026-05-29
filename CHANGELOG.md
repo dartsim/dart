@@ -899,6 +899,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     (about 2.2x faster); DART uses a double LDLT 3x3 block solve while TinyVBD
     uses a float colPivHouseholderQr solve. The Gaia GPU framework and the
     paper's tetrahedral RTX-4090 scene numbers remain future work.
+  - Added a multithreaded VBD block-descent driver
+    (`parallelBlockDescentMassSpring`) that runs the colored Gauss-Seidel sweep
+    on a fixed worker-thread pool with a `std::barrier` between colors. Because
+    same-color vertices are independent, the parallel result is bit-identical to
+    the serial driver (verified). Thread scaling on a 96x96 grid gave roughly
+    1.65x/2.6x/3.5x speedups at 2/4/8 threads.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

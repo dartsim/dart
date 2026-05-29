@@ -85,12 +85,10 @@ matches the default solver. Remaining work, in order:
    wire a vertex-penalty contact block (reuse `deformable_contact` distance/CCD
    kernels) into the per-vertex assembly so VBD handles ground/obstacle/self
    contact, lifting the "contact-free" gate.
-3. Phase 8 (continued): residual early termination already lands and makes
-   single-threaded VBD ~2-4x faster than the in-repo baseline. Next, multithread
-   the color sweeps (Taskflow is available — same-color vertices are
-   independent, so each color is a parallel_for) and add SoA layout, then
-   benchmark vs the external TinyVBD/Gaia CPU numbers (not built in this
-   environment).
+3. Phase 8: residual early termination + multithreaded color sweeps
+   (`parallelBlockDescentMassSpring`, std::barrier, ~3.5x at 8 threads) both
+   land. Next: SoA layout, wire the parallel driver into the World stage, and
+   benchmark vs the external Gaia CPU numbers.
 4. Phase 9 (continued): the CUDA mass-spring kernel lands and is ~9-26x faster
    than single-threaded CPU. Next: a tetrahedral Neo-Hookean GPU kernel,
    CUDA-graph capture of the per-color sweeps, a device-resident multi-step

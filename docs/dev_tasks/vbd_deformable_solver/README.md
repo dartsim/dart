@@ -107,9 +107,16 @@
         baseline solver by ~2-4x on the contact-free mass-spring grid
         benchmark (it converges in fewer per-vertex Newton sweeps and skips the
         baseline's line-search objective re-evaluations).
-  - [ ] Remaining Phase 8 work: SoA layout and multithreaded color sweeps
-        (Taskflow; same-color vertices are independent), then benchmark vs the
-        external TinyVBD/Gaia CPU reference numbers.
+  - [x] Multithreaded color-sweep sub-slice: `parallelBlockDescentMassSpring`
+        (`detail/deformable_vbd/parallel_block_descent.hpp`) runs the colored
+        Gauss-Seidel sweep on a fixed worker-thread pool with a C++20
+        `std::barrier` between colors. Same-color vertices are independent, so
+        the parallel result is bit-identical to the serial driver (verified).
+        Thread scaling on a 96x96 grid (9216 verts, 20 sweeps, wall clock): 1
+        thread 30.2 ms, 2 threads 18.3 ms (1.65x), 4 threads 11.7 ms (2.6x), 8
+        threads 8.66 ms (3.5x).
+  - [ ] Remaining Phase 8 work: SoA layout, wiring the parallel driver into the
+        World stage, and benchmarking against the external Gaia CPU numbers.
 - [ ] Phase 9: GPU (CUDA) VBD backend behind the experimental compute boundary
       with benchmarks targeting the reference/paper GPU numbers.
   - [x] CUDA mass-spring kernel sub-slice: `compute/cuda/vbd_block_descent_cuda`
@@ -327,6 +334,16 @@ spring grid through the real World pipeline.
 
 This beats the in-repo gradient-descent reference solver on contact-free
 mass-spring scenes on a single CPU thread.
+
+For the multithreaded color-sweep sub-slice, keep the verification language
+precise: it covers `parallelBlockDescentMassSpring`, which distributes each
+color's vertices across a fixed worker-thread pool with a `std::barrier` between
+colors. `test_vbd_parallel_block_descent` confirms the parallel result is
+identical to the serial driver for 2/4/8 threads, the single-thread path falls
+back to the serial driver, and it converges to a low residual. The scaling
+benchmark (`BM_VbdParallelGridStep`, 96x96 grid) gave 1.65x/2.6x/3.5x speedups
+at 2/4/8 threads. It does not yet wire the parallel driver into the World stage
+or add a SoA layout.
 
 Local gate (external TinyVBD reference comparison, on 2026-05-28, single CPU
 thread, compute-only, treat as smoke): the upstream `AnkaChan/TinyVBD` reference

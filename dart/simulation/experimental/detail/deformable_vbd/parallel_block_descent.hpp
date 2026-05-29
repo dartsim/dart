@@ -1,0 +1,159 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#pragma once
+
+#include <dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp>
+
+#include <Eigen/Core>
+
+#include <algorithm>
+#include <barrier>
+#include <thread>
+#include <vector>
+
+#include <cstddef>
+#include <cstdint>
+
+namespace dart::simulation::experimental::detail::deformable_vbd {
+
+//==============================================================================
+/// Multithreaded graph-colored Gauss-Seidel mass-spring block descent.
+///
+/// This is the CPU realization of VBD's parallelism: within a color, vertices
+/// share no spring, so a fixed pool of worker threads each updates a disjoint
+/// contiguous slice of that color's vertices with no data races (each writes
+/// only its own vertices and reads only other-colored neighbors). A
+/// `std::barrier` synchronizes the threads between colors so the Gauss-Seidel
+/// color order is preserved. The result is therefore identical to the serial
+/// `blockDescentMassSpring` for the same iteration count.
+///
+/// `threadCount <= 1` falls back to the serial driver. Early termination is not
+/// applied here (it would need a cross-thread reduction), so the full
+/// `options.iterations` budget runs.
+inline BlockDescentStats parallelBlockDescentMassSpring(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    double timeStep,
+    const VertexColoring& coloring,
+    const SpringAdjacency& adjacency,
+    const BlockDescentOptions& options,
+    unsigned int threadCount)
+{
+  if (threadCount <= 1) {
+    BlockDescentOptions serialOptions = options;
+    serialOptions.convergenceDisplacement = 0.0;
+    return blockDescentMassSpring(
+        positions,
+        masses,
+        fixed,
+        inertialTargets,
+        springs,
+        springStiffness,
+        timeStep,
+        coloring,
+        adjacency,
+        serialOptions);
+  }
+
+  const std::size_t vertexCount = positions.size();
+  std::barrier sync(static_cast<std::ptrdiff_t>(threadCount));
+
+  const auto worker = [&](unsigned int threadId) {
+    for (std::size_t iteration = 0; iteration < options.iterations;
+         ++iteration) {
+      for (const auto& group : coloring.groups) {
+        const std::size_t groupSize = group.size();
+        const std::size_t chunk = (groupSize + threadCount - 1) / threadCount;
+        const std::size_t begin = std::min(groupSize, threadId * chunk);
+        const std::size_t end = std::min(groupSize, begin + chunk);
+        for (std::size_t k = begin; k < end; ++k) {
+          const std::uint32_t vertex = group[k];
+          if (vertex >= vertexCount || fixed[vertex] != 0u) {
+            continue;
+          }
+          const VertexBlock block = detail::assembleVertexBlock(
+              vertex,
+              positions,
+              masses,
+              inertialTargets,
+              springs,
+              adjacency,
+              springStiffness,
+              timeStep,
+              options.clampSpringHessian);
+          positions[vertex] += solveVertexBlock(block, options.regularization);
+        }
+        sync.arrive_and_wait();
+      }
+    }
+  };
+
+  std::vector<std::thread> threads;
+  threads.reserve(threadCount);
+  for (unsigned int t = 0; t < threadCount; ++t) {
+    threads.emplace_back(worker, t);
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  BlockDescentStats stats;
+  stats.iterations = options.iterations;
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    ++stats.vertexUpdates;
+    const VertexBlock block = detail::assembleVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        springs,
+        adjacency,
+        springStiffness,
+        timeStep,
+        options.clampSpringHessian);
+    residualNormSquared += block.force.squaredNorm();
+  }
+  stats.vertexUpdates *= options.iterations;
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
+} // namespace dart::simulation::experimental::detail::deformable_vbd
