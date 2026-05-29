@@ -142,34 +142,34 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-sparse-newton-solve` - stacked on `feature/ipc-projected-newton`
-(#2740). Replaces the dense projected-Newton solve with SPARSE triplet assembly
+`feature/ipc-deformable-drape-demo` - stacked on `feature/ipc-sparse-newton-solve`
+(#2741). Adds a `drape` showcase scene to `experimental_deformable_gui`
+(`--deformable-scene-kind drape`): a 572-node mat drapes over a raised
+ground-barrier step onto the ground, exercising the landed contact pipeline
+(self-contact + ground barrier + sparse projected Newton) past the old 256-node
+cap. DART-native showcase, NOT a faithful paper-figure reproduction (mass-spring,
+no codimensional/FEM elasticity or friction). Adds a library-level drape
+regression (`SparseProjectedNewtonDrapesMatOverStepBarrier`, started near the
+draped equilibrium for speed) and `BM_DeformableDrapeStage`.
 
-- sparse Cholesky (`SimplicialLDLT`, positive-diagonal guard), lifting the
-  256-node dense cap to thousands of nodes so paper-scale meshes stay on the
-  Newton path. Fixed DOFs are pinned at assembly time (unit diagonal, free-free
-  element blocks only), preserving exact dense parity; the steepest-descent
-  fallback and PD guard are unchanged. 300-node-chain regression + sparse-Newton
-  step/fallback counters on the grid scaling benchmark (512/1152-node grids).
-
-The prior branch `feature/ipc-projected-newton` (#2740) introduced the
-projected-Newton direction itself (dense LDLT). #2738/#2739/#2740 are open,
-stacked, and awaiting Codex review.
+Prior stacked branches, all open + awaiting Codex review: #2738 (moving rigid
+CCD) <- #2739 (self-contact barrier) <- #2740 (projected Newton, dense LDLT) <-
+#2741 (sparse Cholesky solve, 256->20000 cap).
 
 ## Immediate Next Step
 
-Per the user-directed sequence (2026-05-28): next is a **visible IPC demo**
-(GUI/headless + benchmark advancing the paper-figure showcase), then let the
-review stack (#2738->#2740 + this sparse PR) land, then the **GPU optimization
-pass** (per-element PSD projection + Hessian assembly onto the CUDA backend).
-Sparse-solve perf follow-ups: symbolic-factorization reuse / matrix-free CG (the
-solve currently refactorizes from scratch each iteration), then adaptive barrier
-stiffness and barrier forces for rigid/codimensional obstacles. After that:
-friction (Slice 6, the stick-slip / card-house / arch / roller figures), the
-scene corpus port (Slice 7), and the Python facade (Slice 8). Per the standing
-directive, optimize CPU AND GPU throughout: the per-element eigen-decomposition,
-Hessian assembly, candidate assembly, and linear solve are all data-parallel GPU
-candidates, and the experimental module already has CUDA backends to build on.
+Per the user-directed sequence (2026-05-28): the visible demo (this branch) is
+done; NEXT is **let the review stack land** (merge #2738 -> ... -> this demo PR
+bottom-up as Codex approves), then the **GPU optimization pass** (per-element PSD
+projection + Hessian assembly onto the CUDA backend). Sparse-solve perf
+follow-ups: symbolic-factorization reuse / matrix-free CG (the solve currently
+refactorizes from scratch each iteration), then adaptive barrier stiffness and
+barrier forces for rigid/codimensional obstacles. After that: friction (Slice 6,
+the stick-slip / card-house / arch / roller figures), the scene corpus port
+(Slice 7), and the Python facade (Slice 8). Per the standing directive, optimize
+CPU AND GPU throughout: the per-element eigen-decomposition, Hessian assembly,
+candidate assembly, and linear solve are all data-parallel GPU candidates, and
+the experimental module already has CUDA backends to build on.
 
 ## Context That Would Be Lost
 

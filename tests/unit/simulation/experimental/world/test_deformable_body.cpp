@@ -2465,3 +2465,118 @@ TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
     EXPECT_GE(body.getPosition(i).z(), -1e-3);
   }
 }
+
+//==============================================================================
+// Library-level reproduction of the experimental_deformable_gui "drape" demo:
+// a >256-node mat drapes over a raised box ground barrier (a finite-footprint
+// step in the support height field) onto the surrounding flat ground. The mat
+// is solved on the sparse Newton path and conforms to the step -- center nodes
+// held at the box top, overhang nodes draped toward the ground -- so the node
+// heights span a clear range without penetrating either surface.
+TEST(DeformableBody, SparseProjectedNewtonDrapesMatOverStepBarrier)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  // Flat ground barrier (top surface at z = 0).
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  // Raised central box barrier: a finite-footprint step with top at z = 0.24.
+  constexpr double boxHalf = 0.30;
+  constexpr double boxTop = 0.24;
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5 * boxTop);
+  auto box = world.addRigidBody("step", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(boxHalf, boxHalf, 0.5 * boxTop)));
+  box.setDeformableGroundBarrier(true);
+
+  // 18x16 = 288-node mat (> 256) overhanging the box footprint. It is started
+  // near its draped equilibrium -- step-shaped, just above the box top over the
+  // footprint and just above the ground beyond it -- so the solve settles in a
+  // few iterations (the experimental_deformable_gui "drape" demo runs the full
+  // dynamic fall; here we only need to validate the conforming equilibrium).
+  constexpr std::size_t kColumns = 18;
+  constexpr std::size_t kRows = 16;
+  constexpr std::size_t kNodeCount = kColumns * kRows;
+  constexpr double spacing = 0.05;
+  const double halfWidth = 0.5 * spacing * static_cast<double>(kColumns - 1);
+  const double halfDepth = 0.5 * spacing * static_cast<double>(kRows - 1);
+
+  const auto index = [&](std::size_t c, std::size_t r) {
+    return r * kColumns + c;
+  };
+
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 25.0;
+  options.damping = 1.5;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      const double x = static_cast<double>(c) * spacing - halfWidth;
+      const double y = static_cast<double>(r) * spacing - halfDepth;
+      const bool overBox = std::abs(x) <= boxHalf && std::abs(y) <= boxHalf;
+      options.positions.emplace_back(x, y, overBox ? boxTop + 0.005 : 0.005);
+    }
+  }
+  options.masses.assign(kNodeCount, 0.05);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      if (c + 1 < kColumns) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r), -1.0});
+      }
+      if (r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c, r + 1), -1.0});
+      }
+      if (c + 1 < kColumns && r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r + 1), -1.0});
+        options.edges.push_back(
+            sx::DeformableEdge{index(c + 1, r), index(c, r + 1), -1.0});
+      }
+    }
+  }
+
+  auto body = world.addDeformableBody("drape_mat", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int step = 0; step < 20; ++step) {
+    world.step(executor, pipeline);
+  }
+
+  const auto& stats = stage.getLastStats();
+  // Two ground barriers (flat ground + raised step), solved on the sparse
+  // Newton path above the former dense cap.
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 2u);
+
+  double minZ = std::numeric_limits<double>::infinity();
+  double maxZ = -std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    const auto position = body.getPosition(i);
+    ASSERT_TRUE(position.allFinite());
+    EXPECT_GE(position.z(), -1e-3); // no penetration of either surface
+    minZ = std::min(minZ, position.z());
+    maxZ = std::max(maxZ, position.z());
+  }
+
+  // The mat conforms to the step: some nodes ride the box top while overhang
+  // nodes drape toward the ground, so the height range spans a good fraction of
+  // the step height (a flat sheet would collapse this range to ~0).
+  EXPECT_LT(minZ, 0.1 * boxTop); // overhang nodes reached near the ground
+  EXPECT_GT(maxZ, 0.5 * boxTop); // supported nodes remain near the box top
+}
