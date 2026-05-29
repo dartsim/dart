@@ -207,8 +207,18 @@ its own line so status updates remain git-history friendly.
 - Dimension: Scalable compute
 - Next step: Live at `dartsim.github.io/dart/performance/` via
   `benchmark-action/github-action-benchmark` and embedded in the Read the Docs
-  page. Optional future work: per-PR regression comments and a secondary backend
-  (Bencher/CodSpeed).
+  page. Per-PR regression comments are now implemented as an opt-in extension:
+  `.github/workflows/benchmark_pr_comparison.yml` reuses the dashboard's
+  benchmark slice and gh-pages baseline (no second pipeline — it never writes to
+  gh-pages) to post a "moved by N%" comparison, gated to same-repo PRs carrying
+  the `benchmark` label so ordinary PRs pay no benchmark cost. This is the
+  reconciliation decision from the retired `benchmark_pr_comparison` dev task:
+  extend the existing dashboard infra (chosen) rather than stand up the
+  prototype's parallel committed-JSON pipeline. Gradual rollout: validate the
+  comment placement and tune `alert-threshold` on a real labeled PR, then
+  consider widening the trigger (path-filtered auto-run) and the benchmark slice
+  once review-noise tradeoffs are visible. A secondary backend (Bencher/CodSpeed)
+  remains optional future work.
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
   Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
   history.
