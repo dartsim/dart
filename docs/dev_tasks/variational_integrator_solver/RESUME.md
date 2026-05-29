@@ -21,7 +21,10 @@ integrator + 3 test suites) plus the PLAN-082 docs.
   (kernels == `dart::math::lie_group`; `dexp⁻¹ ≡ SE3::LeftJacobianInverse`),
   `test_variational_integration` (prismatic free-fall accel = −9.81 to 1e-9;
   pendulum first-step accel matches Newtonian; RIQN converges; **energy
-  conserved over 1e5 steps**). Full experimental suite 24/24.
+  conserved over 1e5 steps**; ABI inverse-mass == dense `M⁻¹` to 1e-9; floating
+  free-fall + tumbling energy conservation; **`MaintainsDistanceLoopClosure`** —
+  a Distance loop closure holds to 1e-6 while the 1-DOF arm swings). Full
+  experimental suite green.
 
 ## Immediate Next Step
 
@@ -47,10 +50,18 @@ Remaining, in priority order:
 3. **Phase B1**: floating base — DONE. Floating + Spherical joints with
    manifold-correct SE(3)/SO(3) RIQN retraction (`jointRetract`/
    `jointLogDifference`), verified by free-fall + tumbling energy conservation.
-4. **Phase B2**: holonomic constraints (loop closures) — a constraint Jacobian
-   `∂g/∂q` + impulse-based constraint solve folded into RIQN; flip the
-   loop-closure `Solve` validation. (`johnson-murphey-2009`/`leyendecker-2008`.)
-5. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
+4. **Phase B2**: holonomic constraints (loop closures) — algorithm DONE. The
+   constraint Jacobian `∂g/∂q` (`worldPointJacobian` /
+   `constraintResidualAndJacobian`) and the impulse-based projection onto
+   `g(q)=0` reusing the O(n) ABI (`λ=(JM⁻¹Jᵀ)⁻¹(−g)`, `Δq=M⁻¹Jᵀλ`) ship via the
+   `constraints` parameter of `integrateMultibodyVariational`, verified by
+   `MaintainsDistanceLoopClosure`. **Remaining integration**: translate the
+   World's `LoopClosure` components → `VariationalLoopConstraint`s inside
+   `MultibodyVariationalIntegrationStage`, and flip the loop-closure `Solve`
+   validation so closures run through `world.step()`
+   (`johnson-murphey-2009` / `leyendecker-2008`).
+5. **Phase C**: contact/friction — recorded **NO-GO** (deferred, go/no-go; see
+   the plan sidecar).
 
 ## Context That Would Be Lost
 

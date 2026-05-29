@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace dart::simulation::experimental::compute {
@@ -511,6 +512,108 @@ Eigen::VectorXd applyArticulatedInverseMass(
   return qddot;
 }
 
+// Body-frame spatial Jacobian of every link (6 x dofCount, [angular; linear] in
+// the link frame): J_i = Ad(T_i^{-1}) J_parent with the link's own joint
+// columns set to its motion subspace.
+std::vector<Eigen::MatrixXd> bodyJacobians(const VarTree& tree)
+{
+  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+  std::vector<Eigen::MatrixXd> jacobian(
+      tree.links.size(), Eigen::MatrixXd::Zero(6, dof));
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const VarLink& link = tree.links[i];
+    if (link.parent >= 0) {
+      jacobian[i] = adjoint(link.currentRelative.inverse())
+                    * jacobian[static_cast<std::size_t>(link.parent)];
+    }
+    if (link.dof > 0) {
+      jacobian[i].middleCols(
+          static_cast<Eigen::Index>(link.dofOffset),
+          static_cast<Eigen::Index>(link.dof))
+          = link.subspace;
+    }
+  }
+  return jacobian;
+}
+
+// World-frame translational Jacobian (3 x dofCount) of a body-fixed point at
+// local offset `point` on link `i`: J_world = R_i (J_linear - [point]
+// J_angular).
+Eigen::MatrixXd worldPointJacobian(
+    const VarTree& tree,
+    const std::vector<Eigen::MatrixXd>& jacobians,
+    std::size_t i,
+    const Eigen::Vector3d& point)
+{
+  const Eigen::Matrix3d rotation = tree.links[i].worldTransform.linear();
+  const Eigen::MatrixXd angular = jacobians[i].topRows<3>();
+  const Eigen::MatrixXd linear = jacobians[i].bottomRows<3>();
+  return rotation * (linear - skew(point) * angular);
+}
+
+// Stack the holonomic residual g(q) and Jacobian J = dg/dq for the loop
+// closures on a tree built at the current configuration.
+std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
+    const comps::MultibodyStructure& structure,
+    const VarTree& tree,
+    const std::vector<Eigen::MatrixXd>& jacobians,
+    const std::vector<VariationalLoopConstraint>& constraints)
+{
+  const auto& links = structure.links;
+  const auto indexOf = [&](entt::entity e) -> int {
+    const auto it = std::find(links.begin(), links.end(), e);
+    return it == links.end() ? -1 : static_cast<int>(it - links.begin());
+  };
+  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+
+  Eigen::Index rows = 0;
+  for (const auto& c : constraints) {
+    rows += c.distance ? 1 : 3;
+  }
+  Eigen::VectorXd g(rows);
+  Eigen::MatrixXd jac = Eigen::MatrixXd::Zero(rows, dof);
+
+  Eigen::Index row = 0;
+  for (const auto& c : constraints) {
+    Eigen::Vector3d pointA = c.pointA;
+    Eigen::MatrixXd jacA = Eigen::MatrixXd::Zero(3, dof);
+    if (c.linkA != entt::null) {
+      const int ia = indexOf(c.linkA);
+      if (ia >= 0) {
+        pointA = tree.links[static_cast<std::size_t>(ia)].worldTransform
+                 * c.pointA;
+        jacA = worldPointJacobian(
+            tree, jacobians, static_cast<std::size_t>(ia), c.pointA);
+      }
+    }
+    Eigen::Vector3d pointB = c.pointB;
+    Eigen::MatrixXd jacB = Eigen::MatrixXd::Zero(3, dof);
+    if (c.linkB != entt::null) {
+      const int ib = indexOf(c.linkB);
+      if (ib >= 0) {
+        pointB = tree.links[static_cast<std::size_t>(ib)].worldTransform
+                 * c.pointB;
+        jacB = worldPointJacobian(
+            tree, jacobians, static_cast<std::size_t>(ib), c.pointB);
+      }
+    }
+    if (c.distance) {
+      const Eigen::Vector3d offset = pointA - pointB;
+      const double dist = offset.norm();
+      const Eigen::Vector3d dir = dist > 1e-12 ? Eigen::Vector3d(offset / dist)
+                                               : Eigen::Vector3d::UnitX();
+      g[row] = dist - c.length;
+      jac.row(row) = dir.transpose() * (jacA - jacB);
+      row += 1;
+    } else {
+      g.segment<3>(row) = pointA - pointB;
+      jac.middleRows<3>(row) = jacA - jacB;
+      row += 3;
+    }
+  }
+  return {g, jac};
+}
+
 } // namespace
 
 //==============================================================================
@@ -521,7 +624,8 @@ VariationalSolveReport integrateMultibodyVariational(
     double timeStep,
     MultibodyVariationalState& state,
     int maxIterations,
-    double tolerance)
+    double tolerance,
+    const std::vector<VariationalLoopConstraint>& constraints)
 {
   VariationalSolveReport report;
   if (structure.links.empty()) {
@@ -611,6 +715,54 @@ VariationalSolveReport integrateMultibodyVariational(
     }
   }
 
+  // Enforce holonomic loop closures: Newton-project the next configuration onto
+  // the constraint manifold g(q) = 0 (the paper's Sec. 5 extension),
+  // impulse-based and reusing the O(n) inverse-mass apply.
+  if (!constraints.empty()) {
+    constexpr double constraintTolerance = 1e-10;
+    constexpr int maxProjectionIterations = 32;
+    for (int projection = 0; projection < maxProjectionIterations;
+         ++projection) {
+      // Reflect the candidate configuration in the joints so a freshly built
+      // tree carries the world transforms and Jacobians at nextPosition.
+      for (const VarLink& link : tree.links) {
+        if (link.dof == 0) {
+          continue;
+        }
+        registry.get<comps::Joint>(link.joint).position = nextPosition.segment(
+            static_cast<Eigen::Index>(link.dofOffset),
+            static_cast<Eigen::Index>(link.dof));
+      }
+      const VarTree nextTree = buildVarTree(registry, structure);
+      const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(nextTree);
+      const auto [g, jacobian] = constraintResidualAndJacobian(
+          structure, nextTree, jacobians, constraints);
+      if (g.norm() <= constraintTolerance) {
+        break;
+      }
+      const Eigen::Index rows = g.size();
+      Eigen::MatrixXd inverseMassJt(
+          static_cast<Eigen::Index>(nextTree.dofCount), rows);
+      for (Eigen::Index r = 0; r < rows; ++r) {
+        inverseMassJt.col(r) = applyArticulatedInverseMass(
+            nextTree, jacobian.row(r).transpose());
+      }
+      const Eigen::MatrixXd constraintMass = jacobian * inverseMassJt;
+      const Eigen::VectorXd lambda = constraintMass.ldlt().solve(-g);
+      const Eigen::VectorXd correction = inverseMassJt * lambda;
+      for (const VarLink& link : tree.links) {
+        if (link.dof == 0) {
+          continue;
+        }
+        const auto& joint = registry.get<comps::Joint>(link.joint);
+        const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+        const auto n = static_cast<Eigen::Index>(link.dof);
+        nextPosition.segment(seg, n) = jointRetract(
+            joint, nextPosition.segment(seg, n), correction.segment(seg, n));
+      }
+    }
+  }
+
   // Refresh the per-link scratch at the accepted configuration so the history
   // shift uses dT and momentum consistent with nextPosition.
   const Eigen::VectorXd finalResidual = computeResidual(
@@ -627,8 +779,11 @@ VariationalSolveReport integrateMultibodyVariational(
     const auto n = static_cast<Eigen::Index>(link.dof);
     const Eigen::VectorXd previousVelocity = joint.velocity;
     const Eigen::VectorXd newPosition = nextPosition.segment(seg, n);
+    // q^k is the captured `position` (the loop-closure projection may have
+    // already mutated `joint.position` to the candidate qNext).
     joint.velocity
-        = jointLogDifference(joint, newPosition, joint.position) / timeStep;
+        = jointLogDifference(joint, newPosition, position.segment(seg, n))
+          / timeStep;
     joint.position = newPosition;
     if (previousVelocity.size() == n) {
       joint.acceleration = (joint.velocity - previousVelocity) / timeStep;

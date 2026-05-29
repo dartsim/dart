@@ -51,8 +51,18 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
       `FloatingBaseTorqueFreeConservesEnergy` (tumbling asymmetric-inertia body
       conserves energy over 2e4 steps). Resolves the manifold-retraction gap the
       reference impl left as open TODOs.
-- [ ] Phase B2 — Holonomic constraints (loop closures)
-- [ ] Phase C — Contact & friction (DEFERRED, separate go/no-go; see plan sidecar)
+- [~] **Phase B2 — Holonomic constraints** — the constrained-VI _algorithm_ is
+  done + verified: holonomic loop closures (Point and Distance) enforced by an
+  impulse-based Newton projection onto `g(q)=0` reusing the O(n) ABI
+  (`λ = (J M⁻¹ Jᵀ)⁻¹(−g)`, `Δq = M⁻¹ Jᵀ λ`, via `VariationalLoopConstraint` on
+  `integrateMultibodyVariational`). `MaintainsDistanceLoopClosure` confirms a
+  Distance closure holds to 1e-6 while the 1-DOF arm swings under gravity.
+  Remaining integration: translate the World's `LoopClosure` components →
+  constraints in the stage and flip the loop-closure `Solve` validation so it
+  runs through `world.step()`.
+- [x] **Phase C — Contact & friction: go/no-go = NO-GO** (deferred). Recorded in
+      the plan sidecar; neither entry gate met (no contact-query-at-trial-config
+      redesign; no C2 spike).
 
 ## Goal
 
@@ -85,12 +95,15 @@ energy behavior on a passive chain before optimizing to O(n).
 
 ## Immediate Next Steps
 
-Phases A1, A2, and B1 are complete and verified. Remaining, in priority order
-(see `RESUME.md` for the full handoff):
+Phases A1, A2, B1, and the B2 constrained-VI algorithm are complete and
+verified; Phase C is a recorded NO-GO. Remaining, in priority order (see
+`RESUME.md` for the full handoff):
 
-1. **Phase B2**: holonomic constraints (loop closures) — a constraint Jacobian
-   `∂g/∂q` + an impulse-based constraint solve folded into RIQN; flip the
-   loop-closure `Solve` validation.
+1. **Phase B2 integration**: the constraint algorithm (Jacobian `∂g/∂q` +
+   impulse-based projection onto `g(q)=0`) is done + verified; what remains is
+   wiring the World's `LoopClosure` components → `VariationalLoopConstraint`s in
+   the stage and flipping the loop-closure `Solve` validation so closures run
+   through `world.step()`.
 2. A1 finish: serialize `MultibodyVariationalState` (binary-format version bump +
    bootstrap-done flag) + a save/load determinism round-trip test; optionally a
    documented non-convergence error.

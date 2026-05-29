@@ -406,3 +406,74 @@ TEST(VariationalIntegration, FloatingBaseTorqueFreeConservesEnergy)
   }
   EXPECT_LT(maxRelativeDrift, 1e-2);
 }
+
+// Phase B2: a holonomic loop closure (the tip of a 2-link arm held at a fixed
+// distance from a world anchor) is maintained by the impulse-based projection
+// while the 1-DOF system still swings under gravity.
+TEST(VariationalIntegration, MaintainsDistanceLoopClosure)
+{
+  sx::World world; // gravity (0, 0, -9.81)
+  auto robot = world.addMultibody("loop");
+  auto base = robot.addLink("base");
+  const auto offset = [](double x) {
+    Eigen::Isometry3d t = Eigen::Isometry3d::Identity();
+    t.translation() = Eigen::Vector3d(x, 0.0, 0.0);
+    return t;
+  };
+  sx::JointSpec s1;
+  s1.name = "j1";
+  s1.type = sx::JointType::Revolute;
+  s1.axis = Eigen::Vector3d::UnitY();
+  s1.transformFromParent = offset(0.5);
+  auto link1 = robot.addLink("link1", base, s1);
+  link1.setMass(1.0);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  sx::JointSpec s2;
+  s2.name = "j2";
+  s2.type = sx::JointType::Revolute;
+  s2.axis = Eigen::Vector3d::UnitY();
+  s2.transformFromParent = offset(0.5);
+  auto link2 = robot.addLink("link2", link1, s2);
+  link2.setMass(1.0);
+  link2.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  const double dt = 1e-3;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  link1.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.5));
+  link2.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.4));
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::Vector3d gravity = world.getGravity();
+
+  // Anchor the link2 origin at its initial distance from a fixed world point.
+  const Eigen::Vector3d anchor(0.3, 0.0, 0.2);
+  const double length = (link2.getTransform().translation() - anchor).norm();
+  ASSERT_GT(length, 1e-3);
+
+  sxc::VariationalLoopConstraint constraint;
+  constraint.linkA = structure.links[2]; // link2
+  constraint.pointA = Eigen::Vector3d::Zero();
+  constraint.linkB = entt::null; // fixed world anchor
+  constraint.pointB = anchor;
+  constraint.distance = true;
+  constraint.length = length;
+  const std::vector<sxc::VariationalLoopConstraint> constraints{constraint};
+
+  sxc::MultibodyVariationalState state;
+  double maxViolation = 0.0;
+  double motion = 0.0;
+  for (int k = 0; k < 5000; ++k) {
+    sxc::integrateMultibodyVariational(
+        registry, structure, gravity, dt, state, 50, 1e-10, constraints);
+    world.updateKinematics();
+    const double dist = (link2.getTransform().translation() - anchor).norm();
+    maxViolation = std::max(maxViolation, std::abs(dist - length));
+    motion = std::max(
+        motion, std::abs(link1.getParentJoint().getPosition()[0] - 0.5));
+  }
+  EXPECT_LT(maxViolation, 1e-6); // closure maintained
+  EXPECT_GT(motion, 1e-3);       // the constrained system actually moved
+}

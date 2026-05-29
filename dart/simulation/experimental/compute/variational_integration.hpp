@@ -18,7 +18,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <entt/fwd.hpp>
+#include <entt/entt.hpp>
 
 #include <string_view>
 #include <vector>
@@ -66,6 +66,24 @@ struct VariationalSolveReport
   bool converged = false;     ///< Whether the residual fell below tolerance.
 };
 
+/// A holonomic loop-closure constraint between two points fixed on two links of
+/// the same multibody (or a point on a link and a fixed world anchor when
+/// `linkB`/`linkA` is null). Point closures constrain the 3D offset to zero;
+/// distance closures constrain the separation to `length`.
+///
+/// **Internal Implementation Detail** - Not exposed in public API.
+struct VariationalLoopConstraint
+{
+  entt::entity linkA = entt::null; ///< null => `pointA` is a world anchor.
+  Eigen::Vector3d pointA
+      = Eigen::Vector3d::Zero();   ///< local on linkA (or world).
+  entt::entity linkB = entt::null; ///< null => `pointB` is a world anchor.
+  Eigen::Vector3d pointB
+      = Eigen::Vector3d::Zero(); ///< local on linkB (or world).
+  bool distance = false;         ///< false: point (3 rows); true: distance (1).
+  double length = 0.0;           ///< target separation when `distance`.
+};
+
 /// Advance one multibody by one step with the linear-time variational
 /// integrator (Lee, Liu, Park, Srinivasa, WAFR 2016 / arXiv:1609.02898).
 ///
@@ -83,6 +101,12 @@ struct VariationalSolveReport
 ///
 /// Updates the multibody's joint positions, velocities, and accelerations in
 /// the registry, and advances `state`. Returns solve diagnostics.
+///
+/// When `constraints` is non-empty, holonomic loop closures are enforced after
+/// the unconstrained step by an impulse-based position projection onto the
+/// constraint manifold `g(q) = 0` (the paper's Sec. 5 extension), reusing the
+/// O(n) inverse-mass apply: `lambda = (J M^{-1} J^T)^{-1} (-g)`,
+/// `dq = M^{-1} J^T lambda`. This keeps closed loops satisfied each step.
 DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
@@ -90,7 +114,8 @@ DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     double timeStep,
     MultibodyVariationalState& state,
     int maxIterations = 50,
-    double tolerance = 1e-10);
+    double tolerance = 1e-10,
+    const std::vector<VariationalLoopConstraint>& constraints = {});
 
 /// Total mechanical energy (kinetic + gravitational potential) of one multibody
 /// at its current configuration and velocity.
