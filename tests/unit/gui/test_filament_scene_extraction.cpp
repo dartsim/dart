@@ -34,7 +34,9 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
+#include <dart/gui/detail/frame_viewport.hpp>
 #include <dart/gui/detail/gui_scale.hpp>
+#include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/detail/simulation_stepper.hpp>
 #include <dart/gui/geometry.hpp>
@@ -666,7 +668,25 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       frameViewportSource.find(
           "isSceneMouseInputCapturedByUi(showUi, imguiIo)"),
       std::string::npos);
+  EXPECT_NE(
+      inputSource.find("controls.mouseMode == OrbitCameraMouseMode::Orbit"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("controls.mouseMode == OrbitCameraMouseMode::Pan"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("controls.mouseMode == OrbitCameraMouseMode::Zoom"),
+      std::string::npos);
   EXPECT_NE(sceneFrameSource.find("uiCapturesMouse"), std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find("const bool mouseSelectionCommitted"),
+      std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find("= mSelectionController.updateMouseSelection"),
+      std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find("mouseSelectionCommitted && after == 0"),
+      std::string::npos);
   EXPECT_NE(
       sceneFixturesSource.find("makeAtlasMeshVisualsReadable(atlas)"),
       std::string::npos);
@@ -714,6 +734,13 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       std::string::npos);
   EXPECT_NE(
       applicationSource.find("appOptions.debugLabels"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(
+          "appOptions.cameraUpdater(cameraController.camera)"),
+      std::string::npos);
+  EXPECT_EQ(
+      applicationSource.find("resetOrbitCameraTracking(cameraController)"),
+      std::string::npos);
   EXPECT_NE(
       selectionSource.find("mSelectionBoundsVisible = false"),
       std::string::npos);
@@ -1956,93 +1983,419 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
   EXPECT_TRUE(cameraReset);
 }
 
-TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresCameraControls)
 {
-  struct ExampleExpectation
-  {
-    std::filesystem::path directory;
-    bool usesPanel = false;
-    bool ownsWorld = true;
+  dart::gui::ApplicationOptions options;
+  options.cameraControlsProvider = [] {
+    dart::gui::OrbitCameraControlOptions controls;
+    controls.mouseMode = dart::gui::OrbitCameraMouseMode::Pan;
+    controls.locked = true;
+    return controls;
+  };
+  options.cameraUpdater = [](dart::gui::OrbitCamera& camera) {
+    camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+    return true;
   };
 
-  const std::vector<ExampleExpectation> examples = {
-      {std::filesystem::path("examples") / "hello_world", true},
-      {std::filesystem::path("examples") / "boxes", false},
-      {std::filesystem::path("examples") / "rigid_cubes", true},
-      {std::filesystem::path("examples") / "box_stacking", true},
-      {std::filesystem::path("examples") / "simple_frames", false},
-      {std::filesystem::path("examples") / "capsule_ground_contact", true},
-      {std::filesystem::path("examples") / "fetch", true},
-      {std::filesystem::path("examples") / "rigid_chain", true},
-      {std::filesystem::path("examples") / "rigid_loop", true},
-      {std::filesystem::path("examples") / "mixed_chain", true},
-      {std::filesystem::path("examples") / "coupler_constraint", true},
-      {std::filesystem::path("examples") / "add_delete_skels", true},
-      {std::filesystem::path("examples") / "rigid_shapes", true},
-      {std::filesystem::path("examples") / "hybrid_dynamics", true},
-      {std::filesystem::path("examples") / "biped_stand", true},
-      {std::filesystem::path("examples") / "joint_constraints", true},
-      {std::filesystem::path("examples") / "free_joint_cases", true},
-      {std::filesystem::path("examples") / "human_joint_limits", true},
-      {std::filesystem::path("examples") / "imgui", true},
-      {std::filesystem::path("examples") / "drag_and_drop", true},
-      {std::filesystem::path("examples") / "tinkertoy", true},
-      {std::filesystem::path("examples") / "operational_space_control", true},
-      {std::filesystem::path("examples") / "wam_ikfast", true},
-      {std::filesystem::path("examples") / "atlas_simbicon", true},
-      {std::filesystem::path("examples") / "atlas_puppet", true},
-      {std::filesystem::path("examples") / "hubo_puppet", true},
-      {std::filesystem::path("examples") / "g1_puppet", true},
-      {std::filesystem::path("examples") / "hardcoded_design", true},
-      {std::filesystem::path("examples") / "heightmap", true},
-      {std::filesystem::path("examples") / "point_cloud", true},
-      {std::filesystem::path("examples") / "polyhedron_visual", false},
-      {std::filesystem::path("examples") / "lcp_physics", true},
-      {std::filesystem::path("examples") / "mimic_pendulums", true},
-      {std::filesystem::path("examples") / "empty", true},
-      {std::filesystem::path("examples") / "simulation_event_handler", true},
-      {std::filesystem::path("examples") / "soft_bodies", true},
-      {std::filesystem::path("examples") / "vehicle", true}};
-  std::vector<std::filesystem::path> sources;
-  for (const auto& example : examples) {
-    sources.push_back(example.directory / "main.cpp");
-    sources.push_back(example.directory / "CMakeLists.txt");
-  }
+  ASSERT_TRUE(static_cast<bool>(options.cameraControlsProvider));
+  EXPECT_EQ(
+      options.cameraControlsProvider().mouseMode,
+      dart::gui::OrbitCameraMouseMode::Pan);
+  EXPECT_TRUE(options.cameraControlsProvider().locked);
 
-  const auto backendViolations
-      = scanSourceFilesForTokens(sources, kForbiddenBackendTokens);
-  for (const auto& violation : backendViolations) {
-    ADD_FAILURE() << violation.source << " reaches backend token `"
-                  << violation.token << "` directly";
-  }
+  const dart::gui::OrbitCameraControllerInput lockedInput
+      = dart::gui::detail::makeOrbitCameraControllerInput(
+          10.0,
+          20.0,
+          true,
+          false,
+          false,
+          false,
+          false,
+          options.cameraControlsProvider());
+  EXPECT_TRUE(lockedInput.locked);
+  EXPECT_TRUE(lockedInput.pan);
+  EXPECT_FALSE(lockedInput.orbit);
+  EXPECT_FALSE(lockedInput.zoom);
 
-  const auto promotedViolations
-      = scanSourceFilesForTokens(sources, kForbiddenPromotedGuiTokens);
-  for (const auto& violation : promotedViolations) {
-    ADD_FAILURE() << violation.source << " reaches old GUI token `"
-                  << violation.token << "`";
-  }
+  dart::gui::OrbitCamera camera;
+  ASSERT_TRUE(options.cameraUpdater(camera));
+  EXPECT_TRUE(camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
 
-  for (const auto& example : examples) {
-    const auto mainSource = readSourceFile(example.directory / "main.cpp");
-    EXPECT_NE(
-        mainSource.find("#include <dart/gui/application.hpp>"),
-        std::string::npos);
-    EXPECT_NE(
-        mainSource.find("dart::gui::ApplicationOptions"), std::string::npos);
-    EXPECT_NE(
-        mainSource.find("dart::gui::runApplication(argc, argv, options)"),
-        std::string::npos);
-    if (example.usesPanel) {
-      EXPECT_NE(
-          mainSource.find("#include <dart/gui/panel.hpp>"), std::string::npos);
-      EXPECT_NE(mainSource.find("dart::gui::Panel"), std::string::npos);
-    }
-    if (example.ownsWorld) {
-      EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-      EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-    }
-  }
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresViewportLayoutProvider)
+{
+  dart::gui::ApplicationOptions options;
+  options.viewportLayoutProvider = [](const dart::gui::OrbitCamera& camera) {
+    dart::gui::ViewportLayoutOptions layout;
+    layout.mode = dart::gui::ViewportLayoutMode::Quad;
+    layout.paneCount = dart::gui::kMaxViewportPanes;
+    layout.panes[0].kind = dart::gui::ViewportPaneKind::Perspective;
+    layout.panes[0].camera = camera;
+    layout.panes[0].active = true;
+    layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
+    return layout;
+  };
+  dart::gui::ViewportPaneKind activatedPane
+      = dart::gui::ViewportPaneKind::Perspective;
+  options.onViewportPaneActivated = [&](dart::gui::ViewportPaneKind pane) {
+    activatedPane = pane;
+  };
+
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(4.0, 5.0, 6.0);
+  camera.distance = 7.0;
+
+  ASSERT_TRUE(static_cast<bool>(options.viewportLayoutProvider));
+  const auto layout = options.viewportLayoutProvider(camera);
+  EXPECT_EQ(layout.mode, dart::gui::ViewportLayoutMode::Quad);
+  ASSERT_EQ(layout.paneCount, dart::gui::kMaxViewportPanes);
+  EXPECT_EQ(layout.panes[0].kind, dart::gui::ViewportPaneKind::Perspective);
+  EXPECT_TRUE(layout.panes[0].active);
+  EXPECT_TRUE(layout.panes[0].camera.target.isApprox(camera.target));
+  EXPECT_EQ(layout.panes[0].camera.distance, camera.distance);
+  EXPECT_EQ(layout.panes[1].kind, dart::gui::ViewportPaneKind::Top);
+
+  ASSERT_TRUE(static_cast<bool>(options.onViewportPaneActivated));
+  options.onViewportPaneActivated(dart::gui::ViewportPaneKind::Right);
+  EXPECT_EQ(activatedPane, dart::gui::ViewportPaneKind::Right);
+}
+
+TEST(FilamentSceneExtraction, FrameViewportLayoutSplitsQuadPanes)
+{
+  dart::gui::ViewportLayoutOptions layout;
+  layout.mode = dart::gui::ViewportLayoutMode::Quad;
+  layout.paneCount = dart::gui::kMaxViewportPanes;
+  layout.panes[0].kind = dart::gui::ViewportPaneKind::Perspective;
+  layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
+  layout.panes[2].kind = dart::gui::ViewportPaneKind::Front;
+  layout.panes[2].active = true;
+  layout.panes[3].kind = dart::gui::ViewportPaneKind::Right;
+  layout.panes[1].camera = dart::gui::OrbitCamera{};
+  layout.panes[1].camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+  layout.panes[1].camera.yaw = 0.75;
+  layout.panes[1].camera.pitch = 0.25;
+  layout.panes[1].camera.distance = 9.0;
+
+  const auto viewport = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  EXPECT_EQ(viewport.width, 640);
+  EXPECT_EQ(viewport.height, 480);
+  ASSERT_EQ(viewport.paneCount, dart::gui::kMaxViewportPanes);
+
+  EXPECT_EQ(viewport.panes[0].kind, dart::gui::ViewportPaneKind::Perspective);
+  EXPECT_EQ(viewport.panes[0].x, 320);
+  EXPECT_EQ(viewport.panes[0].y, 0);
+  EXPECT_EQ(viewport.panes[0].width, 320);
+  EXPECT_EQ(viewport.panes[0].height, 240);
+
+  EXPECT_EQ(viewport.panes[1].kind, dart::gui::ViewportPaneKind::Top);
+  EXPECT_EQ(viewport.panes[1].x, 0);
+  EXPECT_EQ(viewport.panes[1].y, 0);
+  EXPECT_EQ(viewport.panes[1].width, 320);
+  EXPECT_EQ(viewport.panes[1].height, 240);
+
+  EXPECT_EQ(viewport.panes[2].kind, dart::gui::ViewportPaneKind::Front);
+  EXPECT_EQ(viewport.panes[2].x, 0);
+  EXPECT_EQ(viewport.panes[2].y, 240);
+  EXPECT_EQ(viewport.panes[2].width, 320);
+  EXPECT_EQ(viewport.panes[2].height, 240);
+  EXPECT_TRUE(viewport.panes[2].active);
+
+  EXPECT_EQ(viewport.panes[3].kind, dart::gui::ViewportPaneKind::Right);
+  EXPECT_EQ(viewport.panes[3].x, 320);
+  EXPECT_EQ(viewport.panes[3].y, 240);
+  EXPECT_EQ(viewport.panes[3].width, 320);
+  EXPECT_EQ(viewport.panes[3].height, 240);
+
+  EXPECT_EQ(
+      dart::gui::detail::activeViewportPane(viewport).kind,
+      dart::gui::ViewportPaneKind::Front);
+  ASSERT_TRUE(
+      dart::gui::detail::viewportPaneIndexAtCursor(viewport, 10.0, 10.0));
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneAtCursor(viewport, 10.0, 10.0)->kind,
+      dart::gui::ViewportPaneKind::Top);
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneAtCursor(viewport, 330.0, 10.0)->kind,
+      dart::gui::ViewportPaneKind::Perspective);
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneAtCursor(viewport, 10.0, 250.0)->kind,
+      dart::gui::ViewportPaneKind::Front);
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneAtCursor(viewport, 330.0, 250.0)->kind,
+      dart::gui::ViewportPaneKind::Right);
+}
+
+TEST(FilamentSceneExtraction, FrameViewportLayoutFallsBackWhenTooSmall)
+{
+  dart::gui::ViewportLayoutOptions layout;
+  layout.mode = dart::gui::ViewportLayoutMode::Quad;
+  layout.paneCount = dart::gui::kMaxViewportPanes;
+  layout.panes[0].kind = dart::gui::ViewportPaneKind::Perspective;
+  layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
+  layout.panes[2].kind = dart::gui::ViewportPaneKind::Front;
+  layout.panes[2].active = true;
+  layout.panes[3].kind = dart::gui::ViewportPaneKind::Right;
+
+  const auto narrow = dart::gui::detail::makeFrameViewport(layout, 1, 480);
+  ASSERT_EQ(narrow.paneCount, 1u);
+  EXPECT_EQ(narrow.width, 1);
+  EXPECT_EQ(narrow.height, 480);
+  EXPECT_EQ(narrow.panes[0].kind, dart::gui::ViewportPaneKind::Front);
+  EXPECT_EQ(narrow.panes[0].x, 0);
+  EXPECT_EQ(narrow.panes[0].y, 0);
+  EXPECT_EQ(narrow.panes[0].width, 1);
+  EXPECT_EQ(narrow.panes[0].height, 480);
+  EXPECT_TRUE(narrow.panes[0].active);
+
+  const auto shortViewport
+      = dart::gui::detail::makeFrameViewport(layout, 640, 1);
+  ASSERT_EQ(shortViewport.paneCount, 1u);
+  EXPECT_EQ(shortViewport.width, 640);
+  EXPECT_EQ(shortViewport.height, 1);
+  EXPECT_EQ(shortViewport.panes[0].kind, dart::gui::ViewportPaneKind::Front);
+}
+
+TEST(FilamentSceneExtraction, FrameViewportActivationFindsInactiveCursorPane)
+{
+  dart::gui::ViewportLayoutOptions layout;
+  layout.mode = dart::gui::ViewportLayoutMode::Quad;
+  layout.paneCount = dart::gui::kMaxViewportPanes;
+  layout.panes[0].kind = dart::gui::ViewportPaneKind::Perspective;
+  layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
+  layout.panes[2].kind = dart::gui::ViewportPaneKind::Front;
+  layout.panes[2].active = true;
+  layout.panes[3].kind = dart::gui::ViewportPaneKind::Right;
+  layout.panes[1].camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+  layout.panes[1].camera.yaw = 0.75;
+  layout.panes[1].camera.pitch = 0.25;
+  layout.panes[1].camera.distance = 9.0;
+
+  const auto viewport = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  const auto topActivation
+      = dart::gui::detail::viewportPaneActivationIndexAtCursor(
+          viewport, 10.0, 10.0);
+  ASSERT_TRUE(topActivation.has_value());
+  EXPECT_EQ(*topActivation, 1u);
+  ASSERT_NE(
+      dart::gui::detail::viewportPaneActivationAtCursor(viewport, 10.0, 10.0),
+      nullptr);
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneActivationAtCursor(viewport, 10.0, 10.0)
+          ->kind,
+      dart::gui::ViewportPaneKind::Top);
+
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneActivationIndexAtCursor(
+          viewport, 10.0, 250.0)
+          .has_value());
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneActivationIndexAtCursor(
+          viewport, 700.0, 10.0)
+          .has_value());
+
+  dart::gui::OrbitCameraController controller;
+  controller.camera.yaw = -0.5;
+  dart::gui::ViewportPaneKind activatedPane
+      = dart::gui::ViewportPaneKind::Perspective;
+  bool callbackCalled = false;
+  dart::gui::detail::ViewportPaneActivationState activationState;
+  EXPECT_TRUE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          activationState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          false,
+          controller,
+          [&](dart::gui::ViewportPaneKind pane) {
+            callbackCalled = true;
+            activatedPane = pane;
+          }));
+  EXPECT_TRUE(callbackCalled);
+  EXPECT_EQ(activatedPane, dart::gui::ViewportPaneKind::Top);
+  EXPECT_TRUE(
+      controller.camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_EQ(controller.camera.yaw, 0.75);
+  EXPECT_EQ(controller.camera.pitch, 0.25);
+  EXPECT_EQ(controller.camera.distance, 9.0);
+  callbackCalled = false;
+  EXPECT_FALSE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          activationState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          false,
+          controller,
+          [&](dart::gui::ViewportPaneKind) { callbackCalled = true; }));
+  EXPECT_FALSE(callbackCalled);
+
+  dart::gui::OrbitCameraController noCallbackController;
+  noCallbackController.camera.yaw = -0.5;
+  dart::gui::detail::ViewportPaneActivationState noCallbackState;
+  EXPECT_FALSE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          noCallbackState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          false,
+          noCallbackController,
+          {}));
+  EXPECT_EQ(noCallbackController.camera.yaw, -0.5);
+
+  dart::gui::detail::ViewportPaneActivationState capturedState;
+  EXPECT_FALSE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          capturedState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          true,
+          controller,
+          [&](dart::gui::ViewportPaneKind) { callbackCalled = true; }));
+  EXPECT_FALSE(callbackCalled);
+
+  layout.mode = dart::gui::ViewportLayoutMode::Single;
+  const auto single = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneActivationIndexAtCursor(single, 10.0, 10.0)
+          .has_value());
+}
+
+TEST(FilamentSceneExtraction, ViewportPaneDisplayNamesAreStable)
+{
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Perspective),
+      "Perspective");
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Top),
+      "Top");
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Front),
+      "Front");
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Right),
+      "Right");
+}
+
+TEST(FilamentSceneExtraction, ViewportPaneLabelStateUsesActivePaneFallback)
+{
+  dart::gui::ViewportLayoutOptions layout;
+  layout.mode = dart::gui::ViewportLayoutMode::Quad;
+  layout.paneCount = dart::gui::kMaxViewportPanes;
+  layout.panes[0].kind = dart::gui::ViewportPaneKind::Perspective;
+  layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
+  layout.panes[2].kind = dart::gui::ViewportPaneKind::Front;
+  layout.panes[3].kind = dart::gui::ViewportPaneKind::Right;
+
+  const auto noExplicitActive
+      = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  EXPECT_EQ(dart::gui::detail::activeViewportPaneIndex(noExplicitActive), 0u);
+  EXPECT_TRUE(
+      dart::gui::detail::viewportPaneLabelState(noExplicitActive, 0u).active);
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneLabelState(noExplicitActive, 1u).active);
+
+  layout.panes[1].active = true;
+  layout.panes[2].active = true;
+  const auto multipleActive
+      = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  EXPECT_EQ(dart::gui::detail::activeViewportPaneIndex(multipleActive), 1u);
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneLabelState(multipleActive, 1u).text,
+      "Top");
+  EXPECT_TRUE(
+      dart::gui::detail::viewportPaneLabelState(multipleActive, 1u).active);
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneLabelState(multipleActive, 2u).active);
+}
+
+TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
+{
+  const auto applicationHeader
+      = readSourceFile(kDartGuiDirectory / "application.hpp");
+  EXPECT_NE(
+      applicationHeader.find("viewportLayoutProvider"), std::string::npos);
+  EXPECT_NE(
+      applicationHeader.find("struct ViewportLayoutOptions"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationHeader.find("onViewportPaneActivated"), std::string::npos);
+
+  const auto applicationSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "application.cpp");
+  EXPECT_NE(
+      applicationSource.find("appOptions.viewportLayoutProvider"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("appOptions.onViewportPaneActivated"),
+      std::string::npos);
+  EXPECT_NE(applicationSource.find("renderContext.views"), std::string::npos);
+  EXPECT_NE(applicationSource.find("renderContext.cameras"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(
+          "renderContext.activeViewCount = viewport.paneCount"),
+      std::string::npos);
+
+  const auto renderContextSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "render_context.cpp");
+  EXPECT_NE(
+      renderContextSource.find("for (std::size_t i = 0; i < activeViewCount"),
+      std::string::npos);
+  EXPECT_NE(
+      renderContextSource.find("context.renderer->render(context.views[i])"),
+      std::string::npos);
+
+  const auto frameViewportSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "frame_viewport.cpp");
+  EXPECT_NE(frameViewportSource.find("makeFrameViewport"), std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find("viewportPaneIndexAtCursor"), std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find("activeViewportPaneIndex"), std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find("viewport.height - pane.y - pane.height"),
+      std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find("viewportPaneDisplayName"), std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find("applyViewportPaneActivationAtCursor"),
+      std::string::npos);
+
+  const auto uiFrameSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "ui_frame.cpp");
+  EXPECT_NE(uiFrameSource.find("renderViewportPaneLabels"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find(
+          "renderViewportPaneLabels(viewport, guiScale.effectiveScale)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("viewportPaneLabelState(viewport, i)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("updateViewportPaneActivation"), std::string::npos);
+
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+  EXPECT_NE(
+      editorSource.find("buildViewportLayoutMenu(ui, app, context)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("options.viewportLayoutProvider"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("options.onViewportPaneActivated"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applyViewportPaneActivation"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, CsvLoggerPreservesNonGuiLoggingContract)
@@ -2267,2428 +2620,6 @@ TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
-TEST(FilamentSceneExtraction, CapsuleGroundContactPreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "capsule_ground_contact"
-      / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "capsule_ground_contact"
-      / "README.md");
-
-  EXPECT_NE(mainSource.find("DART_HAVE_ODE"), std::string::npos);
-  EXPECT_NE(mainSource.find("CollisionDetectorType::Ode"), std::string::npos);
-  EXPECT_NE(mainSource.find("PlaneShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("CapsuleShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("capsule_joint"), std::string::npos);
-  EXPECT_NE(mainSource.find("capsule_body"), std::string::npos);
-  EXPECT_NE(mainSource.find("persistent manifolds"), std::string::npos);
-  EXPECT_NE(mainSource.find("clearCapsuleVelocities"), std::string::npos);
-  EXPECT_NE(mainSource.find("createCapsuleKeyboardActions"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('h')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('v')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey(' ')"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("makeCapsuleRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 1024"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 768"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeCapsuleCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.2)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.up = Eigen::Vector3d(-0.2, -0.2, 0.95)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("Capsule Ground Contact Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("1024x768"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, RigidChainExamplePreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_chain" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_chain" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("dart://sample/skel/chain.skel"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setTimeStep(1.0 / 2000.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart::math::Random::uniform(-0.5, 0.5)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("applyChainDamping"), std::string::npos);
-  EXPECT_NE(mainSource.find("damping[i] *= 0.1"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeRigidChainRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeRigidChainCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("camera.distance = 3.0"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Rigid Chain Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("RealTimeWorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("dart::gui::Viewer"), std::string::npos);
-  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, RigidLoopExamplePreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_loop" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_loop" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("dart://sample/skel/chain.skel"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setTimeStep(1.0 / 2000.0)"), std::string::npos);
-  EXPECT_NE(mainSource.find("std::array{20, 23, 26, 29}"), std::string::npos);
-  EXPECT_NE(mainSource.find("0.4 * dart::math::pi"), std::string::npos);
-  EXPECT_NE(mainSource.find("BallJointConstraint"), std::string::npos);
-  EXPECT_NE(mainSource.find("link 6"), std::string::npos);
-  EXPECT_NE(mainSource.find("link 10"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("link6->setColor(Eigen::Vector3d(1.0, 0.0, 0.0))"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("link10->setColor(Eigen::Vector3d(1.0, 0.0, 0.0))"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("printRigidLoopInstructions"), std::string::npos);
-  EXPECT_NE(mainSource.find("Rigid Loop Chain Simulation"), std::string::npos);
-  EXPECT_NE(mainSource.find("applyChainDamping"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeRigidLoopRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Rigid Loop Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("dart::gui::Viewer"), std::string::npos);
-  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, RigidCubesExamplePreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_cubes" / "main.cpp");
-  const auto cmakeSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_cubes" / "CMakeLists.txt");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_cubes" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("dart://sample/skel/cubes.skel"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::io::readWorld"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("applyPendingForce"), std::string::npos);
-  EXPECT_NE(mainSource.find("state->pendingForce /= 2.0"), std::string::npos);
-  EXPECT_NE(mainSource.find("getSkeleton(1)"), std::string::npos);
-  EXPECT_NE(mainSource.find("printRigidCubesInstructions"), std::string::npos);
-  EXPECT_NE(mainSource.find("Rigid Cubes Example"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('p')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('v')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('1')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('2')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('3')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('4')"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("makeRigidCubesRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeRigidCubesCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.distance = 8.660254037844387"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(cmakeSource.find("dart-io"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Rigid Cubes Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("RealTimeWorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("dart::gui::Viewer"), std::string::npos);
-  EXPECT_EQ(mainSource.find("viewer.record"), std::string::npos);
-  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "boxes" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "boxes" / "README.md");
-
-  EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
-  EXPECT_NE(mainSource.find("Skeleton::create(\"box\""), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(25.0, 25.0, 0.1)"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::Color::LightGray()"), std::string::npos);
-  EXPECT_EQ(mainSource.find("[Experimental] Please note"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Press space to start free falling the box."),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("createBoxesInstructionsPanel"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeBoxesRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 1360"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 768"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeBoxesCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 3.0)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Boxes Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("1360x768"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, SimpleFramesExamplePreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "simple_frames" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "simple_frames" / "README.md");
-
-  EXPECT_NE(mainSource.find("\"F1\""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"F2\""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"F3\""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"A\""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"A1\""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"A2\""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"A3\""), std::string::npos);
-  EXPECT_NE(mainSource.find("ArrowShape"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("ArrowShape::Properties(0.002, 1.8)"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeSimpleFramesRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeSimpleFramesCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.0)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Simple Frames Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("ArrowShape"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, DragAndDropExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "drag_and_drop" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "drag_and_drop" / "README.md");
-
-  EXPECT_EQ(mainSource.find("createDragFrameHandleShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.size = 2.0"), std::string::npos);
-  EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
-  EXPECT_NE(mainSource.find("draggable"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(-4.0, 4.0, 0.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(8.0, 0.0, 0.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(0.0, 8.0, 0.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(0.0, 0.0, 8.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(0.2, 0.2, 0.2)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Left-drag gizmo arrows, planes, and rings"),
-      std::string::npos);
-  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeDragAndDropRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeDragAndDropCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.0)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Drag and Drop Example"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(readmeSource.find("rotation-ring dragging"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_EQ(readmeSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("enableDragAndDrop"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "box_stacking" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "box_stacking" / "README.md");
-
-  EXPECT_NE(mainSource.find("DantzigSolver"), std::string::npos);
-  EXPECT_NE(mainSource.find("PgsSolver"), std::string::npos);
-  EXPECT_NE(mainSource.find("--solver"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Random::uniform<Eigen::Vector3d>"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(0.0, 0.0, 0.5 + 0.25 + i * 0.5)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("floorHeight = 0.01"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::Color::LightGray()"), std::string::npos);
-  EXPECT_NE(mainSource.find("setSplitImpulseEnabled"), std::string::npos);
-  EXPECT_NE(mainSource.find("Box stacking demo"), std::string::npos);
-  EXPECT_NE(mainSource.find("Gravity On/Off"), std::string::npos);
-  EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("context.lighting.headlightsEnabled"), std::string::npos);
-  EXPECT_NE(mainSource.find("LCP solver:"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createBoxStackingKeyboardActions"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
-  EXPECT_NE(mainSource.find("Capital Q released"), std::string::npos);
-  EXPECT_NE(mainSource.find("context.camera.eye"), std::string::npos);
-  EXPECT_NE(mainSource.find("Eye   : "), std::string::npos);
-  EXPECT_NE(mainSource.find("Center: "), std::string::npos);
-  EXPECT_NE(mainSource.find("Up    : "), std::string::npos);
-  EXPECT_NE(mainSource.find("User Guide:"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeBoxStackingRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 800"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeBoxStackingCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 2.0)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Box Stacking Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("800x640"), std::string::npos);
-  EXPECT_NE(readmeSource.find("keydown/key-release"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--gui-scale"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "fetch" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "fetch" / "README.md");
-  const auto interactionHeader = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "interaction.hpp");
-  const auto panelHeader
-      = readSourceFile(std::filesystem::path("dart") / "gui" / "panel.hpp");
-  const auto selectionSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
-  const auto panelSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
-
-  EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
-  EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
-  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("MeshShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::math::TriMesh<double>"), std::string::npos);
-  EXPECT_NE(mainSource.find("createTargetCrossShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("addBoxToMesh"), std::string::npos);
-  EXPECT_NE(mainSource.find("two transparent green bars"), std::string::npos);
-  EXPECT_NE(mainSource.find("MeshShape::SHAPE_ALPHA"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(mainSource.find("targetGizmo.size = 0.24"), std::string::npos);
-  EXPECT_NE(mainSource.find("kTargetRotationStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("rotateFetchTarget"), std::string::npos);
-  EXPECT_NE(mainSource.find("createFetchKeyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("fetch_pick_and_place_grid"), std::string::npos);
-  EXPECT_NE(mainSource.find("createFetchGridShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("createFetchGrid"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::dynamics::WeldJoint"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(1.3, 0.75, 0.0)"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeFetchCamera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeFetchRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.1, -0.3, 0.3)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("syncMocapTarget"), std::string::npos);
-  EXPECT_NE(mainSource.find("Fetch robot example"), std::string::npos);
-  EXPECT_NE(mainSource.find("initialPosition"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("std::array<double, 2>{10.0, 20.0}"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("std::array<double, 2>{360.0, 600.0}"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("backgroundAlpha = 0.5"), std::string::npos);
-  EXPECT_NE(mainSource.find("horizontalScrollbar = true"), std::string::npos);
-  EXPECT_NE(mainSource.find("menuBar = true"), std::string::npos);
-  EXPECT_NE(mainSource.find("builder.beginMenuBar()"), std::string::npos);
-  EXPECT_NE(mainSource.find("builder.beginMenu(\"Menu\")"), std::string::npos);
-  EXPECT_NE(mainSource.find("builder.menuItem(\"Exit\")"), std::string::npos);
-  EXPECT_NE(mainSource.find("builder.beginMenu(\"Help\")"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("builder.menuItem(\"About DART\")"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("builder.collapsingHeader(\"Help\")"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("builder.collapsingHeader(\"Simulation\", true)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("User Guid:"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Point cloud and voxel grid rendering example"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("whole body motion of the Fetch robot"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Left drag orbits"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Left-drag target gizmo arrows/planes/rings"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("public target gizmo handles"), std::string::npos);
-  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_NE(mainSource.find("u/j, i/k, o/l rotate"), std::string::npos);
-  EXPECT_NE(mainSource.find("builder.button(\"Play\")"), std::string::npos);
-  EXPECT_NE(mainSource.find("builder.button(\"Pause\")"), std::string::npos);
-  EXPECT_NE(mainSource.find("builder.button(\"Exit\")"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::requestExit"), std::string::npos);
-  EXPECT_NE(mainSource.find("About DART"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("Rotate target +X"), std::string::npos);
-  EXPECT_NE(mainSource.find("Reset target pose"), std::string::npos);
-  EXPECT_NE(
-      interactionHeader.find("rotateSimpleFrameRenderable"), std::string::npos);
-  EXPECT_NE(panelHeader.find("initialPosition"), std::string::npos);
-  EXPECT_NE(panelHeader.find("initialSize"), std::string::npos);
-  EXPECT_NE(panelHeader.find("backgroundAlpha"), std::string::npos);
-  EXPECT_NE(panelHeader.find("collapsingHeader"), std::string::npos);
-  EXPECT_NE(panelHeader.find("beginMenuBar"), std::string::npos);
-  EXPECT_NE(panelHeader.find("menuItem"), std::string::npos);
-  EXPECT_NE(panelHeader.find("openModal"), std::string::npos);
-  EXPECT_NE(panelHeader.find("beginModal"), std::string::npos);
-  EXPECT_NE(
-      selectionSource.find("rotateRenderableAndApplyIk"), std::string::npos);
-  EXPECT_NE(
-      selectionSource.find("isRotationDragModifierDown"), std::string::npos);
-  EXPECT_NE(panelSource.find("ImGui::SetNextWindowPos"), std::string::npos);
-  EXPECT_NE(panelSource.find("ImGui::SetNextWindowSize"), std::string::npos);
-  EXPECT_NE(
-      panelSource.find("ImGuiWindowFlags_HorizontalScrollbar"),
-      std::string::npos);
-  EXPECT_NE(panelSource.find("ImGuiWindowFlags_MenuBar"), std::string::npos);
-  EXPECT_NE(panelSource.find("ImGui::BeginMenuBar"), std::string::npos);
-  EXPECT_NE(panelSource.find("ImGui::CollapsingHeader"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("two transparent green bars"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("target gizmo arrows/planes/rings"), std::string::npos);
-  EXPECT_NE(readmeSource.find("public target gizmo"), std::string::npos);
-  EXPECT_EQ(readmeSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_EQ(readmeSource.find("Remaining gap"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("1280x960"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("./fetch"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(
-      mainSource.find("setGravity(Eigen::Vector3d::Zero())"),
-      std::string::npos);
-}
-
-TEST(
-    FilamentSceneExtraction,
-    CouplerConstraintExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "coupler_constraint" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "coupler_constraint" / "README.md");
-
-  EXPECT_NE(mainSource.find("CouplerController"), std::string::npos);
-  EXPECT_NE(mainSource.find("driveReferenceJoint"), std::string::npos);
-  EXPECT_NE(mainSource.find("refreshPairVisual"), std::string::npos);
-  EXPECT_NE(mainSource.find("getMimicDofProperties"), std::string::npos);
-  EXPECT_NE(mainSource.find("setUseCouplerConstraint"), std::string::npos);
-  EXPECT_NE(mainSource.find("torqueLimit = 90.0"), std::string::npos);
-  EXPECT_NE(mainSource.find("proportionalGain = 320.0"), std::string::npos);
-  EXPECT_NE(mainSource.find("dampingGain = 25.0"), std::string::npos);
-  EXPECT_NE(mainSource.find("coupler_constraint_grid"), std::string::npos);
-  EXPECT_NE(mainSource.find("cellCount = 25"), std::string::npos);
-  EXPECT_NE(mainSource.find("step = 0.05"), std::string::npos);
-  EXPECT_NE(mainSource.find("createCouplerKeyboardActions"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('r')"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeCouplerCamera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 960"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 720"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.4, 0.0, 0.2)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Coupler pair (left)"), std::string::npos);
-  EXPECT_NE(mainSource.find("Mimic motor pair (right)"), std::string::npos);
-  EXPECT_NE(mainSource.find("MimicMotorConstraint"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Coupler Constraint Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("960x720"), std::string::npos);
-  EXPECT_NE(readmeSource.find("headless"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
-  EXPECT_EQ(mainSource.find("RealTimeWorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("GUIEventHandler"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "imgui" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "imgui" / "README.md");
-
-  EXPECT_NE(mainSource.find("PanelExtensionScene"), std::string::npos);
-  EXPECT_NE(mainSource.find("panel extension target"), std::string::npos);
-  EXPECT_EQ(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("createPanelTargetShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(mainSource.find("createPanelExtensionControls"), std::string::npos);
-  EXPECT_NE(mainSource.find("Tinkertoy Control"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Promoted panel extension example"), std::string::npos);
-  EXPECT_NE(mainSource.find("Gravity On/Off"), std::string::npos);
-  EXPECT_NE(mainSource.find("setPanelWorldGravity"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createPanelExtensionKeyboardActions"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Lowercase q pressed"), std::string::npos);
-  EXPECT_NE(mainSource.find("Capital Q pressed"), std::string::npos);
-  EXPECT_NE(mainSource.find("Lowercase q released"), std::string::npos);
-  EXPECT_NE(mainSource.find("Capital Q released"), std::string::npos);
-  EXPECT_NE(mainSource.find("Left arrow key pressed"), std::string::npos);
-  EXPECT_NE(mainSource.find("Left arrow key released"), std::string::npos);
-  EXPECT_NE(mainSource.find("Right arrow key pressed"), std::string::npos);
-  EXPECT_NE(mainSource.find("Right arrow key released"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("Pre-step callbacks"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.postStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("Post-step callbacks"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preRender"), std::string::npos);
-  EXPECT_NE(mainSource.find("Pre-render callbacks"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.postRender"), std::string::npos);
-  EXPECT_NE(mainSource.find("Post-render callbacks"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("makePanelExtensionRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("makePanelExtensionCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.yaw = 0.8848934155088675"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.pitch = 0.38410042777133657"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.distance = 4.376539729055364"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("User Guide"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Left-drag target gizmo arrows/planes/rings"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("context.lighting.headlightsEnabled"), std::string::npos);
-  EXPECT_NE(mainSource.find("context.camera.eye"), std::string::npos);
-  EXPECT_NE(mainSource.find("Eye   : "), std::string::npos);
-  EXPECT_NE(mainSource.find("Center: "), std::string::npos);
-  EXPECT_NE(mainSource.find("Up    : "), std::string::npos);
-  EXPECT_NE(readmeSource.find("Panel Extension Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Tinkertoy Control"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_NE(readmeSource.find("keyboard callbacks"), std::string::npos);
-  EXPECT_EQ(readmeSource.find("Remaining gaps"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("GUIEventHandler"), std::string::npos);
-  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_shapes" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "rigid_shapes" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("dart://sample/skel/shapes.skel"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::io::readWorld"), std::string::npos);
-  EXPECT_NE(mainSource.find("ConvexMeshShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("spawnConvexMesh"), std::string::npos);
-  EXPECT_NE(mainSource.find("ConvexMeshShape::fromMesh"), std::string::npos);
-  EXPECT_NE(mainSource.find("Random::uniform"), std::string::npos);
-  EXPECT_NE(mainSource.find("printRigidShapesInstructions"), std::string::npos);
-  EXPECT_NE(mainSource.find("Collision detector:"), std::string::npos);
-  EXPECT_NE(mainSource.find("PointCloudShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("contact_points"), std::string::npos);
-  EXPECT_NE(mainSource.find("toggleContactPoints"), std::string::npos);
-  EXPECT_NE(mainSource.find("updateContactPoints"), std::string::npos);
-  EXPECT_NE(mainSource.find("getLastCollisionResult"), std::string::npos);
-  EXPECT_NE(mainSource.find("--collision-detector"), std::string::npos);
-  EXPECT_NE(mainSource.find("--max-contacts"), std::string::npos);
-  EXPECT_NE(mainSource.find("--ground-thickness"), std::string::npos);
-  EXPECT_NE(mainSource.find("maxNumContacts"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeRigidShapesRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeRigidShapesCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.up = Eigen::Vector3d::UnitY()"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey(key)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Keys: q box"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("GUIEventHandler"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Rigid Shapes Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("pixi run ex rigid_shapes"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--collision-detector"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, BipedStandExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "biped_stand" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "biped_stand" / "README.md");
-
-  EXPECT_NE(mainSource.find("BipedStandController"), std::string::npos);
-  EXPECT_NE(mainSource.find("controller->preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("controller->perturb"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createBipedStandKeyboardActions"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey(key)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(50.0, 0.0, 0.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(-50.0, 0.0, 0.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(0.0, 0.0, 50.0)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(0.0, 0.0, -50.0)"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeBipedStandRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeBipedStandCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Press space to start simulation"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("1: Push robot with +50 along x-axis N for 100 frames"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Keys: 1 +X"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Biped Stand Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("keyboard actions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("./biped_stand"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, FreeJointCasesExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "free_joint_cases" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "free_joint_cases" / "README.md");
-
-  EXPECT_NE(mainSource.find("computeMetrics"), std::string::npos);
-  EXPECT_NE(mainSource.find("getWorldJacobian"), std::string::npos);
-  EXPECT_NE(mainSource.find("getJacobianClassicDeriv"), std::string::npos);
-  EXPECT_NE(mainSource.find("getRelativeJacobianTimeDeriv"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("GroundTruthModel::ConstantWorldTwist"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("setUseSphericalInertia"), std::string::npos);
-  EXPECT_NE(mainSource.find("recomputeMetrics"), std::string::npos);
-  EXPECT_NE(mainSource.find("--numeric-dt"), std::string::npos);
-  EXPECT_NE(mainSource.find("--dt"), std::string::npos);
-  EXPECT_NE(mainSource.find("--spherical-inertia"), std::string::npos);
-  EXPECT_NE(mainSource.find("--ground-truth"), std::string::npos);
-  EXPECT_NE(mainSource.find("--ground-truth-substeps"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("builder.button(\"Numeric checks\")"), std::string::npos);
-  EXPECT_NE(mainSource.find("Torque-free substeps"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("makeFreeJointCasesRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 720"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeFreeJointCasesCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(2.5, 0.0, 0.0)"),
-      std::string::npos);
-  EXPECT_NE(readmeSource.find("Free Joint Cases Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, HumanJointLimitsExamplePreservesParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "human_joint_limits" / "main.cpp");
-  const auto constraintSource = readSourceFile(
-      std::filesystem::path("examples") / "human_joint_limits"
-      / "human_joint_limit_constraints.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "human_joint_limits" / "README.md");
-
-  EXPECT_NE(mainSource.find("kima_human_edited.skel"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("joint->setLimitEnforcement(true)"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeStaticGround"), std::string::npos);
-  EXPECT_NE(mainSource.find("human->setMobile(true)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("makeHumanJointLimitsRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("printHumanJointLimitsInstructions"), std::string::npos);
-  EXPECT_NE(mainSource.find("space bar: simulation on/off"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("installHumanJointLimitConstraints"), std::string::npos);
-  EXPECT_NE(mainSource.find("customConstraintCount"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(
-      constraintSource.find("HumanArmJointLimitConstraint"), std::string::npos);
-  EXPECT_NE(
-      constraintSource.find("HumanLegJointLimitConstraint"), std::string::npos);
-  EXPECT_NE(
-      constraintSource.find("humanJointLimits/neuralnets/net-larm"),
-      std::string::npos);
-  EXPECT_NE(
-      constraintSource.find("humanJointLimits/neuralnets/net-lleg"),
-      std::string::npos);
-  EXPECT_NE(
-      constraintSource.find("TinyDnnSequentialNetwork"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Human Joint Limits Example"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("HumanArmJointLimitConstraint"), std::string::npos);
-  EXPECT_NE(readmeSource.find("TinyDNN-serialized"), std::string::npos);
-  EXPECT_EQ(readmeSource.find("tracked as a follow-up"), std::string::npos);
-  EXPECT_EQ(
-      mainSource.find("setGravity(Eigen::Vector3d::Zero())"),
-      std::string::npos);
-  EXPECT_EQ(
-      mainSource.find("makeVisualOnlySkeleton(human)"), std::string::npos);
-  EXPECT_EQ(mainSource.find("setRequiredJointPositions"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "add_delete_skels" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "add_delete_skels" / "README.md");
-
-  EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart://sample/skel/ground.skel"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("spawnRandomCube"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("std::uniform_real_distribution"), std::string::npos);
-  EXPECT_NE(mainSource.find("body.mInertia.setMass(mass)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("BoxShape::computeInertia(size, mass)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("deleteLastCube"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createAddDeleteKeyboardActions"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('q')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('w')"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("'q': spawn a random cube"), std::string::npos);
-  EXPECT_NE(mainSource.find("'w': delete a spawned cube"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeAddDeleteCamera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeAddDeleteRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_EQ(mainSource.find("spawnPresetCube"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("Add/Delete Skeletons Example"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("pixi run ex add_delete_skels"), std::string::npos);
-  EXPECT_NE(readmeSource.find("`q` spawns a cube"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("`w` deletes the most recent cube"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, MixedChainExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "mixed_chain" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "mixed_chain" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("test_articulated_bodies_10bodies.skel"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart::math::Random::uniform(-0.5, 0.5)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("startImpulse"), std::string::npos);
-  EXPECT_NE(mainSource.find("applyImpulse"), std::string::npos);
-  EXPECT_NE(mainSource.find("kForceMagnitude = 500.0"), std::string::npos);
-  EXPECT_NE(mainSource.find("kImpulseFrames = 100"), std::string::npos);
-  EXPECT_NE(mainSource.find("getSoftBodyNode(3)"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeImpulseAction"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey(key)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createMixedChainKeyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("Apply mixed-chain impulse -X"), std::string::npos);
-  EXPECT_NE(mainSource.find("Apply mixed-chain impulse +X"), std::string::npos);
-  EXPECT_NE(mainSource.find("Apply mixed-chain impulse -Y"), std::string::npos);
-  EXPECT_NE(mainSource.find("Apply mixed-chain impulse +Y"), std::string::npos);
-  EXPECT_NE(mainSource.find("Apply mixed-chain impulse -Z"), std::string::npos);
-  EXPECT_NE(mainSource.find("Apply mixed-chain impulse +Z"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("'q'/'w': apply force in -X/+X direction"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("'q'/'w': Apply force in -X/+X direction"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("printMixedChainInstructions"), std::string::npos);
-  EXPECT_NE(mainSource.find("Space: Toggle simulation"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeMixedChainCamera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeMixedChainRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Mixed Chain Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("pixi run ex mixed_chain"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, HybridDynamicsExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "hybrid_dynamics" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "hybrid_dynamics" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("dart://sample/skel/fullbody1.skel"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kGroundSkeletonName = \"ground skeleton\""),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kBipedSkeletonName = \"fullbody1\""), std::string::npos);
-  EXPECT_EQ(mainSource.find("setName(kGroundSkeletonName)"), std::string::npos);
-  EXPECT_EQ(mainSource.find("setName(kBipedSkeletonName)"), std::string::npos);
-  EXPECT_EQ(mainSource.find("colorBiped"), std::string::npos);
-  EXPECT_EQ(mainSource.find("setColor("), std::string::npos);
-  EXPECT_NE(mainSource.find("toggleHarness"), std::string::npos);
-  EXPECT_NE(mainSource.find("The pelvis is locked."), std::string::npos);
-  EXPECT_NE(mainSource.find("The pelvis is unlocked."), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("printHybridDynamicsInstructions"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeHybridDynamicsCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.up = Eigen::Vector3d::UnitY()"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("makeHybridDynamicsRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createHybridDynamicsKeyboardActions"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('h')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Toggle hybrid-dynamics harness"), std::string::npos);
-  EXPECT_NE(mainSource.find("'h': toggle harness on/off"), std::string::npos);
-  EXPECT_NE(mainSource.find("space bar: simulation on/off"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Hybrid Dynamics Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("pixi run ex hybrid_dynamics"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-}
-
-TEST(
-    FilamentSceneExtraction,
-    JointConstraintsExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "joint_constraints" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "joint_constraints" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("dart://sample/skel/fullbody1.skel"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kGroundSkeletonName = \"ground skeleton\""),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kBipedSkeletonName = \"fullbody1\""), std::string::npos);
-  EXPECT_EQ(mainSource.find("setName(kGroundSkeletonName)"), std::string::npos);
-  EXPECT_EQ(mainSource.find("setName(kBipedSkeletonName)"), std::string::npos);
-  EXPECT_EQ(mainSource.find("colorBiped"), std::string::npos);
-  EXPECT_EQ(mainSource.find("setColor("), std::string::npos);
-  EXPECT_NE(mainSource.find("makeJointConstraintsCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.up = Eigen::Vector3d::UnitY()"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("makeJointConstraintsRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(mainSource.find("makePerturbAction"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("printJointConstraintsInstructions"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createJointConstraintsKeyboardActions"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey(key)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardShortcut::characterKey('h')"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Apply joint-constraints forward perturbation"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("push forward"), std::string::npos);
-  EXPECT_NE(mainSource.find("push backward"), std::string::npos);
-  EXPECT_NE(mainSource.find("push right"), std::string::npos);
-  EXPECT_NE(mainSource.find("push left"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Toggle joint-constraints harness"), std::string::npos);
-  EXPECT_NE(mainSource.find("Harness on"), std::string::npos);
-  EXPECT_NE(mainSource.find("Harness off"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("'1'-'4': programmed perturbations"), std::string::npos);
-  EXPECT_NE(mainSource.find("'h': toggle harness on/off"), std::string::npos);
-  EXPECT_NE(mainSource.find("space bar: simulation on/off"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Joint Constraints Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("pixi run ex joint_constraints"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "atlas_simbicon" / "main.cpp");
-  const auto controllerSource = readSourceFile(
-      std::filesystem::path("examples") / "atlas_simbicon" / "controller.cpp");
-  const auto stateSource = readSourceFile(
-      std::filesystem::path("examples") / "atlas_simbicon" / "state.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "atlas_simbicon" / "README.md");
-
-  EXPECT_NE(mainSource.find("createZUpGround"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart://sample/sdf/atlas/atlas_v5_no_head.urdf"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("scene.world->setGravity(-kDefaultGravity"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Eigen::Vector3d::UnitZ()"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("makeAtlasMeshVisualsReadable(scene.atlas)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find(
-          "mesh->setColorMode(dart::dynamics::MeshShape::MATERIAL_COLOR)"),
-      std::string::npos);
-  EXPECT_EQ(mainSource.find("setPosition(0, -0.5"), std::string::npos);
-  EXPECT_EQ(
-      mainSource.find("-kDefaultGravity * Eigen::Vector3d::UnitY()"),
-      std::string::npos);
-  EXPECT_EQ(
-      mainSource.find("-mGravity * Eigen::Vector3d::UnitY()"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("std::make_unique<Controller>"), std::string::npos);
-  EXPECT_NE(mainSource.find("runtime->preStep()"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("createAtlasSimbiconKeyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("Push Atlas forward"), std::string::npos);
-  EXPECT_NE(mainSource.find("Standing controller"), std::string::npos);
-  EXPECT_NE(mainSource.find("Walking-in-place controller"), std::string::npos);
-  EXPECT_NE(mainSource.find("Atlas Control"), std::string::npos);
-  EXPECT_NE(mainSource.find("Gravity Acc."), std::string::npos);
-  EXPECT_NE(mainSource.find("Harness pelvis"), std::string::npos);
-  EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
-  EXPECT_NE(mainSource.find("Shadow On/Off"), std::string::npos);
-  EXPECT_NE(mainSource.find("Depth mode"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart::gui::RenderOutputMode::Depth"), std::string::npos);
-  EXPECT_NE(mainSource.find("Normal-Stride Walking"), std::string::npos);
-  EXPECT_NE(mainSource.find("Short-Stride Walking"), std::string::npos);
-  EXPECT_EQ(
-      mainSource.find("Depth mode needs a public render-output API"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("makeAtlasSimbiconCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, -0.25)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("options.windowTitle = \"Atlas Simbicon\""),
-      std::string::npos);
-  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(
-      controllerSource.find("_createWalkingStateMachine"), std::string::npos);
-  EXPECT_NE(controllerSource.find("harnessPelvis"), std::string::npos);
-  EXPECT_NE(controllerSource.find("keyboard"), std::string::npos);
-  EXPECT_NE(controllerSource.find("const auto z = pos[2]"), std::string::npos);
-  EXPECT_NE(stateSource.find("computeControlForce"), std::string::npos);
-  EXPECT_NE(
-      stateSource.find(
-          "const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ()"),
-      std::string::npos);
-  EXPECT_NE(stateSource.find("projPelvisZ[1] = 0.0"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Atlas Simbicon Example"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("dart::gui::ApplicationOptions::preStep"),
-      std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui::RunOptions"), std::string::npos);
-  EXPECT_NE(readmeSource.find("depth output"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--render-output depth"), std::string::npos);
-  EXPECT_EQ(
-      readmeSource.find("Remaining renderer-neutral API gap"),
-      std::string::npos);
-  EXPECT_EQ(
-      readmeSource.find("historical OSG depth camera mode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("osg"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "atlas_puppet" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "atlas_puppet" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("dart://sample/sdf/atlas/atlas_v5_no_head.urdf"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("atlas_puppet_root_handle"), std::string::npos);
-  EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("atlas_puppet_ik_target_left_hand"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("atlas_puppet_ik_target_right_hand"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("atlas_puppet_ik_target_left_foot"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("atlas_puppet_ik_target_right_foot"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("makeAtlasMeshVisualsReadable(atlas)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find(
-          "mesh->setColorMode(dart::dynamics::MeshShape::MATERIAL_COLOR)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find(
-          "scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81))"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("atlas_puppet_support_polygon_overlay"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("atlas_puppet_support_com_overlay"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeAtlasSupportPolygonLines"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeAtlasSupportComLines"), std::string::npos);
-  EXPECT_NE(mainSource.find("addDisconnectedLine"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("removeConnection(start - 1u, start)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("atlasSupportComColor"), std::string::npos);
-  EXPECT_NE(mainSource.find("isInsideSupportPolygon"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector4d(1.0, 0.0, 0.0, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
-  EXPECT_NE(mainSource.find("state->toggle()"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
-  EXPECT_NE(mainSource.find("return state->active"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.size = 0.20"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->removeSimpleFrame(target)"), std::string::npos);
-  EXPECT_NE(mainSource.find("r_arm_shx"), std::string::npos);
-  EXPECT_NE(mainSource.find("l_arm_shx"), std::string::npos);
-  EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
-  EXPECT_NE(mainSource.find("RelaxedPosture"), std::string::npos);
-  EXPECT_NE(mainSource.find("enforceIdealPosture"), std::string::npos);
-  EXPECT_NE(mainSource.find("setupAtlasWholeBodySolver"), std::string::npos);
-  EXPECT_NE(mainSource.find("GradientDescentSolver"), std::string::npos);
-  EXPECT_NE(mainSource.find("BalanceConstraint"), std::string::npos);
-  EXPECT_NE(mainSource.find("OPTIMIZE_BALANCE"), std::string::npos);
-  EXPECT_NE(mainSource.find("FROM_CENTROID"), std::string::npos);
-  EXPECT_NE(mainSource.find("SHIFT_SUPPORT"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Left-drag active target gizmo handles"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("InverseKinematicsSolveMode::SkeletonHierarchy"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("applyAtlasRootGradientWeights"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("solveAtlasWholeBody"), std::string::npos);
-  EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Toggle left Atlas foot support"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Toggle right Atlas foot support"), std::string::npos);
-  EXPECT_NE(mainSource.find("Print Atlas DOFs"), std::string::npos);
-  EXPECT_NE(mainSource.find("Reset Atlas relaxed posture"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Optimize Atlas posture and balance"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Restore Atlas centroid balance mode"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Hold R to optimize whole-body posture and balance"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Blue/red COM marker shows support-polygon validity"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeAtlasPuppetRunDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeAtlasPuppetCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.yaw = 0.5118558424318241"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("'1'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'4'"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Atlas Puppet Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(readmeSource.find("SimpleFrame` IK targets"), std::string::npos);
-  EXPECT_NE(readmeSource.find("axis-arrow dragging"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Target gizmos appear"), std::string::npos);
-  EXPECT_NE(readmeSource.find("rotation"), std::string::npos);
-  EXPECT_NE(readmeSource.find("rotation ring"), std::string::npos);
-  EXPECT_NE(readmeSource.find("plane handles"), std::string::npos);
-  EXPECT_NE(readmeSource.find("COM validity"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("whole-body posture and balance"), std::string::npos);
-  EXPECT_NE(readmeSource.find("relaxed-posture objective"), std::string::npos);
-  EXPECT_NE(readmeSource.find("balance"), std::string::npos);
-  EXPECT_NE(readmeSource.find("constraint"), std::string::npos);
-  EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
-  EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
-  EXPECT_NE(readmeSource.find("1280"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "hubo_puppet" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "hubo_puppet" / "README.md");
-
-  EXPECT_NE(mainSource.find("urdf/drchubo/drchubo.urdf"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("removeHuboPuppetFingerBodyNodes"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kHuboSkeletonName = \"hubo_copy\""), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kGroundSkeletonName = \"ground\""), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(10.0, 10.0, thickness)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector4d(0.0, 0.0, 0.2, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81))"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kSupportVisualElevation = 0.05"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
-  EXPECT_NE(mainSource.find("hubo_support_polygon_overlay"), std::string::npos);
-  EXPECT_NE(mainSource.find("hubo_support_com_overlay"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeHuboSupportComLines"), std::string::npos);
-  EXPECT_NE(mainSource.find("addDisconnectedLine"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("removeConnection(start - 1u, start)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("huboSupportComColor"), std::string::npos);
-  EXPECT_NE(mainSource.find("isInsideSupportPolygon"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector4d(1.0, 0.0, 0.0, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("hubo_puppet_ik_target_left_hand"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("hubo_puppet_ik_target_right_peg"), std::string::npos);
-  EXPECT_NE(mainSource.find("\"l_hand\""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"r_peg\""), std::string::npos);
-  EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
-  EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
-  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("InverseKinematicsSolveMode::SkeletonHierarchy"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
-  EXPECT_NE(mainSource.find("return state->active"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.size = 0.20"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Left-drag active target gizmo handles"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->removeSimpleFrame(target)"), std::string::npos);
-  EXPECT_NE(mainSource.find("Activated IK target"), std::string::npos);
-  EXPECT_NE(mainSource.find("Deactivated IK target"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("kTeleopAmplifiedScale"), std::string::npos);
-  EXPECT_NE(mainSource.find("std::string(\"Amplified \")"), std::string::npos);
-  EXPECT_NE(mainSource.find("RelaxedPosture"), std::string::npos);
-  EXPECT_NE(mainSource.find("setupHuboWholeBodySolver"), std::string::npos);
-  EXPECT_NE(mainSource.find("GradientDescentSolver"), std::string::npos);
-  EXPECT_NE(mainSource.find("BalanceConstraint"), std::string::npos);
-  EXPECT_NE(mainSource.find("HuboArmIK"), std::string::npos);
-  EXPECT_NE(mainSource.find("HuboLegIK"), std::string::npos);
-  EXPECT_NE(mainSource.find("setGradientMethod<HuboArmIK>"), std::string::npos);
-  EXPECT_NE(mainSource.find("setGradientMethod<HuboLegIK>"), std::string::npos);
-  EXPECT_NE(mainSource.find("POST_ANALYTICAL"), std::string::npos);
-  EXPECT_NE(mainSource.find("setExtraErrorLengthClamp"), std::string::npos);
-  EXPECT_NE(mainSource.find("Body_LSP"), std::string::npos);
-  EXPECT_NE(mainSource.find("Body_RHY"), std::string::npos);
-  EXPECT_NE(mainSource.find("OPTIMIZE_BALANCE"), std::string::npos);
-  EXPECT_NE(mainSource.find("FROM_CENTROID"), std::string::npos);
-  EXPECT_NE(mainSource.find("SHIFT_SUPPORT"), std::string::npos);
-  EXPECT_NE(mainSource.find("solveHuboWholeBody"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Optimize Hubo posture and balance"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Restore Hubo centroid balance mode"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Toggle left Hubo foot support"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Toggle right Hubo foot support"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Blue/red COM marker shows support-polygon validity"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("Print Hubo DOFs"), std::string::npos);
-  EXPECT_NE(mainSource.find("Reset Hubo relaxed posture"), std::string::npos);
-  EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Hold R to optimize whole-body posture and balance"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Whole-body IK solves active targets and balance"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("'1'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'6'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'x'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'c'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'p'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'t'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'W'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'E'"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeHuboPuppetCamera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.50)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.up = Eigen::Vector3d(-0.20, -0.08, 0.98)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.yaw = 0.5118558424318241"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("SupportPolygonVisual"), std::string::npos);
-  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("osg"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Hubo Puppet Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(readmeSource.find("pixi run ex hubo_puppet"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("support-polygon and COM validity overlay"),
-      std::string::npos);
-  EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Press `1`-`6`"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Target gizmos appear"), std::string::npos);
-  EXPECT_NE(readmeSource.find("historical 2x movement"), std::string::npos);
-  EXPECT_NE(readmeSource.find("whole-body"), std::string::npos);
-  EXPECT_NE(readmeSource.find("posture"), std::string::npos);
-  EXPECT_NE(readmeSource.find("balance"), std::string::npos);
-  EXPECT_NE(readmeSource.find("relaxed-posture objective"), std::string::npos);
-  EXPECT_NE(readmeSource.find("balance constraint"), std::string::npos);
-  EXPECT_NE(readmeSource.find("analytical"), std::string::npos);
-  EXPECT_NE(readmeSource.find("arm and leg IK"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, CollisionSandboxUsesMouseDrivenObjectGizmos)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "collision_sandbox" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "collision_sandbox" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("#include <dart/gui/gizmo.hpp>"), std::string::npos);
-  EXPECT_NE(mainSource.find("createObjectGizmos"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("options.gizmos = createObjectGizmos(state)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
-  EXPECT_NE(mainSource.find("kContactObjectAlpha"), std::string::npos);
-  EXPECT_NE(mainSource.find("showDebugLabels"), std::string::npos);
-  EXPECT_NE(mainSource.find("addDebugLabel"), std::string::npos);
-  EXPECT_NE(mainSource.find("BroadPhaseObjectCenters"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("objectCentersById = fallbackObjectCenters"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("options.debugLabels"), std::string::npos);
-  EXPECT_NE(mainSource.find("\"Name Tags\""), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("const bool showContactOverlay"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Left-drag object gizmo arrows, planes, and rings"),
-      std::string::npos);
-  EXPECT_EQ(mainSource.find("\"A Position\""), std::string::npos);
-  EXPECT_EQ(mainSource.find("\"B Position\""), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("Left-drag object gizmo arrows, planes, and rings"),
-      std::string::npos);
-  EXPECT_NE(readmeSource.find("rendered translucent"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("point, normal, and depth overlays"),
-      std::string::npos);
-  EXPECT_NE(readmeSource.find("Minimal name tags"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
-{
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "g1_puppet" / "main.cpp");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "g1_puppet" / "README.md");
-
-  EXPECT_NE(
-      mainSource.find("package://g1_description/g1_29dof.urdf"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("createG1ResourceRetriever"), std::string::npos);
-  EXPECT_NE(mainSource.find("--g1-package-uri"), std::string::npos);
-  EXPECT_NE(mainSource.find("--package-uri"), std::string::npos);
-  EXPECT_NE(mainSource.find("kG1SkeletonName = \"G1\""), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kGroundSkeletonName = \"ground\""), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kGroundBodyName = \"ground_body\""), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81))"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector3d(8.0, 8.0, thickness)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Eigen::Vector4d(0.4, 0.4, 0.4, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("transform.translation().z() = 0.75"), std::string::npos);
-  EXPECT_NE(mainSource.find("computeVisualWorldBounds"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("groundClearance - bounds->first.z()"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("createG1GridShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("constexpr int cellCount = 40"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("constexpr double spacing = 0.1"), std::string::npos);
-  EXPECT_NE(mainSource.find("kG1GridShapeName"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("kSupportVisualElevation = 0.02"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
-  EXPECT_NE(mainSource.find("g1_support_polygon_overlay"), std::string::npos);
-  EXPECT_NE(mainSource.find("addDisconnectedLine"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("removeConnection(start - 1u, start)"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
-  EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("ik_target_left_hand"), std::string::npos);
-  EXPECT_NE(mainSource.find("ik_target_right_foot"), std::string::npos);
-  EXPECT_NE(mainSource.find("left_rubber_hand_target"), std::string::npos);
-  EXPECT_NE(mainSource.find("right_ankle_roll_link_target"), std::string::npos);
-  EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
-  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(mainSource.find("BodyNodeDragHandle"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.bodyNodeDragHandles"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Alt-drag translates body nodes"), std::string::npos);
-  EXPECT_NE(mainSource.find("Ctrl-drag rotates them"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Shift-drag moves a body with only its parent joint"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
-  EXPECT_NE(mainSource.find("return state->active"), std::string::npos);
-  EXPECT_NE(mainSource.find("gizmo.size = 0.15"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Left-drag active target gizmo handles"),
-      std::string::npos);
-  EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
-  EXPECT_NE(mainSource.find("createG1KeyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("solveActiveG1Targets"), std::string::npos);
-  EXPECT_EQ(
-      mainSource.find("InverseKinematicsSolveMode::SkeletonHierarchy"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("world->removeSimpleFrame(target)"), std::string::npos);
-  EXPECT_NE(mainSource.find("Activated IK target"), std::string::npos);
-  EXPECT_NE(mainSource.find("Deactivated IK target"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
-  EXPECT_NE(mainSource.find("makeG1Camera"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.75)"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("camera.yaw = 0.48995732625372834"), std::string::npos);
-  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("toggle/select targets"), std::string::npos);
-  EXPECT_NE(mainSource.find("'1'"), std::string::npos);
-  EXPECT_NE(mainSource.find("'4'"), std::string::npos);
-  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(mainSource.find("GridVisual"), std::string::npos);
-  EXPECT_EQ(mainSource.find("SupportPolygonVisual"), std::string::npos);
-  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
-  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
-  EXPECT_EQ(mainSource.find("osg"), std::string::npos);
-  EXPECT_NE(readmeSource.find("G1 Puppet Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(readmeSource.find("pixi run ex g1_puppet"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--package-uri"), std::string::npos);
-  EXPECT_NE(readmeSource.find("--g1-package-uri"), std::string::npos);
-  EXPECT_NE(readmeSource.find("support-polygon overlay"), std::string::npos);
-  EXPECT_NE(readmeSource.find("BodyNodeDragHandle"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Target gizmos appear"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Alt preserves orientation"), std::string::npos);
-  EXPECT_EQ(
-      readmeSource.find("do not have a full renderer-neutral"),
-      std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
-{
-  const auto operationalSource = readSourceFile(
-      std::filesystem::path("examples") / "operational_space_control"
-      / "main.cpp");
-  const auto operationalReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "operational_space_control"
-      / "README.md");
-  const auto inputSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "detail" / "input.cpp");
-  const auto selectionSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
-  EXPECT_NE(
-      operationalSource.find("KR5/KR5 sixx R650.urdf"), std::string::npos);
-  EXPECT_NE(operationalSource.find("KR5/ground.urdf"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("setTransformFromParentBodyNode"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("Eigen::Isometry3d::Identity()"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalSource.find(
-          "transform.pretranslate(Eigen::Vector3d(0.0, 0.0, 0.5))"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("Eigen::AngleAxisd(dart::math::pi / 2.0"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("joint->setLimitEnforcement(false)"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("joint->setDampingCoefficient(0, 0.5)"),
-      std::string::npos);
-  EXPECT_EQ(operationalSource.find("SphereShape"), std::string::npos);
-  EXPECT_NE(operationalSource.find("getMassMatrix"), std::string::npos);
-  EXPECT_NE(operationalSource.find("getLinearJacobian"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("getLinearJacobianDeriv"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("getCoriolisAndGravityForces"), std::string::npos);
-  EXPECT_NE(operationalSource.find("mKp(i, i) = 50.0"), std::string::npos);
-  EXPECT_NE(operationalSource.find("mKd(i, i) = 5.0"), std::string::npos);
-  EXPECT_NE(operationalSource.find("mRobot->setForces"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("makeOperationalSpaceRunDefaults"),
-      std::string::npos);
-  EXPECT_NE(operationalSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(operationalSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("makeOperationalSpaceCamera"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94)"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("camera.yaw = 0.8848934155088675"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("camera.distance = 4.376539729055364"),
-      std::string::npos);
-  EXPECT_NE(operationalSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(operationalSource.find("options.ikHandles"), std::string::npos);
-  EXPECT_NE(operationalSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(operationalSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(operationalSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(operationalSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("Left-drag the target gizmo"), std::string::npos);
-  EXPECT_NE(operationalSource.find("Press 1 to select"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("createOperationalSpaceKeyboardActions"),
-      std::string::npos);
-  EXPECT_NE(operationalSource.find("Toggle shadows"), std::string::npos);
-  EXPECT_NE(
-      operationalSource.find("makeToggleShadowsAction('S')"),
-      std::string::npos);
-  EXPECT_NE(operationalSource.find("Shadow On/Off"), std::string::npos);
-  EXPECT_EQ(operationalSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_EQ(
-      operationalSource.find("Hold key 1 or X while Ctrl-dragging"),
-      std::string::npos);
-  EXPECT_EQ(operationalSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_EQ(operationalSource.find("wam.urdf"), std::string::npos);
-  EXPECT_NE(inputSource.find("GLFW_KEY_1"), std::string::npos);
-  EXPECT_NE(inputSource.find("GLFW_KEY_2"), std::string::npos);
-  EXPECT_NE(inputSource.find("GLFW_KEY_3"), std::string::npos);
-  EXPECT_NE(selectionSource.find("GLFW_KEY_1"), std::string::npos);
-  EXPECT_NE(selectionSource.find("GLFW_KEY_2"), std::string::npos);
-  EXPECT_NE(selectionSource.find("GLFW_KEY_3"), std::string::npos);
-  EXPECT_NE(
-      operationalReadmeSource.find("Operational Space Control Example"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalReadmeSource.find("pixi run ex operational_space_control"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalReadmeSource.find("public `dart::gui::Gizmo`"),
-      std::string::npos);
-  EXPECT_NE(
-      operationalReadmeSource.find("Press `1` to select"), std::string::npos);
-  EXPECT_NE(
-      operationalReadmeSource.find("Press `s` or `S` to toggle shadows"),
-      std::string::npos);
-  EXPECT_NE(operationalReadmeSource.find("--out"), std::string::npos);
-  EXPECT_NE(
-      operationalReadmeSource.find("shadow toggle are restored"),
-      std::string::npos);
-  EXPECT_EQ(
-      operationalReadmeSource.find("shadow-control API gap"),
-      std::string::npos);
-
-  const auto wamSource = readSourceFile(
-      std::filesystem::path("examples") / "wam_ikfast" / "main.cpp");
-  const auto wamReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "wam_ikfast" / "README.md");
-  const auto wamCmakeSource = readSourceFile(
-      std::filesystem::path("examples") / "wam_ikfast" / "CMakeLists.txt");
-  const auto wamIkfastCmakeSource = readSourceFile(
-      std::filesystem::path("examples") / "wam_ikfast" / "ikfast"
-      / "CMakeLists.txt");
-  EXPECT_EQ(wamSource.find("createTargetHandleShape"), std::string::npos);
-  EXPECT_EQ(wamSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(wamSource.find("SharedLibraryIkFast"), std::string::npos);
-  EXPECT_NE(wamSource.find("DART_WAM_IKFAST_LIB_PATH"), std::string::npos);
-  EXPECT_NE(
-      wamSource.find("std::vector<std::size_t>{0, 1, 3, 4, 5, 6}"),
-      std::string::npos);
-  EXPECT_NE(wamSource.find("std::vector<std::size_t>{2}"), std::string::npos);
-  EXPECT_NE(wamSource.find("lh_target"), std::string::npos);
-  EXPECT_NE(
-      wamSource.find("createWamIkFastKeyboardActions"), std::string::npos);
-  EXPECT_NE(wamSource.find("Toggle WAM IKFast target"), std::string::npos);
-  EXPECT_NE(wamSource.find("Print WAM joint values"), std::string::npos);
-  EXPECT_NE(wamSource.find("Reset WAM relaxed posture"), std::string::npos);
-  EXPECT_NE(wamSource.find("targetState->solve"), std::string::npos);
-  EXPECT_NE(wamSource.find("makeWamIkFastRunDefaults"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.height = 960"), std::string::npos);
-  EXPECT_NE(wamSource.find("makeWamIkFastCamera"), std::string::npos);
-  EXPECT_NE(
-      wamSource.find("camera.distance = 6.285196894290584"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.ikHandles"), std::string::npos);
-  EXPECT_NE(wamSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(wamSource.find("BodyNodeDragHandle"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.bodyNodeDragHandles"), std::string::npos);
-  EXPECT_NE(wamSource.find("gizmo.isVisible"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.simulateWorld = false"), std::string::npos);
-  EXPECT_NE(wamSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(wamSource.find("Left-drag active target gizmo"), std::string::npos);
-  EXPECT_NE(wamSource.find("Alt + left-drag body"), std::string::npos);
-  EXPECT_NE(wamSource.find("Ctrl + left-drag body"), std::string::npos);
-  EXPECT_NE(wamSource.find("Shift + left-drag body"), std::string::npos);
-  EXPECT_EQ(wamSource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_NE(
-      wamSource.find("Note that this is purely kinematic"), std::string::npos);
-  EXPECT_EQ(wamSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_NE(wamCmakeSource.find("add_subdirectory(ikfast)"), std::string::npos);
-  EXPECT_NE(wamCmakeSource.find("DART_WAM_IKFAST_LIB_PATH"), std::string::npos);
-  EXPECT_NE(wamCmakeSource.find("wamIk"), std::string::npos);
-  EXPECT_NE(wamIkfastCmakeSource.find("add_library(wamIk"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("WAM IKFast Example"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("pixi run ex wam_ikfast"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("--screenshot"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("--out"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("simulateWorld = false"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("BodyNodeDragHandle"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("Alt/Ctrl/Shift"), std::string::npos);
-  EXPECT_NE(wamReadmeSource.find("Shift-left-drag a body"), std::string::npos);
-  EXPECT_EQ(
-      wamReadmeSource.find("remains a public manipulation API gap"),
-      std::string::npos);
-
-  const auto tinkertoySource = readSourceFile(
-      std::filesystem::path("examples") / "tinkertoy" / "main.cpp");
-  const auto tinkertoyReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "tinkertoy" / "README.md");
-  const auto panelHeader
-      = readSourceFile(std::filesystem::path("dart") / "gui" / "panel.hpp");
-  EXPECT_EQ(tinkertoySource.find("createTargetHandleShape"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("options.gizmos"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("tinkertoy_target"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("syncPickFromSelectionContext"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("context.selectedPoint"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("context.selectedNormal"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("kDefaultBlockWidth / 2.0"), std::string::npos);
-  EXPECT_NE(panelHeader.find("selectedPoint"), std::string::npos);
-  EXPECT_NE(panelHeader.find("selectedNormal"), std::string::npos);
-  EXPECT_NE(panelHeader.find("LightingState"), std::string::npos);
-  EXPECT_NE(panelHeader.find("headlightsEnabled"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("Left-drag target gizmo arrows/planes/rings"),
-      std::string::npos);
-  EXPECT_EQ(tinkertoySource.find("Ctrl-left drag"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("class TinkertoyState"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("addWeldJointBlock"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("deletePick"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("setGravityEnabled"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("setForceCoeff"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Tinkertoy Control"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("initialPosition"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("initialSize"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("backgroundAlpha = 0.5"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("horizontalScrollbar = true"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("menuBar = true"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Gravity On/Off"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Headlights On/Off"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("context.lighting.headlightsEnabled"),
-      std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Force Coeff"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Add a Weld-Joint Block"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("Add a Revolute-Joint Block"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Add a Ball-Joint Block"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("options.height = 720"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("KeyboardShortcut"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("KeyboardAction"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("KeyboardKey::Tab"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("KeyboardKey::Enter"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("context.resetCamera"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("toggleTinkertoyRecording"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("toggleFrameOutputCapture"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("kTinkertoyRecordingDirectory"), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("openModal(\"About DART\""), std::string::npos);
-  EXPECT_NE(
-      tinkertoySource.find("beginModal(\"About DART\""), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("frameOutputEnabled"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Start Recording"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Stop Recording"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("CollisionAspect"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("DynamicsAspect"), std::string::npos);
-  EXPECT_NE(
-      tinkertoyReadmeSource.find("Tinkertoy Builder Example"),
-      std::string::npos);
-  EXPECT_NE(
-      tinkertoyReadmeSource.find("pixi run ex tinkertoy"), std::string::npos);
-  EXPECT_NE(tinkertoyReadmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(tinkertoyReadmeSource.find("--gui-scale"), std::string::npos);
-  EXPECT_NE(tinkertoyReadmeSource.find("--out"), std::string::npos);
-  EXPECT_NE(
-      tinkertoyReadmeSource.find("Enter-key recording"), std::string::npos);
-  EXPECT_EQ(
-      tinkertoyReadmeSource.find("Runtime Enter-key recording remains"),
-      std::string::npos);
-  EXPECT_EQ(tinkertoyReadmeSource.find("viewer headlight"), std::string::npos);
-  EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
-{
-  const auto hardcodedSource = readSourceFile(
-      std::filesystem::path("examples") / "hardcoded_design" / "main.cpp");
-  const auto hardcodedReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "hardcoded_design" / "README.md");
-  EXPECT_NE(hardcodedSource.find("visual_hardcoded_design"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("RevoluteJoint"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("LHY"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("createBoxWireframeShape"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("addBoxWireframe"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("kJointStep = 0.1"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("moveDof"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("toggleDirection"), std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("createHardcodedDesignKeyboardActions"),
-      std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("makeMoveJointAction('1', 0, controls)"),
-      std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("makeMoveJointAction('2', 1, controls)"),
-      std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("makeMoveJointAction('3', 2, controls)"),
-      std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("KeyboardShortcut::characterKey(key)"),
-      std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("KeyboardShortcut::characterKey('-')"),
-      std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("makeHardcodedDesignCamera"), std::string::npos);
-  EXPECT_NE(
-      hardcodedSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.0)"),
-      std::string::npos);
-  EXPECT_NE(hardcodedSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(hardcodedSource.find("Hardcoded Design"), std::string::npos);
-  EXPECT_NE(
-      hardcodedReadmeSource.find("Hardcoded Design Example"),
-      std::string::npos);
-  EXPECT_NE(hardcodedReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(hardcodedReadmeSource.find("wireframe link"), std::string::npos);
-  EXPECT_NE(
-      hardcodedReadmeSource.find("DART line geometry"), std::string::npos);
-  EXPECT_EQ(
-      hardcodedReadmeSource.find("render-style or debug-mode API"),
-      std::string::npos);
-  EXPECT_EQ(hardcodedSource.find("options.defaultScene"), std::string::npos);
-
-  const auto sourceGridHeader = readSourceFile(
-      std::filesystem::path("examples") / "gui_source_grid.hpp");
-  EXPECT_NE(sourceGridHeader.find("SourceOwnedGridState"), std::string::npos);
-  EXPECT_NE(sourceGridHeader.find("SourceOwnedGridPlane"), std::string::npos);
-  EXPECT_NE(sourceGridHeader.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(
-      sourceGridHeader.find("addSourceOwnedGridPanelControls"),
-      std::string::npos);
-  EXPECT_NE(sourceGridHeader.find("Show Source Grid"), std::string::npos);
-  EXPECT_NE(sourceGridHeader.find("Major Line Color"), std::string::npos);
-  EXPECT_NE(sourceGridHeader.find("Minor Line Color"), std::string::npos);
-  EXPECT_EQ(sourceGridHeader.find("GridVisual"), std::string::npos);
-
-  const auto heightmapSource = readSourceFile(
-      std::filesystem::path("examples") / "heightmap" / "main.cpp");
-  const auto heightmapReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "heightmap" / "README.md");
-  EXPECT_NE(heightmapSource.find("visual_heightmap"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("HeightmapShaped"), std::string::npos);
-  EXPECT_NE(
-      heightmapSource.find("visual_heightmap_sample_ball_"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("--demo"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("HeightmapDemo"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("createHeightmapPanel"), std::string::npos);
-  EXPECT_NE(
-      heightmapSource.find("makeHeightmapRunDefaults"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("options.height = 720"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("makeHeightmapCamera"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("Heightmap Demo"), std::string::npos);
-  EXPECT_NE(
-      heightmapSource.find("Heightmap rendering example"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("builder.slider"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("Show Terrain"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("Terrain Color"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("SourceOwnedGridState"), std::string::npos);
-  EXPECT_NE(
-      heightmapSource.find("attachSourceOwnedGridFrames"), std::string::npos);
-  EXPECT_NE(
-      heightmapSource.find("addSourceOwnedGridPanelControls"),
-      std::string::npos);
-  EXPECT_NE(heightmapSource.find("Regenerate"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("requestSingleStep"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("requestExit"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("setupAlignmentDemo"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("DART_HAVE_ODE"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("heightmap_ball_"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("box_ball_"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("reference_box"), std::string::npos);
-  EXPECT_EQ(heightmapSource.find("debug-grid API"), std::string::npos);
-  EXPECT_NE(heightmapReadmeSource.find("Heightmap Example"), std::string::npos);
-  EXPECT_NE(heightmapReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(
-      heightmapReadmeSource.find("edit the terrain color"), std::string::npos);
-  EXPECT_NE(heightmapReadmeSource.find("line count"), std::string::npos);
-  EXPECT_NE(heightmapReadmeSource.find("major/minor/axis"), std::string::npos);
-  EXPECT_NE(heightmapReadmeSource.find("--demo alignment"), std::string::npos);
-  EXPECT_EQ(heightmapSource.find("options.defaultScene"), std::string::npos);
-
-  const auto pointCloudSource = readSourceFile(
-      std::filesystem::path("examples") / "point_cloud" / "main.cpp");
-  const auto pointCloudReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "point_cloud" / "README.md");
-  EXPECT_NE(pointCloudSource.find("visual_point_cloud"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("PointCloudShape"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("point_cloud_sensor"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("KR5 sixx R650.urdf"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("ground.urdf"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("PointSamplingMode"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("SampleOnRobot"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("SampleInBox"), std::string::npos);
-  EXPECT_NE(
-      pointCloudSource.find("generatePointCloudOnRobot"), std::string::npos);
-  EXPECT_NE(
-      pointCloudSource.find("generatePointCloudInBox"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("updateRobotPose"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("updateSensor"), std::string::npos);
-  EXPECT_EQ(pointCloudSource.find("DART_HAVE_OCTOMAP"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("VoxelGridShape"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("visual_voxel_grid"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("point_cloud_grid"), std::string::npos);
-  EXPECT_NE(
-      pointCloudSource.find("state->grid.visible = false"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("SourceOwnedGridState"), std::string::npos);
-  EXPECT_NE(
-      pointCloudSource.find("attachSourceOwnedGridFrames"), std::string::npos);
-  EXPECT_NE(
-      pointCloudSource.find("Point Cloud & Voxel Grid Demo"),
-      std::string::npos);
-  EXPECT_NE(
-      pointCloudSource.find("Point cloud and voxel grid rendering example"),
-      std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Run Robot Updating"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Sample on robot"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Sample in box"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Cycle Color Mode"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Point Cloud Color"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Voxel Grid Color"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Cycle Point Shape Type"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("Visual Size"), std::string::npos);
-  EXPECT_EQ(pointCloudSource.find("debug-grid API"), std::string::npos);
-  EXPECT_EQ(
-      pointCloudSource.find("Color editors and detailed debug-grid"),
-      std::string::npos);
-  EXPECT_NE(
-      pointCloudSource.find("makePointCloudRunDefaults"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("options.height = 720"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("makePointCloudCamera"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(
-      pointCloudReadmeSource.find("Point Cloud Example"), std::string::npos);
-  EXPECT_NE(pointCloudReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(pointCloudReadmeSource.find("1280x720"), std::string::npos);
-  EXPECT_NE(
-      pointCloudReadmeSource.find("Point Cloud Color"), std::string::npos);
-  EXPECT_NE(
-      pointCloudReadmeSource.find("Scene-grid controls"), std::string::npos);
-  EXPECT_NE(pointCloudReadmeSource.find("line count"), std::string::npos);
-  EXPECT_EQ(pointCloudSource.find("options.defaultScene"), std::string::npos);
-
-  const auto polyhedronSource = readSourceFile(
-      std::filesystem::path("examples") / "polyhedron_visual" / "main.cpp");
-  const auto polyhedronReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "polyhedron_visual" / "README.md");
-  EXPECT_NE(
-      polyhedronSource.find("visual_polyhedron_surface"), std::string::npos);
-  EXPECT_NE(
-      polyhedronSource.find("visual_polyhedron_wireframe"), std::string::npos);
-  EXPECT_NE(polyhedronSource.find("visual_polyhedron_grid"), std::string::npos);
-  EXPECT_NE(polyhedronSource.find("ConvexMeshShape"), std::string::npos);
-  EXPECT_NE(polyhedronSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(
-      polyhedronSource.find("createPolyhedronGridShape"), std::string::npos);
-  EXPECT_NE(
-      polyhedronSource.find("makePolyhedronRunDefaults"), std::string::npos);
-  EXPECT_NE(polyhedronSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(polyhedronSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(polyhedronSource.find("makePolyhedronCamera"), std::string::npos);
-  EXPECT_NE(
-      polyhedronSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.4)"),
-      std::string::npos);
-  EXPECT_NE(polyhedronSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(polyhedronSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(
-      polyhedronReadmeSource.find("Polyhedron Visual Example"),
-      std::string::npos);
-  EXPECT_NE(polyhedronReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(polyhedronReadmeSource.find("640x480"), std::string::npos);
-  EXPECT_EQ(polyhedronSource.find("options.defaultScene"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
-{
-  const auto lcpSource = readSourceFile(
-      std::filesystem::path("examples") / "lcp_physics" / "main.cpp");
-  const auto lcpReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "lcp_physics" / "README.md");
-  EXPECT_NE(
-      lcpSource.find("constexpr int kBallDropSphereCount = 75"),
-      std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("constexpr int kBoxStackLayers = 5"), std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("constexpr int kDominoCount = 20"), std::string::npos);
-  EXPECT_NE(lcpSource.find("\"light_box\""), std::string::npos);
-  EXPECT_NE(lcpSource.find("\"heavy_box\""), std::string::npos);
-  EXPECT_NE(lcpSource.find("\"box_\""), std::string::npos);
-  EXPECT_NE(lcpSource.find("\"ball_\""), std::string::npos);
-  EXPECT_NE(lcpSource.find("\"domino_\""), std::string::npos);
-  EXPECT_NE(lcpSource.find("DantzigSolver"), std::string::npos);
-  EXPECT_NE(lcpSource.find("PgsSolver"), std::string::npos);
-  EXPECT_NE(lcpSource.find("--scenario"), std::string::npos);
-  EXPECT_NE(lcpSource.find("--solver"), std::string::npos);
-  EXPECT_NE(lcpSource.find("--list"), std::string::npos);
-  EXPECT_NE(lcpSource.find("resetLcpWorld"), std::string::npos);
-  EXPECT_NE(lcpSource.find("builder.button(label)"), std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("builder.slider(\"Timestep (Hz)\""), std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("builder.slider(\"Gravity (m/s^2)\""), std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("std::deque<double> stepTimeHistory"), std::string::npos);
-  EXPECT_NE(lcpSource.find("updateRenderFps"), std::string::npos);
-  EXPECT_NE(lcpSource.find("render fps:"), std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("builder.beginTable(\"lcp_performance\""),
-      std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("builder.plotLines(\"Step time (ms)\""),
-      std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("builder.collapsingHeader(\"UI Debug\""),
-      std::string::npos);
-  EXPECT_NE(lcpSource.find("DisplaySize:"), std::string::npos);
-  EXPECT_NE(lcpSource.find("FramebufferScale:"), std::string::npos);
-  EXPECT_NE(lcpSource.find("FontSize:"), std::string::npos);
-  EXPECT_NE(lcpSource.find("FontGlobalScale:"), std::string::npos);
-  EXPECT_NE(lcpSource.find("UiScale:"), std::string::npos);
-  EXPECT_NE(lcpSource.find("FontTex:"), std::string::npos);
-  EXPECT_EQ(
-      lcpSource.find("Display/font metrics need backend debug access"),
-      std::string::npos);
-  EXPECT_EQ(
-      lcpSource.find("Step-time line plot needs a public panel plotting API"),
-      std::string::npos);
-  EXPECT_EQ(
-      lcpSource.find("step-time plots need a public panel plotting"),
-      std::string::npos);
-  EXPECT_EQ(lcpSource.find("ImGui"), std::string::npos);
-  EXPECT_NE(lcpSource.find("createInclinedPlaneScenario"), std::string::npos);
-  EXPECT_NE(lcpSource.find("makeLcpRunDefaults"), std::string::npos);
-  EXPECT_NE(lcpSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(lcpSource.find("options.height = 720"), std::string::npos);
-  EXPECT_NE(lcpSource.find("makeLcpCamera"), std::string::npos);
-  EXPECT_NE(
-      lcpSource.find("camera.target = Eigen::Vector3d(0.0, 0.3, 0.0)"),
-      std::string::npos);
-  EXPECT_NE(lcpSource.find("options.world"), std::string::npos);
-  EXPECT_NE(lcpReadmeSource.find("LCP Physics Example"), std::string::npos);
-  EXPECT_NE(lcpReadmeSource.find("mass_ratio"), std::string::npos);
-  EXPECT_NE(lcpReadmeSource.find("75 balls dropping"), std::string::npos);
-  EXPECT_NE(lcpReadmeSource.find("Command-Line Options"), std::string::npos);
-  EXPECT_NE(lcpReadmeSource.find("--out <dir>"), std::string::npos);
-  EXPECT_EQ(lcpSource.find("options.defaultScene"), std::string::npos);
-
-  const auto mimicSource = readSourceFile(
-      std::filesystem::path("examples") / "mimic_pendulums" / "main.cpp");
-  const auto mimicReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "mimic_pendulums" / "README.md");
-  EXPECT_NE(
-      mimicSource.find(
-          "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf"),
-      std::string::npos);
-  EXPECT_NE(mimicSource.find("mimic_pendulums_xy_grid"), std::string::npos);
-  EXPECT_NE(mimicSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mimicSource.find("pendulum_with_base\""), std::string::npos);
-  EXPECT_NE(
-      mimicSource.find("pendulum_with_base_mimic_slow_follows_fast"),
-      std::string::npos);
-  EXPECT_NE(
-      mimicSource.find("pendulum_with_base_mimic_fast_follows_slow"),
-      std::string::npos);
-  EXPECT_NE(mimicSource.find("retargetMimicsToBaseline"), std::string::npos);
-  EXPECT_NE(mimicSource.find("collectMimicPairs"), std::string::npos);
-  EXPECT_NE(mimicSource.find("tintBases"), std::string::npos);
-  EXPECT_NE(mimicSource.find("base drift"), std::string::npos);
-  EXPECT_NE(mimicSource.find("colorSwatch"), std::string::npos);
-  EXPECT_NE(mimicSource.find("beginTable(\"mimic_table\""), std::string::npos);
-  EXPECT_NE(mimicSource.find("Reference (rad)"), std::string::npos);
-  EXPECT_NE(mimicSource.find("Follower (rad)"), std::string::npos);
-  EXPECT_NE(mimicSource.find("toDegree"), std::string::npos);
-  EXPECT_NE(mimicSource.find("Reset world"), std::string::npos);
-  EXPECT_NE(mimicSource.find("Collision / solver"), std::string::npos);
-  EXPECT_NE(mimicSource.find("Use ODE collision"), std::string::npos);
-  EXPECT_NE(mimicSource.find("Force PGS solver"), std::string::npos);
-  EXPECT_NE(mimicSource.find("Contacts last step"), std::string::npos);
-  EXPECT_NE(mimicSource.find("--solver"), std::string::npos);
-  EXPECT_NE(mimicSource.find("--collision"), std::string::npos);
-  EXPECT_NE(mimicSource.find("PgsSolver"), std::string::npos);
-  EXPECT_NE(
-      mimicSource.find("makeMimicPendulumsRunDefaults"), std::string::npos);
-  EXPECT_NE(mimicSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(mimicSource.find("options.height = 720"), std::string::npos);
-  EXPECT_NE(mimicSource.find("makeMimicPendulumsCamera"), std::string::npos);
-  EXPECT_NE(
-      mimicSource.find("camera.target = Eigen::Vector3d(0.5, 0.0, 1.5)"),
-      std::string::npos);
-  EXPECT_NE(mimicSource.find("options.world"), std::string::npos);
-  EXPECT_NE(
-      mimicReadmeSource.find("Mimic Pendulums Example"), std::string::npos);
-  EXPECT_NE(mimicReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(mimicReadmeSource.find("color legend"), std::string::npos);
-  EXPECT_NE(mimicReadmeSource.find("Command-Line Options"), std::string::npos);
-  EXPECT_NE(mimicReadmeSource.find("--out <dir>"), std::string::npos);
-  EXPECT_EQ(mimicSource.find("options.defaultScene"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
-{
-  const auto emptySource = readSourceFile(
-      std::filesystem::path("examples") / "empty" / "main.cpp");
-  const auto emptyReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "empty" / "README.md");
-  EXPECT_NE(emptySource.find("interactive frame"), std::string::npos);
-  EXPECT_NE(emptySource.find("draggable"), std::string::npos);
-  EXPECT_NE(emptySource.find("createEmptyWorld"), std::string::npos);
-  EXPECT_NE(emptySource.find("emptyPreStepScaffold"), std::string::npos);
-  EXPECT_NE(emptySource.find("emptyPostStepScaffold"), std::string::npos);
-  EXPECT_NE(emptySource.find("emptyPreRenderScaffold"), std::string::npos);
-  EXPECT_NE(emptySource.find("emptyPostRenderScaffold"), std::string::npos);
-  EXPECT_NE(emptySource.find("createEmptyKeyboardActions"), std::string::npos);
-  EXPECT_NE(
-      emptySource.find("KeyboardShortcut::characterKey('q')"),
-      std::string::npos);
-  EXPECT_NE(
-      emptySource.find("KeyboardShortcut::characterKey('Q')"),
-      std::string::npos);
-  EXPECT_NE(emptySource.find("KeyboardKey::Left"), std::string::npos);
-  EXPECT_NE(emptySource.find("KeyboardKey::Right"), std::string::npos);
-  EXPECT_NE(emptySource.find("Lowercase q pressed"), std::string::npos);
-  EXPECT_NE(emptySource.find("Capital Q pressed"), std::string::npos);
-  EXPECT_NE(emptySource.find("Lowercase q released"), std::string::npos);
-  EXPECT_NE(emptySource.find("Capital Q released"), std::string::npos);
-  EXPECT_NE(
-      emptySource.find("KeyboardActionTrigger::Release"), std::string::npos);
-  EXPECT_NE(emptySource.find("Left arrow key pressed"), std::string::npos);
-  EXPECT_NE(emptySource.find("Left arrow key released"), std::string::npos);
-  EXPECT_NE(emptySource.find("Right arrow key pressed"), std::string::npos);
-  EXPECT_NE(emptySource.find("Right arrow key released"), std::string::npos);
-  EXPECT_NE(emptySource.find("Pre-step callbacks"), std::string::npos);
-  EXPECT_NE(emptySource.find("Post-step callbacks"), std::string::npos);
-  EXPECT_NE(emptySource.find("Pre-render callbacks"), std::string::npos);
-  EXPECT_NE(emptySource.find("Post-render callbacks"), std::string::npos);
-  EXPECT_NE(emptySource.find("makeEmptyRunDefaults"), std::string::npos);
-  EXPECT_NE(emptySource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(emptySource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(emptySource.find("makeEmptyCamera"), std::string::npos);
-  EXPECT_NE(
-      emptySource.find("camera.target = Eigen::Vector3d::Zero()"),
-      std::string::npos);
-  EXPECT_NE(
-      emptySource.find("camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94)"),
-      std::string::npos);
-  EXPECT_NE(emptySource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(emptySource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(emptySource.find("options.postStep"), std::string::npos);
-  EXPECT_NE(emptySource.find("options.preRender"), std::string::npos);
-  EXPECT_NE(emptySource.find("options.postRender"), std::string::npos);
-  EXPECT_NE(emptySource.find("options.world"), std::string::npos);
-  EXPECT_NE(emptyReadmeSource.find("Empty Viewer Example"), std::string::npos);
-  EXPECT_NE(emptyReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(emptyReadmeSource.find("640x480"), std::string::npos);
-  EXPECT_NE(
-      emptyReadmeSource.find("keydown and key-release"), std::string::npos);
-  EXPECT_NE(emptyReadmeSource.find("render callbacks"), std::string::npos);
-  EXPECT_EQ(emptyReadmeSource.find("public API follow-up"), std::string::npos);
-  EXPECT_EQ(emptySource.find("options.defaultScene"), std::string::npos);
-
-  const auto eventSource = readSourceFile(
-      std::filesystem::path("examples") / "simulation_event_handler"
-      / "main.cpp");
-  const auto eventReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "simulation_event_handler"
-      / "README.md");
-  EXPECT_NE(
-      eventSource.find("class BlinkingMarkerSensor final"), std::string::npos);
-  EXPECT_NE(eventSource.find("class SimulationEventState"), std::string::npos);
-  EXPECT_NE(eventSource.find("fast_sensor"), std::string::npos);
-  EXPECT_NE(eventSource.find("slow_sensor"), std::string::npos);
-  EXPECT_NE(
-      eventSource.find("simulation_event_handler_fast_sensor"),
-      std::string::npos);
-  EXPECT_NE(
-      eventSource.find("simulation_event_handler_force_arrow"),
-      std::string::npos);
-  EXPECT_NE(eventSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(
-      eventSource.find("createSimulationEventKeyboardActions"),
-      std::string::npos);
-  EXPECT_NE(eventSource.find("KeyboardKey::Tab"), std::string::npos);
-  EXPECT_NE(eventSource.find("KeyboardKey::Backspace"), std::string::npos);
-  EXPECT_NE(eventSource.find("KeyboardKey::Up"), std::string::npos);
-  EXPECT_NE(eventSource.find("KeyboardKey::Down"), std::string::npos);
-  EXPECT_NE(eventSource.find("KeyboardKey::Left"), std::string::npos);
-  EXPECT_NE(eventSource.find("KeyboardKey::Right"), std::string::npos);
-  EXPECT_NE(
-      eventSource.find("KeyboardShortcut::characterKey"), std::string::npos);
-  EXPECT_NE(eventSource.find("character('?')"), std::string::npos);
-  EXPECT_NE(eventSource.find("addExtForce"), std::string::npos);
-  EXPECT_NE(eventSource.find("addExtTorque"), std::string::npos);
-  EXPECT_NE(
-      eventSource.find("makeSimulationEventRunDefaults"), std::string::npos);
-  EXPECT_NE(eventSource.find("options.width = 1280"), std::string::npos);
-  EXPECT_NE(eventSource.find("options.height = 960"), std::string::npos);
-  EXPECT_NE(eventSource.find("makeSimulationEventCamera"), std::string::npos);
-  EXPECT_NE(
-      eventSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 1.0)"),
-      std::string::npos);
-  EXPECT_NE(eventSource.find("world->addSensor"), std::string::npos);
-  EXPECT_NE(eventSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(eventSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(eventSource.find("options.world"), std::string::npos);
-  EXPECT_NE(
-      eventReadmeSource.find("Simulation Event Handler Example"),
-      std::string::npos);
-  EXPECT_NE(eventReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(eventReadmeSource.find("Tab / Backspace"), std::string::npos);
-  EXPECT_NE(eventReadmeSource.find("`h` / `?`"), std::string::npos);
-  EXPECT_EQ(eventSource.find("options.defaultScene"), std::string::npos);
-}
-
-TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
-{
-  const auto softBodiesSource = readSourceFile(
-      std::filesystem::path("examples") / "soft_bodies" / "main.cpp");
-  const auto softBodiesReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "soft_bodies" / "README.md");
-  EXPECT_NE(
-      softBodiesSource.find("dart://sample/skel/softBodies.skel"),
-      std::string::npos);
-  EXPECT_NE(softBodiesSource.find("class SoftBodyHistory"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("captureStepStart"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("moveBackward"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("makePlaybackAction"), std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("KeyboardShortcut::characterKey(key)"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("createSoftBodiesKeyboardActions"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("Move soft-body playback backward one frame"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("Move soft-body playback forward one frame"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("Move soft-body playback backward ten frames"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("Move soft-body playback forward ten frames"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("Restart soft-body playback"), std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("Jump soft-body playback to latest frame"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("'['/']': move backward/forward one frame"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("'{'/'}': move backward/forward ten frames"),
-      std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("printSoftBodiesInstructions"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(
-      softBodiesSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(softBodiesSource.find("options.world"), std::string::npos);
-  EXPECT_EQ(softBodiesSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_NE(
-      softBodiesReadmeSource.find("Soft Bodies Example"), std::string::npos);
-  EXPECT_NE(
-      softBodiesReadmeSource.find("pixi run ex soft_bodies"),
-      std::string::npos);
-  EXPECT_NE(softBodiesReadmeSource.find("--out"), std::string::npos);
-
-  const auto inputSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "detail" / "input.cpp");
-  EXPECT_NE(inputSource.find("GLFW_KEY_LEFT_BRACKET"), std::string::npos);
-  EXPECT_NE(inputSource.find("GLFW_KEY_RIGHT_BRACKET"), std::string::npos);
-  EXPECT_NE(inputSource.find("GLFW_KEY_SLASH"), std::string::npos);
-  EXPECT_NE(inputSource.find("GLFW_KEY_BACKSLASH"), std::string::npos);
-  EXPECT_NE(inputSource.find("case '?'"), std::string::npos);
-  EXPECT_NE(inputSource.find("isShiftDown"), std::string::npos);
-
-  const auto vehicleSource = readSourceFile(
-      std::filesystem::path("examples") / "vehicle" / "main.cpp");
-  const auto vehicleReadmeSource = readSourceFile(
-      std::filesystem::path("examples") / "vehicle" / "README.md");
-  EXPECT_NE(
-      vehicleSource.find("dart://sample/skel/vehicle.skel"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("visual_vehicle_car"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("wheel_front_left"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("kWheelSpeedCommand"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("mBackWheelVelocity"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("forces[6]"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("makeVehicleCamera"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("makeVehicleAction"), std::string::npos);
-  EXPECT_NE(
-      vehicleSource.find("KeyboardShortcut::characterKey(key)"),
-      std::string::npos);
-  EXPECT_NE(
-      vehicleSource.find("createVehicleKeyboardActions"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("Move vehicle forward"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("Stop vehicle"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("Move vehicle backward"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("Steer vehicle left"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("Steer vehicle right"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("printVehicleInstructions"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("'w': move forward"), std::string::npos);
-  EXPECT_NE(
-      vehicleSource.find("'a': rotate steering wheels to left"),
-      std::string::npos);
-  EXPECT_NE(vehicleSource.find("options.runDefaults"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("options.width = 640"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("options.height = 480"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("options.keyboardActions"), std::string::npos);
-  EXPECT_NE(vehicleSource.find("options.world"), std::string::npos);
-  EXPECT_EQ(vehicleSource.find("options.defaultScene"), std::string::npos);
-  EXPECT_NE(vehicleReadmeSource.find("Vehicle Example"), std::string::npos);
-  EXPECT_NE(vehicleReadmeSource.find("pixi run ex vehicle"), std::string::npos);
-  EXPECT_NE(vehicleReadmeSource.find("--screenshot"), std::string::npos);
-  EXPECT_NE(vehicleReadmeSource.find("--out"), std::string::npos);
-}
-
 TEST(
     FilamentSceneExtraction,
     DartsimApplicationHeadersAvoidDirectFilamentIncludes)
@@ -4789,6 +2720,34 @@ TEST(FilamentSceneExtraction, DartsimSceneFixtureModeSkipsEditorPanels)
   EXPECT_LT(fixtureModeReturn, panelRegistration);
 }
 
+TEST(FilamentSceneExtraction, DartsimDefaultsToEmptySceneUnlessDemoRequested)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  // A --demo flag opt-in guards the demo scene; default launch starts empty.
+  EXPECT_NE(
+      editorSource.find("std::string_view(argv[i]) == \"--demo\""),
+      std::string::npos);
+
+  const auto appConstruction
+      = editorSource.find("auto app = std::make_shared<EditorApp>();");
+  ASSERT_NE(appConstruction, std::string::npos);
+
+  const auto demoGuard
+      = editorSource.find("if (hasDemoOption(argc, argv))", appConstruction);
+  const auto demoSeeding = editorSource.find("seedDemoScene(*app);", demoGuard);
+  const auto emptyStart
+      = editorSource.find("startEmptyScene(*app);", demoGuard);
+  ASSERT_NE(demoGuard, std::string::npos);
+  ASSERT_NE(demoSeeding, std::string::npos);
+  ASSERT_NE(emptyStart, std::string::npos);
+
+  // Demo seeding is the guarded opt-in branch, not an unconditional call.
+  EXPECT_LT(appConstruction, demoGuard);
+  EXPECT_LT(demoGuard, demoSeeding);
+}
+
 TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
 {
   const auto editorSource
@@ -4806,9 +2765,12 @@ TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
   EXPECT_NE(
       editorSource.find("clearOutlinerSelection(app.engine)"),
       std::string::npos);
+  EXPECT_NE(editorSource.find("selectViewportRenderable("), std::string::npos);
   EXPECT_NE(
-      editorSource.find("selectViewportRenderable(app->engine, renderableId)"),
+      editorSource.find("app->engine, app->viewportLayers, renderableId"),
       std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app->engine.select(kNoObject)"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, DartsimSceneTreeUsesOutlinerStateAndActions)
@@ -4854,6 +2816,10 @@ TEST(FilamentSceneExtraction, DartsimViewportTransformUsesActionSeam)
       editorSource.find("applyViewportTransformGizmo("), std::string::npos);
   EXPECT_NE(
       editorSource.find(
+          "app->transformGizmo, app->engine, app->viewportLayers"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
           "options.keyboardActions = makeViewportMoveActions(app)"),
       std::string::npos);
 }
@@ -4868,9 +2834,65 @@ TEST(FilamentSceneExtraction, DartsimViewportCameraUsesActionSeam)
 
   EXPECT_NE(editorSource.find("ui.beginMenu(\"View\")"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("buildViewportCameraActions(app.engine)"),
+      editorSource.find("ViewportLayerFilterState viewportLayers"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("filteredViewportRenderItems("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "selectedViewportRenderable(app->engine, app->viewportLayers)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "selectedViewportLabel(app->engine, app->viewportLayers)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildViewportLayerFilterActions(app.viewportLayers)"),
+      std::string::npos);
+  EXPECT_NE(editorSource.find("buildViewportStatus("), std::string::npos);
+  EXPECT_NE(editorSource.find("buildViewportPanel("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.layoutLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.activePaneLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.cameraModeLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.cameraLockLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.trackingLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.visibleLayerLabel)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.selectionLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "if (!action.enabled) {\n      "
+          "ui.text(cameraControlMenuLabel(action));"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("if (ui.button(cameraControlMenuLabel(action)))"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "options.panels.push_back(makePanel(\n      \"Viewport\""),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "[app](dart::gui::PanelBuilder& ui) { buildViewportPanel(ui, *app); "
+          "}"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "setViewportLayerVisible(app.viewportLayers, action.kind, checked)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "buildViewportCameraActions(app.engine, app.viewportLayers)"),
       std::string::npos);
   EXPECT_NE(editorSource.find("applyViewportCameraAction("), std::string::npos);
+  EXPECT_NE(editorSource.find("app.viewportLayers"), std::string::npos);
   EXPECT_NE(
       editorSource.find("context.camera.setOrbitCamera"), std::string::npos);
   EXPECT_NE(
@@ -4920,6 +2942,36 @@ TEST(FilamentSceneExtraction, DartsimSimulationPanelUsesActionSeam)
       editorSource.find("app.engine.simulation().reset()"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DartsimWatchPanelUsesActionSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(
+      editorSource.find("#include <dartsim_ui/watch_actions.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("std::string watchPresetName"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("WatchStatus status = buildWatchStatus"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("saveWatchPreset(app.watch, app.engine"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applyWatchPreset(app.watch, app.engine"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("deleteWatchPreset(app.engine"), std::string::npos);
+  EXPECT_NE(editorSource.find("status.presetOptions"), std::string::npos);
+  EXPECT_NE(editorSource.find("canEditWatchPresets"), std::string::npos);
+  EXPECT_NE(editorSource.find("missingTargetCount"), std::string::npos);
+  EXPECT_NE(editorSource.find("ignoredSignalCount"), std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.objects().model().workspace"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, DartsimRelationshipMenuUsesActionSeam)
 {
   const auto editorSource
@@ -4959,16 +3011,16 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
       std::string::npos);
   EXPECT_NE(
       editorSource.find("ui.menuItem(\"Open Project...\")"), std::string::npos);
+  EXPECT_NE(editorSource.find("openProjectFromMenu(app)"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("openProjectFromNativeDialog(app)"), std::string::npos);
+      editorSource.find("requestOpenProjectReplacementWithDialog("),
+      std::string::npos);
   EXPECT_NE(
-      editorSource.find("saveProjectFromNativeDialog(app)"), std::string::npos);
-  EXPECT_NE(
-      editorSource.find("openProjectFromNativeDialog(EditorApp& app)"),
+      editorSource.find("requestProjectPathModalAfterDialogFailure("),
       std::string::npos);
   EXPECT_NE(
       editorSource.find(
-          "makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open)"),
+          "makeProjectFileDialogRequest(app, app.projectPathKind)"),
       std::string::npos);
   EXPECT_NE(editorSource.find("requestProjectPathModal("), std::string::npos);
   EXPECT_NE(editorSource.find("ui.button(\"Browse...\")"), std::string::npos);
@@ -4989,6 +3041,14 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
   EXPECT_NE(
       editorSource.find("ui.menuItem(\"Save Project As...\")"),
       std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.menuItem(\"Close Project\")"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("requestCloseProjectReplacement(app.engine)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("saveProjectFromMenu(app, true)"), std::string::npos);
+  EXPECT_NE(editorSource.find("saveProjectWithDialog("), std::string::npos);
   EXPECT_EQ(
       editorSource.find("app.engine.loadProject(\"scene.dartsim\")"),
       std::string::npos);
@@ -5044,7 +3104,8 @@ TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringSimulationMode)
   const auto editorSource
       = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
 
-  const auto inspectorStart = editorSource.find("void buildInspector");
+  const auto inspectorStart = editorSource.find(
+      "void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)");
   ASSERT_NE(inspectorStart, std::string::npos);
   const auto canEditCheck = editorSource.find(
       "const InspectorStatus status = buildInspectorStatus(app.engine);");
@@ -5054,14 +3115,14 @@ TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringSimulationMode)
   const auto lockMessage
       = editorSource.find("Inspector locked during Simulation Mode", lockGuard);
   ASSERT_NE(lockMessage, std::string::npos);
-  const auto firstSlider
-      = editorSource.find("ui.slider(property.label", inspectorStart);
+  const auto sectionBuild = editorSource.find(
+      "buildInspectorSection(ui, app, status, section);", inspectorStart);
   const auto deleteButton
       = editorSource.find("ui.button(\"Delete##inspector\")", inspectorStart);
-  ASSERT_NE(firstSlider, std::string::npos);
+  ASSERT_NE(sectionBuild, std::string::npos);
   ASSERT_NE(deleteButton, std::string::npos);
 
-  EXPECT_LT(lockGuard, firstSlider);
+  EXPECT_LT(lockGuard, sectionBuild);
   EXPECT_LT(lockGuard, deleteButton);
 }
 
@@ -5076,6 +3137,9 @@ TEST(FilamentSceneExtraction, DartsimInspectorUsesEnumChoiceControls)
   EXPECT_NE(panelHeader.find("select("), std::string::npos);
   EXPECT_NE(panelSource.find("ImGui::BeginCombo("), std::string::npos);
   EXPECT_NE(editorSource.find("status.enumProperties"), std::string::npos);
+  EXPECT_NE(editorSource.find("inspectorSections(status)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.collapsingHeader(section"), std::string::npos);
   EXPECT_NE(editorSource.find("ui.select(property.label"), std::string::npos);
   EXPECT_NE(editorSource.find("setInspectorEnumProperty("), std::string::npos);
 }
@@ -7330,9 +5394,45 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
       controller.camera.target.isApprox(Eigen::Vector3d(0.0, -0.03, 0.06)));
   EXPECT_LT(controller.camera.distance, 2.0);
 
+  const double distanceAfterScroll = controller.camera.distance;
+  controllerInput.pan = false;
+  controllerInput.zoom = true;
+  controllerInput.cursorY = 60.0;
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
+  EXPECT_LT(controller.camera.distance, distanceAfterScroll);
+
+  const double yawBeforeExternalTargetUpdate = controller.camera.yaw;
+  controller.camera.target = Eigen::Vector3d(5.0, 0.0, 0.0);
+  controllerInput.orbit = true;
+  controllerInput.zoom = false;
+  controllerInput.cursorX = 120.0;
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
+  EXPECT_NE(controller.camera.yaw, yawBeforeExternalTargetUpdate);
+  EXPECT_TRUE(
+      controller.camera.target.isApprox(Eigen::Vector3d(5.0, 0.0, 0.0)));
+
   controllerInput.hasCursor = false;
   dart::gui::updateOrbitCameraController(controller, controllerInput);
   EXPECT_FALSE(controller.hasLastCursor);
+
+  const dart::gui::OrbitCamera cameraBeforeLock = controller.camera;
+  controller.hasLastCursor = true;
+  controller.lastCursorX = 50.0;
+  controller.lastCursorY = 60.0;
+  dart::gui::addOrbitCameraScroll(controller, 1.0);
+  controllerInput.hasCursor = true;
+  controllerInput.locked = true;
+  controllerInput.orbit = true;
+  controllerInput.cursorX = 140.0;
+  controllerInput.cursorY = 160.0;
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
+  EXPECT_FALSE(controller.hasLastCursor);
+  EXPECT_NEAR(controller.scrollDelta, 0.0, 1e-12);
+  EXPECT_TRUE(controller.camera.target.isApprox(cameraBeforeLock.target));
+  EXPECT_TRUE(controller.camera.up.isApprox(cameraBeforeLock.up));
+  EXPECT_EQ(controller.camera.yaw, cameraBeforeLock.yaw);
+  EXPECT_EQ(controller.camera.pitch, cameraBeforeLock.pitch);
+  EXPECT_EQ(controller.camera.distance, cameraBeforeLock.distance);
 
   const auto ray
       = dart::gui::makePerspectivePickRay(camera, 320, 240, 640, 480);

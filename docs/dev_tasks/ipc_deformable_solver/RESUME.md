@@ -142,15 +142,217 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-rigid-surface-ccd` - stacked on
-`feature/ipc-sweep-pair-traversal`, adding an explicitly opted-in static box
-surface CCD limiter for deformable line searches.
+`feature/ipc-gpu-psd-perf-gate` - stacked on
+`feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
+threshold tuning. New cuda test GpuVsCpuPerfGateAtSolverScale: projects 12x12
+barrier batches across {256,1024,4096,16384}, asserts GPU==CPU parity at every
+scale (hard gate), logs per-call wall time (informational, NOT asserted ->
+non-flaky). MEASURED on RTX 5000 Ada: 256 blocks ~0.4x (GPU slower), 1024 ~1.4x,
+4096 ~4x, 16384 ~9x -> crossover ~1k blocks. So raised the cuda adapter's
+kMinGpuBatchBlocks 64 -> 1024 (data-driven; small batches stay on CPU). Only
+touches the cuda test + the cuda adapter threshold -> CPU/default build
+unaffected; test-all for lint; 8/8 cuda tests pass. NOTE Phase-5 contract forbids
+new cuda-named BENCHMARK files -> this is a TEST. Stack 22-deep
+(#2738-#2746,#2748-#2760).
+NEXT remaining (all riskier/deeper, best after Codex reviews the base): resident
+GPU device buffers (avoid per-call cudaMalloc), matrix-free CG, adaptive barrier
+stiffness (TRAJECTORY-CHANGING, no public kappa knob), rigid/codim obstacle
+barrier forces (DISTURBS #2732). Blocked: codim-obstacle friction, corpus port.
+
+Prior #2759 = live GPU PSD-backend injection. LIVE GPU PSD-BACKEND INJECTION
+(user chose "full live wiring now" via AskUserQuestion). New core seam (NO CUDA
+dep): `compute/deformable_psd_backend.{hpp,cpp}` -- `projectSymmetricBlocksToPsd`
+dispatches to an injectable backend (default `projectSymmetricBlocksToPsdCpu`,
+per-block Eigen self-adjoint eigensolve + clamp, BIT-IDENTICAL to the old inline
+projectSymmetricToPsd which I removed). world_step_stage assembly RESTRUCTURED:
+the spring (6x6) and barrier (12x12, PT+EE) Hessian blocks are now COLLECTED into
+a packed row-major buffer, batch-projected via the seam, then scattered (was
+inline per-block). CPU path bit-identical -> 66 deformable tests + full test-all
+6/6 (incl check-no-gpu-runtime-dependencies: core stays GPU-free). CUDA sidecar
+(deformable_psd_projection_cuda.{cuh,cpp}) adds installCudaDeformablePsdBackend()/
+restoreDefaultDeformablePsdBackend(): an adapter that offloads batches >=64 blocks
+to projectSymmetricBlocksToPsdCuda and defers smaller/no-device to CPU (so the
+offload never changes results). GPU validated on RTX 5000 via pixi -e cuda:
+test BackendInjectionRoutesThroughCoreSeam (install -> core seam -> GPU matches
+CPU <1e-9; restore -> CPU). 7/7 cuda tests pass. Stack 21-deep
+(#2738-#2746,#2748-#2759).
+GOTCHA: `pixi run -e cuda test-cuda`'s build step does NOT rebuild the deformable
+cuda TEST target (only the lib/sidecar + rigid bench), so it ran a STALE binary;
+had to `cmake --build build/cuda/cpp/Release --target test_deformable_psd_projection_cuda`
+explicitly. Eigen ternary/RowMajor: packed blocks via Eigen::Map<...,RowMajor>
+(symmetric so row/col-major identical).
+NEXT remaining Phase 3: resident GPU solve path (current backend round-trips
+host<->device per batch -> persistent device buffers + formal GPU-vs-CPU perf
+gate), matrix-free CG, adaptive barrier stiffness, rigid/codim barrier forces
+(DISTURBS #2732). Blocked: codim-obstacle friction, corpus port (assets).
+
+Prior #2758 = converged-ness step-norm diagnostic
+(DeformableSolverStats.finalStepInfinityNorm; diagnostic-only). Adds a CONVERGED-NESS
+step-norm diagnostic: DeformableSolverStats.finalStepInfinityNorm = largest last
+accepted per-node step (infinity norm) across the step's bodies, captured in the
+line-search accept block (max|candidate-next| over free nodes, before the swap),
+folded across bodies after the outer loop. BEHAVIOR-PRESERVING (diagnostic only;
+solve unchanged). KEY FINDING while investigating the #2745 barrier-stall: the
+320-node grid-on-ground UNIT scenario actually CONVERGES FULLY
+(finalGradientResidualNorm ~3e-13 after 5 steps) -- the ~868/~99 high-residual
+figures were BENCHMARK transients (bm_deformable_body), NOT this settled case.
+So this slice is honestly a DIAGNOSTIC (the right convergence companion for
+stiff barriers where the near-singular barrier Hessian inflates the gradient
+norm), NOT a stall fix -- I did not reproduce a genuine stall in a unit test.
+Regression StiffGroundBarrierSettlesByStepNorm (early step >0 while settling,
+shrinks <1e-4 < early at equilibrium). 66 deformable tests, test-all expected
+6/6. Stack 20-deep (#2738-#2746,#2748-#2758).
+NEXT: if pursuing real barrier-stall robustness, reproduce the high residual via
+the BENCHMARK scenarios first (bm_deformable_body grid/drape), then consider an
+IPC-standard Newton-decrement convergence criterion or CCD-filtered line search
+-- but those change trajectories/iteration counts (risk on the unreviewed stack).
+Other remaining: live GPU-backend injection, adaptive stiffness, rigid/codim
+barrier forces (disturbs #2732). Blocked: codim-obstacle friction, corpus port.
+
+Prior #2757 = scene loader + diagnostics bindings (FINAL Phase-8 increment): dartpy
+SCENE LOADER + DIAGNOSTICS. m.def free functions load_deformable_scene(world,
+scene_path, options) + collect_deformable_scene_diagnostics(world), and classes
+DeformableSceneLoadOptions (asset_root[path], body_name_prefix,
+add_structural_springs, structural_spring_stiffness, damping,
+ignore_contact_directives), DeformableSceneInfo (duration, time_step,
+gravity_enabled, bodies, warnings), DeformableSceneBodyInfo (name, body, *counts),
+DeformableSceneDiagnostics (frame, time, *counts, total_mass, max_displacement,
+min_z, max_z). Needed `#include <nanobind/stl/filesystem.h>` for the path<->str
+caster + the io header. io types are `sim::io::...` (sim=dart::simulation::
+experimental). Python test test_experimental_deformable_scene_loader_python_api
+writes a single-tet Gmsh msh + scene.txt into tmp_path, loads it, checks counts
+(4 nodes, 1 tet, 4 derived surface tris) + total_mass==1 (vol 1/6 \* density 6).
+Binary restart save/load (std::iostream) DEFERRED (needs a Python bytes API).
+PHASE 8 NOW COMPLETE -> README Phase 8 marked [x]. Stack 19-deep
+(#2738-#2746,#2748-#2757).
+NEXT (riskier core items, now the main remaining work; sequence carefully on the
+unreviewed stack): barrier-stall convergence robustness (the #2745 high-residual
+finding), live GPU-backend injection, adaptive barrier stiffness, rigid/codim
+obstacle barrier forces (disturbs #2732). Blocked: codim-obstacle friction,
+upstream corpus port (assets).
+
+Prior #2756 = DBC/NBC bindings (DeformableDirichletBoundaryCondition +
+DeformableNeumannBoundaryCondition classes + options
+dirichlet_boundary_conditions/neumann_boundary_conditions; DBC node follows
+linear_velocity\*dt, NBC applies per-node acceleration; Python regression).
+
+Prior #2755 = deformable surface/tetra topology bindings (DeformableSurfaceTriangle
+
+- DeformableTetrahedron classes, options surface*triangles/tetrahedra, body
+  accessors surface_triangle_count/surface_triangle, tetrahedron_count/tetrahedron/
+  tetrahedron_rest_volume, node_mass; regen stubs + inventory which tracks public
+  CLASS names; unit-tetra test). KEY dartpy facts: NO get*\_/set\_\_ names allowed;
+  binding changes need `pixi run generate-stubs` AND
+  `pixi run update-api-boundary-inventory` + `check-api-boundary-inventory`.
+
+Prior #2754 = friction diagnostics: DeformableSolverStats gains
+`frictionDissipation` (sum mu*lambda*f1(y)*y over active friction contacts at the
+converged iterate = force*slip, ramped to 0 at rest) + `activeFrictionContacts`
+(count of ground+self-contact contacts w/ nonzero lagged normal force). New free
+fn `accumulateFrictionDiagnostics` mirrors the two friction energies' slip
+measures (ground u_T=(I-n n^T)(x-start); self-contact projection\*displacement),
+called ONCE after the outer loop (not the line-search hot path). Both 0 when
+mu==0. DeformableSolverStats is C++-ONLY (NOT bound to dartpy) -> no stub regen.
+Regression FrictionDiagnosticsReportSlidingDissipation. With non-flat normals +
+diagnostics done, Phase 4 is COMPLETE except codim-obstacle friction (BLOCKED on
+the codim-obstacle barrier, a Phase-3 item).
+
+Prior #2753 = non-flat ground-normal friction (static-ground
+friction follows the TRUE GEOMETRIC ground normal instead of a hardcoded xy
+tangent plane. KEY: the static-ground barrier is a vertical height field (force
+along +z) and stays that way; only the FRICTION term gains a per-node lagged
+normal. `boxContactAt`/`staticGroundContactAt` now return a `StaticGroundContact
+{top, normal}` (radial normal for a sphere; the +z-exit-face normal of the
+ray-march for a rotated/tilted box); `staticGroundTopAt` delegates to it so the
+6 CCD callers are unchanged. `computeStaticGroundNormalForces` outputs a
+parallel `normalDirection`; `GroundFrictionInputs` gains `laggedNormalDirection`;
+`addGroundFrictionEnergy` and the Newton ground-friction Hessian project against
+P = I - n n^T (energy/grad use u_T = (I - n n^T)(x - x_start); the Hessian is a
+PSD 3x3 tangent block scale*[ (f1/y)(P - T T^T) + f1' T T^T ], -> scale*(2/eps)P
+as y->0). For flat ground n = +z, P = diag(1,1,0) -> reduces EXACTLY to the old
+xy 2x2 block, so flat-ground friction tests are bit-identical. Regression
+GroundFrictionFollowsTiltedSlopeNormal: a node dropped straight down (-z) onto a
+45-deg tilted box deflects DOWN-SLOPE (+x ~= 0.017) because tilt-aware friction
+couples normal/tangential, whereas the frictionless control (and any xy-only
+tangent model) stays on x = 0. 64 deformable tests pass, test-all 6/6.
+CAVEAT/LESSON: the failure-then-fix flipped my predicted -x deflection to +x --
+the vertical height-field barrier exerts no x-force, so all x-motion comes from
+the tilted friction coupling; sign is +x (down-slope), validated empirically.
+ALSO: `cmake --build ... 2>&1 | tail` masks ninja's exit code (pipe returns
+tail's 0); redirect to a file and check $? separately. Eigen ternary needs both
+branches wrapped in Eigen::Vector3d (lazy-expr vs BasisReturnType type mismatch).
+NOTE: codimensional-obstacle friction (the next nominal Phase-4 item) is BLOCKED
+on the codim-obstacle barrier (a remaining Phase-3 item) -- no barrier to lag
+against -- so it is skipped; friction diagnostics is the next executable item.
+friction to follow the TRUE GEOMETRIC ground normal instead of a hardcoded xy
+tangent plane. KEY: the static-ground barrier is a vertical height field (force
+along +z) and stays that way; only the FRICTION term gains a per-node lagged
+normal. `boxContactAt`/`staticGroundContactAt` now return a `StaticGroundContact
+{top, normal}` (radial normal for a sphere; the +z-exit-face normal of the
+ray-march for a rotated/tilted box); `staticGroundTopAt` delegates to it so the
+6 CCD callers are unchanged. `computeStaticGroundNormalForces` outputs a
+parallel `normalDirection`; `GroundFrictionInputs` gains `laggedNormalDirection`;
+`addGroundFrictionEnergy` and the Newton ground-friction Hessian project against
+P = I - n n^T (energy/grad use u_T = (I - n n^T)(x - x_start); the Hessian is a
+PSD 3x3 tangent block scale*[ (f1/y)(P - T T^T) + f1' T T^T ], -> scale*(2/eps)P
+as y->0). For flat ground n = +z, P = diag(1,1,0) -> reduces EXACTLY to the old
+xy 2x2 block, so flat-ground friction tests are bit-identical. Regression
+GroundFrictionFollowsTiltedSlopeNormal: a node dropped straight down (-z) onto a
+45-deg tilted box deflects DOWN-SLOPE (+x ~= 0.017) because tilt-aware friction
+couples normal/tangential, whereas the frictionless control (and any xy-only
+tangent model) stays on x = 0. 64 deformable tests pass, test-all 6/6.
+CAVEAT/LESSON: the failure-then-fix flipped my predicted -x deflection to +x --
+the vertical height-field barrier exerts no x-force, so all x-motion comes from
+the tilted friction coupling; sign is +x (down-slope), validated empirically.
+ALSO: `cmake --build ... 2>&1 | tail` masks ninja's exit code (pipe returns
+tail's 0); redirect to a file and check $? separately. Eigen ternary needs both
+branches wrapped in Eigen::Vector3d (lazy-expr vs BasisReturnType type mismatch).
+NOTE: codimensional-obstacle friction (the next nominal Phase-4 item) is BLOCKED
+on the codim-obstacle barrier (a remaining Phase-3 item) -- no barrier to lag
+against -- so it is skipped; friction diagnostics is the next executable item.
+
+Prior #2752 = edge-edge self-contact friction (force + Hessian; generic over the
+4-node SelfContactFrictionContact, only buildSelfContactFrictionContacts extended
+to edgeEdgeCandidates). #2751 = self-contact friction Hessian (PT). #2750 = Python facade (dartpy
+deformable bindings; forbids get*\*/set*\* names; regenerate stubs +
+api-boundary-inventory.md). #2749 = scene-replay harness.
+
+Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
+friction. NOTE (from the #2745
+diagnostic): the stiff barrier-contact benchmarks
+(grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
+the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
+projected-Newton + line-search stall on very stiff barriers, present without
+friction (mu=0 == mu=0.5 residual). Not a friction bug; a known IPC-class
+limitation worth a future continuation/line-search-robustness slice.
+
+Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
+until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
+(self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
+Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
+reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
+(self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade)
+<- #2751 (self-contact friction Hessian) <- #2752 (edge-edge self-contact
+friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
+diagnostics) <- #2755 (deformable surface/tetra topology bindings) <- #2756
+(deformable DBC/NBC bindings) <- #2757 (deformable scene-loader + diagnostics
+bindings) <- #2758 (converged-ness step-norm diagnostic) <- #2759 (live GPU
+PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU perf gate + adapter threshold tuning).
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with non-box/deforming/moving
-rigid surface contact candidates, broader solver-wired CCD coverage, and
-stronger spatial acceleration for larger meshes.
+User directive (2026-05-28): KEEP BUILDING, NEVER STOP while a plan item remains,
+do everything in order (Codex review batched for Saturday). The three sequenced
+items (self-contact friction, Phase 5 harness, Phase 8 facade) are now done.
+REMAINING plan work, in rough priority: Phase 4 is now done except
+codimensional-obstacle friction (blocked on the codim-obstacle barrier);
+barrier-stall convergence robustness (the high-residual finding above; a strong
+next candidate -- additive, addresses a known limitation); live GPU-backend
+injection (wire the CUDA PSD primitive + a GPU-vs-CPU gate via an optional
+executor, world_step_stage stays GPU-free); adaptive barrier stiffness;
+rigid/codim obstacle barrier forces (disturbs #2732); remaining Phase 8 bindings
+(surface/tetra + DBC/NBC + scene loader); upstream corpus port once assets are
+vendored. Optimize CPU AND GPU throughout.
 
 ## Context That Would Be Lost
 
@@ -166,7 +368,7 @@ stronger spatial acceleration for larger meshes.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-ccd-line-search
+git checkout feature/ipc-sparse-newton-solve
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
@@ -214,6 +416,15 @@ cmake --build build/default/cpp/Release --target test_deformable_body test_seria
 ./build/default/cpp/Release/bin/test_serialization --gtest_filter='Serialization.PreservesRigidBodyCollisionComponents'
 PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'collision_query'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticRigidSurfaceCcdStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.MovingRigidSurfaceCcd*:DeformableBody.MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableMovingRigidSurfaceCcdStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SelfContactBarrier*'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableSelfContactBarrierStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.*ProjectedNewton*:DeformableBody.SparseProjectedNewtonScalesBeyondDenseCap:DeformableBody.FixedSpringMatchesAnalyticImplicitEulerStep'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.02s --benchmark_filter='BM_DeformableGridStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked

@@ -27,6 +27,14 @@
   - Restored historical GUI example executable names as `dart::gui` launchers
     backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
     alongside the existing `--screenshot <path>` final-frame capture.
+  - Consolidated the standalone GUI example executables into a single
+    `dart-demos` application (`examples/demos`) that hosts each example as a
+    scene selectable at runtime from a categorized sidebar (`--scene <id>`
+    selects the initial scene; `--cycle-scenes` drives the headless smoke).
+    Added a runtime scene-switch capability to `dart::gui` via
+    `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
+    template, and the headless `csv_logger`, `headless_simulation`,
+    `speed_test`, and `unified_loading` examples stay standalone.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`
@@ -461,8 +469,17 @@
   - Added opt-in CUDA smoke support for experimental simulation builds, including
     a gated CMake option, Pixi CUDA environment, private SoA integration test and
     benchmark coverage, and manual CUDA CI workflow.
+  - Upgraded pinned build and runtime dependencies to current conda-forge
+    releases via `pixi upgrade`/`pixi update` (notably Eigen 5, fmt 12,
+    spdlog 1.17, Boost 1.91, urdfdom 5, and assimp 6), and migrated DART's
+    `Eigen::JacobiSVD` usage to the Eigen 5 API that takes SVD computation
+    options as template parameters
+    (`Eigen::JacobiSVD<MatrixType, Eigen::ComputeFullV>`) instead of the
+    deprecated runtime `compute()`/constructor arguments.
 
 - Tooling and Docs
+  - Bumped developer tooling to current releases (clang-format 22, black 26)
+    and reformatted the C++ and Python sources to match.
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
   - Added the shared `docs/ai/` agent entrypoint and tightened AI workflow verification, approval-boundary checks, and dev-task cleanup guidance. ([#2649](https://github.com/dartsim/dart/pull/2649))
   - Updated GUI onboarding, module agent docs, ReadTheDocs pages, examples, and tutorial indexes to identify Filament as the maintained renderer and the removed OSG/Raylib paths as unsupported.
@@ -486,6 +503,11 @@
     `abidiff`. The task is diagnostic only and is not wired into CI; ABI
     stability between minor releases is still a deferred topic (see issue
     [#1026](https://github.com/dartsim/dart/issues/1026)).
+  - Added `pixi run lint-cmake` / `check-lint-cmake` CMake formatting with
+    `gersemi`, wired into the `lint` and `check-lint` chains so `CMakeLists.txt`
+    and `*.cmake` files are auto-formatted and CI-checked like every other
+    tracked file type. Configuration in `.gersemirc` matches DART's C++ style
+    (80-column, 2-space indent).
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.
@@ -818,6 +840,242 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     line-search limiter, with point-triangle and physical box-edge CCD
     regressions and benchmark counters. This is a CCD limiter only, not rigid
     contact response or IPC parity.
+  - Added internal experimental moving rigid box surface CCD limiting for free
+    (non-static) deformable-surface CCD obstacles: the deformable stage predicts
+    each obstacle's end-of-step transform from its velocity (mirroring the rigid
+    position integrator that runs after the deformable stage) and tiles the
+    swept motion with overlapping static pose samples so the deformable cannot
+    settle in or tunnel through the obstacle's swept corridor, with focused
+    regressions and benchmark counters. This is a one-way conservative CCD
+    limiter only (timing-agnostic, no rigid contact response or two-way
+    coupling) and is not IPC parity.
+  - Added internal experimental IPC self-contact barrier forces: the deformable
+    solve now adds the clamped-log barrier energy/gradient over the active
+    self-contact point-triangle and edge-edge candidate set (assembled per outer
+    iteration within the activation distance d_hat) as a new objective term, so
+    a deformable surface folding onto itself experiences smooth repulsive
+    contact forces and settles near d_hat instead of pinning at the CCD
+    minimum separation. The conservative CCD limiters remain the hard
+    no-penetration guarantee. First-order (steepest-descent) solve with fixed
+    barrier stiffness; projected Newton and adaptive stiffness are later slices.
+    Includes focused regressions and a benchmark with barrier counters.
+  - Added internal experimental IPC projected-Newton search direction for the
+    deformable solve: each iteration assembles the per-step Hessian (inertia +
+    spring + self-contact barrier + static ground barrier) with per-element
+    PSD projection and solves it (dense LDLT, guarded by a positive-definite
+    check) for a Newton direction, replacing mass-scaled steepest descent and
+    falling back to it when the dense solve is skipped (large bodies), fails,
+    or its line search cannot make progress. This lets the stiff barrier term
+    converge cleanly and matches the analytic implicit-Euler spring solution.
+    Sparse assembly and CPU/GPU optimization of the per-element
+    eigen-decompositions are later slices. Includes focused regressions (Newton
+    engaged, few-iteration convergence, analytic parity) and solver-step
+    counters.
+  - Optimized the experimental IPC projected-Newton solve to assemble a SPARSE
+    per-step Hessian (Eigen triplet assembly) and factorize it with a sparse
+    Cholesky (`SimplicialLDLT`, guarded by a positive-diagonal check), lifting
+    the former 256-node dense-solve cap to thousands of nodes so paper-scale
+    deformable meshes are solved on the Newton path instead of falling back to
+    steepest descent. Fixed DOFs are pinned at assembly time (unit diagonal,
+    free-free element blocks only), preserving the exact dense result; the
+    steepest-descent fallback and PD guard are unchanged. The solve refactorizes
+    from scratch each iteration (per-step cost is not yet optimized);
+    symbolic-factorization reuse, matrix-free CG, and GPU offload of the
+    assembly/solve remain later perf slices. Adds a 300-node-chain regression
+    and a 320-node grid-on-ground-barrier regression (Newton engaged past the
+    old cap) plus sparse-Newton step/fallback counters on the scaling benchmark.
+  - Added a `drape` showcase scene to the `experimental_deformable_gui` example
+    (`--deformable-scene-kind drape`): a 572-node deformable mat drapes over a
+    raised ground-barrier step onto the ground, exercising the landed IPC
+    contact pipeline (self-contact + ground barrier + sparse projected Newton)
+    at a mesh scale past the former 256-node cap. It is a DART-native showcase,
+    not a faithful paper-figure reproduction (mass-spring, no codimensional/FEM
+    elasticity or friction). Adds a library-level drape regression
+    (non-penetrating, conforming over the step) and a `BM_DeformableDrapeStage`
+    benchmark of the multi-barrier solve.
+  - Added an optional CUDA primitive for the deformable solver's data-parallel
+    hotspot: `projectSymmetricBlocksToPsdCuda` batches the per-element PSD
+    projection (the symmetric eigendecomposition that the projected-Newton
+    assembly applies to every spring 6x6 and barrier 12x12 block) onto the GPU
+    via a per-block cyclic-Jacobi kernel, with an identical-semantics CPU
+    reference (`projectSymmetricBlocksToPsdReference`). It ships as part of the
+    opt-in `dart-simulation-experimental-cuda` sidecar (built only with
+    `DART_ENABLE_EXPERIMENTAL_CUDA=ON`); the default CPU runtime keeps no GPU
+    dependency. A CUDA unit test validates the GPU path against the CPU
+    reference for spring and barrier block sizes. This is the standalone,
+    validated building block: wiring it into the live solve needs an optional
+    GPU compute-backend injection path (so `world_step_stage` stays GPU-free per
+    the runtime-dependency policy) and is a later slice.
+  - Optimized the experimental IPC sparse projected-Newton solve to reuse its
+    fill-reducing symbolic factorization (`SimplicialLDLT::analyzePattern`)
+    across iterations and steps whenever the assembled Hessian sparsity pattern
+    is unchanged, so the ordering runs once and only the numeric factorization
+    repeats. It is behavior-preserving (a structural mismatch or failed
+    factorization re-analyzes) and roughly halves the per-step solve on a
+    settled 512-node grid (~21.7 ms to ~11.6 ms). Adds symbolic/numeric
+    factorization counters and a regression asserting a steady step performs
+    zero new symbolic analyses.
+  - Added an experimental IPC solver convergence diagnostic: the deformable
+    stage now reports `finalGradientResidualNorm`, the largest projected-Newton
+    gradient norm at solve termination across the step's bodies (near the
+    gradient tolerance means converged; a large value flags an iteration-cap or
+    stall), surfaced on the grid/drape stage benchmarks toward the paper's
+    benchmark-statistics tables (Fig. 23 / Table 1).
+  - Added experimental IPC lagged smoothed Coulomb friction for deformable
+    contact against static ground barriers (PLAN-081 Phase 4 first increment).
+    A new `DeformableMaterialProperties.frictionCoefficient` (default 0, so
+    existing behavior is unchanged) drives a friction force opposing each
+    contacting node's tangential displacement over the step. The IPC mollifier
+    (f0/f1, velocity threshold epsv) makes the force C1: it saturates at
+    mu \* normalForce when sliding and ramps smoothly to zero at rest. The normal
+    force is lagged once per outer iteration; the lagged friction Hessian is a
+    positive-semidefinite tangential 2x2 block, so it integrates cleanly into
+    the projected-Newton solve. Adds regressions (a sliding node decelerates
+    versus the frictionless control; friction is inactive without contact), a
+    friction variant of the drape benchmark, and serialization of the new
+    coefficient. Self-contact and codimensional friction are later increments.
+  - Extended experimental IPC friction to deformable SELF-CONTACT (point-triangle
+    pairs), reusing the same `frictionCoefficient`. The lagged normal force is
+    the barrier force magnitude on the point node, and the tangent projection
+    comes from the point-triangle tangent stencil; friction opposes the stencil's
+    tangential relative displacement with the same IPC f0/f1 mollifier. Adds a
+    regression (one surface sliding tangentially on another in self-contact
+    decelerates versus the frictionless control while the barrier keeps them
+    separated). Energy+gradient only for now (the self-contact friction Hessian,
+    edge-edge friction, and non-flat ground normals are later increments); the
+    line search on the friction-inclusive energy ensures descent.
+  - Added a deterministic scene-replay regression for the experimental
+    deformable scene pipeline (PLAN-081 Phase 5 validation harness): a
+    DART-native tutorial-style scene (one Dirichlet-anchored cube, one free cube
+    falling under gravity) is replayed for many frames through the real
+    loader -> solver -> diagnostics path, asserting the anchor stays put, the
+    free body falls, mass is conserved, the diagnostics are finite, and a second
+    identical replay reproduces the trajectory. This is the per-scene invariant
+    pattern the upstream ipc-sim/IPC corpus rows require; the full 154-scene port
+    additionally needs the upstream scene assets vendored and the
+    contact-capable solver (later phases), so the manifest rows stay `planned`.
+  - Exposed the experimental deformable-body API to `dartpy` (PLAN-081 Phase 8):
+    `World.add_deformable_body` / `get_deformable_body` / `has_deformable_body` /
+    `get_deformable_body_count`, and `DeformableBodyOptions`,
+    `DeformableMaterialProperties` (including `friction_coefficient`),
+    `DeformableEdge`, and `DeformableBody` (`node_count`, `edge_count`,
+    `node_position` / `set_node_position`, `node_velocity` / `set_node_velocity`,
+    `is_fixed_node`, `edge`, `material_properties`). Regenerated the type stubs
+    and added a Python regression that builds a spring strand, sets a friction
+    coefficient, steps the world, and reads the resulting state. Surface/tetra
+    topology and boundary-condition bindings remain a later increment.
+  - Added the lagged self-contact friction Hessian to the experimental IPC
+    projected-Newton solve, completing self-contact friction as a proper Newton
+    term (previously energy+gradient only). Per active point-triangle contact it
+    assembles a positive-semidefinite 12x12 block,
+    `projection^T * H_2x2 * projection` (the tangent-stencil projection times the
+    same PSD tangential matrix the ground-friction Hessian uses), scattered to
+    the four stencil nodes. Behavior-preserving (the line search still resolves
+    the same friction-inclusive energy); existing tests pass unchanged. The
+    edge-edge self-contact friction Hessian remains a later increment.
+  - Extended experimental IPC self-contact friction (force and Hessian) to
+    edge-edge contacts. The friction energy/gradient/Hessian are generic over a
+    four-node stencil + tangent projection, so only the lagged-contact assembly
+    is extended: active edge-edge barrier candidates contribute a friction
+    contact whose lagged normal force is the net barrier force on the first
+    edge and whose tangent projection comes from the edge-edge tangent stencil.
+    Adds a regression where one crossing edge slides over another in edge-edge
+    self-contact and decelerates versus the frictionless control while the
+    barrier holds them apart. Self-contact friction now covers both
+    point-triangle and edge-edge primitives.
+  - Generalized experimental IPC static-ground friction to follow the true
+    geometric ground normal instead of a hardcoded xy tangent plane. Each
+    contacting node now lags the supporting barrier surface's normal (radial for
+    a sphere, the supporting-face normal for a rotated/tilted box), and the
+    friction energy, gradient, and tangential Hessian resolve against the plane
+    orthogonal to it (the Hessian is now a positive-semidefinite 3x3 tangent
+    block). For flat or box-top ground the normal is +z and the behavior reduces
+    exactly to the previous xy tangent plane, so existing flat-ground friction
+    tests are unchanged; the underlying barrier force stays a vertical height
+    field. Adds a regression on a 45-degree tilted slope where tilt-aware
+    friction couples the normal and tangential directions so a node dropped
+    straight down deflects down-slope, whereas the frictionless control (and any
+    xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
+    friction and friction-specific diagnostics remain later increments.
+  - Exposed the experimental deformable scene loader and replay diagnostics to
+    `dartpy`, completing the PLAN-081 Phase 8 Python facade. Added
+    `load_deformable_scene` and `collect_deformable_scene_diagnostics` module
+    functions, plus `DeformableSceneLoadOptions`, `DeformableSceneInfo`,
+    `DeformableSceneBodyInfo`, and `DeformableSceneDiagnostics` bindings, so a
+    contact-free tutorial-style scene file can be loaded into a `World` from
+    Python and its per-body counts, total mass, and bounds read back.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression that loads a single-tetrahedron scene and checks the reported
+    topology counts and total mass. (The loader still covers only the
+    contact-free subset; it is not IPC scene parity.)
+  - Extended the experimental deformable-body `dartpy` facade with scripted
+    boundary conditions (PLAN-081 Phase 8). Added
+    `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
+    `angular_velocity`, `center`, `start_time`, `end_time`) and
+    `DeformableNeumannBoundaryCondition` (`nodes`, `acceleration`, `start_time`,
+    `end_time`) bindings, plus the `DeformableBodyOptions`
+    `dirichlet_boundary_conditions` / `neumann_boundary_conditions` fields.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression where a Dirichlet-scripted node follows its prescribed linear
+    motion while a Neumann-accelerated node falls under the applied
+    acceleration. Scene-loader Python access and diagnostics exposure remain a
+    later increment.
+  - Extended the experimental deformable-body `dartpy` facade with surface and
+    tetrahedral topology (PLAN-081 Phase 8). Added `DeformableSurfaceTriangle`
+    and `DeformableTetrahedron` bindings, the `DeformableBodyOptions`
+    `surface_triangles` / `tetrahedra` fields, and `DeformableBody` read
+    accessors `surface_triangle_count` / `surface_triangle`,
+    `tetrahedron_count` / `tetrahedron` / `tetrahedron_rest_volume`, and
+    `node_mass`. Regenerated the type stubs and API boundary inventory, and
+    added a Python regression that builds a single tetrahedron with an explicit
+    boundary surface and reads back the topology, rest volume, and node mass.
+    Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
+    increment.
+  - Added a GPU-vs-CPU performance gate for the experimental IPC deformable PSD
+    projection and tuned the GPU offload threshold to the measured crossover. A
+    CUDA test now projects 12x12 self-contact barrier batches across a sweep of
+    sizes, asserting GPU/CPU parity at every scale and logging each path's wall
+    time. On an RTX 5000 Ada the GPU path runs ~0.4x at 256 blocks, ~1.4x at
+    1024, ~4x at 4096, and ~9x at 16384, so the backend adapter's minimum GPU
+    batch size is raised from 64 to ~1024 blocks (small batches stay on the CPU
+    backend where the host/device round trip would otherwise dominate).
+  - Wired an optional GPU backend into the experimental IPC deformable solver's
+    per-element PSD projection (PLAN-081 Phase 3). The projected-Newton assembly
+    now collects its per-element spring (6x6) and self-contact barrier (12x12)
+    Hessian blocks into one packed batch and projects them through a pluggable
+    backend (`compute::projectSymmetricBlocksToPsd`) before scattering, instead
+    of projecting each block inline. The default CPU backend is bit-identical to
+    the previous per-element projection, so behavior is unchanged. The optional
+    CUDA sidecar can install a GPU backend via `installCudaDeformablePsdBackend`
+    that offloads large batches to the device (and defers small batches or the
+    no-device case to the CPU backend), so the offload never changes results.
+    The default runtime never links CUDA -- the no-GPU-runtime-dependency check
+    still passes -- and the GPU path is validated against the CPU backend through
+    the core seam in the CUDA test suite.
+  - Added an experimental IPC converged-ness diagnostic to the deformable solver
+    stats. Each step now reports `finalStepInfinityNorm`, the largest last
+    accepted per-node position update across the step's bodies. Unlike the
+    gradient residual, which can stay large at a stiff clamped-log barrier
+    contact because the barrier Hessian is near-singular, the step norm shrinks
+    toward zero as the solve reaches a feasible equilibrium, so it is the honest
+    companion to `finalGradientResidualNorm` for judging convergence on
+    barrier-dominated problems. Behavior-preserving (a diagnostic only; the solve
+    is unchanged). Adds a regression where a stiff grid pressed onto the ground
+    barrier accepts a measurable step while settling and then drives the step
+    norm to a negligible value at equilibrium.
+  - Added experimental IPC friction diagnostics to the deformable solver stats
+    (PLAN-081 Phase 4). Each step now reports `frictionDissipation` (the IPC
+    Coulomb work mu \* normalForce \* f1(y) \* y summed over active friction
+    contacts at the converged iterate -- force times tangential slip, equal to
+    mu \* normalForce \* slip in the kinetic regime and ramped smoothly to zero
+    at rest by the f0/f1 mollifier) and `activeFrictionContacts` (the number of
+    static-ground and self-contact friction contacts carrying a nonzero lagged
+    normal force). Both are zero when friction is disabled and are computed once
+    per step outside the line-search hot path. Adds a regression that a sliding
+    ground-contact node reports positive dissipation over a nonzero active set
+    while the frictionless control reports zero. These feed the paper's friction
+    benchmark statistics (Fig. 23 / Table 1) alongside the existing
+    `finalGradientResidualNorm` convergence diagnostic.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

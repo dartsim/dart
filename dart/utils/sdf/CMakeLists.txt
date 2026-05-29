@@ -21,7 +21,10 @@ dart_generate_component_headers(
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/sdf.hpp
+  FILES
+    ${hdrs}
+    ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/sdf.hpp
   DESTINATION include/dart/utils/sdf
   COMPONENT headers
 )

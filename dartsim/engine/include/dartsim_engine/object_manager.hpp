@@ -83,6 +83,9 @@ public:
   /// load).
   void setModel(SceneModel model);
 
+  /// Restore an editor snapshot, skipping rebuilds for workspace-only changes.
+  void restoreModelSnapshot(SceneModel model);
+
   /// Rebuild the derived World from the current model and refresh kinematics.
   ///
   /// Call after editing model() directly. Building never throws on invalid

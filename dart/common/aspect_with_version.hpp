@@ -109,8 +109,7 @@ public:
       updateProperties>;
 
   AspectWithStateAndVersionedProperties(
-      const AspectWithStateAndVersionedProperties&)
-      = delete;
+      const AspectWithStateAndVersionedProperties&) = delete;
 
   /// Construct using a StateData and a PropertiesData instance
   AspectWithStateAndVersionedProperties(

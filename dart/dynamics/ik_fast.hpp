@@ -217,8 +217,7 @@ protected:
       const IkReal* targetTranspose,
       const IkReal* targetRotation,
       const IkReal* pfree,
-      ikfast::IkSolutionListBase<IkReal>& solutions)
-      = 0;
+      ikfast::IkSolutionListBase<IkReal>& solutions) = 0;
 
   /// Computes the forward kinematics solutions using the generated IKFast code.
   virtual void computeFk(

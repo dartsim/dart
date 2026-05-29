@@ -23,15 +23,22 @@ dart_build_tests(
 # launch with STATUS_DLL_NOT_FOUND (0xc0000135). Mirror dart_add_simulation_test
 # by prepending the experimental library directory. Linux/macOS already resolve
 # it via the build-tree RPATH; adding it there is harmless.
-if(TEST UNIT_dartsim_engine AND NOT APPLE AND TARGET dart-simulation-experimental)
+if(
+  TEST UNIT_dartsim_engine
+  AND NOT APPLE
+  AND TARGET dart-simulation-experimental
+)
   if(WIN32)
     set(_dartsim_engine_path_var "PATH")
   else()
     set(_dartsim_engine_path_var "LD_LIBRARY_PATH")
   endif()
-  set_property(TEST UNIT_dartsim_engine APPEND PROPERTY
-    ENVIRONMENT_MODIFICATION
-    "${_dartsim_engine_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart-simulation-experimental>"
+  set_property(
+    TEST UNIT_dartsim_engine
+    APPEND
+    PROPERTY
+      ENVIRONMENT_MODIFICATION
+        "${_dartsim_engine_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart-simulation-experimental>"
   )
   unset(_dartsim_engine_path_var)
 endif()

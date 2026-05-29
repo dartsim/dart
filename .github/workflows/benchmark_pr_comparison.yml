@@ -1,0 +1,151 @@
+name: Benchmark PR Comparison
+
+# Opt-in per-PR benchmark comparison comment (PLAN-080 follow-on). Reuses the
+# Performance Dashboard's benchmark slice and reads its github-action-benchmark
+# gh-pages history (published by performance_dashboard.yml) as the baseline, then
+# posts a "moved by N%" comparison in the PR review thread via scripts/
+# benchmark_pr_compare.py. This is a read-only consumer of the dashboard data,
+# not a second publishing pipeline: it never writes to gh-pages.
+#
+# Gradual rollout (PLAN-080): the job is gated to same-repo PRs carrying the
+# `benchmark` label, so ordinary PRs pay no benchmark cost. Fork PRs are skipped
+# because their GITHUB_TOKEN is read-only and cannot post a comment, and running
+# fork code on the benchmark path is out of scope for the initial rollout.
+#
+# Note: GitHub-hosted runners are noisy; tune the comparison alert threshold once
+# review-noise tradeoffs are visible on a real labeled PR, and expand beyond the
+# dashboard slice only after that.
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: benchmark-pr-comparison-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    name: Benchmark comparison comment
+    # Same-repo PRs only (fork PRs get a read-only token and cannot comment), and
+    # opt-in via the `benchmark` label to keep ordinary PRs cost-free.
+    if: >-
+      github.event.pull_request.head.repo.fork == false &&
+      contains(github.event.pull_request.labels.*.name, 'benchmark')
+    runs-on: ubuntu-latest
+    env:
+      BUILD_TYPE: Release
+      CMAKE_BUILD_PARALLEL_LEVEL: 8
+      # Must stay byte-identical to performance_dashboard.yml's `name:` so the
+      # gh-pages baseline series matches.
+      BENCHMARK_SERIES: DART Experimental World Performance
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          # This job never pushes; do not leave the token in .git/config where
+          # PR-author build code could read it.
+          persist-credentials: false
+
+      - name: Fetch dashboard baseline from gh-pages
+        # Read-only: extract just the published data file. Tolerate its absence
+        # (first dashboard publish may not have happened yet); the compare script
+        # then emits an informational comment.
+        run: |
+          if git fetch --depth=1 origin gh-pages 2>/dev/null \
+            && git cat-file -e origin/gh-pages:performance/data.js 2>/dev/null; then
+            git show origin/gh-pages:performance/data.js > baseline-data.js
+            echo "Fetched dashboard baseline."
+          else
+            echo "No dashboard baseline on gh-pages yet."
+          fi
+
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
+        with:
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+          environments: collision-reference
+          install-args: -e collision-reference
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 2
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      # Match the dashboard build toggles so the PR slice is comparable to the
+      # published baseline.
+      - name: Configure build
+        env:
+          DART_BUILD_GUI_OVERRIDE: "OFF"
+          DART_BUILD_EXAMPLES_OVERRIDE: "OFF"
+          DART_BUILD_TUTORIALS_OVERRIDE: "OFF"
+          DART_BUILD_DARTPY_OVERRIDE: "OFF"
+        run: |
+          pixi run --locked -e collision-reference config
+
+      - name: Run benchmark surfaces
+        # Same slice as the dashboard so the comparison is apples-to-apples
+        # against the published gh-pages baseline. Tolerate a flaky surface.
+        run: |
+          pixi run --locked -e collision-reference \
+            python scripts/run_performance_dashboard_benchmarks.py --continue-on-error || true
+
+      - name: Merge benchmark results
+        # If every surface failed (no rows), fall back to an empty result so the
+        # comparison step still posts a graceful "no rows" comment instead of
+        # failing the job with a red check.
+        run: |
+          pixi run --locked -e collision-reference \
+            python scripts/merge_benchmark_results.py .benchmark_results \
+            --output .benchmark_results/combined.json \
+            || echo '{"benchmarks": []}' > .benchmark_results/combined.json
+
+      - name: Render comparison comment
+        run: |
+          pixi run --locked -e collision-reference \
+            python scripts/benchmark_pr_compare.py \
+            --current .benchmark_results/combined.json \
+            --baseline baseline-data.js \
+            --series "${BENCHMARK_SERIES}" \
+            --alert-threshold 1.5 \
+            --output bm_pr_comment.md
+
+      - name: Post or update PR comment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("fs");
+            const body = fs.readFileSync("bm_pr_comment.md", "utf8");
+            const marker = "<!-- dart-benchmark-pr-comparison -->";
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number },
+            );
+            const existing = comments.find(
+              (c) => c.body && c.body.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

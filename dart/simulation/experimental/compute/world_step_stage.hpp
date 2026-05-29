@@ -98,6 +98,58 @@ struct DeformableSolverStats
   std::size_t staticRigidSurfaceCcdIndeterminateCount = 0;
   std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
   std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t movingRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t movingRigidSurfaceCcdBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdSampleCount = 0;
+  std::size_t movingRigidSurfaceCcdInflatedBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdTriangleCount = 0;
+  std::size_t movingRigidSurfaceCcdEdgeCount = 0;
+  std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t movingRigidSurfaceCcdHits = 0;
+  std::size_t movingRigidSurfaceCcdMisses = 0;
+  std::size_t movingRigidSurfaceCcdIndeterminateCount = 0;
+  std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t selfContactBarrierCandidateBuilds = 0;
+  // Cumulative count of active barrier contacts summed over the outer solver
+  // iterations of a step (one increment per active candidate per gradient
+  // evaluation), matching the cumulative semantics of solverIterations; it is
+  // not the active-set size of a single iteration.
+  std::size_t selfContactBarrierActiveContacts = 0;
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t projectedNewtonFallbacks = 0;
+  // Sparse-solve factorization accounting. The symbolic factorization
+  // (fill-reducing ordering) is reused whenever the Hessian sparsity pattern is
+  // unchanged across iterations/steps, so only the numeric factorization
+  // repeats; symbolic < numeric indicates the analysis was amortized.
+  std::size_t projectedNewtonSymbolicFactorizations = 0;
+  std::size_t projectedNewtonNumericFactorizations = 0;
+  // Convergence diagnostic: the largest L2 gradient norm at solve termination
+  // across the step's deformable bodies (the projected-Newton residual). Near
+  // the gradient tolerance means the solve converged; a large value means a
+  // body hit the iteration cap or stalled. Feeds the paper's benchmark
+  // statistics (Fig. 23 / Table 1).
+  double finalGradientResidualNorm = 0.0;
+  // Converged-ness diagnostic: the largest last-accepted step infinity norm
+  // (per-node position change) across the step's deformable bodies. Unlike the
+  // gradient residual, this shrinks toward zero at equilibrium even for stiff
+  // barrier contacts (whose near-singular Hessian keeps the gradient norm
+  // large), so a small value here with a large finalGradientResidualNorm
+  // indicates a feasible settled configuration rather than a failed solve.
+  double finalStepInfinityNorm = 0.0;
+  // Friction diagnostics at the converged iterate, summed over the step's
+  // bodies and over both static-ground and self-contact friction. The
+  // dissipation is the IPC Coulomb work mu * lambda * f1(y) * y (force times
+  // tangential slip, smoothly ramped to zero at rest by the f0/f1 mollifier);
+  // the active count is the number of friction contacts carrying a nonzero
+  // lagged normal force. Both are zero when friction is disabled
+  // (frictionCoefficient == 0). Feed the paper's friction benchmark statistics.
+  double frictionDissipation = 0.0;
+  std::size_t activeFrictionContacts = 0;
   std::size_t vbdBodyCount = 0;
   std::size_t vbdSweeps = 0;
   std::size_t vbdVertexUpdates = 0;

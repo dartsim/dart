@@ -380,8 +380,7 @@ protected:
 
   /// Add CollisionObjects to the collision detection engine
   virtual void addCollisionObjectsToEngine(
-      std::span<CollisionObject* const> collObjects)
-      = 0;
+      std::span<CollisionObject* const> collObjects) = 0;
 
   /// Remove CollisionObject from the collision detection engine
   virtual void removeCollisionObjectFromEngine(CollisionObject* object) = 0;

@@ -143,6 +143,16 @@ void ObjectManager::setModel(SceneModel model)
   rebuild();
 }
 
+void ObjectManager::restoreModelSnapshot(SceneModel model)
+{
+  if (m_model.hasSameSceneContents(model)) {
+    m_model = std::move(model);
+    return;
+  }
+
+  setModel(std::move(model));
+}
+
 void ObjectManager::rebuild()
 {
   // A fresh World guarantees design mode regardless of prior simulation state.
@@ -187,6 +197,14 @@ void ObjectManager::rebuild()
       case ObjectType::Link:
       case ObjectType::Joint:
         // Links/joints are created as part of their owning MultiBody.
+        break;
+      case ObjectType::Sensor:
+        // Sensors are editor-authored descriptors until the experimental World
+        // exposes public sensor runtime concepts.
+        break;
+      case ObjectType::Collision:
+        // Collision geometries are editor-authored descriptors until the
+        // experimental World exposes public collision-shape authoring.
         break;
     }
   }
@@ -329,7 +347,9 @@ std::optional<Eigen::Isometry3d> ObjectManager::worldTransformOf(
     }
   } else if (
       object->type == ObjectType::FreeFrame
-      || object->type == ObjectType::FixedFrame) {
+      || object->type == ObjectType::FixedFrame
+      || object->type == ObjectType::Sensor
+      || object->type == ObjectType::Collision) {
     if (object->parent == kNoObject) {
       return object->transform;
     }
@@ -374,7 +394,9 @@ std::vector<RenderItem> ObjectManager::computeRenderItems() const
     }
 
     const bool hasShape = object->type == ObjectType::RigidBody
-                          || object->type == ObjectType::Link;
+                          || object->type == ObjectType::Link
+                          || object->type == ObjectType::Sensor
+                          || object->type == ObjectType::Collision;
     if (!hasShape || !effectivelyVisible) {
       continue;
     }

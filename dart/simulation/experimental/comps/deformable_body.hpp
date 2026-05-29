@@ -118,6 +118,7 @@ struct DeformableMaterial
   double density = 1.0;
   double youngsModulus = 1.0e5;
   double poissonRatio = 0.3;
+  double frictionCoefficient = 0.0;
 };
 
 /// Time-ranged scripted Dirichlet boundary region for deformable nodes.

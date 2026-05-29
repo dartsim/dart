@@ -35,18 +35,10 @@ if(MSVC)
   elseif(TARGET Assimp::Assimp)
     set(ASSIMP_LIBRARIES "Assimp::Assimp")
   else()
-    find_library(
-      ASSIMP_LIBRARIES
-      NAMES assimp
-      HINTS ${PC_ASSIMP_LIBDIR}
-    )
+    find_library(ASSIMP_LIBRARIES NAMES assimp HINTS ${PC_ASSIMP_LIBDIR})
   endif()
 else()
-  find_library(
-    ASSIMP_LIBRARIES
-    NAMES assimp
-    HINTS ${PC_ASSIMP_LIBDIR}
-  )
+  find_library(ASSIMP_LIBRARIES NAMES assimp HINTS ${PC_ASSIMP_LIBDIR})
 endif()
 
 # Version

@@ -40,6 +40,8 @@
 
 namespace dartsim::ui {
 
+struct WatchState;
+
 /// Result of executing one Console panel command.
 struct ConsoleCommandResult
 {
@@ -51,12 +53,19 @@ struct ConsoleCommandResult
 ConsoleCommandResult tokenizeConsoleCommand(
     std::string_view input, std::vector<std::string>& tokens);
 
-/// One-line help text for the supported automation commands.
+/// One-line help text for automation commands that only require SimEngine.
 [[nodiscard]] std::string consoleCommandHelpText();
+
+/// One-line help text, optionally including commands that need WatchState.
+[[nodiscard]] std::string consoleCommandHelpText(bool watchCommandsAvailable);
 
 /// Apply a Console command through the same tested action seams used by the
 /// panels and menus.
 ConsoleCommandResult applyConsoleCommand(
     SimEngine& engine, std::string_view input);
+
+/// Apply a Console command with access to the session-local Watch panel state.
+ConsoleCommandResult applyConsoleCommand(
+    SimEngine& engine, WatchState& watch, std::string_view input);
 
 } // namespace dartsim::ui
