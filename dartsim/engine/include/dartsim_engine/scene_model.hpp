@@ -41,6 +41,32 @@
 
 namespace dartsim {
 
+/// Persisted Watch panel preset stored with the project workspace.
+struct WorkspaceWatchPreset
+{
+  std::string name;
+  std::vector<ObjectId> targets;
+  std::vector<std::string> chartSignals;
+
+  bool operator==(const WorkspaceWatchPreset&) const = default;
+};
+
+/// Persisted editor workspace settings that are saved with the project.
+struct WorkspaceSettings
+{
+  std::vector<WorkspaceWatchPreset> watchPresets;
+
+  bool operator==(const WorkspaceSettings&) const = default;
+};
+
+/// Normalize persisted editor workspace settings.
+///
+/// Returns false when a setting cannot be represented safely in the text
+/// project format (for example an empty preset name, duplicate preset names,
+/// or a chart signal key with whitespace). Duplicate targets and duplicate
+/// chart signal keys inside one preset are removed while preserving order.
+[[nodiscard]] bool normalizeWorkspaceSettings(WorkspaceSettings& workspace);
+
 /// The authoritative, editable description of a scene.
 ///
 /// SceneModel is the single source of truth for the editor. The derived
@@ -52,6 +78,9 @@ class SceneModel
 public:
   /// World time step seconds, applied to the rebuilt World.
   double timeStep = 0.001;
+
+  /// Persisted editor workspace settings, separate from scene objects.
+  WorkspaceSettings workspace;
 
   /// Insert a new object and return its assigned id.
   ///
@@ -119,6 +148,12 @@ public:
   /// Exact equality of the whole model, used to detect no-op edits when
   /// snapshotting for undo/redo.
   bool operator==(const SceneModel&) const = default;
+
+  /// True when the simulation-owned part of the model matches exactly.
+  ///
+  /// Workspace metadata is excluded because it does not affect the derived
+  /// experimental World and should not force rebuilds during undo/redo.
+  [[nodiscard]] bool hasSameSceneContents(const SceneModel& other) const;
 
 private:
   std::unordered_map<ObjectId, SceneObject> m_objects;

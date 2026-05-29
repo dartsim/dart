@@ -35,6 +35,10 @@
 
 #include <utils/Entity.h>
 
+#include <array>
+
+#include <cstddef>
+
 namespace filament {
 
 class Camera;
@@ -54,6 +58,8 @@ struct RunOptions;
 
 namespace dart::gui::detail {
 
+inline constexpr std::size_t kFilamentViewportSlots = 4u;
+
 struct FilamentRenderContext
 {
   ::filament::Engine* engine = nullptr;
@@ -62,6 +68,10 @@ struct FilamentRenderContext
   ::filament::View* view = nullptr;
   ::filament::Scene* scene = nullptr;
   ::filament::Camera* camera = nullptr;
+  std::array<::filament::View*, kFilamentViewportSlots> views{};
+  std::array<::filament::Camera*, kFilamentViewportSlots> cameras{};
+  std::array<utils::Entity, kFilamentViewportSlots> cameraEntities{};
+  std::size_t activeViewCount = 1u;
   utils::Entity cameraEntity;
   // Name of the graphics backend actually selected (static string literal).
   const char* backendName = "opengl";

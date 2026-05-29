@@ -89,6 +89,15 @@ void configureViewportCamera(
     int width,
     int height);
 
+void configureViewportCamera(
+    ::filament::View& view,
+    ::filament::Camera& camera,
+    const dart::gui::OrbitCamera& orbitCamera,
+    int x,
+    int y,
+    int width,
+    int height);
+
 SceneLights createSceneLights(
     ::filament::Engine& engine,
     bool headless,

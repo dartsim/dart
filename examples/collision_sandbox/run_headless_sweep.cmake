@@ -11,7 +11,8 @@ set(_height 480)
 set(_ui_width 1280)
 set(_ui_height 720)
 set(_frames 2)
-set(_pairs
+set(
+  _pairs
   sphere_box
   box_box
   box_capsule
@@ -46,13 +47,27 @@ function(_dart_collision_sandbox_check_ppm screenshot width height)
     )
   endif()
 
-  file(READ "${screenshot}" _pixel_sample OFFSET "${_header_size}" LIMIT 8192 HEX)
+  file(
+    READ "${screenshot}"
+    _pixel_sample
+    OFFSET "${_header_size}"
+    LIMIT 8192
+    HEX
+  )
   if(NOT _pixel_sample MATCHES "[1-9a-fA-F]")
     message(FATAL_ERROR "${screenshot} sample contains only zero-valued pixels")
   endif()
 endfunction()
 
-function(_dart_collision_sandbox_run_pair pair broad_phase filter_pair show_ui width height)
+function(
+  _dart_collision_sandbox_run_pair
+  pair
+  broad_phase
+  filter_pair
+  show_ui
+  width
+  height
+)
   set(_suffix "${pair}")
   set(_broad_phase_args "")
   if(NOT "${broad_phase}" STREQUAL "")
@@ -74,16 +89,9 @@ function(_dart_collision_sandbox_run_pair pair broad_phase filter_pair show_ui w
   file(REMOVE "${_screenshot}")
   execute_process(
     COMMAND
-      "${DART_COLLISION_SANDBOX_EXECUTABLE}"
-      --headless
-      ${_ui_args}
-      --frames "${_frames}"
-      --width "${width}"
-      --height "${height}"
-      --pair "${pair}"
-      ${_broad_phase_args}
-      ${_filter_args}
-      --screenshot "${_screenshot}"
+      "${DART_COLLISION_SANDBOX_EXECUTABLE}" --headless ${_ui_args} --frames
+      "${_frames}" --width "${width}" --height "${height}" --pair "${pair}"
+      ${_broad_phase_args} ${_filter_args} --screenshot "${_screenshot}"
     RESULT_VARIABLE _result
     OUTPUT_VARIABLE _stdout
     ERROR_VARIABLE _stderr

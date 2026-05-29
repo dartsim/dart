@@ -261,10 +261,12 @@ GPU prototype-gate rules and sidecar package shape in
 
 ## Verdict
 
-This verdict is the durable decision behind the roadmap. The actionable,
-status-tracked phase plan lives in
-`docs/dev_tasks/experimental_world_scalable_compute/`; operating priority lives in
-`docs/plans/dashboard.md` (PLAN-030). Scope is the experimental World only;
+This verdict is the durable decision behind the roadmap. Phases 0-5 are complete
+and merged; operating priority and the Phase 6 backlog now live in
+`docs/plans/dashboard.md` (PLAN-030), and the GPU prototype gate, the recorded
+go/no-go, and the CUDA-versus-SYCL criteria live in
+`scalable_compute_decisions.md` (the multiphase dev-task folder has been
+retired). Scope is the experimental World only;
 shared backend-neutral utilities (for example `dart/simd/`) may live elsewhere.
 
 Direction (confirmed by a three-perspective review — architecture, plan critique,
@@ -332,8 +334,9 @@ These remain genuinely open and should trigger a re-decision when answered:
 
 ## Related Designs
 
-- `docs/dev_tasks/experimental_world_scalable_compute/` owns the actionable,
-  status-tracked multiphase plan that executes this verdict.
+- `docs/plans/dashboard.md` (PLAN-030) owns operating priority and the Phase 6
+  backlog now that the multiphase plan's Phases 0-5 are complete and its
+  dev-task folder has been retired.
 - [`scalable_compute_decisions.md`](scalable_compute_decisions.md) owns the
   workload-first decision rules, multi-core and SIMD constraints, the GPU
   prototype gate, and the CUDA-versus-SYCL criteria.

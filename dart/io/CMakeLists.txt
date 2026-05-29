@@ -1,7 +1,7 @@
 # Set local target/component names
 set(target_name ${PROJECT_NAME}-io)
 set(component_name io)
-set(component_dependencies )
+set(component_dependencies)
 
 # Dependency checks
 dart_check_dependent_target(${target_name} dart-utils)
@@ -45,7 +45,10 @@ dart_generate_component_headers(
 # Install (includes All.hpp, io.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/io.hpp
+  FILES
+    ${hdrs}
+    ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/io.hpp
   DESTINATION include/dart/io
   COMPONENT headers
 )

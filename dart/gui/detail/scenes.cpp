@@ -721,6 +721,7 @@ DartScene createDartScene(const AppOptions& options)
     scene.renderableProvider = options.renderableProvider;
     scene.selectedRenderableProvider = options.selectedRenderableProvider;
     scene.onRenderableSelected = options.onRenderableSelected;
+    scene.onViewportPaneActivated = options.onViewportPaneActivated;
     scene.dockingEnabled = options.dockingEnabled;
     scene.gizmos = options.gizmos;
     scene.debugLabels = options.debugLabels;
