@@ -315,3 +315,39 @@ its own line so status updates remain git-history friendly.
   World only; the renderer stays backend-hidden (PLAN-060); and the default
   `dartsim` headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a
   non-blank editor frame while legacy `--scene` smokes keep contrast.
+
+### PLAN-110: Differentiable Simulation
+
+- Owner doc:
+  [`110-differentiable-simulation.md`](110-differentiable-simulation.md);
+  durable design in
+  [`../design/differentiable_simulation.md`](../design/differentiable_simulation.md).
+- Status: Active
+- Horizon: Next
+- Dimension: Algorithm extensibility
+- Scope note: WS1–WS5 first slices plus the PLAN-080-WS4 boxed-LCP contact
+  prerequisite are implemented and verified (13 slices, experimental suite ON
+  30/30, FD-of-step validated ~1e-11, default build untouched). Changes are local
+  on `main`, uncommitted. Remaining is hardening/examples/promotion, not new
+  workstreams.
+- Next step: Land the work (commit/PR per repo rules — experimental surface, so
+  single-branch to `main`, milestone DART 7.0, CHANGELOG; awaiting maintainer
+  approval). Then: run the torch-autograd test (`pip install torch`); add the
+  trajectory-optimization and system-identification example programs required by
+  the DART 8 promotion contract; harden the static-friction Dantzig
+  degenerate-pivot warning (shared `dart/math/lcp`, its own PR); and extend the
+  deferred parameters/contacts (CENTER_OF_MASS, articulated multibody-link
+  contact). Track in `docs/dev_tasks/differentiable_simulation/`.
+- Gate: differentiability is off by default with bitwise-identical results and
+  zero snapshot allocation when off (`test_diff_zero_cost_parity` + on/off
+  overhead benchmark against a stated budget); analytic Jacobians agree with
+  central finite differences at relative error `< 1e-4` over `h ∈ {1e-5,1e-6,1e-7}`
+  on named scenes (Tied-set/boundary configs excluded) before any parity claim;
+  a `DART_BUILD_DIFF` build option with CI on _and_ off and a workflow guard;
+  serialization round-trip (or documented non-serialization) of the
+  `differentiable`/`contact_gradient_mode`/parameter-registration state; the
+  public surface never exposes the reverse-pass cache, LCP snapshot,
+  solver/coupler/backend types, ECS storage, or a tensor framework in the C++
+  core (`check-api-boundaries` green); and mode-switch/limit subgradient and
+  elastic-approximation limits are documented with saddle-escape and
+  pre-contact surrogates opt-in only (no FD gate by construction).
