@@ -7,23 +7,38 @@ get_filename_component(
   "${DART_GUI_FILAMENT_BACKEND_DIR}/../../.."
   ABSOLUTE
 )
-set(DART_GUI_FILAMENT_BINARY_TO_HEADER
-  "${DART_GUI_FILAMENT_SOURCE_DIR}/cmake/dart_binary_to_header.cmake")
+set(
+  DART_GUI_FILAMENT_BINARY_TO_HEADER
+  "${DART_GUI_FILAMENT_SOURCE_DIR}/cmake/dart_binary_to_header.cmake"
+)
 
-set(DART_GUI_FILAMENT_DEFAULT_LIT_MATERIAL
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/default_lit.mat")
-set(DART_GUI_FILAMENT_TEXTURED_LIT_MATERIAL
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/textured_lit.mat")
-set(DART_GUI_FILAMENT_TRANSPARENT_LIT_MATERIAL
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/transparent_lit.mat")
-set(DART_GUI_FILAMENT_TRANSPARENT_TEXTURED_LIT_MATERIAL
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/transparent_textured_lit.mat")
-set(DART_GUI_FILAMENT_DEBUG_COLOR_MATERIAL
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/debug_color.mat")
-set(DART_GUI_FILAMENT_IMGUI_MATERIAL
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/imgui.mat")
+set(
+  DART_GUI_FILAMENT_DEFAULT_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/default_lit.mat"
+)
+set(
+  DART_GUI_FILAMENT_TEXTURED_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/textured_lit.mat"
+)
+set(
+  DART_GUI_FILAMENT_TRANSPARENT_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/transparent_lit.mat"
+)
+set(
+  DART_GUI_FILAMENT_TRANSPARENT_TEXTURED_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/transparent_textured_lit.mat"
+)
+set(
+  DART_GUI_FILAMENT_DEBUG_COLOR_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/debug_color.mat"
+)
+set(
+  DART_GUI_FILAMENT_IMGUI_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/imgui.mat"
+)
 
-set(DART_GUI_FILAMENT_BACKEND_SRCS
+set(
+  DART_GUI_FILAMENT_BACKEND_SRCS
   "${DART_GUI_FILAMENT_BACKEND_DIR}/application.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/application_teardown.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/debug_overlay.cpp"
@@ -49,9 +64,11 @@ set(DART_GUI_FILAMENT_BACKEND_SRCS
   "${DART_GUI_FILAMENT_BACKEND_DIR}/selection.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/simulation_stepper.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/textures.cpp"
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/ui_frame.cpp")
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/ui_frame.cpp"
+)
 
-set(DART_GUI_FILAMENT_BACKEND_HDRS
+set(
+  DART_GUI_FILAMENT_BACKEND_HDRS
   "${DART_GUI_FILAMENT_BACKEND_DIR}/application.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/application_runner.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/application_teardown.hpp"
@@ -77,7 +94,8 @@ set(DART_GUI_FILAMENT_BACKEND_HDRS
   "${DART_GUI_FILAMENT_BACKEND_DIR}/selection.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/simulation_stepper.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/textures.hpp"
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/ui_frame.hpp")
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/ui_frame.hpp"
+)
 
 function(_dart_gui_filament_find_dependencies out_imgui_target)
   if(NOT TARGET Filament::filament OR NOT TARGET Filament::matc)
@@ -119,12 +137,16 @@ function(_dart_gui_filament_read_jpeg_version out_version)
   endif()
 
   foreach(_jpeg_include_dir IN LISTS ARGN)
-    set(_jpeg_version_header_candidates
+    set(
+      _jpeg_version_header_candidates
       "${_jpeg_include_dir}/jconfig.h"
       "${_jpeg_include_dir}/jpeglib.h"
     )
     file(GLOB _jpeg_multiarch_config_headers "${_jpeg_include_dir}/*/jconfig.h")
-    list(APPEND _jpeg_version_header_candidates ${_jpeg_multiarch_config_headers})
+    list(
+      APPEND _jpeg_version_header_candidates
+      ${_jpeg_multiarch_config_headers}
+    )
 
     foreach(_jpeg_version_header IN LISTS _jpeg_version_header_candidates)
       if(NOT EXISTS "${_jpeg_version_header}")
@@ -132,8 +154,7 @@ function(_dart_gui_filament_read_jpeg_version out_version)
       endif()
 
       file(
-        STRINGS
-        "${_jpeg_version_header}"
+        STRINGS "${_jpeg_version_header}"
         _jpeg_version_lines
         REGEX "^#define[ \t]+JPEG_LIB_VERSION[ \t]+[0-9]+"
       )
@@ -179,8 +200,9 @@ function(
     # is runtime-selectable (DART_FILAMENT_BACKEND / RunOptions::backend) without
     # a separate build. Each extra API roughly adds its shader variants to the
     # embedded .filamat blob.
-    COMMAND Filament::matc -a opengl -a vulkan -p desktop -o "${_material_bin}"
-            "${material_source}"
+    COMMAND
+      Filament::matc -a opengl -a vulkan -p desktop -o "${_material_bin}"
+      "${material_source}"
     DEPENDS "${material_source}" Filament::matc
     COMMENT "Compiling ${material_label} Filament material"
     VERBATIM
@@ -188,12 +210,10 @@ function(
 
   add_custom_command(
     OUTPUT "${_material_header}"
-    COMMAND "${CMAKE_COMMAND}"
-            "-DINPUT=${_material_bin}"
-            "-DOUTPUT=${_material_header}"
-            "-DSYMBOL=${symbol}"
-            -DNAMESPACE=dart::gui::detail
-            -P "${DART_GUI_FILAMENT_BINARY_TO_HEADER}"
+    COMMAND
+      "${CMAKE_COMMAND}" "-DINPUT=${_material_bin}"
+      "-DOUTPUT=${_material_header}" "-DSYMBOL=${symbol}"
+      -DNAMESPACE=dart::gui::detail -P "${DART_GUI_FILAMENT_BINARY_TO_HEADER}"
     DEPENDS "${_material_bin}" "${DART_GUI_FILAMENT_BINARY_TO_HEADER}"
     COMMENT "Embedding ${material_label} Filament material"
     VERBATIM
@@ -343,8 +363,10 @@ function(dart_gui_filament_configure_backend_target target_name)
       glfw
       ${_imgui_target}
   )
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
-     AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  if(
+    CMAKE_SYSTEM_NAME STREQUAL "Linux"
+    AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
+  )
     target_link_options(${target_name} PRIVATE "-Wl,-z,noexecstack")
   endif()
   target_compile_features(${target_name} PRIVATE cxx_std_20)
@@ -358,51 +380,79 @@ function(_dart_gui_filament_apply_smoke_test_properties test_name)
   if(UNIX AND NOT APPLE)
     set_tests_properties(
       ${test_name}
-      PROPERTIES ENVIRONMENT
-                 "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
+      PROPERTIES
+        ENVIRONMENT
+          "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
     )
   endif()
 endfunction()
 
-set(DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS
-    hello_world hello-world
-    boxes boxes
-    hardcoded_design hardcoded-design
-    rigid_chain rigid-chain
-    rigid_loop rigid-loop
-    mixed_chain mixed-chain
-    coupler_constraint coupler-constraint
-    add_delete_skels add-delete-skels
-    vehicle vehicle
-    hybrid_dynamics hybrid-dynamics
-    joint_constraints joint-constraints
-    free_joint_cases free-joint-cases
-    human_joint_limits human-joint-limits
-    lcp_physics lcp-physics
-    mimic_pendulums mimic-pendulums
-    atlas_puppet atlas-puppet
-    hubo_puppet hubo-puppet
-    atlas_simbicon atlas-simbicon
-    operational_space_control operational-space-control
-    wam_ikfast wam-ikfast
-    fetch fetch
-    tinkertoy tinkertoy
-    drag_and_drop drag-and-drop
-    simple_frames simple-frames
-    soft_bodies soft-bodies
-    point_cloud point-cloud
-    capsule_ground_contact capsule-ground-contact
-    simulation_event_handler simulation-event-handler
-    polyhedron polyhedron
-    heightmap heightmap
+set(
+  DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS
+  hello_world
+  hello-world
+  boxes
+  boxes
+  hardcoded_design
+  hardcoded-design
+  rigid_chain
+  rigid-chain
+  rigid_loop
+  rigid-loop
+  mixed_chain
+  mixed-chain
+  coupler_constraint
+  coupler-constraint
+  add_delete_skels
+  add-delete-skels
+  vehicle
+  vehicle
+  hybrid_dynamics
+  hybrid-dynamics
+  joint_constraints
+  joint-constraints
+  free_joint_cases
+  free-joint-cases
+  human_joint_limits
+  human-joint-limits
+  lcp_physics
+  lcp-physics
+  mimic_pendulums
+  mimic-pendulums
+  atlas_puppet
+  atlas-puppet
+  hubo_puppet
+  hubo-puppet
+  atlas_simbicon
+  atlas-simbicon
+  operational_space_control
+  operational-space-control
+  wam_ikfast
+  wam-ikfast
+  fetch
+  fetch
+  tinkertoy
+  tinkertoy
+  drag_and_drop
+  drag-and-drop
+  simple_frames
+  simple-frames
+  soft_bodies
+  soft-bodies
+  point_cloud
+  point-cloud
+  capsule_ground_contact
+  capsule-ground-contact
+  simulation_event_handler
+  simulation-event-handler
+  polyhedron
+  polyhedron
+  heightmap
+  heightmap
 )
 
 function(_dart_gui_filament_smoke_test_name out_name scene_suffix)
-  set(
-    ${out_name}
-    "EXAMPLE_dartsim_${scene_suffix}_headless_smoke"
-    PARENT_SCOPE
-  )
+  set(${out_name} "EXAMPLE_dartsim_${scene_suffix}_headless_smoke" PARENT_SCOPE)
 endfunction()
 
 function(_dart_gui_filament_add_headless_smoke_test test_name example_target)
@@ -433,8 +483,7 @@ function(_dart_gui_filament_add_headless_smoke_test test_name example_target)
 
   if(DART_GUI_FILAMENT_SMOKE_SCENE)
     list(
-      APPEND
-      _command
+      APPEND _command
       "-DDART_GUI_FILAMENT_SCENE=${DART_GUI_FILAMENT_SMOKE_SCENE}"
     )
   endif()
@@ -449,8 +498,7 @@ function(_dart_gui_filament_add_headless_smoke_test test_name example_target)
       )
     endif()
     list(
-      APPEND
-      _command
+      APPEND _command
       "-DDART_GUI_FILAMENT_PYTHON=${Python3_EXECUTABLE}"
       "-DDART_GUI_FILAMENT_ANALYZER=${DART_GUI_FILAMENT_TESTING_DIR}/analyze_headless_smoke.py"
       "-DDART_GUI_FILAMENT_ANALYSIS_MODE=${DART_GUI_FILAMENT_SMOKE_ANALYSIS_MODE}"
@@ -458,8 +506,7 @@ function(_dart_gui_filament_add_headless_smoke_test test_name example_target)
   endif()
 
   list(
-    APPEND
-    _command
+    APPEND _command
     -P
     "${DART_GUI_FILAMENT_TESTING_DIR}/run_headless_smoke.cmake"
   )
@@ -490,12 +537,7 @@ function(dart_gui_filament_add_smoke_tests example_target)
   math(EXPR _smoke_last_index "${_smoke_pair_count} - 1")
   foreach(_suffix_index RANGE 0 ${_smoke_last_index} 2)
     math(EXPR _scene_index "${_suffix_index} + 1")
-    list(
-      GET
-      DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS
-      ${_suffix_index}
-      _scene_suffix
-    )
+    list(GET DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS ${_suffix_index} _scene_suffix)
     list(GET DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS ${_scene_index} _scene_name)
     _dart_gui_filament_smoke_test_name(_test_name "${_scene_suffix}")
     _dart_gui_filament_add_headless_smoke_test(
@@ -536,14 +578,12 @@ function(dart_gui_filament_add_example example_target)
   endif()
   file(READ "${_example_main}" _example_main_contents)
   string(
-    FIND
-    "${_example_main_contents}"
+    FIND "${_example_main_contents}"
     "#include <filament/"
     _filament_angle_include
   )
   string(
-    FIND
-    "${_example_main_contents}"
+    FIND "${_example_main_contents}"
     "#include \"filament/"
     _filament_quote_include
   )
@@ -559,8 +599,7 @@ function(dart_gui_filament_add_example example_target)
   endif()
 
   file(
-    GLOB
-    _example_local_sources
+    GLOB _example_local_sources
     CONFIGURE_DEPENDS
     "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/*.cpp"
     "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/*.hpp"
@@ -569,8 +608,7 @@ function(dart_gui_filament_add_example example_target)
   list(REMOVE_ITEM _unexpected_example_local_sources "${_example_main}")
   if(_unexpected_example_local_sources)
     list(
-      JOIN
-      _unexpected_example_local_sources
+      JOIN _unexpected_example_local_sources
       "\n  "
       _unexpected_example_local_sources_message
     )
@@ -583,24 +621,21 @@ function(dart_gui_filament_add_example example_target)
   endif()
 
   file(
-    GLOB_RECURSE
-    _example_tree_files
+    GLOB_RECURSE _example_tree_files
     LIST_DIRECTORIES false
     CONFIGURE_DEPENDS
     "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/*"
   )
   set(_unexpected_example_tree_files ${_example_tree_files})
   list(
-    REMOVE_ITEM
-    _unexpected_example_tree_files
+    REMOVE_ITEM _unexpected_example_tree_files
     "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/CMakeLists.txt"
     "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/README.md"
     "${_example_main}"
   )
   if(_unexpected_example_tree_files)
     list(
-      JOIN
-      _unexpected_example_tree_files
+      JOIN _unexpected_example_tree_files
       "\n  "
       _unexpected_example_tree_files_message
     )
@@ -617,11 +652,7 @@ function(dart_gui_filament_add_example example_target)
     ${example_target}
     PROPERTIES OUTPUT_NAME "${DART_GUI_FILAMENT_EXAMPLE_OUTPUT_NAME}"
   )
-  target_link_libraries(
-    ${example_target}
-    PRIVATE
-      dart-gui
-  )
+  target_link_libraries(${example_target} PRIVATE dart-gui)
   target_compile_features(${example_target} PRIVATE cxx_std_20)
 
   if(DART_IN_SOURCE_BUILD)
@@ -636,7 +667,11 @@ function(dart_gui_filament_add_example example_target)
       ${DART_GUI_FILAMENT_BACKEND_HDRS}
     )
 
-    if(BUILD_TESTING AND DART_BUILD_TESTS AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS)
+    if(
+      BUILD_TESTING
+      AND DART_BUILD_TESTS
+      AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS
+    )
       dart_gui_filament_add_smoke_tests(
         ${example_target}
         BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}"
