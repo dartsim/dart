@@ -196,7 +196,9 @@
         contact-heavy scenes (the loader currently ignores contact/friction
         directives; barrier/CCD/friction land via Phases 3-4). Until then only
         contact-free DBC/NBC tutorial-family scenes are replayable.
-- [~] Phase 8: Python facade for the deformable-body API.
+- [x] Phase 8: Python facade for the deformable-body API (core, topology,
+      boundary conditions, scene loader, and diagnostics; binary restart
+      deferred pending a Python bytes interface).
   - [x] Core bindings: `dartpy` exposes `World.add_deformable_body` /
         `get_deformable_body` / `has_deformable_body` /
         `get_deformable_body_count`, plus `DeformableBodyOptions`,
@@ -218,8 +220,16 @@
         `dirichlet_boundary_conditions` / `neumann_boundary_conditions` fields.
         Stubs and the API boundary inventory regenerated; a Python regression
         scripts a Dirichlet node's motion and a Neumann node's acceleration.
-  - [ ] Remaining Phase 8 work: scene-loader Python access and diagnostics
-        exposure.
+  - [x] Scene-loader and diagnostics bindings: `dartpy` exposes
+        `load_deformable_scene` / `collect_deformable_scene_diagnostics` and the
+        `DeformableSceneLoadOptions` / `DeformableSceneInfo` /
+        `DeformableSceneBodyInfo` / `DeformableSceneDiagnostics` structs, so a
+        contact-free scene file loads into a `World` from Python and its replay
+        diagnostics read back. Stubs and inventory regenerated;
+        single-tetrahedron scene Python regression.
+  - [ ] Remaining Phase 8 work: none for the contact-free facade; binary restart
+        save/load (`std::iostream`-based) is deferred until a Python-friendly
+        bytes interface is designed.
 
 ## Goal
 

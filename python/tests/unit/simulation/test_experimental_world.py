@@ -2552,3 +2552,57 @@ def test_experimental_deformable_body_boundary_conditions_python_api():
     assert body.node_position(0)[0] == pytest.approx(0.1, abs=1e-9)
     # The Neumann node accelerates downward under the applied acceleration.
     assert body.node_position(1)[2] < 0.0
+
+
+def test_experimental_deformable_scene_loader_python_api(tmp_path):
+    sx = _simulation_experimental()
+
+    # A minimal single-tetrahedron Gmsh 4.1 mesh (no explicit surface section,
+    # so the loader derives the four boundary faces).
+    mesh_dir = tmp_path / "input" / "tetMeshes"
+    mesh_dir.mkdir(parents=True)
+    (mesh_dir / "tet.msh").write_text(
+        "$MeshFormat\n"
+        "4.1 0 8\n"
+        "$EndMeshFormat\n"
+        "$Nodes\n"
+        "1 4 1 4\n"
+        "3 0 0 4\n"
+        "1\n2\n3\n4\n"
+        "0.000000e+00 0.000000e+00 0.000000e+00\n"
+        "1.000000e+00 0.000000e+00 0.000000e+00\n"
+        "0.000000e+00 1.000000e+00 0.000000e+00\n"
+        "0.000000e+00 0.000000e+00 1.000000e+00\n"
+        "$EndNodes\n"
+        "$Elements\n"
+        "1 1 1 1\n"
+        "3 0 4 1\n"
+        "1 1 2 3 4\n"
+        "$EndElements\n"
+    )
+
+    scene_path = tmp_path / "scene.txt"
+    scene_path.write_text(
+        "time 0.5 0.1\n"
+        "shapes input 1\n"
+        "input/tetMeshes/tet.msh 0 0 0  0 0 0  1 1 1 material 6 100 0.2\n"
+    )
+
+    world = sx.World()
+    options = sx.DeformableSceneLoadOptions()
+    options.asset_root = str(tmp_path)
+    info = sx.load_deformable_scene(world, str(scene_path), options)
+
+    assert len(info.bodies) == 1
+    body_info = info.bodies[0]
+    assert body_info.node_count == 4
+    assert body_info.tetrahedron_count == 1
+    assert body_info.surface_triangle_count == 4
+    assert body_info.body.node_count == 4
+
+    diagnostics = sx.collect_deformable_scene_diagnostics(world)
+    assert diagnostics.body_count == 1
+    assert diagnostics.node_count == 4
+    assert diagnostics.tetrahedron_count == 1
+    # Unit corner tetrahedron volume 1/6 at density 6 has total mass 1.
+    assert diagnostics.total_mass == pytest.approx(1.0)
