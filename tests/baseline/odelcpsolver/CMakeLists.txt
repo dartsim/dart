@@ -7,7 +7,8 @@ set(target_name ${PROJECT_NAME}-external-odelcpsolver)
 set(component_name external-odelcpsolver)
 
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_include_directories(${target_name}
+target_include_directories(
+  ${target_name}
   PUBLIC
     $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
