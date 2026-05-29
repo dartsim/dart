@@ -105,6 +105,22 @@ def test_render_handles_missing_baseline():
     assert m.COMMENT_MARKER in out
 
 
+def test_render_flags_subalert_regression_and_noise_band():
+    m = _load_module()
+    out = m.render_comment(
+        {"BM_SLOW": 1200e-9, "BM_FLAT": 1003e-9},
+        {"BM_SLOW": 1000e-9, "BM_FLAT": 1000e-9},
+        series="DART",
+        alert_ratio=1.5,
+        baseline_available=True,
+    )
+    # +20% is a regression but below the 50% alert threshold -> yellow, not red.
+    assert "🟡" in out and "🔴" not in out
+    assert "✅" in out  # nothing crossed the alert threshold
+    # +0.3% sits in the noise band.
+    assert "➖" in out
+
+
 def test_render_unit_mismatch_baseline_vs_current():
     m = _load_module()
     # Baseline in us, current in ns: 1 us baseline vs 2000 ns current = 2x slower.

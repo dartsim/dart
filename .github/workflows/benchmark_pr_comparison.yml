@@ -99,10 +99,14 @@ jobs:
             python scripts/run_performance_dashboard_benchmarks.py --continue-on-error || true
 
       - name: Merge benchmark results
+        # If every surface failed (no rows), fall back to an empty result so the
+        # comparison step still posts a graceful "no rows" comment instead of
+        # failing the job with a red check.
         run: |
           pixi run --locked -e collision-reference \
             python scripts/merge_benchmark_results.py .benchmark_results \
-            --output .benchmark_results/combined.json
+            --output .benchmark_results/combined.json \
+            || echo '{"benchmarks": []}' > .benchmark_results/combined.json
 
       - name: Render comparison comment
         run: |
@@ -115,7 +119,7 @@ jobs:
             --output bm_pr_comment.md
 
       - name: Post or update PR comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require("fs");

@@ -52,8 +52,9 @@ def parse_current(path: Path) -> dict[str, float]:
             None,
             "median",
         ):
-            # Keep only the median series (merge_benchmark_results already does
-            # this, but stay robust to raw inputs).
+            # The real pipeline pre-selects the median row via
+            # merge_benchmark_results.py; this guard just skips any stray
+            # non-median aggregate rows.
             continue
         name = row.get("name") or row.get("run_name")
         seconds = _to_seconds(
@@ -123,7 +124,8 @@ def render_comment(
         ratio = cur / base
         rows.append((name, base, cur, ratio))
 
-    # Sort: largest regression first, then new/unknown, then the rest.
+    # Sort largest-ratio (worst regression) first; new benchmarks (no baseline)
+    # sort around the neutral boundary, then alphabetical tiebreak.
     def _sort_key(row):
         ratio = row[3]
         return (-(ratio if ratio is not None else 0.0), row[0])
@@ -150,11 +152,14 @@ def render_comment(
             lines.append(f"| `{name}` | — | {cur_s} | new | 🆕 |")
             continue
         delta_pct = (ratio - 1.0) * 100.0
-        flag = (
-            "🔴" if ratio >= alert_ratio else ("🟢" if delta_pct <= -float(0) else "")
-        )
         if -1.0 < delta_pct < 1.0:
-            flag = "➖"
+            flag = "➖"  # within noise band
+        elif ratio >= alert_ratio:
+            flag = "🔴"  # regression past the alert threshold
+        elif delta_pct < 0:
+            flag = "🟢"  # improvement
+        else:
+            flag = "🟡"  # sub-alert regression
         sign = "+" if delta_pct >= 0 else ""
         lines.append(
             f"| `{name}` | {_fmt_time(base)} | {cur_s} | {sign}{delta_pct:.1f}% | {flag} |"
@@ -191,7 +196,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    current = parse_current(args.current)
+    current = parse_current(args.current) if args.current.exists() else {}
     baseline_available = args.baseline.exists()
     baseline = parse_baseline(args.baseline, args.series) if baseline_available else {}
     comment = render_comment(
