@@ -128,6 +128,12 @@ struct DeformableSolverStats
   // repeats; symbolic < numeric indicates the analysis was amortized.
   std::size_t projectedNewtonSymbolicFactorizations = 0;
   std::size_t projectedNewtonNumericFactorizations = 0;
+  // Convergence diagnostic: the largest L2 gradient norm at solve termination
+  // across the step's deformable bodies (the projected-Newton residual). Near
+  // the gradient tolerance means the solve converged; a large value means a
+  // body hit the iteration cap or stalled. Feeds the paper's benchmark
+  // statistics (Fig. 23 / Table 1).
+  double finalGradientResidualNorm = 0.0;
 
   void reset() noexcept
   {

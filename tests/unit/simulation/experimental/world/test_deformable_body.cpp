@@ -2326,6 +2326,9 @@ TEST(DeformableBody, ProjectedNewtonSolvesSpringStepInFewIterations)
   // outer iterations total, far fewer than steepest descent. A tight bound
   // makes this a real regression guard against a convergence slowdown.
   EXPECT_LE(stats.solverIterations, 2u);
+  // The reported convergence residual reflects a converged solve (the loop
+  // terminates on the gradient tolerance).
+  EXPECT_LT(stats.finalGradientResidualNorm, 1e-6);
 
   constexpr double inertialWeight = 1.0 / (0.1 * 0.1);
   constexpr double expectedX

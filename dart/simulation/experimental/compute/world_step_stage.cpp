@@ -3078,6 +3078,7 @@ void advanceDeformableBody(
     constexpr double armijo = 1e-4;
     constexpr double minStep = 1e-12;
 
+    double lastGradSquared = 0.0;
     for (std::size_t iteration = 0; iteration < maxIterations; ++iteration) {
       ++stats.solverIterations;
       ++stats.objectiveEvaluations;
@@ -3129,6 +3130,7 @@ void advanceDeformableBody(
 
       const double gradSquared
           = gradientNormSquared(scratch.gradient, scratch.activeFixed);
+      lastGradSquared = gradSquared;
       if (gradSquared <= gradientToleranceSquared) {
         break;
       }
@@ -3285,6 +3287,11 @@ void advanceDeformableBody(
         break;
       }
     }
+    // Record the worst-case solve residual across the step's bodies (the
+    // gradient norm at termination), a convergence diagnostic for the
+    // benchmark statistics.
+    stats.finalGradientResidualNorm
+        = std::max(stats.finalGradientResidualNorm, std::sqrt(lastGradSquared));
   }
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
