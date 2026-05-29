@@ -122,16 +122,20 @@
         compute-backend injection path (keeping `world_step_stage` GPU-free per
         the runtime-dependency policy), and the formal GPU-vs-CPU perf gate is a
         follow-up.
-  - [ ] Remaining Phase 3 work: symbolic-factorization reuse / matrix-free CG
-        for the sparse solve (the current solve refactorizes from scratch each
-        iteration; per-step cost is not yet optimized), adaptive barrier
-        stiffness, barrier forces for rigid/codimensional obstacles, and
-        complementarity/solver-stat diagnostics. CPU and GPU performance
-        optimization of the per-element eigen-decomposition, Hessian assembly,
-        and linear solve (all data-parallel GPU candidates). Known
-        approximation: the contact active set is rebuilt once per outer
-        iteration and held fixed across the inner Newton/line-search step
-        (standard IPC), rather than re-queried within the line search.
+  - [x] Symbolic-factorization reuse sub-slice: the sparse Cholesky reuses its
+        fill-reducing ordering (`analyzePattern`) across iterations/steps when
+        the Hessian sparsity pattern is unchanged, so only the numeric
+        factorization repeats. Behavior-preserving (structural mismatch
+        re-analyzes); ~halves the per-step solve on a settled 512-node grid
+        (~21.7->~11.6 ms). Symbolic/numeric counters + reuse regression.
+  - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
+        primitive into the solve via an optional executor + a GPU-vs-CPU perf
+        gate), matrix-free CG for very large meshes, adaptive barrier stiffness,
+        barrier forces for rigid/codimensional obstacles, and
+        complementarity/solver-stat diagnostics. Known approximation: the
+        contact active set is rebuilt once per outer iteration and held fixed
+        across the inner Newton/line-search step (standard IPC), rather than
+        re-queried within the line search.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
 - [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
       examples, benchmarks, profiling artifacts, and headless Filament evidence.

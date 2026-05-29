@@ -122,6 +122,12 @@ struct DeformableSolverStats
   std::size_t selfContactBarrierActiveContacts = 0;
   std::size_t projectedNewtonSteps = 0;
   std::size_t projectedNewtonFallbacks = 0;
+  // Sparse-solve factorization accounting. The symbolic factorization
+  // (fill-reducing ordering) is reused whenever the Hessian sparsity pattern is
+  // unchanged across iterations/steps, so only the numeric factorization
+  // repeats; symbolic < numeric indicates the analysis was amortized.
+  std::size_t projectedNewtonSymbolicFactorizations = 0;
+  std::size_t projectedNewtonNumericFactorizations = 0;
 
   void reset() noexcept
   {

@@ -737,6 +737,16 @@ struct DeformableContactSolverScratch
   std::vector<dc::detail::SweepItem> interBodyObstacleTriangleItems;
   std::vector<dc::detail::SweepItem> interBodyCurrentEdgeItems;
   std::vector<dc::detail::SweepItem> interBodyObstacleEdgeItems;
+
+  // Persistent projected-Newton sparse Cholesky. The fill-reducing symbolic
+  // factorization is reused across iterations and steps whenever the assembled
+  // Hessian sparsity pattern (cached column/row index arrays) is unchanged, so
+  // only the numeric factorization repeats. Behavior-preserving: a structure
+  // mismatch (or a failed factorization) re-runs analyzePattern.
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> newtonSolver;
+  std::vector<int> newtonPatternOuter;
+  std::vector<int> newtonPatternInner;
+  bool newtonPatternValid = false;
 };
 
 //==============================================================================
@@ -2734,7 +2744,9 @@ bool computeProjectedNewtonDirection(
     const SelfContactBarrierInputs* contactBarrier,
     const double timeStep,
     const std::vector<Eigen::Vector3d>& gradient,
-    std::vector<Eigen::Vector3d>& direction)
+    std::vector<Eigen::Vector3d>& direction,
+    DeformableContactSolverScratch& solverCache,
+    DeformableSolverStats& stats)
 {
   const std::size_t nodeCount = positions.size();
   // Sparse Cholesky scales to large meshes; the cap is a safety bound against
@@ -2918,6 +2930,46 @@ bool computeProjectedNewtonDirection(
 
   Eigen::SparseMatrix<double> hessian(dim, dim);
   hessian.setFromTriplets(triplets.begin(), triplets.end());
+  hessian.makeCompressed();
+
+  // Reuse the fill-reducing symbolic factorization when the sparsity pattern is
+  // unchanged from the last analyzed matrix (same column/row index arrays); the
+  // expensive ordering then runs once and only the numeric factorization
+  // repeats. This is behavior-preserving (analyzePattern + factorize gives the
+  // same result as compute()); any structural mismatch re-analyzes, so it is
+  // safe by construction.
+  auto& ldlt = solverCache.newtonSolver;
+  const auto cols = hessian.cols();
+  const auto nnz = hessian.nonZeros();
+  const int* outer = hessian.outerIndexPtr();
+  const int* inner = hessian.innerIndexPtr();
+  bool patternMatches
+      = solverCache.newtonPatternValid
+        && static_cast<Eigen::Index>(solverCache.newtonPatternOuter.size())
+               == cols + 1
+        && static_cast<Eigen::Index>(solverCache.newtonPatternInner.size())
+               == nnz;
+  if (patternMatches) {
+    for (Eigen::Index i = 0; i <= cols && patternMatches; ++i) {
+      patternMatches = solverCache.newtonPatternOuter[i] == outer[i];
+    }
+    for (Eigen::Index i = 0; i < nnz && patternMatches; ++i) {
+      patternMatches = solverCache.newtonPatternInner[i] == inner[i];
+    }
+  }
+
+  if (patternMatches) {
+    ldlt.factorize(hessian);
+    ++stats.projectedNewtonNumericFactorizations;
+  } else {
+    ldlt.analyzePattern(hessian);
+    ldlt.factorize(hessian);
+    solverCache.newtonPatternOuter.assign(outer, outer + cols + 1);
+    solverCache.newtonPatternInner.assign(inner, inner + nnz);
+    solverCache.newtonPatternValid = true;
+    ++stats.projectedNewtonSymbolicFactorizations;
+    ++stats.projectedNewtonNumericFactorizations;
+  }
 
   // The inertia term (m/dt^2 on every free DOF, with positive node masses
   // enforced at construction) keeps the Hessian positive definite once the
@@ -2929,14 +2981,15 @@ bool computeProjectedNewtonDirection(
   // intent as the dense LDLT isPositive() guard the rest of the module uses;
   // the two verdicts can only differ for near-singular matrices, which the
   // m/dt^2 inertia floor precludes here. Either failure falls back to steepest
-  // descent below. (info() is unchanged by solve(); the recheck is defensive,
-  // matching the rigid-body solves.)
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt(hessian);
+  // descent below.
   if (ldlt.info() != Eigen::Success || (ldlt.vectorD().array() <= 0.0).any()) {
+    // Force a fresh analysis next time after a failed/indefinite factorization.
+    solverCache.newtonPatternValid = false;
     return false;
   }
   const Eigen::VectorXd solution = ldlt.solve(rhs);
   if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
+    solverCache.newtonPatternValid = false;
     return false;
   }
 
@@ -3207,7 +3260,9 @@ void advanceDeformableBody(
           &contactBarrier,
           timeStep,
           scratch.gradient,
-          scratch.direction);
+          scratch.direction,
+          contactScratch,
+          stats);
       if (newtonDirection) {
         ++stats.projectedNewtonSteps;
       } else {
