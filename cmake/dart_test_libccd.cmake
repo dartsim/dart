@@ -6,7 +6,12 @@ if(TARGET dart_tests_libccd)
 endif()
 
 set(DART_TESTS_LIBCCD_FOUND FALSE)
-set(DART_TESTS_LIBCCD_ROOT "" CACHE PATH "Path to libccd (source or install) for tests/benchmarks")
+set(
+  DART_TESTS_LIBCCD_ROOT
+  ""
+  CACHE PATH
+  "Path to libccd (source or install) for tests/benchmarks"
+)
 
 macro(_dart_reset_missing_libccd_cache)
   if(LIBCCD_INCLUDE_DIR AND NOT EXISTS "${LIBCCD_INCLUDE_DIR}/ccd/ccd.h")
@@ -50,7 +55,13 @@ if(DART_TESTS_LIBCCD_ROOT)
     endif()
 
     if(DEFINED _dart_prev_enable_double)
-      set(ENABLE_DOUBLE_PRECISION ${_dart_prev_enable_double} CACHE BOOL "" FORCE)
+      set(
+        ENABLE_DOUBLE_PRECISION
+        ${_dart_prev_enable_double}
+        CACHE BOOL
+        ""
+        FORCE
+      )
     else()
       unset(ENABLE_DOUBLE_PRECISION CACHE)
     endif()
@@ -78,7 +89,10 @@ if(DART_TESTS_LIBCCD_ROOT)
 
     if(LIBCCD_INCLUDE_DIR AND LIBCCD_LIBRARY)
       add_library(dart_tests_libccd INTERFACE)
-      target_include_directories(dart_tests_libccd INTERFACE ${LIBCCD_INCLUDE_DIR})
+      target_include_directories(
+        dart_tests_libccd
+        INTERFACE ${LIBCCD_INCLUDE_DIR}
+      )
       target_link_libraries(dart_tests_libccd INTERFACE ${LIBCCD_LIBRARY})
       set(DART_TESTS_LIBCCD_FOUND TRUE)
     endif()
@@ -106,7 +120,10 @@ if(NOT DART_TESTS_LIBCCD_FOUND)
 
   if(LIBCCD_INCLUDE_DIR AND LIBCCD_LIBRARY)
     add_library(dart_tests_libccd INTERFACE)
-    target_include_directories(dart_tests_libccd INTERFACE ${LIBCCD_INCLUDE_DIR})
+    target_include_directories(
+      dart_tests_libccd
+      INTERFACE ${LIBCCD_INCLUDE_DIR}
+    )
     target_link_libraries(dart_tests_libccd INTERFACE ${LIBCCD_LIBRARY})
     set(DART_TESTS_LIBCCD_FOUND TRUE)
   endif()
