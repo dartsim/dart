@@ -54,6 +54,8 @@ using dart::gui::KeyboardShortcut;
 using dart::gui::OrbitCamera;
 using dart::gui::OrbitCameraController;
 using dart::gui::OrbitCameraControllerInput;
+using dart::gui::OrbitCameraControlOptions;
+using dart::gui::OrbitCameraMouseMode;
 using dart::gui::requestSingleStep;
 using dart::gui::resetOrbitCameraTracking;
 using dart::gui::togglePaused;
@@ -365,10 +367,36 @@ Eigen::Vector3d selectedNudgeFromKeyboard(
   return computeCameraRelativeNudge(camera, input);
 }
 
+OrbitCameraControllerInput makeOrbitCameraControllerInput(
+    double cursorX,
+    double cursorY,
+    bool leftMousePressed,
+    bool rightMousePressed,
+    bool middleMousePressed,
+    bool suppressCameraMouse,
+    bool dragModifierDown,
+    const dart::gui::OrbitCameraControlOptions& controls)
+{
+  OrbitCameraControllerInput input;
+  input.cursorX = cursorX;
+  input.cursorY = cursorY;
+  input.locked = controls.locked;
+  const bool leftMouse
+      = leftMousePressed && !suppressCameraMouse && !dragModifierDown;
+  const bool rightOrMiddleMouse
+      = !suppressCameraMouse && (rightMousePressed || middleMousePressed);
+  input.orbit = leftMouse && controls.mouseMode == OrbitCameraMouseMode::Orbit;
+  input.pan = (leftMouse && controls.mouseMode == OrbitCameraMouseMode::Pan)
+              || rightOrMiddleMouse;
+  input.zoom = leftMouse && controls.mouseMode == OrbitCameraMouseMode::Zoom;
+  return input;
+}
+
 void updateCameraController(
     GLFWwindow* window,
     dart::gui::OrbitCameraController& controller,
-    bool suppressLeftMouseOrbit)
+    bool suppressCameraMouse,
+    const dart::gui::OrbitCameraControlOptions& controls)
 {
   if (window == nullptr) {
     return;
@@ -378,14 +406,15 @@ void updateCameraController(
   double y = 0.0;
   glfwGetCursorPos(window, &x, &y);
 
-  OrbitCameraControllerInput input;
-  input.cursorX = x;
-  input.cursorY = y;
-  input.orbit = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS
-                && !suppressLeftMouseOrbit && !isDragModifierDown(window);
-  input.pan
-      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS
-        || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+  const OrbitCameraControllerInput input = makeOrbitCameraControllerInput(
+      x,
+      y,
+      glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS,
+      glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS,
+      glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS,
+      suppressCameraMouse,
+      isDragModifierDown(window),
+      controls);
   updateOrbitCameraController(controller, input);
 }
 

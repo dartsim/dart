@@ -1,6 +1,7 @@
 # Copyright (c) 2011, The DART development contributors
 
-set(simd_headers
+set(
+  simd_headers
   config.hpp
   fwd.hpp
   math.hpp
@@ -59,7 +60,8 @@ set(simd_headers
 # Header-only library (interface target)
 add_library(dart-simd INTERFACE)
 target_include_directories(
-  dart-simd INTERFACE
+  dart-simd
+  INTERFACE
     $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>

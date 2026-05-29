@@ -57,12 +57,18 @@ enum class InspectorNumericPropertyKind
   JointAxisX,
   JointAxisY,
   JointAxisZ,
+  SensorRange,
+  SensorFieldOfView,
+  SensorUpdateRate,
+  CollisionFriction,
+  CollisionRestitution,
 };
 
 enum class InspectorEnumPropertyKind
 {
   ShapeType,
   JointKind,
+  SensorKind,
 };
 
 struct InspectorNumericProperty
@@ -70,6 +76,7 @@ struct InspectorNumericProperty
   InspectorNumericPropertyKind kind
       = InspectorNumericPropertyKind::TranslationX;
   std::string label;
+  std::string section;
   double value = 0.0;
   double minimum = 0.0;
   double maximum = 1.0;
@@ -79,6 +86,7 @@ struct InspectorNumericProperty
 struct InspectorColorProperty
 {
   std::string label;
+  std::string section;
   Eigen::Vector4d rgba = Eigen::Vector4d(1.0, 1.0, 1.0, 1.0);
   bool editable = false;
 };
@@ -93,6 +101,7 @@ struct InspectorEnumProperty
 {
   InspectorEnumPropertyKind kind = InspectorEnumPropertyKind::ShapeType;
   std::string label;
+  std::string section;
   int value = 0;
   std::vector<InspectorEnumChoice> choices;
   bool editable = false;
@@ -121,6 +130,10 @@ struct InspectorActionResult
 
 /// Build a typed inspector view model for the current primary selection.
 [[nodiscard]] InspectorStatus buildInspectorStatus(const SimEngine& engine);
+/// Build the same inspector view model for one object without changing
+/// selection.
+[[nodiscard]] InspectorStatus buildInspectorObjectStatus(
+    const SimEngine& engine, ObjectId id);
 
 /// Apply one numeric inspector edit through the undoable command stack.
 InspectorActionResult setInspectorNumericProperty(
