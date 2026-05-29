@@ -812,6 +812,10 @@ void BM_DeformableGridStage(benchmark::State& state)
       = static_cast<double>(stats.acceptedLineSearchSteps);
   state.counters["initial_projections"]
       = static_cast<double>(stats.initialProjectionCount);
+  state.counters["projected_newton_steps"]
+      = static_cast<double>(stats.projectedNewtonSteps);
+  state.counters["projected_newton_fallbacks"]
+      = static_cast<double>(stats.projectedNewtonFallbacks);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1187,12 +1191,18 @@ BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
 
+// The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
+// dense-solve cap, so they exercise the sparse projected-Newton path; compare
+// projected_newton_steps against projected_newton_fallbacks to confirm Newton
+// stays engaged as the mesh scales.
 BENCHMARK(BM_DeformableGridStage)
     ->Args({8, 4, 0})
     ->Args({16, 8, 0})
     ->Args({32, 16, 0})
+    ->Args({48, 24, 0})
     ->Args({16, 8, 1})
-    ->Args({32, 16, 1});
+    ->Args({32, 16, 1})
+    ->Args({48, 24, 1});
 
 BENCHMARK(BM_DeformableSurfaceContactStage)
     ->Args({1, 0})
