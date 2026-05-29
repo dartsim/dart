@@ -52,7 +52,7 @@ def parse_current(path: Path) -> dict[str, float]:
             None,
             "median",
         ):
-            # The real pipeline pre-selects the median row via
+            # The real pipeline already selects the median row via
             # merge_benchmark_results.py; this guard just skips any stray
             # non-median aggregate rows.
             continue
@@ -105,9 +105,11 @@ def render_comment(
     ]
     if not baseline_available:
         lines += [
-            "_No published baseline was found on `gh-pages` yet, so only the "
-            "current PR measurements are shown. The comparison populates once the "
-            "Performance Dashboard has published history for this series._",
+            (
+                "_No published baseline was found on `gh-pages` yet, so only the "
+                "current PR measurements are shown. The comparison populates once "
+                "the Performance Dashboard has published history for this series._"
+            ),
             "",
         ]
     if not current:
@@ -169,8 +171,11 @@ def render_comment(
         lines += ["", f"_Baseline-only (not run in this PR): {len(missing)}._"]
     lines += [
         "",
-        "<sub>Smaller is better. Baseline is the latest `gh-pages` dashboard "
-        "entry; GitHub-hosted runners are noisy, so treat small deltas as noise.</sub>",
+        (
+            "<sub>Smaller is better. Baseline is the latest `gh-pages` dashboard "
+            "entry; GitHub-hosted runners are noisy, so treat small deltas as "
+            "noise.</sub>"
+        ),
     ]
     return "\n".join(lines)
 
