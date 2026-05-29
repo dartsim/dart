@@ -322,6 +322,46 @@ private:
   Eigen::Isometry3d m_transform;
 };
 
+//==============================================================================
+// Adds a non-static (free) rigid box tagged as a deformable-surface CCD
+// obstacle with a prescribed world-frame velocity. The deformable stage
+// predicts this body's end-of-step pose from its velocity, so the moving CCD
+// limiter constrains the deformable against where the box will be.
+sx::RigidBody addMovingSurfaceCcdBox(
+    sx::World& world,
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Vector3d& linearVelocity,
+    const Eigen::Vector3d& angularVelocity = Eigen::Vector3d::Zero(),
+    const Eigen::Quaterniond& orientation = Eigen::Quaterniond::Identity())
+{
+  sx::RigidBodyOptions options;
+  options.isStatic = false;
+  options.position = position;
+  options.orientation = orientation;
+  auto body = world.addRigidBody(name, options);
+  body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  body.setDeformableSurfaceCcdObstacle(true);
+  body.setLinearVelocity(linearVelocity);
+  body.setAngularVelocity(angularVelocity);
+  return body;
+}
+
+//==============================================================================
+// True when `point` lies strictly outside the axis-or-oriented box centered at
+// `center` with the given orientation and half extents (i.e. positive
+// separation on at least one axis in the box's local frame).
+bool isOutsideBox(
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& center,
+    const Eigen::Quaterniond& orientation,
+    const Eigen::Vector3d& halfExtents)
+{
+  const Eigen::Vector3d local = orientation.conjugate() * (point - center);
+  return (local.array().abs() > halfExtents.array()).any();
+}
+
 } // namespace
 
 //==============================================================================
@@ -1722,4 +1762,379 @@ TEST(DeformableBody, SerializationPreservesMeshTopologyAndMaterial)
   world2.setTimeStep(0.05);
   world2.step();
   EXPECT_LT(body2->getPosition(3).z(), 1.0 + 0.05 * 0.5);
+}
+
+//==============================================================================
+// A deformable node advancing toward a box that is itself moving toward the
+// node is conservatively limited so it does not enter the box's predicted
+// end-of-step pose. The custom pipeline runs only the deformable stage; the
+// limiter still predicts the box end pose from its velocity.
+TEST(DeformableBody, MovingRigidSurfaceCcdLimitsAgainstPredictedPose)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  addMovingSurfaceCcdBox(
+      world,
+      "moving_box",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      halfExtents,
+      Eigen::Vector3d(-20.0, 0.0, 0.0));
+
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  // The swept motion is tiled by overlapping static pose samples (>= 2), each
+  // contributing the box's 12 triangles / 12 edges.
+  EXPECT_GE(stats.movingRigidSurfaceCcdSampleCount, 2u);
+  EXPECT_EQ(
+      stats.movingRigidSurfaceCcdTriangleCount,
+      12u * stats.movingRigidSurfaceCcdSampleCount);
+  EXPECT_EQ(
+      stats.movingRigidSurfaceCcdEdgeCount,
+      12u * stats.movingRigidSurfaceCcdSampleCount);
+  EXPECT_GT(stats.movingRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+  // The moving obstacle path must not be confused with the static one.
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+
+  // The node moved toward its free target but was limited short of it.
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), -1.0);
+  EXPECT_LT(finalPosition.x(), 1.0);
+
+  // Conservative guarantee: the node stays outside the box's predicted end pose
+  // (center moves by velocity * dt = -20 * 0.1 = -2.0 to the origin).
+  const Eigen::Vector3d predictedEndCenter(0.0, 0.0, 0.0);
+  EXPECT_TRUE(isOutsideBox(
+      finalPosition,
+      predictedEndCenter,
+      Eigen::Quaterniond::Identity(),
+      halfExtents));
+}
+
+//==============================================================================
+// Isolates the ordering fix: with the box STATIC at its start pose, the node's
+// own trajectory never reaches it, so the static limiter does not engage and
+// the node reaches its free target. With the SAME geometry but the box moving
+// onto the node's path, the moving limiter predicts the end pose and limits the
+// node. Same node motion, opposite outcome -> the prediction is what matters.
+TEST(DeformableBody, MovingRigidSurfaceCcdConstrainsWhereStaticSnapshotWouldNot)
+{
+  const Eigen::Vector3d boxStart(2.0, 0.0, 0.0);
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  const Eigen::Vector3d nodeStart(-1.0, 0.0, 0.0);
+  const Eigen::Vector3d nodeVelocity(20.0, 0.0, 0.0);
+
+  // Baseline: a static box at the start pose is too far from the node's
+  // trajectory to limit it.
+  double staticFinalX = 0.0;
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addStaticSurfaceCcdBox(world, "static_box", boxStart, halfExtents);
+    auto body = world.addDeformableBody(
+        "approaching_point",
+        makeSingleNodeBodyOptions(nodeStart, nodeVelocity));
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+    staticFinalX = body.getPosition(0).x();
+    EXPECT_GT(staticFinalX, 0.9); // reached free target ~ +1.0
+  }
+
+  // Moving: the same box sweeps onto the node's path and is predicted, so the
+  // node is limited well short of its free target.
+  double movingFinalX = 0.0;
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addMovingSurfaceCcdBox(
+        world,
+        "moving_box",
+        boxStart,
+        halfExtents,
+        Eigen::Vector3d(-20.0, 0.0, 0.0));
+    auto body = world.addDeformableBody(
+        "approaching_point",
+        makeSingleNodeBodyOptions(nodeStart, nodeVelocity));
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_GT(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+    movingFinalX = body.getPosition(0).x();
+  }
+
+  // The moving prediction constrains the node where the static snapshot did
+  // not.
+  EXPECT_LT(movingFinalX, staticFinalX);
+  EXPECT_LT(movingFinalX, 0.9);
+}
+
+//==============================================================================
+// An obstacle receding from the deformable must not spuriously limit it.
+TEST(DeformableBody, MovingRigidSurfaceCcdDoesNotLimitRecedingObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addMovingSurfaceCcdBox(
+      world,
+      "receding_box",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      Eigen::Vector3d(0.05, 1.0, 1.0),
+      Eigen::Vector3d(20.0, 0.0, 0.0)); // moves away in +x
+
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdHits, 0u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+  // The node reaches its free target unimpeded.
+  EXPECT_GT(body.getPosition(0).x(), 0.9);
+}
+
+//==============================================================================
+// A fast-rotating obstacle is handled conservatively: its swept motion is tiled
+// by sampled rotated poses, so a node advancing toward the spinning slab is
+// limited and stays outside the slab's rotated end pose, deterministically.
+TEST(DeformableBody, MovingRigidSurfaceCcdHandlesRotatingObstacle)
+{
+  const Eigen::Vector3d boxCenter(0.0, 0.0, 0.0);
+  const Eigen::Vector3d halfExtents(1.0, 0.1, 1.0);
+  const Eigen::Vector3d angularVelocity(0.0, 0.0, 10.0); // 10 rad/s about z
+  const double timeStep = 0.1;                           // theta = 1.0 rad
+
+  std::size_t limitedSteps = 0;
+  std::size_t boxCount = 0;
+  const auto run = [&]() {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(timeStep);
+    addMovingSurfaceCcdBox(
+        world,
+        "spinning_slab",
+        boxCenter,
+        halfExtents,
+        Eigen::Vector3d::Zero(),
+        angularVelocity);
+    // Node starts outside the slab's swept disc on the +x side and drives in
+    // toward the center, so it must be limited by the rotating obstacle.
+    auto body = world.addDeformableBody(
+        "approaching_point",
+        makeSingleNodeBodyOptions(
+            Eigen::Vector3d(1.5, 0.0, 0.0), Eigen::Vector3d(-10.0, 0.0, 0.0)));
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    limitedSteps = stage.getLastStats().movingRigidSurfaceCcdLimitedSteps;
+    boxCount = stage.getLastStats().movingRigidSurfaceCcdBoxCount;
+    return body.getPosition(0);
+  };
+
+  const Eigen::Vector3d finalPosition = run();
+
+  EXPECT_EQ(boxCount, 1u);
+  EXPECT_GT(limitedSteps, 0u);
+
+  // Predicted end orientation: rotation by theta = |angular| * dt = 1.0 rad
+  // about z. The node must remain outside the obstacle's rotated end pose.
+  const Eigen::Quaterniond endOrientation(
+      Eigen::AngleAxisd(10.0 * timeStep, Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(
+      isOutsideBox(finalPosition, boxCenter, endOrientation, halfExtents));
+
+  // Determinism: identical inputs produce identical output.
+  const Eigen::Vector3d repeat = run();
+  EXPECT_DOUBLE_EQ(finalPosition.x(), repeat.x());
+  EXPECT_DOUBLE_EQ(finalPosition.y(), repeat.y());
+  EXPECT_DOUBLE_EQ(finalPosition.z(), repeat.z());
+}
+
+//==============================================================================
+// The moving and static rigid obstacle collectors are disjoint: a static CCD
+// box increments only static counters and a moving CCD box increments only
+// moving counters.
+TEST(DeformableBody, MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint)
+{
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addStaticSurfaceCcdBox(
+        world, "static_box", Eigen::Vector3d::Zero(), halfExtents);
+    auto body = world.addDeformableBody(
+        "fast_point",
+        makeSingleNodeBodyOptions(
+            Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    EXPECT_TRUE(body.isValid());
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 1u);
+    EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_EQ(stats.movingRigidSurfaceCcdCandidateBuilds, 0u);
+    EXPECT_EQ(stats.movingRigidSurfaceCcdHits, 0u);
+  }
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addMovingSurfaceCcdBox(
+        world,
+        "moving_box",
+        Eigen::Vector3d(2.0, 0.0, 0.0),
+        halfExtents,
+        Eigen::Vector3d(-20.0, 0.0, 0.0));
+    auto body = world.addDeformableBody(
+        "fast_point",
+        makeSingleNodeBodyOptions(
+            Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    EXPECT_TRUE(body.isValid());
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdCandidateBuilds, 0u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdHits, 0u);
+  }
+}
+
+//==============================================================================
+// A very fast obstacle exceeds the sample cap; the sampled boxes are then
+// inflated to keep overlapping, so the deformable still cannot tunnel into the
+// swept corridor (the conservative invariant holds past the cap).
+TEST(
+    DeformableBody, MovingRigidSurfaceCcdInflatesSamplesPastCapWithoutTunneling)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  // minHalfExtent = 0.05; motion = 200 * 0.1 = 20 >> 64 * 0.05, so the sample
+  // count is capped and the boxes must be inflated to bridge the residual gaps.
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  addMovingSurfaceCcdBox(
+      world,
+      "very_fast_box",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      halfExtents,
+      Eigen::Vector3d(-200.0, 0.0, 0.0));
+
+  // Node approaches the corridor from the +x side (outside the swept region).
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(3.0, 0.0, 0.0), Eigen::Vector3d(-10.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdInflatedBoxCount, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+
+  // The node is stopped before entering the swept corridor (start box right
+  // face is at x = 2.05); it must not tunnel into or across the corridor.
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), 2.0);
+  EXPECT_LT(finalPosition.x(), 3.0);
+}
+
+//==============================================================================
+// End-to-end through the FULL default pipeline: the obstacle is actually
+// integrated by RigidBodyPositionStage (stage 5) after the deformable solve
+// (stage 4). With gravity off and no rigid contacts the obstacle velocity is
+// constant across stages, so the velocity-based prediction the deformable stage
+// limits against equals the pose the obstacle really reaches, and the node ends
+// outside the obstacle's realized end pose.
+TEST(DeformableBody, MovingRigidSurfaceCcdMatchesRealizedMotionInFullPipeline)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const Eigen::Vector3d boxStart(1.0, 0.0, 0.0);
+  const Eigen::Vector3d halfExtents(0.2, 1.0, 1.0);
+  const Eigen::Vector3d boxVelocity(-1.0, 0.0, 0.0);
+  auto box = addMovingSurfaceCcdBox(
+      world, "moving_box", boxStart, halfExtents, boxVelocity);
+
+  // Free target (+1.0) lies inside the obstacle's end pose, so the node must be
+  // limited by the full-pipeline solve.
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-0.5, 0.0, 0.0), Eigen::Vector3d(15.0, 0.0, 0.0)));
+
+  world.step(); // default pipeline: integrates the obstacle at stage 5
+
+  // Obstacle velocity is unchanged (no gravity, no rigid contacts), so the
+  // predicted end pose equals the realized one: center = 1.0 + (-1.0) * 0.1.
+  expectVectorNear(box.getLinearVelocity(), boxVelocity, 1e-12);
+  const Eigen::Vector3d realizedEndCenter
+      = boxStart + boxVelocity * world.getTimeStep();
+
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), -0.5); // advanced toward its target
+  EXPECT_TRUE(isOutsideBox(
+      finalPosition,
+      realizedEndCenter,
+      Eigen::Quaterniond::Identity(),
+      halfExtents));
 }

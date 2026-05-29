@@ -1186,6 +1186,175 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
 }
 
 //==============================================================================
+// Predict a free rigid body's end-of-step transform from its current pose and
+// velocity WITHOUT mutating any component. Mirrors integrateRigidBodyPosition
+// exactly so the deformable stage limits against the SAME motion that
+// RigidBodyPositionStage will later apply at stage 5.
+comps::Transform predictRigidBodyEndTransform(
+    const comps::Transform& transform,
+    const comps::Velocity& velocity,
+    const double timeStep)
+{
+  comps::Transform end = transform;
+  end.position = transform.position + velocity.linear * timeStep;
+
+  auto orientation = normalizeOrIdentity(transform.orientation);
+  const double angularSpeed = velocity.angular.norm();
+  if (angularSpeed > 0.0 && std::isfinite(angularSpeed)) {
+    const auto rotation = Eigen::AngleAxisd(
+        angularSpeed * timeStep, velocity.angular.normalized());
+    orientation = rotation * orientation;
+    orientation.normalize();
+  }
+  end.orientation = normalizeOrIdentity(orientation);
+  return end;
+}
+
+//==============================================================================
+// Number of intermediate static box poses that tile a moving obstacle's swept
+// motion. Below the cap, consecutive sample centers are one box min-half-extent
+// apart so the sampled boxes overlap with margin. The count is capped so a
+// pathologically fast obstacle cannot explode the work; past the cap the
+// residual spacing grows, and the caller restores overlap by inflating the
+// sampled boxes (see collectMovingRigidSurfaceCcdObstacles), so the swept
+// corridor stays covered rather than developing tunnelable gaps.
+std::size_t movingRigidSurfaceCcdSampleCount(
+    const Eigen::Vector3d& halfExtents,
+    const comps::Transform& startTransform,
+    const comps::Transform& endTransform,
+    const Eigen::Vector3d& angularVelocity,
+    const double timeStep)
+{
+  constexpr std::size_t kMaxSamples = 64;
+  const double minHalfExtent = halfExtents.minCoeff();
+  if (!(minHalfExtent > 0.0)) {
+    return 2;
+  }
+
+  const double linearMotion
+      = (endTransform.position - startTransform.position).norm();
+  const double radius = halfExtents.norm();
+  const double angularMotion = radius * angularVelocity.norm() * timeStep;
+  const double motion = linearMotion + angularMotion;
+  if (!std::isfinite(motion) || motion <= 0.0) {
+    return 2;
+  }
+
+  const auto segments
+      = static_cast<std::size_t>(std::ceil(motion / minHalfExtent));
+  const std::size_t samples = std::min(kMaxSamples, segments + 1);
+  return std::max<std::size_t>(samples, 2);
+}
+
+//==============================================================================
+// Collect conservative static box snapshots that tile each MOVING rigid box
+// obstacle's swept motion over the step. Each snapshot is an ordinary static
+// pose, so the existing static-style limiter and
+// interBodySurfaceContactStepBound handle them unchanged. The obstacle end pose
+// is predicted from velocity, so the deformable is limited against where the
+// obstacle will be even though the deformable stage runs before
+// RigidBodyPositionStage.
+//
+// This treats the swept volume as a static blocker for the step (timing-
+// agnostic): it is more conservative than a timing-aware sweep for fast
+// obstacles. At IPC-scale time steps the per-step motion is small, so few
+// samples closely approximate the true contact surface. Consecutive sample
+// boxes are kept overlapping so the deformable cannot tunnel between them: when
+// the sample count hits its cap and the natural spacing would open gaps, the
+// sampled boxes are isotropically inflated by half the residual spacing, which
+// keeps the real obstacle inside each sample and the corridor covered (at the
+// cost of extra over-conservatism). Coverage of the swept hull is exact along
+// the box min axis for axis-aligned motion; for diagonal motion a bounded,
+// half-extent-scale thin-corner under-coverage remains, inherent to all box
+// supersampling.
+std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
+    const World& world, const double timeStep, DeformableSolverStats& stats)
+{
+  ++stats.movingRigidSurfaceCcdSnapshotBuilds;
+
+  const auto& registry = world.getRegistry();
+  // Moving obstacles are free (non-static) rigid bodies integrated by
+  // RigidBodyPositionStage. entt::exclude<StaticBodyTag> keeps this set
+  // disjoint from collectStaticRigidSurfaceCcdObstacles so no body is limited
+  // or counted twice. comps::Velocity is required to predict the end pose.
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform,
+      comps::Velocity>(entt::exclude<comps::StaticBodyTag>);
+
+  std::vector<SurfaceContactSnapshot> snapshots;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    const auto& velocity = view.get<comps::Velocity>(entity);
+    if (geometry.shape.type != CollisionShapeType::Box
+        || !geometry.shape.halfExtents.allFinite()
+        || (geometry.shape.halfExtents.array() <= 0.0).any()
+        || !transform.position.allFinite() || !velocity.linear.allFinite()
+        || !velocity.angular.allFinite()) {
+      continue;
+    }
+
+    const auto endTransform
+        = predictRigidBodyEndTransform(transform, velocity, timeStep);
+    const auto& halfExtents = geometry.shape.halfExtents;
+    const std::size_t samples = movingRigidSurfaceCcdSampleCount(
+        halfExtents, transform, endTransform, velocity.angular, timeStep);
+
+    // Keep consecutive sample boxes overlapping. The natural (uncapped) spacing
+    // is one box min-half-extent, so the boxes overlap with margin; once the
+    // sample count is capped the residual spacing can exceed the box min
+    // dimension, so inflate each sampled box isotropically by half the residual
+    // spacing to bridge the gap. inflation is 0 in the common (uncapped) case.
+    const double minHalfExtent = halfExtents.minCoeff();
+    const double linearMotion
+        = (endTransform.position - transform.position).norm();
+    const double angularMotion
+        = halfExtents.norm() * velocity.angular.norm() * timeStep;
+    const double motion = linearMotion + angularMotion;
+    const double spacing = (samples > 1 && std::isfinite(motion))
+                               ? motion / static_cast<double>(samples - 1)
+                               : 0.0;
+    const double inflation = std::max(0.0, 0.5 * spacing - minHalfExtent);
+    const Eigen::Vector3d sampleHalfExtents
+        = halfExtents + Eigen::Vector3d::Constant(inflation);
+    if (inflation > 0.0) {
+      ++stats.movingRigidSurfaceCcdInflatedBoxCount;
+    }
+
+    const Eigen::Quaterniond startOrientation
+        = normalizeOrIdentity(transform.orientation);
+    const Eigen::Quaterniond endOrientation
+        = normalizeOrIdentity(endTransform.orientation);
+
+    for (std::size_t k = 0; k < samples; ++k) {
+      // samples is always >= 2, so the denominator is never zero.
+      const double fraction
+          = static_cast<double>(k) / static_cast<double>(samples - 1);
+      comps::Transform sampleTransform;
+      sampleTransform.position
+          = transform.position
+            + fraction * (endTransform.position - transform.position);
+      sampleTransform.orientation
+          = startOrientation.slerp(fraction, endOrientation);
+
+      auto snapshot = makeStaticBoxSurfaceCcdSnapshot(
+          entity, sampleHalfExtents, sampleTransform);
+      stats.movingRigidSurfaceCcdTriangleCount
+          += snapshot.surfaceTriangles.size();
+      stats.movingRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
+      ++stats.movingRigidSurfaceCcdSampleCount;
+      snapshots.push_back(std::move(snapshot));
+    }
+    ++stats.movingRigidSurfaceCcdBoxCount;
+  }
+
+  return snapshots;
+}
+
+//==============================================================================
 std::optional<double> boxTopAt(
     const StaticGroundBarrier& barrier, const Eigen::Vector3d& position)
 {
@@ -2139,6 +2308,105 @@ bool applyStaticRigidSurfaceCcdLimit(
 }
 
 //==============================================================================
+// Conservative CCD limiter against MOVING rigid box obstacles. The snapshots
+// are static poses sampled along the obstacle's predicted swept motion, so this
+// reuses exactly the static-obstacle step-bound path; only the stat family
+// differs. Limiting against every sampled pose keeps the deformable out of the
+// obstacle's swept corridor.
+bool applyMovingRigidSurfaceCcdLimit(
+    std::span<const SurfaceContactSnapshot> movingRigidSurfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (movingRigidSurfaceSnapshots.empty()) {
+    return true;
+  }
+
+  if (contactScratch.surfaceTriangles.empty()) {
+    contactScratch.interBodyCurrentEdges.clear();
+  } else {
+    dc::buildUniqueSurfaceEdges(
+        contactScratch.surfaceTriangles, contactScratch.interBodyCurrentEdges);
+  }
+
+  ++stats.movingRigidSurfaceCcdCandidateBuilds;
+  bool hit = false;
+  bool indeterminate = false;
+  double stepBound = 1.0;
+
+  for (const auto& snapshot : movingRigidSurfaceSnapshots) {
+    if (snapshot.surfaceTriangles.empty()) {
+      continue;
+    }
+
+    const auto result = interBodySurfaceContactStepBound(
+        current,
+        candidate,
+        contactScratch.surfaceTriangles,
+        contactScratch.surfaceContactPointMask,
+        contactScratch.interBodyCurrentEdges,
+        snapshot,
+        makeSurfaceContactCandidateOptions(),
+        makeSurfaceContactCcdOptions(),
+        contactScratch);
+
+    stats.movingRigidSurfaceCcdPointTriangleCandidates
+        += result.pointTriangleCandidateCount;
+    stats.movingRigidSurfaceCcdEdgeEdgeCandidates
+        += result.edgeEdgeCandidateCount;
+    stats.movingRigidSurfaceCcdPointTriangleChecks
+        += result.stats.pointTriangleChecks;
+    stats.movingRigidSurfaceCcdEdgeEdgeChecks += result.stats.edgeEdgeChecks;
+    stats.movingRigidSurfaceCcdHits += result.stats.hits;
+    stats.movingRigidSurfaceCcdMisses += result.stats.misses;
+    stats.movingRigidSurfaceCcdIndeterminateCount += result.stats.indeterminate;
+    stats.movingRigidSurfaceCcdZeroStepCount += result.stats.zeroStepCount;
+
+    indeterminate = indeterminate || result.indeterminate;
+    if (result.indeterminate) {
+      stepBound = 0.0;
+    }
+    if (result.hit && (!hit || result.stepBound < stepBound)) {
+      hit = true;
+      stepBound = result.stepBound;
+    }
+  }
+
+  if (indeterminate) {
+    return false;
+  }
+
+  if (!hit) {
+    return true;
+  }
+
+  stepBound = std::clamp(stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    ++stats.movingRigidSurfaceCcdZeroStepCount;
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    ++stats.movingRigidSurfaceCcdZeroStepCount;
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.movingRigidSurfaceCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
 bool applyStaticGroundBarrierCcdLimit(
     const std::vector<Eigen::Vector3d>& current,
     const std::vector<Eigen::Vector3d>& direction,
@@ -2316,6 +2584,7 @@ void advanceDeformableBody(
     DeformableContactSolverScratch& contactScratch,
     std::span<const SurfaceContactSnapshot> surfaceSnapshots,
     std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
+    std::span<const SurfaceContactSnapshot> movingRigidSurfaceSnapshots,
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
@@ -2365,6 +2634,7 @@ void advanceDeformableBody(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
   if (model.edges.empty() && barriers.empty() && rigidSurfaceSnapshots.empty()
+      && movingRigidSurfaceSnapshots.empty()
       && contactScratch.surfaceTriangles.empty()) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
@@ -2445,6 +2715,17 @@ void advanceDeformableBody(
                 directionalDerivative)
             && applyStaticRigidSurfaceCcdLimit(
                 rigidSurfaceSnapshots,
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && applyMovingRigidSurfaceCcdLimit(
+                movingRigidSurfaceSnapshots,
                 scratch.next,
                 scratch.direction,
                 scratch.gradient,
@@ -2890,6 +3171,8 @@ void DeformableDynamicsStage::execute(
   const auto rigidSurfaceSnapshots
       = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
+  const auto movingRigidSurfaceSnapshots
+      = collectMovingRigidSurfaceCcdObstacles(world, timeStep, m_lastStats);
   const auto gravity = world.getGravity();
   m_lastStats.staticGroundBarrierCount = barriers.size();
 
@@ -2948,6 +3231,7 @@ void DeformableDynamicsStage::execute(
         contactScratch,
         surfaceSnapshots,
         rigidSurfaceSnapshots,
+        movingRigidSurfaceSnapshots,
         gravity,
         timeStep,
         barriers,

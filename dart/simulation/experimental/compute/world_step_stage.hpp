@@ -98,6 +98,22 @@ struct DeformableSolverStats
   std::size_t staticRigidSurfaceCcdIndeterminateCount = 0;
   std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
   std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t movingRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t movingRigidSurfaceCcdBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdSampleCount = 0;
+  std::size_t movingRigidSurfaceCcdInflatedBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdTriangleCount = 0;
+  std::size_t movingRigidSurfaceCcdEdgeCount = 0;
+  std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t movingRigidSurfaceCcdHits = 0;
+  std::size_t movingRigidSurfaceCcdMisses = 0;
+  std::size_t movingRigidSurfaceCcdIndeterminateCount = 0;
+  std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
 
   void reset() noexcept
   {
