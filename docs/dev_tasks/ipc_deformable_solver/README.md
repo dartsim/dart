@@ -158,10 +158,15 @@
         contact (`projection^T * H_2x2 * projection`) in the projected-Newton
         assembly, completing self-contact friction as a proper Newton term
         (behavior-preserving; the line search still resolves the same energy).
-  - [ ] Remaining Phase 4 work: edge-edge self-contact friction (force + Hessian),
-        codimensional-obstacle friction, friction over non-flat (sphere/tilted)
-        ground normals, and friction-specific convergence/dissipation
-        diagnostics.
+  - [x] Edge-edge self-contact friction (force + Hessian): the friction
+        energy/gradient/Hessian are generic over a four-node stencil, so only
+        the lagged-contact assembly is extended to edge-edge barrier candidates
+        (net edge force + edge-edge tangent stencil). Crossing-edge slide
+        regression. Self-contact friction now covers point-triangle and
+        edge-edge.
+  - [ ] Remaining Phase 4 work: codimensional-obstacle friction, friction over
+        non-flat (sphere/tilted) ground normals, and friction-specific
+        convergence/dissipation diagnostics.
 - [~] Phase 5: complete the upstream scene corpus as DART-native tests,
   examples, benchmarks, profiling artifacts, and headless Filament evidence.
   - [x] Scene-replay validation harness: the loader -> solver -> diagnostics

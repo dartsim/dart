@@ -951,6 +951,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     the four stencil nodes. Behavior-preserving (the line search still resolves
     the same friction-inclusive energy); existing tests pass unchanged. The
     edge-edge self-contact friction Hessian remains a later increment.
+  - Extended experimental IPC self-contact friction (force and Hessian) to
+    edge-edge contacts. The friction energy/gradient/Hessian are generic over a
+    four-node stencil + tangent projection, so only the lagged-contact assembly
+    is extended: active edge-edge barrier candidates contribute a friction
+    contact whose lagged normal force is the net barrier force on the first
+    edge and whose tangent projection comes from the edge-edge tangent stencil.
+    Adds a regression where one crossing edge slides over another in edge-edge
+    self-contact and decelerates versus the frictionless control while the
+    barrier holds them apart. Self-contact friction now covers both
+    point-triangle and edge-edge primitives.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

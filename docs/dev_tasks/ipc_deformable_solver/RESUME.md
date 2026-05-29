@@ -142,20 +142,20 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-self-contact-friction-hessian` - stacked on
-`feature/ipc-deformable-python-facade` (#2750). Adds the lagged self-contact
-friction Hessian to computeProjectedNewtonDirection: per active point-triangle
-contact, a PSD 12x12 block scale*projection^T*H2x2*projection (tangent-stencil
-projection times the same PSD tangential matrix the ground-friction Hessian
-uses), scattered to the 4 stencil nodes via addBlock3 (free-free). Completes
-self-contact friction as a proper Newton term (was energy+gradient only);
-behavior-preserving (line search resolves the same energy). 62 deformable tests
-pass. computeProjectedNewtonDirection now takes a SelfContactFrictionInputs* arg.
-Edge-edge self-contact friction (force+Hessian) still deferred.
+`feature/ipc-edge-edge-self-friction` - stacked on
+`feature/ipc-self-contact-friction-hessian` (#2751). Extends self-contact
+friction (force + Hessian) to EDGE-EDGE contacts. KEY: the friction
+energy/gradient/Hessian are generic over a SelfContactFrictionContact
+{4 nodes, projection, normalForce}, so ONLY buildSelfContactFrictionContacts is
+extended to also process edgeEdgeCandidates (lambda = net edgeEdgeBarrier force
+on edge A; projection from dc::edgeEdgeTangentStencil(ea0,ea1,eb0,eb1)).
+Regression EdgeEdgeSelfContactFrictionDeceleratesSlidingEdge (two near-orthogonal
+thin triangles whose long edges cross with a gap; the free edge decelerates with
+friction). Self-contact friction now covers PT + EE. 63 deformable tests pass.
 
-Prior #2750 = Python facade (dartpy deformable bindings; forbids get_*/set_*
-names; regenerate stubs + api-boundary-inventory.md). #2749 = scene-replay
-harness.
+Prior #2751 = self-contact friction Hessian (PT). #2750 = Python facade (dartpy
+deformable bindings; forbids get_*/set_* names; regenerate stubs +
+api-boundary-inventory.md). #2749 = scene-replay harness.
 
 Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
 friction. NOTE (from the #2745
@@ -171,8 +171,8 @@ until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 (self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
 Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
 reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
-(self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade).
-(PR #2747 is another author's.)
+(self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade)
+<- #2751 (self-contact friction Hessian). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 
