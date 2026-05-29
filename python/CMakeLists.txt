@@ -48,7 +48,9 @@ if(DART_BUILD_DARTPY)
   list(APPEND _dart_pythonpath_components "${DART_DARTPY_RUNTIME_DIR}")
 endif()
 
-string(JOIN "${DART_PYTHONPATH_DELIM}" DART_PYTHONPATH_ENV
+string(
+  JOIN "${DART_PYTHONPATH_DELIM}"
+  DART_PYTHONPATH_ENV
   ${_dart_pythonpath_components}
 )
 if(WIN32)
