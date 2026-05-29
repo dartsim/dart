@@ -84,6 +84,11 @@ public:
   /// Return to the captured edit state and Edit mode.
   void reset();
 
+  /// Restore the captured edit state and stay in Simulation mode.
+  ///
+  /// Returns false when there is no captured edit state to restart from.
+  [[nodiscard]] bool restart();
+
   /// Discard any captured edit state and return to a fresh Edit state.
   ///
   /// Use when the underlying scene is replaced wholesale (e.g. loading a
@@ -106,6 +111,9 @@ public:
 
   /// Invoked when Edit/Simulation mode or running state changes.
   std::function<void()> onModeChanged;
+
+  /// Invoked after a restart restores the captured runtime reset target.
+  std::function<void()> onRestarted;
 
   /// Invoked after each individual step (used to record replay frames).
   std::function<void()> onAfterStep;

@@ -46,9 +46,13 @@ include(dart_test_libccd)
 # ==============================================================================
 # Collision Benchmarks
 # ==============================================================================
-if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-bullet)
+if(
+  DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
+  AND TARGET dart-test-reference-bullet
+)
   add_executable(bm_boxes collision/bm_boxes.cpp)
-  target_link_libraries(bm_boxes
+  target_link_libraries(
+    bm_boxes
     dart
     dart-test-reference-bullet
     benchmark::benchmark
@@ -58,37 +62,24 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-bull
 endif()
 
 add_executable(bm_native collision/bm_native.cpp)
-target_link_libraries(bm_native
-  dart-collision-native
-  benchmark::benchmark
-)
+target_link_libraries(bm_native dart-collision-native benchmark::benchmark)
 dart_format_add(collision/bm_native.cpp)
-add_executable(
-  bm_native_ccd
-  collision/native/bm_ccd.cpp
-)
-target_link_libraries(bm_native_ccd
-  dart-collision-native
-  benchmark::benchmark
-)
+add_executable(bm_native_ccd collision/native/bm_ccd.cpp)
+target_link_libraries(bm_native_ccd dart-collision-native benchmark::benchmark)
 dart_format_add(collision/native/bm_ccd.cpp)
 if(DART_TESTS_LIBCCD_FOUND)
-  add_executable(
+  add_executable(bm_native_libccd collision/native/bm_libccd.cpp)
+  target_link_libraries(
     bm_native_libccd
-    collision/native/bm_libccd.cpp
-  )
-  target_link_libraries(bm_native_libccd
     dart-collision-native
     dart_tests_libccd
     benchmark::benchmark
   )
   dart_format_add(collision/native/bm_libccd.cpp)
 endif()
-add_executable(
+add_executable(bm_native_broadphase collision/native/bm_broadphase.cpp)
+target_link_libraries(
   bm_native_broadphase
-  collision/native/bm_broadphase.cpp
-)
-target_link_libraries(bm_native_broadphase
   dart-collision-native
   benchmark::benchmark
 )
@@ -96,7 +87,8 @@ dart_format_add(collision/native/bm_broadphase.cpp)
 
 if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
   add_executable(bm_comparative collision/bm_comparative.cpp)
-  target_link_libraries(bm_comparative
+  target_link_libraries(
+    bm_comparative
     dart
     dart-collision-native
     benchmark::benchmark
@@ -116,14 +108,18 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
     bm_comparative_narrow_phase
     collision/comparative/bm_narrow_phase.cpp
   )
-  target_link_libraries(bm_comparative_narrow_phase
+  target_link_libraries(
+    bm_comparative_narrow_phase
     dart
     dart-collision-native
     benchmark::benchmark
   )
   target_link_libraries(bm_comparative_narrow_phase dart-test-reference-fcl)
   if(TARGET dart-test-reference-bullet)
-    target_link_libraries(bm_comparative_narrow_phase dart-test-reference-bullet)
+    target_link_libraries(
+      bm_comparative_narrow_phase
+      dart-test-reference-bullet
+    )
   endif()
   if(TARGET dart-test-reference-ode)
     target_link_libraries(bm_comparative_narrow_phase dart-test-reference-ode)
@@ -132,11 +128,9 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
 endif()
 
 if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
-  add_executable(
+  add_executable(bm_comparative_distance collision/comparative/bm_distance.cpp)
+  target_link_libraries(
     bm_comparative_distance
-    collision/comparative/bm_distance.cpp
-  )
-  target_link_libraries(bm_comparative_distance
     dart
     dart-collision-native
     benchmark::benchmark
@@ -151,11 +145,9 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
   dart_format_add(collision/comparative/bm_distance.cpp)
 endif()
 if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS)
-  add_executable(
+  add_executable(bm_comparative_raycast collision/comparative/bm_raycast.cpp)
+  target_link_libraries(
     bm_comparative_raycast
-    collision/comparative/bm_raycast.cpp
-  )
-  target_link_libraries(bm_comparative_raycast
     dart
     dart-collision-native
     benchmark::benchmark
@@ -166,11 +158,9 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS)
   dart_format_add(collision/comparative/bm_raycast.cpp)
 endif()
 if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
-  add_executable(
+  add_executable(bm_comparative_ccd collision/comparative/bm_ccd.cpp)
+  target_link_libraries(
     bm_comparative_ccd
-    collision/comparative/bm_ccd.cpp
-  )
-  target_link_libraries(bm_comparative_ccd
     dart
     dart-collision-native
     benchmark::benchmark
@@ -189,14 +179,18 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
     bm_scenarios_mixed_primitives
     collision/scenarios/bm_mixed_primitives.cpp
   )
-  target_link_libraries(bm_scenarios_mixed_primitives
+  target_link_libraries(
+    bm_scenarios_mixed_primitives
     dart
     dart-collision-native
     benchmark::benchmark
   )
   target_link_libraries(bm_scenarios_mixed_primitives dart-test-reference-fcl)
   if(TARGET dart-test-reference-bullet)
-    target_link_libraries(bm_scenarios_mixed_primitives dart-test-reference-bullet)
+    target_link_libraries(
+      bm_scenarios_mixed_primitives
+      dart-test-reference-bullet
+    )
   endif()
   if(TARGET dart-test-reference-ode)
     target_link_libraries(bm_scenarios_mixed_primitives dart-test-reference-ode)
@@ -207,12 +201,16 @@ add_executable(
   bm_scenarios_raycast_batch
   collision/scenarios/bm_raycast_batch.cpp
 )
-target_link_libraries(bm_scenarios_raycast_batch
+target_link_libraries(
+  bm_scenarios_raycast_batch
   dart
   dart-collision-native
   benchmark::benchmark
 )
-if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-bullet)
+if(
+  DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
+  AND TARGET dart-test-reference-bullet
+)
   target_link_libraries(bm_scenarios_raycast_batch dart-test-reference-bullet)
   target_compile_definitions(
     bm_scenarios_raycast_batch
@@ -221,11 +219,9 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-bull
 endif()
 dart_format_add(collision/scenarios/bm_raycast_batch.cpp)
 if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
-  add_executable(
+  add_executable(bm_scenarios_mesh_heavy collision/scenarios/bm_mesh_heavy.cpp)
+  target_link_libraries(
     bm_scenarios_mesh_heavy
-    collision/scenarios/bm_mesh_heavy.cpp
-  )
-  target_link_libraries(bm_scenarios_mesh_heavy
     dart
     dart-collision-native
     benchmark::benchmark
@@ -240,7 +236,8 @@ add_executable(
   bm_scenarios_pipeline_breakdown
   collision/scenarios/bm_pipeline_breakdown.cpp
 )
-target_link_libraries(bm_scenarios_pipeline_breakdown
+target_link_libraries(
+  bm_scenarios_pipeline_breakdown
   dart
   dart-collision-native
   benchmark::benchmark
@@ -250,7 +247,8 @@ add_executable(
   bm_scenarios_stacked_scenes
   collision/scenarios/bm_stacked_scenes.cpp
 )
-target_link_libraries(bm_scenarios_stacked_scenes
+target_link_libraries(
+  bm_scenarios_stacked_scenes
   dart
   dart-collision-native
   benchmark::benchmark
@@ -260,10 +258,7 @@ add_executable(
   bm_scenarios_dart_adapter
   collision/scenarios/bm_dart_adapter.cpp
 )
-target_link_libraries(bm_scenarios_dart_adapter
-  dart
-  benchmark::benchmark
-)
+target_link_libraries(bm_scenarios_dart_adapter dart benchmark::benchmark)
 dart_format_add(collision/scenarios/bm_dart_adapter.cpp)
 dart_format_add(collision/fixtures/shape_factories.hpp)
 dart_format_add(collision/fixtures/scene_builders.hpp)
@@ -274,7 +269,8 @@ dart_format_add(collision/fixtures/edge_cases.hpp)
 # ==============================================================================
 if(TARGET dart-io)
   add_executable(bm_kinematics dynamics/bm_kinematics.cpp)
-  target_link_libraries(bm_kinematics
+  target_link_libraries(
+    bm_kinematics
     dart-io
     benchmark::benchmark
     benchmark::benchmark_main
@@ -283,7 +279,8 @@ if(TARGET dart-io)
 endif()
 
 add_executable(bm_jacobian dynamics/bm_jacobian.cpp)
-target_link_libraries(bm_jacobian
+target_link_libraries(
+  bm_jacobian
   dart
   benchmark::benchmark
   benchmark::benchmark_main
@@ -291,7 +288,8 @@ target_link_libraries(bm_jacobian
 dart_format_add(dynamics/bm_jacobian.cpp)
 
 add_executable(bm_dynamics_cache dynamics/bm_dynamics_cache.cpp)
-target_link_libraries(bm_dynamics_cache
+target_link_libraries(
+  bm_dynamics_cache
   dart
   benchmark::benchmark
   benchmark::benchmark_main
@@ -299,7 +297,8 @@ target_link_libraries(bm_dynamics_cache
 dart_format_add(dynamics/bm_dynamics_cache.cpp)
 
 add_executable(bm_sparse_occupancy_grid dynamics/bm_sparse_occupancy_grid.cpp)
-target_link_libraries(bm_sparse_occupancy_grid
+target_link_libraries(
+  bm_sparse_occupancy_grid
   dart
   benchmark::benchmark
   benchmark::benchmark_main
@@ -315,7 +314,8 @@ dart_format_add(dynamics/bm_sparse_occupancy_grid.cpp)
 
 if(TARGET dart-io)
   add_executable(bm_dynamics_cache_io dynamics/bm_dynamics_cache_io.cpp)
-  target_link_libraries(bm_dynamics_cache_io
+  target_link_libraries(
+    bm_dynamics_cache_io
     dart-io
     benchmark::benchmark
     benchmark::benchmark_main
@@ -327,7 +327,8 @@ endif()
 # Common (Allocator) Benchmarks
 # ==============================================================================
 add_executable(bm_allocators common/bm_allocators.cpp)
-target_link_libraries(bm_allocators
+target_link_libraries(
+  bm_allocators
   dart
   benchmark::benchmark
   benchmark::benchmark_main
@@ -337,7 +338,8 @@ dart_format_add(common/bm_allocators.cpp)
 find_package(foonathan_memory QUIET)
 if(foonathan_memory_FOUND)
   add_executable(bm_allocators_comparative common/bm_allocators_comparative.cpp)
-  target_link_libraries(bm_allocators_comparative
+  target_link_libraries(
+    bm_allocators_comparative
     dart
     foonathan_memory
     benchmark::benchmark
@@ -357,7 +359,8 @@ endif()
 # Math Benchmarks
 # ==============================================================================
 add_executable(bm_helpers math/bm_helpers.cpp)
-target_link_libraries(bm_helpers
+target_link_libraries(
+  bm_helpers
   dart
   benchmark::benchmark
   benchmark::benchmark_main
@@ -365,7 +368,8 @@ target_link_libraries(bm_helpers
 dart_format_add(math/bm_helpers.cpp)
 
 add_executable(bm_group_product math/bm_group_product.cpp)
-target_link_libraries(bm_group_product
+target_link_libraries(
+  bm_group_product
   dart
   benchmark::benchmark
   benchmark::benchmark_main
@@ -373,7 +377,8 @@ target_link_libraries(bm_group_product
 dart_format_add(math/bm_group_product.cpp)
 
 add_executable(bm_spatial_algebra math/bm_spatial_algebra.cpp)
-target_link_libraries(bm_spatial_algebra
+target_link_libraries(
+  bm_spatial_algebra
   dart
   benchmark::benchmark
   benchmark::benchmark_main
@@ -384,18 +389,10 @@ dart_format_add(math/bm_spatial_algebra.cpp)
 # SIMD Benchmarks
 # ==============================================================================
 add_executable(bm_simd simd/bm_simd.cpp)
-target_link_libraries(bm_simd
-  dart-simd
-  Eigen3::Eigen
-  benchmark::benchmark
-)
+target_link_libraries(bm_simd dart-simd Eigen3::Eigen benchmark::benchmark)
 
 add_executable(bm_math simd/bm_math.cpp)
-target_link_libraries(bm_math
-  dart-simd
-  Eigen3::Eigen
-  benchmark::benchmark
-)
+target_link_libraries(bm_math dart-simd Eigen3::Eigen benchmark::benchmark)
 
 # Enable native SIMD for benchmarks (AVX2, AVX-512, etc. based on CPU)
 include(CheckCXXCompilerFlag)
@@ -412,7 +409,8 @@ dart_format_add(simd/bm_math.cpp)
 # Dynamics SIMD Benchmarks
 # ==============================================================================
 add_executable(bm_mesh_bbox dynamics/bm_mesh_bbox.cpp)
-target_link_libraries(bm_mesh_bbox
+target_link_libraries(
+  bm_mesh_bbox
   dart-simd
   Eigen3::Eigen
   benchmark::benchmark
@@ -425,7 +423,8 @@ endif()
 dart_format_add(dynamics/bm_mesh_bbox.cpp)
 
 add_executable(bm_soft_body dynamics/bm_soft_body.cpp)
-target_link_libraries(bm_soft_body
+target_link_libraries(
+  bm_soft_body
   dart-simd
   Eigen3::Eigen
   benchmark::benchmark

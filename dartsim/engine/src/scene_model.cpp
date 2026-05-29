@@ -33,12 +33,88 @@
 #include <dartsim_engine/scene_model.hpp>
 
 #include <algorithm>
+#include <string>
+#include <unordered_set>
+
+#include <cctype>
 
 namespace dartsim {
 
 namespace {
 const std::vector<ObjectId> kEmptyChildren;
+
+std::string trim(std::string value)
+{
+  const auto first
+      = std::find_if_not(value.begin(), value.end(), [](unsigned char c) {
+          return std::isspace(c) != 0;
+        });
+  const auto last
+      = std::find_if_not(value.rbegin(), value.rend(), [](unsigned char c) {
+          return std::isspace(c) != 0;
+        }).base();
+  if (first >= last) {
+    return {};
+  }
+  return std::string(first, last);
+}
+
+bool isWorkspaceSignalKey(std::string_view signal)
+{
+  if (signal.empty()) {
+    return false;
+  }
+  return std::all_of(signal.begin(), signal.end(), [](unsigned char c) {
+    return std::isalnum(c) != 0 || c == '_' || c == '-' || c == '.' || c == ':'
+           || c == '/';
+  });
+}
+
 } // namespace
+
+bool normalizeWorkspaceSettings(WorkspaceSettings& workspace)
+{
+  std::vector<WorkspaceWatchPreset> normalizedPresets;
+  normalizedPresets.reserve(workspace.watchPresets.size());
+  std::unordered_set<std::string> presetNames;
+
+  for (WorkspaceWatchPreset preset : workspace.watchPresets) {
+    preset.name = trim(std::move(preset.name));
+    if (preset.name.empty() || !presetNames.insert(preset.name).second) {
+      return false;
+    }
+
+    std::vector<ObjectId> targets;
+    targets.reserve(preset.targets.size());
+    std::unordered_set<ObjectId> seenTargets;
+    for (const ObjectId target : preset.targets) {
+      if (target == kNoObject || !seenTargets.insert(target).second) {
+        continue;
+      }
+      targets.push_back(target);
+    }
+    preset.targets = std::move(targets);
+
+    std::vector<std::string> chartSignals;
+    chartSignals.reserve(preset.chartSignals.size());
+    std::unordered_set<std::string> seenSignals;
+    for (std::string signal : preset.chartSignals) {
+      signal = trim(std::move(signal));
+      if (!isWorkspaceSignalKey(signal)) {
+        return false;
+      }
+      if (seenSignals.insert(signal).second) {
+        chartSignals.push_back(std::move(signal));
+      }
+    }
+    preset.chartSignals = std::move(chartSignals);
+
+    normalizedPresets.push_back(std::move(preset));
+  }
+
+  workspace.watchPresets = std::move(normalizedPresets);
+  return true;
+}
 
 ObjectId SceneModel::add(SceneObject object)
 {
@@ -202,6 +278,12 @@ bool SceneModel::isNameAvailable(
     }
   }
   return true;
+}
+
+bool SceneModel::hasSameSceneContents(const SceneModel& other) const
+{
+  return timeStep == other.timeStep && m_objects == other.m_objects
+         && m_rootOrder == other.m_rootOrder && m_nextId == other.m_nextId;
 }
 
 } // namespace dartsim
