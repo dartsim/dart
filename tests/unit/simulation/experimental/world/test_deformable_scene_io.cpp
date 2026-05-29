@@ -619,3 +619,82 @@ input/tetMeshes/cube.msh 0 0 0  0 0 0  1 1 1 DBC -0.1 -0.1 -0.1  0.1 1.1 1.1  1 
     expectVectorNear(actual.getVelocity(i), expected.getVelocity(i));
   }
 }
+
+//==============================================================================
+// Corpus replay-validation pattern: a tutorial-style scene (one DBC-anchored
+// cube, one free cube falling under gravity) replayed for many frames follows a
+// sane trajectory (the anchor stays put, the free body falls, mass conserved,
+// all finite) and is reproducible across runs -- the deterministic per-scene
+// invariant the upstream corpus rows require. This exercises the
+// loader -> solver -> diagnostics replay pipeline on a DART-native scene; the
+// full ipc-sim/IPC corpus port additionally needs the upstream assets vendored
+// and the contact-capable solver.
+TEST(DeformableSceneIo, ReplaysTutorialSceneDeterministicallyWithSaneTrajectory)
+{
+  static constexpr std::string_view kScene = R"scene(
+time 0.5 0.01
+shapes input 2
+input/tetMeshes/cube.msh 0 0 0  0 0 0  1 1 1 DBC -0.2 -0.2 -0.2  1.2 1.2 1.2  0 0 0  0 0 0
+input/tetMeshes/cube.msh 3 0 0  0 0 0  1 1 1
+)scene";
+
+  struct ReplayResult
+  {
+    sxio::DeformableSceneDiagnostics diagnostics;
+    Eigen::Vector3d anchorInitial = Eigen::Vector3d::Zero();
+    Eigen::Vector3d anchorFinal = Eigen::Vector3d::Zero();
+    Eigen::Vector3d freeInitial = Eigen::Vector3d::Zero();
+    Eigen::Vector3d freeFinal = Eigen::Vector3d::Zero();
+  };
+
+  const auto replay = [&]() {
+    TempSceneDir temp;
+    const auto scenePath = temp.writeScene("tutorial_replay.txt", kScene);
+    sx::World world;
+    sxio::DeformableSceneLoadOptions options;
+    options.assetRoot = temp.path();
+    const auto info = sxio::loadDeformableScene(world, scenePath, options);
+    EXPECT_EQ(info.bodies.size(), 2u);
+    // Bail out before dereferencing if the loader ever regresses to fewer than
+    // the two expected bodies, so the failure above is reported rather than
+    // crashing on an out-of-bounds access. (ASSERT_* cannot be used here: this
+    // lambda returns a value, not void.)
+    if (info.bodies.size() < 2) {
+      return ReplayResult{};
+    }
+    const auto anchorBody = info.bodies[0].body;
+    const auto freeBody = info.bodies[1].body;
+
+    ReplayResult result;
+    result.anchorInitial = anchorBody.getPosition(0);
+    result.freeInitial = freeBody.getPosition(0);
+    for (int frame = 0; frame < 30; ++frame) {
+      world.step();
+    }
+    result.anchorFinal = anchorBody.getPosition(0);
+    result.freeFinal = freeBody.getPosition(0);
+    result.diagnostics = sxio::collectDeformableSceneDiagnostics(world);
+    return result;
+  };
+
+  const ReplayResult first = replay();
+  const ReplayResult second = replay();
+
+  // The DBC-anchored cube stays put throughout (scripted zero velocity).
+  expectVectorNear(first.anchorFinal, first.anchorInitial, 1e-9);
+  // The free cube falls under gravity (the loader uses Y-up, gravity along -Y).
+  EXPECT_LT(first.freeFinal.y(), first.freeInitial.y() - 0.1);
+  // Sane, finite aggregate diagnostics; the free body's fall shows up as a
+  // nonzero maximum node displacement.
+  EXPECT_EQ(first.diagnostics.bodyCount, 2u);
+  EXPECT_GT(first.diagnostics.totalMass, 0.0);
+  EXPECT_GT(first.diagnostics.maxDisplacement, 0.1);
+  EXPECT_TRUE(std::isfinite(first.diagnostics.minZ));
+  EXPECT_TRUE(std::isfinite(first.diagnostics.maxDisplacement));
+  // Reproducible: a second identical replay yields the same trajectory.
+  EXPECT_DOUBLE_EQ(first.diagnostics.minZ, second.diagnostics.minZ);
+  EXPECT_DOUBLE_EQ(
+      first.diagnostics.maxDisplacement, second.diagnostics.maxDisplacement);
+  EXPECT_DOUBLE_EQ(first.diagnostics.totalMass, second.diagnostics.totalMass);
+  expectVectorNear(first.freeFinal, second.freeFinal, 1e-12);
+}
