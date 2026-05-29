@@ -164,9 +164,16 @@
         (net edge force + edge-edge tangent stencil). Crossing-edge slide
         regression. Self-contact friction now covers point-triangle and
         edge-edge.
-  - [ ] Remaining Phase 4 work: codimensional-obstacle friction, friction over
-        non-flat (sphere/tilted) ground normals, and friction-specific
-        convergence/dissipation diagnostics.
+  - [x] Non-flat ground-normal friction: static-ground friction now lags the
+        true geometric surface normal (radial for a sphere, supporting-face
+        normal for a rotated/tilted box) and resolves its tangent plane and
+        positive-semidefinite 3x3 tangential Hessian against it; flat/box-top
+        ground (normal +z) reduces exactly to the previous xy tangent plane.
+        Tilted-slope deflection regression; the barrier force itself stays a
+        vertical height field.
+  - [ ] Remaining Phase 4 work: codimensional-obstacle friction (blocked on the
+        codimensional-obstacle barrier, a remaining Phase 3 item) and
+        friction-specific convergence/dissipation diagnostics.
 - [~] Phase 5: complete the upstream scene corpus as DART-native tests,
   examples, benchmarks, profiling artifacts, and headless Filament evidence.
   - [x] Scene-replay validation harness: the loader -> solver -> diagnostics

@@ -2731,6 +2731,85 @@ TEST(DeformableBody, GroundFrictionInactiveWithoutGroundContact)
 }
 
 namespace {
+struct TiltedGroundSlideResult
+{
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();
+  Eigen::Vector3d velocity = Eigen::Vector3d::Zero();
+};
+
+// Drive a single node in the ground-barrier band just above a 45-degree tilted
+// box surface (top-face normal (1, 0, 1)/sqrt(2)) with the given initial
+// velocity and Coulomb friction coefficient, returning its final position and
+// velocity after `steps` steps under zero gravity.
+TiltedGroundSlideResult runTiltedGroundFrictionSlide(
+    double frictionCoefficient,
+    const Eigen::Vector3d& initialVelocity,
+    int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.orientation = Eigen::AngleAxisd(
+      0.25 * 3.14159265358979323846, Eigen::Vector3d::UnitY());
+  auto ground = world.addRigidBody("tilted_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 4.0, 0.2)));
+  ground.setDeformableGroundBarrier(true);
+
+  // The tilted top face directly above (0, 0) sits at z = sqrt(2) * 0.2 ~=
+  // 0.283; start ~0.007 into the d_hat = 2e-2 activation band.
+  auto options = makeSingleNodeBodyOptions(
+      Eigen::Vector3d(0.0, 0.0, 0.29), initialVelocity);
+  options.material.frictionCoefficient = frictionCoefficient;
+  auto body = world.addDeformableBody("tilted_slider", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < steps; ++i) {
+    world.step(executor, pipeline);
+  }
+  return {body.getPosition(0), body.getVelocity(0)};
+}
+} // namespace
+
+//==============================================================================
+// Friction resolves its tangent plane against the true geometric ground normal,
+// not a hardcoded xy plane. The static-ground barrier is a vertical height
+// field, so a node dropped straight down (-z) onto a 45-degree tilted slope
+// feels no horizontal force from the barrier or (zero) gravity: the
+// frictionless control stays exactly on the x = 0 line. Tilt-aware friction,
+// however, couples the normal and tangential directions through the slope's
+// tilted tangent plane (normal (1, 0, 1)/sqrt(2)), so the arrested vertical
+// impact deflects the node down-slope in +x -- the contact behaves like a real
+// incline. An xy-only tangent model has no x/z coupling and would leave x at
+// zero, so the nonzero +x deflection is the signature of the tilt-aware tangent
+// basis.
+TEST(DeformableBody, GroundFrictionFollowsTiltedSlopeNormal)
+{
+  const Eigen::Vector3d drop(0.0, 0.0, -2.0);
+  const auto frictionless = runTiltedGroundFrictionSlide(0.0, drop, 20);
+  const auto frictional = runTiltedGroundFrictionSlide(1.0, drop, 20);
+
+  // Frictionless: only the vertical barrier and (zero) gravity act, so x is
+  // untouched to machine precision.
+  EXPECT_NEAR(frictionless.position.x(), 0.0, 1e-9);
+
+  // Tilt-aware friction couples normal/tangential and deflects the vertical
+  // drop down-slope (+x); an xy-only tangent model would leave x at zero here.
+  EXPECT_GT(frictional.position.x(), 1e-3);
+
+  // Both stay above the tilted surface (no deep penetration of the ~0.283
+  // contact height directly above the origin).
+  EXPECT_GT(frictional.position.z(), 0.25);
+  EXPECT_GT(frictionless.position.z(), 0.25);
+}
+
+namespace {
 struct SelfContactSlideResult
 {
   double centroidX = 0.0;
