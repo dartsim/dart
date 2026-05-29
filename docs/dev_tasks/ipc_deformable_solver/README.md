@@ -151,14 +151,17 @@
   - [x] Self-contact friction (point-triangle): reuses `frictionCoefficient`;
         lagged normal force = barrier force on the point node, tangent
         projection from the point-triangle tangent stencil, same f0/f1 mollifier
-        opposing the stencil's tangential relative displacement. Energy+gradient
-        only (self-contact friction Hessian deferred). Regression: a surface
-        sliding on another in self-contact decelerates vs the frictionless
-        control while staying separated.
-  - [ ] Remaining Phase 4 work: edge-edge self-contact friction and the
-        self-contact friction Hessian, codimensional-obstacle friction, friction
-        over non-flat (sphere/tilted) ground normals, and friction-specific
-        convergence/dissipation diagnostics.
+        opposing the stencil's tangential relative displacement. Regression: a
+        surface sliding on another in self-contact decelerates vs the
+        frictionless control while staying separated.
+  - [x] Self-contact friction Hessian: a PSD 12x12 block per point-triangle
+        contact (`projection^T * H_2x2 * projection`) in the projected-Newton
+        assembly, completing self-contact friction as a proper Newton term
+        (behavior-preserving; the line search still resolves the same energy).
+  - [ ] Remaining Phase 4 work: edge-edge self-contact friction (force + Hessian),
+        codimensional-obstacle friction, friction over non-flat (sphere/tilted)
+        ground normals, and friction-specific convergence/dissipation
+        diagnostics.
 - [~] Phase 5: complete the upstream scene corpus as DART-native tests,
   examples, benchmarks, profiling artifacts, and headless Filament evidence.
   - [x] Scene-replay validation harness: the loader -> solver -> diagnostics

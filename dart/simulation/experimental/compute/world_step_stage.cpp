@@ -2992,6 +2992,7 @@ bool computeProjectedNewtonDirection(
     const std::vector<StaticGroundBarrier>& barriers,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
+    const SelfContactFrictionInputs* selfContactFriction,
     const double timeStep,
     const std::vector<Eigen::Vector3d>& gradient,
     std::vector<Eigen::Vector3d>& direction,
@@ -3223,6 +3224,63 @@ bool computeProjectedNewtonDirection(
       triplets.emplace_back(rowX, rowY, hxy);
       triplets.emplace_back(rowY, rowX, hxy);
       triplets.emplace_back(rowY, rowY, hyy);
+    }
+  }
+
+  // Lagged self-contact friction Hessian (point-triangle): a PSD 12x12 block
+  // per active contact, projection^T * H_2x2 * projection, scattered to the
+  // four stencil nodes (free-free only). Mirrors the ground-friction tangent
+  // Hessian through the contact's tangent projection; non-negative coefficients
+  // keep H_2x2 positive semidefinite, so the assembled block is PSD by
+  // construction.
+  if (selfContactFriction != nullptr && selfContactFriction->coefficient > 0.0
+      && selfContactFriction->epsilon > 0.0
+      && selfContactFriction->stepStartPositions != nullptr
+      && selfContactFriction->contacts != nullptr) {
+    const auto& start = *selfContactFriction->stepStartPositions;
+    const double epsilon = selfContactFriction->epsilon;
+    for (const auto& contact : *selfContactFriction->contacts) {
+      if (contact.normalForce <= 0.0) {
+        continue;
+      }
+      Eigen::Matrix<double, 12, 1> displacement;
+      for (int k = 0; k < 4; ++k) {
+        displacement.segment<3>(3 * k)
+            = positions[contact.nodes[k]] - start[contact.nodes[k]];
+      }
+      const Eigen::Vector2d tangent = contact.projection * displacement;
+      const double y = tangent.norm();
+      const double scale
+          = selfContactFriction->coefficient * contact.normalForce;
+      constexpr double tiny = 1e-12;
+      double f1OverY = 2.0 / epsilon;
+      double f1Prime = 2.0 / epsilon;
+      double tx = 0.0;
+      double ty = 0.0;
+      if (y > tiny) {
+        f1OverY = frictionF1(y, epsilon) / y;
+        f1Prime = (y < epsilon)
+                      ? (2.0 / epsilon - 2.0 * y / (epsilon * epsilon))
+                      : 0.0;
+        tx = tangent.x() / y;
+        ty = tangent.y() / y;
+      }
+      Eigen::Matrix2d tangentHessian;
+      tangentHessian(0, 0) = f1OverY * (1.0 - tx * tx) + f1Prime * tx * tx;
+      tangentHessian(0, 1) = (f1Prime - f1OverY) * tx * ty;
+      tangentHessian(1, 0) = tangentHessian(0, 1);
+      tangentHessian(1, 1) = f1OverY * (1.0 - ty * ty) + f1Prime * ty * ty;
+      const Eigen::Matrix<double, 12, 12> block
+          = scale * contact.projection.transpose() * tangentHessian
+            * contact.projection;
+      for (int bi = 0; bi < 4; ++bi) {
+        for (int bj = 0; bj < 4; ++bj) {
+          addBlock3(
+              contact.nodes[bi],
+              contact.nodes[bj],
+              block.block<3, 3>(3 * bi, 3 * bj));
+        }
+      }
     }
   }
 
@@ -3604,6 +3662,7 @@ void advanceDeformableBody(
           barriers,
           &contactBarrier,
           &groundFriction,
+          &selfContactFriction,
           timeStep,
           scratch.gradient,
           scratch.direction,
@@ -3637,8 +3696,8 @@ void advanceDeformableBody(
     // of that iteration, so the stored residual is the pre-final-step value.
     // Recompute the gradient at the terminal iterate -- rebuilding the
     // self-contact barrier active set and the lagged ground / self-contact
-    // friction inputs there so the residual matches the in-loop objective --
-    // and use it, so the convergence diagnostic reports the residual at solve
+    // friction inputs there so the residual matches the in-loop objective -- and
+    // use it, so the convergence diagnostic reports the residual at solve
     // termination.
     if (!brokeEarly) {
       SelfContactBarrierInputs terminalBarrier;
