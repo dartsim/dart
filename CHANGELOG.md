@@ -461,8 +461,17 @@
   - Added opt-in CUDA smoke support for experimental simulation builds, including
     a gated CMake option, Pixi CUDA environment, private SoA integration test and
     benchmark coverage, and manual CUDA CI workflow.
+  - Upgraded pinned build and runtime dependencies to current conda-forge
+    releases via `pixi upgrade`/`pixi update` (notably Eigen 5, fmt 12,
+    spdlog 1.17, Boost 1.91, urdfdom 5, and assimp 6), and migrated DART's
+    `Eigen::JacobiSVD` usage to the Eigen 5 API that takes SVD computation
+    options as template parameters
+    (`Eigen::JacobiSVD<MatrixType, Eigen::ComputeFullV>`) instead of the
+    deprecated runtime `compute()`/constructor arguments.
 
 - Tooling and Docs
+  - Bumped developer tooling to current releases (clang-format 22, black 26)
+    and reformatted the C++ and Python sources to match.
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
   - Added the shared `docs/ai/` agent entrypoint and tightened AI workflow verification, approval-boundary checks, and dev-task cleanup guidance. ([#2649](https://github.com/dartsim/dart/pull/2649))
   - Updated GUI onboarding, module agent docs, ReadTheDocs pages, examples, and tutorial indexes to identify Filament as the maintained renderer and the removed OSG/Raylib paths as unsupported.
@@ -910,7 +919,7 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     existing behavior is unchanged) drives a friction force opposing each
     contacting node's tangential displacement over the step. The IPC mollifier
     (f0/f1, velocity threshold epsv) makes the force C1: it saturates at
-    mu * normalForce when sliding and ramps smoothly to zero at rest. The normal
+    mu \* normalForce when sliding and ramps smoothly to zero at rest. The normal
     force is lagged once per outer iteration; the lagged friction Hessian is a
     positive-semidefinite tangential 2x2 block, so it integrates cleanly into
     the projected-Newton solve. Adds regressions (a sliding node decelerates

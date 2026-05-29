@@ -490,8 +490,9 @@ inline double wrapToPi(double angle)
   return std::fmod(angle + pi, two_pi) - pi;
 }
 
-template <typename MatrixType, typename ReturnType>
-void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
+template <typename MatrixType, int Options, typename ReturnType>
+void extractNullSpace(
+    const Eigen::JacobiSVD<MatrixType, Options>& _SVD, ReturnType& _NS)
 {
   int rank = 0;
   // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
@@ -513,7 +514,7 @@ void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
 template <typename MatrixType, typename ReturnType>
 void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
 {
-  Eigen::JacobiSVD<MatrixType> svd(_M, Eigen::ComputeFullV);
+  Eigen::JacobiSVD<MatrixType, Eigen::ComputeFullV> svd(_M);
   extractNullSpace(svd, _NS);
 }
 
