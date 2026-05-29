@@ -1023,6 +1023,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     boundary surface and reads back the topology, rest volume, and node mass.
     Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
     increment.
+  - Added an experimental IPC converged-ness diagnostic to the deformable solver
+    stats. Each step now reports `finalStepInfinityNorm`, the largest last
+    accepted per-node position update across the step's bodies. Unlike the
+    gradient residual, which can stay large at a stiff clamped-log barrier
+    contact because the barrier Hessian is near-singular, the step norm shrinks
+    toward zero as the solve reaches a feasible equilibrium, so it is the honest
+    companion to `finalGradientResidualNorm` for judging convergence on
+    barrier-dominated problems. Behavior-preserving (a diagnostic only; the solve
+    is unchanged). Adds a regression where a stiff grid pressed onto the ground
+    barrier accepts a measurable step while settling and then drives the step
+    norm to a negligible value at equilibrium.
   - Added experimental IPC friction diagnostics to the deformable solver stats
     (PLAN-081 Phase 4). Each step now reports `frictionDissipation` (the IPC
     Coulomb work mu \* normalForce \* f1(y) \* y summed over active friction

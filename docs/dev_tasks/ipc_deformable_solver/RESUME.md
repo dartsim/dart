@@ -142,8 +142,30 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-scene-loader-bindings` - stacked on
-`feature/ipc-deformable-bc-bindings` (#2756). FINAL Phase-8 increment: dartpy
+`feature/ipc-step-norm-diagnostic` - stacked on
+`feature/ipc-deformable-scene-loader-bindings` (#2757). Adds a CONVERGED-NESS
+step-norm diagnostic: DeformableSolverStats.finalStepInfinityNorm = largest last
+accepted per-node step (infinity norm) across the step's bodies, captured in the
+line-search accept block (max|candidate-next| over free nodes, before the swap),
+folded across bodies after the outer loop. BEHAVIOR-PRESERVING (diagnostic only;
+solve unchanged). KEY FINDING while investigating the #2745 barrier-stall: the
+320-node grid-on-ground UNIT scenario actually CONVERGES FULLY
+(finalGradientResidualNorm ~3e-13 after 5 steps) -- the ~868/~99 high-residual
+figures were BENCHMARK transients (bm_deformable_body), NOT this settled case.
+So this slice is honestly a DIAGNOSTIC (the right convergence companion for
+stiff barriers where the near-singular barrier Hessian inflates the gradient
+norm), NOT a stall fix -- I did not reproduce a genuine stall in a unit test.
+Regression StiffGroundBarrierSettlesByStepNorm (early step >0 while settling,
+shrinks <1e-4 < early at equilibrium). 66 deformable tests, test-all expected
+6/6. Stack 20-deep (#2738-#2746,#2748-#2758).
+NEXT: if pursuing real barrier-stall robustness, reproduce the high residual via
+the BENCHMARK scenarios first (bm_deformable_body grid/drape), then consider an
+IPC-standard Newton-decrement convergence criterion or CCD-filtered line search
+-- but those change trajectories/iteration counts (risk on the unreviewed stack).
+Other remaining: live GPU-backend injection, adaptive stiffness, rigid/codim
+barrier forces (disturbs #2732). Blocked: codim-obstacle friction, corpus port.
+
+Prior #2757 = scene loader + diagnostics bindings (FINAL Phase-8 increment): dartpy
 SCENE LOADER + DIAGNOSTICS. m.def free functions load_deformable_scene(world,
 scene_path, options) + collect_deformable_scene_diagnostics(world), and classes
 DeformableSceneLoadOptions (asset_root[path], body_name_prefix,
@@ -270,7 +292,8 @@ reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
 diagnostics) <- #2755 (deformable surface/tetra topology bindings) <- #2756
 (deformable DBC/NBC bindings) <- #2757 (deformable scene-loader + diagnostics
-bindings). (PR #2747 is another author's.)
+bindings) <- #2758 (converged-ness step-norm diagnostic). (PR #2747 is another
+author's.)
 
 ## Immediate Next Step
 
