@@ -1953,3 +1953,219 @@ TEST(RigidIpcCcdGeometry, InterpolatePoseIsLinearInPositionAndRotationVector)
           .isApprox(
               expdetail::transformRigidIpcPoint(local, interpPose), 1e-12));
 }
+
+// The adaptive-kappa helpers port `ipc::initial_barrier_stiffness` and
+// `ipc::update_barrier_stiffness` (dmin = 0) onto DART's squared-distance
+// clamped-log barrier. These verify the suggested-kappa gradient ratio, the
+// kappa_min / kappa_max clamp bounds, invalid-input fallbacks, and the
+// per-iteration doubling rule.
+TEST(RigidIpcAdaptiveStiffness, InitialStiffnessUsesGradientRatioWithinBounds)
+{
+  const double bbox = 1.0;
+  const double squaredActivationDistance = 1e-4; // dhat = 0.01
+  const double averageMass = 1.0;
+  const double scale = 1e11;
+
+  // Reproduce the clamp bounds the helper computes.
+  const double d0 = 1e-8 * bbox;
+  const double d0Squared = d0 * d0;
+  const double secondDerivative
+      = dc::c2ClampedLogBarrier(d0Squared, squaredActivationDistance)
+            .secondDerivative;
+  const double kappaMin
+      = scale * averageMass / (4.0 * d0Squared * secondDerivative);
+  const double kappaMax = 100.0 * kappaMin;
+
+  // gradEnergy = (kappaTarget, 0), gradBarrier = (-1, 0) => suggested kappa =
+  // -gradBarrier.dot(gradEnergy) / |gradBarrier|^2 = kappaTarget.
+  const double kappaTarget = 2.0 * kappaMin; // inside [kappaMin, kappaMax]
+  Eigen::VectorXd gradEnergy(2);
+  gradEnergy << kappaTarget, 0.0;
+  Eigen::VectorXd gradBarrier(2);
+  gradBarrier << -1.0, 0.0;
+
+  double maxStiffness = 0.0;
+  const double kappa = expdetail::computeInitialRigidIpcBarrierStiffness(
+      bbox,
+      squaredActivationDistance,
+      averageMass,
+      gradEnergy,
+      gradBarrier,
+      scale,
+      maxStiffness);
+
+  EXPECT_NEAR(kappa, kappaTarget, kappaTarget * 1e-9);
+  EXPECT_NEAR(maxStiffness, kappaMax, kappaMax * 1e-9);
+}
+
+TEST(RigidIpcAdaptiveStiffness, InitialStiffnessClampsToMinWhenBarrierInactive)
+{
+  const double bbox = 2.0;
+  const double squaredActivationDistance = 1e-4;
+  const double averageMass = 3.0;
+  const double scale = 1e11;
+
+  const double d0 = 1e-8 * bbox;
+  const double d0Squared = d0 * d0;
+  const double secondDerivative
+      = dc::c2ClampedLogBarrier(d0Squared, squaredActivationDistance)
+            .secondDerivative;
+  const double kappaMin
+      = scale * averageMass / (4.0 * d0Squared * secondDerivative);
+
+  // Inactive barrier => zero barrier gradient => suggested kappa defaults to 1,
+  // then clamps up to kappa_min (far above the old fixed kappa = 1).
+  Eigen::VectorXd gradEnergy(3);
+  gradEnergy << 1.0, 2.0, 3.0;
+  const Eigen::VectorXd gradBarrier = Eigen::VectorXd::Zero(3);
+
+  double maxStiffness = 0.0;
+  const double kappa = expdetail::computeInitialRigidIpcBarrierStiffness(
+      bbox,
+      squaredActivationDistance,
+      averageMass,
+      gradEnergy,
+      gradBarrier,
+      scale,
+      maxStiffness);
+
+  EXPECT_NEAR(kappa, kappaMin, kappaMin * 1e-9);
+  EXPECT_GT(kappa, 1.0);
+  EXPECT_NEAR(maxStiffness, 100.0 * kappaMin, kappaMin * 1e-7);
+}
+
+TEST(RigidIpcAdaptiveStiffness, InitialStiffnessClampsToMaxForLargeRatio)
+{
+  const double bbox = 1.0;
+  const double squaredActivationDistance = 1e-4;
+  const double averageMass = 1.0;
+  const double scale = 1e11;
+
+  const double d0 = 1e-8 * bbox;
+  const double d0Squared = d0 * d0;
+  const double secondDerivative
+      = dc::c2ClampedLogBarrier(d0Squared, squaredActivationDistance)
+            .secondDerivative;
+  const double kappaMax
+      = 100.0 * scale * averageMass / (4.0 * d0Squared * secondDerivative);
+
+  Eigen::VectorXd gradEnergy(1);
+  gradEnergy << 1e12 * kappaMax;
+  Eigen::VectorXd gradBarrier(1);
+  gradBarrier << -1.0;
+
+  double maxStiffness = 0.0;
+  const double kappa = expdetail::computeInitialRigidIpcBarrierStiffness(
+      bbox,
+      squaredActivationDistance,
+      averageMass,
+      gradEnergy,
+      gradBarrier,
+      scale,
+      maxStiffness);
+
+  EXPECT_NEAR(kappa, kappaMax, kappaMax * 1e-9);
+}
+
+TEST(RigidIpcAdaptiveStiffness, InitialStiffnessRejectsInvalidInputs)
+{
+  Eigen::VectorXd gradient(1);
+  gradient << 1.0;
+  double maxStiffness = 0.0;
+
+  EXPECT_EQ(
+      expdetail::computeInitialRigidIpcBarrierStiffness(
+          0.0, 1e-4, 1.0, gradient, gradient, 1e11, maxStiffness),
+      1.0);
+  EXPECT_FALSE(std::isfinite(maxStiffness));
+
+  EXPECT_EQ(
+      expdetail::computeInitialRigidIpcBarrierStiffness(
+          1.0, 0.0, 1.0, gradient, gradient, 1e11, maxStiffness),
+      1.0);
+  EXPECT_EQ(
+      expdetail::computeInitialRigidIpcBarrierStiffness(
+          1.0, 1e-4, 0.0, gradient, gradient, 1e11, maxStiffness),
+      1.0);
+}
+
+TEST(RigidIpcAdaptiveStiffness, UpdateDoublesWhenStrugglingToSeparate)
+{
+  const double bbox = 1.0;
+  const double dhatEpsilonScale = 1e-3; // band = (1e-3)^2 squared distance
+  const double epsilon = dhatEpsilonScale * bbox;
+  const double bandSquared = epsilon * epsilon;
+  const double inside = 0.25 * bandSquared;
+  const double closer = 0.10 * bandSquared;
+
+  // Inside the band and still approaching => doubled.
+  EXPECT_NEAR(
+      expdetail::updateRigidIpcBarrierStiffness(
+          inside, closer, 1e6, 100.0, bbox, dhatEpsilonScale),
+      200.0,
+      1e-9);
+  // Doubling is capped at maxStiffness.
+  EXPECT_NEAR(
+      expdetail::updateRigidIpcBarrierStiffness(
+          inside, closer, 150.0, 100.0, bbox, dhatEpsilonScale),
+      150.0,
+      1e-9);
+  // Receding => unchanged.
+  EXPECT_NEAR(
+      expdetail::updateRigidIpcBarrierStiffness(
+          closer, inside, 1e6, 100.0, bbox, dhatEpsilonScale),
+      100.0,
+      1e-9);
+  // Outside the band => unchanged even while approaching.
+  EXPECT_NEAR(
+      expdetail::updateRigidIpcBarrierStiffness(
+          2.0 * bandSquared,
+          1.5 * bandSquared,
+          1e6,
+          100.0,
+          bbox,
+          dhatEpsilonScale),
+      100.0,
+      1e-9);
+}
+
+TEST(RigidIpcAdaptiveStiffness, InitialStiffnessClampsProbeForOversizedWorld)
+{
+  // For a grossly mis-scaled world (bbox diagonal >= 1e6 * dhat) the raw probe
+  // distance d0 = 1e-8 * bbox would land outside the activation band, where the
+  // barrier second derivative is 0. The reference d0 clamp pulls it to an
+  // interior point so a real adaptive kappa is still returned instead of the
+  // kappa = 1 fallback.
+  const double bbox = 2.0e6; // d0 = 2e-2, d0^2 = 4e-4 >= dhat^2 = 1e-4
+  const double squaredActivationDistance = 1e-4;
+  const double averageMass = 1.0;
+  const double scale = 1e11;
+
+  // Expected kappa_min uses the clamped probe distance 0.5 * dhat^2.
+  const double clampedD0Squared = 0.5 * squaredActivationDistance;
+  const double secondDerivative
+      = dc::c2ClampedLogBarrier(clampedD0Squared, squaredActivationDistance)
+            .secondDerivative;
+  ASSERT_GT(secondDerivative, 0.0);
+  const double kappaMin
+      = scale * averageMass / (4.0 * clampedD0Squared * secondDerivative);
+
+  // Inactive barrier => suggested kappa defaults to 1, clamped up to kappa_min.
+  Eigen::VectorXd gradEnergy(1);
+  gradEnergy << 5.0;
+  const Eigen::VectorXd gradBarrier = Eigen::VectorXd::Zero(1);
+
+  double maxStiffness = 0.0;
+  const double kappa = expdetail::computeInitialRigidIpcBarrierStiffness(
+      bbox,
+      squaredActivationDistance,
+      averageMass,
+      gradEnergy,
+      gradBarrier,
+      scale,
+      maxStiffness);
+
+  EXPECT_NEAR(kappa, kappaMin, kappaMin * 1e-9);
+  EXPECT_GT(kappa, 1.0); // did not fall back to the kappa = 1 default
+  EXPECT_TRUE(std::isfinite(maxStiffness));
+}

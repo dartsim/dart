@@ -911,6 +911,26 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added a `sx_rigid_ipc` Python demo scene (registered in the py-demos
     Experimental category) showing a free box settle on static ground through
     the opt-in rigid IPC barrier solver (`World.rigid_body_solver = IPC`).
+  - Fixed the rigid IPC freeze-on-contact "sink-then-stick" failure by adding
+    IPC adaptive barrier stiffness (porting the reference
+    `initial_barrier_stiffness`/`update_barrier_stiffness` onto DART's
+    squared-distance clamped-log barrier). A fixed `kappa = 1` was orders of
+    magnitude too soft, so a body under gravity crept into the barrier band
+    until a step penetrated and the conservative line search then blocked every
+    subsequent step, freezing the body permanently. The solve now picks an
+    initial `kappa` that balances the barrier gradient against the inertial
+    energy gradient, clamped to `[kappa_min, 100*kappa_min]`, and doubles it
+    when the closest pair keeps approaching. A box on static ground now produces
+    continued contact dynamics (slides and is friction-braked toward rest) while
+    staying intersection-free, instead of sticking. Added a relative
+    projected-Newton gradient-convergence floor (the stiff barrier makes the
+    absolute tolerance unreachable at a resting contact) and made the opt-in
+    stage apply the best intersection-free configuration a bounded solve reaches
+    (matching the reference, which steps with the optimizer's best feasible
+    iterate) instead of discarding any not-fully-converged result. The
+    anti-tunneling guarantee is unchanged: a line-search-blocked or failed solve
+    is still never written back. Covered by adaptive-stiffness unit tests and a
+    no-freeze sliding-contact runtime regression.
   - Added internal experimental moving rigid box surface CCD limiting for free
     (non-static) deformable-surface CCD obstacles: the deformable stage predicts
     each obstacle's end-of-step transform from its velocity (mirroring the rigid

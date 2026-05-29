@@ -3611,13 +3611,19 @@ TEST(World, RigidIpcContactStageSeparatesActivatedMeshBarrier)
   EXPECT_EQ(stats.bodyCount, 2u);
   EXPECT_EQ(stats.dynamicBodyCount, 1u);
   EXPECT_EQ(stats.surfaceCount, 2u);
-  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::Converged);
-  EXPECT_TRUE(stats.converged);
+  // The solve is not failed (no penetration / line-search block) and produces a
+  // usable result. With adaptive barrier stiffness this stiff zero-gravity
+  // contact reaches a feasible friction-limited plateau rather than the exact
+  // gradient tolerance, so the stage applies the best intersection-free
+  // configuration (matching the reference IPC) instead of discarding it.
   EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_FALSE(stats.nonConvergedResultSkipped);
   EXPECT_GT(stats.activeConstraints, 0u);
   EXPECT_GT(stats.activeFrictionConstraints, 0u);
-  EXPECT_EQ(stats.frictionIterations, 1u);
   EXPECT_GT(stats.acceptedSteps, 0u);
+  // Adaptive stiffness raised kappa well above the old fixed value of 1.
+  EXPECT_GT(stats.barrierStiffness, 1.0);
   // The conservative swept broad phase skips line-search CCD when the activated
   // body separates within the step (no possible contact), so the per-family
   // check counts may legitimately be zero here. The CCD invariants still hold,
@@ -3625,10 +3631,87 @@ TEST(World, RigidIpcContactStageSeparatesActivatedMeshBarrier)
   EXPECT_EQ(stats.lineSearchHits, 0u);
   EXPECT_EQ(stats.lineSearchIndeterminateCount, 0u);
   EXPECT_EQ(stats.lineSearchZeroStepCount, 0u);
-  EXPECT_TRUE(stats.resultApplied);
-  EXPECT_FALSE(stats.nonConvergedResultSkipped);
+  // The activated barrier pushes the body off the surface.
   EXPECT_GT(body.getTranslation().z(), initialHeight);
   EXPECT_GT(body.getLinearVelocity().z(), 0.0);
+}
+
+// Regression for the freeze-on-contact "sink-then-stick" bug: under gravity a
+// box resting/sliding on static ground used to creep into the barrier band
+// (fixed kappa=1) until a step penetrated, after which the conservative line
+// search blocked every step (status=LineSearchBlocked) and the body froze in
+// place permanently. Adaptive barrier stiffness (IPC adaptive-kappa) keeps the
+// equilibrium gap > 0, so the contact now produces continued dynamics: the box
+// slides forward and friction brakes it toward rest without ever penetrating
+// the ground or freezing.
+TEST(World, RigidIpcContactStageSlidingContactDoesNotFreeze)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+  // Box bottom starts at z = 0.258 - 0.25 = 0.008 (inside the 1e-2 activation
+  // band): exactly the configuration that used to freeze.
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.258);
+  boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  constexpr int kSteps = 12;
+  double previousX = box.getTranslation().x();
+  double previousVelocityX = box.getLinearVelocity().x();
+  for (int step = 0; step < kSteps; ++step) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+
+    // Never freezes: every step converges and is applied (the old bug returned
+    // LineSearchBlocked / non-converged and skipped the result).
+    EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::Converged)
+        << "step " << step;
+    EXPECT_TRUE(stats.converged) << "step " << step;
+    EXPECT_FALSE(stats.failed) << "step " << step;
+    EXPECT_TRUE(stats.resultApplied) << "step " << step;
+    EXPECT_EQ(stats.lineSearchZeroStepCount, 0u) << "step " << step;
+    // Adaptive stiffness raised kappa well above the old fixed value of 1.
+    EXPECT_GT(stats.barrierStiffness, 100.0) << "step " << step;
+
+    const double x = box.getTranslation().x();
+    const double z = box.getTranslation().z();
+    const double velocityX = box.getLinearVelocity().x();
+
+    // Continued contact dynamics: the box keeps sliding forward and friction
+    // monotonically brakes it, never reversing.
+    EXPECT_GT(x, previousX) << "step " << step;
+    EXPECT_GT(velocityX, 0.0) << "step " << step;
+    EXPECT_LT(velocityX, previousVelocityX) << "step " << step;
+
+    // No penetration and no launch: the box bottom (z - 0.25) stays just above
+    // the ground top (0) within the activation band.
+    EXPECT_GT(z, 0.25) << "step " << step;
+    EXPECT_LT(z, 0.27) << "step " << step;
+
+    previousX = x;
+    previousVelocityX = velocityX;
+  }
+
+  // The slide decelerated substantially but has not frozen or reversed.
+  EXPECT_LT(box.getLinearVelocity().x(), 0.2);
+  EXPECT_GT(box.getLinearVelocity().x(), 0.0);
 }
 
 // Test that lagged friction in the opt-in rigid IPC stage produces an

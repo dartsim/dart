@@ -4767,17 +4767,72 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
     dynamicsTerms.push_back(body.dynamicsTerm);
   }
 
+  // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
+  // collision surfaces and the average dynamic-body mass. These drive the IPC
+  // adaptive-kappa scheme so the barrier is stiff enough to hold bodies at a
+  // gap > 0 under gravity instead of letting them creep into penetration.
+  const double timeStep = world.getTimeStep();
+  Eigen::Vector3d aabbMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d aabbMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  double massSum = 0.0;
+  std::size_t massCount = 0;
+  for (const auto& body : runtimeBodies) {
+    const Eigen::Matrix3d rotation
+        = sxdetail::rigidIpcRotationVectorToMatrix(body.surface.pose.rotation);
+    for (const Eigen::Vector3d& localVertex : body.surface.vertices) {
+      const Eigen::Vector3d worldVertex
+          = rotation * localVertex + body.surface.pose.position;
+      aabbMin = aabbMin.cwiseMin(worldVertex);
+      aabbMax = aabbMax.cwiseMax(worldVertex);
+    }
+    if (body.surface.dynamic && body.dynamicsTerm.active && timeStep > 0.0
+        && std::isfinite(timeStep)) {
+      const double mass
+          = body.dynamicsTerm.diagonalWeights[0] * timeStep * timeStep;
+      if (std::isfinite(mass) && mass > 0.0) {
+        massSum += mass;
+        ++massCount;
+      }
+    }
+  }
+  double bboxDiagonal = 1.0;
+  if (aabbMin.allFinite() && aabbMax.allFinite()
+      && (aabbMax.array() >= aabbMin.array()).all()) {
+    const double diagonal = (aabbMax - aabbMin).norm();
+    if (std::isfinite(diagonal) && diagonal > 0.0) {
+      bboxDiagonal = diagonal;
+    }
+  }
+  const double averageMass
+      = massCount > 0u ? massSum / static_cast<double>(massCount) : 1.0;
+
   sxdetail::RigidIpcProjectedNewtonSolveOptions options;
   constexpr double activationDistance = 1e-2;
   options.barrier.squaredActivationDistance
       = activationDistance * activationDistance;
   options.barrier.stiffness = 1.0;
+  options.adaptiveStiffness.enabled = true;
+  options.adaptiveStiffness.averageMass = averageMass;
+  options.adaptiveStiffness.bboxDiagonal = bboxDiagonal;
   options.friction.coefficient = 1.0;
   options.friction.staticFrictionDisplacement
       = std::max(0.0, 1e-3 * world.getTimeStep());
   options.dynamicsTerms = std::move(dynamicsTerms);
   options.maxIterations = m_maxIterations;
+  // The apply policy below writes back a not-fully-converged result when it
+  // made progress, relying on every accepted Newton step having passed the
+  // conservative line-search feasibility check. That guarantee only holds with
+  // the line search enabled, so pin it explicitly (it is the default, but the
+  // anti-tunneling invariant must not silently depend on that default).
+  options.useLineSearch = true;
   options.newton.gradientTolerance = 1e-10;
+  // The adaptive barrier is stiff (kappa can reach ~1e6), so the absolute
+  // gradient tolerance is unreachable at a resting contact. A relative floor
+  // lets a near-stationary contact converge instead of being skipped as
+  // non-converged (which would otherwise freeze the body at near-rest).
+  options.newton.relativeGradientTolerance = 1e-6;
   options.stepTolerance = 1e-12;
 
   sxdetail::RigidIpcProjectedNewtonSolveResult result;
@@ -4806,6 +4861,9 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.finalGradientNorm = result.stats.finalGradientNorm;
   m_lastStats.finalMomentumBalance = result.stats.finalMomentumBalance;
   m_lastStats.lastStepNorm = result.stats.lastStepNorm;
+  m_lastStats.barrierStiffness = result.stats.barrierStiffness;
+  m_lastStats.barrierStiffnessIncreases
+      = result.stats.barrierStiffnessIncreases;
   m_lastStats.lastLineSearchStepBound = result.lineSearch.stepBound;
   m_lastStats.lastLineSearchIndeterminate = result.lineSearch.indeterminate;
   m_lastStats.lineSearchPointPointChecks
@@ -4823,10 +4881,22 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.converged = result.converged;
   m_lastStats.failed = result.failed;
 
+  // A failed solve (conservative line search blocked the step, or the
+  // factorization failed) never writes back: applying it could penetrate.
   if (result.failed) {
     return;
   }
-  if (!result.converged) {
+  // Otherwise apply the last intersection-free iterate the bounded solve
+  // reached. Every accepted Newton step is a descent step bounded by the
+  // conservative line-search feasibility check, so even a not-fully-converged
+  // result (e.g. a stiff friction-limited contact that plateaus before the
+  // gradient tolerance) is a valid, penetration-free forward step that the next
+  // substep re-solves from -- like the reference IPC, which advances with the
+  // optimizer's feasible iterate rather than discarding a non-converged step.
+  // (Unlike the reference this iterate is not Armijo energy-minimized; the
+  // sufficient-decrease guarantee is a documented follow-up.) A solve that made
+  // no progress at all (e.g. a zero iteration budget) is still skipped.
+  if (!result.converged && !result.madeProgress()) {
     m_lastStats.nonConvergedResultSkipped = true;
     return;
   }

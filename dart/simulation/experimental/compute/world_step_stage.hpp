@@ -322,6 +322,8 @@ struct RigidIpcSolverStats
   double finalGradientNorm = 0.0;
   double finalMomentumBalance = 0.0;
   double lastStepNorm = 0.0;
+  double barrierStiffness = 0.0;
+  std::size_t barrierStiffnessIncreases = 0;
   double lastLineSearchStepBound = 1.0;
   bool lastLineSearchIndeterminate = false;
   std::size_t lineSearchPointPointChecks = 0;

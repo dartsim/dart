@@ -241,6 +241,13 @@ enum class RigidIpcProjectedNewtonSolveStatus
 struct RigidIpcProjectedNewtonOptions
 {
   double gradientTolerance = 1e-8;
+  /// Relative gradient convergence floor. The effective gradient tolerance is
+  /// `max(gradientTolerance, relativeGradientTolerance * initialGradientNorm)`.
+  /// A stiff adaptive barrier makes the absolute tolerance unreachable, so a
+  /// small relative floor lets a near-stationary resting contact converge
+  /// instead of exhausting the iteration budget. Default 0 keeps the absolute
+  /// criterion only (no behavior change for existing callers).
+  double relativeGradientTolerance = 0.0;
   double hessianRegularization = 1e-8;
   double maxStepNorm = std::numeric_limits<double>::infinity();
   double lineSearchSafetyScale = 0.99;
@@ -275,12 +282,35 @@ struct RigidIpcProjectedNewtonStep
   }
 };
 
+/// Adaptive barrier-stiffness controls for the projected-Newton solve.
+///
+/// When `enabled`, the solve replaces the fixed `barrier.stiffness` with the
+/// IPC adaptive-kappa scheme (Li et al. 2020; the same
+/// `initial_barrier_stiffness` / `update_barrier_stiffness` algorithm used by
+/// the `ipc-sim/rigid-ipc` reference): an initial kappa that balances the
+/// barrier gradient against the inertial energy gradient and is clamped to
+/// `[kappa_min, 100*kappa_min]`, then per-iteration doubling whenever the
+/// closest pair keeps approaching inside the `dhatEpsilonScale` band. This
+/// prevents the body from creeping into penetration under a too-soft barrier
+/// (which otherwise traps the conservative line search at a zero step).
+/// Defaults mirror the reference
+/// (`min_barrier_stiffness_scale = 1e11`, `dhat_epsilon = 1e-9`).
+struct RigidIpcAdaptiveStiffnessOptions
+{
+  bool enabled = false;
+  double averageMass = 1.0;
+  double bboxDiagonal = 1.0;
+  double minStiffnessScale = 1e11;
+  double dhatEpsilonScale = 1e-9;
+};
+
 struct RigidIpcProjectedNewtonSolveOptions
 {
   RigidIpcBarrierOptions barrier;
   RigidIpcFrictionOptions friction;
   RigidIpcLineSearchOptions lineSearch;
   RigidIpcProjectedNewtonOptions newton;
+  RigidIpcAdaptiveStiffnessOptions adaptiveStiffness;
   std::vector<RigidIpcBodyDynamicsTerm> dynamicsTerms;
   std::size_t maxIterations = 16;
   std::size_t frictionIterations = 1;
@@ -304,12 +334,14 @@ struct RigidIpcProjectedNewtonSolveStats
   std::size_t lineSearchZeroStepCount = 0;
   std::size_t activeFrictionConstraints = 0;
   std::size_t frictionIterations = 0;
+  std::size_t barrierStiffnessIncreases = 0;
   double initialValue = 0.0;
   double finalValue = 0.0;
   double initialGradientNorm = 0.0;
   double finalGradientNorm = 0.0;
   double finalMomentumBalance = 0.0;
   double lastStepNorm = 0.0;
+  double barrierStiffness = 0.0;
 };
 
 struct RigidIpcProjectedNewtonSolveResult
@@ -669,5 +701,38 @@ computeRigidIpcProjectedNewtonStep(
 solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options = {});
+
+/// Compute the initial IPC adaptive barrier stiffness (kappa) for a solve.
+///
+/// Ports `ipc::initial_barrier_stiffness` (with `dmin = 0`) using DART's
+/// squared-distance clamped-log barrier for the `kappa_min` bound: the
+/// suggested kappa best cancels the inertial energy gradient with the unit
+/// barrier gradient, clamped to `[kappa_min, 100*kappa_min]`, where
+/// `kappa_min = minStiffnessScale * averageMass / (4*d0^2*b''(d0^2, dhat^2))`
+/// and `d0 = 1e-8 * bboxDiagonal`. `maxStiffness` is set to the clamp ceiling.
+/// DART's objective applies kappa directly (it is not normalized by mass like
+/// the reference), so the returned kappa is used as `barrier.stiffness`.
+[[nodiscard]] DART_EXPERIMENTAL_API double
+computeInitialRigidIpcBarrierStiffness(
+    double bboxDiagonal,
+    double squaredActivationDistance,
+    double averageMass,
+    const Eigen::VectorXd& gradEnergy,
+    const Eigen::VectorXd& gradBarrier,
+    double minStiffnessScale,
+    double& maxStiffness);
+
+/// Adaptive kappa update: ports `ipc::update_barrier_stiffness` (with
+/// `dmin = 0`). Doubles `currentStiffness` (capped at `maxStiffness`) when the
+/// closest active pair stays inside the `dhatEpsilonScale * bboxDiagonal`
+/// squared-distance band and keeps approaching, otherwise returns it unchanged.
+/// Distances are squared to match DART's squared-distance barrier.
+[[nodiscard]] DART_EXPERIMENTAL_API double updateRigidIpcBarrierStiffness(
+    double prevMinSquaredDistance,
+    double minSquaredDistance,
+    double maxStiffness,
+    double currentStiffness,
+    double bboxDiagonal,
+    double dhatEpsilonScale);
 
 } // namespace dart::simulation::experimental::detail

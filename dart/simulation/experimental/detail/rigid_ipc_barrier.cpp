@@ -62,8 +62,7 @@ struct SurfaceEdge
   std::size_t vertexB = 0;
 
   [[nodiscard]] friend bool operator==(
-      const SurfaceEdge& lhs, const SurfaceEdge& rhs)
-      = default;
+      const SurfaceEdge& lhs, const SurfaceEdge& rhs) = default;
 
   [[nodiscard]] friend bool operator<(
       const SurfaceEdge& lhs, const SurfaceEdge& rhs)
@@ -2121,6 +2120,103 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStep(
   return computeRigidIpcProjectedNewtonStepImpl(assembly, &lineSearch, options);
 }
 
+double computeInitialRigidIpcBarrierStiffness(
+    const double bboxDiagonal,
+    const double squaredActivationDistance,
+    const double averageMass,
+    const Eigen::VectorXd& gradEnergy,
+    const Eigen::VectorXd& gradBarrier,
+    const double minStiffnessScale,
+    double& maxStiffness)
+{
+  maxStiffness = std::numeric_limits<double>::infinity();
+  if (!(bboxDiagonal > 0.0) || !std::isfinite(bboxDiagonal)
+      || !(averageMass > 0.0) || !std::isfinite(averageMass)
+      || !(minStiffnessScale > 0.0) || !std::isfinite(minStiffnessScale)
+      || !(squaredActivationDistance > 0.0)
+      || !std::isfinite(squaredActivationDistance)) {
+    return 1.0;
+  }
+
+  // Reference `initial_barrier_stiffness` with dmin = 0, evaluated on DART's
+  // squared-distance clamped-log barrier. `d0` is a tiny probe distance; the
+  // second derivative is taken with respect to squared distance.
+  const double d0 = 1e-8 * bboxDiagonal;
+  double d0Squared = d0 * d0;
+  // Reference clamp (adaptive_stiffness.cpp, dmin = 0 specialization): if the
+  // probe distance lands outside the activation band the barrier is inactive
+  // there (second derivative 0), so pull it to an interior point. Without this
+  // a grossly mis-scaled world (bbox diagonal >= 1e6 * dhat) would otherwise
+  // fall back to kappa = 1.
+  if (d0Squared >= squaredActivationDistance) {
+    d0Squared = 0.5 * squaredActivationDistance;
+  }
+  const auto probe = deformable_contact::c2ClampedLogBarrier(
+      d0Squared, squaredActivationDistance);
+  const double minStiffnessRaw = 4.0 * d0Squared * probe.secondDerivative;
+  if (!(minStiffnessRaw > 0.0) || !std::isfinite(minStiffnessRaw)) {
+    return 1.0;
+  }
+
+  const double minStiffness = minStiffnessScale * averageMass / minStiffnessRaw;
+  if (!(minStiffness > 0.0) || !std::isfinite(minStiffness)) {
+    return 1.0;
+  }
+  maxStiffness = 100.0 * minStiffness;
+
+  double kappa = 1.0;
+  const double gradBarrierSquaredNorm = gradBarrier.squaredNorm();
+  if (gradBarrierSquaredNorm > 0.0 && gradBarrier.size() == gradEnergy.size()) {
+    // If negative, the clamp below pins it to kappa_min anyway.
+    kappa = -gradBarrier.dot(gradEnergy) / gradBarrierSquaredNorm;
+  }
+  if (!std::isfinite(kappa)) {
+    kappa = minStiffness;
+  }
+
+  return std::clamp(kappa, minStiffness, maxStiffness);
+}
+
+double updateRigidIpcBarrierStiffness(
+    const double prevMinSquaredDistance,
+    const double minSquaredDistance,
+    const double maxStiffness,
+    const double currentStiffness,
+    const double bboxDiagonal,
+    const double dhatEpsilonScale)
+{
+  if (!std::isfinite(currentStiffness) || !std::isfinite(maxStiffness)
+      || !std::isfinite(bboxDiagonal) || !std::isfinite(dhatEpsilonScale)
+      || !std::isfinite(minSquaredDistance)
+      || !std::isfinite(prevMinSquaredDistance)) {
+    return currentStiffness;
+  }
+
+  // Is the barrier having a difficulty pushing the bodies apart?
+  double dhatEpsilon = dhatEpsilonScale * bboxDiagonal;
+  dhatEpsilon *= dhatEpsilon;
+  if (prevMinSquaredDistance < dhatEpsilon && minSquaredDistance < dhatEpsilon
+      && minSquaredDistance < prevMinSquaredDistance) {
+    return std::min(maxStiffness, 2.0 * currentStiffness);
+  }
+  return currentStiffness;
+}
+
+namespace {
+
+// Smallest active-constraint squared distance in an assembly, or +inf if none.
+double minActiveSquaredDistance(const RigidIpcBarrierAssembly& assembly)
+{
+  double minSquaredDistance = std::numeric_limits<double>::infinity();
+  for (const auto& constraint : assembly.activeConstraints) {
+    minSquaredDistance = std::min(
+        minSquaredDistance, constraint.reduced.primitive.squaredDistance);
+  }
+  return minSquaredDistance;
+}
+
+} // namespace
+
 RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options)
@@ -2146,6 +2242,58 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
   const std::size_t frictionIterationCount
       = useLaggedFriction ? options.frictionIterations : 1u;
 
+  // Barrier stiffness (kappa) used by every assembly in this solve. With
+  // adaptive stiffness disabled this stays the caller-provided fixed value;
+  // otherwise it is initialized from the IPC adaptive-kappa scheme and may be
+  // increased per-iteration when the barrier struggles to separate.
+  RigidIpcBarrierOptions barrierOptions = options.barrier;
+  const RigidIpcAdaptiveStiffnessOptions& adaptive = options.adaptiveStiffness;
+  double maxBarrierStiffness = std::numeric_limits<double>::infinity();
+  double prevMinSquaredDistance = std::numeric_limits<double>::infinity();
+  if (adaptive.enabled) {
+    // Separate the inertial-energy gradient from the unit-barrier gradient at
+    // the start-of-step configuration (both evaluated frictionless, matching
+    // the reference `init_solve`). The barrier gradient is linear in kappa for
+    // a fixed configuration, so the unit-barrier gradient is the difference.
+    RigidIpcBarrierOptions energyOnly = options.barrier;
+    energyOnly.stiffness = 0.0;
+    RigidIpcBarrierOptions unitBarrier = options.barrier;
+    unitBarrier.stiffness = 1.0;
+    const RigidIpcFrictionOptions noFriction;
+    const RigidIpcBarrierAssembly energyAssembly
+        = assembleRigidIpcObjectiveSystem(
+            result.surfaces,
+            laggedSurfaces,
+            options.dynamicsTerms,
+            energyOnly,
+            noFriction);
+    const RigidIpcBarrierAssembly unitBarrierAssembly
+        = assembleRigidIpcObjectiveSystem(
+            result.surfaces,
+            laggedSurfaces,
+            options.dynamicsTerms,
+            unitBarrier,
+            noFriction);
+    Eigen::VectorXd gradBarrier = unitBarrierAssembly.gradient;
+    if (gradBarrier.size() == energyAssembly.gradient.size()) {
+      gradBarrier -= energyAssembly.gradient;
+    }
+    barrierOptions.stiffness = computeInitialRigidIpcBarrierStiffness(
+        adaptive.bboxDiagonal,
+        options.barrier.squaredActivationDistance,
+        adaptive.averageMass,
+        energyAssembly.gradient,
+        gradBarrier,
+        adaptive.minStiffnessScale,
+        maxBarrierStiffness);
+    prevMinSquaredDistance = minActiveSquaredDistance(unitBarrierAssembly);
+  }
+  result.stats.barrierStiffness = barrierOptions.stiffness;
+
+  // Newton options with an effective gradient tolerance that includes the
+  // relative floor (filled once the initial gradient norm is known below).
+  RigidIpcProjectedNewtonOptions newtonOptions = options.newton;
+
   for (std::size_t frictionIteration = 0;
        frictionIteration < frictionIterationCount;
        ++frictionIteration) {
@@ -2157,13 +2305,46 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           result.surfaces,
           laggedSurfaces,
           options.dynamicsTerms,
-          options.barrier,
+          barrierOptions,
           frictionOptions);
+      if (adaptive.enabled) {
+        // Post-(previous-)step adaptive kappa update. The current assembly
+        // reflects the surfaces produced by the prior accepted step, so its
+        // closest pair is the post-step minimum distance.
+        const double minSquaredDistance
+            = minActiveSquaredDistance(result.assembly);
+        const double updatedStiffness = updateRigidIpcBarrierStiffness(
+            prevMinSquaredDistance,
+            minSquaredDistance,
+            maxBarrierStiffness,
+            barrierOptions.stiffness,
+            adaptive.bboxDiagonal,
+            adaptive.dhatEpsilonScale);
+        prevMinSquaredDistance = minSquaredDistance;
+        if (updatedStiffness != barrierOptions.stiffness) {
+          barrierOptions.stiffness = updatedStiffness;
+          result.stats.barrierStiffness = updatedStiffness;
+          ++result.stats.barrierStiffnessIncreases;
+          result.assembly = assembleRigidIpcObjectiveSystem(
+              result.surfaces,
+              laggedSurfaces,
+              options.dynamicsTerms,
+              barrierOptions,
+              frictionOptions);
+        }
+      }
       recordSolveAssemblyStats(
           result, frictionIteration == 0u && iteration == 0u);
+      if (frictionIteration == 0u && iteration == 0u) {
+        const double relativeFloor
+            = std::max(0.0, options.newton.relativeGradientTolerance)
+              * result.stats.initialGradientNorm;
+        newtonOptions.gradientTolerance
+            = std::max(options.newton.gradientTolerance, relativeFloor);
+      }
 
       RigidIpcProjectedNewtonStep step
-          = computeRigidIpcProjectedNewtonStep(result.assembly, options.newton);
+          = computeRigidIpcProjectedNewtonStep(result.assembly, newtonOptions);
       result.lastStep = step;
 
       if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
@@ -2194,7 +2375,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
             result.surfaces, candidateSurfaces, options.lineSearch);
         recordSolveLineSearchStats(result);
         step = computeRigidIpcProjectedNewtonStep(
-            result.assembly, result.lineSearch, options.newton);
+            result.assembly, result.lineSearch, newtonOptions);
         result.lastStep = step;
         if (result.lineSearch.limited) {
           ++result.stats.lineSearchLimitedSteps;
@@ -2221,7 +2402,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
             result.surfaces,
             laggedSurfaces,
             options.dynamicsTerms,
-            options.barrier,
+            barrierOptions,
             frictionOptions);
         recordSolveAssemblyStats(result, false);
         result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
@@ -2239,7 +2420,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         result.surfaces,
         laggedSurfaces,
         options.dynamicsTerms,
-        options.barrier,
+        barrierOptions,
         frictionOptions);
     recordSolveAssemblyStats(result, false);
     if (result.assembly.activeFrictionConstraints.empty()) {

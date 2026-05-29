@@ -137,39 +137,53 @@ friction"):
   `World.rigid_body_solver = IPC`; verified settling (z=0.262, stable) and the
   demos-cycle smoke test. New Rigid IPC GUI examples register in
   `python/examples/demos/registry.py` under the Experimental group.
+- Merged `origin/main` a third time to pick up the Eigen 5 SVD migration and
+  pixi dependency upgrade (#2765, #2768); rebuilt and re-greened the
+  simulation-experimental suite. NOTE: the pixi upgrade moved urdfdom 4.0->5.1,
+  so the full C++/dartpy libraries must be rebuilt (`pixi run build`) before the
+  Python demos load; the experimental tests do not link urdfdom and stayed green
+  throughout.
+- Fixed the freeze-on-contact "sink-then-stick" bug with IPC adaptive barrier
+  stiffness (see the RESOLVED note below).
 
-Known robustness gap (reproducible, next correctness target): the runtime IPC
-stage FREEZES a free rigid body once a barrier constraint becomes active,
-instead of producing continued contact dynamics. A box dropped from z=0.6
-settles at z=0.262 (gap ~0.012) and is then EXACTLY frozen for 300 steps — which
-looks like resting and makes the `sx_rigid_ipc` drop demo honest ("the barrier
-stops the box at the ground"), but is freeze-on-contact, not stable equilibrium.
-The same freeze blocks tangential motion: a box started at z=0.258 (gap 0.008)
-with linear velocity (1,0,0) sinks to z=0.251 (gap 0.001) and then does not
-slide at all, even frictionless — so a friction-slide GUI demo is not yet
-viable.
+RESOLVED (this session): the freeze-on-contact "sink-then-stick" bug. The
+runtime IPC stage used to FREEZE a free rigid body once a barrier constraint
+became active. Root cause (pinned via a C++ stage-stats diagnostic): with a
+fixed `kappa = 1` the barrier was orders of magnitude too soft, so under gravity
+the box crept ~0.0007/step DEEPER into the barrier band (each individual step's
+motion did not cross contact, so the conservative line search never limited it —
+`lsLimited=0`, `lsBound=1`). Once a step finally crossed into penetration (~gap
+0.001), the line search reported initial-separation violations (`lsZero=3`) ->
+`LineSearchBlocked` -> `result.failed` -> the stage skipped the result, and since
+the body stayed penetrating EVERY subsequent step blocked identically ->
+permanent freeze.
 
-Root cause (pinned via a C++ stage-stats diagnostic; the standalone
-`RigidIpcContactStage` slides correctly for ~6 steps): it is "sink-then-stick",
-not a Newton non-convergence. Under gravity the box creeps ~0.0007/step DEEPER
-into the barrier band (each individual step's motion does not cross contact, so
-the conservative line search never limits it — `lsLimited=0`, `lsBound=1`
-through step 6). Once a step finally crosses into penetration (~gap 0.001), the
-line search reports initial-separation violations (`lsZero=3`, `lsBound=0`) ->
-the projected-Newton step is `LineSearchBlocked` -> `result.failed` -> the stage
-skips the result, and since the body stays penetrating, EVERY subsequent step
-blocks identically -> permanent freeze (finalGradientNorm stuck ~91).
+Fix (standard IPC adaptive-kappa, ported from the `ipc-sim/rigid-ipc`
+reference's `initial_barrier_stiffness` / `update_barrier_stiffness` onto DART's
+squared-distance clamped-log barrier; see
+`computeInitialRigidIpcBarrierStiffness` / `updateRigidIpcBarrierStiffness` in
+`rigid_ipc_barrier.cpp`): the solve now picks an initial kappa that balances the
+unit-barrier gradient against the inertial energy gradient
+(`-gradB.dot(gradE)/|gradB|^2`), clamped to `[kappa_min, 100*kappa_min]` with
+`kappa_min = minStiffnessScale * averageMass / (4*d0^2 * b''(d0^2, dhat^2))`,
+`d0 = 1e-8 * bboxDiagonal`, `minStiffnessScale = 1e11`; and doubles kappa when
+the closest pair keeps approaching inside the `dhatEpsilonScale = 1e-9` band.
+The opt-in stage feeds it the world-AABB diagonal and average dynamic-body mass.
+Two supporting changes: a relative projected-Newton gradient-convergence floor
+(`relativeGradientTolerance = 1e-6`; the stiff barrier makes the absolute 1e-10
+tolerance unreachable at a resting contact), and an apply policy that writes back
+the best intersection-free configuration a bounded solve reaches (matching the
+reference, which steps with the optimizer's best feasible iterate) rather than
+discarding any not-fully-converged result. The anti-tunneling guarantee is
+unchanged: a `failed` (line-search-blocked / factorization-failed) solve is still
+never applied.
 
-Fix direction (standard IPC, focused Phase 3 slice): adaptive barrier stiffness
-(raise kappa so the gravity-balancing equilibrium gap stays safely > 0, so the
-box never creeps into penetration), and/or strict per-step feasibility so the
-line search limits the sinking steps before penetration, and/or
-penetration-recovery (minimum-separation CCD) so a penetrating state is not a
-permanent trap. Reproduce from a C++ test reading
-`RigidIpcContactStage::getLastStats()` (status/lsBound/lsZero/finalGradientNorm)
-on a box at z=0.258 over a static ground box — `sx.compute` is not exposed in
-Python. This is the top Phase 3 "production convergence / robust contact" item
-and gates sliding, friction demos, and corpus scenes.
+Verified: a box at z=0.258 over static ground with v=(1,0,0) under gravity now
+slides forward and is friction-braked toward rest (kappa adapts ~7e5), z stays
+~0.2565-0.2577 (gap > 0, never penetrates), `lsZero=0`, converged every step.
+Covered by `RigidIpcContactStageSlidingContactDoesNotFreeze` (runtime) and the
+`RigidIpcAdaptiveStiffness` detail unit tests. The drop demo settles stably; a
+friction-slide GUI demo is now viable.
 
 Next perf targets: a cheaper PSD projection or fewer active-primitive
 evaluations via primitive-level candidate sets (NOT an LDLT skip), then
@@ -184,12 +198,36 @@ All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
 
 ## Immediate Next Step
 
-Phase 4d landed: a differential `World` regression
-(`RigidIpcContactStageFrictionBraketsTangentialSlide`) now proves lagged
-friction observably brakes a tangential slide at an activated mesh contact
-relative to the frictionless solve. Continue Phase 4 from
-`docs/dev_tasks/rigid_ipc_solver/README.md`: extend friction into broader
-runtime fixture behavior, corpus coverage, and production convergence criteria.
+Phase 3 production-convergence milestone landed: adaptive barrier stiffness
+resolved the freeze-on-contact bug (see the RESOLVED note above), so the runtime
+stage now produces continued, intersection-free contact dynamics (sliding,
+friction braking, stable settling) instead of freezing. This unblocks
+sliding/friction/stacking demos and the contact corpus.
+
+Next slices, in rough priority:
+1. Verify the `sx_rigid_ipc` drop demo settles stably (not frozen) after the
+   full `pixi run build` (urdfdom 5.1 relink), and add a friction-slide GUI demo
+   now that sliding is viable.
+2. Multi-body and body-body (not just body-ground) contact-dynamics regressions;
+   resting/stacking convergence.
+3. Continue Phase 4 (broader runtime friction fixture behavior) and Phase 2
+   (rigorous interval CCD + corpus parity).
+
+Known follow-up from the adversarial review of the freeze fix (low severity, not
+blocking): the projected-Newton loop accepts each step on a descent-direction +
+conservative-CCD-feasibility gate but has NO Armijo / monotone-energy
+sufficient-decrease backtracking (the reference `NewtonSolver::line_search`
+halves the step until the barrier objective decreases). The applied iterate is
+therefore the last intersection-free iterate, not an energy-minimized one. This
+is safe (every accepted step is penetration-free; NaN/indefinite/blocked all
+route to skip) but can in principle allow minor energy non-monotonicity/jitter at
+stiff or ill-conditioned contacts. Adding the sufficient-decrease backtrack would
+restore reference parity and is the recommended next solver-quality slice (test
+it changes step acceptance, so verify the freeze fix and demos still hold).
+
+Continue Phase 4 from `docs/dev_tasks/rigid_ipc_solver/README.md`: extend
+friction into broader runtime fixture behavior, corpus coverage, and production
+convergence criteria.
 
 Performance pillar is now in scope (maintainer directive): benchmark the rigid
 IPC path against the current DART rigid contact path, the audited reference
