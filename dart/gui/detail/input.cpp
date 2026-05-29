@@ -61,11 +61,17 @@ using dart::gui::updateOrbitCameraController;
 
 namespace {
 
-void handleScroll(GLFWwindow* window, double, double yOffset)
+void handleScroll(GLFWwindow* window, double xOffset, double yOffset)
 {
-  if (ImGui::GetCurrentContext() != nullptr
-      && ImGui::GetIO().WantCaptureMouse) {
-    return;
+  // Forward the wheel event to ImGui so panels can scroll. Without this,
+  // ImGui never sees the wheel and WantCaptureMouse stays false, so the
+  // sidebar list (e.g. the Demos catalog) never scrolls under the cursor.
+  if (ImGui::GetCurrentContext() != nullptr) {
+    ImGui::GetIO().AddMouseWheelEvent(
+        static_cast<float>(xOffset), static_cast<float>(yOffset));
+    if (ImGui::GetIO().WantCaptureMouse) {
+      return;
+    }
   }
 
   auto* controller = static_cast<dart::gui::OrbitCameraController*>(
