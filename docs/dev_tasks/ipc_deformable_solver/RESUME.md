@@ -154,7 +154,7 @@ thin triangles whose long edges cross with a gap; the free edge decelerates with
 friction). Self-contact friction now covers PT + EE. 63 deformable tests pass.
 
 Prior #2751 = self-contact friction Hessian (PT). #2750 = Python facade (dartpy
-deformable bindings; forbids get_*/set_* names; regenerate stubs +
+deformable bindings; forbids get*\*/set*\* names; regenerate stubs +
 api-boundary-inventory.md). #2749 = scene-replay harness.
 
 Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
