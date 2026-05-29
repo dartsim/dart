@@ -51,6 +51,22 @@ Eigen::Matrix3d skew(const Eigen::Vector3d& v)
   return m;
 }
 
+// SO(3) exponential / logarithm on rotation vectors (axis * angle).
+Eigen::Matrix3d rotationExp3(const Eigen::Vector3d& v)
+{
+  const double angle = v.norm();
+  if (angle < 1e-12) {
+    return Eigen::Matrix3d::Identity();
+  }
+  return Eigen::AngleAxisd(angle, v / angle).toRotationMatrix();
+}
+
+Eigen::Vector3d rotationLog3(const Eigen::Matrix3d& rotation)
+{
+  const Eigen::AngleAxisd angleAxis(rotation);
+  return angleAxis.angle() * angleAxis.axis();
+}
+
 // Spatial motion adjoint Ad_T for the [angular; linear] convention.
 Matrix6 adjoint(const Eigen::Isometry3d& transform)
 {
@@ -91,11 +107,21 @@ Eigen::Isometry3d jointMotionTransform(
     case comps::JointType::Prismatic:
       transform.translation() = joint.axis * position[0];
       return transform;
+    case comps::JointType::Spherical:
+      // Orientation stored as a rotation vector (exponential coordinates).
+      transform.linear() = rotationExp3(position.head<3>());
+      return transform;
+    case comps::JointType::Floating:
+      // 6-DOF pose: translation (position[0..2]) then orientation as a rotation
+      // vector (position[3..5]), matching the kinematics convention.
+      transform.linear() = rotationExp3(position.tail<3>());
+      transform.translation() = position.head<3>();
+      return transform;
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
-          "The variational integrator currently supports fixed, revolute, and "
-          "prismatic joints only (Phase A1)");
+          "The variational integrator supports fixed, revolute, prismatic, "
+          "spherical, and floating joints");
   }
 }
 
@@ -117,11 +143,78 @@ Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
       subspace.col(0).tail<3>() = joint.axis;
       return subspace;
     }
+    case comps::JointType::Spherical: {
+      // Generalized velocity is the body angular velocity (matching the
+      // rotation-vector position): angular = I, linear = 0.
+      Subspace subspace = Subspace::Zero(6, 3);
+      subspace.topRows<3>() = Eigen::Matrix3d::Identity();
+      return subspace;
+    }
+    case comps::JointType::Floating: {
+      // Generalized velocity is [linear; angular] body twist (matching the
+      // position layout [translation; rotation vector]); the subspace permutes
+      // it into the [angular; linear] spatial convention.
+      Subspace subspace = Subspace::Zero(6, 6);
+      subspace.bottomLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
+      subspace.topRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
+      return subspace;
+    }
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
-          "The variational integrator currently supports fixed, revolute, and "
-          "prismatic joints only (Phase A1)");
+          "The variational integrator supports fixed, revolute, prismatic, "
+          "spherical, and floating joints");
+  }
+}
+
+// Retract a joint configuration `q` along a generalized-coordinate increment
+// `delta` (the same space as generalized velocity). Euclidean joints add
+// directly; spherical/floating joints apply the increment on the SO(3)/SE(3)
+// manifold, matching the semi-implicit integration convention
+// (R_new = R exp(omega), p_new = p + R v).
+Eigen::VectorXd jointRetract(
+    const comps::Joint& joint,
+    const Eigen::VectorXd& q,
+    const Eigen::VectorXd& delta)
+{
+  switch (joint.type) {
+    case comps::JointType::Spherical:
+      return rotationLog3(
+          rotationExp3(q.head<3>()) * rotationExp3(delta.head<3>()));
+    case comps::JointType::Floating: {
+      const Eigen::Matrix3d rotation = rotationExp3(q.tail<3>());
+      Eigen::VectorXd result(6);
+      result.head<3>() = q.head<3>() + rotation * delta.head<3>();
+      result.tail<3>() = rotationLog3(rotation * rotationExp3(delta.tail<3>()));
+      return result;
+    }
+    default:
+      return q + delta;
+  }
+}
+
+// The generalized-coordinate tangent `tau` with `jointRetract(q, tau) == qNext`
+// (so the generalized velocity is `tau / dt`). Inverse of jointRetract.
+Eigen::VectorXd jointLogDifference(
+    const comps::Joint& joint,
+    const Eigen::VectorXd& qNext,
+    const Eigen::VectorXd& q)
+{
+  switch (joint.type) {
+    case comps::JointType::Spherical:
+      return rotationLog3(
+          rotationExp3(q.head<3>()).transpose()
+          * rotationExp3(qNext.head<3>()));
+    case comps::JointType::Floating: {
+      const Eigen::Matrix3d rotation = rotationExp3(q.tail<3>());
+      Eigen::VectorXd result(6);
+      result.head<3>() = rotation.transpose() * (qNext.head<3>() - q.head<3>());
+      result.tail<3>()
+          = rotationLog3(rotation.transpose() * rotationExp3(qNext.tail<3>()));
+      return result;
+    }
+    default:
+      return qNext - q;
   }
 }
 
@@ -476,8 +569,20 @@ VariationalSolveReport integrateMultibodyVariational(
       Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount)));
   const Eigen::VectorXd guessAcceleration
       = applyArticulatedInverseMass(tree, appliedForce - bias);
-  Eigen::VectorXd nextPosition = position + timeStep * velocity
-                                 + timeStep * timeStep * guessAcceleration;
+  Eigen::VectorXd nextPosition = position;
+  for (const auto& link : tree.links) {
+    if (link.dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+    const auto n = static_cast<Eigen::Index>(link.dof);
+    const Eigen::VectorXd tangent
+        = timeStep * velocity.segment(seg, n)
+          + timeStep * timeStep * guessAcceleration.segment(seg, n);
+    nextPosition.segment(seg, n)
+        = jointRetract(joint, position.segment(seg, n), tangent);
+  }
 
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
     const Eigen::VectorXd residual = computeResidual(
@@ -490,7 +595,20 @@ VariationalSolveReport integrateMultibodyVariational(
     }
     // RIQN quasi-Newton step dt * M(q^k)^{-1} * e via the O(n) articulated-body
     // inverse-mass apply (the linear-time root update; no dense factorization).
-    nextPosition -= applyArticulatedInverseMass(tree, timeStep * residual);
+    // The increment is retracted per joint so spherical/floating coordinates
+    // stay on their SO(3)/SE(3) manifolds.
+    const Eigen::VectorXd delta
+        = applyArticulatedInverseMass(tree, timeStep * residual);
+    for (const auto& link : tree.links) {
+      if (link.dof == 0) {
+        continue;
+      }
+      const auto& joint = registry.get<comps::Joint>(link.joint);
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto n = static_cast<Eigen::Index>(link.dof);
+      nextPosition.segment(seg, n) = jointRetract(
+          joint, nextPosition.segment(seg, n), -delta.segment(seg, n));
+    }
   }
 
   // Refresh the per-link scratch at the accepted configuration so the history
@@ -509,7 +627,8 @@ VariationalSolveReport integrateMultibodyVariational(
     const auto n = static_cast<Eigen::Index>(link.dof);
     const Eigen::VectorXd previousVelocity = joint.velocity;
     const Eigen::VectorXd newPosition = nextPosition.segment(seg, n);
-    joint.velocity = (newPosition - joint.position) / timeStep;
+    joint.velocity
+        = jointLogDifference(joint, newPosition, joint.position) / timeStep;
     joint.position = newPosition;
     if (previousVelocity.size() == n) {
       joint.acceleration = (joint.velocity - previousVelocity) / timeStep;

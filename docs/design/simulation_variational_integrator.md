@@ -323,9 +323,11 @@ experiments (reference repo `experiments/`: `energy_conservation`, `convergence`
    recursive-Jacobian preconditioner from the paper's Appendix) are tracked
    follow-ups; stiff contact barriers would compound this, so favor compliant/AL
    contact and prototype any barrier on sparse contact first.
-4. **Manifold RIQN increment for ball/free joints** has no correct reference
-   template (open TODOs in the reference impl). Phase A (revolute/prismatic)
-   avoids it; Phase B must solve it.
+4. **Manifold RIQN increment for ball/free joints** — _resolved_ (Phase B1):
+   `jointRetract`/`jointLogDifference` apply the increment on SO(3)/SE(3)
+   (`R_new = R·exp(δω)`, `p_new = p + R·δp`), where the reference impl had open
+   TODOs. Verified by floating-base free-fall (exact) and a tumbling
+   asymmetric-inertia body conserving energy over 2e4 steps.
 5. **Contact query at trial configuration** is unavailable (`collide()` is a
    once-per-step full rebuild); any contact phase needs a query redesign first.
 6. **RIQN non-convergence / joint limits:** define the failure contract; hard

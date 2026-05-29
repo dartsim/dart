@@ -44,7 +44,13 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
       starting-point one. Deeper mitigations (relative/scaled tolerance,
       line-search/Anderson acceleration, or the exact recursive-Jacobian
       preconditioner from the paper's Appendix) are tracked follow-ups.
-- [ ] Phase B1 — Floating base (manifold-correct RIQN retraction)
+- [x] **Phase B1 — Floating base** — Floating + Spherical joints with
+      manifold-correct SE(3)/SO(3) RIQN retraction (`jointRetract`/
+      `jointLogDifference`: `R_new = R·exp(δω)`, `p_new = p + R·δp`). Verified by
+      `FloatingBaseFreeFall` (linear accel −g, no spurious rotation, to 1e-9) and
+      `FloatingBaseTorqueFreeConservesEnergy` (tumbling asymmetric-inertia body
+      conserves energy over 2e4 steps). Resolves the manifold-retraction gap the
+      reference impl left as open TODOs.
 - [ ] Phase B2 — Holonomic constraints (loop closures)
 - [ ] Phase C — Contact & friction (DEFERRED, separate go/no-go; see plan sidecar)
 
@@ -79,17 +85,18 @@ energy behavior on a passive chain before optimizing to O(n).
 
 ## Immediate Next Steps
 
-Phase A1 + A2 (core) are complete and verified. Remaining, in priority order
+Phases A1, A2, and B1 are complete and verified. Remaining, in priority order
 (see `RESUME.md` for the full handoff):
 
-1. A1 finish: serialize `MultibodyVariationalState` (binary-format version bump +
+1. **Phase B2**: holonomic constraints (loop closures) — a constraint Jacobian
+   `∂g/∂q` + an impulse-based constraint solve folded into RIQN; flip the
+   loop-closure `Solve` validation.
+2. A1 finish: serialize `MultibodyVariationalState` (binary-format version bump +
    bootstrap-done flag) + a save/load determinism round-trip test; optionally a
    documented non-convergence error.
-2. A2 large-chain convergence (follow-up): relative/scaled tolerance,
+3. A2 large-chain convergence (follow-up): relative/scaled tolerance,
    line-search/Anderson acceleration, or the exact recursive-Jacobian
    preconditioner (IG3 alone does not resolve the long-chain iteration cliff).
-3. Phase B1: floating base (manifold-correct RIQN retraction).
-4. Phase B2: holonomic constraints (loop closures).
-5. Phase C: contact/friction (deferred, go/no-go; see the plan sidecar).
+4. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
 
 Code is the source of truth; keep this file lean and current.

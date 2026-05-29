@@ -325,3 +325,84 @@ TEST(VariationalIntegration, DeterministicAcrossRuns)
   EXPECT_GT(a.norm(), 0.0);       // the chain actually evolved
   EXPECT_EQ((a - b).norm(), 0.0); // and did so bit-identically
 }
+
+// Phase B1: a floating base (fixed virtual base + Floating joint + body) under
+// gravity free-falls — the body's linear acceleration is -g with no spurious
+// angular acceleration. A free body is a constant-force linear system, so the
+// variational integrator is exact.
+TEST(VariationalIntegration, FloatingBaseFreeFall)
+{
+  sx::World world; // gravity (0, 0, -9.81)
+  auto robot = world.addMultibody("floater");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "float";
+  spec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, spec);
+  body.setMass(2.0);
+  body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
+
+  const double dt = 0.01;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  sxc::MultibodyVariationalState state;
+  const auto report = sxc::integrateMultibodyVariational(
+      world.getRegistry(), structureOf(world), world.getGravity(), dt, state);
+
+  EXPECT_TRUE(report.converged);
+  const Eigen::VectorXd accel = body.getParentJoint().getAcceleration();
+  ASSERT_EQ(accel.size(), 6);
+  // Generalized velocity is [linear; angular]; gravity drives -g in z only.
+  EXPECT_NEAR(accel[0], 0.0, 1e-9);
+  EXPECT_NEAR(accel[1], 0.0, 1e-9);
+  EXPECT_NEAR(accel[2], -9.81, 1e-9);
+  EXPECT_LT(accel.tail<3>().norm(), 1e-9);
+}
+
+// Phase B1: a torque-free floating body (no gravity) with initial linear and
+// angular velocity conserves total mechanical energy under the symplectic
+// variational integrator over a long horizon — a strong check of the
+// manifold-correct SE(3) retraction (asymmetric inertia induces tumbling).
+TEST(VariationalIntegration, FloatingBaseTorqueFreeConservesEnergy)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  auto robot = world.addMultibody("floater");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "float";
+  spec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, spec);
+  body.setMass(1.5);
+  body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
+
+  const double dt = 1e-3;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  Eigen::VectorXd v0(6);
+  v0 << 0.4, -0.3, 0.2, 1.5, 2.0, -1.0; // [linear; angular] (tumbling)
+  body.getParentJoint().setVelocity(v0);
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::Vector3d gravity = world.getGravity();
+  const double energy0
+      = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+  ASSERT_GT(energy0, 1e-6); // pure kinetic energy
+
+  sxc::MultibodyVariationalState state;
+  double maxRelativeDrift = 0.0;
+  for (int k = 0; k < 20000; ++k) {
+    sxc::integrateMultibodyVariational(registry, structure, gravity, dt, state);
+    if (k % 500 == 0) {
+      const double energy
+          = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+      ASSERT_FALSE(std::isnan(energy));
+      maxRelativeDrift = std::max(
+          maxRelativeDrift, std::abs(energy - energy0) / std::abs(energy0));
+    }
+  }
+  EXPECT_LT(maxRelativeDrift, 1e-2);
+}

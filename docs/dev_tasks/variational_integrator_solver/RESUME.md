@@ -44,9 +44,9 @@ Remaining, in priority order:
    bump + bootstrap-done flag) + a save/load determinism round-trip test;
    optionally promote RIQN non-convergence from a `converged=false` diagnostic to
    a documented error.
-3. **Phase B1**: floating base — extend DRNEA/RIQN/ABI to a floating root and add
-   manifold-correct RIQN retraction + velocity reconstruction for SO(3)/SE(3)
-   joints (the reference impl has open TODOs here; Phase A is Euclidean-only).
+3. **Phase B1**: floating base — DONE. Floating + Spherical joints with
+   manifold-correct SE(3)/SO(3) RIQN retraction (`jointRetract`/
+   `jointLogDifference`), verified by free-fall + tumbling energy conservation.
 4. **Phase B2**: holonomic constraints (loop closures) — a constraint Jacobian
    `∂g/∂q` + impulse-based constraint solve folded into RIQN; flip the
    loop-closure `Solve` validation. (`johnson-murphey-2009`/`leyendecker-2008`.)
