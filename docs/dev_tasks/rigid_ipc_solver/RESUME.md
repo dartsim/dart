@@ -99,13 +99,13 @@ active-friction diagnostics from the opt-in runtime stage.
 
 ## Current Branch
 
-`feature/rigid-ipc-manifest` - local branch, committed and currently `0 behind`
-/ `48 ahead` of `origin/main` after merging the latest `origin/main` (merge
-commit integrates the parallel deformable IPC effort, PLAN-081). No PR is open
-yet (push/PR deferred per maintainer choice). Stale upstream tracking was
-cleared. This session added, on top of the earlier uncommitted work (now the
-checkpoint commit "Add opt-in experimental rigid IPC contact stage with lagged
-friction"):
+`feature/rigid-ipc-manifest` - local branch, pushed to
+`origin/feature/rigid-ipc-manifest`, currently `0 behind` / `67 ahead` of
+`origin/main` after merging the latest `origin/main` three times (the parallel
+deformable IPC effort PLAN-081, PR #2762 py-demos, and the Eigen 5 / pixi
+upgrade #2765/#2768). Push is authorized (sole maintainer, no PR-review gating).
+This session added, on top of the earlier uncommitted work (now the checkpoint
+commit "Add opt-in experimental rigid IPC contact stage with lagged friction"):
 
 - Phase 4d runtime friction-behavior regression.
 - First rigid IPC performance benchmark (`bm_rigid_ipc_solver`) + methodology
@@ -194,7 +194,15 @@ Phase 2 rigorous interval-arithmetic CCD + corpus parity. All work is pushed to
 PR-review gating).
 
 All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
-(23/23), `check-lint`, and the manifest checks.
+(23/23, including the new `RigidIpcAdaptiveStiffness` unit tests, the no-freeze
+`RigidIpcContactStageSlidingContactDoesNotFreeze` regression, and the
+`RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration` body-body regression),
+the py-demos cycle smoke (incl. `sx_rigid_ipc` + `sx_rigid_ipc_slide`), and the
+manifest checks. NOTE: after the Eigen 5 merge a full clean `pixi run build` was
+required to relink dartpy (urdfdom 5.1); incremental builds left mixed-ABI
+objects that crashed `import dartpy`. C++ lint uses `pixi run
+lint-simulation-experimental` (clang-format 22); the cached `pixi run lint`
+cmake `format` target still references a stale clang-format-21 path.
 
 ## Immediate Next Step
 
