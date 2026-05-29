@@ -27,6 +27,14 @@
   - Restored historical GUI example executable names as `dart::gui` launchers
     backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
     alongside the existing `--screenshot <path>` final-frame capture.
+  - Consolidated the standalone GUI example executables into a single
+    `dart-demos` application (`examples/demos`) that hosts each example as a
+    scene selectable at runtime from a categorized sidebar (`--scene <id>`
+    selects the initial scene; `--cycle-scenes` drives the headless smoke).
+    Added a runtime scene-switch capability to `dart::gui` via
+    `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
+    template, and the headless `csv_logger`, `headless_simulation`,
+    `speed_test`, and `unified_loading` examples stay standalone.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`

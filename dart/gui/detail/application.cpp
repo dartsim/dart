@@ -65,6 +65,8 @@
 
 #include <utils/Log.h>
 
+#include <array>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -82,7 +84,6 @@ namespace {
 
 using dart::gui::elapsedMs;
 using dart::gui::OrbitCameraController;
-using dart::gui::OrbitCameraControlOptions;
 using dart::gui::printProfile;
 using dart::gui::ProfileAccumulator;
 using dart::gui::RunOptions;
@@ -106,6 +107,8 @@ using dart::gui::detail::createNeutralSkybox;
 using dart::gui::detail::createSceneLights;
 using dart::gui::detail::DartScene;
 using dart::gui::detail::destroyApplicationResources;
+using dart::gui::detail::destroyPersistentApplicationResources;
+using dart::gui::detail::destroySceneRenderables;
 using dart::gui::detail::ExampleScene;
 using dart::gui::detail::FilamentRenderContext;
 using dart::gui::detail::finalizeScreenshotCapture;
@@ -138,6 +141,11 @@ using dart::gui::detail::updateConfiguredImGuiOverlayScale;
 using dart::gui::detail::updateFrameUi;
 using dart::gui::detail::updateFrameViewport;
 
+// Number of frames each scene renders in `--cycle-scenes` mode before the host
+// advances to the next scene. A few frames are enough to exercise scene build,
+// extraction, render, and teardown without making the smoke test slow.
+constexpr int kCycleFramesPerScene = 4;
+
 bool hasSceneOption(int argc, char* argv[]);
 
 bool isTruthyEnvironmentVariable(const char* name)
@@ -166,44 +174,158 @@ void configureFilamentLogging()
   ::utils::slog.v.setConsumer(discardFilamentLog, nullptr);
 }
 
+// Copy the per-scene fields from a user-provided ApplicationOptions into the
+// parsed AppOptions. Used by the demos host when (re)building the active scene.
+void applySceneOptions(
+    AppOptions& appOptions,
+    const dart::gui::ApplicationOptions& src,
+    bool renderOutputModeExplicit,
+    dart::gui::RenderOutputMode renderOutputMode)
+{
+  appOptions.world = src.world;
+  appOptions.renderableProvider = src.renderableProvider;
+  appOptions.dockingEnabled = src.dockingEnabled;
+  appOptions.preStep = src.preStep;
+  appOptions.postStep = src.postStep;
+  appOptions.renderSettings = src.renderSettings;
+  if (renderOutputModeExplicit) {
+    appOptions.renderSettings.outputMode = renderOutputMode;
+  }
+  appOptions.gizmos = src.gizmos;
+  appOptions.debugLabels = src.debugLabels;
+  appOptions.ikHandles = src.ikHandles;
+  appOptions.bodyNodeDragHandles = src.bodyNodeDragHandles;
+  appOptions.keyboardActions = src.keyboardActions;
+  appOptions.preRender = src.preRender;
+  appOptions.postRender = src.postRender;
+  appOptions.simulateWorld = src.simulateWorld;
+  appOptions.panels = src.panels;
+  appOptions.camera = src.camera;
+  appOptions.cameraControlsProvider = src.cameraControlsProvider;
+  appOptions.cameraUpdater = src.cameraUpdater;
+  appOptions.viewportLayoutProvider = src.viewportLayoutProvider;
+  appOptions.onViewportPaneActivated = src.onViewportPaneActivated;
+}
+
+int demoSceneIndex(
+    const std::vector<dart::gui::DemoSceneEntry>& scenes,
+    std::string_view id,
+    int fallback)
+{
+  for (std::size_t i = 0; i < scenes.size(); ++i) {
+    if (scenes[i].id == id) {
+      return static_cast<int>(i);
+    }
+  }
+  return fallback;
+}
+
+// Built-in sidebar panel listing the demo catalog grouped by category (ordered
+// by first appearance). Selecting a different scene requests a runtime switch.
+dart::gui::Panel makeDemoSidebarPanel(
+    const std::vector<dart::gui::DemoSceneEntry>& scenes, int activeIndex)
+{
+  dart::gui::Panel panel;
+  panel.title = "Demos";
+  panel.dockSide = dart::gui::DockSide::Left;
+  panel.initialPosition = std::array<double, 2>{12.0, 12.0};
+  panel.initialSize = std::array<double, 2>{280.0, 560.0};
+  panel.autoResize = false;
+  panel.buildWithContext = [&scenes, activeIndex](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    if (activeIndex >= 0 && activeIndex < static_cast<int>(scenes.size())) {
+      const auto& active = scenes[static_cast<std::size_t>(activeIndex)];
+      builder.text("Current: " + active.title);
+      if (!active.summary.empty()) {
+        builder.text(active.summary);
+      }
+    }
+    builder.separator();
+
+    // Tree-style catalog: each category is a collapsible header, scenes
+    // within are indented list rows (selectable text instead of buttons).
+    std::string lastCategory;
+    bool categoryOpen = true;
+    bool inCategory = false;
+    for (std::size_t i = 0; i < scenes.size(); ++i) {
+      const auto& entry = scenes[i];
+      if (i == 0 || entry.category != lastCategory) {
+        if (inCategory) {
+          builder.unindent();
+          inCategory = false;
+        }
+        lastCategory = entry.category;
+        categoryOpen = builder.collapsingHeader(entry.category, true);
+        if (categoryOpen) {
+          builder.indent();
+          inCategory = true;
+        }
+      }
+      if (!categoryOpen) {
+        continue;
+      }
+      const bool isActive = static_cast<int>(i) == activeIndex;
+      const std::string label = entry.title + "##demo_" + entry.id;
+      if (builder.selectable(label, isActive) && !isActive
+          && context.lifecycle != nullptr) {
+        dart::gui::requestSceneSwitch(*context.lifecycle, entry.id);
+      }
+    }
+    if (inCategory) {
+      builder.unindent();
+    }
+  };
+  return panel;
+}
+
 int runGuiBackendApplicationImpl(
     int argc,
     char* argv[],
-    const dart::gui::ApplicationOptions& applicationOptions)
+    const dart::gui::ApplicationOptions& applicationOptions,
+    const std::vector<dart::gui::DemoSceneEntry>* demoCatalog,
+    int initialDemoIndex,
+    bool cycleScenes)
 {
   AppOptions appOptions
       = parseOptions(argc, argv, applicationOptions.runDefaults);
   const bool renderOutputModeExplicit = appOptions.renderOutputModeExplicit;
   const auto renderOutputMode = appOptions.renderSettings.outputMode;
   appOptions.camera = applicationOptions.camera;
-  appOptions.cameraControlsProvider = applicationOptions.cameraControlsProvider;
-  appOptions.cameraUpdater = applicationOptions.cameraUpdater;
-  appOptions.viewportLayoutProvider = applicationOptions.viewportLayoutProvider;
-  appOptions.onViewportPaneActivated
-      = applicationOptions.onViewportPaneActivated;
-  if (!hasSceneOption(argc, argv)) {
-    appOptions.world = applicationOptions.world;
-    appOptions.renderableProvider = applicationOptions.renderableProvider;
-    appOptions.selectedRenderableProvider
-        = applicationOptions.selectedRenderableProvider;
-    appOptions.onRenderableSelected = applicationOptions.onRenderableSelected;
-    appOptions.dockingEnabled = applicationOptions.dockingEnabled;
-    appOptions.preStep = applicationOptions.preStep;
-    appOptions.postStep = applicationOptions.postStep;
-    appOptions.renderSettings = applicationOptions.renderSettings;
-    if (renderOutputModeExplicit) {
-      appOptions.renderSettings.outputMode = renderOutputMode;
+  // Single-scene wiring (one world/options passed in). The demos host instead
+  // (re)applies each scene's options inside the scene loop below.
+  if (demoCatalog == nullptr) {
+    if (!hasSceneOption(argc, argv)) {
+      appOptions.world = applicationOptions.world;
+      appOptions.renderableProvider = applicationOptions.renderableProvider;
+      appOptions.selectedRenderableProvider
+          = applicationOptions.selectedRenderableProvider;
+      appOptions.onRenderableSelected = applicationOptions.onRenderableSelected;
+      appOptions.dockingEnabled = applicationOptions.dockingEnabled;
+      appOptions.preStep = applicationOptions.preStep;
+      appOptions.postStep = applicationOptions.postStep;
+      appOptions.renderSettings = applicationOptions.renderSettings;
+      if (renderOutputModeExplicit) {
+        appOptions.renderSettings.outputMode = renderOutputMode;
+      }
+      appOptions.gizmos = applicationOptions.gizmos;
+      appOptions.debugLabels = applicationOptions.debugLabels;
+      appOptions.ikHandles = applicationOptions.ikHandles;
+      appOptions.bodyNodeDragHandles = applicationOptions.bodyNodeDragHandles;
+      appOptions.keyboardActions = applicationOptions.keyboardActions;
     }
-    appOptions.gizmos = applicationOptions.gizmos;
-    appOptions.debugLabels = applicationOptions.debugLabels;
-    appOptions.ikHandles = applicationOptions.ikHandles;
-    appOptions.bodyNodeDragHandles = applicationOptions.bodyNodeDragHandles;
-    appOptions.keyboardActions = applicationOptions.keyboardActions;
+    appOptions.preRender = applicationOptions.preRender;
+    appOptions.postRender = applicationOptions.postRender;
+    appOptions.simulateWorld = applicationOptions.simulateWorld;
+    appOptions.panels = applicationOptions.panels;
+    appOptions.cameraControlsProvider
+        = applicationOptions.cameraControlsProvider;
+    appOptions.cameraUpdater = applicationOptions.cameraUpdater;
+    appOptions.viewportLayoutProvider
+        = applicationOptions.viewportLayoutProvider;
+    appOptions.onViewportPaneActivated
+        = applicationOptions.onViewportPaneActivated;
   }
-  appOptions.preRender = applicationOptions.preRender;
-  appOptions.postRender = applicationOptions.postRender;
-  appOptions.simulateWorld = applicationOptions.simulateWorld;
-  appOptions.panels = applicationOptions.panels;
   const RunOptions& runOptions = appOptions.run;
 
   if (!runOptions.frameOutputDirectory.empty()) {
@@ -237,9 +359,6 @@ int runGuiBackendApplicationImpl(
   }
 
   OrbitCameraController cameraController;
-  cameraController.camera
-      = appOptions.camera.value_or(initialCameraForScene(appOptions.scene));
-  const auto homeCamera = cameraController.camera;
   attachOrbitCameraController(window, cameraController);
 
   FilamentRenderContext renderContext = createFilamentRenderContext(
@@ -257,28 +376,6 @@ int runGuiBackendApplicationImpl(
 
   MaterialResources materialResources = createMaterialResources(*engine);
   const MaterialSet materials = materialResources.materialSet();
-
-  const bool validateFixtureRequirements = appOptions.world == nullptr;
-  DartScene dartScene = createDartScene(appOptions);
-  std::optional<InitialSceneState> maybeInitialSceneState
-      = createInitialSceneState(
-          *engine,
-          *scene,
-          materials,
-          materialResources,
-          appOptions.scene,
-          dartScene,
-          validateFixtureRequirements,
-          applicationOptions.allowEmptyScene,
-          std::cerr);
-  if (!maybeInitialSceneState) {
-    return 1;
-  }
-  InitialSceneState sceneState = std::move(*maybeInitialSceneState);
-  auto& sceneRenderables = sceneState.sceneRenderables;
-  auto& debugOverlays = sceneState.debugOverlays;
-
-  std::optional<Renderable> selectionDebugOverlay;
 
   bool orbitLight = appOptions.orbitLight;
   bool headlightsEnabled = true;
@@ -313,179 +410,282 @@ int runGuiBackendApplicationImpl(
   bool frameCaptureSucceeded = true;
   SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
-  SceneFrameUpdater sceneFrameUpdater(
-      window,
-      *engine,
-      *scene,
-      materials,
-      materialResources,
-      runOptions,
-      dartScene,
-      selectionController,
-      sceneState,
-      selectionDebugOverlay,
-      lifecycle,
-      simulationStepper,
-      lights,
-      orbitStartClock,
-      profile);
 
-  while (!lifecycle.exitRequested
-         && shouldContinueApplicationLoop(runOptions.headless, window)) {
-    DART_PROFILE_FRAME;
-    DART_PROFILE_SCOPED_N("GUI frame");
-    const auto frameStart = ProfileAccumulator::Clock::now();
-    auto phaseStart = ProfileAccumulator::Clock::now();
-    {
-      DART_PROFILE_SCOPED_N("GUI input");
-      pollApplicationInput(
-          window,
-          dartScene,
-          selectionController,
-          lifecycle,
-          cameraController,
-          homeCamera,
-          inputState,
-          showPerfHud);
+  int activeIndex = initialDemoIndex;
+  bool keepRunning = true;
+  std::size_t finalContacts = 0;
+
+  // Outer scene loop. For the single-scene path this runs exactly once; for the
+  // demos host it rebuilds the scene-bound state when a switch is requested,
+  // while the window, engine, materials, lights, and ImGui overlay persist.
+  while (keepRunning) {
+    if (demoCatalog != nullptr) {
+      const auto& demoEntry
+          = (*demoCatalog)[static_cast<std::size_t>(activeIndex)];
+      dart::gui::ApplicationOptions sceneOptions;
+      try {
+        sceneOptions = demoEntry.factory();
+      } catch (const std::exception& error) {
+        // Soft-fail: a scene that cannot build (e.g. a missing asset) must not
+        // crash the host. Show an empty world so the sidebar stays usable.
+        std::cerr << "demo scene '" << demoEntry.id
+                  << "' failed to load: " << error.what() << "\n";
+        sceneOptions = dart::gui::ApplicationOptions{};
+      }
+      if (sceneOptions.world == nullptr) {
+        sceneOptions.world = dart::simulation::World::create("(empty)");
+      }
+      applySceneOptions(
+          appOptions, sceneOptions, renderOutputModeExplicit, renderOutputMode);
+      std::vector<dart::gui::Panel> panels;
+      panels.reserve(appOptions.panels.size() + 1);
+      panels.push_back(makeDemoSidebarPanel(*demoCatalog, activeIndex));
+      for (auto& scenePanel : appOptions.panels) {
+        panels.push_back(std::move(scenePanel));
+      }
+      appOptions.panels = std::move(panels);
+      lifecycle.sceneSwitchRequested = false;
+      lifecycle.requestedScene.clear();
+      // Per-scene transient controllers are reset; renderable ids from the
+      // previous scene must not leak into the next one.
+      selectionController.clear();
+      simulationStepper = SimulationStepper{};
     }
-    profile.inputMs += elapsedMs(phaseStart);
 
+    cameraController.camera
+        = appOptions.camera.value_or(initialCameraForScene(appOptions.scene));
     if (appOptions.cameraUpdater) {
       appOptions.cameraUpdater(cameraController.camera);
     }
+    const auto homeCamera = cameraController.camera;
 
-    guiScale = dart::gui::detail::makeGuiScaleState(
-        runOptions.guiScale, resolveWindowDpiScale(window));
-    if (!automaticWindowSizeResolved
-        || std::abs(guiScale.effectiveScale - automaticWindowEffectiveScale)
-               > 1e-4) {
-      resizeAutomaticApplicationWindow(
-          window,
-          runOptions,
-          guiScale,
-          !appOptions.windowWidthExplicit,
-          !appOptions.windowHeightExplicit);
-      automaticWindowEffectiveScale = guiScale.effectiveScale;
-      automaticWindowSizeResolved = true;
+    const bool validateFixtureRequirements = appOptions.world == nullptr;
+    DartScene dartScene = createDartScene(appOptions);
+    std::optional<InitialSceneState> maybeInitialSceneState
+        = createInitialSceneState(
+            *engine,
+            *scene,
+            materials,
+            materialResources,
+            appOptions.scene,
+            dartScene,
+            validateFixtureRequirements,
+            applicationOptions.allowEmptyScene,
+            std::cerr);
+    if (!maybeInitialSceneState) {
+      frameCaptureSucceeded = false;
+      keepRunning = false;
+      break;
     }
-    updateConfiguredImGuiOverlayScale(
-        *engine, imguiOverlay, static_cast<float>(guiScale.effectiveScale));
+    InitialSceneState sceneState = std::move(*maybeInitialSceneState);
+    auto& sceneRenderables = sceneState.sceneRenderables;
+    auto& debugOverlays = sceneState.debugOverlays;
 
-    phaseStart = ProfileAccumulator::Clock::now();
-    FrameViewport viewport;
-    {
-      DART_PROFILE_SCOPED_N("GUI viewport camera");
-      const OrbitCameraControlOptions cameraControls
-          = appOptions.cameraControlsProvider
-                ? appOptions.cameraControlsProvider()
-                : OrbitCameraControlOptions{};
-      dart::gui::ViewportLayoutOptions viewportLayout
-          = appOptions.viewportLayoutProvider
-                ? appOptions.viewportLayoutProvider(cameraController.camera)
-                : dart::gui::ViewportLayoutOptions{};
-      if (!appOptions.viewportLayoutProvider) {
-        viewportLayout.panes[0].camera = cameraController.camera;
-        viewportLayout.panes[0].active = true;
+    std::optional<Renderable> selectionDebugOverlay;
+
+    SceneFrameUpdater sceneFrameUpdater(
+        window,
+        *engine,
+        *scene,
+        materials,
+        materialResources,
+        runOptions,
+        dartScene,
+        selectionController,
+        sceneState,
+        selectionDebugOverlay,
+        lifecycle,
+        simulationStepper,
+        lights,
+        orbitStartClock,
+        profile);
+
+    bool sceneFrameFailed = false;
+    bool cycleAdvance = false;
+    int framesThisScene = 0;
+
+    while (!lifecycle.exitRequested && !lifecycle.sceneSwitchRequested
+           && !cycleAdvance
+           && shouldContinueApplicationLoop(runOptions.headless, window)) {
+      DART_PROFILE_FRAME;
+      DART_PROFILE_SCOPED_N("GUI frame");
+      const auto frameStart = ProfileAccumulator::Clock::now();
+      auto phaseStart = ProfileAccumulator::Clock::now();
+      {
+        DART_PROFILE_SCOPED_N("GUI input");
+        pollApplicationInput(
+            window,
+            dartScene,
+            selectionController,
+            lifecycle,
+            cameraController,
+            homeCamera,
+            inputState,
+            showPerfHud);
       }
-      viewport = updateFrameViewport(
-          window,
-          renderContext.views,
-          renderContext.cameras,
-          cameraController,
-          selectionController,
-          imguiIo,
-          runOptions.width,
-          runOptions.height,
-          dartScene.world->getTimeStep(),
-          appOptions.showUi,
-          cameraControls,
-          viewportLayout);
-      renderContext.activeViewCount = viewport.paneCount;
-    }
-    profile.viewportCameraMs += elapsedMs(phaseStart);
+      profile.inputMs += elapsedMs(phaseStart);
 
-    const bool uiCapturesMouse
-        = isSceneMouseInputCapturedByUi(appOptions.showUi, imguiIo);
-    {
-      DART_PROFILE_SCOPED_N("GUI scene update");
-      sceneFrameUpdater.update(
-          viewport,
-          appOptions.showUi,
-          uiCapturesMouse,
-          orbitLight,
-          appOptions.orbitLightPeriodSeconds);
-    }
-
-    if (appOptions.showUi) {
-      DART_PROFILE_SCOPED_N("GUI ui update");
-      updateFrameUi(
-          window,
-          *engine,
-          *scene,
-          materials.debugColor,
-          imguiOverlay,
-          imguiIo,
-          viewport,
-          appOptions.scene,
-          dartScene,
-          cameraController,
-          selectionController,
-          orbitLight,
-          headlightsEnabled,
-          debugOverlays,
-          appOptions.panels,
-          lifecycle,
-          guiScale,
-          profile,
-          showPerfHud,
-          perfHud,
-          renderContext.backendName);
-    }
-    setSceneLightsEnabled(*engine, lights, headlightsEnabled);
-    for (std::size_t i = 0; i < renderContext.views.size(); ++i) {
-      if (renderContext.views[i] != nullptr) {
-        applyRenderSettings(*renderContext.views[i], dartScene.renderSettings);
+      guiScale = dart::gui::detail::makeGuiScaleState(
+          runOptions.guiScale, resolveWindowDpiScale(window));
+      if (!automaticWindowSizeResolved
+          || std::abs(guiScale.effectiveScale - automaticWindowEffectiveScale)
+                 > 1e-4) {
+        resizeAutomaticApplicationWindow(
+            window,
+            runOptions,
+            guiScale,
+            !appOptions.windowWidthExplicit,
+            !appOptions.windowHeightExplicit);
+        automaticWindowEffectiveScale = guiScale.effectiveScale;
+        automaticWindowSizeResolved = true;
       }
-    }
+      updateConfiguredImGuiOverlayScale(
+          *engine, imguiOverlay, static_cast<float>(guiScale.effectiveScale));
 
-    if (appOptions.preRender) {
-      appOptions.preRender();
-    }
-    FrameRenderResult frameRenderResult;
-    {
-      DART_PROFILE_SCOPED_N("GUI render frame");
-      frameRenderResult = renderApplicationFrame(
-          renderContext,
-          appOptions.showUi ? imguiOverlay.view : nullptr,
-          runOptions,
-          viewport.width,
-          viewport.height,
-          frameStart,
-          screenshotCapture,
-          lifecycle,
-          profile);
-    }
-    if (showPerfHud) {
-      const double gpuMs = latestGpuFrameMs(renderContext);
-      if (gpuMs > 0.0) {
-        profile.gpuFrameMs = gpuMs;
-        if (gpuMs > profile.maxGpuFrameMs) {
-          profile.maxGpuFrameMs = gpuMs;
+      phaseStart = ProfileAccumulator::Clock::now();
+      FrameViewport viewport;
+      {
+        DART_PROFILE_SCOPED_N("GUI viewport camera");
+        const dart::gui::OrbitCameraControlOptions cameraControls
+            = appOptions.cameraControlsProvider
+                  ? appOptions.cameraControlsProvider()
+                  : dart::gui::OrbitCameraControlOptions{};
+        dart::gui::ViewportLayoutOptions viewportLayout
+            = appOptions.viewportLayoutProvider
+                  ? appOptions.viewportLayoutProvider(cameraController.camera)
+                  : dart::gui::ViewportLayoutOptions{};
+        if (!appOptions.viewportLayoutProvider) {
+          viewportLayout.panes[0].camera = cameraController.camera;
+          viewportLayout.panes[0].active = true;
+        }
+        viewport = updateFrameViewport(
+            window,
+            renderContext.views,
+            renderContext.cameras,
+            cameraController,
+            selectionController,
+            imguiIo,
+            runOptions.width,
+            runOptions.height,
+            dartScene.world->getTimeStep(),
+            appOptions.showUi,
+            cameraControls,
+            viewportLayout);
+        renderContext.activeViewCount = viewport.paneCount;
+      }
+      profile.viewportCameraMs += elapsedMs(phaseStart);
+
+      const bool uiCapturesMouse
+          = isSceneMouseInputCapturedByUi(appOptions.showUi, imguiIo);
+      {
+        DART_PROFILE_SCOPED_N("GUI scene update");
+        sceneFrameUpdater.update(
+            viewport,
+            appOptions.showUi,
+            uiCapturesMouse,
+            orbitLight,
+            appOptions.orbitLightPeriodSeconds);
+      }
+
+      if (appOptions.showUi) {
+        DART_PROFILE_SCOPED_N("GUI ui update");
+        updateFrameUi(
+            window,
+            *engine,
+            *scene,
+            materials.debugColor,
+            imguiOverlay,
+            imguiIo,
+            viewport,
+            appOptions.scene,
+            dartScene,
+            cameraController,
+            selectionController,
+            orbitLight,
+            headlightsEnabled,
+            debugOverlays,
+            appOptions.panels,
+            lifecycle,
+            guiScale,
+            profile,
+            showPerfHud,
+            perfHud,
+            renderContext.backendName);
+      }
+      setSceneLightsEnabled(*engine, lights, headlightsEnabled);
+      for (std::size_t i = 0; i < renderContext.views.size(); ++i) {
+        if (renderContext.views[i] != nullptr) {
+          applyRenderSettings(
+              *renderContext.views[i], dartScene.renderSettings);
         }
       }
+
+      if (appOptions.preRender) {
+        appOptions.preRender();
+      }
+      FrameRenderResult frameRenderResult;
+      {
+        DART_PROFILE_SCOPED_N("GUI render frame");
+        frameRenderResult = renderApplicationFrame(
+            renderContext,
+            appOptions.showUi ? imguiOverlay.view : nullptr,
+            runOptions,
+            viewport.width,
+            viewport.height,
+            frameStart,
+            screenshotCapture,
+            lifecycle,
+            profile);
+      }
+      if (showPerfHud) {
+        const double gpuMs = latestGpuFrameMs(renderContext);
+        if (gpuMs > 0.0) {
+          profile.gpuFrameMs = gpuMs;
+          if (gpuMs > profile.maxGpuFrameMs) {
+            profile.maxGpuFrameMs = gpuMs;
+          }
+        }
+      }
+      if (!frameRenderResult.failed && appOptions.postRender) {
+        appOptions.postRender();
+      }
+      if (frameRenderResult.failed) {
+        sceneFrameFailed = true;
+        break;
+      }
+      if (frameRenderResult.continueLoop) {
+        continue;
+      }
+      if (frameRenderResult.stopLoop) {
+        break;
+      }
+      if (cycleScenes && ++framesThisScene >= kCycleFramesPerScene) {
+        cycleAdvance = true;
+      }
     }
-    if (!frameRenderResult.failed && appOptions.postRender) {
-      appOptions.postRender();
-    }
-    if (frameRenderResult.failed) {
+
+    finalContacts = dartScene.world->getLastCollisionResult().getNumContacts();
+    destroySceneRenderables(
+        *engine,
+        *scene,
+        sceneRenderables,
+        debugOverlays,
+        selectionDebugOverlay);
+
+    if (sceneFrameFailed) {
       frameCaptureSucceeded = false;
-      break;
-    }
-    if (frameRenderResult.continueLoop) {
-      continue;
-    }
-    if (frameRenderResult.stopLoop) {
-      break;
+      keepRunning = false;
+    } else if (demoCatalog != nullptr && lifecycle.sceneSwitchRequested) {
+      activeIndex
+          = demoSceneIndex(*demoCatalog, lifecycle.requestedScene, activeIndex);
+    } else if (demoCatalog != nullptr && cycleScenes && cycleAdvance) {
+      if (activeIndex + 1 < static_cast<int>(demoCatalog->size())) {
+        ++activeIndex;
+      } else {
+        keepRunning = false;
+      }
+    } else {
+      keepRunning = false;
     }
   }
 
@@ -496,25 +696,20 @@ int runGuiBackendApplicationImpl(
       lifecycle.screenshotRequested,
       profile);
   if (runOptions.maxFrames >= 0) {
-    std::cout << "Final contacts: "
-              << dartScene.world->getLastCollisionResult().getNumContacts()
-              << "\n";
+    std::cout << "Final contacts: " << finalContacts << "\n";
   }
   if (appOptions.profile) {
     printProfile(profile);
     DART_PROFILE_TEXT_DUMP();
   }
 
-  destroyApplicationResources(
+  destroyPersistentApplicationResources(
       renderContext,
       imguiOverlay,
       lights,
       indirectLight,
       skybox,
       colorGrading,
-      sceneRenderables,
-      debugOverlays,
-      selectionDebugOverlay,
       materialResources);
 
   return screenshotSucceeded && frameCaptureSucceeded ? 0 : 1;
@@ -576,6 +771,54 @@ int runApplication(
       applicationOptions);
 }
 
+int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
+{
+  if (scenes.empty()) {
+    std::cerr << "runDemos: no scenes registered\n";
+    return 1;
+  }
+
+  std::string initialId;
+  if (const char* env = std::getenv("DART_DEMOS_SCENE")) {
+    initialId = env;
+  }
+  bool cycleScenes = false;
+
+  std::vector<char*> filteredArguments;
+  filteredArguments.reserve(static_cast<std::size_t>(argc));
+  if (argc > 0) {
+    filteredArguments.push_back(argv[0]);
+  }
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg = argv[i] == nullptr ? "" : argv[i];
+    if (arg == "--cycle-scenes") {
+      cycleScenes = true;
+      continue;
+    }
+    if (arg == "--scene") {
+      if (i + 1 < argc && argv[i + 1] != nullptr) {
+        initialId = argv[i + 1];
+        ++i;
+      }
+      continue;
+    }
+    filteredArguments.push_back(argv[i]);
+  }
+
+  int index = 0;
+  if (!initialId.empty()) {
+    index = ::demoSceneIndex(scenes, initialId, 0);
+  }
+
+  return runGuiBackendApplicationImpl(
+      static_cast<int>(filteredArguments.size()),
+      filteredArguments.data(),
+      ApplicationOptions{},
+      &scenes,
+      index,
+      cycleScenes);
+}
+
 } // namespace dart::gui
 
 namespace dart::gui::detail {
@@ -590,7 +833,8 @@ int runGuiBackendApplication(
     char* argv[],
     const dart::gui::ApplicationOptions& applicationOptions)
 {
-  return runGuiBackendApplicationImpl(argc, argv, applicationOptions);
+  return runGuiBackendApplicationImpl(
+      argc, argv, applicationOptions, nullptr, 0, false);
 }
 
 } // namespace dart::gui::detail

@@ -165,6 +165,12 @@ void requestExit(ViewerLifecycleState& state)
   state.exitRequested = true;
 }
 
+void requestSceneSwitch(ViewerLifecycleState& state, std::string sceneId)
+{
+  state.requestedScene = std::move(sceneId);
+  state.sceneSwitchRequested = true;
+}
+
 bool shouldAdvanceSimulation(const ViewerLifecycleState& state)
 {
   return !state.paused || state.stepOnce;

@@ -667,11 +667,17 @@ py-ex = { cmd = [
   { arg = "example", default = "hello_world" },
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
-py-ex-hello-world = { depends-on = [
-  { task = "py-ex", args = [
-    "hello_world",
-  ] },
-] }
+# Run the consolidated Python demos app (headless scene-registry runner from
+# PLAN-103). Mirrors C++ `pixi run demos` and accepts the same CLI:
+#   pixi run py-demos -- --scene <id>
+#   pixi run py-demos -- --cycle-scenes --frames 4
+py-demos = { cmd = [
+  "python",
+  "-m",
+  "examples.demos",
+], depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
 py-ex-hello-world-gui = { depends-on = [
   { task = "py-ex", args = [
@@ -1078,6 +1084,17 @@ dartsim = { cmd = [
   "scripts/run_cpp_example.py",
   "dartsim",
 ], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
+
+# Launch the consolidated dart-demos GUI app (all GUI examples as runtime-
+# switchable scenes). Uses system ImGui like other GUI examples; pick a scene
+# with `pixi run demos -- --scene <id>`.
+demos = { cmd = [
+  "python",
+  "scripts/run_cpp_example.py",
+  "demos",
+], depends-on = [
+  "config",
+] }
 
 ex-atlas-puppet = { depends-on = [
   { task = "run-cpp-target", args = [

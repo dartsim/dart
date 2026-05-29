@@ -6,45 +6,13 @@ from pathlib import Path
 import pytest
 
 
+# Standalone filament-routed binaries that still resolve via EXAMPLE_SPECS.
+# Former scene-style examples now live as dart-demos scenes and are exercised
+# by ``test_normalize_target_redirects_demos_scenes`` instead.
 FILAMENT_ROUTED_EXAMPLES = {
     "dartsim": (),
-    "imgui": (),
-    "rigid_shapes": (),
     "hello_world": (),
-    "boxes": (),
-    "box_stacking": (),
-    "rigid_cubes": (),
-    "hardcoded_design": (),
-    "rigid_chain": (),
-    "rigid_loop": (),
-    "mixed_chain": (),
-    "coupler_constraint": (),
-    "add_delete_skels": (),
-    "vehicle": (),
-    "hybrid_dynamics": (),
-    "biped_stand": (),
-    "joint_constraints": (),
-    "free_joint_cases": (),
-    "human_joint_limits": (),
-    "lcp_physics": (),
-    "mimic_pendulums": (),
-    "atlas_puppet": (),
-    "hubo_puppet": (),
-    "atlas_simbicon": (),
-    "operational_space_control": (),
-    "wam_ikfast": (),
-    "fetch": (),
-    "tinkertoy": (),
-    "drag_and_drop": (),
-    "empty": (),
-    "simple_frames": (),
-    "soft_bodies": (),
-    "point_cloud": (),
-    "capsule_ground_contact": (),
-    "simulation_event_handler": (),
-    "polyhedron_visual": (),
-    "heightmap": (),
-    "g1_puppet": (),
+    "gui_scene_diagnostics": (),
 }
 
 
@@ -80,8 +48,20 @@ def test_normalize_target_rejects_backend_named_gui(run_cpp_example, target):
 
 
 def test_normalize_target_passthrough(run_cpp_example, capsys):
-    assert run_cpp_example._normalize_target("atlas_simbicon") == "atlas_simbicon"
+    assert run_cpp_example._normalize_target("hello_world") == "hello_world"
     assert capsys.readouterr().err == ""
+
+
+@pytest.mark.parametrize(
+    "target", ["atlas_simbicon", "collision_sandbox", "wam_ikfast", "g1_puppet"]
+)
+def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "dart-demos" in message
+    assert f"--scene {target}" in message
 
 
 def test_parse_args_requires_target(run_cpp_example, capsys):
@@ -115,16 +95,16 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
             (),
         ),
         (
-            "g1_puppet",
-            "g1_puppet",
-            "g1_puppet",
-            ("filament",),
+            "demos",
+            "dart-demos",
+            "dart-demos",
+            ("filament", "simulation-experimental"),
             (),
         ),
         (
-            "atlas_simbicon",
-            "atlas_simbicon",
-            "atlas_simbicon",
+            "hello_world",
+            "hello_world",
+            "hello_world",
             ("filament",),
             (),
         ),

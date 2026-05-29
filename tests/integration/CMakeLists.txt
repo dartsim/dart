@@ -519,17 +519,20 @@ if(TARGET dart-utils AND TARGET dart-io)
   )
   set_tests_properties(INTEGRATION_simulation_World PROPERTIES TIMEOUT 3600)
   target_link_libraries(INTEGRATION_simulation_World dart-io)
+  # Integration test owns its own copy of the SIMBICON controller under
+  # ./atlas_simbicon/. Tests must not link sources out of examples/ — keeps
+  # the example and test build graphs decoupled.
   target_include_directories(
     INTEGRATION_simulation_World
-    PRIVATE ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon
   )
   target_sources(
     INTEGRATION_simulation_World
     PRIVATE
-      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/controller.cpp
-      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/state.cpp
-      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/state_machine.cpp
-      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/terminal_condition.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/controller.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/state.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/state_machine.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/terminal_condition.cpp
   )
   if(DART_BUILD_COLLISION_REFERENCE_TESTS)
     target_compile_definitions(
