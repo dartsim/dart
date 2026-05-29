@@ -134,6 +134,13 @@ struct DeformableSolverStats
   // body hit the iteration cap or stalled. Feeds the paper's benchmark
   // statistics (Fig. 23 / Table 1).
   double finalGradientResidualNorm = 0.0;
+  // Converged-ness diagnostic: the largest last-accepted step infinity norm
+  // (per-node position change) across the step's deformable bodies. Unlike the
+  // gradient residual, this shrinks toward zero at equilibrium even for stiff
+  // barrier contacts (whose near-singular Hessian keeps the gradient norm
+  // large), so a small value here with a large finalGradientResidualNorm
+  // indicates a feasible settled configuration rather than a failed solve.
+  double finalStepInfinityNorm = 0.0;
   // Friction diagnostics at the converged iterate, summed over the step's
   // bodies and over both static-ground and self-contact friction. The
   // dissipation is the IPC Coulomb work mu * lambda * f1(y) * y (force times

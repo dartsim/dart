@@ -2470,6 +2470,93 @@ TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
 }
 
 //==============================================================================
+// The finalStepInfinityNorm diagnostic reports the last accepted per-node step,
+// a converged-ness measure that complements the gradient residual. For stiff
+// clamped-log barrier contact the barrier Hessian is near-singular, so the raw
+// gradient norm can stay large even at equilibrium; the step norm instead
+// shrinks toward zero as the solve settles. A grid pressed onto the ground
+// barrier accepts a measurable step while actively settling, then drives the
+// step norm down to a negligible value at the feasible equilibrium.
+TEST(DeformableBody, StiffGroundBarrierSettlesByStepNorm)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  constexpr std::size_t kColumns = 20;
+  constexpr std::size_t kRows = 16;
+  constexpr std::size_t kNodeCount = kColumns * kRows;
+  constexpr double spacing = 0.1;
+  constexpr double restZ = 0.01;
+  const auto index = [&](std::size_t c, std::size_t r) {
+    return r * kColumns + c;
+  };
+
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      options.positions.emplace_back(
+          static_cast<double>(c) * spacing,
+          static_cast<double>(r) * spacing,
+          restZ);
+    }
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      if (c + 1 < kColumns) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r), spacing});
+      }
+      if (r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c, r + 1), spacing});
+      }
+    }
+  }
+  options.edgeStiffness = 100.0;
+
+  auto body = world.addDeformableBody("stiff_grid", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+
+  // First step: the grid is actively settling against the stiff barrier, so it
+  // accepts a measurable Newton step.
+  world.step(executor, pipeline);
+  const double earlyStepInfinityNorm
+      = stage.getLastStats().finalStepInfinityNorm;
+
+  for (int step = 0; step < 7; ++step) {
+    world.step(executor, pipeline);
+  }
+
+  const auto& stats = stage.getLastStats();
+  // Feasible: no node penetrates the ground surface.
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    EXPECT_GE(body.getPosition(i).z(), -1e-3);
+  }
+  // The converged-ness diagnostic is measured (positive while settling) and
+  // shrinks toward zero as the configuration reaches equilibrium, even though
+  // the barrier Hessian is stiff. This is the honest convergence signal: the
+  // last accepted per-node step becomes negligible.
+  EXPECT_GT(earlyStepInfinityNorm, 0.0);
+  EXPECT_LT(stats.finalStepInfinityNorm, earlyStepInfinityNorm);
+  EXPECT_LT(stats.finalStepInfinityNorm, 1e-4);
+}
+
+//==============================================================================
 // Library-level reproduction of the experimental_deformable_gui "drape" demo:
 // a >256-node mat drapes over a raised box ground barrier (a finite-footprint
 // step in the support height field) onto the surrounding flat ground. The mat

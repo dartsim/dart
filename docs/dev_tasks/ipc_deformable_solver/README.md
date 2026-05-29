@@ -132,14 +132,31 @@
         (worst-case projected-Newton gradient norm at solve termination across
         the step's bodies), surfaced on the grid/drape benchmarks toward the
         paper's benchmark-statistics tables (Fig. 23 / Table 1).
-  - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
-        primitive into the solve via an optional executor + a GPU-vs-CPU perf
-        gate), matrix-free CG for very large meshes, adaptive barrier stiffness,
-        barrier forces for rigid/codimensional obstacles, and
-        complementarity/solver-stat diagnostics. Known approximation: the
-        contact active set is rebuilt once per outer iteration and held fixed
-        across the inner Newton/line-search step (standard IPC), rather than
-        re-queried within the line search.
+  - [x] Converged-ness step-norm diagnostic: the stage also reports
+        `finalStepInfinityNorm` (largest last accepted per-node step across the
+        step's bodies). It shrinks toward zero at a feasible equilibrium even
+        when the near-singular barrier Hessian keeps the gradient residual
+        large, so it is the honest convergence companion for stiff
+        barrier-dominated problems. Behavior-preserving (diagnostic only).
+  - [x] Live GPU PSD-backend injection: the projected-Newton assembly now packs
+        its per-element spring (6x6) and barrier (12x12) Hessian blocks into one
+        batch and projects them through a pluggable backend
+        (`compute::projectSymmetricBlocksToPsd`) before scattering. The default
+        CPU backend is bit-identical to the previous inline per-element
+        projection; the CUDA sidecar can install a GPU backend
+        (`installCudaDeformablePsdBackend`) that offloads large batches and
+        defers small batches / no-device to the CPU backend, so the offload
+        never changes results. `world_step_stage` stays GPU-free (the
+        no-GPU-runtime-dependency check passes); the GPU path is validated
+        against the CPU backend through the seam in the CUDA test suite.
+  - [ ] Remaining Phase 3 work: a resident GPU solve path (the current backend
+        round-trips host<->device per batch; persistent device buffers + a
+        formal GPU-vs-CPU perf gate are follow-ups), matrix-free CG for very
+        large meshes, adaptive barrier stiffness, barrier forces for
+        rigid/codimensional obstacles, and complementarity/solver-stat
+        diagnostics. Known approximation: the contact active set is rebuilt once
+        per outer iteration and held fixed across the inner Newton/line-search
+        step (standard IPC), rather than re-queried within the line search.
 - [~] Phase 4: lagged smoothed friction and friction diagnostics.
   - [x] Static-ground friction (first increment): lagged smoothed Coulomb
         friction (IPC f0/f1 mollifier, velocity threshold epsv) opposing each

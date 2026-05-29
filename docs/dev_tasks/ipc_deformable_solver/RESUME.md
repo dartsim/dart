@@ -142,8 +142,58 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-scene-loader-bindings` - stacked on
-`feature/ipc-deformable-bc-bindings` (#2756). FINAL Phase-8 increment: dartpy
+`feature/ipc-gpu-psd-backend-injection` - stacked on
+`feature/ipc-step-norm-diagnostic` (#2758). LIVE GPU PSD-BACKEND INJECTION
+(user chose "full live wiring now" via AskUserQuestion). New core seam (NO CUDA
+dep): `compute/deformable_psd_backend.{hpp,cpp}` -- `projectSymmetricBlocksToPsd`
+dispatches to an injectable backend (default `projectSymmetricBlocksToPsdCpu`,
+per-block Eigen self-adjoint eigensolve + clamp, BIT-IDENTICAL to the old inline
+projectSymmetricToPsd which I removed). world_step_stage assembly RESTRUCTURED:
+the spring (6x6) and barrier (12x12, PT+EE) Hessian blocks are now COLLECTED into
+a packed row-major buffer, batch-projected via the seam, then scattered (was
+inline per-block). CPU path bit-identical -> 66 deformable tests + full test-all
+6/6 (incl check-no-gpu-runtime-dependencies: core stays GPU-free). CUDA sidecar
+(deformable_psd_projection_cuda.{cuh,cpp}) adds installCudaDeformablePsdBackend()/
+restoreDefaultDeformablePsdBackend(): an adapter that offloads batches >=64 blocks
+to projectSymmetricBlocksToPsdCuda and defers smaller/no-device to CPU (so the
+offload never changes results). GPU validated on RTX 5000 via pixi -e cuda:
+test BackendInjectionRoutesThroughCoreSeam (install -> core seam -> GPU matches
+CPU <1e-9; restore -> CPU). 7/7 cuda tests pass. Stack 21-deep
+(#2738-#2746,#2748-#2759).
+GOTCHA: `pixi run -e cuda test-cuda`'s build step does NOT rebuild the deformable
+cuda TEST target (only the lib/sidecar + rigid bench), so it ran a STALE binary;
+had to `cmake --build build/cuda/cpp/Release --target test_deformable_psd_projection_cuda`
+explicitly. Eigen ternary/RowMajor: packed blocks via Eigen::Map<...,RowMajor>
+(symmetric so row/col-major identical).
+NEXT remaining Phase 3: resident GPU solve path (current backend round-trips
+host<->device per batch -> persistent device buffers + formal GPU-vs-CPU perf
+gate), matrix-free CG, adaptive barrier stiffness, rigid/codim barrier forces
+(DISTURBS #2732). Blocked: codim-obstacle friction, corpus port (assets).
+
+Prior #2758 = converged-ness step-norm diagnostic
+(DeformableSolverStats.finalStepInfinityNorm; diagnostic-only). Adds a CONVERGED-NESS
+step-norm diagnostic: DeformableSolverStats.finalStepInfinityNorm = largest last
+accepted per-node step (infinity norm) across the step's bodies, captured in the
+line-search accept block (max|candidate-next| over free nodes, before the swap),
+folded across bodies after the outer loop. BEHAVIOR-PRESERVING (diagnostic only;
+solve unchanged). KEY FINDING while investigating the #2745 barrier-stall: the
+320-node grid-on-ground UNIT scenario actually CONVERGES FULLY
+(finalGradientResidualNorm ~3e-13 after 5 steps) -- the ~868/~99 high-residual
+figures were BENCHMARK transients (bm_deformable_body), NOT this settled case.
+So this slice is honestly a DIAGNOSTIC (the right convergence companion for
+stiff barriers where the near-singular barrier Hessian inflates the gradient
+norm), NOT a stall fix -- I did not reproduce a genuine stall in a unit test.
+Regression StiffGroundBarrierSettlesByStepNorm (early step >0 while settling,
+shrinks <1e-4 < early at equilibrium). 66 deformable tests, test-all expected
+6/6. Stack 20-deep (#2738-#2746,#2748-#2758).
+NEXT: if pursuing real barrier-stall robustness, reproduce the high residual via
+the BENCHMARK scenarios first (bm_deformable_body grid/drape), then consider an
+IPC-standard Newton-decrement convergence criterion or CCD-filtered line search
+-- but those change trajectories/iteration counts (risk on the unreviewed stack).
+Other remaining: live GPU-backend injection, adaptive stiffness, rigid/codim
+barrier forces (disturbs #2732). Blocked: codim-obstacle friction, corpus port.
+
+Prior #2757 = scene loader + diagnostics bindings (FINAL Phase-8 increment): dartpy
 SCENE LOADER + DIAGNOSTICS. m.def free functions load_deformable_scene(world,
 scene_path, options) + collect_deformable_scene_diagnostics(world), and classes
 DeformableSceneLoadOptions (asset_root[path], body_name_prefix,
@@ -270,7 +320,8 @@ reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
 diagnostics) <- #2755 (deformable surface/tetra topology bindings) <- #2756
 (deformable DBC/NBC bindings) <- #2757 (deformable scene-loader + diagnostics
-bindings). (PR #2747 is another author's.)
+bindings) <- #2758 (converged-ness step-norm diagnostic) <- #2759 (live GPU
+PSD-backend injection). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 
