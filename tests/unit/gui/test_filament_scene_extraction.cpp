@@ -5231,6 +5231,34 @@ TEST(FilamentSceneExtraction, DartsimSceneFixtureModeSkipsEditorPanels)
   EXPECT_LT(fixtureModeReturn, panelRegistration);
 }
 
+TEST(FilamentSceneExtraction, DartsimDefaultsToEmptySceneUnlessDemoRequested)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  // A --demo flag opt-in guards the demo scene; default launch starts empty.
+  EXPECT_NE(
+      editorSource.find("std::string_view(argv[i]) == \"--demo\""),
+      std::string::npos);
+
+  const auto appConstruction
+      = editorSource.find("auto app = std::make_shared<EditorApp>();");
+  ASSERT_NE(appConstruction, std::string::npos);
+
+  const auto demoGuard
+      = editorSource.find("if (hasDemoOption(argc, argv))", appConstruction);
+  const auto demoSeeding = editorSource.find("seedDemoScene(*app);", demoGuard);
+  const auto emptyStart
+      = editorSource.find("startEmptyScene(*app);", demoGuard);
+  ASSERT_NE(demoGuard, std::string::npos);
+  ASSERT_NE(demoSeeding, std::string::npos);
+  ASSERT_NE(emptyStart, std::string::npos);
+
+  // Demo seeding is the guarded opt-in branch, not an unconditional call.
+  EXPECT_LT(appConstruction, demoGuard);
+  EXPECT_LT(demoGuard, demoSeeding);
+}
+
 TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
 {
   const auto editorSource

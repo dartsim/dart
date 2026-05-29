@@ -269,6 +269,7 @@ int runGuiBackendApplicationImpl(
           appOptions.scene,
           dartScene,
           validateFixtureRequirements,
+          applicationOptions.allowEmptyScene,
           std::cerr);
   if (!maybeInitialSceneState) {
     return 1;

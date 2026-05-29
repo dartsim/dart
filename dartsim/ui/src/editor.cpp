@@ -1359,6 +1359,13 @@ void seedDemoScene(EditorApp& app)
   app.engine.execute(commands::addLink(arm, base, JointKind::Revolute));
   app.engine.commands().clearHistory();
   app.engine.markProjectClean();
+  app.note("dartsim demo scene ready");
+}
+
+void startEmptyScene(EditorApp& app)
+{
+  app.engine.commands().clearHistory();
+  app.engine.markProjectClean();
   app.note("dartsim editor ready");
 }
 
@@ -1412,6 +1419,17 @@ bool hasSceneOption(int argc, char* argv[])
   return false;
 }
 
+bool hasDemoOption(int argc, char* argv[])
+{
+  for (int i = 1; i < argc; ++i) {
+    if (argv[i] != nullptr && std::string_view(argv[i]) == "--demo") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 } // namespace
 
 int runEditor(int argc, char* argv[])
@@ -1421,7 +1439,11 @@ int runEditor(int argc, char* argv[])
   }
 
   auto app = std::make_shared<EditorApp>();
-  seedDemoScene(*app);
+  if (hasDemoOption(argc, argv)) {
+    seedDemoScene(*app);
+  } else {
+    startEmptyScene(*app);
+  }
   app->engine.events().subscribe([watch = &app->watch](const Event& event) {
     handleWatchEvent(*watch, event);
   });
@@ -1433,6 +1455,9 @@ int runEditor(int argc, char* argv[])
   options.world = dart::simulation::World::create("dartsim_editor");
   options.simulateWorld = false;
   options.dockingEnabled = true;
+  // The editor opens an empty workspace by default (and via --demo seeds a
+  // sample scene); allow a scene with no renderables so startup does not abort.
+  options.allowEmptyScene = true;
   options.renderableProvider = [app]() {
     return toDescriptors(
         filteredViewportRenderItems(app->engine, app->viewportLayers));

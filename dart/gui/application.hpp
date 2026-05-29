@@ -200,6 +200,15 @@ struct ApplicationOptions
 
   RenderSettings renderSettings;
   std::string defaultScene;
+
+  /// Permit launching with a scene that has no visible renderables.
+  ///
+  /// Built-in scene fixtures must extract visible content, so the startup path
+  /// rejects an empty scene by default to catch broken fixtures. Applications
+  /// that legitimately open empty (e.g. the dartsim editor's empty workspace)
+  /// set this to skip that check; null debug overlays are then tolerated.
+  bool allowEmptyScene = false;
+
   std::vector<Panel> panels;
   std::vector<Gizmo> gizmos;
   std::function<std::vector<DebugLabelDescriptor>()> debugLabels;
