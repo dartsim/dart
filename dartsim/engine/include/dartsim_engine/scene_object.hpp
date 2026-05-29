@@ -64,6 +64,8 @@ enum class ObjectType
   Joint,
   FreeFrame,
   FixedFrame,
+  Sensor,
+  Collision,
 };
 
 /// Editor-side primitive shape used for rendering and picking.
@@ -93,6 +95,42 @@ enum class JointKind
   Ball,
   Planar,
   Free,
+};
+
+/// Editor-owned sensor descriptor.
+///
+/// These descriptors are authored and persisted by the editor while the
+/// experimental World grows public sensor concepts. They intentionally describe
+/// configuration only; they do not imply simulated sensor output yet.
+enum class SensorKind
+{
+  Camera,
+  Range,
+  Contact,
+};
+
+struct SensorDesc
+{
+  SensorKind kind = SensorKind::Camera;
+  double range = 10.0;
+  double fieldOfView = 60.0; ///< degrees
+  double updateRate = 30.0;  ///< Hz
+
+  bool operator==(const SensorDesc&) const = default;
+};
+
+/// Editor-owned collision geometry descriptor.
+///
+/// Collision descriptors are authored and persisted by the editor while the
+/// experimental World grows public collision-shape authoring. They describe
+/// intended contact material and geometry only; they do not alter runtime
+/// collision behavior yet.
+struct CollisionDesc
+{
+  double friction = 0.8;
+  double restitution = 0.0;
+
+  bool operator==(const CollisionDesc&) const = default;
 };
 
 /// Editor-side shape descriptor.
@@ -142,6 +180,12 @@ struct SceneObject
   // Rendering / picking (RigidBody and Link).
   ShapeDesc shape;
 
+  // Editor-owned sensor configuration (Sensor).
+  SensorDesc sensor;
+
+  // Editor-owned collision geometry metadata (Collision).
+  CollisionDesc collision;
+
   // MultiBody membership (Link, Joint).
   ObjectId multiBody = kNoObject;  ///< owning MultiBody object id
   ObjectId parentLink = kNoObject; ///< parent Link id (kNoObject = root link)
@@ -162,6 +206,7 @@ struct SceneObject
            && lhs.linearVelocity == rhs.linearVelocity
            && lhs.angularVelocity == rhs.angularVelocity && lhs.mass == rhs.mass
            && lhs.inertia == rhs.inertia && lhs.shape == rhs.shape
+           && lhs.sensor == rhs.sensor && lhs.collision == rhs.collision
            && lhs.multiBody == rhs.multiBody && lhs.parentLink == rhs.parentLink
            && lhs.jointType == rhs.jointType && lhs.jointAxis == rhs.jointAxis
            && lhs.jointPosition == rhs.jointPosition;

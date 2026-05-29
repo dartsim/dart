@@ -124,6 +124,24 @@ void SimulationController::reset()
   notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
 
+bool SimulationController::restart()
+{
+  if (!m_haveSnapshot) {
+    return false;
+  }
+
+  const Mode beforeMode = m_mode;
+  const bool beforeRunning = m_running;
+  m_objects.setModel(m_editSnapshot);
+  m_mode = Mode::Simulation;
+  m_accumulator = 0.0;
+  if (onRestarted) {
+    onRestarted();
+  }
+  notifyModeChangedIfNeeded(beforeMode, beforeRunning);
+  return true;
+}
+
 void SimulationController::clearForNewScene()
 {
   const Mode beforeMode = m_mode;
