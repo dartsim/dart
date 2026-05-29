@@ -94,10 +94,10 @@ matches the default solver. Remaining work, in order:
 4. Phase 9: the CUDA mass-spring kernel, the device-resident rollout
    (`vbdRolloutMassSpringCuda`, ~45x faster than single-threaded CPU at 16k
    verts), and the tetrahedral Neo-Hookean GPU kernel (`vbdStepTetMeshCuda`,
-   verified vs CPU) all land. Next: CUDA-graph capture, float/mixed precision, a
-   tetrahedral GPU benchmark, and the RTX-4090 same-GPU reproduction plan in the
-   dev-task README (build on a 4090, run paper scenes + Gaia, compare to
-   Table 1).
+   verified vs CPU, ~4.4x faster than CPU at ~2k verts) all land. Next:
+   CUDA-graph capture, a device-resident tet rollout, float/mixed precision, and
+   the RTX-4090 same-GPU reproduction plan in the dev-task README (build on a
+   4090, run paper scenes + Gaia, compare to Table 1).
 5. Phase 10: reproduce the paper scenes as DART examples/tests/benchmarks with
    profiling JSON and headless Filament visual evidence; the TinyVBD tilted
    strand (20 verts, stiffness 1e8, mass ratio 1:1000) is the first

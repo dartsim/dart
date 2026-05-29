@@ -159,8 +159,15 @@
         (`accumulateNeoHookeanTet`) and a tet-colored sweep kernel. A
         device-skipping test confirms the GPU tetrahedral solve matches the CPU
         `blockDescentTetMesh` to 1e-6 on a Kuhn-decomposed tet bar.
+  - [x] Tetrahedral GPU benchmark sub-slice: `bm_vbd_cuda` `BM_VbdCudaTetStep`
+        vs `BM_VbdCpuTetStep` on a Kuhn tet bar. Per-step (20 sweeps, with
+        per-step transfer): 132 verts CPU 2.6 ms / GPU 3.2 ms (GPU loses on tiny
+        meshes to transfer overhead); 516 verts 10.9 ms / 7.1 ms (~1.5x); 2052
+        verts 40.4 ms / 9.2 ms (~4.4x). The GPU tet solver wins and scales on
+        this GPU for the paper's domain; a device-resident tet rollout would
+        widen the margin further.
   - [ ] Remaining Phase 9 work: CUDA-graph capture of the per-color sweeps,
-        float/mixed precision, a tetrahedral-GPU rollout/benchmark, and
+        a device-resident tetrahedral rollout, float/mixed precision, and
         reproducing the paper's tetrahedral scenes on an RTX-4090 host (see the
         same-GPU reproduction plan below).
 - [ ] Phase 10: complete the upstream example/scene corpus as DART-native

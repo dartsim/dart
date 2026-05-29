@@ -902,8 +902,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     (`vbdStepTetMeshCuda`) with a device port of the analytic per-vertex
     force/Hessian and a tet-colored sweep. A device-skipping test confirms the
     GPU tetrahedral solve matches the CPU `blockDescentTetMesh` to 1e-6,
-    extending the GPU win to the paper's volumetric domain. CUDA-graph capture,
-    mixed precision, and a tetrahedral GPU benchmark remain future work.
+    extending the GPU win to the paper's volumetric domain. A tet GPU-vs-CPU
+    benchmark shows the GPU about 1.5x faster at ~500 vertices and 4.4x at ~2000
+    vertices, with the margin growing with mesh size. CUDA-graph capture, a
+    device-resident tet rollout, and mixed precision remain future work.
   - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
     20-vertex tilted strand with structural and skip springs, 100 iterations per
     step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step
