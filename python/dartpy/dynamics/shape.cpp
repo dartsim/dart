@@ -3,7 +3,14 @@
 #include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/capsule_shape.hpp"
+#include "dart/dynamics/cone_shape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
+#include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
+#include "dart/dynamics/plane_shape.hpp"
+#include "dart/dynamics/pyramid_shape.hpp"
 #include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
@@ -118,6 +125,185 @@ void defShape(nb::module_& m)
         fields.emplace_back("size", size_stream.str());
         return format_repr("BoxShape", fields);
       });
+
+  nb::class_<dart::dynamics::CapsuleShape, Shape>(m, "CapsuleShape")
+      .def(
+          nb::new_([](double radius, double height) {
+            return std::make_shared<dart::dynamics::CapsuleShape>(
+                radius, height);
+          }),
+          nb::arg("radius"),
+          nb::arg("height"))
+      .def("getRadius", &dart::dynamics::CapsuleShape::getRadius)
+      .def(
+          "setRadius",
+          &dart::dynamics::CapsuleShape::setRadius,
+          nb::arg("radius"))
+      .def("getHeight", &dart::dynamics::CapsuleShape::getHeight)
+      .def(
+          "setHeight",
+          &dart::dynamics::CapsuleShape::setHeight,
+          nb::arg("height"))
+      .def(
+          "computeInertia",
+          [](const dart::dynamics::CapsuleShape& self, double mass) {
+            return self.computeInertia(mass);
+          },
+          nb::arg("mass"));
+
+  nb::class_<dart::dynamics::CylinderShape, Shape>(m, "CylinderShape")
+      .def(
+          nb::new_([](double radius, double height) {
+            return std::make_shared<dart::dynamics::CylinderShape>(
+                radius, height);
+          }),
+          nb::arg("radius"),
+          nb::arg("height"))
+      .def("getRadius", &dart::dynamics::CylinderShape::getRadius)
+      .def(
+          "setRadius",
+          &dart::dynamics::CylinderShape::setRadius,
+          nb::arg("radius"))
+      .def("getHeight", &dart::dynamics::CylinderShape::getHeight)
+      .def(
+          "setHeight",
+          &dart::dynamics::CylinderShape::setHeight,
+          nb::arg("height"))
+      .def(
+          "computeInertia",
+          [](const dart::dynamics::CylinderShape& self, double mass) {
+            return self.computeInertia(mass);
+          },
+          nb::arg("mass"));
+
+  nb::class_<dart::dynamics::EllipsoidShape, Shape>(m, "EllipsoidShape")
+      .def(
+          nb::new_([](const Eigen::Vector3d& diameters) {
+            return std::make_shared<dart::dynamics::EllipsoidShape>(diameters);
+          }),
+          nb::arg("diameters"))
+      .def(
+          "getDiameters",
+          [](const dart::dynamics::EllipsoidShape& self) {
+            return self.getDiameters();
+          })
+      .def(
+          "setDiameters",
+          &dart::dynamics::EllipsoidShape::setDiameters,
+          nb::arg("diameters"))
+      .def(
+          "computeInertia",
+          [](const dart::dynamics::EllipsoidShape& self, double mass) {
+            return self.computeInertia(mass);
+          },
+          nb::arg("mass"));
+
+  nb::class_<dart::dynamics::ConeShape, Shape>(m, "ConeShape")
+      .def(
+          nb::new_([](double radius, double height) {
+            return std::make_shared<dart::dynamics::ConeShape>(radius, height);
+          }),
+          nb::arg("radius"),
+          nb::arg("height"))
+      .def("getRadius", &dart::dynamics::ConeShape::getRadius)
+      .def(
+          "setRadius",
+          &dart::dynamics::ConeShape::setRadius,
+          nb::arg("radius"))
+      .def("getHeight", &dart::dynamics::ConeShape::getHeight)
+      .def(
+          "setHeight",
+          &dart::dynamics::ConeShape::setHeight,
+          nb::arg("height"))
+      .def(
+          "computeInertia",
+          [](const dart::dynamics::ConeShape& self, double mass) {
+            return self.computeInertia(mass);
+          },
+          nb::arg("mass"));
+
+  nb::class_<dart::dynamics::PyramidShape, Shape>(m, "PyramidShape")
+      .def(
+          nb::new_([](double base_width, double base_depth, double height) {
+            return std::make_shared<dart::dynamics::PyramidShape>(
+                base_width, base_depth, height);
+          }),
+          nb::arg("base_width"),
+          nb::arg("base_depth"),
+          nb::arg("height"))
+      .def("getBaseWidth", &dart::dynamics::PyramidShape::getBaseWidth)
+      .def(
+          "setBaseWidth",
+          &dart::dynamics::PyramidShape::setBaseWidth,
+          nb::arg("width"))
+      .def("getBaseDepth", &dart::dynamics::PyramidShape::getBaseDepth)
+      .def(
+          "setBaseDepth",
+          &dart::dynamics::PyramidShape::setBaseDepth,
+          nb::arg("depth"))
+      .def("getHeight", &dart::dynamics::PyramidShape::getHeight)
+      .def(
+          "setHeight",
+          &dart::dynamics::PyramidShape::setHeight,
+          nb::arg("height"))
+      .def(
+          "computeInertia",
+          [](const dart::dynamics::PyramidShape& self, double mass) {
+            return self.computeInertia(mass);
+          },
+          nb::arg("mass"));
+
+  nb::class_<dart::dynamics::PlaneShape, Shape>(m, "PlaneShape")
+      .def(
+          nb::new_([](const Eigen::Vector3d& normal, double offset) {
+            return std::make_shared<dart::dynamics::PlaneShape>(normal, offset);
+          }),
+          nb::arg("normal"),
+          nb::arg("offset"))
+      .def(
+          "setNormal",
+          &dart::dynamics::PlaneShape::setNormal,
+          nb::arg("normal"))
+      .def(
+          "getNormal",
+          [](const dart::dynamics::PlaneShape& self) -> Eigen::Vector3d {
+            return self.getNormal();
+          })
+      .def(
+          "setOffset",
+          &dart::dynamics::PlaneShape::setOffset,
+          nb::arg("offset"))
+      .def("getOffset", &dart::dynamics::PlaneShape::getOffset);
+
+  nb::class_<dart::dynamics::LineSegmentShape, Shape>(m, "LineSegmentShape")
+      .def(
+          nb::new_([](float thickness) {
+            return std::make_shared<dart::dynamics::LineSegmentShape>(thickness);
+          }),
+          nb::arg("thickness") = 1.0f)
+      .def(
+          "addVertex",
+          [](dart::dynamics::LineSegmentShape& self, const Eigen::Vector3d& v) {
+            return self.addVertex(v);
+          },
+          nb::arg("vertex"))
+      .def(
+          "addConnection",
+          &dart::dynamics::LineSegmentShape::addConnection,
+          nb::arg("a"),
+          nb::arg("b"))
+      .def(
+          "setVertex",
+          &dart::dynamics::LineSegmentShape::setVertex,
+          nb::arg("index"),
+          nb::arg("vertex"))
+      .def(
+          "getThickness",
+          &dart::dynamics::LineSegmentShape::getThickness)
+      .def(
+          "setThickness",
+          &dart::dynamics::LineSegmentShape::setThickness,
+          nb::arg("thickness"));
 
   nb::class_<dart::dynamics::MeshShape, Shape>(m, "MeshShape")
       .def(

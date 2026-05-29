@@ -3,11 +3,11 @@
 ## Last Session Summary
 
 PLAN-103 Phases 1–4 are landed on branch `demos-app`; Phase 5 is the explicit
-"not now" retire-later checklist. The Python `dart-demos` app exists with 11
-scenes (including 5 minimal-viable modern scenarios), a cross-language golden
-parity smoke runs in both languages against a shared fixture, and a notebook
-gallery seed lives in `python/tutorials/`. C++ `dart-demos` (PLAN-102) remains
-frozen-but-present.
+"not now" retire-later checklist. The Python `dart-demos` app now hosts 29
+scenes (vs. 38 in C++ — 76% coverage) including modern scenarios and Tier
+A/B C++ ports; a cross-language golden parity smoke runs in both languages
+against shared fixtures (3 scenes wired); and a notebook gallery seed lives
+in `python/tutorials/`. C++ `dart-demos` (PLAN-102) remains frozen-but-present.
 
 ## Current Branch
 
@@ -25,9 +25,23 @@ frozen-but-present.
 
 Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
 
-1. **Grow Python breadth toward C++ coverage.** Add Python scene modules for
-   the categories the 11-scene Python runner currently lacks; targets are
-   listed in PLAN-103's "Resolved Decisions" section.
+1. **Grow Python breadth toward C++ coverage.** The Python runner now hosts
+   29 of the 38 C++ scenes (added: `empty`, `shapes`, `simple_frames`,
+   `polyhedron_visual`, `rigid_cubes`, `add_delete_skels`,
+   `capsule_ground_contact`, `box_stacking`, `rigid_loop`, `mixed_chain`,
+   `soft_bodies`, `mimic_pendulums`, `coupler_constraint`, `hardcoded_design`,
+   `free_joint_cases`, `rigid_shapes`). To unlock those ports we added
+   `CapsuleShape`/`CylinderShape`/`EllipsoidShape`/`ConeShape`/`PyramidShape`/
+   `LineSegmentShape`/`PlaneShape` bindings under
+   `python/dartpy/dynamics/shape.cpp` and `Skeleton::{getVelocities,
+   setVelocities,getForces}` under `python/dartpy/dynamics/skeleton.cpp`. The 9
+   remaining C++ scenes are blocked or interactive-only:
+   `drag_and_drop`, `imgui`, `tinkertoy`, `simulation_event_handler` need
+   GUI-only callbacks; `heightmap` / `point_cloud` need
+   `HeightmapShape`/`PointCloudShape` bindings; `atlas_puppet`, `hubo_puppet`,
+   `fetch`, `g1_puppet`, `vehicle`, `human_joint_limits`, `hybrid_dynamics`,
+   `joint_constraints`, `biped_stand`, `experimental_deformable` need full
+   IK/controller subsystems (or other heavyweight bindings).
 2. **Extend the golden set.** `boxes` and `rigid_chain` are now wired. The C++
    `rigid_chain` scene replaced `dart::math::Random::uniform` with a
    deterministic damped-sine initial pose so cross-language state matches; the
