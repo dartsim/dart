@@ -898,6 +898,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     settled 512-node grid (~21.7 ms to ~11.6 ms). Adds symbolic/numeric
     factorization counters and a regression asserting a steady step performs
     zero new symbolic analyses.
+  - Added an experimental IPC solver convergence diagnostic: the deformable
+    stage now reports `finalGradientResidualNorm`, the largest projected-Newton
+    gradient norm at solve termination across the step's bodies (near the
+    gradient tolerance means converged; a large value flags an iteration-cap or
+    stall), surfaced on the grid/drape stage benchmarks toward the paper's
+    benchmark-statistics tables (Fig. 23 / Table 1).
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

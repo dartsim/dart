@@ -128,6 +128,10 @@
         factorization repeats. Behavior-preserving (structural mismatch
         re-analyzes); ~halves the per-step solve on a settled 512-node grid
         (~21.7->~11.6 ms). Symbolic/numeric counters + reuse regression.
+  - [x] Convergence diagnostic: the stage reports `finalGradientResidualNorm`
+        (worst-case projected-Newton gradient norm at solve termination across
+        the step's bodies), surfaced on the grid/drape benchmarks toward the
+        paper's benchmark-statistics tables (Fig. 23 / Table 1).
   - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
         primitive into the solve via an optional executor + a GPU-vs-CPU perf
         gate), matrix-free CG for very large meshes, adaptive barrier stiffness,

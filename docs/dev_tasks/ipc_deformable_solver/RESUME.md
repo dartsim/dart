@@ -142,22 +142,18 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-sparse-newton-symbolic-reuse` - stacked on
-`feature/ipc-gpu-psd-projection` (#2743). Optimizes the sparse projected-Newton
-solve to reuse its fill-reducing symbolic factorization
-(`SimplicialLDLT::analyzePattern`) across iterations and steps whenever the
-Hessian sparsity pattern is unchanged (cached column/row index arrays compared
-in `computeProjectedNewtonDirection`, persistent solver in the per-body
-`DeformableContactSolverScratch`). Behavior-preserving (structural mismatch or
-failed factorization re-analyzes); ~halves the per-step solve on a settled
-512-node grid (~21.7 -> ~11.6 ms). Symbolic/numeric factorization counters +
-`SparseProjectedNewtonReusesSymbolicFactorization` regression (a steady step
-does zero new symbolic analyses).
+`feature/ipc-solver-convergence-diagnostic` - stacked on
+`feature/ipc-sparse-newton-symbolic-reuse` (#2744). Adds a convergence
+diagnostic: the stage reports `finalGradientResidualNorm` (worst-case
+projected-Newton gradient norm at solve termination across the step's bodies),
+surfaced on the grid/drape benchmarks toward the paper's benchmark-statistics
+tables (Fig. 23 / Table 1). Additive; existing tests unchanged.
 
 Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
 until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 (self-contact barrier) <- #2740 (projected Newton, dense LDLT) <- #2741 (sparse
-Cholesky solve) <- #2742 (drape demo) <- #2743 (GPU PSD primitive).
+Cholesky solve) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744
+(symbolic-factorization reuse).
 
 ## Immediate Next Step
 
