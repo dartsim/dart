@@ -533,8 +533,7 @@ std::vector<Eigen::MatrixXd> bodyJacobians(const VarTree& tree)
     if (link.dof > 0) {
       jacobian[i].middleCols(
           static_cast<Eigen::Index>(link.dofOffset),
-          static_cast<Eigen::Index>(link.dof))
-          = link.subspace;
+          static_cast<Eigen::Index>(link.dof)) = link.subspace;
     }
   }
   return jacobian;

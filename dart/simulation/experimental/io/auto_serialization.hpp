@@ -215,16 +215,14 @@ void autoSerialize(
       writePOD(out, field.x());
       writePOD(out, field.y());
       writePOD(out, field.z());
-    } else if constexpr (std::same_as<
-                             FieldType,
-                             std::vector<Eigen::Isometry3d>>) {
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {
       writePOD(out, field.size());
       for (const auto& transform : field) {
         writeIsometry3d(out, transform);
       }
-    } else if constexpr (std::same_as<
-                             FieldType,
-                             std::vector<Eigen::Matrix<double, 6, 1>>>) {
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Matrix<double, 6, 1>>>) {
       writePOD(out, field.size());
       for (const auto& vector6 : field) {
         for (int i = 0; i < 6; ++i) {
@@ -279,18 +277,16 @@ void autoDeserialize(std::istream& in, T& component)
           }
         }
       }
-    } else if constexpr (std::same_as<
-                             FieldType,
-                             std::vector<Eigen::Isometry3d>>) {
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {
       std::size_t count = 0;
       readPOD(in, count);
       field.resize(count);
       for (auto& transform : field) {
         readIsometry3d(in, transform);
       }
-    } else if constexpr (std::same_as<
-                             FieldType,
-                             std::vector<Eigen::Matrix<double, 6, 1>>>) {
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Matrix<double, 6, 1>>>) {
       std::size_t count = 0;
       readPOD(in, count);
       field.resize(count);
