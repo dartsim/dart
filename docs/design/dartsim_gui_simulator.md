@@ -33,10 +33,9 @@ sketch below in two ways worth recording:
   submitted as `DockSpaceOverViewport` with a pass-through central node so the
   3D scene shows through). All docking code is guarded by `IMGUI_HAS_DOCK`, so
   it is a no-op with non-docking ImGui builds. Because the docking API ships
-  only on ImGui's docking branch, launching the editor (`pixi run dartsim`, or
-  `pixi run ex dartsim` without `--scene`) forces `DART_USE_SYSTEM_IMGUI=OFF` to
-  fetch `v1.92.8-docking`; the library build, `--scene` fixtures, and GUI smoke
-  tests keep using system ImGui. Because the GUI build links a single ImGui, the
+  only on ImGui's docking branch, launching the editor (`pixi run dartsim`)
+  forces `DART_USE_SYSTEM_IMGUI=OFF` to fetch `v1.92.8-docking`; the library
+  build, `--scene` fixtures, and GUI smoke tests keep using system ImGui. Because the GUI build links a single ImGui, the
   shared build directory flips between system and docking ImGui as different
   targets are built — the editor launchers reconfigure to docking on demand, and
   the backend-neutral `dart::gui::isDockingAvailable()` lets the editor log

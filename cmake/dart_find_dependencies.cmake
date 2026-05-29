@@ -34,13 +34,20 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
     find_package(Tracy CONFIG REQUIRED)
   else()
     include(FetchContent)
-    FetchContent_Declare(tracy
+    FetchContent_Declare(
+      tracy
       GIT_REPOSITORY https://github.com/wolfpld/tracy.git
       GIT_TAG v0.13.1
       GIT_SHALLOW TRUE
       GIT_PROGRESS TRUE
     )
-    set(TRACY_STATIC ON CACHE BOOL "Build fetched Tracy client as a static library" FORCE)
+    set(
+      TRACY_STATIC
+      ON
+      CACHE BOOL
+      "Build fetched Tracy client as a static library"
+      FORCE
+    )
     FetchContent_MakeAvailable(tracy)
     set_target_properties(TracyClient PROPERTIES POSITION_INDEPENDENT_CODE ON)
     if(MSVC)
@@ -94,16 +101,24 @@ if(_dart_build_collision_references AND NOT DART_USE_SYSTEM_ODE)
   # with CMake 4.0+. Temporarily set CMAKE_POLICY_VERSION_MINIMUM for ODE only.
   set(_dart_old_policy_min "${CMAKE_POLICY_VERSION_MINIMUM}")
   set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
-  FetchContent_Declare(ode
+  FetchContent_Declare(
+    ode
     URL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz
-    URL_HASH SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
+    URL_HASH
+      SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
     EXCLUDE_FROM_ALL
     SYSTEM
   )
   FetchContent_MakeAvailable(ode)
   # Restore CMAKE_POLICY_VERSION_MINIMUM
   if(_dart_old_policy_min)
-    set(CMAKE_POLICY_VERSION_MINIMUM "${_dart_old_policy_min}" CACHE STRING "" FORCE)
+    set(
+      CMAKE_POLICY_VERSION_MINIMUM
+      "${_dart_old_policy_min}"
+      CACHE STRING
+      ""
+      FORCE
+    )
   else()
     unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
   endif()
@@ -118,7 +133,13 @@ if(_dart_build_collision_references AND NOT DART_USE_SYSTEM_ODE)
   endif()
   set(ODE_FOUND TRUE CACHE BOOL "ODE found via FetchContent" FORCE)
   set(ODE_LIBRARIES ODE::ODE CACHE STRING "ODE libraries" FORCE)
-  set(ODE_INCLUDE_DIRS "${ode_SOURCE_DIR}/include;${ode_BINARY_DIR}/include" CACHE STRING "ODE include dirs" FORCE)
+  set(
+    ODE_INCLUDE_DIRS
+    "${ode_SOURCE_DIR}/include;${ode_BINARY_DIR}/include"
+    CACHE STRING
+    "ODE include dirs"
+    FORCE
+  )
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
@@ -180,31 +201,65 @@ if(_dart_build_collision_references AND NOT DART_USE_SYSTEM_BULLET)
   set(BUILD_PYBULLET_NUMPY OFF CACHE BOOL "" FORCE)
   set(INSTALL_LIBS ON CACHE BOOL "" FORCE)
   set(INSTALL_EXTRA_LIBS ON CACHE BOOL "" FORCE)
-  FetchContent_Declare(bullet
+  FetchContent_Declare(
+    bullet
     URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz
-    URL_HASH SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
+    URL_HASH
+      SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
   )
   FetchContent_MakeAvailable(bullet)
-  set(DART_BULLET_SOURCE_DIR "${bullet_SOURCE_DIR}" CACHE INTERNAL "Bullet source dir.")
-  set(DART_BULLET_BINARY_DIR "${bullet_BINARY_DIR}" CACHE INTERNAL "Bullet binary dir.")
+  set(
+    DART_BULLET_SOURCE_DIR
+    "${bullet_SOURCE_DIR}"
+    CACHE INTERNAL
+    "Bullet source dir."
+  )
+  set(
+    DART_BULLET_BINARY_DIR
+    "${bullet_BINARY_DIR}"
+    CACHE INTERNAL
+    "Bullet binary dir."
+  )
 
   # Wire fetched Bullet into find_package flow by setting Bullet_FOUND and
   # BULLET_* variables so dart_find_package(Bullet) succeeds.
   set(Bullet_FOUND TRUE CACHE BOOL "Bullet found via FetchContent" FORCE)
   set(BULLET_FOUND TRUE CACHE BOOL "Bullet found via FetchContent" FORCE)
-  set(BULLET_INCLUDE_DIRS "${bullet_SOURCE_DIR}/src" CACHE STRING "Bullet include dirs" FORCE)
-  set(BULLET_INCLUDE_DIR "${bullet_SOURCE_DIR}/src" CACHE STRING "Bullet include dir" FORCE)
+  set(
+    BULLET_INCLUDE_DIRS
+    "${bullet_SOURCE_DIR}/src"
+    CACHE STRING
+    "Bullet include dirs"
+    FORCE
+  )
+  set(
+    BULLET_INCLUDE_DIR
+    "${bullet_SOURCE_DIR}/src"
+    CACHE STRING
+    "Bullet include dir"
+    FORCE
+  )
   # Bullet builds BulletCollision, BulletDynamics, BulletSoftBody, LinearMath targets
-  set(BULLET_LIBRARIES
+  set(
+    BULLET_LIBRARIES
     BulletCollision
     BulletDynamics
     BulletSoftBody
     LinearMath
-    CACHE STRING "Bullet libraries" FORCE)
+    CACHE STRING
+    "Bullet libraries"
+    FORCE
+  )
   # Pre-set BT_USE_DOUBLE_PRECISION since we built Bullet with USE_DOUBLE_PRECISION=ON.
   # This avoids the check_cxx_source_compiles probe in dart/collision/bullet which
   # would fail at configure time because the Bullet targets aren't built yet.
-  set(BT_USE_DOUBLE_PRECISION TRUE CACHE BOOL "Bullet double precision (FetchContent)" FORCE)
+  set(
+    BT_USE_DOUBLE_PRECISION
+    TRUE
+    CACHE BOOL
+    "Bullet double precision (FetchContent)"
+    FORCE
+  )
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
@@ -313,11 +368,12 @@ if(DART_BUILD_GUI)
     FetchContent_Declare(
       imgui
       GIT_REPOSITORY https://github.com/ocornut/imgui.git
-      GIT_TAG        ${IMGUI_TARGET_VERSION}
-      GIT_SHALLOW    TRUE
-      SOURCE_DIR     "${CMAKE_BINARY_DIR}/_deps/imgui-src"
-      PATCH_COMMAND  ${CMAKE_COMMAND}
-        -DIMGUI_SOURCE_DIR=${CMAKE_BINARY_DIR}/_deps/imgui-src
+      GIT_TAG ${IMGUI_TARGET_VERSION}
+      GIT_SHALLOW TRUE
+      SOURCE_DIR
+      "${CMAKE_BINARY_DIR}/_deps/imgui-src"
+      PATCH_COMMAND
+        ${CMAKE_COMMAND} -DIMGUI_SOURCE_DIR=${CMAKE_BINARY_DIR}/_deps/imgui-src
         -P ${CMAKE_CURRENT_LIST_DIR}/patches/imgui_null_font_guard.cmake
     )
 
@@ -329,14 +385,16 @@ if(DART_BUILD_GUI)
 
     # Define the imgui source files
     # Core imgui files
-    set(IMGUI_CORE_SOURCES
+    set(
+      IMGUI_CORE_SOURCES
       ${imgui_SOURCE_DIR}/imgui.cpp
       ${imgui_SOURCE_DIR}/imgui_draw.cpp
       ${imgui_SOURCE_DIR}/imgui_tables.cpp
       ${imgui_SOURCE_DIR}/imgui_widgets.cpp
     )
 
-    set(IMGUI_CORE_HEADERS
+    set(
+      IMGUI_CORE_HEADERS
       ${imgui_SOURCE_DIR}/imgui.h
       ${imgui_SOURCE_DIR}/imgui_internal.h
       ${imgui_SOURCE_DIR}/imconfig.h
@@ -369,10 +427,9 @@ if(DART_BUILD_GUI)
     # Configure include directories
     # Build tree: use fetched source directory
     # Install tree: use standard include paths (like system-installed imgui)
-    target_include_directories(${imgui_library_name}
-      PUBLIC
-        $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
+    target_include_directories(
+      ${imgui_library_name}
+      PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}> $<INSTALL_INTERFACE:include>
     )
 
     # Compiler options - suppress warnings for third-party code
@@ -382,12 +439,18 @@ if(DART_BUILD_GUI)
 
     # Set position independent code for linking into shared libraries (e.g., Python extensions)
     # This is the modern way to add -fPIC
-    set_target_properties(${imgui_library_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(
+      ${imgui_library_name}
+      PROPERTIES POSITION_INDEPENDENT_CODE ON
+    )
 
     # Ensure MSVC generates an import library when building shared libs.
     # Without exports, linkers can fail to find dart-imgui-lib.lib (LNK1181).
     if(MSVC AND BUILD_SHARED_LIBS)
-      set_target_properties(${imgui_library_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+      set_target_properties(
+        ${imgui_library_name}
+        PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON
+      )
     endif()
 
     # Note: IMGUI_DISABLE_OBSOLETE_FUNCTIONS is intentionally NOT defined here.
@@ -406,16 +469,16 @@ if(DART_BUILD_GUI)
 
     # Install fetched ImGui headers to standard system-like paths
     # This allows downstream projects to use standard includes like <imgui.h>
-    install(
-      FILES ${IMGUI_CORE_HEADERS}
-      DESTINATION include
-      COMPONENT headers
-    )
+    install(FILES ${IMGUI_CORE_HEADERS} DESTINATION include COMPONENT headers)
 
     message(STATUS "ImGui ${IMGUI_TARGET_VERSION} fetched successfully")
 
     # Add install-time warning about installing fetched ImGui
-    install(CODE "message(WARNING \"Installing fetched ImGui headers to \${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")" COMPONENT headers)
+    install(
+      CODE
+        "message(WARNING \"Installing fetched ImGui headers to \${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")"
+      COMPONENT headers
+    )
   endif()
 endif()
 
@@ -439,25 +502,40 @@ if(DART_BUILD_GUI)
     unset(_dart_filament_find_quietly_saved)
     unset(_dart_filament_find_quietly_was_defined)
   elseif(NOT DART_FETCH_FILAMENT)
-    message(FATAL_ERROR "DART_BUILD_GUI=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set.")
+    message(
+      FATAL_ERROR
+      "DART_BUILD_GUI=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set."
+    )
   endif()
 
   if(NOT Filament_FOUND AND DART_FETCH_FILAMENT)
-    message(STATUS "Filament was not found in system paths; fetching Filament ${DART_FILAMENT_VERSION}")
+    message(
+      STATUS
+      "Filament was not found in system paths; fetching Filament ${DART_FILAMENT_VERSION}"
+    )
     if(NOT DART_FILAMENT_VERSION STREQUAL "1.71.3")
-      message(FATAL_ERROR "DART_FETCH_FILAMENT has a pinned hash only for DART_FILAMENT_VERSION=1.71.3. Update the URL hash before changing the version.")
+      message(
+        FATAL_ERROR
+        "DART_FETCH_FILAMENT has a pinned hash only for DART_FILAMENT_VERSION=1.71.3. Update the URL hash before changing the version."
+      )
     endif()
 
     set(_dart_filament_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
       set(_dart_filament_target_arch "")
-      foreach(_dart_filament_arch_candidate IN ITEMS
+      foreach(
+        _dart_filament_arch_candidate
+        IN
+        ITEMS
           CMAKE_CXX_COMPILER_ARCHITECTURE_ID
           CMAKE_GENERATOR_PLATFORM
-          CMAKE_VS_PLATFORM_NAME)
-        if(NOT _dart_filament_target_arch
-            AND DEFINED ${_dart_filament_arch_candidate}
-            AND NOT "${${_dart_filament_arch_candidate}}" STREQUAL "")
+          CMAKE_VS_PLATFORM_NAME
+      )
+        if(
+          NOT _dart_filament_target_arch
+          AND DEFINED ${_dart_filament_arch_candidate}
+          AND NOT "${${_dart_filament_arch_candidate}}" STREQUAL ""
+        )
           set(_dart_filament_target_arch "${${_dart_filament_arch_candidate}}")
         endif()
       endforeach()
@@ -466,34 +544,64 @@ if(DART_BUILD_GUI)
         set(_dart_filament_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
       endif()
     endif()
-    string(TOLOWER "${_dart_filament_target_arch}" _dart_filament_target_arch_lower)
+    string(
+      TOLOWER "${_dart_filament_target_arch}"
+      _dart_filament_target_arch_lower
+    )
 
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+    if(
+      CMAKE_SYSTEM_NAME STREQUAL "Linux"
+      AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$"
+    )
       set(_dart_filament_archive_platform "linux")
-      set(_dart_filament_archive_hash "d41963799c156e2eceff6c8f89d76ce26c3213972f63aa90add5e446a712e12e")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+      set(
+        _dart_filament_archive_hash
+        "d41963799c156e2eceff6c8f89d76ce26c3213972f63aa90add5e446a712e12e"
+      )
+    elseif(
+      CMAKE_SYSTEM_NAME STREQUAL "Linux"
+      AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$"
+    )
       set(_dart_filament_archive_platform "arm-linux")
-      set(_dart_filament_archive_hash "048b5bffffcafcec7fcfa718fe65ef512514c65c00ed954e7bf340e003c146c2")
+      set(
+        _dart_filament_archive_hash
+        "048b5bffffcafcec7fcfa718fe65ef512514c65c00ed954e7bf340e003c146c2"
+      )
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
       set(_dart_filament_archive_platform "mac")
-      set(_dart_filament_archive_hash "d8f253e262d731fb60f8be7d5ae6af76651bdc597d564171790bc78ac3696e04")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows"
-        AND _dart_filament_target_arch_lower MATCHES "^(x64|x86_64|amd64)$")
+      set(
+        _dart_filament_archive_hash
+        "d8f253e262d731fb60f8be7d5ae6af76651bdc597d564171790bc78ac3696e04"
+      )
+    elseif(
+      CMAKE_SYSTEM_NAME STREQUAL "Windows"
+      AND _dart_filament_target_arch_lower MATCHES "^(x64|x86_64|amd64)$"
+    )
       set(_dart_filament_archive_platform "windows")
-      set(_dart_filament_archive_hash "67c08eb259aec39061b02b06f56bf7910ab78c97a95da03b1f83b86b61d1d7e2")
+      set(
+        _dart_filament_archive_hash
+        "67c08eb259aec39061b02b06f56bf7910ab78c97a95da03b1f83b86b61d1d7e2"
+      )
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-      message(FATAL_ERROR
+      message(
+        FATAL_ERROR
         "DART_FETCH_FILAMENT has a pinned Windows Filament archive only for "
         "x64 targets, but the configured target architecture is "
         "'${_dart_filament_target_arch}'. Provide Filament_ROOT for this "
-        "target architecture or disable DART_BUILD_GUI.")
+        "target architecture or disable DART_BUILD_GUI."
+      )
     else()
-      message(FATAL_ERROR "DART_FETCH_FILAMENT does not have a pinned Filament archive for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}. Provide Filament_ROOT or disable DART_BUILD_GUI.")
+      message(
+        FATAL_ERROR
+        "DART_FETCH_FILAMENT does not have a pinned Filament archive for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}. Provide Filament_ROOT or disable DART_BUILD_GUI."
+      )
     endif()
 
     include(FetchContent)
-    FetchContent_Declare(filament_prebuilt
-      URL "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-${_dart_filament_archive_platform}.tgz"
+    FetchContent_Declare(
+      filament_prebuilt
+      URL
+        "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-${_dart_filament_archive_platform}.tgz"
       URL_HASH SHA256=${_dart_filament_archive_hash}
       DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
@@ -511,7 +619,13 @@ if(DART_BUILD_GUI)
     if(EXISTS "${_dart_fetched_filament_root}/filament/include")
       set(_dart_fetched_filament_root "${_dart_fetched_filament_root}/filament")
     endif()
-    set(Filament_ROOT "${_dart_fetched_filament_root}" CACHE PATH "Fetched Filament install tree" FORCE)
+    set(
+      Filament_ROOT
+      "${_dart_fetched_filament_root}"
+      CACHE PATH
+      "Fetched Filament install tree"
+      FORCE
+    )
     unset(_dart_filament_archive_hash)
     unset(_dart_filament_archive_platform)
     unset(_dart_filament_arch_candidate)
@@ -522,13 +636,19 @@ if(DART_BUILD_GUI)
   endif()
 
   if(NOT Filament_FOUND)
-    message(FATAL_ERROR "Filament GUI was requested (DART_BUILD_GUI=ON) but Filament could not be found. Set Filament_ROOT to a Filament install tree that contains include/, lib/, and bin/matc.")
+    message(
+      FATAL_ERROR
+      "Filament GUI was requested (DART_BUILD_GUI=ON) but Filament could not be found. Set Filament_ROOT to a Filament install tree that contains include/, lib/, and bin/matc."
+    )
   endif()
 
   find_package(glfw3 CONFIG REQUIRED)
 
   if(NOT TARGET imgui::imgui AND NOT TARGET dart-imgui-lib)
-    message(FATAL_ERROR "Filament GUI was requested but no ImGui target is available.")
+    message(
+      FATAL_ERROR
+      "Filament GUI was requested but no ImGui target is available."
+    )
   endif()
 endif()
 
