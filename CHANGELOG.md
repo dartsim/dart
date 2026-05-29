@@ -945,6 +945,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     separated). Energy+gradient only for now (the self-contact friction Hessian,
     edge-edge friction, and non-flat ground normals are later increments); the
     line search on the friction-inclusive energy ensures descent.
+  - Added a deterministic scene-replay regression for the experimental
+    deformable scene pipeline (PLAN-081 Phase 5 validation harness): a
+    DART-native tutorial-style scene (one Dirichlet-anchored cube, one free cube
+    falling under gravity) is replayed for many frames through the real
+    loader -> solver -> diagnostics path, asserting the anchor stays put, the
+    free body falls, mass is conserved, the diagnostics are finite, and a second
+    identical replay reproduces the trajectory. This is the per-scene invariant
+    pattern the upstream ipc-sim/IPC corpus rows require; the full 154-scene port
+    additionally needs the upstream scene assets vendored and the
+    contact-capable solver (later phases), so the manifest rows stay `planned`.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
