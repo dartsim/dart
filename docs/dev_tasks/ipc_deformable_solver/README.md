@@ -212,8 +212,14 @@
         `tetrahedron` / `tetrahedron_rest_volume`, `node_mass`). Stubs and the
         API boundary inventory regenerated; single-tetrahedron Python
         regression.
-  - [ ] Remaining Phase 8 work: boundary-condition (DBC/NBC) bindings,
-        scene-loader Python access, and diagnostics exposure.
+  - [x] Boundary-condition bindings: `dartpy` exposes
+        `DeformableDirichletBoundaryCondition` and
+        `DeformableNeumannBoundaryCondition`, plus the `DeformableBodyOptions`
+        `dirichlet_boundary_conditions` / `neumann_boundary_conditions` fields.
+        Stubs and the API boundary inventory regenerated; a Python regression
+        scripts a Dirichlet node's motion and a Neumann node's acceleration.
+  - [ ] Remaining Phase 8 work: scene-loader Python access and diagnostics
+        exposure.
 
 ## Goal
 

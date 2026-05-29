@@ -1473,6 +1473,31 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw("node_c", &sim::DeformableTetrahedron::nodeC)
       .def_rw("node_d", &sim::DeformableTetrahedron::nodeD);
 
+  nb::class_<sim::DeformableDirichletBoundaryCondition>(
+      m, "DeformableDirichletBoundaryCondition")
+      .def(nb::init<>())
+      .def_rw("nodes", &sim::DeformableDirichletBoundaryCondition::nodes)
+      .def_rw(
+          "linear_velocity",
+          &sim::DeformableDirichletBoundaryCondition::linearVelocity)
+      .def_rw(
+          "angular_velocity",
+          &sim::DeformableDirichletBoundaryCondition::angularVelocity)
+      .def_rw("center", &sim::DeformableDirichletBoundaryCondition::center)
+      .def_rw(
+          "start_time", &sim::DeformableDirichletBoundaryCondition::startTime)
+      .def_rw("end_time", &sim::DeformableDirichletBoundaryCondition::endTime);
+
+  nb::class_<sim::DeformableNeumannBoundaryCondition>(
+      m, "DeformableNeumannBoundaryCondition")
+      .def(nb::init<>())
+      .def_rw("nodes", &sim::DeformableNeumannBoundaryCondition::nodes)
+      .def_rw(
+          "acceleration",
+          &sim::DeformableNeumannBoundaryCondition::acceleration)
+      .def_rw("start_time", &sim::DeformableNeumannBoundaryCondition::startTime)
+      .def_rw("end_time", &sim::DeformableNeumannBoundaryCondition::endTime);
+
   nb::class_<sim::DeformableBodyOptions>(m, "DeformableBodyOptions")
       .def(nb::init<>())
       .def_rw("positions", &sim::DeformableBodyOptions::positions)
@@ -1482,6 +1507,12 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw(
           "surface_triangles", &sim::DeformableBodyOptions::surfaceTriangles)
       .def_rw("tetrahedra", &sim::DeformableBodyOptions::tetrahedra)
+      .def_rw(
+          "dirichlet_boundary_conditions",
+          &sim::DeformableBodyOptions::dirichletBoundaryConditions)
+      .def_rw(
+          "neumann_boundary_conditions",
+          &sim::DeformableBodyOptions::neumannBoundaryConditions)
       .def_rw("fixed_nodes", &sim::DeformableBodyOptions::fixedNodes)
       .def_rw("edge_stiffness", &sim::DeformableBodyOptions::edgeStiffness)
       .def_rw("damping", &sim::DeformableBodyOptions::damping)

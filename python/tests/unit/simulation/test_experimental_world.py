@@ -2519,3 +2519,36 @@ def test_experimental_deformable_body_topology_python_api():
     # The unit corner tetrahedron has volume 1/6.
     assert body.tetrahedron_rest_volume(0) == pytest.approx(1.0 / 6.0)
     assert body.node_mass(0) == pytest.approx(1.0)
+
+
+def test_experimental_deformable_body_boundary_conditions_python_api():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.1)
+    world.gravity = np.array([0.0, 0.0, 0.0])
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),  # Dirichlet-scripted
+        np.array([1.0, 0.0, 0.0]),  # Neumann-accelerated, free
+    ]
+    options.masses = [1.0, 1.0]
+
+    dirichlet = sx.DeformableDirichletBoundaryCondition()
+    dirichlet.nodes = [0]
+    dirichlet.linear_velocity = np.array([1.0, 0.0, 0.0])
+    options.dirichlet_boundary_conditions = [dirichlet]
+
+    neumann = sx.DeformableNeumannBoundaryCondition()
+    neumann.nodes = [1]
+    neumann.acceleration = np.array([0.0, 0.0, -10.0])
+    options.neumann_boundary_conditions = [neumann]
+
+    body = world.add_deformable_body("scripted", options)
+    assert body.is_valid
+
+    world.step()
+
+    # The Dirichlet node follows the scripted linear motion: x += vx * dt.
+    assert body.node_position(0)[0] == pytest.approx(0.1, abs=1e-9)
+    # The Neumann node accelerates downward under the applied acceleration.
+    assert body.node_position(1)[2] < 0.0

@@ -975,6 +975,18 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     straight down deflects down-slope, whereas the frictionless control (and any
     xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
     friction and friction-specific diagnostics remain later increments.
+  - Extended the experimental deformable-body `dartpy` facade with scripted
+    boundary conditions (PLAN-081 Phase 8). Added
+    `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
+    `angular_velocity`, `center`, `start_time`, `end_time`) and
+    `DeformableNeumannBoundaryCondition` (`nodes`, `acceleration`, `start_time`,
+    `end_time`) bindings, plus the `DeformableBodyOptions`
+    `dirichlet_boundary_conditions` / `neumann_boundary_conditions` fields.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression where a Dirichlet-scripted node follows its prescribed linear
+    motion while a Neumann-accelerated node falls under the applied
+    acceleration. Scene-loader Python access and diagnostics exposure remain a
+    later increment.
   - Extended the experimental deformable-body `dartpy` facade with surface and
     tetrahedral topology (PLAN-081 Phase 8). Added `DeformableSurfaceTriangle`
     and `DeformableTetrahedron` bindings, the `DeformableBodyOptions`
