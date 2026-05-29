@@ -3,6 +3,8 @@
 Implementation tracking for PLAN-082 (linear-time variational integrator).
 Plan: [`../../plans/082-variational-integrator-solver.md`](../../plans/082-variational-integrator-solver.md).
 Design: [`../../design/simulation_variational_integrator.md`](../../design/simulation_variational_integrator.md).
+Paper experiment replication + measured results:
+[`paper-experiment-replication.md`](paper-experiment-replication.md).
 
 ## Current Status
 

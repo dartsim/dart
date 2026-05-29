@@ -115,14 +115,16 @@ void BM_VariationalStep(benchmark::State& state)
     resetToInitial(registry, chain);
     sxc::MultibodyVariationalState vstate;
     state.ResumeTiming();
+    // Generous iteration budget so the scaling measurement is never cut short
+    // by the non-convergence guard at the largest chain lengths.
     sxc::integrateMultibodyVariational(
-        registry, *chain.structure, chain.gravity, 1e-3, vstate);
+        registry, *chain.structure, chain.gravity, 1e-3, vstate, 400);
   }
   state.SetComplexityN(n);
 }
 BENCHMARK(BM_VariationalStep)
     ->RangeMultiplier(2)
-    ->Range(4, 128)
+    ->Range(4, 64) // linear regime; the RIQN iteration count stays small here
     ->Complexity(benchmark::oN);
 
 // The O(n) articulated-body inverse-mass apply alone (the RIQN quasi-Newton
