@@ -142,19 +142,20 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-ground-friction` - stacked on
-`feature/ipc-solver-convergence-diagnostic` (#2745). Phase 4 first increment:
-lagged smoothed Coulomb friction for static-ground contact, gated by
-`DeformableMaterialProperties.frictionCoefficient` (default 0 -> additive, no
-existing-test churn). IPC f0/f1 mollifier (velocity threshold epsv), normal
-force lagged once per outer iteration, friction energy+gradient in
-evaluateDeformableObjective and a PSD tangential 2x2 friction Hessian in
-computeProjectedNewtonDirection. Plumbed mu through options -> comps::
-DeformableMaterial -> serializer -> getter -> solver view. Tests: sliding node
-decelerates vs frictionless control; friction inactive without contact. Drape
-benchmark gains a mu=0.5 variant; 61 deformable tests pass.
+`feature/ipc-self-contact-friction` - stacked on `feature/ipc-ground-friction`
+(#2746). Extends IPC friction to deformable SELF-CONTACT (point-triangle pairs),
+reusing `frictionCoefficient`. Lagged normal force = barrier force magnitude on
+the point node (||result.gradient.head<3>()||); tangent projection (2x12) from
+`dc::pointTriangleTangentStencil`; friction opposes projection*(4-node step
+displacement) with the same f0/f1 mollifier. Energy+gradient only (self-contact
+friction Hessian + edge-edge friction deferred); line search ensures descent.
+SelfContactFrictionContact/Inputs built once per outer iteration from the active
+barrier set; threaded through evaluateDeformableObjective. Test: a surface
+sliding tangentially on another in self-contact decelerates vs frictionless,
+barrier keeps them separated. 62 deformable tests pass.
 
-NOTE (from the #2745 diagnostic): the stiff barrier-contact benchmarks
+Prior: #2746 = ground friction (Phase 4 first increment). NOTE (from the #2745
+diagnostic): the stiff barrier-contact benchmarks
 (grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
 the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
 projected-Newton + line-search stall on very stiff barriers, present without
@@ -165,7 +166,7 @@ Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
 until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 (self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
 Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
-reuse) <- #2745 (convergence diagnostic).
+reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction).
 
 ## Immediate Next Step
 

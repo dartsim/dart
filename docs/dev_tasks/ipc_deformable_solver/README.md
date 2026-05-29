@@ -148,9 +148,17 @@
         Lagged normal force per outer iteration; PSD tangential friction Hessian
         in the projected-Newton solve. Sliding-deceleration + no-contact-no-
         friction regressions, drape friction benchmark, serialized coefficient.
-  - [ ] Remaining Phase 4 work: self-contact and codimensional-obstacle
-        friction, friction over non-flat (sphere/tilted) ground normals, and
-        friction-specific convergence/dissipation diagnostics.
+  - [x] Self-contact friction (point-triangle): reuses `frictionCoefficient`;
+        lagged normal force = barrier force on the point node, tangent
+        projection from the point-triangle tangent stencil, same f0/f1 mollifier
+        opposing the stencil's tangential relative displacement. Energy+gradient
+        only (self-contact friction Hessian deferred). Regression: a surface
+        sliding on another in self-contact decelerates vs the frictionless
+        control while staying separated.
+  - [ ] Remaining Phase 4 work: edge-edge self-contact friction and the
+        self-contact friction Hessian, codimensional-obstacle friction, friction
+        over non-flat (sphere/tilted) ground normals, and friction-specific
+        convergence/dissipation diagnostics.
 - [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
       examples, benchmarks, profiling artifacts, and headless Filament evidence.
 
