@@ -96,8 +96,7 @@ public:
   virtual size_t toVector(
       const entt::registry& registry,
       std::vector<double>& vec,
-      size_t offset) const
-      = 0;
+      size_t offset) const = 0;
 
   /// Write vector data back to components
   /// @param registry ECS registry to modify
@@ -105,8 +104,7 @@ public:
   /// @param offset Starting offset in input vector
   /// @return Number of elements read
   virtual size_t fromVector(
-      entt::registry& registry, std::span<const double> vec, size_t offset)
-      = 0;
+      entt::registry& registry, std::span<const double> vec, size_t offset) = 0;
 
   /// Get dimension (number of scalars) this mapper handles
   [[nodiscard]] virtual size_t getDimension() const = 0;

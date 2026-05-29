@@ -155,6 +155,13 @@
         256 blocks, ~1.4x at 1024, ~4x at 4096, ~9x at 16384) sets the backend
         adapter's minimum GPU batch size (~1024 blocks); smaller batches stay on
         the CPU backend.
+  - [x] Resident GPU device buffer: the CUDA PSD backend reuses one persistent
+        device allocation that grows on demand (freed when the backend is
+        uninstalled) and projects in place on the caller's packed buffer,
+        removing the per-iteration `cudaMalloc`/`cudaFree` and the temporary
+        host copy. Bit-identical results (only the device storage is reused);
+        a CUDA test asserts the buffer is reused across same-or-smaller batches,
+        grows once for a larger batch, and is released on restore.
   - [x] Contact closest-approach diagnostic: the stage also reports
         `minActiveContactDistance` (the smallest point-triangle / edge-edge
         distance among the active self-contact barrier set at the converged
@@ -163,8 +170,8 @@
         termination, a single-iteration snapshot distinct from the cumulative
         `selfContactBarrierActiveContacts`). Behavior-preserving (diagnostic
         only); feeds the Fig. 23 / Table 1 contact statistics.
-  - [ ] Remaining Phase 3 work: a resident GPU solve path (the current backend
-        round-trips host<->device per batch; persistent device buffers are a
+  - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
+        host<->device copies remain; keeping the assembly/solve on-device is a
         follow-up), matrix-free CG for very large meshes, adaptive barrier
         stiffness, barrier forces for rigid/codimensional obstacles, and
         complementarity/solver-stat diagnostics. Known approximation: the

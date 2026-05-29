@@ -70,8 +70,7 @@ public:
 
   virtual void execute(const ComputeGraph& graph) = 0;
   [[nodiscard]] virtual ComputeExecutionProfile executeProfiled(
-      const ComputeGraph& graph)
-      = 0;
+      const ComputeGraph& graph) = 0;
   [[nodiscard]] virtual std::size_t getWorkerCount() const = 0;
 };
 

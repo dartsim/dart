@@ -52,6 +52,11 @@
   (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
 // clang-format on
 
+// FCL's convex-inl.h calls assert() without including <cassert> and relied on
+// transitive inclusion; Eigen 5 no longer pulls it in, so include it here
+// before the FCL headers are parsed.
+#include <cassert>
+
 DART_SUPPRESS_CPP_WARNING_BEGIN
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 #include <fcl/config.h>

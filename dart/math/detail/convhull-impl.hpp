@@ -628,8 +628,7 @@ inline void convexHull3dBuild(
         }
         triangleIndices
             [(currentTriangleCount - 1) * kSpatialDimension
-             + (kSpatialDimension - 1)]
-            = i;
+             + (kSpatialDimension - 1)] = i;
 
         S triangleVertexCoords
             [convhull_internal::kDimensions * convhull_internal::kDimensions];

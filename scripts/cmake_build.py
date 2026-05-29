@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Helper to invoke cmake --build with consistent options."""
+
 from __future__ import annotations
 
 import argparse
