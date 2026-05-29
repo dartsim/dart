@@ -57,6 +57,20 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 | `ci_windows.yml`    | Build + test            | Windows   |
 | `ci_freebsd.yml`    | Build + test (VM)       | FreeBSD   |
 | `ci_gz_physics.yml` | Gazebo integration      | Ubuntu    |
+| `ci_cuda.yml`       | CUDA build/import gate  | Ubuntu    |
+
+## Runner Policy (no self-hosted GPU runner)
+
+Prefer GitHub-hosted runners. The project does **not** maintain a self-hosted
+GPU runner — they are too tedious to maintain. Consequences:
+
+- GPU CI is **build/import only**: `ci_cuda.yml`'s `CUDA Build` job compiles the
+  CUDA targets on `ubuntu-latest` (nvcc compiles without a GPU).
+- Hardware-specific runtime evidence (e.g. the Phase 5 GPU go/no-go packet) is
+  produced **manually on a developer CUDA host**, not in CI, and recorded in a
+  durable doc (`docs/design/scalable_compute_decisions.md`).
+- Do **not** add a `runs-on: [self-hosted, ...]` GPU job.
+  `pixi run check-phase5-cuda-workflow` enforces this for `ci_cuda.yml`.
 
 ## Fast Iteration Loop
 

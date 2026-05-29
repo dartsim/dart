@@ -20,6 +20,7 @@ eigen = ">=3.4.0,<4"
 entt = ">=3.16.0,<4"
 foonathan-memory = ">=0.7.3,<0.8"
 fmt = ">=11.2.0,<13"
+gersemi = ">=0.24.0,<0.25"
 gtest = ">=1.17.0,<2"
 imgui = ">=1.92.3,<2"
 isort = ">=7.0.0,<8"
@@ -195,6 +196,8 @@ lint-yaml = { cmd = """
 
 lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 
+lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
+
 lint-md = { cmd = """
     prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.codex/**' '!.opencode/**'
 """ }
@@ -235,6 +238,7 @@ lint = { depends-on = [
   "lint-cpp",
   "lint-simulation-experimental",
   "lint-collision-native",
+  "lint-cmake",
   "lint-py",
   "lint-yaml",
   "lint-toml",
@@ -279,6 +283,8 @@ check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
+
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
 check-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
@@ -315,6 +321,7 @@ check-ai-commands = { cmd = [
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-simulation-experimental",
+  "check-lint-cmake",
   "check-lint-py",
   "check-lint-yaml",
   "check-lint-md",
@@ -660,11 +667,17 @@ py-ex = { cmd = [
   { arg = "example", default = "hello_world" },
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
-py-ex-hello-world = { depends-on = [
-  { task = "py-ex", args = [
-    "hello_world",
-  ] },
-] }
+# Run the consolidated Python demos app (headless scene-registry runner from
+# PLAN-103). Mirrors C++ `pixi run demos` and accepts the same CLI:
+#   pixi run py-demos -- --scene <id>
+#   pixi run py-demos -- --cycle-scenes --frames 4
+py-demos = { cmd = [
+  "python",
+  "-m",
+  "examples.demos",
+], depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
 py-ex-hello-world-gui = { depends-on = [
   { task = "py-ex", args = [
@@ -1071,6 +1084,17 @@ dartsim = { cmd = [
   "scripts/run_cpp_example.py",
   "dartsim",
 ], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
+
+# Launch the consolidated dart-demos GUI app (all GUI examples as runtime-
+# switchable scenes). Uses system ImGui like other GUI examples; pick a scene
+# with `pixi run demos -- --scene <id>`.
+demos = { cmd = [
+  "python",
+  "scripts/run_cpp_example.py",
+  "demos",
+], depends-on = [
+  "config",
+] }
 
 ex-atlas-puppet = { depends-on = [
   { task = "run-cpp-target", args = [

@@ -92,6 +92,10 @@ struct ViewerLifecycleState
   bool screenshotRequested = false;
   bool frameOutputEnabled = false;
   bool exitRequested = false;
+  /// Set by the demos sidebar to ask the application loop to swap the active
+  /// scene to `requestedScene` without recreating the window.
+  bool sceneSwitchRequested = false;
+  std::string requestedScene;
 };
 
 struct OrbitCamera
@@ -118,13 +122,28 @@ struct OrbitCameraUpdate
   double scrollDelta = 0.0;
   bool orbit = false;
   bool pan = false;
+  bool zoom = false;
   double orbitScale = 0.006;
   double panScale = 0.0015;
+  double zoomScale = 0.006;
   double scrollScale = 0.12;
   double minDistance = 0.35;
   double maxDistance = 80.0;
   double minPitch = -1.45;
   double maxPitch = 1.45;
+};
+
+enum class OrbitCameraMouseMode
+{
+  Orbit,
+  Pan,
+  Zoom,
+};
+
+struct OrbitCameraControlOptions
+{
+  OrbitCameraMouseMode mouseMode = OrbitCameraMouseMode::Orbit;
+  bool locked = false;
 };
 
 struct OrbitCameraController
@@ -141,8 +160,10 @@ struct OrbitCameraControllerInput
   double cursorX = 0.0;
   double cursorY = 0.0;
   bool hasCursor = true;
+  bool locked = false;
   bool orbit = false;
   bool pan = false;
+  bool zoom = false;
 };
 
 struct DirectionalNudgeInput
@@ -211,6 +232,9 @@ DART_GUI_API void requestSingleStep(
     ViewerLifecycleState& state, bool pause = true);
 
 DART_GUI_API void requestExit(ViewerLifecycleState& state);
+
+DART_GUI_API void requestSceneSwitch(
+    ViewerLifecycleState& state, std::string sceneId);
 
 DART_GUI_API bool shouldAdvanceSimulation(const ViewerLifecycleState& state);
 

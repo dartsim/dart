@@ -63,6 +63,7 @@ struct SimulationStatus
   std::string editStateLabel;
   std::string playbackLabel;
   std::string resetTargetLabel;
+  std::string replayLabel;
 };
 
 /// Result of a user-facing Simulation panel action.
@@ -78,12 +79,29 @@ enum class SimulationModeActionKind
   PlayOrResume,
   Pause,
   Step,
+  Restart,
   ReturnToEdit,
 };
 
 struct SimulationModeAction
 {
   SimulationModeActionKind kind = SimulationModeActionKind::PlayOrResume;
+  std::string label;
+  bool enabled = true;
+  std::string disabledReason;
+};
+
+enum class SimulationReplayActionKind
+{
+  First,
+  Previous,
+  Next,
+  Last,
+};
+
+struct SimulationReplayAction
+{
+  SimulationReplayActionKind kind = SimulationReplayActionKind::First;
   std::string label;
   bool enabled = true;
   std::string disabledReason;
@@ -97,9 +115,15 @@ struct SimulationModeAction
 SimulationActionResult applySimulationModeAction(
     SimEngine& engine, SimulationModeActionKind kind);
 
+[[nodiscard]] std::vector<SimulationReplayAction> buildSimulationReplayActions(
+    const SimEngine& engine);
+SimulationActionResult applySimulationReplayAction(
+    SimEngine& engine, SimulationReplayActionKind kind);
+
 SimulationActionResult playSimulation(SimEngine& engine);
 SimulationActionResult pauseSimulation(SimEngine& engine);
 SimulationActionResult stepSimulation(SimEngine& engine, std::size_t count = 1);
+SimulationActionResult restartSimulation(SimEngine& engine);
 SimulationActionResult resetSimulation(SimEngine& engine);
 SimulationActionResult setSimulationRealTimeFactor(
     SimEngine& engine, double factor);

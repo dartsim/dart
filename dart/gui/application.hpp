@@ -46,10 +46,13 @@
 #include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
+#include <array>
 #include <functional>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::gui {
 
@@ -83,6 +86,36 @@ struct RenderableSelection
 {
   RenderableId id = 0;
   std::string label;
+};
+
+inline constexpr std::size_t kMaxViewportPanes = 4u;
+
+enum class ViewportLayoutMode
+{
+  Single,
+  Quad,
+};
+
+enum class ViewportPaneKind
+{
+  Perspective,
+  Front,
+  Right,
+  Top,
+};
+
+struct ViewportPaneView
+{
+  ViewportPaneKind kind = ViewportPaneKind::Perspective;
+  OrbitCamera camera;
+  bool active = false;
+};
+
+struct ViewportLayoutOptions
+{
+  ViewportLayoutMode mode = ViewportLayoutMode::Single;
+  std::array<ViewportPaneView, kMaxViewportPanes> panes;
+  std::size_t paneCount = 1u;
 };
 
 enum class KeyboardKey
@@ -153,8 +186,29 @@ struct ApplicationOptions
   std::function<void()> postRender;
   bool simulateWorld = true;
   std::optional<OrbitCamera> camera;
+  std::function<OrbitCameraControlOptions()> cameraControlsProvider;
+  std::function<bool(OrbitCamera&)> cameraUpdater;
+  std::function<ViewportLayoutOptions(const OrbitCamera&)>
+      viewportLayoutProvider;
+
+  /// Optional callback fired when a multi-view viewport pane is activated.
+  ///
+  /// The callback receives the logical renderer pane selected by a viewport
+  /// click. Applications can use it to update editor-owned active-pane state
+  /// without exposing backend renderer objects.
+  std::function<void(ViewportPaneKind)> onViewportPaneActivated;
+
   RenderSettings renderSettings;
   std::string defaultScene;
+
+  /// Permit launching with a scene that has no visible renderables.
+  ///
+  /// Built-in scene fixtures must extract visible content, so the startup path
+  /// rejects an empty scene by default to catch broken fixtures. Applications
+  /// that legitimately open empty (e.g. the dartsim editor's empty workspace)
+  /// set this to skip that check; null debug overlays are then tolerated.
+  bool allowEmptyScene = false;
+
   std::vector<Panel> panels;
   std::vector<Gizmo> gizmos;
   std::function<std::vector<DebugLabelDescriptor>()> debugLabels;
@@ -202,6 +256,36 @@ DART_GUI_API int runApplication(
 
 DART_GUI_API int runApplication(
     int argc, char* argv[], const ApplicationOptions& options);
+
+/// One entry in a runtime-switchable demo catalog.
+///
+/// `factory` lazily builds the scene's `ApplicationOptions` (world, panels,
+/// gizmos, handlers, camera) when the scene is first selected, so launching the
+/// host stays fast and an asset/remote failure affects only that scene. `id` is
+/// the stable identifier used by `--scene <id>` and by tests; `category` groups
+/// scenes in the sidebar (categories are ordered by first appearance, scenes by
+/// their order in the catalog vector).
+struct DemoSceneEntry
+{
+  std::string id;
+  std::string title;
+  std::string category;
+  std::string summary;
+  std::function<ApplicationOptions()> factory;
+};
+
+/// Run a single window that hosts multiple demo scenes selectable at runtime
+/// from a built-in "Demos" sidebar. Selecting a scene swaps the active
+/// world/panels/handlers in place without recreating the window.
+///
+/// Initial scene: `--scene <id>` or the `DART_DEMOS_SCENE` environment
+/// variable; otherwise the first catalog entry. `--cycle-scenes` advances
+/// through every scene for a few frames each and then exits (used by headless
+/// smoke tests). Remaining flags (`--headless`, `--frames`, `--screenshot`,
+/// `--width`,
+/// `--height`, `--backend`, ...) match `runApplication`.
+DART_GUI_API int runDemos(
+    int argc, char* argv[], std::vector<DemoSceneEntry> scenes);
 
 } // namespace dart::gui
 

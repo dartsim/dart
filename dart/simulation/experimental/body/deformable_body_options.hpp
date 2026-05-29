@@ -85,6 +85,11 @@ struct DeformableMaterialProperties
 
   /// Poisson ratio reserved for future elastic material models.
   double poissonRatio = 0.3;
+
+  /// Coulomb friction coefficient for contact against static ground barriers.
+  /// Must be finite and non-negative. Zero (the default) disables friction, so
+  /// existing contact behavior is unchanged unless friction is opted in.
+  double frictionCoefficient = 0.0;
 };
 
 /// Scripted Dirichlet boundary condition over deformable nodes.

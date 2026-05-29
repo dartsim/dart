@@ -35,12 +35,17 @@ find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 # Determine Python site-packages directory if it is not already computed.
 if(NOT DEFINED PYTHON_SITE_PACKAGES)
-  execute_process(COMMAND ${Python_EXECUTABLE} -c
-    "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
+  execute_process(
+    COMMAND
+      ${Python_EXECUTABLE} -c
+      "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_REL
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES_REL}")
+  set(
+    PYTHON_SITE_PACKAGES
+    "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES_REL}"
+  )
   set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
@@ -60,12 +65,21 @@ else()
       RESULT_VARIABLE nanobind_NOTFOUND
     )
     if(nanobind_NOTFOUND)
-      message(WARNING "nanobind was not found via 'python -m nanobind --cmake_dir'. "
-        "Install it with 'pip install nanobind' or set nanobind_DIR explicitly.")
+      message(
+        WARNING
+        "nanobind was not found via 'python -m nanobind --cmake_dir'. "
+        "Install it with 'pip install nanobind' or set nanobind_DIR explicitly."
+      )
       return()
     endif()
     list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
-    set(nanobind_DIR "${nanobind_ROOT}" CACHE PATH "nanobind CMake package path" FORCE)
+    set(
+      nanobind_DIR
+      "${nanobind_ROOT}"
+      CACHE PATH
+      "nanobind CMake package path"
+      FORCE
+    )
   endif()
   find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
   set(_dartpy_nanobind_found TRUE)
@@ -76,7 +90,8 @@ if(NOT _dartpy_nanobind_found)
   return()
 endif()
 
-set(dartpy_headers
+set(
+  dartpy_headers
   common/composite.hpp
   common/module.hpp
   common/logging.hpp
@@ -153,7 +168,8 @@ set(dartpy_headers
   constraint/joint_coulomb_friction_constraint.hpp
 )
 
-set(dartpy_sources
+set(
+  dartpy_sources
   dartpy.cpp
   common/composite.cpp
   common/module.cpp
@@ -231,29 +247,17 @@ set(dartpy_sources
   constraint/joint_coulomb_friction_constraint.cpp
 )
 
-set(dartpy_gui_module_headers
-  gui/module.hpp
-)
+set(dartpy_gui_module_headers gui/module.hpp)
 
-set(dartpy_gui_module_sources
-  gui/module.cpp
-)
+set(dartpy_gui_module_sources gui/module.cpp)
 
-set(dartpy_gui_headers
-  gui/descriptors.hpp
-)
+set(dartpy_gui_headers gui/descriptors.hpp gui/viewer.hpp)
 
-set(dartpy_gui_sources
-  gui/descriptors.cpp
-)
+set(dartpy_gui_sources gui/descriptors.cpp gui/viewer.cpp)
 
-set(dartpy_simulation_experimental_headers
-  simulation_experimental/module.hpp
-)
+set(dartpy_simulation_experimental_headers simulation_experimental/module.hpp)
 
-set(dartpy_simulation_experimental_sources
-  simulation_experimental/module.cpp
-)
+set(dartpy_simulation_experimental_sources simulation_experimental/module.cpp)
 
 set(_dartpy_has_gui FALSE)
 set(_dartpy_has_simulation_experimental FALSE)
@@ -299,18 +303,12 @@ foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
   endif()
 endforeach()
 
-target_include_directories(dartpy
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_BINARY_DIR}
+target_include_directories(
+  dartpy
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
 )
 
-set(dartpy_libraries
-  dart
-  dart-utils
-  dart-utils-urdf
-)
+set(dartpy_libraries dart dart-utils dart-utils-urdf)
 foreach(lib ${dartpy_libraries})
   if(TARGET ${lib})
     target_link_libraries(dartpy PRIVATE ${lib})
@@ -349,24 +347,26 @@ if(TARGET dart-simulation-experimental)
   target_link_libraries(dartpy PRIVATE dart-simulation-experimental)
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     get_target_property(
-      _simulation_experimental_includes dart-simulation-experimental ${prop}
+      _simulation_experimental_includes
+      dart-simulation-experimental
+      ${prop}
     )
     if(_simulation_experimental_includes)
       target_include_directories(
-        dartpy PRIVATE ${_simulation_experimental_includes}
+        dartpy
+        PRIVATE ${_simulation_experimental_includes}
       )
     endif()
   endforeach()
 endif()
 
 # Surface a version string to Python.
-target_compile_definitions(dartpy
-  PRIVATE
-    DARTPY_VERSION_INFO="${DART_VERSION}"
-)
+target_compile_definitions(dartpy PRIVATE DARTPY_VERSION_INFO="${DART_VERSION}")
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
-   AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(
+  CMAKE_SYSTEM_NAME STREQUAL "Linux"
+  AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
+)
   target_link_options(dartpy PRIVATE "-Wl,-z,noexecstack")
 endif()
 
@@ -375,13 +375,12 @@ if(_dartpy_has_gui)
 endif()
 if(_dartpy_has_simulation_experimental)
   target_compile_definitions(
-    dartpy PRIVATE DARTPY_HAS_SIMULATION_EXPERIMENTAL=1
+    dartpy
+    PRIVATE DARTPY_HAS_SIMULATION_EXPERIMENTAL=1
   )
 endif()
 
-set_target_properties(dartpy PROPERTIES
-  OUTPUT_NAME "_dartpy"
-)
+set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")
 if(NOT CMAKE_CONFIGURATION_TYPES)
   # Python imports the extension by the module init name, which is _dartpy.
   # Single-config Debug builds use a separate build tree, so no postfix is needed.
@@ -396,10 +395,12 @@ foreach(_py_file __init__.py _naming.py _layout.py)
     COPYONLY
   )
   add_custom_command(
-    TARGET dartpy POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
-            ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
+    TARGET dartpy
+    POST_BUILD
+    COMMAND
+      ${CMAKE_COMMAND} -E copy_if_different
+      ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
+      ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
     COMMENT "Updating dartpy ${_py_file}"
   )
 endforeach()
@@ -412,8 +413,9 @@ endif()
 
 foreach(_type LIBRARY RUNTIME ARCHIVE)
   if(_dartpy_output_dir)
-    set_target_properties(dartpy PROPERTIES
-      ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}"
+    set_target_properties(
+      dartpy
+      PROPERTIES ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}"
     )
   endif()
 endforeach()
@@ -421,29 +423,31 @@ if(CMAKE_CONFIGURATION_TYPES AND _dartpy_output_dir)
   foreach(_config ${CMAKE_CONFIGURATION_TYPES})
     string(TOUPPER ${_config} _config_upper)
     foreach(_type LIBRARY RUNTIME ARCHIVE)
-      set_target_properties(dartpy PROPERTIES
-        ${_type}_OUTPUT_DIRECTORY_${_config_upper} "${_dartpy_output_dir}"
+      set_target_properties(
+        dartpy
+        PROPERTIES
+          ${_type}_OUTPUT_DIRECTORY_${_config_upper} "${_dartpy_output_dir}"
       )
     endforeach()
   endforeach()
 endif()
 
 if(DEFINED SKBUILD_PLATLIB_DIR)
-  install(TARGETS dartpy
-    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
-  )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
+  install(TARGETS dartpy LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy")
+  install(
+    FILES
+      ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
-  install(TARGETS dartpy
-    LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
-  )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
+  install(TARGETS dartpy LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy")
+  install(
+    FILES
+      ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )
 endif()

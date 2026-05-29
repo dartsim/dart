@@ -49,6 +49,8 @@ its own line so status updates remain git-history friendly.
 - Next step: Run a Colab runtime spike from a DART 7 dartpy wheel artifact and
   the Filament GUI branch to prove import, headless simulation, and one
   Filament-backed inline image or video before publishing stable tutorial links.
+  The notebook gallery imports the headless scene modules from PLAN-103
+  (`python/examples/demos`) rather than duplicating scene code.
 - Gate: Cloud tutorial support is not complete until the notebook rejects DART
   6 artifacts, installs only DART 7 dartpy artifacts in the cloud runtime,
   runs a headless simulation, renders a nonblank Filament-backed image or
@@ -74,25 +76,38 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Keep the merged Phase 0-4 foundation in
-  `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
-  the default experimental `World::step` path now preserves the rigid-body
-  contact/multibody solver pipeline, while the batched SoA rigid-body stage
-  remains an explicit unconstrained path and benchmark/prototype seam. PRs now
-  exercise CUDA-on configure and target builds through `CI CUDA / CUDA Build`;
-  runtime evidence still requires `pixi run -e cuda test-cuda` on a CUDA host or
-  manual `CI CUDA / CUDA Runtime Smoke` on a self-hosted runner labeled `cuda`.
-  Keep CUDA private and non-required until runner stability and representative
-  workload benchmarks justify the Phase 6 GPU track. The sidecar package shape,
+- Next step: Phases 0-5 are complete and merged to `main` (PRs #2698, #2710,
+  #2712); the dev-task folder has been retired, so PLAN-030 plus
+  [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
+  are now the durable trackers. The default experimental `World::step` path
+  preserves the rigid-body contact/multibody solver pipeline, while the batched
+  SoA rigid-body stage remains an explicit unconstrained path and
+  benchmark/prototype seam. Phase 5 is closed with a GO: `CI CUDA / CUDA Build`
+  compiles the CUDA targets on a GitHub-hosted `ubuntu-latest` runner (green on
+  `main`), and because the project does not maintain a self-hosted GPU runner,
+  the go/no-go runtime packet is measured manually on a CUDA host. The recorded
+  GO (2026-05-28, RTX 5000 Ada): speedup 109.6x at 4096/128/100 with final-state
+  error 1.78e-15, packet accepted (see the owner doc's "Recorded Phase 5
+  Go/No-Go"). Keep CUDA private and non-required. The sidecar package shape,
   go/no-go threshold, `bm-phase5-gpu-packet-check` /
   `check-compute-backend-boundaries` / `check-no-gpu-runtime-dependencies`
   evidence gates, and the `check-phase5-cuda-benchmark-contract` row contract
-  are recorded in the owner doc. The manual CUDA workflow writes and validates
-  the Phase 5 packet artifact through `bm-phase5-cuda-full` and
-  `bm-phase5-cuda-packet` when a self-hosted CUDA runner is available, with
-  `check-phase5-cuda-workflow` guarding that wiring. Phase 3's speedup surface
+  are recorded in the owner doc. To refresh the packet on any CUDA host, run
+  `bm-phase5-cuda-full` then `bm-phase5-cuda-packet`;
+  `check-phase5-cuda-workflow` guards that `ci_cuda.yml` keeps the build/import
+  gate and never reintroduces a self-hosted GPU runner. Phase 3's speedup surface
   is the checked contact-island benchmark, not the trivial Euler rigid-body
   rows.
+- Phase 6 backlog (unblocked by the Phase 5 GO, unstarted; each item needs its
+  own design note and gate before work starts): broaden GPU stage coverage
+  beyond the single rigid-body integration stage; promote auto-scheduling from
+  resource-access metadata behind a verified scheduler contract (honest
+  declarations, deferred structural changes, deterministic reductions, cost
+  gate); heterogeneous batches and single-scene contact/constraint GPU work
+  (Pattern B, only after Pattern A evidence justifies it); and differentiable
+  state types if differentiability is promoted from a deferred to a committed
+  capability. Rationale for each lives in
+  [`../design/compute_backend_research.md`](../design/compute_backend_research.md).
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and
@@ -225,8 +240,22 @@ its own line so status updates remain git-history friendly.
 - Dimension: Scalable compute
 - Next step: Live at `dartsim.github.io/dart/performance/` via
   `benchmark-action/github-action-benchmark` and embedded in the Read the Docs
-  page. Optional future work: per-PR regression comments and a secondary backend
-  (Bencher/CodSpeed).
+  page. Per-PR regression comments are added as an opt-in extension (pending one
+  real-PR validation run): `.github/workflows/benchmark_pr_comparison.yml` runs
+  the dashboard's benchmark slice on a PR and `scripts/benchmark_pr_compare.py`
+  diffs it against the dashboard's published gh-pages history, then posts a
+  marker-based "moved by N%" comment in the PR review thread via
+  `actions/github-script`. It is a read-only consumer of the dashboard data (it
+  never writes to gh-pages — no second pipeline), gated to same-repo PRs carrying
+  the `benchmark` label so ordinary PRs pay no benchmark cost. This is the
+  reconciliation decision from the retired `benchmark_pr_comparison` dev task:
+  extend the existing dashboard infra (chosen) over the prototype's parallel
+  committed-JSON pipeline. The compare/render logic is unit-tested
+  (`test_benchmark_pr_compare.py`); the only step that needs a live PR to confirm
+  is the comment post itself. Gradual rollout: add the `benchmark` label to one
+  PR to confirm the comment posts, tune `--alert-threshold`, then consider
+  widening the trigger and the benchmark slice once review-noise tradeoffs are
+  visible. A secondary backend (Bencher/CodSpeed) remains optional future work.
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
   Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
   history.
@@ -333,3 +362,44 @@ its own line so status updates remain git-history friendly.
   World only; the renderer stays backend-hidden (PLAN-060); and the default
   `dartsim` headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a
   non-blank editor frame while legacy `--scene` smokes keep contrast.
+
+### PLAN-102: Demos App
+
+- Owner doc: [`../design/demos_app.md`](../design/demos_app.md); user
+  instructions in [`../../examples/README.md`](../../examples/README.md).
+- Status: Complete
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Implemented — `dart-demos` hosts 37 GUI examples as categorized,
+  runtime-switchable scenes (cycle smoke `EXAMPLE_dart_demos_cycle_headless_smoke`);
+  `hello_world` stays the standalone template; tooling/docs/CHANGELOG updated.
+  The `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
+  internal test fixtures (see the design doc's "examples vs renderer fixtures"
+  decision), so PLAN-101's `--scene` smoke gate is unaffected. C++ `dart-demos`
+  is now **frozen**: future example growth is Python-first under PLAN-103, which
+  also owns the retire-later checklist for this C++ app.
+- Gate: `dart-demos` launches and switches across scenes (including asset-backed
+  robots) in one window without window recreation; the headless cycle smoke
+  renders every scene; only `hello_world` plus a few special-build/test-coupled
+  programs stay standalone; `pixi run lint` and `check-docs-policy` green.
+
+### PLAN-103: Examples Strategy (Python-First)
+
+- Owner doc: [`103-examples-strategy.md`](103-examples-strategy.md); C++ app
+  architecture in [`../design/demos_app.md`](../design/demos_app.md).
+- Status: Active
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Phases 1–4 landed — `dart-demos` Python (11 scenes incl. 5
+  minimal-viable modern scenarios), cross-language golden parity (Python +
+  C++ both assert against the shared fixture within 1e-9),
+  `python/tutorials/01_browse_demos.ipynb`. Phase 5 (retire C++ `dart-demos`)
+  is explicit "not now": conditions 4–5 of the retire-later checklist are met,
+  conditions 1–3 wait on Python-breadth growth + PLAN-012 (Colab smoke) +
+  PLAN-101 (editor loading example scenes). Track residual follow-ups in
+  `docs/dev_tasks/examples_strategy/`.
+- Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
+  Python `test_golden_parity` + C++ `UNIT_gui_DemosGoldenParity` both pass
+  against the shared fixture; the notebook imports (not copies) the scene
+  modules; C++ `dart-demos` unchanged; `pixi run lint` and `check-docs-policy`
+  green.

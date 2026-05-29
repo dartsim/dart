@@ -41,6 +41,7 @@
 #include <iomanip>
 #include <ios>
 #include <iterator>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <system_error>
@@ -48,12 +49,14 @@
 #include <unordered_set>
 #include <vector>
 
+#include <cmath>
+
 namespace dartsim::scene_io {
 
 namespace {
 
 /// Highest scene-file format version this build can read and writes on save.
-constexpr int kSceneFormatVersion = 1;
+constexpr int kSceneFormatVersion = 3;
 
 void writeRow(std::ostream& out, const char* key, const double* data, int n)
 {
@@ -123,6 +126,55 @@ bool readVector(std::istream& in, Eigen::Matrix<double, N, 1>& v)
   return true;
 }
 
+std::optional<SensorKind> sensorKindFromInt(int value)
+{
+  switch (static_cast<SensorKind>(value)) {
+    case SensorKind::Camera:
+    case SensorKind::Range:
+    case SensorKind::Contact:
+      return static_cast<SensorKind>(value);
+  }
+  return std::nullopt;
+}
+
+std::optional<ObjectType> objectTypeFromInt(int value)
+{
+  switch (static_cast<ObjectType>(value)) {
+    case ObjectType::RigidBody:
+    case ObjectType::MultiBody:
+    case ObjectType::Link:
+    case ObjectType::Joint:
+    case ObjectType::FreeFrame:
+    case ObjectType::FixedFrame:
+    case ObjectType::Sensor:
+    case ObjectType::Collision:
+      return static_cast<ObjectType>(value);
+  }
+  return std::nullopt;
+}
+
+bool isFrameLike(ObjectType type)
+{
+  return type == ObjectType::RigidBody || type == ObjectType::Link
+         || type == ObjectType::FreeFrame || type == ObjectType::FixedFrame;
+}
+
+bool isValidSensorDesc(const SensorDesc& sensor)
+{
+  return sensorKindFromInt(static_cast<int>(sensor.kind)).has_value()
+         && std::isfinite(sensor.range) && sensor.range > 0.0
+         && std::isfinite(sensor.fieldOfView) && sensor.fieldOfView >= 1.0
+         && sensor.fieldOfView <= 179.0 && std::isfinite(sensor.updateRate)
+         && sensor.updateRate > 0.0;
+}
+
+bool isValidCollisionDesc(const CollisionDesc& collision)
+{
+  return std::isfinite(collision.friction) && collision.friction >= 0.0
+         && std::isfinite(collision.restitution) && collision.restitution >= 0.0
+         && collision.restitution <= 1.0;
+}
+
 } // namespace
 
 std::string save(const SceneModel& model)
@@ -131,6 +183,21 @@ std::string save(const SceneModel& model)
   out << std::setprecision(17);
   out << "dartsim-scene " << kSceneFormatVersion << "\n";
   out << "timestep " << model.timeStep << '\n';
+
+  WorkspaceSettings workspace = model.workspace;
+  if (normalizeWorkspaceSettings(workspace)) {
+    for (const WorkspaceWatchPreset& preset : workspace.watchPresets) {
+      out << "watch-preset\n";
+      out << "name " << preset.name << '\n';
+      for (const ObjectId target : preset.targets) {
+        out << "target " << target << '\n';
+      }
+      for (const std::string& signal : preset.chartSignals) {
+        out << "signal " << signal << '\n';
+      }
+      out << "end\n";
+    }
+  }
 
   for (const ObjectId id : model.allIds()) {
     const SceneObject* object = model.find(id);
@@ -146,6 +213,12 @@ std::string save(const SceneModel& model)
     out << "parentlink " << object->parentLink << '\n';
     out << "jointkind " << static_cast<int>(object->jointType) << '\n';
     out << "shapetype " << static_cast<int>(object->shape.type) << '\n';
+    out << "sensorkind " << static_cast<int>(object->sensor.kind) << '\n';
+    out << "sensorrange " << object->sensor.range << '\n';
+    out << "sensorfov " << object->sensor.fieldOfView << '\n';
+    out << "sensorrate " << object->sensor.updateRate << '\n';
+    out << "collisionfriction " << object->collision.friction << '\n';
+    out << "collisionrestitution " << object->collision.restitution << '\n';
     writeMatrix4(out, object->transform.matrix());
     writeRow(out, "linvel", object->linearVelocity.data(), 3);
     writeRow(out, "angvel", object->angularVelocity.data(), 3);
@@ -185,7 +258,9 @@ bool load(std::string_view text, SceneModel& out)
   SceneModel result;
   std::vector<SceneObject> objects;
   SceneObject current;
+  WorkspaceWatchPreset currentPreset;
   bool inObject = false;
+  bool inWatchPreset = false;
 
   while (std::getline(in, line)) {
     std::istringstream ls(line);
@@ -196,19 +271,32 @@ bool load(std::string_view text, SceneModel& out)
     }
 
     if (key == "timestep") {
+      if (inObject || inWatchPreset) {
+        return false;
+      }
       if (!(ls >> result.timeStep)) {
         return false;
       }
     } else if (key == "object") {
-      if (inObject) {
+      if (inObject || inWatchPreset) {
         return false;
       }
       current = SceneObject{};
       inObject = true;
+    } else if (key == "watch-preset") {
+      if (inObject || inWatchPreset) {
+        return false;
+      }
+      currentPreset = WorkspaceWatchPreset{};
+      inWatchPreset = true;
     } else if (key == "end") {
       if (inObject) {
         objects.push_back(current);
         inObject = false;
+      } else if (inWatchPreset) {
+        result.workspace.watchPresets.push_back(std::move(currentPreset));
+        currentPreset = WorkspaceWatchPreset{};
+        inWatchPreset = false;
       }
     } else if (inObject) {
       if (key == "id") {
@@ -220,7 +308,11 @@ bool load(std::string_view text, SceneModel& out)
         if (!(ls >> value)) {
           return false;
         }
-        current.type = static_cast<ObjectType>(value);
+        const std::optional<ObjectType> type = objectTypeFromInt(value);
+        if (!type.has_value()) {
+          return false;
+        }
+        current.type = *type;
       } else if (key == "parent") {
         if (!(ls >> current.parent)) {
           return false;
@@ -251,6 +343,36 @@ bool load(std::string_view text, SceneModel& out)
           return false;
         }
         current.shape.type = static_cast<ShapeType>(value);
+      } else if (key == "sensorkind") {
+        int value = 0;
+        if (!(ls >> value)) {
+          return false;
+        }
+        const std::optional<SensorKind> kind = sensorKindFromInt(value);
+        if (!kind.has_value()) {
+          return false;
+        }
+        current.sensor.kind = *kind;
+      } else if (key == "sensorrange") {
+        if (!(ls >> current.sensor.range)) {
+          return false;
+        }
+      } else if (key == "sensorfov") {
+        if (!(ls >> current.sensor.fieldOfView)) {
+          return false;
+        }
+      } else if (key == "sensorrate") {
+        if (!(ls >> current.sensor.updateRate)) {
+          return false;
+        }
+      } else if (key == "collisionfriction") {
+        if (!(ls >> current.collision.friction)) {
+          return false;
+        }
+      } else if (key == "collisionrestitution") {
+        if (!(ls >> current.collision.restitution)) {
+          return false;
+        }
       } else if (key == "transform") {
         if (!readMatrix4(ls, current.transform)) {
           return false;
@@ -295,16 +417,60 @@ bool load(std::string_view text, SceneModel& out)
         }
         current.name = rest;
       }
+    } else if (inWatchPreset) {
+      if (key == "name") {
+        std::string rest;
+        std::getline(ls, rest);
+        if (!rest.empty() && rest.front() == ' ') {
+          rest.erase(rest.begin());
+        }
+        currentPreset.name = rest;
+      } else if (key == "target") {
+        ObjectId id = kNoObject;
+        if (!(ls >> id)) {
+          return false;
+        }
+        currentPreset.targets.push_back(id);
+      } else if (key == "signal") {
+        std::string signal;
+        std::string extra;
+        if (!(ls >> signal) || (ls >> extra)) {
+          return false;
+        }
+        currentPreset.chartSignals.push_back(std::move(signal));
+      }
     }
   }
-  if (inObject) {
+  if (inObject || inWatchPreset) {
+    return false;
+  }
+  if (!normalizeWorkspaceSettings(result.workspace)) {
     return false;
   }
 
-  std::unordered_set<ObjectId> objectIds;
-  for (const SceneObject& object : objects) {
-    if (!objectIds.insert(object.id).second) {
+  std::unordered_map<ObjectId, ObjectType> objectTypes;
+  for (SceneObject& object : objects) {
+    if (object.type == ObjectType::Sensor
+        && !isValidSensorDesc(object.sensor)) {
       return false;
+    }
+    if (object.type == ObjectType::Collision
+        && !isValidCollisionDesc(object.collision)) {
+      return false;
+    }
+    if (!objectTypes.emplace(object.id, object.type).second) {
+      return false;
+    }
+  }
+  for (SceneObject& object : objects) {
+    if ((object.type != ObjectType::Sensor
+         && object.type != ObjectType::Collision)
+        || object.parent == kNoObject) {
+      continue;
+    }
+    const auto parent = objectTypes.find(object.parent);
+    if (parent != objectTypes.end() && !isFrameLike(parent->second)) {
+      object.parent = kNoObject;
     }
   }
 

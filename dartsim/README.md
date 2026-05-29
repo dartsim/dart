@@ -30,8 +30,15 @@ pixi run dartsim
 pixi run dartsim -- --width 1600 --height 900
 ```
 
-Launching the editor (either `pixi run dartsim` or `pixi run ex dartsim`
-without `--scene`) forces the ImGui docking branch
+The editor opens an **empty workspace** by default. Pass `--demo` to seed a
+small sample scene (a box, a sphere, and a two-link revolute arm) for a quick
+look at the panels:
+
+```bash
+pixi run dartsim -- --demo
+```
+
+Launching the editor with `pixi run dartsim` forces the ImGui docking branch
 (`DART_USE_SYSTEM_IMGUI=OFF`) so the menu bar, Scene Tree, Inspector, Console,
 and Simulation panels open in a default IDE layout and can be docked, split, and
 rearranged, with the arrangement persisted in `imgui.ini`. Extra CLI flags pass
@@ -62,12 +69,14 @@ pixi run ex dartsim --headless --frames 10 --screenshot /tmp/dartsim.ppm
 pixi run ex dartsim --scene boxes
 ```
 
-Historical GUI examples such as `hello_world`, `rigid_cubes`, `drag_and_drop`,
-and `imgui` have their own executable names:
+The GUI examples are consolidated into the `dart-demos` app, where each is a
+runtime-switchable scene; `hello_world` stays standalone as the minimal
+template:
 
 ```bash
-pixi run ex hello_world
-pixi run ex rigid_cubes --headless --frames 10 --screenshot /tmp/rigid_cubes.ppm
+pixi run demos                  # browse all example scenes in one window
+pixi run demos -- --scene boxes # select a scene by id
+pixi run ex hello_world         # the standalone minimal template
 ```
 
 The renderer implementation is private to `dart::gui`; code should include
