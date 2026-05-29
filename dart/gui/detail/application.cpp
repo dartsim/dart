@@ -41,6 +41,7 @@
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/native_window.hpp>
+#include <dart/gui/detail/offscreen_parity.hpp>
 #include <dart/gui/detail/perf_hud.hpp>
 #include <dart/gui/detail/render_context.hpp>
 #include <dart/gui/detail/render_environment.hpp>
@@ -78,6 +79,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 
 namespace {
@@ -128,6 +130,7 @@ using dart::gui::detail::parseOptions;
 using dart::gui::detail::PerfHudState;
 using dart::gui::detail::pollApplicationInput;
 using dart::gui::detail::Renderable;
+using dart::gui::detail::runOffscreenParitySelfCheck;
 using dart::gui::detail::renderApplicationFrame;
 using dart::gui::detail::resizeAutomaticApplicationWindow;
 using dart::gui::detail::resolveWindowDpiScale;
@@ -695,6 +698,27 @@ int runGuiBackendApplicationImpl(
       runOptions.screenshotPath,
       lifecycle.screenshotRequested,
       profile);
+
+  // Phase-1 gate of the Filament offscreen-viewport spike: when
+  // DART_GUI_OFFSCREEN_PARITY is set, render the live scene to an offscreen
+  // RenderTarget and confirm it matches the swapchain render (diagnostic only;
+  // see docs/design/dartsim_gui_toolkit_decisions.md Decision 3).
+  bool offscreenParitySucceeded = true;
+  if (runOptions.headless
+      && isTruthyEnvironmentVariable("DART_GUI_OFFSCREEN_PARITY")) {
+    if (std::string_view(renderContext.backendName) == "noop") {
+      std::cout
+          << "[offscreen-parity] SKIP: noop backend produces no pixels\n";
+    } else {
+      offscreenParitySucceeded = runOffscreenParitySelfCheck(
+          renderContext,
+          static_cast<std::uint32_t>(runOptions.width > 0 ? runOptions.width : 1),
+          static_cast<std::uint32_t>(
+              runOptions.height > 0 ? runOptions.height : 1),
+          std::cout);
+    }
+  }
+
   if (runOptions.maxFrames >= 0) {
     std::cout << "Final contacts: " << finalContacts << "\n";
   }
@@ -712,7 +736,10 @@ int runGuiBackendApplicationImpl(
       colorGrading,
       materialResources);
 
-  return screenshotSucceeded && frameCaptureSucceeded ? 0 : 1;
+  return screenshotSucceeded && frameCaptureSucceeded
+                 && offscreenParitySucceeded
+             ? 0
+             : 1;
 }
 
 bool hasSceneOption(int argc, char* argv[])
