@@ -34,7 +34,8 @@ dart_add_core_sources(${math_lcp_other_srcs})
 
 # Compute relative header names (e.g., lcp/pivoting/lemke_solver.hpp, lcp/dantzig/common.hpp)
 set(math_lcp_header_names "")
-set(math_lcp_public_hdrs
+set(
+  math_lcp_public_hdrs
   ${math_lcp_hdrs}
   ${math_lcp_pivoting_hdrs}
   ${math_lcp_pivoting_dantzig_hdrs}

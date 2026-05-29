@@ -43,11 +43,27 @@ function(dart_experimental_enable_benchmark_target)
   if(NOT DART_EXPERIMENTAL_BUILD_BENCHMARKS AND TARGET benchmark::benchmark)
     if(DART_EXPERIMENTAL_DEPS_MISSING)
       list(REMOVE_ITEM DART_EXPERIMENTAL_DEPS_MISSING benchmark)
-      set(DART_EXPERIMENTAL_DEPS_MISSING "${DART_EXPERIMENTAL_DEPS_MISSING}" CACHE INTERNAL "List of missing dependencies")
+      set(
+        DART_EXPERIMENTAL_DEPS_MISSING
+        "${DART_EXPERIMENTAL_DEPS_MISSING}"
+        CACHE INTERNAL
+        "List of missing dependencies"
+      )
     endif()
     list(APPEND DART_EXPERIMENTAL_DEPS_FOUND benchmark)
-    set(DART_EXPERIMENTAL_DEPS_FOUND "${DART_EXPERIMENTAL_DEPS_FOUND}" CACHE INTERNAL "List of found dependencies")
-    set(DART_EXPERIMENTAL_BUILD_BENCHMARKS TRUE CACHE BOOL "benchmark available" FORCE)
+    set(
+      DART_EXPERIMENTAL_DEPS_FOUND
+      "${DART_EXPERIMENTAL_DEPS_FOUND}"
+      CACHE INTERNAL
+      "List of found dependencies"
+    )
+    set(
+      DART_EXPERIMENTAL_BUILD_BENCHMARKS
+      TRUE
+      CACHE BOOL
+      "benchmark available"
+      FORCE
+    )
     if(DART_EXPERIMENTAL_VERBOSE)
       message(STATUS "  ✓ benchmark (target already available)")
     endif()
@@ -63,7 +79,12 @@ set(DART_EXPERIMENTAL_DEPENDENCIES_INCLUDED TRUE)
 
 # Initialize global lists for dependency tracking
 set(DART_EXPERIMENTAL_DEPS_FOUND "" CACHE INTERNAL "List of found dependencies")
-set(DART_EXPERIMENTAL_DEPS_MISSING "" CACHE INTERNAL "List of missing dependencies")
+set(
+  DART_EXPERIMENTAL_DEPS_MISSING
+  ""
+  CACHE INTERNAL
+  "List of missing dependencies"
+)
 
 if(DART_EXPERIMENTAL_VERBOSE)
   message(STATUS "==================================")
@@ -85,7 +106,10 @@ dart_experimental_find_package(
   REQUIRED
 )
 if(Eigen3_VERSION VERSION_LESS 3.4)
-  message(FATAL_ERROR "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}")
+  message(
+    FATAL_ERROR
+    "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}"
+  )
 endif()
 
 # EnTT - Entity Component System library
@@ -172,10 +196,22 @@ if(Python_FOUND)
     if(DART_EXPERIMENTAL_VERBOSE)
       message(STATUS "  ✗ nanobind not found (Python bindings disabled)")
     endif()
-    set(DART_EXPERIMENTAL_BUILD_PYTHON FALSE CACHE BOOL "Build simulation-experimental Python bindings" FORCE)
+    set(
+      DART_EXPERIMENTAL_BUILD_PYTHON
+      FALSE
+      CACHE BOOL
+      "Build simulation-experimental Python bindings"
+      FORCE
+    )
   endif()
 else()
-  set(DART_EXPERIMENTAL_BUILD_PYTHON FALSE CACHE BOOL "Build simulation-experimental Python bindings" FORCE)
+  set(
+    DART_EXPERIMENTAL_BUILD_PYTHON
+    FALSE
+    CACHE BOOL
+    "Build simulation-experimental Python bindings"
+    FORCE
+  )
 endif()
 
 #==============================================================================
@@ -202,7 +238,10 @@ else()
 
   if(DART_EXPERIMENTAL_DEPS_MISSING)
     list(JOIN DART_EXPERIMENTAL_DEPS_MISSING " " _missing_str)
-    set(_dart_experimental_summary "${_dart_experimental_summary} (missing: ${_missing_str})")
+    set(
+      _dart_experimental_summary
+      "${_dart_experimental_summary} (missing: ${_missing_str})"
+    )
   endif()
 
   message(STATUS "${_dart_experimental_summary}")
