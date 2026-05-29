@@ -50,12 +50,90 @@ struct DeformableSolverStats
   std::size_t bodyCount = 0;
   std::size_t nodeCount = 0;
   std::size_t edgeCount = 0;
+  std::size_t activeDirichletNodeCount = 0;
+  std::size_t activeNeumannNodeCount = 0;
   std::size_t objectiveEvaluations = 0;
   std::size_t solverIterations = 0;
   std::size_t lineSearchTrials = 0;
   std::size_t rejectedLineSearchCandidates = 0;
   std::size_t acceptedLineSearchSteps = 0;
   std::size_t initialProjectionCount = 0;
+  std::size_t staticGroundBarrierCount = 0;
+  std::size_t staticGroundBarrierCcdNodeChecks = 0;
+  std::size_t staticGroundBarrierCcdSampleChecks = 0;
+  std::size_t staticGroundBarrierCcdHits = 0;
+  std::size_t staticGroundBarrierCcdLimitedSteps = 0;
+  std::size_t staticGroundBarrierCcdZeroStepCount = 0;
+  std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactPointTriangleCandidates = 0;
+  std::size_t surfaceContactEdgeEdgeCandidates = 0;
+  std::size_t surfaceContactCcdPointTriangleChecks = 0;
+  std::size_t surfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t surfaceContactCcdHits = 0;
+  std::size_t surfaceContactCcdMisses = 0;
+  std::size_t surfaceContactCcdIndeterminateCount = 0;
+  std::size_t surfaceContactCcdLimitedSteps = 0;
+  std::size_t surfaceContactCcdZeroStepCount = 0;
+  std::size_t interBodySurfaceContactCandidateBuilds = 0;
+  std::size_t interBodySurfaceContactPointTriangleCandidates = 0;
+  std::size_t interBodySurfaceContactEdgeEdgeCandidates = 0;
+  std::size_t interBodySurfaceContactCcdPointTriangleChecks = 0;
+  std::size_t interBodySurfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t interBodySurfaceContactCcdHits = 0;
+  std::size_t interBodySurfaceContactCcdMisses = 0;
+  std::size_t interBodySurfaceContactCcdIndeterminateCount = 0;
+  std::size_t interBodySurfaceContactCcdLimitedSteps = 0;
+  std::size_t interBodySurfaceContactCcdZeroStepCount = 0;
+  std::size_t staticRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t staticRigidSurfaceCcdBoxCount = 0;
+  std::size_t staticRigidSurfaceCcdTriangleCount = 0;
+  std::size_t staticRigidSurfaceCcdEdgeCount = 0;
+  std::size_t staticRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t staticRigidSurfaceCcdHits = 0;
+  std::size_t staticRigidSurfaceCcdMisses = 0;
+  std::size_t staticRigidSurfaceCcdIndeterminateCount = 0;
+  std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t movingRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t movingRigidSurfaceCcdBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdSampleCount = 0;
+  std::size_t movingRigidSurfaceCcdInflatedBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdTriangleCount = 0;
+  std::size_t movingRigidSurfaceCcdEdgeCount = 0;
+  std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t movingRigidSurfaceCcdHits = 0;
+  std::size_t movingRigidSurfaceCcdMisses = 0;
+  std::size_t movingRigidSurfaceCcdIndeterminateCount = 0;
+  std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t selfContactBarrierCandidateBuilds = 0;
+  // Cumulative count of active barrier contacts summed over the outer solver
+  // iterations of a step (one increment per active candidate per gradient
+  // evaluation), matching the cumulative semantics of solverIterations; it is
+  // not the active-set size of a single iteration.
+  std::size_t selfContactBarrierActiveContacts = 0;
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t projectedNewtonFallbacks = 0;
+  // Sparse-solve factorization accounting. The symbolic factorization
+  // (fill-reducing ordering) is reused whenever the Hessian sparsity pattern is
+  // unchanged across iterations/steps, so only the numeric factorization
+  // repeats; symbolic < numeric indicates the analysis was amortized.
+  std::size_t projectedNewtonSymbolicFactorizations = 0;
+  std::size_t projectedNewtonNumericFactorizations = 0;
+  // Convergence diagnostic: the largest L2 gradient norm at solve termination
+  // across the step's deformable bodies (the projected-Newton residual). Near
+  // the gradient tolerance means the solve converged; a large value means a
+  // body hit the iteration cap or stalled. Feeds the paper's benchmark
+  // statistics (Fig. 23 / Table 1).
+  double finalGradientResidualNorm = 0.0;
 
   void reset() noexcept
   {

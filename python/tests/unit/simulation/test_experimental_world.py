@@ -283,6 +283,32 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         assert member not in stub
 
 
+def _stub_class_block(stub: str, class_name: str) -> str:
+    start = stub.index(f"class {class_name}")
+    end = stub.find("\nclass ", start + 1)
+    if end == -1:
+        end = len(stub)
+    return stub[start:end]
+
+
+def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
+    sx = _simulation_experimental()
+    repo_root = Path(__file__).resolve().parents[4]
+    stub = (
+        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+    ).read_text(encoding="utf-8")
+
+    assert hasattr(sx.RigidBody, "is_deformable_surface_ccd_obstacle")
+    assert not hasattr(sx.Link, "is_deformable_surface_ccd_obstacle")
+    assert (
+        "is_deformable_surface_ccd_obstacle"
+        in _stub_class_block(stub, "RigidBody")
+    )
+    assert (
+        "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
+    )
+
+
 def test_experimental_state_space_metadata_value_object():
     sx = _simulation_experimental()
 
@@ -1949,6 +1975,11 @@ def test_experimental_collision_query():
     assert body_a.has_collision_shape
     assert body_a.collision_shape.type == sx.CollisionShapeType.SPHERE
     assert body_b.collision_shape.type == sx.CollisionShapeType.BOX
+    assert not body_b.is_deformable_surface_ccd_obstacle
+    body_b.is_deformable_surface_ccd_obstacle = True
+    assert body_b.is_deformable_surface_ccd_obstacle
+    body_b.is_deformable_surface_ccd_obstacle = False
+    assert not body_b.is_deformable_surface_ccd_obstacle
     assert world.add_rigid_body("c").collision_shape is None
 
     contacts = world.collide()

@@ -11,7 +11,8 @@ endif()
 # Scene modules + the ordered registry, compiled into a static library so the
 # dart-demos executable and tests/unit/gui/UNIT_demos_golden_parity can both
 # consume the same scene set without rebuilding it.
-set(demos_scene_sources
+set(
+  demos_scene_sources
   "${CMAKE_CURRENT_LIST_DIR}/registry.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/hello_world.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/empty.cpp"
@@ -63,7 +64,10 @@ set(demos_scene_sources
 
 add_library(demos_scenes STATIC ${demos_scene_sources})
 target_include_directories(demos_scenes PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
-target_link_libraries(demos_scenes PUBLIC dart-gui dart-io dart-collision-native)
+target_link_libraries(
+  demos_scenes
+  PUBLIC dart-gui dart-io dart-collision-native
+)
 if(TARGET dart-simulation-experimental)
   target_link_libraries(demos_scenes PUBLIC dart-simulation-experimental)
 endif()
@@ -84,22 +88,27 @@ if(TARGET dart-demos)
   # python/tests/unit/test_golden_parity.py. Plain main() so no GTest scope
   # dependency from examples/.
   if(BUILD_TESTING AND DART_BUILD_TESTS)
-    add_executable(UNIT_gui_DemosGoldenParity
-      "${CMAKE_SOURCE_DIR}/tests/unit/gui/test_demos_golden_parity.cpp")
+    add_executable(
+      UNIT_gui_DemosGoldenParity
+      "${CMAKE_SOURCE_DIR}/tests/unit/gui/test_demos_golden_parity.cpp"
+    )
     target_link_libraries(UNIT_gui_DemosGoldenParity PRIVATE demos_scenes)
     target_compile_features(UNIT_gui_DemosGoldenParity PRIVATE cxx_std_20)
-    add_test(NAME UNIT_gui_DemosGoldenParity
-      COMMAND UNIT_gui_DemosGoldenParity)
-    set_tests_properties(UNIT_gui_DemosGoldenParity
-      PROPERTIES LABELS "unit;gui;demos")
+    add_test(NAME UNIT_gui_DemosGoldenParity COMMAND UNIT_gui_DemosGoldenParity)
+    set_tests_properties(
+      UNIT_gui_DemosGoldenParity
+      PROPERTIES LABELS "unit;gui;demos"
+    )
   endif()
 
   # Headless smoke: cycle through every registered scene a few frames each,
   # exercising scene build, render, and the runtime scene switch/teardown. Uses
   # the same software-GL environment as the other GUI Filament smoke tests.
-  if(BUILD_TESTING
-     AND DART_BUILD_TESTS
-     AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS)
+  if(
+    BUILD_TESTING
+    AND DART_BUILD_TESTS
+    AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS
+  )
     add_test(
       NAME EXAMPLE_dart_demos_cycle_headless_smoke
       COMMAND dart-demos --cycle-scenes --headless --width 320 --height 240
@@ -111,8 +120,9 @@ if(TARGET dart-demos)
     if(UNIX AND NOT APPLE)
       set_tests_properties(
         EXAMPLE_dart_demos_cycle_headless_smoke
-        PROPERTIES ENVIRONMENT
-                   "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
+        PROPERTIES
+          ENVIRONMENT
+            "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
       )
     endif()
   endif()

@@ -37,13 +37,18 @@
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <dart/collision/native/narrow_phase/primitive_ccd.hpp>
+
 #include <gtest/gtest.h>
 
 #include <limits>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 namespace sx = dart::simulation::experimental;
 namespace compute = dart::simulation::experimental::compute;
+namespace nc = dart::collision::native;
 
 namespace {
 
@@ -59,6 +64,193 @@ void expectVectorNear(
 }
 
 //==============================================================================
+sx::DeformableBodyOptions makeSingleNodeBodyOptions(
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& velocity,
+    bool fixed = false)
+{
+  sx::DeformableBodyOptions options;
+  options.positions = {position};
+  options.velocities = {velocity};
+  options.masses = {1.0};
+  if (fixed) {
+    options.fixedNodes = {0};
+  }
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeSurfaceCrossingBodyOptions(
+    double pointHeight = 1.0, double pointVelocity = -20.0)
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, pointHeight)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, pointVelocity)};
+  options.masses = {1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeInterBodyMovingPointOptions()
+{
+  auto options = makeSurfaceCrossingBodyOptions();
+  options.positions[0].z() = 3.0;
+  options.positions[1].z() = 3.0;
+  options.positions[2].z() = 3.0;
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeStationaryTriangleObstacleOptions(double z = 0.0)
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, z),
+         Eigen::Vector3d(1.0, -1.0, z),
+         Eigen::Vector3d(0.0, 1.0, z)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+  options.masses = {1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeMovingTriangleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 1.0),
+         Eigen::Vector3d(1.0, -1.0, 1.0),
+         Eigen::Vector3d(0.0, 1.0, 1.0)};
+  options.velocities
+      = {Eigen::Vector3d(0.0, 0.0, -20.0),
+         Eigen::Vector3d(0.0, 0.0, -20.0),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.masses = {1.0, 1.0, 1.0};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeStationaryPointObstacleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 3.0),
+         Eigen::Vector3d(1.0, -1.0, 3.0),
+         Eigen::Vector3d(0.0, 1.0, 3.0),
+         Eigen::Vector3d(0.0, 0.0, 0.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+  options.masses = {1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2, 3};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeMovingEdgeOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, -1.0, -1.0),
+         Eigen::Vector3d(0.0, -1.0, 1.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0)};
+  options.velocities
+      = {Eigen::Vector3d(0.0, 20.0, 0.0),
+         Eigen::Vector3d(0.0, 20.0, 0.0),
+         Eigen::Vector3d(0.0, 20.0, 0.0)};
+  options.masses = {1.0, 1.0, 1.0};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeStationaryEdgeObstacleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+  options.masses = {1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeVolumetricInteriorNodeCrossingOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 2.0),
+         Eigen::Vector3d(0.0, 0.0, 0.5)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.fixedNodes = {0, 1, 2, 3};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{0, 3, 1},
+         sx::DeformableSurfaceTriangle{1, 3, 2},
+         sx::DeformableSurfaceTriangle{2, 3, 0}};
+  options.tetrahedra
+      = {sx::DeformableTetrahedron{0, 1, 2, 4},
+         sx::DeformableTetrahedron{0, 1, 3, 4},
+         sx::DeformableTetrahedron{1, 2, 3, 4},
+         sx::DeformableTetrahedron{2, 0, 3, 4}};
+  return options;
+}
+
+//==============================================================================
+void expectNoExactPointTriangleCrossing(
+    const Eigen::Vector3d& pointStart,
+    const Eigen::Vector3d& pointEnd,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  nc::CcdOption option;
+  option.tolerance = 1e-8;
+  option.maxIterations = 64;
+  option.minSeparation = 0.0;
+  option.advancement = nc::CcdAdvancement::Conservative;
+
+  nc::CcdPrimitiveResult exact;
+  EXPECT_FALSE(
+      nc::pointTriangleCcdExact(
+          pointStart, pointEnd, a, a, b, b, c, c, option, exact));
+}
+
+//==============================================================================
 sx::DeformableBodyOptions makeTwoNodeBody()
 {
   sx::DeformableBodyOptions options;
@@ -66,6 +258,108 @@ sx::DeformableBodyOptions makeTwoNodeBody()
   options.edges = {sx::DeformableEdge{0, 1, -1.0}};
   options.fixedNodes = {0};
   return options;
+}
+
+//==============================================================================
+sx::DeformableBodyOptions makeSingleTetrahedronBody()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ()};
+  options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
+  return options;
+}
+
+//==============================================================================
+sx::RigidBody addStaticSurfaceCcdBox(
+    sx::World& world,
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Quaterniond& orientation = Eigen::Quaterniond::Identity())
+{
+  sx::RigidBodyOptions options;
+  options.isStatic = true;
+  options.position = position;
+  options.orientation = orientation;
+  auto body = world.addRigidBody(name, options);
+  body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  body.setDeformableSurfaceCcdObstacle(true);
+  return body;
+}
+
+//==============================================================================
+class MoveRigidBodyStage final : public compute::WorldStepStage
+{
+public:
+  MoveRigidBodyStage(sx::RigidBody body, const Eigen::Isometry3d& transform)
+    : m_body(body), m_transform(transform)
+  {
+  }
+
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "move_rigid_body";
+  }
+
+  [[nodiscard]] compute::ComputeStageMetadata getMetadata()
+      const noexcept override
+  {
+    return {compute::ComputeStageDomain::Kinematics};
+  }
+
+  void execute(
+      sx::World& /*world*/, compute::ComputeExecutor& /*executor*/) override
+  {
+    m_body.setTransform(m_transform);
+  }
+
+private:
+  sx::RigidBody m_body;
+  Eigen::Isometry3d m_transform;
+};
+
+//==============================================================================
+// Adds a non-static (free) rigid box tagged as a deformable-surface CCD
+// obstacle with a prescribed world-frame velocity. The deformable stage
+// predicts this body's end-of-step pose from its velocity, so the moving CCD
+// limiter constrains the deformable against where the box will be.
+sx::RigidBody addMovingSurfaceCcdBox(
+    sx::World& world,
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Vector3d& linearVelocity,
+    const Eigen::Vector3d& angularVelocity = Eigen::Vector3d::Zero(),
+    const Eigen::Quaterniond& orientation = Eigen::Quaterniond::Identity())
+{
+  sx::RigidBodyOptions options;
+  options.isStatic = false;
+  options.position = position;
+  options.orientation = orientation;
+  auto body = world.addRigidBody(name, options);
+  body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  body.setDeformableSurfaceCcdObstacle(true);
+  body.setLinearVelocity(linearVelocity);
+  body.setAngularVelocity(angularVelocity);
+  return body;
+}
+
+//==============================================================================
+// True when `point` lies strictly outside the axis-or-oriented box centered at
+// `center` with the given orientation and half extents (i.e. positive
+// separation on at least one axis in the box's local frame).
+bool isOutsideBox(
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& center,
+    const Eigen::Quaterniond& orientation,
+    const Eigen::Vector3d& halfExtents)
+{
+  const Eigen::Vector3d local = orientation.conjugate() * (point - center);
+  return (local.array().abs() > halfExtents.array()).any();
 }
 
 } // namespace
@@ -197,6 +491,163 @@ TEST(DeformableBody, RejectsInvalidModels)
   EXPECT_THROW(
       world.addDeformableBody("bad_finite_damping", nonfiniteDamping),
       sx::InvalidArgumentException);
+
+  auto badMaterial = makeTwoNodeBody();
+  badMaterial.material.density = 0.0;
+  EXPECT_THROW(
+      world.addDeformableBody("bad_density", badMaterial),
+      sx::InvalidArgumentException);
+
+  badMaterial = makeTwoNodeBody();
+  badMaterial.material.youngsModulus = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(
+      world.addDeformableBody("bad_youngs", badMaterial),
+      sx::InvalidArgumentException);
+
+  badMaterial = makeTwoNodeBody();
+  badMaterial.material.poissonRatio = 0.5;
+  EXPECT_THROW(
+      world.addDeformableBody("bad_poisson", badMaterial),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(DeformableBody, MeshTopologyValidationAndSurfaceExtraction)
+{
+  sx::World world;
+
+  auto options = makeSingleTetrahedronBody();
+  auto body = world.addDeformableBody("tetra", options);
+
+  EXPECT_EQ(body.getSurfaceTriangleCount(), 4u);
+  EXPECT_EQ(body.getTetrahedronCount(), 1u);
+  EXPECT_DOUBLE_EQ(body.getTetrahedronRestVolume(0), 1.0 / 6.0);
+
+  const auto tet = body.getTetrahedron(0);
+  EXPECT_EQ(tet.nodeA, 0u);
+  EXPECT_EQ(tet.nodeB, 1u);
+  EXPECT_EQ(tet.nodeC, 2u);
+  EXPECT_EQ(tet.nodeD, 3u);
+
+  const auto face0 = body.getSurfaceTriangle(0);
+  EXPECT_EQ(face0.nodeA, 0u);
+  EXPECT_EQ(face0.nodeB, 2u);
+  EXPECT_EQ(face0.nodeC, 1u);
+
+  sx::World invertedWorld;
+  auto inverted = makeSingleTetrahedronBody();
+  inverted.tetrahedra = {sx::DeformableTetrahedron{0, 1, 3, 2}};
+  auto invertedBody = invertedWorld.addDeformableBody("inverted", inverted);
+  const auto canonical = invertedBody.getTetrahedron(0);
+  EXPECT_DOUBLE_EQ(invertedBody.getTetrahedronRestVolume(0), 1.0 / 6.0);
+  EXPECT_EQ(canonical.nodeC, 2u);
+  EXPECT_EQ(canonical.nodeD, 3u);
+
+  sx::World invalidWorld;
+  auto invalid = makeSingleTetrahedronBody();
+  invalid.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 2}};
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("repeated_node", invalid),
+      sx::InvalidArgumentException);
+
+  invalid = makeSingleTetrahedronBody();
+  invalid.positions[3] = Eigen::Vector3d(1.0, 1.0, 0.0);
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("flat_tet", invalid),
+      sx::InvalidArgumentException);
+
+  invalid = makeSingleTetrahedronBody();
+  invalid.tetrahedra.push_back(invalid.tetrahedra.front());
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("duplicate_tet", invalid),
+      sx::InvalidArgumentException);
+
+  invalid.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY()};
+  invalid.tetrahedra.clear();
+  invalid.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("surface_without_mass", invalid),
+      sx::InvalidArgumentException);
+
+  invalid.masses = {1.0, 1.0, 1.0};
+  invalid.surfaceTriangles.push_back(invalid.surfaceTriangles.front());
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("duplicate_surface", invalid),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(DeformableBody, DensityMassAssemblyUsesTetrahedraOnly)
+{
+  sx::World world;
+
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  auto body = world.addDeformableBody("density_mass", options);
+
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    EXPECT_DOUBLE_EQ(body.getMass(i), 0.5);
+  }
+  const auto material = body.getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 1.0e5);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.3);
+
+  sx::World explicitMassWorld;
+  options.masses = {1.0, 2.0, 3.0, 4.0};
+  options.material.density = 1200.0;
+  auto explicitMassBody
+      = explicitMassWorld.addDeformableBody("explicit_mass", options);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(0), 1.0);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(1), 2.0);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(2), 3.0);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(3), 4.0);
+}
+
+//==============================================================================
+TEST(DeformableBody, MeshMetadataDoesNotChangeSpringStepping)
+{
+  auto makeSpringBody = [](bool withSurface) {
+    sx::DeformableBodyOptions options;
+    options.positions
+        = {Eigen::Vector3d::Zero(),
+           Eigen::Vector3d::UnitX(),
+           Eigen::Vector3d::UnitY()};
+    options.velocities
+        = {Eigen::Vector3d::Zero(),
+           Eigen::Vector3d(0.1, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 0.2, 0.0)};
+    options.masses = {1.0, 1.0, 1.0};
+    options.edges
+        = {sx::DeformableEdge{0, 1, 1.0}, sx::DeformableEdge{0, 2, 1.0}};
+    options.fixedNodes = {0};
+    options.edgeStiffness = 75.0;
+    if (withSurface) {
+      options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+    }
+    return options;
+  };
+
+  sx::World pointWorld;
+  sx::World meshWorld;
+  pointWorld.setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+  meshWorld.setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+  pointWorld.setTimeStep(0.05);
+  meshWorld.setTimeStep(0.05);
+
+  auto pointBody = pointWorld.addDeformableBody("point", makeSpringBody(false));
+  auto meshBody = meshWorld.addDeformableBody("mesh", makeSpringBody(true));
+
+  pointWorld.step(4);
+  meshWorld.step(4);
+
+  for (std::size_t i = 0; i < pointBody.getNodeCount(); ++i) {
+    expectVectorNear(meshBody.getPosition(i), pointBody.getPosition(i));
+    expectVectorNear(meshBody.getVelocity(i), pointBody.getVelocity(i));
+  }
 }
 
 //==============================================================================
@@ -425,6 +876,40 @@ TEST(DeformableBody, ActiveStaticGroundContactAllowsTangentialMotion)
 }
 
 //==============================================================================
+TEST(DeformableBody, ActiveDirichletNodesDoNotBlockGroundBarrierSolve)
+{
+  sx::World world;
+  world.setTimeStep(0.1);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.1), Eigen::Vector3d(0.0, 0.0, 0.5)};
+  options.edges = {sx::DeformableEdge{0, 1, -1.0}};
+  options.edgeStiffness = 100.0;
+
+  sx::DeformableDirichletBoundaryCondition boundary;
+  boundary.nodes = {0};
+  boundary.linearVelocity = Eigen::Vector3d(0.0, 0.0, -2.0);
+  options.dirichletBoundaryConditions.push_back(boundary);
+
+  const auto body = world.addDeformableBody("scripted_anchor", options);
+  world.step();
+
+  EXPECT_NEAR(body.getPosition(0).z(), -0.1, 1e-12);
+  EXPECT_LT(body.getPosition(1).z(), 0.5);
+  EXPECT_GE(body.getPosition(1).z(), 1e-4 - 1e-12);
+}
+
+//==============================================================================
 TEST(DeformableBody, StaticGroundBarrierUsesFiniteStaticFootprint)
 {
   sx::World world;
@@ -530,13 +1015,654 @@ TEST(DeformableBody, StaticCollisionRequiresGroundBarrierOptIn)
 }
 
 //==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdLimitsFastFallingNode)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "falling_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -20.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).z(), 1e-4 - 1e-12);
+  EXPECT_LT(body.getPosition(0).z(), 1.0);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 1u);
+  EXPECT_GT(stats.staticGroundBarrierCcdNodeChecks, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdSampleChecks, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdCatchesFiniteFootprintFlyThrough)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("finite_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.05)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "fast_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, -0.2), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), -0.5);
+  EXPECT_NEAR(body.getPosition(0).z(), -0.2, 1e-12);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdCatchesNarrowOffsetFootprint)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.022, 0.0, -0.05);
+  auto ground = world.addRigidBody("narrow_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.005, 0.5, 0.05)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "fast_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, -0.2), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), 0.017);
+  EXPECT_NEAR(body.getPosition(0).z(), -0.2, 1e-12);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdLimitsSphereTopSurface)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  sphereOptions.position = Eigen::Vector3d::Zero();
+  auto sphere = world.addRigidBody("sphere_ground", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "falling_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -20.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).z(), 0.5001 - 1e-12);
+  EXPECT_LT(body.getPosition(0).z(), 1.0);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdIgnoresOrdinaryStaticShapes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto obstacle = world.addRigidBody("ordinary_static_box", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.05)));
+  ASSERT_FALSE(obstacle.isDeformableGroundBarrier());
+
+  auto body = world.addDeformableBody(
+      "fast_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, -0.2), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).x(), 0.5);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdNodeChecks, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdSkipsFixedNodes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "fixed_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(0.0, 0.0, -0.5),
+          Eigen::Vector3d(0.0, 0.0, -20.0),
+          true));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_NEAR(body.getPosition(0).z(), -0.5, 1e-12);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 1u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdNodeChecks, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCcdHits, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdPreventsFastPointTriangleCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  auto body = world.addDeformableBody(
+      "surface_crossing", makeSurfaceCrossingBodyOptions());
+  const Eigen::Vector3d pointStart = body.getPosition(3);
+
+  world.step();
+
+  EXPECT_GT(body.getPosition(3).z(), 0.0);
+  EXPECT_LT(body.getPosition(3).z(), pointStart.z());
+  expectNoExactPointTriangleCrossing(
+      pointStart,
+      body.getPosition(3),
+      body.getPosition(0),
+      body.getPosition(1),
+      body.getPosition(2));
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdReportsCustomStageStats)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "surface_crossing", makeSurfaceCrossingBodyOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(3).z(), 0.0);
+  EXPECT_GT(stats.surfaceContactCandidateBuilds, 0u);
+  EXPECT_GT(stats.surfaceContactPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.surfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.surfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdIndeterminateCount, 0u);
+  EXPECT_EQ(stats.interBodySurfaceContactPointTriangleCandidates, 0u);
+  EXPECT_EQ(stats.interBodySurfaceContactEdgeEdgeCandidates, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, InterBodySurfaceContactCcdLimitsMovingPoint)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto moving
+      = world.addDeformableBody("moving", makeInterBodyMovingPointOptions());
+  world.addDeformableBody("obstacle", makeStationaryTriangleObstacleOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(moving.getPosition(3).z(), 0.0);
+  EXPECT_LT(moving.getPosition(3).z(), 1.0);
+  EXPECT_GT(stats.interBodySurfaceContactCandidateBuilds, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, InterBodySurfaceContactCcdLimitsMovingTriangle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto moving = world.addDeformableBody("moving", makeMovingTriangleOptions());
+  world.addDeformableBody("obstacle", makeStationaryPointObstacleOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(moving.getPosition(0).z(), 0.0);
+  EXPECT_LT(moving.getPosition(0).z(), 1.0);
+  EXPECT_GT(stats.interBodySurfaceContactPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, InterBodySurfaceContactCcdChecksEdgeEdgePairs)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto moving = world.addDeformableBody("moving", makeMovingEdgeOptions());
+  world.addDeformableBody("obstacle", makeStationaryEdgeObstacleOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(moving.getPosition(0).y(), 0.0);
+  EXPECT_GT(stats.interBodySurfaceContactEdgeEdgeCandidates, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdEdgeEdgeChecks, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, InterBodySurfaceContactCcdUsesStageStartSnapshot)
+{
+  const auto runScene = [](bool movingFirst) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+
+    sx::DeformableBody moving;
+    if (movingFirst) {
+      moving = world.addDeformableBody(
+          "moving", makeInterBodyMovingPointOptions());
+      world.addDeformableBody(
+          "obstacle", makeStationaryTriangleObstacleOptions());
+    } else {
+      world.addDeformableBody(
+          "obstacle", makeStationaryTriangleObstacleOptions());
+      moving = world.addDeformableBody(
+          "moving", makeInterBodyMovingPointOptions());
+    }
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    return moving.getPosition(3).z();
+  };
+
+  const double movingFirstZ = runScene(true);
+  const double obstacleFirstZ = runScene(false);
+  EXPECT_GT(movingFirstZ, 0.0);
+  EXPECT_GT(obstacleFirstZ, 0.0);
+  EXPECT_NEAR(movingFirstZ, obstacleFirstZ, 1e-12);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdLimitsPointOnlySideCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addStaticSurfaceCcdBox(
+      world,
+      "static_box",
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.05, 1.0, 1.0));
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), -0.05);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdTriangleCount, 12u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdEdgeCount, 12u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdRequiresOptIn)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  auto box = world.addRigidBody("ordinary_static_box", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
+  ASSERT_FALSE(box.isDeformableSurfaceCcdObstacle());
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).x(), 0.5);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdHits, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdChecksPhysicalBoxEdges)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addStaticSurfaceCcdBox(
+      world,
+      "thin_box",
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.5, 0.05, 0.5));
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-0.5, -1.0, -0.5),
+         Eigen::Vector3d(-0.5, -1.0, 0.5),
+         Eigen::Vector3d(-0.7, -1.0, 0.0)};
+  options.velocities
+      = {Eigen::Vector3d(0.0, 20.0, 0.0),
+         Eigen::Vector3d(0.0, 20.0, 0.0),
+         Eigen::Vector3d(0.0, 20.0, 0.0)};
+  options.masses = {1.0, 1.0, 1.0};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  auto body = world.addDeformableBody("moving_edge", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).y(), -0.05);
+  EXPECT_GT(stats.staticRigidSurfaceCcdEdgeEdgeCandidates, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdEdgeEdgeChecks, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdUsesStageStartTransform)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto box = addStaticSurfaceCcdBox(
+      world,
+      "moved_box",
+      Eigen::Vector3d(10.0, 0.0, 0.0),
+      Eigen::Vector3d(0.05, 1.0, 1.0));
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  Eigen::Isometry3d movedTransform = Eigen::Isometry3d::Identity();
+  movedTransform.translation() = Eigen::Vector3d::Zero();
+  MoveRigidBodyStage moveBox(box, movedTransform);
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(moveBox);
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), -0.05);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdHandlesRotatedBoxSide)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addStaticSurfaceCcdBox(
+      world,
+      "rotated_box",
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.05, 1.0, 1.0),
+      Eigen::Quaterniond(
+          Eigen::AngleAxisd(
+              0.25 * 3.14159265358979323846, Eigen::Vector3d::UnitZ())));
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, -1.0, 0.0), Eigen::Vector3d(20.0, 20.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), 0.0);
+  EXPECT_LT(body.getPosition(0).y(), 0.0);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+  EXPECT_GT(body.getPosition(0).y(), -1.0);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdIgnoresVolumetricInteriorNodes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "volumetric_interior", makeVolumetricInteriorNodeCrossingOptions());
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(4).z(), 0.0);
+  EXPECT_GT(stats.surfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(stats.surfaceContactPointTriangleCandidates, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_EQ(stats.surfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdRejectsInitialSeparationBand)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "surface_initial_band", makeSurfaceCrossingBodyOptions(5e-5, -1.0));
+  const Eigen::Vector3d pointStart = body.getPosition(3);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  expectVectorNear(body.getPosition(3), pointStart, 1e-12);
+  EXPECT_GT(stats.surfaceContactCcdZeroStepCount, 0u);
+  EXPECT_EQ(stats.acceptedLineSearchSteps, 0u);
+  EXPECT_GT(stats.rejectedLineSearchCandidates, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceFreeParticlesKeepFastPath)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.25);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero()};
+  options.velocities = {Eigen::Vector3d(0.0, 0.0, 2.0)};
+  auto body = world.addDeformableBody("free_particle", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  expectVectorNear(body.getPosition(0), Eigen::Vector3d(0.0, 0.0, 0.5));
+  EXPECT_EQ(stage.getLastStats().surfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(stage.getLastStats().solverIterations, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactScratchIsPerBody)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto surfaced = world.addDeformableBody(
+      "surface_crossing", makeSurfaceCrossingBodyOptions());
+
+  sx::DeformableBodyOptions freeOptions;
+  freeOptions.positions = {Eigen::Vector3d(3.0, 0.0, 0.0)};
+  freeOptions.velocities = {Eigen::Vector3d(0.0, 0.0, 5.0)};
+  auto free = world.addDeformableBody("free_particle", freeOptions);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  EXPECT_GT(surfaced.getPosition(3).z(), 0.0);
+  expectVectorNear(free.getPosition(0), Eigen::Vector3d(3.0, 0.0, 0.5));
+  EXPECT_EQ(stage.getLastStats().bodyCount, 2u);
+  EXPECT_GT(stage.getLastStats().surfaceContactCandidateBuilds, 0u);
+}
+
+//==============================================================================
 TEST(DeformableBody, StageMetadataUsesDeformableDomain)
 {
   compute::DeformableDynamicsStage stage;
 
   EXPECT_EQ(stage.getName(), "deformable_dynamics");
-  EXPECT_EQ(
-      stage.getMetadata().domain, compute::ComputeStageDomain::DeformableBody);
+  const auto metadata = stage.getMetadata();
+  EXPECT_EQ(metadata.domain, compute::ComputeStageDomain::DeformableBody);
+
+  bool readsTopology = false;
+  for (const auto& resource : metadata.resources) {
+    if (resource.resource == "deformable_body.topology") {
+      readsTopology = resource.mode == compute::ComputeAccessMode::Read;
+    }
+  }
+  EXPECT_TRUE(readsTopology);
 }
 
 //==============================================================================
@@ -598,4 +1724,1008 @@ TEST(DeformableBody, SerializationPreservesModelAndState)
   expectVectorNear(body2->getVelocity(1), Eigen::Vector3d(0.25, 0.0, 0.0));
   ASSERT_EQ(body2->getEdgeCount(), 1u);
   EXPECT_DOUBLE_EQ(body2->getEdge(0).restLength, 1.0);
+}
+
+//==============================================================================
+TEST(DeformableBody, SerializationPreservesMeshTopologyAndMaterial)
+{
+  sx::World world1;
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  options.material.youngsModulus = 2500.0;
+  options.material.poissonRatio = 0.25;
+  auto body1 = world1.addDeformableBody("serialized_mesh", options);
+  body1.setVelocity(3, Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  std::stringstream stream;
+  world1.saveBinary(stream);
+
+  sx::World world2;
+  world2.loadBinary(stream);
+
+  auto body2 = world2.getDeformableBody("serialized_mesh");
+  ASSERT_TRUE(body2.has_value());
+  ASSERT_EQ(body2->getNodeCount(), 4u);
+  ASSERT_EQ(body2->getSurfaceTriangleCount(), 4u);
+  ASSERT_EQ(body2->getTetrahedronCount(), 1u);
+  EXPECT_DOUBLE_EQ(body2->getTetrahedronRestVolume(0), 1.0 / 6.0);
+  for (std::size_t i = 0; i < body2->getNodeCount(); ++i) {
+    EXPECT_DOUBLE_EQ(body2->getMass(i), 0.5);
+  }
+
+  const auto material = body2->getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 2500.0);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.25);
+  expectVectorNear(body2->getVelocity(3), Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  world2.setTimeStep(0.05);
+  world2.step();
+  EXPECT_LT(body2->getPosition(3).z(), 1.0 + 0.05 * 0.5);
+}
+
+//==============================================================================
+// A deformable node advancing toward a box that is itself moving toward the
+// node is conservatively limited so it does not enter the box's predicted
+// end-of-step pose. The custom pipeline runs only the deformable stage; the
+// limiter still predicts the box end pose from its velocity.
+TEST(DeformableBody, MovingRigidSurfaceCcdLimitsAgainstPredictedPose)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  addMovingSurfaceCcdBox(
+      world,
+      "moving_box",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      halfExtents,
+      Eigen::Vector3d(-20.0, 0.0, 0.0));
+
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  // The swept motion is tiled by overlapping static pose samples (>= 2), each
+  // contributing the box's 12 triangles / 12 edges.
+  EXPECT_GE(stats.movingRigidSurfaceCcdSampleCount, 2u);
+  EXPECT_EQ(
+      stats.movingRigidSurfaceCcdTriangleCount,
+      12u * stats.movingRigidSurfaceCcdSampleCount);
+  EXPECT_EQ(
+      stats.movingRigidSurfaceCcdEdgeCount,
+      12u * stats.movingRigidSurfaceCcdSampleCount);
+  EXPECT_GT(stats.movingRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdPointTriangleCandidates, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdPointTriangleChecks, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+  // The moving obstacle path must not be confused with the static one.
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+
+  // The node moved toward its free target but was limited short of it.
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), -1.0);
+  EXPECT_LT(finalPosition.x(), 1.0);
+
+  // Conservative guarantee: the node stays outside the box's predicted end pose
+  // (center moves by velocity * dt = -20 * 0.1 = -2.0 to the origin).
+  const Eigen::Vector3d predictedEndCenter(0.0, 0.0, 0.0);
+  EXPECT_TRUE(isOutsideBox(
+      finalPosition,
+      predictedEndCenter,
+      Eigen::Quaterniond::Identity(),
+      halfExtents));
+}
+
+//==============================================================================
+// Isolates the ordering fix: with the box STATIC at its start pose, the node's
+// own trajectory never reaches it, so the static limiter does not engage and
+// the node reaches its free target. With the SAME geometry but the box moving
+// onto the node's path, the moving limiter predicts the end pose and limits the
+// node. Same node motion, opposite outcome -> the prediction is what matters.
+TEST(DeformableBody, MovingRigidSurfaceCcdConstrainsWhereStaticSnapshotWouldNot)
+{
+  const Eigen::Vector3d boxStart(2.0, 0.0, 0.0);
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  const Eigen::Vector3d nodeStart(-1.0, 0.0, 0.0);
+  const Eigen::Vector3d nodeVelocity(20.0, 0.0, 0.0);
+
+  // Baseline: a static box at the start pose is too far from the node's
+  // trajectory to limit it.
+  double staticFinalX = 0.0;
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addStaticSurfaceCcdBox(world, "static_box", boxStart, halfExtents);
+    auto body = world.addDeformableBody(
+        "approaching_point",
+        makeSingleNodeBodyOptions(nodeStart, nodeVelocity));
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+    staticFinalX = body.getPosition(0).x();
+    EXPECT_GT(staticFinalX, 0.9); // reached free target ~ +1.0
+  }
+
+  // Moving: the same box sweeps onto the node's path and is predicted, so the
+  // node is limited well short of its free target.
+  double movingFinalX = 0.0;
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addMovingSurfaceCcdBox(
+        world,
+        "moving_box",
+        boxStart,
+        halfExtents,
+        Eigen::Vector3d(-20.0, 0.0, 0.0));
+    auto body = world.addDeformableBody(
+        "approaching_point",
+        makeSingleNodeBodyOptions(nodeStart, nodeVelocity));
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_GT(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+    movingFinalX = body.getPosition(0).x();
+  }
+
+  // The moving prediction constrains the node where the static snapshot did
+  // not.
+  EXPECT_LT(movingFinalX, staticFinalX);
+  EXPECT_LT(movingFinalX, 0.9);
+}
+
+//==============================================================================
+// An obstacle receding from the deformable must not spuriously limit it.
+TEST(DeformableBody, MovingRigidSurfaceCcdDoesNotLimitRecedingObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addMovingSurfaceCcdBox(
+      world,
+      "receding_box",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      Eigen::Vector3d(0.05, 1.0, 1.0),
+      Eigen::Vector3d(20.0, 0.0, 0.0)); // moves away in +x
+
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdHits, 0u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+  // The node reaches its free target unimpeded.
+  EXPECT_GT(body.getPosition(0).x(), 0.9);
+}
+
+//==============================================================================
+// A fast-rotating obstacle is handled conservatively: its swept motion is tiled
+// by sampled rotated poses, so a node advancing toward the spinning slab is
+// limited and stays outside the slab's rotated end pose, deterministically.
+TEST(DeformableBody, MovingRigidSurfaceCcdHandlesRotatingObstacle)
+{
+  const Eigen::Vector3d boxCenter(0.0, 0.0, 0.0);
+  const Eigen::Vector3d halfExtents(1.0, 0.1, 1.0);
+  const Eigen::Vector3d angularVelocity(0.0, 0.0, 10.0); // 10 rad/s about z
+  const double timeStep = 0.1;                           // theta = 1.0 rad
+
+  std::size_t limitedSteps = 0;
+  std::size_t boxCount = 0;
+  const auto run = [&]() {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(timeStep);
+    addMovingSurfaceCcdBox(
+        world,
+        "spinning_slab",
+        boxCenter,
+        halfExtents,
+        Eigen::Vector3d::Zero(),
+        angularVelocity);
+    // Node starts outside the slab's swept disc on the +x side and drives in
+    // toward the center, so it must be limited by the rotating obstacle.
+    auto body = world.addDeformableBody(
+        "approaching_point",
+        makeSingleNodeBodyOptions(
+            Eigen::Vector3d(1.5, 0.0, 0.0), Eigen::Vector3d(-10.0, 0.0, 0.0)));
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    limitedSteps = stage.getLastStats().movingRigidSurfaceCcdLimitedSteps;
+    boxCount = stage.getLastStats().movingRigidSurfaceCcdBoxCount;
+    return body.getPosition(0);
+  };
+
+  const Eigen::Vector3d finalPosition = run();
+
+  EXPECT_EQ(boxCount, 1u);
+  EXPECT_GT(limitedSteps, 0u);
+
+  // Predicted end orientation: rotation by theta = |angular| * dt = 1.0 rad
+  // about z. The node must remain outside the obstacle's rotated end pose.
+  const Eigen::Quaterniond endOrientation(
+      Eigen::AngleAxisd(10.0 * timeStep, Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(
+      isOutsideBox(finalPosition, boxCenter, endOrientation, halfExtents));
+
+  // Determinism: identical inputs produce identical output.
+  const Eigen::Vector3d repeat = run();
+  EXPECT_DOUBLE_EQ(finalPosition.x(), repeat.x());
+  EXPECT_DOUBLE_EQ(finalPosition.y(), repeat.y());
+  EXPECT_DOUBLE_EQ(finalPosition.z(), repeat.z());
+}
+
+//==============================================================================
+// The moving and static rigid obstacle collectors are disjoint: a static CCD
+// box increments only static counters and a moving CCD box increments only
+// moving counters.
+TEST(DeformableBody, MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint)
+{
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addStaticSurfaceCcdBox(
+        world, "static_box", Eigen::Vector3d::Zero(), halfExtents);
+    auto body = world.addDeformableBody(
+        "fast_point",
+        makeSingleNodeBodyOptions(
+            Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    EXPECT_TRUE(body.isValid());
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 1u);
+    EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_EQ(stats.movingRigidSurfaceCcdCandidateBuilds, 0u);
+    EXPECT_EQ(stats.movingRigidSurfaceCcdHits, 0u);
+  }
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addMovingSurfaceCcdBox(
+        world,
+        "moving_box",
+        Eigen::Vector3d(2.0, 0.0, 0.0),
+        halfExtents,
+        Eigen::Vector3d(-20.0, 0.0, 0.0));
+    auto body = world.addDeformableBody(
+        "fast_point",
+        makeSingleNodeBodyOptions(
+            Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    EXPECT_TRUE(body.isValid());
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdCandidateBuilds, 0u);
+    EXPECT_EQ(stats.staticRigidSurfaceCcdHits, 0u);
+  }
+}
+
+//==============================================================================
+// A very fast obstacle exceeds the sample cap; the sampled boxes are then
+// inflated to keep overlapping, so the deformable still cannot tunnel into the
+// swept corridor (the conservative invariant holds past the cap).
+TEST(
+    DeformableBody, MovingRigidSurfaceCcdInflatesSamplesPastCapWithoutTunneling)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  // minHalfExtent = 0.05; motion = 200 * 0.1 = 20 >> 64 * 0.05, so the sample
+  // count is capped and the boxes must be inflated to bridge the residual gaps.
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  addMovingSurfaceCcdBox(
+      world,
+      "very_fast_box",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      halfExtents,
+      Eigen::Vector3d(-200.0, 0.0, 0.0));
+
+  // Node approaches the corridor from the +x side (outside the swept region).
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(3.0, 0.0, 0.0), Eigen::Vector3d(-10.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdInflatedBoxCount, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+
+  // The node is stopped before entering the swept corridor (start box right
+  // face is at x = 2.05); it must not tunnel into or across the corridor.
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), 2.0);
+  EXPECT_LT(finalPosition.x(), 3.0);
+}
+
+//==============================================================================
+// End-to-end through the FULL default pipeline: the obstacle is actually
+// integrated by RigidBodyPositionStage (stage 5) after the deformable solve
+// (stage 4). With gravity off and no rigid contacts the obstacle velocity is
+// constant across stages, so the velocity-based prediction the deformable stage
+// limits against equals the pose the obstacle really reaches, and the node ends
+// outside the obstacle's realized end pose.
+TEST(DeformableBody, MovingRigidSurfaceCcdMatchesRealizedMotionInFullPipeline)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const Eigen::Vector3d boxStart(1.0, 0.0, 0.0);
+  const Eigen::Vector3d halfExtents(0.2, 1.0, 1.0);
+  const Eigen::Vector3d boxVelocity(-1.0, 0.0, 0.0);
+  auto box = addMovingSurfaceCcdBox(
+      world, "moving_box", boxStart, halfExtents, boxVelocity);
+
+  // Free target (+1.0) lies inside the obstacle's end pose, so the node must be
+  // limited by the full-pipeline solve.
+  auto body = world.addDeformableBody(
+      "approaching_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-0.5, 0.0, 0.0), Eigen::Vector3d(15.0, 0.0, 0.0)));
+
+  world.step(); // default pipeline: integrates the obstacle at stage 5
+
+  // Obstacle velocity is unchanged (no gravity, no rigid contacts), so the
+  // predicted end pose equals the realized one: center = 1.0 + (-1.0) * 0.1.
+  expectVectorNear(box.getLinearVelocity(), boxVelocity, 1e-12);
+  const Eigen::Vector3d realizedEndCenter
+      = boxStart + boxVelocity * world.getTimeStep();
+
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), -0.5); // advanced toward its target
+  EXPECT_TRUE(isOutsideBox(
+      finalPosition,
+      realizedEndCenter,
+      Eigen::Quaterniond::Identity(),
+      halfExtents));
+}
+
+//==============================================================================
+// Two facing triangles in ONE deformable body: the lower triangle is fixed and
+// the upper triangle (directly above) is driven down into it. The self-contact
+// barrier must produce a repulsive force that keeps the surfaces apart, beyond
+// what the CCD min-separation alone would give.
+namespace {
+sx::DeformableBodyOptions makeTwoFacingTrianglesOptions(
+    double gap, double downwardVelocity)
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, gap),
+         Eigen::Vector3d(1.0, 0.0, gap),
+         Eigen::Vector3d(0.0, 1.0, gap)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -downwardVelocity),
+         Eigen::Vector3d(0.0, 0.0, -downwardVelocity),
+         Eigen::Vector3d(0.0, 0.0, -downwardVelocity)};
+  options.masses = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2}; // lower triangle is a fixed obstacle
+  options.edgeStiffness = 0.0;    // no springs: isolate the contact response
+  options.damping = 0.0;
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{3, 4, 5}};
+  return options;
+}
+
+double minUpperTriangleHeight(const sx::DeformableBody& body)
+{
+  return std::min(
+      {body.getPosition(3).z(),
+       body.getPosition(4).z(),
+       body.getPosition(5).z()});
+}
+} // namespace
+
+//==============================================================================
+TEST(DeformableBody, SelfContactBarrierKeepsDrivenSurfacesApart)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  // Start within the barrier activation band; drive the upper triangle hard
+  // enough that its free (barrier-free) target would penetrate the lower one.
+  auto body = world.addDeformableBody(
+      "facing_triangles", makeTwoFacingTrianglesOptions(0.015, 0.2));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(stats.selfContactBarrierCandidateBuilds, 0u);
+  EXPECT_GT(stats.selfContactBarrierActiveContacts, 0u);
+
+  // Projected Newton is the dominant search direction here: the 12x12 barrier
+  // Hessian assembly and per-element PSD projection run on every iteration
+  // under a heavily-loaded active set (~255 contacts). At most an occasional
+  // near-convergence iteration, where the Newton step's directional derivative
+  // rounds toward zero, degrades gracefully to the steepest-descent fallback,
+  // so Newton steps strictly outnumber fallbacks.
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_GT(stats.projectedNewtonSteps, stats.projectedNewtonFallbacks);
+
+  // The barrier produces a strong repulsive force that holds the surfaces at a
+  // stable separation inside the activation band (d_hat = 2e-2), far beyond the
+  // CCD min-separation (1e-4) that CCD-only limiting would leave.
+  const double height = minUpperTriangleHeight(body);
+  EXPECT_GT(height, 5e-3); // clear repulsion, orders of magnitude above min-sep
+  EXPECT_LT(height, 2e-2); // settles within the barrier activation band
+}
+
+//==============================================================================
+TEST(DeformableBody, SelfContactBarrierInactiveWhenFarApart)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  // Gap far exceeds d_hat (2e-2); a tiny downward velocity keeps it that way.
+  auto body = world.addDeformableBody(
+      "facing_triangles_far", makeTwoFacingTrianglesOptions(0.5, 0.1));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.selfContactBarrierActiveContacts, 0u);
+  // The upper triangle reaches its free target (0.5 - 0.1 * 0.1 = 0.49).
+  EXPECT_NEAR(minUpperTriangleHeight(body), 0.49, 1e-6);
+}
+
+//==============================================================================
+TEST(DeformableBody, SelfContactBarrierIsDeterministic)
+{
+  const auto run = [] {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    auto body = world.addDeformableBody(
+        "facing_triangles", makeTwoFacingTrianglesOptions(0.015, 0.2));
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    world.step(executor, pipeline);
+    return minUpperTriangleHeight(body);
+  };
+  EXPECT_DOUBLE_EQ(run(), run());
+}
+
+//==============================================================================
+// The self-contact barrier must use the same surface point mask as the CCD
+// path: a volumetric body's interior node (not a vertex of any surface
+// triangle) must never receive a barrier point-triangle force against its own
+// shell, even when it lies within the activation band.
+TEST(DeformableBody, SelfContactBarrierIgnoresVolumetricInteriorNodes)
+{
+  auto options = makeVolumetricInteriorNodeCrossingOptions();
+  // Place the interior apex (node 4) within d_hat (2e-2) of the bottom surface
+  // triangle and let it drift slowly; without the mask it would generate a
+  // spurious barrier contact against the shell.
+  options.positions[4] = Eigen::Vector3d(0.0, 0.0, 0.015);
+  options.velocities[4] = Eigen::Vector3d(0.0, 0.0, -0.05);
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody("volumetric_interior_barrier", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_TRUE(body.isValid());
+  EXPECT_GT(stats.selfContactBarrierCandidateBuilds, 0u); // barrier path ran
+  // The masked interior node produces no surface self-contact barrier force.
+  EXPECT_EQ(stats.selfContactBarrierActiveContacts, 0u);
+}
+
+//==============================================================================
+// The deformable solve uses a projected-Newton search direction: it engages
+// (no fallback) and converges the linear spring step in very few iterations,
+// reaching the analytic implicit-Euler equilibrium.
+TEST(DeformableBody, ProjectedNewtonSolvesSpringStepInFewIterations)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  auto options = makeTwoNodeBody();
+  options.positions[1] = Eigen::Vector3d(2.0, 0.0, 0.0);
+  options.edges = {sx::DeformableEdge{0, 1, 1.0}};
+  options.edgeStiffness = 100.0;
+  options.masses = {1.0, 1.0};
+  auto body = world.addDeformableBody("newton_spring", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_EQ(stats.projectedNewtonFallbacks, 0u);
+  // This (effectively linear) spring step is solved by a single Newton step,
+  // with one confirming iteration that breaks on the gradient tolerance: two
+  // outer iterations total, far fewer than steepest descent. A tight bound
+  // makes this a real regression guard against a convergence slowdown.
+  EXPECT_LE(stats.solverIterations, 2u);
+  // The reported convergence residual reflects a converged solve (the loop
+  // terminates on the gradient tolerance).
+  EXPECT_LT(stats.finalGradientResidualNorm, 1e-6);
+
+  constexpr double inertialWeight = 1.0 / (0.1 * 0.1);
+  constexpr double expectedX
+      = (inertialWeight * 2.0 + 100.0 * 1.0) / (inertialWeight + 100.0);
+  expectVectorNear(body.getPosition(1), Eigen::Vector3d(expectedX, 0.0, 0.0));
+}
+
+//==============================================================================
+// Sparse projected Newton scales past the former dense 256-node cap: a 300-node
+// spring chain (well beyond the old limit) is solved on the Newton path. The
+// previous dense solver returned false for any body over 256 nodes, so this
+// whole body would have fallen back to steepest descent for every iteration;
+// the sparse Cholesky assembly now keeps it on the Newton path.
+TEST(DeformableBody, SparseProjectedNewtonScalesBeyondDenseCap)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  constexpr std::size_t kNodeCount = 300; // > the former 256-node dense cap
+  constexpr double spacing = 0.1;
+
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    options.positions.emplace_back(static_cast<double>(i) * spacing, 0.0, 0.0);
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  options.edges.reserve(kNodeCount - 1);
+  for (std::size_t i = 0; i + 1 < kNodeCount; ++i) {
+    options.edges.push_back(sx::DeformableEdge{i, i + 1, spacing});
+  }
+  options.edgeStiffness = 100.0;
+  options.fixedNodes = {0}; // anchor one end of the chain
+
+  auto body = world.addDeformableBody("sparse_chain", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  // The >256-node body is solved on the sparse Newton path; the old dense
+  // solver would have reported projectedNewtonSteps == 0 (all fallback).
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_GT(stats.projectedNewtonSteps, stats.projectedNewtonFallbacks);
+
+  // The solve stays finite, keeps the anchor pinned, and lets gravity sag the
+  // free end downward.
+  expectVectorNear(body.getPosition(0), Eigen::Vector3d::Zero());
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+  }
+  EXPECT_LT(body.getPosition(kNodeCount - 1).z(), 0.0);
+}
+
+//==============================================================================
+// Sparse projected Newton scales past the dense cap WITH active contact: a
+// 320-node grid (> the former 256-node cap) pressed onto a static ground
+// barrier is solved on the Newton path, so the sparse assembly's ground-barrier
+// Hessian scatter runs above the old cap. The barrier holds it non-penetrating.
+TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  // Ground barrier: static box whose top surface sits at z = 0.
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  // 20x16 = 320-node grid lying just inside the barrier activation band
+  // (d_hat = 2e-2), connected by structural springs along both axes.
+  constexpr std::size_t kColumns = 20;
+  constexpr std::size_t kRows = 16;
+  constexpr std::size_t kNodeCount = kColumns * kRows; // 320 > 256
+  constexpr double spacing = 0.1;
+  constexpr double restZ = 0.01; // inside (0, d_hat)
+
+  const auto index = [&](std::size_t c, std::size_t r) {
+    return r * kColumns + c;
+  };
+
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      options.positions.emplace_back(
+          static_cast<double>(c) * spacing,
+          static_cast<double>(r) * spacing,
+          restZ);
+    }
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      if (c + 1 < kColumns) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r), spacing});
+      }
+      if (r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c, r + 1), spacing});
+      }
+    }
+  }
+  options.edgeStiffness = 100.0;
+
+  auto body = world.addDeformableBody("sparse_grid", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int step = 0; step < 5; ++step) {
+    world.step(executor, pipeline);
+  }
+
+  const auto& stats = stage.getLastStats();
+  // The >256-node body is solved on the sparse Newton path with the ground
+  // barrier configured, so the sparse assembly's ground-barrier Hessian scatter
+  // runs above the former dense cap.
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 1u);
+
+  // Gravity presses the grid onto the barrier, which holds every node above the
+  // ground surface (z = 0) without penetration.
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+    EXPECT_GE(body.getPosition(i).z(), -1e-3);
+  }
+}
+
+//==============================================================================
+// Library-level reproduction of the experimental_deformable_gui "drape" demo:
+// a >256-node mat drapes over a raised box ground barrier (a finite-footprint
+// step in the support height field) onto the surrounding flat ground. The mat
+// is solved on the sparse Newton path and conforms to the step -- center nodes
+// held at the box top, overhang nodes draped toward the ground -- so the node
+// heights span a clear range without penetrating either surface.
+TEST(DeformableBody, SparseProjectedNewtonDrapesMatOverStepBarrier)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  // Flat ground barrier (top surface at z = 0).
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  // Raised central box barrier: a finite-footprint step with top at z = 0.24.
+  constexpr double boxHalf = 0.30;
+  constexpr double boxTop = 0.24;
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5 * boxTop);
+  auto box = world.addRigidBody("step", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(boxHalf, boxHalf, 0.5 * boxTop)));
+  box.setDeformableGroundBarrier(true);
+
+  // 18x16 = 288-node mat (> 256) overhanging the box footprint. It is started
+  // near its draped equilibrium -- step-shaped, just above the box top over the
+  // footprint and just above the ground beyond it -- so the solve settles in a
+  // few iterations (the experimental_deformable_gui "drape" demo runs the full
+  // dynamic fall; here we only need to validate the conforming equilibrium).
+  constexpr std::size_t kColumns = 18;
+  constexpr std::size_t kRows = 16;
+  constexpr std::size_t kNodeCount = kColumns * kRows;
+  constexpr double spacing = 0.05;
+  const double halfWidth = 0.5 * spacing * static_cast<double>(kColumns - 1);
+  const double halfDepth = 0.5 * spacing * static_cast<double>(kRows - 1);
+
+  const auto index = [&](std::size_t c, std::size_t r) {
+    return r * kColumns + c;
+  };
+
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 25.0;
+  options.damping = 1.5;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      const double x = static_cast<double>(c) * spacing - halfWidth;
+      const double y = static_cast<double>(r) * spacing - halfDepth;
+      const bool overBox = std::abs(x) <= boxHalf && std::abs(y) <= boxHalf;
+      options.positions.emplace_back(x, y, overBox ? boxTop + 0.005 : 0.005);
+    }
+  }
+  options.masses.assign(kNodeCount, 0.05);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      if (c + 1 < kColumns) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r), -1.0});
+      }
+      if (r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c, r + 1), -1.0});
+      }
+      if (c + 1 < kColumns && r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r + 1), -1.0});
+        options.edges.push_back(
+            sx::DeformableEdge{index(c + 1, r), index(c, r + 1), -1.0});
+      }
+    }
+  }
+
+  auto body = world.addDeformableBody("drape_mat", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int step = 0; step < 20; ++step) {
+    world.step(executor, pipeline);
+  }
+
+  const auto& stats = stage.getLastStats();
+  // Two ground barriers (flat ground + raised step), solved on the sparse
+  // Newton path above the former dense cap.
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_EQ(stats.staticGroundBarrierCount, 2u);
+
+  double minZ = std::numeric_limits<double>::infinity();
+  double maxZ = -std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    const auto position = body.getPosition(i);
+    ASSERT_TRUE(position.allFinite());
+    EXPECT_GE(position.z(), -1e-3); // no penetration of either surface
+    minZ = std::min(minZ, position.z());
+    maxZ = std::max(maxZ, position.z());
+  }
+
+  // The mat conforms to the step: some nodes ride the box top while overhang
+  // nodes drape toward the ground, so the height range spans a good fraction of
+  // the step height (a flat sheet would collapse this range to ~0).
+  EXPECT_LT(minZ, 0.1 * boxTop); // overhang nodes reached near the ground
+  EXPECT_GT(maxZ, 0.5 * boxTop); // supported nodes remain near the box top
+}
+
+//==============================================================================
+// A fixed-topology spring body (no contact) has an unchanging Hessian sparsity
+// pattern, so the projected-Newton solve reuses its fill-reducing symbolic
+// factorization: the first step analyzes the pattern, and a later step performs
+// numeric factorizations with zero new symbolic analyses. Behavior is
+// unchanged -- this only asserts the analysis is amortized.
+TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  constexpr std::size_t kNodeCount = 8;
+  constexpr double spacing = 0.1;
+  sx::DeformableBodyOptions options;
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    options.positions.emplace_back(static_cast<double>(i) * spacing, 0.0, 0.0);
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  for (std::size_t i = 0; i + 1 < kNodeCount; ++i) {
+    options.edges.push_back(sx::DeformableEdge{i, i + 1, spacing});
+  }
+  options.edgeStiffness = 100.0;
+  options.fixedNodes = {0};
+
+  auto body = world.addDeformableBody("symbolic_reuse_chain", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+
+  world.step(executor, pipeline); // first step analyzes the sparsity pattern
+  EXPECT_GE(stage.getLastStats().projectedNewtonSymbolicFactorizations, 1u);
+
+  world.step(executor, pipeline); // pattern unchanged -> symbolic reused
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(stats.projectedNewtonNumericFactorizations, 0u);
+  EXPECT_EQ(stats.projectedNewtonSymbolicFactorizations, 0u);
+
+  // The reused factorization still produces a finite, sane solve.
+  EXPECT_TRUE(body.getPosition(kNodeCount - 1).allFinite());
+}
+
+namespace {
+struct GroundSlideResult
+{
+  double x = 0.0;
+  double vx = 0.0;
+  double z = 0.0;
+};
+
+// Slide a single node along a static ground barrier under gravity with the
+// given Coulomb friction coefficient, returning its final tangential position,
+// tangential velocity, and height after `steps` steps.
+GroundSlideResult runGroundFrictionSlide(double frictionCoefficient, int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  // Start inside the barrier band (d_hat = 2e-2) with a tangential velocity.
+  auto options = makeSingleNodeBodyOptions(
+      Eigen::Vector3d(0.0, 0.0, 0.01), Eigen::Vector3d(2.0, 0.0, 0.0));
+  options.material.frictionCoefficient = frictionCoefficient;
+  auto body = world.addDeformableBody("slider", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < steps; ++i) {
+    world.step(executor, pipeline);
+  }
+
+  const auto position = body.getPosition(0);
+  const auto velocity = body.getVelocity(0);
+  return {position.x(), velocity.x(), position.z()};
+}
+} // namespace
+
+//==============================================================================
+// Coulomb friction (mu > 0) opposes a node sliding while in static-ground
+// contact: it travels less far and ends slower than the frictionless control,
+// while staying in non-penetrating contact.
+TEST(DeformableBody, GroundFrictionDeceleratesSlidingNode)
+{
+  const auto frictionless = runGroundFrictionSlide(0.0, 30);
+  const auto frictional = runGroundFrictionSlide(0.8, 30);
+
+  EXPECT_GE(frictionless.z, -1e-3);
+  EXPECT_GE(frictional.z, -1e-3);
+
+  // The frictionless node slides essentially freely (gravity is vertical).
+  EXPECT_GT(frictionless.x, 0.4);
+  EXPECT_NEAR(frictionless.vx, 2.0, 0.2);
+
+  // Friction opposes the slide: shorter distance and lower final speed.
+  EXPECT_LT(frictional.x, frictionless.x);
+  EXPECT_LT(frictional.vx, frictionless.vx);
+  EXPECT_GE(frictional.x, 0.0); // not pushed backward
+}
+
+//==============================================================================
+// Friction is inactive without contact: a node above the barrier band has no
+// normal force, so a high friction coefficient does not slow its free slide.
+TEST(DeformableBody, GroundFrictionInactiveWithoutGroundContact)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto options = makeSingleNodeBodyOptions(
+      Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(2.0, 0.0, 0.0));
+  options.material.frictionCoefficient = 1.0;
+  auto body = world.addDeformableBody("floater", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < 10; ++i) {
+    world.step(executor, pipeline);
+  }
+
+  // Out of contact: slides freely at constant velocity (no friction force).
+  EXPECT_NEAR(body.getVelocity(0).x(), 2.0, 1e-6);
+  EXPECT_NEAR(body.getPosition(0).x(), 2.0 * 0.01 * 10, 1e-3);
 }

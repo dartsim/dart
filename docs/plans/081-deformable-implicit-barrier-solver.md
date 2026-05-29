@@ -36,6 +36,13 @@
   is the machine-checkable source of truth for every audited upstream
   `IPC/input` `.txt` scene path, including symlink aliases, target type,
   expected invariant, profiling requirement, and visual evidence requirement.
+- IPC paper figure showcase plan:
+  [`081-deformable-implicit-barrier-solver/ipc-paper-figure-showcase.md`](081-deformable-implicit-barrier-solver/ipc-paper-figure-showcase.md)
+  enumerates the paper figures and benchmark tables (Fig. 2, 4, 5, 7, 8, 10,
+  11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 23, Table 1) that DART must
+  reproduce as examples, tests, or benchmark reports, with per-row
+  prerequisite kernels, performance targets, and `Status` tracking. Every
+  paper-parity slice should advance at least one row toward `landed`.
 - Implementation tracking: the first C++ slice is complete in this plan; future
   slices continue from the workstreams below. Because full IPC parity is now a
   multi-session implementation, start a new `docs/dev_tasks/` folder when that
@@ -150,9 +157,10 @@
 - Reusable deformable rendering is covered by `UNIT_gui_FilamentSceneExtraction`
   for the `dart::gui` descriptor path.
 - `bm_deformable_body` can be run with:
-  `pixi run bm bm_deformable_body -- --benchmark_filter='BM_(WorldStepWithoutDeformables|DeformableGridStep|DeformableGridStage)' --benchmark_min_time=0.1s`.
+  `pixi run bm bm_deformable_body -- --benchmark_filter='BM_(WorldStepWithoutDeformables|DeformableGridStep|DeformableGridStage|DeformableTetraMeshStep|DeformableSceneLoad|DeformableSceneReplay)' --benchmark_min_time=0.1s`.
 - Local gates run for the slice: `pixi run lint`, `pixi run build`, focused
-  `test_deformable_body`, and `pixi run check-api-boundaries`.
+  `test_deformable_body`, `test_deformable_scene_io`, `test_serialization`,
+  `UNIT_gui_FilamentSceneExtraction`, and `pixi run check-api-boundaries`.
 - This evidence is limited to point masses, springs, an analytic static-ground
   barrier, and render-only deformable surface descriptors. It is not evidence
   for mesh IPC contact, FEM elasticity, projected Newton, CCD line search,
@@ -183,6 +191,39 @@ method family. In short, the remaining gap is:
 - upstream tutorial, paper, stress, friction, scaling, SQP-comparison, and
   failure-mode visual examples ported to DART-native tests, benchmarks,
   examples, profiling, and long-horizon headless Filament evidence.
+
+## Mesh/Material-State Sub-Slice Evidence
+
+The mesh/material-state sub-slice is a narrow PLAN-081 Slice 1 increment. It
+adds optional surface triangles, tetrahedra, material properties, density-based
+tetrahedral lumped mass assembly, deterministic boundary-surface extraction,
+custom binary serialization, mesh setup/step benchmark counters, and updates
+`experimental_deformable_gui` to render body-owned surface topology. The
+existing point-mass/spring solver remains the only stepping path.
+
+The sub-slice must not be used as evidence for FEM elasticity, material-driven
+stiffness, mesh contact, no-intersection or no-inversion guarantees, CCD line
+search, projected Newton, friction, upstream scene parity, or full IPC parity.
+
+## Contact-Free Scene/Boundary Sub-Slice Evidence
+
+The scene/boundary/diagnostics sub-slice is a second narrow PLAN-081 Slice 1
+increment. It adds a DART-owned loader for the audited upstream-style text scene
+subset, a Gmsh 4.1 tetra-mesh subset importer with boundary-surface fallback
+when `$Surface` is absent, generated structural spring edges for contact-free
+replay, scripted Dirichlet and Neumann controls with time ranges, binary
+restart continuity, compact diagnostics JSON, replay/load benchmark counters,
+and `experimental_deformable_gui --deformable-scene` capture in
+combined/surface/points modes. Scene gravity follows the imported reference
+convention for these replay files; public `DeformableBodyOptions` remain
+DART-owned and do not expose upstream solver selectors. Imported IPC metadata
+such as `energy` and `timeIntegration` is reported as ignored until the
+matching solver slices exist.
+
+The sub-slice must not be used as evidence for FEM elasticity, material-driven
+stiffness, upstream ground/contact/friction behavior, mesh self-contact,
+intersection or inversion guarantees, CCD line search, projected Newton,
+friction, complete scene-corpus coverage, or full IPC parity.
 
 ## Non-Goals For The First PR
 

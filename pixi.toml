@@ -20,6 +20,7 @@ eigen = ">=3.4.0,<4"
 entt = ">=3.16.0,<4"
 foonathan-memory = ">=0.7.3,<0.8"
 fmt = ">=11.2.0,<13"
+gersemi = ">=0.24.0,<0.25"
 gtest = ">=1.17.0,<2"
 imgui = ">=1.92.3,<2"
 isort = ">=7.0.0,<8"
@@ -195,6 +196,8 @@ lint-yaml = { cmd = """
 
 lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 
+lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
+
 lint-md = { cmd = """
     prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.codex/**' '!.opencode/**'
 """ }
@@ -235,6 +238,7 @@ lint = { depends-on = [
   "lint-cpp",
   "lint-simulation-experimental",
   "lint-collision-native",
+  "lint-cmake",
   "lint-py",
   "lint-yaml",
   "lint-toml",
@@ -279,6 +283,8 @@ check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
+
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
 check-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
@@ -315,6 +321,7 @@ check-ai-commands = { cmd = [
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-simulation-experimental",
+  "check-lint-cmake",
   "check-lint-py",
   "check-lint-yaml",
   "check-lint-md",

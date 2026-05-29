@@ -5,7 +5,28 @@
  * The list of contributors can be found at:
  *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
- * This file is provided under the "BSD-style" License.
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice and this list of conditions in the documentation
+ *     and/or other materials provided with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "scenes.hpp"
@@ -14,8 +35,10 @@
 #include <dart/simulation/experimental/body/deformable_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
@@ -31,8 +54,13 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -48,12 +76,15 @@ namespace dynamics = dart::dynamics;
 namespace gui = dart::gui;
 namespace legacy_sim = dart::simulation;
 namespace sx = dart::simulation::experimental;
+namespace sxio = dart::simulation::experimental::io;
 
+//==============================================================================
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
 {
   return {r, g, b, a};
 }
 
+//==============================================================================
 Eigen::Isometry3d makeTransform(const Eigen::Vector3d& translation)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -61,6 +92,7 @@ Eigen::Isometry3d makeTransform(const Eigen::Vector3d& translation)
   return transform;
 }
 
+//==============================================================================
 struct DeformableVisual
 {
   sx::DeformableBody body;
@@ -74,49 +106,79 @@ struct DeformableVisual
   std::vector<dynamics::SimpleFramePtr> nodeFrames;
 };
 
+//==============================================================================
+struct LaunchOptions
+{
+  std::filesystem::path scenePath;
+  std::filesystem::path diagnosticsJsonPath;
+  std::string deformableView = "combined";
+  std::string sceneKind = "net"; // built-in scene when no --deformable-scene
+};
+
+//==============================================================================
 struct ExampleState
 {
   sx::World physicsWorld;
   legacy_sim::WorldPtr renderWorld
-      = legacy_sim::World::create("experimental_deformable");
-  DeformableVisual deformable;
+      = legacy_sim::World::create("experimental_deformable_gui");
+  std::vector<DeformableVisual> deformables;
   int stepsPerFrame = 2;
   bool showSurfaceMesh = true;
   bool showPointMasses = true;
   bool showSpringEdges = true;
   std::size_t surfaceVersion = 1;
+  std::filesystem::path diagnosticsJsonPath;
+  std::size_t diagnosticsFrameOffset = 0;
 
   void applyVisualOptions()
   {
-    if (deformable.edgeFrame) {
-      auto* visual = deformable.edgeFrame->getVisualAspect();
-      if (showSpringEdges) {
-        visual->show();
-      } else {
-        visual->hide();
+    for (const auto& deformable : deformables) {
+      if (deformable.edgeFrame) {
+        auto* visual = deformable.edgeFrame->getVisualAspect();
+        if (showSpringEdges) {
+          visual->show();
+        } else {
+          visual->hide();
+        }
       }
-    }
 
-    for (const auto& frame : deformable.nodeFrames) {
-      auto* visual = frame->getVisualAspect();
-      if (showPointMasses) {
-        visual->show();
-      } else {
-        visual->hide();
+      for (const auto& frame : deformable.nodeFrames) {
+        auto* visual = frame->getVisualAspect();
+        if (showPointMasses) {
+          visual->show();
+        } else {
+          visual->hide();
+        }
       }
     }
   }
 
   void syncRenderFrames()
   {
-    const auto nodeCount = deformable.body.getNodeCount();
-    for (std::size_t i = 0; i < nodeCount; ++i) {
-      const auto position = deformable.body.getPosition(i);
-      deformable.edgeShape->setVertex(i, position);
-      deformable.nodeFrames[i]->setTransform(makeTransform(position));
+    for (auto& deformable : deformables) {
+      const auto nodeCount = deformable.body.getNodeCount();
+      for (std::size_t i = 0; i < nodeCount; ++i) {
+        const auto position = deformable.body.getPosition(i);
+        deformable.edgeShape->setVertex(i, position);
+        deformable.nodeFrames[i]->setTransform(makeTransform(position));
+      }
     }
     ++surfaceVersion;
     applyVisualOptions();
+  }
+
+  void writeDiagnostics() const
+  {
+    if (diagnosticsJsonPath.empty()) {
+      return;
+    }
+
+    auto diagnostics = sxio::collectDeformableSceneDiagnostics(physicsWorld);
+    diagnostics.frame = diagnostics.frame >= diagnosticsFrameOffset
+                            ? diagnostics.frame - diagnosticsFrameOffset
+                            : 0u;
+    std::ofstream output(diagnosticsJsonPath);
+    sxio::writeDeformableSceneDiagnosticsJson(output, diagnostics);
   }
 
   void step()
@@ -126,53 +188,67 @@ struct ExampleState
     }
     renderWorld->setTime(physicsWorld.getTime());
     syncRenderFrames();
+    writeDiagnostics();
   }
 
   void reset()
   {
     physicsWorld.setTime(0.0);
+    diagnosticsFrameOffset = physicsWorld.getFrame();
     renderWorld->reset();
     renderWorld->setTime(0.0);
 
-    for (std::size_t i = 0; i < deformable.initialPositions.size(); ++i) {
-      deformable.body.setPosition(i, deformable.initialPositions[i]);
-      deformable.body.setVelocity(i, deformable.initialVelocities[i]);
+    for (auto& deformable : deformables) {
+      for (std::size_t i = 0; i < deformable.initialPositions.size(); ++i) {
+        deformable.body.setPosition(i, deformable.initialPositions[i]);
+        deformable.body.setVelocity(i, deformable.initialVelocities[i]);
+      }
     }
 
     syncRenderFrames();
+    writeDiagnostics();
   }
 
   std::vector<gui::RenderableDescriptor> makeSurfaceRenderables() const
   {
-    if (!showSurfaceMesh || deformable.surfaceTriangles.empty()) {
+    if (!showSurfaceMesh) {
       return {};
     }
 
-    const auto nodeCount = deformable.body.getNodeCount();
-    if (nodeCount == 0) {
-      return {};
+    std::vector<gui::RenderableDescriptor> descriptors;
+    for (const auto& deformable : deformables) {
+      if (deformable.surfaceTriangles.empty()) {
+        continue;
+      }
+
+      const auto nodeCount = deformable.body.getNodeCount();
+      if (nodeCount == 0) {
+        continue;
+      }
+
+      std::vector<Eigen::Vector3d> positions;
+      positions.reserve(nodeCount);
+      for (std::size_t i = 0; i < nodeCount; ++i) {
+        positions.push_back(deformable.body.getPosition(i));
+      }
+
+      gui::DeformableSurfaceRenderOptions surfaceOptions;
+      surfaceOptions.version = surfaceVersion;
+      const auto descriptor = gui::makeDeformableSurfaceRenderable(
+          reinterpret_cast<gui::RenderableId>(&deformable.surfaceRenderableKey),
+          positions,
+          deformable.surfaceTriangles,
+          surfaceOptions);
+      if (descriptor) {
+        descriptors.push_back(*descriptor);
+      }
     }
 
-    std::vector<Eigen::Vector3d> positions;
-    positions.reserve(nodeCount);
-    for (std::size_t i = 0; i < nodeCount; ++i) {
-      positions.push_back(deformable.body.getPosition(i));
-    }
-
-    gui::DeformableSurfaceRenderOptions surfaceOptions;
-    surfaceOptions.version = surfaceVersion;
-    const auto descriptor = gui::makeDeformableSurfaceRenderable(
-        reinterpret_cast<gui::RenderableId>(&deformable.surfaceRenderableKey),
-        positions,
-        deformable.surfaceTriangles,
-        surfaceOptions);
-    if (!descriptor) {
-      return {};
-    }
-    return {*descriptor};
+    return descriptors;
   }
 };
 
+//==============================================================================
 void addGround(ExampleState& state)
 {
   sx::RigidBodyOptions groundOptions;
@@ -193,6 +269,7 @@ void addGround(ExampleState& state)
   state.renderWorld->addSimpleFrame(frame);
 }
 
+//==============================================================================
 sx::DeformableBodyOptions makeNetOptions(
     int columns,
     int rows,
@@ -241,9 +318,90 @@ sx::DeformableBodyOptions makeNetOptions(
     }
   }
   options.edges = edges;
+
+  for (const auto& triangle : gui::makeGridSurfaceTriangles(columns, rows)) {
+    options.surfaceTriangles.push_back(
+        {static_cast<std::size_t>(triangle.x()),
+         static_cast<std::size_t>(triangle.y()),
+         static_cast<std::size_t>(triangle.z())});
+  }
   return options;
 }
 
+//==============================================================================
+std::vector<Eigen::Vector3i> extractSurfaceTriangles(
+    const sx::DeformableBody& body)
+{
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(body.getSurfaceTriangleCount());
+  for (std::size_t i = 0; i < body.getSurfaceTriangleCount(); ++i) {
+    const auto triangle = body.getSurfaceTriangle(i);
+    triangles.emplace_back(
+        static_cast<int>(triangle.nodeA),
+        static_cast<int>(triangle.nodeB),
+        static_cast<int>(triangle.nodeC));
+  }
+  return triangles;
+}
+
+//==============================================================================
+void appendDeformableVisual(
+    ExampleState& state, const sx::DeformableBody& body, std::string_view name)
+{
+  DeformableVisual visual;
+  visual.body = body;
+  const auto nodeCount = body.getNodeCount();
+  visual.initialPositions.reserve(nodeCount);
+  visual.initialVelocities.reserve(nodeCount);
+  visual.fixed.reserve(nodeCount);
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    visual.initialPositions.push_back(body.getPosition(i));
+    visual.initialVelocities.push_back(body.getVelocity(i));
+    visual.fixed.push_back(body.isFixedNode(i) ? 1u : 0u);
+  }
+  auto surfaceTriangles = extractSurfaceTriangles(body);
+
+  auto edgeShape = std::make_shared<dynamics::LineSegmentShape>(2.8f);
+  for (const auto& position : visual.initialPositions) {
+    edgeShape->addVertex(position);
+  }
+  for (std::size_t i = 0; i < body.getEdgeCount(); ++i) {
+    const auto edge = body.getEdge(i);
+    edgeShape->addConnection(edge.nodeA, edge.nodeB);
+  }
+
+  auto edgeFrame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), std::string(name) + "_edges");
+  edgeFrame->setShape(edgeShape);
+  edgeFrame->getVisualAspect(true)->setRGBA(rgba(0.08, 0.13, 0.17));
+  state.renderWorld->addSimpleFrame(edgeFrame);
+
+  std::vector<dynamics::SimpleFramePtr> nodeFrames;
+  nodeFrames.reserve(visual.initialPositions.size());
+  for (std::size_t i = 0; i < visual.initialPositions.size(); ++i) {
+    auto frame = dynamics::SimpleFrame::createShared(
+        dynamics::Frame::World(),
+        std::string(name) + "_node_" + std::to_string(i),
+        makeTransform(visual.initialPositions[i]));
+    frame->setShape(
+        std::make_shared<dynamics::SphereShape>(
+            visual.fixed[i] != 0u ? 0.045 : 0.032));
+    frame->getVisualAspect(true)->setRGBA(
+        visual.fixed[i] != 0u ? rgba(0.95, 0.50, 0.16)
+                              : rgba(0.12, 0.57, 0.91));
+    state.renderWorld->addSimpleFrame(frame);
+    nodeFrames.push_back(std::move(frame));
+  }
+
+  visual.surfaceRenderableKey = static_cast<int>(state.deformables.size() + 1u);
+  visual.surfaceTriangles = std::move(surfaceTriangles);
+  visual.edgeShape = std::move(edgeShape);
+  visual.edgeFrame = std::move(edgeFrame);
+  visual.nodeFrames = std::move(nodeFrames);
+  state.deformables.push_back(std::move(visual));
+}
+
+//==============================================================================
 void addDeformableNet(ExampleState& state)
 {
   constexpr int columns = 9;
@@ -253,65 +411,169 @@ void addDeformableNet(ExampleState& state)
   std::vector<std::uint8_t> fixed;
   auto options = makeNetOptions(columns, rows, edges, fixed);
   auto body = state.physicsWorld.addDeformableBody("deformable_net", options);
-
-  auto surfaceTriangles = gui::makeGridSurfaceTriangles(columns, rows);
-
-  auto edgeShape = std::make_shared<dynamics::LineSegmentShape>(2.8f);
-  for (const auto& position : options.positions) {
-    edgeShape->addVertex(position);
-  }
-  for (const auto& edge : edges) {
-    edgeShape->addConnection(edge.nodeA, edge.nodeB);
-  }
-
-  auto edgeFrame = dynamics::SimpleFrame::createShared(
-      dynamics::Frame::World(), "deformable_net_edges");
-  edgeFrame->setShape(edgeShape);
-  edgeFrame->getVisualAspect(true)->setRGBA(rgba(0.08, 0.13, 0.17));
-  state.renderWorld->addSimpleFrame(edgeFrame);
-
-  std::vector<dynamics::SimpleFramePtr> nodeFrames;
-  nodeFrames.reserve(options.positions.size());
-  for (std::size_t i = 0; i < options.positions.size(); ++i) {
-    auto frame = dynamics::SimpleFrame::createShared(
-        dynamics::Frame::World(),
-        "deformable_node_" + std::to_string(i),
-        makeTransform(options.positions[i]));
-    frame->setShape(
-        std::make_shared<dynamics::SphereShape>(
-            fixed[i] != 0u ? 0.045 : 0.032));
-    frame->getVisualAspect(true)->setRGBA(
-        fixed[i] != 0u ? rgba(0.95, 0.50, 0.16) : rgba(0.12, 0.57, 0.91));
-    state.renderWorld->addSimpleFrame(frame);
-    nodeFrames.push_back(std::move(frame));
-  }
-
-  state.deformable.body = body;
-  state.deformable.initialPositions = std::move(options.positions);
-  state.deformable.initialVelocities = std::move(options.velocities);
-  state.deformable.fixed = std::move(fixed);
-  state.deformable.surfaceTriangles = std::move(surfaceTriangles);
-  state.deformable.edgeShape = std::move(edgeShape);
-  state.deformable.edgeFrame = std::move(edgeFrame);
-  state.deformable.nodeFrames = std::move(nodeFrames);
+  appendDeformableVisual(state, body, "deformable_net");
 }
 
-std::shared_ptr<ExampleState> makeExampleState()
+//==============================================================================
+// A raised static box at the scene center, tagged as a deformable ground
+// barrier. The ground barrier uses a finite xy footprint, so it forms a step
+// in the support height field: a draping mat is held at the box top over the
+// footprint and falls past it to the surrounding ground beyond the edges.
+void addObstacleBox(ExampleState& state)
+{
+  const Eigen::Vector3d halfExtents(0.30, 0.30, 0.12);
+  const Eigen::Vector3d center(0.0, 0.0, halfExtents.z());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = center;
+  auto obstacle
+      = state.physicsWorld.addRigidBody("drape_obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  obstacle.setDeformableGroundBarrier(true);
+
+  auto frame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), "drape_obstacle_visual", makeTransform(center));
+  frame->setShape(std::make_shared<dynamics::BoxShape>(2.0 * halfExtents));
+  frame->getVisualAspect(true)->setRGBA(rgba(0.52, 0.45, 0.34));
+  state.renderWorld->addSimpleFrame(frame);
+}
+
+//==============================================================================
+// A free deformable mat suspended flat above the obstacle. Under gravity it
+// drapes over the box (conservative surface CCD), folds against itself
+// (self-contact barrier), and settles onto the ground (ground barrier) -- a
+// showcase for the projected-Newton solve at sparse scale (> 256 nodes).
+sx::DeformableBodyOptions makeDrapeOptions(
+    int columns, int rows, std::vector<sx::DeformableEdge>& edges)
+{
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 25.0; // floppy enough to drape over the step edges
+  options.damping = 1.5;
+
+  const auto index = [columns](int col, int row) {
+    return static_cast<std::size_t>(row * columns + col);
+  };
+
+  constexpr double spacing = 0.05;
+  constexpr double dropHeight = 0.42; // above the obstacle top (0.24)
+  const double halfWidth = 0.5 * spacing * static_cast<double>(columns - 1);
+  const double halfDepth = 0.5 * spacing * static_cast<double>(rows - 1);
+  for (int row = 0; row < rows; ++row) {
+    for (int col = 0; col < columns; ++col) {
+      const double x = spacing * static_cast<double>(col) - halfWidth;
+      const double y = spacing * static_cast<double>(row) - halfDepth;
+      options.positions.push_back(Eigen::Vector3d(x, y, dropHeight));
+      options.velocities.push_back(Eigen::Vector3d::Zero());
+      options.masses.push_back(0.05);
+    }
+  }
+
+  for (int row = 0; row < rows; ++row) {
+    for (int col = 0; col < columns; ++col) {
+      if (col + 1 < columns) {
+        edges.push_back({index(col, row), index(col + 1, row), -1.0});
+      }
+      if (row + 1 < rows) {
+        edges.push_back({index(col, row), index(col, row + 1), -1.0});
+      }
+      if (col + 1 < columns && row + 1 < rows) {
+        edges.push_back({index(col, row), index(col + 1, row + 1), -1.0});
+        edges.push_back({index(col + 1, row), index(col, row + 1), -1.0});
+      }
+    }
+  }
+  options.edges = edges;
+
+  for (const auto& triangle : gui::makeGridSurfaceTriangles(columns, rows)) {
+    options.surfaceTriangles.push_back(
+        {static_cast<std::size_t>(triangle.x()),
+         static_cast<std::size_t>(triangle.y()),
+         static_cast<std::size_t>(triangle.z())});
+  }
+  return options;
+}
+
+//==============================================================================
+void addDeformableDrape(ExampleState& state)
+{
+  constexpr int columns = 26;
+  constexpr int rows = 22; // 572 nodes, past the former dense 256-node cap
+
+  addObstacleBox(state);
+
+  std::vector<sx::DeformableEdge> edges;
+  auto options = makeDrapeOptions(columns, rows, edges);
+  auto body = state.physicsWorld.addDeformableBody("deformable_drape", options);
+  appendDeformableVisual(state, body, "deformable_drape");
+}
+
+//==============================================================================
+void addLoadedScene(ExampleState& state, const std::filesystem::path& scenePath)
+{
+  sxio::DeformableSceneLoadOptions loadOptions;
+  loadOptions.assetRoot = scenePath.parent_path();
+  auto sceneInfo
+      = sxio::loadDeformableScene(state.physicsWorld, scenePath, loadOptions);
+  for (const auto& bodyInfo : sceneInfo.bodies) {
+    appendDeformableVisual(state, bodyInfo.body, bodyInfo.name);
+  }
+}
+
+//==============================================================================
+std::shared_ptr<ExampleState> makeExampleState(const LaunchOptions& launch)
 {
   auto state = std::make_shared<ExampleState>();
+  state->diagnosticsJsonPath = launch.diagnosticsJsonPath;
 
   constexpr double timeStep = 1.0 / 120.0;
   state->physicsWorld.setTimeStep(timeStep);
   state->renderWorld->setTimeStep(timeStep * state->stepsPerFrame);
 
-  addGround(*state);
-  addDeformableNet(*state);
+  if (launch.scenePath.empty()) {
+    addGround(*state);
+    if (launch.sceneKind == "drape") {
+      addDeformableDrape(*state);
+    } else {
+      addDeformableNet(*state);
+    }
+  } else {
+    addLoadedScene(*state, launch.scenePath);
+    state->renderWorld->setTimeStep(
+        state->physicsWorld.getTimeStep() * state->stepsPerFrame);
+  }
 
   state->physicsWorld.enterSimulationMode();
   state->syncRenderFrames();
+  state->writeDiagnostics();
   return state;
 }
 
+//==============================================================================
+bool applyDeformableViewMode(
+    const std::shared_ptr<ExampleState>& state, std::string_view value)
+{
+  if (value == "combined") {
+    state->showSurfaceMesh = true;
+    state->showPointMasses = true;
+    state->showSpringEdges = true;
+  } else if (value == "surface") {
+    state->showSurfaceMesh = true;
+    state->showPointMasses = false;
+    state->showSpringEdges = false;
+  } else if (value == "points") {
+    state->showSurfaceMesh = false;
+    state->showPointMasses = true;
+    state->showSpringEdges = false;
+  } else {
+    return false;
+  }
+
+  state->applyVisualOptions();
+  return true;
+}
+
+//==============================================================================
 gui::OrbitCamera makeCamera()
 {
   gui::OrbitCamera camera;
@@ -322,6 +584,7 @@ gui::OrbitCamera makeCamera()
   return camera;
 }
 
+//==============================================================================
 std::vector<gui::KeyboardAction> createKeyboardActions(
     const std::shared_ptr<ExampleState>& state)
 {
@@ -334,6 +597,7 @@ std::vector<gui::KeyboardAction> createKeyboardActions(
   return {std::move(reset)};
 }
 
+//==============================================================================
 gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
 {
   gui::Panel panel;
@@ -360,7 +624,13 @@ gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
 
 dart::gui::ApplicationOptions makeExperimentalDeformableScene()
 {
-  const auto state = makeExampleState();
+  // dart-demos scene: built-in net scene, default view, no diagnostics output.
+  // The CLI flags the standalone tool exposed (--deformable-scene,
+  // --deformable-scene-kind, --deformable-view, --diagnostics-json) live in
+  // the standalone tool's evolution history and are not surfaced here.
+  LaunchOptions launch;
+  const auto state = makeExampleState(launch);
+  (void)applyDeformableViewMode(state, launch.deformableView);
 
   gui::ApplicationOptions options;
   options.world = state->renderWorld;

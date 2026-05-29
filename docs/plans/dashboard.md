@@ -76,25 +76,38 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Keep the merged Phase 0-4 foundation in
-  `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
-  the default experimental `World::step` path now preserves the rigid-body
-  contact/multibody solver pipeline, while the batched SoA rigid-body stage
-  remains an explicit unconstrained path and benchmark/prototype seam. PRs now
-  exercise CUDA-on configure and target builds through `CI CUDA / CUDA Build`;
-  runtime evidence still requires `pixi run -e cuda test-cuda` on a CUDA host or
-  manual `CI CUDA / CUDA Runtime Smoke` on a self-hosted runner labeled `cuda`.
-  Keep CUDA private and non-required until runner stability and representative
-  workload benchmarks justify the Phase 6 GPU track. The sidecar package shape,
+- Next step: Phases 0-5 are complete and merged to `main` (PRs #2698, #2710,
+  #2712); the dev-task folder has been retired, so PLAN-030 plus
+  [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
+  are now the durable trackers. The default experimental `World::step` path
+  preserves the rigid-body contact/multibody solver pipeline, while the batched
+  SoA rigid-body stage remains an explicit unconstrained path and
+  benchmark/prototype seam. Phase 5 is closed with a GO: `CI CUDA / CUDA Build`
+  compiles the CUDA targets on a GitHub-hosted `ubuntu-latest` runner (green on
+  `main`), and because the project does not maintain a self-hosted GPU runner,
+  the go/no-go runtime packet is measured manually on a CUDA host. The recorded
+  GO (2026-05-28, RTX 5000 Ada): speedup 109.6x at 4096/128/100 with final-state
+  error 1.78e-15, packet accepted (see the owner doc's "Recorded Phase 5
+  Go/No-Go"). Keep CUDA private and non-required. The sidecar package shape,
   go/no-go threshold, `bm-phase5-gpu-packet-check` /
   `check-compute-backend-boundaries` / `check-no-gpu-runtime-dependencies`
   evidence gates, and the `check-phase5-cuda-benchmark-contract` row contract
-  are recorded in the owner doc. The manual CUDA workflow writes and validates
-  the Phase 5 packet artifact through `bm-phase5-cuda-full` and
-  `bm-phase5-cuda-packet` when a self-hosted CUDA runner is available, with
-  `check-phase5-cuda-workflow` guarding that wiring. Phase 3's speedup surface
+  are recorded in the owner doc. To refresh the packet on any CUDA host, run
+  `bm-phase5-cuda-full` then `bm-phase5-cuda-packet`;
+  `check-phase5-cuda-workflow` guards that `ci_cuda.yml` keeps the build/import
+  gate and never reintroduces a self-hosted GPU runner. Phase 3's speedup surface
   is the checked contact-island benchmark, not the trivial Euler rigid-body
   rows.
+- Phase 6 backlog (unblocked by the Phase 5 GO, unstarted; each item needs its
+  own design note and gate before work starts): broaden GPU stage coverage
+  beyond the single rigid-body integration stage; promote auto-scheduling from
+  resource-access metadata behind a verified scheduler contract (honest
+  declarations, deferred structural changes, deterministic reductions, cost
+  gate); heterogeneous batches and single-scene contact/constraint GPU work
+  (Pattern B, only after Pattern A evidence justifies it); and differentiable
+  state types if differentiability is promoted from a deferred to a committed
+  capability. Rationale for each lives in
+  [`../design/compute_backend_research.md`](../design/compute_backend_research.md).
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and
@@ -196,8 +209,22 @@ its own line so status updates remain git-history friendly.
 - Dimension: Scalable compute
 - Next step: Live at `dartsim.github.io/dart/performance/` via
   `benchmark-action/github-action-benchmark` and embedded in the Read the Docs
-  page. Optional future work: per-PR regression comments and a secondary backend
-  (Bencher/CodSpeed).
+  page. Per-PR regression comments are added as an opt-in extension (pending one
+  real-PR validation run): `.github/workflows/benchmark_pr_comparison.yml` runs
+  the dashboard's benchmark slice on a PR and `scripts/benchmark_pr_compare.py`
+  diffs it against the dashboard's published gh-pages history, then posts a
+  marker-based "moved by N%" comment in the PR review thread via
+  `actions/github-script`. It is a read-only consumer of the dashboard data (it
+  never writes to gh-pages — no second pipeline), gated to same-repo PRs carrying
+  the `benchmark` label so ordinary PRs pay no benchmark cost. This is the
+  reconciliation decision from the retired `benchmark_pr_comparison` dev task:
+  extend the existing dashboard infra (chosen) over the prototype's parallel
+  committed-JSON pipeline. The compare/render logic is unit-tested
+  (`test_benchmark_pr_compare.py`); the only step that needs a live PR to confirm
+  is the comment post itself. Gradual rollout: add the `benchmark` label to one
+  PR to confirm the comment posts, tune `--alert-threshold`, then consider
+  widening the trigger and the benchmark slice once review-noise tradeoffs are
+  visible. A secondary backend (Bencher/CodSpeed) remains optional future work.
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
   Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
   history.
