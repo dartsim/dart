@@ -14,16 +14,23 @@ message(STATUS "collision-native: Configuring unit tests...")
 if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   set(COLLISION_NATIVE_TESTS "" CACHE INTERNAL "" FORCE)
 
-  set(DART_NATIVE_VOXBLOX_ROOT "" CACHE PATH "Path to Voxblox for native collision tests")
+  set(
+    DART_NATIVE_VOXBLOX_ROOT
+    ""
+    CACHE PATH
+    "Path to Voxblox for native collision tests"
+  )
   if(DART_NATIVE_VOXBLOX_ROOT)
-    find_path(VOXBLOX_INCLUDE_DIR
+    find_path(
+      VOXBLOX_INCLUDE_DIR
       NAMES voxblox/core/esdf_map.h
       PATHS
         ${DART_NATIVE_VOXBLOX_ROOT}
         ${DART_NATIVE_VOXBLOX_ROOT}/voxblox/include
         ${DART_NATIVE_VOXBLOX_ROOT}/include
     )
-    find_library(VOXBLOX_LIBRARY
+    find_library(
+      VOXBLOX_LIBRARY
       NAMES voxblox
       PATHS
         ${DART_NATIVE_VOXBLOX_ROOT}/lib
@@ -36,7 +43,8 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
     set(VOXBLOX_FOUND TRUE)
   endif()
 
-  set(collision_native_test_sources
+  set(
+    collision_native_test_sources
     test_aabb.cpp
     test_aabb_tree.cpp
     test_box_box.cpp
@@ -80,7 +88,10 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   if(NOT DART_TESTS_LIBCCD_FOUND)
     list(FILTER test_files EXCLUDE REGEX "test_libccd_.*\\.cpp$")
   endif()
-  if(NOT DART_BUILD_COLLISION_REFERENCE_TESTS OR NOT TARGET dart-test-reference-fcl)
+  if(
+    NOT DART_BUILD_COLLISION_REFERENCE_TESTS
+    OR NOT TARGET dart-test-reference-fcl
+  )
     list(FILTER test_files EXCLUDE REGEX "test_reference_backends\\.cpp$")
   endif()
 
@@ -89,11 +100,9 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
 
     dart_property_add(DART_unit_TESTS ${test_name})
     add_executable(${test_name} ${test_file})
-    target_link_libraries(${test_name}
-      PRIVATE
-        dart-collision-native
-        GTest::gtest
-        GTest::gtest_main
+    target_link_libraries(
+      ${test_name}
+      PRIVATE dart-collision-native GTest::gtest GTest::gtest_main
     )
     if(DART_TESTS_LIBCCD_FOUND AND test_name MATCHES "^test_libccd_")
       target_link_libraries(${test_name} PRIVATE dart_tests_libccd)
@@ -102,13 +111,13 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
       target_link_libraries(${test_name} PRIVATE dart)
     endif()
     if(test_name STREQUAL "test_collision_sandbox_pair_registry")
-      target_sources(${test_name}
-        PRIVATE
-          ${CMAKE_SOURCE_DIR}/examples/collision_sandbox/pair_registry.cpp
+      target_sources(
+        ${test_name}
+        PRIVATE ${CMAKE_SOURCE_DIR}/examples/collision_sandbox/pair_registry.cpp
       )
-      target_include_directories(${test_name}
-        PRIVATE
-          ${CMAKE_SOURCE_DIR}/examples/collision_sandbox
+      target_include_directories(
+        ${test_name}
+        PRIVATE ${CMAKE_SOURCE_DIR}/examples/collision_sandbox
       )
     endif()
     if(test_name STREQUAL "test_reference_backends")
@@ -119,21 +128,27 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
       )
       if(TARGET dart-test-reference-fcl)
         dart_force_link_collision_backend(
-          ${test_name} dart-test-reference-fcl PRIVATE)
+          ${test_name} dart-test-reference-fcl PRIVATE
+        )
       endif()
       if(TARGET dart-test-reference-bullet)
         dart_force_link_collision_backend(
-          ${test_name} dart-test-reference-bullet PRIVATE)
+          ${test_name} dart-test-reference-bullet PRIVATE
+        )
       endif()
       if(TARGET dart-test-reference-ode)
         dart_force_link_collision_backend(
-          ${test_name} dart-test-reference-ode PRIVATE)
+          ${test_name} dart-test-reference-ode PRIVATE
+        )
       endif()
     endif()
     if(test_name STREQUAL "test_sdf_compare" AND VOXBLOX_FOUND)
       target_include_directories(${test_name} PRIVATE ${VOXBLOX_INCLUDE_DIR})
       target_link_libraries(${test_name} PRIVATE ${VOXBLOX_LIBRARY})
-      target_compile_definitions(${test_name} PRIVATE DART_NATIVE_HAVE_VOXBLOX=1)
+      target_compile_definitions(
+        ${test_name}
+        PRIVATE DART_NATIVE_HAVE_VOXBLOX=1
+      )
     endif()
 
     add_test(NAME ${test_name} COMMAND ${test_name})
@@ -143,7 +158,8 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   endforeach()
 
   if(COLLISION_NATIVE_TESTS)
-    add_custom_target(dart_collision_native_tests
+    add_custom_target(
+      dart_collision_native_tests
       DEPENDS ${COLLISION_NATIVE_TESTS}
       COMMENT "Building all collision-native unit tests"
     )
@@ -152,5 +168,8 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   list(LENGTH test_files num_tests)
   message(STATUS "collision-native: Total ${num_tests} unit test(s)")
 else()
-  message(STATUS "collision-native: Unit tests disabled (GTest not found or tests disabled)")
+  message(
+    STATUS
+    "collision-native: Unit tests disabled (GTest not found or tests disabled)"
+  )
 endif()

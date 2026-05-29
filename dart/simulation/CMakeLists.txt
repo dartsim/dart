@@ -20,7 +20,10 @@ dart_generate_component_headers(
 # Install (includes All.hpp, simulation.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp
+  FILES
+    ${hdrs}
+    ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp
   DESTINATION include/dart/simulation
   COMPONENT headers
 )

@@ -121,7 +121,8 @@ CTest-gated.
 
 - The dartsim entry (`dartsim/app/main.cpp`) calls `dartsim::ui::runEditor`; the
   earlier viewer called `dart::gui::runApplication` with hardcoded `ExampleScene`
-  fixtures, still reachable via `--scene`.
+  fixtures, still reachable via `--scene`. The editor starts an empty workspace
+  by default; `--demo` seeds the sample box/sphere/arm scene.
 - Experimental World public surface (topology, kinematics, stepping, state,
   binary save/load) is documented in
   [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md)

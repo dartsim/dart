@@ -118,13 +118,28 @@ struct OrbitCameraUpdate
   double scrollDelta = 0.0;
   bool orbit = false;
   bool pan = false;
+  bool zoom = false;
   double orbitScale = 0.006;
   double panScale = 0.0015;
+  double zoomScale = 0.006;
   double scrollScale = 0.12;
   double minDistance = 0.35;
   double maxDistance = 80.0;
   double minPitch = -1.45;
   double maxPitch = 1.45;
+};
+
+enum class OrbitCameraMouseMode
+{
+  Orbit,
+  Pan,
+  Zoom,
+};
+
+struct OrbitCameraControlOptions
+{
+  OrbitCameraMouseMode mouseMode = OrbitCameraMouseMode::Orbit;
+  bool locked = false;
 };
 
 struct OrbitCameraController
@@ -141,8 +156,10 @@ struct OrbitCameraControllerInput
   double cursorX = 0.0;
   double cursorY = 0.0;
   bool hasCursor = true;
+  bool locked = false;
   bool orbit = false;
   bool pan = false;
+  bool zoom = false;
 };
 
 struct DirectionalNudgeInput

@@ -38,6 +38,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace dartsim::commands {
 
@@ -77,6 +78,27 @@ std::unique_ptr<Command> addFixedFrame(
     const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
     std::string name = {});
 
+/// Add an editor-owned sensor descriptor under the world or a frame-like
+/// parent.
+std::unique_ptr<Command> addSensor(
+    SensorKind kind = SensorKind::Camera,
+    ObjectId parent = kNoObject,
+    const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
+    std::string name = {});
+
+/// Add an editor-owned collision geometry descriptor under the world or a
+/// frame-like parent.
+std::unique_ptr<Command> addCollision(
+    ShapeType shape = ShapeType::Box,
+    ObjectId parent = kNoObject,
+    const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
+    std::string name = {});
+std::unique_ptr<Command> addCollision(
+    const ShapeDesc& shape,
+    ObjectId parent = kNoObject,
+    const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
+    std::string name = {});
+
 /// Remove an object (and its descendants) and update the selection.
 std::unique_ptr<Command> removeObject(ObjectId id);
 
@@ -89,6 +111,12 @@ std::unique_ptr<Command> setMass(ObjectId id, double mass);
 
 /// Set a rigid body or link visual shape descriptor.
 std::unique_ptr<Command> setShape(ObjectId id, ShapeDesc shape);
+
+/// Set a sensor descriptor.
+std::unique_ptr<Command> setSensor(ObjectId id, SensorDesc sensor);
+
+/// Set a collision geometry descriptor.
+std::unique_ptr<Command> setCollision(ObjectId id, CollisionDesc collision);
 
 /// Set a child link's single-DOF joint position.
 std::unique_ptr<Command> setJointPosition(ObjectId link, double position);
@@ -127,5 +155,9 @@ std::unique_ptr<Command> detachFrame(ObjectId frame);
 
 /// Set the world time step.
 std::unique_ptr<Command> setTimeStep(double timeStep);
+
+/// Replace persisted Watch panel presets in the project workspace.
+std::unique_ptr<Command> setWorkspaceWatchPresets(
+    std::vector<WorkspaceWatchPreset> presets);
 
 } // namespace dartsim::commands

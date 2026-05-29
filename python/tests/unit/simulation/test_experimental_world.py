@@ -2451,7 +2451,7 @@ def test_experimental_deformable_body_python_api():
     assert body.name == "strand"
     assert body.node_count == 2
     assert body.edge_count == 1
-    assert world.get_deformable_body_count() == 1
+    assert world.num_deformable_bodies == 1
     assert world.has_deformable_body("strand")
     assert not world.has_deformable_body("missing")
     assert world.get_deformable_body("missing") is None

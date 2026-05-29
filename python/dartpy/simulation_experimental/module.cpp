@@ -1647,8 +1647,8 @@ void defSimulationExperimentalModule(nb::module_& m)
             return self.hasDeformableBody(name);
           },
           nb::arg("name"))
-      .def(
-          "get_deformable_body_count",
+      .def_prop_ro(
+          "num_deformable_bodies",
           [](const sim::World& self) { return self.getDeformableBodyCount(); })
       .def(
           "add_loop_closure",
