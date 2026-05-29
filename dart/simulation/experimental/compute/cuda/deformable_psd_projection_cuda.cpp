@@ -211,8 +211,11 @@ void projectSymmetricBlocksToPsdCuda(
 namespace {
 
 // Smallest batch the GPU path is worth: below this the host-to-device round
-// trip dominates the per-block eigensolves, so the CPU backend is faster.
-constexpr std::size_t kMinGpuBatchBlocks = 64;
+// trip dominates the per-block eigensolves, so the CPU backend is faster. The
+// GpuVsCpuPerfGateAtSolverScale test measures the crossover for 12x12 blocks on
+// an RTX 5000 Ada at ~1k blocks (256 blocks ran ~0.4x, 1024 ~1.4x, 4096 ~4x,
+// 16384 ~9x), so the GPU path engages from roughly a thousand blocks up.
+constexpr std::size_t kMinGpuBatchBlocks = 1024;
 
 // Backend adapter matching compute::DeformablePsdBlockProjector. Offloads large
 // batches to the GPU and defers small batches (or the no-device case) to the
