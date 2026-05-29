@@ -961,6 +961,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     self-contact and decelerates versus the frictionless control while the
     barrier holds them apart. Self-contact friction now covers both
     point-triangle and edge-edge primitives.
+  - Generalized experimental IPC static-ground friction to follow the true
+    geometric ground normal instead of a hardcoded xy tangent plane. Each
+    contacting node now lags the supporting barrier surface's normal (radial for
+    a sphere, the supporting-face normal for a rotated/tilted box), and the
+    friction energy, gradient, and tangential Hessian resolve against the plane
+    orthogonal to it (the Hessian is now a positive-semidefinite 3x3 tangent
+    block). For flat or box-top ground the normal is +z and the behavior reduces
+    exactly to the previous xy tangent plane, so existing flat-ground friction
+    tests are unchanged; the underlying barrier force stays a vertical height
+    field. Adds a regression on a 45-degree tilted slope where tilt-aware
+    friction couples the normal and tangential directions so a node dropped
+    straight down deflects down-slope, whereas the frictionless control (and any
+    xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
+    friction and friction-specific diagnostics remain later increments.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

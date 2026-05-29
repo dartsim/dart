@@ -142,19 +142,39 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-edge-edge-self-friction` - stacked on
-`feature/ipc-self-contact-friction-hessian` (#2751). Extends self-contact
-friction (force + Hessian) to EDGE-EDGE contacts. KEY: the friction
-energy/gradient/Hessian are generic over a SelfContactFrictionContact
-{4 nodes, projection, normalForce}, so ONLY buildSelfContactFrictionContacts is
-extended to also process edgeEdgeCandidates (lambda = net edgeEdgeBarrier force
-on edge A; projection from dc::edgeEdgeTangentStencil(ea0,ea1,eb0,eb1)).
-Regression EdgeEdgeSelfContactFrictionDeceleratesSlidingEdge (two near-orthogonal
-thin triangles whose long edges cross with a gap; the free edge decelerates with
-friction). Self-contact friction now covers PT + EE. 63 deformable tests pass.
+`feature/ipc-nonflat-ground-friction` - stacked on
+`feature/ipc-edge-edge-self-friction` (#2752). Generalizes static-ground
+friction to follow the TRUE GEOMETRIC ground normal instead of a hardcoded xy
+tangent plane. KEY: the static-ground barrier is a vertical height field (force
+along +z) and stays that way; only the FRICTION term gains a per-node lagged
+normal. `boxContactAt`/`staticGroundContactAt` now return a `StaticGroundContact
+{top, normal}` (radial normal for a sphere; the +z-exit-face normal of the
+ray-march for a rotated/tilted box); `staticGroundTopAt` delegates to it so the
+6 CCD callers are unchanged. `computeStaticGroundNormalForces` outputs a
+parallel `normalDirection`; `GroundFrictionInputs` gains `laggedNormalDirection`;
+`addGroundFrictionEnergy` and the Newton ground-friction Hessian project against
+P = I - n n^T (energy/grad use u_T = (I - n n^T)(x - x_start); the Hessian is a
+PSD 3x3 tangent block scale*[ (f1/y)(P - T T^T) + f1' T T^T ], -> scale*(2/eps)P
+as y->0). For flat ground n = +z, P = diag(1,1,0) -> reduces EXACTLY to the old
+xy 2x2 block, so flat-ground friction tests are bit-identical. Regression
+GroundFrictionFollowsTiltedSlopeNormal: a node dropped straight down (-z) onto a
+45-deg tilted box deflects DOWN-SLOPE (+x ~= 0.017) because tilt-aware friction
+couples normal/tangential, whereas the frictionless control (and any xy-only
+tangent model) stays on x = 0. 64 deformable tests pass, test-all 6/6.
+CAVEAT/LESSON: the failure-then-fix flipped my predicted -x deflection to +x --
+the vertical height-field barrier exerts no x-force, so all x-motion comes from
+the tilted friction coupling; sign is +x (down-slope), validated empirically.
+ALSO: `cmake --build ... 2>&1 | tail` masks ninja's exit code (pipe returns
+tail's 0); redirect to a file and check $? separately. Eigen ternary needs both
+branches wrapped in Eigen::Vector3d (lazy-expr vs BasisReturnType type mismatch).
+NOTE: codimensional-obstacle friction (the next nominal Phase-4 item) is BLOCKED
+on the codim-obstacle barrier (a remaining Phase-3 item) -- no barrier to lag
+against -- so it is skipped; friction diagnostics is the next executable item.
 
-Prior #2751 = self-contact friction Hessian (PT). #2750 = Python facade (dartpy
-deformable bindings; forbids get_*/set_* names; regenerate stubs +
+Prior #2752 = edge-edge self-contact friction (force + Hessian; generic over the
+4-node SelfContactFrictionContact, only buildSelfContactFrictionContacts extended
+to edgeEdgeCandidates). #2751 = self-contact friction Hessian (PT). #2750 = Python facade (dartpy
+deformable bindings; forbids get*\*/set*\* names; regenerate stubs +
 api-boundary-inventory.md). #2749 = scene-replay harness.
 
 Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
@@ -172,15 +192,17 @@ until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
 reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 (self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade)
-<- #2751 (self-contact friction Hessian). (PR #2747 is another author's.)
+<- #2751 (self-contact friction Hessian) <- #2752 (edge-edge self-contact
+friction). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 
 User directive (2026-05-28): KEEP BUILDING, NEVER STOP while a plan item remains,
 do everything in order (Codex review batched for Saturday). The three sequenced
 items (self-contact friction, Phase 5 harness, Phase 8 facade) are now done.
-REMAINING plan work, in rough priority: remaining Phase 4 (edge-edge/self-contact
-friction Hessian, non-flat ground normals, friction diagnostics); barrier-stall
+REMAINING plan work, in rough priority: remaining Phase 4 (friction-specific
+convergence/dissipation diagnostics next; codimensional-obstacle friction is
+blocked on the codim-obstacle barrier); barrier-stall
 convergence robustness (the high-residual finding above); live GPU-backend
 injection (wire the CUDA PSD primitive + a GPU-vs-CPU gate via an optional
 executor, world_step_stage stays GPU-free); adaptive barrier stiffness;
