@@ -35,6 +35,47 @@
 
 namespace dart::gui::detail {
 
+void destroySceneRenderables(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    std::vector<SceneRenderable>& sceneRenderables,
+    DebugOverlayController& debugOverlays,
+    std::optional<Renderable>& selectionDebugOverlay)
+{
+  for (const SceneRenderable& sceneRenderable : sceneRenderables) {
+    removeRenderableFromScene(scene, sceneRenderable.renderable);
+  }
+  clearDebugOverlays(engine, scene, debugOverlays);
+  clearDebugLineOverlay(engine, scene, selectionDebugOverlay);
+  for (SceneRenderable& sceneRenderable : sceneRenderables) {
+    destroyRenderable(engine, sceneRenderable.renderable);
+  }
+  sceneRenderables.clear();
+}
+
+void destroyPersistentApplicationResources(
+    FilamentRenderContext& renderContext,
+    ImGuiOverlay& imguiOverlay,
+    SceneLights& lights,
+    ::filament::IndirectLight* indirectLight,
+    ::filament::Skybox* skybox,
+    ::filament::ColorGrading* colorGrading,
+    MaterialResources& materialResources)
+{
+  auto& engine = *renderContext.engine;
+  auto& scene = *renderContext.scene;
+  auto& view = *renderContext.view;
+
+  destroyConfiguredImGuiOverlay(engine, imguiOverlay);
+  detachSceneEnvironment(scene, lights);
+  clearMainViewColorGrading(view);
+  destroySceneLights(engine, lights);
+  destroyRenderEnvironmentResources(
+      engine, indirectLight, skybox, colorGrading);
+  destroyMaterialResources(engine, materialResources);
+  destroyFilamentRenderContext(renderContext);
+}
+
 void destroyApplicationResources(
     FilamentRenderContext& renderContext,
     ImGuiOverlay& imguiOverlay,

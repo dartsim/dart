@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Format TOML files while keeping backups."""
+
 from __future__ import annotations
 
 import pathlib

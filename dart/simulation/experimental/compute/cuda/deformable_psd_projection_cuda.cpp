@@ -31,12 +31,14 @@
  */
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/deformable_psd_backend.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <cuda_runtime_api.h>
 #include <dart/simulation/experimental/compute/cuda/deformable_psd_projection_cuda.cuh>
 
+#include <algorithm>
 #include <string_view>
 #include <vector>
 
@@ -204,6 +206,49 @@ void projectSymmetricBlocksToPsdCuda(
           deviceBlocks.byteSize(),
           cudaMemcpyDeviceToHost),
       "PSD block copy from device");
+}
+
+namespace {
+
+// Smallest batch the GPU path is worth: below this the host-to-device round
+// trip dominates the per-block eigensolves, so the CPU backend is faster. The
+// GpuVsCpuPerfGateAtSolverScale test measures the crossover for 12x12 blocks on
+// an RTX 5000 Ada at ~1k blocks (256 blocks ran ~0.4x, 1024 ~1.4x, 4096 ~4x,
+// 16384 ~9x), so the GPU path engages from roughly a thousand blocks up.
+constexpr std::size_t kMinGpuBatchBlocks = 1024;
+
+// Backend adapter matching compute::DeformablePsdBlockProjector. Offloads large
+// batches to the GPU and defers small batches (or the no-device case) to the
+// CPU backend, so installing this never changes results -- only where the
+// arithmetic runs.
+void cudaPsdBackendAdapter(
+    double* blocks, std::size_t dimension, std::size_t blockCount)
+{
+  if (blocks == nullptr || dimension == 0 || blockCount == 0) {
+    return;
+  }
+  if (blockCount < kMinGpuBatchBlocks || !isCudaRuntimeAvailable()) {
+    projectSymmetricBlocksToPsdCpu(blocks, dimension, blockCount);
+    return;
+  }
+  std::vector<double> buffer(
+      blocks, blocks + dimension * dimension * blockCount);
+  projectSymmetricBlocksToPsdCuda(buffer, dimension, blockCount);
+  std::copy(buffer.begin(), buffer.end(), blocks);
+}
+
+} // namespace
+
+//==============================================================================
+void installCudaDeformablePsdBackend()
+{
+  setDeformablePsdBlockProjector(&cudaPsdBackendAdapter);
+}
+
+//==============================================================================
+void restoreDefaultDeformablePsdBackend()
+{
+  setDeformablePsdBlockProjector(nullptr);
 }
 
 } // namespace dart::simulation::experimental::compute::cuda

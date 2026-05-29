@@ -42,7 +42,35 @@
 #include <optional>
 #include <vector>
 
+namespace filament {
+class Engine;
+class Scene;
+} // namespace filament
+
 namespace dart::gui::detail {
+
+/// Destroy only the per-scene renderables (scene geometry, debug overlays, and
+/// the selection overlay) so the active scene can be torn down and rebuilt at
+/// runtime while the window, engine, materials, lights, and ImGui overlay
+/// persist. The passed containers are left empty.
+void destroySceneRenderables(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    std::vector<SceneRenderable>& sceneRenderables,
+    DebugOverlayController& debugOverlays,
+    std::optional<Renderable>& selectionDebugOverlay);
+
+/// Destroy the persistent application resources (ImGui overlay, lights,
+/// environment, materials, render context). Call once at shutdown after the
+/// active scene's renderables have been destroyed.
+void destroyPersistentApplicationResources(
+    FilamentRenderContext& renderContext,
+    ImGuiOverlay& imguiOverlay,
+    SceneLights& lights,
+    ::filament::IndirectLight* indirectLight,
+    ::filament::Skybox* skybox,
+    ::filament::ColorGrading* colorGrading,
+    MaterialResources& materialResources);
 
 void destroyApplicationResources(
     FilamentRenderContext& renderContext,

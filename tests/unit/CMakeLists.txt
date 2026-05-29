@@ -414,6 +414,10 @@ if(TARGET dart-gui-core)
   target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-core)
 endif()
 
+# UNIT_gui_DemosGoldenParity is registered in examples/demos/CMakeLists.txt,
+# where the demos_scenes target is in scope (examples are processed after
+# tests/, so it is not visible from here).
+
 if(TARGET dart-gui AND TARGET dart-imgui-lib)
   # DART-patched ImGui guard tests only work with the fetched ImGui target.
   dart_add_test(

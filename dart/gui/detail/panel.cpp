@@ -67,6 +67,22 @@ public:
     return ImGui::Button(labelValue.c_str());
   }
 
+  bool selectable(std::string_view label, bool selected) override
+  {
+    const std::string labelValue(label);
+    return ImGui::Selectable(labelValue.c_str(), selected);
+  }
+
+  void indent(double width) override
+  {
+    ImGui::Indent(static_cast<float>(width));
+  }
+
+  void unindent(double width) override
+  {
+    ImGui::Unindent(static_cast<float>(width));
+  }
+
   bool checkbox(std::string_view label, bool& value) override
   {
     const std::string labelValue(label);

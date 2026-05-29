@@ -53,8 +53,7 @@ public:
   /// Note: kept for gz-physics compatibility; prefer getTypeView().
   [[deprecated(
       "Use getTypeView() for string_view access.")]] virtual const std::string&
-  getType() const
-      = 0;
+  getType() const = 0;
 
   // TODO(DART 8): Rename getTypeView() to getType() and drop the compatibility
   // string-returning overload.
@@ -74,8 +73,7 @@ public:
       double* lo,
       double* hi,
       int* findex,
-      bool earlyTermination = false)
-      = 0;
+      bool earlyTermination = false) = 0;
 
   virtual bool canSolve(int n, const double* A) = 0;
 };
