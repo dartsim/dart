@@ -25,21 +25,27 @@ integrator + 3 test suites) plus the PLAN-082 docs.
 
 ## Immediate Next Step
 
-The integration-family **selector** has landed (`World::setMultibodyIntegration
-Method("variational integrator")`; the default `step()` substitutes the VI
-stage; `SelectableThroughWorldStep` test green). Phase A1 remaining: **serialize**
-`MultibodyVariationalState` (binary-format version bump + bootstrap-done flag)
-and add the determinism/save-load round-trip test; optionally promote RIQN
-non-convergence from a `converged=false` diagnostic to a documented error.
+The selector and the **O(n) ABI** (Phase A2 core) have landed:
+`computeMultibodyInverseMassProduct` (Featherstone ABA: backward
+articulated-inertia sweep + forward acceleration sweep) drives RIQN and matches
+the dense `M⁻¹` to 1e-9 (`ArticulatedInverseMassMatchesDenseSolve`); the
+integrator is linear-time, symplectic (energy-conserving over 1e5 steps), and
+selectable via `World::setMultibodyIntegrationMethod("variational integrator")`.
+Remaining, in priority order:
 
-Then **Phase A2** (the headline linear-time claim): replace the dense `M⁻¹`
-placeholder in RIQN with an O(n) impulse-based articulated-body-inertia (ABI)
-recursion. Recommended approach: add `applyArticulatedInverseMass(tree, b) ->
-M(q)⁻¹·b` (Featherstone ABA: backward articulated-inertia sweep + forward
-acceleration sweep, zero velocity/gravity), gate it with a test asserting it
-equals the dense `massMatrix.ldlt().solve(b)` for random `b`, then swap RIQN's
-`massSolver.solve(dt·e)` to it and add the per-step-cost-vs-DOF scaling
-benchmark. The dense path stays as the correctness oracle.
+1. **A2 evidence**: a per-step-cost-vs-DOF scaling benchmark under
+   `tests/benchmark/simulation/experimental/` confirming the sub-quadratic slope.
+2. **A1 finish**: serialize `MultibodyVariationalState` (binary-format version
+   bump + bootstrap-done flag) + a save/load determinism round-trip test;
+   optionally promote RIQN non-convergence from a `converged=false` diagnostic to
+   a documented error.
+3. **Phase B1**: floating base — extend DRNEA/RIQN/ABI to a floating root and add
+   manifold-correct RIQN retraction + velocity reconstruction for SO(3)/SE(3)
+   joints (the reference impl has open TODOs here; Phase A is Euclidean-only).
+4. **Phase B2**: holonomic constraints (loop closures) — a constraint Jacobian
+   `∂g/∂q` + impulse-based constraint solve folded into RIQN; flip the
+   loop-closure `Solve` validation. (`johnson-murphey-2009`/`leyendecker-2008`.)
+5. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
 
 ## Context That Would Be Lost
 
