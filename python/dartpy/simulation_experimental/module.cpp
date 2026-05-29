@@ -37,6 +37,8 @@
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/contact.hpp>
+#include <dart/simulation/experimental/body/deformable_body.hpp>
+#include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
@@ -1409,6 +1411,66 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "depth", [](const sim::Contact& self) { return self.depth; });
 
+  nb::class_<sim::DeformableMaterialProperties>(
+      m, "DeformableMaterialProperties")
+      .def(nb::init<>())
+      .def_rw("density", &sim::DeformableMaterialProperties::density)
+      .def_rw(
+          "youngs_modulus", &sim::DeformableMaterialProperties::youngsModulus)
+      .def_rw("poisson_ratio", &sim::DeformableMaterialProperties::poissonRatio)
+      .def_rw(
+          "friction_coefficient",
+          &sim::DeformableMaterialProperties::frictionCoefficient);
+
+  nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
+      .def(
+          "__init__",
+          [](sim::DeformableEdge* self,
+             std::size_t nodeA,
+             std::size_t nodeB,
+             double restLength) {
+            new (self) sim::DeformableEdge{nodeA, nodeB, restLength};
+          },
+          nb::arg("node_a") = 0,
+          nb::arg("node_b") = 0,
+          nb::arg("rest_length") = -1.0)
+      .def_rw("node_a", &sim::DeformableEdge::nodeA)
+      .def_rw("node_b", &sim::DeformableEdge::nodeB)
+      .def_rw("rest_length", &sim::DeformableEdge::restLength);
+
+  nb::class_<sim::DeformableBodyOptions>(m, "DeformableBodyOptions")
+      .def(nb::init<>())
+      .def_rw("positions", &sim::DeformableBodyOptions::positions)
+      .def_rw("velocities", &sim::DeformableBodyOptions::velocities)
+      .def_rw("masses", &sim::DeformableBodyOptions::masses)
+      .def_rw("edges", &sim::DeformableBodyOptions::edges)
+      .def_rw("fixed_nodes", &sim::DeformableBodyOptions::fixedNodes)
+      .def_rw("edge_stiffness", &sim::DeformableBodyOptions::edgeStiffness)
+      .def_rw("damping", &sim::DeformableBodyOptions::damping)
+      .def_rw("material", &sim::DeformableBodyOptions::material);
+
+  nb::class_<sim::DeformableBody>(m, "DeformableBody")
+      .def_prop_ro("is_valid", &sim::DeformableBody::isValid)
+      .def_prop_ro("name", &sim::DeformableBody::getName)
+      .def_prop_ro("node_count", &sim::DeformableBody::getNodeCount)
+      .def_prop_ro("edge_count", &sim::DeformableBody::getEdgeCount)
+      .def("node_position", &sim::DeformableBody::getPosition, nb::arg("node"))
+      .def(
+          "set_node_position",
+          &sim::DeformableBody::setPosition,
+          nb::arg("node"),
+          nb::arg("position"))
+      .def("node_velocity", &sim::DeformableBody::getVelocity, nb::arg("node"))
+      .def(
+          "set_node_velocity",
+          &sim::DeformableBody::setVelocity,
+          nb::arg("node"),
+          nb::arg("velocity"))
+      .def("is_fixed_node", &sim::DeformableBody::isFixedNode, nb::arg("node"))
+      .def("edge", &sim::DeformableBody::getEdge, nb::arg("edge"))
+      .def_prop_ro(
+          "material_properties", &sim::DeformableBody::getMaterialProperties);
+
   nb::class_<sim::World>(m, "World")
       .def(
           "__init__",
@@ -1471,6 +1533,36 @@ void defSimulationExperimentalModule(nb::module_& m)
             return self.hasMultibody(name);
           },
           nb::arg("name"))
+      .def(
+          "add_deformable_body",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::DeformableBodyOptions& options) {
+            return self.addDeformableBody(name, options);
+          },
+          nb::arg("name"),
+          nb::arg("options"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "get_deformable_body",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto body = self.getDeformableBody(name);
+            if (!body.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*body, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "has_deformable_body",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasDeformableBody(name);
+          },
+          nb::arg("name"))
+      .def_prop_ro(
+          "num_deformable_bodies",
+          [](const sim::World& self) { return self.getDeformableBodyCount(); })
       .def(
           "add_loop_closure",
           [](sim::World& self,

@@ -2430,3 +2430,49 @@ def test_experimental_loop_closure_rejects_unsupported_active_policy():
     closure.kinematics = sx.ClosureKinematicsPolicy.RESIDUAL_ONLY
     with pytest.raises(Exception, match="solving stage"):
         world.step()
+
+
+def test_experimental_deformable_body_python_api():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [np.array([0.0, 0.0, 0.0]), np.array([2.0, 0.0, 0.0])]
+    options.masses = [1.0, 1.0]
+    options.edges = [sx.DeformableEdge(0, 1, 1.0)]
+    options.fixed_nodes = [0]
+    options.edge_stiffness = 100.0
+    material = sx.DeformableMaterialProperties()
+    material.friction_coefficient = 0.5
+    options.material = material
+
+    body = world.add_deformable_body("strand", options)
+    assert body.is_valid
+    assert body.name == "strand"
+    assert body.node_count == 2
+    assert body.edge_count == 1
+    assert world.num_deformable_bodies == 1
+    assert world.has_deformable_body("strand")
+    assert not world.has_deformable_body("missing")
+    assert world.get_deformable_body("missing") is None
+
+    assert body.is_fixed_node(0)
+    assert not body.is_fixed_node(1)
+    assert body.material_properties.friction_coefficient == pytest.approx(0.5)
+
+    edge = body.edge(0)
+    assert edge.node_a == 0
+    assert edge.node_b == 1
+
+    # The fixed node stays put; the stretched spring contracts the free node.
+    np.testing.assert_allclose(
+        body.node_position(0), [0.0, 0.0, 0.0], atol=1e-12
+    )
+    before_x = body.node_position(1)[0]
+    world.step()
+    after_x = body.node_position(1)[0]
+    assert after_x < before_x
+
+    fetched = world.get_deformable_body("strand")
+    assert fetched is not None
+    assert fetched.node_count == 2

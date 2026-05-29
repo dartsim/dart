@@ -175,6 +175,18 @@
         contact-heavy scenes (the loader currently ignores contact/friction
         directives; barrier/CCD/friction land via Phases 3-4). Until then only
         contact-free DBC/NBC tutorial-family scenes are replayable.
+- [~] Phase 8: Python facade for the deformable-body API.
+  - [x] Core bindings: `dartpy` exposes `World.add_deformable_body` /
+        `get_deformable_body` / `has_deformable_body` /
+        `get_deformable_body_count`, plus `DeformableBodyOptions`,
+        `DeformableMaterialProperties` (incl. `friction_coefficient`),
+        `DeformableEdge`, and `DeformableBody` (counts, per-node
+        position/velocity get/set, `is_fixed_node`, `edge`,
+        `material_properties`). Stubs regenerated; Python regression covers
+        create/configure/step/read.
+  - [ ] Remaining Phase 8 work: surface-triangle/tetrahedron and
+        boundary-condition (DBC/NBC) bindings, scene-loader Python access, and
+        diagnostics exposure.
 
 ## Goal
 
