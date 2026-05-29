@@ -558,9 +558,18 @@
     (`WorldOptions::contactSolverMethod`), a framework-neutral `diff::rollout`,
     contact-gradient refinement modes (`ContactGradientMode`), and a dartpy
     `sx.diff` bridge (`timestep` as a `torch.autograd.Function`, `rollout`,
-    `get_step_derivatives`/`apply_step_vjp`) with lazy torch import. All
-    gradients are finite-difference-of-step verified; no solver, reverse-pass
-    cache, ECS, or tensor-backend types are exposed publicly.
+    `get_step_derivatives`/`apply_step_vjp`) with lazy torch import. The
+    articulated-body dynamics derivatives are analytic (`O(dof²)`
+    recursive-Newton-Euler derivative recursions, with a finite-difference
+    fallback for manifold/configuration-dependent joints) and the contact
+    gradient exploits the block-sparse Delassus system, so the
+    analytic-vs-finite-difference speedup grows with system size — reproducing
+    the paper's scaling result and, on that hardware-normalized metric, matching
+    or beating the reference `nimblephysics` implementation measured on the same
+    machine. The paper's gradient-based trajectory-optimization experiment is
+    reproduced on a cartpole. All gradients are finite-difference-of-step
+    verified; no solver, reverse-pass cache, ECS, or tensor-backend types are
+    exposed publicly.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
