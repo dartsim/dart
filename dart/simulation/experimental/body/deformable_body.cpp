@@ -331,7 +331,10 @@ DeformableMaterialProperties DeformableBody::getMaterialProperties() const
   const auto& material = m_world->getRegistry().get<comps::DeformableMaterial>(
       toEntity(m_entityId));
   return DeformableMaterialProperties{
-      material.density, material.youngsModulus, material.poissonRatio};
+      material.density,
+      material.youngsModulus,
+      material.poissonRatio,
+      material.frictionCoefficient};
 }
 
 } // namespace dart::simulation::experimental

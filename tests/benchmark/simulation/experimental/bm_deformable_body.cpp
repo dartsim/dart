@@ -253,7 +253,7 @@ struct DeformableGridWorld
 // fall.
 struct DeformableDrapeWorld
 {
-  DeformableDrapeWorld(int columns, int rows)
+  DeformableDrapeWorld(int columns, int rows, double frictionCoefficient = 0.0)
   {
     columns = std::max(columns, 2);
     rows = std::max(rows, 2);
@@ -265,6 +265,7 @@ struct DeformableDrapeWorld
     sx::DeformableBodyOptions options;
     options.edgeStiffness = 25.0;
     options.damping = 1.5;
+    options.material.frictionCoefficient = frictionCoefficient;
 
     const auto index = [columns](int col, int row) {
       return static_cast<std::size_t>(row * columns + col);
@@ -916,7 +917,9 @@ void BM_DeformableDrapeStage(benchmark::State& state)
 {
   const auto columns = static_cast<int>(state.range(0));
   const auto rows = static_cast<int>(state.range(1));
-  DeformableDrapeWorld fixture(columns, rows);
+  // range(2) is the friction coefficient in tenths (0 = frictionless).
+  const double frictionCoefficient = static_cast<double>(state.range(2)) / 10.0;
+  DeformableDrapeWorld fixture(columns, rows, frictionCoefficient);
   sx::compute::SequentialExecutor executor;
   sx::compute::DeformableDynamicsStage deformableStage;
   sx::compute::WorldStepPipeline pipeline;
@@ -1338,7 +1341,12 @@ BENCHMARK(BM_DeformableGridStage)
 // over a raised box ground barrier onto the flat ground (two active barriers).
 // The 18x16 (288-node) and 24x20 (480-node) mats exceed the former 256-node
 // dense-solve cap and are solved on the sparse projected-Newton path.
-BENCHMARK(BM_DeformableDrapeStage)->Args({18, 16})->Args({24, 20});
+// range(2) is the friction coefficient in tenths; the mu=0.5 row exercises the
+// lagged smoothed Coulomb ground-friction path.
+BENCHMARK(BM_DeformableDrapeStage)
+    ->Args({18, 16, 0})
+    ->Args({24, 20, 0})
+    ->Args({18, 16, 5});
 
 BENCHMARK(BM_DeformableSurfaceContactStage)
     ->Args({1, 0})

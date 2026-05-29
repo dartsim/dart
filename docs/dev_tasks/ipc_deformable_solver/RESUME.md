@@ -142,32 +142,43 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-solver-convergence-diagnostic` - stacked on
-`feature/ipc-sparse-newton-symbolic-reuse` (#2744). Adds a convergence
-diagnostic: the stage reports `finalGradientResidualNorm` (worst-case
-projected-Newton gradient norm at solve termination across the step's bodies),
-surfaced on the grid/drape benchmarks toward the paper's benchmark-statistics
-tables (Fig. 23 / Table 1). Additive; existing tests unchanged.
+`feature/ipc-ground-friction` - stacked on
+`feature/ipc-solver-convergence-diagnostic` (#2745). Phase 4 first increment:
+lagged smoothed Coulomb friction for static-ground contact, gated by
+`DeformableMaterialProperties.frictionCoefficient` (default 0 -> additive, no
+existing-test churn). IPC f0/f1 mollifier (velocity threshold epsv), normal
+force lagged once per outer iteration, friction energy+gradient in
+evaluateDeformableObjective and a PSD tangential 2x2 friction Hessian in
+computeProjectedNewtonDirection. Plumbed mu through options -> comps::
+DeformableMaterial -> serializer -> getter -> solver view. Tests: sliding node
+decelerates vs frictionless control; friction inactive without contact. Drape
+benchmark gains a mu=0.5 variant; 61 deformable tests pass.
+
+NOTE (from the #2745 diagnostic): the stiff barrier-contact benchmarks
+(grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
+the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
+projected-Newton + line-search stall on very stiff barriers, present without
+friction (mu=0 == mu=0.5 residual). Not a friction bug; a known IPC-class
+limitation worth a future continuation/line-search-robustness slice.
 
 Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
 until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
-(self-contact barrier) <- #2740 (projected Newton, dense LDLT) <- #2741 (sparse
-Cholesky solve) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744
-(symbolic-factorization reuse).
+(self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
+Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
+reuse) <- #2745 (convergence diagnostic).
 
 ## Immediate Next Step
 
 User directive (2026-05-28): KEEP BUILDING the plan (Codex review batched for
-Saturday). The four sequenced steps (sparse, demo, reviews, GPU) are done; this
-symbolic-reuse slice is an extra CPU-perf win. REMAINING plan work, in rough
-priority: live GPU-backend injection (wire the CUDA PSD primitive + a GPU-vs-CPU
-perf gate into the solve via an optional executor, keeping world_step_stage
-GPU-free), matrix-free CG for very large meshes, adaptive barrier stiffness,
-barrier forces for rigid/codimensional obstacles (note: disturbs #2732 CCD test
-contracts -- not purely additive), friction (Slice 6: stick-slip / card-house /
-arch / roller figures -- the marquee paper feature, tangent stencils scaffolded
-in #2724), scene corpus port (Slice 7), Python facade (Slice 8). Per the
-standing directive, optimize CPU AND GPU throughout.
+Saturday). REMAINING plan work, in rough priority: remaining Phase 4 friction
+(self-contact + codimensional friction; non-flat ground normals; friction
+diagnostics), barrier-stall convergence robustness (continuation / better line
+search -- the high-residual finding above), live GPU-backend injection (wire the
+CUDA PSD primitive + a GPU-vs-CPU perf gate via an optional executor, keeping
+world_step_stage GPU-free), adaptive barrier stiffness, rigid/codimensional
+obstacle barrier forces (disturbs #2732 CCD contracts), scene corpus port
+(Phase 5), Python facade (Phase 8). Per the standing directive, optimize CPU AND
+GPU throughout.
 
 ## Context That Would Be Lost
 
