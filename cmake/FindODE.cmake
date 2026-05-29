@@ -34,11 +34,7 @@ find_path(
 if(MSVC)
   set(ODE_LIBRARIES "ode$<$<CONFIG:Debug>:d>")
 else()
-  find_library(
-    ODE_LIBRARIES
-    NAMES ode
-    HINTS ${PC_ODE_LIBDIR}
-  )
+  find_library(ODE_LIBRARIES NAMES ode HINTS ${PC_ODE_LIBDIR})
 endif()
 
 # Version

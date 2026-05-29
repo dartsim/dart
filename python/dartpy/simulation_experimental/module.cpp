@@ -1636,7 +1636,12 @@ void defSimulationExperimentalModule(nb::module_& m)
       },
       nb::arg("world"),
       nb::arg("scene_path"),
-      nb::arg("options") = sim::io::DeformableSceneLoadOptions{});
+      nb::arg("options") = sim::io::DeformableSceneLoadOptions{},
+      // The returned DeformableSceneInfo carries DeformableBody handles that
+      // hold a raw World*, so keep the World alive as long as the info (and the
+      // body handles read from it) lives, matching the keep-alive edge the
+      // World.add_deformable_body / get_deformable_body bindings use.
+      nb::keep_alive<0, 1>());
 
   m.def(
       "collect_deformable_scene_diagnostics",
@@ -1732,8 +1737,8 @@ void defSimulationExperimentalModule(nb::module_& m)
             return self.hasDeformableBody(name);
           },
           nb::arg("name"))
-      .def(
-          "get_deformable_body_count",
+      .def_prop_ro(
+          "num_deformable_bodies",
           [](const sim::World& self) { return self.getDeformableBodyCount(); })
       .def(
           "add_loop_closure",

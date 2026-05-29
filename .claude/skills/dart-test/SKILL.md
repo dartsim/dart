@@ -52,3 +52,12 @@ pixi run test-unit
 # Get CI logs
 gh run view <RUN_ID> --log-failed
 ```
+
+## Gotchas
+
+- `pixi run build` builds libraries only, NOT the unit-test binaries. If you run
+  `ctest` without building the test target first, you may execute stale binaries
+  that silently pass. Build the test target before running its label, e.g. for
+  the experimental simulation suite:
+  `pixi run build-simulation-experimental-tests` (target `dart_experimental_tests`)
+  before `ctest -L simulation-experimental`.

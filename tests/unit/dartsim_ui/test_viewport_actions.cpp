@@ -40,7 +40,14 @@
 #include <dartsim_ui/viewport_actions.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <limits>
+#include <optional>
+#include <utility>
+#include <vector>
+
+#include <cstddef>
 
 using namespace dartsim;
 
@@ -61,6 +68,99 @@ dart::gui::OrbitCamera testCamera()
   camera.pitch = 0.25;
   camera.distance = 12.0;
   return camera;
+}
+
+std::size_t countRenderItemsOfType(
+    const SimEngine& engine,
+    const std::vector<RenderItem>& items,
+    ObjectType type)
+{
+  return static_cast<std::size_t>(std::count_if(
+      items.begin(), items.end(), [&engine, type](const RenderItem& item) {
+        const SceneObject* object = engine.objects().model().find(item.id);
+        return object != nullptr && object->type == type;
+      }));
+}
+
+void expectCameraNear(
+    const dart::gui::OrbitCamera& actual,
+    const dart::gui::OrbitCamera& expected)
+{
+  EXPECT_TRUE(actual.target.isApprox(expected.target));
+  EXPECT_TRUE(actual.up.isApprox(expected.up));
+  EXPECT_EQ(actual.yaw, expected.yaw);
+  EXPECT_EQ(actual.pitch, expected.pitch);
+  EXPECT_EQ(actual.distance, expected.distance);
+}
+
+struct PaneCameraCase
+{
+  ui::ViewportPaneKind uiPane = ui::ViewportPaneKind::Perspective;
+  ui::ViewportLayoutActionKind action
+      = ui::ViewportLayoutActionKind::ActivatePerspectivePane;
+  dart::gui::ViewportPaneKind guiPane
+      = dart::gui::ViewportPaneKind::Perspective;
+  dart::gui::OrbitCamera camera;
+};
+
+std::array<PaneCameraCase, 4> makePaneCameraCases()
+{
+  std::array<PaneCameraCase, 4> cases{
+      PaneCameraCase{
+          ui::ViewportPaneKind::Perspective,
+          ui::ViewportLayoutActionKind::ActivatePerspectivePane,
+          dart::gui::ViewportPaneKind::Perspective,
+          testCamera()},
+      PaneCameraCase{
+          ui::ViewportPaneKind::Top,
+          ui::ViewportLayoutActionKind::ActivateTopPane,
+          dart::gui::ViewportPaneKind::Top,
+          testCamera()},
+      PaneCameraCase{
+          ui::ViewportPaneKind::Front,
+          ui::ViewportLayoutActionKind::ActivateFrontPane,
+          dart::gui::ViewportPaneKind::Front,
+          testCamera()},
+      PaneCameraCase{
+          ui::ViewportPaneKind::Right,
+          ui::ViewportLayoutActionKind::ActivateRightPane,
+          dart::gui::ViewportPaneKind::Right,
+          testCamera()}};
+  for (std::size_t i = 0; i < cases.size(); ++i) {
+    cases[i].camera.target = Eigen::Vector3d(
+        1.0 + static_cast<double>(i),
+        2.0 + static_cast<double>(i) * 3.0,
+        3.0 + static_cast<double>(i) * 5.0);
+    cases[i].camera.yaw = -0.4 + static_cast<double>(i) * 0.2;
+    cases[i].camera.pitch = -0.2 + static_cast<double>(i) * 0.3;
+    cases[i].camera.distance = 6.0 + static_cast<double>(i);
+  }
+  return cases;
+}
+
+void rememberPaneCameras(
+    ui::ViewportLayoutState& layout, const std::array<PaneCameraCase, 4>& cases)
+{
+  for (const PaneCameraCase& paneCase : cases) {
+    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
+    ui::rememberViewportActivePaneCamera(layout, paneCase.camera);
+  }
+}
+
+void expectRememberedPaneCameras(
+    const SimEngine& engine,
+    ui::ViewportLayoutState layout,
+    const ui::ViewportLayerFilterState& filters,
+    const std::array<PaneCameraCase, 4>& cases)
+{
+  for (const PaneCameraCase& paneCase : cases) {
+    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
+    const auto activeCamera
+        = ui::activeViewportPaneCamera(engine, testCamera(), filters, layout);
+    ASSERT_TRUE(activeCamera.ok);
+    ASSERT_TRUE(activeCamera.camera.has_value());
+    expectCameraNear(*activeCamera.camera, paneCase.camera);
+  }
 }
 
 } // namespace
@@ -164,6 +264,64 @@ TEST(DartsimViewportActions, TransformGizmoTracksAndCommitsSelection)
           Eigen::Vector3d(0.0, 0.0, 1.0)));
 }
 
+TEST(
+    DartsimViewportActions,
+    TransformGizmoUsesWorldTransformsForParentedDescriptors)
+{
+  SimEngine engine;
+  Eigen::Isometry3d parentTransform = translation(1.0, 2.0, 0.5);
+  parentTransform.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, parentTransform, "body"));
+  const ObjectId parent = engine.selection().primary();
+  ASSERT_NE(parent, kNoObject);
+
+  const Eigen::Isometry3d localSensorTransform = translation(0.0, 1.0, 0.25);
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Camera, parent, localSensorTransform, "camera"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+
+  const Eigen::Isometry3d expectedWorld
+      = parentTransform * localSensorTransform;
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  EXPECT_EQ(gizmo.object, sensor);
+  EXPECT_TRUE(gizmo.target->getWorldTransform().matrix().isApprox(
+      expectedWorld.matrix()));
+
+  Eigen::Isometry3d movedWorld = expectedWorld;
+  movedWorld.translation() += Eigen::Vector3d(0.5, 0.0, 0.0);
+  ASSERT_TRUE(ui::applyViewportTransformGizmo(engine, gizmo, movedWorld));
+  const Eigen::Isometry3d expectedLocal
+      = parentTransform.inverse() * movedWorld;
+  const SceneObject* edited = engine.objects().model().find(sensor);
+  ASSERT_NE(edited, nullptr);
+  EXPECT_TRUE(edited->transform.matrix().isApprox(expectedLocal.matrix()));
+  const std::optional<Eigen::Isometry3d> updatedWorld
+      = engine.objects().worldTransformOf(sensor);
+  ASSERT_TRUE(updatedWorld.has_value());
+  EXPECT_TRUE(updatedWorld->matrix().isApprox(movedWorld.matrix()));
+  EXPECT_TRUE(
+      gizmo.target->getWorldTransform().matrix().isApprox(movedWorld.matrix()));
+
+  const Eigen::Isometry3d localCollisionTransform = translation(0.25, 0.0, 0.5);
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere, parent, localCollisionTransform, "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  const Eigen::Isometry3d expectedCollisionWorld
+      = parentTransform * localCollisionTransform;
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  EXPECT_EQ(gizmo.object, collision);
+  EXPECT_TRUE(gizmo.target->getWorldTransform().matrix().isApprox(
+      expectedCollisionWorld.matrix()));
+}
+
 TEST(DartsimViewportActions, TransformGizmoRejectsUnsupportedHiddenAndRunMode)
 {
   SimEngine engine;
@@ -195,6 +353,425 @@ TEST(DartsimViewportActions, TransformGizmoRejectsUnsupportedHiddenAndRunMode)
           Eigen::Vector3d(0.0, 0.0, 1.0)));
 }
 
+TEST(DartsimViewportActions, LayerFiltersSeparateRigidBodiesAndLinks)
+{
+  SimEngine engine;
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxRigidBody)
+          .ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_TRUE(
+      ui::applyPaletteAction(
+          engine, ui::PaletteActionKind::AddTwoLinkArmExample)
+          .ok);
+
+  ui::ViewportLayerFilterState filters;
+  std::vector<RenderItem> items
+      = ui::filteredViewportRenderItems(engine, filters);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::RigidBody), 1u);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::Link), 3u);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  items = ui::filteredViewportRenderItems(engine, filters);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::RigidBody), 0u);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::Link), 3u);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, box, filters));
+  EXPECT_TRUE(engine.objects().model().find(box)->visible);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  EXPECT_TRUE(ui::filteredViewportRenderItems(engine, filters).empty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  items = ui::filteredViewportRenderItems(engine, filters);
+  EXPECT_EQ(items.size(), 1u);
+  EXPECT_EQ(items.front().id, box);
+}
+
+TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const ObjectId body = engine.selection().primary();
+  ASSERT_NE(body, kNoObject);
+
+  engine.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = engine.selection().primary();
+  ASSERT_NE(arm, kNoObject);
+  engine.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId link = engine.selection().primary();
+  ASSERT_NE(link, kNoObject);
+
+  engine.execute(
+      commands::addFreeFrame(translation(1.0, 0.0, 0.0), "free_frame"));
+  const ObjectId freeFrame = engine.selection().primary();
+  ASSERT_NE(freeFrame, kNoObject);
+  engine.execute(
+      commands::addFixedFrame(
+          freeFrame, translation(0.0, 1.0, 0.0), "fixed_frame"));
+  const ObjectId fixedFrame = engine.selection().primary();
+  ASSERT_NE(fixedFrame, kNoObject);
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Range, fixedFrame, translation(0.0, 0.0, 0.5), "range"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere,
+          fixedFrame,
+          translation(0.0, 0.0, 0.25),
+          "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  SceneObject joint;
+  joint.type = ObjectType::Joint;
+  joint.parent = arm;
+  joint.name = "raw_joint";
+  const ObjectId jointId = engine.objects().model().add(std::move(joint));
+  engine.objects().rebuild();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, body, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, link, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, freeFrame, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, sensor, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, collision, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, arm, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, jointId, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, 999999, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, body, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, link, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, link, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, freeFrame, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, sensor, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Sensors, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, sensor, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, collision, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, collision, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, true)
+          .ok);
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, freeFrame, false));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, freeFrame, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+}
+
+TEST(DartsimViewportActions, LayerFilterTogglesAreViewOnly)
+{
+  SimEngine engine;
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxRigidBody)
+          .ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  const auto hidden = ui::setViewportLayerVisible(
+      filters, ui::ViewportLayerKind::RigidBodies, false);
+  EXPECT_TRUE(hidden.ok);
+  EXPECT_EQ(hidden.message, "Rigid Bodies hidden");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.objects().model().find(box)->visible);
+
+  const auto actions = ui::buildViewportLayerFilterActions(filters);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_FALSE(actions[0].checked);
+  EXPECT_TRUE(actions[1].checked);
+  EXPECT_TRUE(actions[2].checked);
+  EXPECT_TRUE(actions[3].checked);
+  EXPECT_TRUE(actions[4].checked);
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectViewportSelectionAndMovement)
+{
+  SimEngine engine;
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxRigidBody)
+          .ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  const Eigen::Vector3d original
+      = engine.objects().model().find(box)->transform.translation();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_NE(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+
+  engine.execute(commands::addFreeFrame(translation(3.0, 0.0, 0.0), "marker"));
+  const ObjectId marker = engine.selection().primary();
+  ASSERT_NE(marker, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+  engine.select(box);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+
+  ASSERT_TRUE(engine.select(marker));
+  EXPECT_FALSE(
+      ui::selectViewportRenderable(
+          engine, filters, ui::renderableIdForObject(box)));
+  EXPECT_EQ(engine.selection().primary(), marker);
+  EXPECT_TRUE(ui::selectViewportRenderable(engine, filters, 0));
+  EXPECT_EQ(engine.selection().primary(), kNoObject);
+  ASSERT_TRUE(engine.select(box));
+
+  ui::ViewportMoveInput input;
+  input.right = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          original));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  EXPECT_FALSE(
+      ui::applyViewportTransformGizmo(
+          engine, gizmo, filters, translation(8.0, 0.0, 0.0)));
+  EXPECT_FALSE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, kNoObject);
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          original));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  EXPECT_TRUE(ui::moveSelectedFromViewport(engine, filters, input));
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectSensorSelectionAndMovement)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Range, kNoObject, translation(1.0, 2.0, 3.0), "range"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+  const Eigen::Vector3d original
+      = engine.objects().model().find(sensor)->transform.translation();
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_NE(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Sensors, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+
+  ui::ViewportMoveInput input;
+  input.right = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(sensor)->transform.translation().isApprox(
+          original));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Sensors, true)
+          .ok);
+  EXPECT_TRUE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(sensor)->transform.translation().isApprox(
+          Eigen::Vector3d(1.1, 2.0, 3.0)));
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectCollisionSelectionAndMovement)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere, kNoObject, translation(1.0, 2.0, 3.0), "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+  const Eigen::Vector3d original
+      = engine.objects().model().find(collision)->transform.translation();
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  const dart::gui::RenderableId renderable
+      = ui::selectedViewportRenderable(engine, filters);
+  EXPECT_EQ(renderable, ui::renderableIdForObject(collision));
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+  EXPECT_TRUE(ui::selectViewportRenderable(engine, filters, 0));
+  EXPECT_EQ(engine.selection().primary(), kNoObject);
+  EXPECT_TRUE(ui::selectViewportRenderable(engine, filters, renderable));
+  EXPECT_EQ(engine.selection().primary(), collision);
+
+  const auto fit = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene, filters);
+  ASSERT_TRUE(fit.ok);
+  ASSERT_TRUE(fit.camera.has_value());
+  EXPECT_TRUE(fit.camera->target.isApprox(original));
+  const auto focus = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  ASSERT_TRUE(focus.ok);
+  ASSERT_TRUE(focus.camera.has_value());
+  EXPECT_TRUE(focus.camera->target.isApprox(original));
+
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, collision);
+  Eigen::Isometry3d moved = translation(4.0, 5.0, 6.0);
+  ASSERT_TRUE(ui::applyViewportTransformGizmo(engine, gizmo, filters, moved));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
+  EXPECT_TRUE(
+      gizmo.target->getWorldTransform().matrix().isApprox(moved.matrix()));
+  ASSERT_TRUE(engine.undo());
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(original));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+
+  ui::ViewportMoveInput input;
+  input.right = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(original));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, true)
+          .ok);
+  EXPECT_TRUE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(Eigen::Vector3d(1.1, 2.0, 3.0)));
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectFrameFocusAndGizmos)
+{
+  SimEngine engine;
+  engine.execute(commands::addFreeFrame(translation(1.0, 2.0, 3.0), "frame"));
+  const ObjectId frame = engine.selection().primary();
+  ASSERT_NE(frame, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+  const auto focused = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  ASSERT_TRUE(focused.ok);
+  ASSERT_TRUE(focused.camera.has_value());
+  EXPECT_TRUE(focused.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  EXPECT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, frame);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+  const auto hiddenFocus = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  EXPECT_FALSE(hiddenFocus.ok);
+  EXPECT_FALSE(
+      ui::applyViewportTransformGizmo(
+          engine, gizmo, filters, translation(4.0, 5.0, 6.0)));
+  ui::ViewportMoveInput input;
+  input.up = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(frame)->transform.translation().isApprox(
+          Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_FALSE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, kNoObject);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
 TEST(DartsimViewportActions, BuildsCameraActionsFromVisibleSceneState)
 {
   SimEngine engine;
@@ -221,6 +798,104 @@ TEST(DartsimViewportActions, BuildsCameraActionsFromVisibleSceneState)
   const auto hiddenActions = ui::buildViewportCameraActions(engine);
   EXPECT_FALSE(hiddenActions[0].enabled);
   EXPECT_FALSE(hiddenActions[1].enabled);
+}
+
+TEST(DartsimViewportActions, BuildsAllPaneCameraActionsFromLayoutAndSceneState)
+{
+  SimEngine engine;
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+
+  auto actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_EQ(actions[0].kind, ui::ViewportCameraActionKind::FitScene);
+  EXPECT_EQ(actions[0].label, "Fit All Panes");
+  EXPECT_FALSE(actions[0].enabled);
+  EXPECT_EQ(actions[0].disabledReason, "Enable Four View Layout");
+  EXPECT_EQ(actions[1].kind, ui::ViewportCameraActionKind::FocusSelection);
+  EXPECT_EQ(actions[1].label, "Focus Selection in All Panes");
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "Enable Four View Layout");
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_FALSE(actions[0].enabled);
+  EXPECT_EQ(actions[0].disabledReason, "No visible objects");
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "No visible selected object");
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_TRUE(actions[0].enabled);
+  EXPECT_TRUE(actions[1].enabled);
+
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, box, false));
+  actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_FALSE(actions[0].enabled);
+  EXPECT_EQ(actions[0].disabledReason, "No visible objects");
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "No visible selected object");
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectCameraActionsWithoutEditingScene)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(-10.0, 0.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = engine.selection().primary();
+  ASSERT_NE(arm, kNoObject);
+  engine.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId link = engine.selection().primary();
+  ASSERT_NE(link, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  const auto fitWithoutRigidBodies = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene, filters);
+  ASSERT_TRUE(fitWithoutRigidBodies.ok);
+  ASSERT_TRUE(fitWithoutRigidBodies.camera.has_value());
+  EXPECT_NEAR(fitWithoutRigidBodies.camera->target.x(), 0.0, 2.0);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  const auto hiddenScene = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene, filters);
+  EXPECT_FALSE(hiddenScene.ok);
+  EXPECT_FALSE(hiddenScene.camera.has_value());
+
+  ASSERT_TRUE(engine.select(box));
+  const auto hiddenSelection = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  EXPECT_FALSE(hiddenSelection.ok);
+
+  const auto preset = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::Perspective, filters);
+  EXPECT_TRUE(preset.ok);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }
 
 TEST(DartsimViewportActions, FitSceneFramesAllVisibleRenderables)
@@ -440,11 +1115,810 @@ TEST(DartsimViewportActions, CameraPresetsPreserveTargetAndDistance)
   dart::gui::OrbitCamera invalid = current;
   invalid.target
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
+  invalid.up = Eigen::Vector3d::Zero();
+  invalid.yaw = std::numeric_limits<double>::quiet_NaN();
+  invalid.pitch = std::numeric_limits<double>::infinity();
   invalid.distance = -1.0;
   const auto perspective = ui::applyViewportCameraAction(
       engine, invalid, ui::ViewportCameraActionKind::Perspective);
   ASSERT_TRUE(perspective.ok);
   ASSERT_TRUE(perspective.camera.has_value());
   EXPECT_TRUE(perspective.camera->target.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(perspective.camera->up.isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_NEAR(perspective.camera->yaw, -0.78, 1e-12);
+  EXPECT_NEAR(perspective.camera->pitch, 0.42, 1e-12);
   EXPECT_GE(perspective.camera->distance, 0.8);
+}
+
+TEST(DartsimViewportActions, RejectsUnknownViewportActions)
+{
+  SimEngine engine;
+
+  ui::ViewportLayerFilterState filters;
+  const auto layer = ui::setViewportLayerVisible(
+      filters, static_cast<ui::ViewportLayerKind>(999), false);
+  EXPECT_TRUE(layer.ok);
+  EXPECT_EQ(layer.message, "Unknown hidden");
+
+  const auto camera = ui::applyViewportCameraAction(
+      engine, testCamera(), static_cast<ui::ViewportCameraActionKind>(999));
+  EXPECT_FALSE(camera.ok);
+  EXPECT_EQ(camera.message, "Unknown camera action");
+
+  ui::ViewportCameraControlState controls;
+  const auto control = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      static_cast<ui::ViewportCameraControlActionKind>(999));
+  EXPECT_FALSE(control.ok);
+  EXPECT_EQ(control.message, "Unknown camera control");
+
+  ui::ViewportLayoutState layout;
+  const auto layoutResult = ui::applyViewportLayoutAction(
+      layout, static_cast<ui::ViewportLayoutActionKind>(999));
+  EXPECT_FALSE(layoutResult.ok);
+  EXPECT_EQ(layoutResult.message, "Unknown viewport layout");
+
+  const auto paneAction = ui::viewportPaneActivationAction(
+      static_cast<dart::gui::ViewportPaneKind>(999));
+  EXPECT_FALSE(paneAction.has_value());
+
+  const auto paneResult = ui::applyViewportPaneActivation(
+      layout, static_cast<dart::gui::ViewportPaneKind>(999));
+  EXPECT_FALSE(paneResult.ok);
+  EXPECT_EQ(paneResult.message, "Unknown viewport pane");
+
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(static_cast<ui::ViewportPaneKind>(999)),
+      ui::ViewportCameraActionKind::Perspective);
+}
+
+TEST(DartsimViewportActions, CameraControlsAndTrackingAreViewOnly)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+
+  auto actions
+      = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_TRUE(actions[0].checked);
+  EXPECT_FALSE(actions[3].enabled);
+  EXPECT_EQ(actions[3].disabledReason, "No visible selected object");
+
+  auto tracked
+      = ui::trackedSelectionCamera(engine, testCamera(), filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "Selection tracking off");
+
+  controls.trackSelection = true;
+  tracked = ui::trackedSelectionCamera(engine, testCamera(), filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "No visible selected object");
+
+  controls.lockCamera = true;
+  tracked = ui::trackedSelectionCamera(engine, testCamera(), filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "Camera locked");
+
+  const dart::gui::OrbitCameraControlOptions lockedOptions
+      = ui::viewportCameraControlOptions(controls);
+  EXPECT_TRUE(lockedOptions.locked);
+  EXPECT_EQ(lockedOptions.mouseMode, dart::gui::OrbitCameraMouseMode::Orbit);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+  controls.lockCamera = false;
+  controls.mouseMode = dart::gui::OrbitCameraMouseMode::Zoom;
+  actions = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_TRUE(actions[2].checked);
+  EXPECT_TRUE(actions[3].enabled);
+
+  const dart::gui::OrbitCamera current = testCamera();
+  tracked = ui::trackedSelectionCamera(engine, current, filters, controls);
+  ASSERT_TRUE(tracked.ok);
+  ASSERT_TRUE(tracked.camera.has_value());
+  EXPECT_TRUE(tracked.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 0.5)));
+  EXPECT_EQ(tracked.camera->distance, current.distance);
+
+  const auto toggled = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_TRUE(toggled.ok);
+  EXPECT_EQ(toggled.message, "Selection tracking off");
+  EXPECT_FALSE(controls.trackSelection);
+
+  controls.mouseMode = static_cast<dart::gui::OrbitCameraMouseMode>(999);
+  const ui::ViewportStatus status = ui::buildViewportStatus(
+      engine, filters, controls, ui::ViewportLayoutState{});
+  EXPECT_EQ(status.cameraModeLabel, "Camera Mode");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(0.0, 0.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayoutState layout;
+  auto actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_EQ(actions[0].kind, ui::ViewportLayoutActionKind::SingleView);
+  EXPECT_TRUE(actions[0].checked);
+  EXPECT_EQ(actions[1].kind, ui::ViewportLayoutActionKind::QuadView);
+  EXPECT_FALSE(actions[1].checked);
+  EXPECT_EQ(
+      actions[2].kind, ui::ViewportLayoutActionKind::ActivatePerspectivePane);
+  EXPECT_TRUE(actions[2].checked);
+  EXPECT_FALSE(actions[2].enabled);
+  EXPECT_EQ(actions[2].disabledReason, "Enable Four View Layout");
+
+  auto disabledPane = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateFrontPane);
+  EXPECT_FALSE(disabledPane.ok);
+  EXPECT_EQ(disabledPane.message, "Enable Four View Layout");
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Perspective);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  auto result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::QuadView);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Quad);
+
+  actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_FALSE(actions[0].checked);
+  EXPECT_TRUE(actions[1].checked);
+  EXPECT_TRUE(actions[2].enabled);
+  EXPECT_TRUE(actions[2].checked);
+
+  result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateFrontPane);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Front Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Front);
+
+  const auto frontCamera = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::viewportPaneCameraAction(layout.activePane));
+  ASSERT_TRUE(frontCamera.ok);
+  ASSERT_TRUE(frontCamera.camera.has_value());
+  EXPECT_NEAR(frontCamera.camera->yaw, -3.14159265358979323846 * 0.5, 1e-12);
+  EXPECT_NEAR(frontCamera.camera->pitch, 0.0, 1e-12);
+
+  result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateRightPane);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Right Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Right);
+  actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_TRUE(actions[4].checked);
+
+  result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateTopPane);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Top Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Top);
+  actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_TRUE(actions[5].checked);
+
+  result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::SingleView);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Top);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, ViewportPaneCameraMappingsAreCanonical)
+{
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Perspective),
+      ui::ViewportCameraActionKind::Perspective);
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Front),
+      ui::ViewportCameraActionKind::Front);
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Right),
+      ui::ViewportCameraActionKind::Right);
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Top),
+      ui::ViewportCameraActionKind::Top);
+}
+
+TEST(DartsimViewportActions, ViewportLayoutRemembersIndependentPaneCameras)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+
+  const auto cases = makePaneCameraCases();
+  rememberPaneCameras(layout, cases);
+
+  for (const PaneCameraCase& paneCase : cases) {
+    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
+    const auto activeCamera
+        = ui::activeViewportPaneCamera(engine, testCamera(), filters, layout);
+    ASSERT_TRUE(activeCamera.ok);
+    ASSERT_TRUE(activeCamera.camera.has_value());
+    expectCameraNear(*activeCamera.camera, paneCase.camera);
+
+    const auto layoutOptions
+        = ui::viewportLayoutOptions(engine, paneCase.camera, filters, layout);
+    ASSERT_EQ(layoutOptions.paneCount, dart::gui::kMaxViewportPanes);
+    for (const PaneCameraCase& expectedPane : cases) {
+      const auto pane = std::find_if(
+          layoutOptions.panes.begin(),
+          layoutOptions.panes.begin()
+              + static_cast<std::ptrdiff_t>(layoutOptions.paneCount),
+          [&expectedPane](const dart::gui::ViewportPaneView& view) {
+            return view.kind == expectedPane.guiPane;
+          });
+      ASSERT_NE(
+          pane,
+          layoutOptions.panes.begin()
+              + static_cast<std::ptrdiff_t>(layoutOptions.paneCount));
+      expectCameraNear(pane->camera, expectedPane.camera);
+      EXPECT_EQ(pane->active, expectedPane.uiPane == paneCase.uiPane);
+    }
+  }
+
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, AllPaneCameraRejectsUnsupportedActions)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+
+  const auto result = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::Perspective,
+      filters,
+      layout);
+  EXPECT_FALSE(result.ok);
+  EXPECT_EQ(result.message, "Unsupported all-pane camera action");
+}
+
+TEST(DartsimViewportActions, AllPaneFitFramesSceneForRememberedPaneCameras)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(-2.0, 0.0, 0.5), "left_box"));
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(4.0, 2.0, 1.0), "right_sphere"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  auto cases = makePaneCameraCases();
+  rememberPaneCameras(layout, cases);
+
+  const auto result = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      cases.back().camera,
+      ui::ViewportCameraActionKind::FitScene,
+      filters,
+      layout);
+  ASSERT_TRUE(result.ok);
+  ASSERT_TRUE(result.camera.has_value());
+  EXPECT_EQ(result.message, "Fit all viewport panes");
+
+  for (PaneCameraCase& paneCase : cases) {
+    const auto expected = ui::applyViewportCameraAction(
+        engine,
+        paneCase.camera,
+        ui::ViewportCameraActionKind::FitScene,
+        filters);
+    ASSERT_TRUE(expected.ok);
+    ASSERT_TRUE(expected.camera.has_value());
+    paneCase.camera = *expected.camera;
+  }
+  expectRememberedPaneCameras(engine, layout, filters, cases);
+  expectCameraNear(*result.camera, cases.back().camera);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, AllPaneFocusIsAtomicAndPreservesPaneOrientations)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  const auto originalCases = makePaneCameraCases();
+  rememberPaneCameras(layout, originalCases);
+
+  ui::ViewportLayoutState singleLayout = layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          singleLayout, ui::ViewportLayoutActionKind::SingleView)
+          .ok);
+  const auto singleResult = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      originalCases.back().camera,
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters,
+      singleLayout);
+  EXPECT_FALSE(singleResult.ok);
+  EXPECT_EQ(singleResult.message, "Enable Four View Layout");
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          singleLayout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  expectRememberedPaneCameras(engine, singleLayout, filters, originalCases);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  const auto hiddenResult = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      originalCases.back().camera,
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters,
+      layout);
+  EXPECT_FALSE(hiddenResult.ok);
+  EXPECT_EQ(hiddenResult.message, "No visible selected object");
+  expectRememberedPaneCameras(engine, layout, filters, originalCases);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  auto focusedCases = originalCases;
+  const auto focused = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      focusedCases.back().camera,
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters,
+      layout);
+  ASSERT_TRUE(focused.ok);
+  ASSERT_TRUE(focused.camera.has_value());
+  EXPECT_EQ(focused.message, "Focused selection in all viewport panes");
+
+  for (PaneCameraCase& paneCase : focusedCases) {
+    const auto expected = ui::applyViewportCameraAction(
+        engine,
+        paneCase.camera,
+        ui::ViewportCameraActionKind::FocusSelection,
+        filters);
+    ASSERT_TRUE(expected.ok);
+    ASSERT_TRUE(expected.camera.has_value());
+    paneCase.camera = *expected.camera;
+  }
+  expectRememberedPaneCameras(engine, layout, filters, focusedCases);
+  expectCameraNear(*focused.camera, focusedCases.back().camera);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, RendererPaneActivationUsesLayoutActions)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayoutState layout;
+  const std::array<
+      std::pair<dart::gui::ViewportPaneKind, ui::ViewportLayoutActionKind>,
+      4>
+      expectedActions{
+          std::pair{
+              dart::gui::ViewportPaneKind::Perspective,
+              ui::ViewportLayoutActionKind::ActivatePerspectivePane},
+          std::pair{
+              dart::gui::ViewportPaneKind::Front,
+              ui::ViewportLayoutActionKind::ActivateFrontPane},
+          std::pair{
+              dart::gui::ViewportPaneKind::Right,
+              ui::ViewportLayoutActionKind::ActivateRightPane},
+          std::pair{
+              dart::gui::ViewportPaneKind::Top,
+              ui::ViewportLayoutActionKind::ActivateTopPane}};
+  for (const auto& [pane, expectedAction] : expectedActions) {
+    const std::optional<ui::ViewportLayoutActionKind> action
+        = ui::viewportPaneActivationAction(pane);
+    ASSERT_TRUE(action.has_value());
+    EXPECT_EQ(*action, expectedAction);
+  }
+
+  auto disabled = ui::applyViewportPaneActivation(
+      layout, dart::gui::ViewportPaneKind::Top);
+  EXPECT_FALSE(disabled.ok);
+  EXPECT_EQ(disabled.message, "Enable Four View Layout");
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Perspective);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  auto result = ui::applyViewportPaneActivation(
+      layout, dart::gui::ViewportPaneKind::Right);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Right Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Right);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, ViewportLayoutOptionsExposeRendererPaneViews)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  const dart::gui::OrbitCamera current = testCamera();
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+
+  const auto single
+      = ui::viewportLayoutOptions(engine, current, filters, layout);
+  EXPECT_EQ(single.mode, dart::gui::ViewportLayoutMode::Single);
+  ASSERT_EQ(single.paneCount, 1u);
+  EXPECT_EQ(single.panes[0].kind, dart::gui::ViewportPaneKind::Perspective);
+  EXPECT_TRUE(single.panes[0].active);
+  EXPECT_TRUE(single.panes[0].camera.target.isApprox(current.target));
+  EXPECT_EQ(single.panes[0].camera.distance, current.distance);
+  EXPECT_EQ(single.panes[0].camera.yaw, current.yaw);
+  EXPECT_EQ(single.panes[0].camera.pitch, current.pitch);
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  const auto quad = ui::viewportLayoutOptions(engine, current, filters, layout);
+  EXPECT_EQ(quad.mode, dart::gui::ViewportLayoutMode::Quad);
+  ASSERT_EQ(quad.paneCount, dart::gui::kMaxViewportPanes);
+
+  const std::array<dart::gui::ViewportPaneKind, dart::gui::kMaxViewportPanes>
+      expectedKinds{
+          dart::gui::ViewportPaneKind::Perspective,
+          dart::gui::ViewportPaneKind::Top,
+          dart::gui::ViewportPaneKind::Front,
+          dart::gui::ViewportPaneKind::Right};
+  for (std::size_t i = 0; i < expectedKinds.size(); ++i) {
+    EXPECT_EQ(quad.panes[i].kind, expectedKinds[i]);
+  }
+  EXPECT_TRUE(quad.panes[0].active);
+  EXPECT_FALSE(quad.panes[1].active);
+  EXPECT_FALSE(quad.panes[2].active);
+  EXPECT_FALSE(quad.panes[3].active);
+  EXPECT_EQ(quad.panes[0].camera.yaw, current.yaw);
+  EXPECT_EQ(quad.panes[0].camera.pitch, current.pitch);
+  EXPECT_NEAR(quad.panes[1].camera.pitch, 1.45, 1e-12);
+  EXPECT_NEAR(quad.panes[2].camera.yaw, -3.14159265358979323846 * 0.5, 1e-12);
+  EXPECT_NEAR(quad.panes[2].camera.pitch, 0.0, 1e-12);
+  EXPECT_NEAR(quad.panes[3].camera.yaw, 0.0, 1e-12);
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::ActivateFrontPane)
+          .ok);
+  const auto activeFront
+      = ui::viewportLayoutOptions(engine, current, filters, layout);
+  ASSERT_EQ(activeFront.paneCount, dart::gui::kMaxViewportPanes);
+  EXPECT_FALSE(activeFront.panes[0].active);
+  EXPECT_TRUE(activeFront.panes[2].active);
+  EXPECT_EQ(activeFront.panes[2].camera.yaw, current.yaw);
+  EXPECT_EQ(activeFront.panes[2].camera.pitch, current.pitch);
+
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, CameraControlActionsSetMouseModeWithoutEditing)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+  auto actions
+      = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_EQ(actions[0].kind, ui::ViewportCameraControlActionKind::OrbitMode);
+  EXPECT_TRUE(actions[0].checked);
+  EXPECT_FALSE(actions[1].checked);
+  EXPECT_FALSE(actions[2].checked);
+  EXPECT_FALSE(actions[3].checked);
+  EXPECT_TRUE(actions[3].enabled);
+  EXPECT_EQ(
+      actions[4].kind, ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  EXPECT_EQ(actions[4].label, "Lock Camera");
+  EXPECT_FALSE(actions[4].checked);
+  EXPECT_TRUE(actions[4].enabled);
+  EXPECT_TRUE(actions[4].disabledReason.empty());
+
+  auto result = ui::applyViewportCameraControlAction(
+      engine, filters, controls, ui::ViewportCameraControlActionKind::PanMode);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Pan Camera Mode");
+  EXPECT_EQ(controls.mouseMode, dart::gui::OrbitCameraMouseMode::Pan);
+  EXPECT_EQ(
+      ui::viewportCameraControlOptions(controls).mouseMode,
+      dart::gui::OrbitCameraMouseMode::Pan);
+
+  result = ui::applyViewportCameraControlAction(
+      engine, filters, controls, ui::ViewportCameraControlActionKind::ZoomMode);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(controls.mouseMode, dart::gui::OrbitCameraMouseMode::Zoom);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::OrbitMode);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(controls.mouseMode, dart::gui::OrbitCameraMouseMode::Orbit);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Camera locked");
+  EXPECT_TRUE(controls.lockCamera);
+  EXPECT_TRUE(ui::viewportCameraControlOptions(controls).locked);
+  actions = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_EQ(actions[4].label, "Lock Camera");
+  EXPECT_TRUE(actions[4].checked);
+  EXPECT_TRUE(actions[4].enabled);
+  EXPECT_TRUE(actions[4].disabledReason.empty());
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Camera unlocked");
+  EXPECT_FALSE(controls.lockCamera);
+  EXPECT_FALSE(ui::viewportCameraControlOptions(controls).locked);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, SelectionTrackingFollowsVisibleSelection)
+{
+  SimEngine engine;
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+
+  auto result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_FALSE(result.ok);
+  EXPECT_EQ(result.message, "No visible selected object");
+  EXPECT_FALSE(controls.trackSelection);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(4.0, -2.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_TRUE(result.ok);
+  EXPECT_TRUE(controls.trackSelection);
+
+  const dart::gui::OrbitCamera current = testCamera();
+  auto tracked = ui::trackedSelectionCamera(engine, current, filters, controls);
+  ASSERT_TRUE(tracked.ok);
+  ASSERT_TRUE(tracked.camera.has_value());
+  EXPECT_TRUE(tracked.camera->target.isApprox(Eigen::Vector3d(4.0, -2.0, 0.5)));
+  EXPECT_EQ(tracked.camera->distance, current.distance);
+  EXPECT_EQ(tracked.camera->yaw, current.yaw);
+  EXPECT_EQ(tracked.camera->pitch, current.pitch);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  tracked = ui::trackedSelectionCamera(engine, current, filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_FALSE(tracked.camera.has_value());
+  auto actions
+      = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_TRUE(actions[3].checked);
+  EXPECT_TRUE(actions[3].enabled);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_TRUE(result.ok);
+  EXPECT_FALSE(controls.trackSelection);
+}
+
+TEST(DartsimViewportActions, CameraLockSuppressesSelectionTracking)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(4.0, -2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+  auto result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  ASSERT_TRUE(result.ok);
+  ASSERT_TRUE(controls.trackSelection);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  ASSERT_TRUE(result.ok);
+  EXPECT_TRUE(controls.lockCamera);
+
+  const dart::gui::OrbitCamera current = testCamera();
+  const auto tracked
+      = ui::trackedSelectionCamera(engine, current, filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "Camera locked");
+  EXPECT_FALSE(tracked.camera.has_value());
+  EXPECT_TRUE(controls.trackSelection);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, ViewportStatusSummarizesViewOnlyState)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  const ui::ViewportStatus defaultStatus = ui::buildViewportStatus(
+      engine,
+      filters,
+      ui::ViewportCameraControlState{},
+      ui::ViewportLayoutState{});
+  EXPECT_EQ(
+      defaultStatus.visibleLayerLabel,
+      "Visible layers: Rigid Bodies, Links, Frames, Sensors, Collisions");
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, false)
+          .ok);
+
+  ui::ViewportCameraControlState controls;
+  controls.mouseMode = dart::gui::OrbitCameraMouseMode::Pan;
+  controls.trackSelection = true;
+  controls.lockCamera = true;
+
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::ActivateTopPane)
+          .ok);
+
+  const ui::ViewportStatus status
+      = ui::buildViewportStatus(engine, filters, controls, layout);
+  EXPECT_EQ(status.layoutLabel, "Layout: Four View Layout");
+  EXPECT_EQ(status.activePaneLabel, "Active pane: Top Pane");
+  EXPECT_EQ(status.cameraModeLabel, "Pan Camera Mode");
+  EXPECT_EQ(status.cameraLockLabel, "Camera: locked");
+  EXPECT_EQ(status.trackingLabel, "Selection tracking: paused");
+  EXPECT_EQ(
+      status.visibleLayerLabel,
+      "Visible layers: Rigid Bodies, Sensors, Collisions");
+  EXPECT_EQ(status.selectionLabel, "Selection: box [RigidBody]");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Sensors, false)
+          .ok);
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, false)
+          .ok);
+  controls.lockCamera = false;
+  const ui::ViewportStatus hidden
+      = ui::buildViewportStatus(engine, filters, controls, layout);
+  EXPECT_EQ(hidden.cameraLockLabel, "Camera: unlocked");
+  EXPECT_EQ(hidden.trackingLabel, "Selection tracking: on");
+  EXPECT_EQ(hidden.visibleLayerLabel, "Visible layers: none");
+  EXPECT_EQ(hidden.selectionLabel, "Selection: none");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }

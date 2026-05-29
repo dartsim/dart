@@ -18,6 +18,65 @@ critique/steelman review). Their corrections — most importantly that the
 existing UI seam bounds renderer swaps but not a retained-toolkit migration —
 are folded into the decisions, the costed exit, and the risk register.
 
+A dated re-investigation (2026-05-28) **reaffirmed Decision 2** and refreshed
+several stale figures; see the addendum immediately below before reading the
+original decisions. Where the addendum and the original body disagree on
+numbers, the addendum is current.
+
+## Re-investigation addendum (2026-05-28)
+
+A fresh pass (codebase re-measurement against the live tree + 2025–2026 external
+evidence + adversarial re-checking of this doc's load-bearing claims; full memo
+in `.omc/research/gui-toolkit-reinvestigation-2026-05.md`) **reaffirms
+Decision 2: keep GLFW + Dear ImGui; do not migrate to Qt.** None of the four Qt
+triggers has fired. The fresh evidence strengthens the verdict rather than
+weakening it. Three corrections to the body below:
+
+1. **The costed-exit figures are stale and understate the rewrite surface.**
+   `editor.cpp` was 632 lines when the exit table was written; it is now **1,150
+   lines on `main` and 1,589 on the in-flight editor branch** (PR #2716), with
+   13 immediate-mode panel builders (not ~10). Total `dartsim/ui` is **5,722
+   lines on `main` / 10,109 on the branch** across 12 modules — versus the body's
+   "~1,250-line action layer" framing. The toolkit-free action _verbs_ still
+   dominate and still survive a Qt move, but the immediate-mode view surface that
+   would be **rewritten** for a retained toolkit (`editor.cpp` + per-frame view
+   binding such as the every-frame `OutlinerRow` re-flatten) is now ≈2,500 lines,
+   ~4× the body's implied ~632. The qualitative ranking (viewport + model/view
+   rewrite dominate cost) holds; the absolute numbers were optimistic. **This
+   reinforces "don't migrate" on cost while confirming the deferral is accruing
+   uncapped rewrite debt.**
+
+2. **The "no production reference for a Filament↔Qt viewport" risk is
+   outdated.** Cascadeur 2026.1 ships a Qt/QML DCC whose scene viewport was moved
+   to Filament. This de-risks a future spike; it does not fire a trigger. The
+   _narrow_ claim — no public reference for the zero-copy offscreen-texture
+   composite specifically — may still hold (Filament external-texture import
+   remains unplanned beyond Android), so a spike must still settle the
+   native-child-window vs offscreen-composite question.
+
+3. **Decision 2's Action 1 (the CI guard) was never enforced on `dartsim/ui` —
+   now fixed.** `scripts/check_api_boundaries.py` previously covered only
+   `python/dartpy`. It now also forbids ImGui/GLFW/Filament symbols, headers, and
+   references in `dartsim/ui` (check id `dartsim-ui-backend-leak`, wired into
+   `pixi run lint`), and the two leaked header comments + one CMake comment were
+   cleaned. The boundary is no longer discipline-only.
+
+**Trigger status (2026-05-28):** none firing. Closest to becoming observable is
+the **large-tree jank** trigger — the per-frame outliner re-flatten has grown
+with the view layer while no scene yet reaches ~5–10k nodes; this is the trigger
+the growing view-debt makes most worth preempting with a measurement. The
+**accessibility/i18n** trigger remains the only structural one (ImGui's a11y
+issue #8022 and RTL/shaping gaps are confirmed permanent, not roadmap items) and
+remains unfiled. ImGui v1.92's dynamic-fonts/texture work removed two real
+DPI/atlas objections; the docking branch is still unmerged but
+maintainer-recommended (pinning per Decision 4 still correct).
+
+**Recommended next action (highest-leverage, lowest-regret):** the CI guard
+above (done). Second: the Filament offscreen render-to-texture spike (see
+`docs/dev_tasks/filament_offscreen_viewport_spike/`) — independently valuable
+for headless/sensor/web-streaming and the long pole for _both_ a Qt viewport and
+a web viewer. **Do not start a Qt port.**
+
 ## Purpose
 
 The `dartsim` application (north-star consumption mode 3) currently uses GLFW3
