@@ -20,7 +20,9 @@ cmake_minimum_required(VERSION 3.22.1)
 
 set(target_name dartsim_engine)
 
-add_library(${target_name} STATIC
+add_library(
+  ${target_name}
+  STATIC
   src/scene_model.cpp
   src/name_manager.cpp
   src/object_manager.cpp
@@ -33,17 +35,16 @@ add_library(${target_name} STATIC
   src/sim_engine.cpp
 )
 
-target_include_directories(${target_name}
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+target_include_directories(
+  ${target_name}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 target_compile_features(${target_name} PUBLIC cxx_std_20)
 
-target_link_libraries(${target_name}
-  PUBLIC
-    dart-simulation-experimental
-    Eigen3::Eigen
+target_link_libraries(
+  ${target_name}
+  PUBLIC dart-simulation-experimental Eigen3::Eigen
 )
 
 # Allow linking into shared targets (e.g. the GUI app) later.
@@ -51,7 +52,8 @@ set_target_properties(${target_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Register sources with the repository formatter so `pixi run lint` covers them.
 if(COMMAND dart_format_add)
-  file(GLOB_RECURSE _dartsim_engine_format_files
+  file(
+    GLOB_RECURSE _dartsim_engine_format_files
     "${CMAKE_CURRENT_SOURCE_DIR}/include/dartsim_engine/*.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
   )

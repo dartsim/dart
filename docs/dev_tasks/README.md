@@ -144,11 +144,16 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 > ⚠️ **CRITICAL**: Cleanup happens in the **SAME PR** that completes the task, NOT after merge.
 > Leaving orphaned folders is a compliance violation.
 
-**When task is completed, agents MUST:**
+**When a task is completed — or all of its still-doable work is done — agents MUST:**
 
-1. [ ] **Extract key insights** → Add brief section to existing `docs/onboarding/<relevant>.md`
-2. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
-3. [ ] **Include in completion PR** → Same PR that finishes the implementation
+1. [ ] **Relocate remaining / deferred / blocked work** → If plans remain that are
+       blocked by a hard constraint or deferred by design, move them to a durable
+       home (a `docs/design/` doc, a `docs/plans/` entry, or the dashboard) so they
+       survive folder deletion. If such work genuinely cannot be completed now,
+       **ask the human before retiring the folder** so it can be revisited later.
+2. [ ] **Extract key insights** → Add brief section to the existing relevant `docs/onboarding/` (or `docs/design/` / `docs/plans/`) doc
+3. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
+4. [ ] **Include in completion PR** → Same PR that finishes the implementation
 
 ### Why This Matters
 

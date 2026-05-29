@@ -34,11 +34,7 @@ find_path(
 if(MSVC)
   set(TINYXML2_LIBRARIES "tinyxml2$<$<CONFIG:Debug>:d>")
 else()
-  find_library(
-    TINYXML2_LIBRARIES
-    NAMES tinyxml2
-    HINTS ${PC_TINYXML2_LIBDIR}
-  )
+  find_library(TINYXML2_LIBRARIES NAMES tinyxml2 HINTS ${PC_TINYXML2_LIBDIR})
 endif()
 
 # Version
