@@ -98,6 +98,42 @@ struct DeformableSolverStats
   std::size_t staticRigidSurfaceCcdIndeterminateCount = 0;
   std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
   std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t movingRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t movingRigidSurfaceCcdBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdSampleCount = 0;
+  std::size_t movingRigidSurfaceCcdInflatedBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdTriangleCount = 0;
+  std::size_t movingRigidSurfaceCcdEdgeCount = 0;
+  std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t movingRigidSurfaceCcdHits = 0;
+  std::size_t movingRigidSurfaceCcdMisses = 0;
+  std::size_t movingRigidSurfaceCcdIndeterminateCount = 0;
+  std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t selfContactBarrierCandidateBuilds = 0;
+  // Cumulative count of active barrier contacts summed over the outer solver
+  // iterations of a step (one increment per active candidate per gradient
+  // evaluation), matching the cumulative semantics of solverIterations; it is
+  // not the active-set size of a single iteration.
+  std::size_t selfContactBarrierActiveContacts = 0;
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t projectedNewtonFallbacks = 0;
+  // Sparse-solve factorization accounting. The symbolic factorization
+  // (fill-reducing ordering) is reused whenever the Hessian sparsity pattern is
+  // unchanged across iterations/steps, so only the numeric factorization
+  // repeats; symbolic < numeric indicates the analysis was amortized.
+  std::size_t projectedNewtonSymbolicFactorizations = 0;
+  std::size_t projectedNewtonNumericFactorizations = 0;
+  // Convergence diagnostic: the largest L2 gradient norm at solve termination
+  // across the step's deformable bodies (the projected-Newton residual). Near
+  // the gradient tolerance means the solve converged; a large value means a
+  // body hit the iteration cap or stalled. Feeds the paper's benchmark
+  // statistics (Fig. 23 / Table 1).
+  double finalGradientResidualNorm = 0.0;
 
   void reset() noexcept
   {

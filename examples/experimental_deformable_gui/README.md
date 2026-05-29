@@ -23,6 +23,28 @@ together. Use `--deformable-view surface`, `--deformable-view points`, or
 `--deformable-view combined` for headless comparisons, or toggle `Surface Mesh`,
 `Point Masses`, and `Spring Edges` in the interactive panel.
 
+## Drape showcase scene
+
+`--deformable-scene-kind drape` builds a 572-node deformable mat suspended above
+a raised box at the scene center. Under gravity the mat drapes over the box (a
+finite-footprint ground-barrier step) and settles onto the surrounding ground,
+folding against itself where it bends over the edges. It exercises the IPC
+deformable-contact pipeline that has landed so far — self-contact and
+ground-barrier repulsion resolved by the projected-Newton solve at sparse scale
+(past the former 256-node dense cap) — and is a DART-native showcase, not a
+faithful reproduction of the paper's codimensional/FEM mat figures.
+
+```bash
+pixi run ex experimental_deformable_gui -- --headless --frames 200 \
+  --width 900 --height 600 --deformable-scene-kind drape \
+  --deformable-view combined \
+  --screenshot /tmp/experimental_deformable_drape.ppm \
+  --diagnostics-json /tmp/experimental_deformable_drape.json
+```
+
+The default built-in scene (`--deformable-scene-kind net`, the hanging spring
+net) is used when the flag is omitted.
+
 The example can also replay the contact-free deformable scene-loader subset:
 
 ```bash

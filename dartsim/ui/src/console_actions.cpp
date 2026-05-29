@@ -36,17 +36,22 @@
 #include <dartsim_ui/outliner_actions.hpp>
 #include <dartsim_ui/palette_actions.hpp>
 #include <dartsim_ui/project_actions.hpp>
+#include <dartsim_ui/relationship_actions.hpp>
 #include <dartsim_ui/simulation_actions.hpp>
+#include <dartsim_ui/watch_actions.hpp>
 
 #include <algorithm>
 #include <charconv>
 #include <filesystem>
+#include <iomanip>
 #include <optional>
 #include <span>
+#include <sstream>
 #include <string_view>
 #include <system_error>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <cctype>
 #include <cstddef>
@@ -96,6 +101,63 @@ std::string ensureProjectExtension(std::string path)
 bool hasFlag(std::span<const std::string> tokens, std::string_view flag)
 {
   return std::find(tokens.begin(), tokens.end(), flag) != tokens.end();
+}
+
+bool hasWatchedObject(const WatchState& watch, ObjectId id)
+{
+  return std::find_if(
+             watch.targets.begin(),
+             watch.targets.end(),
+             [id](const WatchTarget& target) { return target.id == id; })
+         != watch.targets.end();
+}
+
+std::optional<WatchValueKind> parseWatchSignalKind(std::string_view token)
+{
+  const std::string signal = lower(token);
+  if (signal == "time" || signal == "sim-time" || signal == "simulation-time") {
+    return WatchValueKind::SimulationTime;
+  }
+  if (signal == "frame" || signal == "frame-count") {
+    return WatchValueKind::FrameCount;
+  }
+  if (signal == "x" || signal == "translation-x") {
+    return WatchValueKind::TranslationX;
+  }
+  if (signal == "y" || signal == "translation-y") {
+    return WatchValueKind::TranslationY;
+  }
+  if (signal == "z" || signal == "height" || signal == "translation-z") {
+    return WatchValueKind::TranslationZ;
+  }
+  if (signal == "mass") {
+    return WatchValueKind::Mass;
+  }
+  if (signal == "joint" || signal == "joint-position") {
+    return WatchValueKind::JointPosition;
+  }
+  if (signal == "sensor-range" || signal == "range") {
+    return WatchValueKind::SensorRange;
+  }
+  if (signal == "sensor-fov" || signal == "field-of-view") {
+    return WatchValueKind::SensorFieldOfView;
+  }
+  if (signal == "sensor-rate" || signal == "sensor-update-rate") {
+    return WatchValueKind::SensorUpdateRate;
+  }
+  return std::nullopt;
+}
+
+std::optional<bool> parseOnOff(std::string_view token)
+{
+  const std::string value = lower(token);
+  if (value == "on" || value == "enable" || value == "enabled") {
+    return true;
+  }
+  if (value == "off" || value == "disable" || value == "disabled") {
+    return false;
+  }
+  return std::nullopt;
 }
 
 std::optional<ObjectId> parseObjectId(std::string_view token)
@@ -163,6 +225,218 @@ TargetResolution resolveObjectTarget(
   return {matches.front(), {}};
 }
 
+enum class ListObjectFilter
+{
+  All,
+  Selected,
+  Visible,
+  Hidden,
+};
+
+std::optional<ListObjectFilter> parseListObjectFilter(std::string_view token)
+{
+  const std::string filter = lower(token);
+  if (filter == "all") {
+    return ListObjectFilter::All;
+  }
+  if (filter == "selected" || filter == "selection") {
+    return ListObjectFilter::Selected;
+  }
+  if (filter == "visible" || filter == "shown") {
+    return ListObjectFilter::Visible;
+  }
+  if (filter == "hidden") {
+    return ListObjectFilter::Hidden;
+  }
+  return std::nullopt;
+}
+
+bool effectiveRowVisibility(const SimEngine& engine, ObjectId id)
+{
+  const SceneModel& model = engine.objects().model();
+  const SceneObject* object = model.find(id);
+  std::size_t remaining = model.size();
+  while (object != nullptr && remaining > 0) {
+    if (!object->visible) {
+      return false;
+    }
+    if (object->parent == kNoObject) {
+      return true;
+    }
+    object = model.find(object->parent);
+    --remaining;
+  }
+  return object != nullptr;
+}
+
+bool rowMatchesFilter(
+    const OutlinerRow& row, ListObjectFilter filter, bool effectivelyVisible)
+{
+  switch (filter) {
+    case ListObjectFilter::All:
+      return true;
+    case ListObjectFilter::Selected:
+      return row.selected;
+    case ListObjectFilter::Visible:
+      return effectivelyVisible;
+    case ListObjectFilter::Hidden:
+      return !effectivelyVisible;
+  }
+  return false;
+}
+
+std::string emptyListMessage(ListObjectFilter filter)
+{
+  switch (filter) {
+    case ListObjectFilter::All:
+      return "No objects";
+    case ListObjectFilter::Selected:
+      return "No selected objects";
+    case ListObjectFilter::Visible:
+      return "No visible objects";
+    case ListObjectFilter::Hidden:
+      return "No hidden objects";
+  }
+  return "No objects";
+}
+
+std::string formatObjectListEntry(
+    const OutlinerRow& row, bool effectivelyVisible)
+{
+  std::string entry = std::to_string(static_cast<unsigned long long>(row.id))
+                      + ":" + row.name + " [" + row.type + "]";
+  if (row.selected) {
+    entry += " selected";
+  }
+  if (!effectivelyVisible) {
+    entry += " hidden";
+  }
+  return entry;
+}
+
+ConsoleCommandResult applyListCommand(
+    const SimEngine& engine, std::span<const std::string> tokens)
+{
+  if (tokens.size() > 2) {
+    return result(false, "Usage: list [all|selected|visible|hidden]");
+  }
+
+  ListObjectFilter filter = ListObjectFilter::All;
+  if (tokens.size() == 2) {
+    const std::optional<ListObjectFilter> parsed
+        = parseListObjectFilter(tokens[1]);
+    if (!parsed.has_value()) {
+      return result(false, "Usage: list [all|selected|visible|hidden]");
+    }
+    filter = *parsed;
+  }
+
+  std::vector<std::string> entries;
+  for (const OutlinerRow& row : buildOutlinerRows(engine)) {
+    const bool effectivelyVisible = effectiveRowVisibility(engine, row.id);
+    if (rowMatchesFilter(row, filter, effectivelyVisible)) {
+      entries.push_back(formatObjectListEntry(row, effectivelyVisible));
+    }
+  }
+
+  if (entries.empty()) {
+    return result(true, emptyListMessage(filter));
+  }
+
+  std::string message = "Objects (" + std::to_string(entries.size()) + "): ";
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    if (i != 0) {
+      message += "; ";
+    }
+    message += entries[i];
+  }
+  return result(true, std::move(message));
+}
+
+std::string scalarText(double value)
+{
+  std::ostringstream out;
+  out << std::setprecision(6) << value;
+  return out.str();
+}
+
+std::string enumChoiceText(const InspectorEnumProperty& property)
+{
+  const auto it = std::find_if(
+      property.choices.begin(),
+      property.choices.end(),
+      [&property](const InspectorEnumChoice& choice) {
+        return choice.value == property.value;
+      });
+  return it == property.choices.end() ? std::to_string(property.value)
+                                      : it->label;
+}
+
+void appendInspectorField(
+    std::vector<std::string>& fields, std::string label, std::string value)
+{
+  fields.push_back(std::move(label) + "=" + std::move(value));
+}
+
+std::string formatInspectorStatus(const InspectorStatus& status)
+{
+  std::string message
+      = status.name + " #"
+        + std::to_string(static_cast<unsigned long long>(status.object)) + " ("
+        + status.type + ")";
+  if (status.locked) {
+    message += " [read-only]";
+  }
+
+  std::vector<std::string> fields;
+  for (const InspectorEnumProperty& property : status.enumProperties) {
+    appendInspectorField(fields, property.label, enumChoiceText(property));
+  }
+  for (const InspectorNumericProperty& property : status.numericProperties) {
+    appendInspectorField(fields, property.label, scalarText(property.value));
+  }
+  if (status.colorProperty.has_value()) {
+    const Eigen::Vector4d& color = status.colorProperty->rgba;
+    appendInspectorField(
+        fields,
+        status.colorProperty->label,
+        "(" + scalarText(color.x()) + ", " + scalarText(color.y()) + ", "
+            + scalarText(color.z()) + ", " + scalarText(color.w()) + ")");
+  }
+
+  if (fields.empty()) {
+    return message;
+  }
+  message += ": ";
+  for (std::size_t i = 0; i < fields.size(); ++i) {
+    if (i != 0) {
+      message += ", ";
+    }
+    message += fields[i];
+  }
+  return message;
+}
+
+ConsoleCommandResult applyInspectCommand(
+    const SimEngine& engine, std::span<const std::string> tokens)
+{
+  if (tokens.size() > 2) {
+    return result(false, "Usage: inspect [id|name|selected]");
+  }
+
+  const std::string targetToken = tokens.size() == 2 ? tokens[1] : "selected";
+  const TargetResolution target = resolveObjectTarget(engine, targetToken);
+  if (target.id == kNoObject) {
+    return result(false, target.error);
+  }
+
+  const InspectorStatus status = buildInspectorObjectStatus(engine, target.id);
+  if (!status.hasSelection) {
+    return result(false, "Object not found: " + targetToken);
+  }
+  return result(true, formatInspectorStatus(status));
+}
+
 std::optional<PaletteActionKind> createActionForToken(std::string_view token)
 {
   static const std::unordered_map<std::string_view, PaletteActionKind> kActions{
@@ -179,6 +453,19 @@ std::optional<PaletteActionKind> createActionForToken(std::string_view token)
       {"prismatic-link", PaletteActionKind::AddPrismaticLink},
       {"free-frame", PaletteActionKind::AddFreeFrame},
       {"fixed-frame", PaletteActionKind::AddFixedFrame},
+      {"camera-sensor", PaletteActionKind::AddCameraSensor},
+      {"range-sensor", PaletteActionKind::AddRangeSensor},
+      {"contact-sensor", PaletteActionKind::AddContactSensor},
+      {"collision-box", PaletteActionKind::AddBoxCollision},
+      {"box-collision", PaletteActionKind::AddBoxCollision},
+      {"collision-sphere", PaletteActionKind::AddSphereCollision},
+      {"sphere-collision", PaletteActionKind::AddSphereCollision},
+      {"collision-cylinder", PaletteActionKind::AddCylinderCollision},
+      {"cylinder-collision", PaletteActionKind::AddCylinderCollision},
+      {"collision-capsule", PaletteActionKind::AddCapsuleCollision},
+      {"capsule-collision", PaletteActionKind::AddCapsuleCollision},
+      {"collision-plane", PaletteActionKind::AddPlaneCollision},
+      {"plane-collision", PaletteActionKind::AddPlaneCollision},
       {"ground-box", PaletteActionKind::AddGroundAndBoxExample},
       {"two-link-arm", PaletteActionKind::AddTwoLinkArmExample},
   };
@@ -217,6 +504,17 @@ ConsoleCommandResult applyProjectCommand(
                                           ? DirtyProjectPolicy::Discard
                                           : DirtyProjectPolicy::Block;
     const ProjectActionResult applied = newProject(engine, policy);
+    return result(applied.ok, applied.message);
+  }
+
+  if (command == "close") {
+    if (tokens.size() > 2 || (tokens.size() == 2 && tokens[1] != "--discard")) {
+      return result(false, "Usage: close [--discard]");
+    }
+    const DirtyProjectPolicy policy = hasFlag(tokens, "--discard")
+                                          ? DirtyProjectPolicy::Discard
+                                          : DirtyProjectPolicy::Block;
+    const ProjectActionResult applied = closeProject(engine, policy);
     return result(applied.ok, applied.message);
   }
 
@@ -368,6 +666,13 @@ ConsoleCommandResult applySimulationCommand(
     const SimulationActionResult applied = resetSimulation(engine);
     return result(applied.ok, applied.message);
   }
+  if (command == "restart") {
+    if (tokens.size() != 1) {
+      return result(false, "Usage: restart");
+    }
+    const SimulationActionResult applied = restartSimulation(engine);
+    return result(applied.ok, applied.message);
+  }
   if (command == "mode") {
     if (tokens.size() != 2) {
       return result(false, "Usage: mode <edit|simulation>");
@@ -417,7 +722,28 @@ ConsoleCommandResult applySimulationCommand(
     return result(applied.ok, applied.message);
   }
   if (tokens.size() != 2) {
-    return result(false, "Usage: replay <frame>");
+    return result(false, "Usage: replay <first|previous|next|last|frame>");
+  }
+  const std::string replayTarget = lower(tokens[1]);
+  if (replayTarget == "first") {
+    const SimulationActionResult applied = applySimulationReplayAction(
+        engine, SimulationReplayActionKind::First);
+    return result(applied.ok, applied.message);
+  }
+  if (replayTarget == "previous" || replayTarget == "prev") {
+    const SimulationActionResult applied = applySimulationReplayAction(
+        engine, SimulationReplayActionKind::Previous);
+    return result(applied.ok, applied.message);
+  }
+  if (replayTarget == "next") {
+    const SimulationActionResult applied
+        = applySimulationReplayAction(engine, SimulationReplayActionKind::Next);
+    return result(applied.ok, applied.message);
+  }
+  if (replayTarget == "last") {
+    const SimulationActionResult applied
+        = applySimulationReplayAction(engine, SimulationReplayActionKind::Last);
+    return result(applied.ok, applied.message);
   }
   const std::optional<std::size_t> frame = parseSize(tokens[1]);
   if (!frame.has_value()) {
@@ -425,6 +751,134 @@ ConsoleCommandResult applySimulationCommand(
   }
   const SimulationActionResult applied = seekSimulationReplay(engine, *frame);
   return result(applied.ok, applied.message);
+}
+
+ConsoleCommandResult applyRelationshipCommand(
+    SimEngine& engine, std::span<const std::string> tokens)
+{
+  const std::string command = lower(tokens[0]);
+  if (tokens.size() != 1) {
+    return result(false, "Usage: " + command);
+  }
+
+  RelationshipActionKind kind = RelationshipActionKind::AttachSelectedToPrimary;
+  if (command == "attach") {
+    kind = RelationshipActionKind::AttachSelectedToPrimary;
+  } else if (command == "detach") {
+    kind = RelationshipActionKind::DetachPrimaryToWorld;
+  } else if (command == "reparent-link") {
+    kind = RelationshipActionKind::ReparentSelectedLinkToPrimary;
+  } else if (command == "make-root") {
+    kind = RelationshipActionKind::MakePrimaryLinkRoot;
+  } else {
+    return result(false, "Unknown relationship command");
+  }
+
+  const RelationshipActionResult applied
+      = applyRelationshipAction(engine, kind);
+  return result(applied.ok, applied.message);
+}
+
+ConsoleCommandResult applyWatchCommand(
+    SimEngine& engine, WatchState* watch, std::span<const std::string> tokens)
+{
+  if (watch == nullptr) {
+    return result(false, "Watch state unavailable");
+  }
+
+  const std::string command = lower(tokens[0]);
+  if (command == "unwatch") {
+    if (tokens.size() != 2) {
+      return result(false, "Usage: unwatch <id|name|selected>");
+    }
+
+    ObjectId id = kNoObject;
+    if (const std::optional<ObjectId> parsed = parseObjectId(tokens[1]);
+        parsed.has_value() && hasWatchedObject(*watch, *parsed)) {
+      id = *parsed;
+    } else {
+      const TargetResolution target = resolveObjectTarget(engine, tokens[1]);
+      if (target.id == kNoObject) {
+        return result(false, target.error);
+      }
+      id = target.id;
+    }
+
+    const WatchActionResult removed = unwatchObject(*watch, id);
+    return result(removed.ok, removed.message);
+  }
+
+  if (tokens.size() == 4 && lower(tokens[1]) == "signal") {
+    const std::optional<WatchValueKind> kind = parseWatchSignalKind(tokens[2]);
+    if (!kind.has_value()) {
+      return result(false, "Unknown watch signal: " + tokens[2]);
+    }
+    const std::optional<bool> enabled = parseOnOff(tokens[3]);
+    if (!enabled.has_value()) {
+      return result(false, "Usage: watch signal <signal> <on|off>");
+    }
+    const WatchActionResult applied
+        = setWatchChartSignalEnabled(*watch, *kind, *enabled);
+    return result(applied.ok, applied.message);
+  }
+
+  if (tokens.size() == 3 && lower(tokens[1]) == "save-preset") {
+    const WatchActionResult saved = saveWatchPreset(*watch, engine, tokens[2]);
+    return result(saved.ok, saved.message);
+  }
+  if (tokens.size() == 3 && lower(tokens[1]) == "preset") {
+    const WatchActionResult applied
+        = applyWatchPreset(*watch, engine, tokens[2]);
+    return result(applied.ok, applied.message);
+  }
+  if (tokens.size() == 3 && lower(tokens[1]) == "delete-preset") {
+    const WatchActionResult deleted = deleteWatchPreset(engine, tokens[2]);
+    return result(deleted.ok, deleted.message);
+  }
+  if (tokens.size() == 2) {
+    const std::string subcommand = lower(tokens[1]);
+    if (subcommand == "save-preset" || subcommand == "preset"
+        || subcommand == "delete-preset") {
+      return result(
+          false,
+          "Usage: watch [target|selection|clear|sample] or watch signal "
+          "<signal> <on|off> or watch <save-preset|preset|delete-preset> "
+          "<name>");
+    }
+  }
+
+  if (tokens.size() == 1) {
+    const WatchStatus status = buildWatchStatus(*watch, engine);
+    return result(true, status.summary);
+  }
+  if (tokens.size() != 2) {
+    return result(
+        false,
+        "Usage: watch [target|selection|clear|sample] or watch signal "
+        "<signal> <on|off> or watch <save-preset|preset|delete-preset> "
+        "<name>");
+  }
+
+  const std::string targetToken = lower(tokens[1]);
+  if (targetToken == "selection") {
+    const WatchActionResult added = watchSelectedObjects(*watch, engine);
+    return result(added.ok, added.message);
+  }
+  if (targetToken == "clear") {
+    const WatchActionResult cleared = clearWatch(*watch);
+    return result(cleared.ok, cleared.message);
+  }
+  if (targetToken == "sample") {
+    recordWatchSample(*watch, engine);
+    return result(true, "Recorded watch sample");
+  }
+
+  const TargetResolution target = resolveObjectTarget(engine, tokens[1]);
+  if (target.id == kNoObject) {
+    return result(false, target.error);
+  }
+  const WatchActionResult added = watchObject(*watch, engine, target.id);
+  return result(added.ok, added.message);
 }
 
 ConsoleCommandResult buildStatus(const SimEngine& engine)
@@ -440,6 +894,9 @@ ConsoleCommandResult buildStatus(const SimEngine& engine)
   }
   return result(true, std::move(message));
 }
+
+ConsoleCommandResult applyConsoleCommandWithWatchState(
+    SimEngine& engine, WatchState* watch, std::string_view input);
 
 } // namespace
 
@@ -509,15 +966,48 @@ ConsoleCommandResult tokenizeConsoleCommand(
 
 std::string consoleCommandHelpText()
 {
-  return "Commands: help, status, new [--discard], open <path> [--discard], "
-         "save [path], create <kind>, select <id|name>, select-add "
+  return consoleCommandHelpText(false);
+}
+
+std::string consoleCommandHelpText(bool watchCommandsAvailable)
+{
+  return "Commands: help, status, new [--discard], close [--discard], open "
+         "<path> [--discard], save [path], create <kind>, select <id|name>, "
+         "select-add "
          "<id|name>, deselect <id|name>, clear-selection, rename <name>, "
-         "delete, show [target], hide [target], mode <edit|simulation>, play, "
-         "pause, step [count], reset, record <on|off>, replay <frame>";
+         "delete, inspect [id|name|selected], list "
+         "[all|selected|visible|hidden], attach, detach, reparent-link, "
+         "make-root, show [target], hide [target], mode <edit|simulation>, "
+         "play (enter/resume Simulation Mode), pause, step [count], restart "
+         "(stay in Simulation Mode), reset (return to Edit Mode), record "
+         "<on|off>, replay "
+         "<first|previous|next|last|frame> "
+         "(paused Simulation Mode)"
+         + std::string(
+             watchCommandsAvailable
+                 ? ", watch [target|selection|clear|sample], watch signal "
+                   "<signal> <on|off>, watch save-preset <name>, watch "
+                   "preset <name>, watch delete-preset <name>, unwatch "
+                   "<target>"
+                 : "");
 }
 
 ConsoleCommandResult applyConsoleCommand(
     SimEngine& engine, std::string_view input)
+{
+  return applyConsoleCommandWithWatchState(engine, nullptr, input);
+}
+
+ConsoleCommandResult applyConsoleCommand(
+    SimEngine& engine, WatchState& watch, std::string_view input)
+{
+  return applyConsoleCommandWithWatchState(engine, &watch, input);
+}
+
+namespace {
+
+ConsoleCommandResult applyConsoleCommandWithWatchState(
+    SimEngine& engine, WatchState* watch, std::string_view input)
 {
   std::vector<std::string> tokens;
   ConsoleCommandResult parsed = tokenizeConsoleCommand(input, tokens);
@@ -536,7 +1026,7 @@ ConsoleCommandResult applyConsoleCommand(
     if (tokens.size() != 1) {
       return result(false, "Usage: help");
     }
-    return result(true, consoleCommandHelpText());
+    return result(true, consoleCommandHelpText(watch != nullptr));
   }
   if (command == "status") {
     if (tokens.size() != 1) {
@@ -547,8 +1037,20 @@ ConsoleCommandResult applyConsoleCommand(
   if (command == "create") {
     return applyCreateCommand(engine, view);
   }
-  if (command == "new" || command == "open" || command == "save") {
-    return applyProjectCommand(engine, view);
+  if (command == "inspect") {
+    return applyInspectCommand(engine, view);
+  }
+  if (command == "list") {
+    return applyListCommand(engine, view);
+  }
+  if (command == "new" || command == "close" || command == "open"
+      || command == "save") {
+    ConsoleCommandResult applied = applyProjectCommand(engine, view);
+    if (watch != nullptr && applied.ok
+        && (command == "new" || command == "open")) {
+      clearWatch(*watch);
+    }
+    return applied;
   }
   if (command == "select" || command == "select-add" || command == "deselect"
       || command == "clear-selection") {
@@ -560,13 +1062,22 @@ ConsoleCommandResult applyConsoleCommand(
   if (command == "delete" || command == "rename") {
     return applyEditCommand(engine, view);
   }
+  if (command == "attach" || command == "detach" || command == "reparent-link"
+      || command == "make-root") {
+    return applyRelationshipCommand(engine, view);
+  }
   if (command == "mode" || command == "play" || command == "pause"
-      || command == "step" || command == "reset" || command == "record"
-      || command == "replay") {
+      || command == "step" || command == "restart" || command == "reset"
+      || command == "record" || command == "replay") {
     return applySimulationCommand(engine, view);
+  }
+  if (command == "watch" || command == "unwatch") {
+    return applyWatchCommand(engine, watch, view);
   }
 
   return result(false, "Unknown command: " + command);
 }
+
+} // namespace
 
 } // namespace dartsim::ui

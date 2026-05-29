@@ -78,12 +78,87 @@
         opted-in static box collision shapes triangulated into stationary
         surface snapshots with physical box edges for deformable line-search
         CCD limiting.
-  - [ ] Remaining Phase 2 work: non-box/deforming/moving rigid surface
-        coverage, broader solver-wired CCD line-search coverage, and stronger
-        spatial acceleration for larger meshes.
+  - [x] Internal moving rigid box surface CCD line-search sub-slice: free
+        (non-static) opted-in box obstacles whose end-of-step transform is
+        predicted from velocity (mirroring the rigid position integrator that
+        runs after the deformable stage) and whose swept motion is tiled by
+        overlapping static pose samples, so the deformable cannot settle in or
+        tunnel through the obstacle's swept corridor. One-way, timing-agnostic
+        conservative limiter with focused regressions and benchmark counters.
+  - [ ] Remaining Phase 2 work: non-box/deforming rigid surface coverage,
+        timing-aware (non-over-conservative) moving-obstacle CCD, broader
+        solver-wired CCD line-search coverage, and stronger spatial
+        acceleration for larger meshes.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
-- [ ] Phase 4: lagged smoothed friction and friction diagnostics.
+  - [x] Self-contact barrier forces sub-slice: the deformable objective now adds
+        the IPC clamped-log barrier energy/gradient over the active self-contact
+        point-triangle and edge-edge candidate set (assembled per outer iteration
+        within d_hat), producing smooth repulsive contact forces so a surface
+        folding onto itself settles near d_hat instead of pinning at the CCD
+        minimum separation. First contact-FORCE slice (prior contact slices were
+        one-way CCD limiters). First-order steepest-descent solve with fixed
+        barrier stiffness; the CCD limiters remain the hard no-penetration
+        guarantee. Focused regressions + benchmark counters.
+  - [x] Projected-Newton sub-slice: per-step Hessian assembly (inertia + spring + self-contact barrier + static ground barrier) with per-element PSD
+        projection and a dense LDLT solve for the Newton search direction,
+        replacing mass-scaled steepest descent (which remains the fallback for
+        large bodies or a failed factorization). Matches the analytic
+        implicit-Euler spring solution and converges the stiff barrier in few
+        iterations. Focused regressions + solver-step counters.
+  - [x] Sparse-solve sub-slice: assemble the per-step Hessian as a sparse
+        matrix (Eigen triplets) and factorize with sparse Cholesky
+        (`SimplicialLDLT`, positive-diagonal guard), lifting the 256-node dense
+        cap to thousands of nodes so paper-scale meshes stay on the Newton path.
+        Fixed DOFs pinned at assembly time (unit diagonal, free-free blocks
+        only); exact-dense parity preserved. 300-node-chain regression + sparse
+        step/fallback benchmark counters (512/1152-node grids).
+  - [x] GPU PSD-projection primitive (prototype): an opt-in CUDA sidecar
+        (`projectSymmetricBlocksToPsdCuda`, `DART_ENABLE_EXPERIMENTAL_CUDA`)
+        batches the per-element symmetric eigendecomposition + eigenvalue clamp
+        (the projected-Newton hotspot) on the GPU via per-block cyclic Jacobi,
+        with an identical-semantics CPU reference and a CUDA equivalence test.
+        Standalone building block only: live-solver wiring needs an optional GPU
+        compute-backend injection path (keeping `world_step_stage` GPU-free per
+        the runtime-dependency policy), and the formal GPU-vs-CPU perf gate is a
+        follow-up.
+  - [x] Symbolic-factorization reuse sub-slice: the sparse Cholesky reuses its
+        fill-reducing ordering (`analyzePattern`) across iterations/steps when
+        the Hessian sparsity pattern is unchanged, so only the numeric
+        factorization repeats. Behavior-preserving (structural mismatch
+        re-analyzes); ~halves the per-step solve on a settled 512-node grid
+        (~21.7->~11.6 ms). Symbolic/numeric counters + reuse regression.
+  - [x] Convergence diagnostic: the stage reports `finalGradientResidualNorm`
+        (worst-case projected-Newton gradient norm at solve termination across
+        the step's bodies), surfaced on the grid/drape benchmarks toward the
+        paper's benchmark-statistics tables (Fig. 23 / Table 1).
+  - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
+        primitive into the solve via an optional executor + a GPU-vs-CPU perf
+        gate), matrix-free CG for very large meshes, adaptive barrier stiffness,
+        barrier forces for rigid/codimensional obstacles, and
+        complementarity/solver-stat diagnostics. Known approximation: the
+        contact active set is rebuilt once per outer iteration and held fixed
+        across the inner Newton/line-search step (standard IPC), rather than
+        re-queried within the line search.
+- [~] Phase 4: lagged smoothed friction and friction diagnostics.
+  - [x] Static-ground friction (first increment): lagged smoothed Coulomb
+        friction (IPC f0/f1 mollifier, velocity threshold epsv) opposing each
+        contacting node's tangential displacement, gated by
+        `DeformableMaterialProperties.frictionCoefficient` (default 0, additive).
+        Lagged normal force per outer iteration; PSD tangential friction Hessian
+        in the projected-Newton solve. Sliding-deceleration + no-contact-no-
+        friction regressions, drape friction benchmark, serialized coefficient.
+  - [x] Self-contact friction (point-triangle): reuses `frictionCoefficient`;
+        lagged normal force = barrier force on the point node, tangent
+        projection from the point-triangle tangent stencil, same f0/f1 mollifier
+        opposing the stencil's tangential relative displacement. Energy+gradient
+        only (self-contact friction Hessian deferred). Regression: a surface
+        sliding on another in self-contact decelerates vs the frictionless
+        control while staying separated.
+  - [ ] Remaining Phase 4 work: edge-edge self-contact friction and the
+        self-contact friction Hessian, codimensional-obstacle friction, friction
+        over non-flat (sphere/tilted) ground normals, and friction-specific
+        convergence/dissipation diagnostics.
 - [ ] Phase 5: complete the upstream scene corpus as DART-native tests,
       examples, benchmarks, profiling artifacts, and headless Filament evidence.
 
@@ -302,6 +377,29 @@ implement rigid collision response, moving obstacle contact, arbitrary mesh
 obstacles, barrier/contact forces, friction, projected Newton, adaptive
 barrier stiffness, no-intersection/no-inversion guarantees, solver selection,
 or full IPC paper parity.
+
+For the moving rigid box surface CCD line-search sub-slice, keep the
+verification language precise: it covers free (non-static) opted-in box
+obstacles collected at `DeformableDynamicsStage` start, whose end-of-step
+transform is predicted from `comps::Velocity` using the exact
+`integrateRigidBodyPosition` formula (so the prediction matches the pose
+`RigidBodyPositionStage` applies after the deformable stage), and whose swept
+motion is tiled by overlapping static pose samples spaced at most one box
+min-half-extent apart (capped at 64 samples). The deformable line-search
+limiter reuses the static-pose point-triangle and edge-edge CCD reducers over
+those samples. The moving collector is disjoint from the static one
+(`entt::exclude<StaticBodyTag>`), so a body is never limited or counted twice.
+It is a one-way, timing-agnostic conservative limiter: it never misses a
+penetration but is more conservative than a timing-aware sweep for fast
+obstacles, and it does not implement rigid collision response, two-way
+coupling, contact forces, friction, projected Newton, arbitrary mesh
+obstacles, kinematically scripted (velocity-free `setTransform`) obstacles,
+or full IPC paper parity. The sample count is capped (64); past the cap the
+sampled boxes are isotropically inflated to keep consecutive samples
+overlapping, so the swept corridor stays covered (more over-conservative)
+rather than opening tunnelable gaps. Coverage is exact along the box min axis
+for axis-aligned motion; diagonal motion leaves a bounded, half-extent-scale
+thin-corner under-coverage inherent to box supersampling.
 
 Current primitive-distance local gates:
 

@@ -142,15 +142,44 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-rigid-surface-ccd` - stacked on
-`feature/ipc-sweep-pair-traversal`, adding an explicitly opted-in static box
-surface CCD limiter for deformable line searches.
+`feature/ipc-self-contact-friction` - stacked on `feature/ipc-ground-friction`
+(#2746). Extends IPC friction to deformable SELF-CONTACT (point-triangle pairs),
+reusing `frictionCoefficient`. Lagged normal force = barrier force magnitude on
+the point node (||result.gradient.head<3>()||); tangent projection (2x12) from
+`dc::pointTriangleTangentStencil`; friction opposes projection\*(4-node step
+displacement) with the same f0/f1 mollifier. Energy+gradient only (self-contact
+friction Hessian + edge-edge friction deferred); line search ensures descent.
+SelfContactFrictionContact/Inputs built once per outer iteration from the active
+barrier set; threaded through evaluateDeformableObjective. Test: a surface
+sliding tangentially on another in self-contact decelerates vs frictionless,
+barrier keeps them separated. 62 deformable tests pass.
+
+Prior: #2746 = ground friction (Phase 4 first increment). NOTE (from the #2745
+diagnostic): the stiff barrier-contact benchmarks
+(grid-on-ground, drape) settle feasibly/non-penetrating but do NOT converge to
+the tight gradient tolerance (finalGradientResidualNorm ~99-868) -- a pre-existing
+projected-Newton + line-search stall on very stiff barriers, present without
+friction (mu=0 == mu=0.5 residual). Not a friction bug; a known IPC-class
+limitation worth a future continuation/line-search-robustness slice.
+
+Prior stacked branches, all open + awaiting Codex review (Codex usage-limited
+until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
+(self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
+Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
+reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction).
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with non-box/deforming/moving
-rigid surface contact candidates, broader solver-wired CCD coverage, and
-stronger spatial acceleration for larger meshes.
+User directive (2026-05-28): KEEP BUILDING the plan (Codex review batched for
+Saturday). REMAINING plan work, in rough priority: remaining Phase 4 friction
+(self-contact + codimensional friction; non-flat ground normals; friction
+diagnostics), barrier-stall convergence robustness (continuation / better line
+search -- the high-residual finding above), live GPU-backend injection (wire the
+CUDA PSD primitive + a GPU-vs-CPU perf gate via an optional executor, keeping
+world_step_stage GPU-free), adaptive barrier stiffness, rigid/codimensional
+obstacle barrier forces (disturbs #2732 CCD contracts), scene corpus port
+(Phase 5), Python facade (Phase 8). Per the standing directive, optimize CPU AND
+GPU throughout.
 
 ## Context That Would Be Lost
 
@@ -166,7 +195,7 @@ stronger spatial acceleration for larger meshes.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-ccd-line-search
+git checkout feature/ipc-sparse-newton-solve
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
@@ -214,6 +243,15 @@ cmake --build build/default/cpp/Release --target test_deformable_body test_seria
 ./build/default/cpp/Release/bin/test_serialization --gtest_filter='Serialization.PreservesRigidBodyCollisionComponents'
 PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'collision_query'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticRigidSurfaceCcdStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.MovingRigidSurfaceCcd*:DeformableBody.MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableMovingRigidSurfaceCcdStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SelfContactBarrier*'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableSelfContactBarrierStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.*ProjectedNewton*:DeformableBody.SparseProjectedNewtonScalesBeyondDenseCap:DeformableBody.FixedSpringMatchesAnalyticImplicitEulerStep'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.02s --benchmark_filter='BM_DeformableGridStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked

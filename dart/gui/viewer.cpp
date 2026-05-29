@@ -325,6 +325,10 @@ void updateOrbitCamera(OrbitCamera& camera, const OrbitCameraUpdate& update)
     camera.target += basis.up * update.deltaY * panScale;
   }
 
+  if (update.zoom) {
+    camera.distance *= std::exp(update.deltaY * update.zoomScale);
+  }
+
   if (update.scrollDelta != 0.0) {
     camera.distance *= std::exp(-update.scrollDelta * update.scrollScale);
   }
@@ -349,6 +353,12 @@ void resetOrbitCameraTracking(OrbitCameraController& controller)
 void updateOrbitCameraController(
     OrbitCameraController& controller, const OrbitCameraControllerInput& input)
 {
+  if (input.locked) {
+    controller.scrollDelta = 0.0;
+    resetOrbitCameraTracking(controller);
+    return;
+  }
+
   const bool hasCursor = input.hasCursor && std::isfinite(input.cursorX)
                          && std::isfinite(input.cursorY);
   double dx = 0.0;
@@ -373,6 +383,7 @@ void updateOrbitCameraController(
   update.scrollDelta = controller.scrollDelta;
   update.orbit = hasCursor && input.orbit;
   update.pan = hasCursor && input.pan;
+  update.zoom = hasCursor && input.zoom;
   updateOrbitCamera(controller.camera, update);
   controller.scrollDelta = 0.0;
 }

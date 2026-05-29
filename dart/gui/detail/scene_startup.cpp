@@ -53,6 +53,7 @@ std::optional<InitialSceneState> createInitialSceneState(
     ExampleScene exampleScene,
     DartScene& dartScene,
     bool validateFixtureRequirements,
+    bool allowEmptyScene,
     std::ostream& errors)
 {
   auto initialDescriptors = dart::gui::extractRenderables(*dartScene.world);
@@ -82,7 +83,7 @@ std::optional<InitialSceneState> createInitialSceneState(
       });
   const bool hasVisibleGizmos
       = !dart::gui::makeGizmoDebugLines(dartScene.gizmos).empty();
-  if (state.sceneRenderables.empty() && !hasVisibleGizmos) {
+  if (state.sceneRenderables.empty() && !hasVisibleGizmos && !allowEmptyScene) {
     errors << "No supported visible DART renderables were extracted\n";
     return std::nullopt;
   }
@@ -103,7 +104,7 @@ std::optional<InitialSceneState> createInitialSceneState(
       materials.debugColor,
       *dartScene.world,
       state.debugOverlays);
-  if (!state.debugOverlays.staticOverlay) {
+  if (!state.debugOverlays.staticOverlay && !allowEmptyScene) {
     errors << "No debug overlay lines were extracted\n";
     return std::nullopt;
   }

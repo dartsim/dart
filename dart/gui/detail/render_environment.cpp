@@ -190,9 +190,21 @@ void configureViewportCamera(
     int width,
     int height)
 {
+  configureViewportCamera(view, camera, orbitCamera, 0, 0, width, height);
+}
+
+void configureViewportCamera(
+    ::filament::View& view,
+    ::filament::Camera& camera,
+    const dart::gui::OrbitCamera& orbitCamera,
+    int x,
+    int y,
+    int width,
+    int height)
+{
   view.setViewport(
-      {0,
-       0,
+      {static_cast<std::int32_t>(x),
+       static_cast<std::int32_t>(y),
        static_cast<std::uint32_t>(width),
        static_cast<std::uint32_t>(height)});
   const auto projection

@@ -82,6 +82,7 @@ namespace {
 
 using dart::gui::elapsedMs;
 using dart::gui::OrbitCameraController;
+using dart::gui::OrbitCameraControlOptions;
 using dart::gui::printProfile;
 using dart::gui::ProfileAccumulator;
 using dart::gui::RunOptions;
@@ -175,6 +176,11 @@ int runGuiBackendApplicationImpl(
   const bool renderOutputModeExplicit = appOptions.renderOutputModeExplicit;
   const auto renderOutputMode = appOptions.renderSettings.outputMode;
   appOptions.camera = applicationOptions.camera;
+  appOptions.cameraControlsProvider = applicationOptions.cameraControlsProvider;
+  appOptions.cameraUpdater = applicationOptions.cameraUpdater;
+  appOptions.viewportLayoutProvider = applicationOptions.viewportLayoutProvider;
+  appOptions.onViewportPaneActivated
+      = applicationOptions.onViewportPaneActivated;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.renderableProvider = applicationOptions.renderableProvider;
@@ -239,11 +245,13 @@ int runGuiBackendApplicationImpl(
   FilamentRenderContext renderContext = createFilamentRenderContext(
       runOptions, runOptions.headless ? nullptr : getNativeWindow(window));
   auto* engine = renderContext.engine;
-  auto* view = renderContext.view;
   auto* scene = renderContext.scene;
-  auto* camera = renderContext.camera;
   auto* colorGrading = createDebugColorGrading(*engine);
-  configureMainView(*view, colorGrading, runOptions.headless);
+  for (auto* view : renderContext.views) {
+    if (view != nullptr) {
+      configureMainView(*view, colorGrading, runOptions.headless);
+    }
+  }
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
 
@@ -261,6 +269,7 @@ int runGuiBackendApplicationImpl(
           appOptions.scene,
           dartScene,
           validateFixtureRequirements,
+          applicationOptions.allowEmptyScene,
           std::cerr);
   if (!maybeInitialSceneState) {
     return 1;
@@ -312,7 +321,6 @@ int runGuiBackendApplicationImpl(
       materialResources,
       runOptions,
       dartScene,
-      cameraController,
       selectionController,
       sceneState,
       selectionDebugOverlay,
@@ -342,6 +350,10 @@ int runGuiBackendApplicationImpl(
     }
     profile.inputMs += elapsedMs(phaseStart);
 
+    if (appOptions.cameraUpdater) {
+      appOptions.cameraUpdater(cameraController.camera);
+    }
+
     guiScale = dart::gui::detail::makeGuiScaleState(
         runOptions.guiScale, resolveWindowDpiScale(window));
     if (!automaticWindowSizeResolved
@@ -363,17 +375,32 @@ int runGuiBackendApplicationImpl(
     FrameViewport viewport;
     {
       DART_PROFILE_SCOPED_N("GUI viewport camera");
+      const OrbitCameraControlOptions cameraControls
+          = appOptions.cameraControlsProvider
+                ? appOptions.cameraControlsProvider()
+                : OrbitCameraControlOptions{};
+      dart::gui::ViewportLayoutOptions viewportLayout
+          = appOptions.viewportLayoutProvider
+                ? appOptions.viewportLayoutProvider(cameraController.camera)
+                : dart::gui::ViewportLayoutOptions{};
+      if (!appOptions.viewportLayoutProvider) {
+        viewportLayout.panes[0].camera = cameraController.camera;
+        viewportLayout.panes[0].active = true;
+      }
       viewport = updateFrameViewport(
           window,
-          *view,
-          *camera,
+          renderContext.views,
+          renderContext.cameras,
           cameraController,
           selectionController,
           imguiIo,
           runOptions.width,
           runOptions.height,
           dartScene.world->getTimeStep(),
-          appOptions.showUi);
+          appOptions.showUi,
+          cameraControls,
+          viewportLayout);
+      renderContext.activeViewCount = viewport.paneCount;
     }
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
@@ -415,7 +442,11 @@ int runGuiBackendApplicationImpl(
           renderContext.backendName);
     }
     setSceneLightsEnabled(*engine, lights, headlightsEnabled);
-    applyRenderSettings(*view, dartScene.renderSettings);
+    for (std::size_t i = 0; i < renderContext.views.size(); ++i) {
+      if (renderContext.views[i] != nullptr) {
+        applyRenderSettings(*renderContext.views[i], dartScene.renderSettings);
+      }
+    }
 
     if (appOptions.preRender) {
       appOptions.preRender();

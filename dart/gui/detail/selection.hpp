@@ -54,6 +54,7 @@ struct GLFWwindow;
 namespace dart::gui::detail {
 
 struct DartScene;
+struct FrameViewport;
 struct IkHandle;
 
 IkHandle* findIkHandle(
@@ -92,11 +93,9 @@ public:
       dart::gui::ViewerLifecycleState& lifecycle,
       double stepSize);
 
-  void updateMouseSelection(
+  bool updateMouseSelection(
       GLFWwindow* window,
-      const dart::gui::OrbitCamera& camera,
-      int framebufferWidth,
-      int framebufferHeight,
+      const FrameViewport& viewport,
       bool showUi,
       bool uiCapturesMouse,
       double guiScale,
@@ -143,6 +142,7 @@ private:
       const Eigen::Vector3d& worldAxis, double angle);
 
   bool mWasLeftMousePressed = false;
+  std::optional<std::size_t> mActivePointerPaneIndex;
   bool mLeftMouseStartedOnPanel = false;
   bool mLeftMouseStartedDrag = false;
   DragMode mSelectedDragMode = DragMode::Translate;
