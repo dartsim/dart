@@ -149,14 +149,20 @@
         never changes results. `world_step_stage` stays GPU-free (the
         no-GPU-runtime-dependency check passes); the GPU path is validated
         against the CPU backend through the seam in the CUDA test suite.
+  - [x] GPU-vs-CPU perf gate: a CUDA test projects 12x12 barrier batches across
+        a size sweep, asserting GPU/CPU parity at every scale and logging each
+        path's wall time. The measured crossover on an RTX 5000 Ada (~0.4x at
+        256 blocks, ~1.4x at 1024, ~4x at 4096, ~9x at 16384) sets the backend
+        adapter's minimum GPU batch size (~1024 blocks); smaller batches stay on
+        the CPU backend.
   - [ ] Remaining Phase 3 work: a resident GPU solve path (the current backend
-        round-trips host<->device per batch; persistent device buffers + a
-        formal GPU-vs-CPU perf gate are follow-ups), matrix-free CG for very
-        large meshes, adaptive barrier stiffness, barrier forces for
-        rigid/codimensional obstacles, and complementarity/solver-stat
-        diagnostics. Known approximation: the contact active set is rebuilt once
-        per outer iteration and held fixed across the inner Newton/line-search
-        step (standard IPC), rather than re-queried within the line search.
+        round-trips host<->device per batch; persistent device buffers are a
+        follow-up), matrix-free CG for very large meshes, adaptive barrier
+        stiffness, barrier forces for rigid/codimensional obstacles, and
+        complementarity/solver-stat diagnostics. Known approximation: the
+        contact active set is rebuilt once per outer iteration and held fixed
+        across the inner Newton/line-search step (standard IPC), rather than
+        re-queried within the line search.
 - [~] Phase 4: lagged smoothed friction and friction diagnostics.
   - [x] Static-ground friction (first increment): lagged smoothed Coulomb
         friction (IPC f0/f1 mollifier, velocity threshold epsv) opposing each

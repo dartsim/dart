@@ -1014,6 +1014,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     boundary surface and reads back the topology, rest volume, and node mass.
     Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
     increment.
+  - Added a GPU-vs-CPU performance gate for the experimental IPC deformable PSD
+    projection and tuned the GPU offload threshold to the measured crossover. A
+    CUDA test now projects 12x12 self-contact barrier batches across a sweep of
+    sizes, asserting GPU/CPU parity at every scale and logging each path's wall
+    time. On an RTX 5000 Ada the GPU path runs ~0.4x at 256 blocks, ~1.4x at
+    1024, ~4x at 4096, and ~9x at 16384, so the backend adapter's minimum GPU
+    batch size is raised from 64 to ~1024 blocks (small batches stay on the CPU
+    backend where the host/device round trip would otherwise dominate).
   - Wired an optional GPU backend into the experimental IPC deformable solver's
     per-element PSD projection (PLAN-081 Phase 3). The projected-Newton assembly
     now collects its per-element spring (6x6) and self-contact barrier (12x12)
