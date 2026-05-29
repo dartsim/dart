@@ -48,13 +48,14 @@ namespace dartsim {
 /// change-driven consumers and tests.
 enum class EventType
 {
-  SceneChanged,     ///< Objects added/removed/edited (topology or properties).
-  SelectionChanged, ///< The selection set or primary selection changed.
-  ModeChanged,      ///< Edit/Simulation mode or running state changed.
-  RecordingChanged, ///< Recording started/stopped or a frame was captured.
-  ProjectCreated,   ///< A new project replaced the current scene.
-  ProjectSaved,     ///< The current project was saved.
-  ProjectLoaded,    ///< A project was loaded, replacing the scene.
+  SceneChanged,      ///< Objects added/removed/edited (topology or properties).
+  SelectionChanged,  ///< The selection set or primary selection changed.
+  ModeChanged,       ///< Edit/Simulation mode or running state changed.
+  SimulationChanged, ///< Runtime world state changed without an edit command.
+  RecordingChanged,  ///< Recording started/stopped or a frame was captured.
+  ProjectCreated,    ///< A new project replaced the current scene.
+  ProjectSaved,      ///< The current project was saved.
+  ProjectLoaded,     ///< A project was loaded, replacing the scene.
   ProjectStateChanged, ///< Project path or dirty/clean state changed.
 };
 

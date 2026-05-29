@@ -38,11 +38,7 @@ else()
 endif()
 
 # Library
-find_library(
-  imgui_LIBRARIES
-  NAMES imgui
-  HINTS ${PC_imgui_LIBDIR}
-)
+find_library(imgui_LIBRARIES NAMES imgui HINTS ${PC_imgui_LIBDIR})
 
 # Version
 if(PC_imgui_VERSION)

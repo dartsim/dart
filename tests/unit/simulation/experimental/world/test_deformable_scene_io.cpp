@@ -655,6 +655,13 @@ input/tetMeshes/cube.msh 3 0 0  0 0 0  1 1 1
     options.assetRoot = temp.path();
     const auto info = sxio::loadDeformableScene(world, scenePath, options);
     EXPECT_EQ(info.bodies.size(), 2u);
+    // Bail out before dereferencing if the loader ever regresses to fewer than
+    // the two expected bodies, so the failure above is reported rather than
+    // crashing on an out-of-bounds access. (ASSERT_* cannot be used here: this
+    // lambda returns a value, not void.)
+    if (info.bodies.size() < 2) {
+      return ReplayResult{};
+    }
     const auto anchorBody = info.bodies[0].body;
     const auto freeBody = info.bodies[1].body;
 
