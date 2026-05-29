@@ -28,10 +28,16 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
         substitution, not stage-append); covered by `SelectableThroughWorldStep`.
   - [ ] Determinism / save-load round-trip test (needs the serialization above).
   - [ ] Defined non-convergence **error** (currently reports `converged=false`).
-- [~] **Phase A2 — O(n) impulse-based ABI** — RIQN now uses the articulated-body
-  inverse-mass solve (matches the dense `M⁻¹` to 1e-9 in
-  `ArticulatedInverseMassMatchesDenseSolve`); the per-step-cost-vs-DOF scaling
-  benchmark is the remaining A2 evidence item.
+- [x] **Phase A2 — O(n) impulse-based ABI** — RIQN uses the articulated-body
+      inverse-mass solve (matches the dense `M⁻¹` to 1e-9,
+      `ArticulatedInverseMassMatchesDenseSolve`). `bm_variational_integration`
+      confirms the inverse-mass kernel is O(n) (BigO `763·N`, 3% RMS) and surfaced +
+      fixed an O(n²) `buildVarTree` parent lookup. **Finding**: per-iteration work is
+      O(n) and the integrator scales linearly + converges in a few iterations for
+      realistic DOF counts (≤~32), but the RIQN iteration count rises sharply for
+      long chains (≥~64 links) at small `dt` — the known `Δt·M⁻¹` quasi-Newton
+      limitation. Improving large-chain convergence (IG3 initial guess, relative
+      tolerance, line-search/Anderson acceleration) is a tracked follow-up.
 - [ ] Phase B1 — Floating base (manifold-correct RIQN retraction)
 - [ ] Phase B2 — Holonomic constraints (loop closures)
 - [ ] Phase C — Contact & friction (DEFERRED, separate go/no-go; see plan sidecar)

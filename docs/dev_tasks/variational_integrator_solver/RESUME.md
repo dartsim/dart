@@ -33,8 +33,11 @@ integrator is linear-time, symplectic (energy-conserving over 1e5 steps), and
 selectable via `World::setMultibodyIntegrationMethod("variational integrator")`.
 Remaining, in priority order:
 
-1. **A2 evidence**: a per-step-cost-vs-DOF scaling benchmark under
-   `tests/benchmark/simulation/experimental/` confirming the sub-quadratic slope.
+1. **A2 large-chain convergence** (follow-up): `bm_variational_integration`
+   confirms the inverse-mass kernel is O(n) (3% RMS) and the integrator scales
+   linearly for ≤~32 DOF, but the RIQN iteration count rises for ≥~64-link
+   chains — improve via an IG3 (semi-implicit) initial guess, a relative/scaled
+   convergence tolerance, or line-search/Anderson acceleration.
 2. **A1 finish**: serialize `MultibodyVariationalState` (binary-format version
    bump + bootstrap-done flag) + a save/load determinism round-trip test;
    optionally promote RIQN non-convergence from a `converged=false` diagnostic to

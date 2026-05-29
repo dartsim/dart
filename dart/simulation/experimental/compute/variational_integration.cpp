@@ -25,6 +25,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <unordered_map>
 #include <vector>
 
 namespace dart::simulation::experimental::compute {
@@ -158,11 +159,13 @@ VarTree buildVarTree(
   VarTree tree;
   tree.links.assign(linkEntities.size(), VarLink{});
 
-  std::vector<entt::entity> order(linkEntities.begin(), linkEntities.end());
-  const auto indexOf = [&](entt::entity e) -> int {
-    const auto it = std::find(order.begin(), order.end(), e);
-    return it == order.end() ? -1 : static_cast<int>(it - order.begin());
-  };
+  // O(1) link-index lookup so building the tree stays O(n); a linear scan per
+  // link would make the whole step O(n^2) and defeat the linear-time solve.
+  std::unordered_map<entt::entity, std::size_t> indexOf;
+  indexOf.reserve(linkEntities.size());
+  for (std::size_t i = 0; i < linkEntities.size(); ++i) {
+    indexOf.emplace(linkEntities[i], i);
+  }
 
   for (std::size_t i = 0; i < linkEntities.size(); ++i) {
     const auto linkEntity = linkEntities[i];
@@ -180,11 +183,12 @@ VarTree buildVarTree(
 
     const auto& joint = registry.get<comps::Joint>(linkComp.parentJoint);
     link.joint = linkComp.parentJoint;
-    link.parent = indexOf(joint.parentLink);
+    const auto parentIt = indexOf.find(joint.parentLink);
     DART_EXPERIMENTAL_THROW_T_IF(
-        link.parent < 0,
+        parentIt == indexOf.end(),
         InvalidOperationException,
         "Multibody link parent is not part of the same multibody");
+    link.parent = static_cast<int>(parentIt->second);
 
     const Subspace jointFrameSubspace = jointSubspaceInJointFrame(joint);
     link.dof = static_cast<std::size_t>(jointFrameSubspace.cols());

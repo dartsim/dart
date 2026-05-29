@@ -309,9 +309,16 @@ experiments (reference repo `experiments/`: `energy_conservation`, `convergence`
    for smooth conservative forcing at fixed `Δt`; friction is deliberately
    dissipative and augmented-Lagrangian contact has no proven long-time energy
    behavior. Never advertise "energy-conserving" for frictional/contact scenes.
-3. **RIQN preconditioner vs. barrier stiffness:** `Δt·M⁻¹` mis-scales stiff
-   barriers → possible iteration blow-up. Favor compliant/AL contact; prototype
-   any barrier on sparse contact first.
+3. **RIQN preconditioner vs. chain length / barrier stiffness:** `Δt·M⁻¹` is an
+   approximate inverse of the DEL Jacobian; its effectiveness degrades as the
+   system gets longer or stiffer. _Measured_ (`bm_variational_integration`): the
+   per-iteration cost is O(n) (3% RMS linear fit on the inverse-mass kernel) and
+   the integrator converges in a few iterations and scales linearly for
+   realistic DOF counts (≤~32), but the RIQN iteration count rises sharply for
+   long chains (≥~64 links) at `Δt = 1 ms`. Mitigations (IG3 initial guess,
+   relative/scaled convergence tolerance, line-search or Anderson acceleration)
+   are tracked follow-ups; stiff contact barriers would compound this, so favor
+   compliant/AL contact and prototype any barrier on sparse contact first.
 4. **Manifold RIQN increment for ball/free joints** has no correct reference
    template (open TODOs in the reference impl). Phase A (revolute/prismatic)
    avoids it; Phase B must solve it.
