@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 
-
 # Standalone filament-routed binaries that still resolve via EXAMPLE_SPECS.
 # Former scene-style examples now live as dart-demos scenes and are exercised
 # by ``test_normalize_target_redirects_demos_scenes`` instead.
@@ -62,6 +61,19 @@ def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
     message = str(exc.value)
     assert "dart-demos" in message
     assert f"--scene {target}" in message
+
+
+@pytest.mark.parametrize("target", ["py-demos", "py_demos", "pydemos"])
+def test_normalize_target_redirects_py_demos(run_cpp_example, target):
+    # `py-demos` is the Python demos viewer (its own `pixi run py-demos` task),
+    # not a C++ example target, so the C++ `ex` runner must redirect rather than
+    # fail with an unknown-ninja-target error.
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "pixi run py-demos" in message
+    assert "ex demos" in message
 
 
 def test_parse_args_requires_target(run_cpp_example, capsys):
@@ -215,10 +227,8 @@ def test_prepare_filament_run_args_preserves_mvp_scene_all(
     run_cpp_example, monkeypatch
 ):
     monkeypatch.setenv("DISPLAY", ":99")
-    scenes, base_args, scene_option_explicit = (
-        run_cpp_example._split_filament_scenes(
-            ["--scene", "all", "--frames", "1"]
-        )
+    scenes, base_args, scene_option_explicit = run_cpp_example._split_filament_scenes(
+        ["--scene", "all", "--frames", "1"]
     )
 
     args = run_cpp_example._prepare_filament_run_args(
@@ -292,13 +302,7 @@ def _cmake_filament_smoke_scene_pairs(cmake_text):
 
 def _filament_sources_cmake_text(run_cpp_example):
     repo_root = Path(run_cpp_example.__file__).resolve().parents[1]
-    cmake_path = (
-        repo_root
-        / "dart"
-        / "gui"
-        / "detail"
-        / "backend_sources.cmake"
-    )
+    cmake_path = repo_root / "dart" / "gui" / "detail" / "backend_sources.cmake"
     return cmake_path.read_text(encoding="utf-8")
 
 
@@ -333,10 +337,7 @@ def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
     registered_scenes = tuple(scene for _suffix, scene in scene_pairs)
     registered_tests = (
         "EXAMPLE_dartsim_headless_smoke",
-        *(
-            f"EXAMPLE_dartsim_{suffix}_headless_smoke"
-            for suffix, _scene in scene_pairs
-        ),
+        *(f"EXAMPLE_dartsim_{suffix}_headless_smoke" for suffix, _scene in scene_pairs),
     )
 
     assert registered_scenes == run_cpp_example.FILAMENT_ALL_SCENES[1:]
@@ -408,9 +409,7 @@ def test_ensure_simulation_experimental_reconfigures_off_cache(
 
     run_cpp_example._ensure_simulation_experimental(tmp_path, env)
 
-    assert calls == [
-        (tmp_path, {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}, env)
-    ]
+    assert calls == [(tmp_path, {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}, env)]
 
 
 def test_ensure_simulation_experimental_keeps_on_cache(
@@ -425,9 +424,7 @@ def test_ensure_simulation_experimental_keeps_on_cache(
     monkeypatch.setattr(
         run_cpp_example,
         "_configure",
-        lambda build_dir, definitions, env: calls.append(
-            (build_dir, definitions, env)
-        ),
+        lambda build_dir, definitions, env: calls.append((build_dir, definitions, env)),
     )
 
     run_cpp_example._ensure_simulation_experimental(tmp_path, {})
@@ -473,7 +470,9 @@ def test_run_filament_smoke_probes_tests_for_old_ctest(
         probes.append((build_dir, env))
 
     monkeypatch.setenv("DISPLAY", ":99")
-    monkeypatch.setattr(run_cpp_example, "_ctest_supports_no_tests_error", lambda: False)
+    monkeypatch.setattr(
+        run_cpp_example, "_ctest_supports_no_tests_error", lambda: False
+    )
     monkeypatch.setattr(
         run_cpp_example, "_validate_filament_smoke_tests_discovered", fake_validate
     )
