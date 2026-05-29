@@ -3121,42 +3121,51 @@ void prepareDeformableBoundaryConditions(
 
 //==============================================================================
 /// Transient cached topology for the experimental Vertex Block Descent inner
-/// solver: the spring list plus its vertex-graph coloring and incident-spring
-/// adjacency, rebuilt only when the spring topology changes. Defined here (not
-/// in comps) so the heavy kernel headers stay out of the component headers; it
-/// is stored per body and never serialized.
+/// solver: the spring and tetrahedron element lists plus the vertex-graph
+/// coloring (over the union of springs and tets) and the per-element incident
+/// adjacencies, rebuilt only when the element topology changes. Defined here
+/// (not in comps) so the heavy kernel headers stay out of the component
+/// headers; it is stored per body and never serialized.
 struct DeformableVbdScratch
 {
   std::vector<dvbd::SpringElement> springs;
+  std::vector<dvbd::TetMeshElement> tets;
   dvbd::VertexColoring coloring;
-  dvbd::SpringAdjacency adjacency;
+  dvbd::SpringAdjacency springAdjacency;
+  dvbd::TetAdjacency tetAdjacency;
   std::size_t cachedNodeCount = 0;
   std::size_t cachedEdgeCount = 0;
+  std::size_t cachedTetCount = 0;
   bool initialized = false;
 };
 
 //==============================================================================
-/// Solve one implicit-Euler step for a contact-free mass-spring deformable body
-/// with the Vertex Block Descent inner solver: graph-colored Gauss-Seidel block
+/// Solve one implicit-Euler step for a contact-free deformable body with the
+/// Vertex Block Descent inner solver: graph-colored Gauss-Seidel block
 /// coordinate descent on the same variational objective the default solver
-/// minimizes, warm-started at the inertial target. Fills `scratch.next`; the
-/// caller's write-back updates positions/velocities. This is the first VBD
-/// World-solver slice: it covers contact-free mass-spring bodies only and does
-/// not yet handle tetrahedra, ground barriers, rigid obstacles, or
-/// surface-contact CCD.
-void runVbdMassSpringSolve(
+/// minimizes, warm-started at the inertial target. Handles both distance
+/// springs and volumetric Stable Neo-Hookean tetrahedra (the latter using the
+/// body's Lame parameters, which the default gradient solver does not yet
+/// model). Fills `scratch.next`; the caller's write-back updates
+/// positions/velocities. This slice covers contact-free bodies only and does
+/// not yet handle ground barriers, rigid obstacles, or surface-contact CCD.
+void runVbdDeformableSolve(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
+    const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
     DeformableVbdScratch& vbdScratch,
     double timeStep,
+    double youngsModulus,
+    double poissonRatio,
     const comps::DeformableVbdConfig& config,
     DeformableSolverStats& stats)
 {
   const std::size_t nodeCount = scratch.next.size();
 
   if (!vbdScratch.initialized || vbdScratch.cachedNodeCount != nodeCount
-      || vbdScratch.cachedEdgeCount != model.edges.size()) {
+      || vbdScratch.cachedEdgeCount != model.edges.size()
+      || vbdScratch.cachedTetCount != topology.tetrahedra.size()) {
     vbdScratch.springs.clear();
     vbdScratch.springs.reserve(model.edges.size());
     for (const auto& edge : model.edges) {
@@ -3165,11 +3174,32 @@ void runVbdMassSpringSolve(
            static_cast<std::uint32_t>(edge.nodeB),
            edge.restLength});
     }
-    vbdScratch.coloring = dvbd::colorSprings(nodeCount, vbdScratch.springs);
-    vbdScratch.adjacency
+
+    vbdScratch.tets.clear();
+    vbdScratch.tets.reserve(topology.tetrahedra.size());
+    for (const auto& tet : topology.tetrahedra) {
+      const std::array<std::uint32_t, 4> vertices
+          = {static_cast<std::uint32_t>(tet.nodeA),
+             static_cast<std::uint32_t>(tet.nodeB),
+             static_cast<std::uint32_t>(tet.nodeC),
+             static_cast<std::uint32_t>(tet.nodeD)};
+      const dvbd::TetRestShape rest = dvbd::makeTetRestShape(
+          {topology.restPositions[tet.nodeA],
+           topology.restPositions[tet.nodeB],
+           topology.restPositions[tet.nodeC],
+           topology.restPositions[tet.nodeD]});
+      vbdScratch.tets.push_back({vertices, rest});
+    }
+
+    vbdScratch.coloring
+        = dvbd::colorDeformable(nodeCount, vbdScratch.springs, vbdScratch.tets);
+    vbdScratch.springAdjacency
         = dvbd::SpringAdjacency::build(nodeCount, vbdScratch.springs);
+    vbdScratch.tetAdjacency
+        = dvbd::TetAdjacency::build(nodeCount, vbdScratch.tets);
     vbdScratch.cachedNodeCount = nodeCount;
     vbdScratch.cachedEdgeCount = model.edges.size();
+    vbdScratch.cachedTetCount = topology.tetrahedra.size();
     vbdScratch.initialized = true;
   }
 
@@ -3179,20 +3209,27 @@ void runVbdMassSpringSolve(
     }
   }
 
+  const dvbd::LameParameters lame
+      = dvbd::lameFromYoungPoisson(youngsModulus, poissonRatio);
+
   dvbd::BlockDescentOptions options;
   options.iterations = config.iterations;
   options.clampSpringHessian = true;
   options.convergenceDisplacement = config.convergenceDisplacement;
-  const dvbd::BlockDescentStats result = dvbd::blockDescentMassSpring(
+  const dvbd::BlockDescentStats result = dvbd::blockDescentDeformable(
       scratch.next,
       state.masses,
       scratch.activeFixed,
       scratch.inertialTargets,
       vbdScratch.springs,
       model.stiffness,
+      vbdScratch.springAdjacency,
+      vbdScratch.tets,
+      lame.mu,
+      lame.lambda,
+      vbdScratch.tetAdjacency,
       timeStep,
       vbdScratch.coloring,
-      vbdScratch.adjacency,
       options);
 
   ++stats.vbdBodyCount;
@@ -3640,6 +3677,8 @@ void advanceDeformableBody(
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
     double frictionCoefficient,
+    double youngsModulus,
+    double poissonRatio,
     DeformableSolverStats& stats)
 {
   const auto nodeCount = state.positions.size();
@@ -3685,13 +3724,29 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  const bool contactFree = barriers.empty() && rigidSurfaceSnapshots.empty()
-                           && movingRigidSurfaceSnapshots.empty()
-                           && contactScratch.surfaceTriangles.empty();
-  if (vbdConfig != nullptr && vbdConfig->enabled && contactFree
-      && topology.tetrahedra.empty()) {
-    runVbdMassSpringSolve(
-        state, model, scratch, vbdScratch, timeStep, *vbdConfig, stats);
+  // External contact sources VBD cannot honor yet (it skips ground/obstacle
+  // barriers and rigid-surface CCD). The body's own surface mesh is excluded
+  // here: VBD solves inertia + springs + tet elasticity and treats the body as
+  // free of surface self-contact (a later slice wires the VBD contact kernels
+  // into the World path). The default-solver fast path below keeps the stricter
+  // surface check so non-VBD bodies still get self-contact.
+  const bool externalContactFree = barriers.empty()
+                                   && rigidSurfaceSnapshots.empty()
+                                   && movingRigidSurfaceSnapshots.empty();
+  const bool contactFree
+      = externalContactFree && contactScratch.surfaceTriangles.empty();
+  if (vbdConfig != nullptr && vbdConfig->enabled && externalContactFree) {
+    runVbdDeformableSolve(
+        state,
+        model,
+        topology,
+        scratch,
+        vbdScratch,
+        timeStep,
+        youngsModulus,
+        poissonRatio,
+        *vbdConfig,
+        stats);
   } else if (model.edges.empty() && contactFree) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
@@ -4549,6 +4604,8 @@ void DeformableDynamicsStage::execute(
         timeStep,
         barriers,
         material.frictionCoefficient,
+        material.youngsModulus,
+        material.poissonRatio,
         m_lastStats);
   }
 }

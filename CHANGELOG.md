@@ -1203,6 +1203,22 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     solver-agnostic. Run it with `pixi run demos -- --scene experimental_vbd`;
     it joins the headless demo-cycle smoke test for visual-regression coverage.
     This is the first user-runnable VBD visual showcase (PLAN-082 Phase 10).
+  - Added a combined springs + tetrahedra VBD block-descent driver
+    (`blockDescentDeformable` with `colorDeformable` and a combined per-vertex
+    assembler) that minimizes inertia + distance-spring + Stable Neo-Hookean
+    tetrahedron energy in one graph-colored Gauss-Seidel sweep. It reduces
+    bit-for-bit to `blockDescentMassSpring` with no tets and to
+    `blockDescentTetMesh` with no springs, and its converged state matches an
+    independent global gradient-descent minimizer of the combined objective.
+  - Extended the experimental World VBD path to tetrahedral bodies: the stage
+    now builds Stable Neo-Hookean tetrahedra from the body topology and its
+    `DeformableMaterial` Lame parameters, so VBD models material-dependent
+    volumetric elasticity that the default gradient solver does not. The opt-in
+    gate was relaxed to run VBD on bodies free of external contact (ground and
+    rigid-surface) sources; surface self-contact for VBD bodies remains a later
+    slice. Tests confirm a tetrahedral body routes through VBD, stays stable
+    under gravity, and that a stiffer material settles measurably closer to its
+    rest shape.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

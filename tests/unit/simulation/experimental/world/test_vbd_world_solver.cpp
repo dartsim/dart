@@ -66,6 +66,27 @@ sx::DeformableBodyOptions makeChainOptions(int count, double spacing)
   return options;
 }
 
+// A single tetrahedron with its z=0 base face (nodes 0,1,2) pinned and its apex
+// (node 3) free above it, so gravity compresses the tet and the Neo-Hookean
+// energy resists. The material stiffness is configurable so tests can assert
+// that a stiffer body deforms less.
+sx::DeformableBodyOptions makeTetOptions(double youngsModulus)
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.masses = {1.0, 1.0, 1.0, 1.0};
+  options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
+  options.fixedNodes = {0, 1, 2};
+  options.material.youngsModulus = youngsModulus;
+  options.material.poissonRatio = 0.3;
+  options.damping = 2.0;
+  return options;
+}
+
 // Opt every deformable body in the world into the internal VBD inner solver.
 void enableVbd(sx::World& world, std::size_t iterations)
 {
@@ -182,4 +203,85 @@ TEST(VbdWorldSolver, HangingChainStretchesAndStaysStable)
   // Top node pinned at the origin; gravity pulls the bottom node further down.
   EXPECT_NEAR(body->getPosition(0).norm(), 0.0, 1e-9);
   EXPECT_LT(body->getPosition(body->getNodeCount() - 1).z(), -0.5 * 7.0);
+}
+
+//==============================================================================
+// A contact-free tetrahedral body opts into VBD too: the World path now
+// assembles Stable Neo-Hookean tetrahedra, which the default gradient solver
+// does not model.
+TEST(VbdWorldSolver, RunsVbdPathForTetrahedralBody)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  world.addDeformableBody("tet", makeTetOptions(1.0e5));
+  enableVbd(world, 30);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.vbdSweeps, 0u);
+  EXPECT_GT(stats.vbdVertexUpdates, 0u);
+}
+
+//==============================================================================
+TEST(VbdWorldSolver, TetrahedralBodyIsStableUnderGravity)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  world.addDeformableBody("tet", makeTetOptions(1.0e5));
+  enableVbd(world, 30);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 200; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("tet");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      const Eigen::Vector3d p = body->getPosition(i);
+      ASSERT_TRUE(p.allFinite()) << "blew up at step " << step;
+      ASSERT_LT(p.norm(), 1e3) << "diverged at step " << step;
+    }
+  }
+
+  const auto body = world.getDeformableBody("tet");
+  ASSERT_TRUE(body.has_value());
+  // Apex stays above the pinned base (the Neo-Hookean energy resists
+  // inversion).
+  EXPECT_GT(body->getPosition(3).z(), 0.0);
+}
+
+//==============================================================================
+// The load-bearing volumetric check: a stiffer Neo-Hookean material resists
+// gravity more, so its apex settles closer to the rest height. This is only
+// possible because the World VBD path now models material-dependent tet
+// elasticity (the default solver, which ignores Young's modulus, cannot).
+TEST(VbdWorldSolver, StifferTetrahedralBodyDeformsLess)
+{
+  const auto settledApexHeight = [](double youngsModulus) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    world.addDeformableBody("tet", makeTetOptions(youngsModulus));
+    enableVbd(world, 60);
+
+    compute::DeformableDynamicsStage stage;
+    for (int step = 0; step < 400; ++step) {
+      stepOnce(world, stage);
+    }
+    const auto body = world.getDeformableBody("tet");
+    return body->getPosition(3).z();
+  };
+
+  const double softApex = settledApexHeight(1.0e4);
+  const double stiffApex = settledApexHeight(1.0e6);
+
+  // Both compress downward from the rest apex height of 1.0 ...
+  EXPECT_LT(softApex, 1.0);
+  EXPECT_LT(stiffApex, 1.0);
+  // ... but the stiffer body compresses measurably less.
+  EXPECT_GT(stiffApex, softApex + 1e-4);
 }

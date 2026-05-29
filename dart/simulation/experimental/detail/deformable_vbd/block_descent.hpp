@@ -466,6 +466,217 @@ inline double tetMeshObjective(
 }
 
 //==============================================================================
+/// Build the vertex-graph coloring induced by both a spring list and a tet mesh
+/// (springs are edges, tets are 4-vertex cliques). Vertices that share neither
+/// a spring nor a tetrahedron may take the same color, so the within-color
+/// sweep stays numerically identical to the parallel Jacobi update for a body
+/// that mixes distance springs and volumetric Neo-Hookean tetrahedra.
+inline VertexColoring colorDeformable(
+    std::size_t vertexCount,
+    const std::vector<SpringElement>& springs,
+    const std::vector<TetMeshElement>& tets)
+{
+  VertexAdjacency adjacency(vertexCount);
+  for (const SpringElement& spring : springs) {
+    adjacency.addEdge(spring.a, spring.b);
+  }
+  for (const TetMeshElement& tet : tets) {
+    adjacency.addTetrahedron(
+        tet.vertices[0], tet.vertices[1], tet.vertices[2], tet.vertices[3]);
+  }
+  return greedyColorVertices(adjacency);
+}
+
+namespace detail {
+
+//==============================================================================
+/// Assemble the inertia + incident-spring + incident-tetrahedron block for one
+/// free vertex at its current position. Combines the mass-spring and tet
+/// assemblers so a single body can carry both distance springs and volumetric
+/// Stable Neo-Hookean tetrahedra.
+inline VertexBlock assembleDeformableVertexBlock(
+    std::uint32_t vertex,
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    const SpringAdjacency& springAdjacency,
+    double springStiffness,
+    bool clampSpringHessian,
+    const std::vector<TetMeshElement>& tets,
+    const TetAdjacency& tetAdjacency,
+    double mu,
+    double lambda,
+    double timeStep)
+{
+  VertexBlock block;
+  addInertiaTerm(
+      block,
+      masses[vertex],
+      timeStep,
+      positions[vertex],
+      inertialTargets[vertex]);
+  if (vertex < springAdjacency.incidentSprings.size()) {
+    for (const std::uint32_t springIndex :
+         springAdjacency.incidentSprings[vertex]) {
+      const SpringElement& spring = springs[springIndex];
+      const std::uint32_t other = (spring.a == vertex) ? spring.b : spring.a;
+      addSpringTerm(
+          block,
+          springStiffness,
+          spring.restLength,
+          positions[vertex],
+          positions[other],
+          clampSpringHessian);
+    }
+  }
+  if (vertex < tetAdjacency.incidentTets.size()) {
+    for (const auto& [tetIndex, localVertex] :
+         tetAdjacency.incidentTets[vertex]) {
+      const TetMeshElement& tet = tets[tetIndex];
+      const std::array<Eigen::Vector3d, 4> tetPositions
+          = {positions[tet.vertices[0]],
+             positions[tet.vertices[1]],
+             positions[tet.vertices[2]],
+             positions[tet.vertices[3]]};
+      addNeoHookeanTetTerm(
+          block, localVertex, tet.rest, tetPositions, mu, lambda);
+    }
+  }
+  return block;
+}
+
+} // namespace detail
+
+//==============================================================================
+/// Run graph-colored Gauss-Seidel block coordinate descent on a single
+/// deformable body that mixes distance springs and Stable Neo-Hookean
+/// tetrahedra, minimizing
+///   G(x) = sum_i (m_i/2h^2)||x_i - y_i||^2
+///        + sum_e (k/2)(l_e - L_e)^2 + sum_t A_t Psi(F_t(x)).
+///
+/// `coloring` must be built for the union of `springs` and `tets` (see
+/// colorDeformable); `springAdjacency`/`tetAdjacency` are the matching
+/// incident-element lists. With no tets this reduces to blockDescentMassSpring;
+/// with no springs it reduces to blockDescentTetMesh. `positions` is updated in
+/// place.
+inline BlockDescentStats blockDescentDeformable(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    const SpringAdjacency& springAdjacency,
+    const std::vector<TetMeshElement>& tets,
+    double mu,
+    double lambda,
+    const TetAdjacency& tetAdjacency,
+    double timeStep,
+    const VertexColoring& coloring,
+    const BlockDescentOptions& options)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+
+  const auto assemble = [&](std::uint32_t vertex) {
+    return detail::assembleDeformableVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        springs,
+        springAdjacency,
+        springStiffness,
+        options.clampSpringHessian,
+        tets,
+        tetAdjacency,
+        mu,
+        lambda,
+        timeStep);
+  };
+
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    double maxDeltaSquared = 0.0;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        const Eigen::Vector3d delta
+            = solveVertexBlock(block, options.regularization);
+        positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
+        ++stats.vertexUpdates;
+      }
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
+//==============================================================================
+/// Evaluate the combined springs + tetrahedra variational implicit-Euler
+/// objective G(x) for convergence/energy-decrease verification.
+inline double deformableObjective(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    const std::vector<TetMeshElement>& tets,
+    double mu,
+    double lambda,
+    double timeStep)
+{
+  // The inertia term is shared, so sum the two element objectives and subtract
+  // one copy of the inertia (which tetMeshObjective and massSpringObjective
+  // each include).
+  double energy = 0.0;
+  const double invDt2 = 1.0 / (timeStep * timeStep);
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    const Eigen::Vector3d delta = positions[i] - inertialTargets[i];
+    energy += 0.5 * masses[i] * invDt2 * delta.squaredNorm();
+  }
+  for (const SpringElement& spring : springs) {
+    const double length = (positions[spring.b] - positions[spring.a]).norm();
+    const double stretch = length - spring.restLength;
+    energy += 0.5 * springStiffness * stretch * stretch;
+  }
+  for (const TetMeshElement& tet : tets) {
+    const std::array<Eigen::Vector3d, 4> tetPositions
+        = {positions[tet.vertices[0]],
+           positions[tet.vertices[1]],
+           positions[tet.vertices[2]],
+           positions[tet.vertices[3]]};
+    const Eigen::Matrix3d F
+        = deformationGradient(tet.rest.restShapeInverse, tetPositions);
+    energy
+        += tet.rest.restVolume * stableNeoHookeanEnergyDensity(F, mu, lambda);
+  }
+  return energy;
+}
+
+//==============================================================================
 /// Mass-spring block descent with static half-space penalty contact. Identical
 /// to blockDescentMassSpring, but each vertex block additionally accumulates
 /// the VBD penalty-contact term for every plane it penetrates, so a body rests

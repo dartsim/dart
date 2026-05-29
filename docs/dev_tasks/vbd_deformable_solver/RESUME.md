@@ -95,10 +95,16 @@ VBD now runs as an opt-in inner solver inside `DeformableDynamicsStage` for
 contact-free mass-spring bodies (`comps::DeformableVbdConfig` selects it), and
 matches the default solver. Remaining work, in order:
 
-1. Extend the World VBD path to tetrahedral bodies (the stage would fetch
-   `comps::DeformableMaterial` for Lame params and reuse `blockDescentTetMesh`
-   /the combined springs+tets assembly), and thread Chebyshev + element damping
-   into the World path. Then decide the public solver-selection surface.
+1. DONE (tetrahedra): the World VBD path now handles tetrahedral bodies. A new
+   combined driver `blockDescentDeformable` (+ `colorDeformable`) assembles
+   inertia + springs + Stable Neo-Hookean tets in one colored sweep; the stage
+   fetches `comps::DeformableMaterial` for Lame params and builds the tet rest
+   shapes once per topology change. The VBD gate was relaxed to external-contact
+   freeness so surfaced (tet) bodies qualify; surface self-contact for VBD
+   bodies is still deferred. `test_vbd_combined_descent` (5 cases) and three new
+   `test_vbd_world_solver` tet cases cover it (including stiffer-deforms-less).
+   STILL TODO here: thread Chebyshev + element damping into the World path, and
+   decide the public solver-selection surface.
 2. Phase 7: half-space penalty contact + semi-implicit Coulomb friction land
    (`contact_kernel.hpp`: `addHalfSpacePenaltyContact`, `addHalfSpaceFriction`;
    drivers `blockDescentMassSpringGround[Friction]`; bodies rest on the ground,
