@@ -246,6 +246,92 @@ struct DeformableGridWorld
   std::size_t edgeCount = 0;
 };
 
+// A deformable mat draped over a raised box ground barrier onto the flat ground
+// (the experimental_deformable_gui "drape" demo's solver scenario). The mat is
+// started near its draped equilibrium so the benchmark measures the per-step
+// sparse-Newton solve under two active ground barriers rather than the dynamic
+// fall.
+struct DeformableDrapeWorld
+{
+  DeformableDrapeWorld(int columns, int rows)
+  {
+    columns = std::max(columns, 2);
+    rows = std::max(rows, 2);
+
+    constexpr double boxHalf = 0.30;
+    constexpr double boxTop = 0.24;
+    constexpr double spacing = 0.05;
+
+    sx::DeformableBodyOptions options;
+    options.edgeStiffness = 25.0;
+    options.damping = 1.5;
+
+    const auto index = [columns](int col, int row) {
+      return static_cast<std::size_t>(row * columns + col);
+    };
+
+    const double halfWidth = 0.5 * spacing * static_cast<double>(columns - 1);
+    const double halfDepth = 0.5 * spacing * static_cast<double>(rows - 1);
+    for (int row = 0; row < rows; ++row) {
+      for (int col = 0; col < columns; ++col) {
+        const double x = spacing * static_cast<double>(col) - halfWidth;
+        const double y = spacing * static_cast<double>(row) - halfDepth;
+        const bool overBox = std::abs(x) <= boxHalf && std::abs(y) <= boxHalf;
+        options.positions.push_back(
+            Eigen::Vector3d(x, y, overBox ? boxTop + 0.005 : 0.005));
+        options.velocities.push_back(Eigen::Vector3d::Zero());
+        options.masses.push_back(0.05);
+      }
+    }
+
+    for (int row = 0; row < rows; ++row) {
+      for (int col = 0; col < columns; ++col) {
+        if (col + 1 < columns) {
+          options.edges.push_back({index(col, row), index(col + 1, row), -1.0});
+        }
+        if (row + 1 < rows) {
+          options.edges.push_back({index(col, row), index(col, row + 1), -1.0});
+        }
+        if (col + 1 < columns && row + 1 < rows) {
+          options.edges.push_back(
+              {index(col, row), index(col + 1, row + 1), -1.0});
+          options.edges.push_back(
+              {index(col + 1, row), index(col, row + 1), -1.0});
+        }
+      }
+    }
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+    ground.setDeformableGroundBarrier(true);
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.isStatic = true;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5 * boxTop);
+    auto box = world.addRigidBody("step", boxOptions);
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(
+            Eigen::Vector3d(boxHalf, boxHalf, 0.5 * boxTop)));
+    box.setDeformableGroundBarrier(true);
+
+    body = world.addDeformableBody("drape", options);
+    nodeCount = body.getNodeCount();
+    edgeCount = body.getEdgeCount();
+
+    world.setTimeStep(1.0 / 120.0);
+    world.enterSimulationMode();
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::size_t nodeCount = 0;
+  std::size_t edgeCount = 0;
+};
+
 //==============================================================================
 struct DeformableTetraMeshWorld
 {
@@ -821,6 +907,40 @@ void BM_DeformableGridStage(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableDrapeStage(benchmark::State& state)
+{
+  const auto columns = static_cast<int>(state.range(0));
+  const auto rows = static_cast<int>(state.range(1));
+  DeformableDrapeWorld fixture(columns, rows);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1).z());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["edges"] = static_cast<double>(fixture.edgeCount);
+  state.counters["ground_barriers"]
+      = static_cast<double>(stats.staticGroundBarrierCount);
+  state.counters["solver_iterations"]
+      = static_cast<double>(stats.solverIterations);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.counters["projected_newton_steps"]
+      = static_cast<double>(stats.projectedNewtonSteps);
+  state.counters["projected_newton_fallbacks"]
+      = static_cast<double>(stats.projectedNewtonFallbacks);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableSurfaceContactStage(benchmark::State& state)
 {
   const auto pairCount = static_cast<int>(state.range(0));
@@ -1203,6 +1323,12 @@ BENCHMARK(BM_DeformableGridStage)
     ->Args({16, 8, 1})
     ->Args({32, 16, 1})
     ->Args({48, 24, 1});
+
+// The experimental_deformable_gui "drape" demo solver scenario: a mat draped
+// over a raised box ground barrier onto the flat ground (two active barriers).
+// The 18x16 (288-node) and 24x20 (480-node) mats exceed the former 256-node
+// dense-solve cap and are solved on the sparse projected-Newton path.
+BENCHMARK(BM_DeformableDrapeStage)->Args({18, 16})->Args({24, 20});
 
 BENCHMARK(BM_DeformableSurfaceContactStage)
     ->Args({1, 0})

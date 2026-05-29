@@ -867,6 +867,15 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     assembly/solve remain later perf slices. Adds a 300-node-chain regression
     and a 320-node grid-on-ground-barrier regression (Newton engaged past the
     old cap) plus sparse-Newton step/fallback counters on the scaling benchmark.
+  - Added a `drape` showcase scene to the `experimental_deformable_gui` example
+    (`--deformable-scene-kind drape`): a 572-node deformable mat drapes over a
+    raised ground-barrier step onto the ground, exercising the landed IPC
+    contact pipeline (self-contact + ground barrier + sparse projected Newton)
+    at a mesh scale past the former 256-node cap. It is a DART-native showcase,
+    not a faithful paper-figure reproduction (mass-spring, no codimensional/FEM
+    elasticity or friction). Adds a library-level drape regression
+    (non-penetrating, conforming over the step) and a `BM_DeformableDrapeStage`
+    benchmark of the multi-barrier solve.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

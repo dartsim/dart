@@ -63,6 +63,22 @@ projected Newton (Phase 3, for stiff barriers to converge), barrier forces
 against rigid/codimensional obstacles, and friction (Phase 6, for the
 stick-slip / card-house / arch / roller figures).
 
+Progress note (Phase 3 solver): the projected-Newton search direction has
+landed (per-step PSD-projected Hessian, replacing steepest descent) and now
+assembles the Hessian sparsely with a sparse Cholesky solve, lifting the dense
+256-node cap to thousands of nodes — so self-contact and ground-barrier contact
+converge on the Newton path at mesh scales the figures need.
+
+DART-native showcase demo: `experimental_deformable_gui --deformable-scene-kind
+drape` renders a 572-node mat draping over a raised ground-barrier step onto the
+ground (self-contact + ground barrier + sparse projected Newton). This is a
+DART-native demonstration of the landed contact pipeline, NOT a faithful
+reproduction of any paper figure: it is a mass-spring mat (no codimensional
+shell/FEM elasticity, no rigid-obstacle contact forces, no friction), so all
+figure rows below remain `planned` until those kernels land. It is the first
+visual evidence backing this showcase and the template for promoting a figure
+row to `in-progress`.
+
 ## Showcase Catalog
 
 Status column: `planned` (not yet implemented), `in-progress` (PR open),

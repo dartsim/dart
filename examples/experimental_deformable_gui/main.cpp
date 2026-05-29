@@ -106,6 +106,7 @@ struct LaunchOptions
   std::filesystem::path scenePath;
   std::filesystem::path diagnosticsJsonPath;
   std::string deformableView = "combined";
+  std::string sceneKind = "net"; // built-in scene when no --deformable-scene
 };
 
 //==============================================================================
@@ -408,6 +409,100 @@ void addDeformableNet(ExampleState& state)
 }
 
 //==============================================================================
+// A raised static box at the scene center, tagged as a deformable ground
+// barrier. The ground barrier uses a finite xy footprint, so it forms a step
+// in the support height field: a draping mat is held at the box top over the
+// footprint and falls past it to the surrounding ground beyond the edges.
+void addObstacleBox(ExampleState& state)
+{
+  const Eigen::Vector3d halfExtents(0.30, 0.30, 0.12);
+  const Eigen::Vector3d center(0.0, 0.0, halfExtents.z());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = center;
+  auto obstacle
+      = state.physicsWorld.addRigidBody("drape_obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  obstacle.setDeformableGroundBarrier(true);
+
+  auto frame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), "drape_obstacle_visual", makeTransform(center));
+  frame->setShape(std::make_shared<dynamics::BoxShape>(2.0 * halfExtents));
+  frame->getVisualAspect(true)->setRGBA(rgba(0.52, 0.45, 0.34));
+  state.renderWorld->addSimpleFrame(frame);
+}
+
+//==============================================================================
+// A free deformable mat suspended flat above the obstacle. Under gravity it
+// drapes over the box (conservative surface CCD), folds against itself
+// (self-contact barrier), and settles onto the ground (ground barrier) -- a
+// showcase for the projected-Newton solve at sparse scale (> 256 nodes).
+sx::DeformableBodyOptions makeDrapeOptions(
+    int columns, int rows, std::vector<sx::DeformableEdge>& edges)
+{
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 25.0; // floppy enough to drape over the step edges
+  options.damping = 1.5;
+
+  const auto index = [columns](int col, int row) {
+    return static_cast<std::size_t>(row * columns + col);
+  };
+
+  constexpr double spacing = 0.05;
+  constexpr double dropHeight = 0.42; // above the obstacle top (0.24)
+  const double halfWidth = 0.5 * spacing * static_cast<double>(columns - 1);
+  const double halfDepth = 0.5 * spacing * static_cast<double>(rows - 1);
+  for (int row = 0; row < rows; ++row) {
+    for (int col = 0; col < columns; ++col) {
+      const double x = spacing * static_cast<double>(col) - halfWidth;
+      const double y = spacing * static_cast<double>(row) - halfDepth;
+      options.positions.push_back(Eigen::Vector3d(x, y, dropHeight));
+      options.velocities.push_back(Eigen::Vector3d::Zero());
+      options.masses.push_back(0.05);
+    }
+  }
+
+  for (int row = 0; row < rows; ++row) {
+    for (int col = 0; col < columns; ++col) {
+      if (col + 1 < columns) {
+        edges.push_back({index(col, row), index(col + 1, row), -1.0});
+      }
+      if (row + 1 < rows) {
+        edges.push_back({index(col, row), index(col, row + 1), -1.0});
+      }
+      if (col + 1 < columns && row + 1 < rows) {
+        edges.push_back({index(col, row), index(col + 1, row + 1), -1.0});
+        edges.push_back({index(col + 1, row), index(col, row + 1), -1.0});
+      }
+    }
+  }
+  options.edges = edges;
+
+  for (const auto& triangle : gui::makeGridSurfaceTriangles(columns, rows)) {
+    options.surfaceTriangles.push_back(
+        {static_cast<std::size_t>(triangle.x()),
+         static_cast<std::size_t>(triangle.y()),
+         static_cast<std::size_t>(triangle.z())});
+  }
+  return options;
+}
+
+//==============================================================================
+void addDeformableDrape(ExampleState& state)
+{
+  constexpr int columns = 26;
+  constexpr int rows = 22; // 572 nodes, past the former dense 256-node cap
+
+  addObstacleBox(state);
+
+  std::vector<sx::DeformableEdge> edges;
+  auto options = makeDrapeOptions(columns, rows, edges);
+  auto body = state.physicsWorld.addDeformableBody("deformable_drape", options);
+  appendDeformableVisual(state, body, "deformable_drape");
+}
+
+//==============================================================================
 void addLoadedScene(ExampleState& state, const std::filesystem::path& scenePath)
 {
   sxio::DeformableSceneLoadOptions loadOptions;
@@ -431,7 +526,11 @@ std::shared_ptr<ExampleState> makeExampleState(const LaunchOptions& launch)
 
   if (launch.scenePath.empty()) {
     addGround(*state);
-    addDeformableNet(*state);
+    if (launch.sceneKind == "drape") {
+      addDeformableDrape(*state);
+    } else {
+      addDeformableNet(*state);
+    }
   } else {
     addLoadedScene(*state, launch.scenePath);
     state->renderWorld->setTimeStep(
@@ -494,6 +593,17 @@ bool parseExampleOptions(int argc, char* argv[], LaunchOptions& options)
         return false;
       }
       options.scenePath = argv[++i];
+    } else if (arg == "--deformable-scene-kind") {
+      if (i + 1 >= argc) {
+        std::cerr << "--deformable-scene-kind requires net or drape\n";
+        return false;
+      }
+      options.sceneKind = std::string(argv[++i]);
+      if (options.sceneKind != "net" && options.sceneKind != "drape") {
+        std::cerr << "Invalid --deformable-scene-kind value '"
+                  << options.sceneKind << "'. Expected net or drape.\n";
+        return false;
+      }
     } else if (arg == "--diagnostics-json") {
       if (i + 1 >= argc) {
         std::cerr << "--diagnostics-json requires an output path\n";
