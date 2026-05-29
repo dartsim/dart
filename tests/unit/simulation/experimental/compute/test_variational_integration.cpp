@@ -8,6 +8,7 @@
  * This file is provided under the "BSD-style" License
  */
 
+#include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -157,4 +158,52 @@ TEST(VariationalIntegration, PendulumConservesEnergyOverLongHorizon)
 
   // Symplectic behavior: bounded energy oscillation, no secular drift.
   EXPECT_LT(maxRelativeDrift, 1e-2);
+}
+
+// The variational integrator is reachable through the public method-name
+// selector on the default World::step() path; selecting it conserves energy,
+// confirming pipeline substitution (not the double-integrating stage-append
+// path) and a facade-safe selection by method name.
+TEST(VariationalIntegration, SelectableThroughWorldStep)
+{
+  sx::World world;
+  EXPECT_EQ(world.getMultibodyIntegrationMethod(), "semi-implicit");
+  EXPECT_THROW(
+      world.setMultibodyIntegrationMethod("nonsense"),
+      sx::InvalidArgumentException);
+  world.setMultibodyIntegrationMethod("variational integrator");
+  EXPECT_EQ(world.getMultibodyIntegrationMethod(), "variational integrator");
+
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+  bob.setMass(1.0);
+  bob.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  bob.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 1.0));
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::Vector3d gravity = world.getGravity();
+  const double energy0
+      = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+
+  for (int k = 0; k < 20000; ++k) {
+    world.step();
+  }
+
+  const double energy
+      = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+  EXPECT_FALSE(std::isnan(energy));
+  EXPECT_LT(std::abs(energy - energy0) / std::abs(energy0), 1e-2);
 }

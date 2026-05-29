@@ -22,8 +22,9 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
         accel, RIQN convergence, energy conserved over 1e5 steps, lie_group parity.
   - [~] Two-step previous-configuration State — in-memory + bootstrap done;
     **serialization (version bump + bootstrap-done flag) pending**.
-  - [ ] Integration-family **selector** so the VI is reachable via the public
-        method-name path (today: explicit `WorldStepPipeline` only).
+  - [x] Integration-family **selector** (`World::setMultibodyIntegrationMethod`)
+        so the VI runs on the default `step()` path by method name (pipeline
+        substitution, not stage-append); covered by `SelectableThroughWorldStep`.
   - [ ] Determinism / save-load round-trip test (needs the serialization above).
   - [ ] Defined non-convergence **error** (currently reports `converged=false`).
 - [ ] Phase A2 — O(n) impulse-based ABI (replaces dense solve; scaling gate)

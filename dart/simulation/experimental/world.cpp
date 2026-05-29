@@ -46,6 +46,7 @@
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/compute/sequential_executor.hpp"
+#include "dart/simulation/experimental/compute/variational_integration.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure.hpp"
@@ -1498,21 +1499,49 @@ void World::step(std::size_t count)
 }
 
 //==============================================================================
+void World::setMultibodyIntegrationMethod(std::string_view method)
+{
+  if (method == "semi-implicit" || method == "semi-implicit Euler") {
+    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
+  } else if (method == "variational integrator" || method == "variational") {
+    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
+  } else {
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidArgumentException,
+        "Unknown multibody integration method; supported method-family names "
+        "are 'semi-implicit' and 'variational integrator'");
+  }
+}
+
+//==============================================================================
+std::string World::getMultibodyIntegrationMethod() const
+{
+  return m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+             ? "variational integrator"
+             : "semi-implicit";
+}
+
+//==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::MultibodyVariationalIntegrationStage multibodyVariational;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
+  compute::WorldStepStage& multibodyStage
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
   compute::WorldStepPipeline pipeline;
   // Integrate rigid-body positions after the multibody stage so two-sided
   // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
   // the multibody solve) take effect in the same step's pose update.
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
+      .addStage(multibodyStage)
       .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);
@@ -1526,15 +1555,20 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::MultibodyVariationalIntegrationStage multibodyVariational;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
+  compute::WorldStepStage& multibodyStage
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
   compute::WorldStepPipeline pipeline;
   // Integrate rigid-body positions after the multibody stage so two-sided
   // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
   // the multibody solve) take effect in the same step's pose update.
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
+      .addStage(multibodyStage)
       .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);

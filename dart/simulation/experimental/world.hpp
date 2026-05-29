@@ -160,6 +160,22 @@ public:
       compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
+  // Solver / integration-family selection
+  //--------------------------------------------------------------------------
+
+  /// Select the integration family used for multibody dynamics on the default
+  /// `step()` path, by documented method-family name: `"semi-implicit"`
+  /// (default; articulated-body forward dynamics) or `"variational integrator"`
+  /// (the linear-time discrete-mechanics integrator). Throws
+  /// InvalidArgumentException for unknown names. Selecting by method name keeps
+  /// solver and stage types out of the public facade.
+  void setMultibodyIntegrationMethod(std::string_view method);
+
+  /// The configured multibody integration-family method name. Defaults to
+  /// `"semi-implicit"`.
+  [[nodiscard]] std::string getMultibodyIntegrationMethod() const;
+
+  //--------------------------------------------------------------------------
   // Registry access
   //--------------------------------------------------------------------------
   /// @internal
@@ -223,6 +239,13 @@ private:
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   double m_timeStep{0.001};
   double m_time{0.0};
+  enum class MultibodyIntegrationMethod
+  {
+    SemiImplicit,
+    Variational
+  };
+  MultibodyIntegrationMethod m_multibodyIntegrationMethod{
+      MultibodyIntegrationMethod::SemiImplicit};
   std::size_t m_frame{0};
 
   std::size_t m_freeFrameCounter{0};
