@@ -837,6 +837,18 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     no-penetration guarantee. First-order (steepest-descent) solve with fixed
     barrier stiffness; projected Newton and adaptive stiffness are later slices.
     Includes focused regressions and a benchmark with barrier counters.
+  - Added internal experimental IPC projected-Newton search direction for the
+    deformable solve: each iteration assembles the per-step Hessian (inertia +
+    spring + self-contact barrier + static ground barrier) with per-element
+    PSD projection and solves it (dense LDLT, guarded by a positive-definite
+    check) for a Newton direction, replacing mass-scaled steepest descent and
+    falling back to it when the dense solve is skipped (large bodies), fails,
+    or its line search cannot make progress. This lets the stiff barrier term
+    converge cleanly and matches the analytic implicit-Euler spring solution.
+    Sparse assembly and CPU/GPU optimization of the per-element
+    eigen-decompositions are later slices. Includes focused regressions (Newton
+    engaged, few-iteration convergence, analytic parity) and solver-step
+    counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

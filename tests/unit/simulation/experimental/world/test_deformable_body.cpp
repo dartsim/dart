@@ -2204,6 +2204,15 @@ TEST(DeformableBody, SelfContactBarrierKeepsDrivenSurfacesApart)
   EXPECT_GT(stats.selfContactBarrierCandidateBuilds, 0u);
   EXPECT_GT(stats.selfContactBarrierActiveContacts, 0u);
 
+  // Projected Newton is the dominant search direction here: the 12x12 barrier
+  // Hessian assembly and per-element PSD projection run on every iteration
+  // under a heavily-loaded active set (~255 contacts). At most an occasional
+  // near-convergence iteration, where the Newton step's directional derivative
+  // rounds toward zero, degrades gracefully to the steepest-descent fallback,
+  // so Newton steps strictly outnumber fallbacks.
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_GT(stats.projectedNewtonSteps, stats.projectedNewtonFallbacks);
+
   // The barrier produces a strong repulsive force that holds the surfaces at a
   // stable separation inside the activation band (d_hat = 2e-2), far beyond the
   // CCD min-separation (1e-4) that CCD-only limiting would leave.
@@ -2284,4 +2293,42 @@ TEST(DeformableBody, SelfContactBarrierIgnoresVolumetricInteriorNodes)
   EXPECT_GT(stats.selfContactBarrierCandidateBuilds, 0u); // barrier path ran
   // The masked interior node produces no surface self-contact barrier force.
   EXPECT_EQ(stats.selfContactBarrierActiveContacts, 0u);
+}
+
+//==============================================================================
+// The deformable solve uses a projected-Newton search direction: it engages
+// (no fallback) and converges the linear spring step in very few iterations,
+// reaching the analytic implicit-Euler equilibrium.
+TEST(DeformableBody, ProjectedNewtonSolvesSpringStepInFewIterations)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  auto options = makeTwoNodeBody();
+  options.positions[1] = Eigen::Vector3d(2.0, 0.0, 0.0);
+  options.edges = {sx::DeformableEdge{0, 1, 1.0}};
+  options.edgeStiffness = 100.0;
+  options.masses = {1.0, 1.0};
+  auto body = world.addDeformableBody("newton_spring", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_EQ(stats.projectedNewtonFallbacks, 0u);
+  // This (effectively linear) spring step is solved by a single Newton step,
+  // with one confirming iteration that breaks on the gradient tolerance: two
+  // outer iterations total, far fewer than steepest descent. A tight bound
+  // makes this a real regression guard against a convergence slowdown.
+  EXPECT_LE(stats.solverIterations, 2u);
+
+  constexpr double inertialWeight = 1.0 / (0.1 * 0.1);
+  constexpr double expectedX
+      = (inertialWeight * 2.0 + 100.0 * 1.0) / (inertialWeight + 100.0);
+  expectVectorNear(body.getPosition(1), Eigen::Vector3d(expectedX, 0.0, 0.0));
 }
