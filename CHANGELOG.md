@@ -931,6 +931,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     anti-tunneling guarantee is unchanged: a line-search-blocked or failed solve
     is still never written back. Covered by adaptive-stiffness unit tests and a
     no-freeze sliding-contact runtime regression.
+  - Added a `sx_rigid_ipc_slide` Python demo scene (registered in the py-demos
+    Experimental category) showing a box slide across static ground and be
+    friction-braked to rest through the rigid IPC barrier solver, now viable
+    thanks to the freeze-on-contact fix.
   - Added internal experimental moving rigid box surface CCD limiting for free
     (non-static) deformable-surface CCD obstacles: the deformable stage predicts
     each obstacle's end-of-step transform from its velocity (mirroring the rigid

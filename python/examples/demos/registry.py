@@ -37,6 +37,7 @@ from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
 from .scenes.sx_rigid_ipc import SCENE as SX_RIGID_IPC
+from .scenes.sx_rigid_ipc_slide import SCENE as SX_RIGID_IPC_SLIDE
 
 
 def make_demo_scenes() -> list[PythonDemoScene]:
@@ -82,4 +83,5 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_FLOATING_BASE,
         SX_CONTACT,
         SX_RIGID_IPC,
+        SX_RIGID_IPC_SLIDE,
     ]
