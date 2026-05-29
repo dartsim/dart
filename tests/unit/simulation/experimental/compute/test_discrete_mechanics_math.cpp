@@ -164,3 +164,41 @@ TEST(DiscreteMechanicsMath, AdInvRLinearRotatesIntoBody)
   EXPECT_LT(result.head<3>().norm(), 1e-12);
   EXPECT_TRUE(result.tail<3>().isApprox(t.linear().transpose() * g, 1e-12));
 }
+
+// Phase B1 gate: the SE(3) manifold retraction is verified against finite
+// differences. The floating-base / spherical RIQN update applies an increment
+// xi as T_new = T * se3Exp(xi); its first-order behavior must equal the twist,
+// i.e. d/de se3Exp(e*xi)|_0 == hat(xi) (the se(3) matrix in [angular; linear]
+// convention). Central finite difference of the homogeneous matrix.
+TEST(DiscreteMechanicsMath, ExpRetractionTangentMatchesFiniteDifference)
+{
+  const double eps = 1e-6;
+  for (const auto& xi : sampleTwists()) {
+    const Eigen::Matrix4d dT
+        = (se3Exp(eps * xi).matrix() - se3Exp(-eps * xi).matrix())
+          / (2.0 * eps);
+    Eigen::Matrix4d hat = Eigen::Matrix4d::Zero();
+    hat.topLeftCorner<3, 3>() = skew(xi.head<3>());
+    hat.topRightCorner<3, 1>() = xi.tail<3>();
+    EXPECT_TRUE(dT.isApprox(hat, 1e-6)) << "xi=" << xi.transpose() << "\ndT=\n"
+                                        << dT << "\nhat=\n"
+                                        << hat;
+  }
+}
+
+// Phase B1 gate (companion): the log map is the consistent inverse retraction.
+// Along the geodesic T(s) = se3Exp(s*xi), the average-velocity reconstruction
+// V = se3Log(T)/s used by the integrator must satisfy d/ds se3Log(T(s)) == xi.
+// Central finite difference at s = 0.5 (rotations stay well below pi).
+TEST(DiscreteMechanicsMath, LogRetractionDerivativeMatchesFiniteDifference)
+{
+  const double s = 0.5;
+  const double h = 1e-6;
+  for (const auto& xi : sampleTwists()) {
+    const Vector6 d
+        = (se3Log(se3Exp((s + h) * xi)) - se3Log(se3Exp((s - h) * xi)))
+          / (2.0 * h);
+    EXPECT_TRUE(d.isApprox(xi, 1e-6) || (d.norm() < 1e-9 && xi.norm() < 1e-9))
+        << "xi=" << xi.transpose() << " d=" << d.transpose();
+  }
+}
