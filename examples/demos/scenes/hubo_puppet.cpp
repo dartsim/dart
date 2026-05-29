@@ -351,7 +351,7 @@ public:
                 Eigen::AngleAxisd(testQ(WP), Eigen::Vector3d::UnitY()));
       Eigen::Vector3d euler
           = (targetInBase.rotation() * lowerRotation.inverse().matrix())
-                .eulerAngles(1, 0, 2);
+                .canonicalEulerAngles(1, 0, 2);
       if (flipShoulder != 0) {
         euler = flipEuler3Axis(euler);
       }

@@ -185,7 +185,7 @@ protected:
   math::LinearJacobian mEEJacCache;
 
   /// Cache for the SVD
-  Eigen::JacobiSVD<math::LinearJacobian> mSVDCache;
+  Eigen::JacobiSVD<math::LinearJacobian, Eigen::ComputeFullV> mSVDCache;
 
   /// Cache for the full null space
   Eigen::MatrixXd mNullSpaceCache;

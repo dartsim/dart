@@ -1485,19 +1485,15 @@ int runEditor(int argc, char* argv[])
   app->transformGizmo.gizmo.isVisible = [app]() {
     return app->transformGizmo.object != kNoObject;
   };
-  app->transformGizmo.gizmo.onChanged
-      = [app](const Eigen::Isometry3d& transform) {
-          if (!applyViewportTransformGizmo(
-                  app->engine,
-                  app->transformGizmo,
-                  app->viewportLayers,
-                  transform)) {
-            return;
-          }
-          const std::string name = primarySelectionName(app->engine);
-          app->note(
-              name.empty() ? "Transformed selection" : "Transformed " + name);
-        };
+  app->transformGizmo.gizmo
+      .onChanged = [app](const Eigen::Isometry3d& transform) {
+    if (!applyViewportTransformGizmo(
+            app->engine, app->transformGizmo, app->viewportLayers, transform)) {
+      return;
+    }
+    const std::string name = primarySelectionName(app->engine);
+    app->note(name.empty() ? "Transformed selection" : "Transformed " + name);
+  };
   options.gizmos.push_back(app->transformGizmo.gizmo);
   options.keyboardActions = makeViewportMoveActions(app);
   options.cameraControlsProvider = [app]() {

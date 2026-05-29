@@ -127,8 +127,7 @@ public:
 
   [[nodiscard]] virtual std::vector<BroadPhasePair> queryPairs() const = 0;
   [[nodiscard]] virtual std::vector<std::size_t> queryOverlapping(
-      const Aabb& aabb) const
-      = 0;
+      const Aabb& aabb) const = 0;
   [[nodiscard]] virtual std::size_t size() const = 0;
 
   virtual void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const
