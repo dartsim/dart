@@ -142,20 +142,20 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-python-facade` - stacked on
-`feature/ipc-scene-replay-harness` (#2749). PLAN-081 Phase 8: exposes the
-deformable-body API to dartpy in python/dartpy/simulation_experimental/module.cpp
-(World.add_deformable_body/get_deformable_body/has_deformable_body/
-get_deformable_body_count + DeformableBodyOptions, DeformableMaterialProperties
-incl friction_coefficient, DeformableEdge, DeformableBody with node_count,
-edge_count, node_position/set_node_position, node_velocity/set_node_velocity,
-is_fixed_node, edge, material_properties). KEY: the experimental dartpy API
-FORBIDS get_*/set_* method names (test_experimental_world.py forbidden list:
-get_position/set_position/get_name/...) -> use properties or node_* indexed
-methods. Stubs regenerated via `pixi run generate-stubs` (rebuilds dartpy +
-writes python/stubs/dartpy/*.pyi; the stub-tracking test enforces it). Python
-regression test_experimental_deformable_body_python_api. 50 python tests pass.
-Surface/tetra + DBC/NBC + scene-loader python bindings deferred.
+`feature/ipc-self-contact-friction-hessian` - stacked on
+`feature/ipc-deformable-python-facade` (#2750). Adds the lagged self-contact
+friction Hessian to computeProjectedNewtonDirection: per active point-triangle
+contact, a PSD 12x12 block scale*projection^T*H2x2*projection (tangent-stencil
+projection times the same PSD tangential matrix the ground-friction Hessian
+uses), scattered to the 4 stencil nodes via addBlock3 (free-free). Completes
+self-contact friction as a proper Newton term (was energy+gradient only);
+behavior-preserving (line search resolves the same energy). 62 deformable tests
+pass. computeProjectedNewtonDirection now takes a SelfContactFrictionInputs* arg.
+Edge-edge self-contact friction (force+Hessian) still deferred.
+
+Prior #2750 = Python facade (dartpy deformable bindings; forbids get_*/set_*
+names; regenerate stubs + api-boundary-inventory.md). #2749 = scene-replay
+harness.
 
 Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
 friction. NOTE (from the #2745
@@ -171,8 +171,8 @@ until ~Sat 2AM; user is batching review): #2738 (moving rigid CCD) <- #2739
 (self-contact barrier) <- #2740 (projected Newton, dense) <- #2741 (sparse
 Cholesky) <- #2742 (drape demo) <- #2743 (GPU PSD primitive) <- #2744 (symbolic
 reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
-(self-contact friction) <- #2749 (scene-replay harness). (PR #2747 is another
-author's.)
+(self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade).
+(PR #2747 is another author's.)
 
 ## Immediate Next Step
 

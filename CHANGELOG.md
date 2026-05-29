@@ -942,6 +942,15 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     and added a Python regression that builds a spring strand, sets a friction
     coefficient, steps the world, and reads the resulting state. Surface/tetra
     topology and boundary-condition bindings remain a later increment.
+  - Added the lagged self-contact friction Hessian to the experimental IPC
+    projected-Newton solve, completing self-contact friction as a proper Newton
+    term (previously energy+gradient only). Per active point-triangle contact it
+    assembles a positive-semidefinite 12x12 block,
+    `projection^T * H_2x2 * projection` (the tangent-stencil projection times the
+    same PSD tangential matrix the ground-friction Hessian uses), scattered to
+    the four stencil nodes. Behavior-preserving (the line search still resolves
+    the same friction-inclusive energy); existing tests pass unchanged. The
+    edge-edge self-contact friction Hessian remains a later increment.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
