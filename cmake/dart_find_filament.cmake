@@ -30,16 +30,21 @@ if(DEFINED ENV{FILAMENT_ROOT} AND NOT "$ENV{FILAMENT_ROOT}" STREQUAL "")
 endif()
 
 macro(_dart_filament_unset_missing_cache_path variable)
-  if(DEFINED ${variable}
-      AND NOT "${${variable}}" STREQUAL ""
-      AND NOT "${${variable}}" MATCHES "-NOTFOUND$"
-      AND NOT EXISTS "${${variable}}")
+  if(
+    DEFINED ${variable}
+    AND NOT "${${variable}}" STREQUAL ""
+    AND NOT "${${variable}}" MATCHES "-NOTFOUND$"
+    AND NOT EXISTS "${${variable}}"
+  )
     unset(${variable} CACHE)
     unset(${variable})
   endif()
 endmacro()
 
-foreach(_dart_filament_cache_var IN ITEMS
+foreach(
+  _dart_filament_cache_var
+  IN
+  ITEMS
     Filament_INCLUDE_DIR
     Filament_MATC_EXECUTABLE
     Filament_filament_LIBRARY
@@ -56,7 +61,8 @@ foreach(_dart_filament_cache_var IN ITEMS
     Filament_Foundation_LIBRARY
     Filament_objc_LIBRARY
     Filament_cxx_LIBRARY
-    Filament_cxxabi_LIBRARY)
+    Filament_cxxabi_LIBRARY
+)
   _dart_filament_unset_missing_cache_path(${_dart_filament_cache_var})
 endforeach()
 
@@ -76,7 +82,8 @@ if(TARGET matc AND NOT TARGET Filament::matc)
   add_executable(Filament::matc ALIAS matc)
 endif()
 
-find_path(Filament_INCLUDE_DIR
+find_path(
+  Filament_INCLUDE_DIR
   NAMES filament/Engine.h
   HINTS ${_dart_filament_roots}
   PATH_SUFFIXES include
@@ -84,7 +91,8 @@ find_path(Filament_INCLUDE_DIR
 
 set(Filament_LIBRARIES)
 
-set(_dart_filament_library_suffixes
+set(
+  _dart_filament_library_suffixes
   lib
   lib/x86_64
   lib/arm64
@@ -93,8 +101,7 @@ set(_dart_filament_library_suffixes
 )
 if(MSVC)
   list(
-    PREPEND
-    _dart_filament_library_suffixes
+    PREPEND _dart_filament_library_suffixes
     lib/x86_64/md
     lib/${CMAKE_SYSTEM_PROCESSOR}/md
     lib/x86_64/mt
@@ -102,9 +109,24 @@ if(MSVC)
   )
 endif()
 
-foreach(_lib IN ITEMS filament backend filabridge filaflat utils geometry bluegl bluevk smol-v shaders)
+foreach(
+  _lib
+  IN
+  ITEMS
+    filament
+    backend
+    filabridge
+    filaflat
+    utils
+    geometry
+    bluegl
+    bluevk
+    smol-v
+    shaders
+)
   string(REPLACE "-" "_" _lib_var "${_lib}")
-  find_library(Filament_${_lib_var}_LIBRARY
+  find_library(
+    Filament_${_lib_var}_LIBRARY
     NAMES ${_lib}
     HINTS ${_dart_filament_roots}
     PATH_SUFFIXES ${_dart_filament_library_suffixes}
@@ -114,7 +136,8 @@ foreach(_lib IN ITEMS filament backend filabridge filaflat utils geometry bluegl
   endif()
 endforeach()
 
-find_library(Filament_zstd_LIBRARY
+find_library(
+  Filament_zstd_LIBRARY
   NAMES zstd
   HINTS ${_dart_filament_roots}
   PATH_SUFFIXES ${_dart_filament_library_suffixes}
@@ -150,7 +173,8 @@ if(CMAKE_NM AND Filament_utils_LIBRARY)
 endif()
 
 if(_dart_filament_requires_libcxx)
-  find_library(Filament_cxx_LIBRARY
+  find_library(
+    Filament_cxx_LIBRARY
     NAMES c++
     HINTS ${_dart_filament_roots}
     PATH_SUFFIXES ${_dart_filament_library_suffixes}
@@ -159,7 +183,8 @@ if(_dart_filament_requires_libcxx)
     list(APPEND Filament_LIBRARIES "${Filament_cxx_LIBRARY}")
   endif()
 
-  find_library(Filament_cxxabi_LIBRARY
+  find_library(
+    Filament_cxxabi_LIBRARY
     NAMES c++abi
     HINTS ${_dart_filament_roots}
     PATH_SUFFIXES ${_dart_filament_library_suffixes}
@@ -169,7 +194,8 @@ if(_dart_filament_requires_libcxx)
   endif()
 endif()
 
-find_program(Filament_MATC_EXECUTABLE
+find_program(
+  Filament_MATC_EXECUTABLE
   NAMES matc matc.exe
   HINTS ${_dart_filament_roots}
   PATH_SUFFIXES bin
@@ -177,7 +203,8 @@ find_program(Filament_MATC_EXECUTABLE
 
 set(_dart_filament_required_vars)
 if(NOT TARGET Filament::filament)
-  list(APPEND _dart_filament_required_vars
+  list(
+    APPEND _dart_filament_required_vars
     Filament_INCLUDE_DIR
     Filament_filament_LIBRARY
     Filament_backend_LIBRARY
@@ -191,8 +218,8 @@ if(NOT TARGET Filament::matc)
   list(APPEND _dart_filament_required_vars Filament_MATC_EXECUTABLE)
 endif()
 if(_dart_filament_requires_libcxx AND NOT TARGET Filament::filament)
-  list(APPEND
-    _dart_filament_required_vars
+  list(
+    APPEND _dart_filament_required_vars
     Filament_cxx_LIBRARY
     Filament_cxxabi_LIBRARY
   )
@@ -201,7 +228,8 @@ endif()
 if(TARGET Filament::filament AND TARGET Filament::matc)
   set(Filament_FOUND TRUE)
 else()
-  find_package_handle_standard_args(Filament
+  find_package_handle_standard_args(
+    Filament
     REQUIRED_VARS ${_dart_filament_required_vars}
     REASON_FAILURE_MESSAGE
       "Install a Filament development package such as conda-forge filament-static, set Filament_ROOT to a Filament install tree, or provide an upstream archive plus any required libc++/libc++abi libraries."
@@ -211,16 +239,20 @@ endif()
 if(Filament_FOUND AND NOT TARGET Filament::filament)
   find_package(Threads REQUIRED)
   add_library(Filament::filament INTERFACE IMPORTED)
-  set_target_properties(Filament::filament PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${Filament_INCLUDE_DIR}"
-    INTERFACE_LINK_LIBRARIES "${Filament_LIBRARIES};Threads::Threads;${CMAKE_DL_LIBS}"
+  set_target_properties(
+    Filament::filament
+    PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${Filament_INCLUDE_DIR}"
+      INTERFACE_LINK_LIBRARIES
+        "${Filament_LIBRARIES};Threads::Threads;${CMAKE_DL_LIBS}"
   )
 endif()
 
 if(Filament_FOUND AND NOT TARGET Filament::matc)
   add_executable(Filament::matc IMPORTED)
-  set_target_properties(Filament::matc PROPERTIES
-    IMPORTED_LOCATION "${Filament_MATC_EXECUTABLE}"
+  set_target_properties(
+    Filament::matc
+    PROPERTIES IMPORTED_LOCATION "${Filament_MATC_EXECUTABLE}"
   )
 endif()
 

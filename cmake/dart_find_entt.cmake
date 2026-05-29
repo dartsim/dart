@@ -24,8 +24,9 @@ if(NOT EnTT_FOUND AND NOT TARGET EnTT::EnTT)
   endif()
 
   add_library(EnTT::EnTT INTERFACE IMPORTED GLOBAL)
-  set_target_properties(EnTT::EnTT PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${entt_SOURCE_DIR}/src"
+  set_target_properties(
+    EnTT::EnTT
+    PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${entt_SOURCE_DIR}/src"
   )
   set(EnTT_VERSION 3.16.0 CACHE STRING "EnTT version" FORCE)
   set(EnTT_FOUND TRUE CACHE BOOL "EnTT found via FetchContent" FORCE)

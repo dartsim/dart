@@ -71,21 +71,24 @@ constexpr std::size_t kMaxDebugLabels = 96u;
 constexpr double kPi = 3.14159265358979323846;
 
 std::optional<ImVec2> projectDebugLabel(
-    const dart::gui::OrbitCamera& camera,
-    const FrameViewport& viewport,
-    const Eigen::Vector3d& position)
+    const FrameViewport& viewport, const Eigen::Vector3d& position)
 {
   if (!position.allFinite() || viewport.width <= 0 || viewport.height <= 0) {
     return std::nullopt;
   }
 
+  const ViewportPaneFrame& pane = activeViewportPane(viewport);
+  if (pane.width <= 0 || pane.height <= 0) {
+    return std::nullopt;
+  }
+
   const dart::gui::OrbitCameraBasis basis
-      = dart::gui::makeOrbitCameraBasis(camera);
+      = dart::gui::makeOrbitCameraBasis(pane.camera);
   const Eigen::Vector3d cameraSpace = position - basis.eye;
   const double depth = cameraSpace.dot(basis.forward);
   const dart::gui::PerspectiveProjection projection
       = dart::gui::makePerspectiveProjection(
-          camera, viewport.width, viewport.height);
+          pane.camera, pane.width, pane.height);
   if (!std::isfinite(depth) || depth <= projection.nearPlane
       || depth >= projection.farPlane) {
     return std::nullopt;
@@ -107,8 +110,8 @@ std::optional<ImVec2> projectDebugLabel(
   }
 
   return ImVec2(
-      static_cast<float>((ndcX + 1.0) * 0.5 * viewport.width),
-      static_cast<float>((1.0 - ndcY) * 0.5 * viewport.height));
+      static_cast<float>(pane.x + (ndcX + 1.0) * 0.5 * pane.width),
+      static_cast<float>(pane.y + (1.0 - ndcY) * 0.5 * pane.height));
 }
 
 ImU32 toImGuiColor(const Eigen::Vector4d& rgba, double alphaScale = 1.0)
@@ -133,7 +136,6 @@ std::string compactDebugLabel(std::string text)
 
 void renderDebugLabels(
     const std::vector<dart::gui::DebugLabelDescriptor>& labels,
-    const dart::gui::OrbitCamera& camera,
     const FrameViewport& viewport,
     double effectiveScale)
 {
@@ -163,7 +165,7 @@ void renderDebugLabels(
     }
 
     const std::optional<ImVec2> anchor
-        = projectDebugLabel(camera, viewport, label.position);
+        = projectDebugLabel(viewport, label.position);
     if (!anchor.has_value()) {
       continue;
     }
@@ -182,6 +184,109 @@ void renderDebugLabels(
     drawList->AddRect(rectMin, rectMax, border, 3.0f * scale);
     drawList->AddText(textPos, toImGuiColor(label.rgba), text.c_str());
     ++rendered;
+  }
+}
+
+bool paneLabelFits(
+    const std::string& text,
+    float maxWidth,
+    float maxHeight,
+    const ImVec2& padding)
+{
+  const ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
+  return textSize.x + padding.x * 2.0f <= maxWidth
+         && textSize.y + padding.y * 2.0f <= maxHeight;
+}
+
+void renderViewportPaneLabels(const FrameViewport& viewport, double guiScale)
+{
+  if (viewport.paneCount <= 1u) {
+    return;
+  }
+
+  auto* drawList = ImGui::GetBackgroundDrawList();
+  if (drawList == nullptr) {
+    return;
+  }
+
+  const float scale = static_cast<float>(std::max(0.5, guiScale));
+  const ImVec2 padding(6.0f * scale, 3.0f * scale);
+  const float inset = 6.0f * scale;
+  const ImU32 paneBorder
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.82f, 0.88f, 0.94f, 0.22f));
+  const ImU32 activeBorder
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.33f, 0.62f, 0.96f, 0.90f));
+  const ImU32 labelBackground
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.03f, 0.04f, 0.05f, 0.68f));
+  const ImU32 activeLabelBackground
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.05f, 0.12f, 0.20f, 0.82f));
+  const ImU32 labelBorder
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.88f, 0.92f, 0.96f, 0.24f));
+  const ImU32 activeLabelBorder
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.43f, 0.72f, 1.0f, 0.78f));
+  const ImU32 textColor
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.92f, 0.95f, 0.98f, 0.96f));
+
+  for (std::size_t i = 0;
+       i < viewport.paneCount && i < dart::gui::kMaxViewportPanes;
+       ++i) {
+    const ViewportPaneFrame& pane = viewport.panes[i];
+    if (pane.width <= 0 || pane.height <= 0) {
+      continue;
+    }
+
+    const ImVec2 paneMin(
+        static_cast<float>(pane.x), static_cast<float>(pane.y));
+    const ImVec2 paneMax(
+        static_cast<float>(pane.x + pane.width),
+        static_cast<float>(pane.y + pane.height));
+    const ViewportPaneLabelState labelState
+        = viewportPaneLabelState(viewport, i);
+    drawList->AddRect(
+        paneMin,
+        paneMax,
+        labelState.active ? activeBorder : paneBorder,
+        0.0f,
+        0,
+        labelState.active ? 2.0f * scale : 1.0f * scale);
+
+    const float maxLabelWidth = static_cast<float>(pane.width) - inset * 2.0f;
+    const float maxLabelHeight = static_cast<float>(pane.height) - inset * 2.0f;
+    if (maxLabelWidth <= 0.0f || maxLabelHeight <= 0.0f) {
+      continue;
+    }
+
+    std::string text(labelState.text);
+    if (labelState.active) {
+      const std::string activeText = text + "  Active";
+      if (paneLabelFits(activeText, maxLabelWidth, maxLabelHeight, padding)) {
+        text = activeText;
+      }
+    }
+    if (!paneLabelFits(text, maxLabelWidth, maxLabelHeight, padding)) {
+      continue;
+    }
+
+    const ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
+    const ImVec2 rectMin(paneMin.x + inset, paneMin.y + inset);
+    const ImVec2 rectMax(
+        rectMin.x + textSize.x + padding.x * 2.0f,
+        rectMin.y + textSize.y + padding.y * 2.0f);
+    const ImVec2 textPos(rectMin.x + padding.x, rectMin.y + padding.y);
+
+    drawList->PushClipRect(paneMin, paneMax, true);
+    drawList->AddRectFilled(
+        rectMin,
+        rectMax,
+        labelState.active ? activeLabelBackground : labelBackground,
+        4.0f * scale);
+    drawList->AddRect(
+        rectMin,
+        rectMax,
+        labelState.active ? activeLabelBorder : labelBorder,
+        4.0f * scale);
+    drawList->AddText(textPos, textColor, text.c_str());
+    drawList->PopClipRect();
   }
 }
 
@@ -403,12 +508,18 @@ void updateFrameUi(
   }
   renderApplicationPanels(
       panels, panelContext, guiScale.effectiveScale, dartScene.dockingEnabled);
+  updateViewportPaneActivation(
+      dartScene.viewportPaneActivation,
+      window,
+      viewport,
+      imguiIo,
+      true,
+      cameraController,
+      dartScene.onViewportPaneActivated);
+  renderViewportPaneLabels(viewport, guiScale.effectiveScale);
   if (dartScene.debugLabels) {
     renderDebugLabels(
-        dartScene.debugLabels(),
-        cameraController.camera,
-        viewport,
-        guiScale.effectiveScale);
+        dartScene.debugLabels(), viewport, guiScale.effectiveScale);
   }
   if (showPerfHud) {
     drawPerfHud(perfHud, profile, backendName);
