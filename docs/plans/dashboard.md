@@ -207,18 +207,22 @@ its own line so status updates remain git-history friendly.
 - Dimension: Scalable compute
 - Next step: Live at `dartsim.github.io/dart/performance/` via
   `benchmark-action/github-action-benchmark` and embedded in the Read the Docs
-  page. Per-PR regression comments are now implemented as an opt-in extension:
-  `.github/workflows/benchmark_pr_comparison.yml` reuses the dashboard's
-  benchmark slice and gh-pages baseline (no second pipeline — it never writes to
-  gh-pages) to post a "moved by N%" comparison, gated to same-repo PRs carrying
+  page. Per-PR regression comments are added as an opt-in extension (pending one
+  real-PR validation run): `.github/workflows/benchmark_pr_comparison.yml` runs
+  the dashboard's benchmark slice on a PR and `scripts/benchmark_pr_compare.py`
+  diffs it against the dashboard's published gh-pages history, then posts a
+  marker-based "moved by N%" comment in the PR review thread via
+  `actions/github-script`. It is a read-only consumer of the dashboard data (it
+  never writes to gh-pages — no second pipeline), gated to same-repo PRs carrying
   the `benchmark` label so ordinary PRs pay no benchmark cost. This is the
   reconciliation decision from the retired `benchmark_pr_comparison` dev task:
-  extend the existing dashboard infra (chosen) rather than stand up the
-  prototype's parallel committed-JSON pipeline. Gradual rollout: validate the
-  comment placement and tune `alert-threshold` on a real labeled PR, then
-  consider widening the trigger (path-filtered auto-run) and the benchmark slice
-  once review-noise tradeoffs are visible. A secondary backend (Bencher/CodSpeed)
-  remains optional future work.
+  extend the existing dashboard infra (chosen) over the prototype's parallel
+  committed-JSON pipeline. The compare/render logic is unit-tested
+  (`test_benchmark_pr_compare.py`); the only step that needs a live PR to confirm
+  is the comment post itself. Gradual rollout: add the `benchmark` label to one
+  PR to confirm the comment posts, tune `--alert-threshold`, then consider
+  widening the trigger and the benchmark slice once review-noise tradeoffs are
+  visible. A secondary backend (Bencher/CodSpeed) remains optional future work.
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
   Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
   history.

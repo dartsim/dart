@@ -1,21 +1,20 @@
 name: Benchmark PR Comparison
 
 # Opt-in per-PR benchmark comparison comment (PLAN-080 follow-on). Reuses the
-# Performance Dashboard's benchmark slice and its github-action-benchmark
+# Performance Dashboard's benchmark slice and reads its github-action-benchmark
 # gh-pages history (published by performance_dashboard.yml) as the baseline, then
-# posts a "moved by N%" comparison against that baseline on the PR. This is a
-# read-only consumer of the dashboard data, not a second publishing pipeline:
-# it never writes to gh-pages (save-data-file/auto-push are false).
+# posts a "moved by N%" comparison in the PR review thread via scripts/
+# benchmark_pr_compare.py. This is a read-only consumer of the dashboard data,
+# not a second publishing pipeline: it never writes to gh-pages.
 #
 # Gradual rollout (PLAN-080): the job is gated to same-repo PRs carrying the
 # `benchmark` label, so ordinary PRs pay no benchmark cost. Fork PRs are skipped
 # because their GITHUB_TOKEN is read-only and cannot post a comment, and running
 # fork code on the benchmark path is out of scope for the initial rollout.
 #
-# NOTE: the exact comment placement (commit vs PR thread) and the noise/alert
-# threshold must be validated on a real labeled PR run; tune `alert-threshold`
-# once review-noise tradeoffs are visible, and expand beyond the dashboard slice
-# only after that.
+# Note: GitHub-hosted runners are noisy; tune the comparison alert threshold once
+# review-noise tradeoffs are visible on a real labeled PR, and expand beyond the
+# dashboard slice only after that.
 
 on:
   pull_request:
@@ -41,9 +40,29 @@ jobs:
     env:
       BUILD_TYPE: Release
       CMAKE_BUILD_PARALLEL_LEVEL: 8
+      # Must stay byte-identical to performance_dashboard.yml's `name:` so the
+      # gh-pages baseline series matches.
+      BENCHMARK_SERIES: DART Experimental World Performance
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
+        with:
+          # This job never pushes; do not leave the token in .git/config where
+          # PR-author build code could read it.
+          persist-credentials: false
+
+      - name: Fetch dashboard baseline from gh-pages
+        # Read-only: extract just the published data file. Tolerate its absence
+        # (first dashboard publish may not have happened yet); the compare script
+        # then emits an informational comment.
+        run: |
+          if git fetch --depth=1 origin gh-pages 2>/dev/null \
+            && git cat-file -e origin/gh-pages:performance/data.js 2>/dev/null; then
+            git show origin/gh-pages:performance/data.js > baseline-data.js
+            echo "Fetched dashboard baseline."
+          else
+            echo "No dashboard baseline on gh-pages yet."
+          fi
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -85,22 +104,44 @@ jobs:
             python scripts/merge_benchmark_results.py .benchmark_results \
             --output .benchmark_results/combined.json
 
-      - name: Compare against dashboard baseline and comment
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Render comparison comment
+        run: |
+          pixi run --locked -e collision-reference \
+            python scripts/benchmark_pr_compare.py \
+            --current .benchmark_results/combined.json \
+            --baseline baseline-data.js \
+            --series "${BENCHMARK_SERIES}" \
+            --alert-threshold 1.5 \
+            --output bm_pr_comment.md
+
+      - name: Post or update PR comment
+        uses: actions/github-script@v7
         with:
-          name: DART Experimental World Performance
-          tool: googlecpp
-          output-file-path: .benchmark_results/combined.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          gh-pages-branch: gh-pages
-          benchmark-data-dir-path: performance
-          # Read-only consumer: never write PR results to gh-pages history.
-          save-data-file: false
-          auto-push: false
-          # Always post the comparison so the PR shows the delta even when it is
-          # below the alert threshold. GitHub-hosted runners are noisy; start at
-          # a conservative threshold and tune once noise tradeoffs are visible.
-          comment-always: true
-          alert-threshold: "150%"
-          fail-on-alert: false
-          max-items-in-chart: 250
+          script: |
+            const fs = require("fs");
+            const body = fs.readFileSync("bm_pr_comment.md", "utf8");
+            const marker = "<!-- dart-benchmark-pr-comparison -->";
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number },
+            );
+            const existing = comments.find(
+              (c) => c.body && c.body.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
