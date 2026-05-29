@@ -1956,7 +1956,6 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
   EXPECT_TRUE(cameraReset);
 }
 
-
 TEST(FilamentSceneExtraction, CsvLoggerPreservesNonGuiLoggingContract)
 {
   const auto mainSource = readSourceFile(
@@ -2178,35 +2177,6 @@ TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
   EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 TEST(
     FilamentSceneExtraction,

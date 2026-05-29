@@ -207,14 +207,10 @@ void defShape(nb::module_& m)
           nb::arg("height"))
       .def("getRadius", &dart::dynamics::ConeShape::getRadius)
       .def(
-          "setRadius",
-          &dart::dynamics::ConeShape::setRadius,
-          nb::arg("radius"))
+          "setRadius", &dart::dynamics::ConeShape::setRadius, nb::arg("radius"))
       .def("getHeight", &dart::dynamics::ConeShape::getHeight)
       .def(
-          "setHeight",
-          &dart::dynamics::ConeShape::setHeight,
-          nb::arg("height"))
+          "setHeight", &dart::dynamics::ConeShape::setHeight, nb::arg("height"))
       .def(
           "computeInertia",
           [](const dart::dynamics::ConeShape& self, double mass) {
@@ -278,7 +274,8 @@ void defShape(nb::module_& m)
   nb::class_<dart::dynamics::LineSegmentShape, Shape>(m, "LineSegmentShape")
       .def(
           nb::new_([](float thickness) {
-            return std::make_shared<dart::dynamics::LineSegmentShape>(thickness);
+            return std::make_shared<dart::dynamics::LineSegmentShape>(
+                thickness);
           }),
           nb::arg("thickness") = 1.0f)
       .def(
@@ -297,9 +294,7 @@ void defShape(nb::module_& m)
           &dart::dynamics::LineSegmentShape::setVertex,
           nb::arg("index"),
           nb::arg("vertex"))
-      .def(
-          "getThickness",
-          &dart::dynamics::LineSegmentShape::getThickness)
+      .def("getThickness", &dart::dynamics::LineSegmentShape::getThickness)
       .def(
           "setThickness",
           &dart::dynamics::LineSegmentShape::setThickness,

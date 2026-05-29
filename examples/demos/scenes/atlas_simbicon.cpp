@@ -113,8 +113,7 @@ struct AtlasSimbiconState
 std::shared_ptr<AtlasSimbiconState> createState()
 {
   auto state = std::make_shared<AtlasSimbiconState>();
-  state->world
-      = dart::simulation::World::create("dartsim_atlas_simbicon");
+  state->world = dart::simulation::World::create("dartsim_atlas_simbicon");
   state->world->setGravity(-kDefaultGravity * Eigen::Vector3d::UnitZ());
   state->world->addSkeleton(createGround());
 
@@ -131,15 +130,14 @@ dart::gui::Panel makePanel(const std::shared_ptr<AtlasSimbiconState>& state)
 {
   dart::gui::Panel panel;
   panel.title = "Atlas SIMBICON";
-  panel.buildWithContext = [state](
-                               dart::gui::PanelBuilder& builder,
-                               dart::gui::PanelContext&) {
-    builder.text("Atlas humanoid driven by the SIMBICON controller.");
-    builder.text("Controller advances every frame via preStep.");
-    if (state->controller != nullptr) {
-      builder.text("Controller active: yes");
-    }
-  };
+  panel.buildWithContext
+      = [state](dart::gui::PanelBuilder& builder, dart::gui::PanelContext&) {
+          builder.text("Atlas humanoid driven by the SIMBICON controller.");
+          builder.text("Controller advances every frame via preStep.");
+          if (state->controller != nullptr) {
+            builder.text("Controller active: yes");
+          }
+        };
   return panel;
 }
 

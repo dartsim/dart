@@ -34,7 +34,7 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
    `CapsuleShape`/`CylinderShape`/`EllipsoidShape`/`ConeShape`/`PyramidShape`/
    `LineSegmentShape`/`PlaneShape` bindings under
    `python/dartpy/dynamics/shape.cpp` and `Skeleton::{getVelocities,
-   setVelocities,getForces}` under `python/dartpy/dynamics/skeleton.cpp`. The 9
+setVelocities,getForces}` under `python/dartpy/dynamics/skeleton.cpp`. The 9
    remaining C++ scenes are blocked or interactive-only:
    `drag_and_drop`, `imgui`, `tinkertoy`, `simulation_event_handler` need
    GUI-only callbacks; `heightmap` / `point_cloud` need

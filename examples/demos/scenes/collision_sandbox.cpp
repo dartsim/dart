@@ -23,14 +23,14 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <dart/collision/native/shapes/shape.hpp>
+
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
-
-#include <dart/collision/native/shapes/shape.hpp>
 
 #include <Eigen/Geometry>
 
@@ -104,13 +104,11 @@ void addPairCase(
   Eigen::Isometry3d originB = pose.transformB;
   originB.pretranslate(columnOrigin);
 
-  const Eigen::Vector4d color
-      = pair.supportsContact()
-            ? Eigen::Vector4d(0.20, 0.55, 0.90, 0.85)
-            : Eigen::Vector4d(0.90, 0.45, 0.20, 0.85);
+  const Eigen::Vector4d color = pair.supportsContact()
+                                    ? Eigen::Vector4d(0.20, 0.55, 0.90, 0.85)
+                                    : Eigen::Vector4d(0.90, 0.45, 0.20, 0.85);
 
-  addPairFrame(
-      world, pair.id + "_A", originA, pair.shapeA, paramsA, color);
+  addPairFrame(world, pair.id + "_A", originA, pair.shapeA, paramsA, color);
   addPairFrame(
       world,
       pair.id + "_B",
@@ -139,19 +137,18 @@ dart::gui::Panel makeSandboxPanel(std::size_t numPairs)
 {
   dart::gui::Panel panel;
   panel.title = "Collision Sandbox";
-  panel.buildWithContext = [numPairs](
-                               dart::gui::PanelBuilder& builder,
-                               dart::gui::PanelContext&) {
-    builder.text(
-        "Static showcase of " + std::to_string(numPairs)
-        + " canonical pair tests");
-    builder.text("blue: contact pair; orange: distance-only / unsupported");
-    builder.separator();
-    builder.text(
-        "Interactive broad/narrow-phase benchmarking lives in the "
-        "Python collision-native tooling — this scene is the visual "
-        "index of the canonical pair registry.");
-  };
+  panel.buildWithContext =
+      [numPairs](dart::gui::PanelBuilder& builder, dart::gui::PanelContext&) {
+        builder.text(
+            "Static showcase of " + std::to_string(numPairs)
+            + " canonical pair tests");
+        builder.text("blue: contact pair; orange: distance-only / unsupported");
+        builder.separator();
+        builder.text(
+            "Interactive broad/narrow-phase benchmarking lives in the "
+            "Python collision-native tooling — this scene is the visual "
+            "index of the canonical pair registry.");
+      };
   return panel;
 }
 

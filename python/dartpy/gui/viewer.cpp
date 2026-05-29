@@ -41,8 +41,14 @@ public:
     mPointers.push_back(nullptr);
   }
 
-  int argc() const { return static_cast<int>(mStorage.size()); }
-  char** argv() { return mPointers.data(); }
+  int argc() const
+  {
+    return static_cast<int>(mStorage.size());
+  }
+  char** argv()
+  {
+    return mPointers.data();
+  }
 
 private:
   std::vector<std::string> mStorage;
@@ -142,8 +148,7 @@ void defGuiViewer(nb::module_& m)
                 try {
                   (*pre_step_holder)();
                 } catch (const std::exception& e) {
-                  fprintf(
-                      stderr, "py-demos pre_step error: %s\n", e.what());
+                  fprintf(stderr, "py-demos pre_step error: %s\n", e.what());
                 }
               };
             }

@@ -159,7 +159,9 @@ void defSkeleton(nb::module_& m)
       .def("resetPositions", &Skeleton::resetPositions)
       .def(
           "getMassMatrix",
-          [](Skeleton& self) -> Eigen::MatrixXd { return self.getMassMatrix(); })
+          [](Skeleton& self) -> Eigen::MatrixXd {
+            return self.getMassMatrix();
+          })
       .def(
           "getCoriolisAndGravityForces",
           [](Skeleton& self) -> Eigen::VectorXd {

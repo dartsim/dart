@@ -64,10 +64,8 @@ void defBodyNode(nb::module_& m)
           })
       .def(
           "getLinearVelocity",
-          [](const BodyNode& self,
-             const Eigen::Vector3d& offset) -> Eigen::Vector3d {
-            return self.getLinearVelocity(offset);
-          },
+          [](const BodyNode& self, const Eigen::Vector3d& offset)
+              -> Eigen::Vector3d { return self.getLinearVelocity(offset); },
           nb::arg("offset"))
       .def(
           "getBodyNodePtr",
@@ -110,10 +108,7 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self) -> dart::dynamics::Inertia {
             return self.getInertia();
           })
-      .def(
-          "setInertia",
-          &BodyNode::setInertia,
-          nb::arg("inertia"))
+      .def("setInertia", &BodyNode::setInertia, nb::arg("inertia"))
       .def("getOrCreateIK", [](BodyNode& self) { return self.getOrCreateIK(); })
       .def(
           "getIK",

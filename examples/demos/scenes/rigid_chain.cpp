@@ -22,8 +22,9 @@
 
 #include <Eigen/Core>
 
-#include <cmath>
 #include <stdexcept>
+
+#include <cmath>
 
 namespace dart::examples::demos {
 

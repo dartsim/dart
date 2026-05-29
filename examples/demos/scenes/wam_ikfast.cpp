@@ -146,8 +146,8 @@ bool tryAttachIkFast(
   try {
     const std::vector<std::size_t> dofs{0, 1, 2, 3, 4, 5, 6};
     const std::vector<std::size_t> freeDofs;
-    auto solver = ik->setGradientMethod<
-        dart::dynamics::SharedLibraryIkFast>(libraryPath, dofs, freeDofs);
+    auto solver = ik->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(
+        libraryPath, dofs, freeDofs);
     (void)solver;
     return true;
   } catch (const std::exception& e) {
@@ -191,10 +191,10 @@ WamSetup createWamSetup()
   const auto ik = effector->getIK(true);
   ik->getErrorMethod().setLinearBounds(
       -Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
-       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()));
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()));
   ik->getErrorMethod().setAngularBounds(
       -Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
-       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()));
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()));
   setup.ikfastAttached = tryAttachIkFast(ik, defaultIkFastLibraryPath());
   return setup;
 }
@@ -203,15 +203,14 @@ dart::gui::Panel makePanel(const std::shared_ptr<WamSetup>& setup)
 {
   dart::gui::Panel panel;
   panel.title = "WAM IKFast";
-  panel.buildWithContext = [setup](
-                              dart::gui::PanelBuilder& builder,
-                              dart::gui::PanelContext&) {
-    builder.text("Barrett WAM-7 arm with a tracked target frame.");
-    builder.text(
-        setup->ikfastAttached
-            ? std::string("IK solver: analytical (IKFast, runtime-loaded)")
-            : std::string("IK solver: numerical (IKFast lib not found)"));
-  };
+  panel.buildWithContext =
+      [setup](dart::gui::PanelBuilder& builder, dart::gui::PanelContext&) {
+        builder.text("Barrett WAM-7 arm with a tracked target frame.");
+        builder.text(
+            setup->ikfastAttached
+                ? std::string("IK solver: analytical (IKFast, runtime-loaded)")
+                : std::string("IK solver: numerical (IKFast lib not found)"));
+      };
   return panel;
 }
 
