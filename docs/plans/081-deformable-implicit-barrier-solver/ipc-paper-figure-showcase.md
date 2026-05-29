@@ -47,6 +47,14 @@ Internal kernels with only unit tests and microbenchmarks (PRs #2719→#2732 to
 date) do not satisfy these goals; they enable them. Every kernel must
 eventually back at least one figure entry in the table.
 
+Infrastructure progress note: a one-way conservative moving rigid box surface
+CCD limiter has landed as Phase-2 scaffolding (the deformable line search now
+predicts a free obstacle's swept motion and stays out of its corridor). It is
+enabling infrastructure for the moving-obstacle figures (Fig. 8, 13, 15, 16,
+18), which remain `planned`: those figures need two-way contact forces /
+friction and timing-aware coupling that this one-way, timing-agnostic limiter
+does not provide.
+
 ## Showcase Catalog
 
 Status column: `planned` (not yet implemented), `in-progress` (PR open),
