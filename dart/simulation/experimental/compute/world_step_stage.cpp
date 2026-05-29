@@ -2476,6 +2476,68 @@ void accumulateFrictionDiagnostics(
 }
 
 //==============================================================================
+// Closest-approach diagnostic over the active self-contact barrier set at the
+// converged iterate. Each candidate's point-triangle / edge-edge squared
+// distance is recomputed at the terminal positions; candidates within the
+// activation band (squared distance < d_hat^2) form the active set, and the
+// smallest distance among them is the IPC intersection-free "minimum distance"
+// statistic. Returns the active-set size and writes the closest distance (0
+// when the set is empty). Read once after the outer loop, not on the
+// line-search hot path.
+std::size_t accumulateContactDistanceDiagnostics(
+    const std::vector<Eigen::Vector3d>& positions,
+    const SelfContactBarrierInputs& barrier,
+    double& outMinDistance)
+{
+  outMinDistance = 0.0;
+  if (barrier.candidates == nullptr || barrier.triangles == nullptr
+      || !(barrier.squaredActivationDistance > 0.0)) {
+    return 0;
+  }
+
+  const auto& candidates = *barrier.candidates;
+  const auto& triangles = *barrier.triangles;
+  double minSquared = std::numeric_limits<double>::infinity();
+  std::size_t activeContacts = 0;
+
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    const auto& triangle = triangles[candidate.triangle];
+    const double squaredDistance = dc::pointTriangleSquaredDistance(
+                                       positions[candidate.point],
+                                       positions[triangle.nodeA],
+                                       positions[triangle.nodeB],
+                                       positions[triangle.nodeC])
+                                       .squaredDistance;
+    if (squaredDistance >= barrier.squaredActivationDistance) {
+      continue;
+    }
+    ++activeContacts;
+    minSquared = std::min(minSquared, squaredDistance);
+  }
+
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
+    const double squaredDistance = dc::edgeEdgeSquaredDistance(
+                                       positions[edgeA.nodeA],
+                                       positions[edgeA.nodeB],
+                                       positions[edgeB.nodeA],
+                                       positions[edgeB.nodeB])
+                                       .squaredDistance;
+    if (squaredDistance >= barrier.squaredActivationDistance) {
+      continue;
+    }
+    ++activeContacts;
+    minSquared = std::min(minSquared, squaredDistance);
+  }
+
+  if (activeContacts > 0 && std::isfinite(minSquared)) {
+    outMinDistance = std::sqrt(std::max(0.0, minSquared));
+  }
+  return activeContacts;
+}
+
+//==============================================================================
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -3995,6 +4057,38 @@ void advanceDeformableBody(
         selfContactFrictionContacts,
         stats.frictionDissipation,
         stats.activeFrictionContacts);
+
+    // Closest-approach (minimum) distance over the active self-contact barrier
+    // set at the converged iterate -- the IPC intersection-free statistic. The
+    // barrier candidate buffer holds the terminal active set: rebuilt at
+    // scratch.next above when the solve hit the iteration cap, otherwise the
+    // last in-loop set at the converged iterate (the final accepted step was
+    // sub-tolerance, so the iterate barely moved), mirroring how the friction
+    // diagnostics reuse their lagged sets.
+    if (!contactScratch.surfaceTriangles.empty()) {
+      const double dHat = selfContactBarrierActivationDistance();
+      SelfContactBarrierInputs diagnosticBarrier;
+      diagnosticBarrier.candidates = &contactScratch.barrierCandidates;
+      diagnosticBarrier.triangles = &contactScratch.surfaceTriangles;
+      diagnosticBarrier.squaredActivationDistance = dHat * dHat;
+      diagnosticBarrier.stiffness = selfContactBarrierStiffness();
+      double bodyMinContactDistance = 0.0;
+      const std::size_t bodyActiveContacts
+          = accumulateContactDistanceDiagnostics(
+              scratch.next, diagnosticBarrier, bodyMinContactDistance);
+      if (bodyActiveContacts > 0) {
+        // Fold across bodies: sum the active counts, take the minimum closest
+        // approach. Gate the min on the running count (not on a zero-distance
+        // sentinel) so the first contacting body always seeds it.
+        if (stats.convergedActiveContactCount == 0) {
+          stats.minActiveContactDistance = bodyMinContactDistance;
+        } else {
+          stats.minActiveContactDistance = std::min(
+              stats.minActiveContactDistance, bodyMinContactDistance);
+        }
+        stats.convergedActiveContactCount += bodyActiveContacts;
+      }
+    }
   }
 
   for (std::size_t i = 0; i < nodeCount; ++i) {

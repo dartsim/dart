@@ -150,6 +150,20 @@ struct DeformableSolverStats
   // (frictionCoefficient == 0). Feed the paper's friction benchmark statistics.
   double frictionDissipation = 0.0;
   std::size_t activeFrictionContacts = 0;
+  // Contact closest-approach diagnostic at the converged iterate, folded across
+  // the step's deformable bodies. minActiveContactDistance is the smallest
+  // point-triangle / edge-edge distance among the active self-contact barrier
+  // set (candidates within the activation band d_hat) at solve termination --
+  // the IPC intersection-free "minimum distance" statistic (Fig. 23 / Table 1).
+  // It is meaningful only when convergedActiveContactCount > 0 (otherwise 0).
+  // convergedActiveContactCount is the size of that active set at termination:
+  // a single-iteration snapshot, unlike the cumulative
+  // selfContactBarrierActiveContacts (which sums the active set over every
+  // outer iteration). Both are zero for bodies without self-contact (point-mass
+  // bodies, or surfaces that stay outside d_hat). Read once after the outer
+  // loop, not on the line-search hot path.
+  double minActiveContactDistance = 0.0;
+  std::size_t convergedActiveContactCount = 0;
 
   void reset() noexcept
   {

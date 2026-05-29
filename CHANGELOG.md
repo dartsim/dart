@@ -1067,6 +1067,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     while the frictionless control reports zero. These feed the paper's friction
     benchmark statistics (Fig. 23 / Table 1) alongside the existing
     `finalGradientResidualNorm` convergence diagnostic.
+  - Added an experimental IPC contact closest-approach diagnostic to the
+    deformable solver stats. Each step now reports `minActiveContactDistance`
+    (the smallest point-triangle / edge-edge distance among the active
+    self-contact barrier set at the converged iterate -- the IPC
+    intersection-free "minimum distance" statistic, Fig. 23 / Table 1) and
+    `convergedActiveContactCount` (the size of that active set at solve
+    termination, a single-iteration snapshot distinct from the cumulative
+    `selfContactBarrierActiveContacts`). Both are zero for bodies without active
+    self-contact, the distance is meaningful only when the count is positive,
+    and both are read once per step outside the line-search hot path.
+    Behavior-preserving (a diagnostic only; the solve is unchanged). Adds
+    regressions that a self-contact step reports a positive closest approach
+    strictly inside the activation band while a far-apart configuration reports
+    an empty active set, plus self-contact stage benchmark counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

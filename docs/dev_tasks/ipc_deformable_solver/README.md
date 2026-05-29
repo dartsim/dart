@@ -155,6 +155,14 @@
         256 blocks, ~1.4x at 1024, ~4x at 4096, ~9x at 16384) sets the backend
         adapter's minimum GPU batch size (~1024 blocks); smaller batches stay on
         the CPU backend.
+  - [x] Contact closest-approach diagnostic: the stage also reports
+        `minActiveContactDistance` (the smallest point-triangle / edge-edge
+        distance among the active self-contact barrier set at the converged
+        iterate -- the IPC intersection-free "minimum distance" statistic) and
+        `convergedActiveContactCount` (the size of that active set at
+        termination, a single-iteration snapshot distinct from the cumulative
+        `selfContactBarrierActiveContacts`). Behavior-preserving (diagnostic
+        only); feeds the Fig. 23 / Table 1 contact statistics.
   - [ ] Remaining Phase 3 work: a resident GPU solve path (the current backend
         round-trips host<->device per batch; persistent device buffers are a
         follow-up), matrix-free CG for very large meshes, adaptive barrier
