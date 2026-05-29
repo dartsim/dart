@@ -26,7 +26,10 @@ set_property(CACHE DART_COMPILER_CACHE PROPERTY STRINGS "" sccache ccache)
 function(_dart_collect_compiler_cache_candidates out_var)
   set(_candidates)
 
-  if(DEFINED ENV{DART_COMPILER_CACHE} AND NOT "$ENV{DART_COMPILER_CACHE}" STREQUAL "")
+  if(
+    DEFINED ENV{DART_COMPILER_CACHE}
+    AND NOT "$ENV{DART_COMPILER_CACHE}" STREQUAL ""
+  )
     list(APPEND _candidates "$ENV{DART_COMPILER_CACHE}")
   endif()
 
@@ -78,12 +81,18 @@ function(dart_configure_compiler_cache)
       )
     endif()
     unset(DART_ACTIVE_COMPILER_CACHE CACHE)
-    message(STATUS "Compiler cache auto-detection disabled (DART_DISABLE_COMPILER_CACHE=ON)")
+    message(
+      STATUS
+      "Compiler cache auto-detection disabled (DART_DISABLE_COMPILER_CACHE=ON)"
+    )
     return()
   endif()
 
   if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
-    message(STATUS "Compiler cache already configured (C: ${CMAKE_C_COMPILER_LAUNCHER} | CXX: ${CMAKE_CXX_COMPILER_LAUNCHER})")
+    message(
+      STATUS
+      "Compiler cache already configured (C: ${CMAKE_C_COMPILER_LAUNCHER} | CXX: ${CMAKE_CXX_COMPILER_LAUNCHER})"
+    )
     return()
   endif()
 
@@ -123,10 +132,16 @@ function(dart_configure_compiler_cache)
         CACHE INTERNAL
         "Compiler cache executable selected for this build"
       )
-      message(STATUS "Compiler cache enabled: ${_candidate} (${_cache_executable})")
+      message(
+        STATUS
+        "Compiler cache enabled: ${_candidate} (${_cache_executable})"
+      )
       return()
     endif()
   endforeach()
 
-  message(STATUS "Compiler cache disabled: neither sccache nor ccache found on PATH")
+  message(
+    STATUS
+    "Compiler cache disabled: neither sccache nor ccache found on PATH"
+  )
 endfunction()

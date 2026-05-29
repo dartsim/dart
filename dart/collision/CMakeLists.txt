@@ -10,17 +10,8 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision headers" ${hdrs})
 list(REMOVE_ITEM header_names smart_pointer.hpp)
-set(
-  header_names
-  ${header_names}
-  dart/All.hpp
-  fcl/All.hpp
-)
-set(collision_source_headers
-  ${hdrs}
-  ${detail_hdrs}
-  ${dart_hdrs}
-)
+set(header_names ${header_names} dart/All.hpp fcl/All.hpp)
+set(collision_source_headers ${hdrs} ${detail_hdrs} ${dart_hdrs})
 dart_generate_component_headers(
   COMPONENT_NAME collision
   TARGET_DIR "dart/collision/"
@@ -31,7 +22,10 @@ dart_generate_component_headers(
 
 # Install headers and generated component headers
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
+  FILES
+    ${hdrs}
+    ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
   DESTINATION include/dart/collision
   COMPONENT headers
 )

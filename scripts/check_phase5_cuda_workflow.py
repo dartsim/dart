@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Check that the manual CUDA workflow produces Phase 5 packet evidence."""
+"""Check the CUDA CI workflow keeps the build/import gate off self-hosted runners.
+
+The project does not maintain a self-hosted GPU runner. Phase 5's GPU go/no-go
+evidence is produced manually on a CUDA host and recorded in
+``docs/design/scalable_compute_decisions.md``; CI only compiles the CUDA targets
+on a GitHub-hosted runner as the build/import gate. This checker guards that
+contract: the ``cuda-build`` build/import gate stays wired on a GitHub-hosted
+ubuntu runner, and no job may reintroduce a self-hosted GPU runner.
+"""
 
 from __future__ import annotations
 
@@ -12,23 +20,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci_cuda.yml"
 
-REQUIRED_RUNNER_LABELS = ("self-hosted", "dartsim", "cuda")
-REQUIRED_POLICY_GATES = (
-    "pixi run --locked -e cuda check-compute-backend-boundaries",
-    "pixi run --locked -e cuda check-no-gpu-runtime-dependencies",
-    "pixi run --locked -e cuda check-phase5-cuda-benchmark-contract",
-)
-REQUIRED_PACKET_FLAGS = (
-    "--includes-transfer-setup-compute-readback",
-    "--gpu-build-import-gate-passed",
-    "--compute-backend-boundaries-passed",
-    "--no-gpu-runtime-dependencies-passed",
-    "--phase5-benchmark-contract-passed",
-)
-REQUIRED_ARTIFACT_PATHS = (
-    ".benchmark_results/phase5_cuda_ci_full.json",
-    ".benchmark_results/phase5_cuda_packet.json",
-)
+BUILD_IMPORT_GATE = "pixi run --locked -e cuda build-cuda"
 
 
 @dataclass(frozen=True)
@@ -47,18 +39,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _contains_all(text: str, needles: tuple[str, ...]) -> list[str]:
-    return [needle for needle in needles if needle not in text]
-
-
-def _find_step_block(text: str, name: str) -> str:
-    pattern = re.compile(
-        rf"(?ms)^ {{6}}- name: {re.escape(name)}\n" r".*?(?=^ {6}- name: |\Z)"
-    )
-    match = pattern.search(text)
-    return match.group(0) if match else ""
-
-
 def _find_job_block(text: str, job_id: str) -> str:
     pattern = re.compile(
         rf"(?ms)^  {re.escape(job_id)}:\n" r".*?(?=^  [A-Za-z0-9_-]+:\n|\Z)"
@@ -75,76 +55,37 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
 
     violations: list[Violation] = []
 
-    if "workflow_dispatch:" not in workflow_text:
-        violations.append(Violation("CUDA workflow must be manually dispatched"))
-
-    runtime_job = _find_job_block(workflow_text, "cuda-runtime")
-    runtime_text = runtime_job or workflow_text
-    if (
-        runtime_job
-        and "if: github.event_name == 'workflow_dispatch'" not in runtime_job
-    ):
+    # Policy: no job may run on a self-hosted runner. The project does not
+    # maintain a self-hosted GPU runner; Phase 5 GPU go/no-go evidence is
+    # produced manually on a CUDA host instead.
+    if re.search(r"(?mi)^\s*runs-on:.*self-hosted", workflow_text):
         violations.append(
-            Violation("CUDA runtime job must only run on workflow_dispatch")
+            Violation(
+                "CUDA workflow must not use a self-hosted runner; GPU go/no-go "
+                "evidence is produced manually on a CUDA host"
+            )
         )
 
-    runner_match = re.search(
-        r"(?m)^ {4}runs-on:\s*\[(?P<labels>[^\]]+)\]", runtime_text
-    )
-    runner_labels = set()
-    if runner_match:
-        runner_labels = {
-            label.strip() for label in runner_match.group("labels").split(",")
-        }
-    if not runner_match or any(
-        label not in runner_labels for label in REQUIRED_RUNNER_LABELS
-    ):
-        labels = ", ".join(REQUIRED_RUNNER_LABELS)
-        violations.append(Violation(f"CUDA job must run on [{labels}]"))
+    # The build/import gate must stay wired on a GitHub-hosted ubuntu runner.
+    build_job = _find_job_block(workflow_text, "cuda-build")
+    if not build_job:
+        violations.append(Violation("CUDA workflow must define a cuda-build job"))
+        return violations
 
-    smoke_run = _find_step_block(runtime_text, "Run CUDA smoke tests")
-    if "pixi run --locked -e cuda test-cuda" not in smoke_run:
-        violations.append(Violation("CUDA workflow must run the test-cuda gate"))
-
-    policy_run = _find_step_block(runtime_text, "Run Phase 5 policy gates")
-    for gate in _contains_all(policy_run, REQUIRED_POLICY_GATES):
-        violations.append(Violation(f"CUDA workflow is missing policy gate: {gate}"))
-
-    full_run = _find_step_block(runtime_text, "Run Phase 5 CUDA go/no-go benchmark")
-    if "pixi run --locked -e cuda bm-phase5-cuda-full" not in full_run:
+    runner_match = re.search(r"(?m)^ {4}runs-on:\s*(?P<runner>\S+)", build_job)
+    runner = runner_match.group("runner") if runner_match else ""
+    if not runner.startswith("ubuntu-"):
         violations.append(
-            Violation("CUDA workflow must run bm-phase5-cuda-full for the full row")
+            Violation("cuda-build must run on a GitHub-hosted ubuntu runner")
         )
 
-    packet_run = _find_step_block(runtime_text, "Write Phase 5 CUDA packet")
-    packet_requirements = (
-        "pixi run --locked -e cuda bm-phase5-cuda-packet",
-        "--benchmark-json .benchmark_results/phase5_cuda_ci_full.json",
-        "--output .benchmark_results/phase5_cuda_packet.json",
-        "pixi run --locked -e cuda bm-phase5-gpu-packet-check",
-        "--input .benchmark_results/phase5_cuda_packet.json",
-        *REQUIRED_PACKET_FLAGS,
-    )
-    for requirement in _contains_all(packet_run, packet_requirements):
+    if BUILD_IMPORT_GATE not in build_job:
         violations.append(
-            Violation(f"CUDA workflow packet step is missing: {requirement}")
+            Violation(f"cuda-build must run the build/import gate: {BUILD_IMPORT_GATE}")
         )
 
-    upload_step = _find_step_block(runtime_text, "Upload Phase 5 CUDA packet")
-    if not upload_step:
-        violations.append(
-            Violation("CUDA workflow must upload Phase 5 packet artifacts")
-        )
-    elif "uses: actions/upload-artifact@" not in upload_step:
-        violations.append(
-            Violation("CUDA workflow packet upload must use upload-artifact")
-        )
-    if upload_step and "if: always()" not in upload_step:
-        violations.append(Violation("CUDA workflow packet upload must run always"))
-    for path in _contains_all(upload_step, REQUIRED_ARTIFACT_PATHS):
-        violations.append(
-            Violation(f"CUDA workflow artifact upload is missing: {path}")
-        )
+    if "environments: cuda" not in build_job:
+        violations.append(Violation("cuda-build must set up the cuda pixi environment"))
 
     return violations
 
