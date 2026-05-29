@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <vector>
 
 #include <cmath>
 
@@ -476,4 +477,140 @@ TEST(VariationalIntegration, MaintainsDistanceLoopClosure)
   }
   EXPECT_LT(maxViolation, 1e-6); // closure maintained
   EXPECT_GT(motion, 1e-3);       // the constrained system actually moved
+}
+
+// PLAN-082 headline acceptance gate. On a passive 10-link revolute chain (whose
+// inertia is strongly configuration-dependent), the variational integrator's
+// total mechanical energy stays in a bounded band with *no secular drift*: the
+// least-squares slope of energy-vs-time is ~0. Semi-implicit Euler on the very
+// same scene -- the default integration family -- conserves measurably worse.
+// The no-secular-drift slope is the falsifiable headline gate.
+TEST(VariationalIntegration, PassiveChainEnergyHasNoSecularDrift)
+{
+  constexpr int kLinks = 10;
+  const double dt = 1e-3;
+  const int steps = 100000;
+  const int sampleEvery = 1000;
+
+  // Build the identical passive chain into a fresh world (released bent, so the
+  // configuration -- and thus the mass matrix -- varies strongly as it swings).
+  const auto buildChain = [](sx::World& world) {
+    auto robot = world.addMultibody("chain");
+    auto parent = robot.addLink("base");
+    for (int i = 0; i < kLinks; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(i == 0 ? 0.0 : 0.3, 0.0, 0.0);
+      sx::JointSpec spec;
+      spec.name = "j" + std::to_string(i);
+      spec.type = sx::JointType::Revolute;
+      spec.axis = Eigen::Vector3d::UnitY();
+      spec.transformFromParent = offset;
+      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+      link.setMass(0.7);
+      link.setInertia(Eigen::Vector3d(0.02, 0.02, 0.02).asDiagonal());
+      parent = link;
+    }
+    return robot;
+  };
+
+  // Least-squares slope of y vs sample index (per-sample units).
+  const auto slope = [](const std::vector<double>& y) {
+    const double n = static_cast<double>(y.size());
+    double sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (std::size_t i = 0; i < y.size(); ++i) {
+      const double x = static_cast<double>(i);
+      sx += x;
+      sy += y[i];
+      sxx += x * x;
+      sxy += x * y[i];
+    }
+    return (n * sxy - sx * sy) / (n * sxx - sx * sx);
+  };
+
+  // Variational-integrator rollout (direct, so we control the solve).
+  std::vector<double> viDev;
+  double viBand = 0.0;
+  {
+    sx::World world;
+    auto robot = buildChain(world);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    for (auto joint : robot.getJoints()) {
+      joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
+    }
+    world.updateKinematics();
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+    const double e0
+        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+    ASSERT_GT(std::abs(e0), 1e-6);
+    sxc::MultibodyVariationalState state;
+    for (int k = 0; k < steps; ++k) {
+      sxc::integrateMultibodyVariational(
+          registry, structure, gravity, dt, state);
+      if (k % sampleEvery == 0) {
+        const double e = sxc::computeMultibodyMechanicalEnergy(
+            registry, structure, gravity);
+        ASSERT_FALSE(std::isnan(e));
+        const double dev = (e - e0) / std::abs(e0);
+        viDev.push_back(dev);
+        viBand = std::max(viBand, std::abs(dev));
+      }
+    }
+  }
+
+  // Semi-implicit Euler rollout (default family) on the same scene.
+  std::vector<double> seDev;
+  double seBand = 0.0;
+  {
+    sx::World world; // default method == "semi-implicit"
+    auto robot = buildChain(world);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    for (auto joint : robot.getJoints()) {
+      joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
+    }
+    world.updateKinematics();
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+    const double e0
+        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+    for (int k = 0; k < steps; ++k) {
+      world.step();
+      if (k % sampleEvery == 0) {
+        const double e = sxc::computeMultibodyMechanicalEnergy(
+            registry, structure, gravity);
+        ASSERT_FALSE(std::isnan(e));
+        const double dev = (e - e0) / std::abs(e0);
+        seDev.push_back(dev);
+        seBand = std::max(seBand, std::abs(dev));
+      }
+    }
+  }
+
+  const double viSlope = std::abs(slope(viDev));
+  const double seSlope = std::abs(slope(seDev));
+  // Net fitted energy trend over the whole run (per-sample slope x #samples).
+  const double viTrend = viSlope * static_cast<double>(viDev.size());
+
+  // Measured (deterministic) on this scene: viBand ~= 0.0078, seBand ~= 0.39,
+  // viSlope ~= 5.9e-6, seSlope ~= 4.0e-3 -- the VI conserves ~690x better.
+
+  // (1) Bounded band: VI energy stays within 1%.
+  EXPECT_LT(viBand, 1e-2) << "VI energy band " << viBand << " exceeds 1%";
+  // (2) Contrast: semi-implicit Euler on the same scene drifts far beyond 1%.
+  EXPECT_GT(seBand, 5e-2)
+      << "semi-implicit Euler did not drift beyond the band as expected; band "
+      << seBand;
+  // (3) No secular drift: the VI's net fitted energy trend is a small fraction
+  //     of its oscillation band (slope ~= 0 within the oscillation noise).
+  EXPECT_LT(viTrend, 0.25 * viBand) << "VI net energy trend " << viTrend
+                                    << " is not small vs band " << viBand;
+  // (4) The VI's drift slope is at least 50x smaller than semi-implicit
+  // Euler's.
+  EXPECT_LT(viSlope * 50.0, seSlope)
+      << "VI slope " << viSlope << " not >=50x better than semi-implicit slope "
+      << seSlope;
 }
