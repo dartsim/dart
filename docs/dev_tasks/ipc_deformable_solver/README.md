@@ -132,10 +132,33 @@
         (worst-case projected-Newton gradient norm at solve termination across
         the step's bodies), surfaced on the grid/drape benchmarks toward the
         paper's benchmark-statistics tables (Fig. 23 / Table 1).
-  - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
-        primitive into the solve via an optional executor + a GPU-vs-CPU perf
-        gate), matrix-free CG for very large meshes, adaptive barrier stiffness,
-        barrier forces for rigid/codimensional obstacles, and
+  - [x] Converged-ness step-norm diagnostic: the stage also reports
+        `finalStepInfinityNorm` (largest last accepted per-node step across the
+        step's bodies). It shrinks toward zero at a feasible equilibrium even
+        when the near-singular barrier Hessian keeps the gradient residual
+        large, so it is the honest convergence companion for stiff
+        barrier-dominated problems. Behavior-preserving (diagnostic only).
+  - [x] Live GPU PSD-backend injection: the projected-Newton assembly now packs
+        its per-element spring (6x6) and barrier (12x12) Hessian blocks into one
+        batch and projects them through a pluggable backend
+        (`compute::projectSymmetricBlocksToPsd`) before scattering. The default
+        CPU backend is bit-identical to the previous inline per-element
+        projection; the CUDA sidecar can install a GPU backend
+        (`installCudaDeformablePsdBackend`) that offloads large batches and
+        defers small batches / no-device to the CPU backend, so the offload
+        never changes results. `world_step_stage` stays GPU-free (the
+        no-GPU-runtime-dependency check passes); the GPU path is validated
+        against the CPU backend through the seam in the CUDA test suite.
+  - [x] GPU-vs-CPU perf gate: a CUDA test projects 12x12 barrier batches across
+        a size sweep, asserting GPU/CPU parity at every scale and logging each
+        path's wall time. The measured crossover on an RTX 5000 Ada (~0.4x at
+        256 blocks, ~1.4x at 1024, ~4x at 4096, ~9x at 16384) sets the backend
+        adapter's minimum GPU batch size (~1024 blocks); smaller batches stay on
+        the CPU backend.
+  - [ ] Remaining Phase 3 work: a resident GPU solve path (the current backend
+        round-trips host<->device per batch; persistent device buffers are a
+        follow-up), matrix-free CG for very large meshes, adaptive barrier
+        stiffness, barrier forces for rigid/codimensional obstacles, and
         complementarity/solver-stat diagnostics. Known approximation: the
         contact active set is rebuilt once per outer iteration and held fixed
         across the inner Newton/line-search step (standard IPC), rather than
@@ -151,14 +174,35 @@
   - [x] Self-contact friction (point-triangle): reuses `frictionCoefficient`;
         lagged normal force = barrier force on the point node, tangent
         projection from the point-triangle tangent stencil, same f0/f1 mollifier
-        opposing the stencil's tangential relative displacement. Energy+gradient
-        only (self-contact friction Hessian deferred). Regression: a surface
-        sliding on another in self-contact decelerates vs the frictionless
-        control while staying separated.
-  - [ ] Remaining Phase 4 work: edge-edge self-contact friction and the
-        self-contact friction Hessian, codimensional-obstacle friction, friction
-        over non-flat (sphere/tilted) ground normals, and friction-specific
-        convergence/dissipation diagnostics.
+        opposing the stencil's tangential relative displacement. Regression: a
+        surface sliding on another in self-contact decelerates vs the
+        frictionless control while staying separated.
+  - [x] Self-contact friction Hessian: a PSD 12x12 block per point-triangle
+        contact (`projection^T * H_2x2 * projection`) in the projected-Newton
+        assembly, completing self-contact friction as a proper Newton term
+        (behavior-preserving; the line search still resolves the same energy).
+  - [x] Edge-edge self-contact friction (force + Hessian): the friction
+        energy/gradient/Hessian are generic over a four-node stencil, so only
+        the lagged-contact assembly is extended to edge-edge barrier candidates
+        (net edge force + edge-edge tangent stencil). Crossing-edge slide
+        regression. Self-contact friction now covers point-triangle and
+        edge-edge.
+  - [x] Non-flat ground-normal friction: static-ground friction now lags the
+        true geometric surface normal (radial for a sphere, supporting-face
+        normal for a rotated/tilted box) and resolves its tangent plane and
+        positive-semidefinite 3x3 tangential Hessian against it; flat/box-top
+        ground (normal +z) reduces exactly to the previous xy tangent plane.
+        Tilted-slope deflection regression; the barrier force itself stays a
+        vertical height field.
+  - [x] Friction diagnostics: each step reports `frictionDissipation` (the IPC
+        Coulomb work mu _ normalForce _ f1(y) \* y summed over active friction
+        contacts at the converged iterate) and `activeFrictionContacts` (the
+        active static-ground + self-contact friction set size), both zero when
+        friction is disabled and computed outside the line-search hot path.
+        Sliding-dissipation regression; feeds the Fig-23/Table-1 statistics.
+  - [ ] Remaining Phase 4 work: codimensional-obstacle friction, blocked on the
+        codimensional-obstacle barrier (a remaining Phase 3 item) -- there is no
+        barrier to lag friction against yet.
 - [~] Phase 5: complete the upstream scene corpus as DART-native tests,
   examples, benchmarks, profiling artifacts, and headless Filament evidence.
   - [x] Scene-replay validation harness: the loader -> solver -> diagnostics
@@ -175,6 +219,40 @@
         contact-heavy scenes (the loader currently ignores contact/friction
         directives; barrier/CCD/friction land via Phases 3-4). Until then only
         contact-free DBC/NBC tutorial-family scenes are replayable.
+- [x] Phase 8: Python facade for the deformable-body API (core, topology,
+      boundary conditions, scene loader, and diagnostics; binary restart
+      deferred pending a Python bytes interface).
+  - [x] Core bindings: `dartpy` exposes `World.add_deformable_body` /
+        `get_deformable_body` / `has_deformable_body` /
+        `get_deformable_body_count`, plus `DeformableBodyOptions`,
+        `DeformableMaterialProperties` (incl. `friction_coefficient`),
+        `DeformableEdge`, and `DeformableBody` (counts, per-node
+        position/velocity get/set, `is_fixed_node`, `edge`,
+        `material_properties`). Stubs regenerated; Python regression covers
+        create/configure/step/read.
+  - [x] Topology bindings: `dartpy` exposes `DeformableSurfaceTriangle` and
+        `DeformableTetrahedron`, the `DeformableBodyOptions` `surface_triangles`
+        / `tetrahedra` fields, and `DeformableBody` read accessors
+        (`surface_triangle_count` / `surface_triangle`, `tetrahedron_count` /
+        `tetrahedron` / `tetrahedron_rest_volume`, `node_mass`). Stubs and the
+        API boundary inventory regenerated; single-tetrahedron Python
+        regression.
+  - [x] Boundary-condition bindings: `dartpy` exposes
+        `DeformableDirichletBoundaryCondition` and
+        `DeformableNeumannBoundaryCondition`, plus the `DeformableBodyOptions`
+        `dirichlet_boundary_conditions` / `neumann_boundary_conditions` fields.
+        Stubs and the API boundary inventory regenerated; a Python regression
+        scripts a Dirichlet node's motion and a Neumann node's acceleration.
+  - [x] Scene-loader and diagnostics bindings: `dartpy` exposes
+        `load_deformable_scene` / `collect_deformable_scene_diagnostics` and the
+        `DeformableSceneLoadOptions` / `DeformableSceneInfo` /
+        `DeformableSceneBodyInfo` / `DeformableSceneDiagnostics` structs, so a
+        contact-free scene file loads into a `World` from Python and its replay
+        diagnostics read back. Stubs and inventory regenerated;
+        single-tetrahedron scene Python regression.
+  - [ ] Remaining Phase 8 work: none for the contact-free facade; binary restart
+        save/load (`std::iostream`-based) is deferred until a Python-friendly
+        bytes interface is designed.
 
 ## Goal
 

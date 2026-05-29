@@ -46,6 +46,7 @@ add_library(
   compute/compute_graph_visualization.cpp
   compute/compute_node.cpp
   compute/compute_stage_metadata.cpp
+  compute/deformable_psd_backend.cpp
   compute/execution_profile.cpp
   compute/multibody_dynamics.cpp
   compute/parallel_executor.cpp

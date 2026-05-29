@@ -2470,6 +2470,93 @@ TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
 }
 
 //==============================================================================
+// The finalStepInfinityNorm diagnostic reports the last accepted per-node step,
+// a converged-ness measure that complements the gradient residual. For stiff
+// clamped-log barrier contact the barrier Hessian is near-singular, so the raw
+// gradient norm can stay large even at equilibrium; the step norm instead
+// shrinks toward zero as the solve settles. A grid pressed onto the ground
+// barrier accepts a measurable step while actively settling, then drives the
+// step norm down to a negligible value at the feasible equilibrium.
+TEST(DeformableBody, StiffGroundBarrierSettlesByStepNorm)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  constexpr std::size_t kColumns = 20;
+  constexpr std::size_t kRows = 16;
+  constexpr std::size_t kNodeCount = kColumns * kRows;
+  constexpr double spacing = 0.1;
+  constexpr double restZ = 0.01;
+  const auto index = [&](std::size_t c, std::size_t r) {
+    return r * kColumns + c;
+  };
+
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(kNodeCount);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      options.positions.emplace_back(
+          static_cast<double>(c) * spacing,
+          static_cast<double>(r) * spacing,
+          restZ);
+    }
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  for (std::size_t r = 0; r < kRows; ++r) {
+    for (std::size_t c = 0; c < kColumns; ++c) {
+      if (c + 1 < kColumns) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c + 1, r), spacing});
+      }
+      if (r + 1 < kRows) {
+        options.edges.push_back(
+            sx::DeformableEdge{index(c, r), index(c, r + 1), spacing});
+      }
+    }
+  }
+  options.edgeStiffness = 100.0;
+
+  auto body = world.addDeformableBody("stiff_grid", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+
+  // First step: the grid is actively settling against the stiff barrier, so it
+  // accepts a measurable Newton step.
+  world.step(executor, pipeline);
+  const double earlyStepInfinityNorm
+      = stage.getLastStats().finalStepInfinityNorm;
+
+  for (int step = 0; step < 7; ++step) {
+    world.step(executor, pipeline);
+  }
+
+  const auto& stats = stage.getLastStats();
+  // Feasible: no node penetrates the ground surface.
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    EXPECT_GE(body.getPosition(i).z(), -1e-3);
+  }
+  // The converged-ness diagnostic is measured (positive while settling) and
+  // shrinks toward zero as the configuration reaches equilibrium, even though
+  // the barrier Hessian is stiff. This is the honest convergence signal: the
+  // last accepted per-node step becomes negligible.
+  EXPECT_GT(earlyStepInfinityNorm, 0.0);
+  EXPECT_LT(stats.finalStepInfinityNorm, earlyStepInfinityNorm);
+  EXPECT_LT(stats.finalStepInfinityNorm, 1e-4);
+}
+
+//==============================================================================
 // Library-level reproduction of the experimental_deformable_gui "drape" demo:
 // a >256-node mat drapes over a raised box ground barrier (a finite-footprint
 // step in the support height field) onto the surrounding flat ground. The mat
@@ -2731,6 +2818,136 @@ TEST(DeformableBody, GroundFrictionInactiveWithoutGroundContact)
 }
 
 namespace {
+struct TiltedGroundSlideResult
+{
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();
+  Eigen::Vector3d velocity = Eigen::Vector3d::Zero();
+};
+
+// Drive a single node in the ground-barrier band just above a 45-degree tilted
+// box surface (top-face normal (1, 0, 1)/sqrt(2)) with the given initial
+// velocity and Coulomb friction coefficient, returning its final position and
+// velocity after `steps` steps under zero gravity.
+TiltedGroundSlideResult runTiltedGroundFrictionSlide(
+    double frictionCoefficient,
+    const Eigen::Vector3d& initialVelocity,
+    int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.orientation = Eigen::AngleAxisd(
+      0.25 * 3.14159265358979323846, Eigen::Vector3d::UnitY());
+  auto ground = world.addRigidBody("tilted_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 4.0, 0.2)));
+  ground.setDeformableGroundBarrier(true);
+
+  // The tilted top face directly above (0, 0) sits at z = sqrt(2) * 0.2 ~=
+  // 0.283; start ~0.007 into the d_hat = 2e-2 activation band.
+  auto options = makeSingleNodeBodyOptions(
+      Eigen::Vector3d(0.0, 0.0, 0.29), initialVelocity);
+  options.material.frictionCoefficient = frictionCoefficient;
+  auto body = world.addDeformableBody("tilted_slider", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < steps; ++i) {
+    world.step(executor, pipeline);
+  }
+  return {body.getPosition(0), body.getVelocity(0)};
+}
+} // namespace
+
+//==============================================================================
+// Friction resolves its tangent plane against the true geometric ground normal,
+// not a hardcoded xy plane. The static-ground barrier is a vertical height
+// field, so a node dropped straight down (-z) onto a 45-degree tilted slope
+// feels no horizontal force from the barrier or (zero) gravity: the
+// frictionless control stays exactly on the x = 0 line. Tilt-aware friction,
+// however, couples the normal and tangential directions through the slope's
+// tilted tangent plane (normal (1, 0, 1)/sqrt(2)), so the arrested vertical
+// impact deflects the node down-slope in +x -- the contact behaves like a real
+// incline. An xy-only tangent model has no x/z coupling and would leave x at
+// zero, so the nonzero +x deflection is the signature of the tilt-aware tangent
+// basis.
+TEST(DeformableBody, GroundFrictionFollowsTiltedSlopeNormal)
+{
+  const Eigen::Vector3d drop(0.0, 0.0, -2.0);
+  const auto frictionless = runTiltedGroundFrictionSlide(0.0, drop, 20);
+  const auto frictional = runTiltedGroundFrictionSlide(1.0, drop, 20);
+
+  // Frictionless: only the vertical barrier and (zero) gravity act, so x is
+  // untouched to machine precision.
+  EXPECT_NEAR(frictionless.position.x(), 0.0, 1e-9);
+
+  // Tilt-aware friction couples normal/tangential and deflects the vertical
+  // drop down-slope (+x); an xy-only tangent model would leave x at zero here.
+  EXPECT_GT(frictional.position.x(), 1e-3);
+
+  // Both stay above the tilted surface (no deep penetration of the ~0.283
+  // contact height directly above the origin).
+  EXPECT_GT(frictional.position.z(), 0.25);
+  EXPECT_GT(frictionless.position.z(), 0.25);
+}
+
+//==============================================================================
+// The solver reports friction diagnostics for the step: a node sliding in
+// static-ground contact dissipates a positive friction energy over a nonzero
+// active friction-contact set, while the frictionless control reports exactly
+// zero for both (the diagnostic is gated on a positive friction coefficient).
+TEST(DeformableBody, FrictionDiagnosticsReportSlidingDissipation)
+{
+  const auto runWithStats = [](double frictionCoefficient) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+    ground.setDeformableGroundBarrier(true);
+
+    // Start in the d_hat = 2e-2 band with a tangential velocity so the node
+    // slides while staying in static-ground contact.
+    auto options = makeSingleNodeBodyOptions(
+        Eigen::Vector3d(0.0, 0.0, 0.01), Eigen::Vector3d(2.0, 0.0, 0.0));
+    options.material.frictionCoefficient = frictionCoefficient;
+    world.addDeformableBody("slider", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    for (int i = 0; i < 5; ++i) {
+      world.step(executor, pipeline);
+    }
+    return stage.getLastStats();
+  };
+
+  const auto frictionless = runWithStats(0.0);
+  const auto frictional = runWithStats(0.8);
+
+  // Frictionless: the diagnostic is disabled, so no dissipation and no active
+  // friction contacts are reported.
+  EXPECT_EQ(frictionless.frictionDissipation, 0.0);
+  EXPECT_EQ(frictionless.activeFrictionContacts, 0u);
+
+  // Frictional sliding node in contact: positive dissipation over at least one
+  // active friction contact.
+  EXPECT_GT(frictional.frictionDissipation, 0.0);
+  EXPECT_GE(frictional.activeFrictionContacts, 1u);
+}
+
+namespace {
 struct SelfContactSlideResult
 {
   double centroidX = 0.0;
@@ -2797,4 +3014,82 @@ TEST(DeformableBody, SelfContactFrictionDeceleratesSlidingSurface)
   // Friction opposes the tangential slide: shorter travel.
   EXPECT_LT(frictional.centroidX, frictionless.centroidX);
   EXPECT_GE(frictional.centroidX, 0.0); // not pushed backward
+}
+
+namespace {
+// Two near-orthogonal thin triangles whose long edges cross with a small
+// vertical gap form an edge-edge self-contact. The lower triangle is fixed; the
+// upper one is pressed down and slid tangentially with the given friction.
+SelfContactSlideResult runEdgeEdgeFrictionSlide(
+    double frictionCoefficient, int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  constexpr double gap = 0.012; // inside the self-contact band (d_hat = 2e-2)
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 0.0; // isolate the contact response (no springs)
+  options.damping = 0.0;
+  // Lower triangle: a thin sliver along x at z = 0.
+  options.positions = {
+      Eigen::Vector3d(-0.6, 0.0, 0.0),
+      Eigen::Vector3d(0.6, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 0.06, 0.0),
+      // Upper triangle: a thin sliver along y at z = gap (edge crosses above).
+      Eigen::Vector3d(0.0, -0.6, gap),
+      Eigen::Vector3d(0.0, 0.6, gap),
+      Eigen::Vector3d(0.06, 0.0, gap)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.5, 0.0, -0.1),
+         Eigen::Vector3d(0.5, 0.0, -0.1),
+         Eigen::Vector3d(0.5, 0.0, -0.1)};
+  options.masses = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{3, 4, 5}};
+  options.material.frictionCoefficient = frictionCoefficient;
+  auto body = world.addDeformableBody("crossing_edges", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  for (int i = 0; i < steps; ++i) {
+    world.step(executor, pipeline);
+  }
+
+  const double centroidX = (body.getPosition(3).x() + body.getPosition(4).x()
+                            + body.getPosition(5).x())
+                           / 3.0;
+  const double minUpperZ = std::min(
+      {body.getPosition(3).z(),
+       body.getPosition(4).z(),
+       body.getPosition(5).z()});
+  return {centroidX, minUpperZ};
+}
+} // namespace
+
+//==============================================================================
+// Edge-edge self-contact friction (mu > 0) opposes one crossing edge sliding
+// tangentially over another while the edge-edge barrier holds them apart.
+TEST(DeformableBody, EdgeEdgeSelfContactFrictionDeceleratesSlidingEdge)
+{
+  const auto frictionless = runEdgeEdgeFrictionSlide(0.0, 20);
+  const auto frictional = runEdgeEdgeFrictionSlide(0.8, 20);
+
+  // The edge-edge barrier keeps the upper edge above the lower (z = 0).
+  EXPECT_GT(frictionless.minUpperZ, 0.0);
+  EXPECT_GT(frictional.minUpperZ, 0.0);
+
+  // Frictionless: the upper edge slides tangentially essentially freely.
+  EXPECT_GT(frictionless.centroidX, 0.05);
+
+  // Friction opposes the tangential slide: shorter travel.
+  EXPECT_LT(frictional.centroidX, frictionless.centroidX);
+  EXPECT_GE(frictional.centroidX, 0.0);
 }

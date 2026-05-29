@@ -49,6 +49,8 @@ its own line so status updates remain git-history friendly.
 - Next step: Run a Colab runtime spike from a DART 7 dartpy wheel artifact and
   the Filament GUI branch to prove import, headless simulation, and one
   Filament-backed inline image or video before publishing stable tutorial links.
+  The notebook gallery imports the headless scene modules from PLAN-103
+  (`python/examples/demos`) rather than duplicating scene code.
 - Gate: Cloud tutorial support is not complete until the notebook rejects DART
   6 artifacts, installs only DART 7 dartpy artifacts in the cloud runtime,
   runs a headless simulation, renders a nonblank Filament-backed image or
@@ -330,6 +332,47 @@ its own line so status updates remain git-history friendly.
   `dartsim` headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a
   non-blank editor frame while legacy `--scene` smokes keep contrast.
 
+### PLAN-102: Demos App
+
+- Owner doc: [`../design/demos_app.md`](../design/demos_app.md); user
+  instructions in [`../../examples/README.md`](../../examples/README.md).
+- Status: Complete
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Implemented — `dart-demos` hosts 37 GUI examples as categorized,
+  runtime-switchable scenes (cycle smoke `EXAMPLE_dart_demos_cycle_headless_smoke`);
+  `hello_world` stays the standalone template; tooling/docs/CHANGELOG updated.
+  The `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
+  internal test fixtures (see the design doc's "examples vs renderer fixtures"
+  decision), so PLAN-101's `--scene` smoke gate is unaffected. C++ `dart-demos`
+  is now **frozen**: future example growth is Python-first under PLAN-103, which
+  also owns the retire-later checklist for this C++ app.
+- Gate: `dart-demos` launches and switches across scenes (including asset-backed
+  robots) in one window without window recreation; the headless cycle smoke
+  renders every scene; only `hello_world` plus a few special-build/test-coupled
+  programs stay standalone; `pixi run lint` and `check-docs-policy` green.
+
+### PLAN-103: Examples Strategy (Python-First)
+
+- Owner doc: [`103-examples-strategy.md`](103-examples-strategy.md); C++ app
+  architecture in [`../design/demos_app.md`](../design/demos_app.md).
+- Status: Active
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Phases 1–4 landed — `dart-demos` Python (11 scenes incl. 5
+  minimal-viable modern scenarios), cross-language golden parity (Python +
+  C++ both assert against the shared fixture within 1e-9),
+  `python/tutorials/01_browse_demos.ipynb`. Phase 5 (retire C++ `dart-demos`)
+  is explicit "not now": conditions 4–5 of the retire-later checklist are met,
+  conditions 1–3 wait on Python-breadth growth + PLAN-012 (Colab smoke) +
+  PLAN-101 (editor loading example scenes). Track residual follow-ups in
+  `docs/dev_tasks/examples_strategy/`.
+- Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
+  Python `test_golden_parity` + C++ `UNIT_gui_DemosGoldenParity` both pass
+  against the shared fixture; the notebook imports (not copies) the scene
+  modules; C++ `dart-demos` unchanged; `pixi run lint` and `check-docs-policy`
+  green.
+
 ### PLAN-110: Differentiable Simulation
 
 - Owner doc:
@@ -340,18 +383,19 @@ its own line so status updates remain git-history friendly.
 - Horizon: Next
 - Dimension: Algorithm extensibility
 - Scope note: WS1–WS5 first slices plus the PLAN-080-WS4 boxed-LCP contact
-  prerequisite are implemented and verified (13 slices, experimental suite ON
-  30/30, FD-of-step validated ~1e-11, default build untouched). Changes are local
-  on `main`, uncommitted. Remaining is hardening/examples/promotion, not new
+  prerequisite are implemented and verified (FD-of-step validated; default build
+  untouched and bitwise-identical when off). The work is committed on
+  `feature/differentiable-simulation` and open as PR #2761 (milestone DART 7.0,
+  CHANGELOG included). Remaining is hardening/examples/promotion, not new
   workstreams.
-- Next step: Land the work (commit/PR per repo rules — experimental surface, so
-  single-branch to `main`, milestone DART 7.0, CHANGELOG; awaiting maintainer
-  approval). Then: run the torch-autograd test (`pip install torch`); add the
-  trajectory-optimization and system-identification example programs required by
-  the DART 8 promotion contract; harden the static-friction Dantzig
-  degenerate-pivot warning (shared `dart/math/lcp`, its own PR); and extend the
-  deferred parameters/contacts (CENTER_OF_MASS, articulated multibody-link
-  contact). Track in `docs/dev_tasks/differentiable_simulation/`.
+- Next step: Drive PR #2761 to merge (experimental surface, single-branch to
+  `main`). Then: run the torch-autograd test (`pip install torch`); add the
+  standalone worked trajectory-optimization / system-identification example
+  programs (the GUI demo and the convergence tests already ship); harden the
+  static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
+  own PR); and extend the deferred parameters/contacts (CENTER_OF_MASS,
+  articulated multibody-link contact). Track in
+  `docs/dev_tasks/differentiable_simulation/`.
 - Gate: differentiability is off by default with bitwise-identical results and
   zero snapshot allocation when off (`test_diff_zero_cost_parity` + on/off
   overhead benchmark against a stated budget); analytic Jacobians agree with

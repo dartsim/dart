@@ -175,6 +175,18 @@ backend-hidden while letting non-legacy-World sources contribute geometry. The
 editor hosts an empty legacy world purely as a render canvas (never stepped);
 viewport pick-to-tree selection sync is a known follow-up.
 
+## Demos App (Example Scenes)
+
+The GUI examples are consolidated into `dart-demos` (`examples/demos/`): one
+window that hosts each example as a scene picked from a categorized sidebar and
+switched at runtime via `dart::gui::runDemos`. A scene is a factory returning a
+`dart::gui::ApplicationOptions`; add one by writing `examples/demos/scenes/<name>.cpp`,
+declaring it in `scenes.hpp`, and registering it in `registry.cpp`. `hello_world`
+stays a standalone minimal template. The `dart/gui/detail` `ExampleScene` set is
+kept as the renderer's internal test fixtures (renderable-extraction +
+`EXAMPLE_dartsim_<scene>` smokes), distinct from the examples. Design rationale:
+`docs/design/demos_app.md`.
+
 ## Migration Notes
 
 The removed OSG and Raylib paths are not compatibility targets for new work.

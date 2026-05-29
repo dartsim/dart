@@ -2,83 +2,78 @@
 
 ## Overview
 
-- Maintained examples live flat under `examples/` for simpler discovery and
-  tooling.
-- Filament is the maintained visualization implementation behind `dart::gui`.
-  Legacy OpenSceneGraph example sources were removed; common historical GUI
-  example names are restored as thin `dart::gui` launchers where a replacement
-  scene exists.
-- The standalone GUI simulator lives in `dartsim/`, built as the `dartsim`
-  executable. It is intentionally not listed as an educational example.
-- Legacy OpenSceneGraph C++ tutorials were removed from `tutorials/`.
+DART's C++ examples are organized around one consolidated application plus a few
+standalone programs:
 
-## Categories (Ordered)
+- **`dart-demos`** (`examples/demos/`) — a single GUI application that hosts most
+  examples as scenes. Pick a scene from the categorized sidebar and switch
+  between them at runtime, without relaunching. This is the place to browse
+  DART's capabilities.
+- **`hello_world`** (`examples/hello_world/`) — kept standalone as the minimal,
+  copy-pasteable template for setting up an executable, CMake-based C++ project
+  that links DART. Every other interactive GUI example is now a scene in
+  `dart-demos`. `gui_scene_diagnostics` is a headless GUI-descriptor inspector
+  rather than a viewer scene.
+- **Headless / CLI examples**: `csv_logger`, `headless_simulation`,
+  `speed_test`, and `unified_loading` are console programs and stay standalone.
 
-### 00 Getting Started
+Filament (with GLFW3 and Dear ImGui) is the maintained visualization
+implementation behind `dart::gui`. The standalone `dartsim` editor (top-level
+`dartsim/`) is a separate authoring application and is not an educational
+example.
 
-- `unified_loading`
+## Run the Demos App
 
-### 01 Visualization and Interaction
-
-- `hello_world`
-- `rigid_cubes`
-- `drag_and_drop`
-- `imgui`
-- `gui_scene_diagnostics`
-- `experimental_deformable_gui`
-
-### 02 Performance and Scaling
-
-- `headless_simulation`
-- `speed_test`
-
-### 03 Integration and Tools
-
-- `csv_logger`
-- `point_cloud`
-
-## Build Each Example
-
-Copy the example directory to your workspace and follow the instruction of any
-README.md in that example directory.
-
-If you are working inside the DART repo, prefer the `pixi run` entry points
-documented in `docs/onboarding/building.md` when available.
-
-For C++ examples, the generic in-tree runner is:
+From inside the DART repo:
 
 ```bash
-pixi run ex <example-target>
+pixi run demos                     # launch the Demos app (interactive)
+pixi run demos -- --scene boxes    # launch with a specific scene selected
 ```
 
-For example, `pixi run ex csv_logger` builds and runs `csv_logger`. The
-`dartsim` application and GUI examples with extra CMake requirements, such as
-`hello_world`, `boxes`, `rigid_chain`, `atlas_simbicon`, and `heightmap`,
-declare those requirements in `scripts/run_cpp_example.py`.
+In the app, use the **Demos** sidebar to switch scenes. Scenes are grouped into
+ordered categories: Getting Started, Visualization, Rigid Body, Collision,
+Constraints & Joints, Control & IK, Soft Bodies, and Robots.
 
-## Build Examples as One Project
+`dart-demos` accepts the same options as other GUI programs (`--headless`,
+`--frames`, `--screenshot <path>`, `--width`, `--height`, `--backend`,
+`--perf-hud`). `--cycle-scenes` advances through every scene for a few frames and
+exits; it backs the headless smoke test.
 
-### Build Instructions
+### Adding a scene
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+1. Add `examples/demos/scenes/<name>.cpp` defining
+   `dart::gui::ApplicationOptions dart::examples::demos::make<Name>Scene();`
+   (build the world, panels, gizmos, handlers, and camera, then return the
+   options). See an existing scene such as `scenes/boxes.cpp` for the pattern.
+2. Declare it in `examples/demos/scenes.hpp`.
+3. Register it (id, title, category, summary, factory) in
+   `examples/demos/registry.cpp`, placed within its category group.
+4. Add the source to `examples/demos/CMakeLists.txt`.
 
-Copy this directory to your workspace (e.g., in Linux):
+## Run Other Examples
 
-    $ cp -r examples /your/workspace/directory/dart_examples
-    $ cd /your/workspace/directory/dart_examples
+```bash
+pixi run ex hello_world
+pixi run ex csv_logger
+```
 
-From the workspace directory:
+The generic in-tree runner is `pixi run ex <target>`. GUI programs with extra
+CMake requirements declare them in `scripts/run_cpp_example.py`.
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+## Build hello_world Standalone
 
-### Execute Instructions
+`hello_world` demonstrates a minimal external project that links an installed
+DART. Copy the directory to your workspace and build it:
 
-Launch the each executable from the build directory above (e.g.,):
+```bash
+cp -r examples/hello_world /your/workspace/hello_world
+cd /your/workspace/hello_world
+mkdir build && cd build
+cmake ..
+make
+./hello_world
+```
 
-    $ ./csv_logger
-
-Follow the instructions detailed in the console.
+This project depends on an installed DART; make sure a compatible version of
+DART is installed before building.

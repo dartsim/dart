@@ -27,6 +27,14 @@
   - Restored historical GUI example executable names as `dart::gui` launchers
     backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
     alongside the existing `--screenshot <path>` final-frame capture.
+  - Consolidated the standalone GUI example executables into a single
+    `dart-demos` application (`examples/demos`) that hosts each example as a
+    scene selectable at runtime from a categorized sidebar (`--scene <id>`
+    selects the initial scene; `--cycle-scenes` drives the headless smoke).
+    Added a runtime scene-switch capability to `dart::gui` via
+    `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
+    template, and the headless `csv_logger`, `headless_simulation`,
+    `speed_test`, and `unified_loading` examples stay standalone.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`
@@ -955,6 +963,128 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     pattern the upstream ipc-sim/IPC corpus rows require; the full 154-scene port
     additionally needs the upstream scene assets vendored and the
     contact-capable solver (later phases), so the manifest rows stay `planned`.
+  - Exposed the experimental deformable-body API to `dartpy` (PLAN-081 Phase 8):
+    `World.add_deformable_body` / `get_deformable_body` / `has_deformable_body` /
+    `get_deformable_body_count`, and `DeformableBodyOptions`,
+    `DeformableMaterialProperties` (including `friction_coefficient`),
+    `DeformableEdge`, and `DeformableBody` (`node_count`, `edge_count`,
+    `node_position` / `set_node_position`, `node_velocity` / `set_node_velocity`,
+    `is_fixed_node`, `edge`, `material_properties`). Regenerated the type stubs
+    and added a Python regression that builds a spring strand, sets a friction
+    coefficient, steps the world, and reads the resulting state. Surface/tetra
+    topology and boundary-condition bindings remain a later increment.
+  - Added the lagged self-contact friction Hessian to the experimental IPC
+    projected-Newton solve, completing self-contact friction as a proper Newton
+    term (previously energy+gradient only). Per active point-triangle contact it
+    assembles a positive-semidefinite 12x12 block,
+    `projection^T * H_2x2 * projection` (the tangent-stencil projection times the
+    same PSD tangential matrix the ground-friction Hessian uses), scattered to
+    the four stencil nodes. Behavior-preserving (the line search still resolves
+    the same friction-inclusive energy); existing tests pass unchanged. The
+    edge-edge self-contact friction Hessian remains a later increment.
+  - Extended experimental IPC self-contact friction (force and Hessian) to
+    edge-edge contacts. The friction energy/gradient/Hessian are generic over a
+    four-node stencil + tangent projection, so only the lagged-contact assembly
+    is extended: active edge-edge barrier candidates contribute a friction
+    contact whose lagged normal force is the net barrier force on the first
+    edge and whose tangent projection comes from the edge-edge tangent stencil.
+    Adds a regression where one crossing edge slides over another in edge-edge
+    self-contact and decelerates versus the frictionless control while the
+    barrier holds them apart. Self-contact friction now covers both
+    point-triangle and edge-edge primitives.
+  - Generalized experimental IPC static-ground friction to follow the true
+    geometric ground normal instead of a hardcoded xy tangent plane. Each
+    contacting node now lags the supporting barrier surface's normal (radial for
+    a sphere, the supporting-face normal for a rotated/tilted box), and the
+    friction energy, gradient, and tangential Hessian resolve against the plane
+    orthogonal to it (the Hessian is now a positive-semidefinite 3x3 tangent
+    block). For flat or box-top ground the normal is +z and the behavior reduces
+    exactly to the previous xy tangent plane, so existing flat-ground friction
+    tests are unchanged; the underlying barrier force stays a vertical height
+    field. Adds a regression on a 45-degree tilted slope where tilt-aware
+    friction couples the normal and tangential directions so a node dropped
+    straight down deflects down-slope, whereas the frictionless control (and any
+    xy-only tangent model) leaves it on the drop line. Codimensional-obstacle
+    friction and friction-specific diagnostics remain later increments.
+  - Exposed the experimental deformable scene loader and replay diagnostics to
+    `dartpy`, completing the PLAN-081 Phase 8 Python facade. Added
+    `load_deformable_scene` and `collect_deformable_scene_diagnostics` module
+    functions, plus `DeformableSceneLoadOptions`, `DeformableSceneInfo`,
+    `DeformableSceneBodyInfo`, and `DeformableSceneDiagnostics` bindings, so a
+    contact-free tutorial-style scene file can be loaded into a `World` from
+    Python and its per-body counts, total mass, and bounds read back.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression that loads a single-tetrahedron scene and checks the reported
+    topology counts and total mass. (The loader still covers only the
+    contact-free subset; it is not IPC scene parity.)
+  - Extended the experimental deformable-body `dartpy` facade with scripted
+    boundary conditions (PLAN-081 Phase 8). Added
+    `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
+    `angular_velocity`, `center`, `start_time`, `end_time`) and
+    `DeformableNeumannBoundaryCondition` (`nodes`, `acceleration`, `start_time`,
+    `end_time`) bindings, plus the `DeformableBodyOptions`
+    `dirichlet_boundary_conditions` / `neumann_boundary_conditions` fields.
+    Regenerated the type stubs and API boundary inventory, and added a Python
+    regression where a Dirichlet-scripted node follows its prescribed linear
+    motion while a Neumann-accelerated node falls under the applied
+    acceleration. Scene-loader Python access and diagnostics exposure remain a
+    later increment.
+  - Extended the experimental deformable-body `dartpy` facade with surface and
+    tetrahedral topology (PLAN-081 Phase 8). Added `DeformableSurfaceTriangle`
+    and `DeformableTetrahedron` bindings, the `DeformableBodyOptions`
+    `surface_triangles` / `tetrahedra` fields, and `DeformableBody` read
+    accessors `surface_triangle_count` / `surface_triangle`,
+    `tetrahedron_count` / `tetrahedron` / `tetrahedron_rest_volume`, and
+    `node_mass`. Regenerated the type stubs and API boundary inventory, and
+    added a Python regression that builds a single tetrahedron with an explicit
+    boundary surface and reads back the topology, rest volume, and node mass.
+    Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
+    increment.
+  - Added a GPU-vs-CPU performance gate for the experimental IPC deformable PSD
+    projection and tuned the GPU offload threshold to the measured crossover. A
+    CUDA test now projects 12x12 self-contact barrier batches across a sweep of
+    sizes, asserting GPU/CPU parity at every scale and logging each path's wall
+    time. On an RTX 5000 Ada the GPU path runs ~0.4x at 256 blocks, ~1.4x at
+    1024, ~4x at 4096, and ~9x at 16384, so the backend adapter's minimum GPU
+    batch size is raised from 64 to ~1024 blocks (small batches stay on the CPU
+    backend where the host/device round trip would otherwise dominate).
+  - Wired an optional GPU backend into the experimental IPC deformable solver's
+    per-element PSD projection (PLAN-081 Phase 3). The projected-Newton assembly
+    now collects its per-element spring (6x6) and self-contact barrier (12x12)
+    Hessian blocks into one packed batch and projects them through a pluggable
+    backend (`compute::projectSymmetricBlocksToPsd`) before scattering, instead
+    of projecting each block inline. The default CPU backend is bit-identical to
+    the previous per-element projection, so behavior is unchanged. The optional
+    CUDA sidecar can install a GPU backend via `installCudaDeformablePsdBackend`
+    that offloads large batches to the device (and defers small batches or the
+    no-device case to the CPU backend), so the offload never changes results.
+    The default runtime never links CUDA -- the no-GPU-runtime-dependency check
+    still passes -- and the GPU path is validated against the CPU backend through
+    the core seam in the CUDA test suite.
+  - Added an experimental IPC converged-ness diagnostic to the deformable solver
+    stats. Each step now reports `finalStepInfinityNorm`, the largest last
+    accepted per-node position update across the step's bodies. Unlike the
+    gradient residual, which can stay large at a stiff clamped-log barrier
+    contact because the barrier Hessian is near-singular, the step norm shrinks
+    toward zero as the solve reaches a feasible equilibrium, so it is the honest
+    companion to `finalGradientResidualNorm` for judging convergence on
+    barrier-dominated problems. Behavior-preserving (a diagnostic only; the solve
+    is unchanged). Adds a regression where a stiff grid pressed onto the ground
+    barrier accepts a measurable step while settling and then drives the step
+    norm to a negligible value at equilibrium.
+  - Added experimental IPC friction diagnostics to the deformable solver stats
+    (PLAN-081 Phase 4). Each step now reports `frictionDissipation` (the IPC
+    Coulomb work mu \* normalForce \* f1(y) \* y summed over active friction
+    contacts at the converged iterate -- force times tangential slip, equal to
+    mu \* normalForce \* slip in the kinetic regime and ramped smoothly to zero
+    at rest by the f0/f1 mollifier) and `activeFrictionContacts` (the number of
+    static-ground and self-contact friction contacts carrying a nonzero lagged
+    normal force). Both are zero when friction is disabled and are computed once
+    per step outside the line-search hot path. Adds a regression that a sliding
+    ground-contact node reports positive dissipation over a nonzero active set
+    while the frictionless control reports zero. These feed the paper's friction
+    benchmark statistics (Fig. 23 / Table 1) alongside the existing
+    `finalGradientResidualNorm` convergence diagnostic.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

@@ -257,6 +257,36 @@ DART_GUI_API int runApplication(
 DART_GUI_API int runApplication(
     int argc, char* argv[], const ApplicationOptions& options);
 
+/// One entry in a runtime-switchable demo catalog.
+///
+/// `factory` lazily builds the scene's `ApplicationOptions` (world, panels,
+/// gizmos, handlers, camera) when the scene is first selected, so launching the
+/// host stays fast and an asset/remote failure affects only that scene. `id` is
+/// the stable identifier used by `--scene <id>` and by tests; `category` groups
+/// scenes in the sidebar (categories are ordered by first appearance, scenes by
+/// their order in the catalog vector).
+struct DemoSceneEntry
+{
+  std::string id;
+  std::string title;
+  std::string category;
+  std::string summary;
+  std::function<ApplicationOptions()> factory;
+};
+
+/// Run a single window that hosts multiple demo scenes selectable at runtime
+/// from a built-in "Demos" sidebar. Selecting a scene swaps the active
+/// world/panels/handlers in place without recreating the window.
+///
+/// Initial scene: `--scene <id>` or the `DART_DEMOS_SCENE` environment
+/// variable; otherwise the first catalog entry. `--cycle-scenes` advances
+/// through every scene for a few frames each and then exits (used by headless
+/// smoke tests). Remaining flags (`--headless`, `--frames`, `--screenshot`,
+/// `--width`,
+/// `--height`, `--backend`, ...) match `runApplication`.
+DART_GUI_API int runDemos(
+    int argc, char* argv[], std::vector<DemoSceneEntry> scenes);
+
 } // namespace dart::gui
 
 #endif // DART_GUI_APPLICATION_HPP_
