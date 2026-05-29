@@ -486,6 +486,11 @@
     `abidiff`. The task is diagnostic only and is not wired into CI; ABI
     stability between minor releases is still a deferred topic (see issue
     [#1026](https://github.com/dartsim/dart/issues/1026)).
+  - Added `pixi run lint-cmake` / `check-lint-cmake` CMake formatting with
+    `gersemi`, wired into the `lint` and `check-lint` chains so `CMakeLists.txt`
+    and `*.cmake` files are auto-formatted and CI-checked like every other
+    tracked file type. Configuration in `.gersemirc` matches DART's C++ style
+    (80-column, 2-space indent).
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.
@@ -765,6 +770,63 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     foundation for upstream-style tetra mesh scene records, scripted
     Dirichlet/Neumann boundary conditions, restart diagnostics, benchmarks, and
     headless GUI scene capture.
+  - Added internal experimental IPC primitive-distance kernels for
+    point-triangle and edge-edge squared distances, closest-feature
+    classification, derivative regression tests, edge-edge mollifier
+    derivatives, and a microbenchmark surface for future deformable contact
+    assembly.
+  - Replaced internal experimental IPC finite-difference distance Hessian
+    placeholders with feature-wise analytic point-triangle and edge-edge
+    Hessian paths, reducing local Hessian microbenchmark timings for future
+    deformable contact assembly.
+  - Added internal experimental IPC clamped-log barrier kernel scaffolding for
+    point-triangle and edge-edge primitive candidates, including raw analytic
+    gradients/Hessians, edge-edge mollifier product-rule derivatives, regression
+    tests, and microbenchmark coverage.
+  - Added internal experimental IPC tangent-stencil scaffolding for
+    point-triangle, edge-edge, point-edge, and point-point friction/contact
+    stencils, including upstream-style tangent bases, closest-point parameters,
+    tangent projection matrices, metric matrices, regression tests, and
+    microbenchmark coverage.
+  - Added internal experimental IPC contact candidate assembly for
+    point-triangle and edge-edge primitive pairs with deterministic surface-edge
+    extraction, incident/adjacent filtering, sweep-versus-brute-force
+    regression tests, and indexed/brute-force benchmark counters.
+  - Added internal experimental IPC motion-aware candidate culling over
+    start/end swept primitive AABBs, preserving fast point-triangle and
+    edge-edge crossings that static endpoint candidate filters miss, with
+    regression tests and benchmark counters for future CCD line-search wiring.
+  - Added reusable internal IPC contact-candidate builder overloads that clear
+    stale candidate state while preserving candidate vector capacity, with
+    regression tests and return-wrapper versus reusable-buffer benchmark
+    counters for future solver-owned contact buffers.
+  - Wired internal IPC motion-aware surface-contact candidates into the
+    deformable line search as a conservative per-body CCD limiter, with
+    primitive-CCD uncertainty status, no-edge surface-contact regressions, and
+    focused benchmark counters.
+  - Added reusable internal sweep-item scratch for IPC static and motion-aware
+    contact candidate builders and wired the deformable surface-contact line
+    search to reuse it per body.
+  - Optimized internal IPC cross-set sweep-pair traversal used by experimental
+    surface candidate and CCD checks so the sorted right-hand-side AABB prefix
+    already expired for the current left-hand-side AABB is skipped.
+  - Added internal inter-body deformable surface CCD line-search limiting with
+    stage-start surface snapshots, cross-body point-triangle and edge-edge
+    conservative CCD checks, focused regressions, and benchmark counters.
+  - Added internal static-ground-barrier CCD line-search limiting for
+    point-mass deformable nodes sweeping against explicitly opted-in static
+    rigid ground barriers, with continuous finite-footprint regressions and
+    benchmark counters.
+  - Added experimental static-box surface CCD obstacle opt-in
+    (`RigidBody::setDeformableSurfaceCcdObstacle`/`isDeformableSurfaceCcdObstacle`,
+    dartpy `is_deformable_surface_ccd_obstacle`) for the deformable
+    line-search limiter, with point-triangle and physical box-edge CCD
+    regressions and benchmark counters. This is a CCD limiter only, not rigid
+    contact response or IPC parity.
+  - Added internal experimental IPC conservative continuous-collision step
+    bounds for point-triangle and edge-edge primitive candidate pairs by
+    wrapping native primitive CCD, with exact-CCD regression tests, sampled
+    safety checks, and benchmark counters.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

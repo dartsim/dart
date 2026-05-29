@@ -18,7 +18,9 @@ set(target_name dartsim_ui)
 
 find_package(nfd CONFIG REQUIRED)
 
-add_library(${target_name} STATIC
+add_library(
+  ${target_name}
+  STATIC
   src/console_actions.cpp
   src/editor.cpp
   src/history_actions.cpp
@@ -33,25 +35,24 @@ add_library(${target_name} STATIC
   src/viewport_actions.cpp
 )
 
-target_include_directories(${target_name}
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+target_include_directories(
+  ${target_name}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 target_compile_features(${target_name} PUBLIC cxx_std_20)
 
-target_link_libraries(${target_name}
-  PUBLIC
-    dartsim_engine
-    dart-gui
-  PRIVATE
-    nfd::nfd
+target_link_libraries(
+  ${target_name}
+  PUBLIC dartsim_engine dart-gui
+  PRIVATE nfd::nfd
 )
 
 set_target_properties(${target_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(COMMAND dart_format_add)
-  file(GLOB_RECURSE _dartsim_ui_format_files
+  file(
+    GLOB_RECURSE _dartsim_ui_format_files
     "${CMAKE_CURRENT_SOURCE_DIR}/include/dartsim_ui/*.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
   )

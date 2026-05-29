@@ -45,6 +45,8 @@
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
+#include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -52,15 +54,20 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <cmath>
 
 namespace dart::simulation::experimental::compute {
+
+namespace dc = dart::simulation::experimental::detail::deformable_contact;
 
 namespace {
 
@@ -709,6 +716,476 @@ struct StaticGroundBarrier
 };
 
 //==============================================================================
+struct DeformableContactSolverScratch
+{
+  std::vector<DeformableSurfaceTriangle> surfaceTriangles;
+  std::vector<std::uint8_t> surfaceContactPointMask;
+  dc::ContactCandidateSet candidates;
+  dc::detail::ContactCandidateSweepScratch sweepScratch;
+  std::vector<dc::SurfaceEdge> interBodyCurrentEdges;
+  std::vector<dc::detail::SweepItem> interBodyCurrentPointItems;
+  std::vector<dc::detail::SweepItem> interBodyObstaclePointItems;
+  std::vector<dc::detail::SweepItem> interBodyCurrentTriangleItems;
+  std::vector<dc::detail::SweepItem> interBodyObstacleTriangleItems;
+  std::vector<dc::detail::SweepItem> interBodyCurrentEdgeItems;
+  std::vector<dc::detail::SweepItem> interBodyObstacleEdgeItems;
+};
+
+//==============================================================================
+struct SurfaceContactSnapshot
+{
+  entt::entity entity = entt::null;
+  std::vector<Eigen::Vector3d> positions;
+  std::vector<DeformableSurfaceTriangle> surfaceTriangles;
+  std::vector<std::uint8_t> surfaceContactPointMask;
+  std::vector<dc::SurfaceEdge> surfaceEdges;
+};
+
+//==============================================================================
+struct InterBodySurfaceContactResult
+{
+  bool hit = false;
+  bool indeterminate = false;
+  double stepBound = 1.0;
+  std::size_t pointTriangleCandidateCount = 0;
+  std::size_t edgeEdgeCandidateCount = 0;
+  dc::ContinuousCollisionStepStats stats;
+};
+
+//==============================================================================
+double surfaceContactMinSeparation()
+{
+  return 1e-4;
+}
+
+//==============================================================================
+double surfaceContactTolerance()
+{
+  return 1e-6;
+}
+
+//==============================================================================
+dc::ContactCandidateOptions makeSurfaceContactCandidateOptions()
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance
+      = surfaceContactMinSeparation() + surfaceContactTolerance();
+  options.exactDistanceFilter = true;
+  options.excludeIncidentPointTriangles = true;
+  options.excludeAdjacentEdges = true;
+  return options;
+}
+
+//==============================================================================
+dc::ContinuousCollisionStepOptions makeSurfaceContactCcdOptions()
+{
+  dc::ContinuousCollisionStepOptions options;
+  options.minSeparation = surfaceContactMinSeparation();
+  options.tolerance = surfaceContactTolerance();
+  options.maxIterations = 128;
+  return options;
+}
+
+//==============================================================================
+void copySurfaceContactTopology(
+    std::span<const comps::DeformableSurfaceTriangle> source,
+    std::size_t nodeCount,
+    bool restrictPointsToReferencedSurfaceNodes,
+    std::vector<DeformableSurfaceTriangle>& surfaceTriangles,
+    std::vector<std::uint8_t>& surfaceContactPointMask)
+{
+  surfaceTriangles.clear();
+  surfaceTriangles.reserve(source.size());
+  if (restrictPointsToReferencedSurfaceNodes) {
+    surfaceContactPointMask.assign(nodeCount, 0u);
+  } else {
+    surfaceContactPointMask.clear();
+  }
+
+  for (const auto& triangle : source) {
+    surfaceTriangles.push_back(
+        DeformableSurfaceTriangle{
+            triangle.nodeA, triangle.nodeB, triangle.nodeC});
+    if (restrictPointsToReferencedSurfaceNodes) {
+      surfaceContactPointMask[triangle.nodeA] = 1u;
+      surfaceContactPointMask[triangle.nodeB] = 1u;
+      surfaceContactPointMask[triangle.nodeC] = 1u;
+    }
+  }
+}
+
+//==============================================================================
+void syncSurfaceContactTopology(
+    std::span<const comps::DeformableSurfaceTriangle> source,
+    std::size_t nodeCount,
+    bool restrictPointsToReferencedSurfaceNodes,
+    DeformableContactSolverScratch& scratch)
+{
+  copySurfaceContactTopology(
+      source,
+      nodeCount,
+      restrictPointsToReferencedSurfaceNodes,
+      scratch.surfaceTriangles,
+      scratch.surfaceContactPointMask);
+}
+
+//==============================================================================
+void filterSurfaceContactPointCandidates(
+    dc::ContactCandidateSet& candidates,
+    std::span<const std::uint8_t> pointMask)
+{
+  if (pointMask.empty()) {
+    return;
+  }
+
+  auto& pointTriangleCandidates = candidates.pointTriangleCandidates;
+  pointTriangleCandidates.erase(
+      std::remove_if(
+          pointTriangleCandidates.begin(),
+          pointTriangleCandidates.end(),
+          [&](const dc::PointTriangleCandidate& candidate) {
+            return candidate.point >= pointMask.size()
+                   || pointMask[candidate.point] == 0u;
+          }),
+      pointTriangleCandidates.end());
+  candidates.stats.pointTriangleCandidateCount = pointTriangleCandidates.size();
+}
+
+//==============================================================================
+bool surfaceContactPointAllowed(
+    const std::size_t point, std::span<const std::uint8_t> pointMask)
+{
+  return pointMask.empty()
+         || (point < pointMask.size() && pointMask[point] != 0u);
+}
+
+//==============================================================================
+void accumulateCcdStats(
+    dc::ContinuousCollisionStepStats& total,
+    const dc::ContinuousCollisionStepStats& addend)
+{
+  total.pointTriangleChecks += addend.pointTriangleChecks;
+  total.edgeEdgeChecks += addend.edgeEdgeChecks;
+  total.hits += addend.hits;
+  total.misses += addend.misses;
+  total.indeterminate += addend.indeterminate;
+  total.zeroStepCount += addend.zeroStepCount;
+}
+
+//==============================================================================
+void considerInterBodyContactResult(
+    InterBodySurfaceContactResult& aggregate,
+    const dc::ContinuousCollisionStepResult& candidate)
+{
+  accumulateCcdStats(aggregate.stats, candidate.stats);
+  aggregate.indeterminate = aggregate.indeterminate || candidate.indeterminate;
+  if (candidate.indeterminate) {
+    aggregate.stepBound = 0.0;
+    return;
+  }
+
+  if (!candidate.hit) {
+    return;
+  }
+
+  if (!aggregate.hit || candidate.stepBound < aggregate.stepBound) {
+    aggregate.hit = true;
+    aggregate.stepBound = candidate.stepBound;
+  }
+}
+
+//==============================================================================
+void buildPointSweepItems(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const std::uint8_t> pointMask,
+    double margin,
+    std::vector<dc::detail::SweepItem>& items)
+{
+  items.clear();
+  items.reserve(positionsStart.size());
+  for (std::size_t point = 0; point < positionsStart.size(); ++point) {
+    if (!surfaceContactPointAllowed(point, pointMask)) {
+      continue;
+    }
+    items.push_back(
+        dc::detail::SweepItem{
+            point,
+            dc::detail::makeSweptPointAabb(
+                positionsStart[point], positionsEnd[point], margin)});
+  }
+}
+
+//==============================================================================
+void buildTriangleSweepItems(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    double margin,
+    std::vector<dc::detail::SweepItem>& items)
+{
+  items.clear();
+  items.reserve(triangles.size());
+  for (std::size_t triangle = 0; triangle < triangles.size(); ++triangle) {
+    const auto& t = triangles[triangle];
+    items.push_back(
+        dc::detail::SweepItem{
+            triangle,
+            dc::detail::makeSweptTriangleAabb(
+                positionsStart[t.nodeA],
+                positionsEnd[t.nodeA],
+                positionsStart[t.nodeB],
+                positionsEnd[t.nodeB],
+                positionsStart[t.nodeC],
+                positionsEnd[t.nodeC],
+                margin)});
+  }
+}
+
+//==============================================================================
+void buildEdgeSweepItems(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const dc::SurfaceEdge> edges,
+    double margin,
+    std::vector<dc::detail::SweepItem>& items)
+{
+  items.clear();
+  items.reserve(edges.size());
+  for (std::size_t edge = 0; edge < edges.size(); ++edge) {
+    const auto& e = edges[edge];
+    items.push_back(
+        dc::detail::SweepItem{
+            edge,
+            dc::detail::makeSweptSegmentAabb(
+                positionsStart[e.nodeA],
+                positionsEnd[e.nodeA],
+                positionsStart[e.nodeB],
+                positionsEnd[e.nodeB],
+                margin)});
+  }
+}
+
+//==============================================================================
+InterBodySurfaceContactResult interBodySurfaceContactStepBound(
+    std::span<const Eigen::Vector3d> currentStart,
+    std::span<const Eigen::Vector3d> currentEnd,
+    std::span<const DeformableSurfaceTriangle> currentTriangles,
+    std::span<const std::uint8_t> currentPointMask,
+    std::span<const dc::SurfaceEdge> currentEdges,
+    const SurfaceContactSnapshot& obstacle,
+    const dc::ContactCandidateOptions& candidateOptions,
+    const dc::ContinuousCollisionStepOptions& ccdOptions,
+    DeformableContactSolverScratch& scratch)
+{
+  InterBodySurfaceContactResult aggregate;
+  const double margin
+      = 0.5 * dc::detail::nonnegativeActivationDistance(candidateOptions);
+
+  buildPointSweepItems(
+      currentStart,
+      currentEnd,
+      currentPointMask,
+      margin,
+      scratch.interBodyCurrentPointItems);
+  buildPointSweepItems(
+      obstacle.positions,
+      obstacle.positions,
+      obstacle.surfaceContactPointMask,
+      margin,
+      scratch.interBodyObstaclePointItems);
+  buildTriangleSweepItems(
+      currentStart,
+      currentEnd,
+      currentTriangles,
+      margin,
+      scratch.interBodyCurrentTriangleItems);
+  buildTriangleSweepItems(
+      obstacle.positions,
+      obstacle.positions,
+      obstacle.surfaceTriangles,
+      margin,
+      scratch.interBodyObstacleTriangleItems);
+
+  dc::detail::visitSweepPairs(
+      scratch.interBodyCurrentPointItems,
+      scratch.interBodyObstacleTriangleItems,
+      [&](const std::size_t point, const std::size_t triangleIndex) {
+        ++aggregate.pointTriangleCandidateCount;
+        const auto& triangle = obstacle.surfaceTriangles[triangleIndex];
+        const auto result = dc::pointTriangleStepBound(
+            currentStart[point],
+            currentEnd[point],
+            obstacle.positions[triangle.nodeA],
+            obstacle.positions[triangle.nodeA],
+            obstacle.positions[triangle.nodeB],
+            obstacle.positions[triangle.nodeB],
+            obstacle.positions[triangle.nodeC],
+            obstacle.positions[triangle.nodeC],
+            ccdOptions);
+        considerInterBodyContactResult(aggregate, result);
+      });
+
+  dc::detail::visitSweepPairs(
+      scratch.interBodyObstaclePointItems,
+      scratch.interBodyCurrentTriangleItems,
+      [&](const std::size_t point, const std::size_t triangleIndex) {
+        ++aggregate.pointTriangleCandidateCount;
+        const auto& triangle = currentTriangles[triangleIndex];
+        const auto result = dc::pointTriangleStepBound(
+            obstacle.positions[point],
+            obstacle.positions[point],
+            currentStart[triangle.nodeA],
+            currentEnd[triangle.nodeA],
+            currentStart[triangle.nodeB],
+            currentEnd[triangle.nodeB],
+            currentStart[triangle.nodeC],
+            currentEnd[triangle.nodeC],
+            ccdOptions);
+        considerInterBodyContactResult(aggregate, result);
+      });
+
+  buildEdgeSweepItems(
+      currentStart,
+      currentEnd,
+      currentEdges,
+      margin,
+      scratch.interBodyCurrentEdgeItems);
+  buildEdgeSweepItems(
+      obstacle.positions,
+      obstacle.positions,
+      obstacle.surfaceEdges,
+      margin,
+      scratch.interBodyObstacleEdgeItems);
+  dc::detail::visitSweepPairs(
+      scratch.interBodyCurrentEdgeItems,
+      scratch.interBodyObstacleEdgeItems,
+      [&](const std::size_t currentEdge, const std::size_t obstacleEdge) {
+        ++aggregate.edgeEdgeCandidateCount;
+        const auto& a = currentEdges[currentEdge];
+        const auto& b = obstacle.surfaceEdges[obstacleEdge];
+        const auto result = dc::edgeEdgeStepBound(
+            currentStart[a.nodeA],
+            currentEnd[a.nodeA],
+            currentStart[a.nodeB],
+            currentEnd[a.nodeB],
+            obstacle.positions[b.nodeA],
+            obstacle.positions[b.nodeA],
+            obstacle.positions[b.nodeB],
+            obstacle.positions[b.nodeB],
+            ccdOptions);
+        considerInterBodyContactResult(aggregate, result);
+      });
+
+  return aggregate;
+}
+
+//==============================================================================
+SurfaceContactSnapshot makeStaticBoxSurfaceCcdSnapshot(
+    entt::entity entity,
+    const Eigen::Vector3d& halfExtents,
+    const comps::Transform& transform)
+{
+  SurfaceContactSnapshot snapshot;
+  snapshot.entity = entity;
+  snapshot.positions.reserve(8);
+
+  const Eigen::Matrix3d rotation
+      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
+  const std::array<Eigen::Vector3d, 8> localVertices{
+      Eigen::Vector3d(-halfExtents.x(), -halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), -halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(-halfExtents.x(), halfExtents.y(), -halfExtents.z()),
+      Eigen::Vector3d(-halfExtents.x(), -halfExtents.y(), halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), -halfExtents.y(), halfExtents.z()),
+      Eigen::Vector3d(halfExtents.x(), halfExtents.y(), halfExtents.z()),
+      Eigen::Vector3d(-halfExtents.x(), halfExtents.y(), halfExtents.z())};
+  for (const auto& local : localVertices) {
+    snapshot.positions.push_back(transform.position + rotation * local);
+  }
+
+  constexpr std::array<std::array<std::size_t, 3>, 12> kBoxTriangles{{
+      {{0, 3, 1}},
+      {{1, 3, 2}},
+      {{4, 5, 7}},
+      {{5, 6, 7}},
+      {{0, 1, 4}},
+      {{1, 5, 4}},
+      {{2, 3, 6}},
+      {{3, 7, 6}},
+      {{0, 4, 3}},
+      {{3, 4, 7}},
+      {{1, 2, 5}},
+      {{2, 6, 5}},
+  }};
+  snapshot.surfaceTriangles.reserve(kBoxTriangles.size());
+  for (const auto& triangle : kBoxTriangles) {
+    snapshot.surfaceTriangles.push_back(
+        DeformableSurfaceTriangle{triangle[0], triangle[1], triangle[2]});
+  }
+
+  constexpr std::array<std::array<std::size_t, 2>, 12> kBoxEdges{{
+      {{0, 1}},
+      {{1, 2}},
+      {{2, 3}},
+      {{0, 3}},
+      {{4, 5}},
+      {{5, 6}},
+      {{6, 7}},
+      {{4, 7}},
+      {{0, 4}},
+      {{1, 5}},
+      {{2, 6}},
+      {{3, 7}},
+  }};
+  snapshot.surfaceEdges.reserve(kBoxEdges.size());
+  for (const auto& edge : kBoxEdges) {
+    snapshot.surfaceEdges.push_back(
+        dc::detail::makeSurfaceEdge(edge[0], edge[1]));
+  }
+
+  return snapshot;
+}
+
+//==============================================================================
+std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
+    const World& world, DeformableSolverStats& stats)
+{
+  ++stats.staticRigidSurfaceCcdSnapshotBuilds;
+
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<SurfaceContactSnapshot> snapshots;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    if (geometry.shape.type != CollisionShapeType::Box
+        || !geometry.shape.halfExtents.allFinite()
+        || (geometry.shape.halfExtents.array() <= 0.0).any()
+        || !transform.position.allFinite()) {
+      continue;
+    }
+
+    auto snapshot = makeStaticBoxSurfaceCcdSnapshot(
+        entity, geometry.shape.halfExtents, transform);
+    stats.staticRigidSurfaceCcdTriangleCount
+        += snapshot.surfaceTriangles.size();
+    stats.staticRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
+    snapshots.push_back(std::move(snapshot));
+    ++stats.staticRigidSurfaceCcdBoxCount;
+  }
+
+  return snapshots;
+}
+
+//==============================================================================
 std::optional<double> boxTopAt(
     const StaticGroundBarrier& barrier, const Eigen::Vector3d& position)
 {
@@ -843,6 +1320,361 @@ double minimumStaticGroundHeight(double groundTop)
 {
   constexpr double clearance = 1e-4;
   return groundTop + clearance;
+}
+
+//==============================================================================
+double staticGroundBarrierCcdClearanceTolerance()
+{
+  return 1e-12;
+}
+
+//==============================================================================
+double cross2d(const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs)
+{
+  return lhs.x() * rhs.y() - lhs.y() * rhs.x();
+}
+
+//==============================================================================
+struct TimeInterval
+{
+  double begin{0.0};
+  double end{1.0};
+};
+
+//==============================================================================
+std::vector<Eigen::Vector2d> projectedBoxFootprint(
+    const StaticGroundBarrier& barrier)
+{
+  std::vector<Eigen::Vector2d> points;
+  points.reserve(8);
+  for (const double xSign : {-1.0, 1.0}) {
+    for (const double ySign : {-1.0, 1.0}) {
+      for (const double zSign : {-1.0, 1.0}) {
+        const Eigen::Vector3d local(
+            xSign * barrier.halfExtents.x(),
+            ySign * barrier.halfExtents.y(),
+            zSign * barrier.halfExtents.z());
+        const Eigen::Vector3d world = barrier.center + barrier.rotation * local;
+        points.push_back(world.head<2>());
+      }
+    }
+  }
+
+  constexpr double tolerance = 1e-12;
+  std::sort(
+      points.begin(),
+      points.end(),
+      [](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
+        return std::tie(lhs.x(), lhs.y()) < std::tie(rhs.x(), rhs.y());
+      });
+  points.erase(
+      std::unique(
+          points.begin(),
+          points.end(),
+          [](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
+            return (lhs - rhs).squaredNorm() <= tolerance * tolerance;
+          }),
+      points.end());
+
+  if (points.size() <= 2) {
+    return points;
+  }
+
+  std::vector<Eigen::Vector2d> hull;
+  hull.reserve(points.size() * 2);
+  for (const auto& point : points) {
+    while (hull.size() >= 2
+           && cross2d(hull.back() - hull[hull.size() - 2], point - hull.back())
+                  <= tolerance) {
+      hull.pop_back();
+    }
+    hull.push_back(point);
+  }
+
+  const auto lowerSize = hull.size();
+  for (auto it = points.rbegin() + 1; it != points.rend(); ++it) {
+    while (hull.size() > lowerSize
+           && cross2d(hull.back() - hull[hull.size() - 2], *it - hull.back())
+                  <= tolerance) {
+      hull.pop_back();
+    }
+    hull.push_back(*it);
+  }
+  if (!hull.empty()) {
+    hull.pop_back();
+  }
+
+  return hull;
+}
+
+//==============================================================================
+std::optional<TimeInterval> clipSegmentToConvexFootprint(
+    const Eigen::Vector2d& start,
+    const Eigen::Vector2d& end,
+    const std::vector<Eigen::Vector2d>& footprint)
+{
+  if (footprint.size() < 3) {
+    return std::nullopt;
+  }
+
+  constexpr double tolerance = 1e-12;
+  const Eigen::Vector2d direction = end - start;
+  double intervalBegin = 0.0;
+  double intervalEnd = 1.0;
+
+  for (std::size_t i = 0; i < footprint.size(); ++i) {
+    const Eigen::Vector2d& a = footprint[i];
+    const Eigen::Vector2d& b = footprint[(i + 1) % footprint.size()];
+    const Eigen::Vector2d edge = b - a;
+    const double valueAtStart = cross2d(edge, start - a);
+    const double slope = cross2d(edge, direction);
+
+    if (std::abs(slope) <= tolerance) {
+      if (valueAtStart < -tolerance) {
+        return std::nullopt;
+      }
+      continue;
+    }
+
+    const double boundaryT = (-tolerance - valueAtStart) / slope;
+    if (slope > 0.0) {
+      intervalBegin = std::max(intervalBegin, boundaryT);
+    } else {
+      intervalEnd = std::min(intervalEnd, boundaryT);
+    }
+
+    if (intervalBegin > intervalEnd) {
+      return std::nullopt;
+    }
+  }
+
+  return TimeInterval{
+      std::clamp(intervalBegin, 0.0, 1.0), std::clamp(intervalEnd, 0.0, 1.0)};
+}
+
+//==============================================================================
+std::optional<TimeInterval> sphereFootprintInterval(
+    const StaticGroundBarrier& barrier,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end)
+{
+  const Eigen::Vector2d origin = start.head<2>() - barrier.center.head<2>();
+  const Eigen::Vector2d direction = end.head<2>() - start.head<2>();
+  const double a = direction.squaredNorm();
+  const double b = 2.0 * origin.dot(direction);
+  const double c = origin.squaredNorm() - barrier.radius * barrier.radius;
+  constexpr double tolerance = 1e-14;
+
+  if (a <= tolerance) {
+    if (c <= tolerance) {
+      return TimeInterval{0.0, 1.0};
+    }
+    return std::nullopt;
+  }
+
+  const double discriminant = b * b - 4.0 * a * c;
+  if (discriminant < -tolerance) {
+    return std::nullopt;
+  }
+
+  const double root = std::sqrt(std::max(0.0, discriminant));
+  double intervalBegin = (-b - root) / (2.0 * a);
+  double intervalEnd = (-b + root) / (2.0 * a);
+  if (intervalBegin > intervalEnd) {
+    std::swap(intervalBegin, intervalEnd);
+  }
+
+  intervalBegin = std::max(intervalBegin, 0.0);
+  intervalEnd = std::min(intervalEnd, 1.0);
+  if (intervalBegin > intervalEnd) {
+    return std::nullopt;
+  }
+
+  return TimeInterval{intervalBegin, intervalEnd};
+}
+
+//==============================================================================
+std::optional<TimeInterval> staticGroundBarrierFootprintInterval(
+    const StaticGroundBarrier& barrier,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end)
+{
+  switch (barrier.shape) {
+    case StaticGroundBarrier::Shape::Box:
+      return clipSegmentToConvexFootprint(
+          start.head<2>(), end.head<2>(), projectedBoxFootprint(barrier));
+    case StaticGroundBarrier::Shape::Sphere:
+      return sphereFootprintInterval(barrier, start, end);
+  }
+
+  return std::nullopt;
+}
+
+//==============================================================================
+std::optional<double> staticGroundClearanceAt(
+    const Eigen::Vector3d& position,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  ++stats.staticGroundBarrierCcdSampleChecks;
+  const auto groundTop = staticGroundTopAt(position, barriers);
+  if (!groundTop.has_value()) {
+    return std::nullopt;
+  }
+  return position.z() - minimumStaticGroundHeight(*groundTop);
+}
+
+//==============================================================================
+Eigen::Vector3d interpolatePoint(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end, double t)
+{
+  return start + t * (end - start);
+}
+
+//==============================================================================
+bool isStaticGroundBarrierCcdHit(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double t,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const auto clearance = staticGroundClearanceAt(
+      interpolatePoint(start, end, t), barriers, stats);
+  return clearance.has_value()
+         && *clearance < -staticGroundBarrierCcdClearanceTolerance();
+}
+
+//==============================================================================
+std::optional<double> verticalStaticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const auto startClearance = staticGroundClearanceAt(start, barriers, stats);
+  const auto endClearance = staticGroundClearanceAt(end, barriers, stats);
+  const double tolerance = staticGroundBarrierCcdClearanceTolerance();
+  if (startClearance.has_value() && *startClearance < -tolerance) {
+    return 0.0;
+  }
+  if (!endClearance.has_value() || *endClearance >= -tolerance) {
+    return std::nullopt;
+  }
+  if (!startClearance.has_value()) {
+    return std::nullopt;
+  }
+
+  const double denominator = *startClearance - *endClearance;
+  if (!(denominator > 0.0) || !std::isfinite(denominator)) {
+    return std::nullopt;
+  }
+
+  return std::clamp(*startClearance / denominator, 0.0, 1.0);
+}
+
+//==============================================================================
+std::optional<double> firstStaticGroundBarrierHitInInterval(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const TimeInterval& interval,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const double tolerance = staticGroundBarrierCcdClearanceTolerance();
+  if (isStaticGroundBarrierCcdHit(
+          start, end, interval.begin, barriers, stats)) {
+    return interval.begin;
+  }
+  if (interval.end <= interval.begin) {
+    return std::nullopt;
+  }
+
+  constexpr int minimizationIterations = 48;
+  double lo = interval.begin;
+  double hi = interval.end;
+  const auto clearanceOrInfinity = [&](double t) {
+    const auto clearance = staticGroundClearanceAt(
+        interpolatePoint(start, end, t), barriers, stats);
+    return clearance.has_value() ? *clearance
+                                 : std::numeric_limits<double>::infinity();
+  };
+
+  for (int iteration = 0; iteration < minimizationIterations; ++iteration) {
+    const double third = (hi - lo) / 3.0;
+    const double midA = lo + third;
+    const double midB = hi - third;
+    if (clearanceOrInfinity(midA) < clearanceOrInfinity(midB)) {
+      hi = midB;
+    } else {
+      lo = midA;
+    }
+  }
+
+  double hitT = 0.5 * (lo + hi);
+  const auto minClearance = staticGroundClearanceAt(
+      interpolatePoint(start, end, hitT), barriers, stats);
+  if (!minClearance.has_value() || *minClearance >= -tolerance) {
+    return std::nullopt;
+  }
+
+  constexpr int bisectionIterations = 32;
+  lo = interval.begin;
+  hi = hitT;
+  for (int iteration = 0; iteration < bisectionIterations; ++iteration) {
+    const double mid = 0.5 * (lo + hi);
+    if (isStaticGroundBarrierCcdHit(start, end, mid, barriers, stats)) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+
+  return std::clamp(hi, 0.0, 1.0);
+}
+
+//==============================================================================
+std::optional<double> continuousStaticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  if (isStaticGroundBarrierCcdHit(start, end, 0.0, barriers, stats)) {
+    return 0.0;
+  }
+
+  std::optional<double> stepBound;
+  for (const auto& barrier : barriers) {
+    const auto interval
+        = staticGroundBarrierFootprintInterval(barrier, start, end);
+    if (!interval.has_value()) {
+      continue;
+    }
+
+    const auto hit = firstStaticGroundBarrierHitInInterval(
+        start, end, *interval, barriers, stats);
+    if (hit.has_value()) {
+      stepBound = stepBound.has_value() ? std::min(*stepBound, *hit) : hit;
+    }
+  }
+
+  return stepBound;
+}
+
+//==============================================================================
+std::optional<double> staticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  constexpr double planarTolerance = 1e-14;
+  if ((end.head<2>() - start.head<2>()).squaredNorm()
+      <= planarTolerance * planarTolerance) {
+    return verticalStaticGroundBarrierStepBound(start, end, barriers, stats);
+  }
+  return continuousStaticGroundBarrierStepBound(start, end, barriers, stats);
 }
 
 //==============================================================================
@@ -1021,6 +1853,354 @@ double gradientNormSquared(
 }
 
 //==============================================================================
+double buildLineSearchCandidate(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    double step,
+    std::vector<Eigen::Vector3d>& candidate)
+{
+  double directionalDerivative = 0.0;
+  for (std::size_t i = 0; i < current.size(); ++i) {
+    candidate[i] = current[i];
+    if (fixed[i] == 0u) {
+      candidate[i] += step * direction[i];
+      directionalDerivative += gradient[i].dot(candidate[i] - current[i]);
+    }
+  }
+  return directionalDerivative;
+}
+
+//==============================================================================
+bool applySurfaceContactCcdLimit(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (contactScratch.surfaceTriangles.empty()) {
+    return true;
+  }
+
+  ++stats.surfaceContactCandidateBuilds;
+  dc::buildMotionAwareContactCandidatesSweep(
+      current,
+      candidate,
+      contactScratch.surfaceTriangles,
+      makeSurfaceContactCandidateOptions(),
+      contactScratch.candidates,
+      contactScratch.sweepScratch);
+  filterSurfaceContactPointCandidates(
+      contactScratch.candidates, contactScratch.surfaceContactPointMask);
+  stats.surfaceContactPointTriangleCandidates
+      += contactScratch.candidates.pointTriangleCandidates.size();
+  stats.surfaceContactEdgeEdgeCandidates
+      += contactScratch.candidates.edgeEdgeCandidates.size();
+
+  const auto result = dc::contactCandidateStepBound(
+      current,
+      candidate,
+      contactScratch.surfaceTriangles,
+      contactScratch.candidates,
+      makeSurfaceContactCcdOptions());
+  stats.surfaceContactCcdPointTriangleChecks
+      += result.stats.pointTriangleChecks;
+  stats.surfaceContactCcdEdgeEdgeChecks += result.stats.edgeEdgeChecks;
+  stats.surfaceContactCcdHits += result.stats.hits;
+  stats.surfaceContactCcdMisses += result.stats.misses;
+  stats.surfaceContactCcdIndeterminateCount += result.stats.indeterminate;
+  stats.surfaceContactCcdZeroStepCount += result.stats.zeroStepCount;
+
+  if (result.indeterminate) {
+    return false;
+  }
+
+  if (!result.hit) {
+    return true;
+  }
+
+  const double stepBound = std::clamp(result.stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.surfaceContactCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
+bool applyInterBodySurfaceContactCcdLimit(
+    entt::entity entity,
+    std::span<const SurfaceContactSnapshot> surfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (contactScratch.surfaceTriangles.empty()) {
+    return true;
+  }
+
+  bool hasObstacleSurface = false;
+  for (const auto& snapshot : surfaceSnapshots) {
+    if (snapshot.entity != entity && !snapshot.surfaceTriangles.empty()) {
+      hasObstacleSurface = true;
+      break;
+    }
+  }
+  if (!hasObstacleSurface) {
+    return true;
+  }
+
+  dc::buildUniqueSurfaceEdges(
+      contactScratch.surfaceTriangles, contactScratch.interBodyCurrentEdges);
+
+  ++stats.interBodySurfaceContactCandidateBuilds;
+  bool hit = false;
+  bool indeterminate = false;
+  double stepBound = 1.0;
+
+  for (const auto& snapshot : surfaceSnapshots) {
+    if (snapshot.entity == entity || snapshot.surfaceTriangles.empty()) {
+      continue;
+    }
+
+    const auto result = interBodySurfaceContactStepBound(
+        current,
+        candidate,
+        contactScratch.surfaceTriangles,
+        contactScratch.surfaceContactPointMask,
+        contactScratch.interBodyCurrentEdges,
+        snapshot,
+        makeSurfaceContactCandidateOptions(),
+        makeSurfaceContactCcdOptions(),
+        contactScratch);
+
+    stats.interBodySurfaceContactPointTriangleCandidates
+        += result.pointTriangleCandidateCount;
+    stats.interBodySurfaceContactEdgeEdgeCandidates
+        += result.edgeEdgeCandidateCount;
+    stats.interBodySurfaceContactCcdPointTriangleChecks
+        += result.stats.pointTriangleChecks;
+    stats.interBodySurfaceContactCcdEdgeEdgeChecks
+        += result.stats.edgeEdgeChecks;
+    stats.interBodySurfaceContactCcdHits += result.stats.hits;
+    stats.interBodySurfaceContactCcdMisses += result.stats.misses;
+    stats.interBodySurfaceContactCcdIndeterminateCount
+        += result.stats.indeterminate;
+    stats.interBodySurfaceContactCcdZeroStepCount += result.stats.zeroStepCount;
+
+    indeterminate = indeterminate || result.indeterminate;
+    if (result.indeterminate) {
+      stepBound = 0.0;
+    }
+    if (result.hit && (!hit || result.stepBound < stepBound)) {
+      hit = true;
+      stepBound = result.stepBound;
+    }
+  }
+
+  if (indeterminate) {
+    return false;
+  }
+
+  if (!hit) {
+    return true;
+  }
+
+  stepBound = std::clamp(stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.interBodySurfaceContactCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
+bool applyStaticRigidSurfaceCcdLimit(
+    std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (rigidSurfaceSnapshots.empty()) {
+    return true;
+  }
+
+  if (contactScratch.surfaceTriangles.empty()) {
+    contactScratch.interBodyCurrentEdges.clear();
+  } else {
+    dc::buildUniqueSurfaceEdges(
+        contactScratch.surfaceTriangles, contactScratch.interBodyCurrentEdges);
+  }
+
+  ++stats.staticRigidSurfaceCcdCandidateBuilds;
+  bool hit = false;
+  bool indeterminate = false;
+  double stepBound = 1.0;
+
+  for (const auto& snapshot : rigidSurfaceSnapshots) {
+    if (snapshot.surfaceTriangles.empty()) {
+      continue;
+    }
+
+    const auto result = interBodySurfaceContactStepBound(
+        current,
+        candidate,
+        contactScratch.surfaceTriangles,
+        contactScratch.surfaceContactPointMask,
+        contactScratch.interBodyCurrentEdges,
+        snapshot,
+        makeSurfaceContactCandidateOptions(),
+        makeSurfaceContactCcdOptions(),
+        contactScratch);
+
+    stats.staticRigidSurfaceCcdPointTriangleCandidates
+        += result.pointTriangleCandidateCount;
+    stats.staticRigidSurfaceCcdEdgeEdgeCandidates
+        += result.edgeEdgeCandidateCount;
+    stats.staticRigidSurfaceCcdPointTriangleChecks
+        += result.stats.pointTriangleChecks;
+    stats.staticRigidSurfaceCcdEdgeEdgeChecks += result.stats.edgeEdgeChecks;
+    stats.staticRigidSurfaceCcdHits += result.stats.hits;
+    stats.staticRigidSurfaceCcdMisses += result.stats.misses;
+    stats.staticRigidSurfaceCcdIndeterminateCount += result.stats.indeterminate;
+    stats.staticRigidSurfaceCcdZeroStepCount += result.stats.zeroStepCount;
+
+    indeterminate = indeterminate || result.indeterminate;
+    if (result.indeterminate) {
+      stepBound = 0.0;
+    }
+    if (result.hit && (!hit || result.stepBound < stepBound)) {
+      hit = true;
+      stepBound = result.stepBound;
+    }
+  }
+
+  if (indeterminate) {
+    return false;
+  }
+
+  if (!hit) {
+    return true;
+  }
+
+  stepBound = std::clamp(stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    ++stats.staticRigidSurfaceCcdZeroStepCount;
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    ++stats.staticRigidSurfaceCcdZeroStepCount;
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.staticRigidSurfaceCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
+bool applyStaticGroundBarrierCcdLimit(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (barriers.empty()) {
+    return true;
+  }
+
+  bool hit = false;
+  double stepBound = 1.0;
+  for (std::size_t node = 0; node < current.size(); ++node) {
+    if (fixed[node] != 0u) {
+      continue;
+    }
+
+    ++stats.staticGroundBarrierCcdNodeChecks;
+    const auto nodeStepBound = staticGroundBarrierStepBound(
+        current[node], candidate[node], barriers, stats);
+    if (!nodeStepBound.has_value()) {
+      continue;
+    }
+
+    ++stats.staticGroundBarrierCcdHits;
+    if (*nodeStepBound <= 0.0) {
+      ++stats.staticGroundBarrierCcdZeroStepCount;
+      return false;
+    }
+    hit = true;
+    stepBound = std::min(stepBound, *nodeStepBound);
+  }
+
+  if (!hit) {
+    return true;
+  }
+
+  stepBound = std::clamp(stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    ++stats.staticGroundBarrierCcdZeroStepCount;
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    ++stats.staticGroundBarrierCcdZeroStepCount;
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.staticGroundBarrierCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
 bool isBoundaryActiveAtStepStart(double time, double start, double end)
 {
   // Contact-free scene controls intentionally use step-start sampling. Later
@@ -1128,9 +2308,14 @@ void prepareDeformableBoundaryConditions(
 
 //==============================================================================
 void advanceDeformableBody(
+    entt::entity entity,
     comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
+    const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
+    DeformableContactSolverScratch& contactScratch,
+    std::span<const SurfaceContactSnapshot> surfaceSnapshots,
+    std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
@@ -1143,6 +2328,11 @@ void advanceDeformableBody(
 
   stats.nodeCount += nodeCount;
   stats.edgeCount += model.edges.size();
+  syncSurfaceContactTopology(
+      topology.surfaceTriangles,
+      nodeCount,
+      !topology.tetrahedra.empty(),
+      contactScratch);
 
   scratch.inertialTargets.resize(nodeCount);
   scratch.next.resize(nodeCount);
@@ -1174,7 +2364,8 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  if (model.edges.empty() && barriers.empty()) {
+  if (model.edges.empty() && barriers.empty() && rigidSurfaceSnapshots.empty()
+      && contactScratch.surfaceTriangles.empty()) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
         scratch.next[i] = scratch.inertialTargets[i];
@@ -1222,17 +2413,58 @@ void advanceDeformableBody(
       bool accepted = false;
       for (std::size_t ls = 0; ls < maxLineSearchIterations; ++ls) {
         ++stats.lineSearchTrials;
-        double directionalDerivative = 0.0;
-        for (std::size_t i = 0; i < nodeCount; ++i) {
-          scratch.candidate[i] = scratch.next[i];
-          if (scratch.activeFixed[i] == 0u) {
-            scratch.candidate[i] += step * scratch.direction[i];
-            directionalDerivative += scratch.gradient[i].dot(
-                scratch.candidate[i] - scratch.next[i]);
-          }
-        }
+        double directionalDerivative = buildLineSearchCandidate(
+            scratch.next,
+            scratch.direction,
+            scratch.gradient,
+            scratch.activeFixed,
+            step,
+            scratch.candidate);
 
-        if (directionalDerivative < -1e-24
+        if (applySurfaceContactCcdLimit(
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && applyInterBodySurfaceContactCcdLimit(
+                entity,
+                surfaceSnapshots,
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && applyStaticRigidSurfaceCcdLimit(
+                rigidSurfaceSnapshots,
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && applyStaticGroundBarrierCcdLimit(
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                barriers,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && directionalDerivative < -1e-24
             && satisfiesStaticGroundBarrier(
                 scratch.candidate, scratch.activeFixed, barriers)) {
           ++stats.objectiveEvaluations;
@@ -1633,6 +2865,7 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
           | ComputeStageAcceleration::DataLocality,
       {{"deformable_body.state", ComputeAccessMode::ReadWrite},
        {"deformable_body.model", ComputeAccessMode::Read},
+       {"deformable_body.topology", ComputeAccessMode::Read},
        {"deformable_body.boundary_conditions", ComputeAccessMode::Read},
        {"static_collision_geometry", ComputeAccessMode::Read}}};
 }
@@ -1647,18 +2880,21 @@ void DeformableDynamicsStage::execute(
   auto view = registry.view<
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
-      comps::DeformableSpringModel>();
+      comps::DeformableSpringModel,
+      comps::DeformableMeshTopology>();
   if (view.begin() == view.end()) {
     return;
   }
 
   const auto barriers = collectStaticGroundBarriers(world);
+  const auto rigidSurfaceSnapshots
+      = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
   const auto gravity = world.getGravity();
+  m_lastStats.staticGroundBarrierCount = barriers.size();
 
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);
-    const auto& model = view.get<comps::DeformableSpringModel>(entity);
     auto& scratch
         = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
     const auto* boundaryConditions
@@ -1671,8 +2907,51 @@ void DeformableDynamicsStage::execute(
         timeStep,
         scratch,
         m_lastStats);
+  }
+
+  std::vector<SurfaceContactSnapshot> surfaceSnapshots;
+  for (const auto entity : view) {
+    const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
+    if (topology.surfaceTriangles.empty()) {
+      continue;
+    }
+
+    SurfaceContactSnapshot snapshot;
+    snapshot.entity = entity;
+    snapshot.positions = state.positions;
+    copySurfaceContactTopology(
+        topology.surfaceTriangles,
+        state.positions.size(),
+        !topology.tetrahedra.empty(),
+        snapshot.surfaceTriangles,
+        snapshot.surfaceContactPointMask);
+    dc::buildUniqueSurfaceEdges(
+        snapshot.surfaceTriangles, snapshot.surfaceEdges);
+    surfaceSnapshots.push_back(std::move(snapshot));
+  }
+
+  for (const auto entity : view) {
+    auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& model = view.get<comps::DeformableSpringModel>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
+    auto& scratch
+        = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+    auto& contactScratch
+        = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
     advanceDeformableBody(
-        state, model, scratch, gravity, timeStep, barriers, m_lastStats);
+        entity,
+        state,
+        model,
+        topology,
+        scratch,
+        contactScratch,
+        surfaceSnapshots,
+        rigidSurfaceSnapshots,
+        gravity,
+        timeStep,
+        barriers,
+        m_lastStats);
   }
 }
 

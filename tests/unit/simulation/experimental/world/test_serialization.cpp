@@ -450,6 +450,8 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   ground.setFriction(0.25);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 2.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+  ground.setDeformableSurfaceCcdObstacle(true);
 
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
@@ -465,6 +467,8 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   EXPECT_TRUE(groundRestored->isStatic());
   EXPECT_DOUBLE_EQ(groundRestored->getRestitution(), 0.75);
   EXPECT_DOUBLE_EQ(groundRestored->getFriction(), 0.25);
+  EXPECT_TRUE(groundRestored->isDeformableGroundBarrier());
+  EXPECT_TRUE(groundRestored->isDeformableSurfaceCcdObstacle());
 
   auto groundShape = groundRestored->getCollisionShape();
   ASSERT_TRUE(groundShape.has_value());

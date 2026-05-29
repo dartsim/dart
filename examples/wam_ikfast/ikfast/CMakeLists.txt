@@ -6,8 +6,9 @@ target_compile_definitions(wamIk PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
 if(NOT MSVC)
   target_compile_options(wamIk PRIVATE -w)
 endif()
-set_target_properties(wamIk
+set_target_properties(
+  wamIk
   PROPERTIES
-   LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}"
-   ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}"
+    LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}"
 )

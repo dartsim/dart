@@ -58,6 +58,46 @@ struct DeformableSolverStats
   std::size_t rejectedLineSearchCandidates = 0;
   std::size_t acceptedLineSearchSteps = 0;
   std::size_t initialProjectionCount = 0;
+  std::size_t staticGroundBarrierCount = 0;
+  std::size_t staticGroundBarrierCcdNodeChecks = 0;
+  std::size_t staticGroundBarrierCcdSampleChecks = 0;
+  std::size_t staticGroundBarrierCcdHits = 0;
+  std::size_t staticGroundBarrierCcdLimitedSteps = 0;
+  std::size_t staticGroundBarrierCcdZeroStepCount = 0;
+  std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactPointTriangleCandidates = 0;
+  std::size_t surfaceContactEdgeEdgeCandidates = 0;
+  std::size_t surfaceContactCcdPointTriangleChecks = 0;
+  std::size_t surfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t surfaceContactCcdHits = 0;
+  std::size_t surfaceContactCcdMisses = 0;
+  std::size_t surfaceContactCcdIndeterminateCount = 0;
+  std::size_t surfaceContactCcdLimitedSteps = 0;
+  std::size_t surfaceContactCcdZeroStepCount = 0;
+  std::size_t interBodySurfaceContactCandidateBuilds = 0;
+  std::size_t interBodySurfaceContactPointTriangleCandidates = 0;
+  std::size_t interBodySurfaceContactEdgeEdgeCandidates = 0;
+  std::size_t interBodySurfaceContactCcdPointTriangleChecks = 0;
+  std::size_t interBodySurfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t interBodySurfaceContactCcdHits = 0;
+  std::size_t interBodySurfaceContactCcdMisses = 0;
+  std::size_t interBodySurfaceContactCcdIndeterminateCount = 0;
+  std::size_t interBodySurfaceContactCcdLimitedSteps = 0;
+  std::size_t interBodySurfaceContactCcdZeroStepCount = 0;
+  std::size_t staticRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t staticRigidSurfaceCcdBoxCount = 0;
+  std::size_t staticRigidSurfaceCcdTriangleCount = 0;
+  std::size_t staticRigidSurfaceCcdEdgeCount = 0;
+  std::size_t staticRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t staticRigidSurfaceCcdHits = 0;
+  std::size_t staticRigidSurfaceCcdMisses = 0;
+  std::size_t staticRigidSurfaceCcdIndeterminateCount = 0;
+  std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
 
   void reset() noexcept
   {

@@ -44,6 +44,13 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   # Register all unit test directories
   dart_experimental_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/common)
   dart_experimental_add_unit_test_dir(compute ${CMAKE_CURRENT_SOURCE_DIR}/compute)
+  dart_experimental_add_unit_test_dir(contact ${CMAKE_CURRENT_SOURCE_DIR}/contact)
+  if(TARGET test_continuous_collision_step)
+    target_link_libraries(
+      test_continuous_collision_step
+      PRIVATE ${PROJECT_NAME}-collision-native
+    )
+  endif()
   dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/world)
   dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/frame)
   dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
@@ -60,7 +67,8 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
 
   # Create meta target for all unit tests
   # DART_ALL_TESTS now contains only the tests added by this module
-  add_custom_target(dart_experimental_tests
+  add_custom_target(
+    dart_experimental_tests
     DEPENDS ${DART_ALL_TESTS}
     COMMENT "Building all simulation-experimental unit tests"
   )
@@ -68,5 +76,8 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   list(LENGTH DART_ALL_TESTS num_tests)
   message(STATUS "simulation-experimental: Total ${num_tests} unit test(s)")
 else()
-  message(STATUS "simulation-experimental: Unit tests disabled (GTest not found)")
+  message(
+    STATUS
+    "simulation-experimental: Unit tests disabled (GTest not found)"
+  )
 endif()
