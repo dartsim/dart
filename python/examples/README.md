@@ -1,30 +1,41 @@
 # DART Python Examples
 
-## Overview
+Per PLAN-103, Python is DART's primary, growing example surface. The consolidated
+home is the headless `dart-demos` Python app: one runner, one registry, many
+scenes — see [`demos/README.md`](demos/README.md). C++ `dart-demos`
+(PLAN-102) is frozen.
 
-- Examples live flat under `python/examples/` for simpler discovery and tooling.
-- Legacy Python examples that depended on the removed OpenSceneGraph GUI
-  classes were removed. The remaining example is headless and works with the
-  maintained dartpy core API.
-- GUI-oriented Python coverage now lives in tests for `dartpy.gui`, which
-  exposes backend-hidden GUI descriptors and helpers.
+## Layout
 
-## Categories (Ordered)
+- [`demos/`](demos/) — the headless scene-registry runner (`dart-demos`
+  Python) and its scene modules; this is where new example content lands.
+- A notebook gallery for Colab (PLAN-012) will live in `python/tutorials/` and
+  import the scene modules from `demos/` (single source).
 
-### 00 Getting Started
+## Run
 
-- `hello_world`
+```bash
+pixi run py-demos                                # run the first scene
+pixi run py-demos -- --scene sx_articulated      # select a scene by id
+pixi run py-demos -- --cycle-scenes --frames 4   # cycle every scene and exit
+pixi run py-demos -- --list                      # print the catalog
+```
 
-## Run Examples
+Without pixi, from the repo root:
 
-If you are working inside the DART repo, prefer the `pixi run` entry points
-documented in `docs/onboarding/building.md` when available.
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+    python -m examples.demos --scene hello_world --frames 5
+```
 
-For example:
+## Add a scene
 
-    $ pixi run py-ex hello_world
+See [`demos/README.md`](demos/README.md): drop a `scenes/<name>.py` module
+exposing a `SCENE` constant, append it in `demos/registry.py`. No CMake edits
+are required.
 
-Or, without pixi:
+## GUI and interactive viewer
 
-    $ PYTHONPATH=build/<env>/cpp/<build_type>/python \
-      python python/examples/hello_world/main.py
+`dartpy` exposes only headless GUI utilities (`dartpy.gui` — renderable
+descriptors). There is no interactive viewer binding by design (PLAN-103); use
+the C++ `dartsim` editor (PLAN-101) for interactive scene authoring.

@@ -27,6 +27,14 @@
   - Restored historical GUI example executable names as `dart::gui` launchers
     backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
     alongside the existing `--screenshot <path>` final-frame capture.
+  - Consolidated the standalone GUI example executables into a single
+    `dart-demos` application (`examples/demos`) that hosts each example as a
+    scene selectable at runtime from a categorized sidebar (`--scene <id>`
+    selects the initial scene; `--cycle-scenes` drives the headless smoke).
+    Added a runtime scene-switch capability to `dart::gui` via
+    `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
+    template, and the headless `csv_logger`, `headless_simulation`,
+    `speed_test`, and `unified_loading` examples stay standalone.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`
@@ -1023,6 +1031,27 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     boundary surface and reads back the topology, rest volume, and node mass.
     Boundary-condition (DBC/NBC) and scene-loader bindings remain a later
     increment.
+  - Added a GPU-vs-CPU performance gate for the experimental IPC deformable PSD
+    projection and tuned the GPU offload threshold to the measured crossover. A
+    CUDA test now projects 12x12 self-contact barrier batches across a sweep of
+    sizes, asserting GPU/CPU parity at every scale and logging each path's wall
+    time. On an RTX 5000 Ada the GPU path runs ~0.4x at 256 blocks, ~1.4x at
+    1024, ~4x at 4096, and ~9x at 16384, so the backend adapter's minimum GPU
+    batch size is raised from 64 to ~1024 blocks (small batches stay on the CPU
+    backend where the host/device round trip would otherwise dominate).
+  - Wired an optional GPU backend into the experimental IPC deformable solver's
+    per-element PSD projection (PLAN-081 Phase 3). The projected-Newton assembly
+    now collects its per-element spring (6x6) and self-contact barrier (12x12)
+    Hessian blocks into one packed batch and projects them through a pluggable
+    backend (`compute::projectSymmetricBlocksToPsd`) before scattering, instead
+    of projecting each block inline. The default CPU backend is bit-identical to
+    the previous per-element projection, so behavior is unchanged. The optional
+    CUDA sidecar can install a GPU backend via `installCudaDeformablePsdBackend`
+    that offloads large batches to the device (and defers small batches or the
+    no-device case to the CPU backend), so the offload never changes results.
+    The default runtime never links CUDA -- the no-GPU-runtime-dependency check
+    still passes -- and the GPU path is validated against the CPU backend through
+    the core seam in the CUDA test suite.
   - Added an experimental IPC converged-ness diagnostic to the deformable solver
     stats. Each step now reports `finalStepInfinityNorm`, the largest last
     accepted per-node position update across the step's bodies. Unlike the

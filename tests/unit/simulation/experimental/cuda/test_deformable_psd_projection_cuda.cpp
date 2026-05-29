@@ -31,10 +31,13 @@
  */
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/deformable_psd_backend.hpp>
 
 #include <dart/simulation/experimental/compute/cuda/deformable_psd_projection_cuda.cuh>
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <iostream>
 #include <vector>
 
 #include <cmath>
@@ -186,5 +189,88 @@ TEST(
         EXPECT_NEAR(base[i * dim + j], base[j * dim + i], 1e-9);
       }
     }
+  }
+}
+
+//==============================================================================
+// The CUDA backend installs into the core PSD-projection seam that the
+// deformable projected-Newton assembly uses. Projecting a large batch through
+// the solver-facing compute::projectSymmetricBlocksToPsd entry point routes to
+// the GPU and matches the CPU reference, and restoring the default returns the
+// seam to the CPU backend (a bit-identical no-op for already-CPU results).
+TEST(CudaDeformablePsdProjection, BackendInjectionRoutesThroughCoreSeam)
+{
+  namespace compute = dart::simulation::experimental::compute;
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  constexpr std::size_t dim = 12;
+  constexpr std::size_t count = 256; // above the GPU batch threshold
+  const auto reference = makeSymmetricBlocks(dim, count);
+
+  std::vector<double> cpu = reference;
+  compute::projectSymmetricBlocksToPsdCpu(cpu.data(), dim, count);
+
+  cuda::installCudaDeformablePsdBackend();
+  std::vector<double> viaSeam = reference;
+  compute::projectSymmetricBlocksToPsd(viaSeam.data(), dim, count);
+  cuda::restoreDefaultDeformablePsdBackend();
+
+  EXPECT_LT(maxAbsDifference(cpu, viaSeam), 1e-9);
+
+  // After restore the seam is back on the CPU backend (identical to a direct
+  // CPU projection).
+  std::vector<double> afterRestore = reference;
+  compute::projectSymmetricBlocksToPsd(afterRestore.data(), dim, count);
+  EXPECT_LT(maxAbsDifference(cpu, afterRestore), 1e-12);
+}
+
+//==============================================================================
+// GPU-vs-CPU perf gate at solver-realistic scale. For 12x12 self-contact
+// barrier blocks across a sweep of batch sizes, the GPU batched projection must
+// match the CPU reference (the correctness gate that holds at every scale),
+// and the per-call wall time of each path is logged so the crossover where GPU
+// offload pays off is visible. Timing is reported, not asserted, to avoid
+// hardware-dependent flakiness; the parity bound is the hard gate.
+TEST(CudaDeformablePsdProjection, GpuVsCpuPerfGateAtSolverScale)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  constexpr std::size_t dim = 12; // self-contact barrier Hessian block size
+  const std::size_t counts[] = {256, 1024, 4096, 16384};
+
+  // Warm up the CUDA context so the first timed call does not absorb one-time
+  // device initialization.
+  {
+    std::vector<double> warmup = makeSymmetricBlocks(dim, 64);
+    cuda::projectSymmetricBlocksToPsdCuda(warmup, dim, 64);
+  }
+
+  for (const std::size_t count : counts) {
+    const auto reference = makeSymmetricBlocks(dim, count);
+
+    std::vector<double> cpu = reference;
+    const auto cpuStart = std::chrono::steady_clock::now();
+    cuda::projectSymmetricBlocksToPsdReference(cpu, dim, count);
+    const double cpuMs = std::chrono::duration<double, std::milli>(
+                             std::chrono::steady_clock::now() - cpuStart)
+                             .count();
+
+    std::vector<double> gpu = reference;
+    const auto gpuStart = std::chrono::steady_clock::now();
+    cuda::projectSymmetricBlocksToPsdCuda(gpu, dim, count);
+    const double gpuMs = std::chrono::duration<double, std::milli>(
+                             std::chrono::steady_clock::now() - gpuStart)
+                             .count();
+
+    // Correctness gate at every scale.
+    EXPECT_LT(maxAbsDifference(cpu, gpu), 1e-9) << "count=" << count;
+
+    std::cout << "[ perf gate ] " << count << " x " << dim << "x" << dim
+              << " blocks: cpu=" << cpuMs << "ms gpu=" << gpuMs
+              << "ms speedup=" << (gpuMs > 0.0 ? cpuMs / gpuMs : 0.0) << "x\n";
   }
 }

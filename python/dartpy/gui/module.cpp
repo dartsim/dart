@@ -4,6 +4,7 @@
 
 #if defined(DARTPY_HAS_GUI)
   #include "gui/descriptors.hpp"
+  #include "gui/viewer.hpp"
 #endif
 
 #include <nanobind/nanobind.h>
@@ -14,6 +15,7 @@ void defGuiModule(nanobind::module_& m)
 {
 #if defined(DARTPY_HAS_GUI)
   defGuiDescriptors(m);
+  defGuiViewer(m);
 #endif
 }
 

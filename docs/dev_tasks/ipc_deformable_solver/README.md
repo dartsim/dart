@@ -138,10 +138,27 @@
         when the near-singular barrier Hessian keeps the gradient residual
         large, so it is the honest convergence companion for stiff
         barrier-dominated problems. Behavior-preserving (diagnostic only).
-  - [ ] Remaining Phase 3 work: live GPU-backend injection (wire the CUDA PSD
-        primitive into the solve via an optional executor + a GPU-vs-CPU perf
-        gate), matrix-free CG for very large meshes, adaptive barrier stiffness,
-        barrier forces for rigid/codimensional obstacles, and
+  - [x] Live GPU PSD-backend injection: the projected-Newton assembly now packs
+        its per-element spring (6x6) and barrier (12x12) Hessian blocks into one
+        batch and projects them through a pluggable backend
+        (`compute::projectSymmetricBlocksToPsd`) before scattering. The default
+        CPU backend is bit-identical to the previous inline per-element
+        projection; the CUDA sidecar can install a GPU backend
+        (`installCudaDeformablePsdBackend`) that offloads large batches and
+        defers small batches / no-device to the CPU backend, so the offload
+        never changes results. `world_step_stage` stays GPU-free (the
+        no-GPU-runtime-dependency check passes); the GPU path is validated
+        against the CPU backend through the seam in the CUDA test suite.
+  - [x] GPU-vs-CPU perf gate: a CUDA test projects 12x12 barrier batches across
+        a size sweep, asserting GPU/CPU parity at every scale and logging each
+        path's wall time. The measured crossover on an RTX 5000 Ada (~0.4x at
+        256 blocks, ~1.4x at 1024, ~4x at 4096, ~9x at 16384) sets the backend
+        adapter's minimum GPU batch size (~1024 blocks); smaller batches stay on
+        the CPU backend.
+  - [ ] Remaining Phase 3 work: a resident GPU solve path (the current backend
+        round-trips host<->device per batch; persistent device buffers are a
+        follow-up), matrix-free CG for very large meshes, adaptive barrier
+        stiffness, barrier forces for rigid/codimensional obstacles, and
         complementarity/solver-stat diagnostics. Known approximation: the
         contact active set is rebuilt once per outer iteration and held fixed
         across the inner Newton/line-search step (standard IPC), rather than

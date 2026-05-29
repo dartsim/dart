@@ -79,4 +79,20 @@ void projectSymmetricBlocksToPsdCuda(
 void projectSymmetricBlocksToPsdReference(
     std::vector<double>& blocks, std::size_t dimension, std::size_t blockCount);
 
+/// Install the CUDA batched PSD projection as the deformable solver's
+/// projected-Newton PSD backend (see
+/// `dart/simulation/experimental/compute/deformable_psd_backend.hpp`).
+///
+/// After this call the deformable assembly offloads its packed per-element
+/// 6x6/12x12 PSD projections to the GPU for batches above an internal size
+/// threshold, falling back to the CPU backend for small batches or when no
+/// device is present (so results are unchanged when the GPU is unavailable).
+/// This is strictly opt-in: the default runtime never links the CUDA sidecar
+/// and stays on the CPU backend, preserving the no-GPU-runtime-dependency
+/// guarantee.
+void installCudaDeformablePsdBackend();
+
+/// Restore the built-in CPU PSD projection backend installed by default.
+void restoreDefaultDeformablePsdBackend();
+
 } // namespace dart::simulation::experimental::compute::cuda

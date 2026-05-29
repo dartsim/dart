@@ -142,8 +142,52 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-step-norm-diagnostic` - stacked on
-`feature/ipc-deformable-scene-loader-bindings` (#2757). Adds a CONVERGED-NESS
+`feature/ipc-gpu-psd-perf-gate` - stacked on
+`feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
+threshold tuning. New cuda test GpuVsCpuPerfGateAtSolverScale: projects 12x12
+barrier batches across {256,1024,4096,16384}, asserts GPU==CPU parity at every
+scale (hard gate), logs per-call wall time (informational, NOT asserted ->
+non-flaky). MEASURED on RTX 5000 Ada: 256 blocks ~0.4x (GPU slower), 1024 ~1.4x,
+4096 ~4x, 16384 ~9x -> crossover ~1k blocks. So raised the cuda adapter's
+kMinGpuBatchBlocks 64 -> 1024 (data-driven; small batches stay on CPU). Only
+touches the cuda test + the cuda adapter threshold -> CPU/default build
+unaffected; test-all for lint; 8/8 cuda tests pass. NOTE Phase-5 contract forbids
+new cuda-named BENCHMARK files -> this is a TEST. Stack 22-deep
+(#2738-#2746,#2748-#2760).
+NEXT remaining (all riskier/deeper, best after Codex reviews the base): resident
+GPU device buffers (avoid per-call cudaMalloc), matrix-free CG, adaptive barrier
+stiffness (TRAJECTORY-CHANGING, no public kappa knob), rigid/codim obstacle
+barrier forces (DISTURBS #2732). Blocked: codim-obstacle friction, corpus port.
+
+Prior #2759 = live GPU PSD-backend injection. LIVE GPU PSD-BACKEND INJECTION
+(user chose "full live wiring now" via AskUserQuestion). New core seam (NO CUDA
+dep): `compute/deformable_psd_backend.{hpp,cpp}` -- `projectSymmetricBlocksToPsd`
+dispatches to an injectable backend (default `projectSymmetricBlocksToPsdCpu`,
+per-block Eigen self-adjoint eigensolve + clamp, BIT-IDENTICAL to the old inline
+projectSymmetricToPsd which I removed). world_step_stage assembly RESTRUCTURED:
+the spring (6x6) and barrier (12x12, PT+EE) Hessian blocks are now COLLECTED into
+a packed row-major buffer, batch-projected via the seam, then scattered (was
+inline per-block). CPU path bit-identical -> 66 deformable tests + full test-all
+6/6 (incl check-no-gpu-runtime-dependencies: core stays GPU-free). CUDA sidecar
+(deformable_psd_projection_cuda.{cuh,cpp}) adds installCudaDeformablePsdBackend()/
+restoreDefaultDeformablePsdBackend(): an adapter that offloads batches >=64 blocks
+to projectSymmetricBlocksToPsdCuda and defers smaller/no-device to CPU (so the
+offload never changes results). GPU validated on RTX 5000 via pixi -e cuda:
+test BackendInjectionRoutesThroughCoreSeam (install -> core seam -> GPU matches
+CPU <1e-9; restore -> CPU). 7/7 cuda tests pass. Stack 21-deep
+(#2738-#2746,#2748-#2759).
+GOTCHA: `pixi run -e cuda test-cuda`'s build step does NOT rebuild the deformable
+cuda TEST target (only the lib/sidecar + rigid bench), so it ran a STALE binary;
+had to `cmake --build build/cuda/cpp/Release --target test_deformable_psd_projection_cuda`
+explicitly. Eigen ternary/RowMajor: packed blocks via Eigen::Map<...,RowMajor>
+(symmetric so row/col-major identical).
+NEXT remaining Phase 3: resident GPU solve path (current backend round-trips
+host<->device per batch -> persistent device buffers + formal GPU-vs-CPU perf
+gate), matrix-free CG, adaptive barrier stiffness, rigid/codim barrier forces
+(DISTURBS #2732). Blocked: codim-obstacle friction, corpus port (assets).
+
+Prior #2758 = converged-ness step-norm diagnostic
+(DeformableSolverStats.finalStepInfinityNorm; diagnostic-only). Adds a CONVERGED-NESS
 step-norm diagnostic: DeformableSolverStats.finalStepInfinityNorm = largest last
 accepted per-node step (infinity norm) across the step's bodies, captured in the
 line-search accept block (max|candidate-next| over free nodes, before the swap),
@@ -292,8 +336,8 @@ reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
 diagnostics) <- #2755 (deformable surface/tetra topology bindings) <- #2756
 (deformable DBC/NBC bindings) <- #2757 (deformable scene-loader + diagnostics
-bindings) <- #2758 (converged-ness step-norm diagnostic). (PR #2747 is another
-author's.)
+bindings) <- #2758 (converged-ness step-norm diagnostic) <- #2759 (live GPU
+PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU perf gate + adapter threshold tuning).
 
 ## Immediate Next Step
 
