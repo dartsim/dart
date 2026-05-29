@@ -46,10 +46,13 @@
 #include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
+#include <array>
 #include <functional>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::gui {
 
@@ -83,6 +86,36 @@ struct RenderableSelection
 {
   RenderableId id = 0;
   std::string label;
+};
+
+inline constexpr std::size_t kMaxViewportPanes = 4u;
+
+enum class ViewportLayoutMode
+{
+  Single,
+  Quad,
+};
+
+enum class ViewportPaneKind
+{
+  Perspective,
+  Front,
+  Right,
+  Top,
+};
+
+struct ViewportPaneView
+{
+  ViewportPaneKind kind = ViewportPaneKind::Perspective;
+  OrbitCamera camera;
+  bool active = false;
+};
+
+struct ViewportLayoutOptions
+{
+  ViewportLayoutMode mode = ViewportLayoutMode::Single;
+  std::array<ViewportPaneView, kMaxViewportPanes> panes;
+  std::size_t paneCount = 1u;
 };
 
 enum class KeyboardKey
@@ -153,8 +186,29 @@ struct ApplicationOptions
   std::function<void()> postRender;
   bool simulateWorld = true;
   std::optional<OrbitCamera> camera;
+  std::function<OrbitCameraControlOptions()> cameraControlsProvider;
+  std::function<bool(OrbitCamera&)> cameraUpdater;
+  std::function<ViewportLayoutOptions(const OrbitCamera&)>
+      viewportLayoutProvider;
+
+  /// Optional callback fired when a multi-view viewport pane is activated.
+  ///
+  /// The callback receives the logical renderer pane selected by a viewport
+  /// click. Applications can use it to update editor-owned active-pane state
+  /// without exposing backend renderer objects.
+  std::function<void(ViewportPaneKind)> onViewportPaneActivated;
+
   RenderSettings renderSettings;
   std::string defaultScene;
+
+  /// Permit launching with a scene that has no visible renderables.
+  ///
+  /// Built-in scene fixtures must extract visible content, so the startup path
+  /// rejects an empty scene by default to catch broken fixtures. Applications
+  /// that legitimately open empty (e.g. the dartsim editor's empty workspace)
+  /// set this to skip that check; null debug overlays are then tolerated.
+  bool allowEmptyScene = false;
+
   std::vector<Panel> panels;
   std::vector<Gizmo> gizmos;
   std::function<std::vector<DebugLabelDescriptor>()> debugLabels;

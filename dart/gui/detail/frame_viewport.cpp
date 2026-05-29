@@ -40,39 +40,340 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <functional>
+#include <string_view>
+
+#include <cmath>
+#include <cstddef>
 
 namespace dart::gui::detail {
+namespace {
+
+ViewportPaneFrame makePaneFrame(
+    const dart::gui::ViewportPaneView& pane,
+    int x,
+    int y,
+    int width,
+    int height)
+{
+  ViewportPaneFrame frame;
+  frame.kind = pane.kind;
+  frame.camera = pane.camera;
+  frame.x = x;
+  frame.y = y;
+  frame.width = std::max(0, width);
+  frame.height = std::max(0, height);
+  frame.active = pane.active;
+  return frame;
+}
+
+const dart::gui::ViewportPaneView& singlePaneView(
+    const dart::gui::ViewportLayoutOptions& layoutOptions)
+{
+  if (layoutOptions.mode == dart::gui::ViewportLayoutMode::Quad) {
+    for (std::size_t i = 0;
+         i < layoutOptions.paneCount && i < dart::gui::kMaxViewportPanes;
+         ++i) {
+      if (layoutOptions.panes[i].active) {
+        return layoutOptions.panes[i];
+      }
+    }
+  }
+  return layoutOptions.panes[0];
+}
+
+bool canSplitQuad(int width, int height)
+{
+  return width >= 2 && height >= 2;
+}
+
+void getFramebufferCursorPosition(
+    GLFWwindow* window,
+    int framebufferWidth,
+    int framebufferHeight,
+    double& x,
+    double& y)
+{
+  glfwGetCursorPos(window, &x, &y);
+  int windowWidth = framebufferWidth;
+  int windowHeight = framebufferHeight;
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
+  if (windowWidth > 0) {
+    x *= static_cast<double>(framebufferWidth)
+         / static_cast<double>(windowWidth);
+  }
+  if (windowHeight > 0) {
+    y *= static_cast<double>(framebufferHeight)
+         / static_cast<double>(windowHeight);
+  }
+}
+
+} // namespace
+
+FrameViewport makeFrameViewport(
+    const dart::gui::ViewportLayoutOptions& layoutOptions,
+    int width,
+    int height)
+{
+  FrameViewport viewport;
+  viewport.width = std::max(1, width);
+  viewport.height = std::max(1, height);
+
+  if (layoutOptions.mode != dart::gui::ViewportLayoutMode::Quad
+      || !canSplitQuad(viewport.width, viewport.height)) {
+    viewport.paneCount = 1u;
+    viewport.panes[0] = makePaneFrame(
+        singlePaneView(layoutOptions), 0, 0, viewport.width, viewport.height);
+    viewport.panes[0].active = true;
+    return viewport;
+  }
+
+  viewport.paneCount = std::clamp<std::size_t>(
+      layoutOptions.paneCount, 1u, dart::gui::kMaxViewportPanes);
+  const int leftWidth = viewport.width / 2;
+  const int topHeight = viewport.height / 2;
+  const int rightWidth = std::max(1, viewport.width - leftWidth);
+  const int bottomHeight = std::max(1, viewport.height - topHeight);
+
+  for (std::size_t i = 0; i < viewport.paneCount; ++i) {
+    const dart::gui::ViewportPaneView& pane = layoutOptions.panes[i];
+    switch (pane.kind) {
+      case dart::gui::ViewportPaneKind::Top:
+        viewport.panes[i] = makePaneFrame(pane, 0, 0, leftWidth, topHeight);
+        break;
+      case dart::gui::ViewportPaneKind::Perspective:
+        viewport.panes[i]
+            = makePaneFrame(pane, leftWidth, 0, rightWidth, topHeight);
+        break;
+      case dart::gui::ViewportPaneKind::Front:
+        viewport.panes[i]
+            = makePaneFrame(pane, 0, topHeight, leftWidth, bottomHeight);
+        break;
+      case dart::gui::ViewportPaneKind::Right:
+        viewport.panes[i] = makePaneFrame(
+            pane, leftWidth, topHeight, rightWidth, bottomHeight);
+        break;
+    }
+  }
+  return viewport;
+}
+
+std::size_t activeViewportPaneIndex(const FrameViewport& viewport)
+{
+  for (std::size_t i = 0;
+       i < viewport.paneCount && i < dart::gui::kMaxViewportPanes;
+       ++i) {
+    if (viewport.panes[i].active) {
+      return i;
+    }
+  }
+  return 0u;
+}
+
+const ViewportPaneFrame& activeViewportPane(const FrameViewport& viewport)
+{
+  return viewport.panes[activeViewportPaneIndex(viewport)];
+}
+
+std::optional<std::size_t> viewportPaneIndexAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY)
+{
+  if (!std::isfinite(cursorX) || !std::isfinite(cursorY)) {
+    return std::nullopt;
+  }
+  for (std::size_t i = 0;
+       i < viewport.paneCount && i < dart::gui::kMaxViewportPanes;
+       ++i) {
+    const ViewportPaneFrame& pane = viewport.panes[i];
+    if (pane.width <= 0 || pane.height <= 0) {
+      continue;
+    }
+    if (cursorX >= pane.x && cursorX < pane.x + pane.width && cursorY >= pane.y
+        && cursorY < pane.y + pane.height) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+
+const ViewportPaneFrame* viewportPaneAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY)
+{
+  const std::optional<std::size_t> index
+      = viewportPaneIndexAtCursor(viewport, cursorX, cursorY);
+  return index.has_value() ? &viewport.panes[*index] : nullptr;
+}
+
+std::optional<std::size_t> viewportPaneActivationIndexAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY)
+{
+  if (viewport.paneCount <= 1u) {
+    return std::nullopt;
+  }
+
+  const std::optional<std::size_t> index
+      = viewportPaneIndexAtCursor(viewport, cursorX, cursorY);
+  if (!index.has_value() || *index == activeViewportPaneIndex(viewport)) {
+    return std::nullopt;
+  }
+  return index;
+}
+
+const ViewportPaneFrame* viewportPaneActivationAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY)
+{
+  const std::optional<std::size_t> index
+      = viewportPaneActivationIndexAtCursor(viewport, cursorX, cursorY);
+  return index.has_value() ? &viewport.panes[*index] : nullptr;
+}
+
+bool applyViewportPaneActivationAtCursor(
+    ViewportPaneActivationState& state,
+    const FrameViewport& viewport,
+    double cursorX,
+    double cursorY,
+    bool leftMousePressed,
+    bool uiCapturesMouse,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated)
+{
+  const bool pressedEdge = leftMousePressed && !state.wasLeftMousePressed;
+  state.wasLeftMousePressed = leftMousePressed;
+  if (!pressedEdge || uiCapturesMouse || !onViewportPaneActivated) {
+    return false;
+  }
+
+  const ViewportPaneFrame* pane
+      = viewportPaneActivationAtCursor(viewport, cursorX, cursorY);
+  if (pane == nullptr) {
+    return false;
+  }
+
+  cameraController.camera = pane->camera;
+  dart::gui::resetOrbitCameraTracking(cameraController);
+  onViewportPaneActivated(pane->kind);
+  return true;
+}
+
+bool updateViewportPaneActivation(
+    ViewportPaneActivationState& state,
+    GLFWwindow* window,
+    const FrameViewport& viewport,
+    ImGuiIO& imguiIo,
+    bool showUi,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated)
+{
+  if (window == nullptr) {
+    state.wasLeftMousePressed = false;
+    return false;
+  }
+
+  double cursorX = 0.0;
+  double cursorY = 0.0;
+  getFramebufferCursorPosition(
+      window, viewport.width, viewport.height, cursorX, cursorY);
+  const bool leftMousePressed
+      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+  return applyViewportPaneActivationAtCursor(
+      state,
+      viewport,
+      cursorX,
+      cursorY,
+      leftMousePressed,
+      isSceneMouseInputCapturedByUi(showUi, imguiIo),
+      cameraController,
+      onViewportPaneActivated);
+}
+
+std::string_view viewportPaneDisplayName(dart::gui::ViewportPaneKind kind)
+{
+  switch (kind) {
+    case dart::gui::ViewportPaneKind::Perspective:
+      return "Perspective";
+    case dart::gui::ViewportPaneKind::Top:
+      return "Top";
+    case dart::gui::ViewportPaneKind::Front:
+      return "Front";
+    case dart::gui::ViewportPaneKind::Right:
+      return "Right";
+  }
+  return "Viewport";
+}
+
+ViewportPaneLabelState viewportPaneLabelState(
+    const FrameViewport& viewport, std::size_t paneIndex)
+{
+  ViewportPaneLabelState label;
+  if (paneIndex >= viewport.paneCount
+      || paneIndex >= dart::gui::kMaxViewportPanes) {
+    label.text = "Viewport";
+    return label;
+  }
+
+  label.text = viewportPaneDisplayName(viewport.panes[paneIndex].kind);
+  label.active = paneIndex == activeViewportPaneIndex(viewport);
+  return label;
+}
 
 FrameViewport updateFrameViewport(
     GLFWwindow* window,
-    ::filament::View& view,
-    ::filament::Camera& camera,
+    const std::array<::filament::View*, dart::gui::kMaxViewportPanes>& views,
+    const std::array<::filament::Camera*, dart::gui::kMaxViewportPanes>&
+        cameras,
     dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     ImGuiIO& imguiIo,
     int defaultWidth,
     int defaultHeight,
     double worldTimeStep,
-    bool showUi)
+    bool showUi,
+    const dart::gui::OrbitCameraControlOptions& cameraControls,
+    const dart::gui::ViewportLayoutOptions& layoutOptions)
 {
-  FrameViewport viewport{defaultWidth, defaultHeight};
+  int width = defaultWidth;
+  int height = defaultHeight;
   if (window != nullptr) {
-    glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
+    glfwGetFramebufferSize(window, &width, &height);
   }
-  viewport.width = std::max(1, viewport.width);
-  viewport.height = std::max(1, viewport.height);
+  FrameViewport viewport = makeFrameViewport(layoutOptions, width, height);
 
   imguiIo.DisplaySize = ImVec2(
       static_cast<float>(viewport.width), static_cast<float>(viewport.height));
   imguiIo.DeltaTime = static_cast<float>(worldTimeStep);
-  configureViewportCamera(
-      view, camera, cameraController.camera, viewport.width, viewport.height);
+  for (std::size_t i = 0; i < viewport.paneCount; ++i) {
+    if (views[i] == nullptr || cameras[i] == nullptr) {
+      continue;
+    }
+    const ViewportPaneFrame& pane = viewport.panes[i];
+    configureViewportCamera(
+        *views[i],
+        *cameras[i],
+        pane.camera,
+        pane.x,
+        viewport.height - pane.y - pane.height,
+        pane.width,
+        pane.height);
+  }
 
   if (window != nullptr) {
-    const bool suppressCameraOrbit
+    double cursorX = 0.0;
+    double cursorY = 0.0;
+    getFramebufferCursorPosition(
+        window, viewport.width, viewport.height, cursorX, cursorY);
+    const std::optional<std::size_t> cursorPane
+        = viewportPaneIndexAtCursor(viewport, cursorX, cursorY);
+    const bool cursorOverActivePane
+        = cursorPane.has_value()
+          && *cursorPane == activeViewportPaneIndex(viewport);
+    const bool suppressCameraMouse
         = selectionController.isDraggingSelection()
-          || isSceneMouseInputCapturedByUi(showUi, imguiIo);
-    updateCameraController(window, cameraController, suppressCameraOrbit);
+          || isSceneMouseInputCapturedByUi(showUi, imguiIo)
+          || !cursorOverActivePane;
+    updateCameraController(
+        window, cameraController, suppressCameraMouse, cameraControls);
   }
 
   return viewport;

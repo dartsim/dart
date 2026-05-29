@@ -30,8 +30,15 @@ pixi run dartsim
 pixi run dartsim -- --width 1600 --height 900
 ```
 
-Launching the editor (either `pixi run dartsim` or `pixi run ex dartsim`
-without `--scene`) forces the ImGui docking branch
+The editor opens an **empty workspace** by default. Pass `--demo` to seed a
+small sample scene (a box, a sphere, and a two-link revolute arm) for a quick
+look at the panels:
+
+```bash
+pixi run dartsim -- --demo
+```
+
+Launching the editor with `pixi run dartsim` forces the ImGui docking branch
 (`DART_USE_SYSTEM_IMGUI=OFF`) so the menu bar, Scene Tree, Inspector, Console,
 and Simulation panels open in a default IDE layout and can be docked, split, and
 rearranged, with the arrangement persisted in `imgui.ini`. Extra CLI flags pass

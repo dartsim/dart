@@ -90,12 +90,15 @@ void destroyApplicationResources(
 {
   auto& engine = *renderContext.engine;
   auto& scene = *renderContext.scene;
-  auto& view = *renderContext.view;
 
   destroyConfiguredImGuiOverlay(engine, imguiOverlay);
 
   detachSceneEnvironment(scene, lights);
-  clearMainViewColorGrading(view);
+  for (auto* view : renderContext.views) {
+    if (view != nullptr) {
+      clearMainViewColorGrading(*view);
+    }
+  }
   for (const SceneRenderable& sceneRenderable : sceneRenderables) {
     removeRenderableFromScene(scene, sceneRenderable.renderable);
   }

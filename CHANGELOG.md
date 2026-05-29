@@ -925,6 +925,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     versus the frictionless control; friction is inactive without contact), a
     friction variant of the drape benchmark, and serialization of the new
     coefficient. Self-contact and codimensional friction are later increments.
+  - Extended experimental IPC friction to deformable SELF-CONTACT (point-triangle
+    pairs), reusing the same `frictionCoefficient`. The lagged normal force is
+    the barrier force magnitude on the point node, and the tangent projection
+    comes from the point-triangle tangent stencil; friction opposes the stencil's
+    tangential relative displacement with the same IPC f0/f1 mollifier. Adds a
+    regression (one surface sliding tangentially on another in self-contact
+    decelerates versus the frictionless control while the barrier keeps them
+    separated). Energy+gradient only for now (the self-contact friction Hessian,
+    edge-edge friction, and non-flat ground normals are later increments); the
+    line search on the friction-inclusive energy ensures descent.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

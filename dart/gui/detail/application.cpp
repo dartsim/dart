@@ -201,6 +201,10 @@ void applySceneOptions(
   appOptions.simulateWorld = src.simulateWorld;
   appOptions.panels = src.panels;
   appOptions.camera = src.camera;
+  appOptions.cameraControlsProvider = src.cameraControlsProvider;
+  appOptions.cameraUpdater = src.cameraUpdater;
+  appOptions.viewportLayoutProvider = src.viewportLayoutProvider;
+  appOptions.onViewportPaneActivated = src.onViewportPaneActivated;
 }
 
 int demoSceneIndex(
@@ -314,6 +318,13 @@ int runGuiBackendApplicationImpl(
     appOptions.postRender = applicationOptions.postRender;
     appOptions.simulateWorld = applicationOptions.simulateWorld;
     appOptions.panels = applicationOptions.panels;
+    appOptions.cameraControlsProvider
+        = applicationOptions.cameraControlsProvider;
+    appOptions.cameraUpdater = applicationOptions.cameraUpdater;
+    appOptions.viewportLayoutProvider
+        = applicationOptions.viewportLayoutProvider;
+    appOptions.onViewportPaneActivated
+        = applicationOptions.onViewportPaneActivated;
   }
   const RunOptions& runOptions = appOptions.run;
 
@@ -353,11 +364,13 @@ int runGuiBackendApplicationImpl(
   FilamentRenderContext renderContext = createFilamentRenderContext(
       runOptions, runOptions.headless ? nullptr : getNativeWindow(window));
   auto* engine = renderContext.engine;
-  auto* view = renderContext.view;
   auto* scene = renderContext.scene;
-  auto* camera = renderContext.camera;
   auto* colorGrading = createDebugColorGrading(*engine);
-  configureMainView(*view, colorGrading, runOptions.headless);
+  for (auto* view : renderContext.views) {
+    if (view != nullptr) {
+      configureMainView(*view, colorGrading, runOptions.headless);
+    }
+  }
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
 
@@ -441,6 +454,9 @@ int runGuiBackendApplicationImpl(
 
     cameraController.camera
         = appOptions.camera.value_or(initialCameraForScene(appOptions.scene));
+    if (appOptions.cameraUpdater) {
+      appOptions.cameraUpdater(cameraController.camera);
+    }
     const auto homeCamera = cameraController.camera;
 
     const bool validateFixtureRequirements = appOptions.world == nullptr;
@@ -454,6 +470,7 @@ int runGuiBackendApplicationImpl(
             appOptions.scene,
             dartScene,
             validateFixtureRequirements,
+            applicationOptions.allowEmptyScene,
             std::cerr);
     if (!maybeInitialSceneState) {
       frameCaptureSucceeded = false;
@@ -474,7 +491,6 @@ int runGuiBackendApplicationImpl(
         materialResources,
         runOptions,
         dartScene,
-        cameraController,
         selectionController,
         sceneState,
         selectionDebugOverlay,
@@ -530,17 +546,32 @@ int runGuiBackendApplicationImpl(
       FrameViewport viewport;
       {
         DART_PROFILE_SCOPED_N("GUI viewport camera");
+        const dart::gui::OrbitCameraControlOptions cameraControls
+            = appOptions.cameraControlsProvider
+                  ? appOptions.cameraControlsProvider()
+                  : dart::gui::OrbitCameraControlOptions{};
+        dart::gui::ViewportLayoutOptions viewportLayout
+            = appOptions.viewportLayoutProvider
+                  ? appOptions.viewportLayoutProvider(cameraController.camera)
+                  : dart::gui::ViewportLayoutOptions{};
+        if (!appOptions.viewportLayoutProvider) {
+          viewportLayout.panes[0].camera = cameraController.camera;
+          viewportLayout.panes[0].active = true;
+        }
         viewport = updateFrameViewport(
             window,
-            *view,
-            *camera,
+            renderContext.views,
+            renderContext.cameras,
             cameraController,
             selectionController,
             imguiIo,
             runOptions.width,
             runOptions.height,
             dartScene.world->getTimeStep(),
-            appOptions.showUi);
+            appOptions.showUi,
+            cameraControls,
+            viewportLayout);
+        renderContext.activeViewCount = viewport.paneCount;
       }
       profile.viewportCameraMs += elapsedMs(phaseStart);
 
@@ -582,7 +613,12 @@ int runGuiBackendApplicationImpl(
             renderContext.backendName);
       }
       setSceneLightsEnabled(*engine, lights, headlightsEnabled);
-      applyRenderSettings(*view, dartScene.renderSettings);
+      for (std::size_t i = 0; i < renderContext.views.size(); ++i) {
+        if (renderContext.views[i] != nullptr) {
+          applyRenderSettings(
+              *renderContext.views[i], dartScene.renderSettings);
+        }
+      }
 
       if (appOptions.preRender) {
         appOptions.preRender();

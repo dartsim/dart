@@ -32,6 +32,7 @@
 
 #include "selection.hpp"
 
+#include "frame_viewport.hpp"
 #include "input.hpp"
 #include "scenes.hpp"
 
@@ -88,6 +89,45 @@ const RenderableDescriptor* findRenderableDescriptor(
         return candidate.id == id;
       });
   return descriptor == descriptors.end() ? nullptr : &*descriptor;
+}
+
+std::size_t pointerPaneIndex(
+    const FrameViewport& viewport, double cursorX, double cursorY)
+{
+  const std::optional<std::size_t> hovered
+      = viewportPaneIndexAtCursor(viewport, cursorX, cursorY);
+  return hovered.value_or(activeViewportPaneIndex(viewport));
+}
+
+PickRay makePanePickRay(
+    const ViewportPaneFrame& pane, double cursorX, double cursorY)
+{
+  const double localCursorX = std::clamp(
+      cursorX - static_cast<double>(pane.x),
+      0.0,
+      static_cast<double>(std::max(1, pane.width)));
+  const double localCursorY = std::clamp(
+      cursorY - static_cast<double>(pane.y),
+      0.0,
+      static_cast<double>(std::max(1, pane.height)));
+  return makePerspectivePickRay(
+      pane.camera, localCursorX, localCursorY, pane.width, pane.height);
+}
+
+void getFramebufferCursorPosition(
+    GLFWwindow* window, const FrameViewport& viewport, double& x, double& y)
+{
+  glfwGetCursorPos(window, &x, &y);
+  int windowWidth = viewport.width;
+  int windowHeight = viewport.height;
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
+  if (windowWidth > 0) {
+    x *= static_cast<double>(viewport.width) / static_cast<double>(windowWidth);
+  }
+  if (windowHeight > 0) {
+    y *= static_cast<double>(viewport.height)
+         / static_cast<double>(windowHeight);
+  }
 }
 
 std::optional<int> selectedRotationAxisIndexFromKeyboard(GLFWwindow* window)
@@ -573,11 +613,9 @@ void SelectionController::applyKeyboardNudge(
   descriptors = extractRenderables(*scene.world);
 }
 
-void SelectionController::updateMouseSelection(
+bool SelectionController::updateMouseSelection(
     GLFWwindow* window,
-    const OrbitCamera& camera,
-    int framebufferWidth,
-    int framebufferHeight,
+    const FrameViewport& viewport,
     bool showUi,
     bool uiCapturesMouse,
     double guiScale,
@@ -586,19 +624,35 @@ void SelectionController::updateMouseSelection(
     ViewerLifecycleState& lifecycle)
 {
   if (window == nullptr) {
-    return;
+    return false;
   }
   (void)showUi;
   (void)guiScale;
 
   double cursorX = 0.0;
   double cursorY = 0.0;
-  glfwGetCursorPos(window, &cursorX, &cursorY);
+  getFramebufferCursorPosition(window, viewport, cursorX, cursorY);
   const bool isLeftMousePressed
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+  const std::size_t hoveredPaneIndex
+      = pointerPaneIndex(viewport, cursorX, cursorY);
+  if (isLeftMousePressed && !mWasLeftMousePressed) {
+    mActivePointerPaneIndex = hoveredPaneIndex;
+  }
+  const std::size_t inputPaneIndex
+      = isLeftMousePressed && mActivePointerPaneIndex.has_value()
+            ? *mActivePointerPaneIndex
+            : hoveredPaneIndex;
+  const std::size_t maxPaneIndex
+      = viewport.paneCount > 0
+            ? std::min(
+                  viewport.paneCount - 1u, dart::gui::kMaxViewportPanes - 1u)
+            : 0u;
+  const ViewportPaneFrame& inputPane
+      = viewport.panes[std::min(inputPaneIndex, maxPaneIndex)];
+  const OrbitCamera& camera = inputPane.camera;
   const bool cursorOverPanel = uiCapturesMouse;
-  const PickRay cursorRay = makePerspectivePickRay(
-      camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+  const PickRay cursorRay = makePanePickRay(inputPane, cursorX, cursorY);
   const bool gizmoDragActive
       = mLeftMouseStartedDrag
         && (mSelectedDragMode == DragMode::GizmoTranslateAxis
@@ -754,8 +808,7 @@ void SelectionController::updateMouseSelection(
       mSelectedDragLastCursorX = cursorX;
       mSelectedDragLastCursorY = cursorY;
     } else if (mSelectedDragMode == DragMode::BodyTranslate) {
-      const PickRay ray = makePerspectivePickRay(
-          camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+      const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
       const auto translation = mSelectedDragIsAxisConstrained
                                    ? computeAxisDragTranslation(
                                          mSelectedDragLastRay,
@@ -774,8 +827,7 @@ void SelectionController::updateMouseSelection(
         descriptors = extractRenderables(*scene.world);
       }
     } else if (mSelectedDragMode == DragMode::GizmoTranslateAxis) {
-      const PickRay ray = makePerspectivePickRay(
-          camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+      const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
       const auto translation = computeAxisDragTranslation(
           mSelectedDragLastRay,
           ray,
@@ -793,8 +845,7 @@ void SelectionController::updateMouseSelection(
         descriptors = extractRenderables(*scene.world);
       }
     } else if (mSelectedDragMode == DragMode::GizmoTranslatePlane) {
-      const PickRay ray = makePerspectivePickRay(
-          camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+      const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
       const auto translation = computePlaneDragTranslation(
           mSelectedDragLastRay,
           ray,
@@ -827,8 +878,7 @@ void SelectionController::updateMouseSelection(
       mSelectedDragLastCursorX = cursorX;
       mSelectedDragLastCursorY = cursorY;
     } else {
-      const PickRay ray = makePerspectivePickRay(
-          camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+      const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
       const auto translation = mSelectedDragIsAxisConstrained
                                    ? computeAxisDragTranslation(
                                          mSelectedDragLastRay,
@@ -854,11 +904,13 @@ void SelectionController::updateMouseSelection(
     }
   }
 
+  bool selectionCommitted = false;
   if (!isLeftMousePressed && mWasLeftMousePressed) {
     const double dragDistance
         = std::hypot(cursorX - mLeftMousePressX, cursorY - mLeftMousePressY);
     if (!mLeftMouseStartedOnPanel && !mLeftMouseStartedDrag
         && dragDistance < 4.0) {
+      selectionCommitted = true;
       const auto hit = pickNearestRenderable(descriptors, cursorRay);
       if (hit) {
         mSelectedRenderableId = hit->id;
@@ -877,9 +929,11 @@ void SelectionController::updateMouseSelection(
     mActiveGizmoIndex = 0u;
     mActiveGizmoHandle.reset();
     mActiveBodyNodeDrag.reset();
+    mActivePointerPaneIndex.reset();
   }
 
   mWasLeftMousePressed = isLeftMousePressed;
+  return selectionCommitted;
 }
 
 } // namespace dart::gui::detail
