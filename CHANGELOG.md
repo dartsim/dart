@@ -521,6 +521,24 @@
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
 
 - Simulation
+  - Added opt-in analytic differentiable simulation to the experimental `World`
+    (the Nimble method, arXiv:2103.16021): a build-time `DART_BUILD_DIFF` option
+    plus a runtime `WorldOptions::differentiable` flag (off by default, with
+    bitwise-identical results and no snapshot allocation when off). When enabled,
+    `World::getStepDerivatives()` returns DART-owned state/control/parameter
+    Jacobians and `World::applyStepVjp()` an efficient vector-Jacobian product,
+    computed by implicit differentiation of the boxed-LCP contact solve (the
+    clamping-block `A_CC⁻¹` gradient with the friction upper-bound mapping) and
+    the articulated-body dynamics. Covers all joint types (including SO(3)/SE(3)
+    manifold position Jacobians), frictionless and Coulomb-friction contact,
+    rotational/off-COM and multi-contact, and mass/inertia/friction parameter
+    derivatives; adds an opt-in boxed-LCP rigid-body contact path
+    (`WorldOptions::contactSolverMethod`), a framework-neutral `diff::rollout`,
+    contact-gradient refinement modes (`ContactGradientMode`), and a dartpy
+    `sx.diff` bridge (`timestep` as a `torch.autograd.Function`, `rollout`,
+    `get_step_derivatives`/`apply_step_vjp`) with lazy torch import. All
+    gradients are finite-difference-of-step verified; no solver, reverse-pass
+    cache, ECS, or tensor-backend types are exposed publicly.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration

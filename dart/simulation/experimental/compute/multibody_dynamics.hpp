@@ -69,9 +69,10 @@ struct MultibodyDynamicsTerms
 ///
 /// Uses the same recursive Newton-Euler formulation as the forward-dynamics
 /// stage, evaluated at the multibody's current joint positions and velocities.
-/// Fixed-base trees with fixed/revolute/prismatic joints are supported; other
-/// joint types are rejected. For a multibody with no movable degrees of freedom
-/// the returned matrix and vectors are empty.
+/// Fixed-base trees with fixed, revolute, prismatic, screw, universal, planar,
+/// ball (Spherical), and free (Floating) joints are supported, matching the
+/// joint types handled by the forward dynamics. For a multibody with no movable
+/// degrees of freedom the returned matrix and vectors are empty.
 [[nodiscard]] DART_EXPERIMENTAL_API MultibodyDynamicsTerms
 computeMultibodyDynamicsTerms(
     entt::registry& registry,

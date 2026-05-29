@@ -220,10 +220,16 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
-/// Resolves contacts between free rigid bodies with sequential normal impulses
-/// (frictionless, fully inelastic). Static bodies (non-positive mass) act as
-/// immovable. This is the first contact-solver slice; friction, restitution
-/// tuning, joints/links, and an LCP formulation are future work.
+/// Resolves contacts between free rigid bodies. Static bodies (non-positive
+/// mass) act as immovable.
+///
+/// Two solver paths are available, selected per-World via
+/// `WorldOptions::contactSolverMethod`:
+///   - `SequentialImpulse` (default): the long-standing sequential normal +
+///     friction impulse solve with positional correction.
+///   - `BoxedLcp`: an opt-in boxed-LCP normal solve (frictionless first slice)
+///     via the pivoting Dantzig solver. Contacts outside that scope (friction,
+///     articulated links) fall through to the sequential-impulse behavior.
 class DART_EXPERIMENTAL_API RigidBodyContactStage final : public WorldStepStage
 {
 public:

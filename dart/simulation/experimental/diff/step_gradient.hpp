@@ -34,52 +34,30 @@
 
 #include <dart/simulation/experimental/export.hpp>
 
+#include <Eigen/Core>
+
 namespace dart::simulation::experimental {
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class DeformableBody;
-class Joint;
-class Link;
-class LoopClosure;
-class Multibody;
-class RigidBody;
-class World;
-enum class ContactSolverMethod;
-enum class ContactGradientMode;
-enum class WorldSyncStage;
-enum class PhysicalParameter;
-struct PhysicalParameterSelector;
-
-namespace compute {
-class ComputeExecutor;
-class ParallelExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
-
-// Value objects
-struct Contact;
-struct DeformableDirichletBoundaryCondition;
-struct DeformableMaterialProperties;
-struct DeformableNeumannBoundaryCondition;
-struct DeformableSurfaceTriangle;
-struct DeformableTetrahedron;
-
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct DeformableBodyOptions;
-struct DeformableEdge;
-struct JointOptions;
-struct JointSpec;
-struct LinkOptions;
-struct LoopClosureRuntimePolicy;
-struct LoopClosureResidual;
-struct LoopClosureSpec;
-struct MultibodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+/// Reverse-mode (vector-Jacobian product) gradient of a single differentiable
+/// simulation step.
+///
+/// Given an upstream gradient of a scalar loss with respect to the next state
+/// `dL/dx'` (size `2 * ndof`), the step's reverse-mode rule pulls it back to
+/// the inputs of the step:
+///
+/// - `state` is `dL/dx = stateJacobianᵀ · (dL/dx')`, size `2*ndof`, the
+/// gradient
+///   with respect to the current state `x = [q; q̇]`.
+/// - `control` is `dL/du = controlJacobianᵀ · (dL/dx')`, size `ndof`, the
+///   gradient with respect to the control `u = τ`.
+///
+/// This is a plain Eigen-typed value object with no solver, backend, or ECS
+/// dependency. The vectors are valid for the configuration at which the step's
+/// Jacobians were evaluated.
+struct DART_EXPERIMENTAL_API StepGradient
+{
+  Eigen::VectorXd state;   ///< dL/dx = Jₓᵀ · (dL/dx'), size 2*ndof
+  Eigen::VectorXd control; ///< dL/du = Jᵤᵀ · (dL/dx'), size ndof
+};
 
 } // namespace dart::simulation::experimental

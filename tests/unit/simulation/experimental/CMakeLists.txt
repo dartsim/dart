@@ -56,6 +56,45 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
   dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
 
+  # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only
+  # the always-compiled WorldOptions core, so it runs in both build configs. The
+  # FD-vs-analytic Jacobian test exercises the detail-only differentiable code
+  # path and is registered only when DART_BUILD_DIFF is ON.
+  dart_experimental_add_test(
+    test_diff_zero_cost_parity
+    ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_zero_cost_parity.cpp
+  )
+  if(DART_BUILD_DIFF)
+    dart_experimental_add_test(
+      test_diff_smooth_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_smooth_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_contact_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_contact_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_public_contact_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_public_contact_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_contact_gradient_modes
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_contact_gradient_modes.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_apply_step_vjp
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_apply_step_vjp.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_parameter_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_parameter_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_rollout
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_rollout.cpp
+    )
+  endif()
+
   if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
     dart_experimental_add_test(
       test_rigid_body_state_batch_cuda
