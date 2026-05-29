@@ -67,6 +67,15 @@
         the per-vertex assembly) once the solver-stepping slice (Phase 6) lands.
 - [ ] Phase 6: wire VBD as a DART-owned, selectable deformable solver path in
       the experimental World step and add integration tests.
+  - [x] Stepping-loop sub-slice: a self-contained `vbdStepMassSpring` driver
+        that performs one implicit-Euler step (inertial targets, adaptive warm
+        start, colored block-descent sweeps with optional Chebyshev
+        over-relaxation, velocity update, and previous-velocity bookkeeping),
+        with tests for implicit-Euler free-fall, fixed vertices, multi-step
+        stability, Chebyshev no-op/convergence, and adaptive-init convergence.
+  - [ ] Remaining Phase 6 work: thread element damping into the stepper, add a
+        tetrahedral stepper, and wire the stepper behind the algorithm-neutral
+        `DeformableDynamicsStage` with World-level integration tests.
 - [ ] Phase 7: vertex-based contact and friction (reusing the existing
       `deformable_contact` distance/barrier/CCD kernels).
 - [ ] Phase 8: CPU performance optimization (SoA layout, multithreaded color
@@ -229,6 +238,22 @@ standalone helpers; they are not yet threaded through a multi-step VBD stepping
 loop (no step-start initialization, cross-sweep Chebyshev, or in-assembly
 damping yet), which depends on the Phase 6 solver-stepping slice.
 
+For the stepping-loop sub-slice, keep the verification language precise: it
+covers the single-body mass-spring `vbdStepMassSpring` implicit-Euler step
+(inertial-target computation, adaptive warm start, colored block-descent sweeps,
+optional Chebyshev over-relaxation across sweeps, velocity update, and
+previous-velocity bookkeeping), with tests for the no-spring implicit-Euler
+free-fall trajectory, fixed-vertex immobility, 400-step finiteness/boundedness
+plus net downward stretch of a hanging chain, Chebyshev being a no-op at
+`rho = 0` and converging to the same step solution at large iteration counts,
+adaptive initialization converging to the same step solution as a cold start,
+and previous-velocity advancement. It is a single-body mass-spring CPU stepper;
+element damping, a tetrahedral stepper, and any wiring behind
+`DeformableDynamicsStage` are not implemented.
+
+Local gate (Phase 6 stepping loop, first pass) on 2026-05-28: the focused target
+build and 7 `test_vbd_stepper` cases passing.
+
 Local gate (Phase 5 acceleration/damping primitives, first pass) on 2026-05-28:
 the focused target build and 9 `test_vbd_acceleration` cases passing. These are
 constant-time pure helpers, so no separate microbenchmark is added; their effect
@@ -259,7 +284,8 @@ pixi run cmake build/default/cpp/Release
 pixi run cmake --build build/default/cpp/Release --target \
   test_vbd_vertex_block_kernel test_vbd_vertex_coloring test_vbd_block_descent \
   test_vbd_neo_hookean test_vbd_tet_mesh_descent test_vbd_acceleration \
-  bm_vbd_vertex_block_kernel bm_vbd_block_descent bm_vbd_neo_hookean
+  test_vbd_stepper bm_vbd_vertex_block_kernel bm_vbd_block_descent \
+  bm_vbd_neo_hookean
 ctest --test-dir build/default/cpp/Release -R '^test_vbd_' --output-on-failure
 ./build/default/cpp/Release/bin/bm_vbd_vertex_block_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'
 ./build/default/cpp/Release/bin/bm_vbd_block_descent --benchmark_min_time=0.05s --benchmark_filter='BM_Vbd'

@@ -858,6 +858,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     and stiffness-proportional Rayleigh damping for the per-vertex block, each
     unit-tested. These are standalone helpers, not yet threaded through a
     multi-step VBD stepping loop.
+  - Added an internal experimental single-body VBD mass-spring stepper that
+    performs one implicit-Euler step (inertial targets, adaptive warm start,
+    colored block-descent sweeps with optional Chebyshev over-relaxation,
+    velocity update, and previous-velocity bookkeeping), validated against the
+    implicit-Euler free-fall trajectory, fixed-vertex immobility, multi-step
+    stability, Chebyshev no-op/convergence, and adaptive-init convergence.
+    Internal solver groundwork only; not wired behind the deformable world
+    stage.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position
