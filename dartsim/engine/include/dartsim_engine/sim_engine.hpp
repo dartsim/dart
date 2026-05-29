@@ -46,6 +46,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dartsim {
 
@@ -81,6 +82,10 @@ public:
     return m_selection;
   }
   [[nodiscard]] CommandManager& commands()
+  {
+    return m_commands;
+  }
+  [[nodiscard]] const CommandManager& commands() const
   {
     return m_commands;
   }
@@ -154,6 +159,16 @@ public:
 
   /// True when the current scene differs from the last clean project snapshot.
   [[nodiscard]] bool isProjectDirty() const;
+  /// True when the undo/redo cursor is at the last clean project revision.
+  [[nodiscard]] bool isHistoryAtCleanState() const;
+  [[nodiscard]] std::size_t cleanHistoryIndex() const
+  {
+    return m_cleanHistoryIndex;
+  }
+  [[nodiscard]] CommandManager::HistoryRevision cleanHistoryRevision() const
+  {
+    return m_cleanHistoryRevision;
+  }
   [[nodiscard]] const std::string& projectPath() const
   {
     return m_projectPath;
@@ -161,6 +176,10 @@ public:
   [[nodiscard]] bool hasProjectPath() const
   {
     return !m_projectPath.empty();
+  }
+  [[nodiscard]] std::uint64_t projectGeneration() const
+  {
+    return m_projectGeneration;
   }
 
   /// Replace the current project with a fresh empty scene.
@@ -203,6 +222,9 @@ private:
   std::function<void()> m_onChanged;
   std::string m_projectPath;
   SceneModel m_cleanProjectModel;
+  std::size_t m_cleanHistoryIndex = 0;
+  CommandManager::HistoryRevision m_cleanHistoryRevision = 0;
+  std::uint64_t m_projectGeneration = 1;
 };
 
 } // namespace dartsim

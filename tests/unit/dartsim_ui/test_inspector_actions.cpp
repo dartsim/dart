@@ -98,6 +98,59 @@ TEST(DartsimInspectorActions, EmptySelectionBuildsEmptyStatus)
   EXPECT_FALSE(ui::deleteInspectorSelection(engine).ok);
 }
 
+TEST(DartsimInspectorActions, ObjectStatusDoesNotDependOnSelection)
+{
+  SimEngine engine;
+  EXPECT_FALSE(ui::buildInspectorObjectStatus(engine, 42).hasSelection);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(4.0, 5.0, 6.0), "sphere"));
+  const ObjectId sphere = engine.selection().primary();
+  ASSERT_NE(sphere, kNoObject);
+  ASSERT_TRUE(engine.select(box));
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+
+  const ui::InspectorStatus status
+      = ui::buildInspectorObjectStatus(engine, sphere);
+  EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.selectionCount, 1u);
+  EXPECT_EQ(status.selectionSummary, "1 object");
+  EXPECT_FALSE(status.locked);
+  EXPECT_FALSE(status.canDelete);
+  EXPECT_EQ(status.object, sphere);
+  EXPECT_EQ(status.name, "sphere");
+  EXPECT_EQ(status.type, "RigidBody");
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
+      nullptr);
+  EXPECT_DOUBLE_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX)
+          ->value,
+      4.0);
+  ASSERT_NE(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType), nullptr);
+  EXPECT_EQ(engine.selection().primary(), box);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+
+  engine.simulation().play();
+  const ui::InspectorStatus locked
+      = ui::buildInspectorObjectStatus(engine, sphere);
+  EXPECT_TRUE(locked.locked);
+  EXPECT_FALSE(locked.canDelete);
+  ASSERT_FALSE(locked.numericProperties.empty());
+  EXPECT_FALSE(locked.numericProperties.front().editable);
+}
+
 TEST(DartsimInspectorActions, RigidBodyPropertiesEditThroughUndoableCommands)
 {
   SimEngine engine;
@@ -119,14 +172,29 @@ TEST(DartsimInspectorActions, RigidBodyPropertiesEditThroughUndoableCommands)
   ASSERT_NE(
       findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
       nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX)
+          ->section,
+      "Transform");
   ASSERT_NE(
       findNumeric(status, ui::InspectorNumericPropertyKind::Mass), nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::Mass)->section,
+      "Physical");
   ASSERT_NE(
       findNumeric(status, ui::InspectorNumericPropertyKind::ShapeDimensionX),
       nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::ShapeDimensionX)
+          ->section,
+      "Shape");
   ASSERT_NE(
       findEnum(status, ui::InspectorEnumPropertyKind::ShapeType), nullptr);
+  EXPECT_EQ(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType)->section,
+      "Shape");
   ASSERT_TRUE(status.colorProperty.has_value());
+  EXPECT_EQ(status.colorProperty->section, "Material");
 
   EXPECT_TRUE(
       ui::setInspectorNumericProperty(
@@ -368,6 +436,171 @@ TEST(DartsimInspectorActions, ShapePropertiesMatchPrimitiveKinds)
   EXPECT_NE(
       findNumeric(status, ui::InspectorNumericPropertyKind::ShapeDimensionZ),
       nullptr);
+}
+
+TEST(
+    DartsimInspectorActions,
+    SensorInspectorEditsDescriptorThroughUndoableCommands)
+{
+  SimEngine engine;
+  engine.execute(commands::addSensor(SensorKind::Camera, kNoObject));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+
+  ui::InspectorStatus status = ui::buildInspectorStatus(engine);
+  EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.type, "Sensor");
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorRange),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorFieldOfView),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorUpdateRate),
+      nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::Mass), nullptr);
+  EXPECT_FALSE(status.colorProperty.has_value());
+
+  const ui::InspectorEnumProperty* sensorKind
+      = findEnum(status, ui::InspectorEnumPropertyKind::SensorKind);
+  ASSERT_NE(sensorKind, nullptr);
+  EXPECT_EQ(sensorKind->label, "sensor kind");
+  EXPECT_EQ(sensorKind->section, "Sensor");
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorRange)
+          ->section,
+      "Sensor");
+  ASSERT_EQ(sensorKind->choices.size(), 3u);
+  EXPECT_EQ(sensorKind->choices[0].label, "Camera");
+  EXPECT_EQ(sensorKind->choices[1].label, "Range");
+  EXPECT_EQ(sensorKind->choices[2].label, "Contact");
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::SensorRange, -5.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(engine.objects().model().find(sensor)->sensor.range, 10.0);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::SensorFieldOfView, 500.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(sensor)->sensor.fieldOfView, 179.0);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine,
+          ui::InspectorNumericPropertyKind::SensorUpdateRate,
+          std::numeric_limits<double>::quiet_NaN())
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(sensor)->sensor.updateRate, 30.0);
+
+  const auto changedKind = ui::setInspectorEnumProperty(
+      engine,
+      ui::InspectorEnumPropertyKind::SensorKind,
+      static_cast<int>(SensorKind::Range));
+  EXPECT_TRUE(changedKind.ok);
+  EXPECT_EQ(changedKind.message, "Updated sensor kind");
+  const SceneObject* edited = engine.objects().model().find(sensor);
+  ASSERT_NE(edited, nullptr);
+  EXPECT_EQ(edited->sensor.kind, SensorKind::Range);
+  EXPECT_TRUE(
+      edited->shape.color.isApprox(Eigen::Vector4d(0.2, 0.75, 0.55, 1.0)));
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_EQ(
+      engine.objects().model().find(sensor)->sensor.kind, SensorKind::Camera);
+}
+
+TEST(
+    DartsimInspectorActions,
+    CollisionInspectorEditsShapeAndMaterialThroughUndoableCommands)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Box, kNoObject, translation(1.0, 2.0, 3.0), "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  ui::InspectorStatus status = ui::buildInspectorStatus(engine);
+  EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.type, "Collision");
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::ShapeDimensionX),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::CollisionFriction),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(
+          status, ui::InspectorNumericPropertyKind::CollisionRestitution),
+      nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::Mass), nullptr);
+  ASSERT_NE(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType), nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::CollisionFriction)
+          ->section,
+      "Collision");
+  EXPECT_EQ(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType)->section,
+      "Shape");
+  ASSERT_TRUE(status.colorProperty.has_value());
+  EXPECT_EQ(status.colorProperty->section, "Material");
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::CollisionFriction, -5.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(collision)->collision.friction, 0.8);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::CollisionRestitution, 2.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(collision)->collision.restitution, 1.0);
+
+  EXPECT_TRUE(
+      ui::setInspectorEnumProperty(
+          engine,
+          ui::InspectorEnumPropertyKind::ShapeType,
+          static_cast<int>(ShapeType::Capsule))
+          .ok);
+  EXPECT_EQ(
+      engine.objects().model().find(collision)->shape.type, ShapeType::Capsule);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::ShapeDimensionY, 0.75)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(collision)->shape.dimensions.y(), 0.75);
+
+  const Eigen::Vector4d color(0.1, 0.2, 0.3, 0.4);
+  EXPECT_TRUE(ui::setInspectorShapeColor(engine, color).ok);
+  EXPECT_TRUE(
+      engine.objects().model().find(collision)->shape.color.isApprox(color));
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_EQ(
+      engine.objects().model().find(collision)->shape.type, ShapeType::Capsule);
+  ASSERT_TRUE(engine.undo());
+  EXPECT_NE(
+      engine.objects().model().find(collision)->shape.dimensions.y(), 0.75);
 }
 
 TEST(DartsimInspectorActions, UnsupportedPropertiesAreRejected)

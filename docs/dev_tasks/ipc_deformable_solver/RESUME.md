@@ -146,7 +146,7 @@ candidate culling, barrier assembly, projected Newton, or friction.
 (#2746). Extends IPC friction to deformable SELF-CONTACT (point-triangle pairs),
 reusing `frictionCoefficient`. Lagged normal force = barrier force magnitude on
 the point node (||result.gradient.head<3>()||); tangent projection (2x12) from
-`dc::pointTriangleTangentStencil`; friction opposes projection*(4-node step
+`dc::pointTriangleTangentStencil`; friction opposes projection\*(4-node step
 displacement) with the same f0/f1 mollifier. Energy+gradient only (self-contact
 friction Hessian + edge-edge friction deferred); line search ensures descent.
 SelfContactFrictionContact/Inputs built once per outer iteration from the active
