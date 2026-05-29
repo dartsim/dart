@@ -840,6 +840,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     line-search limiter, with point-triangle and physical box-edge CCD
     regressions and benchmark counters. This is a CCD limiter only, not rigid
     contact response or IPC parity.
+  - Extended the static rigid surface CCD obstacle opt-in to static SPHERE
+    collision shapes (PLAN-081 Phase 2 non-box rigid surface coverage). An
+    opted-in static sphere is tessellated into a UV-sphere triangle mesh that
+    conservatively CIRCUMSCRIBES the analytic sphere (vertices placed at a
+    slightly inflated radius so every flat face stays outside the true surface),
+    so the existing point-triangle / edge-edge deformable CCD limiter stops a
+    deformable at the sphere without a new CCD primitive and never lets it
+    penetrate the real surface. Reuses the same `setDeformableSurfaceCcdObstacle`
+    opt-in (untagged spheres and boxes are unaffected, so existing scenes are
+    behavior-preserving) and reports a new `staticRigidSurfaceCcdSphereCount`
+    stat. Adds regressions that a fast node is limited before an opted-in sphere
+    and passes through an untagged one. Still a one-way conservative CCD limiter,
+    not rigid contact response or IPC parity.
   - Added internal experimental moving rigid box surface CCD limiting for free
     (non-static) deformable-surface CCD obstacles: the deformable stage predicts
     each obstacle's end-of-step transform from its velocity (mirroring the rigid
