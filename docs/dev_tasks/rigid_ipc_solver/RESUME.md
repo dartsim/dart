@@ -122,9 +122,15 @@ friction"):
   reusing the curved-trajectory speed bound plus the CCD convergence tolerance.
   Adversarially verified (>100M numerical samples + audit), which caught and
   fixed an off-by-`convergeAbs` reach bug; guarded by anti-tunneling, far-skip,
-  and tolerance-band regressions. Shaved ~10–20% off the rigid IPC step. Next
-  perf targets: spatial index for the residual all-pairs enumeration, the
-  per-primitive kernel/PSD cost, then warm-start/active-set reuse, then GPU.
+  and tolerance-band regressions. Shaved ~10–20% off the rigid IPC step.
+- Measured + rejected a PSD Cholesky fast path for `projectToPsd` (net ~15%
+  slower; the active reduced Hessians are typically indefinite). See the
+  "Per-primitive barrier kernels" finding in [`benchmarks.md`](benchmarks.md).
+  Next perf targets: spatial index for the residual all-pairs enumeration, a
+  cheaper PSD projection or fewer active-primitive evaluations (NOT an LDLT
+  skip), then warm-start/active-set reuse, then the gated GPU port. All work is
+  pushed to `origin/feature/rigid-ipc-manifest` (sole-maintainer authorization,
+  no PR-review gating).
 
 All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
 (23/23), `check-lint`, and the manifest checks.
