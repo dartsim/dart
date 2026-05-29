@@ -147,13 +147,29 @@ stops the box at the ground"), but is freeze-on-contact, not stable equilibrium.
 The same freeze blocks tangential motion: a box started at z=0.258 (gap 0.008)
 with linear velocity (1,0,0) sinks to z=0.251 (gap 0.001) and then does not
 slide at all, even frictionless — so a friction-slide GUI demo is not yet
-viable. Likely cause: the per-step projected-Newton solve returns non-converged
-(MaxIterations) once contact is active, so the opt-in stage skips the result
-(Phase 3q non-converged skip) and the pose never advances. Investigate from a
-C++ test (read `RigidIpcContactStage::getLastStats()`: status/converged/
-acceptedSteps/finalGradientNorm) — `sx.compute` is not exposed in Python. This
-is the top Phase 3 "production convergence criteria / robust contact behavior"
-item and gates sliding, friction demos, and corpus scenes.
+viable.
+
+Root cause (pinned via a C++ stage-stats diagnostic; the standalone
+`RigidIpcContactStage` slides correctly for ~6 steps): it is "sink-then-stick",
+not a Newton non-convergence. Under gravity the box creeps ~0.0007/step DEEPER
+into the barrier band (each individual step's motion does not cross contact, so
+the conservative line search never limits it — `lsLimited=0`, `lsBound=1`
+through step 6). Once a step finally crosses into penetration (~gap 0.001), the
+line search reports initial-separation violations (`lsZero=3`, `lsBound=0`) ->
+the projected-Newton step is `LineSearchBlocked` -> `result.failed` -> the stage
+skips the result, and since the body stays penetrating, EVERY subsequent step
+blocks identically -> permanent freeze (finalGradientNorm stuck ~91).
+
+Fix direction (standard IPC, focused Phase 3 slice): adaptive barrier stiffness
+(raise kappa so the gravity-balancing equilibrium gap stays safely > 0, so the
+box never creeps into penetration), and/or strict per-step feasibility so the
+line search limits the sinking steps before penetration, and/or
+penetration-recovery (minimum-separation CCD) so a penetrating state is not a
+permanent trap. Reproduce from a C++ test reading
+`RigidIpcContactStage::getLastStats()` (status/lsBound/lsZero/finalGradientNorm)
+on a box at z=0.258 over a static ground box — `sx.compute` is not exposed in
+Python. This is the top Phase 3 "production convergence / robust contact" item
+and gates sliding, friction demos, and corpus scenes.
 
 Next perf targets: a cheaper PSD projection or fewer active-primitive
 evaluations via primitive-level candidate sets (NOT an LDLT skip), then
