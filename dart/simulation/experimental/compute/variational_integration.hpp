@@ -72,10 +72,12 @@ struct VariationalSolveReport
   bool converged = false;     ///< Whether the residual fell below tolerance.
 };
 
-/// A holonomic loop-closure constraint between two points fixed on two links of
-/// the same multibody (or a point on a link and a fixed world anchor when
-/// `linkB`/`linkA` is null). Point closures constrain the 3D offset to zero;
-/// distance closures constrain the separation to `length`.
+/// A holonomic loop-closure constraint between two endpoint frames fixed on two
+/// links of the same multibody (or an endpoint on a link and a fixed world
+/// anchor when `linkB`/`linkA` is null). Point closures constrain the 3D offset
+/// to zero (3 rows); distance closures constrain the separation to `length`
+/// (1 row); rigid closures additionally constrain the relative orientation
+/// (6 rows: 3 position + 3 world-frame rotation residual).
 ///
 /// **Internal Implementation Detail** - Not exposed in public API.
 struct VariationalLoopConstraint
@@ -88,6 +90,14 @@ struct VariationalLoopConstraint
       = Eigen::Vector3d::Zero(); ///< local on linkB (or world).
   bool distance = false;         ///< false: point (3 rows); true: distance (1).
   double length = 0.0;           ///< target separation when `distance`.
+  bool rigid
+      = false; ///< true: also constrain relative orientation (3 extra rows).
+  Eigen::Matrix3d rotationA
+      = Eigen::Matrix3d::Identity(); ///< endpoint-A offset
+                                     ///< rotation (rigid).
+  Eigen::Matrix3d rotationB
+      = Eigen::Matrix3d::Identity(); ///< endpoint-B offset
+                                     ///< rotation (rigid).
 };
 
 /// Advance one multibody by one step with the linear-time variational

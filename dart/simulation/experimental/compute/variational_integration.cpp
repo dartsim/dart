@@ -572,35 +572,33 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
 
   Eigen::Index rows = 0;
   for (const auto& c : constraints) {
-    rows += c.distance ? 1 : 3;
+    rows += c.distance ? 1 : (c.rigid ? 6 : 3);
   }
   Eigen::VectorXd g(rows);
   Eigen::MatrixXd jac = Eigen::MatrixXd::Zero(rows, dof);
 
   Eigen::Index row = 0;
   for (const auto& c : constraints) {
+    const int ia = (c.linkA != entt::null) ? indexOf(c.linkA) : -1;
+    const int ib = (c.linkB != entt::null) ? indexOf(c.linkB) : -1;
+
     Eigen::Vector3d pointA = c.pointA;
     Eigen::MatrixXd jacA = Eigen::MatrixXd::Zero(3, dof);
-    if (c.linkA != entt::null) {
-      const int ia = indexOf(c.linkA);
-      if (ia >= 0) {
-        pointA = tree.links[static_cast<std::size_t>(ia)].worldTransform
-                 * c.pointA;
-        jacA = worldPointJacobian(
-            tree, jacobians, static_cast<std::size_t>(ia), c.pointA);
-      }
+    if (ia >= 0) {
+      pointA
+          = tree.links[static_cast<std::size_t>(ia)].worldTransform * c.pointA;
+      jacA = worldPointJacobian(
+          tree, jacobians, static_cast<std::size_t>(ia), c.pointA);
     }
     Eigen::Vector3d pointB = c.pointB;
     Eigen::MatrixXd jacB = Eigen::MatrixXd::Zero(3, dof);
-    if (c.linkB != entt::null) {
-      const int ib = indexOf(c.linkB);
-      if (ib >= 0) {
-        pointB = tree.links[static_cast<std::size_t>(ib)].worldTransform
-                 * c.pointB;
-        jacB = worldPointJacobian(
-            tree, jacobians, static_cast<std::size_t>(ib), c.pointB);
-      }
+    if (ib >= 0) {
+      pointB
+          = tree.links[static_cast<std::size_t>(ib)].worldTransform * c.pointB;
+      jacB = worldPointJacobian(
+          tree, jacobians, static_cast<std::size_t>(ib), c.pointB);
     }
+
     if (c.distance) {
       const Eigen::Vector3d offset = pointA - pointB;
       const double dist = offset.norm();
@@ -609,9 +607,44 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
       g[row] = dist - c.length;
       jac.row(row) = dir.transpose() * (jacA - jacB);
       row += 1;
-    } else {
-      g.segment<3>(row) = pointA - pointB;
-      jac.middleRows<3>(row) = jacA - jacB;
+      continue;
+    }
+
+    // Position rows (Point, and the first 3 rows of Rigid).
+    g.segment<3>(row) = pointA - pointB;
+    jac.middleRows<3>(row) = jacA - jacB;
+    row += 3;
+
+    if (c.rigid) {
+      // Orientation rows: world-frame rotation residual R_B * log(R_B^T R_A)
+      // (matching LoopClosure::computeResidual) and the relative angular
+      // Jacobian J_w_A - J_w_B, where the world angular Jacobian of an endpoint
+      // is R_link * (body angular Jacobian). A rigid offset adds no angular
+      // velocity, so only the link rotation enters the Jacobian.
+      const auto worldRotation
+          = [&](int i, const Eigen::Matrix3d& offset) -> Eigen::Matrix3d {
+        Eigen::Matrix3d linkRotation = Eigen::Matrix3d::Identity();
+        if (i >= 0) {
+          linkRotation
+              = tree.links[static_cast<std::size_t>(i)].worldTransform.linear();
+        }
+        return linkRotation * offset;
+      };
+      const Eigen::Matrix3d rotA = worldRotation(ia, c.rotationA);
+      const Eigen::Matrix3d rotB = worldRotation(ib, c.rotationB);
+      g.segment<3>(row) = rotB * rotationLog3(rotB.transpose() * rotA);
+
+      Eigen::MatrixXd angA = Eigen::MatrixXd::Zero(3, dof);
+      Eigen::MatrixXd angB = Eigen::MatrixXd::Zero(3, dof);
+      if (ia >= 0) {
+        angA = tree.links[static_cast<std::size_t>(ia)].worldTransform.linear()
+               * jacobians[static_cast<std::size_t>(ia)].topRows<3>();
+      }
+      if (ib >= 0) {
+        angB = tree.links[static_cast<std::size_t>(ib)].worldTransform.linear()
+               * jacobians[static_cast<std::size_t>(ib)].topRows<3>();
+      }
+      jac.middleRows<3>(row) = angA - angB;
       row += 3;
     }
   }
@@ -971,14 +1004,6 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
     return binding; // Ignored: no closure, disabled, or residual-only.
   }
 
-  if (closure->family == LoopClosureFamily::Rigid) {
-    binding.status = Status::Unsupported;
-    binding.reason
-        = "the variational loop-closure solver does not yet support the Rigid "
-          "family (it has no orientation residual); use Point or Distance";
-    return binding;
-  }
-
   // Resolve an endpoint frame to its owning multibody structure: entt::null for
   // a world anchor, the structure entity for a link, or report failure for a
   // non-link frame (e.g. a rigid body).
@@ -1031,17 +1056,20 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
   binding.structure = structureA != entt::null ? structureA : structureB;
   // The endpoint expressed in a link body frame is offset.translation() (the
   // frame IS the link body frame; a null link keeps the point in world
-  // coordinates as the anchor). Point/Distance ignore the offset orientation by
-  // construction; Rigid -- which would need it -- is rejected above. Point
-  // constrains the 3D offset to zero; Distance constrains the separation to the
-  // closure's target distance.
+  // coordinates as the anchor). Point constrains the 3D offset to zero;
+  // Distance constrains the separation to the closure's target distance; Rigid
+  // adds the relative-orientation rows and uses the offset rotation.
   const bool isDistance = closure->family == LoopClosureFamily::Distance;
+  const bool isRigid = closure->family == LoopClosureFamily::Rigid;
   binding.constraint.linkA = closure->frameA;
   binding.constraint.pointA = closure->offsetA.translation();
   binding.constraint.linkB = closure->frameB;
   binding.constraint.pointB = closure->offsetB.translation();
   binding.constraint.distance = isDistance;
   binding.constraint.length = isDistance ? closure->distance : 0.0;
+  binding.constraint.rigid = isRigid;
+  binding.constraint.rotationA = closure->offsetA.linear();
+  binding.constraint.rotationB = closure->offsetB.linear();
   return binding;
 }
 

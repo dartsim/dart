@@ -987,28 +987,133 @@ TEST(VariationalIntegration, LoopClosureCrossMultibodyRejectedUnderVariational)
 // Phase B2 deliverable (rejection): the Rigid family (which needs an
 // orientation residual the solver does not implement) is rejected under the
 // variational method rather than silently dropping the orientation constraint.
-TEST(VariationalIntegration, LoopClosureRigidFamilyRejectedUnderVariational)
+// Phase B2 (Rigid family): the 6-row rigid constraint Jacobian (3 position + 3
+// orientation) matches a central finite difference of the residual. The tip of
+// a 3-DOF spatial arm is welded to its current world pose so the residual is
+// zero at the base configuration -- where the first-order orientation Jacobian
+// is exact -- and the difference is taken around it.
+TEST(VariationalIntegration, RigidConstraintJacobianMatchesFiniteDifference)
+{
+  sx::World world;
+  auto robot = world.addMultibody("arm");
+  auto parent = robot.addLink("base");
+  const Eigen::Vector3d axes[3]
+      = {Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitX()};
+  for (int i = 0; i < 3; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "j" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = axes[i];
+    spec.transformFromParent = offset;
+    auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+    parent = link;
+  }
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  auto joints = robot.getJoints();
+  ASSERT_EQ(joints.size(), 3u);
+  const double q0[3] = {0.3, -0.4, 0.5};
+  for (int i = 0; i < 3; ++i) {
+    joints[static_cast<std::size_t>(i)].setPosition(
+        Eigen::VectorXd::Constant(1, q0[i]));
+  }
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::Isometry3d tipPose = robot.getLinks().back().getTransform();
+
+  sxc::VariationalLoopConstraint c;
+  c.linkA = structure.links[3]; // tip
+  c.pointA = Eigen::Vector3d::Zero();
+  c.rotationA = Eigen::Matrix3d::Identity();
+  c.linkB = entt::null; // world weld target = the tip's current pose
+  c.pointB = tipPose.translation();
+  c.rotationB = tipPose.linear();
+  c.rigid = true;
+  const std::vector<sxc::VariationalLoopConstraint> constraints{c};
+
+  const auto lin = sxc::computeVariationalConstraintLinearization(
+      registry, structure, constraints);
+  ASSERT_EQ(lin.residual.size(), 6); // 3 position + 3 orientation
+  ASSERT_EQ(lin.jacobian.cols(), 3);
+  EXPECT_LT(lin.residual.norm(), 1e-9); // welded at the current pose
+
+  const double eps = 1e-6;
+  Eigen::MatrixXd fd(6, 3);
+  for (int j = 0; j < 3; ++j) {
+    const double base = joints[static_cast<std::size_t>(j)].getPosition()[0];
+    joints[static_cast<std::size_t>(j)].setPosition(
+        Eigen::VectorXd::Constant(1, base + eps));
+    const Eigen::VectorXd plus = sxc::computeVariationalConstraintLinearization(
+                                     registry, structure, constraints)
+                                     .residual;
+    joints[static_cast<std::size_t>(j)].setPosition(
+        Eigen::VectorXd::Constant(1, base - eps));
+    const Eigen::VectorXd minus
+        = sxc::computeVariationalConstraintLinearization(
+              registry, structure, constraints)
+              .residual;
+    joints[static_cast<std::size_t>(j)].setPosition(
+        Eigen::VectorXd::Constant(1, base));
+    fd.col(j) = (plus - minus) / (2.0 * eps);
+  }
+  EXPECT_TRUE(fd.isApprox(lin.jacobian, 1e-6))
+      << "analytic J=\n"
+      << lin.jacobian << "\nfinite-difference=\n"
+      << fd;
+}
+
+// Phase B2 (Rigid family through the public API): a Rigid closure weld added
+// via addLoopClosure holds the full pose (position + orientation) of a spatial
+// 7-DOF arm's tip through World::step() under the variational method, while the
+// redundant internal degree of freedom still flexes under gravity.
+TEST(VariationalIntegration, LoopClosureRigidSolvedThroughWorldStep)
 {
   sx::World world;
   world.setMultibodyIntegrationMethod("variational integrator");
   auto robot = world.addMultibody("arm");
-  auto base = robot.addLink("base");
-  sx::JointSpec spec;
-  spec.name = "j";
-  spec.type = sx::JointType::Revolute;
-  spec.axis = Eigen::Vector3d::UnitY();
-  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
-  offset.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
-  spec.transformFromParent = offset;
-  auto link = robot.addLink("link", base, spec);
-  link.setMass(1.0);
-  link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  auto parent = robot.addLink("base");
+  const Eigen::Vector3d axes[7]
+      = {Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitX()};
+  const double bend[7] = {0.2, 0.3, -0.2, 0.4, -0.3, 0.2, -0.4};
+  Eigen::Isometry3d tipFromBase = Eigen::Isometry3d::Identity();
+  for (int i = 0; i < 7; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.linear() = Eigen::AngleAxisd(bend[i], Eigen::Vector3d::UnitZ())
+                          .toRotationMatrix();
+    offset.translation() = Eigen::Vector3d(0.25, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "j" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = axes[i];
+    spec.transformFromParent = offset;
+    auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+    link.setMass(0.6);
+    link.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+    parent = link;
+    tipFromBase = tipFromBase * offset; // joints at zero => relative == offset
+  }
 
+  auto tip = robot.getLinks().back();
   auto closure = world.addLoopClosure(
-      "rigid",
-      {.frameA = link,
+      "weld",
+      {.frameA = tip,
        .frameB = sx::Frame::world(),
-       .family = sx::LoopClosureFamily::Rigid});
+       .family = sx::LoopClosureFamily::Rigid,
+       .offsetB = tipFromBase}); // weld target = the tip's rest pose
   closure.setRuntimePolicy(
       {.enabled = true,
        .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
@@ -1016,7 +1121,20 @@ TEST(VariationalIntegration, LoopClosureRigidFamilyRejectedUnderVariational)
 
   world.setTimeStep(1e-3);
   world.enterSimulationMode();
-  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  auto joints = robot.getJoints();
+  ASSERT_EQ(joints.size(), 7u);
+
+  double maxResidual = 0.0;
+  double motion = 0.0;
+  for (int k = 0; k < 2000; ++k) {
+    world.step();
+    maxResidual = std::max(maxResidual, closure.computeResidual().norm);
+    for (auto joint : joints) {
+      motion = std::max(motion, std::abs(joint.getPosition()[0]));
+    }
+  }
+  EXPECT_LT(maxResidual, 1e-6); // the 6-DOF weld holds through world.step()
+  EXPECT_GT(motion, 1e-3);      // the redundant internal DOF still flexes
 }
 
 // Phase B2 (Distance family through the public API): a Distance loop closure
