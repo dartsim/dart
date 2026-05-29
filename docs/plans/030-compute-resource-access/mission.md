@@ -44,8 +44,10 @@ handoff.
 - `docs/plans/dashboard.md` owns PLAN-030 operating state.
 - `docs/design/scalable_compute_decisions.md` owns durable scalable-compute
   rationale.
-- `docs/dev_tasks/experimental_world_scalable_compute/` owns active multi-session
-  task state; resource-access is Phase 1 of that consolidated plan.
+- `docs/plans/dashboard.md` (PLAN-030) and
+  `docs/design/scalable_compute_decisions.md` own the durable scalable-compute
+  state now that the consolidated dev-task folder has been retired;
+  resource-access was Phase 1 of that plan.
 - `tests/unit/simulation/experimental/compute/` and
   `tests/unit/simulation/experimental/world/` own focused regression coverage.
 - `tests/benchmark/simulation/experimental/bm_compute_graph.cpp` owns

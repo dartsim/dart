@@ -299,7 +299,7 @@ def test_apply_imgui_override_overwrites_preset(run_cpp_example):
 
 def _cmake_filament_smoke_scene_pairs(cmake_text):
     match = re.search(
-        r"set\(DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS\s+(.*?)\n\)",
+        r"set\(\s*DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS\s+(.*?)\n\s*\)",
         cmake_text,
         re.DOTALL,
     )

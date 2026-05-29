@@ -34,7 +34,8 @@ set(component_name collision-native)
 include(dart_defs)
 
 # Source files - start minimal, add as we implement
-set(collision_native_sources
+set(
+  collision_native_sources
   aabb.cpp
   broad_phase/aabb_tree.cpp
   broad_phase/brute_force.cpp
@@ -77,7 +78,10 @@ if(NOT TARGET Eigen3::Eigen)
   dart_find_package(Eigen3)
 endif()
 if(Eigen3_VERSION VERSION_LESS 3.4)
-  message(FATAL_ERROR "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}")
+  message(
+    FATAL_ERROR
+    "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}"
+  )
 endif()
 
 if(NOT TARGET EnTT::EnTT)
@@ -93,7 +97,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
-target_include_directories(${target_name}
+target_include_directories(
+  ${target_name}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -102,17 +107,15 @@ target_include_directories(${target_name}
 
 target_compile_features(${target_name} PUBLIC cxx_std_20)
 
-target_link_libraries(${target_name}
-  PUBLIC
-    Eigen3::Eigen
-    EnTT::EnTT
-  PRIVATE
-    Threads::Threads
+target_link_libraries(
+  ${target_name}
+  PUBLIC Eigen3::Eigen EnTT::EnTT
+  PRIVATE Threads::Threads
 )
 
-target_compile_definitions(${target_name}
-  PRIVATE
-    DART_BUILDING_COLLISION_NATIVE
+target_compile_definitions(
+  ${target_name}
+  PRIVATE DART_BUILDING_COLLISION_NATIVE
 )
 
 # Benchmarks (optional)
@@ -124,16 +127,23 @@ dart_experimental_add_benchmark(
 )
 
 if(TARGET bm_collision_native_sdf_compare)
-  set(DART_NATIVE_VOXBLOX_ROOT "" CACHE PATH "Path to Voxblox for experimental collision benchmarks")
+  set(
+    DART_NATIVE_VOXBLOX_ROOT
+    ""
+    CACHE PATH
+    "Path to Voxblox for experimental collision benchmarks"
+  )
   if(DART_NATIVE_VOXBLOX_ROOT)
-    find_path(VOXBLOX_INCLUDE_DIR
+    find_path(
+      VOXBLOX_INCLUDE_DIR
       NAMES voxblox/core/esdf_map.h
       PATHS
         ${DART_NATIVE_VOXBLOX_ROOT}
         ${DART_NATIVE_VOXBLOX_ROOT}/voxblox/include
         ${DART_NATIVE_VOXBLOX_ROOT}/include
     )
-    find_library(VOXBLOX_LIBRARY
+    find_library(
+      VOXBLOX_LIBRARY
       NAMES voxblox
       PATHS
         ${DART_NATIVE_VOXBLOX_ROOT}/lib
@@ -143,9 +153,18 @@ if(TARGET bm_collision_native_sdf_compare)
   endif()
 
   if(VOXBLOX_INCLUDE_DIR AND VOXBLOX_LIBRARY)
-    target_include_directories(bm_collision_native_sdf_compare PRIVATE ${VOXBLOX_INCLUDE_DIR})
-    target_link_libraries(bm_collision_native_sdf_compare PRIVATE ${VOXBLOX_LIBRARY})
-    target_compile_definitions(bm_collision_native_sdf_compare PRIVATE DART_NATIVE_HAVE_VOXBLOX=1)
+    target_include_directories(
+      bm_collision_native_sdf_compare
+      PRIVATE ${VOXBLOX_INCLUDE_DIR}
+    )
+    target_link_libraries(
+      bm_collision_native_sdf_compare
+      PRIVATE ${VOXBLOX_LIBRARY}
+    )
+    target_compile_definitions(
+      bm_collision_native_sdf_compare
+      PRIVATE DART_NATIVE_HAVE_VOXBLOX=1
+    )
   endif()
 endif()
 
@@ -158,5 +177,6 @@ install(
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
   DESTINATION include/dart/collision/native
   COMPONENT headers
-  FILES_MATCHING PATTERN "*.hpp"
+  FILES_MATCHING
+  PATTERN "*.hpp"
 )

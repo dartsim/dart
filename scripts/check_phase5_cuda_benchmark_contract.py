@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check Phase 5 CUDA benchmark names against the go/no-go packet contract.
 
-CUDA benchmark files are optional while DART lacks a project-owned GPU runner,
-but any CUDA benchmark that lands must be shaped so its Google Benchmark JSON can
+CUDA benchmark files are optional (the GPU go/no-go is measured on a CUDA host,
+not in CI), but any that land must be shaped so their Google Benchmark JSON can
 feed `check_phase5_gpu_packet.py` without ad hoc renaming. In practice this
 means the file must register the matching Phase 5 GPU row name and full manual
 go/no-go workload:
