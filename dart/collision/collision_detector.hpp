@@ -93,15 +93,13 @@ public:
   /// @brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
   virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
-      const
-      = 0;
+      const = 0;
 
   /// Return collision detection engine type as a std::string.
   /// Note: kept for gz-physics compatibility; prefer getTypeView().
   [[deprecated(
       "Use getTypeView() for string_view access.")]] virtual const std::string&
-  getType() const
-      = 0;
+  getType() const = 0;
 
   // TODO(DART 8): Rename getTypeView() to getType() and drop the compatibility
   // string-returning overload.
@@ -146,8 +144,7 @@ public:
   virtual bool collide(
       CollisionGroup* group,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
-      CollisionResult* result = nullptr)
-      = 0;
+      CollisionResult* result = nullptr) = 0;
 
   /// Perform collision check for two groups. If nullptr is passed to
   /// result, then the this returns only simple information whether there is a
@@ -156,8 +153,7 @@ public:
       CollisionGroup* group1,
       CollisionGroup* group2,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
-      CollisionResult* result = nullptr)
-      = 0;
+      CollisionResult* result = nullptr) = 0;
 
   /// Get the minimum signed distance between the Shape pairs in the given
   /// CollisionGroup.
@@ -170,8 +166,7 @@ public:
   virtual double distance(
       CollisionGroup* group,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
-      DistanceResult* result = nullptr)
-      = 0;
+      DistanceResult* result = nullptr) = 0;
 
   /// Get the minimum signed distance between the Shape pairs where a pair
   /// consist of two shapes from each groups (one from group1 and one from
@@ -189,8 +184,7 @@ public:
       CollisionGroup* group1,
       CollisionGroup* group2,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
-      DistanceResult* result = nullptr)
-      = 0;
+      DistanceResult* result = nullptr) = 0;
 
   /// Performs raycast to a collision group.
   ///
@@ -259,8 +253,7 @@ protected:
 
   /// Create CollisionObject
   virtual std::unique_ptr<CollisionObject> createCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame)
-      = 0;
+      const dynamics::ShapeFrame* shapeFrame) = 0;
 
   /// Update the collision geometry of a ShapeFrame
   virtual void refreshCollisionObject(CollisionObject* object) = 0;
@@ -282,8 +275,7 @@ public:
   /// Claim CollisionObject associated with shapeFrame. New CollisionObject
   /// will be created if it hasn't created yet for shapeFrame.
   virtual std::shared_ptr<CollisionObject> claimCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame)
-      = 0;
+      const dynamics::ShapeFrame* shapeFrame) = 0;
 
   /// Returns collision detector
   CollisionDetector* getCollisionDetector();

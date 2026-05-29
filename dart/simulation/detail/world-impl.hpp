@@ -58,9 +58,10 @@ WorldPtr World::create(Args&&... args)
 template <typename Func>
 void World::eachSkeleton(Func func) const
 {
-  if constexpr (std::same_as<
-                    std::invoke_result_t<Func, const dynamics::Skeleton*>,
-                    bool>) {
+  if constexpr (
+      std::same_as<
+          std::invoke_result_t<Func, const dynamics::Skeleton*>,
+          bool>) {
     (void)std::ranges::all_of(
         mSkeletons, [&func](auto skel) { return func(skel.get()); });
   } else {
@@ -74,9 +75,8 @@ void World::eachSkeleton(Func func) const
 template <typename Func>
 void World::eachSkeleton(Func func)
 {
-  if constexpr (std::same_as<
-                    std::invoke_result_t<Func, dynamics::Skeleton*>,
-                    bool>) {
+  if constexpr (
+      std::same_as<std::invoke_result_t<Func, dynamics::Skeleton*>, bool>) {
     (void)std::ranges::all_of(
         mSkeletons, [&func](auto skel) { return func(skel.get()); });
   } else {
@@ -90,9 +90,10 @@ void World::eachSkeleton(Func func)
 template <typename Func>
 void World::eachSimpleFrame(Func func) const
 {
-  if constexpr (std::same_as<
-                    std::invoke_result_t<Func, const dynamics::SimpleFrame*>,
-                    bool>) {
+  if constexpr (
+      std::same_as<
+          std::invoke_result_t<Func, const dynamics::SimpleFrame*>,
+          bool>) {
     (void)std::ranges::all_of(mSimpleFrames, [&func](auto simpleFrame) {
       return func(simpleFrame.get());
     });
@@ -107,9 +108,8 @@ void World::eachSimpleFrame(Func func) const
 template <typename Func>
 void World::eachSimpleFrame(Func func)
 {
-  if constexpr (std::same_as<
-                    std::invoke_result_t<Func, dynamics::SimpleFrame*>,
-                    bool>) {
+  if constexpr (
+      std::same_as<std::invoke_result_t<Func, dynamics::SimpleFrame*>, bool>) {
     (void)std::ranges::all_of(mSimpleFrames, [&func](auto simpleFrame) {
       return func(simpleFrame.get());
     });

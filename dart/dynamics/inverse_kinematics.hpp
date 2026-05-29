@@ -616,8 +616,7 @@ public:
   /// transform to always be equal to the Target's transform, you can simply
   /// call ErrorMethod::computeDesiredTransform to implement this function.
   virtual Eigen::Isometry3d computeDesiredTransform(
-      const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error)
-      = 0;
+      const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error) = 0;
 
   /// This function is used to handle caching the error vector.
   const Eigen::Vector6d& evalError(const Eigen::VectorXd& _q);
@@ -857,8 +856,7 @@ public:
   /// must use to compute the error. This function will only get called when
   /// an update is needed.
   virtual void computeGradient(
-      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
-      = 0;
+      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) = 0;
 
   /// This function is used to handle caching the gradient vector and
   /// interfacing with the solver.
@@ -1177,8 +1175,7 @@ public:
   /// the LIMIT_VIOLATED flags of any configurations that are outside of the
   /// position limits.
   virtual std::span<const Solution> computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf)
-      = 0;
+      const Eigen::Isometry3d& _desiredBodyTf) = 0;
 
   /// Get a list of the DOFs that will be included in the entries of the
   /// solutions returned by getSolutions(). Ideally, this should match up with
@@ -1338,7 +1335,7 @@ protected:
   Eigen::VectorXd mGradCache;
 
   /// Cache for the null space SVD
-  Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  Eigen::JacobiSVD<math::Jacobian, Eigen::ComputeFullV> mSVDCache;
   // TODO(JS): Need to define aligned operator new for this?
 
   /// Cache for the null space

@@ -140,8 +140,7 @@ public:
 
 protected:
   virtual void updateImpl(
-      const simulation::World& world, const SensorUpdateContext& context)
-      = 0;
+      const simulation::World& world, const SensorUpdateContext& context) = 0;
 
   virtual void resetImpl();
 

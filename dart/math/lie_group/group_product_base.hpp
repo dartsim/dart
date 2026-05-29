@@ -304,8 +304,7 @@ GroupProductBase<Derived>::toAdjointMatrix(
   AdjointMatrix out = AdjointMatrix::Zero();
   int offset = 0;
   ((out.template block<Component<Indices>::DoF, Component<Indices>::DoF>(
-        offset, offset)
-    = get<Indices>().toAdjointMatrix(),
+        offset, offset) = get<Indices>().toAdjointMatrix(),
     offset += Component<Indices>::DoF),
    ...);
   return out;
