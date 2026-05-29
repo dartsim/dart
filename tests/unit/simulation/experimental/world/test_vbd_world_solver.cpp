@@ -97,6 +97,17 @@ void enableVbd(sx::World& world, std::size_t iterations)
   }
 }
 
+// Opt every deformable body into VBD with an explicit config (acceleration and
+// damping knobs).
+void enableVbdConfig(
+    sx::World& world, const sx::comps::DeformableVbdConfig& cfg)
+{
+  auto& registry = world.getRegistry();
+  for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, cfg);
+  }
+}
+
 void stepOnce(sx::World& world, compute::DeformableDynamicsStage& stage)
 {
   compute::SequentialExecutor executor;
@@ -284,4 +295,79 @@ TEST(VbdWorldSolver, StifferTetrahedralBodyDeformsLess)
   EXPECT_LT(stiffApex, 1.0);
   // ... but the stiffer body compresses measurably less.
   EXPECT_GT(stiffApex, softApex + 1e-4);
+}
+
+//==============================================================================
+// Chebyshev over-relaxation and Rayleigh damping flow from the config through
+// the World VBD path; the body stays stable and the accelerated solve agrees
+// with the unaccelerated one (Chebyshev preserves the fixed point).
+TEST(VbdWorldSolver, ChebyshevConfigMatchesPlainAndStaysStable)
+{
+  sx::World plainWorld;
+  sx::World chebyshevWorld;
+  for (sx::World* world : {&plainWorld, &chebyshevWorld}) {
+    world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world->setTimeStep(0.01);
+    world->addDeformableBody("chain", makeChainOptions(7, 0.5));
+  }
+  enableVbd(plainWorld, 200);
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 200;
+  cfg.useChebyshev = true;
+  cfg.chebyshevRho = 0.9;
+  enableVbdConfig(chebyshevWorld, cfg);
+
+  compute::DeformableDynamicsStage plainStage;
+  compute::DeformableDynamicsStage chebyshevStage;
+  for (int step = 0; step < 5; ++step) {
+    stepOnce(plainWorld, plainStage);
+    stepOnce(chebyshevWorld, chebyshevStage);
+  }
+
+  const auto plainBody = plainWorld.getDeformableBody("chain");
+  const auto chebyshevBody = chebyshevWorld.getDeformableBody("chain");
+  ASSERT_TRUE(plainBody.has_value());
+  ASSERT_TRUE(chebyshevBody.has_value());
+  for (std::size_t i = 0; i < plainBody->getNodeCount(); ++i) {
+    EXPECT_NEAR(
+        (plainBody->getPosition(i) - chebyshevBody->getPosition(i)).norm(),
+        0.0,
+        1e-4)
+        << "node " << i;
+  }
+}
+
+//==============================================================================
+// Rayleigh damping dissipates motion: after release under gravity, the damped
+// chain carries less kinetic energy than the undamped one.
+TEST(VbdWorldSolver, RayleighDampingReducesKineticEnergy)
+{
+  const auto kineticEnergyAfter = [](double rayleigh) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    world.addDeformableBody("chain", makeChainOptions(8, 0.5));
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 40;
+    cfg.rayleighDamping = rayleigh;
+    enableVbdConfig(world, cfg);
+
+    compute::DeformableDynamicsStage stage;
+    for (int step = 0; step < 30; ++step) {
+      stepOnce(world, stage);
+    }
+    const auto body = world.getDeformableBody("chain");
+    double energy = 0.0;
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      energy += body->getVelocity(i).squaredNorm();
+    }
+    return energy;
+  };
+
+  const double undamped = kineticEnergyAfter(0.0);
+  const double damped = kineticEnergyAfter(0.2);
+  EXPECT_GT(undamped, 0.0);
+  EXPECT_LT(damped, undamped);
 }

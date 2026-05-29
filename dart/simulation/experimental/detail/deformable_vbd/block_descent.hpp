@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/deformable_vbd/acceleration.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/contact_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/neo_hookean.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
@@ -102,6 +103,22 @@ struct BlockDescentOptions
   /// Stop early once the largest per-vertex update in a sweep falls below this
   /// length (0 disables early termination and runs the full sweep budget).
   double convergenceDisplacement = 0.0;
+  /// Chebyshev semi-iterative over-relaxation across sweeps (honored by
+  /// blockDescentDeformable). Accelerates convergence without changing the
+  /// fixed point when `chebyshevRho` matches the actual Gauss-Seidel spectral
+  /// radius.
+  bool useChebyshev = false;
+  /// Estimated spectral radius in (0, 1) for the Chebyshev recurrence. It
+  /// should approximate the body's actual Gauss-Seidel convergence rate:
+  /// setting it well above the true rate over-relaxes and can diverge within a
+  /// step, so it is most useful for stiff, slowly-converging bodies and should
+  /// be left conservative (or Chebyshev disabled) otherwise.
+  double chebyshevRho = 0.95;
+  /// Stiffness-proportional (Rayleigh) damping coefficient k_d, honored by
+  /// blockDescentDeformable when step-start positions are supplied (0 = off).
+  /// Adds (k_d/h) H_elastic to each block and opposes the per-step
+  /// displacement.
+  double rayleighDamping = 0.0;
 };
 
 /// Outcome of a block-descent solve.
@@ -560,6 +577,12 @@ inline VertexBlock assembleDeformableVertexBlock(
 /// incident-element lists. With no tets this reduces to blockDescentMassSpring;
 /// with no springs it reduces to blockDescentTetMesh. `positions` is updated in
 /// place.
+///
+/// `options.useChebyshev` over-relaxes each sweep with Chebyshev acceleration
+/// (faster convergence, same fixed point). `options.rayleighDamping` adds
+/// stiffness-proportional damping opposing the per-step displacement; it
+/// requires `stepStartPositions` (the positions x^t at the start of the step)
+/// and is a no-op when that is null or the coefficient is zero.
 inline BlockDescentStats blockDescentDeformable(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -574,13 +597,17 @@ inline BlockDescentStats blockDescentDeformable(
     const TetAdjacency& tetAdjacency,
     double timeStep,
     const VertexColoring& coloring,
-    const BlockDescentOptions& options)
+    const BlockDescentOptions& options,
+    const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
+  const double invDt2 = 1.0 / (timeStep * timeStep);
+  const bool useRayleigh
+      = options.rayleighDamping > 0.0 && stepStartPositions != nullptr;
 
   const auto assemble = [&](std::uint32_t vertex) {
-    return detail::assembleDeformableVertexBlock(
+    VertexBlock block = detail::assembleDeformableVertexBlock(
         vertex,
         positions,
         masses,
@@ -594,12 +621,34 @@ inline BlockDescentStats blockDescentDeformable(
         mu,
         lambda,
         timeStep);
+    if (useRayleigh) {
+      // The elastic Hessian is the full block Hessian minus the (m/h^2) I
+      // inertia term that addInertiaTerm placed on the diagonal.
+      Eigen::Matrix3d elasticHessian = block.hessian;
+      elasticHessian.diagonal().array() -= masses[vertex] * invDt2;
+      addRayleighDamping(
+          block,
+          elasticHessian,
+          positions[vertex] - (*stepStartPositions)[vertex],
+          options.rayleighDamping,
+          timeStep);
+    }
+    return block;
   };
 
   const double convergenceSquared
       = options.convergenceDisplacement * options.convergenceDisplacement;
+  std::vector<Eigen::Vector3d> twoStepsBack;
+  if (options.useChebyshev) {
+    twoStepsBack = positions;
+  }
+  double omega = 1.0;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    std::vector<Eigen::Vector3d> beforeSweep;
+    if (options.useChebyshev) {
+      beforeSweep = positions;
+    }
     double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
@@ -613,6 +662,17 @@ inline BlockDescentStats blockDescentDeformable(
         maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
+    }
+    if (options.useChebyshev) {
+      omega = chebyshevOmega(iteration + 1, options.chebyshevRho, omega);
+      if (omega > 1.0) {
+        for (std::size_t i = 0; i < vertexCount; ++i) {
+          if (fixed[i] == 0u) {
+            positions[i] = applyChebyshev(omega, positions[i], twoStepsBack[i]);
+          }
+        }
+      }
+      twoStepsBack = beforeSweep;
     }
     if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
       break;

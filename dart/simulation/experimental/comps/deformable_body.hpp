@@ -166,6 +166,13 @@ struct DeformableVbdConfig
   /// Stop sweeping early once the largest per-vertex update falls below this
   /// length (0 disables early termination).
   double convergenceDisplacement = 0.0;
+  /// Over-relax each sweep with Chebyshev acceleration (same fixed point,
+  /// faster convergence).
+  bool useChebyshev = false;
+  /// Estimated spectral radius in (0, 1) for the Chebyshev recurrence.
+  double chebyshevRho = 0.95;
+  /// Stiffness-proportional (Rayleigh) damping coefficient k_d (0 disables it).
+  double rayleighDamping = 0.0;
 };
 
 /// Transient scratch buffers reused by the default deformable solver.

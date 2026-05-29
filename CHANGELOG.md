@@ -1219,6 +1219,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     slice. Tests confirm a tetrahedral body routes through VBD, stays stable
     under gravity, and that a stiffer material settles measurably closer to its
     rest shape.
+  - Threaded Chebyshev semi-iterative acceleration and stiffness-proportional
+    Rayleigh damping into the World VBD path. `blockDescentDeformable` now
+    optionally over-relaxes each sweep with Chebyshev (same fixed point, faster
+    convergence when the spectral radius is matched) and adds Rayleigh damping
+    opposing the per-step displacement, both selected through new
+    `DeformableVbdConfig` knobs (`useChebyshev`/`chebyshevRho`/
+    `rayleighDamping`). Tests confirm Chebyshev converges to the same minimizer,
+    Rayleigh keeps the per-vertex system positive definite while changing the
+    iterate, the World accelerated solve matches the plain one, and World
+    Rayleigh damping dissipates kinetic energy. Chebyshev is opt-in and
+    conservative by default because too high a spectral radius can over-relax.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

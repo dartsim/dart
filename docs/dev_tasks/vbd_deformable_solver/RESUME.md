@@ -103,8 +103,11 @@ matches the default solver. Remaining work, in order:
    freeness so surfaced (tet) bodies qualify; surface self-contact for VBD
    bodies is still deferred. `test_vbd_combined_descent` (5 cases) and three new
    `test_vbd_world_solver` tet cases cover it (including stiffer-deforms-less).
-   STILL TODO here: thread Chebyshev + element damping into the World path, and
-   decide the public solver-selection surface.
+   Chebyshev acceleration + Rayleigh damping are now threaded through the World
+   path too (via `DeformableVbdConfig` `useChebyshev`/`chebyshevRho`/
+   `rayleighDamping`; Chebyshev is opt-in and conservative since too high a
+   spectral radius over-relaxes). STILL TODO here: decide the public
+   solver-selection surface.
 2. Phase 7: half-space penalty contact + semi-implicit Coulomb friction land
    (`contact_kernel.hpp`: `addHalfSpacePenaltyContact`, `addHalfSpaceFriction`;
    drivers `blockDescentMassSpringGround[Friction]`; bodies rest on the ground,

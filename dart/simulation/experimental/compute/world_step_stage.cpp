@@ -3216,6 +3216,11 @@ void runVbdDeformableSolve(
   options.iterations = config.iterations;
   options.clampSpringHessian = true;
   options.convergenceDisplacement = config.convergenceDisplacement;
+  options.useChebyshev = config.useChebyshev;
+  options.chebyshevRho = config.chebyshevRho;
+  options.rayleighDamping = config.rayleighDamping;
+  // state.positions holds x^t for this step (the write-back to the live state
+  // happens after the solve), so it is the Rayleigh displacement reference.
   const dvbd::BlockDescentStats result = dvbd::blockDescentDeformable(
       scratch.next,
       state.masses,
@@ -3230,7 +3235,8 @@ void runVbdDeformableSolve(
       vbdScratch.tetAdjacency,
       timeStep,
       vbdScratch.coloring,
-      options);
+      options,
+      &state.positions);
 
   ++stats.vbdBodyCount;
   stats.vbdSweeps += result.iterations;

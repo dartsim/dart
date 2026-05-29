@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -376,4 +377,106 @@ TEST(VbdCombinedDescent, ConvergesToReferenceMinimizer)
     EXPECT_NEAR((scene.positions[i] - reference[i]).norm(), 0.0, 1e-6)
         << "vertex " << i;
   }
+}
+
+//==============================================================================
+// Chebyshev over-relaxation accelerates convergence but must not move the fixed
+// point: with a generous budget the accelerated solve lands on the same
+// minimizer as the unaccelerated one.
+TEST(VbdCombinedDescent, ChebyshevConvergesToSameMinimizer)
+{
+  const CombinedScene base = makeSpringTetBar();
+  const auto springAdjacency
+      = vbd::SpringAdjacency::build(base.positions.size(), base.springs);
+  const auto tetAdjacency
+      = vbd::TetAdjacency::build(base.positions.size(), base.tets);
+  const auto coloring
+      = vbd::colorDeformable(base.positions.size(), base.springs, base.tets);
+
+  const auto solve = [&](bool useChebyshev) {
+    CombinedScene scene = base;
+    vbd::BlockDescentOptions options;
+    options.iterations = 600;
+    options.useChebyshev = useChebyshev;
+    options.chebyshevRho = 0.9;
+    vbd::blockDescentDeformable(
+        scene.positions,
+        scene.masses,
+        scene.fixed,
+        scene.inertialTargets,
+        scene.springs,
+        scene.springStiffness,
+        springAdjacency,
+        scene.tets,
+        scene.mu,
+        scene.lambda,
+        tetAdjacency,
+        scene.timeStep,
+        coloring,
+        options);
+    return scene.positions;
+  };
+
+  const std::vector<Vec3> plain = solve(false);
+  const std::vector<Vec3> accelerated = solve(true);
+  for (std::size_t i = 0; i < plain.size(); ++i) {
+    EXPECT_NEAR((plain[i] - accelerated[i]).norm(), 0.0, 1e-7)
+        << "vertex " << i;
+  }
+}
+
+//==============================================================================
+// Rayleigh damping keeps the augmented per-vertex system positive definite (the
+// solve still drives the residual down) while measurably changing the converged
+// iterate relative to the undamped solve.
+TEST(VbdCombinedDescent, RayleighDampingIsStableAndChangesResult)
+{
+  const CombinedScene base = makeSpringTetBar();
+  const auto springAdjacency
+      = vbd::SpringAdjacency::build(base.positions.size(), base.springs);
+  const auto tetAdjacency
+      = vbd::TetAdjacency::build(base.positions.size(), base.tets);
+  const auto coloring
+      = vbd::colorDeformable(base.positions.size(), base.springs, base.tets);
+
+  const auto solve = [&](double rayleigh, double& residualOut) {
+    CombinedScene scene = base;
+    const std::vector<Vec3> stepStart = scene.positions;
+    vbd::BlockDescentOptions options;
+    options.iterations = 300;
+    options.rayleighDamping = rayleigh;
+    const vbd::BlockDescentStats stats = vbd::blockDescentDeformable(
+        scene.positions,
+        scene.masses,
+        scene.fixed,
+        scene.inertialTargets,
+        scene.springs,
+        scene.springStiffness,
+        springAdjacency,
+        scene.tets,
+        scene.mu,
+        scene.lambda,
+        tetAdjacency,
+        scene.timeStep,
+        coloring,
+        options,
+        &stepStart);
+    residualOut = stats.finalResidualNormSquared;
+    return scene.positions;
+  };
+
+  double undampedResidual = 0.0;
+  double dampedResidual = 0.0;
+  const std::vector<Vec3> undamped = solve(0.0, undampedResidual);
+  const std::vector<Vec3> damped = solve(0.05, dampedResidual);
+
+  // Both solves converge (the damped system stays SPD) ...
+  EXPECT_LT(undampedResidual, 1e-12);
+  EXPECT_LT(dampedResidual, 1e-12);
+  // ... but damping opposes the step displacement, so the iterates differ.
+  double maxDifference = 0.0;
+  for (std::size_t i = 0; i < damped.size(); ++i) {
+    maxDifference = std::max(maxDifference, (damped[i] - undamped[i]).norm());
+  }
+  EXPECT_GT(maxDifference, 1e-6);
 }
