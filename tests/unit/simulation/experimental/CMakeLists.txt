@@ -93,6 +93,10 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
       test_diff_rollout
       ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_rollout.cpp
     )
+    dart_experimental_add_test(
+      test_diff_optimization
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_optimization.cpp
+    )
   endif()
 
   if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
