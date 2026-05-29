@@ -118,6 +118,13 @@ friction"):
   IPC) establishing baseline #1: the rigid IPC scaffold is currently ~3 orders
   of magnitude slower per step and scales super-linearly (see
   [`benchmarks.md`](benchmarks.md)). This is the optimization gap to close.
+- Swept broad-phase cull in the conservative line search (roadmap step 1),
+  reusing the curved-trajectory speed bound plus the CCD convergence tolerance.
+  Adversarially verified (>100M numerical samples + audit), which caught and
+  fixed an off-by-`convergeAbs` reach bug; guarded by anti-tunneling, far-skip,
+  and tolerance-band regressions. Shaved ~10–20% off the rigid IPC step. Next
+  perf targets: spatial index for the residual all-pairs enumeration, the
+  per-primitive kernel/PSD cost, then warm-start/active-set reuse, then GPU.
 
 All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
 (23/23), `check-lint`, and the manifest checks.

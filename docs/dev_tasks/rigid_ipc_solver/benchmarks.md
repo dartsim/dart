@@ -83,13 +83,17 @@ models differ (velocity-level impulses vs position-level barriers), so this is a
 throughput comparison of advancing the same scene one step, not a
 matched-accuracy claim.
 
-Snapshot (2026-05-28, host `32 x 5300 MHz`, Release, CPU scaling enabled):
+Snapshot (2026-05-28, host `32 x 5300 MHz`, Release, CPU scaling enabled; rigid
+IPC column after the assembly and line-search broad-phase culls):
 
 | Boxes | Sequential impulse | Rigid IPC | IPC slower by |
 | ----- | ------------------ | --------- | ------------- |
-| 1     | ~45 µs             | ~18 ms    | ~400x         |
-| 2     | ~51 µs             | ~65 ms    | ~1300x        |
-| 4     | ~57 µs             | ~137 ms   | ~2400x        |
+| 1     | ~45 µs             | ~15 ms    | ~330x         |
+| 2     | ~51 µs             | ~51 ms    | ~1000x        |
+| 4     | ~57 µs             | ~123 ms   | ~2160x        |
+
+The broad-phase culls (assembly + line search) shaved ~10–20% off the earlier
+rigid IPC step (was ~18 ms / ~65 ms / ~137 ms) — real but incremental.
 
 Reading: the rigid IPC path is currently ~3 orders of magnitude slower than the
 incumbent and scales super-linearly (~2x per added box) while sequential impulse
