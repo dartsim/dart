@@ -274,3 +274,62 @@ TEST(CudaDeformablePsdProjection, GpuVsCpuPerfGateAtSolverScale)
               << "ms speedup=" << (gpuMs > 0.0 ? cpuMs / gpuMs : 0.0) << "x\n";
   }
 }
+
+//==============================================================================
+// The GPU projection reuses one resident device buffer across calls rather than
+// allocating and freeing per call: a first batch allocates, repeated
+// same-or-smaller batches reuse it (no new allocation), a larger batch grows it
+// once, and restoring the backend frees it (so a subsequent batch
+// re-allocates). Results stay equal to the CPU reference throughout, proving
+// the resident buffer is purely a performance change.
+TEST(
+    CudaDeformablePsdProjection,
+    ResidentDeviceBufferReusesAllocationAcrossCalls)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  constexpr std::size_t dim = 12;
+  constexpr std::size_t smallCount = 1024;
+  constexpr std::size_t largeCount = 4096;
+
+  // Release any resident buffer left by earlier tests so the first projection
+  // below is guaranteed to allocate; assertions then track allocation deltas.
+  cuda::restoreDefaultDeformablePsdBackend();
+
+  const auto project = [&](std::size_t count) {
+    const auto reference = makeSymmetricBlocks(dim, count);
+    std::vector<double> cpu = reference;
+    cuda::projectSymmetricBlocksToPsdReference(cpu, dim, count);
+    std::vector<double> gpu = reference;
+    cuda::projectSymmetricBlocksToPsdCuda(gpu, dim, count);
+    EXPECT_LT(maxAbsDifference(cpu, gpu), 1e-9) << "count=" << count;
+  };
+
+  const std::size_t base = cuda::deformablePsdResidentBufferAllocationCount();
+
+  project(smallCount); // first use after release -> exactly one allocation
+  const std::size_t afterFirst
+      = cuda::deformablePsdResidentBufferAllocationCount();
+  EXPECT_EQ(afterFirst, base + 1);
+
+  project(smallCount); // same size -> reuse, no new allocation
+  EXPECT_EQ(cuda::deformablePsdResidentBufferAllocationCount(), afterFirst);
+
+  project(largeCount); // larger than capacity -> one growth allocation
+  const std::size_t afterGrow
+      = cuda::deformablePsdResidentBufferAllocationCount();
+  EXPECT_EQ(afterGrow, afterFirst + 1);
+
+  project(smallCount); // smaller than capacity -> reuse, no new allocation
+  EXPECT_EQ(cuda::deformablePsdResidentBufferAllocationCount(), afterGrow);
+
+  // Restoring the backend releases the device scratch, so the next projection
+  // allocates afresh.
+  cuda::restoreDefaultDeformablePsdBackend();
+  project(smallCount);
+  EXPECT_EQ(cuda::deformablePsdResidentBufferAllocationCount(), afterGrow + 1);
+
+  cuda::restoreDefaultDeformablePsdBackend();
+}

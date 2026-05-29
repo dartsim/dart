@@ -54,8 +54,7 @@ struct SurfaceEdge
   std::size_t nodeB = 0;
 
   [[nodiscard]] friend bool operator==(
-      const SurfaceEdge& lhs, const SurfaceEdge& rhs)
-      = default;
+      const SurfaceEdge& lhs, const SurfaceEdge& rhs) = default;
 
   [[nodiscard]] friend bool operator<(
       const SurfaceEdge& lhs, const SurfaceEdge& rhs)

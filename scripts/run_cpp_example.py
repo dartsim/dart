@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and run a C++ example with optional runtime arguments."""
+
 from __future__ import annotations
 
 import argparse
@@ -151,6 +152,11 @@ REMOVED_EXAMPLES = {
     "`pixi run ex dartsim` or one of the DART GUI example names instead.",
 }
 
+# The Python demos viewer (`pixi run py-demos` / `python -m examples.demos`) is
+# not a C++ example, so it has no CMake/ninja build target. Catch the common
+# attempts to launch it through the C++ `ex` runner and point at its own task.
+_PYTHON_DEMO_ALIASES = ("py-demos", "py_demos", "pydemos")
+
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(
@@ -196,6 +202,15 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 def _normalize_target(target: str) -> str:
     if target in REMOVED_EXAMPLES:
         raise SystemExit(REMOVED_EXAMPLES[target])
+    if target in _PYTHON_DEMO_ALIASES:
+        raise SystemExit(
+            "'py-demos' is the Python demos viewer, not a C++ example target, "
+            "so it has no ninja build target. Run it with its own task:\n"
+            "  pixi run py-demos                 # launch the first scene\n"
+            "  pixi run py-demos -- --list       # list the scene catalog\n"
+            "  pixi run py-demos -- --scene <id> # launch a specific scene\n"
+            "The C++ demos viewer is a separate app: pixi run ex demos"
+        )
     if target in _DEMOS_SCENE_IDS:
         raise SystemExit(
             f"The '{target}' GUI example is now a scene in the dart-demos app. "

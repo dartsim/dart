@@ -196,8 +196,7 @@ public:
   virtual void operator()(
       const Eigen::VectorXd& _x,
       Eigen::Map<Eigen::VectorXd>& _f,
-      Eigen::Map<Eigen::MatrixXd>& _grad)
-      = 0;
+      Eigen::Map<Eigen::MatrixXd>& _grad) = 0;
 };
 
 } // namespace math

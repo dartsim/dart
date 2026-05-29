@@ -43,9 +43,8 @@ namespace dart::constraint {
 template <typename Func>
 void ConstraintSolver::eachConstraint(Func func) const
 {
-  if constexpr (std::same_as<
-                    std::invoke_result_t<Func, const ConstraintBase*>,
-                    bool>) {
+  if constexpr (
+      std::same_as<std::invoke_result_t<Func, const ConstraintBase*>, bool>) {
     for (auto i = 0u; i < getNumConstraints(); ++i) {
       if (!func(getConstraint(i))) {
         return;
@@ -62,9 +61,8 @@ void ConstraintSolver::eachConstraint(Func func) const
 template <typename Func>
 void ConstraintSolver::eachConstraint(Func func)
 {
-  if constexpr (std::same_as<
-                    std::invoke_result_t<Func, ConstraintBase*>,
-                    bool>) {
+  if constexpr (
+      std::same_as<std::invoke_result_t<Func, ConstraintBase*>, bool>) {
     for (auto i = 0u; i < getNumConstraints(); ++i) {
       if (!func(getConstraint(i))) {
         return;

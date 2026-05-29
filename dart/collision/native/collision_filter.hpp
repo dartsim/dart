@@ -149,8 +149,7 @@ public:
   /// @param object2 Second collision object
   /// @return true to IGNORE collision, false to test collision
   [[nodiscard]] virtual bool ignoresCollision(
-      const CollisionObject& object1, const CollisionObject& object2) const
-      = 0;
+      const CollisionObject& object1, const CollisionObject& object2) const = 0;
 };
 
 /// Callback-based collision filter using std::function.
