@@ -911,6 +911,15 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     same-color vertices are independent, the parallel result is bit-identical to
     the serial driver (verified). Thread scaling on a 96x96 grid gave roughly
     1.65x/2.6x/3.5x speedups at 2/4/8 threads.
+  - Added an internal experimental VBD half-space penalty-contact kernel
+    (`contact_kernel.hpp`: `ContactPlane`, `addHalfSpacePenaltyContact`, energy
+    `E_c = (k_c/2) d^2`) and a contact-aware mass-spring driver
+    (`blockDescentMassSpringGround`), so deformable bodies rest on static
+    ground/obstacle half-spaces instead of tunneling. Tests cover the
+    finite-difference force match, inactivity above the plane, the
+    positive-semidefinite contact Hessian, a particle resting on the ground, and
+    a spring net sagging onto the ground. Vertex-triangle/edge-edge contact,
+    friction, and self-collision remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

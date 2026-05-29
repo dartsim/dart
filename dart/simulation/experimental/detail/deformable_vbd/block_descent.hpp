@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/deformable_vbd/contact_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/neo_hookean.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_coloring.hpp>
@@ -462,6 +463,69 @@ inline double tetMeshObjective(
         += tet.rest.restVolume * stableNeoHookeanEnergyDensity(F, mu, lambda);
   }
   return energy;
+}
+
+//==============================================================================
+/// Mass-spring block descent with static half-space penalty contact. Identical
+/// to blockDescentMassSpring, but each vertex block additionally accumulates
+/// the VBD penalty-contact term for every plane it penetrates, so a body rests
+/// on (rather than tunnels through) ground/obstacle half-spaces. `positions` is
+/// updated in place.
+inline BlockDescentStats blockDescentMassSpringGround(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    double timeStep,
+    const std::vector<ContactPlane>& planes,
+    const VertexColoring& coloring,
+    const SpringAdjacency& adjacency,
+    const BlockDescentOptions& options)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block = detail::assembleVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        springs,
+        adjacency,
+        springStiffness,
+        timeStep,
+        options.clampSpringHessian);
+    for (const ContactPlane& plane : planes) {
+      addHalfSpacePenaltyContact(block, positions[vertex], plane);
+    }
+    return block;
+  };
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
 }
 
 } // namespace dart::simulation::experimental::detail::deformable_vbd

@@ -87,6 +87,17 @@
         decide the public solver-selection surface.
 - [ ] Phase 7: vertex-based contact and friction (reusing the existing
       `deformable_contact` distance/barrier/CCD kernels).
+  - [x] Half-space penalty-contact sub-slice: `contact_kernel.hpp`
+        (`ContactPlane`, `addHalfSpacePenaltyContact`) adds the VBD penalty
+        contact `E_c = (k_c/2) d^2` for a vertex against a static half-space
+        (force `k_c d n`, PSD Hessian `k_c n n^T`), plus the contact-aware driver
+        `blockDescentMassSpringGround`. Tests cover the finite-difference force
+        match, inactivity above the plane, PSD Hessian, a particle resting on
+        the ground without tunneling, and a pinned spring net sagging onto the
+        ground.
+  - [ ] Remaining Phase 7 work: vertex-triangle / edge-edge penalty contact
+        (reusing the `deformable_contact` distance kernels), IPC-style lagged
+        friction, self-collision, and wiring contact into the World VBD path.
 - [ ] Phase 8: CPU performance optimization (SoA layout, multithreaded color
       sweeps) with benchmarks targeting the reference CPU numbers.
   - [x] CPU baseline-comparison sub-slice: `bm_vbd_world_solver` steps the same
@@ -352,6 +363,17 @@ back to the serial driver, and it converges to a low residual. The scaling
 benchmark (`BM_VbdParallelGridStep`, 96x96 grid) gave 1.65x/2.6x/3.5x speedups
 at 2/4/8 threads. It does not yet wire the parallel driver into the World stage
 or add a SoA layout.
+
+For the half-space penalty-contact sub-slice, keep the verification language
+precise: it covers `addHalfSpacePenaltyContact` (VBD penalty contact against a
+static half-space) and the contact-aware `blockDescentMassSpringGround` driver,
+with tests for the finite-difference force match while penetrating, inactivity
+above the plane, the positive-semidefinite contact Hessian, a particle resting
+on the ground without tunneling, and a pinned spring net sagging onto the
+ground. It is half-space (ground/obstacle) penalty contact only:
+vertex-triangle / edge-edge contact, friction, self-collision, and World wiring
+are not implemented. Local gate on 2026-05-28: the focused target build and 4
+`test_vbd_contact` cases passing.
 
 Local gate (external TinyVBD reference comparison, on 2026-05-28, single CPU
 thread, compute-only, treat as smoke): the upstream `AnkaChan/TinyVBD` reference
