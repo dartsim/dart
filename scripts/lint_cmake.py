@@ -12,6 +12,12 @@ SKIP_DIRS = {".deps", ".git", ".pixi", "build", "external", "node_modules"}
 
 
 def find_cmake_files(root: pathlib.Path) -> list[pathlib.Path]:
+    # Only ``CMakeLists.txt`` and ``*.cmake`` are formatted. ``*.cmake.in``
+    # configure templates are intentionally excluded: they embed configure-time
+    # placeholders (e.g. ``@PACKAGE_INIT@`` in DARTConfig.cmake.in, which expands
+    # to multiple statements) that gersemi cannot parse, and reflowing lines
+    # around ``@VAR@`` tokens could corrupt the template before ``configure_file``
+    # substitution runs.
     files = []
     for path in root.rglob("CMakeLists.txt"):
         if any(part in SKIP_DIRS for part in path.parts):
