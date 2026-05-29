@@ -2,13 +2,15 @@
 
 ## Status
 
-Proposal. This document owns the durable design rationale for adding a
-**linear-time variational integrator** to the experimental simulation `World`
-as a new integration family. It owns architecture and math rationale, not
-timeline or status. Sequencing, phase gates, and acceptance criteria live in
-PLAN-082 (`docs/plans/082-variational-integrator-solver.md` and its
-`contact-roadmap.md` sidecar); a `docs/dev_tasks/variational_integrator_solver/`
-folder is created when implementation begins (per `docs/dev_tasks/README.md`).
+Implemented (Phases A1, A2, B1, B2; Phase C is a recorded NO-GO). This document
+owns the durable design rationale for the **linear-time variational integrator**
+in the experimental simulation `World` integration family. It owns architecture
+and math rationale, not timeline or status. Sequencing, phase gates, and
+acceptance criteria live in PLAN-082
+(`docs/plans/082-variational-integrator-solver.md` and its `contact-roadmap.md`
+sidecar); the implementation tracker, measured paper-experiment replication, and
+the per-gate evidence live in `docs/dev_tasks/variational_integrator_solver/`
+(`README.md`, `RESUME.md`, `paper-experiment-replication.md`).
 
 Companion docs:
 
@@ -99,6 +101,77 @@ subspace `Sᵢ`; parent `λ(i)`; children `σ(i)`.
   the RIQN increment is applied by retraction (exp), not addition. The reference
   impl only ever handled Euclidean joints correctly here (open TODOs for
   ball/free), so this is genuinely new, correctness-sensitive work for Phase B.
+
+## Improvements, Corrections, and New Features (relative to the paper)
+
+This is a fresh implementation in DART's experimental ECS `World`, not a port of
+the author's classic-DART reference (`github.com/jslee02/wafr2016`). It
+reproduces the paper's results (see
+[`../dev_tasks/variational_integrator_solver/paper-experiment-replication.md`](../dev_tasks/variational_integrator_solver/paper-experiment-replication.md))
+and differs from the paper and its reference code in the following ways. Each
+item names the artifact that verifies it.
+
+### Corrections (bug fixes vs a naive port)
+
+- **O(n) kinematic-tree build.** A direct port computed each link's parent by a
+  linear scan (`std::find`), making tree construction O(n²) and silently
+  defeating the linear-time claim. The scaling benchmark surfaced this; it is
+  fixed with an `unordered_map` parent lookup, so `buildVarTree` is O(n)
+  (`bm_variational_integration`, `BM_ArticulatedInverseMass` = `O(n)`).
+- **Non-convergence is a hard error, not a silent best-effort step.** The
+  reference returned the last iterate regardless of convergence (silent NaN /
+  garbage risk). Here a step that fails to reach tolerance within `maxIterations`
+  raises a documented `InvalidOperationException`
+  (`NonConvergenceRaisesDocumentedError`).
+
+### Improvements (more accurate / more robust than the paper)
+
+- **Exact `dexp⁻¹` via `SE3::LeftJacobianInverse`** instead of the paper's
+  truncated Bernoulli series `I − ad/2 + ad²/12 − ad⁴/720`. The closed-form
+  left-Jacobian inverse is exact (no truncation error); cross-checked against
+  `dart::math::lie_group` (`test_discrete_mechanics_lie_group_parity`,
+  `DexpInvIsLeftJacobianInverse`).
+- **Anderson-accelerated RIQN.** The paper's fixed `Δt·M⁻¹` quasi-Newton
+  preconditioner converges in a few iterations for small systems but its rate
+  degrades for long chains (measured: a 64-link chain peaked near **456**
+  iterations; 100 links failed to converge within 500). Depth-`m` Anderson
+  mixing of the fixed-point iteration — applied only where the generalized
+  coordinates form a vector space (all joints revolute/prismatic), since
+  spherical/floating coordinates cannot be linearly mixed — restores fast
+  convergence (64 links: max **19**; 100 links: max **205**)
+  (`LongChainConvergesWithinDefaultBudget`, `DISABLED_RiqnIterationsVsChainLength`).
+- **Dimension-consistent (`√n`-scaled) convergence tolerance.** `tolerance` is a
+  per-coordinate accuracy; the residual L2 norm is tested against
+  `tolerance·√(dofCount)`, so the accuracy is uniform across chain lengths rather
+  than `√n` times stricter for an `n`-DOF system (which left the hardest
+  long-chain steps stalled just above an unscaled floor).
+
+### New features (beyond the paper's scope)
+
+- **Manifold-correct floating and spherical joints.** The paper's reference
+  implementation only handled Euclidean joints in the RIQN retraction (open
+  TODOs for ball/free). Here the increment is applied by SE(3)/SO(3) retraction
+  (`R_new = R·exp(δω)`, `p_new = p + R·δp`), verified by floating free-fall,
+  torque-free tumbling energy conservation, and a finite-difference manifold
+  check (`FloatingBaseFreeFall`, `FloatingBaseTorqueFreeConservesEnergy`,
+  `ExpRetractionTangentMatchesFiniteDifference`).
+- **Holonomic loop closures through the public API.** The paper handles only
+  joint equality constraints. Here Point, Distance, and Rigid closures (the
+  paper's Sec. 5 extension) are enforced by an impulse-based projection onto
+  `g(q)=0` reusing the O(n) ABI, wired through the World's `LoopClosure`
+  components and solved on the `world.step()` path under the variational method
+  (the semi-implicit path still rejects `Solve`). The constraint Jacobians
+  (including the 6-row Rigid position+orientation Jacobian) are finite-difference
+  verified (`ConstraintJacobianMatchesFiniteDifference`,
+  `RigidConstraintJacobianMatchesFiniteDifference`,
+  `LoopClosure{,Distance,Rigid}SolvedThroughWorldStep`).
+- **State serialization.** The two-step discrete-mechanics history is a
+  registered, serialized component, so a binary save/load resumes a trajectory
+  bit-identically without re-bootstrapping (`StateSerializationRoundTripsTrajectory`).
+- **Facade-safe integration-family selector.** The integrator is selected by the
+  documented method-family name (`World::setMultibodyIntegrationMethod`, also a
+  dartpy property) with no public exposure of solver/stage/component types;
+  `check-api-boundaries` stays green.
 
 ## How It Maps Onto The Experimental World
 

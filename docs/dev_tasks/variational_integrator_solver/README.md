@@ -47,17 +47,19 @@ SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
 - [x] **Phase A2 — O(n) impulse-based ABI** — RIQN uses the articulated-body
       inverse-mass solve (matches the dense `M⁻¹` to 1e-9,
       `ArticulatedInverseMassMatchesDenseSolve`). `bm_variational_integration`
-      confirms the inverse-mass kernel is O(n) (BigO `763·N`, 3% RMS) and surfaced +
-      fixed an O(n²) `buildVarTree` parent lookup. **Finding**: per-iteration work is
-      O(n) and the integrator scales linearly + converges in a few iterations for
-      realistic DOF counts (≤~32), but the RIQN iteration count rises sharply for
-      long chains (≥~64 links) at small `dt` — the known `Δt·M⁻¹` quasi-Newton
-      limitation. The IG3 (semi-implicit, forward-dynamics) initial guess is used
-      and helps continuous rollouts, but does **not** resolve the cliff: it is a
-      convergence-_rate_ issue (the fixed `Δt·M⁻¹` preconditioner), not a
-      starting-point one. Deeper mitigations (relative/scaled tolerance,
-      line-search/Anderson acceleration, or the exact recursive-Jacobian
-      preconditioner from the paper's Appendix) are tracked follow-ups.
+      confirms the inverse-mass kernel is O(n) (`806·N`, 13% RMS) and surfaced +
+      fixed an O(n²) `buildVarTree` parent lookup; the full RIQN step is also O(n)
+      (`3958·N`, 11% RMS) to 64 links. **Long-chain convergence (resolved):** the
+      fixed `Δt·M⁻¹` quasi-Newton rate degraded for long chains (undamped 64-link
+      max **456** iters; 100 links failed within 500). Depth-`m` Anderson
+      acceleration (Euclidean coordinates only; spherical/floating keep the plain
+      step) plus a per-coordinate `√n`-scaled tolerance bound it (64-link max
+      **19**, 100-link max **205**); a 64-link chain now converges within the
+      default budget (`LongChainConvergesWithinDefaultBudget`). IG3 alone did not
+      help (a starting-point fix, not a rate fix); a monotone line search hurt
+      (it suppressed the beneficial non-monotone steps). The exact recursive-
+      Jacobian preconditioner (paper Appendix) remains an option for ≥100-link
+      chains.
 - [x] **Phase B1 — Floating base** — Floating + Spherical joints with
       manifold-correct SE(3)/SO(3) RIQN retraction (`jointRetract`/
       `jointLogDifference`: `R_new = R·exp(δω)`, `p_new = p + R·δp`). Verified by
@@ -66,21 +68,21 @@ SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
       conserves energy over 2e4 steps). Resolves the manifold-retraction gap the
       reference impl left as open TODOs.
 - [x] **Phase B2 — Holonomic constraints (loop closures)** — done + verified,
-      end-to-end through the public API. The constrained-VI algorithm enforces
-      holonomic closures by an impulse-based Newton projection onto `g(q)=0` reusing
-      the O(n) ABI (`λ = (J M⁻¹ Jᵀ)⁻¹(−g)`, `Δq = M⁻¹ Jᵀ λ`); the constraint
-      Jacobian is finite-difference-verified (`ConstraintJacobianMatchesFinite-
-Difference`). The World's `LoopClosure` components are wired into the
-      variational stage (`bindVariationalLoopClosure`, the single source of truth for
-      both the stage and the `Solve` validation), so a `Solve` Point closure runs
-      through `world.step()` under the variational method
-      (`LoopClosureSolvedThroughWorldStep`), while the semi-implicit path still
-      rejects `Solve` and unsupported closures (Rigid/Distance families, rigid-body
-      or cross-multibody endpoints) raise documented errors. **Scope today:** Point
-      closures with link/world endpoints on a single multibody. Distance (needs a
-      public rest-length field) and Rigid (needs an orientation residual) through the
-      public model are tracked follow-ups; the internal `VariationalLoopConstraint`
-      Distance path is already verified by `MaintainsDistanceLoopClosure`.
+      end-to-end through the public API for **all three families** (Point,
+      Distance, Rigid). The constrained-VI algorithm enforces closures by an
+      impulse-based Newton projection onto `g(q)=0` reusing the O(n) ABI
+      (`λ = (J M⁻¹ Jᵀ)⁻¹(−g)`, `Δq = M⁻¹ Jᵀ λ`). The World's `LoopClosure`
+      components are wired into the variational stage (`bindVariationalLoopClosure`,
+      the single source of truth for both the stage and the `Solve` validation):
+      Point (3-row offset), Distance (1-row separation, with a public
+      `LoopClosureSpec.distance` target), and Rigid (6-row position + world-frame
+      orientation residual) closures all run through `world.step()` under the
+      variational method, while the semi-implicit path still rejects `Solve` and
+      cross-multibody / rigid-body endpoints raise documented errors. The
+      constraint Jacobians (including the Rigid orientation Jacobian) are
+      finite-difference-verified (`ConstraintJacobianMatchesFiniteDifference`,
+      `RigidConstraintJacobianMatchesFiniteDifference`); closures hold through
+      `world.step()` (`LoopClosure{,Distance,Rigid}SolvedThroughWorldStep`).
 - [x] **Phase C — Contact & friction: go/no-go = NO-GO** (deferred). Recorded in
       the plan sidecar; neither entry gate met (no contact-query-at-trial-config
       redesign; no C2 spike).
@@ -117,17 +119,18 @@ energy behavior on a passive chain before optimizing to O(n).
 ## Immediate Next Steps
 
 All committed PLAN-082 phases (A1, A2, B1, B2) and their acceptance gates are
-complete and verified; Phase C is a recorded NO-GO. Remaining items are
-follow-ups beyond the original commitment, in priority order (see `RESUME.md`):
+complete and verified, the paper's experiments are replicated
+([`paper-experiment-replication.md`](paper-experiment-replication.md)), and the
+prior follow-ups are done: the dartpy integration-family selector, the A2
+long-chain convergence fix (Anderson + `√n` tolerance), and Point/Distance/Rigid
+loop closures through the public API. Phase C is a recorded NO-GO. What remains:
 
-1. **B2 public-model follow-ups**: support Distance closures through the public
-   API (needs a rest-length the `comps::LoopClosure` model does not yet carry)
-   and Rigid closures (needs an orientation residual the solver does not yet
-   implement). Both are rejected today with documented errors; the internal
-   Distance path is already verified.
-2. **A2 large-chain convergence** (research follow-up): relative/scaled tolerance,
-   line-search/Anderson acceleration, or the exact recursive-Jacobian
-   preconditioner (IG3 alone does not resolve the long-chain iteration cliff).
-3. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
+1. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
+2. **A2 extreme chains (≥100 links)**: the exact recursive-Jacobian
+   preconditioner (paper Appendix) for chains that still need a budget above the
+   100-iteration default.
+3. **Dedup**: the local spatial-algebra/kinematic-tree helpers in
+   `variational_integration.cpp` duplicate a subset of `multibody_dynamics.cpp`;
+   hoist into a shared internal header.
 
 Code is the source of truth; keep this file lean and current.

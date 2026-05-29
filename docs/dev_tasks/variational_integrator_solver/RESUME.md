@@ -34,30 +34,23 @@ articulated-inertia sweep + forward acceleration sweep) drives RIQN and matches
 the dense `M⁻¹` to 1e-9 (`ArticulatedInverseMassMatchesDenseSolve`); the
 integrator is linear-time, symplectic (energy-conserving over 1e5 steps), and
 selectable via `World::setMultibodyIntegrationMethod("variational integrator")`.
-All committed PLAN-082 phases (A1, A2, B1, B2) and every acceptance gate are
-complete and verified: A1's symplectic-no-secular-drift headline, momentum,
-convergence/non-convergence-error, determinism **and binary save/load
-serialization** (`MultibodyVariationalState` is now a registered State component,
-format v3); A2's O(n) ABI + scaling benchmark; B1's manifold finite-difference
-gate; and B2's constraint-Jacobian FD + closed-loop hold, wired through the
-public API (Point closures via `world.step()` under the variational method,
-semi-implicit still rejects `Solve`). Phase C is a recorded NO-GO. Remaining
-items are follow-ups beyond the original commitment, in priority order:
+All committed PLAN-082 phases (A1, A2, B1, B2), every acceptance gate, the
+paper-experiment replication, and the post-plan follow-ups are complete and
+verified: A1's symplectic headline / momentum / non-convergence-error /
+determinism / **serialization**; A2's O(n) ABI + scaling benchmark + the
+**Anderson + `√n`-tolerance long-chain convergence fix**; B1's manifold
+finite-difference gate; B2's **Point/Distance/Rigid loop closures through the
+public API** (constraint Jacobians incl. the Rigid orientation Jacobian
+FD-verified; semi-implicit still rejects `Solve`); the **dartpy** integration-
+family selector; and the **improvements/corrections/new-features** write-up in
+the design doc. Phase C is a recorded NO-GO. What remains:
 
-1. **B2 public-model follow-ups**: Distance closures through the public API need
-   a rest-length the `comps::LoopClosure` model does not carry; Rigid closures
-   need an orientation residual the solver does not implement. Both are rejected
-   today with documented errors (`bindVariationalLoopClosure`); the internal
-   Distance path is verified by `MaintainsDistanceLoopClosure`.
-   (`johnson-murphey-2009` / `leyendecker-2008`.)
-2. **A2 large-chain convergence** (research follow-up): the inverse-mass kernel
-   is O(n) (3% RMS) and the integrator scales linearly for ≤~32 DOF, but the RIQN
-   iteration count rises for ≥~64-link chains (the fixed `Δt·M⁻¹` quasi-Newton
-   rate). IG3 did not fix it; open mitigations are a relative/scaled tolerance,
-   line-search/Anderson acceleration, or the exact recursive-Jacobian
-   preconditioner.
-3. **Phase C**: contact/friction — recorded **NO-GO** (deferred, go/no-go; see
+1. **Phase C**: contact/friction — recorded **NO-GO** (deferred, go/no-go; see
    the plan sidecar).
+2. **A2 extreme chains (≥100 links)**: the exact recursive-Jacobian
+   preconditioner (paper Appendix) for chains needing a budget above the default.
+3. **Dedup**: hoist the local spatial-algebra/kinematic-tree helpers shared with
+   `multibody_dynamics.cpp` into an internal header.
 
 ## Context That Would Be Lost
 
