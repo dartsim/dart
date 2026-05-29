@@ -2221,10 +2221,12 @@ struct SelfContactFrictionInputs
 };
 
 // Assemble the lagged self-contact friction set from the active point-triangle
-// barrier candidates at the current iterate. The lagged normal force is the
-// barrier force magnitude on the point node (the barrier pushes the point along
-// the contact normal), and the tangent projection comes from the point-triangle
-// tangent stencil. Edge-edge friction is a later increment.
+// and edge-edge barrier candidates at the current iterate. The lagged normal
+// force is the barrier force magnitude on the primitive's first feature (the
+// point node, or the net force on the first edge), and the tangent projection
+// comes from the matching point-triangle / edge-edge tangent stencil. The
+// downstream friction energy/gradient/Hessian are generic over the four-node
+// stencil, so both contact types share them.
 void buildSelfContactFrictionContacts(
     const std::vector<Eigen::Vector3d>& positions,
     const SelfContactBarrierInputs& barrier,
@@ -2255,6 +2257,28 @@ void buildSelfContactFrictionContacts(
         = {candidate.point, triangle.nodeA, triangle.nodeB, triangle.nodeC};
     contact.normalForce = result.gradient.template head<3>().norm();
     contact.projection = dc::pointTriangleTangentStencil(p, a, b, c).projection;
+    contacts.push_back(contact);
+  }
+
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
+    const auto& a0 = positions[edgeA.nodeA];
+    const auto& a1 = positions[edgeA.nodeB];
+    const auto& b0 = positions[edgeB.nodeA];
+    const auto& b1 = positions[edgeB.nodeB];
+    const auto result = dc::edgeEdgeBarrier(
+        a0, a1, b0, b1, barrier.squaredActivationDistance, barrier.stiffness);
+    if (!result.active) {
+      continue;
+    }
+    SelfContactFrictionContact contact;
+    contact.nodes = {edgeA.nodeA, edgeA.nodeB, edgeB.nodeA, edgeB.nodeB};
+    // Lagged normal force = net barrier force on edge A (its two endpoints).
+    contact.normalForce = (result.gradient.template head<3>()
+                           + result.gradient.template segment<3>(3))
+                              .norm();
+    contact.projection = dc::edgeEdgeTangentStencil(a0, a1, b0, b1).projection;
     contacts.push_back(contact);
   }
 }
