@@ -58,7 +58,6 @@ endif()
 #   dart_add_test("unit" test_unit_test_aNone test_source_c1.cpp test_source_c2.cpp)
 #===============================================================================
 function(dart_add_test test_type target_name) # ARGN for source files
-
   dart_property_add(DART_${test_type}_TESTS ${target_name})
 
   if(${ARGC} GREATER 2)
@@ -68,10 +67,7 @@ function(dart_add_test test_type target_name) # ARGN for source files
   endif()
 
   add_executable(${target_name} ${sources})
-  add_test(
-    NAME ${target_name}
-    COMMAND $<TARGET_FILE:${target_name}>
-  )
+  add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
   # Set up library paths for tests to find shared libraries at runtime.
@@ -82,8 +78,9 @@ function(dart_add_test test_type target_name) # ARGN for source files
   if(APPLE)
     # Explicitly set BUILD_RPATH to include the dart library directory.
     # This ensures tests find the correct Debug/Release libraries.
-    set_target_properties(${target_name} PROPERTIES
-      BUILD_RPATH "$<TARGET_FILE_DIR:dart>"
+    set_target_properties(
+      ${target_name}
+      PROPERTIES BUILD_RPATH "$<TARGET_FILE_DIR:dart>"
     )
   else()
     # Windows and Linux need environment variables for library paths
@@ -96,12 +93,17 @@ function(dart_add_test test_type target_name) # ARGN for source files
     if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
       # CTest applies path_list_prepend entries in order, so add lower
       # priority paths first and the build-tree DART library last.
-      set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
-      list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
+      set(
+        _dart_env_mods
+        "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>"
+      )
+      list(
+        APPEND _dart_env_mods
+        "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>"
+      )
       set_tests_properties(
         ${target_name}
-        PROPERTIES
-          ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
+        PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
       )
     else()
       if(WIN32)
@@ -110,19 +112,21 @@ function(dart_add_test test_type target_name) # ARGN for source files
       else()
         set(_dart_test_path_sep ":")
       endif()
-      set(_dart_lib_paths "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>")
+      set(
+        _dart_lib_paths
+        "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>"
+      )
       set_property(
         TEST ${target_name}
         PROPERTY
           ENVIRONMENT
-          "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
+            "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
       )
       unset(_dart_test_path_sep)
     endif()
     unset(_dart_lib_path_var)
   endif()
   dart_format_add(${sources})
-
 endfunction()
 
 #===============================================================================
@@ -152,8 +156,9 @@ endif()
 if(CMAKE_CONFIGURATION_TYPES)
   foreach(_dart_cfg ${CMAKE_CONFIGURATION_TYPES})
     string(TOUPPER "${_dart_cfg}" _dart_cfg_upper)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper}
-        "${DART_BINARY_DIR}/bin/${_dart_cfg}"
+    set(
+      CMAKE_RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper}
+      "${DART_BINARY_DIR}/bin/${_dart_cfg}"
     )
   endforeach()
 else()
@@ -195,14 +200,13 @@ if(DART_VERBOSE)
 else()
   list(LENGTH integration_tests integration_tests_len)
   list(LENGTH unit_tests unit_tests_len)
-  math(
-    EXPR tests_len
-    "${integration_tests_len} + ${unit_tests_len}"
-  )
-  message(STATUS "Adding ${tests_len} tests ("
-      "integration: ${integration_tests_len}, "
-      "unit: ${unit_tests_len}"
-      ")"
+  math(EXPR tests_len "${integration_tests_len} + ${unit_tests_len}")
+  message(
+    STATUS
+    "Adding ${tests_len} tests ("
+    "integration: ${integration_tests_len}, "
+    "unit: ${unit_tests_len}"
+    ")"
   )
 endif()
 
@@ -219,12 +223,14 @@ add_custom_target(
 
 # Add custom target to build all the tests and run the tests
 if(MSVC)
-  add_custom_target(tests_and_run
+  add_custom_target(
+    tests_and_run
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
     DEPENDS ${integration_tests} ${unit_tests} ${extra_test_targets}
   )
 else()
-  add_custom_target(tests_and_run
+  add_custom_target(
+    tests_and_run
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
     DEPENDS ${integration_tests} ${unit_tests} ${extra_test_targets}
   )

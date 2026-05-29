@@ -66,6 +66,7 @@ std::optional<InitialSceneState> createInitialSceneState(
     ExampleScene exampleScene,
     DartScene& dartScene,
     bool validateFixtureRequirements,
+    bool allowEmptyScene,
     std::ostream& errors);
 
 } // namespace dart::gui::detail
