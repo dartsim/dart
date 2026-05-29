@@ -177,11 +177,18 @@ PLAN-082 gates, to be filled with controlled benchmark JSON:
   spring stiffness `1e8`, mass ratio 1:1000 (last vertex mass 1000), skip-spring
   stiffness 100, `h = 1/60`, 100 iterations, gravity `(0, -10, 0)`.
 - CPU per-step wall time on matched scenes vs `TinyVBD`/`Gaia` CPU (Phase 8).
+  **Done vs TinyVBD:** on the TinyVBD default tilted-strand scene (20 verts,
+  100 iters/step, single CPU thread, compute-only), DART's VBD is ~0.21 ms/step
+  vs TinyVBD's ~0.47 ms/frame — about 2.2x faster. DART uses a double LDLT 3x3
+  solve; TinyVBD a float `colPivHouseholderQr`. `Gaia` CPU remains.
 - GPU per-step wall time / frame rate on the paper's high-resolution scenes vs
-  `Gaia` GPU and the paper's reported numbers (Phase 9).
+  `Gaia` GPU and the paper's reported numbers (Phase 9). **Partial:** DART's
+  CUDA mass-spring kernel runs ~9-26x faster than its own single-threaded CPU on
+  grids; the paper's tetrahedral scenes and the published RTX-4090 numbers
+  (different scenes/hardware) and `Gaia` GPU remain.
 
-Until those phases land with controlled benchmark JSON, no performance-parity
-claim is made.
+These are smoke-level local comparisons, not controlled benchmark-JSON parity
+runs; no full paper-parity claim is made.
 
 ## DART-Specific Constraints
 

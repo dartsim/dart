@@ -892,6 +892,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     16k vertices, scaling near-flat while the CPU path grows linearly. A
     tetrahedral GPU kernel, device-resident rollout, and paper-scene comparisons
     remain future work.
+  - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
+    20-vertex tilted strand with structural and skip springs, 100 iterations per
+    step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step
+    versus the TinyVBD reference's roughly 0.47 ms/frame on the same scene
+    (about 2.2x faster); DART uses a double LDLT 3x3 block solve while TinyVBD
+    uses a float colPivHouseholderQr solve. The Gaia GPU framework and the
+    paper's tetrahedral RTX-4090 scene numbers remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

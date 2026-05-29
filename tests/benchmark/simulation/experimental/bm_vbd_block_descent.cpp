@@ -261,4 +261,96 @@ static void BM_VbdTetMeshStep(benchmark::State& state)
 }
 BENCHMARK(BM_VbdTetMeshStep)->Arg(4)->Arg(16)->Arg(64);
 
+namespace {
+
+// The TinyVBD reference default scene: a 20-vertex strand tilted 30 degrees,
+// pinned at vertex 0, with structural springs (i, i+1) and skip springs
+// (i, i+2), a 1:1000 tip mass ratio, and 100 iterations per step. Matched here
+// for a per-step CPU comparison against the TinyVBD reference implementation
+// (same vertex/spring/iteration counts and the same per-vertex VBD update).
+struct StrandScene
+{
+  std::vector<Vec3> positions;
+  std::vector<double> masses;
+  std::vector<std::uint8_t> fixed;
+  std::vector<Vec3> inertialTargets;
+  std::vector<vbd::SpringElement> springs;
+  vbd::VertexColoring coloring;
+  vbd::SpringAdjacency adjacency;
+  double stiffness = 1.0e8;
+  double timeStep = 1.0 / 60.0;
+};
+
+StrandScene makeTiltedStrand()
+{
+  StrandScene scene;
+  const int numVerts = 20;
+  const double spacing = 0.05;
+  const double tanAngle = 0.57735; // 30 degrees
+  for (int i = 0; i < numVerts; ++i) {
+    scene.positions.emplace_back(
+        i * spacing, 2.0 + i * spacing * tanAngle, 0.0);
+    scene.masses.push_back(i == numVerts - 1 ? 1000.0 : 1.0);
+    scene.fixed.push_back(i == 0 ? 1u : 0u);
+  }
+  for (int i = 0; i + 1 < numVerts; ++i) {
+    const double rest = (scene.positions[i + 1] - scene.positions[i]).norm();
+    scene.springs.push_back(
+        {static_cast<std::uint32_t>(i),
+         static_cast<std::uint32_t>(i + 1),
+         rest});
+  }
+  for (int i = 0; i + 2 < numVerts; ++i) { // skip springs (i, i+2)
+    const double rest = (scene.positions[i + 2] - scene.positions[i]).norm();
+    scene.springs.push_back(
+        {static_cast<std::uint32_t>(i),
+         static_cast<std::uint32_t>(i + 2),
+         rest});
+  }
+  scene.inertialTargets = scene.positions;
+  const Vec3 gravityStep(0.0, -10.0 * scene.timeStep * scene.timeStep, 0.0);
+  for (std::size_t i = 0; i < scene.positions.size(); ++i) {
+    if (scene.fixed[i] == 0u) {
+      scene.inertialTargets[i] += gravityStep;
+    }
+  }
+  scene.coloring = vbd::colorSprings(scene.positions.size(), scene.springs);
+  scene.adjacency
+      = vbd::SpringAdjacency::build(scene.positions.size(), scene.springs);
+  return scene;
+}
+
+} // namespace
+
+//==============================================================================
+// One step (100 sweeps) on the TinyVBD reference tilted-strand scene, for a
+// per-step CPU comparison against the TinyVBD reference implementation.
+static void BM_VbdTinyStrandStep(benchmark::State& state)
+{
+  const StrandScene base = makeTiltedStrand();
+  vbd::BlockDescentOptions options;
+  options.iterations = 100;
+  for (auto _ : state) {
+    state.PauseTiming();
+    std::vector<Vec3> positions = base.inertialTargets;
+    state.ResumeTiming();
+    vbd::BlockDescentStats stats = vbd::blockDescentMassSpring(
+        positions,
+        base.masses,
+        base.fixed,
+        base.inertialTargets,
+        base.springs,
+        base.stiffness,
+        base.timeStep,
+        base.coloring,
+        base.adjacency,
+        options);
+    benchmark::DoNotOptimize(stats.finalResidualNormSquared);
+    benchmark::DoNotOptimize(positions);
+  }
+  state.counters["vertices"] = static_cast<double>(base.positions.size());
+  state.counters["springs"] = static_cast<double>(base.springs.size());
+}
+BENCHMARK(BM_VbdTinyStrandStep);
+
 BENCHMARK_MAIN();

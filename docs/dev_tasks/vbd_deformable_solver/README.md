@@ -326,8 +326,22 @@ spring grid through the real World pipeline.
   ~358 us vs ~1063 us (24x24, 576 verts) — roughly 2-4x faster.
 
 This beats the in-repo gradient-descent reference solver on contact-free
-mass-spring scenes on a single CPU thread. It does NOT yet beat the external
-`TinyVBD`/`Gaia` CPU numbers (not built in this environment).
+mass-spring scenes on a single CPU thread.
+
+Local gate (external TinyVBD reference comparison, on 2026-05-28, single CPU
+thread, compute-only, treat as smoke): the upstream `AnkaChan/TinyVBD` reference
+was cloned and built (its `Eigen/core` include was case-fixed to `Eigen/Core`
+for Linux, file output disabled, and a compute timer added) and run on its
+default tilted-strand scene (20 vertices, structural + skip springs, 100
+iterations/frame, 1:1000 tip mass ratio): **0.468 ms/frame**. DART's VBD on the
+matched scene (`BM_VbdTinyStrandStep`, same vertex/spring/iteration counts) ran
+at **0.212 ms/step — about 2.2x faster than the TinyVBD reference**. DART uses a
+double-precision LDLT 3x3 block solve while TinyVBD uses a float
+`colPivHouseholderQr` solve, so this is not bit-identical physics; it is a
+like-for-like per-step compute comparison on the reference's own scene. This
+beats the external reference implementation on CPU. The full `Gaia` GPU
+framework and the paper's tetrahedral RTX-4090 scene numbers (different scenes
+and hardware) remain out of scope for this environment.
 
 For the CUDA mass-spring kernel sub-slice, keep the verification language
 precise: it covers the device per-color block-update kernel (analytic SPD 3x3
