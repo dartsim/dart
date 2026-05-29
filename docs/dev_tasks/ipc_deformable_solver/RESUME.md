@@ -142,34 +142,38 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-drape-demo` - stacked on `feature/ipc-sparse-newton-solve`
-(#2741). Adds a `drape` showcase scene to `experimental_deformable_gui`
-(`--deformable-scene-kind drape`): a 572-node mat drapes over a raised
-ground-barrier step onto the ground, exercising the landed contact pipeline
-(self-contact + ground barrier + sparse projected Newton) past the old 256-node
-cap. DART-native showcase, NOT a faithful paper-figure reproduction (mass-spring,
-no codimensional/FEM elasticity or friction). Adds a library-level drape
-regression (`SparseProjectedNewtonDrapesMatOverStepBarrier`, started near the
-draped equilibrium for speed) and `BM_DeformableDrapeStage`.
+`feature/ipc-gpu-psd-projection` - stacked on `feature/ipc-deformable-drape-demo`
+(#2742). Adds an opt-in CUDA sidecar `projectSymmetricBlocksToPsdCuda` +
+`projectSymmetricBlocksToPsdReference` (compute/cuda/deformable_psd_projection_cuda.{cuh,cu,cpp})
+that batches the projected-Newton per-element PSD projection (symmetric
+eigendecomposition + eigenvalue clamp on every spring 6x6 / barrier 12x12 block)
+on the GPU via per-block cyclic Jacobi, with an identical-semantics Eigen CPU
+reference. Built only with `DART_ENABLE_EXPERIMENTAL_CUDA=ON` (sidecar
+`dart-simulation-experimental-cuda`); the default CPU runtime stays GPU-free.
+CUDA test `test_deformable_psd_projection_cuda` validates GPU==CPU for spring +
+barrier block sizes (verified on an RTX 5000 Ada via `pixi run -e cuda`). NOT
+wired into the live solve: that needs an optional GPU compute-backend injection
+path so `world_step_stage` keeps no GPU dependency (runtime-dependency policy).
 
-Prior stacked branches, all open + awaiting Codex review: #2738 (moving rigid
-CCD) <- #2739 (self-contact barrier) <- #2740 (projected Newton, dense LDLT) <-
-#2741 (sparse Cholesky solve, 256->20000 cap).
+Prior stacked branches, all open + awaiting Codex review (Codex is currently
+usage-limited): #2738 (moving rigid CCD) <- #2739 (self-contact barrier) <-
+#2740 (projected Newton, dense LDLT) <- #2741 (sparse Cholesky solve) <- #2742
+(drape demo).
 
 ## Immediate Next Step
 
-Per the user-directed sequence (2026-05-28): the visible demo (this branch) is
-done; NEXT is **let the review stack land** (merge #2738 -> ... -> this demo PR
-bottom-up as Codex approves), then the **GPU optimization pass** (per-element PSD
-projection + Hessian assembly onto the CUDA backend). Sparse-solve perf
-follow-ups: symbolic-factorization reuse / matrix-free CG (the solve currently
-refactorizes from scratch each iteration), then adaptive barrier stiffness and
-barrier forces for rigid/codimensional obstacles. After that: friction (Slice 6,
-the stick-slip / card-house / arch / roller figures), the scene corpus port
-(Slice 7), and the Python facade (Slice 8). Per the standing directive, optimize
-CPU AND GPU throughout: the per-element eigen-decomposition, Hessian assembly,
-candidate assembly, and linear solve are all data-parallel GPU candidates, and
-the experimental module already has CUDA backends to build on.
+Per the user-directed sequence (2026-05-28), all four steps are now addressed:
+sparse solver (#2741), visible demo (#2742), let-reviews-land (blocked on Codex
+usage limits; merge bottom-up when it resets or per user waiver), GPU pass (this
+branch). REMAINING plan work: live GPU-backend injection (wire the CUDA PSD
+primitive + a GPU-vs-CPU perf gate into the solve via an optional executor),
+sparse-solve symbolic-factorization reuse / matrix-free CG (the solve currently
+refactorizes from scratch each iteration), adaptive barrier stiffness, barrier
+forces for rigid/codimensional obstacles, friction (Slice 6: stick-slip /
+card-house / arch / roller figures), scene corpus port (Slice 7), Python facade
+(Slice 8). Per the standing directive, optimize CPU AND GPU throughout: the
+per-element eigen-decomposition (now GPU-prototyped), Hessian assembly,
+candidate assembly, and linear solve are all data-parallel GPU candidates.
 
 ## Context That Would Be Lost
 

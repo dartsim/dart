@@ -63,6 +63,12 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
       LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
       LABEL simulation-experimental-cuda
     )
+    dart_experimental_add_test(
+      test_deformable_psd_projection_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_deformable_psd_projection_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL simulation-experimental-cuda
+    )
   endif()
 
   # Create meta target for all unit tests
