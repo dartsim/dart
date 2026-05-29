@@ -10,8 +10,10 @@ __all__: list[str] = [
     "Contact",
     "DeformableBody",
     "DeformableBodyOptions",
+    "DeformableDirichletBoundaryCondition",
     "DeformableEdge",
     "DeformableMaterialProperties",
+    "DeformableNeumannBoundaryCondition",
     "DeformableSurfaceTriangle",
     "DeformableTetrahedron",
     "FixedFrame",
@@ -930,6 +932,72 @@ class DeformableTetrahedron:
     @node_d.setter
     def node_d(self, arg: int, /) -> None: ...
 
+class DeformableDirichletBoundaryCondition:
+    def __init__(self) -> None: ...
+
+    @property
+    def nodes(self) -> list[int]: ...
+
+    @nodes.setter
+    def nodes(self, arg: Sequence[int], /) -> None: ...
+
+    @property
+    def linear_velocity(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @linear_velocity.setter
+    def linear_velocity(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def angular_velocity(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @angular_velocity.setter
+    def angular_velocity(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def center(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @center.setter
+    def center(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def start_time(self) -> float: ...
+
+    @start_time.setter
+    def start_time(self, arg: float, /) -> None: ...
+
+    @property
+    def end_time(self) -> float: ...
+
+    @end_time.setter
+    def end_time(self, arg: float, /) -> None: ...
+
+class DeformableNeumannBoundaryCondition:
+    def __init__(self) -> None: ...
+
+    @property
+    def nodes(self) -> list[int]: ...
+
+    @nodes.setter
+    def nodes(self, arg: Sequence[int], /) -> None: ...
+
+    @property
+    def acceleration(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @acceleration.setter
+    def acceleration(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def start_time(self) -> float: ...
+
+    @start_time.setter
+    def start_time(self, arg: float, /) -> None: ...
+
+    @property
+    def end_time(self) -> float: ...
+
+    @end_time.setter
+    def end_time(self, arg: float, /) -> None: ...
+
 class DeformableBodyOptions:
     def __init__(self) -> None: ...
 
@@ -968,6 +1036,18 @@ class DeformableBodyOptions:
 
     @tetrahedra.setter
     def tetrahedra(self, arg: Sequence[DeformableTetrahedron], /) -> None: ...
+
+    @property
+    def dirichlet_boundary_conditions(self) -> list[DeformableDirichletBoundaryCondition]: ...
+
+    @dirichlet_boundary_conditions.setter
+    def dirichlet_boundary_conditions(self, arg: Sequence[DeformableDirichletBoundaryCondition], /) -> None: ...
+
+    @property
+    def neumann_boundary_conditions(self) -> list[DeformableNeumannBoundaryCondition]: ...
+
+    @neumann_boundary_conditions.setter
+    def neumann_boundary_conditions(self, arg: Sequence[DeformableNeumannBoundaryCondition], /) -> None: ...
 
     @property
     def fixed_nodes(self) -> list[int]: ...

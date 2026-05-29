@@ -142,21 +142,30 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-topology-bindings` - stacked on
-`feature/ipc-friction-diagnostics` (#2754). PHASE 8 increment: dartpy bindings
-for deformable SURFACE/TETRA TOPOLOGY. Adds DeformableSurfaceTriangle +
-DeformableTetrahedron classes, DeformableBodyOptions.surface*triangles/tetrahedra
-def_rw, and DeformableBody read accessors surface_triangle_count/surface_triangle,
-tetrahedron_count/tetrahedron/tetrahedron_rest_volume, node_mass (getMass was
-unbound). NO get*_/set\__ names (forbidden). MUST regen stubs
-(`pixi run generate-stubs`) AND `pixi run update-api-boundary-inventory` (it
-tracks public CLASS names: DeformableSurfaceTriangle/DeformableTetrahedron now
-listed) + verify `check-api-boundary-inventory` -- CI lint fails if stale.
-Python regression test_experimental_deformable_body_topology_python_api (unit
-tetra, explicit boundary surface, rest_volume==1/6, node_mass==1). 6/6 expected.
-Stack 17-deep (#2738-#2746,#2748-#2755). Remaining Phase 8: DBC/NBC bindings
-(need DeformableDirichlet/NeumannBoundaryCondition structs bound too),
-scene-loader Python access, diagnostics exposure.
+`feature/ipc-deformable-bc-bindings` - stacked on
+`feature/ipc-deformable-topology-bindings` (#2755). PHASE 8 increment: dartpy
+bindings for scripted BOUNDARY CONDITIONS. Adds
+DeformableDirichletBoundaryCondition (nodes, linear_velocity, angular_velocity,
+center, start_time, end_time) + DeformableNeumannBoundaryCondition (nodes,
+acceleration, start_time, end_time) classes (nb::init<>() + def_rw), and
+DeformableBodyOptions.dirichlet_boundary_conditions/neumann_boundary_conditions.
+DBC node follows linear_velocity\*dt (a node in `nodes` is removed from the solve
+and scripted); NBC applies per-node acceleration. Regen stubs +
+update-api-boundary-inventory + check. Python test
+test_experimental_deformable_body_boundary_conditions_python_api (DBC node x->0.1
+after dt=0.1 at vx=1; NBC node falls under accel -z). 6/6 expected. Stack 18-deep
+(#2738-#2746,#2748-#2756). Remaining Phase 8: scene-loader Python access,
+diagnostics exposure. THEN riskier core items (barrier-stall robustness, GPU
+injection, adaptive stiffness, rigid/codim barriers).
+
+Prior #2755 = deformable surface/tetra topology bindings (DeformableSurfaceTriangle
+
+- DeformableTetrahedron classes, options surface*triangles/tetrahedra, body
+  accessors surface_triangle_count/surface_triangle, tetrahedron_count/tetrahedron/
+  tetrahedron_rest_volume, node_mass; regen stubs + inventory which tracks public
+  CLASS names; unit-tetra test). KEY dartpy facts: NO get*_/set\__ names allowed;
+  binding changes need `pixi run generate-stubs` AND
+  `pixi run update-api-boundary-inventory` + `check-api-boundary-inventory`.
 
 Prior #2754 = friction diagnostics: DeformableSolverStats gains
 `frictionDissipation` (sum mu*lambda*f1(y)*y over active friction contacts at the
@@ -247,8 +256,8 @@ reuse) <- #2745 (convergence diagnostic) <- #2746 (ground friction) <- #2748
 (self-contact friction) <- #2749 (scene-replay harness) <- #2750 (Python facade)
 <- #2751 (self-contact friction Hessian) <- #2752 (edge-edge self-contact
 friction) <- #2753 (non-flat ground-normal friction) <- #2754 (friction
-diagnostics) <- #2755 (deformable surface/tetra topology bindings). (PR #2747 is
-another author's.)
+diagnostics) <- #2755 (deformable surface/tetra topology bindings) <- #2756
+(deformable DBC/NBC bindings). (PR #2747 is another author's.)
 
 ## Immediate Next Step
 
