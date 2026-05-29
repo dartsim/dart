@@ -902,6 +902,10 @@ void BM_DeformableGridStage(benchmark::State& state)
       = static_cast<double>(stats.projectedNewtonSteps);
   state.counters["projected_newton_fallbacks"]
       = static_cast<double>(stats.projectedNewtonFallbacks);
+  state.counters["newton_symbolic_factorizations"]
+      = static_cast<double>(stats.projectedNewtonSymbolicFactorizations);
+  state.counters["newton_numeric_factorizations"]
+      = static_cast<double>(stats.projectedNewtonNumericFactorizations);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -936,6 +940,10 @@ void BM_DeformableDrapeStage(benchmark::State& state)
       = static_cast<double>(stats.projectedNewtonSteps);
   state.counters["projected_newton_fallbacks"]
       = static_cast<double>(stats.projectedNewtonFallbacks);
+  state.counters["newton_symbolic_factorizations"]
+      = static_cast<double>(stats.projectedNewtonSymbolicFactorizations);
+  state.counters["newton_numeric_factorizations"]
+      = static_cast<double>(stats.projectedNewtonNumericFactorizations);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }

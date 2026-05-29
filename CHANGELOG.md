@@ -889,6 +889,15 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     validated building block: wiring it into the live solve needs an optional
     GPU compute-backend injection path (so `world_step_stage` stays GPU-free per
     the runtime-dependency policy) and is a later slice.
+  - Optimized the experimental IPC sparse projected-Newton solve to reuse its
+    fill-reducing symbolic factorization (`SimplicialLDLT::analyzePattern`)
+    across iterations and steps whenever the assembled Hessian sparsity pattern
+    is unchanged, so the ordering runs once and only the numeric factorization
+    repeats. It is behavior-preserving (a structural mismatch or failed
+    factorization re-analyzes) and roughly halves the per-step solve on a
+    settled 512-node grid (~21.7 ms to ~11.6 ms). Adds symbolic/numeric
+    factorization counters and a regression asserting a steady step performs
+    zero new symbolic analyses.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

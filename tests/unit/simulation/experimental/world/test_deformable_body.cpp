@@ -2580,3 +2580,47 @@ TEST(DeformableBody, SparseProjectedNewtonDrapesMatOverStepBarrier)
   EXPECT_LT(minZ, 0.1 * boxTop); // overhang nodes reached near the ground
   EXPECT_GT(maxZ, 0.5 * boxTop); // supported nodes remain near the box top
 }
+
+//==============================================================================
+// A fixed-topology spring body (no contact) has an unchanging Hessian sparsity
+// pattern, so the projected-Newton solve reuses its fill-reducing symbolic
+// factorization: the first step analyzes the pattern, and a later step performs
+// numeric factorizations with zero new symbolic analyses. Behavior is
+// unchanged -- this only asserts the analysis is amortized.
+TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  constexpr std::size_t kNodeCount = 8;
+  constexpr double spacing = 0.1;
+  sx::DeformableBodyOptions options;
+  for (std::size_t i = 0; i < kNodeCount; ++i) {
+    options.positions.emplace_back(static_cast<double>(i) * spacing, 0.0, 0.0);
+  }
+  options.masses.assign(kNodeCount, 1.0);
+  for (std::size_t i = 0; i + 1 < kNodeCount; ++i) {
+    options.edges.push_back(sx::DeformableEdge{i, i + 1, spacing});
+  }
+  options.edgeStiffness = 100.0;
+  options.fixedNodes = {0};
+
+  auto body = world.addDeformableBody("symbolic_reuse_chain", options);
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+
+  world.step(executor, pipeline); // first step analyzes the sparsity pattern
+  EXPECT_GE(stage.getLastStats().projectedNewtonSymbolicFactorizations, 1u);
+
+  world.step(executor, pipeline); // pattern unchanged -> symbolic reused
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(stats.projectedNewtonNumericFactorizations, 0u);
+  EXPECT_EQ(stats.projectedNewtonSymbolicFactorizations, 0u);
+
+  // The reused factorization still produces a finite, sane solve.
+  EXPECT_TRUE(body.getPosition(kNodeCount - 1).allFinite());
+}
