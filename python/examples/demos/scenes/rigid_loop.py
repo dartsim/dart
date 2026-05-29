@@ -21,17 +21,15 @@ _URI = "dart://sample/skel/chain.skel"
 _LOOP_NAME = "rigid_loop"
 
 
-def _make_step(world: "dart.World", chain: "dart.Skeleton") -> "callable":
-    def step(frames: int) -> None:
-        for _ in range(max(0, frames)):
-            vel = np.asarray(chain.get_velocities())
-            damping = -0.01 * vel
-            for i in range(damping.shape[0]):
-                if i % 3 == 1:
-                    damping[i] *= 0.1
-            chain.set_forces(damping.tolist())
-            world.step()
-    return step
+def _make_pre_step(chain: "dart.Skeleton") -> "callable":
+    def pre_step() -> None:
+        vel = np.asarray(chain.get_velocities())
+        damping = -0.01 * vel
+        for i in range(damping.shape[0]):
+            if i % 3 == 1:
+                damping[i] *= 0.1
+        chain.set_forces(damping.tolist())
+    return pre_step
 
 
 def build() -> SceneSetup:
@@ -64,7 +62,7 @@ def build() -> SceneSetup:
     world.get_constraint_solver().add_constraint(constraint)
 
     setup = SceneSetup(world=world, info={"golden_skeletons": [_LOOP_NAME]})
-    setup.step = _make_step(world, chain)
+    setup.pre_step = _make_pre_step(chain)
     return setup
 
 

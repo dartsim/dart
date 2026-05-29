@@ -73,16 +73,22 @@ class PythonDemoScene:
 def _step(setup: SceneSetup, frames: int) -> None:
     """Advance the scene by ``frames`` steps headlessly.
 
-    Used by the golden-parity smoke (and any caller that needs a
-    deterministic Python-side stepping without involving the viewer).
-    Honors a SceneSetup.step callable when present (controller-driven
-    scenes), otherwise calls world.step() in a loop.
+    Honors (in order of precedence):
+      1. SceneSetup.step (legacy whole-loop callable, owns world.step()
+         itself — used by the OSC/rigid_loop golden-parity smokes).
+      2. SceneSetup.pre_step (run the controller body, then world.step()
+         here). Same pattern the interactive viewer uses, so the same
+         scene runs in both surfaces without duplicate logic.
+      3. Plain world.step() per frame.
     """
 
     if setup.step is not None:
         setup.step(frames)
         return
+    pre = setup.pre_step
     for _ in range(max(0, frames)):
+        if pre is not None:
+            pre()
         setup.world.step()
 
 

@@ -45,15 +45,13 @@ def build() -> SceneSetup:
     world.add_skeleton(pendulum)
     joint = pendulum.get_joint(0)
 
-    def step(n: int) -> None:
-        for _ in range(max(0, n)):
-            q = joint.get_position(0)
-            qdot = joint.get_velocity(0)
-            tau = -_KP * (q - _DESIRED_ANGLE) - _KD * qdot
-            joint.set_force(0, tau)
-            world.step()
+    def pre_step() -> None:
+        q = joint.get_position(0)
+        qdot = joint.get_velocity(0)
+        tau = -_KP * (q - _DESIRED_ANGLE) - _KD * qdot
+        joint.set_force(0, tau)
 
-    return SceneSetup(world=world, step=step,
+    return SceneSetup(world=world, pre_step=pre_step,
                       info={"controller": "PD", "kp": _KP, "kd": _KD})
 
 
