@@ -26,7 +26,9 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
   - [x] Integration-family **selector** (`World::setMultibodyIntegrationMethod`)
         so the VI runs on the default `step()` path by method name (pipeline
         substitution, not stage-append); covered by `SelectableThroughWorldStep`.
-  - [ ] Determinism / save-load round-trip test (needs the serialization above).
+  - [~] Determinism — run-to-run bit-identical rollout through `world.step()`
+    verified (`DeterministicAcrossRuns`); the **save/load** round-trip still
+    needs the VI-state serialization above.
   - [ ] Defined non-convergence **error** (currently reports `converged=false`).
 - [x] **Phase A2 — O(n) impulse-based ABI** — RIQN uses the articulated-body
       inverse-mass solve (matches the dense `M⁻¹` to 1e-9,

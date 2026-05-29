@@ -21,6 +21,8 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include <cmath>
 
 namespace {
@@ -277,4 +279,49 @@ TEST(VariationalIntegration, ArticulatedInverseMassMatchesDenseSolve)
         << "b=" << b.transpose() << " abi=" << abi.transpose()
         << " dense=" << denseSolve.transpose();
   }
+}
+
+// The variational integrator is deterministic: two identical rollouts through
+// the public World::step() path produce bit-identical final state.
+TEST(VariationalIntegration, DeterministicAcrossRuns)
+{
+  const auto rollout = []() {
+    sx::World world;
+    world.setMultibodyIntegrationMethod("variational integrator");
+    auto robot = world.addMultibody("chain");
+    auto parent = robot.addLink("base");
+    for (int i = 0; i < 3; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+      sx::JointSpec spec;
+      spec.name = "j" + std::to_string(i);
+      spec.type = sx::JointType::Revolute;
+      spec.axis = Eigen::Vector3d::UnitY();
+      spec.transformFromParent = offset;
+      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+      link.setMass(1.0);
+      link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+      parent = link;
+    }
+    world.setTimeStep(1e-3);
+    world.enterSimulationMode();
+    auto joints = robot.getJoints();
+    for (std::size_t i = 0; i < joints.size(); ++i) {
+      joints[i].setPosition(Eigen::VectorXd::Constant(1, 0.3));
+    }
+    world.updateKinematics();
+    for (int k = 0; k < 2000; ++k) {
+      world.step();
+    }
+    Eigen::VectorXd finalState(static_cast<Eigen::Index>(joints.size()));
+    for (std::size_t i = 0; i < joints.size(); ++i) {
+      finalState[static_cast<Eigen::Index>(i)] = joints[i].getPosition()[0];
+    }
+    return finalState;
+  };
+
+  const Eigen::VectorXd a = rollout();
+  const Eigen::VectorXd b = rollout();
+  EXPECT_GT(a.norm(), 0.0);       // the chain actually evolved
+  EXPECT_EQ((a - b).norm(), 0.0); // and did so bit-identically
 }
