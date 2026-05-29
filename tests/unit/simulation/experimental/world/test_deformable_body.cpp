@@ -2809,6 +2809,57 @@ TEST(DeformableBody, GroundFrictionFollowsTiltedSlopeNormal)
   EXPECT_GT(frictionless.position.z(), 0.25);
 }
 
+//==============================================================================
+// The solver reports friction diagnostics for the step: a node sliding in
+// static-ground contact dissipates a positive friction energy over a nonzero
+// active friction-contact set, while the frictionless control reports exactly
+// zero for both (the diagnostic is gated on a positive friction coefficient).
+TEST(DeformableBody, FrictionDiagnosticsReportSlidingDissipation)
+{
+  const auto runWithStats = [](double frictionCoefficient) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
+    ground.setDeformableGroundBarrier(true);
+
+    // Start in the d_hat = 2e-2 band with a tangential velocity so the node
+    // slides while staying in static-ground contact.
+    auto options = makeSingleNodeBodyOptions(
+        Eigen::Vector3d(0.0, 0.0, 0.01), Eigen::Vector3d(2.0, 0.0, 0.0));
+    options.material.frictionCoefficient = frictionCoefficient;
+    world.addDeformableBody("slider", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+    for (int i = 0; i < 5; ++i) {
+      world.step(executor, pipeline);
+    }
+    return stage.getLastStats();
+  };
+
+  const auto frictionless = runWithStats(0.0);
+  const auto frictional = runWithStats(0.8);
+
+  // Frictionless: the diagnostic is disabled, so no dissipation and no active
+  // friction contacts are reported.
+  EXPECT_EQ(frictionless.frictionDissipation, 0.0);
+  EXPECT_EQ(frictionless.activeFrictionContacts, 0u);
+
+  // Frictional sliding node in contact: positive dissipation over at least one
+  // active friction contact.
+  EXPECT_GT(frictional.frictionDissipation, 0.0);
+  EXPECT_GE(frictional.activeFrictionContacts, 1u);
+}
+
 namespace {
 struct SelfContactSlideResult
 {

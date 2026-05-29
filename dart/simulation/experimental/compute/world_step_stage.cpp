@@ -2419,6 +2419,62 @@ double addSelfContactFrictionEnergy(
 }
 
 //==============================================================================
+// Friction diagnostics at the converged iterate, over both static-ground and
+// self-contact friction. Accumulates the IPC Coulomb dissipation
+// mu * lambda * f1(y) * y (force times tangential slip; equal to mu * lambda *
+// y in the kinetic regime and ramped smoothly to zero at rest by the mollifier)
+// and the count of contacts carrying a nonzero lagged normal force. Evaluated
+// once per step outside the line-search hot path, mirroring the slip measures
+// the friction energy uses: u_T = (I - n n^T)(x - x_start) for ground contact
+// and projection * (stacked four-node displacement) for self-contact.
+void accumulateFrictionDiagnostics(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<Eigen::Vector3d>& stepStart,
+    const std::vector<std::uint8_t>& fixed,
+    const double frictionCoefficient,
+    const double epsilon,
+    const std::vector<double>& groundNormalForce,
+    const std::vector<Eigen::Vector3d>& groundNormalDirection,
+    const std::vector<SelfContactFrictionContact>& selfContacts,
+    double& dissipation,
+    std::size_t& activeContacts)
+{
+  if (frictionCoefficient <= 0.0 || epsilon <= 0.0) {
+    return;
+  }
+
+  for (std::size_t i = 0; i < groundNormalForce.size() && i < positions.size();
+       ++i) {
+    if (fixed[i] != 0u || groundNormalForce[i] <= 0.0) {
+      continue;
+    }
+    const Eigen::Vector3d n = (i < groundNormalDirection.size())
+                                  ? groundNormalDirection[i]
+                                  : Eigen::Vector3d::UnitZ();
+    const Eigen::Vector3d u = positions[i] - stepStart[i];
+    const double y = (u - n.dot(u) * n).norm();
+    dissipation += frictionCoefficient * groundNormalForce[i]
+                   * frictionF1(y, epsilon) * y;
+    ++activeContacts;
+  }
+
+  for (const auto& contact : selfContacts) {
+    if (contact.normalForce <= 0.0) {
+      continue;
+    }
+    Eigen::Matrix<double, 12, 1> displacement;
+    for (int k = 0; k < 4; ++k) {
+      displacement.segment<3>(3 * k)
+          = positions[contact.nodes[k]] - stepStart[contact.nodes[k]];
+    }
+    const double y = (contact.projection * displacement).norm();
+    dissipation += frictionCoefficient * contact.normalForce
+                   * frictionF1(y, epsilon) * y;
+    ++activeContacts;
+  }
+}
+
+//==============================================================================
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -3809,7 +3865,8 @@ void advanceDeformableBody(
     // self-contact barrier active set and the lagged ground / self-contact
     // friction inputs there so the residual matches the in-loop objective -- and
     // use it, so the convergence diagnostic reports the residual at solve
-    // termination.
+    // termination. This also refreshes the lagged friction inputs to the
+    // terminal iterate for the dissipation diagnostic below.
     if (!brokeEarly) {
       SelfContactBarrierInputs terminalBarrier;
       if (!contactScratch.surfaceTriangles.empty()) {
@@ -3882,6 +3939,20 @@ void advanceDeformableBody(
     // benchmark statistics.
     stats.finalGradientResidualNorm
         = std::max(stats.finalGradientResidualNorm, std::sqrt(lastGradSquared));
+
+    // Friction dissipation/active-contact diagnostics at the converged iterate,
+    // using the final lagged ground normals and self-contact friction set.
+    accumulateFrictionDiagnostics(
+        scratch.next,
+        scratch.previousStepPositions,
+        scratch.activeFixed,
+        frictionCoefficient,
+        frictionEpsilon,
+        groundFrictionNormalForce,
+        groundFrictionNormalDirection,
+        selfContactFrictionContacts,
+        stats.frictionDissipation,
+        stats.activeFrictionContacts);
   }
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
