@@ -409,14 +409,24 @@ Local gate (external TinyVBD reference comparison, on 2026-05-28, single CPU
 thread, compute-only, treat as smoke): the upstream `AnkaChan/TinyVBD` reference
 was cloned and built (its `Eigen/core` include was case-fixed to `Eigen/Core`
 for Linux, file output disabled, and a compute timer added) and run on its
-default tilted-strand scene (20 vertices, structural + skip springs, 100
-iterations/frame, 1:1000 tip mass ratio): **0.468 ms/frame**. DART's VBD on the
-matched scene (`BM_VbdTinyStrandStep`, same vertex/spring/iteration counts) ran
-at **0.212 ms/step — about 2.2x faster than the TinyVBD reference**. DART uses a
-double-precision LDLT 3x3 block solve while TinyVBD uses a float
-`colPivHouseholderQr` solve, so this is not bit-identical physics; it is a
-like-for-like per-step compute comparison on the reference's own scene. This
-beats the external reference implementation on CPU. The full `Gaia` GPU
+default tilted-strand scene (structural + skip springs, 100 iterations/frame,
+1:1000 tip mass ratio). DART's VBD on the matched scene
+(`BM_VbdTinyStrandStep`, same vertex/spring/iteration counts) was timed at the
+same sizes (the strand length is configurable in both via `TINYVBD_NUMVERTS`
+and the benchmark `Arg`). Per-step / per-frame (single CPU thread,
+compute-only):
+
+| Vertices | DART VBD | TinyVBD reference | DART speedup |
+| -------- | -------- | ----------------- | ------------ |
+| 20       | 0.159 ms | 0.485 ms          | ~3.0x        |
+| 100      | 0.781 ms | 2.335 ms          | ~3.0x        |
+| 400      | 3.18 ms  | 8.67 ms           | ~2.7x        |
+
+DART is ~2.7-3.0x faster than the TinyVBD reference at every size, so DART's CPU
+VBD wins robustly, not just at one scene size. DART uses a double-precision LDLT
+3x3 block solve plus tight assembly while TinyVBD uses a float
+`colPivHouseholderQr` solve; this is not bit-identical physics but a like-for-like
+per-step compute comparison on the reference's own scene. The full `Gaia` GPU
 framework and the paper's tetrahedral RTX-4090 scene numbers (different scenes
 and hardware) remain out of scope for this environment.
 

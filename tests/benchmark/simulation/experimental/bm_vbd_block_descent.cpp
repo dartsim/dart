@@ -282,10 +282,9 @@ struct StrandScene
   double timeStep = 1.0 / 60.0;
 };
 
-StrandScene makeTiltedStrand()
+StrandScene makeTiltedStrand(int numVerts)
 {
   StrandScene scene;
-  const int numVerts = 20;
   const double spacing = 0.05;
   const double tanAngle = 0.57735; // 30 degrees
   for (int i = 0; i < numVerts; ++i) {
@@ -328,7 +327,7 @@ StrandScene makeTiltedStrand()
 // per-step CPU comparison against the TinyVBD reference implementation.
 static void BM_VbdTinyStrandStep(benchmark::State& state)
 {
-  const StrandScene base = makeTiltedStrand();
+  const StrandScene base = makeTiltedStrand(static_cast<int>(state.range(0)));
   vbd::BlockDescentOptions options;
   options.iterations = 100;
   for (auto _ : state) {
@@ -352,7 +351,7 @@ static void BM_VbdTinyStrandStep(benchmark::State& state)
   state.counters["vertices"] = static_cast<double>(base.positions.size());
   state.counters["springs"] = static_cast<double>(base.springs.size());
 }
-BENCHMARK(BM_VbdTinyStrandStep);
+BENCHMARK(BM_VbdTinyStrandStep)->Arg(20)->Arg(100)->Arg(400);
 
 //==============================================================================
 // Thread-scaling of the colored Gauss-Seidel sweep on a large spring grid: one

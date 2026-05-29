@@ -909,10 +909,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
     20-vertex tilted strand with structural and skip springs, 100 iterations per
     step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step
-    versus the TinyVBD reference's roughly 0.47 ms/frame on the same scene
-    (about 2.2x faster); DART uses a double LDLT 3x3 block solve while TinyVBD
-    uses a float colPivHouseholderQr solve. The Gaia GPU framework and the
-    paper's tetrahedral RTX-4090 scene numbers remain future work.
+    versus the TinyVBD reference on the same scene across sizes (the strand
+    length is configurable in both), with DART about 2.7-3.0x faster at 20, 100,
+    and 400 vertices (e.g. 0.16 vs 0.49 ms, 0.78 vs 2.33 ms, 3.18 vs 8.67 ms per
+    step). DART's CPU VBD thus wins robustly, not just at one size; it uses a
+    double LDLT 3x3 block solve plus tight assembly while TinyVBD uses a float
+    colPivHouseholderQr solve. The Gaia GPU framework and the paper's
+    tetrahedral RTX-4090 scene numbers remain future work.
   - Added a multithreaded VBD block-descent driver
     (`parallelBlockDescentMassSpring`) that runs the colored Gauss-Seidel sweep
     on a fixed worker-thread pool with a `std::barrier` between colors. Because

@@ -43,9 +43,11 @@ on contact-free mass-spring scenes.
   `DeformableVbdConfig::convergenceDisplacement`) + `bm_vbd_world_solver`. With
   early termination, single-threaded VBD is ~2-4x faster per step than the
   in-repo gradient-descent baseline on the spring-grid benchmark. Also added
-  `BM_VbdTinyStrandStep` matching the upstream TinyVBD default scene: DART VBD
-  ~0.21 ms/step vs the built-and-run TinyVBD reference ~0.47 ms/frame (~2.2x
-  faster, single CPU thread, compute-only).
+  `BM_VbdTinyStrandStep` matching the upstream TinyVBD default scene (size
+  configurable via `TINYVBD_NUMVERTS` / the benchmark Arg): DART CPU is
+  ~2.7-3.0x faster than the built-and-run TinyVBD reference at 20/100/400 verts
+  (single CPU thread, compute-only) — DART's CPU VBD wins robustly across
+  sizes, not just one scene.
 - Phase 9 (GPU) `compute/cuda/vbd_block_descent_cuda.cu/.cuh`: a CUDA per-color
   mass-spring block-update kernel (analytic SPD 3x3 solve, single-stream
   Gauss-Seidel) in the `-cuda` target. `test_vbd_block_descent_cuda` (skips
