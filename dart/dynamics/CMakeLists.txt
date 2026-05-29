@@ -4,8 +4,6 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
-
-
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
 
@@ -23,7 +21,11 @@ dart_generate_component_headers(
 # Install (includes All.hpp, dynamics.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp ikfast.h
+  FILES
+    ${hdrs}
+    ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
+    ikfast.h
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )

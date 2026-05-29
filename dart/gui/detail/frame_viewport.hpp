@@ -33,6 +33,15 @@
 #ifndef DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_
 #define DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_
 
+#include <dart/gui/application.hpp>
+
+#include <array>
+#include <functional>
+#include <optional>
+#include <string_view>
+
+#include <cstddef>
+
 struct GLFWwindow;
 struct ImGuiIO;
 
@@ -44,6 +53,7 @@ class View;
 namespace dart::gui {
 
 struct OrbitCameraController;
+struct OrbitCameraControlOptions;
 
 } // namespace dart::gui
 
@@ -51,23 +61,97 @@ namespace dart::gui::detail {
 
 class SelectionController;
 
+struct ViewportPaneFrame
+{
+  dart::gui::ViewportPaneKind kind = dart::gui::ViewportPaneKind::Perspective;
+  dart::gui::OrbitCamera camera;
+  int x = 0;
+  int y = 0;
+  int width = 1;
+  int height = 1;
+  bool active = false;
+};
+
+struct ViewportPaneLabelState
+{
+  std::string_view text;
+  bool active = false;
+};
+
+struct ViewportPaneActivationState
+{
+  bool wasLeftMousePressed = false;
+};
+
 struct FrameViewport
 {
   int width = 1;
   int height = 1;
+  std::size_t paneCount = 1u;
+  std::array<ViewportPaneFrame, dart::gui::kMaxViewportPanes> panes;
 };
+
+FrameViewport makeFrameViewport(
+    const dart::gui::ViewportLayoutOptions& layoutOptions,
+    int width,
+    int height);
+
+std::size_t activeViewportPaneIndex(const FrameViewport& viewport);
+
+const ViewportPaneFrame& activeViewportPane(const FrameViewport& viewport);
+
+std::optional<std::size_t> viewportPaneIndexAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
+
+const ViewportPaneFrame* viewportPaneAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
+
+std::optional<std::size_t> viewportPaneActivationIndexAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
+
+const ViewportPaneFrame* viewportPaneActivationAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
+
+bool applyViewportPaneActivationAtCursor(
+    ViewportPaneActivationState& state,
+    const FrameViewport& viewport,
+    double cursorX,
+    double cursorY,
+    bool leftMousePressed,
+    bool uiCapturesMouse,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated);
+
+bool updateViewportPaneActivation(
+    ViewportPaneActivationState& state,
+    GLFWwindow* window,
+    const FrameViewport& viewport,
+    ImGuiIO& imguiIo,
+    bool showUi,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated);
+
+std::string_view viewportPaneDisplayName(dart::gui::ViewportPaneKind kind);
+
+ViewportPaneLabelState viewportPaneLabelState(
+    const FrameViewport& viewport, std::size_t paneIndex);
 
 FrameViewport updateFrameViewport(
     GLFWwindow* window,
-    ::filament::View& view,
-    ::filament::Camera& camera,
+    const std::array<::filament::View*, dart::gui::kMaxViewportPanes>& views,
+    const std::array<::filament::Camera*, dart::gui::kMaxViewportPanes>&
+        cameras,
     dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     ImGuiIO& imguiIo,
     int defaultWidth,
     int defaultHeight,
     double worldTimeStep,
-    bool showUi);
+    bool showUi,
+    const dart::gui::OrbitCameraControlOptions& cameraControls,
+    const dart::gui::ViewportLayoutOptions& layoutOptions);
 
 } // namespace dart::gui::detail
 

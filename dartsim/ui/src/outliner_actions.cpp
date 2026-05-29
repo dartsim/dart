@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <optional>
 #include <utility>
 
 #include <cctype>
@@ -72,6 +73,7 @@ void appendOutlinerRows(
           depth,
           object->name,
           objectTypeLabel(object->type),
+          objectTypeIcon(object->type),
           engine.selection().isSelected(id),
           object->visible,
           hasChildren,
@@ -89,7 +91,8 @@ void appendOutlinerRows(
 bool isMovable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor
+         || type == ObjectType::Collision;
 }
 
 bool hasVisibleRenderable(const SimEngine& engine, ObjectId id)
@@ -100,6 +103,23 @@ bool hasVisibleRenderable(const SimEngine& engine, ObjectId id)
              renderItems.end(),
              [id](const RenderItem& item) { return item.id == id; })
          != renderItems.end();
+}
+
+std::optional<Eigen::Isometry3d> localTransformForWorldTransform(
+    const SimEngine& engine,
+    const SceneObject& object,
+    const Eigen::Isometry3d& worldTransform)
+{
+  if (object.type == ObjectType::RigidBody || object.parent == kNoObject) {
+    return worldTransform;
+  }
+
+  const std::optional<Eigen::Isometry3d> parentWorld
+      = engine.objects().worldTransformOf(object.parent);
+  if (!parentWorld.has_value()) {
+    return std::nullopt;
+  }
+  return parentWorld->inverse() * worldTransform;
 }
 
 std::string trimmed(std::string value)
@@ -153,8 +173,35 @@ std::string objectTypeLabel(ObjectType type)
       return "FreeFrame";
     case ObjectType::FixedFrame:
       return "FixedFrame";
+    case ObjectType::Sensor:
+      return "Sensor";
+    case ObjectType::Collision:
+      return "Collision";
   }
   return "Object";
+}
+
+std::string objectTypeIcon(ObjectType type)
+{
+  switch (type) {
+    case ObjectType::RigidBody:
+      return "RB";
+    case ObjectType::MultiBody:
+      return "MB";
+    case ObjectType::Link:
+      return "LK";
+    case ObjectType::Joint:
+      return "JT";
+    case ObjectType::FreeFrame:
+      return "FF";
+    case ObjectType::FixedFrame:
+      return "FX";
+    case ObjectType::Sensor:
+      return "SN";
+    case ObjectType::Collision:
+      return "CO";
+  }
+  return "OB";
 }
 
 std::vector<OutlinerRow> buildOutlinerRows(const SimEngine& engine)
@@ -184,6 +231,8 @@ std::string outlinerButtonLabel(const OutlinerRow& row)
 {
   std::string label(static_cast<std::size_t>(row.depth) * 2u, ' ');
   label += row.selected ? "* " : "  ";
+  label += row.icon;
+  label += " ";
   label += row.name;
   label += " [";
   label += row.type;
@@ -477,13 +526,25 @@ bool moveSelectedBy(SimEngine& engine, const Eigen::Vector3d& delta)
     return false;
   }
 
-  Eigen::Isometry3d transform = object->transform;
-  transform.translation() += delta;
-  engine.execute(commands::setTransform(id, transform));
+  std::optional<Eigen::Isometry3d> worldTransform
+      = engine.objects().worldTransformOf(id);
+  if (!worldTransform.has_value()) {
+    return false;
+  }
+  worldTransform->translation() += delta;
+  const std::optional<Eigen::Isometry3d> localTransform
+      = localTransformForWorldTransform(engine, *object, *worldTransform);
+  if (!localTransform.has_value()) {
+    return false;
+  }
+
+  engine.execute(commands::setTransform(id, *localTransform));
 
   const SceneObject* updated = engine.objects().model().find(id);
-  return updated != nullptr
-         && updated->transform.translation().isApprox(transform.translation());
+  const std::optional<Eigen::Isometry3d> updatedWorld
+      = engine.objects().worldTransformOf(id);
+  return updated != nullptr && updatedWorld.has_value()
+         && updatedWorld->translation().isApprox(worldTransform->translation());
 }
 
 } // namespace dartsim::ui
