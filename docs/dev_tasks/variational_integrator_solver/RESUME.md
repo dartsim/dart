@@ -25,14 +25,21 @@ integrator + 3 test suites) plus the PLAN-082 docs.
 
 ## Immediate Next Step
 
-Phase A1 remaining (before A1 is "complete"): (1) a facade-safe integration-
-family **selector** so the VI is reachable via the public method-name path
-(today the stage runs only through an explicit `WorldStepPipeline`); (2)
-**serialize** `MultibodyVariationalState` (binary-format version bump +
-bootstrap-done flag) and add the determinism/save-load round-trip test. Then
-**Phase A2**: replace the dense `M⁻¹` placeholder with an O(n) impulse-based
-articulated-body-inertia recursion (the headline linear-time claim) and add the
-scaling benchmark.
+The integration-family **selector** has landed (`World::setMultibodyIntegration
+Method("variational integrator")`; the default `step()` substitutes the VI
+stage; `SelectableThroughWorldStep` test green). Phase A1 remaining: **serialize**
+`MultibodyVariationalState` (binary-format version bump + bootstrap-done flag)
+and add the determinism/save-load round-trip test; optionally promote RIQN
+non-convergence from a `converged=false` diagnostic to a documented error.
+
+Then **Phase A2** (the headline linear-time claim): replace the dense `M⁻¹`
+placeholder in RIQN with an O(n) impulse-based articulated-body-inertia (ABI)
+recursion. Recommended approach: add `applyArticulatedInverseMass(tree, b) ->
+M(q)⁻¹·b` (Featherstone ABA: backward articulated-inertia sweep + forward
+acceleration sweep, zero velocity/gravity), gate it with a test asserting it
+equals the dense `massMatrix.ldlt().solve(b)` for random `b`, then swap RIQN's
+`massSolver.solve(dt·e)` to it and add the per-step-cost-vs-DOF scaling
+benchmark. The dense path stays as the correctness oracle.
 
 ## Context That Would Be Lost
 
