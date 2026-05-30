@@ -964,6 +964,22 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     restores a perturbed node toward rest), a `BM_DeformableFemBarStep`
     benchmark, and a `Deformable FEM Bar (IPC)` py-demos scene (a tetrahedral
     cantilever sagging under gravity) in the `IPC Deformable (sx)` category.
+  - Added the fixed-corotational (FCR) tetrahedral FEM material to the
+    experimental deformable solver (PLAN-081 M1 follow-up), the IPC paper's
+    other isotropic elasticity model alongside neo-Hookean. The
+    `fem_tet_element.hpp` kernel gains the FCR energy `mu*||F - R||^2 +
+(lambda/2)*(J - 1)^2` (with `R` the polar-decomposition rotation), its exact
+    first Piola-Kirchhoff stress, and a positive-definite Gauss-Newton element
+    Hessian, validated by rest-state zero-force, rotation-invariance, and
+    finite-difference gradient / SPD-Hessian tests. It is selected by the new
+    opt-in `DeformableMaterialProperties.useFixedCorotationalElasticity` flag
+    (also exposed to `dartpy` as `use_fixed_corotational_elasticity`) on top of
+    `useFiniteElementElasticity`; the objective and projected-Newton assembly
+    dispatch to whichever material is configured through a shared element seam,
+    so the default stable neo-Hookean path is unchanged. Adds solver regressions
+    (an FCR tetrahedron stationary at rest; restores a perturbed node toward
+    rest) and a `Deformable FCR Twist (IPC)` py-demos scene (a tetrahedral bar
+    twisted at both ends, untwisting under the fixed-corotational material).
   - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
     counter-rotated at both ends by opposing scripted Dirichlet boundary
     conditions, then released so the stable neo-Hookean core untwists

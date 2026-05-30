@@ -682,6 +682,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
   data.material.frictionCoefficient = options.material.frictionCoefficient;
   data.material.useFiniteElementElasticity
       = options.material.useFiniteElementElasticity;
+  data.material.useFixedCorotationalElasticity
+      = options.material.useFixedCorotationalElasticity;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);

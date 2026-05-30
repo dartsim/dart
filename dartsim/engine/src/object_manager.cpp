@@ -242,6 +242,12 @@ void ObjectManager::buildMultiBody(
         added.insert(link->id);
         progressed = true;
       } else if (added.count(link->parentLink) != 0) {
+        // Defensive give-up guards: a parentLink that is already in `added` is
+        // always a link collected from the model, so find() and getLink() are
+        // expected to succeed. These two abandon branches cannot be reached
+        // through the SceneModel API today; they only protect against a future
+        // collect/build desync (e.g. an out-of-multibody parent reference) and
+        // are intentionally left without direct unit coverage.
         const SceneObject* parent = m_model.find(link->parentLink);
         if (parent == nullptr) {
           added.insert(link->id); // give up on this malformed link

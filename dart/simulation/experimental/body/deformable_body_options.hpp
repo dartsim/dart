@@ -96,6 +96,11 @@ struct DeformableMaterialProperties
   /// edge model. Requires the body to carry tetrahedra. Off by default, so
   /// existing spring bodies are unchanged.
   bool useFiniteElementElasticity = false;
+
+  /// When ``useFiniteElementElasticity`` is enabled, use the fixed-corotational
+  /// material (the IPC paper's other isotropic model) instead of the default
+  /// stable neo-Hookean kernel. Ignored when finite-element elasticity is off.
+  bool useFixedCorotationalElasticity = false;
 };
 
 /// Scripted Dirichlet boundary condition over deformable nodes.

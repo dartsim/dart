@@ -864,6 +864,62 @@ TEST(DeformableBody, FemTetrahedronRestoresStretchedNodeTowardRest)
 }
 
 //==============================================================================
+// The fixed-corotational material is selected by an additional opt-in flag on
+// top of useFiniteElementElasticity. At its rest shape it stores zero strain
+// energy and exerts zero force, so the tetrahedron stays put across many steps,
+// exactly like the default stable neo-Hookean kernel.
+TEST(DeformableBody, FemFixedCorotationalTetrahedronIsStationaryAtRest)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+  sx::DeformableBodyOptions options = makeFemTetrahedronBody();
+  options.material.useFixedCorotationalElasticity = true;
+  auto body = world.addDeformableBody("fcr_rest", options);
+
+  world.step(25);
+
+  expectVectorNear(body.getPosition(0), Eigen::Vector3d::Zero());
+  expectVectorNear(body.getPosition(1), Eigen::Vector3d::UnitX());
+  expectVectorNear(body.getPosition(2), Eigen::Vector3d::UnitY());
+  expectVectorNear(body.getPosition(3), Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+// A fixed-corotational FEM tetrahedron given an outward velocity on a free node
+// is pulled back toward its rest shape and settles there, confirming the FCR
+// dispatch path is wired through both the energy/gradient objective and the
+// projected-Newton Hessian assembly.
+TEST(DeformableBody, FemFixedCorotationalRestoresStretchedNodeTowardRest)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  auto options = makeFemTetrahedronBody(/*youngsModulus=*/1.0e3);
+  options.material.useFixedCorotationalElasticity = true;
+  options.fixedNodes = {0, 1, 2};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, 10.0)};
+  auto body = world.addDeformableBody("fcr_stretch", options);
+
+  double peakDisplacement = 0.0;
+  for (int step = 0; step < 60; ++step) {
+    world.step();
+    peakDisplacement
+        = std::max(peakDisplacement, std::abs(body.getPosition(3).z() - 1.0));
+    EXPECT_TRUE(body.getPosition(3).allFinite());
+  }
+  EXPECT_GT(peakDisplacement, 0.02);
+
+  world.step(400);
+  EXPECT_TRUE(body.getPosition(3).allFinite());
+  expectVectorNear(body.getPosition(3), Eigen::Vector3d(0.0, 0.0, 1.0), 5e-2);
+}
+
+//==============================================================================
 // A free FEM cube (one hexahedral cell split into six tetrahedra) opting in to
 // stable neo-Hookean elasticity, released above the ground top.
 sx::DeformableBodyOptions makeFemCubeBody(
