@@ -2245,6 +2245,67 @@ TEST(DeformableBody, SelfContactBarrierInactiveWhenFarApart)
 }
 
 //==============================================================================
+// The converged contact diagnostic reports a positive closest approach inside
+// the activation band whenever self-contact holds two surfaces apart -- the IPC
+// intersection-free "minimum distance" statistic.
+TEST(DeformableBody, SelfContactBarrierReportsConvergedContactDistance)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "facing_triangles", makeTwoFacingTrianglesOptions(0.015, 0.2));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  // The terminal active set is nonempty and the closest approach is a positive
+  // distance strictly inside the barrier activation band (d_hat = 2e-2): the
+  // surfaces are held apart, not penetrating and not yet outside the band.
+  EXPECT_GT(stats.convergedActiveContactCount, 0u);
+  EXPECT_GT(stats.minActiveContactDistance, 0.0);
+  EXPECT_LT(stats.minActiveContactDistance, 2e-2);
+  // It never exceeds the cumulative active count (a single-iteration snapshot
+  // versus the sum over every outer iteration).
+  EXPECT_LE(
+      stats.convergedActiveContactCount,
+      stats.selfContactBarrierActiveContacts);
+  // The reported closest approach reflects a genuine positive separation: the
+  // surfaces are held apart, not pinned together.
+  EXPECT_GT(minUpperTriangleHeight(body), 0.0);
+}
+
+//==============================================================================
+// With the surfaces far outside the activation band, the converged contact
+// diagnostic reports an empty active set and a zero closest approach (the
+// sentinel for "no active self-contact").
+TEST(
+    DeformableBody, SelfContactBarrierReportsNoConvergedContactDistanceFarApart)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "facing_triangles_far", makeTwoFacingTrianglesOptions(0.5, 0.1));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.convergedActiveContactCount, 0u);
+  EXPECT_EQ(stats.minActiveContactDistance, 0.0);
+  // The surfaces remain well outside the activation band (d_hat = 2e-2).
+  EXPECT_GT(minUpperTriangleHeight(body), 2e-2);
+}
+
+//==============================================================================
 TEST(DeformableBody, SelfContactBarrierIsDeterministic)
 {
   const auto run = [] {
