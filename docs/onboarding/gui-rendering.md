@@ -189,8 +189,26 @@ returns extra `RenderableDescriptor`s appended to the world-derived renderables
 each frame. Descriptors only need `id`, `geometry`, `material`, and
 `worldTransform`; dynamics pointers stay null. This keeps the renderer
 backend-hidden while letting non-legacy-World sources contribute geometry. The
-editor hosts an empty legacy world purely as a render canvas (never stepped);
-viewport pick-to-tree selection sync is a known follow-up.
+editor hosts an empty legacy world purely as a render canvas (never stepped).
+Viewport pick / Scene Tree / Inspector selection now share one engine-owned
+selection through `dart::gui::ApplicationOptions::{selectedRenderableProvider,
+onRenderableSelected}` and the outliner action seam.
+
+The editor is feature-complete as a workbench. Its key code rule: panel and menu
+logic lives in tested, backend-hidden view-model **action seams**
+(`dartsim/ui/include/dartsim_ui/*_actions.hpp` — project, history, outliner,
+inspector, palette, relationship, simulation, console, watch, viewport), each
+with a `UNIT_dartsim_ui_*Actions` test, rather than in anonymous `editor.cpp`
+lambdas. Add new behavior as a seam first, then wire it into `editor.cpp` as a
+thin view. The filtered `dartsim/engine/*` plus `dartsim/ui/*_actions` surface is
+held at ≥95% line coverage (`pixi run coverage-report-dartsim`). The
+renderer-backend boundary (no Filament/GLFW/ImGui/OpenGL/Vulkan/Metal in
+`dartsim/engine` or `dartsim/ui`, and no `dart/gui` include in the headless
+engine) is enforced by `scripts/check_api_boundaries.py`. The native file picker
+(`project_file_dialog.cpp`, nativefiledialog-extended) is the one sanctioned
+OS/windowing dependency; it crosses the `dart::gui` boundary only as an opaque
+`void* parentNativeWindow`. Architecture and the remaining experimental-API-gated
+follow-ups live in `docs/design/dartsim_gui_simulator.md`.
 
 ## Demos App (Example Scenes)
 

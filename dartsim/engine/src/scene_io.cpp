@@ -137,6 +137,35 @@ std::optional<SensorKind> sensorKindFromInt(int value)
   return std::nullopt;
 }
 
+std::optional<JointKind> jointKindFromInt(int value)
+{
+  switch (static_cast<JointKind>(value)) {
+    case JointKind::Fixed:
+    case JointKind::Revolute:
+    case JointKind::Prismatic:
+    case JointKind::Screw:
+    case JointKind::Universal:
+    case JointKind::Ball:
+    case JointKind::Planar:
+    case JointKind::Free:
+      return static_cast<JointKind>(value);
+  }
+  return std::nullopt;
+}
+
+std::optional<ShapeType> shapeTypeFromInt(int value)
+{
+  switch (static_cast<ShapeType>(value)) {
+    case ShapeType::Box:
+    case ShapeType::Sphere:
+    case ShapeType::Cylinder:
+    case ShapeType::Capsule:
+    case ShapeType::Plane:
+      return static_cast<ShapeType>(value);
+  }
+  return std::nullopt;
+}
+
 std::optional<ObjectType> objectTypeFromInt(int value)
 {
   switch (static_cast<ObjectType>(value)) {
@@ -336,13 +365,21 @@ bool load(std::string_view text, SceneModel& out)
         if (!(ls >> value)) {
           return false;
         }
-        current.jointType = static_cast<JointKind>(value);
+        const std::optional<JointKind> kind = jointKindFromInt(value);
+        if (!kind.has_value()) {
+          return false;
+        }
+        current.jointType = *kind;
       } else if (key == "shapetype") {
         int value = 0;
         if (!(ls >> value)) {
           return false;
         }
-        current.shape.type = static_cast<ShapeType>(value);
+        const std::optional<ShapeType> shapeType = shapeTypeFromInt(value);
+        if (!shapeType.has_value()) {
+          return false;
+        }
+        current.shape.type = *shapeType;
       } else if (key == "sensorkind") {
         int value = 0;
         if (!(ls >> value)) {

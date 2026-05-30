@@ -237,12 +237,6 @@ void requestProjectPathModal(
   app.projectPathModalRequested = true;
 }
 
-bool startsWith(std::string_view text, std::string_view prefix)
-{
-  return text.size() >= prefix.size()
-         && text.substr(0, prefix.size()) == prefix;
-}
-
 void requestProjectPathModalAfterDialogFailure(
     EditorApp& app, ProjectFileDialogKind kind, std::string status)
 {
@@ -263,9 +257,7 @@ void openProjectFromMenu(EditorApp& app)
     requestProjectReplacementPrompt(app, opened.request);
     return;
   }
-  if (!opened.result.ok
-      && (startsWith(opened.result.message, "Open dialog failed")
-          || startsWith(opened.result.message, "Open failed"))) {
+  if (opened.result.followUp == ProjectActionFollowUp::ModalFallback) {
     requestProjectPathModalAfterDialogFailure(
         app, ProjectFileDialogKind::Open, opened.result.message);
     return;
@@ -280,7 +272,7 @@ void saveProjectFromMenu(EditorApp& app, bool forceDialog)
       nativeProjectFileDialog,
       forceDialog,
       app.projectDialogParentWindow);
-  if (!saved.ok && startsWith(saved.message, "Save dialog failed")) {
+  if (saved.followUp == ProjectActionFollowUp::ModalFallback) {
     requestProjectPathModalAfterDialogFailure(
         app, ProjectFileDialogKind::Save, saved.message);
     return;
@@ -1150,7 +1142,7 @@ void buildMenuBar(
       if (!action.enabled && !action.disabledReason.empty()) {
         label += " (" + action.disabledReason + ")";
       }
-      if (ui.menuItem(label)) {
+      if (ui.menuItem(label) && action.enabled) {
         app.note(applyRelationshipAction(app.engine, action.kind).message);
         syncViewportTransformGizmo(
             app.transformGizmo, app.engine, app.viewportLayers);
@@ -1164,7 +1156,7 @@ void buildMenuBar(
       if (!action.enabled && !action.disabledReason.empty()) {
         label += " (" + action.disabledReason + ")";
       }
-      if (ui.menuItem(label)) {
+      if (ui.menuItem(label) && action.enabled) {
         app.note(applyPaletteAction(app.engine, action.kind).message);
         syncViewportTransformGizmo(
             app.transformGizmo, app.engine, app.viewportLayers);

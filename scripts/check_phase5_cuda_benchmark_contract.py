@@ -10,7 +10,11 @@ go/no-go workload:
   BM_Phase5RigidBodyBatchGpu/4096/128/100
 
 The routine CPU smoke row stays in `bm_compute_graph.cpp`; this checker only
-guards optional CUDA benchmark files.
+guards the Phase 5 rigid-body GPU packet benchmark. CUDA benchmark files for
+other domains (for example a deformable Vertex Block Descent benchmark) do not
+feed the rigid-body go/no-go packet, so they are exempt: the contract applies
+only to CUDA benchmark sources that target the rigid-body Phase 5 packet (their
+source mentions `RigidBody` or `Phase5`).
 """
 
 from __future__ import annotations
@@ -117,6 +121,15 @@ def _is_cuda_benchmark_source(path: Path, text: str) -> bool:
     return any(marker in text for marker in CUDA_BENCHMARK_MARKERS)
 
 
+def _targets_phase5_rigid_body_packet(masked: str) -> bool:
+    """Whether a CUDA benchmark source feeds the rigid-body Phase 5 packet.
+
+    Only rigid-body Phase 5 benchmarks must register the canonical go/no-go row;
+    CUDA benchmarks for other domains are out of this contract's scope.
+    """
+    return "RigidBody" in masked or "Phase5" in masked
+
+
 def _has_required_benchmark_name(masked: str) -> bool:
     return any(
         match.group("name") == REQUIRED_GPU_BENCHMARK
@@ -146,6 +159,8 @@ def find_violations_in_text(rel_path: str, text: str) -> list[Violation]:
         return []
 
     masked = _mask_comments_and_literals(text)
+    if not _targets_phase5_rigid_body_packet(masked):
+        return []
     violations: list[Violation] = []
     if not _has_required_benchmark_name(masked):
         violations.append(
@@ -187,6 +202,16 @@ def find_phase5_cuda_benchmark_contract_violations() -> list[Violation]:
 def run_self_tests() -> None:
     if find_violations_in_text("bm_compute_graph.cpp", "BENCHMARK(BM_WorldStep);"):
         raise AssertionError("non-CUDA benchmark self-test failed")
+
+    # A CUDA benchmark for a different domain (no rigid-body Phase 5 row) is
+    # exempt even though its filename and source mention CUDA.
+    vbd_cuda_source = """
+    namespace cuda = dart::simulation::experimental::compute::cuda;
+    void BM_VbdCudaStep(benchmark::State& state) {}
+    BENCHMARK(BM_VbdCudaStep)->Arg(64);
+    """
+    if find_violations_in_text("bm_vbd_cuda.cpp", vbd_cuda_source):
+        raise AssertionError("non-rigid-body CUDA exemption self-test failed")
 
     bad_source = """
     void BM_CudaRigidBodyStateBatchLinear(benchmark::State& state) {}

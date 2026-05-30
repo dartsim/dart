@@ -1405,6 +1405,36 @@ std::size_t World::getDeformableBodyCount() const
 }
 
 //==============================================================================
+void World::configureDeformableSolver(
+    std::string_view name, const DeformableSolverOptions& options)
+{
+  auto view = m_registry.view<comps::DeformableBodyTag, comps::Name>();
+  for (auto entity : view) {
+    if (view.get<comps::Name>(entity).name != name) {
+      continue;
+    }
+    // Translate the public, solver-agnostic options into the internal opt-in
+    // inner-solver component. The mapping lives here (the World step pipeline
+    // owns the concrete solver) so the public facade stays algorithm-neutral.
+    m_registry.emplace_or_replace<comps::DeformableVbdConfig>(
+        entity,
+        comps::DeformableVbdConfig{/*enabled=*/true,
+                                   options.iterations,
+                                   options.convergenceTolerance,
+                                   options.useAcceleration,
+                                   options.accelerationSpectralRadius,
+                                   options.stiffnessDamping,
+                                   options.workerThreads,
+                                   options.groundContactStiffness});
+    return;
+  }
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException,
+      "configureDeformableSolver: no deformable body named '{}'",
+      name);
+}
+
+//==============================================================================
 void World::enterSimulationMode()
 {
   DART_EXPERIMENTAL_THROW_T_IF(
