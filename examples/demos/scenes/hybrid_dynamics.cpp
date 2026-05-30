@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -63,8 +64,6 @@ dart::simulation::WorldPtr createHybridDynamicsWorld()
         "Failed to load hybrid_dynamics world from "
         + std::string(kHybridWorldUri));
   }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
   auto ground = world->getSkeleton("ground skeleton");
   if (ground == nullptr) {
     throw std::runtime_error("hybrid_dynamics world is missing ground");
@@ -97,6 +96,12 @@ dart::simulation::WorldPtr createHybridDynamicsWorld()
       joint->setActuatorType(dart::dynamics::Joint::ActuatorType::VELOCITY);
     }
   }
+
+  // The biped world is authored Y-up; reorient to the canonical Z-up
+  // convention. The controller only issues joint-space velocity commands, so
+  // the rotated motion is identical. The camera is flipped to Z-up to match.
+  reorientWorldToZUp(world);
+
   return world;
 }
 
@@ -169,7 +174,7 @@ dart::gui::OrbitCamera makeHybridDynamicsCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d::Zero();
-  camera.up = Eigen::Vector3d::UnitY();
+  camera.up = Eigen::Vector3d::UnitZ();
   camera.yaw = 0.5404195002705842;
   camera.pitch = 0.4758822496604165;
   camera.distance = 6.557438524302;
