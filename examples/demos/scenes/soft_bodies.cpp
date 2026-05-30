@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -178,6 +179,10 @@ dart::simulation::WorldPtr createSoftBodiesWorld()
     throw std::runtime_error(
         "Failed to load soft_bodies world from " + std::string(kWorldUri));
   }
+
+  // softBodies.skel is authored Y-up; reorient to the canonical Z-up
+  // convention.
+  reorientWorldToZUp(world);
 
   return world;
 }
