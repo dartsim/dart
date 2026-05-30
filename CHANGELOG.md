@@ -1314,10 +1314,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     a mass-spring hanging cloth (`vbd_cloth`) and net (`vbd_net`), and a
     tetrahedral cantilever beam (`vbd_beam`, the single-body analogue of the
     paper's twisting beams). Each builds an experimental `sx.World`, opts the
-    body into VBD via `configure_deformable_solver`, and renders the nodes as a
-    point cloud through a new `SxRenderBridge.add_deformable_visual`. The paper's
-    multi-body / self-collision scenes (216 squishy balls, 10,368 models,
-    tearing cloth) need surface self-contact and are deferred.
+    body into VBD via `configure_deformable_solver`, and renders through a new
+    `SxRenderBridge.add_deformable_visual` as a live deforming surface
+    wireframe (spring edges for the mass-spring cloth/net, boundary-triangle
+    edges for the tetrahedral beam) with pinned nodes marked, instead of an
+    isolated per-node point cloud. The paper's multi-body / self-collision
+    scenes (216 squishy balls, 10,368 models, tearing cloth) need surface
+    self-contact and are deferred.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position
