@@ -187,7 +187,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     unsigned int threadCount,
     const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
     const std::vector<ContactPlane>* contactPlanes = nullptr,
-    double contactFriction = 0.0)
+    double contactFriction = 0.0,
+    const SelfContactAdjacency* selfContact = nullptr)
 {
   if (threadCount <= 1) {
     return blockDescentDeformable(
@@ -207,7 +208,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         options,
         stepStartPositions,
         contactPlanes,
-        contactFriction);
+        contactFriction,
+        selfContact);
   }
 
   const std::size_t vertexCount = positions.size();
@@ -231,7 +233,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         lambda,
         timeStep,
         options.useFemTetKernel,
-        options.useFixedCorotationalTets);
+        options.useFixedCorotationalTets,
+        selfContact);
     if (useRayleigh) {
       Eigen::Matrix3d elasticHessian = block.hessian;
       elasticHessian.diagonal().array() -= masses[vertex] * invDt2;

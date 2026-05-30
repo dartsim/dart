@@ -570,3 +570,59 @@ TEST(VbdCombinedDescent, FemTetKernelHonorsMaterialChoice)
   // ...and the material selection actually changes the VBD force.
   EXPECT_GT((snhBlock.force - fcrBlock.force).norm(), 1e-6);
 }
+
+//==============================================================================
+// Option A: a self-contact constraint scatters the IPC point-triangle / edge-
+// edge barrier's 12-vector into per-vertex blocks. Each involved vertex's block
+// must carry exactly that primitive's 3x1 force (negated gradient sub-block)
+// and 3x3 diagonal Hessian block, and the repulsion must push a point hovering
+// above a triangle away from it.
+TEST(VbdCombinedDescent, SelfContactBlockMatchesBarrier)
+{
+  namespace dc = dart::simulation::experimental::detail::deformable_contact;
+  namespace sim = dart::simulation::experimental;
+
+  // A point 1 cm above a triangle, inside the barrier activation band.
+  const std::vector<Vec3> positions
+      = {Vec3(0.3, 0.3, 0.01), // point (node 0)
+         Vec3(0.0, 0.0, 0.0),  // triangle node a (node 1)
+         Vec3(1.0, 0.0, 0.0),  // b (node 2)
+         Vec3(0.0, 1.0, 0.0)}; // c (node 3)
+  const std::vector<sim::DeformableSurfaceTriangle> triangles = {{1, 2, 3}};
+  dc::ContactCandidateSet candidates;
+  candidates.pointTriangleCandidates.push_back(
+      {/*point=*/0, /*triangle=*/0, 0.0});
+
+  const double dHat = 0.02;
+  const double kappa = 1.0e5;
+  const auto adjacency = vbd::SelfContactAdjacency::build(
+      positions.size(), candidates, triangles, dHat * dHat, kappa);
+  ASSERT_TRUE(adjacency.active());
+
+  const auto barrier = dc::pointTriangleBarrier(
+      positions[0],
+      positions[1],
+      positions[2],
+      positions[3],
+      dHat * dHat,
+      kappa);
+  ASSERT_TRUE(barrier.active);
+
+  // The point's block (local index 0) carries the barrier's vertex-0 sub-block.
+  vbd::VertexBlock pointBlock;
+  vbd::addSelfContactTerms(pointBlock, 0, adjacency, positions);
+  EXPECT_LT(
+      (pointBlock.force - (-barrier.gradient.segment<3>(0))).norm(), 1e-12);
+  EXPECT_LT(
+      (pointBlock.hessian - barrier.hessian.block<3, 3>(0, 0)).norm(), 1e-12);
+
+  // A triangle node's block (node 1 = local index 1) carries its sub-block.
+  vbd::VertexBlock triBlock;
+  vbd::addSelfContactTerms(triBlock, 1, adjacency, positions);
+  EXPECT_LT((triBlock.force - (-barrier.gradient.segment<3>(3))).norm(), 1e-12);
+  EXPECT_LT(
+      (triBlock.hessian - barrier.hessian.block<3, 3>(3, 3)).norm(), 1e-12);
+
+  // The repulsion pushes the point up, away from the triangle below it.
+  EXPECT_GT(pointBlock.force.z(), 0.0);
+}

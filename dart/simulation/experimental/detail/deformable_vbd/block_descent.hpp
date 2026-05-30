@@ -36,6 +36,7 @@
 #include <dart/simulation/experimental/detail/deformable_vbd/acceleration.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/contact_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/neo_hookean.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/self_contact.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_coloring.hpp>
 
@@ -604,7 +605,8 @@ inline VertexBlock assembleDeformableVertexBlock(
     double lambda,
     double timeStep,
     bool useFemTetKernel = false,
-    bool useFixedCorotationalTets = false)
+    bool useFixedCorotationalTets = false,
+    const SelfContactAdjacency* selfContact = nullptr)
 {
   VertexBlock block;
   addInertiaTerm(
@@ -651,6 +653,9 @@ inline VertexBlock assembleDeformableVertexBlock(
       }
     }
   }
+  if (selfContact != nullptr) {
+    addSelfContactTerms(block, vertex, *selfContact, positions);
+  }
   return block;
 }
 
@@ -691,7 +696,8 @@ inline BlockDescentStats blockDescentDeformable(
     const BlockDescentOptions& options,
     const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
     const std::vector<ContactPlane>* contactPlanes = nullptr,
-    double contactFriction = 0.0)
+    double contactFriction = 0.0,
+    const SelfContactAdjacency* selfContact = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
@@ -715,7 +721,8 @@ inline BlockDescentStats blockDescentDeformable(
         lambda,
         timeStep,
         options.useFemTetKernel,
-        options.useFixedCorotationalTets);
+        options.useFixedCorotationalTets,
+        selfContact);
     if (useRayleigh) {
       // The elastic Hessian is the full block Hessian minus the (m/h^2) I
       // inertia term that addInertiaTerm placed on the diagonal.

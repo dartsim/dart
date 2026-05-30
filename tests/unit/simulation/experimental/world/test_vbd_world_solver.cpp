@@ -164,6 +164,29 @@ sx::DeformableBodyOptions makeFallingPatchOptions(double z0, double velocityX)
   return options;
 }
 
+// Two horizontal triangles in a single deformable body: a wide triangle pinned
+// in the z = 0 plane and a smaller free triangle just above it (held rigid by
+// edge springs). Under gravity the top triangle falls toward the bottom; with
+// self-contact the two surfaces of the same body must not interpenetrate.
+sx::DeformableBodyOptions makeSelfFoldingBody()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),   // 0 bottom (pinned)
+         Eigen::Vector3d(0.5, -0.5, 0.0),    // 1
+         Eigen::Vector3d(0.0, 0.6, 0.0),     // 2
+         Eigen::Vector3d(-0.2, -0.15, 0.12), // 3 top (free)
+         Eigen::Vector3d(0.2, -0.15, 0.12),  // 4
+         Eigen::Vector3d(0.0, 0.2, 0.12)};   // 5
+  options.masses = {1.0, 1.0, 1.0, 0.1, 0.1, 0.1};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {{0, 1, 2}, {3, 4, 5}};
+  options.edges = {{3, 4, -1.0}, {4, 5, -1.0}, {5, 3, -1.0}};
+  options.edgeStiffness = 500.0;
+  options.damping = 1.0;
+  return options;
+}
+
 } // namespace
 
 //==============================================================================
@@ -734,4 +757,47 @@ TEST(VbdWorldSolver, VbdBodyRestsOnBoxObstacle)
   EXPECT_LT(minZ, 0.36);
   // ... without sinking through it (soft-penalty tolerance).
   EXPECT_GT(minBoxSurfaceDistance(), -3.0e-2);
+}
+
+//==============================================================================
+// Option A: the World VBD path resists surface self-collision. A body's free
+// top triangle falls toward its own pinned bottom triangle; the IPC point-
+// triangle / edge-edge barrier (entered per-vertex during the colored sweeps)
+// keeps the surfaces from interpenetrating.
+TEST(VbdWorldSolver, VbdSelfContactPreventsInterpenetration)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+  world.addDeformableBody("fold", makeSelfFoldingBody());
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 60;
+  enableVbdConfig(world, cfg);
+
+  const auto topMinZ = [&]() {
+    const auto body = world.getDeformableBody("fold");
+    double minimum = 1e9;
+    for (std::size_t i = 3; i < 6; ++i) {
+      minimum = std::min(minimum, body->getPosition(i).z());
+    }
+    return minimum;
+  };
+  ASSERT_GT(topMinZ(), 0.05);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 500; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("fold");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      ASSERT_TRUE(body->getPosition(i).allFinite()) << "blew up at " << step;
+    }
+  }
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  // The top triangle fell toward the bottom ...
+  EXPECT_LT(topMinZ(), 0.10);
+  // ... but self-contact kept it from passing through the bottom surface (z=0).
+  EXPECT_GT(topMinZ(), -0.02);
 }
