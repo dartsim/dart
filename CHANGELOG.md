@@ -904,6 +904,33 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     surface CCD limiter remains the tunnelling guard for fast motion. Adds
     regressions that a node in the band is pushed radially outward and that an
     untagged sphere is inert.
+  - Added stable neo-Hookean tetrahedral FEM elasticity to the experimental
+    deformable solver (PLAN-081 M1, the paper-parity keystone). A new
+    header-only `deformable_elasticity/fem_tet_element.hpp` kernel produces, per
+    tetrahedron, the stable neo-Hookean (Smith et al. 2018) strain energy, its
+    12x1 nodal gradient, and the true 12x12 Hessian, validated by
+    finite-difference gradient/Hessian tests (plus rest-state zero force,
+    inversion-robustness, and zero-Poisson stability). The solver wires it in as
+    an opt-in elasticity model via the new
+    `DeformableMaterialProperties.useFiniteElementElasticity` flag (also exposed
+    to `dartpy` as `use_finite_element_elasticity`): when set, each tetrahedron
+    contributes its energy/gradient to the objective and its PSD-projected 12x12
+    Hessian to the sparse projected-Newton assembly through the same batched
+    projection seam as the spring and barrier blocks. The model is inversion-safe
+    (finite for every deformation gradient, including det F <= 0). Default (flag
+    off) leaves the mass-spring path byte-identical -- all existing deformable
+    regressions are unchanged. Adds solver regressions (a pinned FEM tetrahedron
+    resists gravity where a springless body free-falls; stationary at rest;
+    restores a perturbed node toward rest), a `BM_DeformableFemBarStep`
+    benchmark, and a `Deformable FEM Bar (IPC)` py-demos scene (a tetrahedral
+    cantilever sagging under gravity) in the `IPC Deformable (sx)` category.
+  - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
+    counter-rotated at both ends by opposing scripted Dirichlet boundary
+    conditions, then released so the stable neo-Hookean core untwists
+    elastically -- a DART-native step toward the IPC paper's Fig. 4 (rod twist)
+    / Fig. 14 (mat twist) volumetric-shear themes. Shares a reusable
+    hexahedral-to-tetrahedral bar mesh helper with the FEM cantilever scene; the
+    demos cycle smoke covers it.
   - Added internal experimental IPC projected-Newton search direction for the
     deformable solve: each iteration assembles the per-step Hessian (inertia +
     spring + self-contact barrier + static ground barrier) with per-element

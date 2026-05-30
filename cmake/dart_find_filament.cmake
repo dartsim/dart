@@ -147,15 +147,43 @@ if(Filament_zstd_LIBRARY)
 endif()
 
 if(APPLE)
-  find_library(Filament_Foundation_LIBRARY NAMES Foundation)
-  if(Filament_Foundation_LIBRARY)
-    list(APPEND Filament_LIBRARIES "${Filament_Foundation_LIBRARY}")
-  endif()
+  # Filament's macOS backends pull in several system frameworks: Metal +
+  # QuartzCore (CAMetalLayer) for the Metal backend, CoreVideo for the
+  # texture-cache interop, Cocoa for the NSView/NSWindow surface, plus
+  # IOKit/CoreGraphics/OpenGL. The conda-forge `Filament::filament` CONFIG
+  # target does not always carry these in its link interface, and the dartpy
+  # wheel is the only macOS build that links Filament with the GUI enabled
+  # (the arm64 test jobs build GUI-off), so a missing framework surfaces there
+  # as undefined Metal/CoreVideo/QuartzCore/AppKit symbols when linking
+  # `_dartpy.so`. Collect them so they reach every Filament consumer.
+  set(_dart_filament_apple_frameworks)
+  foreach(
+    _dart_fw
+    Foundation
+    Cocoa
+    Metal
+    CoreVideo
+    QuartzCore
+    IOKit
+    CoreGraphics
+    OpenGL
+  )
+    find_library(Filament_${_dart_fw}_FRAMEWORK NAMES ${_dart_fw})
+    mark_as_advanced(Filament_${_dart_fw}_FRAMEWORK)
+    if(Filament_${_dart_fw}_FRAMEWORK)
+      list(
+        APPEND _dart_filament_apple_frameworks
+        "${Filament_${_dart_fw}_FRAMEWORK}"
+      )
+    endif()
+  endforeach()
 
   find_library(Filament_objc_LIBRARY NAMES objc)
   if(Filament_objc_LIBRARY)
-    list(APPEND Filament_LIBRARIES "${Filament_objc_LIBRARY}")
+    list(APPEND _dart_filament_apple_frameworks "${Filament_objc_LIBRARY}")
   endif()
+
+  list(APPEND Filament_LIBRARIES ${_dart_filament_apple_frameworks})
 elseif(WIN32)
   list(APPEND Filament_LIBRARIES opengl32)
 endif()
@@ -248,6 +276,25 @@ if(Filament_FOUND AND NOT TARGET Filament::filament)
   )
 endif()
 
+# When `Filament::filament` comes from a CONFIG package (e.g. conda-forge), its
+# link interface may omit the macOS system frameworks discovered above. Append
+# them so every consumer of Filament — including the dartpy extension built for
+# the wheel — resolves Metal/CoreVideo/QuartzCore/AppKit and friends. The
+# manual-find path already folds them into the interface via Filament_LIBRARIES;
+# this also covers the CONFIG path, resolving the `Filament::filament` alias to
+# its real target since properties cannot be set on an ALIAS.
+if(APPLE AND TARGET Filament::filament AND _dart_filament_apple_frameworks)
+  get_target_property(_dart_filament_real Filament::filament ALIASED_TARGET)
+  if(NOT _dart_filament_real)
+    set(_dart_filament_real Filament::filament)
+  endif()
+  set_property(
+    TARGET ${_dart_filament_real}
+    APPEND
+    PROPERTY INTERFACE_LINK_LIBRARIES "${_dart_filament_apple_frameworks}"
+  )
+endif()
+
 if(Filament_FOUND AND NOT TARGET Filament::matc)
   add_executable(Filament::matc IMPORTED)
   set_target_properties(
@@ -270,7 +317,6 @@ mark_as_advanced(
   Filament_smol_v_LIBRARY
   Filament_shaders_LIBRARY
   Filament_zstd_LIBRARY
-  Filament_Foundation_LIBRARY
   Filament_objc_LIBRARY
   Filament_cxx_LIBRARY
   Filament_cxxabi_LIBRARY
