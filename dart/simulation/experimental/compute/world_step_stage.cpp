@@ -2254,6 +2254,36 @@ double staticGroundBarrierActivationDistance()
 }
 
 //==============================================================================
+// The default (fixed) clamped-log barrier stiffness kappa shared by the ground,
+// obstacle, and self-contact barriers.
+constexpr double kDefaultBarrierStiffness = 25.0;
+
+//==============================================================================
+// IPC-style adaptive barrier stiffness (kappa) for a body, opted in per body.
+//
+// The clamped-log barrier's curvature contribution to the Hessian scales like
+// kappa / d_hat^2, while a node's inertial stiffness is mass / dt^2. Balancing
+// the two (so the barrier resolves contact in few iterations regardless of the
+// mass/stiffness ratio) gives kappa ~ (mass / dt^2) * d_hat^2. For a unit nodal
+// mass at dt = 1/250 and d_hat = 2e-2 this evaluates to exactly the historical
+// fixed kappa = 25, so the fixed value is just this balance at unit mass; the
+// adaptive form generalizes it, stiffening the barrier for heavier/faster
+// bodies. The result is floored at the fixed default (never softer, so contact
+// robustness never regresses) and capped to avoid an ill-conditioned Hessian.
+double adaptiveBarrierStiffness(
+    double maxNodalMass, double timeStep, double activationDistance)
+{
+  if (!(maxNodalMass > 0.0) || !(timeStep > 0.0) || !std::isfinite(maxNodalMass)
+      || !std::isfinite(timeStep)) {
+    return kDefaultBarrierStiffness;
+  }
+  constexpr double kMaxBarrierStiffness = 1.0e6;
+  const double balanced = (maxNodalMass / (timeStep * timeStep))
+                          * activationDistance * activationDistance;
+  return std::clamp(balanced, kDefaultBarrierStiffness, kMaxBarrierStiffness);
+}
+
+//==============================================================================
 bool satisfiesStaticGroundBarrier(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
@@ -2304,14 +2334,15 @@ double addStaticGroundBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (barriers.empty()) {
     return 0.0;
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  const double barrierScale = barrierStiffness;
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
@@ -2362,14 +2393,15 @@ double addSphereObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<SphereObstacleBarrier>& obstacles,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
     return 0.0;
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  const double barrierScale = barrierStiffness;
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
@@ -2464,14 +2496,15 @@ double addCapsuleObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<CapsuleObstacleBarrier>& obstacles,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
     return 0.0;
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  const double barrierScale = barrierStiffness;
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
@@ -2517,14 +2550,15 @@ double addBoxObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<BoxObstacleBarrier>& obstacles,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
     return 0.0;
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  const double barrierScale = barrierStiffness;
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
@@ -2590,7 +2624,9 @@ void computeStaticGroundNormalForces(
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  // The lagged friction normal-force estimate uses the base barrier stiffness
+  // (adaptive kappa scales the contact barriers, not this approximate force).
+  const double barrierScale = kDefaultBarrierStiffness;
   for (std::size_t i = 0; i < positions.size(); ++i) {
     if (fixed[i] != 0u) {
       continue;
@@ -3161,7 +3197,8 @@ double evaluateDeformableObjective(
     std::size_t* barrierActiveContacts = nullptr,
     const GroundFrictionInputs* groundFriction = nullptr,
     const SelfContactFrictionInputs* selfContactFriction = nullptr,
-    const FemElasticityInputs* femElasticity = nullptr)
+    const FemElasticityInputs* femElasticity = nullptr,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (gradient != nullptr) {
     if (gradient->size() != positions.size()) {
@@ -3211,13 +3248,14 @@ double evaluateDeformableObjective(
     energy
         += addFemElasticityEnergy(positions, fixed, *femElasticity, gradient);
   }
-  energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
+  energy += addStaticGroundBarrierEnergy(
+      positions, fixed, barriers, gradient, barrierStiffness);
   energy += addSphereObstacleBarrierEnergy(
-      positions, fixed, sphereObstacles, gradient);
-  energy
-      += addBoxObstacleBarrierEnergy(positions, fixed, boxObstacles, gradient);
+      positions, fixed, sphereObstacles, gradient, barrierStiffness);
+  energy += addBoxObstacleBarrierEnergy(
+      positions, fixed, boxObstacles, gradient, barrierStiffness);
   energy += addCapsuleObstacleBarrierEnergy(
-      positions, fixed, capsuleObstacles, gradient);
+      positions, fixed, capsuleObstacles, gradient, barrierStiffness);
   if (contactBarrier != nullptr) {
     energy += addSelfContactBarrierEnergy(
         positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
@@ -4109,7 +4147,8 @@ bool computeProjectedNewtonDirection(
     const std::vector<Eigen::Vector3d>& gradient,
     std::vector<Eigen::Vector3d>& direction,
     DeformableContactSolverScratch& solverCache,
-    DeformableSolverStats& stats)
+    DeformableSolverStats& stats,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   const std::size_t nodeCount = positions.size();
   // Sparse Cholesky scales to large meshes; the cap is a safety bound against
@@ -4345,7 +4384,7 @@ bool computeProjectedNewtonDirection(
   // Static ground barrier Hessian (vertical scalar per active free node).
   if (!barriers.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
-    constexpr double barrierScale = 25.0;
+    const double barrierScale = barrierStiffness;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i)) {
         continue;
@@ -4378,7 +4417,7 @@ bool computeProjectedNewtonDirection(
   // the vertical ground barrier curvature, now along the radial normal.
   if (!sphereObstacles.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
-    constexpr double barrierScale = 25.0;
+    const double barrierScale = barrierStiffness;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i)) {
         continue;
@@ -4412,7 +4451,7 @@ bool computeProjectedNewtonDirection(
   // are again non-positive and drop out under PSD projection).
   if (!boxObstacles.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
-    constexpr double barrierScale = 25.0;
+    const double barrierScale = barrierStiffness;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i)) {
         continue;
@@ -4444,7 +4483,7 @@ bool computeProjectedNewtonDirection(
   // projection).
   if (!capsuleObstacles.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
-    constexpr double barrierScale = 25.0;
+    const double barrierScale = barrierStiffness;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i)) {
         continue;
@@ -4709,6 +4748,19 @@ void advanceDeformableBody(
     femElasticityPtr = &femElasticity;
   }
 
+  // Per-step barrier stiffness (kappa). Opt-in adaptive scaling balances the
+  // barrier against the heaviest free node's inertial stiffness; off it is the
+  // fixed default, so every existing scene is byte-identical.
+  double barrierStiffness = kDefaultBarrierStiffness;
+  if (material.useAdaptiveBarrierStiffness) {
+    double maxNodalMass = 0.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      maxNodalMass = std::max(maxNodalMass, state.masses[i]);
+    }
+    barrierStiffness = adaptiveBarrierStiffness(
+        maxNodalMass, timeStep, staticGroundBarrierActivationDistance());
+  }
+
   stats.nodeCount += nodeCount;
   stats.edgeCount += model.edges.size();
   syncSurfaceContactTopology(
@@ -4898,7 +4950,8 @@ void advanceDeformableBody(
           &stats.selfContactBarrierActiveContacts,
           &groundFriction,
           &selfContactFriction,
-          femElasticityPtr);
+          femElasticityPtr,
+          barrierStiffness);
       if (!std::isfinite(energy)) {
         brokeEarly = true;
         break;
@@ -5015,7 +5068,8 @@ void advanceDeformableBody(
                 nullptr,
                 &groundFriction,
                 &selfContactFriction,
-                femElasticityPtr);
+                femElasticityPtr,
+                barrierStiffness);
             if (std::isfinite(candidateEnergy)
                 && candidateEnergy <= energy + armijo * directionalDerivative) {
               // Record the accepted step's infinity norm (the actual per-node
@@ -5071,7 +5125,8 @@ void advanceDeformableBody(
           scratch.gradient,
           scratch.direction,
           contactScratch,
-          stats);
+          stats,
+          barrierStiffness);
       if (newtonDirection) {
         ++stats.projectedNewtonSteps;
       } else {
@@ -5168,7 +5223,8 @@ void advanceDeformableBody(
           nullptr,
           &terminalGroundFriction,
           &terminalSelfContactFriction,
-          femElasticityPtr);
+          femElasticityPtr,
+          barrierStiffness);
       if (std::isfinite(terminalEnergy)) {
         lastGradSquared
             = gradientNormSquared(scratch.gradient, scratch.activeFixed);

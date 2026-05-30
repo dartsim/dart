@@ -124,6 +124,10 @@ struct DeformableMaterial
   // material instead of the default stable neo-Hookean kernel. Ignored unless
   // useFiniteElementElasticity is true.
   bool useFixedCorotationalElasticity = false;
+  // Opt in to IPC-style adaptive barrier stiffness (kappa) for this body's
+  // ground/obstacle contact barriers, scaled per step from the mass/time-step
+  // force balance. Off by default keeps the fixed kappa = 25.
+  bool useAdaptiveBarrierStiffness = false;
 };
 
 /// Time-ranged scripted Dirichlet boundary region for deformable nodes.

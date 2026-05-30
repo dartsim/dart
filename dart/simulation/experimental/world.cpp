@@ -763,6 +763,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
       = options.material.useFiniteElementElasticity;
   data.material.useFixedCorotationalElasticity
       = options.material.useFixedCorotationalElasticity;
+  data.material.useAdaptiveBarrierStiffness
+      = options.material.useAdaptiveBarrierStiffness;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);
