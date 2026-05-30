@@ -71,7 +71,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   5: Link gained an `externalForce` field (per-step external spatial wrench
 //      applied via Link::applyForce; serialized, round-trips to zero)
 //   6: World differentiable flag serialized after the deformable-body counter
-constexpr std::uint32_t kBinaryFormatVersion = 6;
+//   7: CollisionShape mesh vertices and triangle indices serialized
+constexpr std::uint32_t kBinaryFormatVersion = 7;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

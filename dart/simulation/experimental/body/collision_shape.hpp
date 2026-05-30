@@ -34,6 +34,9 @@
 
 #include <Eigen/Core>
 
+#include <utility>
+#include <vector>
+
 namespace dart::simulation::experimental {
 
 /// The geometric family of a collision shape.
@@ -43,6 +46,7 @@ enum class CollisionShapeType
 {
   Sphere,
   Box,
+  Mesh,
 };
 
 /// Public value object describing a body's collision geometry.
@@ -52,7 +56,7 @@ enum class CollisionShapeType
 /// is expressed in the owning body's frame, centered at the body frame origin.
 ///
 /// Only the fields relevant to `type` are used. Prefer the named constructors
-/// (`makeSphere`, `makeBox`) for clarity.
+/// (`makeSphere`, `makeBox`, `makeMesh`) for clarity.
 struct CollisionShape
 {
   /// Geometric family selecting which fields below are used.
@@ -64,6 +68,12 @@ struct CollisionShape
   /// Box half extents along the body x/y/z axes (used when type == Box). Each
   /// component must be positive.
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
+
+  /// Mesh vertices in the body frame (used when type == Mesh).
+  std::vector<Eigen::Vector3d> vertices;
+
+  /// Mesh triangle indices into `vertices` (used when type == Mesh).
+  std::vector<Eigen::Vector3i> triangles;
 
   /// Create a sphere collision shape.
   [[nodiscard]] static CollisionShape makeSphere(double radius)
@@ -81,6 +91,18 @@ struct CollisionShape
     CollisionShape shape;
     shape.type = CollisionShapeType::Box;
     shape.halfExtents = halfExtents;
+    return shape;
+  }
+
+  /// Create a triangle mesh collision shape in the body frame.
+  [[nodiscard]] static CollisionShape makeMesh(
+      std::vector<Eigen::Vector3d> vertices,
+      std::vector<Eigen::Vector3i> triangles)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Mesh;
+    shape.vertices = std::move(vertices);
+    shape.triangles = std::move(triangles);
     return shape;
   }
 };
