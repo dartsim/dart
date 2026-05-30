@@ -70,7 +70,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      Distance family)
 //   5: Link gained an `externalForce` field (per-step external spatial wrench
 //      applied via Link::applyForce; serialized, round-trips to zero)
-constexpr std::uint32_t kBinaryFormatVersion = 5;
+//   6: World differentiable flag serialized after the deformable-body counter
+constexpr std::uint32_t kBinaryFormatVersion = 6;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

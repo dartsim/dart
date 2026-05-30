@@ -73,6 +73,18 @@ public:
     return ImGui::Selectable(labelValue.c_str(), selected);
   }
 
+  void itemTooltip(std::string_view text) override
+  {
+    if (text.empty() || !ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+      return;
+    }
+    ImGui::BeginTooltip();
+    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 28.0F);
+    ImGui::TextUnformatted(text.data(), text.data() + text.size());
+    ImGui::PopTextWrapPos();
+    ImGui::EndTooltip();
+  }
+
   void indent(double width) override
   {
     ImGui::Indent(static_cast<float>(width));

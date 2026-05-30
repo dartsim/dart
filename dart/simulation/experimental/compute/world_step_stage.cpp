@@ -46,6 +46,7 @@
 #include "dart/simulation/experimental/compute/deformable_psd_backend.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/experimental/detail/boxed_lcp_contact.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
@@ -54,6 +55,7 @@
 #include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/experimental/world.hpp"
+#include "dart/simulation/experimental/world_options.hpp"
 
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
@@ -708,6 +710,54 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
     return material->friction;
   }
   return 1.0;
+}
+
+//==============================================================================
+// Positional correction (projection) for rigid-body normal contacts: removes
+// residual penetration beyond a small allowance without injecting velocity, so
+// resting stacks do not sink. Shared by the sequential-impulse and boxed-LCP
+// contact paths; the sequential path inlines an equivalent loop over its
+// precomputed constraints, while the LCP path drives this from the raw
+// contacts. Only rigid-body/rigid-body pairs with at least one dynamic body
+// are corrected.
+void resolveRigidBodyContactPositions(
+    entt::registry& registry,
+    const std::vector<Contact>& contacts,
+    double /*timeStep*/)
+{
+  constexpr double allowance = 1e-4;
+  constexpr double correctionFactor = 0.2;
+  for (const auto& contact : contacts) {
+    const auto entityA = contact.bodyA.getEntity();
+    const auto entityB = contact.bodyB.getEntity();
+    if (!registry.all_of<comps::RigidBodyTag>(entityA)
+        || !registry.all_of<comps::RigidBodyTag>(entityB)) {
+      continue;
+    }
+
+    const double penetration = contact.depth - allowance;
+    if (penetration <= 0.0) {
+      continue;
+    }
+
+    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
+    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const double invMassA
+        = staticA ? 0.0
+                  : inverseMass(registry.get<comps::MassProperties>(entityA));
+    const double invMassB
+        = staticB ? 0.0
+                  : inverseMass(registry.get<comps::MassProperties>(entityB));
+    const double totalInverseMass = invMassA + invMassB;
+    if (totalInverseMass <= 0.0) {
+      continue;
+    }
+
+    const Eigen::Vector3d correction
+        = (correctionFactor * penetration / totalInverseMass) * contact.normal;
+    registry.get<comps::Transform>(entityA).position -= invMassA * correction;
+    registry.get<comps::Transform>(entityB).position += invMassB * correction;
+  }
 }
 
 //==============================================================================
@@ -5002,6 +5052,17 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   }
 
   auto& registry = world.getRegistry();
+
+  // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the frictionless
+  // normal Delassus system with the pivoting Dantzig solver, applying the
+  // resulting impulses to body velocities. The default SequentialImpulse path
+  // below is unchanged.
+  if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
+    (void)detail::solveBoxedLcpContacts(
+        registry, contacts, world.getTimeStep());
+    resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
+    return;
+  }
 
   // Precompute per-contact constants for a sequential-impulse normal solve.
   struct NormalConstraint

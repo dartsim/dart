@@ -17,6 +17,9 @@ from .scenes.cartpole_gym_env import SCENE as CARTPOLE_GYM_ENV
 from .scenes.cartpole_mpc import SCENE as CARTPOLE_MPC
 from .scenes.collision_sandbox import SCENE as COLLISION_SANDBOX
 from .scenes.coupler_constraint import SCENE as COUPLER_CONSTRAINT
+from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
+from .scenes.diff_drone_liftoff import SCENE as DIFF_DRONE_LIFTOFF
+from .scenes.diff_throw_to_target import SCENE as DIFF_THROW_TO_TARGET
 from .scenes.drag_and_drop import SCENE as DRAG_AND_DROP
 from .scenes.empty import SCENE as EMPTY
 from .scenes.experimental_rigid_body_gui import SCENE as EXPERIMENTAL_RIGID_BODY_GUI
@@ -120,6 +123,14 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         EXPERIMENTAL_RIGID_BODY_GUI,
         SX_VARIATIONAL_CHAIN,
         SX_VARIATIONAL_TUMBLER,
+        # Differentiable physics (sx::World + sx.diff). Reproduces the paper's
+        # gradient-based experiments as browsable, animated scenes. Each scene
+        # degrades gracefully to an un-optimized rollout when the differentiable
+        # bindings (DART_BUILD_DIFF) are absent, so the diff-OFF cycle smoke
+        # still builds and renders them.
+        DIFF_THROW_TO_TARGET,
+        DIFF_CARTPOLE_TRAJOPT,
+        DIFF_DRONE_LIFTOFF,
         # Vertex Block Descent (VBD) deformable scenes from the paper that the
         # current contact-free World VBD path reproduces (mass-spring cloth/net,
         # tetrahedral cantilever beam). Multi-body and self-collision scenes

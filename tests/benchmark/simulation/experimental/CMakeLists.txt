@@ -79,6 +79,17 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )
 
+  # Differentiable simulation gradient benchmark (PLAN-110): analytic step
+  # Jacobian vs finite-differencing, and diff-ON vs diff-OFF step overhead.
+  # Exercises the detail-only differentiable code path, so it is registered
+  # only when DART_BUILD_DIFF is ON.
+  if(DART_BUILD_DIFF)
+    dart_experimental_add_benchmark(
+      bm_diff_gradient
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_diff_gradient.cpp
+    )
+  endif()
+
   if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
     dart_experimental_add_benchmark(
       bm_cuda_rigid_body_state_batch

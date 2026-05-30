@@ -51,12 +51,20 @@
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure_spec.hpp"
+#include "dart/simulation/experimental/diff/physical_parameter.hpp"
+#include "dart/simulation/experimental/diff/step_derivatives.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
 #include "dart/simulation/experimental/io/binary_io.hpp"
 #include "dart/simulation/experimental/io/serializer.hpp"
 #include "dart/simulation/experimental/multibody/multibody.hpp"
+#include "dart/simulation/experimental/world_options.hpp"
+
+#ifdef DART_HAS_DIFF
+  #include "dart/simulation/experimental/detail/contact_jacobians.hpp"
+  #include "dart/simulation/experimental/detail/smooth_jacobians.hpp"
+#endif
 
 #include <Eigen/Cholesky>
 
@@ -966,6 +974,24 @@ Eigen::Isometry3d toIsometry(
 World::World() = default;
 
 //==============================================================================
+World::World(const WorldOptions& options)
+  : m_gravity(options.gravity),
+    m_timeStep(options.timeStep),
+    m_differentiable(options.differentiable),
+    m_contactSolverMethod(options.contactSolverMethod),
+    m_contactGradientMode(options.contactGradientMode)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(options.timeStep) || options.timeStep <= 0.0,
+      InvalidArgumentException,
+      "WorldOptions.timeStep must be positive and finite");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.gravity.array().isFinite().all(),
+      InvalidArgumentException,
+      "WorldOptions.gravity must contain only finite coordinates");
+}
+
+//==============================================================================
 World::~World() = default;
 
 //==============================================================================
@@ -987,6 +1013,11 @@ void World::clear()
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_timeStep = 0.001;
+  m_differentiable = false;
+  m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
+  m_contactGradientMode = ContactGradientMode::Analytic;
+  m_stepDerivatives.reset();
+  m_differentiableParameters.clear();
   m_time = 0.0;
   m_frame = 0;
   m_freeFrameCounter = 0;
@@ -1506,6 +1537,248 @@ double World::getTimeStep() const noexcept
 }
 
 //==============================================================================
+bool World::isDifferentiable() const noexcept
+{
+  return m_differentiable;
+}
+
+//==============================================================================
+ContactSolverMethod World::getContactSolverMethod() const noexcept
+{
+  return m_contactSolverMethod;
+}
+
+//==============================================================================
+ContactGradientMode World::getContactGradientMode() const noexcept
+{
+  return m_contactGradientMode;
+}
+
+//==============================================================================
+void World::setContactGradientMode(ContactGradientMode mode) noexcept
+{
+  m_contactGradientMode = mode;
+}
+
+//==============================================================================
+StepDerivatives World::getStepDerivatives() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_differentiable,
+      InvalidOperationException,
+      "World::getStepDerivatives() requires a differentiable World (construct "
+      "with WorldOptions::differentiable set to true)");
+
+#ifdef DART_HAS_DIFF
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_stepDerivatives.has_value(),
+      InvalidOperationException,
+      "World::getStepDerivatives() has no derivatives yet; call step() first");
+  return *m_stepDerivatives;
+#else
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidOperationException,
+      "World::getStepDerivatives() requires differentiable support to be built "
+      "(enable the DART_BUILD_DIFF CMake option)");
+#endif
+}
+
+//==============================================================================
+StepGradient World::applyStepVjp(const Eigen::VectorXd& dLossDNextState) const
+{
+  // Reuse getStepDerivatives() for the not-differentiable / not-built /
+  // no-derivatives-yet gating so applyStepVjp throws the identical errors. When
+  // differentiable support is not compiled this call already throws, so the
+  // explicit VJP below is only reached with valid cached Jacobians.
+  const StepDerivatives derivatives = getStepDerivatives();
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      dLossDNextState.size() != derivatives.stateJacobian.rows(),
+      InvalidArgumentException,
+      "World::applyStepVjp(): dLossDNextState has size {} but the cached step "
+      "Jacobian expects next-state size {}",
+      dLossDNextState.size(),
+      derivatives.stateJacobian.rows());
+
+  StepGradient gradient;
+  gradient.state = derivatives.stateJacobian.transpose() * dLossDNextState;
+  gradient.control = derivatives.controlJacobian.transpose() * dLossDNextState;
+  return gradient;
+}
+
+//==============================================================================
+void World::addDifferentiableParameter(
+    const PhysicalParameterSelector& selector)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_differentiable,
+      InvalidOperationException,
+      "World::addDifferentiableParameter() requires a differentiable World "
+      "(construct with WorldOptions::differentiable set to true)");
+
+#ifndef DART_HAS_DIFF
+  (void)selector;
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidOperationException,
+      "World::addDifferentiableParameter() requires differentiable support to "
+      "be built (enable the DART_BUILD_DIFF CMake option)");
+#else
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !selector.body.isValid() || selector.body.getWorld() != this,
+      InvalidArgumentException,
+      "World::addDifferentiableParameter(): the selector's body does not "
+      "belong to this World");
+
+  const auto entity = selector.body.getEntity();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_registry.all_of<comps::RigidBodyTag>(entity),
+      InvalidArgumentException,
+      "World::addDifferentiableParameter(): the selector's body is not a valid "
+      "rigid body");
+
+  // Supported parameters (PLAN-110 WS4): MASS (1 column), INERTIA (3 diagonal
+  // principal-moment columns), and FRICTION (1 column). CENTER_OF_MASS stays
+  // unsupported: the rigid-body forward step assumes the center of mass at the
+  // body origin (`MassProperties::localCenterOfMass` is unused outside the
+  // multibody path), so its single-step gradient is identically zero — there is
+  // no meaningful Jacobian to assemble. Reject it with a clear
+  // NotImplementedException rather than producing a vacuous zero column.
+  DART_EXPERIMENTAL_THROW_T_IF(
+      selector.parameter == PhysicalParameter::CENTER_OF_MASS,
+      NotImplementedException,
+      "World::addDifferentiableParameter(): PhysicalParameter::CENTER_OF_MASS "
+      "is not supported for rigid bodies; the rigid-body step assumes the "
+      "center of mass at the body origin, so the gradient is identically zero. "
+      "Supported: MASS, INERTIA, FRICTION");
+
+  m_differentiableParameters.emplace_back(entity, selector.parameter);
+#endif
+}
+
+//==============================================================================
+void World::addDifferentiableParameter(
+    const RigidBody& body, PhysicalParameter parameter)
+{
+  addDifferentiableParameter(PhysicalParameterSelector(body, parameter));
+}
+
+//==============================================================================
+std::size_t World::getNumDifferentiableParameters() const noexcept
+{
+  return m_differentiableParameters.size();
+}
+
+namespace {
+
+// Collect dynamic (non-static) rigid bodies in registry iteration order. This
+// is the same view and order the translational contact Jacobian uses, so the
+// state/control vectors line up with getStepDerivatives()'s [q; q̇] layout.
+std::vector<entt::entity> collectDynamicRigidBodies(
+    const entt::registry& registry)
+{
+  std::vector<entt::entity> bodies;
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force>();
+  for (const auto entity : view) {
+    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+      continue;
+    }
+    bodies.push_back(entity);
+  }
+  return bodies;
+}
+
+} // namespace
+
+//==============================================================================
+std::size_t World::getNumDofs() const
+{
+  return 3 * collectDynamicRigidBodies(m_registry).size();
+}
+
+//==============================================================================
+std::size_t World::getNumEfforts() const
+{
+  return getNumDofs();
+}
+
+//==============================================================================
+Eigen::VectorXd World::getStateVector() const
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  Eigen::VectorXd state(2 * dofs);
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    const auto& transform = m_registry.get<comps::Transform>(bodies[k]);
+    const auto& velocity = m_registry.get<comps::Velocity>(bodies[k]);
+    state.segment<3>(base) = transform.position;
+    state.segment<3>(dofs + base) = velocity.linear;
+  }
+  return state;
+}
+
+//==============================================================================
+void World::setStateVector(const Eigen::VectorXd& state)
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.size() != 2 * dofs,
+      InvalidArgumentException,
+      "World::setStateVector(): expected size {} (= 2 * num_dofs) but got {}",
+      2 * dofs,
+      state.size());
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    auto& transform = m_registry.get<comps::Transform>(bodies[k]);
+    auto& velocity = m_registry.get<comps::Velocity>(bodies[k]);
+    transform.position = state.segment<3>(base);
+    velocity.linear = state.segment<3>(dofs + base);
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd World::getControlVector() const
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  Eigen::VectorXd control(dofs);
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    const auto& force = m_registry.get<comps::Force>(bodies[k]);
+    control.segment<3>(base) = force.force;
+  }
+  return control;
+}
+
+//==============================================================================
+void World::setControlVector(const Eigen::VectorXd& control)
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  DART_EXPERIMENTAL_THROW_T_IF(
+      control.size() != dofs,
+      InvalidArgumentException,
+      "World::setControlVector(): expected size {} (= num_efforts) but got {}",
+      dofs,
+      control.size());
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    auto& force = m_registry.get<comps::Force>(bodies[k]);
+    force.force = control.segment<3>(base);
+  }
+}
+
+//==============================================================================
 void World::setTime(double time)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -1721,10 +1994,120 @@ void World::step(
     enterSimulationMode();
   }
 
+  // Differentiable opt-in: record the analytic contact-free step Jacobians at
+  // the pre-step state before integration. This is a single predictable branch;
+  // when off (the default) nothing extra runs and the forward result is
+  // bitwise-identical.
+  if (m_differentiable) {
+    captureStepDerivatives();
+  }
+
   pipeline.execute(*this, executor);
 
   m_time += m_timeStep;
   ++m_frame;
+}
+
+//==============================================================================
+void World::captureStepDerivatives()
+{
+#ifdef DART_HAS_DIFF
+  // Contact-aware path (PLAN-110 WS2): when the boxed-LCP contact solver is
+  // selected, the differentiable step Jacobian must include the analytic
+  // frictionless normal-contact gradient. Capture the active contacts at the
+  // pre-step state from the same collide() source the BoxedLcp contact stage
+  // consumes, validate they fall inside the WS2 slice's scope, then route
+  // through detail::contactStepDerivatives(). When there are no active contacts
+  // this reduces exactly to the contact-free (free-fall) Jacobian for the
+  // dynamic rigid bodies; that is a mathematically exact reduction, not a
+  // fallback.
+  if (m_contactSolverMethod == ContactSolverMethod::BoxedLcp) {
+    const std::vector<Contact> contacts = collide();
+
+    // Scope guard: the contact gradient now covers Coulomb-friction rigid-body
+    // contacts including those that excite the angular DOFs (lever arm not
+    // parallel to the normal, e.g. an off-COM contact) and multiple
+    // simultaneous contacts (e.g. a box resting on its corners). The full 6-DOF
+    // Delassus solve and the screw-axis angular rows of J inside
+    // detail::contactStepDerivatives() handle that coupling; the differentiated
+    // output stays the body's translational [pos; linvel] (the single-step
+    // angular state does not feed back into the translational output). The one
+    // case still out of scope is an articulated-link (multibody) contact, which
+    // the rigid-body contact assembly does not handle: reject it (rather than
+    // silently returning a wrong matrix).
+    for (const auto& contact : contacts) {
+      const auto entityA = contact.bodyA.getEntity();
+      const auto entityB = contact.bodyB.getEntity();
+
+      const bool rigidA = m_registry.all_of<comps::RigidBodyTag>(entityA);
+      const bool rigidB = m_registry.all_of<comps::RigidBodyTag>(entityB);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !rigidA || !rigidB,
+          NotImplementedException,
+          "World::getStepDerivatives(): differentiable contact gradient not "
+          "yet supported for multibody/articulated-link contact; supported: "
+          "rigid-body normal/friction contact (PLAN-110 WS2, incl. rotational "
+          "and multi-contact)");
+    }
+
+    // When physical parameters are registered, additionally assemble the
+    // parameter Jacobian ∂x'/∂θ alongside the state/control Jacobians;
+    // otherwise skip the extra FD work and leave parameterJacobian empty.
+    StepDerivatives contactDerivatives
+        = m_differentiableParameters.empty()
+              ? detail::contactStepDerivatives(
+                    m_registry,
+                    contacts,
+                    m_gravity,
+                    m_timeStep,
+                    m_contactGradientMode)
+              : detail::contactStepDerivativesWithParameters(
+                    m_registry,
+                    contacts,
+                    m_gravity,
+                    m_timeStep,
+                    m_differentiableParameters,
+                    m_contactGradientMode);
+    // Non-empty only when a dynamic rigid body is in scope. When empty (e.g. a
+    // pure multibody scene under BoxedLcp), fall through to the WS1 path below.
+    if (contactDerivatives.stateJacobian.size() != 0) {
+      m_stepDerivatives = std::move(contactDerivatives);
+      return;
+    }
+  }
+
+  // WS1 covers a single contact-free multibody. The joint-type-keyed position
+  // Jacobian in detail::contactFreeStepDerivatives covers fixed, revolute,
+  // prismatic, screw, universal, planar, ball (Spherical), and free (Floating)
+  // joints. Assemble tau from the joint efforts in construction (DOF) order and
+  // compute the analytic Jacobian at the current (pre-step) state.
+  auto view = m_registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+
+    Eigen::VectorXd tau;
+    std::vector<double> torques;
+    for (const auto linkEntity : structure.links) {
+      const auto& link = m_registry.get<comps::Link>(linkEntity);
+      if (link.parentJoint == entt::null) {
+        continue;
+      }
+      const auto& joint = m_registry.get<comps::Joint>(link.parentJoint);
+      for (Eigen::Index d = 0; d < joint.torque.size(); ++d) {
+        torques.push_back(joint.torque[d]);
+      }
+    }
+    if (torques.empty()) {
+      continue;
+    }
+    tau = Eigen::Map<const Eigen::VectorXd>(
+        torques.data(), static_cast<Eigen::Index>(torques.size()));
+
+    m_stepDerivatives = detail::contactFreeStepDerivatives(
+        m_registry, structure, m_gravity, m_timeStep, tau);
+    return; // WS1: one multibody.
+  }
+#endif
 }
 
 //==============================================================================
@@ -1860,6 +2243,9 @@ void World::saveBinary(std::ostream& output) const
   io::writePOD(output, m_gravity.y());
   io::writePOD(output, m_gravity.z());
   io::writePOD(output, m_deformableBodyCounter);
+
+  const std::uint8_t differentiableFlag = m_differentiable ? 1 : 0;
+  io::writePOD(output, differentiableFlag);
 }
 
 //==============================================================================
@@ -1904,6 +2290,12 @@ void World::loadBinary(std::istream& input)
 
     if (input.peek() != std::char_traits<char>::eof()) {
       io::readPOD(input, m_deformableBodyCounter);
+    }
+
+    if (formatVersion >= 6 && input.peek() != std::char_traits<char>::eof()) {
+      std::uint8_t differentiableFlag = 0;
+      io::readPOD(input, differentiableFlag);
+      m_differentiable = differentiableFlag != 0;
     }
   }
 
