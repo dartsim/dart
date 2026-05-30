@@ -32,9 +32,8 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
-
 import dartpy as dart
+import numpy as np
 
 
 def _isometry_to_matrix(transform: Any) -> np.ndarray:
@@ -43,6 +42,45 @@ def _isometry_to_matrix(transform: Any) -> np.ndarray:
     if hasattr(transform, "matrix"):
         return np.asarray(transform.matrix())
     return np.asarray(transform)
+
+
+def _is_fixed_node(body: Any, index: int) -> bool:
+    """``body.is_fixed_node(index)`` guarded against missing/odd bindings."""
+
+    try:
+        return bool(body.is_fixed_node(index))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _deformable_wireframe_edges(body: Any) -> list[tuple[int, int]]:
+    """Unique undirected node-index pairs describing a body's mesh wireframe.
+
+    Tetrahedral/surface bodies are drawn as the edges of their boundary
+    triangles (a solid-looking faceted surface); mass-spring bodies are drawn
+    as their spring network. The result mirrors the paper's surface rendering
+    far better than an isolated per-node point cloud.
+    """
+
+    edges: set[tuple[int, int]] = set()
+
+    def add(u: int, v: int) -> None:
+        edges.add((u, v) if u < v else (v, u))
+
+    triangle_count = int(getattr(body, "surface_triangle_count", 0))
+    if triangle_count > 0:
+        for t in range(triangle_count):
+            tri = body.surface_triangle(t)
+            a, b, c = int(tri.node_a), int(tri.node_b), int(tri.node_c)
+            add(a, b)
+            add(b, c)
+            add(c, a)
+        return sorted(edges)
+
+    for e in range(int(getattr(body, "edge_count", 0))):
+        edge = body.edge(e)
+        add(int(edge.node_a), int(edge.node_b))
+    return sorted(edges)
 
 
 class SxRenderBridge:
@@ -68,9 +106,12 @@ class SxRenderBridge:
         self.render_world.set_gravity([0.0, 0.0, 0.0])
         # The render world steps too (the viewer's pump calls world.step()
         # each frame). With no skeletons it's a no-op + a time advance.
-        self.render_world.set_time_step(
-            getattr(sx_world, "time_step", 0.001))
+        self.render_world.set_time_step(getattr(sx_world, "time_step", 0.001))
         self._mappings: list[tuple[Any, dart.SimpleFrame]] = []
+        # (deformable_body, line_shape, node_count) deforming wireframes.
+        self._surfaces: list[tuple[Any, Any, int]] = []
+        # (deformable_body, [(node_index, SimpleFrame)]) pinned-node markers.
+        self._pins: list[tuple[Any, list[tuple[int, dart.SimpleFrame]]]] = []
         # SimpleFrame name -> sx object, so the viewer's force-drag can resolve
         # the picked renderable (identified by its frame name) back to the sx
         # body/link that owns the physics.
@@ -104,6 +145,58 @@ class SxRenderBridge:
     ) -> "dart.SimpleFrame":
         return self.add_link_visual(sx_body, shape, color, name=name)
 
+    def add_deformable_visual(
+        self,
+        deformable_body: Any,
+        color: tuple[float, float, float],
+        radius: float = 0.018,
+        fixed_color: tuple[float, float, float] | None = None,
+        thickness: float = 2.5,
+    ) -> "dart.SimpleFrame":
+        """Render a deformable body as a live deforming surface wireframe.
+
+        A single ``LineSegmentShape`` carries one vertex per node and one line
+        per mesh edge — spring edges for mass-spring bodies (cloth/net) or
+        boundary-triangle edges for tetrahedral bodies (the beam). Each frame
+        the vertices are rewritten from ``deformable_body.node_position(i)``,
+        which bumps the shape version so the viewer re-uploads the deformed
+        geometry. Pinned nodes are marked with small ``fixed_color`` spheres so
+        the constraints read clearly. Returns the wireframe SimpleFrame.
+        """
+
+        body = deformable_body
+        node_count = int(body.node_count)
+
+        line = dart.LineSegmentShape(float(thickness))
+        for i in range(node_count):
+            line.addVertex(np.asarray(body.node_position(i), dtype=float))
+        for node_a, node_b in _deformable_wireframe_edges(body):
+            line.addConnection(node_a, node_b)
+
+        frame = dart.SimpleFrame(
+            dart.Frame.world(), f"sx_surface_{len(self._surfaces)}", np.eye(4)
+        )
+        frame.set_shape(line)
+        frame.create_visual_aspect().set_color(list(color))
+        self.render_world.add_simple_frame(frame)
+        self._surfaces.append((body, line, node_count))
+
+        pin_color = fixed_color if fixed_color is not None else color
+        pin_frames: list[tuple[int, dart.SimpleFrame]] = []
+        group = len(self._pins)
+        for i in range(node_count):
+            if not _is_fixed_node(body, i):
+                continue
+            sphere = dart.SimpleFrame(
+                dart.Frame.world(), f"sx_pin_{group}_{i}", np.eye(4)
+            )
+            sphere.set_shape(dart.SphereShape(radius))
+            sphere.create_visual_aspect().set_color(list(pin_color))
+            self.render_world.add_simple_frame(sphere)
+            pin_frames.append((i, sphere))
+        self._pins.append((body, pin_frames))
+        return frame
+
     def sync(self) -> None:
         """Copy each sx body's world transform onto its SimpleFrame."""
 
@@ -115,6 +208,24 @@ class SxRenderBridge:
                 frame.set_transform(_isometry_to_matrix(tf))
             except Exception:  # noqa: BLE001
                 pass
+
+        # Rewrite wireframe vertices in place (setVertex bumps the shape
+        # version, so the viewer re-uploads the deformed geometry).
+        for body, line, node_count in self._surfaces:
+            for i in range(node_count):
+                try:
+                    line.setVertex(i, np.asarray(body.node_position(i), dtype=float))
+                except Exception:  # noqa: BLE001
+                    pass
+
+        for body, pin_frames in self._pins:
+            for i, sphere in pin_frames:
+                try:
+                    transform = np.eye(4)
+                    transform[:3, 3] = np.asarray(body.node_position(i))
+                    sphere.set_transform(transform)
+                except Exception:  # noqa: BLE001
+                    pass
 
     def force_drag(self, event: dict[str, Any]) -> None:
         """Viewer mouse force-drag handler (see ``SceneSetup.force_drag``).

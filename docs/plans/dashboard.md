@@ -157,6 +157,31 @@ its own line so status updates remain git-history friendly.
   `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries` green.
 
+### PLAN-104: Vertex Block Descent Solver
+
+- Owner doc:
+  [`104-vertex-block-descent-solver.md`](104-vertex-block-descent-solver.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Implement Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as
+  a DART-owned deformable solver on the existing experimental deformable ECS
+  components and the variational implicit-Euler objective. Track slice-level
+  work in `docs/dev_tasks/vbd_deformable_solver/`, starting with the per-vertex
+  block kernels, graph coloring, and the block-descent driver, then FEM
+  hyperelasticity, acceleration, solver wiring, contact/friction, and CPU/GPU
+  performance.
+- Gate: VBD progress is not complete until the implementation distinguishes
+  each internal kernel slice from a wired solver, keeps VBD naming
+  backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
+  guarantees, coloring conflict-freedom, and convergence parity with the
+  existing solver and the reference implementations, adds FEM/acceleration/
+  contact/friction with focused tests, records CPU and GPU benchmark/profiling
+  JSON that beats the reference and/or paper numbers before any parity claim,
+  verifies headless Filament captures for GUI examples, and keeps
+  `pixi run lint`, `pixi run build`, focused C++ tests, and
+  `check-api-boundaries` green.
+
 ### PLAN-082: Linear-Time Variational Integrator
 
 - Owner doc:
