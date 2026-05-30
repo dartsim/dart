@@ -193,7 +193,7 @@ Springer, 2006.
 | `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration | referenced  | medium   | evaluate  |
 | `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision   | implemented | —        | adopt     |
 | `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact     | in-progress | high     | adopt     |
-| `rigid-ipc-2021`                | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                             | contact      | in-progress  | high      | adopt      |
+| `rigid-ipc-2021`               | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact     | in-progress | high     | adopt     |
 | `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration | planned     | high     | adopt     |
 | `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration | referenced  | medium   | reference |
 | `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024)                                                                                 | contact     | referenced  | medium   | evaluate  |
@@ -390,6 +390,7 @@ Related public resources:
   smoothed friction, same-domain rigid method selection, CPU/GPU benchmark
   packets, comparison baselines, and headless Filament evidence for promoted
   scenes.
+
 ### `lee-vi-2016`
 
 Jeongseok Lee, C. Karen Liu, Frank C. Park, and Siddhartha S. Srinivasa. "A

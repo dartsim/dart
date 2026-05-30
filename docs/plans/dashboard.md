@@ -187,6 +187,7 @@ its own line so status updates remain git-history friendly.
   solver registries/ECS storage, and every promoted runtime slice passes
   `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries`.
+
 ### PLAN-082: Linear-Time Variational Integrator
 
 - Owner doc:
