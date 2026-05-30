@@ -1014,6 +1014,30 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     regression that loads a single-tetrahedron scene and checks the reported
     topology counts and total mass. (The loader still covers only the
     contact-free subset; it is not IPC scene parity.)
+  - Added a dedicated `IPC Deformable (sx)` category of deformable scenes to the
+    consolidated `py-demos` standalone (`pixi run py-demos`), grouping the IPC
+    showcases in their own menu category instead of mixing them into the general
+    `Experimental` (sx) scenes: `ipc_deformable_net` (a pinned spring net sagging
+    under gravity), `ipc_deformable_drape` (a mat draping over a step onto a
+    ground barrier), `ipc_deformable_trampoline` (a corner-pinned membrane sagging
+    and rebounding under projected Newton), `ipc_deformable_friction_slide` (a
+    launched mat skidding to rest under lagged smoothed-Coulomb ground friction),
+    and `ipc_deformable_scripted_dirichlet` (a banner billowing under a scripted
+    Dirichlet boundary condition). A shared `_ipc_deformable_bridge.py` builds the
+    grid topology and mirrors each `dartpy.simulation_experimental` deformable
+    body onto the Filament render world as per-node spheres plus a spring
+    wireframe (the dynamic surface-mesh render path is not yet exposed through
+    `dartpy.gui.run_demos`). To enable the drape and friction scenes, exposed
+    `RigidBody.is_deformable_ground_barrier` to `dartpy` (mirroring the existing
+    `is_deformable_surface_ccd_obstacle` property) so a static rigid box can be
+    tagged as a deformable ground barrier from Python; regenerated the type
+    stubs and added a binding regression. These are DART-native point-mass/spring
+    showcases that evoke the IPC paper's themes (draping, self-contact, friction,
+    scripted boundaries) but are not faithful paper-figure reproductions; the
+    upstream scene corpus stays `planned` pending vendored assets and an
+    FEM/codimensional material model. The demos cycle smoke covers every scene,
+    plus a solver-free grid-builder topology test and a registry test that pins
+    the dedicated category.
   - Extended the experimental deformable-body `dartpy` facade with scripted
     boundary conditions (PLAN-081 Phase 8). Added
     `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
