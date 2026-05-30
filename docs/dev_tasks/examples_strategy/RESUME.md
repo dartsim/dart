@@ -84,6 +84,10 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
    joint drift over 60 steps. Closing the parity requires either reordering
    the Python operations to match Eigen bit-for-bit or relaxing the per-scene
    tolerance for OSC; both are deliberate decisions, not mechanical follow-ups.
+   Tracked as a separate follow-up because the per-scene tolerance path also
+   needs the C++ smoke (`tests/unit/gui/test_demos_golden_parity.cpp`) to
+   move from a hardcoded `kGoldenAbsTol` constant to a per-scene map, plus a
+   regenerated OSC fixture and hand-mirrored entries on the C++ side.
 3. **PLAN-012 + PLAN-101 work.** Cloud Colab smoke (PLAN-012) and editor scene
    loading (PLAN-101) unblock conditions 2 and 3 of the retire-later checklist.
 
