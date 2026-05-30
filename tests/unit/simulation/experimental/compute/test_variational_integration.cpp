@@ -2530,3 +2530,96 @@ TEST(VariationalGroundContact, LaggedFrictionDeceleratesSlidingBlock)
   // And friction travels far less.
   EXPECT_LT(frictional.xDisplacement, 0.5 * frictionless.xDisplacement);
 }
+
+// PLAN-082 Phase C rung C3 -- augmented-Lagrangian contact. The per-contact
+// dual accumulates the steady contact load, so the resting penetration is
+// centered at ~0 (the dual carries the weight) instead of the pure-penalty
+// -mg/k offset. The symplectic VI is undamped, so the AL block oscillates about
+// d=0; we compare the time-averaged contact-point height over a trailing
+// window.
+TEST(
+    VariationalGroundContact,
+    AugmentedLagrangianCentersContactAtZeroPenetration)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  const double k = 1.0e3 * mass * g; // soft: pure-penalty rest is mg/k.
+  const int steps = 1500;
+  const int window = 500;      // trailing average over several oscillations.
+  const int dualInterval = 20; // AL outer loop: update the dual after the
+                               // damped inner dynamics settle (not every step).
+  const double penaltyPenetration = mass * g / k;
+
+  struct Result
+  {
+    double meanZ = 0.0;
+    double meanDual = 0.0;
+  };
+
+  const auto run = [&](bool useAl) {
+    sx::World world;
+    auto carriage = addVerticalSlider(world, mass);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    carriage.getParentJoint().setPosition(
+        Eigen::VectorXd::Constant(
+            1, -penaltyPenetration)); // start at the pure-penalty rest.
+    world.updateKinematics();
+
+    const auto& structure = structureOf(world);
+    const std::size_t carriageIndex = structure.links.size() - 1;
+    sxc::VariationalGroundContact contact;
+    contact.planeNormal = Eigen::Vector3d::UnitZ();
+    contact.planePoint = Eigen::Vector3d::Zero();
+    contact.stiffness = k;
+    contact.dampingCoefficient = 200.0; // ~critical (2*sqrt(k*m)) to settle.
+    contact.points.push_back({carriageIndex, Eigen::Vector3d::Zero()});
+
+    sxc::VariationalGroundContactSolver solver(contact);
+    const sxc::VariationalContactHook penaltyHook
+        = sxc::makeVariationalGroundContactHook(contact);
+    const sxc::VariationalContactHook hook
+        = useAl ? solver.hook() : penaltyHook;
+
+    auto& registry = world.getRegistry();
+    const Eigen::Vector3d gravity = world.getGravity();
+    sxc::MultibodyVariationalState state;
+    std::vector<Eigen::Isometry3d> transforms(
+        structure.links.size(), Eigen::Isometry3d::Identity());
+    Result result;
+    int count = 0;
+    for (int step = 0; step < steps; ++step) {
+      const auto report = sxc::integrateMultibodyVariational(
+          registry, structure, gravity, dt, state, 100, 1e-10, {}, 5, hook);
+      EXPECT_TRUE(report.converged);
+      world.updateKinematics();
+      transforms[carriageIndex] = carriage.getWorldTransform();
+      // AL outer loop: advance the dual only after the damped inner dynamics
+      // settle toward force balance (updating every step would overshoot).
+      if (useAl && (step + 1) % dualInterval == 0) {
+        solver.updateDuals(transforms);
+      }
+      if (step >= steps - window) {
+        result.meanZ += carriage.getParentJoint().getPosition()[0];
+        result.meanDual += useAl ? solver.duals()[0] : 0.0;
+        ++count;
+      }
+    }
+    result.meanZ /= count;
+    result.meanDual /= count;
+    return result;
+  };
+
+  const Result penalty = run(false);
+  const Result al = run(true);
+
+  // Pure penalty rests in steady penetration (~ -mg/k).
+  EXPECT_LT(penalty.meanZ, -0.5 * penaltyPenetration);
+  // AL centers the contact at ~0: the dual carries the weight, removing the
+  // steady penetration offset.
+  EXPECT_LT(std::abs(al.meanZ), 0.3 * penaltyPenetration);
+  // The dual converged near the steady contact force mg.
+  EXPECT_GT(al.meanDual, 0.5 * mass * g);
+  EXPECT_LT(al.meanDual, 2.0 * mass * g);
+}

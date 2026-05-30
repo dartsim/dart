@@ -188,6 +188,10 @@ struct VariationalGroundContact
       = 0.0; ///< Coulomb friction mu (>= 0); 0 disables friction (rung C1)
   double frictionRegularization = 1.0e-4; ///< friction velocity scale eps_v
                                           ///< (m/s); > 0 required when mu > 0
+  double dampingCoefficient = 0.0; ///< Kelvin-Voigt normal damping c (N*s/m,
+                                   ///< >= 0); dissipates the contact transient
+                                   ///< (needed for clean AL settling). Honored
+                                   ///< by VariationalGroundContactSolver.
   std::vector<VariationalContactPoint> points; ///< body-fixed contact points
 };
 
@@ -202,6 +206,45 @@ struct VariationalGroundContact
 /// is negative; the normal is normalized defensively.
 [[nodiscard]] DART_EXPERIMENTAL_API VariationalContactHook
 makeVariationalGroundContactHook(VariationalGroundContact contact);
+
+/// **EXPERIMENTAL (PLAN-082 Phase C, rung C3 — augmented Lagrangian).** A
+/// stateful augmented-Lagrangian wrapper over ground contact that drives the
+/// penetration toward zero at finite stiffness (unlike the pure-penalty `mg/k`
+/// residual). It holds a per-contact-point dual `lambda >= 0`: each step the
+/// normal force is `max(0, lambda + k(-d))` (penalty + dual), with friction
+/// bounded by that AL normal magnitude. After each converged step, call
+/// `updateDuals` with the converged per-link world transforms to advance
+/// `lambda <- max(0, lambda + k(-d))` (dual ascent), warm-started across steps;
+/// over a few steps `lambda` carries the steady contact load and the
+/// penetration drives to ~0. `lambda = 0` (the initial state) reduces to the C2
+/// compliant penalty. Usage: build once, then each step `integrate(...,
+/// solver.hook())` followed by
+/// `solver.updateDuals(convergedLinkWorldTransforms)`.
+class DART_EXPERIMENTAL_API VariationalGroundContactSolver
+{
+public:
+  explicit VariationalGroundContactSolver(VariationalGroundContact contact);
+
+  /// In-loop contact hook reading the current duals (constant across the step's
+  /// RIQN iterates, so the AL force is smooth for the root-find). The returned
+  /// hook reads this solver's live duals, so build it once and reuse it.
+  [[nodiscard]] VariationalContactHook hook() const;
+
+  /// Advance the duals after a converged step, from the per-link world
+  /// transforms at the converged configuration (same link order as the
+  /// context).
+  void updateDuals(const std::vector<Eigen::Isometry3d>& linkWorldTransforms);
+
+  /// The current per-contact-point duals (the accumulated AL contact forces).
+  [[nodiscard]] const std::vector<double>& duals() const
+  {
+    return mDuals;
+  }
+
+private:
+  VariationalGroundContact mContact;
+  std::vector<double> mDuals; ///< per contact point, >= 0
+};
 
 /// Advance one multibody by one step with the linear-time variational
 /// integrator (Lee, Liu, Park, Srinivasa, WAFR 2016 / arXiv:1609.02898).

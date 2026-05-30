@@ -968,6 +968,146 @@ VariationalContactHook makeVariationalGroundContactHook(
   };
 }
 
+namespace {
+
+// Validate + normalize a ground-contact config (shared by the AL solver).
+void normalizeGroundContact(VariationalGroundContact& contact)
+{
+  const double normalNorm = contact.planeNormal.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      normalNorm < 1e-12,
+      InvalidOperationException,
+      "VariationalGroundContact plane normal must be non-zero");
+  contact.planeNormal /= normalNorm;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.stiffness < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact stiffness must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction coefficient must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient > 0.0
+          && contact.frictionRegularization <= 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction regularization must be positive when "
+      "friction is enabled");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.dampingCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact damping coefficient must be non-negative");
+}
+
+// Per-contact-point generalized force at the trial config: the augmented-
+// Lagrangian normal force max(0, dual + k(-d)) plus C1 lagged regularized-
+// Coulomb friction bounded by that normal magnitude (the friction direction is
+// taken at q^k, so it stays smooth across the RIQN iterates). `dual = 0`
+// recovers the C2 compliant penalty. Empty result when inactive (force <= 0).
+Eigen::VectorXd groundContactPointForce(
+    const VariationalContactContext& context,
+    const VariationalGroundContact& contact,
+    const VariationalContactPoint& point,
+    double dual)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      point.linkIndex >= context.linkWorldTransforms.size(),
+      InvalidOperationException,
+      "VariationalGroundContact contact point references an out-of-range link "
+      "index");
+  const Eigen::Vector3d worldPoint
+      = context.linkWorldTransforms[point.linkIndex] * point.localPoint;
+  const double signedDistance
+      = contact.planeNormal.dot(worldPoint - contact.planePoint);
+  double rawNormal = dual + contact.stiffness * (-signedDistance);
+  // Lagged q^k contact-point world velocity J_world(p) v, shared by the
+  // Kelvin-Voigt normal damping and the Coulomb friction (both lagged, so the
+  // per-point force stays constant across the step's RIQN iterates).
+  Eigen::Vector3d tangentVelocity = Eigen::Vector3d::Zero();
+  const bool useVelocity
+      = (contact.dampingCoefficient > 0.0 || contact.frictionCoefficient > 0.0)
+        && context.timeStep > 0.0;
+  if (useVelocity) {
+    const Eigen::Matrix3d previousRotation
+        = context.previousLinkWorldTransforms[point.linkIndex].linear();
+    const Eigen::MatrixXd& previousJacobian
+        = context.previousLinkBodyJacobians[point.linkIndex];
+    const Eigen::Vector3d pointVelocity
+        = previousRotation
+          * (previousJacobian.bottomRows<3>()
+             - detail::skew(point.localPoint) * previousJacobian.topRows<3>())
+          * context.previousVelocity;
+    // Kelvin-Voigt normal damping: resist the approach velocity (the max(0,...)
+    // below keeps the total force non-pulling).
+    rawNormal
+        -= contact.dampingCoefficient * pointVelocity.dot(contact.planeNormal);
+    tangentVelocity
+        = pointVelocity
+          - contact.planeNormal.dot(pointVelocity) * contact.planeNormal;
+  }
+  const double normalMagnitude = std::max(0.0, rawNormal);
+  if (normalMagnitude <= 0.0) {
+    return {};
+  }
+  Eigen::Vector3d contactForce = normalMagnitude * contact.planeNormal;
+  if (contact.frictionCoefficient > 0.0 && context.timeStep > 0.0) {
+    const double epsilon = contact.frictionRegularization;
+    contactForce
+        -= contact.frictionCoefficient * normalMagnitude * tangentVelocity
+           / std::sqrt(tangentVelocity.squaredNorm() + epsilon * epsilon);
+  }
+  return variationalContactPointForce(
+      context, point.linkIndex, point.localPoint, contactForce);
+}
+
+} // namespace
+
+//==============================================================================
+VariationalGroundContactSolver::VariationalGroundContactSolver(
+    VariationalGroundContact contact)
+  : mContact(std::move(contact))
+{
+  normalizeGroundContact(mContact);
+  mDuals.assign(mContact.points.size(), 0.0);
+}
+
+//==============================================================================
+VariationalContactHook VariationalGroundContactSolver::hook() const
+{
+  return [this](const VariationalContactContext& context) -> Eigen::VectorXd {
+    Eigen::VectorXd generalizedForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    for (std::size_t i = 0; i < mContact.points.size(); ++i) {
+      const Eigen::VectorXd pointForce = groundContactPointForce(
+          context, mContact, mContact.points[i], mDuals[i]);
+      if (pointForce.size() != 0) {
+        generalizedForce += pointForce;
+      }
+    }
+    return generalizedForce;
+  };
+}
+
+//==============================================================================
+void VariationalGroundContactSolver::updateDuals(
+    const std::vector<Eigen::Isometry3d>& linkWorldTransforms)
+{
+  for (std::size_t i = 0; i < mContact.points.size(); ++i) {
+    const VariationalContactPoint& point = mContact.points[i];
+    DART_EXPERIMENTAL_THROW_T_IF(
+        point.linkIndex >= linkWorldTransforms.size(),
+        InvalidOperationException,
+        "VariationalGroundContactSolver::updateDuals link index out of range");
+    const Eigen::Vector3d worldPoint
+        = linkWorldTransforms[point.linkIndex] * point.localPoint;
+    const double signedDistance
+        = mContact.planeNormal.dot(worldPoint - mContact.planePoint);
+    // Dual ascent: lambda <- max(0, lambda + k(-d)) (= the converged AL force).
+    mDuals[i]
+        = std::max(0.0, mDuals[i] + mContact.stiffness * (-signedDistance));
+  }
+}
+
 //==============================================================================
 VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,

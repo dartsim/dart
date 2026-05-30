@@ -40,9 +40,10 @@ rigor). `[x]` = met today, `[ ]` = open.
       excludes contact. A "supported" solver that silently cannot do contact is
       a documentation trap; either Phase C lands (compliant/AL rungs) or the
       docs state the contact-free envelope as a first-class limitation. _Partial:
-      **C1 lagged friction + C2 compliant ground contact have landed**
-      (`makeVariationalGroundContactHook` — link-point-vs-analytic-ground); C3
-      augmented-Lagrangian and link-vs-link contact remain before this is met._
+      **C1-C3 contact have landed** (compliant + lagged friction + augmented
+      Lagrangian; `makeVariationalGroundContactHook` /
+      `VariationalGroundContactSolver` — link-point-vs-analytic-ground);
+      link-vs-link contact remains before this is met._
 
 ### API & integration
 

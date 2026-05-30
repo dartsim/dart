@@ -257,7 +257,7 @@ prerequisite; the spike's hard-coded ground plane stands in for the real
 distance/gradient query that workstream must deliver. The 2026-05-28 NO-GO's
 gate-2 half is now satisfied; gate 1 still gates the rung.
 
-## C1+C2 implemented (2026-05-30): compliant ground contact + lagged friction
+## C1-C3 implemented (2026-05-30): compliant contact, lagged friction, AL
 
 The compliant-contact rung (**C2**) now ships for the **link-point-vs-analytic-
 ground** case, promoting the gate-2 spike's hard-coded `z = 0` plane into a real,
@@ -301,10 +301,24 @@ exactly the roadmap's "lagged ⇒ inner solve stays well-conditioned." Verified
 decelerates to rest under kinetic friction `~μ·mg`, while the frictionless block
 keeps sliding at its initial speed.
 
+**C3 augmented Lagrangian** ships as `VariationalGroundContactSolver`: a stateful
+wrapper holding a per-contact dual `λ ≥ 0`, with the normal force
+`max(0, λ + k(-d))` and the dual ascent `λ ← max(0, λ + k(-d))` warm-started
+across steps. As the dual accumulates the steady contact load, the penetration
+drives toward ~0 (drift-free) at finite stiffness — unlike the pure-penalty
+`mg/k` residual. Two findings, both as the roadmap's "AL → implicit Euler"
+(dissipative) note anticipates, were needed for clean settling on the
+**undamped symplectic** VI: (1) a Kelvin-Voigt **normal damping** term
+(`dampingCoefficient`, lagged like friction) — without dissipation the dual
+feedback is marginally unstable (the constraint-feedback cubic `m·s³ + k·s +
+β/Δt` lacks an `s²` damping term); and (2) updating the dual on an **outer-loop
+cadence** (after the damped inner dynamics settle), not every step (which
+overshoots before the body can move). Verified
+(`AugmentedLagrangianCentersContactAtZeroPenetration`): the AL slider centers at
+`d ≈ 0` with `λ ≈ mg`, where the pure penalty rests at `−mg/k`.
+
 ### Still future (the rest of Phase C)
 
-- **C3 augmented-Lagrangian** bounded forces for hard, drift-free non-penetration
-  - Coulomb friction without a global solve.
 - **Link-vs-link contact** — the full gate-1 workstream (persistent broad phase +
   incremental narrow phase reusing the IPC sweep/primitive-distance stack). The
   C2 rung covers link-point-vs-analytic-ground only; arbitrary link-geometry
