@@ -55,6 +55,8 @@ category so the IPC showcases stay together instead of mixing into the general
 | `ipc_deformable_fem_twist`          | A tetrahedral bar twisted at both ends, then released | **FEM** volumetric shear (toward Fig 4/14) |
 | `ipc_deformable_fem_drop`           | A FEM cube dropped onto a ground barrier, settling    | **FEM** volumetric body + IPC contact      |
 | `ipc_deformable_fem_sphere`         | A FEM slab draping over a sphere obstacle             | **FEM** + sphere obstacle barrier (Newton) |
+| `ipc_deformable_fem_box`            | A FEM slab draping over a box "table" obstacle        | **FEM** + box obstacle barrier (Newton)    |
+| `ipc_deformable_fem_msh`            | A FEM cantilever loaded from a GMSH `.msh` tet mesh   | **FEM** body from an imported tet mesh     |
 | `ipc_deformable_scripted_dirichlet` | A banner billowing under a scripted Dirichlet BC      | Scripted Dirichlet boundary conditions     |
 
 These are DART-native showcases, **not** faithful IPC paper-figure
