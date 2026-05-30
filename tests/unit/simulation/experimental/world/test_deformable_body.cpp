@@ -940,6 +940,59 @@ TEST(DeformableBody, FemCubeSettlesOnGroundBarrierWithoutPenetrating)
 }
 
 //==============================================================================
+// A FEM cube dropped onto a static sphere obstacle settles against the curved
+// surface intersection-free: the radial clamped-log obstacle barrier (now a
+// projected-Newton term) keeps every node outside the sphere while the stable
+// neo-Hookean elasticity conforms the cube to the obstacle, all finite. This
+// exercises FEM elasticity and the sphere obstacle barrier (energy, gradient,
+// and Hessian) together.
+TEST(DeformableBody, FemCubeSettlesOnSphereObstacleWithoutPenetrating)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.004);
+
+  const Eigen::Vector3d sphereCenter(0.1, 0.1, 0.0);
+  const double sphereRadius = 0.5;
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  sphereOptions.position = sphereCenter;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  // A small FEM cube released just above the sphere's top.
+  auto body = world.addDeformableBody(
+      "fem_cube",
+      makeFemCubeBody(
+          0.16, Eigen::Vector3d(0.02, 0.02, 0.62), /*youngsModulus=*/2.0e5));
+
+  const auto minSurfaceDistance = [&]() {
+    double minimum = std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      minimum = std::min(
+          minimum, (body.getPosition(i) - sphereCenter).norm() - sphereRadius);
+    }
+    return minimum;
+  };
+
+  ASSERT_GT(minSurfaceDistance(), 0.05);
+  world.step(250);
+
+  // The cube has fallen onto the sphere (well below its release height) ...
+  double minZ = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    minZ = std::min(minZ, body.getPosition(i).z());
+  }
+  EXPECT_LT(minZ, 0.55);
+  // ... but no node penetrates the sphere surface, and all stay finite.
+  EXPECT_GT(minSurfaceDistance(), -1e-3);
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+  }
+}
+
+//==============================================================================
 TEST(DeformableBody, StepCountWithExecutorRunsDefaultDeformableStage)
 {
   sx::World world;

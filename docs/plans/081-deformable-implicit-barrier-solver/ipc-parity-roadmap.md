@@ -76,6 +76,11 @@ follow-up material variant. Rest data (`restPositions`,
 
 ### M2 — Obstacle barrier completeness (analytic + box) + codim wiring
 
+Progress: the **projected-Newton Hessian for the sphere obstacle barrier** has
+landed (rank-1 radial curvature `max(0, B''(d)) n n^T`), so sphere-obstacle
+contact is now a first-class Newton term; a FEM slab draping over a sphere
+obstacle is shown in py-demos. Remaining M2:
+
 Generalize obstacle contact into a real clamped-log **force** everywhere: an
 analytic half-space (plane) collision object, a box-obstacle barrier force
 (reuse PT distance kernels against the box's triangulated faces), the
