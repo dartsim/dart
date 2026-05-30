@@ -761,6 +761,12 @@ struct DeformableContactSolverScratch
   std::vector<int> newtonPatternOuter;
   std::vector<int> newtonPatternInner;
   bool newtonPatternValid = false;
+
+  // Cached per-tetrahedron FEM rest shapes (inverse rest edge matrix + rest
+  // volume). The rest configuration never changes, so these are computed once
+  // (when the cached count first matches the body's tetrahedron count) and
+  // reused every step instead of re-inverting each tet's rest edges per step.
+  std::vector<fem::TetRestShape> femRestShapes;
 };
 
 //==============================================================================
@@ -3947,27 +3953,30 @@ void advanceDeformableBody(
 
   const double frictionCoefficient = material.frictionCoefficient;
 
-  // Opt-in stable neo-Hookean FEM elasticity. Precompute each tetrahedron's
-  // rest shape from the rest positions once per step; the inputs are passed by
-  // pointer into the objective and projected-Newton assembly, replacing the
-  // mass-spring edge model for this body. Null (the default) leaves the spring
-  // path byte-identical.
-  std::vector<fem::TetRestShape> femRestShapes;
+  // Opt-in stable neo-Hookean FEM elasticity. Each tetrahedron's rest shape is
+  // computed once and cached in the per-entity scratch (the rest configuration
+  // never changes), then reused every step; the inputs are passed by pointer
+  // into the objective and projected-Newton assembly, replacing the mass-spring
+  // edge model for this body. Null (the default) leaves the spring path
+  // byte-identical.
   FemElasticityInputs femElasticity;
   const FemElasticityInputs* femElasticityPtr = nullptr;
   if (material.useFiniteElementElasticity && !topology.tetrahedra.empty()
       && topology.restPositions.size() == nodeCount) {
-    femRestShapes.reserve(topology.tetrahedra.size());
-    for (const auto& tet : topology.tetrahedra) {
-      femRestShapes.push_back(
-          fem::makeTetRestShape(
-              topology.restPositions[tet.nodeA],
-              topology.restPositions[tet.nodeB],
-              topology.restPositions[tet.nodeC],
-              topology.restPositions[tet.nodeD]));
+    if (contactScratch.femRestShapes.size() != topology.tetrahedra.size()) {
+      contactScratch.femRestShapes.clear();
+      contactScratch.femRestShapes.reserve(topology.tetrahedra.size());
+      for (const auto& tet : topology.tetrahedra) {
+        contactScratch.femRestShapes.push_back(
+            fem::makeTetRestShape(
+                topology.restPositions[tet.nodeA],
+                topology.restPositions[tet.nodeB],
+                topology.restPositions[tet.nodeC],
+                topology.restPositions[tet.nodeD]));
+      }
     }
     femElasticity.tetrahedra = &topology.tetrahedra;
-    femElasticity.restShapes = &femRestShapes;
+    femElasticity.restShapes = &contactScratch.femRestShapes;
     femElasticity.lame
         = fem::lameParameters(material.youngsModulus, material.poissonRatio);
     femElasticityPtr = &femElasticity;

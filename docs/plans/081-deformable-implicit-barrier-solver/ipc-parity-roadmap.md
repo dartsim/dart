@@ -52,9 +52,10 @@ model (`DeformableMaterialProperties.useFiniteElementElasticity`, also exposed t
 `dartpy`), assembling each tet's PSD-projected 12x12 Hessian through the existing
 batched seam. Ships with solver regressions, a `BM_DeformableFemBarStep`
 benchmark, and a `Deformable FEM Bar (IPC)` py-demos cantilever. The mass-spring
-path is byte-identical when the flag is off. Follow-ups within M1: fixed-corotational
-(FCR) material variant; per-body rest-shape caching (currently recomputed per
-step); twist/large-deformation showcase toward Fig. 4 / Fig. 14.
+path is byte-identical when the flag is off. Each tet's rest shape is cached in
+the per-entity scratch (computed once, reused every step). Follow-ups within M1:
+fixed-corotational (FCR) material variant; twist/large-deformation showcase
+toward Fig. 4 / Fig. 14.
 
 Add a per-tetrahedron strain-energy term producing per-element energy,
 12-vector gradient, and 12×12 Hessian, reusing the existing PSD-projection
