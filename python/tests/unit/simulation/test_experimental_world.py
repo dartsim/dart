@@ -2015,6 +2015,40 @@ def test_experimental_collision_query():
     assert len(world.collide()) == 0
 
 
+def test_experimental_mesh_collision_shape():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    # A unit tetrahedron mesh authored from Python vertex/triangle lists.
+    vertices = [
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
+    ]
+    triangles = [
+        (0, 2, 1),
+        (0, 1, 3),
+        (0, 3, 2),
+        (1, 2, 3),
+    ]
+
+    body = world.add_rigid_body("tet", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.mesh(vertices, triangles))
+
+    assert body.has_collision_shape
+    assert body.collision_shape.type == sx.CollisionShapeType.MESH
+
+    # A mesh body can be driven by the rigid IPC solver path.
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, 0.0)
+    body.force = (2.0, 0.0, 0.0)
+    world.enter_simulation_mode()
+    world.step()
+    assert body.transform[0, 3] > 0.0  # advanced under the applied force
+
+
 def test_experimental_collision_query_includes_links():
     sx = _simulation_experimental()
 

@@ -121,6 +121,7 @@ class RigidBodySolver(enum.Enum):
     SEQUENTIAL_IMPULSE = 0
 
     IPC = 1
+
 class ContactSolverMethod(enum.Enum):
     SEQUENTIAL_IMPULSE = 0
 
@@ -147,12 +148,17 @@ class CollisionShapeType(enum.Enum):
 
     BOX = 1
 
+    MESH = 2
+
 class CollisionShape:
     @staticmethod
     def sphere(radius: float) -> CollisionShape: ...
 
     @staticmethod
     def box(half_extents: object) -> CollisionShape: ...
+
+    @staticmethod
+    def mesh(vertices: object, triangles: object) -> CollisionShape: ...
 
     @property
     def type(self) -> CollisionShapeType: ...

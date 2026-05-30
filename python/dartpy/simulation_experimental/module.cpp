@@ -479,7 +479,8 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
-      .value("BOX", sim::CollisionShapeType::Box);
+      .value("BOX", sim::CollisionShapeType::Box)
+      .value("MESH", sim::CollisionShapeType::Mesh);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
       .def_static("sphere", &sim::CollisionShape::makeSphere, nb::arg("radius"))
@@ -489,6 +490,32 @@ void defSimulationExperimentalModule(nb::module_& m)
             return sim::CollisionShape::makeBox(toVector3(halfExtents));
           },
           nb::arg("half_extents"))
+      .def_static(
+          "mesh",
+          [](const nb::handle& vertices, const nb::handle& triangles) {
+            const auto vseq = nb::cast<nb::sequence>(vertices);
+            const auto tseq = nb::cast<nb::sequence>(triangles);
+            std::vector<Eigen::Vector3d> verts;
+            std::vector<Eigen::Vector3i> tris;
+            const auto vn = static_cast<nb::ssize_t>(nb::len(vseq));
+            verts.reserve(static_cast<std::size_t>(vn));
+            for (nb::ssize_t i = 0; i < vn; ++i) {
+              verts.push_back(toVector3(vseq[i]));
+            }
+            const auto tn = static_cast<nb::ssize_t>(nb::len(tseq));
+            tris.reserve(static_cast<std::size_t>(tn));
+            for (nb::ssize_t i = 0; i < tn; ++i) {
+              const auto tri = nb::cast<nb::sequence>(tseq[i]);
+              tris.emplace_back(
+                  nb::cast<int>(tri[0]),
+                  nb::cast<int>(tri[1]),
+                  nb::cast<int>(tri[2]));
+            }
+            return sim::CollisionShape::makeMesh(
+                std::move(verts), std::move(tris));
+          },
+          nb::arg("vertices"),
+          nb::arg("triangles"))
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
