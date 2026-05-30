@@ -134,6 +134,23 @@ Inspect screenshots or captured frame sequences when judging visual quality.
 Command success alone is not enough for material, lighting, transparency,
 camera, or UI regressions.
 
+### Offscreen render-to-texture
+
+`dart/gui/detail/offscreen_parity.cpp` can render the live scene to an offscreen
+Filament `RenderTarget` (a color `Texture`, not the swapchain) and verify it
+matches the on-screen render. It is the proven seed of the render-to-texture
+path used by headless sensor cameras and any future composited/streamed viewer
+(see `docs/design/dartsim_gui_toolkit_decisions.md`, Decision 3). It is a
+diagnostic — gated by `DART_GUI_OFFSCREEN_PARITY` on the headless path and not in
+the default test suite. Run the parity gate (needs a graphics context, e.g.
+headless OpenGL/llvmpipe):
+
+```bash
+pixi run gui-offscreen-parity
+```
+
+It exits non-zero if the offscreen and swapchain renders diverge.
+
 ## Native Collision Visual Checks
 
 `examples/collision_sandbox` is the maintained native collision visual
