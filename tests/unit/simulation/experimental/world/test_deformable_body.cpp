@@ -41,6 +41,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -860,6 +861,135 @@ TEST(DeformableBody, FemTetrahedronRestoresStretchedNodeTowardRest)
   world.step(400);
   EXPECT_TRUE(body.getPosition(3).allFinite());
   expectVectorNear(body.getPosition(3), Eigen::Vector3d(0.0, 0.0, 1.0), 5e-2);
+}
+
+//==============================================================================
+// A free FEM cube (one hexahedral cell split into six tetrahedra) opting in to
+// stable neo-Hookean elasticity, released above the ground top.
+sx::DeformableBodyOptions makeFemCubeBody(
+    double size, const Eigen::Vector3d& origin, double youngsModulus)
+{
+  sx::DeformableBodyOptions options;
+  for (int corner = 0; corner < 8; ++corner) {
+    options.positions.push_back(
+        origin
+        + size
+              * Eigen::Vector3d(
+                  corner & 1, (corner >> 1) & 1, (corner >> 2) & 1));
+  }
+  // Kuhn six-tetrahedron decomposition of the cell along the 0->7 diagonal.
+  const std::array<std::array<std::size_t, 4>, 6> tets = {{
+      {0, 1, 3, 7},
+      {0, 3, 2, 7},
+      {0, 2, 6, 7},
+      {0, 6, 4, 7},
+      {0, 4, 5, 7},
+      {0, 5, 1, 7},
+  }};
+  for (const auto& tet : tets) {
+    options.tetrahedra.push_back(
+        sx::DeformableTetrahedron{tet[0], tet[1], tet[2], tet[3]});
+  }
+  options.material.youngsModulus = youngsModulus;
+  options.material.poissonRatio = 0.3;
+  options.material.useFiniteElementElasticity = true;
+  return options;
+}
+
+//==============================================================================
+// A volumetric FEM cube dropped onto a static ground barrier settles on the
+// barrier surface intersection-free: gravity pulls it down, the IPC clamped-log
+// ground barrier catches it (no node crosses the ground top), and the stable
+// neo-Hookean elasticity keeps the cube finite as it squashes and rests. This
+// exercises FEM elasticity and barrier contact together in one solve.
+TEST(DeformableBody, FemCubeSettlesOnGroundBarrierWithoutPenetrating)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.004);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+  ground.setDeformableGroundBarrier(true); // top face at z = 0
+
+  auto body = world.addDeformableBody(
+      "fem_cube", makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.5e5));
+
+  const auto minNodeZ = [&]() {
+    double minimum = std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      minimum = std::min(minimum, body.getPosition(i).z());
+    }
+    return minimum;
+  };
+
+  ASSERT_GT(minNodeZ(), 0.25);
+  world.step(250);
+
+  // The cube has fallen onto the barrier (well below its release height) ...
+  EXPECT_LT(minNodeZ(), 0.1);
+  // ... but no node has crossed the ground top, and everything stays finite.
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+    EXPECT_GE(body.getPosition(i).z(), -1e-3);
+  }
+}
+
+//==============================================================================
+// A FEM cube dropped onto a static sphere obstacle settles against the curved
+// surface intersection-free: the radial clamped-log obstacle barrier (now a
+// projected-Newton term) keeps every node outside the sphere while the stable
+// neo-Hookean elasticity conforms the cube to the obstacle, all finite. This
+// exercises FEM elasticity and the sphere obstacle barrier (energy, gradient,
+// and Hessian) together.
+TEST(DeformableBody, FemCubeSettlesOnSphereObstacleWithoutPenetrating)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.004);
+
+  const Eigen::Vector3d sphereCenter(0.1, 0.1, 0.0);
+  const double sphereRadius = 0.5;
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  sphereOptions.position = sphereCenter;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  // A small FEM cube released just above the sphere's top.
+  auto body = world.addDeformableBody(
+      "fem_cube",
+      makeFemCubeBody(
+          0.16, Eigen::Vector3d(0.02, 0.02, 0.62), /*youngsModulus=*/2.0e5));
+
+  const auto minSurfaceDistance = [&]() {
+    double minimum = std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      minimum = std::min(
+          minimum, (body.getPosition(i) - sphereCenter).norm() - sphereRadius);
+    }
+    return minimum;
+  };
+
+  ASSERT_GT(minSurfaceDistance(), 0.05);
+  world.step(250);
+
+  // The cube has fallen onto the sphere (well below its release height) ...
+  double minZ = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    minZ = std::min(minZ, body.getPosition(i).z());
+  }
+  EXPECT_LT(minZ, 0.55);
+  // ... but no node penetrates the sphere surface, and all stay finite.
+  EXPECT_GT(minSurfaceDistance(), -1e-3);
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+  }
 }
 
 //==============================================================================
