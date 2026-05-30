@@ -431,4 +431,96 @@ static void BM_VbdCudaTetStep(benchmark::State& state)
 }
 BENCHMARK(BM_VbdCudaTetStep)->Arg(32)->Arg(128)->Arg(512);
 
+namespace {
+
+cuda::VbdCudaTetRolloutProblem makeTetRolloutProblem(
+    const TetBar& scene, std::size_t iterations, std::size_t steps, bool graph)
+{
+  const std::size_t n = scene.positions.size();
+  cuda::VbdCudaTetRolloutProblem problem;
+  problem.nodeCount = n;
+  problem.mu = scene.mu;
+  problem.lambda = scene.lambda;
+  problem.timeStep = scene.timeStep;
+  problem.iterations = iterations;
+  problem.stepCount = steps;
+  problem.useCudaGraph = graph;
+  problem.gravity[1] = -9.81;
+  for (std::size_t i = 0; i < n; ++i) {
+    problem.positions.push_back(scene.positions[i].x());
+    problem.positions.push_back(scene.positions[i].y());
+    problem.positions.push_back(scene.positions[i].z());
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+  }
+  problem.masses = scene.masses;
+  problem.fixed = scene.fixed;
+  for (const auto& tet : scene.tets) {
+    for (int k = 0; k < 4; ++k) {
+      problem.tetVertices.push_back(tet.vertices[static_cast<std::size_t>(k)]);
+    }
+    for (int r = 0; r < 3; ++r) {
+      for (int c = 0; c < 3; ++c) {
+        problem.tetRestShapeInverse.push_back(tet.rest.restShapeInverse(r, c));
+      }
+    }
+    problem.tetRestVolume.push_back(tet.rest.restVolume);
+  }
+  problem.incidentTetOffsets.push_back(0);
+  for (std::size_t v = 0; v < n; ++v) {
+    for (const auto& [tetIndex, local] : scene.adjacency.incidentTets[v]) {
+      problem.incidentTetIndex.push_back(tetIndex);
+      problem.incidentLocalVertex.push_back(local);
+    }
+    problem.incidentTetOffsets.push_back(
+        static_cast<std::uint32_t>(problem.incidentTetIndex.size()));
+  }
+  problem.colorOffsets.push_back(0);
+  for (const auto& group : scene.coloring.groups) {
+    for (const std::uint32_t v : group) {
+      problem.colorVertices.push_back(v);
+    }
+    problem.colorOffsets.push_back(
+        static_cast<std::uint32_t>(problem.colorVertices.size()));
+  }
+  return problem;
+}
+
+} // namespace
+
+//==============================================================================
+// Device-resident tetrahedral rollout, with and without CUDA-graph capture, to
+// show the per-launch overhead the graph removes for the many small per-color
+// kernel launches.
+static void BM_VbdCudaTetRollout(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("no CUDA device available");
+    return;
+  }
+  const int cubes = static_cast<int>(state.range(0));
+  const bool graph = state.range(1) != 0;
+  const std::size_t steps = 50;
+  const TetBar scene = makeTetBar(cubes);
+  const cuda::VbdCudaTetRolloutProblem seed
+      = makeTetRolloutProblem(scene, 20, steps, graph);
+  for (auto _ : state) {
+    state.PauseTiming();
+    cuda::VbdCudaTetRolloutProblem problem = seed;
+    state.ResumeTiming();
+    cuda::vbdRolloutTetMeshCuda(problem);
+    benchmark::DoNotOptimize(problem.positions);
+  }
+  state.counters["vertices"] = static_cast<double>(scene.positions.size());
+  state.counters["tets"] = static_cast<double>(scene.tets.size());
+  state.counters["steps"] = static_cast<double>(steps);
+  state.counters["graph"] = graph ? 1.0 : 0.0;
+}
+BENCHMARK(BM_VbdCudaTetRollout)
+    ->Args({128, 0})
+    ->Args({128, 1})
+    ->Args({512, 0})
+    ->Args({512, 1});
+
 BENCHMARK_MAIN();

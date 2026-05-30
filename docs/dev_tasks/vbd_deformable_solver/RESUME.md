@@ -124,10 +124,12 @@ matches the default solver. Remaining work, in order:
 4. Phase 9: the CUDA mass-spring kernel, the device-resident rollout
    (`vbdRolloutMassSpringCuda`, ~45x faster than single-threaded CPU at 16k
    verts), and the tetrahedral Neo-Hookean GPU kernel (`vbdStepTetMeshCuda`,
-   verified vs CPU, ~4.4x faster than CPU at ~2k verts) all land. Next:
-   CUDA-graph capture, a device-resident tet rollout, float/mixed precision, and
-   the RTX-4090 same-GPU reproduction plan in the dev-task README (build on a
-   4090, run paper scenes + Gaia, compare to Table 1).
+   verified vs CPU, ~4.4x faster than CPU at ~2k verts) all land. CUDA-graph
+   capture (`useCudaGraph` on both rollouts) and a device-resident tet rollout
+   (`vbdRolloutTetMeshCuda`) now land too, both verified on the local RTX 5000
+   Ada. Next: float/mixed precision, and the RTX-4090 same-GPU reproduction plan
+   in the dev-task README (build on a 4090, run paper scenes + Gaia, compare to
+   Table 1).
 5. Phase 10: reproduce the paper scenes as DART examples/tests/benchmarks with
    profiling JSON and headless Filament visual evidence; the TinyVBD tilted
    strand (20 verts, stiffness 1e8, mass ratio 1:1000) is the first
@@ -135,6 +137,14 @@ matches the default solver. Remaining work, in order:
 
 ## Context That Would Be Lost
 
+- Local CUDA build (post-merge, CUDA 13.3 toolchain): the default
+  `CMAKE_CUDA_ARCHITECTURES=52` is rejected by CUDA 13 (Maxwell dropped) and the
+  merged `compiler_cache.cmake` sets `CMAKE_CUDA_COMPILER_LAUNCHER=sccache`,
+  which mishandles nvcc's PTX stage (`Could not open .ptx` / signal 1).
+  Configure the cuda build with `-DDART_CUDA_ARCHITECTURES=89` (RTX 5000 Ada is
+  sm*89) and `-DDART_DISABLE_COMPILER_CACHE=ON` (clear the launcher cache vars
+  with `-UCMAKE*\*\_COMPILER_LAUNCHER`). CI already sets
+`DART_CUDA_ARCHITECTURES=75`, so this is a local-invocation concern only.
 - The existing deformable solver objective is the VBD objective. Reuse
   `comps::DeformableNodeState` (positions/previousPositions/velocities/masses/
   fixed), `DeformableSpringModel` (edges + stiffness + damping),

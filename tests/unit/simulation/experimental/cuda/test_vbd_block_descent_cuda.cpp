@@ -487,3 +487,185 @@ TEST(CudaVbdBlockDescent, TetMeshMatchesCpu)
     EXPECT_NEAR((gpu - cpu[i]).norm(), 0.0, 1e-6) << "vertex " << i;
   }
 }
+
+namespace {
+
+// Flatten a TetScene into the GPU rollout problem (topology + CSR adjacency +
+// coloring), warm-started from the scene's rest positions with zero velocity.
+cuda::VbdCudaTetRolloutProblem makeTetRolloutProblem(
+    const TetScene& scene,
+    const vbd::VertexColoring& coloring,
+    const vbd::TetAdjacency& adjacency,
+    const Vec3& gravity,
+    std::size_t iterations,
+    std::size_t steps,
+    bool useCudaGraph)
+{
+  const std::size_t n = scene.positions.size();
+  cuda::VbdCudaTetRolloutProblem problem;
+  problem.nodeCount = n;
+  problem.mu = scene.mu;
+  problem.lambda = scene.lambda;
+  problem.timeStep = scene.timeStep;
+  problem.iterations = iterations;
+  problem.stepCount = steps;
+  problem.useCudaGraph = useCudaGraph;
+  problem.gravity[0] = gravity.x();
+  problem.gravity[1] = gravity.y();
+  problem.gravity[2] = gravity.z();
+  for (std::size_t i = 0; i < n; ++i) {
+    problem.positions.push_back(scene.positions[i].x());
+    problem.positions.push_back(scene.positions[i].y());
+    problem.positions.push_back(scene.positions[i].z());
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+  }
+  problem.masses = scene.masses;
+  problem.fixed = scene.fixed;
+  for (const auto& tet : scene.tets) {
+    for (int k = 0; k < 4; ++k) {
+      problem.tetVertices.push_back(tet.vertices[static_cast<std::size_t>(k)]);
+    }
+    for (int r = 0; r < 3; ++r) {
+      for (int c = 0; c < 3; ++c) {
+        problem.tetRestShapeInverse.push_back(tet.rest.restShapeInverse(r, c));
+      }
+    }
+    problem.tetRestVolume.push_back(tet.rest.restVolume);
+  }
+  problem.incidentTetOffsets.push_back(0);
+  for (std::size_t v = 0; v < n; ++v) {
+    for (const auto& [tetIndex, local] : adjacency.incidentTets[v]) {
+      problem.incidentTetIndex.push_back(tetIndex);
+      problem.incidentLocalVertex.push_back(local);
+    }
+    problem.incidentTetOffsets.push_back(
+        static_cast<std::uint32_t>(problem.incidentTetIndex.size()));
+  }
+  problem.colorOffsets.push_back(0);
+  for (const auto& group : coloring.groups) {
+    for (const std::uint32_t v : group) {
+      problem.colorVertices.push_back(v);
+    }
+    problem.colorOffsets.push_back(
+        static_cast<std::uint32_t>(problem.colorVertices.size()));
+  }
+  return problem;
+}
+
+// CPU reference for the tet rollout: replicate the GPU per-step pipeline
+// (inertial-target warm start at y, tet block descent, backward-Euler velocity
+// update) exactly, so the two trajectories must agree.
+std::vector<Vec3> cpuTetRollout(
+    const TetScene& scene,
+    const vbd::VertexColoring& coloring,
+    const vbd::TetAdjacency& adjacency,
+    const Vec3& gravity,
+    std::size_t iterations,
+    std::size_t steps)
+{
+  const std::size_t n = scene.positions.size();
+  const double h = scene.timeStep;
+  std::vector<Vec3> pos = scene.positions;
+  std::vector<Vec3> vel(n, Vec3::Zero());
+  vbd::BlockDescentOptions options;
+  options.iterations = iterations;
+  for (std::size_t s = 0; s < steps; ++s) {
+    std::vector<Vec3> stepStart = pos;
+    std::vector<Vec3> inertial = pos;
+    std::vector<Vec3> next = pos;
+    for (std::size_t i = 0; i < n; ++i) {
+      if (scene.fixed[i] == 0u) {
+        inertial[i] = pos[i] + h * vel[i] + h * h * gravity;
+        next[i] = inertial[i];
+      }
+    }
+    vbd::blockDescentTetMesh(
+        next,
+        scene.masses,
+        scene.fixed,
+        inertial,
+        scene.tets,
+        scene.mu,
+        scene.lambda,
+        h,
+        coloring,
+        adjacency,
+        options);
+    for (std::size_t i = 0; i < n; ++i) {
+      if (scene.fixed[i] == 0u) {
+        vel[i] = (next[i] - stepStart[i]) / h;
+      }
+    }
+    pos = next;
+  }
+  return pos;
+}
+
+} // namespace
+
+//==============================================================================
+// The device-resident tetrahedral rollout matches the equivalent CPU per-step
+// pipeline over many steps.
+TEST(CudaVbdBlockDescent, TetRolloutMatchesCpu)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const TetScene scene = makeTetBar(4);
+  const std::size_t n = scene.positions.size();
+  const auto coloring = vbd::colorTetMesh(n, scene.tets);
+  const auto adjacency = vbd::TetAdjacency::build(n, scene.tets);
+  const Vec3 gravity(0.0, -9.81, 0.0);
+  constexpr std::size_t steps = 20;
+  constexpr std::size_t iterations = 40;
+
+  const std::vector<Vec3> cpu
+      = cpuTetRollout(scene, coloring, adjacency, gravity, iterations, steps);
+
+  cuda::VbdCudaTetRolloutProblem problem = makeTetRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, false);
+  cuda::vbdRolloutTetMeshCuda(problem);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const Vec3 gpu(
+        problem.positions[3 * i],
+        problem.positions[3 * i + 1],
+        problem.positions[3 * i + 2]);
+    EXPECT_NEAR((gpu - cpu[i]).norm(), 0.0, 1e-5) << "vertex " << i;
+  }
+}
+
+//==============================================================================
+// CUDA-graph capture replays one captured step for every step, so it must give
+// the same trajectory as launching each step directly.
+TEST(CudaVbdBlockDescent, GraphRolloutMatchesPlainRollout)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const TetScene scene = makeTetBar(4);
+  const std::size_t n = scene.positions.size();
+  const auto coloring = vbd::colorTetMesh(n, scene.tets);
+  const auto adjacency = vbd::TetAdjacency::build(n, scene.tets);
+  const Vec3 gravity(0.0, -9.81, 0.0);
+  constexpr std::size_t steps = 20;
+  constexpr std::size_t iterations = 40;
+
+  cuda::VbdCudaTetRolloutProblem plain = makeTetRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, false);
+  cuda::vbdRolloutTetMeshCuda(plain);
+
+  cuda::VbdCudaTetRolloutProblem graph = makeTetRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, true);
+  cuda::vbdRolloutTetMeshCuda(graph);
+
+  ASSERT_EQ(plain.positions.size(), graph.positions.size());
+  for (std::size_t i = 0; i < plain.positions.size(); ++i) {
+    EXPECT_NEAR(plain.positions[i], graph.positions[i], 1e-12)
+        << "component " << i;
+  }
+}

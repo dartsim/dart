@@ -110,6 +110,10 @@ struct VbdCudaRolloutProblem
   double timeStep = 0.0;
   std::size_t iterations = 0; ///< Sweeps per step.
   std::size_t stepCount = 0;  ///< Implicit-Euler steps in the rollout.
+  /// Capture one step's kernel launch sequence into a CUDA graph and replay it
+  /// for every step, amortizing per-launch overhead. The per-step launch shape
+  /// is identical across steps, so a single captured graph replays exactly.
+  bool useCudaGraph = false;
 };
 
 /// Run a device-resident VBD mass-spring rollout. Uploads once, runs the full
@@ -150,5 +154,45 @@ struct VbdCudaTetProblem
 /// for a tetrahedral body on the GPU, copying the final positions back. Throws
 /// on a CUDA error.
 void vbdStepTetMeshCuda(VbdCudaTetProblem& problem);
+
+/// A device-resident multi-step tetrahedral Stable Neo-Hookean VBD rollout: the
+/// full step loop (inertial-target prediction, colored Neo-Hookean sweeps,
+/// velocity update) runs on the GPU for `stepCount` implicit-Euler steps with a
+/// single host-to-device upload and a single device-to-host download. This is
+/// the volumetric counterpart of vbdRolloutMassSpringCuda.
+struct VbdCudaTetRolloutProblem
+{
+  std::size_t nodeCount = 0;
+  std::vector<double> positions;   ///< 3*nodeCount, updated in place.
+  std::vector<double> velocities;  ///< 3*nodeCount, updated in place.
+  std::vector<double> masses;      ///< nodeCount.
+  std::vector<std::uint8_t> fixed; ///< nodeCount.
+
+  std::vector<std::uint32_t> tetVertices;  ///< 4*tetCount.
+  std::vector<double> tetRestShapeInverse; ///< 9*tetCount, row-major Dm^-1.
+  std::vector<double> tetRestVolume;       ///< tetCount.
+
+  std::vector<std::uint32_t> incidentTetOffsets; ///< nodeCount + 1 CSR.
+  std::vector<std::uint32_t> incidentTetIndex;   ///< flattened tet indices.
+  std::vector<std::uint8_t> incidentLocalVertex; ///< flattened local 0..3.
+
+  std::vector<std::uint32_t> colorOffsets;
+  std::vector<std::uint32_t> colorVertices;
+
+  double gravity[3] = {0.0, 0.0, 0.0};
+  double mu = 0.0;
+  double lambda = 0.0;
+  double timeStep = 0.0;
+  std::size_t iterations = 0; ///< Sweeps per step.
+  std::size_t stepCount = 0;  ///< Implicit-Euler steps in the rollout.
+  /// Capture one step into a CUDA graph and replay it for every step (see
+  /// VbdCudaRolloutProblem::useCudaGraph).
+  bool useCudaGraph = false;
+};
+
+/// Run a device-resident tetrahedral VBD rollout. Uploads once, runs the full
+/// per-step pipeline on the GPU for `stepCount` steps, and downloads the final
+/// positions and velocities. Throws on a CUDA error.
+void vbdRolloutTetMeshCuda(VbdCudaTetRolloutProblem& problem);
 
 } // namespace dart::simulation::experimental::compute::cuda

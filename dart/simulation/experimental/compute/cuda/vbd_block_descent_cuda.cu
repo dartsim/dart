@@ -477,6 +477,45 @@ private:
   T* m_data = nullptr;
 };
 
+//==============================================================================
+// Drive a device-resident rollout on `stream`. `recordStep` issues exactly one
+// implicit-Euler step's kernel launches onto the stream. With `useCudaGraph`,
+// one step is captured into a CUDA graph and replayed for every step (the
+// per-step launch shape is identical, so a single graph replays exactly),
+// amortizing per-launch overhead; otherwise the steps are launched directly.
+template <typename RecordStep>
+void runDeviceRollout(
+    cudaStream_t stream,
+    RecordStep&& recordStep,
+    std::size_t stepCount,
+    bool useCudaGraph)
+{
+  if (useCudaGraph) {
+    cudaGraph_t graph = nullptr;
+    cudaGraphExec_t graphExec = nullptr;
+    throwIfCudaError(
+        cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal),
+        "begin capture");
+    recordStep();
+    throwIfCudaError(cudaStreamEndCapture(stream, &graph), "end capture");
+    throwIfCudaError(
+        cudaGraphInstantiate(&graphExec, graph, 0), "graph instantiate");
+    for (std::size_t step = 0; step < stepCount; ++step) {
+      throwIfCudaError(cudaGraphLaunch(graphExec, stream), "graph launch");
+    }
+    throwIfCudaError(cudaStreamSynchronize(stream), "graph synchronize");
+    (void)cudaGraphExecDestroy(graphExec);
+    (void)cudaGraphDestroy(graph);
+    return;
+  }
+
+  for (std::size_t step = 0; step < stepCount; ++step) {
+    recordStep();
+  }
+  throwIfCudaError(cudaGetLastError(), "rollout kernel launch");
+  throwIfCudaError(cudaStreamSynchronize(stream), "rollout synchronize");
+}
+
 } // namespace
 
 //==============================================================================
@@ -564,8 +603,11 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
   const unsigned int vertexBlocks
       = (static_cast<unsigned int>(nodeCount) + kThreads - 1) / kThreads;
 
-  for (std::size_t step = 0; step < problem.stepCount; ++step) {
-    vbdInertialTargetKernel<<<vertexBlocks, kThreads>>>(
+  cudaStream_t stream = nullptr;
+  throwIfCudaError(cudaStreamCreate(&stream), "stream create");
+
+  const auto recordStep = [&]() {
+    vbdInertialTargetKernel<<<vertexBlocks, kThreads, 0, stream>>>(
         dPositions.get(),
         dVelocities.get(),
         dStepStart.get(),
@@ -587,7 +629,7 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
         }
         const unsigned int count = end - begin;
         const unsigned int blocks = (count + kThreads - 1) / kThreads;
-        vbdColorSweepKernel<<<blocks, kThreads>>>(
+        vbdColorSweepKernel<<<blocks, kThreads, 0, stream>>>(
             dPositions.get(),
             dInertial.get(),
             dMasses.get(),
@@ -605,17 +647,18 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
       }
     }
 
-    vbdVelocityUpdateKernel<<<vertexBlocks, kThreads>>>(
+    vbdVelocityUpdateKernel<<<vertexBlocks, kThreads, 0, stream>>>(
         dPositions.get(),
         dVelocities.get(),
         dStepStart.get(),
         dFixed.get(),
         problem.timeStep,
         static_cast<std::uint32_t>(nodeCount));
-  }
+  };
 
-  throwIfCudaError(cudaGetLastError(), "rollout kernel launch");
-  throwIfCudaError(cudaDeviceSynchronize(), "rollout synchronize");
+  runDeviceRollout(stream, recordStep, problem.stepCount, problem.useCudaGraph);
+
+  (void)cudaStreamDestroy(stream);
   dPositions.download(problem.positions);
   dVelocities.download(problem.velocities);
 }
@@ -676,6 +719,99 @@ void vbdStepTetMeshCuda(VbdCudaTetProblem& problem)
   throwIfCudaError(cudaGetLastError(), "tet kernel launch");
   throwIfCudaError(cudaDeviceSynchronize(), "tet synchronize");
   dPositions.download(problem.positions);
+}
+
+//==============================================================================
+void vbdRolloutTetMeshCuda(VbdCudaTetRolloutProblem& problem)
+{
+  const std::size_t nodeCount = problem.nodeCount;
+  if (nodeCount == 0 || problem.colorOffsets.size() < 2) {
+    return;
+  }
+
+  DeviceArray<double> dPositions(problem.positions);
+  DeviceArray<double> dVelocities(problem.velocities);
+  DeviceArray<double> dMasses(problem.masses);
+  DeviceArray<std::uint8_t> dFixed(problem.fixed);
+  DeviceArray<std::uint32_t> dTetVertices(problem.tetVertices);
+  DeviceArray<double> dTetRestShapeInverse(problem.tetRestShapeInverse);
+  DeviceArray<double> dTetRestVolume(problem.tetRestVolume);
+  DeviceArray<std::uint32_t> dIncidentTetOffsets(problem.incidentTetOffsets);
+  DeviceArray<std::uint32_t> dIncidentTetIndex(problem.incidentTetIndex);
+  DeviceArray<std::uint8_t> dIncidentLocalVertex(problem.incidentLocalVertex);
+  DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
+
+  // Per-step scratch kept resident on the device for the whole rollout.
+  const std::vector<double> zeros(3 * nodeCount, 0.0);
+  DeviceArray<double> dStepStart(zeros);
+  DeviceArray<double> dInertial(zeros);
+
+  const double invDt2 = 1.0 / (problem.timeStep * problem.timeStep);
+  const std::size_t colorCount = problem.colorOffsets.size() - 1;
+  constexpr unsigned int kThreads = 128;
+  const unsigned int vertexBlocks
+      = (static_cast<unsigned int>(nodeCount) + kThreads - 1) / kThreads;
+
+  cudaStream_t stream = nullptr;
+  throwIfCudaError(cudaStreamCreate(&stream), "stream create");
+
+  const auto recordStep = [&]() {
+    vbdInertialTargetKernel<<<vertexBlocks, kThreads, 0, stream>>>(
+        dPositions.get(),
+        dVelocities.get(),
+        dStepStart.get(),
+        dInertial.get(),
+        dFixed.get(),
+        problem.gravity[0],
+        problem.gravity[1],
+        problem.gravity[2],
+        problem.timeStep,
+        static_cast<std::uint32_t>(nodeCount));
+
+    for (std::size_t iteration = 0; iteration < problem.iterations;
+         ++iteration) {
+      for (std::size_t color = 0; color < colorCount; ++color) {
+        const std::uint32_t begin = problem.colorOffsets[color];
+        const std::uint32_t end = problem.colorOffsets[color + 1];
+        if (end <= begin) {
+          continue;
+        }
+        const unsigned int count = end - begin;
+        const unsigned int blocks = (count + kThreads - 1) / kThreads;
+        vbdTetColorSweepKernel<<<blocks, kThreads, 0, stream>>>(
+            dPositions.get(),
+            dInertial.get(),
+            dMasses.get(),
+            dFixed.get(),
+            dTetVertices.get(),
+            dTetRestShapeInverse.get(),
+            dTetRestVolume.get(),
+            dIncidentTetOffsets.get(),
+            dIncidentTetIndex.get(),
+            dIncidentLocalVertex.get(),
+            dColorVertices.get(),
+            begin,
+            end,
+            problem.mu,
+            problem.lambda,
+            invDt2);
+      }
+    }
+
+    vbdVelocityUpdateKernel<<<vertexBlocks, kThreads, 0, stream>>>(
+        dPositions.get(),
+        dVelocities.get(),
+        dStepStart.get(),
+        dFixed.get(),
+        problem.timeStep,
+        static_cast<std::uint32_t>(nodeCount));
+  };
+
+  runDeviceRollout(stream, recordStep, problem.stepCount, problem.useCudaGraph);
+
+  (void)cudaStreamDestroy(stream);
+  dPositions.download(problem.positions);
+  dVelocities.download(problem.velocities);
 }
 
 } // namespace dart::simulation::experimental::compute::cuda
