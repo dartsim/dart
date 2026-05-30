@@ -931,6 +931,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added a GMSH `.msh` tetrahedral-mesh importer (PLAN-081 M4) so deformable
+    FEM bodies can be built from external tet meshes rather than only procedural
+    grids. `dart::simulation::experimental::io::loadGmshTetMesh` /
+    `loadGmshTetMeshFile` parse GMSH ASCII format 2.x: the `$Nodes` block and the
+    4-node tetrahedron (`$Elements` type 4) connectivity, remapping node ids to
+    0-based indices and ignoring non-tetra elements, raising
+    `InvalidArgumentException` on malformed or unsupported (binary / non-2.x)
+    input. Exposed to `dartpy` as `load_gmsh_tet_mesh(path)` returning a
+    `DeformableBodyOptions` (positions + tetrahedra). Adds parse / rejection /
+    FEM-simulation regressions and a `Deformable FEM from .msh (IPC)` py-demos
+    scene that loads a bundled tet-bar mesh and sags it as an FEM cantilever.
   - Added stable neo-Hookean tetrahedral FEM elasticity to the experimental
     deformable solver (PLAN-081 M1, the paper-parity keystone). A new
     header-only `deformable_elasticity/fem_tet_element.hpp` kernel produces, per

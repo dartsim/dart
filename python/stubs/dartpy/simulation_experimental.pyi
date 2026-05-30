@@ -43,6 +43,7 @@ __all__: list[str] = [
     "WorldSyncStage",
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
+    "load_gmsh_tet_mesh",
 ]
 
 
@@ -1272,6 +1273,8 @@ class DeformableSceneDiagnostics:
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 
 def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnostics: ...
+
+def load_gmsh_tet_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 class World:
     def __init__(self, time_step: float = ...) -> None: ...

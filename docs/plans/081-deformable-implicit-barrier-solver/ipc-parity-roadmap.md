@@ -98,6 +98,11 @@ Static (then moving) codimensional obstacles with barrier + CCD, plus the
 
 ### M4 — Upstream asset pipeline + `.msh` (GMSH) importer
 
+Progress: the **GMSH `.msh` tetrahedral-mesh importer** has landed
+(`io::loadGmshTetMesh*`, ASCII format 2.x; exposed to dartpy as
+`load_gmsh_tet_mesh`), with a py-demos scene loading a bundled tet-bar mesh into
+an FEM cantilever. Remaining M4:
+
 A fetch-into-fixtures workflow for the upstream meshes pinned at
 `573d2c7e0…` (no vendoring, no runtime dependency), plus a GMSH `.msh`
 tet-mesh importer in `dart/io`. Port the contact-free tutorial scenes
