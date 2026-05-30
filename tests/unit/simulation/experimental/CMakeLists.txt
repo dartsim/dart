@@ -45,6 +45,8 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   dart_experimental_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/common)
   dart_experimental_add_unit_test_dir(compute ${CMAKE_CURRENT_SOURCE_DIR}/compute)
   dart_experimental_add_unit_test_dir(contact ${CMAKE_CURRENT_SOURCE_DIR}/contact)
+  dart_experimental_add_unit_test_dir(
+    elasticity ${CMAKE_CURRENT_SOURCE_DIR}/elasticity)
   if(TARGET test_continuous_collision_step)
     target_link_libraries(
       test_continuous_collision_step
