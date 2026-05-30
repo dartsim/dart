@@ -56,6 +56,10 @@ struct LoopClosure
   Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
   dart::simulation::experimental::LoopClosureRuntimePolicy runtimePolicy;
 
+  /// Target separation for the `Distance` family (0 = coincident). Ignored by
+  /// `Point`/`Rigid`.
+  double distance = 0.0;
+
   static constexpr auto entityFields()
   {
     return std::tuple{&LoopClosure::frameA, &LoopClosure::frameB};

@@ -77,6 +77,40 @@ SweepPairFixture makeExpiredPrefixSweepPairs(const int count)
 }
 
 //==============================================================================
+// The worst case for the old prefix-skip cross-sweep: a single long-lived
+// right-hand-side interval that spans the whole x-range (y-disjoint, so it
+// never overlaps and never expires) sorts first in min-x order and pins the
+// prefix cursor, while every other right-hand-side interval expires as the
+// sweep advances. The prefix scan then rescans all already-expired intervals
+// for every left-hand-side item (quadratic); the active-set sweep unlinks them
+// as they expire and stays near-linear.
+SweepPairFixture makeLongLivedIntervalSweepPairs(const int count)
+{
+  SweepPairFixture fixture;
+  fixture.lhsItems.reserve(static_cast<std::size_t>(count));
+  fixture.rhsItems.reserve(static_cast<std::size_t>(count) + 1u);
+
+  // The blocker spans the full x extent but lives in y in [10, 11], so it never
+  // overlaps a left-hand-side item (all in y in [0, 1]) and never expires.
+  fixture.rhsItems.push_back(
+      dc::detail::SweepItem{
+          static_cast<std::size_t>(count),
+          dc::detail::CandidateAabb{
+              Eigen::Vector3d(-1.0, 10.0, 0.0),
+              Eigen::Vector3d(static_cast<double>(count) + 1.0, 11.0, 1.0)}});
+
+  for (int i = 0; i < count; ++i) {
+    const double x = static_cast<double>(i);
+    fixture.lhsItems.push_back(
+        makeSweepItem(static_cast<std::size_t>(i), x, x + 0.25));
+    fixture.rhsItems.push_back(
+        makeSweepItem(static_cast<std::size_t>(i), x + 0.125, x + 0.375));
+  }
+
+  return fixture;
+}
+
+//==============================================================================
 MeshFixture makeClothGrid(const int resolution)
 {
   MeshFixture fixture;
@@ -245,6 +279,7 @@ static void BM_IpcCandidateSetCrossSweepExpiredPrefix(benchmark::State& state)
   auto fixture = makeExpiredPrefixSweepPairs(static_cast<int>(state.range(0)));
 
   std::size_t pairCount = 0;
+  std::vector<std::size_t> links; // reusable live-list scratch (hot-path form)
   for (auto _ : state) {
     pairCount = 0;
     dc::detail::visitSweepPairs(
@@ -254,7 +289,8 @@ static void BM_IpcCandidateSetCrossSweepExpiredPrefix(benchmark::State& state)
           ++pairCount;
           benchmark::DoNotOptimize(lhsId);
           benchmark::DoNotOptimize(rhsId);
-        });
+        },
+        links);
     benchmark::DoNotOptimize(pairCount);
   }
 
@@ -267,6 +303,45 @@ static void BM_IpcCandidateSetCrossSweepExpiredPrefix(benchmark::State& state)
           * (fixture.lhsItems.size() + fixture.rhsItems.size())));
 }
 BENCHMARK(BM_IpcCandidateSetCrossSweepExpiredPrefix)
+    ->Arg(64)
+    ->Arg(256)
+    ->Arg(1024);
+
+//==============================================================================
+// Long-lived blocker case (see makeLongLivedIntervalSweepPairs): the active-set
+// sweep should stay near-linear where the old prefix-skip degraded toward
+// quadratic because it could not prune expired intervals behind the blocker.
+static void BM_IpcCandidateSetCrossSweepLongLivedInterval(
+    benchmark::State& state)
+{
+  auto fixture
+      = makeLongLivedIntervalSweepPairs(static_cast<int>(state.range(0)));
+
+  std::size_t pairCount = 0;
+  std::vector<std::size_t> links; // reusable live-list scratch (hot-path form)
+  for (auto _ : state) {
+    pairCount = 0;
+    dc::detail::visitSweepPairs(
+        fixture.lhsItems,
+        fixture.rhsItems,
+        [&](std::size_t lhsId, std::size_t rhsId) {
+          ++pairCount;
+          benchmark::DoNotOptimize(lhsId);
+          benchmark::DoNotOptimize(rhsId);
+        },
+        links);
+    benchmark::DoNotOptimize(pairCount);
+  }
+
+  state.counters["lhs_items"] = static_cast<double>(fixture.lhsItems.size());
+  state.counters["rhs_items"] = static_cast<double>(fixture.rhsItems.size());
+  state.counters["visited_pairs"] = static_cast<double>(pairCount);
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations()
+          * (fixture.lhsItems.size() + fixture.rhsItems.size())));
+}
+BENCHMARK(BM_IpcCandidateSetCrossSweepLongLivedInterval)
     ->Arg(64)
     ->Arg(256)
     ->Arg(1024);
