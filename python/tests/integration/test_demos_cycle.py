@@ -216,6 +216,49 @@ def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
     assert float(z.min()) > -0.21
 
 
+def test_ipc_deformable_cloth_drapes_over_capsule_rod_without_penetrating() -> None:
+    """The capsule (rod) obstacle barrier holds a draping cloth off its surface.
+
+    A cloth dropped over a static horizontal capsule rod must drape over it (its
+    halves hang down on either side), stay finite, and keep every node strictly
+    outside the rod surface -- the codimensional-obstacle analogue of the
+    sphere/box settle tests, verified by the analytic point-to-segment distance.
+    """
+
+    import numpy as np
+
+    from examples.demos.scenes import ipc_deformable_capsule_rod as scene
+
+    setup = scene.build()
+    world = setup.info["sx_world"]
+    body = world.get_deformable_body("capsule_cloth")
+    n = body.node_count
+
+    for _ in range(260):
+        world.step()
+
+    points = np.array([body.node_position(i) for i in range(n)])
+    assert np.isfinite(points).all()
+    # The sheet draped over the rod (clear vertical spread).
+    assert float(points[:, 2].max() - points[:, 2].min()) > 0.2
+
+    # Every node stays strictly outside the capsule surface (no interpenetration).
+    center = np.asarray(scene._ROD_CENTER, dtype=float)
+    axis = np.array([0.0, 1.0, 0.0])  # body z -> world y (the scene's rotation)
+    point_a = center + scene._ROD_HALF_HEIGHT * axis
+    point_b = center - scene._ROD_HALF_HEIGHT * axis
+    seg = point_b - point_a
+    seg_len_sq = float(seg @ seg)
+    min_surface = float("inf")
+    for p in points:
+        t = np.clip((p - point_a) @ seg / seg_len_sq, 0.0, 1.0)
+        closest = point_a + t * seg
+        min_surface = min(
+            min_surface, float(np.linalg.norm(p - closest)) - scene._ROD_RADIUS
+        )
+    assert min_surface > 0.0
+
+
 def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
     """The .seg and .pt importers feed real deformable solves.
 
@@ -278,6 +321,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_buckle",
         "ipc_deformable_fem_msh",
         "ipc_deformable_obj_cloth",
+        "ipc_deformable_capsule_rod",
         "ipc_deformable_seg_strand",
         "ipc_deformable_pt_particles",
         "ipc_deformable_scripted_dirichlet",

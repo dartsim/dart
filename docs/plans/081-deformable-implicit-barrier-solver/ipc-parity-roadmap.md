@@ -128,10 +128,20 @@ cloth, `io::loadObjTriangleMesh*`), `.seg` (segments → strand,
 exposed to dartpy (`load_obj_triangle_mesh` / `load_seg_line_mesh` /
 `load_point_set`) with `build_cloth_from_obj` / `build_strand_from_seg` /
 `build_particles_from_pt` helpers and draped-cloth / hanging-strand /
-falling-particles showcases. Remaining M3: the codimensional triangle/edge/vertex
-collision **objects** themselves (barrier + CCD against the deformable surface,
-extending the sphere/box obstacle machinery to non-volumetric geometry — a new
-`Capsule` collision shape for the rod/wire obstacle is the natural first step).
+falling-particles showcases.
+
+The first codimensional collision **object** has also LANDED: a `Capsule`
+(rod/wire) collision shape + a static **capsule obstacle barrier**
+(`CollisionShape::makeCapsule`, dartpy `CollisionShape.capsule`). A static capsule
+opted in as a deformable obstacle exerts the same clamped-log barrier (energy +
+gradient + rank-1 radial Hessian) as the sphere/box obstacles, with distance +
+normal from the analytic point-to-segment closest point; it is barrier-only (no
+surface CCD), so a connected sheet drapes over it freely. Ships a radial-repulsion
+regression, an intersection-free draped-cloth regression, and a `Deformable Cloth
+over Capsule Rod (IPC)` showcase (toward Fig. 18 codimensional rollers). Remaining
+M3: the point-cloud / single-triangle codim obstacles (the point obstacle is the
+sphere with radius -> 0; a thin box approximates a single triangle today), and a
+true codim-vs-codim CCD if needed for fast codim rollers.
 
 ### M4 — Upstream asset pipeline + `.msh` (GMSH) importer
 

@@ -1110,6 +1110,41 @@ TEST(DeformableBody, BoxObstacleBarrierRepelsNodeAlongFaceNormal)
 }
 
 //==============================================================================
+// A static capsule (z-axis rod) opted in as a deformable obstacle radially
+// repels a nearby node along the outward normal from the capsule axis -- the
+// codimensional (rod) analogue of the sphere/box obstacle barriers.
+TEST(DeformableBody, CapsuleObstacleBarrierRepelsNodeRadially)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions capsuleOptions;
+  capsuleOptions.isStatic = true;
+  auto capsule = world.addRigidBody("obstacle_capsule", capsuleOptions);
+  // A z-axis capsule: radius 0.3, half-height 0.4 (so the cylindrical side
+  // spans z in [-0.4, 0.4]).
+  capsule.setCollisionShape(
+      sx::CollisionShape::makeCapsule(/*radius=*/0.3, /*halfHeight=*/0.4));
+  capsule.setDeformableSurfaceCcdObstacle(true);
+
+  // 0.305 is inside the band off the cylindrical side (surface 0.3, distance
+  // 0.005), at z = 0 (mid-segment).
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.305, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  auto body = world.addDeformableBody("node", options);
+
+  world.step(10);
+
+  const auto position = body.getPosition(0);
+  EXPECT_GT(position.x(), 0.32);        // repelled past the band edge along +x
+  EXPECT_LT(position.x(), 2.0);         // finite (no blow-up)
+  EXPECT_NEAR(position.y(), 0.0, 1e-9); // purely along the radial normal
+  EXPECT_NEAR(position.z(), 0.0, 1e-9); // mid-segment: no axial push
+}
+
+//==============================================================================
 // A FEM cube dropped onto a static box obstacle settles on the surface
 // intersection-free: the box obstacle barrier (energy, gradient, and Hessian)
 // keeps every node outside the box while the FEM elasticity conforms the cube
