@@ -725,6 +725,16 @@ struct StaticGroundBarrier
 };
 
 //==============================================================================
+// A static sphere obstacle that exerts a full radial clamped-log barrier force
+// on nearby deformable nodes (unlike the vertical-only ground barrier above),
+// so a deformable settles smoothly at ~d_hat against any side of the sphere.
+struct SphereObstacleBarrier
+{
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  double radius = 0.0;
+};
+
+//==============================================================================
 struct DeformableContactSolverScratch
 {
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
@@ -1171,6 +1181,98 @@ SurfaceContactSnapshot makeStaticBoxSurfaceCcdSnapshot(
 }
 
 //==============================================================================
+// A static sphere has no flat faces to triangulate, so it is tessellated into a
+// UV-sphere polyhedron that CIRCUMSCRIBES the true sphere: the vertices sit at
+// a slightly larger radius so every flat face stays outside the analytic
+// surface. That keeps the conservative no-penetration guarantee (a deformable
+// is stopped at the polyhedron, never inside the real sphere), and the existing
+// point-triangle / edge-edge CCD reducers consume the snapshot unchanged. The
+// outward inflation is the modest over-conservatism this introduces (smaller
+// with finer tessellation), analogous to the box supersampling's thin-corner
+// over-coverage.
+SurfaceContactSnapshot makeStaticSphereSurfaceCcdSnapshot(
+    entt::entity entity, double radius, const comps::Transform& transform)
+{
+  constexpr int kLongitude = 16; // segments around the equator
+  constexpr int kLatitude = 8;   // bands from pole to pole
+  constexpr double kPi = 3.14159265358979323846;
+  constexpr std::size_t kNorthPole = 0;
+
+  const double dTheta = 2.0 * kPi / static_cast<double>(kLongitude);
+  const double dPhi = kPi / static_cast<double>(kLatitude);
+  // Inflate the vertex radius so the flat faces (chords) circumscribe the
+  // sphere: a cell's circumscribed cap has angular radius ~0.5 * the cell
+  // diagonal, and a face at vertex radius r sits at r*cos(that) from the
+  // center, so r = radius / cos(angularRadius) puts every face at >= radius. A
+  // small safety factor absorbs rounding.
+  const double angularRadius = 0.5 * std::sqrt(dTheta * dTheta + dPhi * dPhi);
+  const double r = radius * (1.001 / std::cos(angularRadius));
+
+  const Eigen::Matrix3d rotation
+      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
+  const auto worldPoint = [&](const Eigen::Vector3d& local) {
+    return Eigen::Vector3d(transform.position + rotation * local);
+  };
+
+  SurfaceContactSnapshot snapshot;
+  snapshot.entity = entity;
+
+  // Vertices: north pole, (kLatitude - 1) interior rings of kLongitude vertices
+  // each, then the south pole.
+  snapshot.positions.push_back(worldPoint(Eigen::Vector3d(0.0, 0.0, r)));
+  for (int i = 1; i < kLatitude; ++i) {
+    const double phi = dPhi * static_cast<double>(i);
+    const double z = r * std::cos(phi);
+    const double ringRadius = r * std::sin(phi);
+    for (int j = 0; j < kLongitude; ++j) {
+      const double theta = dTheta * static_cast<double>(j);
+      snapshot.positions.push_back(worldPoint(
+          Eigen::Vector3d(
+              ringRadius * std::cos(theta), ringRadius * std::sin(theta), z)));
+    }
+  }
+  const auto southPole = snapshot.positions.size();
+  snapshot.positions.push_back(worldPoint(Eigen::Vector3d(0.0, 0.0, -r)));
+
+  // Vertex index for column j (wrapping) of interior ring in [1, kLatitude -
+  // 1].
+  const auto ringVertex = [&](int ring, int j) {
+    const int col = ((j % kLongitude) + kLongitude) % kLongitude;
+    return static_cast<std::size_t>(1 + (ring - 1) * kLongitude + col);
+  };
+
+  for (int j = 0; j < kLongitude; ++j) {
+    snapshot.surfaceTriangles.push_back(
+        DeformableSurfaceTriangle{
+            kNorthPole, ringVertex(1, j), ringVertex(1, j + 1)});
+  }
+  for (int i = 1; i < kLatitude - 1; ++i) {
+    for (int j = 0; j < kLongitude; ++j) {
+      const auto a = ringVertex(i, j);
+      const auto b = ringVertex(i, j + 1);
+      const auto c = ringVertex(i + 1, j);
+      const auto d = ringVertex(i + 1, j + 1);
+      snapshot.surfaceTriangles.push_back(DeformableSurfaceTriangle{a, c, b});
+      snapshot.surfaceTriangles.push_back(DeformableSurfaceTriangle{b, c, d});
+    }
+  }
+  for (int j = 0; j < kLongitude; ++j) {
+    snapshot.surfaceTriangles.push_back(
+        DeformableSurfaceTriangle{
+            southPole,
+            ringVertex(kLatitude - 1, j + 1),
+            ringVertex(kLatitude - 1, j)});
+  }
+
+  // Unlike a box (whose triangulation diagonals are not physical edges), every
+  // sphere tessellation edge lies on the surface, so the full unique edge set
+  // is the correct edge-edge CCD input.
+  dc::buildUniqueSurfaceEdges(snapshot.surfaceTriangles, snapshot.surfaceEdges);
+
+  return snapshot;
+}
+
+//==============================================================================
 std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
     const World& world, DeformableSolverStats& stats)
 {
@@ -1188,20 +1290,35 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto& transform = view.get<comps::Transform>(entity);
-    if (geometry.shape.type != CollisionShapeType::Box
-        || !geometry.shape.halfExtents.allFinite()
-        || (geometry.shape.halfExtents.array() <= 0.0).any()
-        || !transform.position.allFinite()) {
+    if (!transform.position.allFinite()) {
       continue;
     }
 
-    auto snapshot = makeStaticBoxSurfaceCcdSnapshot(
-        entity, geometry.shape.halfExtents, transform);
+    SurfaceContactSnapshot snapshot;
+    if (geometry.shape.type == CollisionShapeType::Box) {
+      if (!geometry.shape.halfExtents.allFinite()
+          || (geometry.shape.halfExtents.array() <= 0.0).any()) {
+        continue;
+      }
+      snapshot = makeStaticBoxSurfaceCcdSnapshot(
+          entity, geometry.shape.halfExtents, transform);
+      ++stats.staticRigidSurfaceCcdBoxCount;
+    } else if (geometry.shape.type == CollisionShapeType::Sphere) {
+      if (!std::isfinite(geometry.shape.radius)
+          || geometry.shape.radius <= 0.0) {
+        continue;
+      }
+      snapshot = makeStaticSphereSurfaceCcdSnapshot(
+          entity, geometry.shape.radius, transform);
+      ++stats.staticRigidSurfaceCcdSphereCount;
+    } else {
+      continue;
+    }
+
     stats.staticRigidSurfaceCcdTriangleCount
         += snapshot.surfaceTriangles.size();
     stats.staticRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
     snapshots.push_back(std::move(snapshot));
-    ++stats.staticRigidSurfaceCcdBoxCount;
   }
 
   return snapshots;
@@ -1514,6 +1631,40 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
   }
 
   return barriers;
+}
+
+//==============================================================================
+// Static rigid SPHERE bodies opted in as deformable surface-CCD obstacles also
+// exert a full radial barrier force on nearby deformable nodes. They are
+// collected by center + radius (the smooth radial barrier needs no
+// tessellation). Boxes opted in as surface-CCD obstacles are skipped here --
+// their barrier force is a later increment -- and the surface CCD limiter
+// remains the conservative no-penetration gate.
+std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
+    const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<SphereObstacleBarrier> obstacles;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    if (geometry.shape.type != CollisionShapeType::Sphere
+        || !(geometry.shape.radius > 0.0)
+        || !std::isfinite(geometry.shape.radius)
+        || !transform.position.allFinite()) {
+      continue;
+    }
+    obstacles.push_back(
+        SphereObstacleBarrier{transform.position, geometry.shape.radius});
+  }
+  return obstacles;
 }
 
 //==============================================================================
@@ -2043,6 +2194,64 @@ double addStaticGroundBarrierEnergy(
 }
 
 //==============================================================================
+// Full radial clamped-log barrier for static sphere obstacles: each free node
+// within the activation band of a sphere's surface is pushed out along the
+// outward radial normal, so a deformable settles smoothly at ~d_hat against any
+// side of the sphere (a true 3D contact force, unlike the vertical-only ground
+// barrier). Energy + gradient only -- the projected-Newton Hessian, box and
+// codimensional obstacles are later increments; the line search on the
+// barrier-inclusive energy keeps nodes outside because the clamped-log energy
+// diverges as the distance approaches zero.
+double addSphereObstacleBarrierEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<SphereObstacleBarrier>& obstacles,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (obstacles.empty()) {
+    return 0.0;
+  }
+
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  constexpr double barrierScale = 25.0;
+
+  double energy = 0.0;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+
+    for (const auto& obstacle : obstacles) {
+      const Eigen::Vector3d offset = positions[i] - obstacle.center;
+      const double centerDistance = offset.norm();
+      const double distance = centerDistance - obstacle.radius;
+      if (distance <= 0.0 || !std::isfinite(distance)) {
+        return std::numeric_limits<double>::infinity();
+      }
+      if (distance >= activationDistance || centerDistance <= 0.0) {
+        continue;
+      }
+
+      const double normalizedDistance = distance / activationDistance;
+      const double distanceOffset = distance - activationDistance;
+      energy += -barrierScale * distanceOffset * distanceOffset
+                * std::log(normalizedDistance);
+
+      if (gradient != nullptr) {
+        const double derivative
+            = -barrierScale
+              * (2.0 * distanceOffset * std::log(normalizedDistance)
+                 + distanceOffset * distanceOffset / distance);
+        // dDistance/dx is the outward radial unit normal.
+        (*gradient)[i] += derivative * (offset / centerDistance);
+      }
+    }
+  }
+
+  return energy;
+}
+
+//==============================================================================
 // Tangential speed below which static-ground friction smoothly vanishes (the
 // IPC mollifier velocity threshold epsv). Scaled by the time step to a
 // displacement radius.
@@ -2480,6 +2689,68 @@ void accumulateFrictionDiagnostics(
 }
 
 //==============================================================================
+// Closest-approach diagnostic over the active self-contact barrier set at the
+// converged iterate. Each candidate's point-triangle / edge-edge squared
+// distance is recomputed at the terminal positions; candidates within the
+// activation band (squared distance < d_hat^2) form the active set, and the
+// smallest distance among them is the IPC intersection-free "minimum distance"
+// statistic. Returns the active-set size and writes the closest distance (0
+// when the set is empty). Read once after the outer loop, not on the
+// line-search hot path.
+std::size_t accumulateContactDistanceDiagnostics(
+    const std::vector<Eigen::Vector3d>& positions,
+    const SelfContactBarrierInputs& barrier,
+    double& outMinDistance)
+{
+  outMinDistance = 0.0;
+  if (barrier.candidates == nullptr || barrier.triangles == nullptr
+      || !(barrier.squaredActivationDistance > 0.0)) {
+    return 0;
+  }
+
+  const auto& candidates = *barrier.candidates;
+  const auto& triangles = *barrier.triangles;
+  double minSquared = std::numeric_limits<double>::infinity();
+  std::size_t activeContacts = 0;
+
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    const auto& triangle = triangles[candidate.triangle];
+    const double squaredDistance = dc::pointTriangleSquaredDistance(
+                                       positions[candidate.point],
+                                       positions[triangle.nodeA],
+                                       positions[triangle.nodeB],
+                                       positions[triangle.nodeC])
+                                       .squaredDistance;
+    if (squaredDistance >= barrier.squaredActivationDistance) {
+      continue;
+    }
+    ++activeContacts;
+    minSquared = std::min(minSquared, squaredDistance);
+  }
+
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
+    const double squaredDistance = dc::edgeEdgeSquaredDistance(
+                                       positions[edgeA.nodeA],
+                                       positions[edgeA.nodeB],
+                                       positions[edgeB.nodeA],
+                                       positions[edgeB.nodeB])
+                                       .squaredDistance;
+    if (squaredDistance >= barrier.squaredActivationDistance) {
+      continue;
+    }
+    ++activeContacts;
+    minSquared = std::min(minSquared, squaredDistance);
+  }
+
+  if (activeContacts > 0 && std::isfinite(minSquared)) {
+    outMinDistance = std::sqrt(std::max(0.0, minSquared));
+  }
+  return activeContacts;
+}
+
+//==============================================================================
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -2487,6 +2758,7 @@ double evaluateDeformableObjective(
     const std::vector<Eigen::Vector3d>& inertialTargets,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
@@ -2539,6 +2811,8 @@ double evaluateDeformableObjective(
   }
 
   energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
+  energy += addSphereObstacleBarrierEnergy(
+      positions, fixed, sphereObstacles, gradient);
   if (contactBarrier != nullptr) {
     energy += addSelfContactBarrierEnergy(
         positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
@@ -3557,6 +3831,7 @@ void advanceDeformableBody(
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
     double frictionCoefficient,
     DeformableSolverStats& stats)
 {
@@ -3603,8 +3878,8 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  if (model.edges.empty() && barriers.empty() && rigidSurfaceSnapshots.empty()
-      && movingRigidSurfaceSnapshots.empty()
+  if (model.edges.empty() && barriers.empty() && sphereObstacles.empty()
+      && rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty()
       && contactScratch.surfaceTriangles.empty()) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
@@ -3702,6 +3977,7 @@ void advanceDeformableBody(
           scratch.inertialTargets,
           scratch.activeFixed,
           barriers,
+          sphereObstacles,
           timeStep,
           &scratch.gradient,
           &contactBarrier,
@@ -3815,6 +4091,7 @@ void advanceDeformableBody(
                 scratch.inertialTargets,
                 scratch.activeFixed,
                 barriers,
+                sphereObstacles,
                 timeStep,
                 nullptr,
                 &contactBarrier,
@@ -3960,6 +4237,7 @@ void advanceDeformableBody(
           scratch.inertialTargets,
           scratch.activeFixed,
           barriers,
+          sphereObstacles,
           timeStep,
           &scratch.gradient,
           &terminalBarrier,
@@ -3997,6 +4275,38 @@ void advanceDeformableBody(
         selfContactFrictionContacts,
         stats.frictionDissipation,
         stats.activeFrictionContacts);
+
+    // Closest-approach (minimum) distance over the active self-contact barrier
+    // set at the converged iterate -- the IPC intersection-free statistic. The
+    // barrier candidate buffer holds the terminal active set: rebuilt at
+    // scratch.next above when the solve hit the iteration cap, otherwise the
+    // last in-loop set at the converged iterate (the final accepted step was
+    // sub-tolerance, so the iterate barely moved), mirroring how the friction
+    // diagnostics reuse their lagged sets.
+    if (!contactScratch.surfaceTriangles.empty()) {
+      const double dHat = selfContactBarrierActivationDistance();
+      SelfContactBarrierInputs diagnosticBarrier;
+      diagnosticBarrier.candidates = &contactScratch.barrierCandidates;
+      diagnosticBarrier.triangles = &contactScratch.surfaceTriangles;
+      diagnosticBarrier.squaredActivationDistance = dHat * dHat;
+      diagnosticBarrier.stiffness = selfContactBarrierStiffness();
+      double bodyMinContactDistance = 0.0;
+      const std::size_t bodyActiveContacts
+          = accumulateContactDistanceDiagnostics(
+              scratch.next, diagnosticBarrier, bodyMinContactDistance);
+      if (bodyActiveContacts > 0) {
+        // Fold across bodies: sum the active counts, take the minimum closest
+        // approach. Gate the min on the running count (not on a zero-distance
+        // sentinel) so the first contacting body always seeds it.
+        if (stats.convergedActiveContactCount == 0) {
+          stats.minActiveContactDistance = bodyMinContactDistance;
+        } else {
+          stats.minActiveContactDistance = std::min(
+              stats.minActiveContactDistance, bodyMinContactDistance);
+        }
+        stats.convergedActiveContactCount += bodyActiveContacts;
+      }
+    }
   }
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -4955,6 +5265,7 @@ void DeformableDynamicsStage::execute(
   }
 
   const auto barriers = collectStaticGroundBarriers(world);
+  const auto sphereObstacles = collectSphereObstacleBarriers(world);
   const auto rigidSurfaceSnapshots
       = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
@@ -5023,6 +5334,7 @@ void DeformableDynamicsStage::execute(
         gravity,
         timeStep,
         barriers,
+        sphereObstacles,
         material.frictionCoefficient,
         m_lastStats);
   }

@@ -13,6 +13,7 @@ import numpy as np
 import dartpy as dart
 
 from ..runner import PythonDemoScene, SceneSetup
+from ._z_up import reorient_to_z_up
 
 _GROUND_URI = "dart://sample/skel/ground.skel"
 _GROUND_NAME = "add_delete_ground"
@@ -45,7 +46,6 @@ def build() -> SceneSetup:
     world = dart.io.SkelParser.read_world(_GROUND_URI)
     if world is None:
         raise RuntimeError(f"Failed to load {_GROUND_URI}")
-    world.set_gravity([0.0, -9.81, 0.0])
 
     ground = world.get_skeleton(0)
     if ground is not None:
@@ -57,6 +57,10 @@ def build() -> SceneSetup:
         color = ((i % 3) / 3.0, ((i + 1) % 3) / 3.0, ((i + 2) % 3) / 3.0)
         world.add_skeleton(_create_cube(
             f"{_CUBE_PREFIX}{i}", position, (size, size, size), color))
+
+    # ground.skel and the spawn poses above are authored Y-up; reorient the
+    # whole world (ground + cubes) to the canonical Z-up convention.
+    reorient_to_z_up(world)
 
     return SceneSetup(world=world, info={})
 

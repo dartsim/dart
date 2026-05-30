@@ -833,6 +833,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Optimized internal IPC cross-set sweep-pair traversal used by experimental
     surface candidate and CCD checks so the sorted right-hand-side AABB prefix
     already expired for the current left-hand-side AABB is skipped.
+  - Completed the internal IPC cross-set sweep traversal into a full active-set
+    sweep-and-prune: right-hand-side AABBs are kept in a reusable next-index
+    live list and unlinked as soon as their maximum x falls behind the sweep
+    line, so a long-lived early interval no longer pins the prefix cursor and
+    forces the expired intervals behind it to be rescanned for every
+    left-hand-side item (the prior slice's known limitation). The visited
+    `(lhs, rhs)` pair sequence is identical to the naive nested scan, so the
+    surface candidate sets, solver-wired CCD limiters, and barrier candidate
+    assembly are behavior-preserving. Adds a staggered-expiry active-set
+    regression and a long-lived-interval microbenchmark
+    (`BM_IpcCandidateSetCrossSweepLongLivedInterval`).
   - Added internal inter-body deformable surface CCD line-search limiting with
     stage-start surface snapshots, cross-body point-triangle and edge-edge
     conservative CCD checks, focused regressions, and benchmark counters.
@@ -958,6 +969,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     demos yet because the rigid IPC solver currently runs at only a few frames
     per second for those; that capability stays covered by C++ regressions, and
     the demos will follow once the rigid IPC performance work lands.
+  - Extended the static rigid surface CCD obstacle opt-in to static SPHERE
+    collision shapes (PLAN-081 Phase 2 non-box rigid surface coverage). An
+    opted-in static sphere is tessellated into a UV-sphere triangle mesh that
+    conservatively CIRCUMSCRIBES the analytic sphere (vertices placed at a
+    slightly inflated radius so every flat face stays outside the true surface),
+    so the existing point-triangle / edge-edge deformable CCD limiter stops a
+    deformable at the sphere without a new CCD primitive and never lets it
+    penetrate the real surface. Reuses the same `setDeformableSurfaceCcdObstacle`
+    opt-in (untagged spheres and boxes are unaffected, so existing scenes are
+    behavior-preserving) and reports a new `staticRigidSurfaceCcdSphereCount`
+    stat. Adds regressions that a fast node is limited before an opted-in sphere
+    and passes through an untagged one. Still a one-way conservative CCD limiter,
+    not rigid contact response or IPC parity.
   - Added internal experimental moving rigid box surface CCD limiting for free
     (non-static) deformable-surface CCD obstacles: the deformable stage predicts
     each obstacle's end-of-step transform from its velocity (mirroring the rigid
@@ -977,6 +1001,21 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     no-penetration guarantee. First-order (steepest-descent) solve with fixed
     barrier stiffness; projected Newton and adaptive stiffness are later slices.
     Includes focused regressions and a benchmark with barrier counters.
+  - Added experimental IPC barrier forces for static sphere obstacles (PLAN-081
+    Phase 3). A static rigid sphere opted in as a deformable surface-CCD obstacle
+    now exerts a full radial clamped-log barrier force: each deformable node
+    within the activation band of the sphere's surface is pushed out along the
+    outward radial normal, so a deformable settles smoothly against any side of
+    the sphere -- a true 3D contact force, unlike the vertical-only ground
+    barrier. Reuses the existing `setDeformableSurfaceCcdObstacle` opt-in
+    (untagged shapes, boxes, and non-obstacle scenes are unchanged, so existing
+    behavior is preserved; on the prior code surface-CCD-obstacle spheres were a
+    no-op). Energy + gradient only -- the projected-Newton Hessian, box and
+    codimensional obstacles are later increments; the line search on the
+    barrier-inclusive energy keeps slowly-approaching nodes outside, and the
+    surface CCD limiter remains the tunnelling guard for fast motion. Adds
+    regressions that a node in the band is pushed radially outward and that an
+    untagged sphere is inert.
   - Added internal experimental IPC projected-Newton search direction for the
     deformable solve: each iteration assembles the per-step Hessian (inertia +
     spring + self-contact barrier + static ground barrier) with per-element
@@ -1126,6 +1165,30 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     regression that loads a single-tetrahedron scene and checks the reported
     topology counts and total mass. (The loader still covers only the
     contact-free subset; it is not IPC scene parity.)
+  - Added a dedicated `IPC Deformable (sx)` category of deformable scenes to the
+    consolidated `py-demos` standalone (`pixi run py-demos`), grouping the IPC
+    showcases in their own menu category instead of mixing them into the general
+    `Experimental` (sx) scenes: `ipc_deformable_net` (a pinned spring net sagging
+    under gravity), `ipc_deformable_drape` (a mat draping over a step onto a
+    ground barrier), `ipc_deformable_trampoline` (a corner-pinned membrane sagging
+    and rebounding under projected Newton), `ipc_deformable_friction_slide` (a
+    launched mat skidding to rest under lagged smoothed-Coulomb ground friction),
+    and `ipc_deformable_scripted_dirichlet` (a banner billowing under a scripted
+    Dirichlet boundary condition). A shared `_ipc_deformable_bridge.py` builds the
+    grid topology and mirrors each `dartpy.simulation_experimental` deformable
+    body onto the Filament render world as per-node spheres plus a spring
+    wireframe (the dynamic surface-mesh render path is not yet exposed through
+    `dartpy.gui.run_demos`). To enable the drape and friction scenes, exposed
+    `RigidBody.is_deformable_ground_barrier` to `dartpy` (mirroring the existing
+    `is_deformable_surface_ccd_obstacle` property) so a static rigid box can be
+    tagged as a deformable ground barrier from Python; regenerated the type
+    stubs and added a binding regression. These are DART-native point-mass/spring
+    showcases that evoke the IPC paper's themes (draping, self-contact, friction,
+    scripted boundaries) but are not faithful paper-figure reproductions; the
+    upstream scene corpus stays `planned` pending vendored assets and an
+    FEM/codimensional material model. The demos cycle smoke covers every scene,
+    plus a solver-free grid-builder topology test and a registry test that pins
+    the dedicated category.
   - Extended the experimental deformable-body `dartpy` facade with scripted
     boundary conditions (PLAN-081 Phase 8). Added
     `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
@@ -1206,6 +1269,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     while the frictionless control reports zero. These feed the paper's friction
     benchmark statistics (Fig. 23 / Table 1) alongside the existing
     `finalGradientResidualNorm` convergence diagnostic.
+  - Added an experimental IPC contact closest-approach diagnostic to the
+    deformable solver stats. Each step now reports `minActiveContactDistance`
+    (the smallest point-triangle / edge-edge distance among the active
+    self-contact barrier set at the converged iterate -- the IPC
+    intersection-free "minimum distance" statistic, Fig. 23 / Table 1) and
+    `convergedActiveContactCount` (the size of that active set at solve
+    termination, a single-iteration snapshot distinct from the cumulative
+    `selfContactBarrierActiveContacts`). Both are zero for bodies without active
+    self-contact, the distance is meaningful only when the count is positive,
+    and both are read once per step outside the line-search hot path.
+    Behavior-preserving (a diagnostic only; the solve is unchanged). Adds
+    regressions that a self-contact step reports a positive closest approach
+    strictly inside the activation band while a far-apart configuration reports
+    an empty active set, plus self-contact stage benchmark counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
@@ -1635,6 +1712,7 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added Atlas IK dartpy bindings/tutorials and control theory + servo primers. ([#2176](https://github.com/dartsim/dart/pull/2176), [#2303](https://github.com/dartsim/dart/pull/2303), [#2156](https://github.com/dartsim/dart/pull/2156))
   - Fixed python example discovery and added the Issue #743 regression. ([#2311](https://github.com/dartsim/dart/pull/2311), [#743](https://github.com/dartsim/dart/issues/743))
   - Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
+  - Reoriented the Y-up `pixi run py-demos` scenes (`rigid_chain`, `rigid_cubes`, `mixed_chain`, `add_delete_skels`, `rigid_loop`, `soft_bodies`, `kr5_arm`) to the canonical Z-up convention so gravity and the camera up-vector are consistent across the catalog; golden-set parity is preserved because geometry and gravity are rotated by the same rigid transform.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

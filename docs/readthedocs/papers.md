@@ -113,6 +113,7 @@ Animation and Robotics Toolkit." _Journal of Open Source Software_, 3(22),
 | `murray-1994`       | Murray, Li & Sastry, _A Mathematical Introduction to Robotic Manipulation_ (1994)          | kinematics  | referenced  | —        | reference |
 | `shabana-mbs`       | Shabana, _Dynamics of Multibody Systems_ (4th ed.)                                         | terminology | referenced  | —        | reference |
 | `siciliano-2009`    | Siciliano, Sciavicco, Villani & Oriolo, _Robotics: Modelling, Planning and Control_ (2009) | dynamics    | referenced  | —        | reference |
+| `hairer-2006`       | Hairer, Lubich & Wanner, _Geometric Numerical Integration_ (2006)                          | integration | referenced  | medium   | reference |
 
 ### `featherstone-2008`
 
@@ -165,19 +166,41 @@ Planning and Control._ Springer, 2009.
 - **Notes:** General modelling/control reference for terminology and method
   framing.
 
+### `hairer-2006`
+
+Hairer, E., Lubich, C., & Wanner, G. _Geometric Numerical Integration:
+Structure-Preserving Algorithms for Ordinary Differential Equations._ 2nd ed.,
+Springer, 2006.
+
+- **Type:** textbook · **Topic:** integration · **Status:** referenced · **Priority:** medium · **Verdict:** reference
+- **Where used:** authority cited by
+  [`simulation_variational_integrator.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_variational_integrator.md).
+- **Notes:** Authority for symplectic/variational integration, backward-error
+  analysis, and the inverse right-trivialized tangent `dexp⁻¹` as the Bernoulli
+  series `Σ Bₖ/k! adᵘᵏ` (next nonzero term `+ad⁶/30240`; truncation error
+  O(‖ad‖⁶), ~machine-ε at millisecond steps). Grounds the accuracy justification
+  for DART's exact `SE3::LeftJacobianInverse`-based `dexp⁻¹`.
+
 ## Algorithms & Methods (Papers)
 
-| ID                     | Reference                                                                                  | Topic       | Status      | Priority | Verdict   |
-| ---------------------- | ------------------------------------------------------------------------------------------ | ----------- | ----------- | -------- | --------- |
-| `featherstone-1983`    | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)       | dynamics    | planned     | high     | adopt     |
-| `liu-jain-mbs`         | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                       | dynamics    | implemented | —        | adopt     |
-| `tan-lcp`              | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                  | contact     | implemented | —        | adopt     |
-| `stewart-trinkle-1996` | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)            | contact     | referenced  | medium   | baseline  |
-| `baraff-1996`          | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                           | dynamics    | referenced  | low      | reference |
-| `macklin-xpbd-2016`    | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016) | integration | referenced  | medium   | evaluate  |
-| `gjk-1988`             | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                  | collision   | implemented | —        | adopt     |
-| `ipc-2020`             | Li et al., "Incremental Potential Contact" (2020)                                          | contact     | in-progress | high     | adopt     |
-| `rigid-ipc-2021`       | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                            | contact     | in-progress | high     | adopt     |
+| ID                             | Reference                                                                                                                  | Topic       | Status      | Priority | Verdict   |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------- | -------- | --------- |
+| `featherstone-1983`            | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics    | planned     | high     | adopt     |
+| `liu-jain-mbs`                 | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics    | implemented | —        | adopt     |
+| `tan-lcp`                      | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact     | implemented | —        | adopt     |
+| `stewart-trinkle-1996`         | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact     | referenced  | medium   | baseline  |
+| `baraff-1996`                  | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics    | referenced  | low      | reference |
+| `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration | referenced  | medium   | evaluate  |
+| `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision   | implemented | —        | adopt     |
+| `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact     | in-progress | high     | adopt     |
+| `rigid-ipc-2021`                | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                             | contact      | in-progress  | high      | adopt      |
+| `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration | planned     | high     | adopt     |
+| `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration | referenced  | medium   | reference |
+| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024)                                                                                 | contact     | referenced  | medium   | evaluate  |
+| `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact     | referenced  | medium   | evaluate  |
+| `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration | referenced  | high     | baseline  |
+| `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration | referenced  | high     | evaluate  |
+| `kobilarov-crane-desbrun-2009` | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration | referenced  | medium   | reference |
 
 ### `featherstone-1983`
 
@@ -236,10 +259,14 @@ compliant constrained dynamics." _MIG_, 2016.
 
 - **Type:** paper · **Topic:** integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
 - **Where used:** named as a candidate integration family in
-  [cpp design](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md).
+  [cpp design](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md);
+  surveyed as a compliant-constraint contact model in
+  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
 - **Notes:** Compliant position-based dynamics; under evaluation as an optional
-  integration/constraint family behind the DART-owned capability matrix. Not a
-  commitment.
+  integration/constraint family behind the DART-owned capability matrix. Its
+  compliant-constraint formulation (`α̃ = α/Δt²`) is the closest match to the
+  variational integrator's `Δt·M⁻¹` quasi-Newton approximation, making it a
+  natural compliant-contact option there. Not a commitment.
 
 ### `gjk-1988`
 
@@ -363,6 +390,131 @@ Related public resources:
   smoothed friction, same-domain rigid method selection, CPU/GPU benchmark
   packets, comparison baselines, and headless Filament evidence for promoted
   scenes.
+### `lee-vi-2016`
+
+Jeongseok Lee, C. Karen Liu, Frank C. Park, and Siddhartha S. Srinivasa. "A
+Linear-Time Variational Integrator for Multibody Systems." _Algorithmic
+Foundations of Robotics XII_ (WAFR 2016), Springer Proceedings in Advanced
+Robotics. arXiv:1609.02898.
+
+```bib
+@inproceedings{Lee2016VI,
+  author = {Jeongseok Lee and C. Karen Liu and Frank C. Park and Siddhartha S. Srinivasa},
+  title = {A Linear-Time Variational Integrator for Multibody Systems},
+  booktitle = {Algorithmic Foundations of Robotics XII (WAFR 2016)},
+  series = {Springer Proceedings in Advanced Robotics},
+  year = {2020},
+  note = {arXiv:1609.02898}
+}
+```
+
+- **Type:** paper · **Topic:** dynamics/integration · **Status:** planned · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver.md)
+  and its design owner
+  [`simulation_variational_integrator.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_variational_integrator.md).
+- **Notes:** DART's own research lineage; the target method for the experimental
+  variational-integrator family. Reformulates forward integration as a
+  root-finding problem on the forced discrete Euler–Lagrange equation and solves
+  it in O(n) via a discrete recursive Newton–Euler residual (DRNEA) plus a
+  recursive impulse-based quasi-Newton update (RIQN) that reuses an
+  articulated-body-inertia forward-dynamics pass. Symplectic and
+  near-energy-conserving for smooth conservative forcing; the paper does not
+  address contact, friction, or closed loops (PLAN-082 roadmaps those). The
+  experimental world has no ABA yet, so the O(n) update is net-new work; classic
+  DART implemented the original (reference repo `jslee02/wafr2016`).
+
+### `marsden-west-2001`
+
+Marsden, J. E., & West, M. "Discrete mechanics and variational integrators."
+_Acta Numerica_, 10, 357–514 (2001).
+
+- **Type:** paper · **Topic:** integration · **Status:** referenced · **Priority:** medium · **Verdict:** reference
+- **Where used:** foundational citation for
+  [`simulation_variational_integrator.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_variational_integrator.md).
+- **Notes:** Foundational treatment of discrete mechanics, the discrete
+  Euler–Lagrange equation, and the symplectic/momentum-conservation properties
+  that `lee-vi-2016` builds on. Cited for the structure-preservation rationale,
+  not a direct implementation dependency.
+
+### `vbd-2024`
+
+Chen, A. H., Liu, K., et al. "Vertex Block Descent." _ACM Transactions on
+Graphics_ (SIGGRAPH 2024). arXiv:2403.06321.
+
+- **Type:** paper · **Topic:** contact/integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** contact-extension survey in
+  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
+- **Notes:** Vertex-level block coordinate descent on the incremental-potential
+  timestep with graph coloring; adopts the IPC lagged friction model.
+  Surveyed (not adopted) as inspiration for adding contact/friction to the
+  variational integrator; its block-descent solver is largely redundant with the
+  VI's O(n) recursive update, but its monotone-energy-descent and warmstart
+  discipline are informative.
+
+### `avbd-2025`
+
+Giles, et al. "Augmented Vertex Block Descent." _ACM Transactions on Graphics_
+(SIGGRAPH 2025).
+
+- **Type:** paper · **Topic:** contact/integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** contact-extension survey in
+  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
+- **Notes:** Augmented-Lagrangian extension of VBD with bounded constraint
+  forces (`f = clamp(k·C+λ, fmin, fmax)`) and Coulomb friction via a lagged
+  normal-force clamp. Identified as the best structural fit for adding hard,
+  drift-free non-penetration and a friction cone to the variational integrator
+  without a global PSD solve (PLAN-082 contact rung C3). Not a commitment.
+
+### `johnson-murphey-2009`
+
+Johnson, E. R., & Murphey, T. D. "Scalable Variational Integrators for
+Constrained Mechanical Systems in Generalized Coordinates." _IEEE Transactions
+on Robotics_, 25(6), 2009.
+
+- **Type:** paper · **Topic:** integration/dynamics · **Status:** referenced · **Priority:** high · **Verdict:** baseline
+- **Where used:** the explicit predecessor `lee-vi-2016` benchmarks against
+  ("SVI"); informs the PLAN-082 constraint roadmap (Phase B2).
+- **Notes:** The scalable variational integrator in generalized coordinates
+  that `lee-vi-2016` improves from O(n²) evaluation / O(n³) Jacobian to O(n). Its
+  recursive tree formulation with caching and its constrained discrete
+  Euler–Lagrange system (holonomic `h(q)=0` via the augmented multiplier system
+  `D2D1Ld − Dhᵀλ = 0`, `Dh(q^{k+1}) = 0`, enforced directly each step with no
+  drift) are the reference for DART's loop-closure (Phase B2) work. Uses
+  directional pin constraints `n̂·(p1−p2)=0` to avoid the zero-gradient
+  singularity of a satisfied distance constraint.
+
+### `leyendecker-2008`
+
+Leyendecker, S., Marsden, J. E., & Ortiz, M. "Variational integrators for
+constrained dynamical systems." _ZAMM_, 88(9), 2008. (with the
+Betsch–Leyendecker discrete null-space method, _Comput. Methods Appl. Mech.
+Engrg._, 2006.)
+
+- **Type:** paper · **Topic:** integration/contact · **Status:** referenced · **Priority:** high · **Verdict:** evaluate
+- **Where used:** [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md)
+  (equality-constraint / closed-loop route, Phase B2).
+- **Notes:** Constrained variational integrators with holonomic constraints. The
+  discrete null-space method picks `P(q)` spanning `ker Dg(q)` and left-multiplies
+  the constrained DEL by `Pᵀ` to annihilate the multiplier term, then
+  reparameterizes onto a minimal coordinate set — a drift-free, multiplier-free,
+  well-conditioned route for closed loops. For an open kinematic tree the
+  generalized coordinates are already minimal, so this matters mainly for
+  loop closures; the multiplier reaction `Gᵀλ` can alternatively be injected as a
+  generalized impulse into the DART O(n) solve.
+
+### `kobilarov-crane-desbrun-2009`
+
+Kobilarov, M., Crane, K., & Desbrun, M. "Lie group integrators for animation
+and control of vehicles." _ACM Transactions on Graphics_, 28(2), 2009.
+
+- **Type:** paper · **Topic:** integration · **Status:** referenced · **Priority:** medium · **Verdict:** reference
+- **Where used:** supporting reference for
+  [`simulation_variational_integrator.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_variational_integrator.md).
+- **Notes:** Independently confirms the inverse right-trivialized tangent
+  coefficients (`I − ½[ad] + (1/12)[ad]²`) DART's `dexp⁻¹` uses, and documents the
+  **Cayley map** as a cheaper alternative group-difference map that avoids the
+  Bernoulli series and the `log`-map singularity at rotation = π — the recorded
+  escape hatch if that singularity ever becomes binding.
 
 ## Model Formats & Standards
 

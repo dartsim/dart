@@ -74,10 +74,26 @@
         sweep traversal used by experimental surface candidate and CCD checks
         so the expired right-hand-side AABB prefix is no longer rescanned for
         every left-hand-side item.
+  - [x] Internal active-set sweep-and-prune sub-slice: completed the cross-set
+        sweep into a full active-set traversal (a reusable next-index live list
+        that unlinks each right-hand-side AABB as its maximum x falls behind the
+        sweep line), removing the prior slice's limitation where a long-lived
+        early interval pinned the prefix cursor and forced the expired intervals
+        behind it to be rescanned for every left-hand-side item. The visited
+        pair sequence is identical to the naive scan (behavior-preserving), with
+        a staggered-expiry regression and a long-lived-interval microbenchmark.
   - [x] Internal static rigid surface CCD line-search sub-slice: explicitly
         opted-in static box collision shapes triangulated into stationary
         surface snapshots with physical box edges for deformable line-search
         CCD limiting.
+  - [x] Internal static sphere surface CCD sub-slice: opted-in static sphere
+        collision shapes tessellated into a UV-sphere triangle mesh that
+        conservatively circumscribes the analytic sphere (vertices at a slightly
+        inflated radius so every flat face stays outside the true surface),
+        reusing the same point-triangle / edge-edge CCD limiter with no new
+        primitive. Same `setDeformableSurfaceCcdObstacle` opt-in (untagged
+        shapes unaffected); `staticRigidSurfaceCcdSphereCount` stat and
+        opted-in/untagged regressions.
   - [x] Internal moving rigid box surface CCD line-search sub-slice: free
         (non-static) opted-in box obstacles whose end-of-step transform is
         predicted from velocity (mirroring the rigid position integrator that
@@ -85,10 +101,11 @@
         overlapping static pose samples, so the deformable cannot settle in or
         tunnel through the obstacle's swept corridor. One-way, timing-agnostic
         conservative limiter with focused regressions and benchmark counters.
-  - [ ] Remaining Phase 2 work: non-box/deforming rigid surface coverage,
-        timing-aware (non-over-conservative) moving-obstacle CCD, broader
-        solver-wired CCD line-search coverage, and stronger spatial
-        acceleration for larger meshes.
+  - [ ] Remaining Phase 2 work: further non-box rigid surface coverage
+        (arbitrary meshes; deforming/moving spheres), timing-aware
+        (non-over-conservative) moving-obstacle CCD, broader solver-wired CCD
+        line-search coverage, and stronger spatial acceleration for larger
+        meshes. (Static box and sphere obstacles are covered.)
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
   - [x] Self-contact barrier forces sub-slice: the deformable objective now adds
@@ -162,11 +179,28 @@
         host copy. Bit-identical results (only the device storage is reused);
         a CUDA test asserts the buffer is reused across same-or-smaller batches,
         grows once for a larger batch, and is released on restore.
+  - [x] Contact closest-approach diagnostic: the stage also reports
+        `minActiveContactDistance` (the smallest point-triangle / edge-edge
+        distance among the active self-contact barrier set at the converged
+        iterate -- the IPC intersection-free "minimum distance" statistic) and
+        `convergedActiveContactCount` (the size of that active set at
+        termination, a single-iteration snapshot distinct from the cumulative
+        `selfContactBarrierActiveContacts`). Behavior-preserving (diagnostic
+        only); feeds the Fig. 23 / Table 1 contact statistics.
+  - [x] Static sphere obstacle barrier force: a static rigid sphere opted in via
+        `setDeformableSurfaceCcdObstacle` now exerts a full radial clamped-log
+        barrier (energy + gradient) that pushes deformable nodes out along the
+        outward radial normal -- a 3D contact force, unlike the vertical-only
+        ground barrier. Additive (surface-CCD-obstacle spheres were previously a
+        no-op; boxes and non-opted scenes unchanged); the surface CCD limiter is
+        the tunnelling guard for fast motion. Box obstacles, the projected-Newton
+        Hessian, and codimensional obstacles are later increments.
   - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
         host<->device copies remain; keeping the assembly/solve on-device is a
         follow-up), matrix-free CG for very large meshes, adaptive barrier
-        stiffness, barrier forces for rigid/codimensional obstacles, and
-        complementarity/solver-stat diagnostics. Known approximation: the
+        stiffness, barrier forces for rigid BOX and codimensional obstacles (the
+        sphere obstacle barrier is covered) plus their projected-Newton Hessian,
+        and complementarity/solver-stat diagnostics. Known approximation: the
         contact active set is rebuilt once per outer iteration and held fixed
         across the inner Newton/line-search step (standard IPC), rather than
         re-queried within the line search.
@@ -434,12 +468,27 @@ For the sweep-pair traversal sub-slice, keep the verification language precise:
 it covers internal cross-set sweep traversal used by experimental surface
 candidate generation and inter-body surface CCD checks. Sorted right-hand-side
 AABBs whose maximum x coordinate is already behind the current left-hand-side
-minimum x are skipped as a prefix instead of rescanned. This is not a full
-sweep-and-prune active set: a long early right-hand-side interval can still
-keep later expired items in the scan. It preserves the existing visitor pair
-semantics and does not change public APIs, exact distance filters, topology
-filters, same-set edge-edge self traversal, deformable-rigid contact, or full
-IPC contact behavior.
+minimum x are skipped as a prefix instead of rescanned. This was not yet a full
+sweep-and-prune active set (a long early right-hand-side interval could still
+keep later expired items in the scan); the follow-up active-set sub-slice
+removes that limitation. It preserves the existing visitor pair semantics and
+does not change public APIs, exact distance filters, topology filters, same-set
+edge-edge self traversal, deformable-rigid contact, or full IPC contact
+behavior.
+
+For the active-set sweep-and-prune sub-slice, keep the verification language
+precise: it replaces the cross-set prefix skip with a full active-set traversal
+(a reusable next-index live list whose entries are unlinked once their maximum x
+falls behind the sweep line), so expired right-hand-side AABBs behind a
+long-lived early interval are no longer rescanned for every left-hand-side item.
+It is behavior-preserving: the visited `(lhs, rhs)` pair sequence is identical
+to the naive nested scan (verified against the naive reference, including a
+staggered-expiry case), and it does not change public APIs, exact distance
+filters, topology filters, same-set edge-edge self traversal, candidate sets,
+solver-wired CCD limiters, barrier candidate assembly, or full IPC contact
+behavior. Benchmark evidence is the long-lived-interval microbenchmark
+(`BM_IpcCandidateSetCrossSweepLongLivedInterval`) staying near-linear where the
+prefix skip degraded toward quadratic.
 
 For the inter-body surface-contact CCD line-search sub-slice, keep the
 verification language precise: it covers cross-surface point-triangle and

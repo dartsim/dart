@@ -64,8 +64,14 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 // Version history:
 //   1: Initial implementation
 //   2: World gravity serialized after timing metadata; Joint v1 migration
-//   3: CollisionShape mesh vertices and triangle indices serialized
-constexpr std::uint32_t kBinaryFormatVersion = 3;
+//   3: MultibodyVariationalState (variational-integrator two-step history)
+//      registered as a serializable component
+//   4: LoopClosure gained a `distance` field (target separation for the
+//      Distance family)
+//   5: Link gained an `externalForce` field (per-step external spatial wrench
+//      applied via Link::applyForce; serialized, round-trips to zero)
+//   6: CollisionShape mesh vertices and triangle indices serialized
+constexpr std::uint32_t kBinaryFormatVersion = 6;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

@@ -187,6 +187,27 @@ its own line so status updates remain git-history friendly.
   solver registries/ECS storage, and every promoted runtime slice passes
   `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries`.
+### PLAN-082: Linear-Time Variational Integrator
+
+- Owner doc:
+  [`082-variational-integrator-solver.md`](082-variational-integrator-solver.md)
+- Status: Proposed
+- Horizon: Next
+- Dimension: Algorithm extensibility
+- Next step: Run the O(n) impulse-ABI de-risking spike first — the experimental
+  World has no ABA today (dense `M.ldlt()` solve), and the linear-time claim
+  depends on it — then start Phase A1 (fixed-base MVP on a dense-solve
+  placeholder) under a new `docs/dev_tasks/variational_integrator_solver/`
+  folder. Durable design lives in
+  [`../design/simulation_variational_integrator.md`](../design/simulation_variational_integrator.md);
+  contact/friction is a deferred go/no-go sidecar.
+- Gate: Phase A1 proves symplectic energy behavior (no secular energy drift over
+  ≥1e5 steps where semi-implicit Euler drifts), analytic single-DOF correctness,
+  bounded RIQN iterations with a defined non-convergence error, and
+  determinism/serialization round-trip; Phase A2 proves sub-quadratic O(n)
+  scaling via benchmark JSON; `check-api-boundaries` stays green with no
+  solver/stage/component/backend leak; contact/friction stays behind the
+  contact-roadmap go/no-go.
 
 ### PLAN-035: Native Collision Feature Dashboard
 
@@ -390,14 +411,16 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Phases 1–4 landed — `dart-demos` Python (11 scenes incl. 5
-  minimal-viable modern scenarios), cross-language golden parity (Python +
-  C++ both assert against the shared fixture within 1e-9),
+- Next step: Phases 1–4 landed — `dart-demos` Python (29 scenes incl. 5
+  minimal-viable modern scenarios + an interactive Filament viewer via
+  `dartpy.gui.run_demos`), cross-language golden parity (Python + C++ both
+  assert 3 scenes against shared fixtures within 1e-9),
   `python/tutorials/01_browse_demos.ipynb`. Phase 5 (retire C++ `dart-demos`)
   is explicit "not now": conditions 4–5 of the retire-later checklist are met,
-  conditions 1–3 wait on Python-breadth growth + PLAN-012 (Colab smoke) +
-  PLAN-101 (editor loading example scenes). Track residual follow-ups in
-  `docs/dev_tasks/examples_strategy/`.
+  conditions 1–3 wait on Python-breadth growth (~73%) + PLAN-012 (Colab smoke) +
+  PLAN-101 (editor loading example scenes). The `docs/dev_tasks/examples_strategy/`
+  folder is retired; residual follow-ups are tracked in PLAN-103's
+  Landed State + retire-later checklist.
 - Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
   Python `test_golden_parity` + C++ `UNIT_gui_DemosGoldenParity` both pass
   against the shared fixture; the notebook imports (not copies) the scene

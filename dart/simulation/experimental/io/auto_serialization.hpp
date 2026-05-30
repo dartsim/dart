@@ -299,6 +299,24 @@ void autoSerialize(
       writePOD(out, field.x());
       writePOD(out, field.y());
       writePOD(out, field.z());
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix<double, 6, 1>>) {
+      for (int i = 0; i < 6; ++i) {
+        writePOD(out, field[i]);
+      }
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {
+      writePOD(out, field.size());
+      for (const auto& transform : field) {
+        writeIsometry3d(out, transform);
+      }
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Matrix<double, 6, 1>>>) {
+      writePOD(out, field.size());
+      for (const auto& vector6 : field) {
+        for (int i = 0; i < 6; ++i) {
+          writePOD(out, vector6[i]);
+        }
+      }
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       writePOD(out, field);
     } else {
@@ -349,6 +367,28 @@ void autoDeserialize(std::istream& in, T& component)
           if (i != j) {
             field(j, i) = field(i, j);
           }
+        }
+      }
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix<double, 6, 1>>) {
+      for (int i = 0; i < 6; ++i) {
+        readPOD(in, field[i]);
+      }
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {
+      std::size_t count = 0;
+      readPOD(in, count);
+      field.resize(count);
+      for (auto& transform : field) {
+        readIsometry3d(in, transform);
+      }
+    } else if constexpr (
+        std::same_as<FieldType, std::vector<Eigen::Matrix<double, 6, 1>>>) {
+      std::size_t count = 0;
+      readPOD(in, count);
+      field.resize(count);
+      for (auto& vector6 : field) {
+        for (int i = 0; i < 6; ++i) {
+          readPOD(in, vector6[i]);
         }
       }
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {

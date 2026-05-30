@@ -3,4 +3,9 @@
 skip = ./.git,./.pixi,./build,./build-*,./docs/readthedocs/_build,./docs/readthedocs/_generated,./external,./node_modules,*/_build/*,*/_generated/*,*/.venv/*,*/__pycache__/*
 # Ignore domain terms that are not typos.
 ignore-words-list = DOUBLECLICK,mKe,Reacher,reacher,abd,normalY,kInf,matc,inout,lod,toi
+# Treat camelCase identifiers ending in an axis suffix (finalY, initialX, posZ,
+# velY, ...) as code rather than typos of "finally"/"initially": a word ending
+# in an uppercase X/Y/Z is an identifier. Genuine lowercase typos (finaly,
+# initialy) still end in lowercase, so they remain flagged.
+ignore-regex = \b[A-Za-z]+[XYZ]\b
 quiet-level = 3

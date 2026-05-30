@@ -328,12 +328,14 @@ sim::LoopClosureSpec makeLoopClosureSpec(
     const nb::handle& frameB,
     sim::LoopClosureFamily family,
     const nb::handle& offsetA,
-    const nb::handle& offsetB)
+    const nb::handle& offsetB,
+    double distance)
 {
   sim::LoopClosureSpec spec;
   spec.frameA = toFrameHandle(frameA);
   spec.frameB = toFrameHandle(frameB);
   spec.family = family;
+  spec.distance = distance;
 
   if (!offsetA.is_none()) {
     spec.offsetA = toIsometry(offsetA);
@@ -900,6 +902,23 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::Link& self, const nb::handle& centerOfMass) {
             self.setCenterOfMass(toVector3(centerOfMass));
           })
+      .def(
+          "apply_force",
+          [](sim::Link& self,
+             const nb::handle& force,
+             const nb::handle& point,
+             bool forceInWorldFrame,
+             bool pointInWorldFrame) {
+            self.applyForce(
+                toVector3(force),
+                toVector3(point),
+                forceInWorldFrame,
+                pointInWorldFrame);
+          },
+          nb::arg("force"),
+          nb::arg("point") = Eigen::Vector3d::Zero(),
+          nb::arg("force_in_world_frame") = true,
+          nb::arg("point_in_world_frame") = false)
       .def_prop_ro("translation", &sim::Link::getTranslation)
       .def_prop_ro("rotation", &sim::Link::getRotation)
       .def_prop_ro(
@@ -928,16 +947,18 @@ void defSimulationExperimentalModule(nb::module_& m)
                       const nb::handle& frameB,
                       sim::LoopClosureFamily family,
                       const nb::handle& offsetA,
-                      const nb::handle& offsetB) {
+                      const nb::handle& offsetB,
+                      double distance) {
             return makeLoopClosureSpec(
-                frameA, frameB, family, offsetA, offsetB);
+                frameA, frameB, family, offsetA, offsetB, distance);
           }),
           nb::arg("frame_a"),
           nb::arg("frame_b"),
           nb::arg("family") = sim::LoopClosureFamily::Rigid,
           nb::kw_only(),
           nb::arg("offset_a") = nb::none(),
-          nb::arg("offset_b") = nb::none())
+          nb::arg("offset_b") = nb::none(),
+          nb::arg("distance") = 0.0)
       .def_prop_rw(
           "frame_a",
           [](const sim::LoopClosureSpec& self) { return self.frameA; },
@@ -951,6 +972,7 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.frameB = toFrameHandle(frame);
           })
       .def_rw("family", &sim::LoopClosureSpec::family)
+      .def_rw("distance", &sim::LoopClosureSpec::distance)
       .def_prop_rw(
           "offset_a",
           [](const sim::LoopClosureSpec& self) {
@@ -1004,6 +1026,22 @@ void defSimulationExperimentalModule(nb::module_& m)
             "dynamics",
             nb::cast<std::string>(nb::repr(nb::cast(self.dynamics))));
         return format_repr("LoopClosureRuntimePolicy", fields);
+      });
+
+  nb::class_<sim::MultibodyOptions>(m, "MultibodyOptions")
+      .def(
+          nb::new_([](const std::string& integrationFamily) {
+            return sim::MultibodyOptions{
+                .integrationFamily = integrationFamily};
+          }),
+          nb::arg("integration_family") = "semi-implicit")
+      .def_rw("integration_family", &sim::MultibodyOptions::integrationFamily)
+      .def("__repr__", [](const sim::MultibodyOptions& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "integration_family",
+            nb::cast<std::string>(nb::repr(nb::cast(self.integrationFamily))));
+        return format_repr("MultibodyOptions", fields);
       });
 
   nb::class_<sim::LoopClosureResidual>(m, "LoopClosureResidual")
@@ -1277,6 +1315,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           "is_deformable_surface_ccd_obstacle",
           &sim::RigidBody::isDeformableSurfaceCcdObstacle,
           &sim::RigidBody::setDeformableSurfaceCcdObstacle)
+      .def_prop_rw(
+          "is_deformable_ground_barrier",
+          &sim::RigidBody::isDeformableGroundBarrier,
+          &sim::RigidBody::setDeformableGroundBarrier)
       .def_prop_ro("collision_shape", &sim::RigidBody::getCollisionShape)
       .def_prop_ro("has_collision_shape", &sim::RigidBody::hasCollisionShape)
       .def_prop_ro("linear_momentum", &sim::RigidBody::getLinearMomentum)
@@ -1773,10 +1815,12 @@ void defSimulationExperimentalModule(nb::module_& m)
              const nb::handle& frameB,
              sim::LoopClosureFamily family,
              const nb::handle& offsetA,
-             const nb::handle& offsetB) {
+             const nb::handle& offsetB,
+             double distance) {
             return self.addLoopClosure(
                 toOptionalName(name),
-                makeLoopClosureSpec(frameA, frameB, family, offsetA, offsetB));
+                makeLoopClosureSpec(
+                    frameA, frameB, family, offsetA, offsetB, distance));
           },
           nb::arg("name") = nb::none(),
           nb::kw_only(),
@@ -1785,6 +1829,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("family") = sim::LoopClosureFamily::Rigid,
           nb::arg("offset_a") = nb::none(),
           nb::arg("offset_b") = nb::none(),
+          nb::arg("distance") = 0.0,
           nb::keep_alive<0, 1>())
       .def(
           "has_loop_closure",
@@ -1893,6 +1938,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "rigid_body_solver",
           &sim::World::getRigidBodySolver,
           &sim::World::setRigidBodySolver)
+      .def_prop_rw(
+          "multibody_options",
+          &sim::World::getMultibodyOptions,
+          [](sim::World& self, const sim::MultibodyOptions& options) {
+            self.setMultibodyOptions(options);
+          })
       .def_prop_ro("frame", &sim::World::getFrame)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)

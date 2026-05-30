@@ -51,6 +51,79 @@ def test_runner_unknown_scene_exits() -> None:
         run(["--scene", "definitely_not_a_scene"], make_demo_scenes())
 
 
+def test_ipc_deformable_grid_builder_topology() -> None:
+    """Pin the shared IPC deformable grid builder's mesh math (solver-free).
+
+    For a ``columns x rows`` grid the builder emits ``columns*rows`` nodes,
+    horizontal + vertical + two-diagonal-per-cell spring edges, and two
+    triangles per cell.
+    """
+
+    from examples.demos._ipc_deformable_bridge import build_grid_options
+
+    columns, rows = 9, 5
+    options = build_grid_options(
+        columns,
+        rows,
+        position_fn=lambda col, row: (0.1 * col, 0.1 * row, 0.0),
+        mass=0.05,
+        edge_stiffness=50.0,
+        damping=1.0,
+        fixed_nodes=[0],
+    )
+
+    expected_edges = (
+        (columns - 1) * rows  # horizontal
+        + columns * (rows - 1)  # vertical
+        + 2 * (columns - 1) * (rows - 1)  # two diagonals per cell
+    )
+    expected_triangles = 2 * (columns - 1) * (rows - 1)
+    assert len(options.positions) == columns * rows
+    assert len(options.masses) == columns * rows
+    assert len(options.edges) == expected_edges
+    assert len(options.surface_triangles) == expected_triangles
+    # Rest lengths come from the initial layout (the 0.1 grid spacing).
+    assert options.edges[0].rest_length == pytest.approx(0.1)
+    # The first edge is the horizontal (col 0, row 0) -> (col 1, row 0).
+    assert (options.edges[0].node_a, options.edges[0].node_b) == (0, 1)
+    # Pin the first cell's two triangles (a,b,c) + (b,d,c) with
+    # a=(0,0), b=(1,0), c=(0,1), d=(1,1) so a winding/index flip is caught.
+    first = options.surface_triangles[0]
+    second = options.surface_triangles[1]
+    assert (first.node_a, first.node_b, first.node_c) == (0, 1, columns)
+    assert (second.node_a, second.node_b, second.node_c) == (1, columns + 1, columns)
+
+
+def test_ipc_deformable_scenes_share_dedicated_category() -> None:
+    """The IPC deformable scenes live in their own dedicated menu category.
+
+    The five IPC showcases must group under ``IPC Deformable (sx)`` (not the
+    general ``Experimental`` sx category), so the viewer renders them together.
+    """
+
+    scenes = make_demo_scenes()
+    by_id = {scene.id: scene for scene in scenes}
+
+    expected_ipc = {
+        "ipc_deformable_net",
+        "ipc_deformable_drape",
+        "ipc_deformable_trampoline",
+        "ipc_deformable_friction_slide",
+        "ipc_deformable_scripted_dirichlet",
+    }
+    assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
+
+    for scene_id in expected_ipc:
+        assert by_id[scene_id].category == "IPC Deformable (sx)"
+
+    # Every scene in the dedicated category is an IPC deformable scene, and
+    # none of them leaked back into the general Experimental category.
+    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable (sx)"]
+    assert set(ipc_category) == expected_ipc
+    experimental = [s.id for s in scenes if s.category == "Experimental"]
+    assert not any(s.startswith("ipc_deformable_") for s in experimental)
+
+
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     """`--screenshot` writes a real PPM via the dartpy.gui Filament viewer
     (PLAN-103 Phase 2 replacement for the old JSON state stub)."""
@@ -59,8 +132,19 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     target = scenes[0]
     out = tmp_path / "snap.ppm"
     rc = run(
-        ["--scene", target.id, "--frames", "1", "--headless",
-         "--width", "160", "--height", "120", "--screenshot", str(out)],
+        [
+            "--scene",
+            target.id,
+            "--frames",
+            "1",
+            "--headless",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(out),
+        ],
         scenes,
     )
     # Soft-fail (rc != 0) is acceptable when the scene's assets can't load
