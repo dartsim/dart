@@ -441,6 +441,60 @@ def build_cloth_from_obj(
     return options, edges
 
 
+def build_strand_from_seg(
+    path: "str | Path",
+    *,
+    mass: float = 0.05,
+    edge_stiffness: float = 150.0,
+    damping: float = 1.0,
+    translate: Sequence[float] = (0.0, 0.0, 0.0),
+    fixed_nodes: Iterable[int] = (),
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """Build a mass-spring strand from a ``.seg`` segment mesh.
+
+    Loads the segment mesh via :func:`sx.load_seg_line_mesh` (positions + spring
+    edges with auto rest lengths), then sets a uniform nodal ``mass``,
+    ``edge_stiffness`` and ``damping``. ``translate`` offsets every vertex.
+    Returns the options plus the segment list for the wireframe.
+    """
+
+    options = sx.load_seg_line_mesh(str(path))
+    offset = np.asarray(translate, dtype=float)
+    options.positions = [
+        np.asarray(p, dtype=float) + offset for p in options.positions
+    ]
+    options.masses = [mass] * len(options.positions)
+    options.edge_stiffness = edge_stiffness
+    options.damping = damping
+    edges = [(edge.node_a, edge.node_b) for edge in options.edges]
+    fixed = list(fixed_nodes)
+    if fixed:
+        options.fixed_nodes = fixed
+    return options, edges
+
+
+def build_particles_from_pt(
+    path: "str | Path",
+    *,
+    mass: float = 0.02,
+    translate: Sequence[float] = (0.0, 0.0, 0.0),
+) -> "sx.DeformableBodyOptions":
+    """Build a cloud of free deformable particles from a ``.pt`` point set.
+
+    Loads the points via :func:`sx.load_point_set` (positions only) and assigns
+    a uniform nodal ``mass``; with no springs or tetrahedra the nodes are inertial
+    particles that fall under gravity and stack on contact barriers.
+    """
+
+    options = sx.load_point_set(str(path))
+    offset = np.asarray(translate, dtype=float)
+    options.positions = [
+        np.asarray(p, dtype=float) + offset for p in options.positions
+    ]
+    options.masses = [mass] * len(options.positions)
+    return options
+
+
 class IpcDeformableBridge:
     """Mirrors sx deformable bodies onto a render `dart.simulation.World`."""
 

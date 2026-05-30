@@ -53,6 +53,8 @@ __all__: list[str] = [
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
     "load_obj_triangle_mesh",
+    "load_point_set",
+    "load_seg_line_mesh",
 ]
 
 
@@ -1422,6 +1424,10 @@ def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnos
 def load_gmsh_tet_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 def load_obj_triangle_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
+def load_seg_line_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
+def load_point_set(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 class World:
     def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC) -> None: ...

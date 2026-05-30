@@ -53,6 +53,7 @@
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
+#include <dart/simulation/experimental/io/codim_mesh.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/io/gmsh_tet_mesh.hpp>
 #include <dart/simulation/experimental/io/obj_triangle_mesh.hpp>
@@ -1919,6 +1920,38 @@ void defSimulationExperimentalModule(nb::module_& m)
       "Load a Wavefront .obj triangle surface mesh into a "
       "DeformableBodyOptions (positions + surface_triangles). Add spring edges "
       "and masses (or tetrahedra + material) to make it a simulable body.");
+
+  m.def(
+      "load_seg_line_mesh",
+      [](const std::filesystem::path& path) {
+        const auto mesh = sim::io::loadSegLineMeshFile(path);
+        sim::DeformableBodyOptions options;
+        options.positions = mesh.positions;
+        options.edges.reserve(mesh.segments.size());
+        for (const auto& segment : mesh.segments) {
+          // restLength <= 0 asks the body builder to use the initial distance.
+          options.edges.push_back(
+              sim::DeformableEdge{segment[0], segment[1], -1.0});
+        }
+        return options;
+      },
+      nb::arg("path"),
+      "Load a .seg segment mesh into a DeformableBodyOptions (positions + "
+      "spring edges, rest lengths taken from the initial layout). Add masses "
+      "to "
+      "make it a simulable mass-spring strand.");
+
+  m.def(
+      "load_point_set",
+      [](const std::filesystem::path& path) {
+        const auto points = sim::io::loadPointSetFile(path);
+        sim::DeformableBodyOptions options;
+        options.positions = points.positions;
+        return options;
+      },
+      nb::arg("path"),
+      "Load a .pt point set into a DeformableBodyOptions (positions only). Add "
+      "masses to make it a cloud of free deformable particles.");
 
   nb::class_<sim::World>(m, "World")
       .def(

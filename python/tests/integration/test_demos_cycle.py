@@ -216,6 +216,44 @@ def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
     assert float(z.min()) > -0.21
 
 
+def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
+    """The .seg and .pt importers feed real deformable solves.
+
+    A `.seg` strand pinned at one end must hang (its tip falls well below the
+    pinned node), and a `.pt` particle cloud must fall under gravity and stack on
+    the ground barrier without tunneling through it -- both staying finite.
+    """
+
+    import numpy as np
+    from examples.demos.scenes.ipc_deformable_pt_particles import (
+        build as build_particles,
+    )
+    from examples.demos.scenes.ipc_deformable_seg_strand import build as build_strand
+
+    strand = build_strand()
+    sworld = strand.info["sx_world"]
+    sbody = sworld.get_deformable_body("seg_strand")
+    sn = sbody.node_count
+    for _ in range(200):
+        sworld.step()
+    sz = np.array([sbody.node_position(i)[2] for i in range(sn)])
+    assert np.isfinite(sz).all()
+    # The pinned node (0) stays put; the tip hangs well below it.
+    assert float(sz[0] - sz.min()) > 0.1
+
+    particles = build_particles()
+    pworld = particles.info["sx_world"]
+    pbody = pworld.get_deformable_body("pt_particles")
+    pn = pbody.node_count
+    z_start = min(pbody.node_position(i)[2] for i in range(pn))
+    for _ in range(200):
+        pworld.step()
+    pz = np.array([pbody.node_position(i)[2] for i in range(pn)])
+    assert np.isfinite(pz).all()
+    assert float(pz.min()) < z_start - 0.05  # fell under gravity
+    assert float(pz.min()) > -0.02  # caught by the ground barrier
+
+
 def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     """The IPC deformable scenes live in their own dedicated menu category.
 
@@ -240,6 +278,8 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_buckle",
         "ipc_deformable_fem_msh",
         "ipc_deformable_obj_cloth",
+        "ipc_deformable_seg_strand",
+        "ipc_deformable_pt_particles",
         "ipc_deformable_scripted_dirichlet",
     }
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
