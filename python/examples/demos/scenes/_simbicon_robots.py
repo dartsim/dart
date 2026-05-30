@@ -65,6 +65,10 @@ def make_atlas_config() -> SimbiconConfig:
         cv=0.2,
         torso_kp=5000.0,
         torso_kd=1.0,
+        # Stop the gradual crouch-collapse: extend the stance knee toward the
+        # standing pelvis height. 2.0 is the sweep sweet spot (Atlas survives
+        # 3000+ steps; higher values over-correct and destabilize the knee).
+        height_kp=2.0,
         min_pelvis_height=-0.70,
         max_pelvis_height=0.30,
         foot_contact_height=0.04,
@@ -149,6 +153,9 @@ def make_g1_config() -> SimbiconConfig:
         cv=0.2,
         torso_kp=400.0,
         torso_kd=1.0,
+        # Stop the gradual crouch-collapse (see make_atlas_config). 2.0 is the
+        # sweep sweet spot for G1 too (survival nearly doubles).
+        height_kp=2.0,
         # The shared ground.skel slab sits at world z=-0.95 (top), so the G1
         # pelvis operates around -0.19 once standing on it.
         min_pelvis_height=-0.60,

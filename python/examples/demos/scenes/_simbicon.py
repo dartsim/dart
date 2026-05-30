@@ -29,14 +29,10 @@ Notes on the Python port (vs the C++ ``examples/demos/scenes/atlas_simbicon``):
 
 from __future__ import annotations
 
-import dataclasses
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
-
-# RotX(+90deg): the canonical Z-up convention used across py-demos.
-_DEG = math.pi / 180.0
 
 
 @dataclass
@@ -71,6 +67,10 @@ class SimbiconConfig:
     # World-frame torso/swing-hip virtual PD gains.
     torso_kp: float = 1000.0
     torso_kd: float = 100.0
+    # Stance-leg height-regulation gain (0 disables). Extends the stance knee
+    # when the pelvis sinks below its standing height, counteracting the gradual
+    # crouch-collapse the bare gait targets exhibit (the dominant fall mode).
+    height_kp: float = 0.0
 
     # --- Emergency-stop pelvis-height window (world Z, metres). ---
     min_pelvis_height: float = -1.0
@@ -167,8 +167,14 @@ class SimbiconController:
         # FSM: 0,1 = left stance; 2,3 = right stance. 0,2 swing-up; 1,3 down.
         self._state = 0
         self._state_time = 0.0
+        # Standing pelvis height captured at the spawn pose; the height-
+        # regulation term drives the pelvis back toward it.
+        self._target_pz = self._pelvis_world_z()
 
     # ----------------------------------------------------------------- COM ---
+    def _pelvis_world_z(self) -> float:
+        return float(np.asarray(self._pelvis.get_world_transform().matrix())[2, 3])
+
     def _hip_world(self, thigh):
         return np.asarray(thigh.get_world_transform().matrix())[:3, 3]
 
@@ -224,6 +230,22 @@ class SimbiconController:
         cross = np.cross(com_z, proj)
         sign_component = cross[1 if sagittal else 0]
         return angle if sign_component > 0.0 else -angle
+
+    def _pelvis_rates(self, frame: np.ndarray):
+        """Sagittal/coronal pelvis-lean rates (d/dt of :meth:`_pelvis_angle`).
+
+        ``getSpatialVelocity()`` returns the body-frame twist; rotating its
+        angular part into the world gives the pelvis angular velocity. Its
+        component about the lateral axis is the forward-tilt (sagittal) rate and
+        the component about the forward axis is the lateral-tilt (coronal) rate
+        -- the derivative terms the torso PD needs to damp the upright pose.
+        """
+        twist = np.asarray(self._pelvis.get_spatial_velocity())
+        rot = np.asarray(self._pelvis.get_world_transform().matrix())[:3, :3]
+        omega = rot @ twist[:3]
+        rate_sag = float(omega @ frame[:, 1])
+        rate_cor = float(omega @ frame[:, 0])
+        return rate_sag, rate_cor
 
     # ------------------------------------------------------------- gait ------
     def _swing_is_right(self) -> bool:
@@ -282,7 +304,7 @@ class SimbiconController:
 
     # ------------------------------------------------------------ control ----
     def _allowing_control(self) -> bool:
-        z = float(np.asarray(self._pelvis.get_world_transform().matrix())[2, 3])
+        z = self._pelvis_world_z()
         return self.cfg.min_pelvis_height <= z <= self.cfg.max_pelvis_height
 
     def pre_step(self) -> None:
@@ -308,6 +330,21 @@ class SimbiconController:
         if cor_idx >= 0:
             desired[cor_idx] += -(c.cd * d_cor + c.cv * v_cor)
 
+        # Stance-leg height regulation. The bare gait targets let the body
+        # gradually crouch-collapse (traces show the pelvis sinking cycle over
+        # cycle until it drops out of the control window -- the dominant fall
+        # mode for both Atlas and G1). Extend the stance knee toward its
+        # standing height when the pelvis sinks. Flexion is +knee_sign (the
+        # swing knee bends with knee_sign*swing_knee_up), so extension is the
+        # -knee_sign direction; the clip caps the per-step correction.
+        if c.height_kp != 0.0:
+            err_h = self._target_pz - self._pelvis_world_z()  # >0 when too low
+            stance_knee = self._dof[f"{'left' if swing_right else 'right'}_knee"]
+            if stance_knee >= 0:
+                desired[stance_knee] += (
+                    -c.knee_sign * c.height_kp * float(np.clip(err_h, -0.25, 0.25))
+                )
+
         # Stable-PD (SPD, Tan et al. 2011) toward the feedback-adjusted targets.
         # SPD stays stable for stiff gains on low-inertia DOFs (e.g. G1's wrists)
         # where explicit PD explodes. Root (first 6 free-joint DOFs) is left
@@ -332,11 +369,20 @@ class SimbiconController:
         # convention (see the C++ atlas_simbicon backward-topple fix).
         pelvis_sag = self._pelvis_angle(sagittal=True)
         pelvis_cor = self._pelvis_angle(sagittal=False)
+        rate_sag, rate_cor = self._pelvis_rates(self._com_frame())
+        # PD on the world-frame pelvis lean. The paper's torso law is a PD, so
+        # wire in the damping (torso_kd) term that opposes the lean rate; it
+        # mirrors each proportional term's sign because rate_sag/rate_cor are
+        # the exact time-derivatives of pelvis_sag/pelvis_cor. (It steadies the
+        # torso but is not the dominant balance factor -- the gradual height
+        # sink that height_kp addresses is; keep torso_kd modest.)
         tau_torso_sag = (
             self.cfg.torso_kp * (pelvis_sag + c.desired_pelvis_sagittal)
+            + self.cfg.torso_kd * rate_sag
         )
         tau_torso_cor = (
             -self.cfg.torso_kp * (pelvis_cor - c.desired_pelvis_coronal)
+            - self.cfg.torso_kd * rate_cor
         )
         stance_sag = self._dof[
             f"{'left' if swing_right else 'right'}_hip_sagittal"
