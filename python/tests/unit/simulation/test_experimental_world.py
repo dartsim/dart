@@ -2536,6 +2536,48 @@ def test_experimental_deformable_body_topology_python_api():
     assert body.node_mass(0) == pytest.approx(1.0)
 
 
+def test_experimental_world_exposes_deformable_solver_diagnostics():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+    world.gravity = [0.0, 0.0, -9.81]
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.material.youngs_modulus = 1.0e4
+    options.material.use_finite_element_elasticity = True
+    options.fixed_nodes = [0]
+    world.add_deformable_body("tet", options)
+
+    # Before any step the diagnostics are zero-initialized.
+    before = world.last_deformable_solver_diagnostics
+    assert before.body_count == 0
+    assert before.node_count == 0
+    assert before.solver_iterations == 0
+
+    world.step(5)
+
+    after = world.last_deformable_solver_diagnostics
+    assert after.body_count == 1
+    assert after.node_count == 4
+    # The FEM body runs the implicit projected-Newton solve every step.
+    assert after.solver_iterations >= 1
+    assert after.objective_evaluations >= 1
+    assert after.projected_newton_steps + after.projected_newton_fallbacks >= 1
+    # No contacts in this free-hanging single tet.
+    assert after.self_contact_barrier_active_contacts == 0
+    assert after.converged_active_contact_count == 0
+
+    # The snapshot is read-only.
+    with pytest.raises((AttributeError, TypeError)):
+        after.node_count = 99
+
+
 def test_experimental_deformable_body_boundary_conditions_python_api():
     sx = _simulation_experimental()
     world = sx.World(time_step=0.1)

@@ -1103,6 +1103,32 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     closed-form fixed-corotational energy regression under a uniform scale
     `F = c*I` (`3*mu*(c-1)^2 + (lambda/2)*(c^3-1)^2`), which pins the absolute
     energy value that the finite-difference gradient test cannot.
+  - Replaced the fixed-corotational element's Gauss-Newton Hessian with the exact
+    analytic Hessian `2*mu*(I9 - dR/dF) + lambda*(g*g^T + (J - 1)*d^2J/dF^2)`,
+    where the polar-rotation gradient `dR/dF` is solved from the corotational
+    identity `(tr(S) I - S) w = axl(R^T dF - dF^T R)`, validated by a
+    finite-difference Hessian match. Like the IPC paper's per-element Hessian it
+    is generally indefinite, so the solver PSD-projects it through the existing
+    batched seam; severely inverted elements (where the rotation gradient is
+    undefined) fall back to the always-PSD Gauss-Newton form (regression added).
+    The exact Newton curvature converges the line search far faster than the
+    Gauss-Newton approximation, cutting the `BM_DeformableFcrBarStep` per-step
+    time about 7x (to near stable-neo-Hookean parity at equal mesh resolution)
+    while leaving the energy, gradient, and settled solution unchanged (every
+    fixed-corotational kernel and solver test still passes).
+  - Exposed a read-only `DeformableSolverDiagnostics` snapshot of the deformable
+    solver's per-step statistics on the experimental `World`
+    (`World::getLastDeformableSolverDiagnostics`, dartpy
+    `world.last_deformable_solver_diagnostics`). It is a curated, stable subset
+    of the internal `DeformableSolverStats` -- mesh sizes, projected-Newton
+    convergence (iterations, objective evaluations, line-search trials, Newton
+    steps vs steepest-descent fallbacks), self-contact activity, friction
+    dissipation, and the contact closest-approach diagnostic -- captured after
+    each built-in-pipeline step so tools and Python scripts can observe solver
+    behavior (e.g. per-step Newton iteration counts) without the explicit
+    stage/pipeline API. The user-supplied-pipeline `step` overloads leave it
+    unchanged (read the stage's own `getLastStats` there). Adds C++ and Python
+    regressions.
   - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
     counter-rotated at both ends by opposing scripted Dirichlet boundary
     conditions, then released so the stable neo-Hookean core untwists
