@@ -334,19 +334,23 @@ overshoots before the body can move). Verified
 
 ### Still future (the rest of Phase C)
 
-- **Link-vs-link contact** — the remaining gate-1 prerequisite, now substantially
-  **re-pathed by the rigid IPC contact solver** (`#2777`,
+- **Link-vs-link contact — sphere-sphere first slice landed; arbitrary geometry
+  re-pathed onto the rigid IPC stack.** A first link-vs-link query ships:
+  `makeVariationalLinkSphereContactHook` does compliant **sphere-sphere
+  self-contact** between links (penalty + Kelvin-Voigt damping along the center
+  line, an equal-and-opposite force mapped to both links' point Jacobians),
+  verified by `SphereContactStopsSlidingLink` (a link sliding into a fixed base
+  sphere is stopped, no pass-through). **Arbitrary link geometry** is the
+  remaining gap, now **re-pathed by the rigid IPC contact solver** (`#2777`,
   [`082-rigid-implicit-barrier-contact.md`](../082-rigid-implicit-barrier-contact.md)):
   its `detail/contact_jacobians.{hpp,cpp}`, `detail/rigid_ipc_ccd.*`, and the
   `detail/deformable_contact/` geometry (`candidate_set.hpp`,
   `continuous_collision_step.*`, `tangent_stencil.hpp`) already provide the rigid
-  candidate generation, curved-trajectory CCD, and contact Jacobians the VI's
-  RIQN loop needs. So this is no longer a net-new collision workstream but
-  **adapting that stack into an in-loop contact query** (signed distance +
-  `∂d/∂q` at the trial `qᵏ⁺¹`) and feeding it the C1-C3 force laws + the
-  reduced-coordinate glue already built. The C1-C3 rungs cover
-  link-point-vs-analytic-ground; arbitrary link-geometry pairs need this adapter,
-  coordinated with PLAN-082-rigid-implicit-barrier-contact / PLAN-081.
+  candidate generation, curved-trajectory CCD, and contact Jacobians, so this is
+  no longer a net-new collision workstream but **adapting that stack into an
+  in-loop signed-distance + `∂d/∂q` query** at the trial `qᵏ⁺¹` and feeding it
+  the C1-C3 force laws — coordinated with PLAN-082-rigid-implicit-barrier-contact
+  / PLAN-081.
 - **World-surface productionization + a contact GUI demo — landed.** C1/C2
   (compliant penalty + lagged friction, with Kelvin-Voigt damping) are now
   reachable from `World::step()`: a per-multibody `comps::VariationalContact`

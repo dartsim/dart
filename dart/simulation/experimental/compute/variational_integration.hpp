@@ -246,6 +246,36 @@ private:
   std::vector<double> mDuals; ///< per contact point, >= 0
 };
 
+/// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link).** A sphere-sphere contact
+/// pair between two links of a multibody (self-contact): spheres of radius
+/// `radiusA`/`radiusB` fixed at body-frame centers `centerA`/`centerB` on links
+/// `linkA`/`linkB` (structure link indices).
+struct VariationalSphereContactPair
+{
+  std::size_t linkA = 0;
+  Eigen::Vector3d centerA = Eigen::Vector3d::Zero();
+  double radiusA = 0.0;
+  std::size_t linkB = 0;
+  Eigen::Vector3d centerB = Eigen::Vector3d::Zero();
+  double radiusB = 0.0;
+};
+
+/// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link contact, first slice).**
+/// Build an in-loop hook for compliant sphere-sphere contact between links of
+/// the same multibody. Each RIQN iteration, at the trial configuration, every
+/// overlapping pair contributes an equal-and-opposite penalty force
+/// `k*penetration` (with Kelvin-Voigt damping `c` along the center line)
+/// pushing the two link spheres apart, mapped to a generalized force via the
+/// per-link point Jacobians. This is the simplest link-vs-link query (sphere
+/// primitives); arbitrary link geometry reuses the rigid IPC contact stack (the
+/// gate-1 adapter, see the contact roadmap). Throws on negative stiffness or
+/// damping.
+[[nodiscard]] DART_EXPERIMENTAL_API VariationalContactHook
+makeVariationalLinkSphereContactHook(
+    double stiffness,
+    double dampingCoefficient,
+    std::vector<VariationalSphereContactPair> pairs);
+
 /// Advance one multibody by one step with the linear-time variational
 /// integrator (Lee, Liu, Park, Srinivasa, WAFR 2016 / arXiv:1609.02898).
 ///

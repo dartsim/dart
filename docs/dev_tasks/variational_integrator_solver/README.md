@@ -210,8 +210,11 @@ gaps to the [north star](#north-star), in priority order:
    **augmented-Lagrangian** drift-free contact (`VariationalGroundContactSolver`:
    per-contact dual + Kelvin-Voigt damping). Verified: rest at `mg/k`, a swinging
    revolute tip held off the plane, a sliding block decelerated by friction, and
-   the AL slider centered at `d ≈ 0` (vs the penalty `−mg/k`). Remaining:
-   **link-vs-link contact** — now **re-pathed** to _adapt the rigid IPC contact
+   the AL slider centered at `d ≈ 0` (vs the penalty `−mg/k`). **Link-vs-link
+   contact has a first slice**: `makeVariationalLinkSphereContactHook` does
+   compliant **sphere-sphere self-contact** between links (verified — a link
+   sliding into a fixed base sphere is stopped, no pass-through). Remaining:
+   **arbitrary link geometry**, now **re-pathed** to _adapt the rigid IPC contact
    stack_ (`#2777`: contact Jacobians, curved-trajectory CCD, candidate
    generation) into an in-loop signed-distance/gradient query, no longer a
    net-new collision workstream (see the

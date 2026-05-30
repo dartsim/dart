@@ -1110,6 +1110,85 @@ void VariationalGroundContactSolver::updateDuals(
 }
 
 //==============================================================================
+VariationalContactHook makeVariationalLinkSphereContactHook(
+    double stiffness,
+    double dampingCoefficient,
+    std::vector<VariationalSphereContactPair> pairs)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      stiffness < 0.0,
+      InvalidOperationException,
+      "Link-sphere contact stiffness must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      dampingCoefficient < 0.0,
+      InvalidOperationException,
+      "Link-sphere contact damping coefficient must be non-negative");
+
+  // Compliant sphere-sphere contact between links: for each overlapping pair at
+  // the trial configuration, an equal-and-opposite penalty force k*penetration
+  // (with lagged Kelvin-Voigt damping along the center line) pushes the two
+  // link spheres apart, mapped to a generalized force via both links' point
+  // Jacobians.
+  return [stiffness, dampingCoefficient, pairs = std::move(pairs)](
+             const VariationalContactContext& context) -> Eigen::VectorXd {
+    Eigen::VectorXd generalizedForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    if (stiffness == 0.0) {
+      return generalizedForce;
+    }
+    const std::size_t linkCount = context.linkWorldTransforms.size();
+    for (const VariationalSphereContactPair& pair : pairs) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          pair.linkA >= linkCount || pair.linkB >= linkCount,
+          InvalidOperationException,
+          "Link-sphere contact pair references an out-of-range link index");
+      const Eigen::Vector3d worldCenterA
+          = context.linkWorldTransforms[pair.linkA] * pair.centerA;
+      const Eigen::Vector3d worldCenterB
+          = context.linkWorldTransforms[pair.linkB] * pair.centerB;
+      const Eigen::Vector3d delta = worldCenterB - worldCenterA;
+      const double distance = delta.norm();
+      if (distance < 1e-12) {
+        continue; // coincident centers: undefined normal, skip.
+      }
+      const Eigen::Vector3d normal = delta / distance; // unit, from A to B.
+      const double penetration = (pair.radiusA + pair.radiusB) - distance;
+      if (penetration <= 0.0) {
+        continue; // separated.
+      }
+      double forceMagnitude = stiffness * penetration;
+      if (dampingCoefficient > 0.0 && context.timeStep > 0.0) {
+        // Lagged q^k center velocities J_world(c) v, for Kelvin-Voigt damping
+        // along the center line (constant across the step's RIQN iterates).
+        const Eigen::MatrixXd& jacobianA
+            = context.previousLinkBodyJacobians[pair.linkA];
+        const Eigen::Vector3d velocityA
+            = context.previousLinkWorldTransforms[pair.linkA].linear()
+              * (jacobianA.bottomRows<3>()
+                 - detail::skew(pair.centerA) * jacobianA.topRows<3>())
+              * context.previousVelocity;
+        const Eigen::MatrixXd& jacobianB
+            = context.previousLinkBodyJacobians[pair.linkB];
+        const Eigen::Vector3d velocityB
+            = context.previousLinkWorldTransforms[pair.linkB].linear()
+              * (jacobianB.bottomRows<3>()
+                 - detail::skew(pair.centerB) * jacobianB.topRows<3>())
+              * context.previousVelocity;
+        const double approachRate = (velocityB - velocityA).dot(normal);
+        forceMagnitude
+            = std::max(0.0, forceMagnitude - dampingCoefficient * approachRate);
+      }
+      // Equal and opposite: push A along -n, B along +n.
+      generalizedForce += variationalContactPointForce(
+          context, pair.linkA, pair.centerA, -forceMagnitude * normal);
+      generalizedForce += variationalContactPointForce(
+          context, pair.linkB, pair.centerB, forceMagnitude * normal);
+    }
+    return generalizedForce;
+  };
+}
+
+//==============================================================================
 VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,

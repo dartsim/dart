@@ -2677,3 +2677,68 @@ TEST(VariationalGroundContact, WorldSurfaceCompliantContactRestsOnGround)
   EXPECT_GT(finalZ, -0.01); // held near the plane (not free-falling through).
   EXPECT_NEAR(finalZ, -analytic, 1.5 * analytic); // ~mg/k penetration.
 }
+
+// PLAN-082 Phase C link-vs-link contact (first slice): sphere-sphere
+// self-contact. A link sliding toward a fixed sphere on the base is stopped by
+// compliant sphere-sphere contact -- the moving sphere does not pass through
+// the fixed one. Exercises makeVariationalLinkSphereContactHook (the simplest
+// link-vs-link query, the first slice of the gate-1 contact-query workstream).
+TEST(VariationalLinkContact, SphereContactStopsSlidingLink)
+{
+  const double dt = 1.0e-3;
+  const int steps = 1500;
+  const double k = 1.0e3;
+  const double radius = 0.1;
+  const double fixedX = 0.5; // base-sphere center x.
+  const double v0 = 1.0;     // initial slide speed toward the fixed sphere.
+  const double touchX = fixedX - 2.0 * radius; // 0.3: where the spheres touch.
+
+  sx::World world;
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitX();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(1.0);
+  carriage.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  carriage.getParentJoint().setVelocity(
+      Eigen::VectorXd::Constant(1, v0)); // slide toward the fixed sphere.
+  world.updateKinematics();
+
+  const auto& structure = structureOf(world);
+  sxc::VariationalSphereContactPair pair;
+  pair.linkA = 0; // base (root), fixed.
+  pair.centerA = Eigen::Vector3d(fixedX, 0.0, 0.0);
+  pair.radiusA = radius;
+  pair.linkB = structure.links.size() - 1; // carriage (sphere at its origin).
+  pair.centerB = Eigen::Vector3d::Zero();
+  pair.radiusB = radius;
+  const auto hook = sxc::makeVariationalLinkSphereContactHook(k, 20.0, {pair});
+
+  auto& registry = world.getRegistry();
+  const Eigen::Vector3d gravity
+      = world.getGravity(); // -Z; irrelevant to the x-only carriage.
+  sxc::MultibodyVariationalState state;
+  double maxX = 0.0;
+  bool finite = true;
+  bool converged = true;
+  for (int step = 0; step < steps; ++step) {
+    const auto report = sxc::integrateMultibodyVariational(
+        registry, structure, gravity, dt, state, 100, 1e-10, {}, 5, hook);
+    converged = converged && report.converged;
+    finite = finite && std::isfinite(report.residualNorm);
+    maxX = std::max(maxX, carriage.getParentJoint().getPosition()[0]);
+  }
+
+  EXPECT_TRUE(converged);
+  EXPECT_TRUE(finite);
+  // The carriage slid up to the contact (~touchX)...
+  EXPECT_GT(maxX, touchX - 0.05);
+  // ...and sphere-sphere contact stopped it: it did not pass through the fixed
+  // sphere (the overshoot is a bounded penalty penetration).
+  EXPECT_LT(maxX, touchX + 0.08);
+}
