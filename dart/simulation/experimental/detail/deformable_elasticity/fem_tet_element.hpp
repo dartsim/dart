@@ -189,9 +189,8 @@ inline double stableNeoHookeanEnergyDensity(
   const double ic = f.squaredNorm();
   const double j = f.determinant();
   const double lambdaAlpha = lame.lambda + 0.75 * lame.mu;
-  return 0.5 * lame.mu * (ic - 3.0)
-      - 0.5 * lame.mu * std::log((ic + 1.0) / 4.0)
-      + 0.5 * lame.lambda * (j * j - 1.0) - lambdaAlpha * (j - 1.0);
+  return 0.5 * lame.mu * (ic - 3.0) - 0.5 * lame.mu * std::log((ic + 1.0) / 4.0)
+         + 0.5 * lame.lambda * (j * j - 1.0) - lambdaAlpha * (j - 1.0);
 }
 
 /// First Piola-Kirchhoff stress P = dpsi/dF (a 3x3 matrix).
@@ -227,7 +226,8 @@ inline Matrix9d stableNeoHookeanEnergyHessian(
   h.diagonal().array() += lame.mu * (ic / denom);
   h.noalias() += (2.0 * lame.mu / (denom * denom)) * (vecF * vecF.transpose());
   h.noalias() += lame.lambda * (vecG * vecG.transpose());
-  h.noalias() += (lame.lambda * j - lambdaAlpha) * detail::determinantHessian(f);
+  h.noalias()
+      += (lame.lambda * j - lambdaAlpha) * detail::determinantHessian(f);
   return h;
 }
 

@@ -57,7 +57,9 @@ Nodes restTetrahedron()
 
 //==============================================================================
 double energyAt(
-    const Nodes& x, const fem::TetRestShape& rest, const fem::LameParameters& lame)
+    const Nodes& x,
+    const fem::TetRestShape& rest,
+    const fem::LameParameters& lame)
 {
   return fem::evaluateStableNeoHookeanTet(
              x[0], x[1], x[2], x[3], rest, lame, /*computeHessian=*/false)
@@ -67,7 +69,9 @@ double energyAt(
 //==============================================================================
 // Central-difference gradient of the energy w.r.t. the 12 nodal coordinates.
 fem::Vector12d finiteGradient(
-    const Nodes& x, const fem::TetRestShape& rest, const fem::LameParameters& lame)
+    const Nodes& x,
+    const fem::TetRestShape& rest,
+    const fem::LameParameters& lame)
 {
   constexpr double h = 1e-6;
   fem::Vector12d grad = fem::Vector12d::Zero();
@@ -78,7 +82,8 @@ fem::Vector12d finiteGradient(
       plus[node][axis] += h;
       minus[node][axis] -= h;
       grad[3 * node + axis]
-          = (energyAt(plus, rest, lame) - energyAt(minus, rest, lame)) / (2.0 * h);
+          = (energyAt(plus, rest, lame) - energyAt(minus, rest, lame))
+            / (2.0 * h);
     }
   }
   return grad;
@@ -87,7 +92,9 @@ fem::Vector12d finiteGradient(
 //==============================================================================
 // Central-difference Hessian via differencing the analytic gradient.
 fem::Matrix12d finiteHessian(
-    const Nodes& x, const fem::TetRestShape& rest, const fem::LameParameters& lame)
+    const Nodes& x,
+    const fem::TetRestShape& rest,
+    const fem::LameParameters& lame)
 {
   constexpr double h = 1e-6;
   fem::Matrix12d hess = fem::Matrix12d::Zero();
@@ -141,7 +148,8 @@ TEST(FemTetElement, RestShapeVolumeMatchesAnalytic)
   ASSERT_TRUE(shape.valid);
   EXPECT_NEAR(shape.restVolume, 1.0 / 6.0, 1e-12);
   // Bm = Dm^-1 = I for the canonical rest tet.
-  EXPECT_TRUE(shape.inverseRestEdges.isApprox(Eigen::Matrix3d::Identity(), 1e-12));
+  EXPECT_TRUE(
+      shape.inverseRestEdges.isApprox(Eigen::Matrix3d::Identity(), 1e-12));
 }
 
 //==============================================================================
@@ -252,7 +260,11 @@ TEST(FemTetElement, InvertedElementStaysFinite)
   Nodes inverted = rest;
   inverted[3].z() = -1.0;
   const Eigen::Matrix3d f = fem::deformationGradient(
-      inverted[0], inverted[1], inverted[2], inverted[3], shape.inverseRestEdges);
+      inverted[0],
+      inverted[1],
+      inverted[2],
+      inverted[3],
+      shape.inverseRestEdges);
   ASSERT_LT(f.determinant(), 0.0);
 
   const fem::TetElementResult result = fem::evaluateStableNeoHookeanTet(

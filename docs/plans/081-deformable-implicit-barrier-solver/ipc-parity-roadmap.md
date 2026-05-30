@@ -32,7 +32,7 @@ scenes).
   projected Newton with batched PSD projection (+ optional CUDA backend),
   lagged smoothed Coulomb friction (ground + self-contact), conservative
   PT/EE CCD limiters, and active-set sweep-and-prune broad phase.
-- **153/154 corpus scenes need FEM** *and* upstream meshes; 0 meshes are
+- **153/154 corpus scenes need FEM** _and_ upstream meshes; 0 meshes are
   vendored and there is no `.msh`/`.obj`/`.seg`/`.pt` importer. So essentially
   no paper scene is reproducible today, and **every showcase figure row is
   still `planned`.**
@@ -43,7 +43,19 @@ The milestones are ordered by dependency. Each ships as one PR off `main`
 (milestone DART 7.0) with **kernel + correctness tests + a runnable example +
 a benchmark**, per the standing slice contract.
 
-### M1 — FEM tetrahedral elasticity (the keystone) — IN PROGRESS
+### M1 — FEM tetrahedral elasticity (the keystone) — LANDED
+
+Status: the stable neo-Hookean kernel
+(`detail/deformable_elasticity/fem_tet_element.hpp`) is implemented and
+finite-difference-validated; the solver wires it in as an opt-in elasticity
+model (`DeformableMaterialProperties.useFiniteElementElasticity`, also exposed to
+`dartpy`), assembling each tet's PSD-projected 12x12 Hessian through the existing
+batched seam. Ships with solver regressions, a `BM_DeformableFemBarStep`
+benchmark, and a `Deformable FEM Bar (IPC)` py-demos cantilever. The mass-spring
+path is byte-identical when the flag is off. Follow-ups within M1: fixed-corotational
+(FCR) material variant; per-body rest-shape caching (currently recomputed per
+step); twist/large-deformation showcase toward Fig. 4 / Fig. 14.
+
 Add a per-tetrahedron strain-energy term producing per-element energy,
 12-vector gradient, and 12×12 Hessian, reusing the existing PSD-projection
 batch seam and sparse projected-Newton assembly. Material from the existing
@@ -52,15 +64,17 @@ neo-Hookean** (Smith et al. 2018) — inversion-safe (finite energy for all F,
 including J ≤ 0), C∞, and the standard in modern IPC toolkits; FCR is a
 follow-up material variant. Rest data (`restPositions`,
 `tetrahedronRestVolumes`) already exists.
+
 - Tests: finite-difference gradient/Hessian consistency; rest-state zero
   energy + zero force; monotone energy under stretch; inversion-robustness
   (finite energy + force for an inverted element); determinism.
 - Example: a twisting / squashing FEM bar in py-demos (toward Fig 4 / Fig 14).
 - Benchmark: per-step FEM assembly + solve cost at a few mesh sizes.
-- Unblocks: every volumetric figure becomes *physically* possible (Figs 4, 12,
+- Unblocks: every volumetric figure becomes _physically_ possible (Figs 4, 12,
   13, 14, 15, 22, Table 1), pending obstacles/friction/assets per below.
 
 ### M2 — Obstacle barrier completeness (analytic + box) + codim wiring
+
 Generalize obstacle contact into a real clamped-log **force** everywhere: an
 analytic half-space (plane) collision object, a box-obstacle barrier force
 (reuse PT distance kernels against the box's triangulated faces), the
@@ -70,28 +84,33 @@ set so codimensional contact has barrier coverage. Unblocks the plane-drop
 unit families and is a prerequisite for codim objects.
 
 ### M3 — Codimensional collision objects (triangle / edge / vertex)
+
 Static (then moving) codimensional obstacles with barrier + CCD, plus the
 `.obj` / `.seg` / `.pt` importers. Unblocks Fig 2 (knives, points), Fig 17
 (pin-cushions), Fig 18 (codim rollers), and the 9-scene codim-unit family.
 
 ### M4 — Upstream asset pipeline + `.msh` (GMSH) importer
+
 A fetch-into-fixtures workflow for the upstream meshes pinned at
 `573d2c7e0…` (no vendoring, no runtime dependency), plus a GMSH `.msh`
 tet-mesh importer in `dart/io`. Port the contact-free tutorial scenes
 (`2cubesFall` DBC/NBC) first as regression fixtures, then the contact scenes.
 
 ### M5 — Mesh-vs-obstacle friction completeness
+
 Extend lagged smoothed Coulomb friction beyond the static-ground coefficient to
 mesh-vs-obstacle and codim contacts. Unblocks the friction figures: Fig 5 (card
 house), Fig 7 (cement arch), Fig 8 (ball-on-roller), Fig 16 (Armadillo roller),
 Fig 20 (stick-slip rod).
 
 ### M6 — Adaptive barrier stiffness (κ homotopy)
+
 IPC stiffness adaptation with a minimum-stiffness scale and force-balance
 update; additive (defaults to today's fixed κ). Unblocks Fig 12 (large
 mass/stiffness ratios) robustness.
 
 ### M7 — Scale + performance (CPU then GPU) until beating the reference
+
 Matrix-free / AMGCL-class iterative linear solve for very large systems (Fig
 22, 688K nodes), on-device GPU assembly + solve beyond the current PSD offload,
 and a profiling-grade benchmark harness that emits Fig-23-shaped statistics
@@ -105,7 +124,7 @@ net-new.
 This is a multi-PR program. No paper figure is reproducible until at least M1
 (FEM) lands, and the contact-heavy figures additionally need M2/M3/M5 plus the
 M4 assets. The mass-spring showcases already in py-demos (`IPC Deformable (sx)`)
-evoke the paper's *themes* but are explicitly **not** figure reproductions and
+evoke the paper's _themes_ but are explicitly **not** figure reproductions and
 do not count toward parity. Progress is tracked by promoting figure rows in
 [`ipc-paper-figure-showcase.md`](ipc-paper-figure-showcase.md) from `planned`
 → `in-progress` → `landed` → `reference-beaten`.

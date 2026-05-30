@@ -109,6 +109,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_drape",
         "ipc_deformable_trampoline",
         "ipc_deformable_friction_slide",
+        "ipc_deformable_fem_bar",
         "ipc_deformable_scripted_dirichlet",
     }
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"

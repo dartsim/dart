@@ -29,11 +29,9 @@ import math
 import sys
 from typing import Any, Callable, Iterable, Sequence
 
-import numpy as np
-
 import dartpy as dart
 import dartpy.simulation_experimental as sx
-
+import numpy as np
 
 # Node-sphere radii and colors mirror the C++ deformable demo.
 _FIXED_NODE_RADIUS = 0.045
@@ -157,6 +155,91 @@ def build_grid_options(
     return options
 
 
+# The 6-tetrahedron (Kuhn) decomposition of a hexahedral cell, indexed by the
+# cell's eight corners along the main diagonal corner0 -> corner7. |det| rest
+# volumes make per-tet orientation irrelevant to the FEM energy.
+_CUBE_TETRAHEDRA = (
+    (0, 1, 3, 7),
+    (0, 3, 2, 7),
+    (0, 2, 6, 7),
+    (0, 6, 4, 7),
+    (0, 4, 5, 7),
+    (0, 5, 1, 7),
+)
+
+
+def build_fem_bar(
+    *,
+    cells_x: int,
+    cells_y: int,
+    cells_z: int,
+    cell_size: float,
+    origin: Sequence[float],
+    youngs_modulus: float,
+    poisson_ratio: float = 0.3,
+    density: float = 1.0e3,
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """A tetrahedralized FEM beam pinned at its ``x == 0`` face.
+
+    Returns the ``DeformableBodyOptions`` (opting in to stable neo-Hookean FEM
+    elasticity, with tetrahedra and no spring edges) plus the unique tet edge
+    list for the render wireframe.
+    """
+
+    nx, ny, nz = cells_x + 1, cells_y + 1, cells_z + 1
+
+    def node_index(i: int, j: int, k: int) -> int:
+        return i + nx * (j + ny * k)
+
+    positions: list[Sequence[float]] = []
+    for k in range(nz):
+        for j in range(ny):
+            for i in range(nx):
+                positions.append(
+                    (
+                        origin[0] + i * cell_size,
+                        origin[1] + j * cell_size,
+                        origin[2] + k * cell_size,
+                    )
+                )
+
+    tetrahedra: list[sx.DeformableTetrahedron] = []
+    edges: set[tuple[int, int]] = set()
+    for k in range(cells_z):
+        for j in range(cells_y):
+            for i in range(cells_x):
+                # Cube corners in bit order (x, y, z): corner b has
+                # x = b&1, y = (b>>1)&1, z = (b>>2)&1.
+                corner = [
+                    node_index(i + (b & 1), j + ((b >> 1) & 1), k + ((b >> 2) & 1))
+                    for b in range(8)
+                ]
+                for a, b, c, d in _CUBE_TETRAHEDRA:
+                    n0, n1, n2, n3 = corner[a], corner[b], corner[c], corner[d]
+                    tetrahedra.append(sx.DeformableTetrahedron(n0, n1, n2, n3))
+                    for u, v in (
+                        (n0, n1),
+                        (n0, n2),
+                        (n0, n3),
+                        (n1, n2),
+                        (n1, n3),
+                        (n2, n3),
+                    ):
+                        edges.add((u, v) if u < v else (v, u))
+
+    fixed = [node_index(0, j, k) for k in range(nz) for j in range(ny)]
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [np.asarray(p, dtype=float) for p in positions]
+    options.tetrahedra = tetrahedra
+    options.fixed_nodes = fixed
+    options.material.youngs_modulus = youngs_modulus
+    options.material.poisson_ratio = poisson_ratio
+    options.material.density = density
+    options.material.use_finite_element_elasticity = True
+    return options, sorted(edges)
+
+
 class IpcDeformableBridge:
     """Mirrors sx deformable bodies onto a render `dart.simulation.World`."""
 
@@ -170,19 +253,32 @@ class IpcDeformableBridge:
         self._deformables: list[tuple[Any, list[Any], Any]] = []
         self._step_failed = False
 
-    def add_deformable_visual(self, body: Any, name: str = "deformable") -> None:
-        """Create per-node spheres + an edge wireframe for ``body``."""
+    def add_deformable_visual(
+        self,
+        body: Any,
+        name: str = "deformable",
+        edges: Iterable[tuple[int, int]] | None = None,
+    ) -> None:
+        """Create per-node spheres + an edge wireframe for ``body``.
+
+        ``edges`` overrides the wireframe connectivity; when ``None`` the body's
+        own spring edges are used. FEM bodies carry tetrahedra rather than spring
+        edges, so they pass an explicit tet-derived wireframe.
+        """
 
         node_count = body.node_count
 
         edge_shape = dart.LineSegmentShape(_EDGE_THICKNESS)
         for i in range(node_count):
             edge_shape.addVertex(np.asarray(body.node_position(i), dtype=float))
-        for i in range(body.edge_count):
-            edge = body.edge(i)
-            edge_shape.addConnection(edge.node_a, edge.node_b)
-        edge_frame = dart.SimpleFrame(
-            dart.Frame.world(), f"{name}_edges", np.eye(4))
+        if edges is None:
+            edges = [
+                (body.edge(i).node_a, body.edge(i).node_b)
+                for i in range(body.edge_count)
+            ]
+        for node_a, node_b in edges:
+            edge_shape.addConnection(int(node_a), int(node_b))
+        edge_frame = dart.SimpleFrame(dart.Frame.world(), f"{name}_edges", np.eye(4))
         edge_frame.set_shape(edge_shape)
         edge_frame.create_visual_aspect().set_color(list(_EDGE_COLOR))
         self.render_world.add_simple_frame(edge_frame)
@@ -196,10 +292,11 @@ class IpcDeformableBridge:
                 _translation(body.node_position(i)),
             )
             frame.set_shape(
-                dart.SphereShape(
-                    _FIXED_NODE_RADIUS if fixed else _FREE_NODE_RADIUS))
+                dart.SphereShape(_FIXED_NODE_RADIUS if fixed else _FREE_NODE_RADIUS)
+            )
             frame.create_visual_aspect().set_color(
-                list(_FIXED_NODE_COLOR if fixed else _FREE_NODE_COLOR))
+                list(_FIXED_NODE_COLOR if fixed else _FREE_NODE_COLOR)
+            )
             self.render_world.add_simple_frame(frame)
             node_frames.append(frame)
 
@@ -252,6 +349,7 @@ class IpcDeformableBridge:
 # Re-export math for scene modules that shape their grids with trig.
 __all__ = [
     "IpcDeformableBridge",
+    "build_fem_bar",
     "build_grid_options",
     "grid_index",
     "math",
