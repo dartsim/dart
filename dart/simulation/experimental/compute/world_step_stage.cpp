@@ -50,6 +50,7 @@
 #include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp"
+#include "dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -75,6 +76,7 @@
 namespace dart::simulation::experimental::compute {
 
 namespace dc = dart::simulation::experimental::detail::deformable_contact;
+namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
 
 namespace {
 
@@ -732,6 +734,19 @@ struct SphereObstacleBarrier
   double radius = 0.0;
 };
 
+// A static (oriented) box opted in as a deformable obstacle exerts a
+// clamped-log barrier on nearby deformable nodes along the outward surface
+// normal -- the box analogue of the sphere obstacle barrier. The closest point
+// on the box surface (and hence the surface distance and outward normal) is
+// found by clamping the node into the box's local frame, which handles
+// face/edge/corner contact uniformly.
+struct BoxObstacleBarrier
+{
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d rotation = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d halfExtents = Eigen::Vector3d::Zero();
+};
+
 //==============================================================================
 struct DeformableContactSolverScratch
 {
@@ -759,6 +774,12 @@ struct DeformableContactSolverScratch
   std::vector<int> newtonPatternOuter;
   std::vector<int> newtonPatternInner;
   bool newtonPatternValid = false;
+
+  // Cached per-tetrahedron FEM rest shapes (inverse rest edge matrix + rest
+  // volume). The rest configuration never changes, so these are computed once
+  // (when the cached count first matches the body's tetrahedron count) and
+  // reused every step instead of re-inverting each tet's rest edges per step.
+  std::vector<fem::TetRestShape> femRestShapes;
 };
 
 //==============================================================================
@@ -1664,6 +1685,37 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
 }
 
 //==============================================================================
+std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<BoxObstacleBarrier> obstacles;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    if (geometry.shape.type != CollisionShapeType::Box
+        || !geometry.shape.halfExtents.allFinite()
+        || (geometry.shape.halfExtents.array() <= 0.0).any()
+        || !transform.position.allFinite()
+        || !transform.orientation.coeffs().allFinite()) {
+      continue;
+    }
+    BoxObstacleBarrier obstacle;
+    obstacle.center = transform.position;
+    obstacle.rotation = transform.orientation.normalized().toRotationMatrix();
+    obstacle.halfExtents = geometry.shape.halfExtents;
+    obstacles.push_back(obstacle);
+  }
+  return obstacles;
+}
+
+//==============================================================================
 // The supporting static-ground contact under a node: the highest barrier
 // surface across all barriers at the node's (x, y), together with that
 // surface's geometric normal. Mirrors the max-top selection of the legacy
@@ -2248,6 +2300,82 @@ double addSphereObstacleBarrierEnergy(
 }
 
 //==============================================================================
+// Closest-surface distance from a node to an oriented box obstacle, with the
+// outward world-frame surface normal set when the distance is positive. The
+// node is clamped into the box's local frame; |local - clamp(local)| is the
+// distance to the surface (0 inside/on the box), uniform across face, edge, and
+// corner contact.
+double boxObstacleSurfaceDistance(
+    const Eigen::Vector3d& position,
+    const BoxObstacleBarrier& obstacle,
+    Eigen::Vector3d& outwardNormal)
+{
+  const Eigen::Vector3d local
+      = obstacle.rotation.transpose() * (position - obstacle.center);
+  const Eigen::Vector3d clamped
+      = local.cwiseMax(-obstacle.halfExtents).cwiseMin(obstacle.halfExtents);
+  const Eigen::Vector3d delta = local - clamped;
+  const double distance = delta.norm();
+  if (distance > 0.0 && std::isfinite(distance)) {
+    outwardNormal = obstacle.rotation * (delta / distance);
+  }
+  return distance;
+}
+
+//==============================================================================
+// Adds the clamped-log barrier energy/gradient pushing free deformable nodes
+// out of the activation band of an oriented box obstacle, along the outward
+// surface normal. The box analogue of addSphereObstacleBarrierEnergy.
+double addBoxObstacleBarrierEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<BoxObstacleBarrier>& obstacles,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (obstacles.empty()) {
+    return 0.0;
+  }
+
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  constexpr double barrierScale = 25.0;
+
+  double energy = 0.0;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || !std::isfinite(distance)) {
+        // On or inside the box: a penetration the barrier forbids.
+        return std::numeric_limits<double>::infinity();
+      }
+      if (distance >= activationDistance) {
+        continue;
+      }
+
+      const double normalizedDistance = distance / activationDistance;
+      const double distanceOffset = distance - activationDistance;
+      energy += -barrierScale * distanceOffset * distanceOffset
+                * std::log(normalizedDistance);
+
+      if (gradient != nullptr) {
+        const double derivative
+            = -barrierScale
+              * (2.0 * distanceOffset * std::log(normalizedDistance)
+                 + distanceOffset * distanceOffset / distance);
+        (*gradient)[i] += derivative * normal;
+      }
+    }
+  }
+
+  return energy;
+}
+
+//==============================================================================
 // Tangential speed below which static-ground friction smoothly vanishes (the
 // IPC mollifier velocity threshold epsv). Scaled by the time step to a
 // displacement radius.
@@ -2747,6 +2875,60 @@ std::size_t accumulateContactDistanceDiagnostics(
 }
 
 //==============================================================================
+// Stable neo-Hookean FEM elasticity inputs. When non-null (opt-in via
+// DeformableMaterial.useFiniteElementElasticity), each tetrahedron contributes
+// a volumetric strain energy/gradient/Hessian instead of the mass-spring edge
+// model. Null preserves the spring objective exactly.
+struct FemElasticityInputs
+{
+  const std::vector<comps::DeformableTetrahedron>* tetrahedra = nullptr;
+  const std::vector<fem::TetRestShape>* restShapes = nullptr;
+  fem::LameParameters lame;
+};
+
+// Adds the stable neo-Hookean strain energy/gradient over every valid
+// tetrahedron, scattering each element's 12-vector force gradient into its four
+// nodes (fixed nodes receive no gradient, like the spring term).
+double addFemElasticityEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const FemElasticityInputs& inputs,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (inputs.tetrahedra == nullptr || inputs.restShapes == nullptr) {
+    return 0.0;
+  }
+  const auto& tets = *inputs.tetrahedra;
+  const auto& rests = *inputs.restShapes;
+  const std::size_t count = std::min(tets.size(), rests.size());
+  double energy = 0.0;
+  for (std::size_t t = 0; t < count; ++t) {
+    const auto& tet = tets[t];
+    const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
+        positions[tet.nodeA],
+        positions[tet.nodeB],
+        positions[tet.nodeC],
+        positions[tet.nodeD],
+        rests[t],
+        inputs.lame,
+        /*computeHessian=*/false);
+    if (!element.valid) {
+      continue;
+    }
+    energy += element.energy;
+    if (gradient != nullptr) {
+      const std::array<std::size_t, 4> nodes
+          = {tet.nodeA, tet.nodeB, tet.nodeC, tet.nodeD};
+      for (int i = 0; i < 4; ++i) {
+        if (fixed[nodes[i]] == 0u) {
+          (*gradient)[nodes[i]] += element.gradient.segment<3>(3 * i);
+        }
+      }
+    }
+  }
+  return energy;
+}
+
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -2755,12 +2937,14 @@ double evaluateDeformableObjective(
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
     std::size_t* barrierActiveContacts = nullptr,
     const GroundFrictionInputs* groundFriction = nullptr,
-    const SelfContactFrictionInputs* selfContactFriction = nullptr)
+    const SelfContactFrictionInputs* selfContactFriction = nullptr,
+    const FemElasticityInputs* femElasticity = nullptr)
 {
   if (gradient != nullptr) {
     if (gradient->size() != positions.size()) {
@@ -2806,9 +2990,15 @@ double evaluateDeformableObjective(
     }
   }
 
+  if (femElasticity != nullptr) {
+    energy
+        += addFemElasticityEnergy(positions, fixed, *femElasticity, gradient);
+  }
   energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
   energy += addSphereObstacleBarrierEnergy(
       positions, fixed, sphereObstacles, gradient);
+  energy
+      += addBoxObstacleBarrierEnergy(positions, fixed, boxObstacles, gradient);
   if (contactBarrier != nullptr) {
     energy += addSelfContactBarrierEnergy(
         positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
@@ -3406,9 +3596,12 @@ bool computeProjectedNewtonDirection(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
     const SelfContactFrictionInputs* selfContactFriction,
+    const FemElasticityInputs* femElasticity,
     const double timeStep,
     const std::vector<Eigen::Vector3d>& gradient,
     std::vector<Eigen::Vector3d>& direction,
@@ -3534,6 +3727,53 @@ bool computeProjectedNewtonDirection(
     }
   }
 
+  // Stable neo-Hookean FEM elasticity Hessian per tetrahedron, PSD-projected
+  // over its 12x12 block through the same batched seam as the spring and
+  // barrier blocks. Null femElasticity (the default mass-spring path) skips
+  // this entirely, so spring bodies assemble exactly as before.
+  if (femElasticity != nullptr && femElasticity->tetrahedra != nullptr
+      && femElasticity->restShapes != nullptr) {
+    const auto& tets = *femElasticity->tetrahedra;
+    const auto& rests = *femElasticity->restShapes;
+    const std::size_t tetCount = std::min(tets.size(), rests.size());
+    constexpr std::size_t kTetBlockEntries = 144; // 12x12
+    std::vector<double> tetBlocks;
+    std::vector<std::array<std::size_t, 4>> tetBlockNodes;
+    tetBlocks.reserve(kTetBlockEntries * tetCount);
+    tetBlockNodes.reserve(tetCount);
+    for (std::size_t t = 0; t < tetCount; ++t) {
+      const auto& tet = tets[t];
+      const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
+          positions[tet.nodeA],
+          positions[tet.nodeB],
+          positions[tet.nodeC],
+          positions[tet.nodeD],
+          rests[t],
+          femElasticity->lame,
+          /*computeHessian=*/true);
+      if (!element.valid) {
+        continue;
+      }
+      const std::size_t offset = tetBlocks.size();
+      tetBlocks.resize(offset + kTetBlockEntries);
+      Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>(
+          tetBlocks.data() + offset) = element.hessian;
+      tetBlockNodes.push_back({tet.nodeA, tet.nodeB, tet.nodeC, tet.nodeD});
+    }
+    projectSymmetricBlocksToPsd(tetBlocks.data(), 12, tetBlockNodes.size());
+    for (std::size_t b = 0; b < tetBlockNodes.size(); ++b) {
+      const Eigen::Map<const Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>
+          projected(tetBlocks.data() + b * kTetBlockEntries);
+      const auto& nodes = tetBlockNodes[b];
+      for (int bi = 0; bi < 4; ++bi) {
+        for (int bj = 0; bj < 4; ++bj) {
+          addBlock3(
+              nodes[bi], nodes[bj], projected.block<3, 3>(3 * bi, 3 * bj));
+        }
+      }
+    }
+  }
+
   // Self-contact barrier Hessian per active contact, PSD-projected over 12x12.
   // Active point-triangle and edge-edge blocks are collected into one packed
   // batch, projected through the pluggable PSD backend (CPU by default,
@@ -3630,6 +3870,74 @@ bool computeProjectedNewtonDirection(
           static_cast<Eigen::Index>(3 * i + 2),
           static_cast<Eigen::Index>(3 * i + 2),
           std::max(0.0, second));
+    }
+  }
+
+  // Static sphere obstacle barrier Hessian. The full per-node barrier Hessian
+  // is B''(d) n n^T + (B'(d)/|x-c|)(I - n n^T) with n the outward radial
+  // normal; its tangential eigenvalues B'(d)/|x-c| are non-positive (the
+  // barrier force pulls the node radially out), so the PSD projection keeps
+  // only the rank-1 radial term max(0, B''(d)) n n^T -- the sphere analogue of
+  // the vertical ground barrier curvature, now along the radial normal.
+  if (!sphereObstacles.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    constexpr double barrierScale = 25.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (!isFree(i)) {
+        continue;
+      }
+      for (const auto& obstacle : sphereObstacles) {
+        const Eigen::Vector3d offset = positions[i] - obstacle.center;
+        const double centerDistance = offset.norm();
+        const double d = centerDistance - obstacle.radius;
+        if (d <= 0.0 || d >= activationDistance || centerDistance <= 0.0
+            || !std::isfinite(d)) {
+          continue;
+        }
+        const double distanceOffset = d - activationDistance;
+        const double logRatio = std::log(d / activationDistance);
+        const double second = -barrierScale
+                              * (2.0 * logRatio + 4.0 * distanceOffset / d
+                                 - (distanceOffset * distanceOffset) / (d * d));
+        const double curvature = std::max(0.0, second);
+        if (curvature <= 0.0) {
+          continue;
+        }
+        const Eigen::Vector3d normal = offset / centerDistance;
+        addBlock3(i, i, curvature * (normal * normal.transpose()));
+      }
+    }
+  }
+
+  // Static box obstacle barrier Hessian: the rank-1 radial curvature
+  // max(0, B''(d)) n n^T along the outward box-surface normal, the box analogue
+  // of the sphere obstacle barrier Hessian above (the tangential eigenvalues
+  // are again non-positive and drop out under PSD projection).
+  if (!boxObstacles.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    constexpr double barrierScale = 25.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (!isFree(i)) {
+        continue;
+      }
+      for (const auto& obstacle : boxObstacles) {
+        Eigen::Vector3d normal;
+        const double d
+            = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+        if (d <= 0.0 || d >= activationDistance || !std::isfinite(d)) {
+          continue;
+        }
+        const double distanceOffset = d - activationDistance;
+        const double logRatio = std::log(d / activationDistance);
+        const double second = -barrierScale
+                              * (2.0 * logRatio + 4.0 * distanceOffset / d
+                                 - (distanceOffset * distanceOffset) / (d * d));
+        const double curvature = std::max(0.0, second);
+        if (curvature <= 0.0) {
+          continue;
+        }
+        addBlock3(i, i, curvature * (normal * normal.transpose()));
+      }
     }
   }
 
@@ -3828,12 +4136,44 @@ void advanceDeformableBody(
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
-    double frictionCoefficient,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const comps::DeformableMaterial& material,
     DeformableSolverStats& stats)
 {
   const auto nodeCount = state.positions.size();
   if (nodeCount == 0) {
     return;
+  }
+
+  const double frictionCoefficient = material.frictionCoefficient;
+
+  // Opt-in stable neo-Hookean FEM elasticity. Each tetrahedron's rest shape is
+  // computed once and cached in the per-entity scratch (the rest configuration
+  // never changes), then reused every step; the inputs are passed by pointer
+  // into the objective and projected-Newton assembly, replacing the mass-spring
+  // edge model for this body. Null (the default) leaves the spring path
+  // byte-identical.
+  FemElasticityInputs femElasticity;
+  const FemElasticityInputs* femElasticityPtr = nullptr;
+  if (material.useFiniteElementElasticity && !topology.tetrahedra.empty()
+      && topology.restPositions.size() == nodeCount) {
+    if (contactScratch.femRestShapes.size() != topology.tetrahedra.size()) {
+      contactScratch.femRestShapes.clear();
+      contactScratch.femRestShapes.reserve(topology.tetrahedra.size());
+      for (const auto& tet : topology.tetrahedra) {
+        contactScratch.femRestShapes.push_back(
+            fem::makeTetRestShape(
+                topology.restPositions[tet.nodeA],
+                topology.restPositions[tet.nodeB],
+                topology.restPositions[tet.nodeC],
+                topology.restPositions[tet.nodeD]));
+      }
+    }
+    femElasticity.tetrahedra = &topology.tetrahedra;
+    femElasticity.restShapes = &contactScratch.femRestShapes;
+    femElasticity.lame
+        = fem::lameParameters(material.youngsModulus, material.poissonRatio);
+    femElasticityPtr = &femElasticity;
   }
 
   stats.nodeCount += nodeCount;
@@ -3875,8 +4215,10 @@ void advanceDeformableBody(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
   if (model.edges.empty() && barriers.empty() && sphereObstacles.empty()
-      && rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty()
-      && contactScratch.surfaceTriangles.empty()) {
+      && boxObstacles.empty() && rigidSurfaceSnapshots.empty()
+      && movingRigidSurfaceSnapshots.empty()
+      && contactScratch.surfaceTriangles.empty()
+      && femElasticityPtr == nullptr) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
         scratch.next[i] = scratch.inertialTargets[i];
@@ -3974,12 +4316,14 @@ void advanceDeformableBody(
           scratch.activeFixed,
           barriers,
           sphereObstacles,
+          boxObstacles,
           timeStep,
           &scratch.gradient,
           &contactBarrier,
           &stats.selfContactBarrierActiveContacts,
           &groundFriction,
-          &selfContactFriction);
+          &selfContactFriction,
+          femElasticityPtr);
       if (!std::isfinite(energy)) {
         brokeEarly = true;
         break;
@@ -4088,12 +4432,14 @@ void advanceDeformableBody(
                 scratch.activeFixed,
                 barriers,
                 sphereObstacles,
+                boxObstacles,
                 timeStep,
                 nullptr,
                 &contactBarrier,
                 nullptr,
                 &groundFriction,
-                &selfContactFriction);
+                &selfContactFriction,
+                femElasticityPtr);
             if (std::isfinite(candidateEnergy)
                 && candidateEnergy <= energy + armijo * directionalDerivative) {
               // Record the accepted step's infinity norm (the actual per-node
@@ -4138,9 +4484,12 @@ void advanceDeformableBody(
           scratch.next,
           scratch.activeFixed,
           barriers,
+          sphereObstacles,
+          boxObstacles,
           &contactBarrier,
           &groundFriction,
           &selfContactFriction,
+          femElasticityPtr,
           timeStep,
           scratch.gradient,
           scratch.direction,
@@ -4234,12 +4583,14 @@ void advanceDeformableBody(
           scratch.activeFixed,
           barriers,
           sphereObstacles,
+          boxObstacles,
           timeStep,
           &scratch.gradient,
           &terminalBarrier,
           nullptr,
           &terminalGroundFriction,
-          &terminalSelfContactFriction);
+          &terminalSelfContactFriction,
+          femElasticityPtr);
       if (std::isfinite(terminalEnergy)) {
         lastGradSquared
             = gradientNormSquared(scratch.gradient, scratch.activeFixed);
@@ -4695,6 +5046,7 @@ void DeformableDynamicsStage::execute(
 
   const auto barriers = collectStaticGroundBarriers(world);
   const auto sphereObstacles = collectSphereObstacleBarriers(world);
+  const auto boxObstacles = collectBoxObstacleBarriers(world);
   const auto rigidSurfaceSnapshots
       = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
@@ -4764,7 +5116,8 @@ void DeformableDynamicsStage::execute(
         timeStep,
         barriers,
         sphereObstacles,
-        material.frictionCoefficient,
+        boxObstacles,
+        material,
         m_lastStats);
   }
 }

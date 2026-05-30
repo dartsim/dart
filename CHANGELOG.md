@@ -904,6 +904,81 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     surface CCD limiter remains the tunnelling guard for fast motion. Adds
     regressions that a node in the band is pushed radially outward and that an
     untagged sphere is inert.
+  - Added the projected-Newton Hessian for the static sphere obstacle barrier
+    (PLAN-081 M2 increment), making obstacle contact a first-class Newton term
+    rather than relying on the steepest-descent fallback. The full per-node
+    barrier Hessian's tangential eigenvalues are non-positive, so its PSD
+    projection is the rank-1 radial curvature `max(0, B''(d)) n n^T` along the
+    outward normal -- the sphere analogue of the vertical ground-barrier
+    curvature. Equilibrium-preserving (the Hessian changes only the search
+    direction), so the existing sphere obstacle regressions are unchanged. Adds
+    a `FemCubeSettlesOnSphereObstacleWithoutPenetrating` regression (a FEM cube
+    dropped onto a sphere obstacle settles intersection-free) and a
+    `Deformable FEM over Sphere (IPC)` py-demos scene (a FEM slab draping over a
+    sphere obstacle), exercising FEM elasticity with the sphere + ground
+    barriers together.
+  - Added a clamped-log barrier force (energy + gradient + projected-Newton
+    Hessian) for static oriented BOX obstacles (PLAN-081 M2 increment), the box
+    analogue of the sphere obstacle barrier. The closest point on the box surface
+    -- and hence the surface distance and outward normal -- is found by clamping
+    the node into the box's local frame, which handles face, edge, and corner
+    contact uniformly; the barrier pushes nearby deformable nodes out along that
+    normal, and its PSD-projected Hessian is the rank-1 radial curvature along
+    it. Reuses the existing `setDeformableSurfaceCcdObstacle` opt-in (the box CCD
+    limiter stays the tunnelling guard; box obstacles previously had no smooth
+    contact force); purely additive (all existing box surface-CCD regressions
+    unchanged). Adds `BoxObstacleBarrierRepelsNodeAlongFaceNormal` and
+    `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
+    `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
+    obstacle).
+  - Added a GMSH `.msh` tetrahedral-mesh importer (PLAN-081 M4) so deformable
+    FEM bodies can be built from external tet meshes rather than only procedural
+    grids. `dart::simulation::experimental::io::loadGmshTetMesh` /
+    `loadGmshTetMeshFile` parse GMSH ASCII format 2.x and 4.x (both the legacy
+    flat layout and the entity-block layout): the `$Nodes` and the 4-node
+    tetrahedron (`$Elements` type 4) connectivity, remapping node ids to
+    0-based indices and ignoring non-tetra elements, raising
+    `InvalidArgumentException` on malformed or unsupported (binary, or
+    version &lt; 2 / &ge; 5) input. Exposed to `dartpy` as
+    `load_gmsh_tet_mesh(path)` returning a
+    `DeformableBodyOptions` (positions + tetrahedra). Adds parse / rejection /
+    FEM-simulation regressions and a `Deformable FEM from .msh (IPC)` py-demos
+    scene that loads a bundled tet-bar mesh and sags it as an FEM cantilever.
+  - Added stable neo-Hookean tetrahedral FEM elasticity to the experimental
+    deformable solver (PLAN-081 M1, the paper-parity keystone). A new
+    header-only `deformable_elasticity/fem_tet_element.hpp` kernel produces, per
+    tetrahedron, the stable neo-Hookean (Smith et al. 2018) strain energy, its
+    12x1 nodal gradient, and the true 12x12 Hessian, validated by
+    finite-difference gradient/Hessian tests (plus rest-state zero force,
+    inversion-robustness, and zero-Poisson stability). The solver wires it in as
+    an opt-in elasticity model via the new
+    `DeformableMaterialProperties.useFiniteElementElasticity` flag (also exposed
+    to `dartpy` as `use_finite_element_elasticity`): when set, each tetrahedron
+    contributes its energy/gradient to the objective and its PSD-projected 12x12
+    Hessian to the sparse projected-Newton assembly through the same batched
+    projection seam as the spring and barrier blocks. The model is inversion-safe
+    (finite for every deformation gradient, including det F <= 0). Default (flag
+    off) leaves the mass-spring path byte-identical -- all existing deformable
+    regressions are unchanged. Adds solver regressions (a pinned FEM tetrahedron
+    resists gravity where a springless body free-falls; stationary at rest;
+    restores a perturbed node toward rest), a `BM_DeformableFemBarStep`
+    benchmark, and a `Deformable FEM Bar (IPC)` py-demos scene (a tetrahedral
+    cantilever sagging under gravity) in the `IPC Deformable (sx)` category.
+  - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
+    counter-rotated at both ends by opposing scripted Dirichlet boundary
+    conditions, then released so the stable neo-Hookean core untwists
+    elastically -- a DART-native step toward the IPC paper's Fig. 4 (rod twist)
+    / Fig. 14 (mat twist) volumetric-shear themes. Shares a reusable
+    hexahedral-to-tetrahedral bar mesh helper with the FEM cantilever scene; the
+    demos cycle smoke covers it.
+  - Validated and showcased stable neo-Hookean FEM volumetric bodies in IPC
+    contact: a free tetrahedral FEM cube dropped onto a static ground barrier
+    falls, squashes, and settles on the barrier surface intersection-free (no
+    node crosses the ground top), exercising the FEM elasticity and the
+    clamped-log ground barrier together in one solve. Adds a
+    `FemCubeSettlesOnGroundBarrierWithoutPenetrating` regression and a
+    `Deformable FEM Drop (IPC)` py-demos scene -- a DART-native step toward the
+    paper's volumetric drop scenes (e.g. Fig. 12).
   - Added internal experimental IPC projected-Newton search direction for the
     deformable solve: each iteration assembles the per-step Hessian (inertia +
     spring + self-contact barrier + static ground barrier) with per-element
@@ -1600,6 +1675,7 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added Atlas IK dartpy bindings/tutorials and control theory + servo primers. ([#2176](https://github.com/dartsim/dart/pull/2176), [#2303](https://github.com/dartsim/dart/pull/2303), [#2156](https://github.com/dartsim/dart/pull/2156))
   - Fixed python example discovery and added the Issue #743 regression. ([#2311](https://github.com/dartsim/dart/pull/2311), [#743](https://github.com/dartsim/dart/issues/743))
   - Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
+  - Reoriented the Y-up `pixi run py-demos` scenes (`rigid_chain`, `rigid_cubes`, `mixed_chain`, `add_delete_skels`, `rigid_loop`, `soft_bodies`, `kr5_arm`) to the canonical Z-up convention so gravity and the camera up-vector are consistent across the catalog; golden-set parity is preserved because geometry and gravity are rotated by the same rigid transform.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

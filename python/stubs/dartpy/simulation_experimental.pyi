@@ -34,6 +34,7 @@ __all__: list[str] = [
     "LoopClosureRuntimePolicy",
     "LoopClosureSpec",
     "Multibody",
+    "MultibodyOptions",
     "RigidBody",
     "RigidBodyOptions",
     "StateSpace",
@@ -42,6 +43,7 @@ __all__: list[str] = [
     "WorldSyncStage",
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
+    "load_gmsh_tet_mesh",
 ]
 
 
@@ -435,7 +437,7 @@ class Link(Frame):
     @center_of_mass.setter
     def center_of_mass(self, arg: object, /) -> None: ...
 
-    def apply_force(self, force: object, point: object = ..., force_in_world_frame: bool = True, point_in_world_frame: bool = False) -> None: ...
+    def apply_force(self, force: object, point: object = ..., force_in_world_frame: bool = ..., point_in_world_frame: bool = ...) -> None: ...
 
     @property
     def translation(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
@@ -896,6 +898,12 @@ class DeformableMaterialProperties:
     @friction_coefficient.setter
     def friction_coefficient(self, arg: float, /) -> None: ...
 
+    @property
+    def use_finite_element_elasticity(self) -> bool: ...
+
+    @use_finite_element_elasticity.setter
+    def use_finite_element_elasticity(self, arg: bool, /) -> None: ...
+
 class DeformableEdge:
     def __init__(self, node_a: int = ..., node_b: int = ..., rest_length: float = ...) -> None: ...
 
@@ -1265,6 +1273,8 @@ class DeformableSceneDiagnostics:
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 
 def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnostics: ...
+
+def load_gmsh_tet_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 class World:
     def __init__(self, time_step: float = ...) -> None: ...
