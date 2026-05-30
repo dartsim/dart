@@ -569,6 +569,8 @@ BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_rigid_body_state_batch_cuda \
+  --target test_deformable_psd_projection_cuda \
+  --target test_vbd_block_descent_cuda \
   --target bm_cuda_rigid_body_state_batch
 """,
 ], depends-on = [
