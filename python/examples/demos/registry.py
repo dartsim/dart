@@ -74,6 +74,8 @@ from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
 from .scenes.vbd_beam import SCENE as VBD_BEAM
 from .scenes.vbd_cloth import SCENE as VBD_CLOTH
 from .scenes.vbd_net import SCENE as VBD_NET
+from .scenes.vbd_obstacle_drape import SCENE as VBD_OBSTACLE_DRAPE
+from .scenes.vbd_self_fold import SCENE as VBD_SELF_FOLD
 from .scenes.vbd_tilted_strand import SCENE as VBD_TILTED_STRAND
 from .scenes.vehicle import SCENE as VEHICLE
 
@@ -153,14 +155,17 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         DIFF_CARTPOLE_TRAJOPT,
         DIFF_DRONE_LIFTOFF,
         # Vertex Block Descent (VBD) deformable scenes: mass-spring cloth/net, a
-        # tetrahedral cantilever beam, and the TinyVBD reference tilted strand
-        # (the stiff, high-mass-ratio CPU parity scene). The larger multi-body
+        # tetrahedral cantilever beam, the TinyVBD reference tilted strand (the
+        # stiff, high-mass-ratio CPU parity scene), a cloth draping over a sphere
+        # obstacle, and a surface self-contact showcase. The larger multi-body
         # paper scenes (216 squishy balls, 10368 models, tearing cloth) still
         # need broad inter-body contact and remain deferred.
         VBD_CLOTH,
         VBD_NET,
         VBD_BEAM,
         VBD_TILTED_STRAND,
+        VBD_OBSTACLE_DRAPE,
+        VBD_SELF_FOLD,
         # IPC Deformable (sx) — its own dedicated category so the IPC
         # deformable-solver showcases group together rather than mixing into
         # the general experimental scenes above.
