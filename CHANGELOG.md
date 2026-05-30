@@ -1620,6 +1620,7 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added Atlas IK dartpy bindings/tutorials and control theory + servo primers. ([#2176](https://github.com/dartsim/dart/pull/2176), [#2303](https://github.com/dartsim/dart/pull/2303), [#2156](https://github.com/dartsim/dart/pull/2156))
   - Fixed python example discovery and added the Issue #743 regression. ([#2311](https://github.com/dartsim/dart/pull/2311), [#743](https://github.com/dartsim/dart/issues/743))
   - Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
+  - Reoriented the Y-up `pixi run py-demos` scenes (`rigid_chain`, `rigid_cubes`, `mixed_chain`, `add_delete_skels`, `rigid_loop`, `soft_bodies`, `kr5_arm`) to the canonical Z-up convention so gravity and the camera up-vector are consistent across the catalog; golden-set parity is preserved because geometry and gravity are rotated by the same rigid transform.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))
