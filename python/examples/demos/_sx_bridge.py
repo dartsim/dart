@@ -54,6 +54,14 @@ class SxRenderBridge:
     sx counterpart.
     """
 
+    # Velocity-damping gain for the mouse force-drag. The C++ viewer can only
+    # send the spring term ``F = kp*(target - app_point)`` for sx renderables
+    # (it can read an sx body's transform for picking but not its velocity), so
+    # the legacy ``-kd*v`` term is added here instead, mirroring the BodyNode
+    # force-drag. Without it a light free sx body overshoots and rings under a
+    # drag. Tunable: larger = more critically damped / heavier feel.
+    _DRAG_DAMPING_KD: float = 4.0
+
     def __init__(self, sx_world: Any, name: str = "sx_render_world") -> None:
         self._sx_world = sx_world
         self.render_world = dart.World(name)
@@ -128,22 +136,60 @@ class SxRenderBridge:
         point = np.asarray(event["application_point"], dtype=float).reshape(3)
         self._drag = (sx_object, force, point)
 
+    @staticmethod
+    def _drag_velocity(sx_object: Any, point: np.ndarray) -> np.ndarray:
+        """World-frame velocity of ``sx_object`` at ``point`` for drag damping.
+
+        sx RigidBody exposes ``linear_velocity`` (+ ``angular_velocity``); when
+        both are present the velocity is evaluated at the application point as
+        ``v + omega x (point - com)`` so the damping opposes the actual motion
+        of the dragged contact. sx multibody Links expose no velocity accessor,
+        so this returns zeros for them and the drag stays spring-only.
+        """
+
+        linear = getattr(sx_object, "linear_velocity", None)
+        if linear is None:
+            return np.zeros(3)
+        velocity = np.asarray(linear, dtype=float).reshape(3)
+        angular = getattr(sx_object, "angular_velocity", None)
+        if angular is not None:
+            omega = np.asarray(angular, dtype=float).reshape(3)
+            translation = getattr(sx_object, "translation", None)
+            com = (
+                np.zeros(3)
+                if translation is None
+                else np.asarray(translation, dtype=float).reshape(3)
+            )
+            velocity = velocity + np.cross(omega, point - com)
+        return velocity
+
     def pre_step(self) -> None:
         """Advance sx physics by one step, then sync render frames.
 
         If a mouse force-drag is active, (re)apply its one-shot force just
-        before the step so the spring is consumed by this step.
+        before the step so the spring is consumed by this step. The viewer only
+        sends the spring term, so the legacy ``-kd*v`` damping is subtracted
+        here using the dragged body's velocity at the application point.
         """
 
         if self._drag is not None:
             sx_object, force, point = self._drag
+            velocity = self._drag_velocity(sx_object, point)
+            damped_force = force - self._DRAG_DAMPING_KD * velocity
             try:
-                sx_object.apply_force(
-                    force,
-                    point,
-                    force_in_world_frame=True,
-                    point_in_world_frame=True,
-                )
+                # RigidBody exposes linear_velocity; its apply_force takes only
+                # (force,) in world coordinates. Link's apply_force accepts a
+                # point + frame flags too. Duck-type on linear_velocity to pick
+                # the right signature.
+                if hasattr(sx_object, "linear_velocity"):
+                    sx_object.apply_force(damped_force)
+                else:
+                    sx_object.apply_force(
+                        damped_force,
+                        point,
+                        force_in_world_frame=True,
+                        point_in_world_frame=True,
+                    )
             except Exception:  # noqa: BLE001
                 pass
         try:
