@@ -904,6 +904,46 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     surface CCD limiter remains the tunnelling guard for fast motion. Adds
     regressions that a node in the band is pushed radially outward and that an
     untagged sphere is inert.
+  - Added the projected-Newton Hessian for the static sphere obstacle barrier
+    (PLAN-081 M2 increment), making obstacle contact a first-class Newton term
+    rather than relying on the steepest-descent fallback. The full per-node
+    barrier Hessian's tangential eigenvalues are non-positive, so its PSD
+    projection is the rank-1 radial curvature `max(0, B''(d)) n n^T` along the
+    outward normal -- the sphere analogue of the vertical ground-barrier
+    curvature. Equilibrium-preserving (the Hessian changes only the search
+    direction), so the existing sphere obstacle regressions are unchanged. Adds
+    a `FemCubeSettlesOnSphereObstacleWithoutPenetrating` regression (a FEM cube
+    dropped onto a sphere obstacle settles intersection-free) and a
+    `Deformable FEM over Sphere (IPC)` py-demos scene (a FEM slab draping over a
+    sphere obstacle), exercising FEM elasticity with the sphere + ground
+    barriers together.
+  - Added a clamped-log barrier force (energy + gradient + projected-Newton
+    Hessian) for static oriented BOX obstacles (PLAN-081 M2 increment), the box
+    analogue of the sphere obstacle barrier. The closest point on the box surface
+    -- and hence the surface distance and outward normal -- is found by clamping
+    the node into the box's local frame, which handles face, edge, and corner
+    contact uniformly; the barrier pushes nearby deformable nodes out along that
+    normal, and its PSD-projected Hessian is the rank-1 radial curvature along
+    it. Reuses the existing `setDeformableSurfaceCcdObstacle` opt-in (the box CCD
+    limiter stays the tunnelling guard; box obstacles previously had no smooth
+    contact force); purely additive (all existing box surface-CCD regressions
+    unchanged). Adds `BoxObstacleBarrierRepelsNodeAlongFaceNormal` and
+    `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
+    `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
+    obstacle).
+  - Added a GMSH `.msh` tetrahedral-mesh importer (PLAN-081 M4) so deformable
+    FEM bodies can be built from external tet meshes rather than only procedural
+    grids. `dart::simulation::experimental::io::loadGmshTetMesh` /
+    `loadGmshTetMeshFile` parse GMSH ASCII format 2.x and 4.x (both the legacy
+    flat layout and the entity-block layout): the `$Nodes` and the 4-node
+    tetrahedron (`$Elements` type 4) connectivity, remapping node ids to
+    0-based indices and ignoring non-tetra elements, raising
+    `InvalidArgumentException` on malformed or unsupported (binary, or
+    version &lt; 2 / &ge; 5) input. Exposed to `dartpy` as
+    `load_gmsh_tet_mesh(path)` returning a
+    `DeformableBodyOptions` (positions + tetrahedra). Adds parse / rejection /
+    FEM-simulation regressions and a `Deformable FEM from .msh (IPC)` py-demos
+    scene that loads a bundled tet-bar mesh and sags it as an FEM cantilever.
   - Added stable neo-Hookean tetrahedral FEM elasticity to the experimental
     deformable solver (PLAN-081 M1, the paper-parity keystone). A new
     header-only `deformable_elasticity/fem_tet_element.hpp` kernel produces, per
@@ -931,6 +971,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     / Fig. 14 (mat twist) volumetric-shear themes. Shares a reusable
     hexahedral-to-tetrahedral bar mesh helper with the FEM cantilever scene; the
     demos cycle smoke covers it.
+  - Validated and showcased stable neo-Hookean FEM volumetric bodies in IPC
+    contact: a free tetrahedral FEM cube dropped onto a static ground barrier
+    falls, squashes, and settles on the barrier surface intersection-free (no
+    node crosses the ground top), exercising the FEM elasticity and the
+    clamped-log ground barrier together in one solve. Adds a
+    `FemCubeSettlesOnGroundBarrierWithoutPenetrating` regression and a
+    `Deformable FEM Drop (IPC)` py-demos scene -- a DART-native step toward the
+    paper's volumetric drop scenes (e.g. Fig. 12).
   - Added internal experimental IPC projected-Newton search direction for the
     deformable solve: each iteration assembles the per-step Hessian (inertia +
     spring + self-contact barrier + static ground barrier) with per-element
