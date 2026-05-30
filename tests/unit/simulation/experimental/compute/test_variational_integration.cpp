@@ -1397,3 +1397,244 @@ TEST(VariationalIntegration, DISABLED_RiqnIterationsVsChainLength)
               << " maxIters=" << maxIters << "\n";
   }
 }
+
+namespace {
+
+// Build a single floating body (fixed virtual base + Floating joint + body) of
+// the given mass at the world origin. Returns the body Link handle.
+sx::Link addFloatingBody(sx::World& world, double mass)
+{
+  auto robot = world.addMultibody("floater");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "float";
+  spec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, spec);
+  body.setMass(mass);
+  body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
+  return body;
+}
+
+} // namespace
+
+// External Cartesian force on a free (floating) body: a force F applied at the
+// body origin in zero gravity produces linear acceleration F/m and no angular
+// acceleration. The semi-implicit forward-dynamics path is exact for this
+// constant-force linear system.
+TEST(ExternalForce, SemiImplicitFreeBodyAccelerationEqualsForceOverMass)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  const double mass = 2.5;
+  auto body = addFloatingBody(world, mass);
+
+  const double dt = 0.01;
+  world.setTimeStep(dt); // default family: semi-implicit
+  world.enterSimulationMode();
+
+  const Eigen::Vector3d force(3.0, -4.0, 5.0);
+  body.applyForce(force);
+
+  world.step();
+
+  // Starting from rest the post-step generalized acceleration equals qddot.
+  const Eigen::VectorXd accel = body.getParentJoint().getAcceleration();
+  ASSERT_EQ(accel.size(), 6);
+  EXPECT_TRUE(accel.head<3>().isApprox(force / mass, 1e-6))
+      << "linear accel = " << accel.head<3>().transpose()
+      << " expected = " << (force / mass).transpose();
+  EXPECT_LT(accel.tail<3>().norm(), 1e-6);
+}
+
+// The variational-integrator path produces the same free-body acceleration F/m
+// for a constant external force (a free body is a constant-force linear system,
+// so the variational integrator is exact).
+TEST(ExternalForce, VariationalFreeBodyAccelerationEqualsForceOverMass)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  const double mass = 2.5;
+  auto body = addFloatingBody(world, mass);
+
+  const double dt = 0.01;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  const Eigen::Vector3d force(3.0, -4.0, 5.0);
+  body.applyForce(force);
+
+  sxc::MultibodyVariationalState state;
+  const auto report = sxc::integrateMultibodyVariational(
+      world.getRegistry(), structureOf(world), world.getGravity(), dt, state);
+
+  EXPECT_TRUE(report.converged);
+  const Eigen::VectorXd accel = body.getParentJoint().getAcceleration();
+  ASSERT_EQ(accel.size(), 6);
+  EXPECT_TRUE(accel.head<3>().isApprox(force / mass, 1e-9))
+      << "linear accel = " << accel.head<3>().transpose()
+      << " expected = " << (force / mass).transpose();
+  EXPECT_LT(accel.tail<3>().norm(), 1e-9);
+}
+
+// Gravity cancellation (semi-implicit): an upward external force equal to m*g
+// holds a free body stationary for a step (zero generalized velocity).
+TEST(ExternalForce, SemiImplicitUpwardForceCancelsGravity)
+{
+  sx::World world; // gravity (0, 0, -9.81)
+  const double mass = 1.7;
+  auto body = addFloatingBody(world, mass);
+
+  const double dt = 0.01;
+  world.setTimeStep(dt); // default family: semi-implicit
+  world.enterSimulationMode();
+
+  const Eigen::Vector3d gravity = world.getGravity();
+  body.applyForce(-mass * gravity); // upward force = m*g
+
+  world.step();
+
+  const Eigen::VectorXd velocity = body.getParentJoint().getVelocity();
+  ASSERT_EQ(velocity.size(), 6);
+  EXPECT_LT(velocity.norm(), 1e-9) << "velocity = " << velocity.transpose();
+}
+
+// Gravity cancellation (variational): an upward external force equal to m*g
+// holds a free body stationary for a step under the variational integrator.
+TEST(ExternalForce, VariationalUpwardForceCancelsGravity)
+{
+  sx::World world; // gravity (0, 0, -9.81)
+  const double mass = 1.7;
+  auto body = addFloatingBody(world, mass);
+
+  const double dt = 0.01;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  const Eigen::Vector3d gravity = world.getGravity();
+  body.applyForce(-mass * gravity); // upward force = m*g
+
+  sxc::MultibodyVariationalState state;
+  const auto report = sxc::integrateMultibodyVariational(
+      world.getRegistry(), structureOf(world), gravity, dt, state);
+
+  EXPECT_TRUE(report.converged);
+  const Eigen::VectorXd velocity = body.getParentJoint().getVelocity();
+  ASSERT_EQ(velocity.size(), 6);
+  EXPECT_LT(velocity.norm(), 1e-9) << "velocity = " << velocity.transpose();
+}
+
+// Chain deflection (variational): a fixed-base horizontal revolute chain with a
+// lateral force applied at the tip each step deflects the tip in the force's
+// direction (sign/direction sanity through the public World::step() path).
+TEST(ExternalForce, VariationalChainTipDeflectsInForceDirection)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero()); // isolate the applied force
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+
+  auto robot = world.addMultibody("chain");
+  auto parent = robot.addLink("base");
+  const int links = 3;
+  for (int i = 0; i < links; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "j" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitZ(); // rotate in the x-y plane
+    spec.transformFromParent = offset;
+    auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.02, 0.02, 0.02).asDiagonal());
+    parent = link;
+  }
+
+  const double dt = 1e-3;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  world.updateKinematics();
+
+  auto tip = parent;
+  const double initialY = tip.getTransform().translation().y();
+  const Eigen::Vector3d force(0.0, 5.0, 0.0); // +y lateral push at the tip
+  for (int k = 0; k < 50; ++k) {
+    tip.applyForce(force);
+    world.step();
+  }
+  const double finalY = tip.getTransform().translation().y();
+  EXPECT_GT(finalY - initialY, 1e-4)
+      << "tip moved from y=" << initialY << " to y=" << finalY;
+}
+
+// One-shot clear (semi-implicit, public step path): a force applied once does
+// not persist to the next step. A second step with no re-apply matches a
+// reference world that never had a force applied.
+TEST(ExternalForce, SemiImplicitForceIsClearedAfterStep)
+{
+  const double mass = 2.0;
+  const double dt = 0.01;
+  const Eigen::Vector3d force(1.0, 2.0, 3.0);
+
+  // Reference world: no external force ever applied.
+  sx::World reference;
+  reference.setGravity(Eigen::Vector3d::Zero());
+  auto referenceBody = addFloatingBody(reference, mass);
+  reference.setTimeStep(dt);
+  reference.enterSimulationMode();
+  reference.step(); // step 1 (no force)
+  reference.step(); // step 2 (no force)
+  const Eigen::VectorXd referenceVelocity
+      = referenceBody.getParentJoint().getVelocity();
+
+  // Test world: apply the force only before the first step.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  auto body = addFloatingBody(world, mass);
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  body.applyForce(force);
+  world.step(); // step 1 (force consumed here)
+  const Eigen::VectorXd afterFirst = body.getParentJoint().getVelocity();
+  world.step(); // step 2 (force must already be cleared)
+  const Eigen::VectorXd afterSecond = body.getParentJoint().getVelocity();
+
+  // The force acted on the first step (velocity changed)...
+  EXPECT_GT(afterFirst.head<3>().norm(), 1e-9);
+  // ...and the velocity does not change on the second, force-free step.
+  EXPECT_TRUE(afterSecond.isApprox(afterFirst, 1e-12))
+      << "after first = " << afterFirst.transpose()
+      << " after second = " << afterSecond.transpose();
+  // The reference (never forced) stays at rest, confirming the only motion came
+  // from the single one-shot force.
+  EXPECT_LT(referenceVelocity.norm(), 1e-12);
+}
+
+// One-shot clear (variational, public step path): mirrors the semi-implicit
+// one-shot test for the variational integration family.
+TEST(ExternalForce, VariationalForceIsClearedAfterStep)
+{
+  const double mass = 2.0;
+  const double dt = 0.01;
+  const Eigen::Vector3d force(1.0, 2.0, 3.0);
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto body = addFloatingBody(world, mass);
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  body.applyForce(force);
+  world.step(); // force consumed here
+  const Eigen::VectorXd afterFirst = body.getParentJoint().getVelocity();
+  world.step(); // force must already be cleared
+  const Eigen::VectorXd afterSecond = body.getParentJoint().getVelocity();
+
+  // The force acted once, then the body coasts at constant velocity (no
+  // gravity, no further force), so the velocity is unchanged on the second
+  // step.
+  EXPECT_GT(afterFirst.head<3>().norm(), 1e-9);
+  EXPECT_TRUE(afterSecond.isApprox(afterFirst, 1e-9))
+      << "after first = " << afterFirst.transpose()
+      << " after second = " << afterSecond.transpose();
+}

@@ -237,6 +237,8 @@ struct VarLink
   Eigen::Isometry3d currentRelative
       = Eigen::Isometry3d::Identity(); // T_{lambda(i),i} at q^k
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
+  Vector6 externalForce
+      = Vector6::Zero(); // body-frame wrench [angular; linear]
   std::vector<int> children;
   // Per-residual-evaluation scratch.
   Eigen::Isometry3d deltaTransform = Eigen::Isometry3d::Identity();
@@ -271,6 +273,7 @@ VarTree buildVarTree(
     auto& link = tree.links[i];
     link.inertia = spatialInertia(linkComp.mass);
     link.offset = linkComp.transformFromParentJoint;
+    link.externalForce = linkComp.externalForce;
 
     if (linkComp.parentJoint == entt::null) {
       const auto& cache = registry.get<comps::FrameCache>(linkEntity);
@@ -420,6 +423,9 @@ Eigen::VectorXd computeResidual(
         -= dm::dAdT(state.previousDeltaTransform[i], state.previousMomentum[i]);
     // Gravity as a forcing-side spatial impulse (not a Lagrangian potential).
     force -= (g * dm::adInvRLinear(link.worldTransform, gravity)) * timeStep;
+    // External link wrench (body frame) on the same forcing side as gravity, so
+    // an upward force of m*g cancels gravity.
+    force -= link.externalForce * timeStep;
     for (const int child : link.children) {
       force += dm::dAdInvT(
           tree.links[static_cast<std::size_t>(child)].currentRelative,
@@ -1114,6 +1120,13 @@ void MultibodyVariationalIntegrationStage::execute(
     }
     integrateMultibodyVariational(
         registry, structure, gravity, timeStep, state, 100, 1e-10, constraints);
+
+    // External forces are one-shot per step (like legacy
+    // BodyNode::addExtForce): clear them after they have been consumed by this
+    // step's dynamics.
+    for (const auto linkEntity : structure.links) {
+      registry.get<comps::Link>(linkEntity).externalForce.setZero();
+    }
   }
 }
 

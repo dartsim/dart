@@ -215,6 +215,10 @@ void autoSerialize(
       writePOD(out, field.x());
       writePOD(out, field.y());
       writePOD(out, field.z());
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix<double, 6, 1>>) {
+      for (int i = 0; i < 6; ++i) {
+        writePOD(out, field[i]);
+      }
     } else if constexpr (
         std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {
       writePOD(out, field.size());
@@ -276,6 +280,10 @@ void autoDeserialize(std::istream& in, T& component)
             field(j, i) = field(i, j);
           }
         }
+      }
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix<double, 6, 1>>) {
+      for (int i = 0; i < 6; ++i) {
+        readPOD(in, field[i]);
       }
     } else if constexpr (
         std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {

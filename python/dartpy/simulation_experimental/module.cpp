@@ -898,6 +898,23 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::Link& self, const nb::handle& centerOfMass) {
             self.setCenterOfMass(toVector3(centerOfMass));
           })
+      .def(
+          "apply_force",
+          [](sim::Link& self,
+             const nb::handle& force,
+             const nb::handle& point,
+             bool forceInWorldFrame,
+             bool pointInWorldFrame) {
+            self.applyForce(
+                toVector3(force),
+                toVector3(point),
+                forceInWorldFrame,
+                pointInWorldFrame);
+          },
+          nb::arg("force"),
+          nb::arg("point") = Eigen::Vector3d::Zero(),
+          nb::arg("force_in_world_frame") = true,
+          nb::arg("point_in_world_frame") = false)
       .def_prop_ro("translation", &sim::Link::getTranslation)
       .def_prop_ro("rotation", &sim::Link::getRotation)
       .def_prop_ro(
