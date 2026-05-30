@@ -245,6 +245,28 @@ def _make_marker(
     return frame
 
 
+def _cart_trail(
+    render_world: Any,
+    prefix: str,
+    states: list[np.ndarray],
+    color: tuple[float, float, float],
+    radius: float,
+    every: int = 4,
+) -> None:
+    """Drop breadcrumb spheres along the cart's X path so the trajectory the
+    optimizer produced is visible at a glance (not only while it animates)."""
+
+    for i in range(0, len(states), every):
+        cart_x = float(states[i][_CART_DOF])
+        _make_marker(
+            render_world,
+            f"{prefix}_{i}",
+            dart.SphereShape(radius),
+            color,
+            _translation((cart_x, 0.0, 0.05)),
+        )
+
+
 def build() -> SceneSetup:
     diff = getattr(sx, "diff", None)
     # The cartpole path uses World.get_step_derivatives (analytic articulated
@@ -295,6 +317,29 @@ def build() -> SceneSetup:
     cart_x0 = float(states[0][_CART_DOF]) if states else 0.0
     pole_th0 = float(states[0][1]) if states else 0.0
 
+    # Debugging visualization — make the optimizer's effect legible (the loop
+    # otherwise just replays the converged motion). For contrast, overlay the
+    # UN-optimized (zero-force) cart path, where the cart barely moves, against
+    # the optimized blue path that reaches the yellow target post.
+    if result["optimized"]:
+        try:
+            ghost_states = _unoptimized_cartpole()["states"]
+        except Exception:  # noqa: BLE001 - viz only; never raise from build().
+            ghost_states = []
+        _cart_trail(
+            render_world, "uncontrolled", ghost_states, (0.55, 0.58, 0.62), 0.035
+        )
+    # Blue breadcrumbs: the optimized cart path driving toward the target.
+    _cart_trail(render_world, "optimized_path", states, (0.20, 0.55, 0.95), 0.05)
+    # Green: the cart's start position.
+    _make_marker(
+        render_world,
+        "cart_start",
+        dart.SphereShape(0.07),
+        (0.30, 0.80, 0.45),
+        _translation((cart_x0, 0.0, 0.05)),
+    )
+
     cart_frame = _make_marker(
         render_world,
         "cart_visual",
@@ -340,8 +385,10 @@ SCENE = PythonDemoScene(
     category="Differentiable (sx)",
     summary=(
         "Gradient descent through World.get_step_derivatives optimizes a "
-        "cart-force sequence to drive the cart to a target (falls back to the "
-        "uncontrolled rollout when the differentiable bindings are absent)."
+        "cart-force sequence to drive the cart to the yellow target. Blue "
+        "breadcrumbs trace the optimized cart path; faint gray shows the "
+        "un-optimized (zero-force) path that barely moves. Falls back to the "
+        "uncontrolled rollout when the differentiable bindings are absent."
     ),
     build=build,
 )
