@@ -38,16 +38,22 @@
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <Eigen/Geometry>
 
+#include <numbers>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -62,13 +68,30 @@ namespace {
 // treated as "the joint is anchored at the parent link origin".
 constexpr double kAnchorTolerance = 1e-9;
 
+/// Rotation matrix from an exponential-coordinate rotation vector (Rodrigues).
+Eigen::Matrix3d rotationFromVector(const Eigen::Vector3d& rotationVector)
+{
+  const double angle = rotationVector.norm();
+  if (angle < 1e-12) {
+    return Eigen::Matrix3d::Identity();
+  }
+  return Eigen::AngleAxisd(angle, rotationVector / angle).toRotationMatrix();
+}
+
 /// A legacy joint mapped onto the experimental facade.
 struct MappedJoint
 {
-  JointType type;
+  JointType type = JointType::Fixed;
   Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
   Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+  double pitch = 0.0; // experimental screw pitch (translation per radian)
   std::size_t dof = 0;
+  // Axis-based joints (revolute/prismatic/screw/universal) tolerate a rotated
+  // parent-side offset: their axes are rotated into the placed frame. The
+  // orientation-coordinate joints (ball/free/planar) require an identity
+  // parent-side offset because their generalized coordinates are not yet
+  // re-expressed under a rotated parent frame.
+  bool reframable = true;
 };
 
 /// Map a legacy joint type/axis onto the experimental facade, or throw with a
@@ -76,28 +99,113 @@ struct MappedJoint
 MappedJoint mapJoint(const dynamics::Joint& joint)
 {
   const auto type = joint.getType();
+
   if (type == dynamics::WeldJoint::getStaticType()) {
     // A fixed joint carries no motion axis, but the facade still validates a
     // non-zero axis, so keep the default unit axes.
-    return MappedJoint{JointType::Fixed};
+    return MappedJoint{};
   }
   if (type == dynamics::RevoluteJoint::getStaticType()) {
-    const auto& revolute = static_cast<const dynamics::RevoluteJoint&>(joint);
-    return MappedJoint{
-        JointType::Revolute, revolute.getAxis(), Eigen::Vector3d::UnitX(), 1};
+    MappedJoint mapped;
+    mapped.type = JointType::Revolute;
+    mapped.axis = static_cast<const dynamics::RevoluteJoint&>(joint).getAxis();
+    mapped.dof = 1;
+    return mapped;
   }
   if (type == dynamics::PrismaticJoint::getStaticType()) {
-    const auto& prismatic = static_cast<const dynamics::PrismaticJoint&>(joint);
-    return MappedJoint{
-        JointType::Prismatic, prismatic.getAxis(), Eigen::Vector3d::UnitX(), 1};
+    MappedJoint mapped;
+    mapped.type = JointType::Prismatic;
+    mapped.axis = static_cast<const dynamics::PrismaticJoint&>(joint).getAxis();
+    mapped.dof = 1;
+    return mapped;
+  }
+  if (type == dynamics::ScrewJoint::getStaticType()) {
+    const auto& screw = static_cast<const dynamics::ScrewJoint&>(joint);
+    MappedJoint mapped;
+    mapped.type = JointType::Screw;
+    mapped.axis = screw.getAxis();
+    // Legacy pitch is translation per revolution; the experimental screw uses
+    // translation per radian.
+    mapped.pitch = screw.getPitch() / (2.0 * std::numbers::pi);
+    mapped.dof = 1;
+    return mapped;
+  }
+  if (type == dynamics::UniversalJoint::getStaticType()) {
+    const auto& universal = static_cast<const dynamics::UniversalJoint&>(joint);
+    MappedJoint mapped;
+    mapped.type = JointType::Universal;
+    mapped.axis = universal.getAxis1();
+    mapped.axis2 = universal.getAxis2();
+    mapped.dof = 2;
+    return mapped;
+  }
+  if (type == dynamics::BallJoint::getStaticType()) {
+    MappedJoint mapped;
+    mapped.type = JointType::Spherical;
+    mapped.dof = 3;
+    mapped.reframable = false;
+    return mapped;
+  }
+  if (type == dynamics::FreeJoint::getStaticType()) {
+    MappedJoint mapped;
+    mapped.type = JointType::Floating;
+    mapped.dof = 6;
+    mapped.reframable = false;
+    return mapped;
+  }
+  if (type == dynamics::PlanarJoint::getStaticType()) {
+    const auto& planar = static_cast<const dynamics::PlanarJoint&>(joint);
+    MappedJoint mapped;
+    mapped.type = JointType::Planar;
+    mapped.axis = planar.getRotationalAxis();      // plane normal
+    mapped.axis2 = planar.getTranslationalAxis1(); // first in-plane direction
+    mapped.dof = 3;
+    mapped.reframable = false;
+    return mapped;
   }
 
   DART_EXPERIMENTAL_THROW_T(
       InvalidOperationException,
       "buildMultibodyFromSkeleton does not yet support the joint type '{}' "
-      "(joint '{}'); the supported types are weld, revolute, and prismatic",
+      "(joint '{}'); the supported types are weld, revolute, prismatic, screw, "
+      "universal, ball, free, and planar",
       type,
       joint.getName());
+}
+
+/// The legacy joint's current generalized position and velocity, re-expressed
+/// in the experimental coordinate convention.
+std::pair<Eigen::VectorXd, Eigen::VectorXd> mapJointState(
+    const dynamics::Joint& joint, const MappedJoint& mapped)
+{
+  const auto dof = static_cast<Eigen::Index>(joint.getNumDofs());
+  Eigen::VectorXd position(dof);
+  Eigen::VectorXd velocity(dof);
+  for (Eigen::Index i = 0; i < dof; ++i) {
+    position[i] = joint.getPosition(static_cast<std::size_t>(i));
+    velocity[i] = joint.getVelocity(static_cast<std::size_t>(i));
+  }
+
+  if (mapped.type == JointType::Floating) {
+    // Legacy free joint: position [rotation(0..2); translation(3..5)] and a
+    // generalized velocity [angular; linear] expressed in the PARENT frame (its
+    // relative Jacobian is diag(R^T, R^T)). Experimental floating joint:
+    // position [translation(0..2); rotation(3..5)] and a [linear; angular] body
+    // twist. So the position halves swap, and the velocity halves swap and
+    // rotate into the body frame by R^T, where R is the current joint rotation.
+    const Eigen::Matrix3d rotation = rotationFromVector(position.head<3>());
+    Eigen::VectorXd mappedPosition(6);
+    Eigen::VectorXd mappedVelocity(6);
+    mappedPosition.head<3>() = position.tail<3>();
+    mappedPosition.tail<3>() = position.head<3>();
+    mappedVelocity.head<3>() = rotation.transpose() * velocity.tail<3>();
+    mappedVelocity.tail<3>() = rotation.transpose() * velocity.head<3>();
+    return {mappedPosition, mappedVelocity};
+  }
+
+  // The remaining supported joints share the legacy coordinate layout (the
+  // screw differs only by the pitch scale, not the angle coordinate itself).
+  return {position, velocity};
 }
 
 /// The constant offset that places body `b`'s experimental link frame onto its
@@ -124,10 +232,11 @@ struct LinkPlan
   const dynamics::BodyNode* parentBody = nullptr; // null => synthetic base
   std::string linkName;
   JointSpec spec;
+  double pitch = 0.0; // experimental screw pitch (applied after construction)
   double mass = 0.0;
   Eigen::Vector3d com = Eigen::Vector3d::Zero();
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  Eigen::VectorXd position; // copied 1-DOF state; empty when not copied
+  Eigen::VectorXd position; // copied generalized state; empty when not copied
   Eigen::VectorXd velocity;
 };
 
@@ -172,22 +281,28 @@ Multibody buildMultibodyFromSkeleton(
     // it becomes
     //   M * Q(q) * C^-1 * childOffset,   M = parentOffset^-1 * A.
     // The experimental facade applies the joint motion at the parent origin, so
-    // M must be a pure rotation for a moving joint (otherwise the motion is not
-    // anchored at the parent origin: an offset root joint or a branch whose
-    // siblings do not share a parent-side frame).
+    // M must place the joint there: M.translation() must vanish for any moving
+    // joint (otherwise it is an offset root joint, or a branch whose siblings
+    // do not share a parent-side frame). Orientation-coordinate joints
+    // additionally require M.linear() == I because their generalized
+    // coordinates are not yet re-expressed under a rotated parent frame.
     const Eigen::Isometry3d A = joint->getTransformFromParentBodyNode();
     const Eigen::Isometry3d C = joint->getTransformFromChildBodyNode();
     const Eigen::Isometry3d M = parentOffset.inverse() * A;
 
-    if (mapped.type != JointType::Fixed
-        && M.translation().norm() > kAnchorTolerance) {
-      DART_EXPERIMENTAL_THROW_T(
-          InvalidOperationException,
-          "buildMultibodyFromSkeleton cannot anchor joint '{}' at its parent "
-          "link origin (the parent-side offset is non-zero). Offset root "
-          "joints and branches whose sibling joints do not share a parent-side "
-          "frame are not yet supported.",
-          joint->getName());
+    if (mapped.type != JointType::Fixed) {
+      const bool offset = M.translation().norm() > kAnchorTolerance;
+      const bool rotated
+          = !M.linear().isApprox(Eigen::Matrix3d::Identity(), kAnchorTolerance);
+      if (offset || (!mapped.reframable && rotated)) {
+        DART_EXPERIMENTAL_THROW_T(
+            InvalidOperationException,
+            "buildMultibodyFromSkeleton cannot anchor joint '{}' at its parent "
+            "link origin. Offset root joints, branches whose sibling joints do "
+            "not share a parent-side frame, and rotated parent-side offsets on "
+            "ball/free/planar joints are not yet supported.",
+            joint->getName());
+      }
     }
 
     const double mass = body->getMass();
@@ -208,6 +323,7 @@ Multibody buildMultibodyFromSkeleton(
     plan.spec.axis = M.linear() * mapped.axis;
     plan.spec.axis2 = M.linear() * mapped.axis2;
     plan.spec.transformFromParent = M * C.inverse() * childOffset;
+    plan.pitch = mapped.pitch;
     plan.mass = mass;
 
     // Inertial properties re-expressed in the placed link frame. The link frame
@@ -219,9 +335,10 @@ Multibody buildMultibodyFromSkeleton(
     plan.inertia
         = rotation.transpose() * body->getInertia().getMoment() * rotation;
 
-    if (options.copyState && mapped.dof == 1) {
-      plan.position = Eigen::VectorXd::Constant(1, joint->getPosition(0));
-      plan.velocity = Eigen::VectorXd::Constant(1, joint->getVelocity(0));
+    if (options.copyState && mapped.dof > 0) {
+      auto [position, velocity] = mapJointState(*joint, mapped);
+      plan.position = std::move(position);
+      plan.velocity = std::move(velocity);
     }
 
     plans.push_back(std::move(plan));
@@ -244,11 +361,14 @@ Multibody buildMultibodyFromSkeleton(
   for (const auto& plan : plans) {
     const Link parentLink = plan.parentBody ? linkOf.at(plan.parentBody) : base;
     Link link = multibody.addLink(plan.linkName, parentLink, plan.spec);
+    if (plan.spec.type == JointType::Screw) {
+      link.getParentJoint().setPitch(plan.pitch);
+    }
     link.setMass(plan.mass);
     link.setCenterOfMass(plan.com);
     link.setInertia(plan.inertia);
 
-    if (plan.position.size() == 1) {
+    if (plan.position.size() > 0) {
       link.getParentJoint().setPosition(plan.position);
       link.getParentJoint().setVelocity(plan.velocity);
     }

@@ -195,6 +195,61 @@ def test_build_multibody_from_multi_tree_skeleton():
     )
 
 
+def test_build_multibody_ball_joint_matches_legacy():
+    sx = _simulation_experimental()
+
+    skeleton = dart.Skeleton("ball")
+    joint, body = skeleton.create_ball_joint_and_body_node_pair()
+    joint.set_name("ball")
+    body.set_inertia(
+        dart.Inertia(1.2, [0.05, -0.05, -0.3], np.diag([0.04, 0.03, 0.02]))
+    )
+    skeleton.set_positions([0.2, -0.3, 0.15])  # rotation vector
+    skeleton.set_velocities([0.3, 0.1, -0.2])  # body angular velocity
+
+    legacy_mass = np.array(skeleton.get_mass_matrix())
+    legacy_coriolis_gravity = np.array(skeleton.get_coriolis_and_gravity_forces())
+
+    world = sx.World()
+    world.gravity = [0.0, 0.0, -9.81]
+    multibody = sx.build_multibody_from_skeleton(world, skeleton)
+
+    assert multibody.num_dofs == 3
+    # The ball joint shares the legacy coordinate basis, so quantities match
+    # element-wise.
+    assert np.allclose(np.array(multibody.mass_matrix), legacy_mass, atol=1e-9)
+    assert np.allclose(
+        np.array(multibody.coriolis_and_gravity_forces),
+        legacy_coriolis_gravity,
+        atol=1e-9,
+    )
+
+
+def test_build_multibody_floating_base_steps():
+    sx = _simulation_experimental()
+
+    # A free joint models a floating base: the body should fall under gravity.
+    skeleton = dart.Skeleton("floating")
+    joint, body = skeleton.create_free_joint_and_body_node_pair()
+    joint.set_name("free")
+    body.set_inertia(dart.Inertia(2.0, [0.0, 0.0, 0.0], np.diag([0.05, 0.05, 0.05])))
+    skeleton.set_positions([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])  # [rotation; translation]
+
+    world = sx.World()
+    world.gravity = [0.0, 0.0, -9.81]
+    world.time_step = 1e-3
+    multibody = sx.build_multibody_from_skeleton(world, skeleton)
+
+    assert multibody.num_dofs == 6
+    assert multibody.num_links == skeleton.get_num_body_nodes() + 1
+
+    free = multibody.joints[0]
+    world.step(20)
+    # The floating body accelerates downward under gravity (experimental free
+    # velocity is [linear; angular]; the linear-z component grows negative).
+    assert free.velocity[2] < -1e-3
+
+
 def test_build_multibody_from_urdf_skeleton():
     sx = _simulation_experimental()
 
@@ -217,8 +272,9 @@ def test_build_multibody_from_urdf_skeleton():
 def test_build_multibody_rejects_unsupported_joint():
     sx = _simulation_experimental()
 
-    skeleton = dart.Skeleton("ball")
-    _, body = skeleton.create_ball_joint_and_body_node_pair()
+    # Euler joints are not among the supported joint types.
+    skeleton = dart.Skeleton("euler")
+    _, body = skeleton.create_euler_joint_and_body_node_pair()
     body.set_inertia(
         dart.Inertia(1.0, [0.0, 0.0, 0.0], np.diag([0.01, 0.01, 0.01]))
     )

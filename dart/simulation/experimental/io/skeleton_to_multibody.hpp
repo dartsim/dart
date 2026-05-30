@@ -79,10 +79,18 @@ struct SkeletonToMultibodyOptions
 /// A synthetic fixed base link represents the world frame so that a root body's
 /// parent-joint offset is realized rather than dropped.
 ///
-/// Supported subset (this slice): a fixed base with weld (fixed), revolute, and
-/// prismatic joints, forming serial chains or trees whose sibling joints share
-/// a common parent-side frame. Generalized positions/velocities of revolute and
-/// prismatic joints are copied when `options.copyState` is set.
+/// Supported joints: weld (fixed), revolute, prismatic, screw, universal, ball
+/// (spherical), free (floating), and planar, forming serial chains or trees
+/// whose sibling joints share a common parent-side frame, on a fixed base.
+/// Generalized positions and velocities are copied when `options.copyState` is
+/// set (with the screw pitch and the free-joint coordinate order converted to
+/// the experimental convention).
+///
+/// Anchoring constraint: the axis-based joints (revolute, prismatic, screw,
+/// universal) tolerate a rotated parent-side offset (the axes are rotated into
+/// the placed frame); the orientation-coordinate joints (ball, free, planar)
+/// require an identity parent-side offset because their generalized coordinates
+/// are not yet re-expressed under a rotated parent frame.
 ///
 /// @param world The experimental world that will own the created multibody.
 /// @param skeleton The legacy skeleton to translate.

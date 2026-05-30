@@ -282,19 +282,27 @@ jointMotion(q) * transformFromParent`), while a legacy joint carries
     translation-free; that single check rejects both offset roots and
     branches whose siblings do not share a parent-side frame. Verified by
     matching the legacy `Skeleton` mass matrix + Coriolis/gravity forces
-    (DART-6 parity) for revolute, prismatic, and welded-base chains (C++ +
-    dartpy).
+    (DART-6 parity) for revolute, prismatic, welded-base, rotated-frame, and
+    multi-tree chains (C++ + dartpy).
+  - **(DONE) All joint types.** weld, revolute, prismatic, screw, universal,
+    ball→`Spherical`, free→`Floating` (floating base), and planar are mapped,
+    with `copyState` converting the coordinate conventions: the screw pitch is
+    rescaled (legacy per-revolution → experimental per-radian), and the free
+    joint's `[rotation; translation]` parent-frame velocity is swapped and
+    rotated by `R^T` into the experimental `[translation; rotation]` body-twist
+    layout. Verified by per-type DART-6 parity (mass matrix + gravity +
+    Coriolis; the free case checks the body spatial velocity and `M = G M_legacy
+G^T` with `G` the body-twist basis change, since the velocity-dependent
+    Coriolis term does not transform by `G` alone). Axis-based joints tolerate a
+    rotated parent offset; ball/free/planar require an identity parent offset
+    (their orientation coordinates are not yet re-expressed under a rotated
+    parent frame — a follow-up).
   - **Remaining for Subsystem B:**
     - **Branching at an offset** (a parent link with ≥2 child joints at
       different frames). The clean fix is to insert a massless fixed
       intermediate link per branch to carry each child-joint offset — blocked
       only by `Link::setMass` requiring positive mass (allow a structural/zero
       mass fixed link, or special-case it in the bridge).
-    - **Multi-DOF and floating roots:** map screw (pitch), universal (axis2),
-      ball→`Spherical`, free→`Floating`, planar→`Planar`. The structure is easy;
-      the care is matching the multi-DOF **coordinate conventions** when copying
-      positions/velocities (the bridge already copies 1-DOF state). A floating
-      base maps to a `Free` joint from the synthetic base.
     - **Collision/visual shapes:** translate `BodyNode` shape nodes to
       `Link::setCollisionShape` (sphere/box today; see Phase 2 shape backlog).
     - **`readWorld` / multi-skeleton:** a `World`-level loader that converts each

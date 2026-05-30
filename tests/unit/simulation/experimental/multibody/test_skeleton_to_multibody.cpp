@@ -37,9 +37,14 @@
 
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/euler_joint.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <Eigen/Core>
@@ -96,6 +101,31 @@ dd::SkeletonPtr makeDoublePendulum()
 
   skeleton->setGravity(kGravity);
   return skeleton;
+}
+
+// Asserts the converted multibody reproduces the legacy skeleton's joint-space
+// mass matrix, gravity forces, and Coriolis forces at the given configuration
+// and velocity. Use this for joint types whose experimental generalized
+// coordinate ordering coincides with the legacy ordering.
+void expectLegacyDynamicsParity(
+    dd::Skeleton& skeleton, const Eigen::VectorXd& q, const Eigen::VectorXd& dq)
+{
+  skeleton.setGravity(kGravity);
+  skeleton.setPositions(q);
+  skeleton.setVelocities(dq);
+
+  const Eigen::MatrixXd legacyMass = skeleton.getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton.getGravityForces();
+  const Eigen::VectorXd legacyCoriolis = skeleton.getCoriolisForces();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody = sx::io::buildMultibodyFromSkeleton(world, skeleton);
+
+  EXPECT_EQ(multibody.getDOFCount(), skeleton.getNumDofs());
+  EXPECT_LE(maxAbsDiff(multibody.getMassMatrix(), legacyMass), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getGravityForces(), legacyGravity), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getCoriolisForces(), legacyCoriolis), 1e-9);
 }
 
 } // namespace
@@ -318,7 +348,155 @@ TEST(SkeletonToMultibody, RotatedFramesMatchLegacyDynamics)
 }
 
 //==============================================================================
-// A valid first body followed by an unsupported (ball) joint must reject the
+TEST(SkeletonToMultibody, ScrewMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("screw");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::ScrewJoint>(nullptr);
+  joint->setName("screw");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  joint->setPitch(0.05); // translation per revolution (legacy convention)
+  body->setName("nut");
+  body->setMass(1.5);
+  body->setMomentOfInertia(0.02, 0.02, 0.01, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.1, 0.0, -0.2));
+
+  Eigen::VectorXd q(1);
+  q << 0.6;
+  Eigen::VectorXd dq(1);
+  dq << 0.4;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+TEST(SkeletonToMultibody, UniversalMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("universal");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::UniversalJoint>(nullptr);
+  joint->setName("universal");
+  joint->setAxis1(Eigen::Vector3d::UnitY());
+  joint->setAxis2(Eigen::Vector3d::UnitX());
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.03, 0.02, 0.01, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.4));
+
+  Eigen::VectorXd q(2);
+  q << 0.3, -0.5;
+  Eigen::VectorXd dq(2);
+  dq << 0.2, 0.6;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+TEST(SkeletonToMultibody, BallMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("ball");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::BallJoint>(nullptr);
+  joint->setName("ball");
+  body->setName("body");
+  body->setMass(1.2);
+  body->setMomentOfInertia(0.04, 0.03, 0.02, 0.005, 0.002, 0.001);
+  body->setLocalCOM(Eigen::Vector3d(0.05, -0.05, -0.3));
+
+  Eigen::VectorXd q(3);
+  q << 0.2, -0.3, 0.15; // rotation vector (exponential coordinates)
+  Eigen::VectorXd dq(3);
+  dq << 0.3, 0.1, -0.2; // body angular velocity
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+TEST(SkeletonToMultibody, PlanarMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("planar");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::PlanarJoint>(nullptr);
+  joint->setName("planar"); // default XY plane
+  body->setName("body");
+  body->setMass(0.9);
+  body->setMomentOfInertia(0.02, 0.02, 0.03, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.1, 0.05, 0.0));
+
+  Eigen::VectorXd q(3);
+  q << 0.2, -0.15, 0.4;
+  Eigen::VectorXd dq(3);
+  dq << 0.1, 0.2, 0.3;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+// The free joint maps a floating base. The experimental floating joint uses
+// [linear; angular] / [translation; rotation] coordinates while the legacy free
+// joint uses [angular; linear] / [rotation; translation], so the dynamics
+// quantities relate by the 3-block swap S.
+TEST(SkeletonToMultibody, FreeMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("free");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::FreeJoint>(nullptr);
+  joint->setName("free");
+  body->setName("body");
+  body->setMass(2.0);
+  body->setMomentOfInertia(0.05, 0.04, 0.03, 0.01, 0.005, 0.002);
+  body->setLocalCOM(Eigen::Vector3d(0.1, -0.05, 0.2));
+
+  Eigen::VectorXd q(6);
+  q << 0.1, 0.2, -0.15, 0.3, -0.2, 0.5; // legacy [rotation; translation]
+  Eigen::VectorXd dq(6);
+  dq << 0.2, -0.1, 0.3, 0.4, 0.1, -0.2; // legacy [angular; linear]
+  skeleton->setGravity(kGravity);
+  skeleton->setPositions(q);
+  skeleton->setVelocities(dq);
+
+  const Eigen::MatrixXd legacyMass = skeleton->getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton->getGravityForces();
+
+  // The experimental floating joint uses a body-frame [linear; angular] twist,
+  // while the legacy free joint uses a parent-frame [angular; linear] velocity
+  // (its relative Jacobian is diag(R^T, R^T)). The generalized bases relate by
+  // the orthogonal change G = [[0, R^T], [R^T, 0]], R = the body world
+  // rotation. Kinetic-energy invariance gives M_exp = G M_legacy G^T; force
+  // covariance gives f_exp = G f_legacy.
+  const Eigen::Matrix3d rotation
+      = skeleton->getBodyNode(0)->getWorldTransform().linear();
+  Eigen::MatrixXd swap = Eigen::MatrixXd::Zero(6, 6);
+  swap.block<3, 3>(0, 3) = rotation.transpose();
+  swap.block<3, 3>(3, 0) = rotation.transpose();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  EXPECT_EQ(multibody.getDOFCount(), 6u);
+  EXPECT_LE(
+      maxAbsDiff(
+          multibody.getMassMatrix(), swap * legacyMass * swap.transpose()),
+      1e-9);
+  EXPECT_LE(
+      maxAbsDiff(multibody.getGravityForces(), swap * legacyGravity), 1e-9);
+
+  // The Coriolis force does not transform by G alone (G is configuration
+  // dependent, so the coordinate change adds a dG/dt term); each basis carries
+  // its own correct Coriolis term. Verify the velocity mapping physically
+  // instead: the body's spatial velocity (body Jacobian * generalized velocity)
+  // must match the legacy body's spatial velocity.
+  const auto link = multibody.getLink("body");
+  const auto freeJoint = multibody.getJoint("free");
+  ASSERT_TRUE(link.has_value());
+  ASSERT_TRUE(freeJoint.has_value());
+  const Eigen::VectorXd bodyTwistExp
+      = multibody.getJacobian(*link) * freeJoint->getVelocity();
+  const Eigen::VectorXd bodyTwistLegacy
+      = skeleton->getBodyNode(0)->getSpatialVelocity();
+  EXPECT_LE((bodyTwistExp - bodyTwistLegacy).cwiseAbs().maxCoeff(), 1e-9);
+}
+
+//==============================================================================
+// A valid first body followed by an unsupported (Euler) joint must reject the
 // whole skeleton and leave the World with no partial multibody: the plan pass
 // validates everything before any World state is created.
 TEST(SkeletonToMultibody, RejectsUnsupportedJointType)
@@ -333,12 +511,12 @@ TEST(SkeletonToMultibody, RejectsUnsupportedJointType)
   link->setMass(1.0);
   link->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
 
-  auto [ball, ballBody]
-      = skeleton->createJointAndBodyNodePair<dd::BallJoint>(link);
-  ball->setName("ball");
-  ballBody->setName("ball_link");
-  ballBody->setMass(1.0);
-  ballBody->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+  auto [euler, eulerBody]
+      = skeleton->createJointAndBodyNodePair<dd::EulerJoint>(link);
+  euler->setName("euler");
+  eulerBody->setName("euler_link");
+  eulerBody->setMass(1.0);
+  eulerBody->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
 
   sx::World world;
   EXPECT_THROW(

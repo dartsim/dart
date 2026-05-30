@@ -622,13 +622,15 @@
   - Added an experimental model-loading bridge that builds a `Multibody` from a
     legacy `dynamics::Skeleton`: C++ `io::buildMultibodyFromSkeleton(world,
 skeleton, options)` and dartpy `build_multibody_from_skeleton` /
-    `SkeletonToMultibodyOptions`. It maps weld/revolute/prismatic joints on a
-    fixed base, re-expresses each link's frame onto its outgoing joint (carrying
-    the center-of-mass offset and inertia), and reproduces the legacy skeleton's
-    mass matrix and Coriolis/gravity forces. Combined with `dart::io` URDF/SDF
-    parsing this loads a model file into the experimental World. Branching
-    offsets, multi-DOF/floating roots, and collision shapes are not yet
-    translated and raise a descriptive error.
+    `SkeletonToMultibodyOptions`. It maps weld, revolute, prismatic, screw,
+    universal, ball, free (floating base), and planar joints on a fixed base,
+    re-expresses each link's frame onto its outgoing joint (carrying the
+    center-of-mass offset and inertia), converts the screw pitch and free-joint
+    coordinate conventions, and reproduces the legacy skeleton's mass matrix and
+    Coriolis/gravity dynamics. Combined with `dart::io` URDF/SDF parsing this
+    loads a model file into the experimental World. Branching offsets, collision
+    shapes, and rotated parent-side offsets on ball/free/planar joints are not
+    yet translated and raise a descriptive error.
   - Added experimental articulated-body forward dynamics for fixed-base
     multibodies: `World::step()` now integrates revolute and prismatic joint
     accelerations from joint efforts, gravity, and Coriolis/centrifugal terms
