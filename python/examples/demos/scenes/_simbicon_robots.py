@@ -9,8 +9,10 @@ since dartpy has no HTTP resource retriever) skeletons.
 from __future__ import annotations
 
 import math
+import os
 import pathlib
 import re
+import urllib.error
 import urllib.request
 
 import numpy as np
@@ -27,10 +29,13 @@ _DEG = math.pi / 180.0
 _ATLAS_URI = "dart://sample/sdf/atlas/atlas_v5_no_head.urdf"
 
 # Unitree G1 (29-DOF) lives in a remote ROS package; dartpy can't fetch it, so
-# we download the URDF + meshes once into a local cache and load by path.
+# we download the URDF + meshes once into a local cache and load by path. Pin a
+# specific upstream commit (not a moving branch) so the fetched assets are
+# reproducible and don't drift or 404 if `master` is rewritten.
+_G1_REF = "7a48a28ab993614b8cd2059ddcb9b91ba4780d6f"
 _G1_BASE = (
     "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/"
-    "master/robots/g1_description"
+    f"{_G1_REF}/robots/g1_description"
 )
 _G1_URDF = "g1_29dof.urdf"
 _G1_CACHE = pathlib.Path.home() / ".cache" / "dart_demos" / "g1_description"
@@ -98,7 +103,16 @@ def load_atlas_skeleton() -> "dart.dynamics.Skeleton":
 
 # ------------------------------------------------------------------- G1 ------
 def _ensure_g1_cached() -> pathlib.Path:
-    """Download the G1 URDF + referenced meshes into the local cache (once)."""
+    """Download the G1 URDF + referenced meshes into the local cache (once).
+
+    DART can't bundle the third-party G1 meshes and dartpy has no HTTP resource
+    retriever, so the assets are fetched once from the pinned upstream commit
+    into ``_G1_CACHE``. On a network failure (offline CI, proxy, rate limit)
+    this raises a clear :class:`RuntimeError` instead of leaving a half-built
+    cache; the demo runner turns that into a logged skip rather than a silent
+    empty world. Pre-populate ``_G1_CACHE`` on a networked machine to run the
+    G1 demos offline.
+    """
     _G1_CACHE.mkdir(parents=True, exist_ok=True)
 
     def fetch(rel: str) -> None:
@@ -106,7 +120,22 @@ def _ensure_g1_cached() -> pathlib.Path:
         if dst.exists() and dst.stat().st_size > 0:
             return
         dst.parent.mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(f"{_G1_BASE}/{rel}", dst)
+        url = f"{_G1_BASE}/{rel}"
+        # Download to a sibling temp file and atomically rename so an
+        # interrupted fetch never leaves a truncated file that the size check
+        # above would later mistake for a complete asset.
+        tmp = dst.with_name(dst.name + ".part")
+        try:
+            urllib.request.urlretrieve(url, tmp)
+        except (urllib.error.URLError, OSError) as exc:
+            tmp.unlink(missing_ok=True)
+            raise RuntimeError(
+                f"Could not fetch the Unitree G1 asset '{rel}' from {url}. The "
+                "G1 SIMBICON demos need a one-time download of the G1 "
+                f"description; pre-populate {_G1_CACHE} on a networked machine "
+                "to run them offline."
+            ) from exc
+        os.replace(tmp, dst)
 
     fetch(_G1_URDF)
     text = (_G1_CACHE / _G1_URDF).read_text()
