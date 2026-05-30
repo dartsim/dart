@@ -7,9 +7,11 @@
 #include "dart/dynamics/cone_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/heightmap_shape.hpp"
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/plane_shape.hpp"
+#include "dart/dynamics/point_cloud_shape.hpp"
 #include "dart/dynamics/pyramid_shape.hpp"
 #include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
@@ -18,8 +20,11 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/vector.h>
 
 #include <memory>
+#include <span>
+#include <vector>
 
 namespace nb = nanobind;
 
@@ -326,6 +331,115 @@ void defShape(nb::module_& m)
       .def_static("getStaticType", []() {
         return std::string(dart::dynamics::MeshShape::getStaticType());
       });
+
+  using HeightmapShaped = dart::dynamics::HeightmapShape<double>;
+  nb::class_<HeightmapShaped, Shape>(m, "HeightmapShape")
+      .def(nb::new_([]() { return std::make_shared<HeightmapShaped>(); }))
+      .def(
+          "setHeightField",
+          [](HeightmapShaped& self,
+             std::size_t width,
+             std::size_t depth,
+             const std::vector<double>& heights) {
+            self.setHeightField(width, depth, std::span<const double>(heights));
+          },
+          nb::arg("width"),
+          nb::arg("depth"),
+          nb::arg("heights"))
+      .def(
+          "setHeightField",
+          [](HeightmapShaped& self,
+             const HeightmapShaped::HeightField& heights) {
+            self.setHeightField(heights);
+          },
+          nb::arg("heights"))
+      .def(
+          "getHeightField",
+          [](const HeightmapShaped& self) -> HeightmapShaped::HeightField {
+            return self.getHeightField();
+          })
+      .def("setScale", &HeightmapShaped::setScale, nb::arg("scale"))
+      .def(
+          "getScale",
+          [](const HeightmapShaped& self) { return self.getScale(); })
+      .def("getWidth", &HeightmapShaped::getWidth)
+      .def("getDepth", &HeightmapShaped::getDepth)
+      .def("getMinHeight", &HeightmapShaped::getMinHeight)
+      .def("getMaxHeight", &HeightmapShaped::getMaxHeight)
+      .def("flipY", &HeightmapShaped::flipY)
+      .def_static("getStaticType", []() {
+        return std::string(HeightmapShaped::getStaticType());
+      });
+
+  using PointCloudShape = dart::dynamics::PointCloudShape;
+  auto pointCloudShape
+      = nb::class_<PointCloudShape, Shape>(m, "PointCloudShape")
+            .def(
+                nb::new_([](double visualSize) {
+                  return std::make_shared<PointCloudShape>(visualSize);
+                }),
+                nb::arg("visual_size") = 0.01)
+            .def("reserve", &PointCloudShape::reserve, nb::arg("size"))
+            .def(
+                "addPoint",
+                [](PointCloudShape& self, const Eigen::Vector3d& point) {
+                  self.addPoint(point);
+                },
+                nb::arg("point"))
+            .def(
+                "addPoints",
+                [](PointCloudShape& self,
+                   const std::vector<Eigen::Vector3d>& points) {
+                  self.addPoint(std::span<const Eigen::Vector3d>(points));
+                },
+                nb::arg("points"))
+            .def(
+                "setPoints",
+                [](PointCloudShape& self,
+                   const std::vector<Eigen::Vector3d>& points) {
+                  self.setPoint(std::span<const Eigen::Vector3d>(points));
+                },
+                nb::arg("points"))
+            .def(
+                "getPoints",
+                [](const PointCloudShape& self) {
+                  const auto span = self.getPoints();
+                  return std::vector<Eigen::Vector3d>(span.begin(), span.end());
+                })
+            .def("getNumPoints", &PointCloudShape::getNumPoints)
+            .def("removeAllPoints", &PointCloudShape::removeAllPoints)
+            .def(
+                "setPointShapeType",
+                &PointCloudShape::setPointShapeType,
+                nb::arg("type"))
+            .def("getPointShapeType", &PointCloudShape::getPointShapeType)
+            .def(
+                "setColorMode", &PointCloudShape::setColorMode, nb::arg("mode"))
+            .def("getColorMode", &PointCloudShape::getColorMode)
+            .def(
+                "setOverallColor",
+                &PointCloudShape::setOverallColor,
+                nb::arg("color"))
+            .def("getOverallColor", &PointCloudShape::getOverallColor)
+            .def(
+                "setVisualSize",
+                &PointCloudShape::setVisualSize,
+                nb::arg("size"))
+            .def("getVisualSize", &PointCloudShape::getVisualSize)
+            .def_static("getStaticType", []() {
+              return std::string(PointCloudShape::getStaticType());
+            });
+
+  nb::enum_<PointCloudShape::ColorMode>(pointCloudShape, "ColorMode")
+      .value("USE_SHAPE_COLOR", PointCloudShape::USE_SHAPE_COLOR)
+      .value("BIND_OVERALL", PointCloudShape::BIND_OVERALL)
+      .value("BIND_PER_POINT", PointCloudShape::BIND_PER_POINT);
+
+  nb::enum_<PointCloudShape::PointShapeType>(pointCloudShape, "PointShapeType")
+      .value("BOX", PointCloudShape::BOX)
+      .value("BILLBOARD_SQUARE", PointCloudShape::BILLBOARD_SQUARE)
+      .value("BILLBOARD_CIRCLE", PointCloudShape::BILLBOARD_CIRCLE)
+      .value("POINT", PointCloudShape::POINT);
 }
 
 } // namespace dart::python_nb

@@ -58,6 +58,40 @@
 namespace dart::simulation::experimental {
 
 struct WorldOptions;
+/// A read-only snapshot of the deformable solver's per-step diagnostics, folded
+/// across all deformable bodies on the most recent ``World::step``. This is a
+/// curated, stable subset of the internal ``compute::DeformableSolverStats``
+/// (mesh sizes, projected-Newton convergence, self-contact activity, and the
+/// contact closest-approach diagnostic), surfaced for observability from tools
+/// and bindings without exposing the full internal counter set. All counters
+/// are zero before the first step that runs a deformable solve.
+struct DeformableSolverDiagnostics
+{
+  /// Number of deformable bodies stepped.
+  std::size_t bodyCount = 0;
+  /// Total deformable node and (mass-spring) edge counts.
+  std::size_t nodeCount = 0;
+  std::size_t edgeCount = 0;
+  /// Cumulative projected-Newton iterations over the step (summed per body).
+  std::size_t solverIterations = 0;
+  /// Objective (energy/gradient) evaluations and line-search trials.
+  std::size_t objectiveEvaluations = 0;
+  std::size_t lineSearchTrials = 0;
+  /// Projected-Newton search directions taken, and steepest-descent fallbacks
+  /// used when the Newton direction was not a descent direction.
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t projectedNewtonFallbacks = 0;
+  /// Self-contact barrier active contacts summed over every solver iteration.
+  std::size_t selfContactBarrierActiveContacts = 0;
+  /// Coulomb friction energy dissipated at the converged iterate.
+  double frictionDissipation = 0.0;
+  /// Contact closest-approach diagnostic at the converged iterate: the smallest
+  /// active contact distance, and the size of the active set at termination.
+  /// ``minActiveContactDistance`` is meaningful only when
+  /// ``convergedActiveContactCount > 0`` (otherwise it is 0).
+  double minActiveContactDistance = 0.0;
+  std::size_t convergedActiveContactCount = 0;
+};
 
 class DART_EXPERIMENTAL_API World
 {
@@ -338,6 +372,13 @@ public:
       compute::ComputeExecutor& executor,
       compute::WorldStepPipeline& pipeline);
 
+  /// Diagnostics from the deformable solve on the most recent ``step`` that
+  /// used the built-in pipeline (the ``step()`` / ``step(count)`` /
+  /// ``step(executor)`` overloads). For a multi-step call it reflects the last
+  /// step. The user-supplied-pipeline overloads do not update this (read the
+  /// stage's own ``getLastStats`` there); it stays at its previous value.
+  const DeformableSolverDiagnostics& getLastDeformableSolverDiagnostics() const;
+
   //--------------------------------------------------------------------------
   // Multibody solver configuration
   //--------------------------------------------------------------------------
@@ -434,6 +475,7 @@ private:
       ContactSolverMethod::SequentialImpulse};
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   double m_time{0.0};
+  DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,
