@@ -1273,6 +1273,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           "is_deformable_surface_ccd_obstacle",
           &sim::RigidBody::isDeformableSurfaceCcdObstacle,
           &sim::RigidBody::setDeformableSurfaceCcdObstacle)
+      .def_prop_rw(
+          "is_deformable_ground_barrier",
+          &sim::RigidBody::isDeformableGroundBarrier,
+          &sim::RigidBody::setDeformableGroundBarrier)
       .def_prop_ro("collision_shape", &sim::RigidBody::getCollisionShape)
       .def_prop_ro("has_collision_shape", &sim::RigidBody::hasCollisionShape)
       .def_prop_ro("linear_momentum", &sim::RigidBody::getLinearMomentum)
