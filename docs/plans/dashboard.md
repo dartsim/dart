@@ -359,14 +359,16 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Phases 1–4 landed — `dart-demos` Python (11 scenes incl. 5
-  minimal-viable modern scenarios), cross-language golden parity (Python +
-  C++ both assert against the shared fixture within 1e-9),
+- Next step: Phases 1–4 landed — `dart-demos` Python (29 scenes incl. 5
+  minimal-viable modern scenarios + an interactive Filament viewer via
+  `dartpy.gui.run_demos`), cross-language golden parity (Python + C++ both
+  assert 3 scenes against shared fixtures within 1e-9),
   `python/tutorials/01_browse_demos.ipynb`. Phase 5 (retire C++ `dart-demos`)
   is explicit "not now": conditions 4–5 of the retire-later checklist are met,
-  conditions 1–3 wait on Python-breadth growth + PLAN-012 (Colab smoke) +
-  PLAN-101 (editor loading example scenes). Track residual follow-ups in
-  `docs/dev_tasks/examples_strategy/`.
+  conditions 1–3 wait on Python-breadth growth (~73%) + PLAN-012 (Colab smoke) +
+  PLAN-101 (editor loading example scenes). The `docs/dev_tasks/examples_strategy/`
+  folder is retired; residual follow-ups are tracked in PLAN-103's
+  Landed State + retire-later checklist.
 - Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
   Python `test_golden_parity` + C++ `UNIT_gui_DemosGoldenParity` both pass
   against the shared fixture; the notebook imports (not copies) the scene

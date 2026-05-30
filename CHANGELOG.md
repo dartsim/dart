@@ -42,6 +42,12 @@
     log line; embedded materials are now compiled for both OpenGL and Vulkan so
     the backend is selectable without a separate build. No backend types are
     exposed through public headers.
+  - Added a diagnostic Filament offscreen render-to-texture parity self-check
+    (`DART_GUI_OFFSCREEN_PARITY` on the headless path, runnable via
+    `pixi run gui-offscreen-parity`) that renders the scene to an offscreen
+    `RenderTarget` and verifies it matches the swapchain render. The proven
+    render-to-texture path is the prerequisite for headless sensor cameras and a
+    future composited or streamed viewer.
   - Added a live in-app performance HUD (`--perf-hud`, also toggleable at runtime
     with `F2`) that overlays smoothed CPU per-phase timings, GPU frame time (from
     the Filament frame-info history), FPS, a real-time-factor (sim-vs-wall)
@@ -827,6 +833,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Optimized internal IPC cross-set sweep-pair traversal used by experimental
     surface candidate and CCD checks so the sorted right-hand-side AABB prefix
     already expired for the current left-hand-side AABB is skipped.
+  - Completed the internal IPC cross-set sweep traversal into a full active-set
+    sweep-and-prune: right-hand-side AABBs are kept in a reusable next-index
+    live list and unlinked as soon as their maximum x falls behind the sweep
+    line, so a long-lived early interval no longer pins the prefix cursor and
+    forces the expired intervals behind it to be rescanned for every
+    left-hand-side item (the prior slice's known limitation). The visited
+    `(lhs, rhs)` pair sequence is identical to the naive nested scan, so the
+    surface candidate sets, solver-wired CCD limiters, and barrier candidate
+    assembly are behavior-preserving. Adds a staggered-expiry active-set
+    regression and a long-lived-interval microbenchmark
+    (`BM_IpcCandidateSetCrossSweepLongLivedInterval`).
   - Added internal inter-body deformable surface CCD line-search limiting with
     stage-start surface snapshots, cross-body point-triangle and edge-edge
     conservative CCD checks, focused regressions, and benchmark counters.
@@ -1021,6 +1038,30 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     regression that loads a single-tetrahedron scene and checks the reported
     topology counts and total mass. (The loader still covers only the
     contact-free subset; it is not IPC scene parity.)
+  - Added a dedicated `IPC Deformable (sx)` category of deformable scenes to the
+    consolidated `py-demos` standalone (`pixi run py-demos`), grouping the IPC
+    showcases in their own menu category instead of mixing them into the general
+    `Experimental` (sx) scenes: `ipc_deformable_net` (a pinned spring net sagging
+    under gravity), `ipc_deformable_drape` (a mat draping over a step onto a
+    ground barrier), `ipc_deformable_trampoline` (a corner-pinned membrane sagging
+    and rebounding under projected Newton), `ipc_deformable_friction_slide` (a
+    launched mat skidding to rest under lagged smoothed-Coulomb ground friction),
+    and `ipc_deformable_scripted_dirichlet` (a banner billowing under a scripted
+    Dirichlet boundary condition). A shared `_ipc_deformable_bridge.py` builds the
+    grid topology and mirrors each `dartpy.simulation_experimental` deformable
+    body onto the Filament render world as per-node spheres plus a spring
+    wireframe (the dynamic surface-mesh render path is not yet exposed through
+    `dartpy.gui.run_demos`). To enable the drape and friction scenes, exposed
+    `RigidBody.is_deformable_ground_barrier` to `dartpy` (mirroring the existing
+    `is_deformable_surface_ccd_obstacle` property) so a static rigid box can be
+    tagged as a deformable ground barrier from Python; regenerated the type
+    stubs and added a binding regression. These are DART-native point-mass/spring
+    showcases that evoke the IPC paper's themes (draping, self-contact, friction,
+    scripted boundaries) but are not faithful paper-figure reproductions; the
+    upstream scene corpus stays `planned` pending vendored assets and an
+    FEM/codimensional material model. The demos cycle smoke covers every scene,
+    plus a solver-free grid-builder topology test and a registry test that pins
+    the dedicated category.
   - Extended the experimental deformable-body `dartpy` facade with scripted
     boundary conditions (PLAN-081 Phase 8). Added
     `DeformableDirichletBoundaryCondition` (`nodes`, `linear_velocity`,
@@ -1101,6 +1142,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     while the frictionless control reports zero. These feed the paper's friction
     benchmark statistics (Fig. 23 / Table 1) alongside the existing
     `finalGradientResidualNorm` convergence diagnostic.
+  - Added an experimental IPC contact closest-approach diagnostic to the
+    deformable solver stats. Each step now reports `minActiveContactDistance`
+    (the smallest point-triangle / edge-edge distance among the active
+    self-contact barrier set at the converged iterate -- the IPC
+    intersection-free "minimum distance" statistic, Fig. 23 / Table 1) and
+    `convergedActiveContactCount` (the size of that active set at solve
+    termination, a single-iteration snapshot distinct from the cumulative
+    `selfContactBarrierActiveContacts`). Both are zero for bodies without active
+    self-contact, the distance is meaningful only when the count is positive,
+    and both are read once per step outside the line-search hot path.
+    Behavior-preserving (a diagnostic only; the solve is unchanged). Adds
+    regressions that a self-contact step reports a positive closest approach
+    strictly inside the activation band while a far-apart configuration reports
+    an empty active set, plus self-contact stage benchmark counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

@@ -72,10 +72,49 @@ DPI/atlas objections; the docking branch is still unmerged but
 maintainer-recommended (pinning per Decision 4 still correct).
 
 **Recommended next action (highest-leverage, lowest-regret):** the CI guard
-above (done). Second: the Filament offscreen render-to-texture spike (see
-`docs/dev_tasks/filament_offscreen_viewport_spike/`) — independently valuable
-for headless/sensor/web-streaming and the long pole for _both_ a Qt viewport and
-a web viewer. **Do not start a Qt port.**
+above (done) and the Filament offscreen render-to-texture spike (done — see the
+result below). **Do not start a Qt port.**
+
+### Offscreen-viewport spike result (2026-05-29)
+
+The Decision-3 prerequisite — the "hard ~80%" of both a Qt viewport and a
+web/streaming viewer — was executed. **Result: the offscreen render-to-texture
+path works with on-screen parity.**
+
+- **Phase 1 (parity gate) — PASS.** Rendering the live dartsim scene to an
+  offscreen Filament `RenderTarget` backed by an RGBA8 color `Texture` matches
+  the swapchain render to within `maxDelta=2` of 255 over a 1280×720 `--demo`
+  frame (tolerance 4), with non-trivial content. Implemented as an env-gated
+  diagnostic in `dart/gui/detail/offscreen_parity.cpp` and runnable via
+  `pixi run gui-offscreen-parity` (OpenGL/llvmpipe headless). So the renderer can
+  produce a correct texture, not just a window surface — this de-risks the
+  rendering half of any composited front-end (Qt or web) and directly unblocks
+  headless sensor cameras and a future `rerun`/MeshCat-style stream off the
+  shared pipeline (Identity B), which only need render-to-texture + CPU readback
+  at modest rates.
+
+- **Phase 2 (host-composite strategies).** Two ways to get Filament pixels into
+  a Qt window, with the spike's evidence:
+
+  |             | Strategy A — native child window                                                                                                           | Strategy B — offscreen texture composite                                                                                                                                                                                                                     |
+  | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | How         | Filament `createSwapChain(nativeWindow)` into a Qt-owned native handle (`QWidget::createWindowContainer` + `winId()`/`QWindow::fromWinId`) | Filament renders to a `Texture` (proven), host samples it in its own GL/Vulkan context (`QRhi`/`QQuickFramebufferObject`)                                                                                                                                    |
+  | Maturity    | Reuses the exact path the live viewport already uses; lowest risk                                                                          | Render-to-texture proven here; **zero-copy GPU sharing into the host context is the unproven part** — Filament external-texture export is unplanned beyond Android, and a per-frame `readPixels` CPU roundtrip is too slow for a 60 fps interactive viewport |
+  | Compositing | Opaque native child window: Qt widgets/popups/transparency do not compose over it cleanly                                                  | Full Qt compositing (the texture is a normal QML/widget item) — the reason to want B                                                                                                                                                                         |
+  | Verdict     | Low-risk fallback if a Qt viewport is ever built; accepts compositing limits                                                               | Higher fidelity but gated on Filament GPU-texture interop that does not exist today                                                                                                                                                                          |
+
+  **Recommendation:** if a Qt viewport is ever pursued, start with Strategy A
+  (low-risk, reuses the shipping path) and treat Strategy B as blocked until
+  Filament exposes cross-context texture sharing on desktop.
+
+- **Phase 3 (Qt-trigger implication).** This **informs** the Decision-2 Qt
+  trigger; it does not fire it. The rendering prerequisite is no longer a
+  blocker — it is proven low-risk — so the residual Qt risk narrows to the
+  **interactive compositing handoff** (Strategy B's missing GPU interop) plus the
+  unchanged structural triggers (a filed accessibility/i18n requirement; measured
+  large-tree jank; a funded downstream need). The verdict stands: **keep GLFW +
+  Dear ImGui; do not migrate to Qt.** The lasting win is the proven offscreen
+  pipeline, which serves headless/sensor/web regardless of the toolkit outcome.
 
 ## Purpose
 
