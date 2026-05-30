@@ -680,6 +680,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
   data.material.youngsModulus = options.material.youngsModulus;
   data.material.poissonRatio = options.material.poissonRatio;
   data.material.frictionCoefficient = options.material.frictionCoefficient;
+  data.material.useFiniteElementElasticity
+      = options.material.useFiniteElementElasticity;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);
