@@ -1280,6 +1280,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     early termination; the multithreaded path omits them (they need a global
     extrapolation / cross-thread reduction) and falls back to the serial driver
     for a single worker.
+  - Wired static ground/obstacle contact (and optional Coulomb friction) into
+    the World VBD path. `blockDescentDeformable` and
+    `parallelBlockDescentDeformable` now accept per-vertex `ContactPlane`s and a
+    friction coefficient, adding the VBD half-space penalty and semi-implicit
+    Coulomb friction terms per vertex. The stage builds the per-vertex planes
+    each step from the static ground-barrier set (z-up half-spaces at the
+    per-xy barrier top via `staticGroundTopAt`, lagged at the warm-start
+    position), gated by a new `DeformableVbdConfig::contactStiffness`. The VBD
+    gate was relaxed to run on bodies with ground barriers when the contact
+    stiffness is positive; a body with barriers but no VBD contact stiffness
+    still falls back to the default solver so it rests on the ground, and
+    rigid-surface CCD and surface self-contact remain default-solver-only.
+    Tests confirm a VBD spring patch rests on a ground barrier instead of
+    falling through and that Coulomb friction shortens a sliding patch's travel.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

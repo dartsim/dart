@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/deformable_body.hpp>
+#include <dart/simulation/experimental/body/rigid_body.hpp>
+#include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
@@ -114,6 +117,51 @@ void stepOnce(sx::World& world, compute::DeformableDynamicsStage& stage)
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(stage);
   world.step(executor, pipeline);
+}
+
+// Add a static box ground barrier whose top face is at z = 0.
+void addGroundBarrier(sx::World& world)
+{
+  sx::RigidBodyOptions options;
+  options.isStatic = true;
+  options.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", options);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 4.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+}
+
+// A small free (un-pinned) spring patch in the xy plane at height z0, with an
+// optional initial horizontal velocity, dropped onto the ground.
+sx::DeformableBodyOptions makeFallingPatchOptions(double z0, double velocityX)
+{
+  constexpr int side = 3;
+  constexpr double spacing = 0.1;
+  sx::DeformableBodyOptions options;
+  const auto index = [](int r, int c) {
+    return static_cast<std::size_t>(r * side + c);
+  };
+  for (int r = 0; r < side; ++r) {
+    for (int c = 0; c < side; ++c) {
+      options.positions.emplace_back(
+          spacing * c, spacing * r, z0 + 0.002 * ((r + c) % 2));
+      options.velocities.emplace_back(velocityX, 0.0, 0.0);
+      options.masses.push_back(0.1);
+    }
+  }
+  for (int r = 0; r < side; ++r) {
+    for (int c = 0; c < side; ++c) {
+      if (c + 1 < side) {
+        options.edges.push_back({index(r, c), index(r, c + 1), -1.0});
+      }
+      if (r + 1 < side) {
+        options.edges.push_back({index(r, c), index(r + 1, c), -1.0});
+      }
+    }
+  }
+  options.edgeStiffness = 200.0;
+  options.damping = 2.0;
+  return options;
 }
 
 } // namespace
@@ -410,4 +458,95 @@ TEST(VbdWorldSolver, MultithreadedSolveMatchesSingleThreaded)
         1e-12)
         << "node " << i;
   }
+}
+
+//==============================================================================
+// With ground contact enabled (contactStiffness > 0) the World VBD path keeps a
+// free spring patch resting on a static ground barrier instead of falling
+// through it.
+TEST(VbdWorldSolver, VbdBodyRestsOnGround)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  addGroundBarrier(world);
+  world.addDeformableBody("patch", makeFallingPatchOptions(0.3, 0.0));
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 40;
+  cfg.contactStiffness = 5.0e3;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 300; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("patch");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      ASSERT_TRUE(body->getPosition(i).allFinite()) << "blew up at " << step;
+    }
+  }
+
+  // The VBD path (not the default solver) handled the body.
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+
+  const auto body = world.getDeformableBody("patch");
+  ASSERT_TRUE(body.has_value());
+  double minZ = 1e9;
+  double maxZ = -1e9;
+  for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+    const double z = body->getPosition(i).z();
+    minZ = std::min(minZ, z);
+    maxZ = std::max(maxZ, z);
+  }
+  // Settled on the ground (z = 0): it came down to the barrier without falling
+  // through, and the whole patch rests near the surface.
+  EXPECT_GT(minZ, -0.05);
+  EXPECT_LT(minZ, 0.05);
+  EXPECT_LT(maxZ, 0.1);
+}
+
+//==============================================================================
+// Coulomb friction against the ground barrier decelerates a sliding patch: a
+// frictional body travels less far than a frictionless one over the same steps.
+TEST(VbdWorldSolver, VbdFrictionDeceleratesSlidingBody)
+{
+  const auto travelledX = [](double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    addGroundBarrier(world);
+    sx::DeformableBodyOptions options = makeFallingPatchOptions(0.0, 0.6);
+    options.material.frictionCoefficient = friction;
+    world.addDeformableBody("patch", options);
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 40;
+    cfg.contactStiffness = 5.0e3;
+    enableVbdConfig(world, cfg);
+
+    compute::DeformableDynamicsStage stage;
+    const auto start = world.getDeformableBody("patch");
+    double startX = 0.0;
+    for (std::size_t i = 0; i < start->getNodeCount(); ++i) {
+      startX += start->getPosition(i).x();
+    }
+    startX /= static_cast<double>(start->getNodeCount());
+
+    for (int step = 0; step < 150; ++step) {
+      stepOnce(world, stage);
+    }
+    const auto body = world.getDeformableBody("patch");
+    double endX = 0.0;
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      endX += body->getPosition(i).x();
+    }
+    endX /= static_cast<double>(body->getNodeCount());
+    return endX - startX;
+  };
+
+  const double frictionless = travelledX(0.0);
+  const double frictional = travelledX(0.8);
+  EXPECT_GT(frictionless, 0.05);       // it slid forward
+  EXPECT_LT(frictional, frictionless); // friction shortened the slide
 }

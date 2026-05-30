@@ -3134,6 +3134,10 @@ struct DeformableVbdScratch
   dvbd::VertexColoring coloring;
   dvbd::SpringAdjacency springAdjacency;
   dvbd::TetAdjacency tetAdjacency;
+  // Per-vertex static ground-contact planes, rebuilt each step from the barrier
+  // set at the warm-start position (lagged); a zero stiffness marks "no ground
+  // under this vertex".
+  std::vector<dvbd::ContactPlane> contactPlanes;
   std::size_t cachedNodeCount = 0;
   std::size_t cachedEdgeCount = 0;
   std::size_t cachedTetCount = 0;
@@ -3148,8 +3152,10 @@ struct DeformableVbdScratch
 /// springs and volumetric Stable Neo-Hookean tetrahedra (the latter using the
 /// body's Lame parameters, which the default gradient solver does not yet
 /// model). Fills `scratch.next`; the caller's write-back updates
-/// positions/velocities. This slice covers contact-free bodies only and does
-/// not yet handle ground barriers, rigid obstacles, or surface-contact CCD.
+/// positions/velocities. With `config.contactStiffness > 0` it also resolves
+/// static ground/obstacle half-space contact (penalty + optional Coulomb
+/// friction); it does not yet handle rigid-obstacle CCD or surface
+/// self-contact.
 void runVbdDeformableSolve(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -3159,6 +3165,8 @@ void runVbdDeformableSolve(
     double timeStep,
     double youngsModulus,
     double poissonRatio,
+    const std::vector<StaticGroundBarrier>& barriers,
+    double frictionCoeff,
     const comps::DeformableVbdConfig& config,
     DeformableSolverStats& stats)
 {
@@ -3210,6 +3218,31 @@ void runVbdDeformableSolve(
     }
   }
 
+  // Build the per-vertex static-contact planes from the barrier set at the
+  // warm-start position (lagged for the step). A vertex over a barrier
+  // footprint gets a z-up half-space at the barrier top with the configured
+  // penalty stiffness; vertices off the footprint get a zero-stiffness
+  // (inactive) plane and fall freely.
+  const std::vector<dvbd::ContactPlane>* contactPlanes = nullptr;
+  if (config.contactStiffness > 0.0 && !barriers.empty()) {
+    vbdScratch.contactPlanes.assign(nodeCount, dvbd::ContactPlane{});
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      dvbd::ContactPlane& plane = vbdScratch.contactPlanes[i];
+      plane.normal = Eigen::Vector3d::UnitZ();
+      plane.offset = 0.0;
+      plane.stiffness = 0.0;
+      if (scratch.activeFixed[i] != 0u) {
+        continue;
+      }
+      const auto groundTop = staticGroundTopAt(scratch.next[i], barriers);
+      if (groundTop.has_value()) {
+        plane.offset = *groundTop;
+        plane.stiffness = config.contactStiffness;
+      }
+    }
+    contactPlanes = &vbdScratch.contactPlanes;
+  }
+
   const dvbd::LameParameters lame
       = dvbd::lameFromYoungPoisson(youngsModulus, poissonRatio);
 
@@ -3240,7 +3273,9 @@ void runVbdDeformableSolve(
       vbdScratch.coloring,
       options,
       config.workerThreads,
-      &state.positions);
+      &state.positions,
+      contactPlanes,
+      frictionCoeff);
 
   ++stats.vbdBodyCount;
   stats.vbdSweeps += result.iterations;
@@ -3734,18 +3769,24 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  // External contact sources VBD cannot honor yet (it skips ground/obstacle
-  // barriers and rigid-surface CCD). The body's own surface mesh is excluded
-  // here: VBD solves inertia + springs + tet elasticity and treats the body as
-  // free of surface self-contact (a later slice wires the VBD contact kernels
-  // into the World path). The default-solver fast path below keeps the stricter
-  // surface check so non-VBD bodies still get self-contact.
-  const bool externalContactFree = barriers.empty()
-                                   && rigidSurfaceSnapshots.empty()
-                                   && movingRigidSurfaceSnapshots.empty();
-  const bool contactFree
-      = externalContactFree && contactScratch.surfaceTriangles.empty();
-  if (vbdConfig != nullptr && vbdConfig->enabled && externalContactFree) {
+  // VBD handles static ground/obstacle barriers itself (penalty contact) when
+  // contactStiffness > 0, but it cannot honor rigid-surface CCD. The body's own
+  // surface mesh is excluded here: VBD solves inertia + springs + tet
+  // elasticity
+  // (+ ground contact) and treats the body as free of surface self-contact (a
+  // later slice wires VBD self-contact into the World path). A body with ground
+  // barriers but no VBD contact stiffness falls back to the default solver so
+  // it still rests on the ground. The default-solver fast path below keeps the
+  // stricter surface check so non-VBD bodies still get self-contact.
+  const bool rigidSurfaceFree
+      = rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty();
+  const bool vbdHandlesBarriers
+      = barriers.empty()
+        || (vbdConfig != nullptr && vbdConfig->contactStiffness > 0.0);
+  const bool contactFree = rigidSurfaceFree && barriers.empty()
+                           && contactScratch.surfaceTriangles.empty();
+  if (vbdConfig != nullptr && vbdConfig->enabled && rigidSurfaceFree
+      && vbdHandlesBarriers) {
     runVbdDeformableSolve(
         state,
         model,
@@ -3755,6 +3796,8 @@ void advanceDeformableBody(
         timeStep,
         youngsModulus,
         poissonRatio,
+        barriers,
+        frictionCoefficient,
         *vbdConfig,
         stats);
   } else if (model.edges.empty() && contactFree) {

@@ -111,9 +111,14 @@ matches the default solver. Remaining work, in order:
 2. Phase 7: half-space penalty contact + semi-implicit Coulomb friction land
    (`contact_kernel.hpp`: `addHalfSpacePenaltyContact`, `addHalfSpaceFriction`;
    drivers `blockDescentMassSpringGround[Friction]`; bodies rest on the ground,
-   sliding particles are stopped by friction). Next: vertex-triangle / edge-edge
-   penalty contact (reuse `deformable_contact` distance/CCD kernels),
-   self-collision, and wiring contact/friction into the World VBD path.
+   sliding particles are stopped by friction). Ground contact + friction are now
+   WIRED INTO the World VBD path too: `blockDescentDeformable` /
+   `parallelBlockDescentDeformable` take per-vertex `ContactPlane`s, the stage
+   builds them from the barrier set (`staticGroundTopAt`) gated by
+   `DeformableVbdConfig::contactStiffness`, and World tests confirm a VBD patch
+   rests on the ground and friction shortens a slide. Next: vertex-triangle /
+   edge-edge penalty contact (reuse `deformable_contact` distance/CCD kernels)
+   and self-collision in the World VBD path.
 3. Phase 8: residual early termination + multithreaded color sweeps
    (`parallelBlockDescentMassSpring`, std::barrier, ~3.5x at 8 threads) both
    land. The multithreaded sweep is now WIRED INTO the World stage via

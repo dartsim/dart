@@ -185,7 +185,9 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     const VertexColoring& coloring,
     const BlockDescentOptions& options,
     unsigned int threadCount,
-    const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr)
+    const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
+    const std::vector<ContactPlane>* contactPlanes = nullptr,
+    double contactFriction = 0.0)
 {
   if (threadCount <= 1) {
     return blockDescentDeformable(
@@ -203,7 +205,9 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         timeStep,
         coloring,
         options,
-        stepStartPositions);
+        stepStartPositions,
+        contactPlanes,
+        contactFriction);
   }
 
   const std::size_t vertexCount = positions.size();
@@ -235,6 +239,18 @@ inline BlockDescentStats parallelBlockDescentDeformable(
           positions[vertex] - (*stepStartPositions)[vertex],
           options.rayleighDamping,
           timeStep);
+    }
+    if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
+      const ContactPlane& plane = (*contactPlanes)[vertex];
+      addHalfSpacePenaltyContact(block, positions[vertex], plane);
+      if (contactFriction > 0.0 && stepStartPositions != nullptr) {
+        addHalfSpaceFriction(
+            block,
+            positions[vertex],
+            (*stepStartPositions)[vertex],
+            plane,
+            contactFriction);
+      }
     }
     return block;
   };

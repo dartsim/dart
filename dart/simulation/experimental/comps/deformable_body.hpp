@@ -178,6 +178,11 @@ struct DeformableVbdConfig
   /// Chebyshev over-relaxation or residual early termination (those run only on
   /// the serial path).
   unsigned int workerThreads = 1;
+  /// Penalty stiffness k_c for static ground/obstacle half-space contact
+  /// (0 disables ground contact, so the body falls freely past barriers). With
+  /// a positive value the VBD solve keeps the body resting on the ground
+  /// barrier set instead of routing the body to the default solver.
+  double contactStiffness = 0.0;
 };
 
 /// Transient scratch buffers reused by the default deformable solver.
