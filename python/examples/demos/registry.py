@@ -15,6 +15,8 @@ from .scenes.capsule_ground_contact import SCENE as CAPSULE_GROUND_CONTACT
 from .scenes.cartpole_gym_env import SCENE as CARTPOLE_GYM_ENV
 from .scenes.cartpole_mpc import SCENE as CARTPOLE_MPC
 from .scenes.coupler_constraint import SCENE as COUPLER_CONSTRAINT
+from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
+from .scenes.diff_throw_to_target import SCENE as DIFF_THROW_TO_TARGET
 from .scenes.empty import SCENE as EMPTY
 from .scenes.free_joint_cases import SCENE as FREE_JOINT_CASES
 from .scenes.hardcoded_design import SCENE as HARDCODED_DESIGN
@@ -80,4 +82,11 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_ARTICULATED,
         SX_FLOATING_BASE,
         SX_CONTACT,
+        # Differentiable physics (sx::World + sx.diff). Reproduces the paper's
+        # gradient-based experiments as browsable, animated scenes. Each scene
+        # degrades gracefully to an un-optimized rollout when the differentiable
+        # bindings (DART_BUILD_DIFF) are absent, so the diff-OFF cycle smoke
+        # still builds and renders them.
+        DIFF_THROW_TO_TARGET,
+        DIFF_CARTPOLE_TRAJOPT,
     ]
