@@ -308,6 +308,15 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
         "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
     )
 
+    assert hasattr(sx.RigidBody, "is_deformable_ground_barrier")
+    assert not hasattr(sx.Link, "is_deformable_ground_barrier")
+    assert (
+        "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
+    )
+    assert (
+        "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
+    )
+
 
 def test_experimental_state_space_metadata_value_object():
     sx = _simulation_experimental()
@@ -1980,6 +1989,11 @@ def test_experimental_collision_query():
     assert body_b.is_deformable_surface_ccd_obstacle
     body_b.is_deformable_surface_ccd_obstacle = False
     assert not body_b.is_deformable_surface_ccd_obstacle
+    assert not body_b.is_deformable_ground_barrier
+    body_b.is_deformable_ground_barrier = True
+    assert body_b.is_deformable_ground_barrier
+    body_b.is_deformable_ground_barrier = False
+    assert not body_b.is_deformable_ground_barrier
     assert world.add_rigid_body("c").collision_shape is None
 
     contacts = world.collide()
