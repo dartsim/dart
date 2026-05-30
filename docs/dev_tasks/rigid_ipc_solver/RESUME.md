@@ -214,16 +214,22 @@ sliding/friction/stacking demos and the contact corpus.
 
 Next slices, in rough priority:
 
-1. DONE: clean `pixi run build` (urdfdom 5.1 relink) restored dartpy. Expanded
-   the rigid IPC py-demos suite to eight Experimental-category scenes, each
-   verified (per-scene trajectory check + demos-cycle smoke): `sx_rigid_ipc`
-   (box drop), `sx_rigid_ipc_sphere` (sphere drop), `sx_rigid_ipc_slide`
-   (friction slide), `sx_rigid_ipc_incline` (slope friction), `sx_rigid_ipc_stack`
-   (3-box stack), `sx_rigid_ipc_sphere_box` (curved body-body), `sx_rigid_ipc_pile`
-   (boxes into a pile), and `sx_rigid_ipc_tunnel` (no-tunneling / intersection-free
-   guarantee). Articulated/jointed paper scenes (chains, mechanisms, octopus,
-   pendulums, compactors) are NOT yet demoable: the rigid IPC stage handles only
-   free rigid bodies (box/sphere/mesh), no joints.
+1. DONE: clean `pixi run build` (urdfdom 5.1 relink) restored dartpy. The rigid
+   IPC py-demos suite is FIVE real-time Experimental-category scenes, each
+   verified to behave correctly AND to run at an interactive frame rate
+   (per-scene trajectory + per-step wall-clock timing + demos-cycle smoke):
+   `sx_rigid_ipc` (box drop, ~30ms/step settled), `sx_rigid_ipc_slide` (friction
+   slide), `sx_rigid_ipc_incline` (slope friction), `sx_rigid_ipc_pile` (boxes
+   into a pile), and `sx_rigid_ipc_tunnel` (no-tunneling / intersection-free
+   guarantee). Heavier scenes were measured and found too slow for real-time and
+   intentionally NOT shipped as demos (they "looked stuck"): a triangulated
+   sphere (~175 ms/step, ~6 fps), a tight 3-box stack (~190 ms/step), and
+   sphere-on-box (~300 ms/step, ~3 fps) — the known IPC perf gap (sphere = 62
+   triangulation verts; tight stacks = dense face-face contacts). Those stay
+   covered by C++ regressions; the demos return once the perf work lands.
+   Articulated/jointed paper scenes (chains, mechanisms, octopus, pendulums,
+   compactors) remain out of scope: the rigid IPC stage handles only free rigid
+   bodies (box/sphere/mesh), no joints.
 2. DONE (body-body): `RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration`
    C++ regression + the `sx_rigid_ipc_stack`/`_pile`/`_sphere_box` demos confirm
    multiple dynamic bodies and body-body contact settle stably. Remaining:

@@ -40,9 +40,6 @@ from .scenes.sx_rigid_ipc import SCENE as SX_RIGID_IPC
 from .scenes.sx_rigid_ipc_incline import SCENE as SX_RIGID_IPC_INCLINE
 from .scenes.sx_rigid_ipc_pile import SCENE as SX_RIGID_IPC_PILE
 from .scenes.sx_rigid_ipc_slide import SCENE as SX_RIGID_IPC_SLIDE
-from .scenes.sx_rigid_ipc_sphere import SCENE as SX_RIGID_IPC_SPHERE
-from .scenes.sx_rigid_ipc_sphere_box import SCENE as SX_RIGID_IPC_SPHERE_BOX
-from .scenes.sx_rigid_ipc_stack import SCENE as SX_RIGID_IPC_STACK
 from .scenes.sx_rigid_ipc_tunnel import SCENE as SX_RIGID_IPC_TUNNEL
 
 
@@ -89,14 +86,15 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_FLOATING_BASE,
         SX_CONTACT,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
-        # drops, friction, multi-body stacks/piles, then the intersection-free
-        # (no-tunneling) guarantee.
+        # a drop, friction (flat + inclined), a multi-body pile, then the
+        # intersection-free (no-tunneling) guarantee. Only scenes that run in
+        # real time are registered; heavier contact scenes (a triangulated
+        # sphere, a tight box stack) are intentionally omitted until the rigid
+        # IPC performance work lands, since the solver currently runs at only a
+        # few frames per second for those (they are covered by C++ regressions).
         SX_RIGID_IPC,
-        SX_RIGID_IPC_SPHERE,
         SX_RIGID_IPC_SLIDE,
         SX_RIGID_IPC_INCLINE,
-        SX_RIGID_IPC_STACK,
-        SX_RIGID_IPC_SPHERE_BOX,
         SX_RIGID_IPC_PILE,
         SX_RIGID_IPC_TUNNEL,
     ]
