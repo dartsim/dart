@@ -931,6 +931,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     / Fig. 14 (mat twist) volumetric-shear themes. Shares a reusable
     hexahedral-to-tetrahedral bar mesh helper with the FEM cantilever scene; the
     demos cycle smoke covers it.
+  - Validated and showcased stable neo-Hookean FEM volumetric bodies in IPC
+    contact: a free tetrahedral FEM cube dropped onto a static ground barrier
+    falls, squashes, and settles on the barrier surface intersection-free (no
+    node crosses the ground top), exercising the FEM elasticity and the
+    clamped-log ground barrier together in one solve. Adds a
+    `FemCubeSettlesOnGroundBarrierWithoutPenetrating` regression and a
+    `Deformable FEM Drop (IPC)` py-demos scene -- a DART-native step toward the
+    paper's volumetric drop scenes (e.g. Fig. 12).
   - Added internal experimental IPC projected-Newton search direction for the
     deformable solve: each iteration assembles the per-step Hessian (inertia +
     spring + self-contact barrier + static ground barrier) with per-element
