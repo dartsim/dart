@@ -53,9 +53,20 @@ model (`DeformableMaterialProperties.useFiniteElementElasticity`, also exposed t
 batched seam. Ships with solver regressions, a `BM_DeformableFemBarStep`
 benchmark, and a `Deformable FEM Bar (IPC)` py-demos cantilever. The mass-spring
 path is byte-identical when the flag is off. Each tet's rest shape is cached in
-the per-entity scratch (computed once, reused every step). Follow-ups within M1:
-fixed-corotational (FCR) material variant; twist/large-deformation showcase
-toward Fig. 4 / Fig. 14.
+the per-entity scratch (computed once, reused every step).
+
+Follow-ups within M1 — **FCR LANDED:** the fixed-corotational material variant
+(`psi = mu||F - R||^2 + (lambda/2)(J-1)^2`, exact first Piola + positive-definite
+Gauss-Newton element Hessian, with `R` from the polar decomposition) is wired in
+as a second opt-in material behind
+`DeformableMaterialProperties.useFixedCorotationalElasticity` (dartpy
+`use_fixed_corotational_elasticity`), dispatched through a shared per-element seam
+so neo-Hookean stays the default. It ships kernel
+FD/rotation-invariance/SPD-Hessian tests, solver regressions (FCR tet stationary
+at rest; restores a perturbed node toward rest), and a `Deformable FCR Twist
+(IPC)` py-demos showcase toward Fig. 4 / Fig. 14. Remaining M1 follow-up: the
+exact analytic FCR eigensystem (accuracy/perf) in place of the Gauss-Newton
+Hessian approximation.
 
 Add a per-tetrahedron strain-energy term producing per-element energy,
 12-vector gradient, and 12×12 Hessian, reusing the existing PSD-projection

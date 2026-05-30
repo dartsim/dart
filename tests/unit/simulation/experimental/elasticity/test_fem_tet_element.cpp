@@ -295,3 +295,120 @@ TEST(FemTetElement, ZeroPoissonRatioStaysFinite)
   const double tol = 1e-5 * (1.0 + numeric.cwiseAbs().maxCoeff());
   EXPECT_LT((result.gradient - numeric).cwiseAbs().maxCoeff(), tol);
 }
+
+//==============================================================================
+// Fixed-corotational material tests.
+namespace {
+
+double fcrEnergyAt(
+    const Nodes& x,
+    const fem::TetRestShape& rest,
+    const fem::LameParameters& lame)
+{
+  return fem::evaluateFixedCorotationalTet(
+             x[0], x[1], x[2], x[3], rest, lame, /*computeHessian=*/false)
+      .energy;
+}
+
+fem::Vector12d fcrFiniteGradient(
+    const Nodes& x,
+    const fem::TetRestShape& rest,
+    const fem::LameParameters& lame)
+{
+  constexpr double h = 1e-6;
+  fem::Vector12d grad = fem::Vector12d::Zero();
+  for (int node = 0; node < 4; ++node) {
+    for (int axis = 0; axis < 3; ++axis) {
+      Nodes plus = x;
+      Nodes minus = x;
+      plus[node][axis] += h;
+      minus[node][axis] -= h;
+      grad[3 * node + axis]
+          = (fcrEnergyAt(plus, rest, lame) - fcrEnergyAt(minus, rest, lame))
+            / (2.0 * h);
+    }
+  }
+  return grad;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(FemTetElement, FixedCorotationalRestStateHasZeroEnergyAndForce)
+{
+  const Nodes rest = restTetrahedron();
+  const fem::TetRestShape shape
+      = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
+  const fem::LameParameters lame = fem::lameParameters(1.0e4, 0.3);
+  const fem::TetElementResult result = fem::evaluateFixedCorotationalTet(
+      rest[0], rest[1], rest[2], rest[3], shape, lame);
+  ASSERT_TRUE(result.valid);
+  EXPECT_NEAR(result.energy, 0.0, 1e-9);
+  EXPECT_LT(result.gradient.cwiseAbs().maxCoeff(), 1e-7);
+}
+
+//==============================================================================
+// The corotational property: a rigid rotation of the rest tetrahedron stores no
+// strain energy and exerts no force (unlike a linear model). This is what the
+// polar-decomposition rotation buys.
+TEST(FemTetElement, FixedCorotationalIsInvariantUnderRotation)
+{
+  const Nodes rest = restTetrahedron();
+  const fem::TetRestShape shape
+      = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
+  const fem::LameParameters lame = fem::lameParameters(1.0e4, 0.3);
+
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.9, Eigen::Vector3d(0.3, -0.7, 0.5).normalized())
+            .toRotationMatrix();
+  Nodes rotated = rest;
+  for (auto& node : rotated) {
+    node = rotation * node;
+  }
+
+  const fem::TetElementResult result = fem::evaluateFixedCorotationalTet(
+      rotated[0], rotated[1], rotated[2], rotated[3], shape, lame);
+  ASSERT_TRUE(result.valid);
+  EXPECT_NEAR(result.energy, 0.0, 1e-8);
+  EXPECT_LT(result.gradient.cwiseAbs().maxCoeff(), 1e-6);
+}
+
+//==============================================================================
+TEST(FemTetElement, FixedCorotationalGradientMatchesFiniteDifference)
+{
+  const Nodes rest = restTetrahedron();
+  const Nodes x = deformedTetrahedron();
+  const fem::TetRestShape shape
+      = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
+  const fem::LameParameters lame = fem::lameParameters(1.0e3, 0.3);
+
+  const fem::TetElementResult result
+      = fem::evaluateFixedCorotationalTet(x[0], x[1], x[2], x[3], shape, lame);
+  const fem::Vector12d numeric = fcrFiniteGradient(x, shape, lame);
+
+  const double tol = 1e-5 * (1.0 + numeric.cwiseAbs().maxCoeff());
+  EXPECT_LT((result.gradient - numeric).cwiseAbs().maxCoeff(), tol);
+}
+
+//==============================================================================
+// The Gauss-Newton fixed-corotational Hessian is symmetric positive definite.
+TEST(FemTetElement, FixedCorotationalHessianIsSymmetricPositiveDefinite)
+{
+  const Nodes rest = restTetrahedron();
+  const Nodes x = deformedTetrahedron();
+  const fem::TetRestShape shape
+      = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
+  const fem::LameParameters lame = fem::lameParameters(1.0e3, 0.3);
+
+  const fem::Matrix12d h
+      = fem::evaluateFixedCorotationalTet(x[0], x[1], x[2], x[3], shape, lame)
+            .hessian;
+  EXPECT_LT(
+      (h - h.transpose()).cwiseAbs().maxCoeff(),
+      1e-9 * (1.0 + h.cwiseAbs().maxCoeff()));
+  // The 9 free DOFs (node 0 fixed) span a PD subspace; the smallest eigenvalue
+  // over the whole 12x12 is >= 0 (the rigid translation modes are the
+  // nullspace).
+  const Eigen::SelfAdjointEigenSolver<fem::Matrix12d> solver(h);
+  EXPECT_GT(solver.eigenvalues().minCoeff(), -1e-7);
+}
