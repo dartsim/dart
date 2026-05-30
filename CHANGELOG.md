@@ -549,6 +549,33 @@
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
 
 - Simulation
+  - Added opt-in analytic differentiable simulation to the experimental `World`
+    (the Nimble method, arXiv:2103.16021): a build-time `DART_BUILD_DIFF` option
+    plus a runtime `WorldOptions::differentiable` flag (off by default, with
+    bitwise-identical results and no snapshot allocation when off). When enabled,
+    `World::getStepDerivatives()` returns DART-owned state/control/parameter
+    Jacobians and `World::applyStepVjp()` an efficient vector-Jacobian product,
+    computed by implicit differentiation of the boxed-LCP contact solve (the
+    clamping-block `A_CC⁻¹` gradient with the friction upper-bound mapping) and
+    the articulated-body dynamics. Covers all joint types (including SO(3)/SE(3)
+    manifold position Jacobians), frictionless and Coulomb-friction contact,
+    rotational/off-COM and multi-contact, and mass/inertia/friction parameter
+    derivatives; adds an opt-in boxed-LCP rigid-body contact path
+    (`WorldOptions::contactSolverMethod`), a framework-neutral `diff::rollout`,
+    contact-gradient refinement modes (`ContactGradientMode`), and a dartpy
+    `sx.diff` bridge (`timestep` as a `torch.autograd.Function`, `rollout`,
+    `get_step_derivatives`/`apply_step_vjp`) with lazy torch import. The
+    articulated-body dynamics derivatives are analytic (`O(dof²)`
+    recursive-Newton-Euler derivative recursions, with a finite-difference
+    fallback for manifold/configuration-dependent joints) and the contact
+    gradient exploits the block-sparse Delassus system, so the
+    analytic-vs-finite-difference speedup grows with system size — reproducing
+    the paper's scaling result and, on that hardware-normalized metric, matching
+    or beating the reference `nimblephysics` implementation measured on the same
+    machine. The paper's gradient-based trajectory-optimization experiment is
+    reproduced on a cartpole. All gradients are finite-difference-of-step
+    verified; no solver, reverse-pass cache, ECS, or tensor-backend types are
+    exposed publicly.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
@@ -980,6 +1007,63 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     (an FCR tetrahedron stationary at rest; restores a perturbed node toward
     rest) and a `Deformable FCR Twist (IPC)` py-demos scene (a tetrahedral bar
     twisted at both ends, untwisting under the fixed-corotational material).
+  - Added a `BM_DeformableFcrBarStep` per-step benchmark for the
+    fixed-corotational FEM material (mirroring `BM_DeformableFemBarStep` at the
+    same cell counts) so the two FEM materials' per-step solver cost can be
+    compared at matching mesh resolution -- the per-step-time axis of the IPC
+    paper's Fig. 23 / Table 1. Shares one polar-decomposition SVD per element
+    between the fixed-corotational energy and stress (the line search evaluates
+    both every probe), measurably cutting the per-step cost; the kernel math is
+    unchanged (all fixed-corotational tests still pass bit-for-bit). Adds a
+    closed-form fixed-corotational energy regression under a uniform scale
+    `F = c*I` (`3*mu*(c-1)^2 + (lambda/2)*(c^3-1)^2`), which pins the absolute
+    energy value that the finite-difference gradient test cannot.
+  - Replaced the fixed-corotational element's Gauss-Newton Hessian with the exact
+    analytic Hessian `2*mu*(I9 - dR/dF) + lambda*(g*g^T + (J - 1)*d^2J/dF^2)`,
+    where the polar-rotation gradient `dR/dF` is solved from the corotational
+    identity `(tr(S) I - S) w = axl(R^T dF - dF^T R)`, validated by a
+    finite-difference Hessian match. Like the IPC paper's per-element Hessian it
+    is generally indefinite, so the solver PSD-projects it through the existing
+    batched seam; severely inverted elements (where the rotation gradient is
+    undefined) fall back to the always-PSD Gauss-Newton form (regression added).
+    The exact Newton curvature converges the line search far faster than the
+    Gauss-Newton approximation, cutting the `BM_DeformableFcrBarStep` per-step
+    time about 7x (to near stable-neo-Hookean parity at equal mesh resolution)
+    while leaving the energy, gradient, and settled solution unchanged (every
+    fixed-corotational kernel and solver test still passes).
+  - Added a `newton_iters_per_step` counter to the `BM_DeformableFemBarStep` and
+    `BM_DeformableFcrBarStep` benchmarks (averaged from the per-step solver
+    diagnostics), surfacing the projected-Newton iteration count -- the
+    convergence axis the IPC paper's Table 1 reports -- alongside the wall-clock
+    per-step time. It quantifies the exact fixed-corotational Hessian's
+    convergence: both materials now take ~5-6 Newton iterations per step at
+    matching mesh resolution, confirming the exact curvature brought
+    fixed-corotational convergence to stable-neo-Hookean parity (the earlier
+    Gauss-Newton form's slowness was extra iterations, not per-iteration cost).
+  - Exposed a read-only `DeformableSolverDiagnostics` snapshot of the deformable
+    solver's per-step statistics on the experimental `World`
+    (`World::getLastDeformableSolverDiagnostics`, dartpy
+    `world.last_deformable_solver_diagnostics`). It is a curated, stable subset
+    of the internal `DeformableSolverStats` -- mesh sizes, projected-Newton
+    convergence (iterations, objective evaluations, line-search trials, Newton
+    steps vs steepest-descent fallbacks), self-contact activity, friction
+    dissipation, and the contact closest-approach diagnostic -- captured after
+    each built-in-pipeline step so tools and Python scripts can observe solver
+    behavior (e.g. per-step Newton iteration counts) without the explicit
+    stage/pipeline API. The user-supplied-pipeline `step` overloads leave it
+    unchanged (read the stage's own `getLastStats` there). Adds C++ and Python
+    regressions.
+  - Added a `Deformable FEM Self-Contact (IPC)` py-demos scene: a slender
+    tetrahedral FEM beam whose pinned ends are driven toward each other by
+    opposing scripted Dirichlet boundaries, so the soft FEM core buckles and
+    folds onto itself; the always-on clamped-log self-contact barrier holds the
+    folding surface apart at a positive separation. This is the first DART-native
+    showcase of self-collision (the heart of the IPC method) on a volumetric FEM
+    body, toward the paper's self-collision stress tests, with a reusable
+    `build_fem_compression_bar` bridge helper. A regression drives the beam
+    through the buckle and asserts -- via the new solver diagnostics -- that the
+    self-contact barrier activates, holds every active contact at a strictly
+    positive distance (no interpenetration), and keeps the solve finite.
   - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
     counter-rotated at both ends by opposing scripted Dirichlet boundary
     conditions, then released so the stable neo-Hookean core untwists

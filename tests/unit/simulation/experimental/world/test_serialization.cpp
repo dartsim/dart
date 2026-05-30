@@ -600,13 +600,19 @@ TEST(Serialization, LegacyWorldMetadataDoesNotConsumeTrailingBytesAsGravity)
 
   std::string legacyRecord = saved.str();
   ASSERT_GE(
-      legacyRecord.size(), 2 * sizeof(std::uint32_t) + 3 * sizeof(double));
+      legacyRecord.size(),
+      2 * sizeof(std::uint32_t) + 3 * sizeof(double) + sizeof(std::uint8_t));
 
   const std::uint32_t legacyVersion = 1;
   std::memcpy(
       legacyRecord.data() + sizeof(std::uint32_t),
       &legacyVersion,
       sizeof(legacyVersion));
+  // Format v3 appends a one-byte differentiable flag after the deformable-body
+  // counter. Drop it so the remaining record matches the v2 tail layout this
+  // legacy-compatibility check was written against (deformable counter, then
+  // the gravity block as the last three doubles).
+  legacyRecord.pop_back();
   legacyRecord.resize(legacyRecord.size() - 3 * sizeof(double));
 
   constexpr std::string_view trailerBytes = "0123456789abcdefghijklmn";

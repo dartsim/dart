@@ -826,6 +826,35 @@ TEST(DeformableBody, FemTetrahedronIsStationaryAtRest)
 }
 
 //==============================================================================
+// World exposes a curated snapshot of the deformable solver's per-step
+// diagnostics from the most recent built-in-pipeline step. Before stepping it
+// is zero; after a step it reflects the mesh and the projected-Newton solve.
+TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  world.addDeformableBody("fem", makeFemTetrahedronBody());
+
+  const auto& before = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(before.bodyCount, 0u);
+  EXPECT_EQ(before.nodeCount, 0u);
+  EXPECT_EQ(before.solverIterations, 0u);
+
+  world.step(5);
+
+  const auto& after = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(after.bodyCount, 1u);
+  EXPECT_EQ(after.nodeCount, 4u);
+  EXPECT_GE(after.solverIterations, 1u);
+  EXPECT_GE(after.objectiveEvaluations, 1u);
+  EXPECT_GE(after.projectedNewtonSteps + after.projectedNewtonFallbacks, 1u);
+  // No contacts for a single free-hanging tetrahedron.
+  EXPECT_EQ(after.selfContactBarrierActiveContacts, 0u);
+  EXPECT_EQ(after.convergedActiveContactCount, 0u);
+}
+
+//==============================================================================
 // A FEM tetrahedron given an initial outward velocity on a free node is pulled
 // back toward its rest shape by the elastic restoring force, and the implicit
 // solve dissipates the motion so it settles near rest rather than diverging.

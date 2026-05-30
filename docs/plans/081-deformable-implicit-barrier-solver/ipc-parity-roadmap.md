@@ -62,11 +62,26 @@ as a second opt-in material behind
 `DeformableMaterialProperties.useFixedCorotationalElasticity` (dartpy
 `use_fixed_corotational_elasticity`), dispatched through a shared per-element seam
 so neo-Hookean stays the default. It ships kernel
-FD/rotation-invariance/SPD-Hessian tests, solver regressions (FCR tet stationary
-at rest; restores a perturbed node toward rest), and a `Deformable FCR Twist
-(IPC)` py-demos showcase toward Fig. 4 / Fig. 14. Remaining M1 follow-up: the
-exact analytic FCR eigensystem (accuracy/perf) in place of the Gauss-Newton
-Hessian approximation.
+FD/rotation-invariance tests, solver regressions (FCR tet stationary at rest;
+restores a perturbed node toward rest), and a `Deformable FCR Twist (IPC)`
+py-demos showcase toward Fig. 4 / Fig. 14.
+
+The exact analytic FCR Hessian has since **LANDED** in place of the Gauss-Newton
+approximation: `2*mu*(I9 - dR/dF) + lambda*(g*g^T + (J-1)*d^2J/dF^2)`, with the
+polar-rotation gradient `dR/dF` solved from the corotational identity
+`(tr(S)I - S) w = axl(R^T dF - dF^T R)` (FD-validated; indefinite, so the solver
+PSD-projects it; inverted elements fall back to Gauss-Newton). The exact Newton
+curvature cut the `BM_DeformableFcrBarStep` per-step time ~7x, to near
+stable-neo-Hookean parity at equal mesh resolution. M1 FEM (both materials, exact
+Newton curvature, benchmarked) is now fully realized.
+
+FEM **self-contact** is also now demonstrated end-to-end: a `Deformable FEM
+Self-Contact (IPC)` showcase compresses a slender FEM beam end-to-end until it
+buckles and folds onto itself, and the always-on clamped-log self-contact barrier
+holds the folding surface at a strictly positive separation (verified via the new
+`World` solver diagnostics: the barrier activates, every active contact stays at
+a positive distance, and the solve stays finite). This couples the FEM keystone
+with the IPC self-collision machinery on a volumetric body.
 
 Add a per-tetrahedron strain-energy term producing per-element energy,
 12-vector gradient, and 12×12 Hessian, reusing the existing PSD-projection
