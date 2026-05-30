@@ -99,6 +99,15 @@ if(TARGET dart-demos)
       UNIT_gui_DemosGoldenParity
       PROPERTIES LABELS "unit;gui;demos"
     )
+    # Wire this into the aggregate `tests` target (created in tests/, which is
+    # processed before examples/). Without this, ctest registers the test but no
+    # build target compiles it, so `build-tests`/`pixi run test` report it as
+    # "Not Run". `dart_add_test` does this automatically via a global property,
+    # but that property is consumed before examples/ is processed, so the edge
+    # must be added explicitly here.
+    if(TARGET tests)
+      add_dependencies(tests UNIT_gui_DemosGoldenParity)
+    endif()
   endif()
 
   # Headless smoke: cycle through every registered scene a few frames each,
