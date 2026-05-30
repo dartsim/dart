@@ -9,10 +9,13 @@ A/B/C C++ ports; a cross-language golden parity smoke runs in both languages
 against shared fixtures (3 scenes wired); and a notebook gallery seed lives
 in `python/tutorials/`. C++ `dart-demos` (PLAN-102) remains frozen-but-present.
 
-Branch `examples-strategy-breadth` adds 8 more Python scenes
+Branch `examples-strategy-breadth` adds 9 more Python scenes
 (`hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`, `vehicle`,
-`biped_stand`, `experimental_rigid_body_gui`, `collision_sandbox`) plus
-`HeightmapShape` and `PointCloudShape` dartpy bindings.
+`biped_stand`, `experimental_rigid_body_gui`, `collision_sandbox`,
+`joint_constraints`) plus `HeightmapShape` / `PointCloudShape` dartpy
+shape bindings and `BodyNode::{addExtForce, setExtForce,
+clearExternalForces}` + `Skeleton::{getConstraintForces, getCOM,
+clearExternalForces}` bindings that unblock the SPD biped controllers.
 
 ## Current Branch
 
@@ -31,11 +34,14 @@ Branch `examples-strategy-breadth` adds 8 more Python scenes
 Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
 
 1. **Grow Python breadth toward C++ coverage.** The Python runner now hosts
-   37 of 41 C++ scenes (90 %). Branch `examples-strategy-breadth` added 8
+   38 of 41 C++ scenes (93 %). Branch `examples-strategy-breadth` added 9
    more ports (`hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`,
    `vehicle`, `biped_stand`, `experimental_rigid_body_gui`,
-   `collision_sandbox`) and the `HeightmapShape`/`PointCloudShape` dartpy
-   bindings that unlock the visualization ports. The 13 remaining C++ scenes
+   `collision_sandbox`, `joint_constraints`) and the
+   `HeightmapShape`/`PointCloudShape` shape bindings plus
+   `BodyNode::{addExtForce, setExtForce, clearExternalForces}` and
+   `Skeleton::{getConstraintForces, getCOM, clearExternalForces}` bindings
+   that unlocked the SPD biped controller scenes. The remaining C++ scenes
    need new bindings or controller infrastructure that is out of scope for a
    pure Python port:
    - **Viewer-callback / interactive UI** — `drag_and_drop`, `imgui`,
@@ -45,9 +51,6 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
    - **Custom `ConstraintBase` subclass** — `human_joint_limits`. Needs a
      trampoline binding for `dart::constraint::ConstraintBase` so a
      `NeuralJointLimitConstraint` analogue can be written in Python.
-   - **PD / SPD controller missing `addExtForce` + `getConstraintForces`** —
-     `joint_constraints` (the load-only port works but the SPD controller
-     with constraint-force correction does not).
    - **Heavyweight puppet IK / mocap controllers** — `atlas_puppet`,
      `hubo_puppet`, `fetch`, `g1_puppet`. Need gizmo + IK pendant +
      MJCF/ReadOptions package-resolver bindings.

@@ -24,6 +24,7 @@ from .scenes.hardcoded_design import SCENE as HARDCODED_DESIGN
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.heightmap import SCENE as HEIGHTMAP
 from .scenes.hybrid_dynamics import SCENE as HYBRID_DYNAMICS
+from .scenes.joint_constraints import SCENE as JOINT_CONSTRAINTS
 from .scenes.kr5_arm import SCENE as KR5_ARM
 from .scenes.lcp_physics import SCENE as LCP_PHYSICS
 from .scenes.legged_balance import SCENE as LEGGED_BALANCE
@@ -83,6 +84,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         OSC,
         HYBRID_DYNAMICS,
         BIPED_STAND,
+        JOINT_CONSTRAINTS,
         VEHICLE,
         # Control & Modern (PLAN-103 Phase 3)
         LEGGED_BALANCE,
