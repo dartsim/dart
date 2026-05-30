@@ -26,6 +26,7 @@ from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.heightmap import SCENE as HEIGHTMAP
 from .scenes.hybrid_dynamics import SCENE as HYBRID_DYNAMICS
 from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
+from .scenes.ipc_deformable_fcr_twist import SCENE as IPC_DEFORMABLE_FCR_TWIST
 from .scenes.ipc_deformable_fem_bar import SCENE as IPC_DEFORMABLE_FEM_BAR
 from .scenes.ipc_deformable_fem_box import SCENE as IPC_DEFORMABLE_FEM_BOX
 from .scenes.ipc_deformable_fem_drop import SCENE as IPC_DEFORMABLE_FEM_DROP
@@ -58,6 +59,9 @@ from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
 from .scenes.sx_variational_chain import SCENE as SX_VARIATIONAL_CHAIN
 from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
+from .scenes.vbd_beam import SCENE as VBD_BEAM
+from .scenes.vbd_cloth import SCENE as VBD_CLOTH
+from .scenes.vbd_net import SCENE as VBD_NET
 from .scenes.vehicle import SCENE as VEHICLE
 
 
@@ -115,6 +119,14 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         EXPERIMENTAL_RIGID_BODY_GUI,
         SX_VARIATIONAL_CHAIN,
         SX_VARIATIONAL_TUMBLER,
+        # Vertex Block Descent (VBD) deformable scenes from the paper that the
+        # current contact-free World VBD path reproduces (mass-spring cloth/net,
+        # tetrahedral cantilever beam). Multi-body and self-collision scenes
+        # (216 squishy balls, 10368 models, tearing cloth) need surface
+        # self-contact and are deferred.
+        VBD_CLOTH,
+        VBD_NET,
+        VBD_BEAM,
         # IPC Deformable (sx) — its own dedicated category so the IPC
         # deformable-solver showcases group together rather than mixing into
         # the general experimental scenes above.
@@ -124,6 +136,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FRICTION_SLIDE,
         IPC_DEFORMABLE_FEM_BAR,
         IPC_DEFORMABLE_FEM_TWIST,
+        IPC_DEFORMABLE_FCR_TWIST,
         IPC_DEFORMABLE_FEM_DROP,
         IPC_DEFORMABLE_FEM_SPHERE,
         IPC_DEFORMABLE_FEM_BOX,

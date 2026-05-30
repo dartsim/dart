@@ -71,6 +71,18 @@ ordering:
 Phases 1–2 are independent enough to start in parallel once the scene-model
 interface is agreed; phases 3–6 build sequentially on the engine.
 
+Beyond v1, the post-MVP **workbench completion** (formerly tracked in
+`docs/dev_tasks/dartsim_workbench_completion/`, now retired into the design doc)
+brought the editor to feature parity: every panel/menu runs through tested
+`dartsim/ui/*_actions` view-model seams, with viewport/tree/inspector selection
+sync, a Create palette, a typed multi-selection Inspector, relationship edits, an
+Edit/Simulation mode boundary with replay navigation, a Watch panel with
+persisted presets, editor-owned sensor/collision descriptors, and a four-view
+viewport layout. The filtered `dartsim/engine/*` + `dartsim/ui/*_actions` surface
+holds ≥95% line coverage. Remaining work is experimental-API-gated (sensor output
+panes, joint render layers/filters, shape/loader adoption per PLAN-050) and lives
+in the design doc's as-built follow-ups.
+
 ## Acceptance Criteria
 
 The initiative is complete (and durable output has moved to owner docs) when:
