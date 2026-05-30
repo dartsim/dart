@@ -31,20 +31,27 @@ committed:
   verified real-time (~24 ms/step, ~42 fps physics-only) and in the demos-cycle
   smoke (10 passed). The existing `sx_rigid_ipc_incline` already covers Fig. 18.
 
-KINEMATIC / SCRIPTED BODY FEASIBILITY (next high-value unlock; Fig. 13 turntable,
-Fig. 12 Lewis). Scoped but NOT implemented: the lagged-friction potential already
-takes `(laggedPose, currentPose)` per body, so a moving obstacle's drag could
-reuse it by setting the obstacle's lagged=start / current=end pose. HOWEVER the
-conservative CCD line search treats `result.surfaces` as the sweep start, which
-would hold the obstacle's END pose, so the obstacle's swept motion would NOT be
-checked — breaking the anti-tunneling guarantee. Correct support requires
-threading a separate kinematic start-pose into
-`computeRigidIpcLineSearchStepBound` (and the stage computing each kinematic
-body's end pose from a prescribed velocity). Bounded but multi-site; do it as a
-dedicated slice with a quantitative turntable-drag regression. Articulated paper
-scenes (lock box, mechanisms, bolt, punching press, wrecking-ball/anchor chains,
-card house) remain out of scope for the free-body stage; many-body scenes (arch
-101 blocks, 3D packing, 560-box wrecking ball) are gated on the perf gap.
+KINEMATIC / SCRIPTED BODY SUPPORT — LANDED (Fig. 13 turntable). A kinematic body
+(`RigidBody::setKinematic`) advances by its prescribed velocity and acts as a
+moving support/driver: the barrier/dynamics see it at its end pose, the
+projected-Newton solve overrides the lagged-friction pose to the start pose (so a
+moving obstacle drags its contacts) and sweeps start->end in the line search
+(anti-tunneling for a moving obstacle). All overrides are gated on `hasKinematic`,
+so non-kinematic scenes are byte-identical (14 runtime + 51 barrier tests
+unchanged). Verified: prescribed-velocity advance, conveyor friction-drag, and a
+turntable carrying a resting box CCW (Fig. 13). LIMITATION (documented): supported
+motion is tangential/co-moving (drag); a kinematic body prescribed to move
+normally INTO a dynamic body faster than the barrier can push it aside is not
+guaranteed intersection-free (prescribed motion cannot be slowed by contact) — the
+free box's inertial anchor overwhelms the barrier and the obstacle passes through.
+Robust normal-pushing, a Python `set_kinematic` binding, and a turntable py-demo
+(gated on the disk-contact perf cost) are follow-ups. The `KinematicBodyTag` is
+runtime-only (not serialized).
+
+Still out of scope: articulated paper scenes (lock box, mechanisms, bolt,
+punching press, wrecking-ball/anchor chains, card house) need joints; many-body
+scenes (arch 101 blocks, 3D packing, 560-box wrecking ball) are gated on the perf
+gap (~3 orders of magnitude per step).
 
 ## Last Session Summary
 
