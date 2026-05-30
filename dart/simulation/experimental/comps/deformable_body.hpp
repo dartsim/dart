@@ -120,6 +120,10 @@ struct DeformableMaterial
   double poissonRatio = 0.3;
   double frictionCoefficient = 0.0;
   bool useFiniteElementElasticity = false;
+  // When finite-element elasticity is enabled, selects the fixed-corotational
+  // material instead of the default stable neo-Hookean kernel. Ignored unless
+  // useFiniteElementElasticity is true.
+  bool useFixedCorotationalElasticity = false;
 };
 
 /// Time-ranged scripted Dirichlet boundary region for deformable nodes.

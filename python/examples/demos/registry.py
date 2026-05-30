@@ -20,6 +20,7 @@ from .scenes.free_joint_cases import SCENE as FREE_JOINT_CASES
 from .scenes.hardcoded_design import SCENE as HARDCODED_DESIGN
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
+from .scenes.ipc_deformable_fcr_twist import SCENE as IPC_DEFORMABLE_FCR_TWIST
 from .scenes.ipc_deformable_fem_bar import SCENE as IPC_DEFORMABLE_FEM_BAR
 from .scenes.ipc_deformable_fem_box import SCENE as IPC_DEFORMABLE_FEM_BOX
 from .scenes.ipc_deformable_fem_drop import SCENE as IPC_DEFORMABLE_FEM_DROP
@@ -104,6 +105,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FRICTION_SLIDE,
         IPC_DEFORMABLE_FEM_BAR,
         IPC_DEFORMABLE_FEM_TWIST,
+        IPC_DEFORMABLE_FCR_TWIST,
         IPC_DEFORMABLE_FEM_DROP,
         IPC_DEFORMABLE_FEM_SPHERE,
         IPC_DEFORMABLE_FEM_BOX,

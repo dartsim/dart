@@ -1468,7 +1468,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::frictionCoefficient)
       .def_rw(
           "use_finite_element_elasticity",
-          &sim::DeformableMaterialProperties::useFiniteElementElasticity);
+          &sim::DeformableMaterialProperties::useFiniteElementElasticity)
+      .def_rw(
+          "use_fixed_corotational_elasticity",
+          &sim::DeformableMaterialProperties::useFixedCorotationalElasticity);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(

@@ -2884,7 +2884,42 @@ struct FemElasticityInputs
   const std::vector<comps::DeformableTetrahedron>* tetrahedra = nullptr;
   const std::vector<fem::TetRestShape>* restShapes = nullptr;
   fem::LameParameters lame;
+  // Selects the isotropic material: false (default) is the inversion-robust
+  // stable neo-Hookean kernel; true is fixed-corotational (the IPC paper's
+  // other material), opt-in via
+  // DeformableMaterial.useFixedCorotationalElasticity.
+  bool fixedCorotational = false;
 };
+
+// Dispatches one tetrahedron to the configured FEM material kernel. Both
+// kernels share the TetElementResult shape, so the rest of the assembly is
+// identical.
+inline fem::TetElementResult evaluateFemTetElement(
+    const FemElasticityInputs& inputs,
+    const std::vector<Eigen::Vector3d>& positions,
+    const comps::DeformableTetrahedron& tet,
+    const fem::TetRestShape& rest,
+    const bool computeHessian)
+{
+  if (inputs.fixedCorotational) {
+    return fem::evaluateFixedCorotationalTet(
+        positions[tet.nodeA],
+        positions[tet.nodeB],
+        positions[tet.nodeC],
+        positions[tet.nodeD],
+        rest,
+        inputs.lame,
+        computeHessian);
+  }
+  return fem::evaluateStableNeoHookeanTet(
+      positions[tet.nodeA],
+      positions[tet.nodeB],
+      positions[tet.nodeC],
+      positions[tet.nodeD],
+      rest,
+      inputs.lame,
+      computeHessian);
+}
 
 // Adds the stable neo-Hookean strain energy/gradient over every valid
 // tetrahedron, scattering each element's 12-vector force gradient into its four
@@ -2904,14 +2939,8 @@ double addFemElasticityEnergy(
   double energy = 0.0;
   for (std::size_t t = 0; t < count; ++t) {
     const auto& tet = tets[t];
-    const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
-        positions[tet.nodeA],
-        positions[tet.nodeB],
-        positions[tet.nodeC],
-        positions[tet.nodeD],
-        rests[t],
-        inputs.lame,
-        /*computeHessian=*/false);
+    const fem::TetElementResult element = evaluateFemTetElement(
+        inputs, positions, tet, rests[t], /*computeHessian=*/false);
     if (!element.valid) {
       continue;
     }
@@ -3743,14 +3772,8 @@ bool computeProjectedNewtonDirection(
     tetBlockNodes.reserve(tetCount);
     for (std::size_t t = 0; t < tetCount; ++t) {
       const auto& tet = tets[t];
-      const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
-          positions[tet.nodeA],
-          positions[tet.nodeB],
-          positions[tet.nodeC],
-          positions[tet.nodeD],
-          rests[t],
-          femElasticity->lame,
-          /*computeHessian=*/true);
+      const fem::TetElementResult element = evaluateFemTetElement(
+          *femElasticity, positions, tet, rests[t], /*computeHessian=*/true);
       if (!element.valid) {
         continue;
       }
@@ -4173,6 +4196,7 @@ void advanceDeformableBody(
     femElasticity.restShapes = &contactScratch.femRestShapes;
     femElasticity.lame
         = fem::lameParameters(material.youngsModulus, material.poissonRatio);
+    femElasticity.fixedCorotational = material.useFixedCorotationalElasticity;
     femElasticityPtr = &femElasticity;
   }
 
