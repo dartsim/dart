@@ -550,3 +550,65 @@ TEST(VbdWorldSolver, VbdFrictionDeceleratesSlidingBody)
   EXPECT_GT(frictionless, 0.05);       // it slid forward
   EXPECT_LT(frictional, frictionless); // friction shortened the slide
 }
+
+//==============================================================================
+// The public, solver-agnostic World::configureDeformableSolver opts a body into
+// the VBD inner solver without exposing any solver-internal vocabulary.
+TEST(VbdWorldSolver, PublicConfigureSelectsVbdSolver)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  world.addDeformableBody("chain", makeChainOptions(6, 0.5));
+
+  sx::DeformableSolverOptions options;
+  options.iterations = 30;
+  options.useAcceleration = false;
+  world.configureDeformableSolver("chain", options);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.vbdSweeps, 0u);
+}
+
+//==============================================================================
+TEST(VbdWorldSolver, PublicConfigureThrowsForUnknownBody)
+{
+  sx::World world;
+  sx::DeformableSolverOptions options;
+  EXPECT_ANY_THROW(world.configureDeformableSolver("missing", options));
+}
+
+//==============================================================================
+// Ground contact configured through the public API keeps a patch on the ground.
+TEST(VbdWorldSolver, PublicConfigureGroundContactRests)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  addGroundBarrier(world);
+  world.addDeformableBody("patch", makeFallingPatchOptions(0.3, 0.0));
+
+  sx::DeformableSolverOptions options;
+  options.iterations = 40;
+  options.groundContactStiffness = 5.0e3;
+  world.configureDeformableSolver("patch", options);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 300; ++step) {
+    stepOnce(world, stage);
+  }
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+
+  const auto body = world.getDeformableBody("patch");
+  ASSERT_TRUE(body.has_value());
+  double minZ = 1e9;
+  for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+    minZ = std::min(minZ, body->getPosition(i).z());
+  }
+  EXPECT_GT(minZ, -0.05);
+  EXPECT_LT(minZ, 0.05);
+}

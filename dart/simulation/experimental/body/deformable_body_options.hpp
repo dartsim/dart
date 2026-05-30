@@ -195,4 +195,43 @@ struct DeformableBodyOptions
   double damping = 0.0;
 };
 
+/// Public, solver-agnostic configuration for the experimental deformable inner
+/// solver, applied to an existing deformable body via
+/// `World::configureDeformableSolver`. Calling that method opts the body into
+/// the iterative block-coordinate inner solver (the default per-step solver
+/// runs otherwise); these fields tune its iteration budget, acceleration,
+/// damping, parallelism, and static ground-contact response. The fields are
+/// intentionally algorithm-neutral and carry no solver-name vocabulary; the
+/// World step pipeline owns the mapping to a concrete inner solver.
+struct DeformableSolverOptions
+{
+  /// Maximum inner-solver sweeps per step. Must be positive.
+  std::size_t iterations = 20;
+
+  /// Stop sweeping early once the largest per-node update falls below this
+  /// length (0 runs the full iteration budget). Must be non-negative.
+  double convergenceTolerance = 0.0;
+
+  /// Enable semi-iterative over-relaxation to speed convergence (same solution,
+  /// fewer sweeps when the spectral radius is matched).
+  bool useAcceleration = false;
+
+  /// Estimated convergence-rate spectral radius in (0, 1) for the accelerator.
+  /// Too high a value over-relaxes and can diverge, so leave it conservative.
+  double accelerationSpectralRadius = 0.95;
+
+  /// Stiffness-proportional damping coefficient (0 disables it). Must be
+  /// non-negative.
+  double stiffnessDamping = 0.0;
+
+  /// Worker threads for the inner solve (1 = serial). With more than one thread
+  /// the deterministic parallel inner solve runs, which does not apply
+  /// acceleration or early termination.
+  unsigned int workerThreads = 1;
+
+  /// Penalty stiffness for static ground/obstacle half-space contact (0 lets
+  /// the body fall freely past barriers). Must be non-negative.
+  double groundContactStiffness = 0.0;
+};
+
 } // namespace dart::simulation::experimental

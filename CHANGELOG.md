@@ -1294,6 +1294,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     rigid-surface CCD and surface self-contact remain default-solver-only.
     Tests confirm a VBD spring patch rests on a ground barrier instead of
     falling through and that Coulomb friction shortens a sliding patch's travel.
+  - Added a public, algorithm-neutral way to select the iterative deformable
+    inner solver from the experimental World facade:
+    `World::configureDeformableSolver(name, DeformableSolverOptions)`. The
+    options struct (iterations, convergence tolerance, acceleration, stiffness
+    damping, worker threads, ground-contact stiffness) carries no solver-name
+    vocabulary; the World step pipeline owns the translation to the internal
+    opt-in inner-solver component, so the public surface stays solver-agnostic
+    and the binding never touches `comps/`. This is the supported way for
+    dartpy and examples to opt a deformable body into the VBD solver. Tests
+    confirm it routes a body through the VBD path, honors ground contact, and
+    throws for an unknown body name.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position
