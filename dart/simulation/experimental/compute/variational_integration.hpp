@@ -21,6 +21,7 @@
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
+#include <functional>
 #include <string_view>
 #include <vector>
 
@@ -100,6 +101,50 @@ struct VariationalLoopConstraint
                                      ///< rotation (rigid).
 };
 
+/// **EXPERIMENTAL SPIKE (PLAN-082 contact-roadmap gate 2).** Kinematics of the
+/// *trial* configuration `q^{k+1}` passed to an in-loop contact-force hook on
+/// each RIQN iteration, so the hook can evaluate a contact potential's
+/// generalized force `Q_c(q^{k+1})` at the current iterate (the coupling that
+/// folds the potential's curvature into the root-find). All
+/// transforms/Jacobians are at the trial configuration; the body Jacobians are
+/// body-frame `[angular; linear]` (`6 x dofCount`), in the integrator's
+/// generalized-coordinate order. This is probe scaffolding for the
+/// compliant-contact go/no-go spike, not a production contact surface.
+struct VariationalContactContext
+{
+  /// Per-link world transform at the trial configuration (link construction
+  /// order, parent-before-child).
+  const std::vector<Eigen::Isometry3d>& linkWorldTransforms;
+  /// Per-link body-frame spatial Jacobian (`6 x dofCount`, `[angular; linear]`)
+  /// at the trial configuration.
+  const std::vector<Eigen::MatrixXd>& linkBodyJacobians;
+  /// Movable generalized-coordinate count (the `Q_c` the hook returns has this
+  /// length).
+  std::size_t dofCount;
+};
+
+/// **EXPERIMENTAL SPIKE.** In-loop contact-force hook for the variational
+/// integrator: given the trial configuration's kinematics, returns a per-DOF
+/// generalized contact force `Q_c` (a `dofCount`-vector) folded into the forced
+/// DEL residual exactly like the applied/external force (`residual -= dt *
+/// Q_c`, same sign/scaling). An empty hook (the default) is zero overhead and
+/// leaves the numerics byte-for-byte identical to the no-contact integrator.
+using VariationalContactHook
+    = std::function<Eigen::VectorXd(const VariationalContactContext&)>;
+
+/// **EXPERIMENTAL SPIKE.** Generalized force `J(p)^T * F` of a world-frame
+/// force `worldForce` applied at the body-frame point `localPoint` on link
+/// `linkIndex`, using the trial-configuration kinematics in `context` (the
+/// world-frame translational point Jacobian `J(p) = R_i (J_linear - [p]
+/// J_angular)` mapped back to generalized coordinates). The glue a contact hook
+/// uses to turn a Cartesian contact force into the reduced-coordinate `Q_c`.
+[[nodiscard]] DART_EXPERIMENTAL_API Eigen::VectorXd
+variationalContactPointForce(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce);
+
 /// Advance one multibody by one step with the linear-time variational
 /// integrator (Lee, Liu, Park, Srinivasa, WAFR 2016 / arXiv:1609.02898).
 ///
@@ -154,6 +199,16 @@ struct VariationalLoopConstraint
 /// `0` disables it (the plain quasi-Newton fixed point), exposed so callers and
 /// tests can compare the plain and accelerated paths. It has no effect on the
 /// Euclidean exact-Newton path.
+///
+/// **EXPERIMENTAL SPIKE (contact-roadmap gate 2).** `contactHook`, when set,
+/// supplies a per-DOF generalized contact force `Q_c` re-evaluated at the
+/// *trial* configuration on every RIQN iteration (including each line-search
+/// trial) and folded into the forced-DEL residual exactly like the applied
+/// force (`residual -= dt * Q_c`), so a bounded (compliant/penalty) contact
+/// potential's curvature couples into the root-find. The default empty hook is
+/// zero overhead and leaves the no-contact numerics byte-for-byte identical;
+/// this parameter is probe scaffolding for the compliant-contact go/no-go
+/// spike, not a production contact surface.
 DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
@@ -163,7 +218,8 @@ DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     int maxIterations = 100,
     double tolerance = 1e-10,
     const std::vector<VariationalLoopConstraint>& constraints = {},
-    std::size_t andersonDepth = 5);
+    std::size_t andersonDepth = 5,
+    const VariationalContactHook& contactHook = {});
 
 /// Total mechanical energy (kinetic + gravitational potential) of one multibody
 /// at its current configuration and velocity.

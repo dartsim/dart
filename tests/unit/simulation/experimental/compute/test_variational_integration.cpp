@@ -23,6 +23,9 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <array>
+#include <functional>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -1985,4 +1988,245 @@ TEST(ExternalForce, VariationalForceIsClearedAfterStep)
   EXPECT_TRUE(afterSecond.isApprox(afterFirst, 1e-9))
       << "after first = " << afterFirst.transpose()
       << " after second = " << afterSecond.transpose();
+}
+
+//==============================================================================
+// EXPERIMENTAL SPIKE (PLAN-082 contact-roadmap gate 2): in-loop compliant
+// contact on a single-contact articulated scene.
+//
+// Confirms the central Phase C premise: a SMOOTH bounded (compliant/penalty)
+// contact force, evaluated at the trial q^{k+1} on every RIQN iteration and
+// folded into the forced-DEL residual on the forcing side, keeps the
+// variational integrator's root-find robust (the bounded curvature is
+// tolerated). Scene: a vertical prismatic slider (Euclidean coordinate, so the
+// exact-Newton recursive-Jacobian RIQN path -- the one carrying the O(n)
+// articulated structure) carrying a point mass, dropped onto a hard-coded
+// ground plane z = 0. The hook applies a one-sided linear spring F = k(-z)
+// upward at the carriage origin when it penetrates, mapped to generalized force
+// by the trial-config point Jacobian via `variationalContactPointForce`.
+//
+// Spike scope: a hard-coded ground plane (no collision query; that is gate 1).
+namespace {
+
+// Build a vertical prismatic slider (fixed base at the origin + a z-axis
+// prismatic carriage of the given mass). Returns the carriage Link handle; its
+// joint position[0] is the carriage world height z.
+sx::Link addVerticalSlider(sx::World& world, double mass)
+{
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(mass);
+  carriage.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+  return carriage;
+}
+
+// Result of dropping the slider onto the plane with a given contact stiffness.
+struct SpikeDrop
+{
+  std::size_t maxIters = 0;     ///< peak RIQN iterations over the drop.
+  double meanIters = 0.0;       ///< mean RIQN iterations over the drop.
+  double restPenetration = 0.0; ///< |z| at the final (settled) step.
+  bool allConverged = true;     ///< every step converged within budget.
+  bool finite = true;           ///< no NaN/Inf in the trajectory.
+};
+
+// Drop the slider from `z0` under gravity for `steps` steps with a compliant
+// one-sided penalty contact of stiffness `k` against the plane z = 0, applied
+// through the in-loop variational contact hook. The carriage is the second
+// (last) link, so its trial world height is linkWorldTransforms.back().
+SpikeDrop dropOntoPlane(double mass, double k, double z0, double dt, int steps)
+{
+  sx::World world; // gravity (0, 0, -9.81)
+  auto carriage = addVerticalSlider(world, mass);
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  carriage.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, z0));
+  world.updateKinematics();
+
+  auto& registry = world.getRegistry();
+  const auto& structure = structureOf(world);
+  const Eigen::Vector3d gravity = world.getGravity();
+
+  // One-sided linear-spring penalty at the carriage origin: F = k(-z) up when
+  // z < 0, evaluated at the trial configuration each RIQN iteration. The
+  // carriage is structure.links.back() (base, carriage), so its trial-config
+  // world height is the last linkWorldTransforms entry.
+  const sxc::VariationalContactHook hook
+      = [k](const sxc::VariationalContactContext& context) -> Eigen::VectorXd {
+    const std::size_t carriageIndex = context.linkWorldTransforms.size() - 1;
+    const double z
+        = context.linkWorldTransforms[carriageIndex].translation().z();
+    Eigen::VectorXd contactForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    if (z < 0.0) {
+      const Eigen::Vector3d worldForce(0.0, 0.0, k * (-z)); // upward penalty
+      contactForce += sxc::variationalContactPointForce(
+          context, carriageIndex, Eigen::Vector3d::Zero(), worldForce);
+    }
+    return contactForce;
+  };
+
+  SpikeDrop result;
+  sxc::MultibodyVariationalState state;
+  std::size_t totalIters = 0;
+  for (int step = 0; step < steps; ++step) {
+    const auto report = sxc::integrateMultibodyVariational(
+        registry,
+        structure,
+        gravity,
+        dt,
+        state,
+        /*maxIterations=*/100,
+        /*tolerance=*/1e-10,
+        /*constraints=*/{},
+        /*andersonDepth=*/5,
+        hook);
+    result.allConverged = result.allConverged && report.converged;
+    if (std::isnan(report.residualNorm)
+        || !std::isfinite(report.residualNorm)) {
+      result.finite = false;
+    }
+    totalIters += report.iterations;
+    result.maxIters = std::max(result.maxIters, report.iterations);
+  }
+  result.meanIters = static_cast<double>(totalIters) / steps;
+  // Settled height: position[0] is the carriage world z (base at the origin).
+  const double finalZ = carriage.getParentJoint().getPosition()[0];
+  result.finite = result.finite && std::isfinite(finalZ);
+  result.restPenetration = finalZ < 0.0 ? -finalZ : 0.0;
+  return result;
+}
+
+} // namespace
+
+TEST(VariationalContactSpike, CompliantContactRiqnStaysRobustAcrossStiffness)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1e-3;
+  const int steps = 3000; // ~3 s: enough to fall and settle.
+  const double z0 = 0.05; // start above the plane.
+
+  // Sweep stiffness over mg-scaled values (the bounded-curvature envelope the
+  // roadmap claims C1-C3 tolerate). mg-scale = mass*g, so k_scale = K * mg.
+  const std::array<double, 3> scales = {1e2, 1e3, 1e4};
+  std::array<SpikeDrop, 3> drops{};
+
+  std::ostringstream table;
+  table << "\n[C2 spike] compliant single-contact prismatic slider drop"
+        << " (mass=" << mass << ", dt=" << dt << ", steps=" << steps << ")\n";
+  table << "  k/(mg) |   k (N/m) | max iters | mean iters | rest pen (m) |"
+        << " mg/k (m)\n";
+
+  for (std::size_t i = 0; i < scales.size(); ++i) {
+    const double k = scales[i] * mass * g;
+    drops[i] = dropOntoPlane(mass, k, z0, dt, steps);
+    const double analytic = mass * g / k; // expected steady-state penetration.
+
+    table << "  " << std::setw(6) << scales[i] << " | " << std::setw(9)
+          << std::fixed << std::setprecision(1) << k << " | " << std::setw(9)
+          << drops[i].maxIters << " | " << std::setw(10) << std::setprecision(2)
+          << drops[i].meanIters << " | " << std::setw(12) << std::scientific
+          << std::setprecision(3) << drops[i].restPenetration << " | "
+          << std::setw(9) << analytic << std::defaultfloat << "\n";
+
+    // Gate-2 robustness: every step converges within budget, no NaN.
+    EXPECT_TRUE(drops[i].allConverged)
+        << "k/(mg)=" << scales[i] << " failed to converge every step";
+    EXPECT_TRUE(drops[i].finite)
+        << "k/(mg)=" << scales[i] << " produced NaN/Inf";
+    EXPECT_LT(drops[i].maxIters, 100u)
+        << "k/(mg)=" << scales[i] << " hit the iteration budget";
+
+    // The body rests near the plane: steady-state penetration ~ mg/k, bounded
+    // and small (a soft contact leaves a small residual penetration). Allow a
+    // generous band around the analytic spring compression to absorb the
+    // discrete-time settle.
+    EXPECT_LT(drops[i].restPenetration, 5.0 * analytic + 1e-4)
+        << "k/(mg)=" << scales[i] << " penetration " << drops[i].restPenetration
+        << " exceeds the mg/k envelope " << analytic;
+    EXPECT_GE(drops[i].restPenetration, 0.0);
+  }
+
+  // Penetration strictly decreases with stiffness (the mg/k trend).
+  EXPECT_GT(drops[0].restPenetration, drops[1].restPenetration);
+  EXPECT_GT(drops[1].restPenetration, drops[2].restPenetration);
+
+  std::cout << table.str() << std::flush;
+  RecordProperty("c2_spike_table", table.str());
+}
+
+// EXPERIMENTAL SPIKE: the default-off path is numerically identical. An empty
+// contact hook must reproduce the no-hook trajectory byte-for-byte (the opt-in
+// hook adds zero overhead and changes no numerics when unset).
+TEST(VariationalContactSpike, EmptyHookReproducesNoContactTrajectoryExactly)
+{
+  const auto run = [](bool passEmptyHook) {
+    sx::World world;
+    auto robot = world.addMultibody("chain");
+    auto parent = robot.addLink("base");
+    for (int i = 0; i < 3; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(i == 0 ? 0.0 : 0.3, 0.0, 0.0);
+      sx::JointSpec spec;
+      spec.name = "j" + std::to_string(i);
+      spec.type = sx::JointType::Revolute;
+      spec.axis = Eigen::Vector3d::UnitY();
+      spec.transformFromParent = offset;
+      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+      link.setMass(1.0);
+      link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+      parent = link;
+    }
+    const double dt = 1e-3;
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    for (auto joint : robot.getJoints()) {
+      joint.setPosition(Eigen::VectorXd::Constant(1, 0.3));
+    }
+    world.updateKinematics();
+
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+
+    sxc::MultibodyVariationalState state;
+    std::vector<double> trajectory;
+    const sxc::VariationalContactHook emptyHook; // default-constructed: unset.
+    for (int step = 0; step < 200; ++step) {
+      if (passEmptyHook) {
+        sxc::integrateMultibodyVariational(
+            registry,
+            structure,
+            gravity,
+            dt,
+            state,
+            100,
+            1e-10,
+            {},
+            5,
+            emptyHook);
+      } else {
+        sxc::integrateMultibodyVariational(
+            registry, structure, gravity, dt, state);
+      }
+      for (auto joint : robot.getJoints()) {
+        trajectory.push_back(joint.getPosition()[0]);
+      }
+    }
+    return trajectory;
+  };
+
+  const std::vector<double> noHook = run(false);
+  const std::vector<double> emptyHook = run(true);
+  ASSERT_EQ(noHook.size(), emptyHook.size());
+  // Byte-for-byte identical: an unset hook touches no numerics.
+  for (std::size_t i = 0; i < noHook.size(); ++i) {
+    EXPECT_EQ(noHook[i], emptyHook[i]) << "trajectory diverged at sample " << i;
+  }
 }

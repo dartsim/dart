@@ -785,7 +785,76 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
   return {g, jac};
 }
 
+// EXPERIMENTAL SPIKE (contact-roadmap gate 2): evaluate the in-loop contact
+// hook at the trial configuration `nextPosition` and return the per-DOF
+// generalized contact force `Q_c` to fold into the residual (`residual -= dt *
+// Q_c`). Builds the trial-config per-link world transforms (a forward
+// kinematics sweep over nextPosition: worldTrial_i = worldTrial_parent *
+// relTrial_i) and body Jacobians, packs them into a VariationalContactContext,
+// and calls the hook. Returns an empty vector when no hook is set, so the
+// no-contact path does no work and stays numerically identical.
+Eigen::VectorXd evaluateContactForce(
+    const entt::registry& registry,
+    const VarTree& tree,
+    const Eigen::VectorXd& nextPosition,
+    const VariationalContactHook& contactHook)
+{
+  if (!contactHook) {
+    return {};
+  }
+  // Trial-configuration kinematics: a VarTree copy whose relative/world
+  // transforms are advanced to q^{k+1} (the q^k tree is left untouched).
+  VarTree trial = tree;
+  for (std::size_t i = 0; i < trial.links.size(); ++i) {
+    VarLink& link = trial.links[i];
+    if (link.parent < 0) {
+      continue; // root keeps its fixed world transform from buildVarTree.
+    }
+    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const Eigen::VectorXd seg = nextPosition.segment(
+        static_cast<Eigen::Index>(link.dofOffset),
+        static_cast<Eigen::Index>(link.dof));
+    link.currentRelative = jointMotionTransform(joint, seg) * link.offset;
+    link.worldTransform
+        = trial.links[static_cast<std::size_t>(link.parent)].worldTransform
+          * link.currentRelative;
+  }
+  std::vector<Eigen::Isometry3d> worldTransforms(trial.links.size());
+  for (std::size_t i = 0; i < trial.links.size(); ++i) {
+    worldTransforms[i] = trial.links[i].worldTransform;
+  }
+  const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(trial);
+  const VariationalContactContext context{
+      worldTransforms, jacobians, trial.dofCount};
+  Eigen::VectorXd contactForce = contactHook(context);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contactForce.size() != static_cast<Eigen::Index>(trial.dofCount),
+      InvalidOperationException,
+      "Variational contact hook returned a generalized force of the wrong "
+      "dimension");
+  return contactForce;
+}
+
 } // namespace
+
+//==============================================================================
+Eigen::VectorXd variationalContactPointForce(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce)
+{
+  // World-frame translational point Jacobian J(p) = R_i (J_linear - [p]
+  // J_angular) of the body-fixed point, then the generalized force J(p)^T F.
+  const Eigen::Matrix3d rotation
+      = context.linkWorldTransforms[linkIndex].linear();
+  const Eigen::MatrixXd& jacobian = context.linkBodyJacobians[linkIndex];
+  const Eigen::MatrixXd angular = jacobian.topRows<3>();
+  const Eigen::MatrixXd linear = jacobian.bottomRows<3>();
+  const Eigen::MatrixXd worldPointJacobian
+      = rotation * (linear - detail::skew(localPoint) * angular);
+  return worldPointJacobian.transpose() * worldForce;
+}
 
 //==============================================================================
 VariationalSolveReport integrateMultibodyVariational(
@@ -797,7 +866,8 @@ VariationalSolveReport integrateMultibodyVariational(
     int maxIterations,
     double tolerance,
     const std::vector<VariationalLoopConstraint>& constraints,
-    std::size_t andersonDepth)
+    std::size_t andersonDepth,
+    const VariationalContactHook& contactHook)
 {
   VariationalSolveReport report;
   if (structure.links.empty()) {
@@ -964,6 +1034,32 @@ VariationalSolveReport integrateMultibodyVariational(
   Eigen::VectorXd previousStep;     // tangent update at q^{k-1}
   Eigen::VectorXd previousPosition; // q^{k-1}
 
+  // EXPERIMENTAL SPIKE (contact-roadmap gate 2): evaluate the forced-DEL
+  // residual at a trial configuration, folding the in-loop contact hook's
+  // generalized force `Q_c(trial)` onto the same forcing side as the applied
+  // force (`residual -= dt * Q_c`). Re-evaluating the hook here is what couples
+  // the contact potential's curvature into every RIQN iterate and every
+  // line-search trial. With no hook `evaluateContactForce` returns an empty
+  // vector and the call reduces to the plain `computeResidual(appliedForce)`,
+  // so the no-contact path is numerically identical and does no extra work.
+  const auto residualAt = [&](const Eigen::VectorXd& trialPosition) {
+    const Eigen::VectorXd contactForce
+        = evaluateContactForce(registry, tree, trialPosition, contactHook);
+    if (contactForce.size() == 0) {
+      return computeResidual(
+          registry,
+          tree,
+          trialPosition,
+          state,
+          gravity,
+          timeStep,
+          appliedForce);
+    }
+    const Eigen::VectorXd forcing = appliedForce + contactForce;
+    return computeResidual(
+        registry, tree, trialPosition, state, gravity, timeStep, forcing);
+  };
+
   // `tolerance` is a per-coordinate accuracy; the convergence test is on the
   // L2 norm of the (dofCount-dimensional) residual, so scale by sqrt(dofCount)
   // to keep the per-coordinate accuracy uniform across chain lengths. Without
@@ -972,8 +1068,7 @@ VariationalSolveReport integrateMultibodyVariational(
   const double normTolerance
       = tolerance * std::sqrt(static_cast<double>(tree.dofCount));
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
-    const Eigen::VectorXd residual = computeResidual(
-        registry, tree, nextPosition, state, gravity, timeStep, appliedForce);
+    const Eigen::VectorXd residual = residualAt(nextPosition);
     report.iterations = static_cast<std::size_t>(iteration) + 1;
     report.residualNorm = residual.norm();
     const double residualNorm = report.residualNorm;
@@ -1061,30 +1156,14 @@ VariationalSolveReport integrateMultibodyVariational(
     if (euclideanCoordinates) {
       double alpha = 1.0;
       Eigen::VectorXd trialPosition = retractStep(nextPosition, step, alpha);
-      double trialNorm = computeResidual(
-                             registry,
-                             tree,
-                             trialPosition,
-                             state,
-                             gravity,
-                             timeStep,
-                             appliedForce)
-                             .norm();
+      double trialNorm = residualAt(trialPosition).norm();
       constexpr int kMaxBacktracks = 20;
       for (int backtrack = 0;
            backtrack < kMaxBacktracks && !(trialNorm < residualNorm);
            ++backtrack) {
         alpha *= 0.5;
         trialPosition = retractStep(nextPosition, step, alpha);
-        trialNorm = computeResidual(
-                        registry,
-                        tree,
-                        trialPosition,
-                        state,
-                        gravity,
-                        timeStep,
-                        appliedForce)
-                        .norm();
+        trialNorm = residualAt(trialPosition).norm();
       }
       nextPosition = std::move(trialPosition);
       continue;
@@ -1093,15 +1172,7 @@ VariationalSolveReport integrateMultibodyVariational(
     if (haveAnderson) {
       Eigen::VectorXd andersonPosition
           = retractStep(nextPosition, andersonIncrement, 1.0);
-      const double andersonNorm = computeResidual(
-                                      registry,
-                                      tree,
-                                      andersonPosition,
-                                      state,
-                                      gravity,
-                                      timeStep,
-                                      appliedForce)
-                                      .norm();
+      const double andersonNorm = residualAt(andersonPosition).norm();
       if (andersonNorm < residualNorm) {
         nextPosition = std::move(andersonPosition);
         continue;
@@ -1173,9 +1244,11 @@ VariationalSolveReport integrateMultibodyVariational(
   }
 
   // Refresh the per-link scratch at the accepted configuration so the history
-  // shift uses dT and momentum consistent with nextPosition.
-  const Eigen::VectorXd finalResidual = computeResidual(
-      registry, tree, nextPosition, state, gravity, timeStep, appliedForce);
+  // shift uses dT and momentum consistent with nextPosition. `residualAt` folds
+  // in the contact force (if any) so the reported residual reflects the actual
+  // forced-DEL root; the forward (dT/average-velocity) sweep is independent of
+  // the forcing, so the history shift is unaffected by the hook.
+  const Eigen::VectorXd finalResidual = residualAt(nextPosition);
   report.residualNorm = finalResidual.norm();
 
   // Write back joint position/velocity/acceleration (Euclidean, Phase A1).
