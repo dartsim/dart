@@ -18,9 +18,7 @@ def _cache_reports_experimental_disabled() -> bool:
 
     repo_root = Path(__file__).resolve().parents[4]
     build_type = (
-        os.environ.get("BUILD_TYPE")
-        or os.environ.get("CMAKE_BUILD_TYPE")
-        or "Release"
+        os.environ.get("BUILD_TYPE") or os.environ.get("CMAKE_BUILD_TYPE") or "Release"
     )
     pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     candidates: list[Path] = []
@@ -284,7 +282,14 @@ def test_experimental_stub_tracks_public_runtime_symbols():
 
 
 def _stub_class_block(stub: str, class_name: str) -> str:
-    start = stub.index(f"class {class_name}")
+    # Match the exact class header so a name like "RigidBody" does not also match
+    # "RigidBodySolver". Stub headers look like "class Name:" or "class Name(Base):".
+    for marker in (f"class {class_name}:", f"class {class_name}("):
+        start = stub.find(marker)
+        if start != -1:
+            break
+    else:
+        raise AssertionError(f"class {class_name} not found in stub")
     end = stub.find("\nclass ", start + 1)
     if end == -1:
         end = len(stub)
@@ -300,13 +305,8 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
 
     assert hasattr(sx.RigidBody, "is_deformable_surface_ccd_obstacle")
     assert not hasattr(sx.Link, "is_deformable_surface_ccd_obstacle")
-    assert (
-        "is_deformable_surface_ccd_obstacle"
-        in _stub_class_block(stub, "RigidBody")
-    )
-    assert (
-        "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
-    )
+    assert "is_deformable_surface_ccd_obstacle" in _stub_class_block(stub, "RigidBody")
+    assert "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
 
 
 def test_experimental_state_space_metadata_value_object():
@@ -327,12 +327,8 @@ def test_experimental_state_space_metadata_value_object():
     assert space.dimension == 4
     assert space.num_variables == 3
     assert space.variable_names == ["arm.q", "arm.dq0", "arm.dq1"]
-    assert space.lower_bounds.tolist() == pytest.approx(
-        [-1.0, -1.0, -10.0, -10.0]
-    )
-    assert space.upper_bounds.tolist() == pytest.approx(
-        [1.0, 1.0, 10.0, 10.0]
-    )
+    assert space.lower_bounds.tolist() == pytest.approx([-1.0, -1.0, -10.0, -10.0])
+    assert space.upper_bounds.tolist() == pytest.approx([1.0, 1.0, 10.0, 10.0])
     assert space.has_variable("arm.q")
     assert not space.has_variable("missing")
     assert space.get_variable_index("arm.q") == 0
@@ -960,9 +956,7 @@ def test_experimental_screw_joint_dynamics():
     nut = robot.add_link(
         "nut",
         parent=base,
-        joint=sx.JointSpec(
-            name="helix", type=sx.JointType.SCREW, axis=(0.0, 0.0, 1.0)
-        ),
+        joint=sx.JointSpec(name="helix", type=sx.JointType.SCREW, axis=(0.0, 0.0, 1.0)),
     )
     mass = 2.0
     inertia_zz = 0.1
@@ -984,9 +978,7 @@ def test_experimental_screw_joint_dynamics():
     world.step()
     # Gravity drives the screw down: qddot = -m g pitch / M.
     expected_accel = -mass * 9.81 * pitch / expected_mass
-    assert joint.acceleration.tolist()[0] == pytest.approx(
-        expected_accel, abs=1e-9
-    )
+    assert joint.acceleration.tolist()[0] == pytest.approx(expected_accel, abs=1e-9)
 
 
 def test_experimental_universal_joint_dynamics():
@@ -1192,9 +1184,7 @@ def test_experimental_ball_joint_dynamics():
 
     world.enter_simulation_mode()
 
-    expected_mass = np.diag(
-        [0.05, 0.12 + mass * 0.7**2, 0.2 + mass * 0.7**2]
-    )
+    expected_mass = np.diag([0.05, 0.12 + mass * 0.7**2, 0.2 + mass * 0.7**2])
     assert np.allclose(robot.mass_matrix, expected_mass, atol=1e-12)
     gravity = robot.gravity_forces
     assert gravity[0] == pytest.approx(0.0, abs=1e-12)
@@ -1291,12 +1281,8 @@ def test_experimental_free_joint_dynamics():
     total = dt * steps
     assert spin_joint.velocity.tolist() == pytest.approx(twist, abs=1e-9)
     position = spin_joint.position
-    assert position[:3].tolist() == pytest.approx(
-        [0.0, 0.0, 3.0 * total], abs=1e-9
-    )
-    assert position[3:].tolist() == pytest.approx(
-        [0.0, 0.0, 2.0 * total], abs=1e-9
-    )
+    assert position[:3].tolist() == pytest.approx([0.0, 0.0, 3.0 * total], abs=1e-9)
+    assert position[3:].tolist() == pytest.approx([0.0, 0.0, 2.0 * total], abs=1e-9)
 
 
 def test_experimental_link_center_of_mass_offset():
@@ -1324,12 +1310,8 @@ def test_experimental_link_center_of_mass_offset():
     world.enter_simulation_mode()
 
     # Parallel-axis mass matrix and horizontal-pendulum gravity torque.
-    assert robot.mass_matrix[0, 0] == pytest.approx(
-        inertia_yy + mass * length**2
-    )
-    assert robot.gravity_forces.tolist() == pytest.approx(
-        [-mass * 9.81 * length]
-    )
+    assert robot.mass_matrix[0, 0] == pytest.approx(inertia_yy + mass * length**2)
+    assert robot.gravity_forces.tolist() == pytest.approx([-mass * 9.81 * length])
 
 
 def test_experimental_multibody_dynamics_terms():
@@ -1475,9 +1457,7 @@ def test_experimental_multibody_inverse_dynamics():
     # At q = 0, qdot = 0: tau = (I + m L^2) qddot + g, with g = -m g L.
     accel = 3.0
     tau = robot.compute_inverse_dynamics([accel])
-    expected = (
-        inertia_yy + mass * length * length
-    ) * accel - mass * 9.81 * length
+    expected = (inertia_yy + mass * length * length) * accel - mass * 9.81 * length
     assert tau.tolist() == pytest.approx([expected])
 
     with pytest.raises(Exception, match="must match"):
@@ -1516,9 +1496,7 @@ def test_experimental_multibody_impulse_response():
     assert delta_velocity.tolist() == pytest.approx([impulse / inertia_pivot])
 
     # Consistency: M dqdot = f.
-    assert (robot.mass_matrix @ delta_velocity).tolist() == pytest.approx(
-        [impulse]
-    )
+    assert (robot.mass_matrix @ delta_velocity).tolist() == pytest.approx([impulse])
 
     with pytest.raises(Exception, match="must match"):
         robot.compute_impulse_response([0.0, 0.0])
@@ -1551,9 +1529,7 @@ def test_experimental_multibody_link_jacobian():
     jacobian = robot.get_jacobian(bob)
     assert jacobian.shape == (6, 1)
     # Body twist [axis; axis x p] = [0, 1, 0, 0, 0, -L].
-    assert jacobian[:, 0].tolist() == pytest.approx(
-        [0.0, 1.0, 0.0, 0.0, 0.0, -length]
-    )
+    assert jacobian[:, 0].tolist() == pytest.approx([0.0, 1.0, 0.0, 0.0, 0.0, -length])
 
     # The fixed base cannot move: its Jacobian is zero.
     base_jacobian = robot.get_jacobian(base)
@@ -1658,9 +1634,7 @@ def test_experimental_joint_armature():
 
     world.step()
     expected_accel = 9.81 * mass * length / expected_mass
-    assert joint.acceleration.tolist()[0] == pytest.approx(
-        expected_accel, abs=1e-9
-    )
+    assert joint.acceleration.tolist()[0] == pytest.approx(expected_accel, abs=1e-9)
 
 
 def test_experimental_joint_coulomb_friction():
@@ -2145,10 +2119,7 @@ def test_experimental_multibody_link_pushes_dynamic_rigid_body():
     box_pushed = False
     for _ in range(600):
         world.step()
-        momentum = (
-            striker_mass * joint.velocity[0]
-            + box_mass * box.linear_velocity[0]
-        )
+        momentum = striker_mass * joint.velocity[0] + box_mass * box.linear_velocity[0]
         # Equal-and-opposite contact impulses conserve total X momentum.
         assert momentum == pytest.approx(initial_momentum, abs=1e-6)
         if box.linear_velocity[0] > 1e-3:
@@ -2301,9 +2272,7 @@ def test_experimental_rigid_body_options_reject_invalid_values():
     with pytest.raises(Exception, match="mass must be positive and finite"):
         sx.RigidBodyOptions(mass=0.0)
 
-    with pytest.raises(
-        Exception, match="inertia must be symmetric positive definite"
-    ):
+    with pytest.raises(Exception, match="inertia must be symmetric positive definite"):
         sx.RigidBodyOptions(
             inertia=((1.0, 0.0, 0.0), (0.0, -1.0, 0.0), (0.0, 0.0, 1.0))
         )
@@ -2465,9 +2434,7 @@ def test_experimental_deformable_body_python_api():
     assert edge.node_b == 1
 
     # The fixed node stays put; the stretched spring contracts the free node.
-    np.testing.assert_allclose(
-        body.node_position(0), [0.0, 0.0, 0.0], atol=1e-12
-    )
+    np.testing.assert_allclose(body.node_position(0), [0.0, 0.0, 0.0], atol=1e-12)
     before_x = body.node_position(1)[0]
     world.step()
     after_x = body.node_position(1)[0]

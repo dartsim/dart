@@ -54,6 +54,8 @@ __all__: list[str] = [
     "plan_renderable_set_update",
     "request_single_step",
     "reset_orbit_camera_tracking",
+    "run_application",
+    "run_demos",
     "should_advance_simulation",
     "should_capture_frame_output",
     "should_request_screenshot",
@@ -68,7 +70,7 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 import enum
 from typing import Annotated, overload
 
@@ -940,13 +942,13 @@ class ProjectionOptions:
     def near_plane(self) -> float | None: ...
 
     @near_plane.setter
-    def near_plane(self, arg: float, /) -> None: ...
+    def near_plane(self, arg: float | None) -> None: ...
 
     @property
     def far_plane(self) -> float | None: ...
 
     @far_plane.setter
-    def far_plane(self, arg: float, /) -> None: ...
+    def far_plane(self, arg: float | None) -> None: ...
 
     @property
     def near_scale(self) -> float: ...
@@ -1317,3 +1319,7 @@ def make_support_polygon_debug_lines(skeleton: dartpy.dynamics.Skeleton, options
 def extract_contact_debug_lines(result: dartpy.collision.CollisionResult, options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
 
 def extract_debug_lines(world: dartpy.simulation.World, options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
+
+def run_application(world: dartpy.simulation.World, argv: Sequence[str] = ...) -> int: ...
+
+def run_demos(scenes: Sequence[tuple[str, str, str, str, Callable]], argv: Sequence[str] = ...) -> int: ...
