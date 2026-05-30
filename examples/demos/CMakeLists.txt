@@ -99,15 +99,16 @@ if(TARGET dart-demos)
       UNIT_gui_DemosGoldenParity
       PROPERTIES LABELS "unit;gui;demos"
     )
-    # Wire this into the aggregate `tests` target (created in tests/, which is
-    # processed before examples/). Without this, ctest registers the test but no
-    # build target compiles it, so `build-tests`/`pixi run test` report it as
-    # "Not Run". `dart_add_test` does this automatically via a global property,
-    # but that property is consumed before examples/ is processed, so the edge
-    # must be added explicitly here.
-    if(TARGET tests)
-      add_dependencies(tests UNIT_gui_DemosGoldenParity)
-    endif()
+    # The aggregate `tests` target (tests/CMakeLists.txt) is finalized before
+    # examples/ is added, so it cannot pick up this example-tree test through the
+    # DART_unit_TESTS global property. Attach it explicitly so `pixi run
+    # build-tests` (`--target tests`) builds the binary; otherwise ctest reports
+    # it "Not Run".
+    foreach(_demos_golden_aggregate tests tests_and_run)
+      if(TARGET ${_demos_golden_aggregate})
+        add_dependencies(${_demos_golden_aggregate} UNIT_gui_DemosGoldenParity)
+      endif()
+    endforeach()
   endif()
 
   # Headless smoke: cycle through every registered scene a few frames each,
