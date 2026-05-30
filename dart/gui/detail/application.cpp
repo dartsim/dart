@@ -211,13 +211,28 @@ void applySceneOptions(
   appOptions.onForceDrag = src.onForceDrag;
 }
 
+// Canonicalize a scene id so hyphen- and underscore-separated names compare
+// equal. The catalog uses snake_case ids (e.g. "atlas_simbicon") while --help
+// and historical usage spell them with hyphens (e.g. "atlas-simbicon").
+std::string canonicalSceneId(std::string_view id)
+{
+  std::string out(id);
+  for (char& c : out) {
+    if (c == '_') {
+      c = '-';
+    }
+  }
+  return out;
+}
+
 int demoSceneIndex(
     const std::vector<dart::gui::DemoSceneEntry>& scenes,
     std::string_view id,
     int fallback)
 {
+  const std::string target = canonicalSceneId(id);
   for (std::size_t i = 0; i < scenes.size(); ++i) {
-    if (scenes[i].id == id) {
+    if (canonicalSceneId(scenes[i].id) == target) {
       return static_cast<int>(i);
     }
   }
@@ -840,7 +855,19 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
 
   int index = 0;
   if (!initialId.empty()) {
-    index = ::demoSceneIndex(scenes, initialId, 0);
+    index = ::demoSceneIndex(scenes, initialId, -1);
+    if (index < 0) {
+      // Don't silently fall back to the first scene: an unknown id is almost
+      // always a typo, and a silent fallback makes headless screenshots capture
+      // the wrong scene.
+      std::cerr << "runDemos: unknown --scene '" << initialId
+                << "'. Available scenes:";
+      for (const auto& scene : scenes) {
+        std::cerr << ' ' << scene.id;
+      }
+      std::cerr << '\n';
+      index = 0;
+    }
   }
 
   return runGuiBackendApplicationImpl(
