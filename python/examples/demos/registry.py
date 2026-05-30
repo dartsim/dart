@@ -9,6 +9,9 @@ from __future__ import annotations
 from .runner import PythonDemoScene
 from .scenes.add_delete_skels import SCENE as ADD_DELETE_SKELS
 from .scenes.arm_push_box import SCENE as ARM_PUSH_BOX
+from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
+from .scenes.g1_simbicon import SCENE as G1_SIMBICON
+from .scenes.simbicon_duo import SCENE as SIMBICON_DUO
 from .scenes.box_stacking import SCENE as BOX_STACKING
 from .scenes.boxes import SCENE as BOXES
 from .scenes.capsule_ground_contact import SCENE as CAPSULE_GROUND_CONTACT
@@ -86,6 +89,9 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         KR5_ARM,
         # Control & IK
         OSC,
+        ATLAS_SIMBICON,
+        G1_SIMBICON,
+        SIMBICON_DUO,
         # Control & Modern (PLAN-103 Phase 3)
         LEGGED_BALANCE,
         ARM_PUSH_BOX,
