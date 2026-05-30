@@ -286,8 +286,10 @@ dart::gui::Panel makeDemoSidebarPanel(
       }
       const bool isActive = static_cast<int>(i) == activeIndex;
       const std::string label = entry.title + "##demo_" + entry.id;
-      if (builder.selectable(label, isActive) && !isActive
-          && context.lifecycle != nullptr) {
+      const bool clicked = builder.selectable(label, isActive);
+      // Explain what each scene demonstrates when the row is hovered.
+      builder.itemTooltip(entry.summary);
+      if (clicked && !isActive && context.lifecycle != nullptr) {
         dart::gui::requestSceneSwitch(*context.lifecycle, entry.id);
       }
     }

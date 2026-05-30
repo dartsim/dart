@@ -184,8 +184,12 @@ without touching existing solvers. The coupling method (penalty/projection,
 convex contact, implicit) is a strategy choice recorded as policy and reported
 in diagnostics. Rigid-internal contact and constraint solving is the
 rigid-body solver's own responsibility, not a coupler; couplers handle
-_cross-domain_ interaction. A reverse pass exists for differentiability when
-that capability is added.
+_cross-domain_ interaction. A coupler reverse pass exists for differentiability
+of cross-domain interaction when that capability is added; the rigid-body
+solver's own contact/dynamics gradients are a separate _solver-internal_ reverse
+pass (see
+[`differentiable_simulation.md`](differentiable_simulation.md)), not a coupler
+concern.
 
 ## Step Lifecycle
 

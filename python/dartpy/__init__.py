@@ -64,6 +64,47 @@ _naming.install_aliases(_ext)
 _layout.install_layout(sys.modules[__name__])
 
 
+def _install_simulation_experimental_diff() -> None:
+  """Attach the pure-Python ``diff`` (PyTorch bridge) onto the experimental module.
+
+  ``dartpy.simulation_experimental`` is a C++ extension submodule, so its
+  PyTorch autograd bridge lives in a pure-Python module attached here as the
+  ``diff`` attribute. This import is torch-free; ``sx.diff.timestep`` imports
+  torch lazily, so ``import dartpy.simulation_experimental`` succeeds without
+  torch and ``sx.diff`` always exists.
+  """
+  experimental = sys.modules.get(f"{__name__}.simulation_experimental")
+  if experimental is None:
+    return
+  from . import _simulation_experimental_diff as _diff_impl
+
+  module_name = f"{__name__}.simulation_experimental.diff"
+  diff_module = sys.modules.get(module_name)
+  if diff_module is None:
+    import types
+
+    diff_module = types.ModuleType(module_name)
+    diff_module.__doc__ = _diff_impl.__doc__
+    diff_module.__package__ = f"{__name__}.simulation_experimental"
+    diff_module.timestep = _diff_impl.timestep
+    diff_module.__all__ = list(_diff_impl.__all__)
+    sys.modules[module_name] = diff_module
+  # Re-export the framework-neutral C++ rollout (PLAN-110 rollout item) onto the
+  # ``sx.diff`` namespace when differentiable support is compiled. The torch
+  # ``timestep`` chaining bridge above stays as-is; ``rollout`` is the torch-free
+  # path. Present only in DART_BUILD_DIFF=ON builds.
+  for _name in ("rollout", "RolloutTrajectory"):
+    _obj = getattr(experimental, _name, None)
+    if _obj is not None:
+      setattr(diff_module, _name, _obj)
+      if _name not in diff_module.__all__:
+        diff_module.__all__.append(_name)
+  experimental.diff = diff_module
+
+
+_install_simulation_experimental_diff()
+
+
 def __getattr__(name: str):
   """Expose pure-Python submodules (e.g., gui) via attribute access."""
   import importlib
