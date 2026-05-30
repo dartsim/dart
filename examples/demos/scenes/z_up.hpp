@@ -40,9 +40,14 @@ namespace dart::examples::demos {
 /// display frame changes. It is therefore only valid for scenes whose logic
 /// does not separately hardcode the up axis (e.g. balance controllers that read
 /// a center-of-mass height); those must be reworked explicitly.
-inline void reorientWorldToZUp(const dart::simulation::WorldPtr& world)
+/// Rotate a single legacy Y-up ``skeleton`` in place so it stands Z-up, without
+/// touching gravity or any other skeleton. Use this when only one skeleton in a
+/// world is authored Y-up (e.g. a Y-up robot model dropped onto a ground that
+/// is already built Z-up); use :func:`reorientWorldToZUp` when the whole world
+/// is Y-up.
+inline void reorientSkeletonToZUp(const dart::dynamics::SkeletonPtr& skeleton)
 {
-  if (world == nullptr) {
+  if (skeleton == nullptr) {
     return;
   }
 
@@ -52,18 +57,26 @@ inline void reorientWorldToZUp(const dart::simulation::WorldPtr& world)
   Eigen::Isometry3d rotation = Eigen::Isometry3d::Identity();
   rotation.linear() << 1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0;
 
-  for (std::size_t si = 0; si < world->getNumSkeletons(); ++si) {
-    const auto& skeleton = world->getSkeleton(si);
-    // Iterate joints (not body nodes): a root joint is one whose parent body
-    // node is the world frame (nullptr).
-    for (std::size_t ji = 0; ji < skeleton->getNumJoints(); ++ji) {
-      auto* joint = skeleton->getJoint(ji);
-      if (joint->getParentBodyNode() != nullptr) {
-        continue; // only root joints connect to the world frame
-      }
-      joint->setTransformFromParentBodyNode(
-          rotation * joint->getTransformFromParentBodyNode());
+  // Iterate joints (not body nodes): a root joint is one whose parent body node
+  // is the world frame (nullptr).
+  for (std::size_t ji = 0; ji < skeleton->getNumJoints(); ++ji) {
+    auto* joint = skeleton->getJoint(ji);
+    if (joint->getParentBodyNode() != nullptr) {
+      continue; // only root joints connect to the world frame
     }
+    joint->setTransformFromParentBodyNode(
+        rotation * joint->getTransformFromParentBodyNode());
+  }
+}
+
+inline void reorientWorldToZUp(const dart::simulation::WorldPtr& world)
+{
+  if (world == nullptr) {
+    return;
+  }
+
+  for (std::size_t si = 0; si < world->getNumSkeletons(); ++si) {
+    reorientSkeletonToZUp(world->getSkeleton(si));
   }
 
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));

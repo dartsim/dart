@@ -11,6 +11,7 @@
 #include "atlas_simbicon/controller.hpp"
 #include "atlas_simbicon/state_machine.hpp"
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -119,6 +120,11 @@ std::shared_ptr<AtlasSimbiconState> createState()
 
   state->atlas = readRequiredSkeleton(kAtlasUri);
   makeAtlasMeshVisualsReadable(state->atlas);
+  // The Atlas v5 model is authored Y-up; rotate its floating base to Z-up so it
+  // stands on the Z-up ground under -Z gravity and matches the SIMBICON
+  // controller, whose COM frame (State::getCOMFrame) uses +Z as the up axis.
+  // The ground is built Z-up in code, so only the Atlas skeleton is rotated.
+  reorientSkeletonToZUp(state->atlas);
   state->world->addSkeleton(state->atlas);
 
   state->controller = std::make_unique<Controller>(
