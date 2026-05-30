@@ -60,6 +60,26 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_vbd_vertex_block_kernel
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_vertex_block_kernel.cpp
+  )
+
+  dart_experimental_add_benchmark(
+    bm_vbd_block_descent
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_block_descent.cpp
+  )
+
+  dart_experimental_add_benchmark(
+    bm_vbd_neo_hookean
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_neo_hookean.cpp
+  )
+
+  dart_experimental_add_benchmark(
+    bm_vbd_world_solver
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_world_solver.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )
@@ -68,6 +88,12 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     dart_experimental_add_benchmark(
       bm_cuda_rigid_body_state_batch
       ${CMAKE_CURRENT_SOURCE_DIR}/bm_cuda_rigid_body_state_batch.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL "simulation-experimental-cuda"
+    )
+    dart_experimental_add_benchmark(
+      bm_vbd_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_cuda.cpp
       LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
       LABEL "simulation-experimental-cuda"
     )

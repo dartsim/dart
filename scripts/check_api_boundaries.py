@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Check source-level public/internal API boundaries.
 
-Covers three boundaries:
+Covers four boundaries:
 - Python bindings (``python/dartpy``) must not reach into C++ detail/internal.
 - Generated Doxygen output must exclude private/detail paths.
 - The dartsim editor UI layer (``dartsim/ui``) must stay renderer- and
-  windowing-agnostic: no ImGui/GLFW/Filament symbols, headers, or references.
-  Editor panels talk to the backend-hidden ``dart::gui::PanelBuilder`` seam, so
-  the toolkit can be re-implemented without rewriting the UI layer. This guard
-  keeps that boundary from quietly becoming a one-way door (see
-  ``docs/design/dartsim_gui_toolkit_decisions.md`` Decision 2, Action 1).
+  windowing-agnostic: no ImGui/GLFW/Filament/OpenGL/Vulkan/Metal symbols,
+  headers, or references. Editor panels talk to the backend-hidden
+  ``dart::gui::PanelBuilder`` seam, so the toolkit can be re-implemented without
+  rewriting the UI layer. This guard keeps that boundary from quietly becoming a
+  one-way door (see ``docs/design/dartsim_gui_toolkit_decisions.md`` Decision 2,
+  Action 1).
+- The dartsim editor engine (``dartsim/engine``) is headless: it must not
+  reference any renderer/windowing backend symbol *or* include a ``dart/gui``
+  header at all (the engine depends only on the experimental simulation API).
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ALLOWLIST_PATH = REPO_ROOT / "scripts" / "check_api_boundaries_allowlist.txt"
 PYTHON_BINDING_ROOT = REPO_ROOT / "python" / "dartpy"
 DARTSIM_UI_ROOT = REPO_ROOT / "dartsim" / "ui"
+DARTSIM_ENGINE_ROOT = REPO_ROOT / "dartsim" / "engine"
 DOXYFILE_PATH = REPO_ROOT / "docs" / "doxygen" / "Doxyfile.in"
 GENERATED_CPP_API_ROOT = REPO_ROOT / "docs" / "readthedocs" / "_generated" / "cpp-api"
 SOURCE_SUFFIXES = {".cpp", ".h", ".hpp"}
@@ -83,14 +88,41 @@ LINE_CHECKS: tuple[tuple[str, re.Pattern[str], str], ...] = (
 )
 
 # Boundary before the token, open suffix after, so prefixed identifiers such as
-# ``GLFWwindow``, ``glfwGetKey``, ``ImGui::Begin``, and ``filament::Engine`` are
-# all caught. A legitimate physics "filament" term (none today) would use the
-# allowlist.
-DARTSIM_UI_BACKEND_PATTERN = re.compile(r"(?i)\b(?:imgui|glfw|filament|filagui)\w*")
-DARTSIM_UI_BACKEND_MESSAGE = (
-    "dartsim/ui must stay renderer/windowing-agnostic: no ImGui/GLFW/Filament "
-    "symbols, headers, or references (build UI against dart::gui::PanelBuilder)."
+# ``GLFWwindow``, ``glfwGetKey``, ``ImGui::Begin``, ``filament::Engine``,
+# ``vulkan``-prefixed helpers, and ``opengl`` references are all caught. A
+# legitimate physics "filament" term (none today) would use the allowlist. Bare
+# ``gl``/``vk`` are intentionally excluded to avoid false positives (``global``,
+# ``glance``); raw backend headers are caught by the include-path pattern below.
+DARTSIM_UI_BACKEND_PATTERN = re.compile(
+    r"(?i)\b(?:imgui|glfw|filament|filagui|opengl|vulkan|glad|epoxy|bgfx)\w*"
 )
+# Raw renderer/windowing headers whose include path is the reliable leak signal
+# even when the API uses generic-looking spellings (``GL/gl.h``, ``Metal``,
+# ``vulkan/vulkan.h``, ``EGL``). Matched against ``#include`` lines only.
+DARTSIM_UI_BACKEND_INCLUDE_PATTERN = re.compile(
+    r"^\s*#\s*include\s*[<\"]"
+    r"(?:GL/|GLES[0-9]*/|GLFW/|EGL/|vulkan/|Metal/|MetalKit/|glad/|epoxy/|bgfx/"
+    r"|filament/|filagui/|imgui|backends/imgui)"
+)
+DARTSIM_UI_BACKEND_MESSAGE = (
+    "dartsim/ui must stay renderer/windowing-agnostic: no ImGui/GLFW/Filament/"
+    "OpenGL/Vulkan/Metal symbols, headers, or references (build UI against "
+    "dart::gui::PanelBuilder)."
+)
+DARTSIM_ENGINE_GUI_INCLUDE_PATTERN = re.compile(
+    r"^\s*#\s*include\s*[<\"]dart/gui/[^>\"]+[>\"]"
+)
+DARTSIM_ENGINE_BACKEND_MESSAGE = (
+    "dartsim/engine is headless: no renderer/windowing backend symbols and no "
+    "dart/gui include (depend only on dart::simulation::experimental + math)."
+)
+
+
+def line_has_backend_leak(line: str) -> bool:
+    return bool(
+        DARTSIM_UI_BACKEND_PATTERN.search(line)
+        or DARTSIM_UI_BACKEND_INCLUDE_PATTERN.search(line)
+    )
 
 
 JOINT_PROPERTIES_TYPE_PATTERN_TEXT = (
@@ -207,10 +239,10 @@ def find_python_boundary_violations() -> list[Violation]:
     return violations
 
 
-def iter_dartsim_ui_sources() -> list[Path]:
+def iter_source_files(root: Path) -> list[Path]:
     return sorted(
         path
-        for path in DARTSIM_UI_ROOT.rglob("*")
+        for path in root.rglob("*")
         if path.is_file() and path.suffix in SOURCE_SUFFIXES
     )
 
@@ -220,7 +252,7 @@ def find_dartsim_ui_boundary_violations_in_lines(
 ) -> list[Violation]:
     violations: list[Violation] = []
     for line_number, line in enumerate(lines, 1):
-        if DARTSIM_UI_BACKEND_PATTERN.search(line):
+        if line_has_backend_leak(line):
             violations.append(
                 Violation(
                     "dartsim-ui-backend-leak",
@@ -235,10 +267,42 @@ def find_dartsim_ui_boundary_violations_in_lines(
 
 def find_dartsim_ui_boundary_violations() -> list[Violation]:
     violations: list[Violation] = []
-    for path in iter_dartsim_ui_sources():
+    for path in iter_source_files(DARTSIM_UI_ROOT):
         rel_path = path.relative_to(REPO_ROOT).as_posix()
         violations.extend(
             find_dartsim_ui_boundary_violations_in_lines(
+                rel_path, path.read_text().splitlines()
+            )
+        )
+    return violations
+
+
+def find_dartsim_engine_boundary_violations_in_lines(
+    rel_path: str, lines: list[str]
+) -> list[Violation]:
+    violations: list[Violation] = []
+    for line_number, line in enumerate(lines, 1):
+        if line_has_backend_leak(line) or DARTSIM_ENGINE_GUI_INCLUDE_PATTERN.search(
+            line
+        ):
+            violations.append(
+                Violation(
+                    "dartsim-engine-backend-leak",
+                    rel_path,
+                    line_number,
+                    line.strip(),
+                    DARTSIM_ENGINE_BACKEND_MESSAGE,
+                )
+            )
+    return violations
+
+
+def find_dartsim_engine_boundary_violations() -> list[Violation]:
+    violations: list[Violation] = []
+    for path in iter_source_files(DARTSIM_ENGINE_ROOT):
+        rel_path = path.relative_to(REPO_ROOT).as_posix()
+        violations.extend(
+            find_dartsim_engine_boundary_violations_in_lines(
                 rel_path, path.read_text().splitlines()
             )
         )
@@ -384,6 +448,11 @@ def run_self_tests() -> None:
         "GLFWwindow* window = nullptr;",
         "filament::Engine* engine = nullptr;",
         "/// Label used for an ImGui-style tree row button.",
+        "#include <vulkan/vulkan.h>",
+        "#include <GL/gl.h>",
+        "#include <Metal/Metal.h>",
+        "#include <EGL/egl.h>",
+        "auto* ctx = openGLContext();",
     ):
         leak_violations = find_dartsim_ui_boundary_violations_in_lines(
             ui_fixture_path, [leak_line]
@@ -396,11 +465,39 @@ def run_self_tests() -> None:
         [
             "ProjectActionResult result = newProject(engine);",
             "app.note(buildInspectorStatus(engine).selectionSummary);",
+            "int global = computeGlobalBounds();",
         ],
     )
     if clean_violations:
         raise AssertionError(
             "dartsim-ui self-test false positive on backend-free lines"
+        )
+
+    engine_fixture_path = "dartsim/engine/_backend_boundary_self_test.cpp"
+    for leak_line in (
+        "#include <dart/gui/application.hpp>",
+        "#include <filament/Engine.h>",
+        "#include <GL/gl.h>",
+        'ImGui::Text("nope");',
+    ):
+        engine_violations = find_dartsim_engine_boundary_violations_in_lines(
+            engine_fixture_path, [leak_line]
+        )
+        if not any(
+            v.check_id == "dartsim-engine-backend-leak" for v in engine_violations
+        ):
+            raise AssertionError(f"dartsim-engine self-test failed for: {leak_line}")
+
+    engine_clean_violations = find_dartsim_engine_boundary_violations_in_lines(
+        engine_fixture_path,
+        [
+            "#include <dart/simulation/experimental/world.hpp>",
+            "SceneModel model = engine.sceneModel();",
+        ],
+    )
+    if engine_clean_violations:
+        raise AssertionError(
+            "dartsim-engine self-test false positive on backend-free lines"
         )
 
 
@@ -432,6 +529,16 @@ def main() -> int:
             used_allowlist.add(matched_entry)
 
     for violation in find_dartsim_ui_boundary_violations():
+        matched_entry = next(
+            (entry for entry in allowlist if is_allowed(violation, entry)),
+            None,
+        )
+        if matched_entry is None:
+            unallowed.append(violation)
+        else:
+            used_allowlist.add(matched_entry)
+
+    for violation in find_dartsim_engine_boundary_violations():
         matched_entry = next(
             (entry for entry in allowlist if is_allowed(violation, entry)),
             None,

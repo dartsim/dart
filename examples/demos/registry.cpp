@@ -282,6 +282,13 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Experimental",
        "A spring-net deformable body on the experimental physics solver.",
        &makeExperimentalDeformableScene});
+  scenes.push_back(
+      {"experimental_vbd",
+       "Deformable VBD (Experimental)",
+       "Experimental",
+       "A contact-free hanging cloth driven by the Vertex Block Descent "
+       "inner solver (graph-colored Gauss-Seidel block descent).",
+       &makeExperimentalVbdDeformableScene});
 #endif
 
   return scenes;

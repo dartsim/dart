@@ -134,6 +134,7 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
     compute/cuda/rigid_body_state_batch_cuda.cu
     compute/cuda/deformable_psd_projection_cuda.cpp
     compute/cuda/deformable_psd_projection_cuda.cu
+    compute/cuda/vbd_block_descent_cuda.cu
   )
   dart_maybe_apply_coverage_config(${cuda_target_name})
 

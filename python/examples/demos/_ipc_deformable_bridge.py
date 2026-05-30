@@ -241,6 +241,7 @@ def _fem_bar_options(
     youngs_modulus: float,
     poisson_ratio: float,
     density: float,
+    use_fixed_corotational: bool = False,
 ) -> "sx.DeformableBodyOptions":
     options = sx.DeformableBodyOptions()
     options.positions = positions
@@ -249,6 +250,7 @@ def _fem_bar_options(
     options.material.poisson_ratio = poisson_ratio
     options.material.density = density
     options.material.use_finite_element_elasticity = True
+    options.material.use_fixed_corotational_elasticity = use_fixed_corotational
     return options
 
 
@@ -292,6 +294,7 @@ def build_fem_twist_bar(
     twist_end_time: float,
     poisson_ratio: float = 0.3,
     density: float = 1.0e3,
+    use_fixed_corotational: bool = False,
 ) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
     """A FEM beam twisted at both ends by opposing scripted rotations.
 
@@ -300,14 +303,21 @@ def build_fem_twist_bar(
     then release; the elastic FEM core resists the shear and untwists. The
     scripted drive uses a linear ``omega x r`` extrapolation, so ``twist_rate``
     and ``twist_end_time`` are kept small to stay near a true rotation. Toward
-    the IPC paper's Fig. 4 (rod twist) / Fig. 14 (mat twist) themes.
+    the IPC paper's Fig. 4 (rod twist) / Fig. 14 (mat twist) themes. Set
+    ``use_fixed_corotational`` to drive the bar with the fixed-corotational
+    material instead of the default stable neo-Hookean kernel.
     """
 
     positions, tetrahedra, edges, node_index, (nx, ny, nz) = _fem_bar_mesh(
         cells_x, cells_y, cells_z, cell_size, origin
     )
     options = _fem_bar_options(
-        positions, tetrahedra, youngs_modulus, poisson_ratio, density
+        positions,
+        tetrahedra,
+        youngs_modulus,
+        poisson_ratio,
+        density,
+        use_fixed_corotational=use_fixed_corotational,
     )
 
     axis_y = origin[1] + 0.5 * cells_y * cell_size

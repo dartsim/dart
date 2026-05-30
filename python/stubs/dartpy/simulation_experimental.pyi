@@ -18,6 +18,7 @@ __all__: list[str] = [
     "DeformableSceneDiagnostics",
     "DeformableSceneInfo",
     "DeformableSceneLoadOptions",
+    "DeformableSolverOptions",
     "DeformableSurfaceTriangle",
     "DeformableTetrahedron",
     "FixedFrame",
@@ -910,6 +911,12 @@ class DeformableMaterialProperties:
     @use_finite_element_elasticity.setter
     def use_finite_element_elasticity(self, arg: bool, /) -> None: ...
 
+    @property
+    def use_fixed_corotational_elasticity(self) -> bool: ...
+
+    @use_fixed_corotational_elasticity.setter
+    def use_fixed_corotational_elasticity(self, arg: bool, /) -> None: ...
+
 class DeformableEdge:
     def __init__(self, node_a: int = ..., node_b: int = ..., rest_length: float = ...) -> None: ...
 
@@ -1120,6 +1127,51 @@ class DeformableBodyOptions:
     @material.setter
     def material(self, arg: DeformableMaterialProperties, /) -> None: ...
 
+class DeformableSolverOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def iterations(self) -> int: ...
+
+    @iterations.setter
+    def iterations(self, arg: int, /) -> None: ...
+
+    @property
+    def convergence_tolerance(self) -> float: ...
+
+    @convergence_tolerance.setter
+    def convergence_tolerance(self, arg: float, /) -> None: ...
+
+    @property
+    def use_acceleration(self) -> bool: ...
+
+    @use_acceleration.setter
+    def use_acceleration(self, arg: bool, /) -> None: ...
+
+    @property
+    def acceleration_spectral_radius(self) -> float: ...
+
+    @acceleration_spectral_radius.setter
+    def acceleration_spectral_radius(self, arg: float, /) -> None: ...
+
+    @property
+    def stiffness_damping(self) -> float: ...
+
+    @stiffness_damping.setter
+    def stiffness_damping(self, arg: float, /) -> None: ...
+
+    @property
+    def worker_threads(self) -> int: ...
+
+    @worker_threads.setter
+    def worker_threads(self, arg: int, /) -> None: ...
+
+    @property
+    def ground_contact_stiffness(self) -> float: ...
+
+    @ground_contact_stiffness.setter
+    def ground_contact_stiffness(self, arg: float, /) -> None: ...
+
 class DeformableBody:
     @property
     def is_valid(self) -> bool: ...
@@ -1303,6 +1355,8 @@ class World:
 
     @property
     def num_deformable_bodies(self) -> int: ...
+
+    def configure_deformable_solver(self, name: str, options: DeformableSolverOptions) -> None: ...
 
     @overload
     def add_loop_closure(self, spec: LoopClosureSpec, *, name: object | None = ...) -> LoopClosure: ...
