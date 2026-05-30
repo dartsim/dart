@@ -203,15 +203,16 @@ its own line so status updates remain git-history friendly.
   algorithm-neutral public `configureDeformableSolver` API and dartpy binding,
   static half-space ground contact + Coulomb friction, the CUDA mass-spring and
   tetrahedral rollouts (CUDA-graph capture + mixed precision), the CPU baseline
-  benchmark, and the first GUI showcases (cloth/net/beam). Remaining work, in
-  order: route VBD tet elasticity through the shared `deformable_elasticity` FEM
-  kernels so VBD honors the body's FEM material choice; let VBD honor the merged
-  sphere/box obstacle barriers instead of falling back to the default solver;
-  Phase 7 surface self-collision/friction (vertex-triangle / edge-edge penalty,
-  reusing the PLAN-081 `detail/deformable_contact` kernels); the TinyVBD
-  parity/regression example with committed benchmark JSON; then Phase 8b SoA +
-  Gaia-CPU benchmark and Phase 9 RTX-4090 same-GPU Table 1 reproduction. Reconcile
-  and retire `docs/dev_tasks/vbd_deformable_solver/` once self-collision closes.
+  benchmark, and the first GUI showcases (cloth/net/beam). PR #2801 extends
+  that landed path by routing VBD tetrahedra through the shared
+  `deformable_elasticity` FEM kernels, preserving VBD on static sphere/box
+  obstacle barriers, adding lagged VT/EE surface self-collision penalties, and
+  adding the TinyVBD tilted-strand plus contact showcase py-demos; it also
+  retires the temporary `docs/dev_tasks/vbd_deformable_solver/` tracker by
+  promoting the gap audit into this plan. Remaining work, in order:
+  self-contact tangential friction, committed benchmark/profiling JSON for the
+  new scenes, paper tetrahedral scene reproduction, Phase 8b SoA + Gaia-CPU
+  comparison, and Phase 9 RTX-4090 same-GPU Table 1 reproduction.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

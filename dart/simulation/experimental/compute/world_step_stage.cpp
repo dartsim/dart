@@ -3867,17 +3867,18 @@ struct DeformableVbdScratch
 };
 
 //==============================================================================
-/// Solve one implicit-Euler step for a contact-free deformable body with the
+/// Solve one implicit-Euler step for a deformable body with the
 /// Vertex Block Descent inner solver: graph-colored Gauss-Seidel block
 /// coordinate descent on the same variational objective the default solver
 /// minimizes, warm-started at the inertial target. Handles both distance
-/// springs and volumetric Stable Neo-Hookean tetrahedra (the latter using the
-/// body's Lame parameters, which the default gradient solver does not yet
-/// model). Fills `scratch.next`; the caller's write-back updates
+/// springs and volumetric tetrahedra, with the World path routing tet
+/// elasticity through the shared FEM kernels so the body's material choice is
+/// honored. Fills `scratch.next`; the caller's write-back updates
 /// positions/velocities. With `config.contactStiffness > 0` it also resolves
 /// static ground/obstacle half-space contact (penalty + optional Coulomb
-/// friction); it does not yet handle rigid-obstacle CCD or surface
-/// self-contact.
+/// friction) and lagged surface self-contact normal penalties. Moving
+/// rigid-surface CCD and static capsule obstacle barriers still fall back to
+/// the default solver.
 void runVbdDeformableSolve(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -4805,13 +4806,13 @@ void advanceDeformableBody(
   // or box bodies (collectStaticRigidSurfaceCcdObstacles skips other shapes),
   // i.e. exactly the obstacles VBD handles via those barriers, so they no
   // longer force the body onto the default solver; VBD still cannot honor
-  // *moving* rigid-surface CCD. The body's own surface mesh is excluded here:
-  // VBD solves inertia + springs + tet elasticity (+ static contact) and treats
-  // the body as free of surface self-contact (a later slice wires VBD
-  // self-contact into the World path). A body with static contacts but no VBD
-  // contact stiffness falls back to the default solver so it still rests on /
-  // collides with them. The default-solver fast path below keeps the stricter
-  // surface check so non-VBD bodies still get self-contact.
+  // *moving* rigid-surface CCD. Surface triangles no longer disqualify VBD:
+  // runVbdDeformableSolve builds a lagged VT/EE self-contact candidate set and
+  // adds the normal barrier blocks during the colored sweeps. A body with
+  // static contacts but no VBD contact stiffness falls back to the default
+  // solver so it still rests on / collides with them. The default-solver fast
+  // path below keeps the stricter surface check so non-VBD bodies still get
+  // self-contact.
   const bool movingRigidSurfaceFree = movingRigidSurfaceSnapshots.empty();
   const bool anyStaticContact = !barriers.empty() || !sphereObstacles.empty()
                                 || !boxObstacles.empty()
