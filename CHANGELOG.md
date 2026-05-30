@@ -917,6 +917,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `Deformable FEM over Sphere (IPC)` py-demos scene (a FEM slab draping over a
     sphere obstacle), exercising FEM elasticity with the sphere + ground
     barriers together.
+  - Added a clamped-log barrier force (energy + gradient + projected-Newton
+    Hessian) for static oriented BOX obstacles (PLAN-081 M2 increment), the box
+    analogue of the sphere obstacle barrier. The closest point on the box surface
+    -- and hence the surface distance and outward normal -- is found by clamping
+    the node into the box's local frame, which handles face, edge, and corner
+    contact uniformly; the barrier pushes nearby deformable nodes out along that
+    normal, and its PSD-projected Hessian is the rank-1 radial curvature along
+    it. Reuses the existing `setDeformableSurfaceCcdObstacle` opt-in (the box CCD
+    limiter stays the tunnelling guard; box obstacles previously had no smooth
+    contact force); purely additive (all existing box surface-CCD regressions
+    unchanged). Adds `BoxObstacleBarrierRepelsNodeAlongFaceNormal` and
+    `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
+    `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
+    obstacle).
   - Added stable neo-Hookean tetrahedral FEM elasticity to the experimental
     deformable solver (PLAN-081 M1, the paper-parity keystone). A new
     header-only `deformable_elasticity/fem_tet_element.hpp` kernel produces, per
