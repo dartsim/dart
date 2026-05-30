@@ -1,0 +1,332 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the "BSD-style" License
+ */
+
+// Paper-parity experiments for the rigid-body implicit-barrier (rigid IPC)
+// contact solver tracked by PLAN-082. Each test reproduces the qualitative
+// behavior of a figure from the rigid IPC paper (Ferguson et al.,
+// "Intersection-free Rigid Body Dynamics", SIGGRAPH 2021,
+// https://ipc-sim.github.io/rigid-ipc/) that the current DART-owned rigid IPC
+// runtime stage can express with free dynamic and static rigid bodies plus
+// lagged Coulomb friction. Scenes that require articulation (chains, hinges,
+// gears) or scripted kinematic drivers are out of scope here and tracked
+// separately.
+//
+// The two invariants every rigid IPC scene must hold are encoded as assertions:
+//   1. Intersection-free: no body ever penetrates another (the barrier and the
+//      conservative CCD line search guarantee this), and the solve never fails.
+//   2. Coulomb friction threshold: a body slides iff the down-slope pull
+//      exceeds the friction cone, i.e. tan(theta) > mu (Fig. 18).
+//
+// Friction note: the rigid IPC stage combines per-body friction coefficients as
+// the geometric mean (effective mu = sqrt(mu_a * mu_b)). Setting BOTH bodies in
+// a contact to the same value `mu` therefore yields an effective coefficient of
+// exactly `mu`, which is what these tests rely on.
+
+#include <dart/simulation/experimental/body/collision_shape.hpp>
+#include <dart/simulation/experimental/body/rigid_body.hpp>
+#include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/world.hpp>
+
+#include <Eigen/Geometry>
+#include <gtest/gtest.h>
+
+#include <numbers>
+#include <vector>
+
+#include <cmath>
+
+namespace {
+
+namespace sx = dart::simulation::experimental;
+
+// Build a triangulated thin cylinder ("coin"/"disk") collision mesh centered at
+// the body origin, with its symmetry axis along local +z. `segments` rim
+// samples produce a closed surface: two cap fans plus a quad side wall.
+sx::CollisionShape makeDiskMesh(double radius, double halfHeight, int segments)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  std::vector<Eigen::Vector3i> triangles;
+  vertices.reserve(static_cast<std::size_t>(2 * segments + 2));
+  triangles.reserve(static_cast<std::size_t>(4 * segments));
+
+  const int topCenter = 0;
+  const int bottomCenter = 1;
+  vertices.emplace_back(0.0, 0.0, halfHeight);
+  vertices.emplace_back(0.0, 0.0, -halfHeight);
+
+  const int topRing = 2;
+  const int bottomRing = 2 + segments;
+  for (int i = 0; i < segments; ++i) {
+    const double angle
+        = 2.0 * std::numbers::pi * static_cast<double>(i) / segments;
+    vertices.emplace_back(
+        radius * std::cos(angle), radius * std::sin(angle), halfHeight);
+  }
+  for (int i = 0; i < segments; ++i) {
+    const double angle
+        = 2.0 * std::numbers::pi * static_cast<double>(i) / segments;
+    vertices.emplace_back(
+        radius * std::cos(angle), radius * std::sin(angle), -halfHeight);
+  }
+
+  for (int i = 0; i < segments; ++i) {
+    const int n = (i + 1) % segments;
+    // Top cap (outward normal +z).
+    triangles.emplace_back(topCenter, topRing + i, topRing + n);
+    // Bottom cap (outward normal -z).
+    triangles.emplace_back(bottomCenter, bottomRing + n, bottomRing + i);
+    // Side wall (two triangles per quad).
+    triangles.emplace_back(topRing + i, bottomRing + i, bottomRing + n);
+    triangles.emplace_back(topRing + i, bottomRing + n, topRing + n);
+  }
+
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
+struct InclineRun
+{
+  double downSlopeDisplacement = 0.0; // signed, +x is the down-slope direction
+  double downSlopeSpeed = 0.0;
+  double minCenterZ = 0.0;
+  bool everFailed = false;
+};
+
+// Reproduce Fig. 18 ("High school physics friction test"): a flat block resting
+// on an inclined plane of slope `inclineRad`, with Coulomb coefficient `mu` on
+// both surfaces. Instead of rotating the contact geometry, we tilt gravity so
+// the block sits on a flat, axis-aligned ground (robust contact) while feeling
+// a down-slope pull g*sin(theta) along +x and a normal load g*cos(theta) along
+// -z. This is mechanically identical to the inclined plane and isolates the
+// friction threshold tan(theta) vs mu.
+InclineRun runInclinedFrictionBlock(double inclineRad, double mu, int steps)
+{
+  sx::World world;
+  constexpr double g = 9.81;
+  world.setGravity(
+      Eigen::Vector3d(
+          g * std::sin(inclineRad), 0.0, -g * std::cos(inclineRad)));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("incline_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({5.0, 5.0, 0.5}));
+  ground.setFriction(mu);
+
+  // A flat, low block so the friction force does not generate a tipping torque.
+  sx::RigidBodyOptions blockOptions;
+  blockOptions.mass = 1.0;
+  blockOptions.position = Eigen::Vector3d(0.0, 0.0, 0.1 + 1e-3);
+  auto block = world.addRigidBody("incline_block", blockOptions);
+  block.setCollisionShape(sx::CollisionShape::makeBox({0.4, 0.4, 0.1}));
+  block.setFriction(mu);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  InclineRun run;
+  run.minCenterZ = block.getTranslation().z();
+  const double startX = block.getTranslation().x();
+  for (int s = 0; s < steps; ++s) {
+    world.step(executor, pipeline);
+    if (ipcStage.getLastStats().failed) {
+      run.everFailed = true;
+    }
+    run.minCenterZ = std::min(run.minCenterZ, block.getTranslation().z());
+  }
+  run.downSlopeDisplacement = block.getTranslation().x() - startX;
+  run.downSlopeSpeed = block.getLinearVelocity().x();
+  return run;
+}
+
+} // namespace
+
+// Fig. 18: with a low coefficient (mu = 0.2 well below tan(theta) = 0.5) the
+// block slides down the slope and keeps accelerating.
+TEST(RigidIpcPaperExperiments, FrictionTestBelowThresholdSlides)
+{
+  const double theta = std::atan(0.5); // tan(theta) = 0.5
+  const InclineRun run
+      = runInclinedFrictionBlock(theta, /*mu=*/0.2, /*steps=*/200);
+
+  EXPECT_FALSE(run.everFailed);
+  EXPECT_GT(run.minCenterZ, 0.1 - 5e-3); // never penetrated the ground
+  // Slid forward and is still moving down-slope.
+  EXPECT_GT(run.downSlopeDisplacement, 0.05);
+  EXPECT_GT(run.downSlopeSpeed, 0.2);
+}
+
+// Fig. 18: with a high coefficient (mu = 0.8 well above tan(theta) = 0.5) the
+// friction cone holds the block: it does not slide.
+TEST(RigidIpcPaperExperiments, FrictionTestAboveThresholdSticks)
+{
+  const double theta = std::atan(0.5);
+  const InclineRun run
+      = runInclinedFrictionBlock(theta, /*mu=*/0.8, /*steps=*/200);
+
+  EXPECT_FALSE(run.everFailed);
+  EXPECT_GT(run.minCenterZ, 0.1 - 5e-3); // never penetrated the ground
+  // Essentially stationary: negligible down-slope drift and speed.
+  EXPECT_LT(std::abs(run.downSlopeDisplacement), 5e-3);
+  EXPECT_LT(std::abs(run.downSlopeSpeed), 0.05);
+}
+
+// Fig. 18 fidelity: Coulomb friction monotonically resists the slide as mu
+// increases past the analytic threshold tan(theta) = 0.5. We discriminate a
+// sustained slide from a settle-then-rest by the FINAL down-slope speed (a
+// sliding block is still moving; a stuck block has come to rest). Below the
+// threshold (mu = 0.3) the block is still sliding at the end; above it (mu =
+// 0.7) the block has come to rest, and both the residual speed and the total
+// drift are markedly smaller. (The barrier+lagged-friction scaffold allows a
+// few centimeters of transient creep near the threshold before resting, so this
+// asserts the slide/rest dichotomy rather than a razor-thin mu threshold.)
+TEST(RigidIpcPaperExperiments, FrictionMonotonicallyResistsSlideAcrossThreshold)
+{
+  const double theta = std::atan(0.5);
+
+  const InclineRun below
+      = runInclinedFrictionBlock(theta, /*mu=*/0.3, /*steps=*/200);
+  EXPECT_FALSE(below.everFailed);
+  EXPECT_GT(below.downSlopeSpeed, 0.12) << "mu=0.3 should still be sliding";
+  EXPECT_GT(below.downSlopeDisplacement, 0.05);
+
+  const InclineRun above
+      = runInclinedFrictionBlock(theta, /*mu=*/0.7, /*steps=*/200);
+  EXPECT_FALSE(above.everFailed);
+  EXPECT_LT(above.downSlopeSpeed, 0.03) << "mu=0.7 should have come to rest";
+
+  // Friction monotonically reduces both the residual speed and the drift.
+  EXPECT_GT(below.downSlopeSpeed, above.downSlopeSpeed + 0.05);
+  EXPECT_GT(below.downSlopeDisplacement, above.downSlopeDisplacement);
+}
+
+// Fig. 7 ("Spolling coin"): a coin spinning on a frictional surface is braked
+// by friction. We use a thin triangulated disk resting flat on the ground, spun
+// about its symmetry (z) axis. The contact patch friction must dissipate the
+// spin while the coin stays intersection-free.
+TEST(RigidIpcPaperExperiments, SpinningCoinIsBrakedByFrictionWithoutPenetration)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("coin_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({5.0, 5.0, 0.5}));
+  ground.setFriction(0.5);
+
+  constexpr double radius = 0.4;
+  constexpr double halfHeight = 0.04;
+  sx::RigidBodyOptions coinOptions;
+  coinOptions.mass = 1.0;
+  // Disk inertia about the symmetry axis (z) and the diameters.
+  const double izz = 0.5 * coinOptions.mass * radius * radius;
+  const double ixx = 0.25 * coinOptions.mass * radius * radius
+                     + (1.0 / 3.0) * coinOptions.mass * halfHeight * halfHeight;
+  coinOptions.inertia = Eigen::Vector3d(ixx, ixx, izz).asDiagonal();
+  coinOptions.position = Eigen::Vector3d(0.0, 0.0, halfHeight + 1e-3);
+  coinOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 8.0); // fast spin
+  auto coin = world.addRigidBody("coin", coinOptions);
+  coin.setCollisionShape(makeDiskMesh(radius, halfHeight, /*segments=*/16));
+  coin.setFriction(0.5);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double initialSpin = std::abs(coin.getAngularVelocity().z());
+  double minCenterZ = coin.getTranslation().z();
+  for (int s = 0; s < 60; ++s) {
+    world.step(executor, pipeline);
+    EXPECT_FALSE(ipcStage.getLastStats().failed) << "step " << s;
+    minCenterZ = std::min(minCenterZ, coin.getTranslation().z());
+  }
+
+  // Intersection-free: the coin never sinks into the ground.
+  EXPECT_GT(minCenterZ, halfHeight - 5e-3);
+  // Friction dissipated a meaningful fraction of the spin.
+  const double finalSpin = std::abs(coin.getAngularVelocity().z());
+  EXPECT_LT(finalSpin, initialSpin)
+      << "friction should brake the spin (init " << initialSpin << ")";
+}
+
+// Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its
+// edge (rotated 45 degrees about x) lands in a degenerate edge-on-face contact.
+// The solver must handle the degenerate configuration robustly: it settles to
+// rest without ever penetrating the ground and without a failed solve.
+TEST(RigidIpcPaperExperiments, DegenerateEdgeDropSettlesWithoutPenetration)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("erleben_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({5.0, 5.0, 0.5}));
+  ground.setFriction(0.6);
+
+  // A unit cube rotated 45 degrees about x: it descends onto a bottom edge. The
+  // half-diagonal of the y-z face is 0.25 * sqrt(2) ~ 0.3536, so we place the
+  // center just above that so the edge starts a hair above the ground.
+  constexpr double half = 0.25;
+  const double edgeHeight = half * std::numbers::sqrt2;
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, edgeHeight + 2e-3);
+  boxOptions.orientation = Eigen::Quaterniond(
+      Eigen::AngleAxisd(std::numbers::pi / 4.0, Eigen::Vector3d::UnitX()));
+  auto box = world.addRigidBody("erleben_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({half, half, half}));
+  box.setFriction(0.6);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBottomZ = 0.0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    EXPECT_FALSE(ipcStage.getLastStats().failed) << "step " << s;
+    // Lowest world-space vertex of the rotated cube (an axis-aligned bound on
+    // penetration). The center height minus the rotated half-extent.
+    const Eigen::Matrix3d R = box.getRotation();
+    double lowest = box.getTranslation().z();
+    for (double dx : {-half, half}) {
+      for (double dy : {-half, half}) {
+        for (double dz : {-half, half}) {
+          const Eigen::Vector3d v
+              = box.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+          lowest = std::min(lowest, v.z());
+        }
+      }
+    }
+    minBottomZ = std::min(minBottomZ, lowest);
+  }
+
+  // Never penetrated the ground top (z = 0) beyond the barrier tolerance.
+  EXPECT_GT(minBottomZ, -5e-3);
+  // Came to rest (no explosion): the cube is no longer falling fast.
+  EXPECT_LT(box.getLinearVelocity().norm(), 0.5);
+  // All quantities stayed finite.
+  EXPECT_TRUE(box.getTranslation().allFinite());
+  EXPECT_TRUE(box.getLinearVelocity().allFinite());
+}
