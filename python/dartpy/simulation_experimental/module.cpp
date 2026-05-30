@@ -48,6 +48,7 @@
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
+#include <dart/simulation/experimental/io/gmsh_tet_mesh.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -1696,6 +1697,24 @@ void defSimulationExperimentalModule(nb::module_& m)
       "collect_deformable_scene_diagnostics",
       &sim::io::collectDeformableSceneDiagnostics,
       nb::arg("world"));
+
+  m.def(
+      "load_gmsh_tet_mesh",
+      [](const std::filesystem::path& path) {
+        const auto mesh = sim::io::loadGmshTetMeshFile(path);
+        sim::DeformableBodyOptions options;
+        options.positions = mesh.positions;
+        options.tetrahedra.reserve(mesh.tetrahedra.size());
+        for (const auto& tet : mesh.tetrahedra) {
+          options.tetrahedra.push_back(
+              sim::DeformableTetrahedron{tet[0], tet[1], tet[2], tet[3]});
+        }
+        return options;
+      },
+      nb::arg("path"),
+      "Load a GMSH ASCII .msh (format 2.x) tetrahedral mesh into a "
+      "DeformableBodyOptions (positions + tetrahedra). Set the material "
+      "(e.g. use_finite_element_elasticity) and fixed nodes on the result.");
 
   nb::class_<sim::World>(m, "World")
       .def(

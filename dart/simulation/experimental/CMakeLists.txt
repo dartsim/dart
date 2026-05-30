@@ -77,6 +77,7 @@ add_library(
   io/binary_io.cpp
   io/deformable_scene_io.cpp
   io/detail/rigid_ipc_fixture.cpp
+  io/gmsh_tet_mesh.cpp
   io/serializer.cpp
   multibody/joint.cpp
   multibody/link.cpp
