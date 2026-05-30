@@ -29,11 +29,13 @@ rigor). `[x]` = met today, `[ ]` = open.
 - [x] Manifold-correct floating/spherical retraction (FD-verified).
 - [x] Holonomic loop closures (Point / Distance / Rigid) hold over a long
       horizon; constraint Jacobians FD-verified.
-- [ ] **Convergence is robust at scale.** RIQN converges within budget for the
-      chains we claim to support, including very long/stiff systems — needs the
-      [≥100-link exact recursive-Jacobian preconditioner](README.md#gaps-from-current-progress-road-to-the-north-star)
-      and ideally the manifold-aware Anderson for floating chains. Until then,
-      document the supported envelope (DOF/stiffness bounds) explicitly.
+- [x] **Convergence is robust at scale.** The exact recursive-Jacobian Newton
+      preconditioner lands ~3 iterations independent of length (verified to 128
+      links) and the manifold-aware tangent-space Anderson acceleration converges
+      spherical/floating chains; the supported DOF/stiffness bounds are documented
+      explicitly in [`supported-envelope.md`](supported-envelope.md). (Extending
+      the manifold preconditioner to very long floating chains stays a
+      north-star item, but the supported envelope is now stated, not implicit.)
 - [ ] **Contact & friction** available _or_ the supported envelope explicitly
       excludes contact. A "supported" solver that silently cannot do contact is
       a documentation trap; either Phase C lands (compliant/AL rungs) or the
@@ -59,9 +61,10 @@ rigor). `[x]` = met today, `[ ]` = open.
       duplicate maintenance burden across the SI and VI paths).
 - [x] dartpy parity (selector + `Link.apply_force`) with stubs + tests.
 - [x] GUI demo scenes for visual verification.
-- [ ] **Performance characterized for users**, not just gated: a published
-      per-step cost vs DOF curve and a VI-vs-semi-implicit guidance note (when
-      to pick the VI), beyond the internal O(n) benchmark.
+- [x] **Performance characterized for users**, not just gated: the per-step cost
+      vs DOF curve (O(N) fit) and a VI-vs-semi-implicit guidance note (when to
+      pick the VI) are published in [`performance.md`](performance.md), beyond the
+      internal O(n) benchmark.
 
 ## Explicit non-blockers (future / stretch)
 

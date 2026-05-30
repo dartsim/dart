@@ -33,10 +33,11 @@ and verified **today**; unchecked items are the [gaps below](#gaps-from-current-
       augmented-Lagrangian bounded force → (optional) IPC barrier, all as forces
       in the forced DEL residual so symplectic structure + O(n) survive.
       _(the largest remaining gap)_
-- [ ] **Scales to extreme chains (≥100 links)** — the exact recursive-Jacobian
-      preconditioner (paper Appendix) for systems that exceed the quasi-Newton
-      budget.
-- [ ] **Manifold-aware convergence acceleration** for spherical/floating chains.
+- [x] **Scales to extreme chains** — the exact recursive-Jacobian preconditioner
+      (paper Appendix) lands ~3 iterations independent of length, verified to 128
+      links; supported bounds in [`supported-envelope.md`](supported-envelope.md).
+- [x] **Manifold-aware convergence acceleration** — tangent-space Anderson for
+      spherical/floating chains (Euclidean preconditioner + manifold Anderson).
 - [ ] **Graduation** from `experimental` to a supported solver (variable `Δt`,
       GPU/batched execution are open stretch goals).
 
@@ -175,34 +176,36 @@ All committed PLAN-082 phases (A1, A2, B1, B2), every acceptance gate, the paper
 experiment replication
 ([`paper-experiment-replication.md`](paper-experiment-replication.md)), the
 scalable `MultibodyOptions` config, the zero-default-overhead guarantee, and the
-dartpy + GUI surface are complete and verified. The remaining gaps to the
-[north star](#north-star), in priority order:
+dartpy + GUI surface are complete and verified. The roadmap follow-ups also
+landed: the **exact recursive-Jacobian preconditioner** (~3 iters to 128 links),
+**manifold tangent-space Anderson**, internal spatial-algebra **dedup**
+(`detail/multibody_spatial_algebra.hpp`), the **loop-closure GUI scene**, and the
+**supported-envelope** + **performance** characterization docs. The remaining
+gaps to the [north star](#north-star), in priority order:
 
-1. **Phase C — contact & friction (recorded NO-GO; the largest gap).** The VI is
-   contact-free today. Unblocking needs a _contact-query-at-trial-configuration_
+1. **Phase C — contact & friction (the largest gap).** The VI is contact-free in
+   production today. Unblocking needs a _contact-query-at-trial-configuration_
    redesign (cheap distance/gradient at an arbitrary trial `qᵏ⁺¹` inside the RIQN
    loop; today `World::collide()` rebuilds the whole collision world once per
-   step with no such query). Then rungs C1→C4 — lagged friction → compliant
-   penalty → augmented-Lagrangian bounded force → optional IPC barrier — per the
+   step with no such query) — **scoped in gate 1** of the
    [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md).
-   Must start at the compliant/AL rungs, not the barrier (stiff barrier curvature
-   mis-scales RIQN's `Δt·M⁻¹` quasi-Newton rate). Two go/no-go gates guard entry;
-   both are currently unmet.
-2. **Extreme chains (≥100 links).** Anderson + `√n` tolerance bound iteration
-   counts to ~205 for 100 links within the default 100-iteration budget; beyond
-   that, implement the paper-Appendix **exact recursive-Jacobian preconditioner**.
-3. **Manifold-aware acceleration.** Anderson acceleration is **Euclidean-only**;
-   spherical/floating joints fall back to the plain RIQN step, so long _floating_
-   chains converge more slowly. A Lie-group-correct iterate mixing would close
-   this.
-4. **Internal dedup (tech debt).** The local spatial-algebra / kinematic-tree
-   helpers in `variational_integration.cpp` duplicate a subset of
-   `multibody_dynamics.cpp`; hoist into a shared internal header (coordinate with
-   PLAN-080, the natural owner of the shared O(n) impulse-ABI).
-5. **Productionization / graduation.** Variable time step, GPU/batched execution,
-   and promotion out of `experimental` are open. The graduation checklist lives
-   in [graduation-criteria.md](graduation-criteria.md).
-6. **More demo surface.** A loop-closure GUI scene now (Phase B2 is done) and a
-   contact scene once Phase C lands.
+   A compliant-contact robustness **spike cleared gate 2 (GO** for the
+   compliant/AL rungs, `k ≲ 1e4·mg` — see [`supported-envelope.md`](supported-envelope.md));
+   an opt-in in-loop `VariationalContactHook` exists (default-off byte-for-byte
+   identical). Remaining: an owner for the contact-query redesign, then rungs
+   C1→C3 (lagged friction → compliant penalty → augmented-Lagrangian bounded
+   force; barrier last — stiff curvature mis-scales the `Δt·M⁻¹` quasi-Newton).
+2. **Graduation to a supported solver.** The [graduation
+   checklist](graduation-criteria.md) now has the convergence-at-scale and
+   performance-characterization criteria met (this round); the open items are
+   contact-or-an-explicit-contact-free-envelope and the API freeze + deprecation
+   policy. Variable time step and GPU/batched execution stay explicit
+   non-blockers (stretch).
+3. **Manifold preconditioner for very long _floating_ chains.** The exact
+   recursive-Jacobian preconditioner is Euclidean-only; spherical/floating chains
+   use the manifold Anderson (verified to 20 links). A Lie-group extension of the
+   preconditioner would scale floating chains the way the Euclidean one does.
+4. **Contact demo scene.** A GUI contact scene once Phase C lands (the
+   loop-closure scene is done).
 
 Code is the source of truth; keep this file lean and current.
