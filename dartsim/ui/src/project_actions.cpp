@@ -423,7 +423,12 @@ ProjectReplacementActionResult requestOpenProjectReplacementWithDialog(
     return {false, macroGuardResult("load a project"), {}};
   }
   if (!dialog) {
-    return {false, {false, "Open dialog unavailable"}, {}};
+    return {
+        false,
+        {false,
+         "Open dialog unavailable",
+         ProjectActionFollowUp::ModalFallback},
+        {}};
   }
 
   ProjectFileDialogRequest request;
@@ -434,17 +439,33 @@ ProjectReplacementActionResult requestOpenProjectReplacementWithDialog(
 
   const ProjectFileDialogResult selection = dialog(request);
   switch (selection.status) {
-    case ProjectFileDialogStatus::Selected:
+    case ProjectFileDialogStatus::Selected: {
       if (selection.path.empty()) {
         return {false, {false, "Open canceled"}, {}};
       }
-      return requestOpenProjectReplacement(engine, selection.path);
+      ProjectReplacementActionResult opened
+          = requestOpenProjectReplacement(engine, selection.path);
+      // A chosen path that fails to load (not a dirty-replacement prompt)
+      // should fall back to the in-app modal, just like a dialog failure.
+      if (!opened.promptRequired && !opened.result.ok) {
+        opened.result.followUp = ProjectActionFollowUp::ModalFallback;
+      }
+      return opened;
+    }
     case ProjectFileDialogStatus::Canceled:
       return {false, {false, "Open canceled"}, {}};
     case ProjectFileDialogStatus::Failed:
-      return {false, {false, makeDialogFailureMessage("Open", selection)}, {}};
+      return {
+          false,
+          {false,
+           makeDialogFailureMessage("Open", selection),
+           ProjectActionFollowUp::ModalFallback},
+          {}};
   }
-  return {false, {false, "Open dialog failed"}, {}};
+  return {
+      false,
+      {false, "Open dialog failed", ProjectActionFollowUp::ModalFallback},
+      {}};
 }
 
 ProjectActionResult confirmProjectReplacement(
@@ -504,7 +525,8 @@ ProjectActionResult saveProjectWithDialog(
   }
 
   if (!dialog) {
-    return {false, "Save dialog unavailable"};
+    return {
+        false, "Save dialog unavailable", ProjectActionFollowUp::ModalFallback};
   }
 
   ProjectFileDialogRequest request;
@@ -515,17 +537,28 @@ ProjectActionResult saveProjectWithDialog(
 
   const ProjectFileDialogResult selection = dialog(request);
   switch (selection.status) {
-    case ProjectFileDialogStatus::Selected:
+    case ProjectFileDialogStatus::Selected: {
       if (selection.path.empty()) {
         return {false, "Save canceled"};
       }
-      return saveProjectAs(engine, ensureProjectExtension(selection.path));
+      ProjectActionResult saved
+          = saveProjectAs(engine, ensureProjectExtension(selection.path));
+      // A chosen path that fails to save should fall back to the in-app modal,
+      // just like a dialog failure.
+      if (!saved.ok) {
+        saved.followUp = ProjectActionFollowUp::ModalFallback;
+      }
+      return saved;
+    }
     case ProjectFileDialogStatus::Canceled:
       return {false, "Save canceled"};
     case ProjectFileDialogStatus::Failed:
-      return {false, makeDialogFailureMessage("Save", selection)};
+      return {
+          false,
+          makeDialogFailureMessage("Save", selection),
+          ProjectActionFollowUp::ModalFallback};
   }
-  return {false, "Save dialog failed"};
+  return {false, "Save dialog failed", ProjectActionFollowUp::ModalFallback};
 }
 
 ProjectActionResult openProject(

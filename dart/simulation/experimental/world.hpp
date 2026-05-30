@@ -125,6 +125,13 @@ public:
   bool hasDeformableBody(std::string_view name) const;
   std::size_t getDeformableBodyCount() const;
 
+  /// Opt the named deformable body into the iterative block-coordinate inner
+  /// solver and configure it with solver-agnostic quality/performance options.
+  /// Without this call the body uses the default per-step solver. Throws if no
+  /// deformable body has the given name.
+  void configureDeformableSolver(
+      std::string_view name, const DeformableSolverOptions& options);
+
   //--------------------------------------------------------------------------
   // Simulation control
   //--------------------------------------------------------------------------

@@ -151,6 +151,10 @@ struct DeformableSolverStats
   // (frictionCoefficient == 0). Feed the paper's friction benchmark statistics.
   double frictionDissipation = 0.0;
   std::size_t activeFrictionContacts = 0;
+  std::size_t vbdBodyCount = 0;
+  std::size_t vbdSweeps = 0;
+  std::size_t vbdVertexUpdates = 0;
+  double vbdResidualNormSquared = 0.0;
   // Contact closest-approach diagnostic at the converged iterate, folded across
   // the step's deformable bodies. minActiveContactDistance is the smallest
   // point-triangle / edge-edge distance among the active self-contact barrier
