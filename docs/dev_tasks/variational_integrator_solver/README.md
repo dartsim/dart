@@ -6,6 +6,40 @@ Design: [`../../design/simulation_variational_integrator.md`](../../design/simul
 Paper experiment replication + measured results:
 [`paper-experiment-replication.md`](paper-experiment-replication.md).
 
+## North Star
+
+The durable target this work builds toward — a **production-grade, linear-time
+variational integrator**: DART's symplectic, structure-preserving alternative to
+semi-implicit Euler for multibody systems, faithful to Lee/Liu/Park/Srinivasa
+(WAFR 2016, arXiv:1609.02898) and extended to DART's needs. It lives entirely
+behind the experimental World's method-name facade
+(`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
+never exposing solver / stage / component / backend types, and adds **zero
+runtime overhead** when not selected (the default path stays semi-implicit
+Euler).
+
+A "done" north star means all of the following. Checked items are implemented
+and verified **today**; unchecked items are the [gaps below](#gaps-from-current-progress-road-to-the-north-star):
+
+- [x] **Symplectic, O(n), fixed + floating base** — DRNEA residual + RIQN
+      root-find + Featherstone ABI inverse-mass; energy-bounded with no secular
+      drift over 1e5 steps; manifold-correct SE(3)/SO(3) retraction. _(A1/A2/B1)_
+- [x] **Holonomic constraints** — Point / Distance / Rigid loop closures as
+      impulse-based Newton projections reusing the O(n) ABI. _(B2)_
+- [x] **Public surface + visual proof** — dartpy integration-family selector;
+      scalable `MultibodyOptions` config; GUI demo scenes for visual verification
+      (passive chain, floating tumbler).
+- [ ] **Contact & friction** — the deferred Phase C: compliant/penalty →
+      augmented-Lagrangian bounded force → (optional) IPC barrier, all as forces
+      in the forced DEL residual so symplectic structure + O(n) survive.
+      _(the largest remaining gap)_
+- [ ] **Scales to extreme chains (≥100 links)** — the exact recursive-Jacobian
+      preconditioner (paper Appendix) for systems that exceed the quasi-Newton
+      budget.
+- [ ] **Manifold-aware convergence acceleration** for spherical/floating chains.
+- [ ] **Graduation** from `experimental` to a supported solver (variable `Δt`,
+      GPU/batched execution are open stretch goals).
+
 ## Current Status
 
 - [x] **Phase A1 — Fixed-base MVP (dense solve, correctness-first)** — done + verified
@@ -88,11 +122,29 @@ SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
       the plan sidecar; neither entry gate met (no contact-query-at-trial-config
       redesign; no C2 spike).
 
-## Goal
+## GUI Demos (visual verification)
+
+Two py-demos scenes exercise the VI through the viewer (e.g.
+`pixi run py-demos -- --scene sx_variational_chain`):
+
+- **`sx_variational_chain`** — a 5-link passive revolute chain released from
+  horizontal; the symplectic VI keeps it swinging with no secular energy loss
+  (contrast the dissipative semi-implicit `sx_articulated`).
+- **`sx_variational_tumbler`** — a torque-free floating asymmetric body in zero
+  gravity, tumbling without energy/momentum drift (the Phase B1 floating-base
+  path).
+
+Both select the VI via `World.multibody_options`; the headless cycle smoke
+(`python/tests/integration/test_demos_cycle.py`) builds and steps them. More
+scenes (a loop-closure scene now that B2 is done; a contact scene once Phase C
+lands) are north-star surface.
+
+## Original Phase-A1 Goal (achieved)
 
 A correct, tested variational-integrator stage in the experimental `World`,
 selectable by the `variational integrator` method name, proving symplectic
-energy behavior on a passive chain before optimizing to O(n).
+energy behavior on a passive chain before optimizing to O(n). The
+[North Star](#north-star) now captures the full vision beyond this MVP.
 
 ## Non-Goals (early phases)
 
@@ -117,21 +169,40 @@ energy behavior on a passive chain before optimizing to O(n).
   fixed-base revolute/prismatic (Euclidean), matching the reference impl's
   validated envelope.
 
-## Immediate Next Steps
+## Gaps From Current Progress (Road to the North Star)
 
-All committed PLAN-082 phases (A1, A2, B1, B2) and their acceptance gates are
-complete and verified, the paper's experiments are replicated
-([`paper-experiment-replication.md`](paper-experiment-replication.md)), and the
-prior follow-ups are done: the dartpy integration-family selector, the A2
-long-chain convergence fix (Anderson + `√n` tolerance), and Point/Distance/Rigid
-loop closures through the public API. Phase C is a recorded NO-GO. What remains:
+All committed PLAN-082 phases (A1, A2, B1, B2), every acceptance gate, the paper
+experiment replication
+([`paper-experiment-replication.md`](paper-experiment-replication.md)), the
+scalable `MultibodyOptions` config, the zero-default-overhead guarantee, and the
+dartpy + GUI surface are complete and verified. The remaining gaps to the
+[north star](#north-star), in priority order:
 
-1. **Phase C**: contact/friction (deferred, go/no-go; see the plan sidecar).
-2. **A2 extreme chains (≥100 links)**: the exact recursive-Jacobian
-   preconditioner (paper Appendix) for chains that still need a budget above the
-   100-iteration default.
-3. **Dedup**: the local spatial-algebra/kinematic-tree helpers in
-   `variational_integration.cpp` duplicate a subset of `multibody_dynamics.cpp`;
-   hoist into a shared internal header.
+1. **Phase C — contact & friction (recorded NO-GO; the largest gap).** The VI is
+   contact-free today. Unblocking needs a _contact-query-at-trial-configuration_
+   redesign (cheap distance/gradient at an arbitrary trial `qᵏ⁺¹` inside the RIQN
+   loop; today `World::collide()` rebuilds the whole collision world once per
+   step with no such query). Then rungs C1→C4 — lagged friction → compliant
+   penalty → augmented-Lagrangian bounded force → optional IPC barrier — per the
+   [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md).
+   Must start at the compliant/AL rungs, not the barrier (stiff barrier curvature
+   mis-scales RIQN's `Δt·M⁻¹` quasi-Newton rate). Two go/no-go gates guard entry;
+   both are currently unmet.
+2. **Extreme chains (≥100 links).** Anderson + `√n` tolerance bound iteration
+   counts to ~205 for 100 links within the default 100-iteration budget; beyond
+   that, implement the paper-Appendix **exact recursive-Jacobian preconditioner**.
+3. **Manifold-aware acceleration.** Anderson acceleration is **Euclidean-only**;
+   spherical/floating joints fall back to the plain RIQN step, so long _floating_
+   chains converge more slowly. A Lie-group-correct iterate mixing would close
+   this.
+4. **Internal dedup (tech debt).** The local spatial-algebra / kinematic-tree
+   helpers in `variational_integration.cpp` duplicate a subset of
+   `multibody_dynamics.cpp`; hoist into a shared internal header (coordinate with
+   PLAN-080, the natural owner of the shared O(n) impulse-ABI).
+5. **Productionization / graduation.** Variable time step, GPU/batched execution,
+   and promotion out of `experimental` are open; define graduation criteria when
+   contact lands.
+6. **More demo surface.** A loop-closure GUI scene now (Phase B2 is done) and a
+   contact scene once Phase C lands.
 
 Code is the source of truth; keep this file lean and current.

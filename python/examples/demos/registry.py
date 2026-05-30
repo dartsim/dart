@@ -36,6 +36,8 @@ from .scenes.soft_bodies import SCENE as SOFT_BODIES
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
+from .scenes.sx_variational_chain import SCENE as SX_VARIATIONAL_CHAIN
+from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
 
 
 def make_demo_scenes() -> list[PythonDemoScene]:
@@ -80,4 +82,6 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_ARTICULATED,
         SX_FLOATING_BASE,
         SX_CONTACT,
+        SX_VARIATIONAL_CHAIN,
+        SX_VARIATIONAL_TUMBLER,
     ]

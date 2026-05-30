@@ -43,14 +43,19 @@ finite-difference gate; B2's **Point/Distance/Rigid loop closures through the
 public API** (constraint Jacobians incl. the Rigid orientation Jacobian
 FD-verified; semi-implicit still rejects `Solve`); the **dartpy** integration-
 family selector; and the **improvements/corrections/new-features** write-up in
-the design doc. Phase C is a recorded NO-GO. What remains:
+the design doc. The branch is also **merged up to date with `origin/main`**
+(Eigen 5 SVD migration + clang-format 22; the unrelated deformable-IPC SEGFAULT
+was fixed upstream) and ships **two GUI demo scenes** for visual verification
+(`sx_variational_chain`, `sx_variational_tumbler`). Phase C is a recorded NO-GO.
 
-1. **Phase C**: contact/friction — recorded **NO-GO** (deferred, go/no-go; see
-   the plan sidecar).
-2. **A2 extreme chains (≥100 links)**: the exact recursive-Jacobian
-   preconditioner (paper Appendix) for chains needing a budget above the default.
-3. **Dedup**: hoist the local spatial-algebra/kinematic-tree helpers shared with
-   `multibody_dynamics.cpp` into an internal header.
+The **canonical roadmap is the README's
+[North Star + Gaps](README.md#gaps-from-current-progress-road-to-the-north-star)**.
+In short, what remains: (1) **Phase C** contact/friction (NO-GO, the largest
+gap); (2) **≥100-link** exact recursive-Jacobian preconditioner; (3)
+**manifold-aware Anderson** for spherical/floating chains; (4) **dedup** the
+local spatial helpers shared with `multibody_dynamics.cpp`; (5)
+**productionization** (variable `Δt`, GPU/batched, graduation out of
+`experimental`); (6) **more demo scenes** (loop closure, contact).
 
 ## Context That Would Be Lost
 
