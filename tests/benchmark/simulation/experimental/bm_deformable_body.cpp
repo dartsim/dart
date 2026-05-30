@@ -179,7 +179,8 @@ sx::DeformableBodyOptions makeTetraMeshOptions(int tetrahedronCount)
 // tetrahedra), pinned at its x == 0 face and opting in to stable neo-Hookean
 // FEM elasticity (no spring edges). Used to benchmark the FEM assembly + sparse
 // projected-Newton solve cost as the element count grows.
-sx::DeformableBodyOptions makeFemBarOptions(int cellsX)
+sx::DeformableBodyOptions makeFemBarOptions(
+    int cellsX, bool useFixedCorotational = false)
 {
   cellsX = std::max(cellsX, 1);
   const int nx = cellsX + 1;
@@ -195,6 +196,7 @@ sx::DeformableBodyOptions makeFemBarOptions(int cellsX)
   options.material.youngsModulus = 5.0e5;
   options.material.poissonRatio = 0.3;
   options.material.useFiniteElementElasticity = true;
+  options.material.useFixedCorotationalElasticity = useFixedCorotational;
 
   for (int k = 0; k < nz; ++k) {
     for (int j = 0; j < ny; ++j) {
@@ -925,9 +927,10 @@ void BM_DeformableTetraMeshStep(benchmark::State& state)
 //==============================================================================
 struct DeformableFemBarWorld
 {
-  explicit DeformableFemBarWorld(int cellsX)
+  explicit DeformableFemBarWorld(int cellsX, bool useFixedCorotational = false)
   {
-    body = world.addDeformableBody("fem_bar", makeFemBarOptions(cellsX));
+    body = world.addDeformableBody(
+        "fem_bar", makeFemBarOptions(cellsX, useFixedCorotational));
     nodeCount = body.getNodeCount();
     tetrahedronCount = body.getTetrahedronCount();
     for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -953,6 +956,30 @@ void BM_DeformableFemBarStep(benchmark::State& state)
 {
   const auto cellsX = static_cast<int>(state.range(0));
   DeformableFemBarWorld fixture(cellsX);
+
+  for (auto _ : state) {
+    fixture.world.step();
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
+// Identical beam stepped with the fixed-corotational material instead of stable
+// neo-Hookean. Run at the same cell counts as BM_DeformableFemBarStep to
+// compare per-step solver cost between the two FEM materials at matching mesh
+// resolution (the per-step-time axis of the IPC paper's Fig. 23 / Table 1).
+void BM_DeformableFcrBarStep(benchmark::State& state)
+{
+  const auto cellsX = static_cast<int>(state.range(0));
+  DeformableFemBarWorld fixture(cellsX, /*useFixedCorotational=*/true);
 
   for (auto _ : state) {
     fixture.world.step();
@@ -1436,6 +1463,7 @@ BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
 BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableFemBarStep)->Arg(2)->Arg(8)->Arg(24);
+BENCHMARK(BM_DeformableFcrBarStep)->Arg(2)->Arg(8)->Arg(24);
 
 // The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
 // dense-solve cap, so they exercise the sparse projected-Newton path; compare
