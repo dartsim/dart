@@ -957,8 +957,11 @@ void BM_DeformableFemBarStep(benchmark::State& state)
   const auto cellsX = static_cast<int>(state.range(0));
   DeformableFemBarWorld fixture(cellsX);
 
+  double totalNewtonIterations = 0.0;
   for (auto _ : state) {
     fixture.world.step();
+    totalNewtonIterations += static_cast<double>(
+        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -967,6 +970,10 @@ void BM_DeformableFemBarStep(benchmark::State& state)
   state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
   state.counters["total_mass"] = fixture.totalMass;
   state.counters["contact_constraints"] = 0.0;
+  // Average projected-Newton iterations per step: the convergence axis the IPC
+  // paper's Table 1 reports, alongside the wall-clock per-step time.
+  state.counters["newton_iters_per_step"]
+      = totalNewtonIterations / static_cast<double>(state.iterations());
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -981,8 +988,11 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
   const auto cellsX = static_cast<int>(state.range(0));
   DeformableFemBarWorld fixture(cellsX, /*useFixedCorotational=*/true);
 
+  double totalNewtonIterations = 0.0;
   for (auto _ : state) {
     fixture.world.step();
+    totalNewtonIterations += static_cast<double>(
+        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -991,6 +1001,10 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
   state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
   state.counters["total_mass"] = fixture.totalMass;
   state.counters["contact_constraints"] = 0.0;
+  // Average projected-Newton iterations per step, so the fixed-corotational
+  // material's convergence can be compared to neo-Hookean at equal resolution.
+  state.counters["newton_iters_per_step"]
+      = totalNewtonIterations / static_cast<double>(state.iterations());
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
