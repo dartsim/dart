@@ -21,8 +21,11 @@
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+
+#include <dart/math/tri_mesh.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -39,6 +42,7 @@ namespace {
 namespace dynamics = dart::dynamics;
 namespace gui = dart::gui;
 namespace legacy_sim = dart::simulation;
+namespace math = dart::math;
 namespace sx = dart::simulation::experimental;
 
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
@@ -54,6 +58,22 @@ std::shared_ptr<dynamics::Shape> makeVisualShape(
       return std::make_shared<dynamics::SphereShape>(shape.radius);
     case sx::CollisionShapeType::Box:
       return std::make_shared<dynamics::BoxShape>(2.0 * shape.halfExtents);
+    case sx::CollisionShapeType::Mesh: {
+      auto mesh = std::make_shared<math::TriMesh<double>>();
+      const math::TriMesh<double>::Vertices vertices(
+          shape.vertices.begin(), shape.vertices.end());
+      math::TriMesh<double>::Triangles triangles;
+      triangles.reserve(shape.triangles.size());
+      for (const Eigen::Vector3i& triangle : shape.triangles) {
+        triangles.emplace_back(
+            static_cast<std::size_t>(triangle[0]),
+            static_cast<std::size_t>(triangle[1]),
+            static_cast<std::size_t>(triangle[2]));
+      }
+      mesh->setTriangles(vertices, triangles);
+      return std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d::Ones(), std::move(mesh));
+    }
   }
   return std::make_shared<dynamics::SphereShape>(0.25);
 }
