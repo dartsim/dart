@@ -50,6 +50,7 @@
 #include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp"
+#include "dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -75,6 +76,7 @@
 namespace dart::simulation::experimental::compute {
 
 namespace dc = dart::simulation::experimental::detail::deformable_contact;
+namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
 
 namespace {
 
@@ -759,6 +761,12 @@ struct DeformableContactSolverScratch
   std::vector<int> newtonPatternOuter;
   std::vector<int> newtonPatternInner;
   bool newtonPatternValid = false;
+
+  // Cached per-tetrahedron FEM rest shapes (inverse rest edge matrix + rest
+  // volume). The rest configuration never changes, so these are computed once
+  // (when the cached count first matches the body's tetrahedron count) and
+  // reused every step instead of re-inverting each tet's rest edges per step.
+  std::vector<fem::TetRestShape> femRestShapes;
 };
 
 //==============================================================================
@@ -2747,6 +2755,60 @@ std::size_t accumulateContactDistanceDiagnostics(
 }
 
 //==============================================================================
+// Stable neo-Hookean FEM elasticity inputs. When non-null (opt-in via
+// DeformableMaterial.useFiniteElementElasticity), each tetrahedron contributes
+// a volumetric strain energy/gradient/Hessian instead of the mass-spring edge
+// model. Null preserves the spring objective exactly.
+struct FemElasticityInputs
+{
+  const std::vector<comps::DeformableTetrahedron>* tetrahedra = nullptr;
+  const std::vector<fem::TetRestShape>* restShapes = nullptr;
+  fem::LameParameters lame;
+};
+
+// Adds the stable neo-Hookean strain energy/gradient over every valid
+// tetrahedron, scattering each element's 12-vector force gradient into its four
+// nodes (fixed nodes receive no gradient, like the spring term).
+double addFemElasticityEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const FemElasticityInputs& inputs,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (inputs.tetrahedra == nullptr || inputs.restShapes == nullptr) {
+    return 0.0;
+  }
+  const auto& tets = *inputs.tetrahedra;
+  const auto& rests = *inputs.restShapes;
+  const std::size_t count = std::min(tets.size(), rests.size());
+  double energy = 0.0;
+  for (std::size_t t = 0; t < count; ++t) {
+    const auto& tet = tets[t];
+    const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
+        positions[tet.nodeA],
+        positions[tet.nodeB],
+        positions[tet.nodeC],
+        positions[tet.nodeD],
+        rests[t],
+        inputs.lame,
+        /*computeHessian=*/false);
+    if (!element.valid) {
+      continue;
+    }
+    energy += element.energy;
+    if (gradient != nullptr) {
+      const std::array<std::size_t, 4> nodes
+          = {tet.nodeA, tet.nodeB, tet.nodeC, tet.nodeD};
+      for (int i = 0; i < 4; ++i) {
+        if (fixed[nodes[i]] == 0u) {
+          (*gradient)[nodes[i]] += element.gradient.segment<3>(3 * i);
+        }
+      }
+    }
+  }
+  return energy;
+}
+
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -2760,7 +2822,8 @@ double evaluateDeformableObjective(
     const SelfContactBarrierInputs* contactBarrier = nullptr,
     std::size_t* barrierActiveContacts = nullptr,
     const GroundFrictionInputs* groundFriction = nullptr,
-    const SelfContactFrictionInputs* selfContactFriction = nullptr)
+    const SelfContactFrictionInputs* selfContactFriction = nullptr,
+    const FemElasticityInputs* femElasticity = nullptr)
 {
   if (gradient != nullptr) {
     if (gradient->size() != positions.size()) {
@@ -2806,6 +2869,10 @@ double evaluateDeformableObjective(
     }
   }
 
+  if (femElasticity != nullptr) {
+    energy
+        += addFemElasticityEnergy(positions, fixed, *femElasticity, gradient);
+  }
   energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
   energy += addSphereObstacleBarrierEnergy(
       positions, fixed, sphereObstacles, gradient);
@@ -3409,6 +3476,7 @@ bool computeProjectedNewtonDirection(
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
     const SelfContactFrictionInputs* selfContactFriction,
+    const FemElasticityInputs* femElasticity,
     const double timeStep,
     const std::vector<Eigen::Vector3d>& gradient,
     std::vector<Eigen::Vector3d>& direction,
@@ -3530,6 +3598,53 @@ bool computeProjectedNewtonDirection(
       for (int bj = 0; bj < 2; ++bj) {
         addBlock3(
             nodes[bi], nodes[bj], edgeHessian.block<3, 3>(3 * bi, 3 * bj));
+      }
+    }
+  }
+
+  // Stable neo-Hookean FEM elasticity Hessian per tetrahedron, PSD-projected
+  // over its 12x12 block through the same batched seam as the spring and
+  // barrier blocks. Null femElasticity (the default mass-spring path) skips
+  // this entirely, so spring bodies assemble exactly as before.
+  if (femElasticity != nullptr && femElasticity->tetrahedra != nullptr
+      && femElasticity->restShapes != nullptr) {
+    const auto& tets = *femElasticity->tetrahedra;
+    const auto& rests = *femElasticity->restShapes;
+    const std::size_t tetCount = std::min(tets.size(), rests.size());
+    constexpr std::size_t kTetBlockEntries = 144; // 12x12
+    std::vector<double> tetBlocks;
+    std::vector<std::array<std::size_t, 4>> tetBlockNodes;
+    tetBlocks.reserve(kTetBlockEntries * tetCount);
+    tetBlockNodes.reserve(tetCount);
+    for (std::size_t t = 0; t < tetCount; ++t) {
+      const auto& tet = tets[t];
+      const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
+          positions[tet.nodeA],
+          positions[tet.nodeB],
+          positions[tet.nodeC],
+          positions[tet.nodeD],
+          rests[t],
+          femElasticity->lame,
+          /*computeHessian=*/true);
+      if (!element.valid) {
+        continue;
+      }
+      const std::size_t offset = tetBlocks.size();
+      tetBlocks.resize(offset + kTetBlockEntries);
+      Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>(
+          tetBlocks.data() + offset) = element.hessian;
+      tetBlockNodes.push_back({tet.nodeA, tet.nodeB, tet.nodeC, tet.nodeD});
+    }
+    projectSymmetricBlocksToPsd(tetBlocks.data(), 12, tetBlockNodes.size());
+    for (std::size_t b = 0; b < tetBlockNodes.size(); ++b) {
+      const Eigen::Map<const Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>
+          projected(tetBlocks.data() + b * kTetBlockEntries);
+      const auto& nodes = tetBlockNodes[b];
+      for (int bi = 0; bi < 4; ++bi) {
+        for (int bj = 0; bj < 4; ++bj) {
+          addBlock3(
+              nodes[bi], nodes[bj], projected.block<3, 3>(3 * bi, 3 * bj));
+        }
       }
     }
   }
@@ -3828,12 +3943,43 @@ void advanceDeformableBody(
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
-    double frictionCoefficient,
+    const comps::DeformableMaterial& material,
     DeformableSolverStats& stats)
 {
   const auto nodeCount = state.positions.size();
   if (nodeCount == 0) {
     return;
+  }
+
+  const double frictionCoefficient = material.frictionCoefficient;
+
+  // Opt-in stable neo-Hookean FEM elasticity. Each tetrahedron's rest shape is
+  // computed once and cached in the per-entity scratch (the rest configuration
+  // never changes), then reused every step; the inputs are passed by pointer
+  // into the objective and projected-Newton assembly, replacing the mass-spring
+  // edge model for this body. Null (the default) leaves the spring path
+  // byte-identical.
+  FemElasticityInputs femElasticity;
+  const FemElasticityInputs* femElasticityPtr = nullptr;
+  if (material.useFiniteElementElasticity && !topology.tetrahedra.empty()
+      && topology.restPositions.size() == nodeCount) {
+    if (contactScratch.femRestShapes.size() != topology.tetrahedra.size()) {
+      contactScratch.femRestShapes.clear();
+      contactScratch.femRestShapes.reserve(topology.tetrahedra.size());
+      for (const auto& tet : topology.tetrahedra) {
+        contactScratch.femRestShapes.push_back(
+            fem::makeTetRestShape(
+                topology.restPositions[tet.nodeA],
+                topology.restPositions[tet.nodeB],
+                topology.restPositions[tet.nodeC],
+                topology.restPositions[tet.nodeD]));
+      }
+    }
+    femElasticity.tetrahedra = &topology.tetrahedra;
+    femElasticity.restShapes = &contactScratch.femRestShapes;
+    femElasticity.lame
+        = fem::lameParameters(material.youngsModulus, material.poissonRatio);
+    femElasticityPtr = &femElasticity;
   }
 
   stats.nodeCount += nodeCount;
@@ -3876,7 +4022,8 @@ void advanceDeformableBody(
 
   if (model.edges.empty() && barriers.empty() && sphereObstacles.empty()
       && rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty()
-      && contactScratch.surfaceTriangles.empty()) {
+      && contactScratch.surfaceTriangles.empty()
+      && femElasticityPtr == nullptr) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
         scratch.next[i] = scratch.inertialTargets[i];
@@ -3979,7 +4126,8 @@ void advanceDeformableBody(
           &contactBarrier,
           &stats.selfContactBarrierActiveContacts,
           &groundFriction,
-          &selfContactFriction);
+          &selfContactFriction,
+          femElasticityPtr);
       if (!std::isfinite(energy)) {
         brokeEarly = true;
         break;
@@ -4093,7 +4241,8 @@ void advanceDeformableBody(
                 &contactBarrier,
                 nullptr,
                 &groundFriction,
-                &selfContactFriction);
+                &selfContactFriction,
+                femElasticityPtr);
             if (std::isfinite(candidateEnergy)
                 && candidateEnergy <= energy + armijo * directionalDerivative) {
               // Record the accepted step's infinity norm (the actual per-node
@@ -4141,6 +4290,7 @@ void advanceDeformableBody(
           &contactBarrier,
           &groundFriction,
           &selfContactFriction,
+          femElasticityPtr,
           timeStep,
           scratch.gradient,
           scratch.direction,
@@ -4239,7 +4389,8 @@ void advanceDeformableBody(
           &terminalBarrier,
           nullptr,
           &terminalGroundFriction,
-          &terminalSelfContactFriction);
+          &terminalSelfContactFriction,
+          femElasticityPtr);
       if (std::isfinite(terminalEnergy)) {
         lastGradSquared
             = gradientNormSquared(scratch.gradient, scratch.activeFixed);
@@ -4764,7 +4915,7 @@ void DeformableDynamicsStage::execute(
         timeStep,
         barriers,
         sphereObstacles,
-        material.frictionCoefficient,
+        material,
         m_lastStats);
   }
 }

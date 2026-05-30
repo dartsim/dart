@@ -756,6 +756,113 @@ TEST(DeformableBody, FreeParticleMatchesImplicitEulerTargetForDifferentMasses)
 }
 
 //==============================================================================
+// A single-tetrahedron body that opts in to stable neo-Hookean FEM elasticity
+// (no spring edges, so elasticity comes entirely from the FEM term).
+sx::DeformableBodyOptions makeFemTetrahedronBody(double youngsModulus = 1.0e5)
+{
+  sx::DeformableBodyOptions options = makeSingleTetrahedronBody();
+  options.material.youngsModulus = youngsModulus;
+  options.material.poissonRatio = 0.3;
+  options.material.useFiniteElementElasticity = true;
+  options.fixedNodes = {0};
+  return options;
+}
+
+//==============================================================================
+// With FEM elasticity opted in, a tetrahedron pinned at one node hangs from
+// that node and settles at a bounded deflection under gravity: the stiff
+// material resists deformation, so the free nodes do not run away. The same
+// body WITHOUT FEM (and without spring edges) has no elastic force, so its free
+// nodes free-fall far below. The large gap between the two is the FEM term
+// doing work, and confirms it is strictly opt-in.
+TEST(DeformableBody, FemTetrahedronResistsGravityWhereSpringlessBodyFreeFalls)
+{
+  const auto runFreeNodeDrop = [](bool useFem) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    sx::DeformableBodyOptions options = makeSingleTetrahedronBody();
+    options.fixedNodes = {0};
+    options.material.useFiniteElementElasticity = useFem;
+    auto body = world.addDeformableBody("tet", options);
+    world.step(200);
+    // Node 0 is pinned in both cases.
+    EXPECT_LT((body.getPosition(0) - Eigen::Vector3d::Zero()).norm(), 1e-9);
+    double minZ = 0.0;
+    for (int i = 1; i < 4; ++i) {
+      minZ = std::min(minZ, body.getPosition(i).z());
+      EXPECT_TRUE(body.getPosition(i).allFinite());
+    }
+    return minZ;
+  };
+
+  const double femMinZ = runFreeNodeDrop(/*useFem=*/true);
+  const double springlessMinZ = runFreeNodeDrop(/*useFem=*/false);
+
+  // FEM holds the hanging tetrahedron near its rest extent ...
+  EXPECT_GT(femMinZ, -3.0);
+  // ... while without any elastic force the free nodes have fallen far.
+  EXPECT_LT(springlessMinZ, -15.0);
+  EXPECT_LT(springlessMinZ, femMinZ - 10.0);
+}
+
+//==============================================================================
+// At its rest shape with no external load, a FEM tetrahedron stores zero strain
+// energy and exerts zero force, so it stays put across many steps.
+TEST(DeformableBody, FemTetrahedronIsStationaryAtRest)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+  auto body = world.addDeformableBody("fem_rest", makeFemTetrahedronBody());
+
+  world.step(25);
+
+  expectVectorNear(body.getPosition(0), Eigen::Vector3d::Zero());
+  expectVectorNear(body.getPosition(1), Eigen::Vector3d::UnitX());
+  expectVectorNear(body.getPosition(2), Eigen::Vector3d::UnitY());
+  expectVectorNear(body.getPosition(3), Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+// A FEM tetrahedron given an initial outward velocity on a free node is pulled
+// back toward its rest shape by the elastic restoring force, and the implicit
+// solve dissipates the motion so it settles near rest rather than diverging.
+// A softer material keeps the transient displacement clearly visible.
+TEST(DeformableBody, FemTetrahedronRestoresStretchedNodeTowardRest)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  auto options = makeFemTetrahedronBody(/*youngsModulus=*/1.0e3);
+  options.fixedNodes = {0, 1, 2};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, 10.0)};
+  auto body = world.addDeformableBody("fem_stretch", options);
+
+  // The driven node is clearly displaced from its rest position (z = 1) by the
+  // initial velocity before the elastic force arrests it.
+  double peakDisplacement = 0.0;
+  for (int step = 0; step < 60; ++step) {
+    world.step();
+    peakDisplacement
+        = std::max(peakDisplacement, std::abs(body.getPosition(3).z() - 1.0));
+    EXPECT_TRUE(body.getPosition(3).allFinite());
+  }
+  EXPECT_GT(peakDisplacement, 0.02);
+
+  // After many steps the elastic restoring force + implicit dissipation settle
+  // the free node back near its rest position (0, 0, 1); a body with no elastic
+  // force would never return.
+  world.step(400);
+  EXPECT_TRUE(body.getPosition(3).allFinite());
+  expectVectorNear(body.getPosition(3), Eigen::Vector3d(0.0, 0.0, 1.0), 5e-2);
+}
+
+//==============================================================================
 TEST(DeformableBody, StepCountWithExecutorRunsDefaultDeformableStage)
 {
   sx::World world;
