@@ -245,6 +245,7 @@ private:
     io::writePOD(output, component.frictionCoefficient);
     io::writePOD(output, component.useFiniteElementElasticity);
     io::writePOD(output, component.useFixedCorotationalElasticity);
+    io::writePOD(output, component.useAdaptiveBarrierStiffness);
   }
 
   void loadComponent(
@@ -256,6 +257,7 @@ private:
     io::readPOD(input, component.frictionCoefficient);
     io::readPOD(input, component.useFiniteElementElasticity);
     io::readPOD(input, component.useFixedCorotationalElasticity);
+    io::readPOD(input, component.useAdaptiveBarrierStiffness);
   }
 };
 
