@@ -68,50 +68,70 @@ void throwIfCudaError(cudaError_t status, std::string_view operation)
       cudaGetErrorString(status));
 }
 
-class DeviceDoubleBuffer
+// A device buffer that persists across projection calls. It reuses its
+// allocation whenever the requested element count fits the current capacity and
+// only reallocates (and frees the old storage) when a larger batch arrives, so
+// the per-call cudaMalloc/cudaFree round trip is removed from the solver's
+// projected-Newton hot path. Single-threaded use only (the PSD backend is a
+// process-global function pointer driven by the sequential deformable stage).
+class ResidentDeviceBuffer
 {
 public:
-  explicit DeviceDoubleBuffer(std::size_t count) : m_count(count)
-  {
-    if (m_count == 0) {
-      return;
-    }
+  ResidentDeviceBuffer() = default;
 
+  ~ResidentDeviceBuffer()
+  {
+    release();
+  }
+
+  ResidentDeviceBuffer(const ResidentDeviceBuffer&) = delete;
+  ResidentDeviceBuffer& operator=(const ResidentDeviceBuffer&) = delete;
+
+  // Returns device storage for at least `count` doubles, reusing the existing
+  // allocation when it is already large enough.
+  [[nodiscard]] double* ensure(std::size_t count)
+  {
+    if (count <= m_capacity) {
+      return m_data;
+    }
+    release();
     throwIfCudaError(
-        cudaMalloc(reinterpret_cast<void**>(&m_data), m_count * sizeof(double)),
+        cudaMalloc(reinterpret_cast<void**>(&m_data), count * sizeof(double)),
         "allocation");
-  }
-
-  ~DeviceDoubleBuffer()
-  {
-    if (m_data != nullptr) {
-      (void)cudaFree(m_data);
-    }
-  }
-
-  DeviceDoubleBuffer(const DeviceDoubleBuffer&) = delete;
-  DeviceDoubleBuffer& operator=(const DeviceDoubleBuffer&) = delete;
-
-  [[nodiscard]] double* data() noexcept
-  {
+    m_capacity = count;
+    ++m_allocationCount;
     return m_data;
   }
 
-  [[nodiscard]] std::size_t byteSize() const noexcept
+  void release() noexcept
   {
-    return m_count * sizeof(double);
+    if (m_data != nullptr) {
+      (void)cudaFree(m_data);
+      m_data = nullptr;
+    }
+    m_capacity = 0;
+  }
+
+  [[nodiscard]] std::size_t allocationCount() const noexcept
+  {
+    return m_allocationCount;
   }
 
 private:
   double* m_data = nullptr;
-  std::size_t m_count = 0;
+  std::size_t m_capacity = 0;
+  std::size_t m_allocationCount = 0;
 };
 
-std::size_t validateBlocks(
-    const std::vector<double>& blocks,
-    std::size_t dimension,
-    std::size_t blockCount,
-    std::string_view operation)
+// The resident device buffer reused across GPU projections (a function-local
+// static so it is constructed on first use and torn down at exit).
+ResidentDeviceBuffer& residentDeviceBuffer()
+{
+  static ResidentDeviceBuffer buffer;
+  return buffer;
+}
+
+void validateDimension(std::size_t dimension, std::string_view operation)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       dimension == 0 || dimension > kMaxPsdBlockDimension,
@@ -120,6 +140,15 @@ std::size_t validateBlocks(
       operation,
       dimension,
       kMaxPsdBlockDimension);
+}
+
+void validateBlocks(
+    const std::vector<double>& blocks,
+    std::size_t dimension,
+    std::size_t blockCount,
+    std::string_view operation)
+{
+  validateDimension(dimension, operation);
 
   const auto expected = dimension * dimension * blockCount;
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -132,8 +161,40 @@ std::size_t validateBlocks(
       dimension,
       dimension,
       blocks.size());
+}
 
-  return expected;
+// In-place GPU PSD projection over a raw packed block buffer, reusing the
+// resident device buffer. Validates the dimension and device availability; the
+// caller owns the element-count bookkeeping (so this serves both the public
+// std::vector overload and the backend adapter without an extra host copy).
+void projectSymmetricBlocksToPsdCudaInPlace(
+    double* blocks, std::size_t dimension, std::size_t blockCount)
+{
+  validateDimension(dimension, "projectSymmetricBlocksToPsdCuda");
+  if (blocks == nullptr || blockCount == 0) {
+    return;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isCudaRuntimeAvailable(),
+      sx::InvalidOperationException,
+      "CUDA runtime has no available device");
+
+  const std::size_t count = dimension * dimension * blockCount;
+  const std::size_t byteSize = count * sizeof(double);
+  double* device = residentDeviceBuffer().ensure(count);
+
+  throwIfCudaError(
+      cudaMemcpy(device, blocks, byteSize, cudaMemcpyHostToDevice),
+      "PSD block copy to device");
+  throwIfCudaError(
+      detail::launchProjectSymmetricBlocksToPsdKernel(
+          device, dimension, blockCount),
+      "PSD projection kernel");
+  throwIfCudaError(cudaDeviceSynchronize(), "PSD projection synchronize");
+  throwIfCudaError(
+      cudaMemcpy(blocks, device, byteSize, cudaMemcpyDeviceToHost),
+      "PSD block copy from device");
 }
 
 } // namespace
@@ -178,34 +239,7 @@ void projectSymmetricBlocksToPsdCuda(
   if (blockCount == 0) {
     return;
   }
-
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !isCudaRuntimeAvailable(),
-      sx::InvalidOperationException,
-      "CUDA runtime has no available device");
-
-  DeviceDoubleBuffer deviceBlocks(blocks.size());
-  throwIfCudaError(
-      cudaMemcpy(
-          deviceBlocks.data(),
-          blocks.data(),
-          deviceBlocks.byteSize(),
-          cudaMemcpyHostToDevice),
-      "PSD block copy to device");
-
-  throwIfCudaError(
-      detail::launchProjectSymmetricBlocksToPsdKernel(
-          deviceBlocks.data(), dimension, blockCount),
-      "PSD projection kernel");
-  throwIfCudaError(cudaDeviceSynchronize(), "PSD projection synchronize");
-
-  throwIfCudaError(
-      cudaMemcpy(
-          blocks.data(),
-          deviceBlocks.data(),
-          deviceBlocks.byteSize(),
-          cudaMemcpyDeviceToHost),
-      "PSD block copy from device");
+  projectSymmetricBlocksToPsdCudaInPlace(blocks.data(), dimension, blockCount);
 }
 
 namespace {
@@ -231,10 +265,10 @@ void cudaPsdBackendAdapter(
     projectSymmetricBlocksToPsdCpu(blocks, dimension, blockCount);
     return;
   }
-  std::vector<double> buffer(
-      blocks, blocks + dimension * dimension * blockCount);
-  projectSymmetricBlocksToPsdCuda(buffer, dimension, blockCount);
-  std::copy(buffer.begin(), buffer.end(), blocks);
+  // Project in place on the caller's packed buffer through the resident device
+  // buffer, so the offload adds no per-call host allocation or device
+  // malloc/free -- only the host<->device copies the data movement requires.
+  projectSymmetricBlocksToPsdCudaInPlace(blocks, dimension, blockCount);
 }
 
 } // namespace
@@ -249,6 +283,14 @@ void installCudaDeformablePsdBackend()
 void restoreDefaultDeformablePsdBackend()
 {
   setDeformablePsdBlockProjector(nullptr);
+  // Free the device scratch when the GPU backend is uninstalled.
+  residentDeviceBuffer().release();
+}
+
+//==============================================================================
+std::size_t deformablePsdResidentBufferAllocationCount() noexcept
+{
+  return residentDeviceBuffer().allocationCount();
 }
 
 } // namespace dart::simulation::experimental::compute::cuda
