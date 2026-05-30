@@ -1070,6 +1070,21 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added a capsule (rod/wire) collision shape and a static **capsule obstacle
+    barrier** for the experimental deformable solver (PLAN-081 M3 codimensional
+    collision objects). `CollisionShape::makeCapsule(radius, halfHeight)` adds a
+    `Capsule` shape type (a body-z-axis segment swept by a radius; exposed to
+    dartpy as `CollisionShape.capsule`). A static capsule opted in as a
+    deformable obstacle exerts the same clamped-log barrier (energy, gradient,
+    and rank-1 radial Hessian) as the sphere/box obstacles, with the surface
+    distance and outward normal taken from the analytic point-to-segment closest
+    point (`|node - closestOnAxis| - radius`). Unlike the sphere/box surface-CCD
+    obstacles the capsule is barrier-only, so a connected sheet drapes over it
+    freely. Adds a `CapsuleObstacleBarrierRepelsNodeRadially` solver regression,
+    a draped-cloth intersection-free regression, and a `Deformable Cloth over
+Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
+    toward the paper's Fig. 18 codimensional-roller theme). The native collision
+    engine approximates a capsule by its bounding box for rigid-rigid queries.
   - Added `.seg` (segment) and `.pt` (point) codimensional-geometry importers
     (PLAN-081 M3 asset pipeline), completing the experimental importer set
     alongside `.msh` (tets) and `.obj` (triangles).

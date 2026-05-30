@@ -479,7 +479,8 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
-      .value("BOX", sim::CollisionShapeType::Box);
+      .value("BOX", sim::CollisionShapeType::Box)
+      .value("CAPSULE", sim::CollisionShapeType::Capsule);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
       .def_static("sphere", &sim::CollisionShape::makeSphere, nb::arg("radius"))
@@ -489,6 +490,11 @@ void defSimulationExperimentalModule(nb::module_& m)
             return sim::CollisionShape::makeBox(toVector3(halfExtents));
           },
           nb::arg("half_extents"))
+      .def_static(
+          "capsule",
+          &sim::CollisionShape::makeCapsule,
+          nb::arg("radius"),
+          nb::arg("half_height"))
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
