@@ -1004,6 +1004,15 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     time about 7x (to near stable-neo-Hookean parity at equal mesh resolution)
     while leaving the energy, gradient, and settled solution unchanged (every
     fixed-corotational kernel and solver test still passes).
+  - Added a `newton_iters_per_step` counter to the `BM_DeformableFemBarStep` and
+    `BM_DeformableFcrBarStep` benchmarks (averaged from the per-step solver
+    diagnostics), surfacing the projected-Newton iteration count -- the
+    convergence axis the IPC paper's Table 1 reports -- alongside the wall-clock
+    per-step time. It quantifies the exact fixed-corotational Hessian's
+    convergence: both materials now take ~5-6 Newton iterations per step at
+    matching mesh resolution, confirming the exact curvature brought
+    fixed-corotational convergence to stable-neo-Hookean parity (the earlier
+    Gauss-Newton form's slowness was extra iterations, not per-iteration cost).
   - Exposed a read-only `DeformableSolverDiagnostics` snapshot of the deformable
     solver's per-step statistics on the experimental `World`
     (`World::getLastDeformableSolverDiagnostics`, dartpy
