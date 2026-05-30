@@ -347,4 +347,19 @@ overshoots before the body can move). Verified
   reduced-coordinate glue already built. The C1-C3 rungs cover
   link-point-vs-analytic-ground; arbitrary link-geometry pairs need this adapter,
   coordinated with PLAN-082-rigid-implicit-barrier-contact / PLAN-081.
-- A **contact GUI demo** scene (now unblocked — friction has landed).
+- **World-surface productionization + a contact GUI demo.** C1-C3 are
+  compute-layer (the contact hook is a parameter to `integrateMultibodyVariational`,
+  built in tests); the World step does not yet wire them. The demo needs them
+  reachable from `World::step()`. Scoped wiring (mirrors the loop-closure path):
+  (1) a per-multibody contact-config **component** (plane + `k`/μ/ε/`c` + contact
+  points by link index); (2) `Multibody::setGroundContact(...)` /
+  `addGroundContactPoint(link, localPoint)` handle methods; (3) in
+  `MultibodyVariationalIntegrationStage::execute`, `try_get` the component, build
+  `VariationalGroundContact` (mapping link entity → structure index like the
+  loop-closure `indexOf`), and pass `makeVariationalGroundContactHook(...)` (for
+  C3, hold the `VariationalGroundContactSolver` per multibody and call
+  `updateDuals` after each step); (4) dartpy bindings; (5) a Python demo scene +
+  smoke test. **Convention note:** a serialized `Property` component must be
+  registered in `io/serializer.cpp` with a `kBinaryFormatVersion` bump (the
+  serializer enumerates components explicitly), so this is a focused,
+  review-worthy change rather than a quick add.
