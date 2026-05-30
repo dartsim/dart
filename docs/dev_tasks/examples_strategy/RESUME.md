@@ -9,13 +9,14 @@ A/B/C C++ ports; a cross-language golden parity smoke runs in both languages
 against shared fixtures (3 scenes wired); and a notebook gallery seed lives
 in `python/tutorials/`. C++ `dart-demos` (PLAN-102) remains frozen-but-present.
 
-Branch `examples-strategy-breadth` adds 9 more Python scenes
+Branch `examples-strategy-breadth` adds 10 more Python scenes
 (`hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`, `vehicle`,
 `biped_stand`, `experimental_rigid_body_gui`, `collision_sandbox`,
-`joint_constraints`) plus `HeightmapShape` / `PointCloudShape` dartpy
-shape bindings and `BodyNode::{addExtForce, setExtForce,
-clearExternalForces}` + `Skeleton::{getConstraintForces, getCOM,
-clearExternalForces}` bindings that unblock the SPD biped controllers.
+`joint_constraints`, `drag_and_drop`) plus `HeightmapShape` /
+`PointCloudShape` dartpy shape bindings and
+`BodyNode::{addExtForce, setExtForce, clearExternalForces}` +
+`Skeleton::{getConstraintForces, getCOM, clearExternalForces}` bindings
+that unblock the SPD biped controllers.
 
 ## Current Branch
 
@@ -34,20 +35,21 @@ clearExternalForces}` bindings that unblock the SPD biped controllers.
 Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
 
 1. **Grow Python breadth toward C++ coverage.** The Python runner now hosts
-   38 of 41 C++ scenes (93 %). Branch `examples-strategy-breadth` added 9
+   39 of 41 C++ scenes (95 %). Branch `examples-strategy-breadth` added 10
    more ports (`hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`,
    `vehicle`, `biped_stand`, `experimental_rigid_body_gui`,
-   `collision_sandbox`, `joint_constraints`) and the
+   `collision_sandbox`, `joint_constraints`, `drag_and_drop`) and the
    `HeightmapShape`/`PointCloudShape` shape bindings plus
    `BodyNode::{addExtForce, setExtForce, clearExternalForces}` and
    `Skeleton::{getConstraintForces, getCOM, clearExternalForces}` bindings
    that unlocked the SPD biped controller scenes. The remaining C++ scenes
    need new bindings or controller infrastructure that is out of scope for a
    pure Python port:
-   - **Viewer-callback / interactive UI** — `drag_and_drop`, `imgui`,
-     `tinkertoy`, `simulation_event_handler`. Need Python bindings for
+   - **Viewer-callback / interactive UI** — `imgui`, `tinkertoy`,
+     `simulation_event_handler`. Need Python bindings for
      `dart::gui::KeyboardAction`, gizmo callbacks, and event handlers
-     threaded through `ApplicationOptions`.
+     threaded through `ApplicationOptions`. (`drag_and_drop` ships as a
+     static frame-parenting demo without the gizmo handle.)
    - **Custom `ConstraintBase` subclass** — `human_joint_limits`. Needs a
      trampoline binding for `dart::constraint::ConstraintBase` so a
      `NeuralJointLimitConstraint` analogue can be written in Python.

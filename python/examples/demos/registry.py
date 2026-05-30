@@ -17,6 +17,7 @@ from .scenes.cartpole_gym_env import SCENE as CARTPOLE_GYM_ENV
 from .scenes.cartpole_mpc import SCENE as CARTPOLE_MPC
 from .scenes.collision_sandbox import SCENE as COLLISION_SANDBOX
 from .scenes.coupler_constraint import SCENE as COUPLER_CONSTRAINT
+from .scenes.drag_and_drop import SCENE as DRAG_AND_DROP
 from .scenes.empty import SCENE as EMPTY
 from .scenes.experimental_rigid_body_gui import SCENE as EXPERIMENTAL_RIGID_BODY_GUI
 from .scenes.free_joint_cases import SCENE as FREE_JOINT_CASES
@@ -58,6 +59,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         POLYHEDRON_VISUAL,
         HEIGHTMAP,
         POINT_CLOUD,
+        DRAG_AND_DROP,
         # Rigid Body
         BOXES,
         RIGID_CHAIN,
