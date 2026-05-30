@@ -42,6 +42,13 @@ permissions:
 jobs:
   cuda-build:
     name: CUDA Build
+    # Security: `ubuntu-latest-gpu` is a long-lived self-hosted runner. Never run
+    # untrusted fork-PR code on it. Run only for push/workflow_dispatch, or for
+    # pull requests whose head is a branch in THIS repository (not a fork);
+    # fork PRs skip the CUDA job rather than executing on self-hosted hardware.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     # Runs on the self-hosted GPU runner (label `ubuntu-latest-gpu`) so CUDA
     # targets are built AND executed against a real NVIDIA GPU. General jobs use
     # the `ubuntu-latest` self-hosted runners; only CUDA work is routed here.
