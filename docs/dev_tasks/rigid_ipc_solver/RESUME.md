@@ -213,14 +213,21 @@ friction braking, stable settling) instead of freezing. This unblocks
 sliding/friction/stacking demos and the contact corpus.
 
 Next slices, in rough priority:
-1. DONE: clean `pixi run build` (urdfdom 5.1 relink) restored dartpy; the
-   `sx_rigid_ipc` drop demo settles stably (z 0.6 -> 0.2503, last-100-step span
-   1.3e-5, gap > 0, no mid-air freeze); added + verified the `sx_rigid_ipc_slide`
-   friction-slide GUI demo (box advances ~0.44 m and brakes from 2.0 m/s to rest
-   with a positive gap). Both green in the demos-cycle smoke.
-2. Multi-body and body-body (not just body-ground) contact-dynamics regressions;
-   resting/stacking convergence. (Adversarial review flagged body-body as
-   untested; the per-body bbox/mass adaptive-stiffness inputs still apply.)
+
+1. DONE: clean `pixi run build` (urdfdom 5.1 relink) restored dartpy. Expanded
+   the rigid IPC py-demos suite to eight Experimental-category scenes, each
+   verified (per-scene trajectory check + demos-cycle smoke): `sx_rigid_ipc`
+   (box drop), `sx_rigid_ipc_sphere` (sphere drop), `sx_rigid_ipc_slide`
+   (friction slide), `sx_rigid_ipc_incline` (slope friction), `sx_rigid_ipc_stack`
+   (3-box stack), `sx_rigid_ipc_sphere_box` (curved body-body), `sx_rigid_ipc_pile`
+   (boxes into a pile), and `sx_rigid_ipc_tunnel` (no-tunneling / intersection-free
+   guarantee). Articulated/jointed paper scenes (chains, mechanisms, octopus,
+   pendulums, compactors) are NOT yet demoable: the rigid IPC stage handles only
+   free rigid bodies (box/sphere/mesh), no joints.
+2. DONE (body-body): `RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration`
+   C++ regression + the `sx_rigid_ipc_stack`/`_pile`/`_sphere_box` demos confirm
+   multiple dynamic bodies and body-body contact settle stably. Remaining:
+   resting/stacking convergence corpus + rotational-settling coverage.
 3. Continue Phase 4 (broader runtime friction fixture behavior) and Phase 2
    (rigorous interval CCD + corpus parity).
 

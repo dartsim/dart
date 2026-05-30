@@ -941,6 +941,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     equilibrium (simultaneous body-ground and body-body barriers, a single
     scene-level adaptive kappa) instead of freezing, interpenetrating, or
     separating.
+  - Expanded the rigid IPC py-demos suite (Experimental category) with six more
+    scenes covering the solver's contact-dynamics capabilities, each verified to
+    settle/slide/stop correctly (no freeze, penetration, or explosion):
+    `sx_rigid_ipc_sphere` (curved shape drop), `sx_rigid_ipc_incline` (friction
+    on a tilted ramp), `sx_rigid_ipc_stack` (a three-box stack), `sx_rigid_ipc_sphere_box`
+    (curved body-body contact), `sx_rigid_ipc_pile` (boxes dropped into a pile),
+    and `sx_rigid_ipc_tunnel` (a fast box stopped dead by a thin wall, showcasing
+    the intersection-free / no-tunneling guarantee).
   - Added internal experimental moving rigid box surface CCD limiting for free
     (non-static) deformable-surface CCD obstacles: the deformable stage predicts
     each obstacle's end-of-step transform from its velocity (mirroring the rigid
