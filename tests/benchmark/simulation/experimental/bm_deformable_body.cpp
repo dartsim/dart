@@ -42,6 +42,7 @@
 #include <benchmark/benchmark.h>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -170,6 +171,66 @@ sx::DeformableBodyOptions makeTetraMeshOptions(int tetrahedronCount)
     options.edges.push_back({base + 2u, base + 3u, -1.0});
   }
 
+  return options;
+}
+
+//==============================================================================
+// A connected FEM beam of ``cellsX`` hexahedral cells (each split into six
+// tetrahedra), pinned at its x == 0 face and opting in to stable neo-Hookean
+// FEM elasticity (no spring edges). Used to benchmark the FEM assembly + sparse
+// projected-Newton solve cost as the element count grows.
+sx::DeformableBodyOptions makeFemBarOptions(int cellsX)
+{
+  cellsX = std::max(cellsX, 1);
+  const int nx = cellsX + 1;
+  const int ny = 2;
+  const int nz = 2;
+  constexpr double h = 0.1;
+  const auto nodeIndex = [&](int i, int j, int k) {
+    return static_cast<std::size_t>(i + nx * (j + ny * k));
+  };
+
+  sx::DeformableBodyOptions options;
+  options.material.density = 1.0e3;
+  options.material.youngsModulus = 5.0e5;
+  options.material.poissonRatio = 0.3;
+  options.material.useFiniteElementElasticity = true;
+
+  for (int k = 0; k < nz; ++k) {
+    for (int j = 0; j < ny; ++j) {
+      for (int i = 0; i < nx; ++i) {
+        options.positions.push_back(Eigen::Vector3d(i * h, j * h, 1.0 + k * h));
+      }
+    }
+  }
+
+  static constexpr int kCubeTets[6][4]
+      = {{0, 1, 3, 7},
+         {0, 3, 2, 7},
+         {0, 2, 6, 7},
+         {0, 6, 4, 7},
+         {0, 4, 5, 7},
+         {0, 5, 1, 7}};
+  for (int ci = 0; ci < cellsX; ++ci) {
+    std::array<std::size_t, 8> corner{};
+    for (int b = 0; b < 8; ++b) {
+      corner[static_cast<std::size_t>(b)]
+          = nodeIndex(ci + (b & 1), (b >> 1) & 1, (b >> 2) & 1);
+    }
+    for (const auto& tet : kCubeTets) {
+      options.tetrahedra.push_back(
+          {corner[static_cast<std::size_t>(tet[0])],
+           corner[static_cast<std::size_t>(tet[1])],
+           corner[static_cast<std::size_t>(tet[2])],
+           corner[static_cast<std::size_t>(tet[3])]});
+    }
+  }
+
+  for (int k = 0; k < nz; ++k) {
+    for (int j = 0; j < ny; ++j) {
+      options.fixedNodes.push_back(nodeIndex(0, j, k));
+    }
+  }
   return options;
 }
 
@@ -862,6 +923,52 @@ void BM_DeformableTetraMeshStep(benchmark::State& state)
 }
 
 //==============================================================================
+struct DeformableFemBarWorld
+{
+  explicit DeformableFemBarWorld(int cellsX)
+  {
+    body = world.addDeformableBody("fem_bar", makeFemBarOptions(cellsX));
+    nodeCount = body.getNodeCount();
+    tetrahedronCount = body.getTetrahedronCount();
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      totalMass += body.getMass(i);
+    }
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(1.0 / 240.0);
+    world.enterSimulationMode();
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::size_t nodeCount = 0;
+  std::size_t tetrahedronCount = 0;
+  double totalMass = 0.0;
+};
+
+//==============================================================================
+// Steps a connected FEM beam (stable neo-Hookean elasticity) under gravity:
+// measures the per-step cost of the FEM energy/gradient/Hessian assembly plus
+// the sparse projected-Newton solve as the tetrahedron count grows.
+void BM_DeformableFemBarStep(benchmark::State& state)
+{
+  const auto cellsX = static_cast<int>(state.range(0));
+  DeformableFemBarWorld fixture(cellsX);
+
+  for (auto _ : state) {
+    fixture.world.step();
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableGridStage(benchmark::State& state)
 {
   const auto columns = static_cast<int>(state.range(0));
@@ -1327,6 +1434,8 @@ BENCHMARK(BM_DeformableGridStep)
 BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
+
+BENCHMARK(BM_DeformableFemBarStep)->Arg(2)->Arg(8)->Arg(24);
 
 // The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
 // dense-solve cap, so they exercise the sparse projected-Newton path; compare

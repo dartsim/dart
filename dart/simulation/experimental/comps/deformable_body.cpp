@@ -243,6 +243,7 @@ private:
     io::writePOD(output, component.youngsModulus);
     io::writePOD(output, component.poissonRatio);
     io::writePOD(output, component.frictionCoefficient);
+    io::writePOD(output, component.useFiniteElementElasticity);
   }
 
   void loadComponent(
@@ -252,6 +253,7 @@ private:
     io::readPOD(input, component.youngsModulus);
     io::readPOD(input, component.poissonRatio);
     io::readPOD(input, component.frictionCoefficient);
+    io::readPOD(input, component.useFiniteElementElasticity);
   }
 };
 
