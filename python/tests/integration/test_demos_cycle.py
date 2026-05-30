@@ -114,6 +114,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_drop",
         "ipc_deformable_fem_sphere",
         "ipc_deformable_fem_box",
+        "ipc_deformable_fem_msh",
         "ipc_deformable_scripted_dirichlet",
     }
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"

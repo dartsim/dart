@@ -23,6 +23,7 @@ from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
 from .scenes.ipc_deformable_fem_bar import SCENE as IPC_DEFORMABLE_FEM_BAR
 from .scenes.ipc_deformable_fem_box import SCENE as IPC_DEFORMABLE_FEM_BOX
 from .scenes.ipc_deformable_fem_drop import SCENE as IPC_DEFORMABLE_FEM_DROP
+from .scenes.ipc_deformable_fem_msh import SCENE as IPC_DEFORMABLE_FEM_MSH
 from .scenes.ipc_deformable_fem_sphere import SCENE as IPC_DEFORMABLE_FEM_SPHERE
 from .scenes.ipc_deformable_fem_twist import SCENE as IPC_DEFORMABLE_FEM_TWIST
 from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
@@ -106,5 +107,6 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FEM_DROP,
         IPC_DEFORMABLE_FEM_SPHERE,
         IPC_DEFORMABLE_FEM_BOX,
+        IPC_DEFORMABLE_FEM_MSH,
         IPC_DEFORMABLE_SCRIPTED,
     ]
