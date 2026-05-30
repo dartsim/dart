@@ -1092,6 +1092,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     (an FCR tetrahedron stationary at rest; restores a perturbed node toward
     rest) and a `Deformable FCR Twist (IPC)` py-demos scene (a tetrahedral bar
     twisted at both ends, untwisting under the fixed-corotational material).
+  - Added a `BM_DeformableFcrBarStep` per-step benchmark for the
+    fixed-corotational FEM material (mirroring `BM_DeformableFemBarStep` at the
+    same cell counts) so the two FEM materials' per-step solver cost can be
+    compared at matching mesh resolution -- the per-step-time axis of the IPC
+    paper's Fig. 23 / Table 1. Shares one polar-decomposition SVD per element
+    between the fixed-corotational energy and stress (the line search evaluates
+    both every probe), measurably cutting the per-step cost; the kernel math is
+    unchanged (all fixed-corotational tests still pass bit-for-bit). Adds a
+    closed-form fixed-corotational energy regression under a uniform scale
+    `F = c*I` (`3*mu*(c-1)^2 + (lambda/2)*(c^3-1)^2`), which pins the absolute
+    energy value that the finite-difference gradient test cannot.
   - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
     counter-rotated at both ends by opposing scripted Dirichlet boundary
     conditions, then released so the stable neo-Hookean core untwists
