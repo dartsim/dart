@@ -77,6 +77,15 @@ public:
     return button(label);
   }
 
+  /// Show a tooltip with `text` while the most recently added item (e.g. the
+  /// preceding `selectable`/`button`) is hovered. Lets list rows explain
+  /// themselves on hover (e.g. the demo catalog showing each scene's summary).
+  /// Default is a no-op for builders without hover support.
+  virtual void itemTooltip(std::string_view text)
+  {
+    (void)text;
+  }
+
   /// Push/pop a horizontal indent in points. Lets callers visually nest
   /// list items under a category heading (tree-style).
   virtual void indent(double width = 12.0)

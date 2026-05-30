@@ -168,15 +168,32 @@ Retire `examples/demos` (the C++ app), `pixi run demos`, and the
 `run_cpp_example.py` `demos` spec only when ALL hold. Current status (Phase 5
 explicit "not now"):
 
-1. **NOT MET (narrowed).** Python headless runner covers the breadth (≥ C++
-   pedagogical coverage). Today: **29 Python scenes vs 40 C++ scenes** (~73%).
-   The remaining C++-only scenes are heavyweight or interactive-only:
-   `heightmap`/`point_cloud` need `HeightmapShape`/`PointCloudShape` bindings;
-   the puppet/vehicle/biped/`hybrid_dynamics`/`joint_constraints`/
-   `human_joint_limits` scenes need full IK/controller subsystems;
-   `drag_and_drop`/`imgui`/`tinkertoy`/`simulation_event_handler` are
-   GUI-callback-only and out of scope for a headless runner. Closing this gate
-   is gradual, not a single follow-up.
+1. **NOT MET (largely closed).** Python headless runner covers the breadth (≥
+   C++ pedagogical coverage). Today: **46 Python scenes vs 41 C++ scenes**
+   (Python now exceeds C++ once the Python-first modern scenarios, the
+   IPC-deformable category, and the variational sx scenes are counted); on
+   the C++-set-only axis, **39 of 41 C++ scenes** (~95 %) have a Python
+   mirror. The remaining C++-only scenes fall into well-understood binding
+   gaps tracked outside this gate:
+   - **Viewer-callback / interactive UI** — `imgui`, `tinkertoy`,
+     `simulation_event_handler`. Need Python bindings for
+     `dart::gui::KeyboardAction`/Gizmo/event-handler callbacks threaded
+     through `ApplicationOptions`.
+   - **Custom `ConstraintBase` subclass** — `human_joint_limits`. Needs a
+     trampoline binding for `dart::constraint::ConstraintBase` so a
+     `NeuralJointLimitConstraint` analogue can be authored in Python.
+   - **Heavyweight puppet IK / mocap controllers** — `atlas_puppet`,
+     `hubo_puppet`, `fetch`, `g1_puppet`. Need gizmo + IK pendant +
+     MJCF/ReadOptions package-resolver bindings.
+   - **SIMBICON walking controller in C++** — `atlas_simbicon`. Controller
+     and state-machine sources live under
+     `tests/integration/atlas_simbicon/` and are not Python-bound.
+   - **Runtime-loaded analytical IKFast** — `wam_ikfast`. Needs a
+     `SharedLibraryIkFast` binding.
+   - **`sx::World` deformable mesh build** — `experimental_deformable`.
+     `DeformableBody`/`DeformableBodyOptions` exist; the scene also needs a
+     tet-mesh construction helper (or a Python adapter to
+     `dartpy.simulation_experimental.load_deformable_scene`).
 2. **NOT MET.** Notebook gallery published with a green Colab smoke. Today:
    `python/tutorials/01_browse_demos.ipynb` is the seed; Colab publication +
    smoke is PLAN-012's responsibility.
@@ -254,3 +271,36 @@ multi-scene `run_demos` entry; no interactive viewer _authoring_ binding is
 added. C++ `dart-demos` (PLAN-102) stays frozen; design in
 [`../design/demos_app.md`](../design/demos_app.md). PLAN-012 (Colab) consumes
 these scene modules; PLAN-101 (editor scene loading) is a retire precondition.
+
+## Delta (in flight): `examples-strategy-breadth` branch
+
+Phase-5 gate 1 (breadth) is being closed incrementally on top of the
+landed-state baseline. The breadth-growth branch adds the following:
+
+- **+10 Python scene mirrors** of previously C++-only `dart-demos` scenes:
+  `hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`, `vehicle`,
+  `biped_stand`, `experimental_rigid_body_gui`, `collision_sandbox`,
+  `joint_constraints`, `drag_and_drop`. Each verified under
+  `pixi run py-demos -- --scene <id> --headless`. (39 of 41 C++ scenes now
+  mirrored; coverage on the C++-set axis ~95 %.)
+- **Shape bindings.** `python/dartpy/dynamics/shape.cpp`: `HeightmapShape`
+  (double instantiation; default ctor, `set_height_field` (width/depth + flat
+  list OR HeightField matrix), `get_height_field`, `set_scale`/`get_scale`,
+  `get_width`/`get_depth`/`get_min_height`/`get_max_height`, `flip_y`,
+  `get_static_type`) and `PointCloudShape` (visual-size ctor;
+  `reserve`/`add_point`/`add_points`/`set_points`/`get_points`/
+  `get_num_points`/`remove_all_points`; point-shape-type + color-mode +
+  overall-color + visual-size accessors; nested `ColorMode` /
+  `PointShapeType` enums).
+- **External-force + COM bindings.** `body_node.cpp`:
+  `addExtForce`/`setExtForce`/`clearExternalForces`. `skeleton.cpp`:
+  `getConstraintForces`, `getCOM`, `clearExternalForces`. These close the
+  Stable PD controller binding gap so `biped_stand` and `joint_constraints`
+  port cleanly.
+- **Documentation.** Retire-Later Checklist condition 1 updated to track the
+  remaining C++-only scenes by their binding/infra gap (gizmo callbacks,
+  custom `ConstraintBase`, puppet IK + MJCF/ReadOptions, SIMBICON state
+  machine, `SharedLibraryIkFast`, tet-mesh helper for `sx::World`
+  deformable). OSC golden-parity gap kept deferred; documented that the
+  per-scene-tolerance path also requires updating the C++ smoke's
+  hardcoded `kGoldenAbsTol` and regenerating the OSC fixture on both sides.
