@@ -10,6 +10,7 @@
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
+#include <dart/simulation/experimental/comps/variational_contact.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
@@ -2676,6 +2677,88 @@ TEST(VariationalGroundContact, WorldSurfaceCompliantContactRestsOnGround)
   EXPECT_LT(finalZ, 0.0);   // settled in contact, below the plane.
   EXPECT_GT(finalZ, -0.01); // held near the plane (not free-falling through).
   EXPECT_NEAR(finalZ, -analytic, 1.5 * analytic); // ~mg/k penetration.
+}
+
+// PLAN-082 Phase C: the World-surface ground-contact config persists across
+// binary save/load. comps::VariationalContact is a serialized Property
+// component -- including its link-index parallel array via the generic
+// POD-vector serialization path -- so a saved contact scene reloads with its
+// contact intact. The reloaded slider rests on the plane instead of tunnelling
+// through it (which it would under the prior runtime-only Cache config).
+TEST(VariationalGroundContact, ConfigRoundTripsThroughBinarySaveLoad)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  const double k = 1.0e3 * mass * g;
+  const double damping = 200.0;
+  const double mu = 0.25;
+  const Eigen::Vector3d localPoint(
+      0.05, 0.0, 0.0); // lateral; same Z as origin.
+  const int steps = 3000;
+
+  sx::World reference;
+  reference.setMultibodyOptions(
+      {.integrationFamily = "variational integrator"});
+  auto robot = reference.addMultibody("slider");
+  auto base = robot.addLink("base"); // link index 0.
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec); // link index 1.
+  carriage.setMass(mass);
+  carriage.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+  reference.setTimeStep(dt);
+  reference.enterSimulationMode();
+  carriage.getParentJoint().setPosition(
+      Eigen::VectorXd::Constant(1, 0.02)); // start above the plane.
+  reference.updateKinematics();
+  robot.setGroundContact(
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::Zero(),
+      k,
+      mu,
+      /*frictionRegularization=*/1.0e-4,
+      damping);
+  robot.addGroundContactPoint(carriage, localPoint);
+
+  // Save with the contact configured (before stepping): the round-trip must
+  // restore the configuration, not the resulting rest state.
+  std::stringstream buffer(std::ios::in | std::ios::out | std::ios::binary);
+  reference.saveBinary(buffer);
+
+  sx::World loaded;
+  buffer.seekg(0);
+  loaded.loadBinary(buffer);
+  loaded.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  ASSERT_TRUE(loaded.getMultibody("slider").has_value());
+
+  // The contact config came back field-for-field, including the std::vector
+  // link-index / local-position parallel arrays.
+  auto& registry = loaded.getRegistry();
+  auto view = registry.view<sx::comps::VariationalContact>();
+  ASSERT_EQ(view.size(), 1u);
+  const auto& cfg = registry.get<sx::comps::VariationalContact>(*view.begin());
+  EXPECT_TRUE(cfg.planeNormal.isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(cfg.planePoint.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_EQ(cfg.stiffness, k);
+  EXPECT_EQ(cfg.frictionCoefficient, mu);
+  EXPECT_EQ(cfg.dampingCoefficient, damping);
+  ASSERT_EQ(cfg.pointLinkIndices.size(), 1u);
+  EXPECT_EQ(cfg.pointLinkIndices[0], 1u); // the carriage link.
+  ASSERT_EQ(cfg.pointLocalPositions.size(), 1u);
+  EXPECT_TRUE(cfg.pointLocalPositions[0].isApprox(localPoint));
+
+  // And behaviorally: the reloaded slider rests on the plane (does not tunnel).
+  for (int step = 0; step < steps; ++step) {
+    loaded.step();
+  }
+  const double finalZ
+      = loaded.getMultibody("slider")->getJoints()[0].getPosition()[0];
+  EXPECT_TRUE(std::isfinite(finalZ));
+  EXPECT_LT(finalZ, 0.0);   // settled in contact, below the plane.
+  EXPECT_GT(finalZ, -0.05); // held near the plane, not free-fallen through.
 }
 
 // PLAN-082 Phase C link-vs-link contact (first slice): sphere-sphere

@@ -30,15 +30,17 @@ namespace dart::simulation::experimental::comps {
 /// from it and folds it into the forced-DEL root-find each step; absent (the
 /// default), the integrator is contact-free.
 ///
-/// Stored as a `Cache`-category component so it is **runtime-only** (not yet
-/// persisted across binary save/load). Promoting it to a serialized `Property`
-/// component (registered in `io/serializer.cpp` with a format-version bump) is
-/// a follow-up; the runtime behavior is unaffected.
+/// Stored as a serialized `Property`-category component: it is configuration
+/// (set once via `Multibody::setGroundContact`, read each step, never mutated
+/// by the sim), so it persists across binary save/load like the sibling
+/// `LoopClosure` config. Registered in `io/serializer.cpp`; the contact-point
+/// link indices are positions in the multibody's link order (not entity
+/// references), so no entity-remap pass entry is needed.
 ///
 /// **Internal Implementation Detail** - Not exposed in public API.
 struct VariationalContact
 {
-  DART_EXPERIMENTAL_CACHE_COMPONENT(VariationalContact);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(VariationalContact);
 
   Eigen::Vector3d planeNormal = Eigen::Vector3d::UnitZ(); ///< out of the ground
   Eigen::Vector3d planePoint = Eigen::Vector3d::Zero();   ///< a point on plane

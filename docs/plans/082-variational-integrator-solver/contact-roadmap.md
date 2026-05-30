@@ -359,8 +359,14 @@ overshoots before the body can move). Verified
   and `MultibodyVariationalIntegrationStage::execute` `try_get`s the component and
   folds `makeVariationalGroundContactHook(...)` into the step. Verified by a C++
   `world.step()` rest test, a Python smoke (`sx_variational_contact` — a VI
-  pendulum tip caught by the ground plane), and the demos-cycle. Two non-blocking
-  follow-ups remain: wiring the **stateful C3 AL solver** through the stage
-  (per-multibody `updateDuals` after each step), and promoting the runtime-only
-  `Cache` config to a serialized `Property` component (`io/serializer.cpp` +
-  `kBinaryFormatVersion` bump) so the contact config persists across save/load.
+  pendulum tip caught by the ground plane), and the demos-cycle. The contact
+  config now **persists across binary save/load**: `comps::VariationalContact` is
+  a serialized `Property` component (registered in `io/serializer.cpp`,
+  `kBinaryFormatVersion` bumped to 8; its link-index parallel array round-trips
+  via a new generic POD-vector path in `auto_serialization.hpp`), verified by
+  `ConfigRoundTripsThroughBinarySaveLoad`. The remaining **stateful C3 AL solver**
+  is intentionally **not** auto-wired into `World::step()`: its drift-free dual
+  feedback needs an outer-loop update cadence slower than the primal for stability
+  on the undamped symplectic step — a tuning knob that belongs with the caller via
+  the explicit `VariationalGroundContactSolver` API, not the silent default path.
+  The robust C1/C2 compliant rung is the auto-path default.

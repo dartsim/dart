@@ -278,6 +278,10 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   // references, so no remap pass entry needed).
   registerComponentIfNeeded<compute::MultibodyVariationalState>(registry);
 
+  // The variational integrator's ground-contact config (link indices, not
+  // entity references, so likewise no remap pass entry needed).
+  registerComponentIfNeeded<comps::VariationalContact>(registry);
+
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 
   registerComponentIfNeeded<comps::Link>(registry);
