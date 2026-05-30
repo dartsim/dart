@@ -958,6 +958,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added `.seg` (segment) and `.pt` (point) codimensional-geometry importers
+    (PLAN-081 M3 asset pipeline), completing the experimental importer set
+    alongside `.msh` (tets) and `.obj` (triangles).
+    `io::loadSegLineMesh*` parses Wavefront-style `v` vertices and `l` polylines
+    (each `l v1 v2 ... vk` contributes the k-1 consecutive segments), and
+    `io::loadPointSet*` parses bare `x y z` or `v x y z` point lines; both resolve
+    1-based / negative indices and raise `InvalidArgumentException` on malformed
+    or empty input. Exposed to `dartpy` as `load_seg_line_mesh(path)` (positions +
+    spring edges -> a mass-spring strand) and `load_point_set(path)` (positions ->
+    free particles), with `build_strand_from_seg` / `build_particles_from_pt`
+    helpers, importer regressions, a draped-strand / falling-particles solver
+    regression, and `Deformable .seg Strand (IPC)` and `Deformable .pt Particles
+(IPC)` py-demos scenes (a bundled strand hanging from a pinned end; a bundled
+    point cloud stacking on the ground barrier).
   - Added a Wavefront `.obj` triangle-mesh importer (PLAN-081 M3 asset pipeline)
     so deformable surface bodies can be built from external triangle meshes.
     `dart::simulation::experimental::io::loadObjTriangleMesh` /
@@ -967,11 +981,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     texcoords / groups / materials and raising `InvalidArgumentException` on a
     malformed or out-of-range face. Exposed to `dartpy` as
     `load_obj_triangle_mesh(path)` returning a `DeformableBodyOptions` (positions
-    + surface triangles). Adds parse / triangulation / rejection regressions, a
-    `build_cloth_from_obj` helper (derives unique-edge springs + uniform masses),
-    a draped-cloth solver regression, and a `Deformable .obj Cloth (IPC)`
-    py-demos scene (a bundled cloth mesh pinned at one edge draping under gravity
-    onto the ground barrier).
+    - surface triangles). Adds parse / triangulation / rejection regressions, a
+      `build_cloth_from_obj` helper (derives unique-edge springs + uniform masses),
+      a draped-cloth solver regression, and a `Deformable .obj Cloth (IPC)`
+      py-demos scene (a bundled cloth mesh pinned at one edge draping under gravity
+      onto the ground barrier).
   - Added a GMSH `.msh` tetrahedral-mesh importer (PLAN-081 M4) so deformable
     FEM bodies can be built from external tet meshes rather than only procedural
     grids. `dart::simulation::experimental::io::loadGmshTetMesh` /

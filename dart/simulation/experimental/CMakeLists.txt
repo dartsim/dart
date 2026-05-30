@@ -74,6 +74,7 @@ add_library(
   frame/frame.cpp
   frame/free_frame.cpp
   io/binary_io.cpp
+  io/codim_mesh.cpp
   io/deformable_scene_io.cpp
   io/gmsh_tet_mesh.cpp
   io/obj_triangle_mesh.cpp
