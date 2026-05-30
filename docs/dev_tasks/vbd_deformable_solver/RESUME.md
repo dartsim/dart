@@ -116,8 +116,11 @@ matches the default solver. Remaining work, in order:
    self-collision, and wiring contact/friction into the World VBD path.
 3. Phase 8: residual early termination + multithreaded color sweeps
    (`parallelBlockDescentMassSpring`, std::barrier, ~3.5x at 8 threads) both
-   land. Next: SoA layout, wire the parallel driver into the World stage, and
-   benchmark vs the external Gaia CPU numbers.
+   land. The multithreaded sweep is now WIRED INTO the World stage via
+   `parallelBlockDescentDeformable` (springs+tets) and the
+   `DeformableVbdConfig::workerThreads` knob (bit-identical to serial, verified
+   at the kernel and World level). Next: SoA layout and benchmarking vs the
+   external Gaia CPU numbers.
 4. Phase 9: the CUDA mass-spring kernel, the device-resident rollout
    (`vbdRolloutMassSpringCuda`, ~45x faster than single-threaded CPU at 16k
    verts), and the tetrahedral Neo-Hookean GPU kernel (`vbdStepTetMeshCuda`,

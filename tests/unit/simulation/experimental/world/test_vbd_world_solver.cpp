@@ -371,3 +371,43 @@ TEST(VbdWorldSolver, RayleighDampingReducesKineticEnergy)
   EXPECT_GT(undamped, 0.0);
   EXPECT_LT(damped, undamped);
 }
+
+//==============================================================================
+// The multithreaded VBD sweep is deterministic: a body solved with several
+// worker threads tracks the single-threaded result step for step.
+TEST(VbdWorldSolver, MultithreadedSolveMatchesSingleThreaded)
+{
+  sx::World serialWorld;
+  sx::World parallelWorld;
+  for (sx::World* world : {&serialWorld, &parallelWorld}) {
+    world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world->setTimeStep(0.01);
+    world->addDeformableBody("chain", makeChainOptions(12, 0.5));
+  }
+  sx::comps::DeformableVbdConfig serialCfg;
+  serialCfg.enabled = true;
+  serialCfg.iterations = 40;
+  enableVbdConfig(serialWorld, serialCfg);
+  sx::comps::DeformableVbdConfig parallelCfg = serialCfg;
+  parallelCfg.workerThreads = 4;
+  enableVbdConfig(parallelWorld, parallelCfg);
+
+  compute::DeformableDynamicsStage serialStage;
+  compute::DeformableDynamicsStage parallelStage;
+  for (int step = 0; step < 10; ++step) {
+    stepOnce(serialWorld, serialStage);
+    stepOnce(parallelWorld, parallelStage);
+  }
+
+  const auto serialBody = serialWorld.getDeformableBody("chain");
+  const auto parallelBody = parallelWorld.getDeformableBody("chain");
+  ASSERT_TRUE(serialBody.has_value());
+  ASSERT_TRUE(parallelBody.has_value());
+  for (std::size_t i = 0; i < serialBody->getNodeCount(); ++i) {
+    EXPECT_NEAR(
+        (serialBody->getPosition(i) - parallelBody->getPosition(i)).norm(),
+        0.0,
+        1e-12)
+        << "node " << i;
+  }
+}

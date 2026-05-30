@@ -156,4 +156,133 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
   return stats;
 }
 
+//==============================================================================
+/// Multithreaded graph-colored Gauss-Seidel block descent for a body that mixes
+/// distance springs and Stable Neo-Hookean tetrahedra (the parallel counterpart
+/// of blockDescentDeformable). Same-color vertices share neither a spring nor a
+/// tetrahedron, so a fixed worker pool updates each color's disjoint vertex
+/// slices race-free with a `std::barrier` between colors, giving a result
+/// identical to the serial driver for the same iteration count.
+///
+/// Optional Rayleigh damping is honored via `stepStartPositions`. Chebyshev
+/// over-relaxation and residual early termination are NOT applied on the
+/// multithreaded path (they need cross-thread reductions / a global
+/// extrapolation); `threadCount <= 1` falls back to the full-featured serial
+/// blockDescentDeformable, which does honor them.
+inline BlockDescentStats parallelBlockDescentDeformable(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    const SpringAdjacency& springAdjacency,
+    const std::vector<TetMeshElement>& tets,
+    double mu,
+    double lambda,
+    const TetAdjacency& tetAdjacency,
+    double timeStep,
+    const VertexColoring& coloring,
+    const BlockDescentOptions& options,
+    unsigned int threadCount,
+    const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr)
+{
+  if (threadCount <= 1) {
+    return blockDescentDeformable(
+        positions,
+        masses,
+        fixed,
+        inertialTargets,
+        springs,
+        springStiffness,
+        springAdjacency,
+        tets,
+        mu,
+        lambda,
+        tetAdjacency,
+        timeStep,
+        coloring,
+        options,
+        stepStartPositions);
+  }
+
+  const std::size_t vertexCount = positions.size();
+  const double invDt2 = 1.0 / (timeStep * timeStep);
+  const bool useRayleigh
+      = options.rayleighDamping > 0.0 && stepStartPositions != nullptr;
+
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block = detail::assembleDeformableVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        springs,
+        springAdjacency,
+        springStiffness,
+        options.clampSpringHessian,
+        tets,
+        tetAdjacency,
+        mu,
+        lambda,
+        timeStep);
+    if (useRayleigh) {
+      Eigen::Matrix3d elasticHessian = block.hessian;
+      elasticHessian.diagonal().array() -= masses[vertex] * invDt2;
+      addRayleighDamping(
+          block,
+          elasticHessian,
+          positions[vertex] - (*stepStartPositions)[vertex],
+          options.rayleighDamping,
+          timeStep);
+    }
+    return block;
+  };
+
+  std::barrier sync(static_cast<std::ptrdiff_t>(threadCount));
+  const auto worker = [&](unsigned int threadId) {
+    for (std::size_t iteration = 0; iteration < options.iterations;
+         ++iteration) {
+      for (const auto& group : coloring.groups) {
+        const std::size_t groupSize = group.size();
+        const std::size_t chunk = (groupSize + threadCount - 1) / threadCount;
+        const std::size_t begin = std::min(groupSize, threadId * chunk);
+        const std::size_t end = std::min(groupSize, begin + chunk);
+        for (std::size_t k = begin; k < end; ++k) {
+          const std::uint32_t vertex = group[k];
+          if (vertex >= vertexCount || fixed[vertex] != 0u) {
+            continue;
+          }
+          positions[vertex]
+              += solveVertexBlock(assemble(vertex), options.regularization);
+        }
+        sync.arrive_and_wait();
+      }
+    }
+  };
+
+  std::vector<std::thread> threads;
+  threads.reserve(threadCount);
+  for (unsigned int t = 0; t < threadCount; ++t) {
+    threads.emplace_back(worker, t);
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  BlockDescentStats stats;
+  stats.iterations = options.iterations;
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    ++stats.vertexUpdates;
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.vertexUpdates *= options.iterations;
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
 } // namespace dart::simulation::experimental::detail::deformable_vbd

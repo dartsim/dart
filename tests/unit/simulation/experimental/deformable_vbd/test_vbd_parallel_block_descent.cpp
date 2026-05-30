@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <vector>
 
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
@@ -185,4 +186,99 @@ TEST(VbdParallelBlockDescent, ConvergesToLowResidual)
       options,
       4u);
   EXPECT_LT(stats.finalResidualNormSquared, 1e-12);
+}
+
+//==============================================================================
+// The combined springs + tetrahedra parallel sweep is likewise deterministic
+// and bit-identical to the serial blockDescentDeformable, since same-color
+// vertices share neither a spring nor a tet.
+TEST(VbdParallelBlockDescent, DeformableMatchesSerialExactly)
+{
+  const std::vector<Vec3> rest
+      = {Vec3(0, 0, 0),
+         Vec3(1, 0, 0),
+         Vec3(0, 1, 0),
+         Vec3(0, 0, 1),
+         Vec3(1, 1, 1),
+         Vec3(2, 0, 0),
+         Vec3(2, 1, 0)};
+  std::vector<double> masses(rest.size(), 1.0);
+  std::vector<std::uint8_t> fixed(rest.size(), 0u);
+  fixed[0] = 1u;
+
+  const auto restLength = [&](std::uint32_t a, std::uint32_t b) {
+    return (rest[a] - rest[b]).norm();
+  };
+  const std::vector<vbd::SpringElement> springs
+      = {{1, 5, restLength(1, 5)},
+         {5, 6, restLength(5, 6)},
+         {4, 6, restLength(4, 6)}};
+
+  const auto makeRest = [&](std::array<std::uint32_t, 4> v) {
+    return vbd::makeTetRestShape(
+        {rest[v[0]], rest[v[1]], rest[v[2]], rest[v[3]]});
+  };
+  const std::vector<vbd::TetMeshElement> tets
+      = {{{0, 1, 2, 3}, makeRest({0, 1, 2, 3})},
+         {{1, 2, 3, 4}, makeRest({1, 2, 3, 4})}};
+
+  std::vector<Vec3> inertialTargets = rest;
+  for (std::size_t i = 0; i < inertialTargets.size(); ++i) {
+    if (fixed[i] == 0u) {
+      inertialTargets[i] += Vec3(0.0, -0.03, 0.01);
+    }
+  }
+
+  const double mu = 3000.0;
+  const double lambda = 6000.0;
+  const double springStiffness = 500.0;
+  const double timeStep = 0.01;
+  const auto coloring = vbd::colorDeformable(rest.size(), springs, tets);
+  const auto springAdjacency
+      = vbd::SpringAdjacency::build(rest.size(), springs);
+  const auto tetAdjacency = vbd::TetAdjacency::build(rest.size(), tets);
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 50;
+
+  std::vector<Vec3> serial = inertialTargets;
+  vbd::blockDescentDeformable(
+      serial,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      springStiffness,
+      springAdjacency,
+      tets,
+      mu,
+      lambda,
+      tetAdjacency,
+      timeStep,
+      coloring,
+      options);
+
+  for (const unsigned int threads : {2u, 4u}) {
+    std::vector<Vec3> parallel = inertialTargets;
+    vbd::parallelBlockDescentDeformable(
+        parallel,
+        masses,
+        fixed,
+        inertialTargets,
+        springs,
+        springStiffness,
+        springAdjacency,
+        tets,
+        mu,
+        lambda,
+        tetAdjacency,
+        timeStep,
+        coloring,
+        options,
+        threads);
+    for (std::size_t i = 0; i < serial.size(); ++i) {
+      EXPECT_NEAR((serial[i] - parallel[i]).norm(), 0.0, 1e-12)
+          << "threads=" << threads << " vertex=" << i;
+    }
+  }
 }

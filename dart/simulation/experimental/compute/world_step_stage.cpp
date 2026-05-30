@@ -51,6 +51,7 @@
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -3221,7 +3222,9 @@ void runVbdDeformableSolve(
   options.rayleighDamping = config.rayleighDamping;
   // state.positions holds x^t for this step (the write-back to the live state
   // happens after the solve), so it is the Rayleigh displacement reference.
-  const dvbd::BlockDescentStats result = dvbd::blockDescentDeformable(
+  // parallelBlockDescentDeformable falls back to the full-featured serial
+  // driver when workerThreads <= 1.
+  const dvbd::BlockDescentStats result = dvbd::parallelBlockDescentDeformable(
       scratch.next,
       state.masses,
       scratch.activeFixed,
@@ -3236,6 +3239,7 @@ void runVbdDeformableSolve(
       timeStep,
       vbdScratch.coloring,
       options,
+      config.workerThreads,
       &state.positions);
 
   ++stats.vbdBodyCount;
