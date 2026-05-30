@@ -162,6 +162,14 @@
         host copy. Bit-identical results (only the device storage is reused);
         a CUDA test asserts the buffer is reused across same-or-smaller batches,
         grows once for a larger batch, and is released on restore.
+  - [x] Contact closest-approach diagnostic: the stage also reports
+        `minActiveContactDistance` (the smallest point-triangle / edge-edge
+        distance among the active self-contact barrier set at the converged
+        iterate -- the IPC intersection-free "minimum distance" statistic) and
+        `convergedActiveContactCount` (the size of that active set at
+        termination, a single-iteration snapshot distinct from the cumulative
+        `selfContactBarrierActiveContacts`). Behavior-preserving (diagnostic
+        only); feeds the Fig. 23 / Table 1 contact statistics.
   - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
         host<->device copies remain; keeping the assembly/solve on-device is a
         follow-up), matrix-free CG for very large meshes, adaptive barrier
