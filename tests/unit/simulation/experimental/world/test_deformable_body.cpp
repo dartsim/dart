@@ -1446,6 +1446,79 @@ TEST(DeformableBody, StaticRigidSurfaceCcdRequiresOptIn)
 }
 
 //==============================================================================
+// A static sphere opted in as a surface-CCD obstacle limits a fast deformable
+// node before it can cross the sphere's surface (non-box rigid surface
+// coverage). The sphere is tessellated into a conservatively circumscribed
+// triangle mesh that reuses the same point-triangle / edge-edge CCD limiter.
+TEST(DeformableBody, StaticRigidSurfaceCcdLimitsAgainstSphereObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("static_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  // Stopped at/just before the sphere's near surface (x = -0.5), never pushed
+  // through, and still advanced from its start (x = -1.0).
+  EXPECT_LT(body.getPosition(0).x(), -0.5);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdSphereCount, 1u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdTriangleCount, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdEdgeCount, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+// An untagged static sphere is not a surface-CCD obstacle, so a fast node
+// passes through it (mirrors StaticRigidSurfaceCcdRequiresOptIn for spheres).
+TEST(DeformableBody, StaticRigidSurfaceCcdSphereRequiresOptIn)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("ordinary_static_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_FALSE(sphere.isDeformableSurfaceCcdObstacle());
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).x(), 0.5);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdSphereCount, 0u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdHits, 0u);
+}
+
+//==============================================================================
 TEST(DeformableBody, StaticRigidSurfaceCcdChecksPhysicalBoxEdges)
 {
   sx::World world;

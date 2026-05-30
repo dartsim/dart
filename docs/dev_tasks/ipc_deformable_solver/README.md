@@ -86,6 +86,14 @@
         opted-in static box collision shapes triangulated into stationary
         surface snapshots with physical box edges for deformable line-search
         CCD limiting.
+  - [x] Internal static sphere surface CCD sub-slice: opted-in static sphere
+        collision shapes tessellated into a UV-sphere triangle mesh that
+        conservatively circumscribes the analytic sphere (vertices at a slightly
+        inflated radius so every flat face stays outside the true surface),
+        reusing the same point-triangle / edge-edge CCD limiter with no new
+        primitive. Same `setDeformableSurfaceCcdObstacle` opt-in (untagged
+        shapes unaffected); `staticRigidSurfaceCcdSphereCount` stat and
+        opted-in/untagged regressions.
   - [x] Internal moving rigid box surface CCD line-search sub-slice: free
         (non-static) opted-in box obstacles whose end-of-step transform is
         predicted from velocity (mirroring the rigid position integrator that
@@ -93,10 +101,11 @@
         overlapping static pose samples, so the deformable cannot settle in or
         tunnel through the obstacle's swept corridor. One-way, timing-agnostic
         conservative limiter with focused regressions and benchmark counters.
-  - [ ] Remaining Phase 2 work: non-box/deforming rigid surface coverage,
-        timing-aware (non-over-conservative) moving-obstacle CCD, broader
-        solver-wired CCD line-search coverage, and stronger spatial
-        acceleration for larger meshes.
+  - [ ] Remaining Phase 2 work: further non-box rigid surface coverage
+        (arbitrary meshes; deforming/moving spheres), timing-aware
+        (non-over-conservative) moving-obstacle CCD, broader solver-wired CCD
+        line-search coverage, and stronger spatial acceleration for larger
+        meshes. (Static box and sphere obstacles are covered.)
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
   - [x] Self-contact barrier forces sub-slice: the deformable objective now adds
