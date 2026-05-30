@@ -53,6 +53,7 @@ from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
 from .scenes.vbd_beam import SCENE as VBD_BEAM
 from .scenes.vbd_cloth import SCENE as VBD_CLOTH
 from .scenes.vbd_net import SCENE as VBD_NET
+from .scenes.vbd_tilted_strand import SCENE as VBD_TILTED_STRAND
 
 
 def make_demo_scenes() -> list[PythonDemoScene]:
@@ -99,14 +100,15 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_CONTACT,
         SX_VARIATIONAL_CHAIN,
         SX_VARIATIONAL_TUMBLER,
-        # Vertex Block Descent (VBD) deformable scenes from the paper that the
-        # current contact-free World VBD path reproduces (mass-spring cloth/net,
-        # tetrahedral cantilever beam). Multi-body and self-collision scenes
-        # (216 squishy balls, 10368 models, tearing cloth) need surface
-        # self-contact and are deferred.
+        # Vertex Block Descent (VBD) deformable scenes: mass-spring cloth/net, a
+        # tetrahedral cantilever beam, and the TinyVBD reference tilted strand
+        # (the stiff, high-mass-ratio CPU parity scene). The larger multi-body
+        # paper scenes (216 squishy balls, 10368 models, tearing cloth) still
+        # need broad inter-body contact and remain deferred.
         VBD_CLOTH,
         VBD_NET,
         VBD_BEAM,
+        VBD_TILTED_STRAND,
         # IPC Deformable (sx) — its own dedicated category so the IPC
         # deformable-solver showcases group together rather than mixing into
         # the general experimental scenes above.

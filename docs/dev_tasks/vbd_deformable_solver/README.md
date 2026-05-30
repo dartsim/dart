@@ -183,9 +183,12 @@
         headless demo-cycle smoke test, and a 960x720 headless Filament capture
         renders the pinned curtain correctly (verified locally on
         2026-05-29).
-  - [ ] Remaining Phase 10 work: the TinyVBD tilted-strand example, the paper
-        tetrahedral scenes, profiling JSON artifacts, and committed
-        before/after visual evidence.
+  - [x] Added the TinyVBD reference tilted-strand py-demos scene
+        (`vbd_tilted_strand`: 20-vertex stiff 1e8 strand, 1:1000 mass ratio,
+        h=1/60, 100 sweeps), the runnable companion to the
+        `BM_VbdTinyStrandStep` CPU benchmark.
+  - [ ] Remaining Phase 10 work: the paper tetrahedral scenes, profiling JSON
+        artifacts, and committed before/after visual evidence.
 
 ## Goal
 
