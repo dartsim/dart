@@ -132,9 +132,10 @@ owned by PLAN-012 (this plan supplies the scene modules notebooks import).
 
 ## Workstreams
 
-See Decision 5 for phase contents and ordering. Implementation that spans
-sessions should open `docs/dev_tasks/examples_strategy/` (via `/dart-new-task`)
-when Phase 1 begins; until then this plan is the tracking surface.
+See Decision 5 for phase contents and ordering. Phases 1–4 are landed on `main`
+(see Landed State below); the `docs/dev_tasks/examples_strategy/` tracking folder
+was retired into this plan on completion. This plan is again the tracking surface
+for the residual Phase-5 retire-later follow-ups.
 
 ## Acceptance Criteria
 
@@ -167,10 +168,15 @@ Retire `examples/demos` (the C++ app), `pixi run demos`, and the
 `run_cpp_example.py` `demos` spec only when ALL hold. Current status (Phase 5
 explicit "not now"):
 
-1. **NOT MET.** Python headless runner covers the breadth (≥ C++ pedagogical
-   coverage). Today: 11 Python scenes vs 37 C++ scenes. Closing this gap is the
-   Phase 3 follow-up — port the remaining C++-only categories that have no
-   Python counterpart.
+1. **NOT MET (narrowed).** Python headless runner covers the breadth (≥ C++
+   pedagogical coverage). Today: **29 Python scenes vs 40 C++ scenes** (~73%).
+   The remaining C++-only scenes are heavyweight or interactive-only:
+   `heightmap`/`point_cloud` need `HeightmapShape`/`PointCloudShape` bindings;
+   the puppet/vehicle/biped/`hybrid_dynamics`/`joint_constraints`/
+   `human_joint_limits` scenes need full IK/controller subsystems;
+   `drag_and_drop`/`imgui`/`tinkertoy`/`simulation_event_handler` are
+   GUI-callback-only and out of scope for a headless runner. Closing this gate
+   is gradual, not a single follow-up.
 2. **NOT MET.** Notebook gallery published with a green Colab smoke. Today:
    `python/tutorials/01_browse_demos.ipynb` is the seed; Colab publication +
    smoke is PLAN-012's responsibility.
@@ -181,11 +187,15 @@ explicit "not now"):
    `dart/gui/detail/scenes` + `test_filament_scene_extraction` +
    `EXAMPLE_dartsim_<scene>` are owned by `dart::gui` and exercise renderer
    fixtures, not the examples (see `docs/design/demos_app.md`).
-5. **MET (mechanism); EXPANDING.** Cross-language golden parity is
-   implemented end-to-end for `hello_world` (Python `test_golden_parity` + C++
-   `UNIT_gui_DemosGoldenParity` both pass against the shared fixture). The
-   other planned golden scenes iterate on the same mechanism without
-   architectural change.
+5. **MET (mechanism); at floor.** Cross-language golden parity is implemented
+   end-to-end for 3 scenes (`hello_world`, `boxes`, `rigid_chain`; Python
+   `test_golden_parity` + C++ `UNIT_gui_DemosGoldenParity` both pass against the
+   shared fixtures within 1e-9) — at the planned "~3-5 canonical" floor.
+   `operational_space_control` is mirrored in Python but deliberately excluded
+   from the golden set: its controller diverges across languages (numpy vs Eigen
+   operation order amplifies through the Kp gain into ~1e-3 drift over 60 steps),
+   so adding it needs a deliberate tolerance/reordering decision, not a
+   mechanical port.
 
 Until conditions 1–3 are met, C++ `dart-demos` stays frozen-but-present.
 
@@ -202,15 +212,45 @@ Until conditions 1–3 are met, C++ `dart-demos` stays frozen-but-present.
   outputs (the fidelity-profile seam, PLAN-090) being reachable headless from
   `dartpy.gui`; confirm before Phase 3.
 
-## Current Evidence
+## Landed State (Phases 1–4, on `main`)
 
-- Python surface today: `python/examples/{hello_world,experimental_rigid_body}`;
-  `python/tutorials/` is empty; no `notebooks/`; no parity tests; `pixi run
-py-ex` runs a Python example.
-- `dartpy.gui` is a headless submodule (`python/dartpy/gui/module.cpp`,
-  `descriptors.cpp`) registered as `m.def_submodule("gui", ...)`, alongside
-  `simulation_experimental`.
-- C++ `dart-demos` (PLAN-102) hosts the consolidated GUI examples; design in
-  [`../design/demos_app.md`](../design/demos_app.md).
-- PLAN-012 targets Colab-from-GitHub notebooks and is backend-hidden, matching
-  the headless `dartpy.gui` constraint.
+Phases 1–4 are merged; Phase 5 (retire C++ `dart-demos`) is the explicit "not
+now" recorded in the checklist above. Verified via `pixi run py-demos --
+--cycle-scenes` (exit 0), the Python + C++ golden smokes, and `pixi run lint`.
+
+- **Runner + registry.** `python/examples/demos/` is an importable package with
+  an ordered registry and a `__main__` CLI mirroring `dart-demos`
+  (`--scene`/`--cycle-scenes`/`--frames`/`--screenshot`/`--list`, headless).
+  `pixi run py-demos`; the cycle smoke is pytest-gated
+  (`python/tests/integration/test_demos_cycle.py`). **29 Python scenes** across
+  Basics/Rigid Body/Collision/Constraints/Soft Bodies/Robots/Control/Experimental.
+- **Golden parity.** Shared JSON fixtures + dual-language smokes
+  (`python/tests/unit/test_golden_parity.py`,
+  `tests/unit/gui/test_demos_golden_parity.cpp`) assert 3 scenes within 1e-9.
+  `examples/demos` is split into a `demos_scenes` static library + a thin
+  `dart-demos` app so the tests can link the registry.
+- **Modern content.** Python-first scenarios: `legged_balance`, `arm_push_box`,
+  `cartpole_gym_env` (Gymnasium-style env), `cartpole_mpc` (LQR),
+  `sensor_descriptors`.
+- **Notebook gallery.** `python/tutorials/01_browse_demos.ipynb` imports (does
+  not copy) the demo scene modules; Colab publication is PLAN-012.
+- **Interactive viewer.** `pixi run py-demos` delegates to `dartpy.gui.run_demos`
+  (bindings in `python/dartpy/gui/viewer.cpp`), opening the same Filament + ImGui
+  multi-scene viewer as `pixi run demos` with the Python catalog; `--screenshot`
+  writes a real PPM. Python `step`/`pre_step` controllers run under the headless
+  runner used by golden tests; the interactive viewer does not forward them yet
+  (a future `preStep` binding pass).
+- **Bindings added to unblock ports.** `python/dartpy/dynamics/shape.cpp`:
+  `Capsule`/`Cylinder`/`Ellipsoid`/`Cone`/`Pyramid`/`LineSegment`/`Plane` shapes;
+  `skeleton.cpp`: `getVelocities`/`setVelocities`/`getForces`/`getMassMatrix`/
+  `getCoriolisAndGravityForces`/`setForces`; `body_node.cpp`:
+  `getLinearVelocity(offset)`.
+- **Deformable consolidation.** `experimental_deformable_gui` migrated into
+  `dart-demos` as the `experimental_deformable` scene (Soft Bodies); the
+  standalone example dir was removed and references updated (PLAN-081).
+
+`dartpy.gui` remains a headless-descriptor submodule plus the new headless
+multi-scene `run_demos` entry; no interactive viewer _authoring_ binding is
+added. C++ `dart-demos` (PLAN-102) stays frozen; design in
+[`../design/demos_app.md`](../design/demos_app.md). PLAN-012 (Colab) consumes
+these scene modules; PLAN-101 (editor scene loading) is a retire precondition.

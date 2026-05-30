@@ -303,6 +303,60 @@ TEST(IpcContactCandidateSet, VisitSweepPairsMatchesNaiveReference)
 }
 
 //==============================================================================
+// Stresses the active-set ("sweep and prune") live-list maintenance: a
+// never-expiring early interval that overlaps nothing must stay in the list,
+// while a head item and several mid-list items expire at staggered sweep
+// positions across successive lhs. The optimized traversal must still emit
+// exactly the naive reference's pairs in the same order.
+TEST(IpcContactCandidateSet, VisitSweepPairsActiveSetUnlinksStaggeredExpiries)
+{
+  std::vector<dc::detail::SweepItem> lhs{
+      sweepItem(
+          0, Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(0.5, 1.0, 1.0)),
+      sweepItem(
+          1, Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d(1.5, 1.0, 1.0)),
+      sweepItem(
+          2, Eigen::Vector3d(2.0, 0.0, 0.0), Eigen::Vector3d(2.5, 1.0, 1.0)),
+      sweepItem(
+          3, Eigen::Vector3d(3.0, 0.0, 0.0), Eigen::Vector3d(3.5, 1.0, 1.0)),
+  };
+  std::vector<dc::detail::SweepItem> rhs{
+      // Long-lived but y-disjoint: never expires, never overlaps -> must remain
+      // in the live list and be x-checked for every lhs without being unlinked.
+      sweepItem(
+          100,
+          Eigen::Vector3d(-1.0, 10.0, 0.0),
+          Eigen::Vector3d(100.0, 11.0, 1.0)),
+      // Expires before any lhs (head unlink at the first lhs).
+      sweepItem(
+          1, Eigen::Vector3d(-0.5, 0.0, 0.0), Eigen::Vector3d(-0.2, 1.0, 1.0)),
+      sweepItem(
+          2, Eigen::Vector3d(0.1, 0.0, 0.0), Eigen::Vector3d(0.4, 1.0, 1.0)),
+      // Falls between lhs 0 and lhs 1: never overlaps, unlinked mid-list at 1.
+      sweepItem(
+          3, Eigen::Vector3d(0.6, 0.0, 0.0), Eigen::Vector3d(0.9, 1.0, 1.0)),
+      sweepItem(
+          4, Eigen::Vector3d(1.1, 0.0, 0.0), Eigen::Vector3d(1.4, 1.0, 1.0)),
+      sweepItem(
+          5, Eigen::Vector3d(2.1, 0.0, 0.0), Eigen::Vector3d(2.4, 1.0, 1.0)),
+      sweepItem(
+          6, Eigen::Vector3d(3.1, 0.0, 0.0), Eigen::Vector3d(3.4, 1.0, 1.0)),
+  };
+
+  const auto pairs = visitSweepPairsOptimized(lhs, rhs);
+  const auto referencePairs = visitSweepPairsNaiveReference(lhs, rhs);
+
+  EXPECT_EQ(pairs, referencePairs);
+  const std::vector<std::pair<std::size_t, std::size_t>> expectedPairs{
+      {0, 2},
+      {1, 4},
+      {2, 5},
+      {3, 6},
+  };
+  EXPECT_EQ(pairs, expectedPairs);
+}
+
+//==============================================================================
 TEST(IpcContactCandidateSet, DerivesUniqueSurfaceEdgesDeterministically)
 {
   const std::vector<sx::DeformableSurfaceTriangle> triangles = {

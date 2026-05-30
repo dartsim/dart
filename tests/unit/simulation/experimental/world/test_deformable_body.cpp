@@ -1509,6 +1509,79 @@ TEST(DeformableBody, StaticRigidSurfaceCcdRequiresOptIn)
 }
 
 //==============================================================================
+// A static sphere opted in as a surface-CCD obstacle limits a fast deformable
+// node before it can cross the sphere's surface (non-box rigid surface
+// coverage). The sphere is tessellated into a conservatively circumscribed
+// triangle mesh that reuses the same point-triangle / edge-edge CCD limiter.
+TEST(DeformableBody, StaticRigidSurfaceCcdLimitsAgainstSphereObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("static_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  // Stopped at/just before the sphere's near surface (x = -0.5), never pushed
+  // through, and still advanced from its start (x = -1.0).
+  EXPECT_LT(body.getPosition(0).x(), -0.5);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdSphereCount, 1u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdTriangleCount, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdEdgeCount, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+// An untagged static sphere is not a surface-CCD obstacle, so a fast node
+// passes through it (mirrors StaticRigidSurfaceCcdRequiresOptIn for spheres).
+TEST(DeformableBody, StaticRigidSurfaceCcdSphereRequiresOptIn)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("ordinary_static_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_FALSE(sphere.isDeformableSurfaceCcdObstacle());
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_GT(body.getPosition(0).x(), 0.5);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdSphereCount, 0u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdHits, 0u);
+}
+
+//==============================================================================
 TEST(DeformableBody, StaticRigidSurfaceCcdChecksPhysicalBoxEdges)
 {
   sx::World world;
@@ -2305,6 +2378,67 @@ TEST(DeformableBody, SelfContactBarrierInactiveWhenFarApart)
   EXPECT_EQ(stats.selfContactBarrierActiveContacts, 0u);
   // The upper triangle reaches its free target (0.5 - 0.1 * 0.1 = 0.49).
   EXPECT_NEAR(minUpperTriangleHeight(body), 0.49, 1e-6);
+}
+
+//==============================================================================
+// The converged contact diagnostic reports a positive closest approach inside
+// the activation band whenever self-contact holds two surfaces apart -- the IPC
+// intersection-free "minimum distance" statistic.
+TEST(DeformableBody, SelfContactBarrierReportsConvergedContactDistance)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "facing_triangles", makeTwoFacingTrianglesOptions(0.015, 0.2));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  // The terminal active set is nonempty and the closest approach is a positive
+  // distance strictly inside the barrier activation band (d_hat = 2e-2): the
+  // surfaces are held apart, not penetrating and not yet outside the band.
+  EXPECT_GT(stats.convergedActiveContactCount, 0u);
+  EXPECT_GT(stats.minActiveContactDistance, 0.0);
+  EXPECT_LT(stats.minActiveContactDistance, 2e-2);
+  // It never exceeds the cumulative active count (a single-iteration snapshot
+  // versus the sum over every outer iteration).
+  EXPECT_LE(
+      stats.convergedActiveContactCount,
+      stats.selfContactBarrierActiveContacts);
+  // The reported closest approach reflects a genuine positive separation: the
+  // surfaces are held apart, not pinned together.
+  EXPECT_GT(minUpperTriangleHeight(body), 0.0);
+}
+
+//==============================================================================
+// With the surfaces far outside the activation band, the converged contact
+// diagnostic reports an empty active set and a zero closest approach (the
+// sentinel for "no active self-contact").
+TEST(
+    DeformableBody, SelfContactBarrierReportsNoConvergedContactDistanceFarApart)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "facing_triangles_far", makeTwoFacingTrianglesOptions(0.5, 0.1));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.convergedActiveContactCount, 0u);
+  EXPECT_EQ(stats.minActiveContactDistance, 0.0);
+  // The surfaces remain well outside the activation band (d_hat = 2e-2).
+  EXPECT_GT(minUpperTriangleHeight(body), 2e-2);
 }
 
 //==============================================================================
