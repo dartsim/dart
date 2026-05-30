@@ -39,7 +39,10 @@ from .scenes.ipc_deformable_fem_sphere import SCENE as IPC_DEFORMABLE_FEM_SPHERE
 from .scenes.ipc_deformable_fem_twist import SCENE as IPC_DEFORMABLE_FEM_TWIST
 from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
 from .scenes.ipc_deformable_net import SCENE as IPC_DEFORMABLE_NET
+from .scenes.ipc_deformable_obj_cloth import SCENE as IPC_DEFORMABLE_OBJ_CLOTH
+from .scenes.ipc_deformable_pt_particles import SCENE as IPC_DEFORMABLE_PT_PARTICLES
 from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SCRIPTED
+from .scenes.ipc_deformable_seg_strand import SCENE as IPC_DEFORMABLE_SEG_STRAND
 from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
 from .scenes.joint_constraints import SCENE as JOINT_CONSTRAINTS
 from .scenes.kr5_arm import SCENE as KR5_ARM
@@ -62,6 +65,11 @@ from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
 from .scenes.sx_loop_closure import SCENE as SX_LOOP_CLOSURE
+from .scenes.sx_rigid_ipc import SCENE as SX_RIGID_IPC
+from .scenes.sx_rigid_ipc_incline import SCENE as SX_RIGID_IPC_INCLINE
+from .scenes.sx_rigid_ipc_pile import SCENE as SX_RIGID_IPC_PILE
+from .scenes.sx_rigid_ipc_slide import SCENE as SX_RIGID_IPC_SLIDE
+from .scenes.sx_rigid_ipc_tunnel import SCENE as SX_RIGID_IPC_TUNNEL
 from .scenes.sx_variational_chain import SCENE as SX_VARIATIONAL_CHAIN
 from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
 from .scenes.vbd_beam import SCENE as VBD_BEAM
@@ -122,6 +130,18 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_FLOATING_BASE,
         SX_CONTACT,
         EXPERIMENTAL_RIGID_BODY_GUI,
+        # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
+        # a drop, friction (flat + inclined), a multi-body pile, then the
+        # intersection-free (no-tunneling) guarantee. Only scenes that run in
+        # real time are registered; heavier contact scenes (a triangulated
+        # sphere, a tight box stack) are intentionally omitted until the rigid
+        # IPC performance work lands, since the solver currently runs at only a
+        # few frames per second for those (they are covered by C++ regressions).
+        SX_RIGID_IPC,
+        SX_RIGID_IPC_SLIDE,
+        SX_RIGID_IPC_INCLINE,
+        SX_RIGID_IPC_PILE,
+        SX_RIGID_IPC_TUNNEL,
         SX_VARIATIONAL_CHAIN,
         SX_VARIATIONAL_TUMBLER,
         SX_LOOP_CLOSURE,
@@ -156,5 +176,8 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FEM_BOX,
         IPC_DEFORMABLE_FEM_BUCKLE,
         IPC_DEFORMABLE_FEM_MSH,
+        IPC_DEFORMABLE_OBJ_CLOTH,
+        IPC_DEFORMABLE_SEG_STRAND,
+        IPC_DEFORMABLE_PT_PARTICLES,
         IPC_DEFORMABLE_SCRIPTED,
     ]

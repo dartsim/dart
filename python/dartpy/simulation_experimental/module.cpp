@@ -53,8 +53,10 @@
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
+#include <dart/simulation/experimental/io/codim_mesh.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/io/gmsh_tet_mesh.hpp>
+#include <dart/simulation/experimental/io/obj_triangle_mesh.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -453,6 +455,9 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::WorldSyncStage>(m, "WorldSyncStage")
       .value("KINEMATICS", sim::WorldSyncStage::Kinematics);
 
+  nb::enum_<sim::RigidBodySolver>(m, "RigidBodySolver")
+      .value("SEQUENTIAL_IMPULSE", sim::RigidBodySolver::SequentialImpulse)
+      .value("IPC", sim::RigidBodySolver::Ipc);
   nb::enum_<sim::ContactSolverMethod>(m, "ContactSolverMethod")
       .value("SEQUENTIAL_IMPULSE", sim::ContactSolverMethod::SequentialImpulse)
       .value("BOXED_LCP", sim::ContactSolverMethod::BoxedLcp);
@@ -1898,6 +1903,56 @@ void defSimulationExperimentalModule(nb::module_& m)
       "DeformableBodyOptions (positions + tetrahedra). Set the material "
       "(e.g. use_finite_element_elasticity) and fixed nodes on the result.");
 
+  m.def(
+      "load_obj_triangle_mesh",
+      [](const std::filesystem::path& path) {
+        const auto mesh = sim::io::loadObjTriangleMeshFile(path);
+        sim::DeformableBodyOptions options;
+        options.positions = mesh.positions;
+        options.surfaceTriangles.reserve(mesh.triangles.size());
+        for (const auto& tri : mesh.triangles) {
+          options.surfaceTriangles.push_back(
+              sim::DeformableSurfaceTriangle{tri[0], tri[1], tri[2]});
+        }
+        return options;
+      },
+      nb::arg("path"),
+      "Load a Wavefront .obj triangle surface mesh into a "
+      "DeformableBodyOptions (positions + surface_triangles). Add spring edges "
+      "and masses (or tetrahedra + material) to make it a simulable body.");
+
+  m.def(
+      "load_seg_line_mesh",
+      [](const std::filesystem::path& path) {
+        const auto mesh = sim::io::loadSegLineMeshFile(path);
+        sim::DeformableBodyOptions options;
+        options.positions = mesh.positions;
+        options.edges.reserve(mesh.segments.size());
+        for (const auto& segment : mesh.segments) {
+          // restLength <= 0 asks the body builder to use the initial distance.
+          options.edges.push_back(
+              sim::DeformableEdge{segment[0], segment[1], -1.0});
+        }
+        return options;
+      },
+      nb::arg("path"),
+      "Load a .seg segment mesh into a DeformableBodyOptions (positions + "
+      "spring edges, rest lengths taken from the initial layout). Add masses "
+      "to "
+      "make it a simulable mass-spring strand.");
+
+  m.def(
+      "load_point_set",
+      [](const std::filesystem::path& path) {
+        const auto points = sim::io::loadPointSetFile(path);
+        sim::DeformableBodyOptions options;
+        options.positions = points.positions;
+        return options;
+      },
+      nb::arg("path"),
+      "Load a .pt point set into a DeformableBodyOptions (positions only). Add "
+      "masses to make it a cloud of free deformable particles.");
+
   nb::class_<sim::World>(m, "World")
       .def(
           "__init__",
@@ -2172,6 +2227,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::World& self, const nb::handle& gravity) {
             self.setGravity(toVector3(gravity));
           })
+      .def_prop_rw(
+          "rigid_body_solver",
+          &sim::World::getRigidBodySolver,
+          &sim::World::setRigidBodySolver)
       .def_prop_rw(
           "multibody_options",
           &sim::World::getMultibodyOptions,

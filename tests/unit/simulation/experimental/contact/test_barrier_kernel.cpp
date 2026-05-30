@@ -159,6 +159,25 @@ dc::PrimitiveBarrierResult pointTriangleBarrierFromVector(
 }
 
 //==============================================================================
+dc::PrimitiveBarrierResult pointEdgeBarrierFromVector(
+    const dc::Vector12d& x, const double squaredActivationDistance)
+{
+  return dc::pointEdgeBarrier(
+      x.segment<3>(0),
+      x.segment<3>(3),
+      x.segment<3>(6),
+      squaredActivationDistance);
+}
+
+//==============================================================================
+dc::PrimitiveBarrierResult pointPointBarrierFromVector(
+    const dc::Vector12d& x, const double squaredActivationDistance)
+{
+  return dc::pointPointBarrier(
+      x.segment<3>(0), x.segment<3>(3), squaredActivationDistance);
+}
+
+//==============================================================================
 dc::PrimitiveBarrierResult edgeEdgeBarrierFromVector(
     const dc::Vector12d& x, const double squaredActivationDistance)
 {
@@ -281,6 +300,51 @@ TEST(IpcBarrierKernel, PointTriangleDerivativesMatchFiniteDifferences)
 }
 
 //==============================================================================
+TEST(IpcBarrierKernel, PointEdgeDerivativesMatchFiniteDifferences)
+{
+  const dc::Vector12d x = stack(
+      Eigen::Vector3d(0.2, 0.15, 0.45),
+      Eigen::Vector3d(-0.6, 0.0, 0.0),
+      Eigen::Vector3d(0.6, 0.0, 0.0),
+      Eigen::Vector3d::Zero());
+  constexpr double kSquaredActivationDistance = 1.0;
+
+  const auto result = pointEdgeBarrierFromVector(x, kSquaredActivationDistance);
+  ASSERT_TRUE(result.active);
+  expectFiniteSymmetric(result.hessian);
+
+  const auto value = [](const dc::Vector12d& y) {
+    return pointEdgeBarrierFromVector(y, kSquaredActivationDistance).value;
+  };
+
+  expectVectorNear(result.gradient, finiteGradient(x, value), 3e-6);
+  expectMatrixNear(result.hessian, finiteHessian(x, value), 4e-3);
+}
+
+//==============================================================================
+TEST(IpcBarrierKernel, PointPointDerivativesMatchFiniteDifferences)
+{
+  const dc::Vector12d x = stack(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(0.3, 0.2, 0.4),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero());
+  constexpr double kSquaredActivationDistance = 1.0;
+
+  const auto result
+      = pointPointBarrierFromVector(x, kSquaredActivationDistance);
+  ASSERT_TRUE(result.active);
+  expectFiniteSymmetric(result.hessian);
+
+  const auto value = [](const dc::Vector12d& y) {
+    return pointPointBarrierFromVector(y, kSquaredActivationDistance).value;
+  };
+
+  expectVectorNear(result.gradient, finiteGradient(x, value), 3e-6);
+  expectMatrixNear(result.hessian, finiteHessian(x, value), 4e-3);
+}
+
+//==============================================================================
 TEST(IpcBarrierKernel, EdgeEdgeDerivativesMatchFiniteDifferences)
 {
   const dc::Vector12d x = stack(
@@ -346,6 +410,16 @@ TEST(IpcBarrierKernel, InactivePrimitiveBarriersReturnZeroDerivatives)
   EXPECT_EQ(pointTriangle.gradient.norm(), 0.0);
   EXPECT_EQ(pointTriangle.hessian.norm(), 0.0);
 
+  const auto pointEdge = dc::pointEdgeBarrier(
+      Eigen::Vector3d(0.2, 0.0, 2.0),
+      Eigen::Vector3d(-0.6, 0.0, 0.0),
+      Eigen::Vector3d(0.6, 0.0, 0.0),
+      kSquaredActivationDistance);
+  EXPECT_FALSE(pointEdge.active);
+  EXPECT_EQ(pointEdge.value, 0.0);
+  EXPECT_EQ(pointEdge.gradient.norm(), 0.0);
+  EXPECT_EQ(pointEdge.hessian.norm(), 0.0);
+
   const auto edgeEdge = dc::edgeEdgeBarrier(
       Eigen::Vector3d(-1.0, 0.0, 2.0),
       Eigen::Vector3d(1.0, 0.0, 2.0),
@@ -356,6 +430,15 @@ TEST(IpcBarrierKernel, InactivePrimitiveBarriersReturnZeroDerivatives)
   EXPECT_EQ(edgeEdge.value, 0.0);
   EXPECT_EQ(edgeEdge.gradient.norm(), 0.0);
   EXPECT_EQ(edgeEdge.hessian.norm(), 0.0);
+
+  const auto pointPoint = dc::pointPointBarrier(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 0.0, 2.0),
+      kSquaredActivationDistance);
+  EXPECT_FALSE(pointPoint.active);
+  EXPECT_EQ(pointPoint.value, 0.0);
+  EXPECT_EQ(pointPoint.gradient.norm(), 0.0);
+  EXPECT_EQ(pointPoint.hessian.norm(), 0.0);
 }
 
 //==============================================================================

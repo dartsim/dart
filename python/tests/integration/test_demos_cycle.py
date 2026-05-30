@@ -22,6 +22,37 @@ import pytest
 from examples.demos import make_demo_scenes, run  # noqa: E402
 
 
+def _gui_run_demos_available() -> bool:
+    """True when the dartpy Filament viewer entry point is built.
+
+    Reduced builds disable the GUI (for example the macOS arm64 CI job builds
+    with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF``, and the GUI depends on the
+    experimental target). Without the viewer the runner returns early, so tests
+    that exercise the cycle/screenshot paths skip in that configuration.
+    """
+
+    try:
+        import dartpy as dart
+    except Exception:  # pragma: no cover - dartpy import failure
+        return False
+    return hasattr(dart, "gui") and hasattr(dart.gui, "run_demos")
+
+
+def _deformable_bindings_available() -> bool:
+    """True when the experimental deformable bindings are compiled in.
+
+    Builds with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF`` ship a reduced
+    ``dartpy.simulation_experimental`` without the deformable types, so the
+    solver-free grid-builder check skips there rather than erroring.
+    """
+
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception:  # pragma: no cover - reduced build without the submodule
+        return False
+    return hasattr(sx, "DeformableBodyOptions")
+
+
 def test_registry_has_scenes() -> None:
     scenes = make_demo_scenes()
     assert len(scenes) >= 1
@@ -34,6 +65,8 @@ def test_registry_has_scenes() -> None:
 
 
 def test_runner_cycle_returns_zero() -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
     rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
     assert rc == 0
 
@@ -58,6 +91,12 @@ def test_ipc_deformable_grid_builder_topology() -> None:
     horizontal + vertical + two-diagonal-per-cell spring edges, and two
     triangles per cell.
     """
+
+    if not _deformable_bindings_available():
+        pytest.skip(
+            "DeformableBodyOptions unavailable "
+            "(experimental simulation disabled in this build)"
+        )
 
     from examples.demos._ipc_deformable_bridge import build_grid_options
 
@@ -144,6 +183,77 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     assert np.isfinite(final).all()
 
 
+def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
+    """The .obj importer feeds a real deformable solve.
+
+    Loading a bundled Wavefront ``.obj`` cloth, pinning one edge, and stepping
+    under gravity must produce a draped sheet: the free edge sags well below the
+    pinned edge, the solve stays finite, and nothing falls through the ground.
+    """
+
+    # The importer round-trips the bundled mesh into a usable surface.
+    import dartpy.simulation_experimental as sx
+    import numpy as np
+    from examples.demos.scenes.ipc_deformable_obj_cloth import _CLOTH_PATH, build
+
+    loaded = sx.load_obj_triangle_mesh(str(_CLOTH_PATH))
+    assert len(loaded.positions) == 121
+    assert len(loaded.surface_triangles) == 200
+
+    setup = build()
+    world = setup.info["sx_world"]
+    body = world.get_deformable_body("obj_cloth")
+    n = body.node_count
+
+    for _ in range(300):
+        world.step()
+
+    z = np.array([body.node_position(i)[2] for i in range(n)])
+    assert np.isfinite(z).all()
+    # The free edge sagged well below the pinned (max-y) edge.
+    assert float(z.max() - z.min()) > 0.1
+    # Nothing tunneled through the ground top (z = -0.20).
+    assert float(z.min()) > -0.21
+
+
+def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
+    """The .seg and .pt importers feed real deformable solves.
+
+    A `.seg` strand pinned at one end must hang (its tip falls well below the
+    pinned node), and a `.pt` particle cloud must fall under gravity and stack on
+    the ground barrier without tunneling through it -- both staying finite.
+    """
+
+    import numpy as np
+    from examples.demos.scenes.ipc_deformable_pt_particles import (
+        build as build_particles,
+    )
+    from examples.demos.scenes.ipc_deformable_seg_strand import build as build_strand
+
+    strand = build_strand()
+    sworld = strand.info["sx_world"]
+    sbody = sworld.get_deformable_body("seg_strand")
+    sn = sbody.node_count
+    for _ in range(200):
+        sworld.step()
+    sz = np.array([sbody.node_position(i)[2] for i in range(sn)])
+    assert np.isfinite(sz).all()
+    # The pinned node (0) stays put; the tip hangs well below it.
+    assert float(sz[0] - sz.min()) > 0.1
+
+    particles = build_particles()
+    pworld = particles.info["sx_world"]
+    pbody = pworld.get_deformable_body("pt_particles")
+    pn = pbody.node_count
+    z_start = min(pbody.node_position(i)[2] for i in range(pn))
+    for _ in range(200):
+        pworld.step()
+    pz = np.array([pbody.node_position(i)[2] for i in range(pn)])
+    assert np.isfinite(pz).all()
+    assert float(pz.min()) < z_start - 0.05  # fell under gravity
+    assert float(pz.min()) > -0.02  # caught by the ground barrier
+
+
 def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     """The IPC deformable scenes live in their own dedicated menu category.
 
@@ -167,6 +277,9 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_box",
         "ipc_deformable_fem_buckle",
         "ipc_deformable_fem_msh",
+        "ipc_deformable_obj_cloth",
+        "ipc_deformable_seg_strand",
+        "ipc_deformable_pt_particles",
         "ipc_deformable_scripted_dirichlet",
     }
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
@@ -185,6 +298,9 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     """`--screenshot` writes a real PPM via the dartpy.gui Filament viewer
     (PLAN-103 Phase 2 replacement for the old JSON state stub)."""
+
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     scenes = make_demo_scenes()
     target = scenes[0]
