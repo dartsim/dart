@@ -612,3 +612,126 @@ TEST(VbdWorldSolver, PublicConfigureGroundContactRests)
   EXPECT_GT(minZ, -0.05);
   EXPECT_LT(minZ, 0.05);
 }
+
+//==============================================================================
+// Option C: with contactStiffness > 0 a VBD body keeps running on the VBD path
+// when a static sphere obstacle is present (any obstacle previously forced the
+// body off the VBD path onto the default solver) and settles on the obstacle
+// surface without penetrating it.
+TEST(VbdWorldSolver, VbdBodyRestsOnSphereObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  const Eigen::Vector3d sphereCenter(0.1, 0.1, -0.3);
+  const double sphereRadius = 0.5; // top of the sphere at z = 0.2
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  sphereOptions.position = sphereCenter;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  // A free spring patch released just above the top of the sphere.
+  world.addDeformableBody("patch", makeFallingPatchOptions(0.28, 0.0));
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 50;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  const auto minSurfaceDistance = [&]() {
+    const auto body = world.getDeformableBody("patch");
+    double minimum = 1e9;
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      minimum = std::min(
+          minimum, (body->getPosition(i) - sphereCenter).norm() - sphereRadius);
+    }
+    return minimum;
+  };
+  ASSERT_GT(minSurfaceDistance(), 0.02);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 400; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("patch");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      ASSERT_TRUE(body->getPosition(i).allFinite()) << "blew up at " << step;
+    }
+  }
+
+  // The VBD path (not the default solver) handled the body despite the
+  // obstacle.
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  // The patch fell well below its release height onto the sphere ...
+  const auto body = world.getDeformableBody("patch");
+  double minZ = 1e9;
+  for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+    minZ = std::min(minZ, body->getPosition(i).z());
+  }
+  EXPECT_LT(minZ, 0.26);
+  // ... and no node sinks through the sphere surface (soft-penalty tolerance).
+  EXPECT_GT(minSurfaceDistance(), -3.0e-2);
+}
+
+//==============================================================================
+// Option C: the same holds for a static box obstacle -- VBD keeps the patch on
+// the box's top face without penetrating it.
+TEST(VbdWorldSolver, VbdBodyRestsOnBoxObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  const Eigen::Vector3d boxCenter(0.1, 0.1, 0.0);
+  const Eigen::Vector3d boxHalf(0.3, 0.3, 0.3); // top face at z = 0.3
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  boxOptions.position = boxCenter;
+  auto box = world.addRigidBody("obstacle_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  world.addDeformableBody("patch", makeFallingPatchOptions(0.38, 0.0));
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 50;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  const auto minBoxSurfaceDistance = [&]() {
+    const auto body = world.getDeformableBody("patch");
+    double minimum = 1e9;
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      const Eigen::Vector3d local = body->getPosition(i) - boxCenter;
+      const Eigen::Vector3d clamped
+          = local.cwiseMax(-boxHalf).cwiseMin(boxHalf);
+      minimum = std::min(minimum, (local - clamped).norm());
+    }
+    return minimum;
+  };
+  ASSERT_GT(minBoxSurfaceDistance(), 0.02);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 400; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("patch");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      ASSERT_TRUE(body->getPosition(i).allFinite()) << "blew up at " << step;
+    }
+  }
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  // The patch fell onto the box top face (z = 0.3) ...
+  const auto body = world.getDeformableBody("patch");
+  double minZ = 1e9;
+  for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+    minZ = std::min(minZ, body->getPosition(i).z());
+  }
+  EXPECT_LT(minZ, 0.36);
+  // ... without sinking through it (soft-penalty tolerance).
+  EXPECT_GT(minBoxSurfaceDistance(), -3.0e-2);
+}

@@ -3660,6 +3660,8 @@ void runVbdDeformableSolve(
     double poissonRatio,
     bool useFixedCorotationalTets,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
     double frictionCoeff,
     const comps::DeformableVbdConfig& config,
     DeformableSolverStats& stats)
@@ -3712,13 +3714,22 @@ void runVbdDeformableSolve(
     }
   }
 
-  // Build the per-vertex static-contact planes from the barrier set at the
-  // warm-start position (lagged for the step). A vertex over a barrier
-  // footprint gets a z-up half-space at the barrier top with the configured
-  // penalty stiffness; vertices off the footprint get a zero-stiffness
-  // (inactive) plane and fall freely.
+  // Build the per-vertex static-contact planes from the barrier + obstacle set
+  // at the warm-start position (lagged for the step). Each free vertex gets the
+  // single most-binding (smallest-gap) linearized half-space among the z-up
+  // ground barriers and the static sphere/box obstacles it is near: a z-up
+  // plane at the ground top, or the tangent plane at the closest sphere/box
+  // surface point along the outward surface normal. The half-space penalty (and
+  // Coulomb friction) act only on penetration, so an armed-but-separated plane
+  // is a no-op; vertices off every constraint get a zero-stiffness (inactive)
+  // plane and fall freely. One plane per vertex keeps the driver contract
+  // unchanged; a vertex pressed into ground and an obstacle at once resolves to
+  // the nearer constraint and recovers over steps.
   const std::vector<dvbd::ContactPlane>* contactPlanes = nullptr;
-  if (config.contactStiffness > 0.0 && !barriers.empty()) {
+  const bool anyStaticContact
+      = !barriers.empty() || !sphereObstacles.empty() || !boxObstacles.empty();
+  if (config.contactStiffness > 0.0 && anyStaticContact) {
+    const double band = staticGroundBarrierActivationDistance();
     vbdScratch.contactPlanes.assign(nodeCount, dvbd::ContactPlane{});
     for (std::size_t i = 0; i < nodeCount; ++i) {
       dvbd::ContactPlane& plane = vbdScratch.contactPlanes[i];
@@ -3728,9 +3739,68 @@ void runVbdDeformableSolve(
       if (scratch.activeFixed[i] != 0u) {
         continue;
       }
-      const auto groundTop = staticGroundTopAt(scratch.next[i], barriers);
+      const Eigen::Vector3d& position = scratch.next[i];
+      double bestGap = std::numeric_limits<double>::infinity();
+      Eigen::Vector3d bestNormal = Eigen::Vector3d::UnitZ();
+      double bestOffset = 0.0;
+      bool found = false;
+
+      const auto groundTop = staticGroundTopAt(position, barriers);
       if (groundTop.has_value()) {
-        plane.offset = *groundTop;
+        const double gap = position.z() - *groundTop;
+        if (gap < bestGap) {
+          bestGap = gap;
+          bestNormal = Eigen::Vector3d::UnitZ();
+          bestOffset = *groundTop;
+          found = true;
+        }
+      }
+
+      for (const SphereObstacleBarrier& sphere : sphereObstacles) {
+        const Eigen::Vector3d offset = position - sphere.center;
+        const double centerDistance = offset.norm();
+        if (centerDistance <= 0.0) {
+          continue;
+        }
+        const double surfaceDistance = centerDistance - sphere.radius;
+        if (surfaceDistance >= band) {
+          continue;
+        }
+        const Eigen::Vector3d normal = offset / centerDistance;
+        const double planeOffset = normal.dot(sphere.center) + sphere.radius;
+        const double gap = normal.dot(position) - planeOffset;
+        if (gap < bestGap) {
+          bestGap = gap;
+          bestNormal = normal;
+          bestOffset = planeOffset;
+          found = true;
+        }
+      }
+
+      for (const BoxObstacleBarrier& box : boxObstacles) {
+        Eigen::Vector3d normal;
+        const double surfaceDistance
+            = boxObstacleSurfaceDistance(position, box, normal);
+        // boxObstacleSurfaceDistance leaves the normal unset on/inside the box
+        // (surfaceDistance == 0); the lagged plane re-arms once the node exits.
+        if (surfaceDistance <= 0.0 || surfaceDistance >= band) {
+          continue;
+        }
+        const Eigen::Vector3d surfacePoint
+            = position - surfaceDistance * normal;
+        const double planeOffset = normal.dot(surfacePoint);
+        const double gap = normal.dot(position) - planeOffset;
+        if (gap < bestGap) {
+          bestGap = gap;
+          bestNormal = normal;
+          bestOffset = planeOffset;
+          found = true;
+        }
+      }
+
+      if (found) {
+        plane.normal = bestNormal;
+        plane.offset = bestOffset;
         plane.stiffness = config.contactStiffness;
       }
     }
@@ -4413,27 +4483,30 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  // VBD handles static ground/obstacle barriers itself (penalty contact) when
-  // contactStiffness > 0, but it cannot honor rigid-surface CCD or static
-  // sphere/box obstacles. The body's own surface mesh is excluded here: VBD
-  // solves inertia + springs + tet elasticity (+ ground contact) and treats the
-  // body as free of surface self-contact (a later slice wires VBD self-contact
-  // into the World path). A body with ground barriers but no VBD contact
-  // stiffness, or with sphere/box obstacles, falls back to the default solver
-  // so it still rests on / collides with them. The default-solver fast path
-  // below keeps the stricter surface check so non-VBD bodies still get
-  // self-contact.
-  const bool rigidSurfaceFree
-      = rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty();
-  const bool vbdHandlesBarriers
-      = barriers.empty()
+  // VBD handles static ground barriers and static sphere/box obstacles itself
+  // (lagged per-vertex half-space penalty contact + Coulomb friction) when
+  // contactStiffness > 0. Static rigid-surface CCD obstacles are always sphere
+  // or box bodies (collectStaticRigidSurfaceCcdObstacles skips other shapes),
+  // i.e. exactly the obstacles VBD handles via those barriers, so they no
+  // longer force the body onto the default solver; VBD still cannot honor
+  // *moving* rigid-surface CCD. The body's own surface mesh is excluded here:
+  // VBD solves inertia + springs + tet elasticity (+ static contact) and treats
+  // the body as free of surface self-contact (a later slice wires VBD
+  // self-contact into the World path). A body with static contacts but no VBD
+  // contact stiffness falls back to the default solver so it still rests on /
+  // collides with them. The default-solver fast path below keeps the stricter
+  // surface check so non-VBD bodies still get self-contact.
+  const bool movingRigidSurfaceFree = movingRigidSurfaceSnapshots.empty();
+  const bool anyStaticContact = !barriers.empty() || !sphereObstacles.empty()
+                                || !boxObstacles.empty()
+                                || !rigidSurfaceSnapshots.empty();
+  const bool vbdHandlesStaticContacts
+      = !anyStaticContact
         || (vbdConfig != nullptr && vbdConfig->contactStiffness > 0.0);
-  const bool contactFree = rigidSurfaceFree && barriers.empty()
-                           && sphereObstacles.empty() && boxObstacles.empty()
+  const bool contactFree = movingRigidSurfaceFree && !anyStaticContact
                            && contactScratch.surfaceTriangles.empty();
-  if (vbdConfig != nullptr && vbdConfig->enabled && rigidSurfaceFree
-      && sphereObstacles.empty() && boxObstacles.empty()
-      && vbdHandlesBarriers) {
+  if (vbdConfig != nullptr && vbdConfig->enabled && movingRigidSurfaceFree
+      && vbdHandlesStaticContacts) {
     runVbdDeformableSolve(
         state,
         model,
@@ -4445,6 +4518,8 @@ void advanceDeformableBody(
         material.poissonRatio,
         material.useFixedCorotationalElasticity,
         barriers,
+        sphereObstacles,
+        boxObstacles,
         frictionCoefficient,
         *vbdConfig,
         stats);
