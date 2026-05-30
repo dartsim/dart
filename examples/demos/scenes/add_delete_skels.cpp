@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/config.hpp>
 
@@ -86,9 +87,10 @@ struct AddDeleteState
       return;
     }
 
-    std::uniform_real_distribution<double> positionX(-1.0, 1.0);
-    std::uniform_real_distribution<double> positionY(0.5, 1.0);
-    std::uniform_real_distribution<double> positionZ(-1.0, 1.0);
+    // Z-up: the cube spawns at a random lateral X/Y over the ground and a
+    // random height along +Z.
+    std::uniform_real_distribution<double> lateral(-1.0, 1.0);
+    std::uniform_real_distribution<double> height(0.5, 1.0);
     std::uniform_real_distribution<double> size(0.1, 0.5);
     std::uniform_real_distribution<double> color(0.0, 1.0);
 
@@ -96,9 +98,7 @@ struct AddDeleteState
     world->addSkeleton(createCube(
         std::string(kCubePrefix) + std::to_string(index),
         Eigen::Vector3d(
-            positionX(randomEngine),
-            positionY(randomEngine),
-            positionZ(randomEngine)),
+            lateral(randomEngine), lateral(randomEngine), height(randomEngine)),
         Eigen::Vector3d(
             size(randomEngine), size(randomEngine), size(randomEngine)),
         Eigen::Vector3d(
@@ -158,11 +158,13 @@ dart::simulation::WorldPtr createAddDeleteWorld()
     throw std::runtime_error("Failed to load dart://sample/skel/ground.skel");
   }
 
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   preferBulletCollisionDetector(*world);
   if (auto ground = world->getSkeleton(0)) {
     ground->setName(kGroundName);
   }
+  // ground.skel is authored Y-up; reorient to the canonical Z-up convention.
+  // Runtime-spawned cubes (spawnRandomCube) are authored Z-up directly.
+  reorientWorldToZUp(world);
   return world;
 }
 

@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -50,7 +51,8 @@ dart::simulation::WorldPtr createRigidCubesWorld()
     throw std::runtime_error("Failed to load dart://sample/skel/cubes.skel");
   }
 
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  // cubes.skel is authored Y-up; reorient to the canonical Z-up convention.
+  reorientWorldToZUp(world);
   return world;
 }
 
