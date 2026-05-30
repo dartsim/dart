@@ -42,7 +42,10 @@ permissions:
 jobs:
   cuda-build:
     name: CUDA Build
-    runs-on: ubuntu-latest
+    # Runs on the self-hosted GPU runner (label `ubuntu-latest-gpu`) so CUDA
+    # targets are built AND executed against a real NVIDIA GPU. General jobs use
+    # the `ubuntu-latest` self-hosted runners; only CUDA work is routed here.
+    runs-on: ubuntu-latest-gpu
     timeout-minutes: 60
     env:
       DART_PARALLEL_JOBS: "8"
@@ -65,5 +68,11 @@ jobs:
       - name: Configure compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
+      - name: Show GPU (nvidia-smi)
+        run: nvidia-smi
+
       - name: Build CUDA targets
         run: pixi run --locked -e cuda build-cuda
+
+      - name: Run CUDA tests on GPU
+        run: pixi run --locked -e cuda test-cuda
