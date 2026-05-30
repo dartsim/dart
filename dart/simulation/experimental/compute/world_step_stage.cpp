@@ -802,6 +802,19 @@ struct BoxObstacleBarrier
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Zero();
 };
 
+// A static capsule (a segment swept by a radius -- a rod/wire) opted in as a
+// deformable obstacle exerts a clamped-log barrier on nearby deformable nodes
+// along the outward radial normal. The closest point on the capsule surface is
+// found from the point-to-segment closest point, so the distance is
+// |node - closestOnSegment| - radius. This is the codimensional (1D) obstacle
+// analogue of the sphere (0D point) and box obstacles.
+struct CapsuleObstacleBarrier
+{
+  Eigen::Vector3d pointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointB = Eigen::Vector3d::Zero();
+  double radius = 0.0;
+};
+
 //==============================================================================
 struct DeformableContactSolverScratch
 {
@@ -1699,6 +1712,7 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         barriers.push_back(barrier);
         break;
       }
+      case CollisionShapeType::Capsule:
       case CollisionShapeType::Mesh:
         break;
     }
@@ -1767,6 +1781,43 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
     obstacle.center = transform.position;
     obstacle.rotation = transform.orientation.normalized().toRotationMatrix();
     obstacle.halfExtents = geometry.shape.halfExtents;
+    obstacles.push_back(obstacle);
+  }
+  return obstacles;
+}
+
+//==============================================================================
+std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
+    const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<CapsuleObstacleBarrier> obstacles;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    const double radius = geometry.shape.radius;
+    const double halfHeight = geometry.shape.halfExtents.z();
+    if (geometry.shape.type != CollisionShapeType::Capsule || !(radius > 0.0)
+        || !std::isfinite(radius) || !(halfHeight > 0.0)
+        || !std::isfinite(halfHeight) || !transform.position.allFinite()
+        || !transform.orientation.coeffs().allFinite()) {
+      continue;
+    }
+    // The capsule axis is the body z axis; map its two segment endpoints into
+    // the world frame.
+    const Eigen::Vector3d axis
+        = transform.orientation.normalized().toRotationMatrix().col(2);
+    CapsuleObstacleBarrier obstacle;
+    obstacle.pointA = transform.position - halfHeight * axis;
+    obstacle.pointB = transform.position + halfHeight * axis;
+    obstacle.radius = radius;
     obstacles.push_back(obstacle);
   }
   return obstacles;
@@ -2377,6 +2428,85 @@ double boxObstacleSurfaceDistance(
     outwardNormal = obstacle.rotation * (delta / distance);
   }
   return distance;
+}
+
+//==============================================================================
+// Closest-surface distance from a node to a capsule obstacle, with the outward
+// radial surface normal set when positive. The distance is the point-to-segment
+// axis distance minus the radius; the normal points from the closest axis point
+// to the node.
+double capsuleObstacleSurfaceDistance(
+    const Eigen::Vector3d& position,
+    const CapsuleObstacleBarrier& obstacle,
+    Eigen::Vector3d& outwardNormal)
+{
+  const Eigen::Vector3d axis = obstacle.pointB - obstacle.pointA;
+  const double axisLengthSq = axis.squaredNorm();
+  double t = 0.0;
+  if (axisLengthSq > 0.0) {
+    t = (position - obstacle.pointA).dot(axis) / axisLengthSq;
+    t = std::clamp(t, 0.0, 1.0);
+  }
+  const Eigen::Vector3d closest = obstacle.pointA + t * axis;
+  const Eigen::Vector3d delta = position - closest;
+  const double axisDistance = delta.norm();
+  if (axisDistance > 0.0 && std::isfinite(axisDistance)) {
+    outwardNormal = delta / axisDistance;
+  }
+  return axisDistance - obstacle.radius;
+}
+
+//==============================================================================
+// Adds the clamped-log barrier energy/gradient pushing free deformable nodes
+// out of the activation band of a capsule obstacle, along the outward radial
+// normal. The capsule analogue of addBoxObstacleBarrierEnergy.
+double addCapsuleObstacleBarrierEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<CapsuleObstacleBarrier>& obstacles,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (obstacles.empty()) {
+    return 0.0;
+  }
+
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  constexpr double barrierScale = 25.0;
+
+  double energy = 0.0;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = capsuleObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || !std::isfinite(distance)) {
+        // On or inside the capsule: a penetration the barrier forbids.
+        return std::numeric_limits<double>::infinity();
+      }
+      if (distance >= activationDistance) {
+        continue;
+      }
+
+      const double normalizedDistance = distance / activationDistance;
+      const double distanceOffset = distance - activationDistance;
+      energy += -barrierScale * distanceOffset * distanceOffset
+                * std::log(normalizedDistance);
+
+      if (gradient != nullptr) {
+        const double derivative
+            = -barrierScale
+              * (2.0 * distanceOffset * std::log(normalizedDistance)
+                 + distanceOffset * distanceOffset / distance);
+        (*gradient)[i] += derivative * normal;
+      }
+    }
+  }
+
+  return energy;
 }
 
 //==============================================================================
@@ -3024,6 +3154,7 @@ double evaluateDeformableObjective(
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
@@ -3085,6 +3216,8 @@ double evaluateDeformableObjective(
       positions, fixed, sphereObstacles, gradient);
   energy
       += addBoxObstacleBarrierEnergy(positions, fixed, boxObstacles, gradient);
+  energy += addCapsuleObstacleBarrierEnergy(
+      positions, fixed, capsuleObstacles, gradient);
   if (contactBarrier != nullptr) {
     energy += addSelfContactBarrierEnergy(
         positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
@@ -3967,6 +4100,7 @@ bool computeProjectedNewtonDirection(
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
     const SelfContactFrictionInputs* selfContactFriction,
@@ -4304,6 +4438,38 @@ bool computeProjectedNewtonDirection(
     }
   }
 
+  // Capsule obstacle barrier Hessian: the same rank-1 radial block as the
+  // sphere/box obstacle barriers (curvature * n n^T along the outward radial
+  // normal; the tangential eigenvalues are non-positive and drop out under PSD
+  // projection).
+  if (!capsuleObstacles.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    constexpr double barrierScale = 25.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (!isFree(i)) {
+        continue;
+      }
+      for (const auto& obstacle : capsuleObstacles) {
+        Eigen::Vector3d normal;
+        const double d
+            = capsuleObstacleSurfaceDistance(positions[i], obstacle, normal);
+        if (d <= 0.0 || d >= activationDistance || !std::isfinite(d)) {
+          continue;
+        }
+        const double distanceOffset = d - activationDistance;
+        const double logRatio = std::log(d / activationDistance);
+        const double second = -barrierScale
+                              * (2.0 * logRatio + 4.0 * distanceOffset / d
+                                 - (distanceOffset * distanceOffset) / (d * d));
+        const double curvature = std::max(0.0, second);
+        if (curvature <= 0.0) {
+          continue;
+        }
+        addBlock3(i, i, curvature * (normal * normal.transpose()));
+      }
+    }
+  }
+
   // Lagged ground-friction Hessian: a 3x3 tangent-plane block per node with an
   // active friction normal force. With P = I - n n^T the tangent projector onto
   // the plane orthogonal to the lagged ground normal n, T = u_T/||u_T|| the
@@ -4502,6 +4668,7 @@ void advanceDeformableBody(
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
     const comps::DeformableMaterial& material,
     DeformableSolverStats& stats)
 {
@@ -4600,10 +4767,13 @@ void advanceDeformableBody(
   const bool vbdHandlesStaticContacts
       = !anyStaticContact
         || (vbdConfig != nullptr && vbdConfig->contactStiffness > 0.0);
+  // VBD does not yet handle static capsule-rod obstacles, so a body near one
+  // falls back to the default solver (which does).
   const bool contactFree = movingRigidSurfaceFree && !anyStaticContact
+                           && capsuleObstacles.empty()
                            && contactScratch.surfaceTriangles.empty();
   if (vbdConfig != nullptr && vbdConfig->enabled && movingRigidSurfaceFree
-      && vbdHandlesStaticContacts) {
+      && capsuleObstacles.empty() && vbdHandlesStaticContacts) {
     runVbdDeformableSolve(
         state,
         model,
@@ -4721,6 +4891,7 @@ void advanceDeformableBody(
           barriers,
           sphereObstacles,
           boxObstacles,
+          capsuleObstacles,
           timeStep,
           &scratch.gradient,
           &contactBarrier,
@@ -4837,6 +5008,7 @@ void advanceDeformableBody(
                 barriers,
                 sphereObstacles,
                 boxObstacles,
+                capsuleObstacles,
                 timeStep,
                 nullptr,
                 &contactBarrier,
@@ -4890,6 +5062,7 @@ void advanceDeformableBody(
           barriers,
           sphereObstacles,
           boxObstacles,
+          capsuleObstacles,
           &contactBarrier,
           &groundFriction,
           &selfContactFriction,
@@ -4988,6 +5161,7 @@ void advanceDeformableBody(
           barriers,
           sphereObstacles,
           boxObstacles,
+          capsuleObstacles,
           timeStep,
           &scratch.gradient,
           &terminalBarrier,
@@ -5276,6 +5450,10 @@ bool copyCollisionShapeToRigidIpcSurface(
       }
       copySphereToRigidIpcSurface(shape.radius, surface);
       return true;
+    case CollisionShapeType::Capsule:
+      // Capsule rigid-IPC surfaces are not supported yet; deformable-vs-capsule
+      // contact uses the analytic capsule obstacle barrier.
+      return false;
   }
 
   return false;
@@ -6029,6 +6207,7 @@ void DeformableDynamicsStage::execute(
   const auto barriers = collectStaticGroundBarriers(world);
   const auto sphereObstacles = collectSphereObstacleBarriers(world);
   const auto boxObstacles = collectBoxObstacleBarriers(world);
+  const auto capsuleObstacles = collectCapsuleObstacleBarriers(world);
   const auto rigidSurfaceSnapshots
       = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
@@ -6104,6 +6283,7 @@ void DeformableDynamicsStage::execute(
         barriers,
         sphereObstacles,
         boxObstacles,
+        capsuleObstacles,
         material,
         m_lastStats);
   }
