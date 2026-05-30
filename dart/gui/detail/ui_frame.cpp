@@ -302,7 +302,10 @@ void buildDefaultDockLayout(
   using dart::gui::DockSide;
 
   bool useTop = false;
-  bool useBottom = false;
+  // The built-in status panel ("DART") always docks into the bottom region, so
+  // reserve it even when no application panel requests the bottom; otherwise
+  // the status panel would tab into the left sidebar (e.g. the demos catalog).
+  bool useBottom = true;
   bool useLeft = false;
   bool useRight = false;
   for (const auto& panel : panels) {
@@ -484,6 +487,20 @@ void updateFrameUi(
       uiState};
   panelContext.nativeWindow
       = window == nullptr ? nullptr : getNativeWindow(window);
+  // Float the built-in status HUD to the right of any left-docked sidebar (the
+  // demos catalog) so the two panels do not overlap by default. Standalone
+  // viewers have no left sidebar, so the inset stays 0 and the HUD keeps its
+  // {20,20} corner. Docking, when enabled, places the HUD via the dock layout
+  // and ignores this floating position.
+  double statusPanelLeftPx = 20.0;
+  for (const auto& panel : panels) {
+    if (panel.dockSide == dart::gui::DockSide::Left
+        && panel.initialPosition.has_value() && panel.initialSize.has_value()) {
+      statusPanelLeftPx = std::max(
+          statusPanelLeftPx,
+          (*panel.initialPosition)[0] + (*panel.initialSize)[0] + 16.0);
+    }
+  }
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
       sceneName(exampleScene),
       panelContext.simulationTime,
@@ -495,7 +512,8 @@ void updateFrameUi(
       debugOverlays.contactOptions,
       lifecycle,
       guiScale.effectiveScale,
-      dartScene.dockingEnabled);
+      dartScene.dockingEnabled,
+      statusPanelLeftPx);
   if (debugOptionsChanged) {
     refreshStaticDebugOverlay(
         engine, scene, debugMaterial, *dartScene.world, debugOverlays);

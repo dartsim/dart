@@ -28,6 +28,7 @@ fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 | [`simulation_experimental_references.md`](simulation_experimental_references.md) | Compatibility pointer to the consolidated research reference catalog                                                                     |
 | [`../readthedocs/papers.md`](../readthedocs/papers.md)                           | Managed catalog of research papers, textbooks, standards, and comparative engines for the experimental world (status, priority, verdict) |
 | [`simulation_solver_architecture.md`](simulation_solver_architecture.md)         | Internal architecture for solvers, domain assignment, multi-physics coupling, and the step schedule behind the experimental `World`      |
+| [`simulation_variational_integrator.md`](simulation_variational_integrator.md)   | Architecture and math rationale for the linear-time variational integrator (discrete-mechanics) integration family (PLAN-082)            |
 
 ## Placement Rules
 

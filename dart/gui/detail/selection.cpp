@@ -577,6 +577,155 @@ bool SelectionController::applyBodyNodeDragRotation(
   return mActiveBodyNodeDrag->ik->solveAndApply(true);
 }
 
+namespace {
+
+// Mouse-spring (force-drag) tuning. These are viewer-tunable: kp is the spring
+// stiffness pulling the grabbed point toward the cursor target, kd damps the
+// point velocity to suppress oscillation. Defaults are chosen to feel snappy on
+// the ~1 kg demo bodies without exploding the integrator; tune kp up for a
+// stiffer grab and kd up if a dragged body rings.
+constexpr double kForceDragStiffness = 60.0;
+constexpr double kForceDragDamping = 8.0;
+
+// Resolve the world-space point a fixed depth along a pick ray. The depth is
+// measured along the (normalized) ray direction so the drag target tracks the
+// cursor on a plane parallel to the image plane at the grab distance.
+Eigen::Vector3d forceDragTargetPoint(
+    const dart::gui::PickRay& ray, double rayDepth)
+{
+  const double directionNorm = ray.direction.norm();
+  const Eigen::Vector3d unitDirection
+      = directionNorm > 1e-12 ? (ray.direction / directionNorm).eval()
+                              : ray.direction;
+  return ray.origin + unitDirection * rayDepth;
+}
+
+} // namespace
+
+bool SelectionController::beginForceDrag(
+    DartScene& scene,
+    const RenderableDescriptor& descriptor,
+    const PickRay& cursorRay,
+    const Eigen::Vector3d& hitPointWorld,
+    ViewerLifecycleState& lifecycle)
+{
+  auto* bodyNode = bodyNodeForDescriptor(descriptor);
+  // Non-BodyNode renderables (e.g. sx SimpleFrame mirrors) need an application
+  // sink. Without one there is nothing to push, so skip and let camera orbit.
+  if (bodyNode == nullptr && !scene.onForceDrag) {
+    return false;
+  }
+
+  const double directionNorm = cursorRay.direction.norm();
+  const Eigen::Vector3d unitDirection
+      = directionNorm > 1e-12 ? (cursorRay.direction / directionNorm).eval()
+                              : cursorRay.direction;
+
+  ActiveForceDrag drag;
+  drag.renderableId = descriptor.id;
+  drag.renderableName = descriptor.shapeFrameName.empty()
+                            ? descriptor.bodyName
+                            : descriptor.shapeFrameName;
+  drag.bodyNode = bodyNode;
+  // Record the grab offset in the body's local frame so the application point
+  // tracks the body as it rotates, yielding torque for off-center grabs.
+  const Eigen::Isometry3d& bodyTransform = descriptor.worldTransform;
+  drag.savedLocalOffset = bodyTransform.linear().transpose()
+                          * (hitPointWorld - bodyTransform.translation());
+  drag.rayDepth = unitDirection.dot(hitPointWorld - cursorRay.origin);
+
+  mActiveForceDrag = std::move(drag);
+  mLeftMouseStartedDrag = true;
+  mSelectedDragMode = DragMode::Force;
+  mSelectionBoundsVisible = false;
+  lifecycle.paused = true;
+  return true;
+}
+
+void SelectionController::updateForceDrag(
+    DartScene& scene,
+    const std::vector<RenderableDescriptor>& descriptors,
+    const PickRay& cursorRay)
+{
+  if (!mActiveForceDrag) {
+    return;
+  }
+
+  const Eigen::Vector3d target
+      = forceDragTargetPoint(cursorRay, mActiveForceDrag->rayDepth);
+  if (!target.allFinite()) {
+    return;
+  }
+
+  if (mActiveForceDrag->bodyNode != nullptr) {
+    // Legacy path: the grabbed point is the body origin offset by the saved
+    // local grab offset (rotated into the world); apply a spring-damper force
+    // there every frame via the in-engine external-force buffer.
+    dart::dynamics::BodyNode* bodyNode = mActiveForceDrag->bodyNode;
+    const Eigen::Isometry3d bodyTransform = bodyNode->getWorldTransform();
+    const Eigen::Vector3d worldOffset
+        = bodyTransform.linear() * mActiveForceDrag->savedLocalOffset;
+    const Eigen::Vector3d appPoint = bodyTransform.translation() + worldOffset;
+    const Eigen::Vector3d pointVelocity
+        = bodyNode->getLinearVelocity(mActiveForceDrag->savedLocalOffset);
+    Eigen::Vector3d force = kForceDragStiffness * (target - appPoint)
+                            - kForceDragDamping * pointVelocity;
+    if (!force.allFinite()) {
+      return;
+    }
+    bodyNode->addExtForce(
+        force, appPoint, /*isForceLocal=*/false, /*isOffsetLocal=*/false);
+    return;
+  }
+
+  // Non-BodyNode path: we cannot read the body's pose or velocity from here, so
+  // recompute the application point from the renderable's last-known transform
+  // (refreshed each frame in the descriptor list) and omit damping — the
+  // application owns the body and applies the one-shot force on its next step.
+  if (!scene.onForceDrag) {
+    return;
+  }
+  const RenderableDescriptor* descriptor
+      = findRenderableDescriptor(descriptors, mActiveForceDrag->renderableId);
+  if (descriptor == nullptr) {
+    return;
+  }
+  const Eigen::Isometry3d& bodyTransform = descriptor->worldTransform;
+  const Eigen::Vector3d appPoint
+      = bodyTransform.translation()
+        + bodyTransform.linear() * mActiveForceDrag->savedLocalOffset;
+  const Eigen::Vector3d force = kForceDragStiffness * (target - appPoint);
+  if (!force.allFinite()) {
+    return;
+  }
+
+  dart::gui::ForceDragEvent event;
+  event.renderableId = mActiveForceDrag->renderableId;
+  event.renderableName = mActiveForceDrag->renderableName;
+  event.applicationPoint = appPoint;
+  event.force = force;
+  event.active = true;
+  scene.onForceDrag(event);
+}
+
+void SelectionController::endForceDrag(DartScene& scene)
+{
+  if (!mActiveForceDrag) {
+    return;
+  }
+  // Signal a final inactive event so non-BodyNode applications stop reapplying
+  // their one-shot force. Legacy bodies need no teardown (the buffer clears on
+  // the next step), but the inactive event is harmless for them too.
+  if (mActiveForceDrag->bodyNode == nullptr && scene.onForceDrag) {
+    dart::gui::ForceDragEvent event;
+    event.renderableId = mActiveForceDrag->renderableId;
+    event.renderableName = mActiveForceDrag->renderableName;
+    event.active = false;
+    scene.onForceDrag(event);
+  }
+  mActiveForceDrag.reset();
+}
+
 void SelectionController::applyKeyboardNudge(
     GLFWwindow* window,
     const OrbitCamera& camera,
@@ -779,10 +928,33 @@ bool SelectionController::updateMouseSelection(
         }
       }
     }
+
+    // Plain left-press (no kinematic-drag modifier) over a renderable begins a
+    // mouse "force-drag": a spring that pushes/pulls the picked body. A hit on
+    // empty space leaves mLeftMouseStartedDrag false so camera orbit still
+    // runs.
+    if (!mLeftMouseStartedOnPanel && !mLeftMouseStartedDrag
+        && !isBodyNodeDragModifierDown(window) && !isDragModifierDown(window)) {
+      if (const auto hit = pickNearestRenderable(descriptors, cursorRay)) {
+        const RenderableDescriptor& descriptor
+            = descriptors[hit->renderableIndex];
+        if (beginForceDrag(
+                scene, descriptor, cursorRay, hit->point, lifecycle)) {
+          mSelectedRenderableId = hit->id;
+          mSelectedPoint = hit->point;
+          mSelectedNormal = hit->normal;
+          mSelectedLabel = selectionLabelForRenderable(scene, descriptor);
+        }
+      }
+    }
   }
 
   if (isLeftMousePressed && mLeftMouseStartedDrag) {
-    if (mSelectedDragMode == DragMode::Rotate) {
+    if (mSelectedDragMode == DragMode::Force) {
+      const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
+      updateForceDrag(scene, descriptors, ray);
+      lifecycle.paused = true;
+    } else if (mSelectedDragMode == DragMode::Rotate) {
       const double cursorDelta = (cursorX - mSelectedDragLastCursorX)
                                  - (cursorY - mSelectedDragLastCursorY);
       const double angle = cursorDelta * kRotationRadiansPerPixel;
@@ -924,6 +1096,7 @@ bool SelectionController::updateMouseSelection(
         clear();
       }
     }
+    endForceDrag(scene);
     mLeftMouseStartedDrag = false;
     mSelectedDragMode = DragMode::Translate;
     mActiveGizmoIndex = 0u;

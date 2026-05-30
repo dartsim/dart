@@ -86,6 +86,14 @@
         opted-in static box collision shapes triangulated into stationary
         surface snapshots with physical box edges for deformable line-search
         CCD limiting.
+  - [x] Internal static sphere surface CCD sub-slice: opted-in static sphere
+        collision shapes tessellated into a UV-sphere triangle mesh that
+        conservatively circumscribes the analytic sphere (vertices at a slightly
+        inflated radius so every flat face stays outside the true surface),
+        reusing the same point-triangle / edge-edge CCD limiter with no new
+        primitive. Same `setDeformableSurfaceCcdObstacle` opt-in (untagged
+        shapes unaffected); `staticRigidSurfaceCcdSphereCount` stat and
+        opted-in/untagged regressions.
   - [x] Internal moving rigid box surface CCD line-search sub-slice: free
         (non-static) opted-in box obstacles whose end-of-step transform is
         predicted from velocity (mirroring the rigid position integrator that
@@ -93,10 +101,11 @@
         overlapping static pose samples, so the deformable cannot settle in or
         tunnel through the obstacle's swept corridor. One-way, timing-agnostic
         conservative limiter with focused regressions and benchmark counters.
-  - [ ] Remaining Phase 2 work: non-box/deforming rigid surface coverage,
-        timing-aware (non-over-conservative) moving-obstacle CCD, broader
-        solver-wired CCD line-search coverage, and stronger spatial
-        acceleration for larger meshes.
+  - [ ] Remaining Phase 2 work: further non-box rigid surface coverage
+        (arbitrary meshes; deforming/moving spheres), timing-aware
+        (non-over-conservative) moving-obstacle CCD, broader solver-wired CCD
+        line-search coverage, and stronger spatial acceleration for larger
+        meshes. (Static box and sphere obstacles are covered.)
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
   - [x] Self-contact barrier forces sub-slice: the deformable objective now adds
@@ -178,11 +187,20 @@
         termination, a single-iteration snapshot distinct from the cumulative
         `selfContactBarrierActiveContacts`). Behavior-preserving (diagnostic
         only); feeds the Fig. 23 / Table 1 contact statistics.
+  - [x] Static sphere obstacle barrier force: a static rigid sphere opted in via
+        `setDeformableSurfaceCcdObstacle` now exerts a full radial clamped-log
+        barrier (energy + gradient) that pushes deformable nodes out along the
+        outward radial normal -- a 3D contact force, unlike the vertical-only
+        ground barrier. Additive (surface-CCD-obstacle spheres were previously a
+        no-op; boxes and non-opted scenes unchanged); the surface CCD limiter is
+        the tunnelling guard for fast motion. Box obstacles, the projected-Newton
+        Hessian, and codimensional obstacles are later increments.
   - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
         host<->device copies remain; keeping the assembly/solve on-device is a
         follow-up), matrix-free CG for very large meshes, adaptive barrier
-        stiffness, barrier forces for rigid/codimensional obstacles, and
-        complementarity/solver-stat diagnostics. Known approximation: the
+        stiffness, barrier forces for rigid BOX and codimensional obstacles (the
+        sphere obstacle barrier is covered) plus their projected-Newton Hessian,
+        and complementarity/solver-stat diagnostics. Known approximation: the
         contact active set is rebuilt once per outer iteration and held fixed
         across the inner Newton/line-search step (standard IPC), rather than
         re-queried within the line search.

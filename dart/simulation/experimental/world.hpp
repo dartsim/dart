@@ -39,6 +39,7 @@
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/diff/step_gradient.hpp>
+#include <dart/simulation/experimental/multibody/multibody_options.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 #include <dart/simulation/experimental/world_sync_stage.hpp>
 
@@ -331,6 +332,23 @@ public:
       compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
+  // Multibody solver configuration
+  //--------------------------------------------------------------------------
+
+  /// Set the multibody solver/integration configuration as a whole (see
+  /// `MultibodyOptions`). Configuration is by documented method-family name, so
+  /// new capabilities are added as `MultibodyOptions` fields rather than as new
+  /// World methods, and no solver/stage types are exposed. Throws
+  /// InvalidArgumentException for an unknown `integrationFamily`. Selection is
+  /// parsed to an internal representation here, so the per-step path carries no
+  /// configuration-parsing cost.
+  void setMultibodyOptions(const MultibodyOptions& options);
+
+  /// The current multibody solver/integration configuration. The
+  /// `integrationFamily` defaults to `"semi-implicit"`.
+  [[nodiscard]] MultibodyOptions getMultibodyOptions() const;
+
+  //--------------------------------------------------------------------------
   // Registry access
   //--------------------------------------------------------------------------
   /// @internal
@@ -409,6 +427,13 @@ private:
       ContactSolverMethod::SequentialImpulse};
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   double m_time{0.0};
+  enum class MultibodyIntegrationMethod
+  {
+    SemiImplicit,
+    Variational
+  };
+  MultibodyIntegrationMethod m_multibodyIntegrationMethod{
+      MultibodyIntegrationMethod::SemiImplicit};
   std::size_t m_frame{0};
 
   /// Cached explicit Jacobians of the most recent differentiable step.

@@ -208,6 +208,7 @@ void applySceneOptions(
   appOptions.cameraUpdater = src.cameraUpdater;
   appOptions.viewportLayoutProvider = src.viewportLayoutProvider;
   appOptions.onViewportPaneActivated = src.onViewportPaneActivated;
+  appOptions.onForceDrag = src.onForceDrag;
 }
 
 int demoSceneIndex(
@@ -306,6 +307,7 @@ int runGuiBackendApplicationImpl(
       appOptions.selectedRenderableProvider
           = applicationOptions.selectedRenderableProvider;
       appOptions.onRenderableSelected = applicationOptions.onRenderableSelected;
+      appOptions.onForceDrag = applicationOptions.onForceDrag;
       appOptions.dockingEnabled = applicationOptions.dockingEnabled;
       appOptions.preStep = applicationOptions.preStep;
       appOptions.postStep = applicationOptions.postStep;
@@ -442,6 +444,10 @@ int runGuiBackendApplicationImpl(
       }
       applySceneOptions(
           appOptions, sceneOptions, renderOutputModeExplicit, renderOutputMode);
+      // The demos host uses the docked workspace layout so the catalog sidebar
+      // and the status HUD never overlap; this is a no-op (floating overlay
+      // fallback) on builds without ImGui docking support.
+      appOptions.dockingEnabled = true;
       std::vector<dart::gui::Panel> panels;
       panels.reserve(appOptions.panels.size() + 1);
       panels.push_back(makeDemoSidebarPanel(*demoCatalog, activeIndex));

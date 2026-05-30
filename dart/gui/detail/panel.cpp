@@ -321,11 +321,12 @@ bool renderBuiltInStatusPanel(
     DebugDrawOptions& contactDebugOptions,
     ViewerLifecycleState& lifecycle,
     double guiScale,
-    bool dockingEnabled)
+    bool dockingEnabled,
+    double leftMarginPx)
 {
   const bool dockingActive = dockingEnabled && dart::gui::isDockingAvailable();
   ImGui::SetNextWindowPos(
-      {20.0f * static_cast<float>(guiScale),
+      {static_cast<float>(leftMarginPx) * static_cast<float>(guiScale),
        20.0f * static_cast<float>(guiScale)},
       ImGuiCond_FirstUseEver);
   // When docked, this panel joins the dock layout: keep it opaque and let
