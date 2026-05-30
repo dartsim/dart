@@ -40,10 +40,44 @@ DOF), Atlas-yoga headline 87× (32 DOF, 24 contacts).
 - On the paper's hardware-normalized speedup metric, DART now **beats both the
   live Nimble reference and the paper's mid-system Table II ratios** at matching
   DOF (e.g. 9 DOF: DART 12.4× vs Half-Cheetah 8.64× vs Nimble 5–7×).
-- DART's **absolute** analytic time (0.69 ms @ 32 DOF) is competitive with
-  Nimble's (~0.5 ms) — same order of magnitude. DART's higher _ratio_ partly
-  reflects a more expensive central-FD baseline, so the absolute analytic time
-  is the conservative comparison and remains competitive.
+- On **absolute** single-step time, DART is also strictly faster than the live
+  Nimble reference at every DOF (see the verified median-vs-median comparison
+  below). (The 0.689 ms @ 32 DOF in the table above is the per-call average from
+  the in-process benchmark loop and runs slower under load; the fair head-to-head
+  uses the load-robust median, 0.394 ms.)
+
+### Absolute single-step time vs the live Nimble reference (fair, adversarially verified)
+
+The speedup ratios above are hardware-normalized. For the **absolute** wall-clock
+of one (forward step + full state Jacobian), DART is compared head-to-head with
+the live Nimble reference on the SAME machine, single-threaded, on the SAME
+N-link revolute chain. The statistic is the **median** per call (sample-count
+robust — unlike the minimum, whose order statistic drifts down with more
+samples; an earlier min-vs-min comparison was rejected in adversarial review for
+exactly this bias) over 5 independent repeats:
+
+| DOF | DART median (ms) | Nimble median (ms) | DART faster | DART wins all 5 repeats |
+| --: | ---------------: | -----------------: | ----------: | :---------------------: |
+|   5 |           0.0251 |             0.0369 |       1.47× |           yes           |
+|   9 |           0.0454 |             0.0688 |       1.52× |           yes           |
+|  18 |           0.1429 |             0.2143 |       1.50× |           yes           |
+|  32 |           0.3941 |             0.6293 |       1.60× |           yes           |
+
+DART is strictly faster at every DOF, and the per-repeat distributions are
+non-overlapping (e.g. at 32 DOF DART's slowest repeat 0.44 ms < Nimble's fastest
+0.607 ms). The methodology is **conservative for DART**: DART's timed window also
+assembles the control Jacobian `∂x'/∂u`, which Nimble's `getStateJacobian` does
+not; both engines are single-threaded (`OMP_NUM_THREADS=1`; `torch` set to one
+thread, confirmed). Honest caveats: the benchmarked chains are a uniform revolute
+pendulum chain (not the paper's exact named systems); DART and Nimble place the
+link COM differently (hinge vs mid-link), which does not affect the
+DOF/topology-governed Jacobian cost; absolute times are machine- and
+load-dependent (the ratio is the portable metric).
+
+Versus the **paper's published absolute numbers** (Table II / Fig. 1, 2021
+hardware), DART is far faster on modern hardware: 9 DOF 0.045 ms vs Half-Cheetah
+0.870 ms; 32 DOF 0.39 ms vs Atlas 8.5–16.1 ms (≈10–40×). The hardware differs,
+but the published numbers are the fixed reference.
 
 ## B. Contact regime — N free bodies, each in an active ground contact
 

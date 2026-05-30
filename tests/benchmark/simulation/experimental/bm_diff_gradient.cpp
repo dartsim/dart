@@ -379,6 +379,13 @@ static void BM_ChainJacobianSpeedup(benchmark::State& state)
 
   double analyticSeconds = 0.0;
   double fdSeconds = 0.0;
+  // Per-call times are collected so the MEDIAN can be reported: the median is
+  // robust to the sample COUNT (unlike the minimum, whose order statistic
+  // drifts downward as more samples are drawn) and to occasional load/turbo
+  // spikes, so it is the fair statistic for the head-to-head reference
+  // comparison (compared median-vs-median at matched methodology).
+  std::vector<double> analyticTimes;
+  std::vector<double> fdTimes;
   std::int64_t reps = 0;
 
   for (auto _ : state) {
@@ -389,7 +396,9 @@ static void BM_ChainJacobianSpeedup(benchmark::State& state)
     const sx::StepDerivatives derivatives = analyticWorld->getStepDerivatives();
     const auto a1 = clock::now();
     benchmark::DoNotOptimize(derivatives.stateJacobian.data());
-    analyticSeconds += std::chrono::duration<double>(a1 - a0).count();
+    const double analyticCall = std::chrono::duration<double>(a1 - a0).count();
+    analyticSeconds += analyticCall;
+    analyticTimes.push_back(analyticCall);
 
     // Finite difference: central-difference step() over each state component.
     Eigen::MatrixXd jacobian(stateSize, stateSize);
@@ -412,10 +421,23 @@ static void BM_ChainJacobianSpeedup(benchmark::State& state)
     }
     const auto f1 = clock::now();
     benchmark::DoNotOptimize(jacobian.data());
-    fdSeconds += std::chrono::duration<double>(f1 - f0).count();
+    const double fdCall = std::chrono::duration<double>(f1 - f0).count();
+    fdSeconds += fdCall;
+    fdTimes.push_back(fdCall);
 
     ++reps;
   }
+
+  const auto median = [](std::vector<double>& xs) {
+    if (xs.empty()) {
+      return 0.0;
+    }
+    std::sort(xs.begin(), xs.end());
+    const std::size_t mid = xs.size() / 2;
+    return (xs.size() % 2 == 0) ? 0.5 * (xs[mid - 1] + xs[mid]) : xs[mid];
+  };
+  const double analyticMedian = median(analyticTimes);
+  const double fdMedian = median(fdTimes);
 
   const auto denom = static_cast<double>(std::max<std::int64_t>(reps, 1));
   state.counters["dof"] = static_cast<double>(ndof);
@@ -423,6 +445,11 @@ static void BM_ChainJacobianSpeedup(benchmark::State& state)
   state.counters["fd_ms"] = 1e3 * fdSeconds / denom;
   state.counters["speedup"]
       = analyticSeconds > 0.0 ? fdSeconds / analyticSeconds : 0.0;
+  // Median per-call times (sample-count-robust) for the reference comparison.
+  state.counters["analytic_ms_median"] = 1e3 * analyticMedian;
+  state.counters["fd_ms_median"] = 1e3 * fdMedian;
+  state.counters["speedup_median"]
+      = analyticMedian > 0.0 ? fdMedian / analyticMedian : 0.0;
 }
 BENCHMARK(BM_ChainJacobianSpeedup)
     ->Arg(1)
