@@ -833,6 +833,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Optimized internal IPC cross-set sweep-pair traversal used by experimental
     surface candidate and CCD checks so the sorted right-hand-side AABB prefix
     already expired for the current left-hand-side AABB is skipped.
+  - Completed the internal IPC cross-set sweep traversal into a full active-set
+    sweep-and-prune: right-hand-side AABBs are kept in a reusable next-index
+    live list and unlinked as soon as their maximum x falls behind the sweep
+    line, so a long-lived early interval no longer pins the prefix cursor and
+    forces the expired intervals behind it to be rescanned for every
+    left-hand-side item (the prior slice's known limitation). The visited
+    `(lhs, rhs)` pair sequence is identical to the naive nested scan, so the
+    surface candidate sets, solver-wired CCD limiters, and barrier candidate
+    assembly are behavior-preserving. Adds a staggered-expiry active-set
+    regression and a long-lived-interval microbenchmark
+    (`BM_IpcCandidateSetCrossSweepLongLivedInterval`).
   - Added internal inter-body deformable surface CCD line-search limiting with
     stage-start surface snapshots, cross-body point-triangle and edge-edge
     conservative CCD checks, focused regressions, and benchmark counters.
