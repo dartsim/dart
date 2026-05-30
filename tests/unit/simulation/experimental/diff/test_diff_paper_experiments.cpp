@@ -47,6 +47,10 @@
 //
 // Registered only when DART_BUILD_DIFF is ON.
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
+#include <dart/simulation/experimental/body/rigid_body.hpp>
+#include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/diff/rollout.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -258,5 +262,141 @@ TEST(DiffPaperExperiments, CartpoleReachesTargetByGradientDescent)
 
   std::cout << "[cartpole-opt] iters=" << iters << " final loss=" << loss
             << " cart_x_final=" << cartFinal << " target=" << kTarget
+            << std::endl;
+}
+
+namespace {
+
+constexpr double kDroneRadius = 0.2;
+constexpr double kDroneMass = 1.0;
+constexpr double kDroneTarget = 1.5; // target hover height (metres)
+
+// A single free rigid-body "drone" resting on the ground (an active clamping
+// contact). Vertical thrust is applied through the rollout control. The
+// contact-gradient mode selects naive (Analytic) vs complementarity-aware
+// backward gradients. A free rigid body can leave the ground (no fixed base),
+// so the lift-off is genuine.
+std::unique_ptr<sx::World> buildDroneWorld(sx::ContactGradientMode mode)
+{
+  sx::WorldOptions options;
+  options.timeStep = kTimeStep;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  options.contactGradientMode = mode;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world->addRigidBody("ground", groundOptions);
+  // makeBox takes half-extents, so a 0.5 half-height box at z=-0.5 has its top
+  // face at z=0; the drone (radius 0.2) then rests with its centre at z=0.2.
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setFriction(0.0);
+
+  sx::RigidBodyOptions droneOptions;
+  droneOptions.mass = kDroneMass;
+  // Rest on the ground top (z = 0): centre at the radius with a sub-allowance
+  // penetration so the contact is active and clamping at the start.
+  droneOptions.position = Eigen::Vector3d(0.0, 0.0, kDroneRadius - 5e-5);
+  auto drone = world->addRigidBody("drone", droneOptions);
+  drone.setCollisionShape(sx::CollisionShape::makeSphere(kDroneRadius));
+  drone.setFriction(0.0);
+
+  return world;
+}
+
+struct DroneResult
+{
+  double loss = 0.0;
+  double thrust = 0.0;
+  double finalHeight = 0.0;
+};
+
+// Gradient-descend a constant vertical thrust so the drone reaches the target
+// height by the final step, with the given contact-gradient mode. The loss is
+// 0.5 (target - final_z)²; the thrust gradient is the whole-rollout VJP summed
+// over the (shared) per-step z-force component.
+DroneResult optimizeDrone(sx::ContactGradientMode mode, int iters, double lr)
+{
+  constexpr std::size_t kHorizon = 150;
+  double thrust = 0.0; // start at rest on the ground (the clamping saddle)
+  DroneResult result;
+
+  for (int it = 0; it < iters; ++it) {
+    auto world = buildDroneWorld(mode);
+    const Eigen::VectorXd x0 = world->getStateVector();
+    const Eigen::Index stateSize = x0.size();
+    const auto efforts = static_cast<Eigen::Index>(world->getNumEfforts());
+    Eigen::MatrixXd controls
+        = Eigen::MatrixXd::Zero(static_cast<Eigen::Index>(kHorizon), efforts);
+    controls.col(2).setConstant(thrust); // vertical (z) force each step
+
+    const sx::diff::RolloutTrajectory trajectory
+        = sx::diff::rollout(*world, x0, controls, kHorizon);
+    const double finalZ = trajectory.states.back()[2];
+    const double residual = finalZ - kDroneTarget;
+    result.loss = 0.5 * residual * residual;
+    result.thrust = thrust;
+    result.finalHeight = finalZ;
+
+    Eigen::VectorXd finalGrad = Eigen::VectorXd::Zero(stateSize);
+    finalGrad[2] = residual; // dL/d(final z)
+    const sx::diff::RolloutGradient gradient = trajectory.rolloutVjp(finalGrad);
+    double thrustGrad = 0.0;
+    for (const auto& stepGrad : gradient.controlGrads) {
+      thrustGrad += stepGrad[2];
+    }
+    thrust -= lr * thrustGrad;
+    if (thrust < 0.0) {
+      thrust = 0.0; // physical thrust is non-negative
+    }
+  }
+  return result;
+}
+
+} // namespace
+
+//==============================================================================
+// COMPLEMENTARITY-AWARE SADDLE ESCAPE (paper Section VII-C, Fig 8): a drone
+// rests on the ground and must lift off to a target height. While resting, the
+// ground contact is "clamping", so the true (Analytic) gradient ∂q̇'/∂τ = 0 —
+// naive gradient descent stalls in this saddle and the drone never leaves the
+// ground. The complementarity-aware gradient is non-zero there, so SGD raises
+// the thrust, the drone lifts off and climbs toward the target. This asserts
+// the qualitative escape: naive stays grounded, complementarity-aware lifts off
+// and reaches a lower loss.
+TEST(
+    DiffPaperExperiments, DroneLiftOffComplementarityAwareEscapesClampingSaddle)
+{
+  const DroneResult naive
+      = optimizeDrone(sx::ContactGradientMode::Analytic, 400, 4.0);
+  const DroneResult aware
+      = optimizeDrone(sx::ContactGradientMode::ComplementarityAware, 400, 4.0);
+
+  // Naive gradients stall in the clamping saddle: the thrust never grows and
+  // the drone stays grounded near its resting height (~ the drone radius).
+  EXPECT_LT(naive.thrust, 1.0)
+      << "naive thrust unexpectedly grew (thrust=" << naive.thrust << ")";
+  EXPECT_LT(naive.finalHeight, kDroneRadius + 0.2)
+      << "naive gradients unexpectedly lifted off (height=" << naive.finalHeight
+      << ")";
+  // Complementarity-aware gradients escape the saddle: the thrust grows past
+  // gravity, the drone lifts off and climbs toward the target height.
+  EXPECT_GT(aware.thrust, kDroneMass * 9.81)
+      << "complementarity-aware thrust did not exceed gravity (thrust="
+      << aware.thrust << ")";
+  EXPECT_GT(aware.finalHeight, 1.0)
+      << "complementarity-aware did not lift off toward the target (height="
+      << aware.finalHeight << ")";
+  EXPECT_LT(aware.loss, 0.3 * naive.loss)
+      << "complementarity-aware did not reduce the loss well below naive";
+
+  std::cout << "[drone] naive: thrust=" << naive.thrust
+            << " height=" << naive.finalHeight << " loss=" << naive.loss
+            << " | aware: thrust=" << aware.thrust
+            << " height=" << aware.finalHeight << " loss=" << aware.loss
             << std::endl;
 }
