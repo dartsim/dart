@@ -330,25 +330,44 @@ inline Eigen::Matrix3d polarRotation(const Eigen::Matrix3d& f)
   return u * v.transpose();
 }
 
+/// Fixed-corotational strain-energy density, given the precomputed polar
+/// rotation ``r`` of ``f`` so the per-element SVD can be shared with the
+/// stress.
+inline double fixedCorotationalEnergyDensity(
+    const Eigen::Matrix3d& f,
+    const Eigen::Matrix3d& r,
+    const LameParameters& lame)
+{
+  const double j = f.determinant();
+  return lame.mu * (f - r).squaredNorm()
+         + 0.5 * lame.lambda * (j - 1.0) * (j - 1.0);
+}
+
 /// Fixed-corotational strain-energy density.
 inline double fixedCorotationalEnergyDensity(
     const Eigen::Matrix3d& f, const LameParameters& lame)
 {
-  const Eigen::Matrix3d r = polarRotation(f);
+  return fixedCorotationalEnergyDensity(f, polarRotation(f), lame);
+}
+
+/// Fixed-corotational first Piola-Kirchhoff stress (exact), given the
+/// precomputed polar rotation ``r`` of ``f``.
+inline Eigen::Matrix3d fixedCorotationalFirstPiola(
+    const Eigen::Matrix3d& f,
+    const Eigen::Matrix3d& r,
+    const LameParameters& lame)
+{
   const double j = f.determinant();
-  return lame.mu * (f - r).squaredNorm()
-         + 0.5 * lame.lambda * (j - 1.0) * (j - 1.0);
+  Eigen::Matrix3d p = 2.0 * lame.mu * (f - r);
+  p.noalias() += lame.lambda * (j - 1.0) * detail::determinantGradient(f);
+  return p;
 }
 
 /// Fixed-corotational first Piola-Kirchhoff stress (exact).
 inline Eigen::Matrix3d fixedCorotationalFirstPiola(
     const Eigen::Matrix3d& f, const LameParameters& lame)
 {
-  const Eigen::Matrix3d r = polarRotation(f);
-  const double j = f.determinant();
-  Eigen::Matrix3d p = 2.0 * lame.mu * (f - r);
-  p.noalias() += lame.lambda * (j - 1.0) * detail::determinantGradient(f);
-  return p;
+  return fixedCorotationalFirstPiola(f, polarRotation(f), lame);
 }
 
 /// Positive-definite Gauss-Newton material Hessian for the fixed-corotational
@@ -384,9 +403,14 @@ inline TetElementResult evaluateFixedCorotationalTet(
       = deformationGradient(x0, x1, x2, x3, rest.inverseRestEdges);
   const double w = rest.restVolume;
 
-  result.energy = w * fixedCorotationalEnergyDensity(f, lame);
+  // The polar-decomposition rotation is the only SVD in the kernel; compute it
+  // once and share it between the energy and the stress (the line search
+  // evaluates both every probe, so this halves the per-element SVD cost).
+  const Eigen::Matrix3d r = polarRotation(f);
 
-  const Eigen::Matrix3d p = fixedCorotationalFirstPiola(f, lame);
+  result.energy = w * fixedCorotationalEnergyDensity(f, r, lame);
+
+  const Eigen::Matrix3d p = fixedCorotationalFirstPiola(f, r, lame);
   const Matrix9x12d dFdq = deformationGradientJacobian(rest.inverseRestEdges);
   const Eigen::Map<const Vector9d> vecP(p.data());
   result.gradient.noalias() = w * (dFdq.transpose() * vecP);
