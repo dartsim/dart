@@ -42,6 +42,12 @@
     log line; embedded materials are now compiled for both OpenGL and Vulkan so
     the backend is selectable without a separate build. No backend types are
     exposed through public headers.
+  - Added a diagnostic Filament offscreen render-to-texture parity self-check
+    (`DART_GUI_OFFSCREEN_PARITY` on the headless path, runnable via
+    `pixi run gui-offscreen-parity`) that renders the scene to an offscreen
+    `RenderTarget` and verifies it matches the swapchain render. The proven
+    render-to-texture path is the prerequisite for headless sensor cameras and a
+    future composited or streamed viewer.
   - Added a live in-app performance HUD (`--perf-hud`, also toggleable at runtime
     with `F2`) that overlays smoothed CPU per-phase timings, GPU frame time (from
     the Filament frame-info history), FPS, a real-time-factor (sim-vs-wall)
