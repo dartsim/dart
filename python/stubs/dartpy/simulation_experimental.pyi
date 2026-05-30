@@ -51,6 +51,7 @@ __all__: list[str] = [
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
+    "load_obj_triangle_mesh",
 ]
 
 
@@ -921,6 +922,7 @@ class StepGradient:
     def control(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
 
     def __repr__(self) -> str: ...
+
 class DeformableSolverDiagnostics:
     @property
     def body_count(self) -> int: ...
@@ -1413,6 +1415,8 @@ def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: 
 def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnostics: ...
 
 def load_gmsh_tet_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
+def load_obj_triangle_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 class World:
     def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC) -> None: ...

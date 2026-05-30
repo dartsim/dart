@@ -55,6 +55,7 @@
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/io/gmsh_tet_mesh.hpp>
+#include <dart/simulation/experimental/io/obj_triangle_mesh.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -1897,6 +1898,24 @@ void defSimulationExperimentalModule(nb::module_& m)
       "Load a GMSH ASCII .msh (format 2.x) tetrahedral mesh into a "
       "DeformableBodyOptions (positions + tetrahedra). Set the material "
       "(e.g. use_finite_element_elasticity) and fixed nodes on the result.");
+
+  m.def(
+      "load_obj_triangle_mesh",
+      [](const std::filesystem::path& path) {
+        const auto mesh = sim::io::loadObjTriangleMeshFile(path);
+        sim::DeformableBodyOptions options;
+        options.positions = mesh.positions;
+        options.surfaceTriangles.reserve(mesh.triangles.size());
+        for (const auto& tri : mesh.triangles) {
+          options.surfaceTriangles.push_back(
+              sim::DeformableSurfaceTriangle{tri[0], tri[1], tri[2]});
+        }
+        return options;
+      },
+      nb::arg("path"),
+      "Load a Wavefront .obj triangle surface mesh into a "
+      "DeformableBodyOptions (positions + surface_triangles). Add spring edges "
+      "and masses (or tetrahedra + material) to make it a simulable body.");
 
   nb::class_<sim::World>(m, "World")
       .def(

@@ -958,6 +958,20 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added a Wavefront `.obj` triangle-mesh importer (PLAN-081 M3 asset pipeline)
+    so deformable surface bodies can be built from external triangle meshes.
+    `dart::simulation::experimental::io::loadObjTriangleMesh` /
+    `loadObjTriangleMeshFile` parse `v` vertices and `f` faces (each face vertex
+    token may be `v`, `v/vt`, `v/vt/vn` or `v//vn`; 1-based and negative indices
+    are resolved; polygon faces are fan-triangulated), ignoring normals /
+    texcoords / groups / materials and raising `InvalidArgumentException` on a
+    malformed or out-of-range face. Exposed to `dartpy` as
+    `load_obj_triangle_mesh(path)` returning a `DeformableBodyOptions` (positions
+    + surface triangles). Adds parse / triangulation / rejection regressions, a
+    `build_cloth_from_obj` helper (derives unique-edge springs + uniform masses),
+    a draped-cloth solver regression, and a `Deformable .obj Cloth (IPC)`
+    py-demos scene (a bundled cloth mesh pinned at one edge draping under gravity
+    onto the ground barrier).
   - Added a GMSH `.msh` tetrahedral-mesh importer (PLAN-081 M4) so deformable
     FEM bodies can be built from external tet meshes rather than only procedural
     grids. `dart::simulation::experimental::io::loadGmshTetMesh` /

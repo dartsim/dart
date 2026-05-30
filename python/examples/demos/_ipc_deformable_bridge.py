@@ -388,6 +388,59 @@ def build_fem_compression_bar(
     return options, edges
 
 
+def build_cloth_from_obj(
+    path: "str | Path",
+    *,
+    mass: float = 0.02,
+    edge_stiffness: float = 200.0,
+    damping: float = 1.0,
+    translate: Sequence[float] = (0.0, 0.0, 0.0),
+    fixed_nodes: Iterable[int] = (),
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """Build a mass-spring cloth membrane from a Wavefront ``.obj`` surface mesh.
+
+    Loads the triangle mesh via :func:`sx.load_obj_triangle_mesh`, then derives
+    the mass-spring topology the experimental solver needs: one structural spring
+    per unique triangle edge (rest length = the loaded inter-node distance), a
+    uniform nodal ``mass``, and the surface triangles (kept for self-contact and
+    rendering). ``translate`` offsets every vertex (e.g. to lift the sheet above
+    an obstacle). Returns the options plus the unique edge list for the wireframe.
+    """
+
+    options = sx.load_obj_triangle_mesh(str(path))
+
+    offset = np.asarray(translate, dtype=float)
+    positions = [np.asarray(p, dtype=float) + offset for p in options.positions]
+    options.positions = positions
+    options.masses = [mass] * len(positions)
+    options.edge_stiffness = edge_stiffness
+    options.damping = damping
+
+    seen: set[tuple[int, int]] = set()
+    edges: list[tuple[int, int]] = []
+    edge_objects: list[sx.DeformableEdge] = []
+    for triangle in options.surface_triangles:
+        corners = (triangle.node_a, triangle.node_b, triangle.node_c)
+        for a, b in (
+            (corners[0], corners[1]),
+            (corners[1], corners[2]),
+            (corners[2], corners[0]),
+        ):
+            key = (a, b) if a < b else (b, a)
+            if key in seen:
+                continue
+            seen.add(key)
+            rest = float(np.linalg.norm(positions[key[0]] - positions[key[1]]))
+            edge_objects.append(sx.DeformableEdge(key[0], key[1], rest))
+            edges.append(key)
+    options.edges = edge_objects
+
+    fixed = list(fixed_nodes)
+    if fixed:
+        options.fixed_nodes = fixed
+    return options, edges
+
+
 class IpcDeformableBridge:
     """Mirrors sx deformable bodies onto a render `dart.simulation.World`."""
 
@@ -418,14 +471,14 @@ class IpcDeformableBridge:
 
         edge_shape = dart.LineSegmentShape(_EDGE_THICKNESS)
         for i in range(node_count):
-            edge_shape.addVertex(np.asarray(body.node_position(i), dtype=float))
+            edge_shape.add_vertex(np.asarray(body.node_position(i), dtype=float))
         if edges is None:
             edges = [
                 (body.edge(i).node_a, body.edge(i).node_b)
                 for i in range(body.edge_count)
             ]
         for node_a, node_b in edges:
-            edge_shape.addConnection(int(node_a), int(node_b))
+            edge_shape.add_connection(int(node_a), int(node_b))
         edge_frame = dart.SimpleFrame(dart.Frame.world(), f"{name}_edges", np.eye(4))
         edge_frame.set_shape(edge_shape)
         edge_frame.create_visual_aspect().set_color(list(_EDGE_COLOR))

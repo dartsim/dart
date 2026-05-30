@@ -144,6 +144,39 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     assert np.isfinite(final).all()
 
 
+def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
+    """The .obj importer feeds a real deformable solve.
+
+    Loading a bundled Wavefront ``.obj`` cloth, pinning one edge, and stepping
+    under gravity must produce a draped sheet: the free edge sags well below the
+    pinned edge, the solve stays finite, and nothing falls through the ground.
+    """
+
+    # The importer round-trips the bundled mesh into a usable surface.
+    import dartpy.simulation_experimental as sx
+    import numpy as np
+    from examples.demos.scenes.ipc_deformable_obj_cloth import _CLOTH_PATH, build
+
+    loaded = sx.load_obj_triangle_mesh(str(_CLOTH_PATH))
+    assert len(loaded.positions) == 121
+    assert len(loaded.surface_triangles) == 200
+
+    setup = build()
+    world = setup.info["sx_world"]
+    body = world.get_deformable_body("obj_cloth")
+    n = body.node_count
+
+    for _ in range(300):
+        world.step()
+
+    z = np.array([body.node_position(i)[2] for i in range(n)])
+    assert np.isfinite(z).all()
+    # The free edge sagged well below the pinned (max-y) edge.
+    assert float(z.max() - z.min()) > 0.1
+    # Nothing tunneled through the ground top (z = -0.20).
+    assert float(z.min()) > -0.21
+
+
 def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     """The IPC deformable scenes live in their own dedicated menu category.
 
@@ -167,6 +200,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_box",
         "ipc_deformable_fem_buckle",
         "ipc_deformable_fem_msh",
+        "ipc_deformable_obj_cloth",
         "ipc_deformable_scripted_dirichlet",
     }
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
