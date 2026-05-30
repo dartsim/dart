@@ -46,11 +46,28 @@ namespace dartsim::ui {
 inline constexpr const char* kDefaultProjectPath = "scene.dartsim";
 inline constexpr std::size_t kDefaultRecentProjectCapacity = 8;
 
+/// What the menu layer should do after a failed project action.
+///
+/// `None` (the default) means "just report the message" — this covers success,
+/// user cancellation, and dirty-guard/macro-guard rejections. `ModalFallback`
+/// means a native file dialog could not deliver a usable path (it was
+/// unavailable or failed) or the chosen path failed to load/save, so the menu
+/// should offer the in-app project browser / manual path modal instead. The
+/// menu branches on this enum rather than matching message text, which kept
+/// breaking silently when a message was reworded or a new failure string was
+/// added (e.g. "Open dialog unavailable" / "Save dialog unavailable").
+enum class ProjectActionFollowUp
+{
+  None,
+  ModalFallback,
+};
+
 /// Result of a user-facing project action.
 struct ProjectActionResult
 {
   bool ok = false;
   std::string message;
+  ProjectActionFollowUp followUp = ProjectActionFollowUp::None;
 };
 
 struct ProjectStatus

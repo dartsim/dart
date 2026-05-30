@@ -433,6 +433,13 @@ std::unique_ptr<Command> addFixedFrame(
       });
 }
 
+// Invariant: sensor and collision descriptors are editor-owned scene data that
+// the derived experimental World deliberately ignores (ObjectManager::rebuild
+// has no-op cases for ObjectType::Sensor/Collision). Commands that touch only
+// those descriptor fields therefore mutate the SceneModel without calling
+// objects.rebuild() — the render path reads the model, not the World. Any
+// future command that changes a World-relevant field MUST call rebuild() to
+// avoid a silent model/World desync.
 std::unique_ptr<Command> addSensor(
     SensorKind kind,
     ObjectId parent,
@@ -589,6 +596,8 @@ std::unique_ptr<Command> setSensor(ObjectId id, SensorDesc sensor)
         }
         object->sensor = sensor;
         object->shape = defaultSensorShape(sensor.kind);
+        // Descriptor-only edit: no objects.rebuild() (see the invariant above
+        // addSensor).
       });
 }
 
@@ -604,6 +613,8 @@ std::unique_ptr<Command> setCollision(ObjectId id, CollisionDesc collision)
           return;
         }
         object->collision = collision;
+        // Descriptor-only edit: no objects.rebuild() (see the invariant above
+        // addSensor).
       });
 }
 

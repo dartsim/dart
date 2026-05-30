@@ -788,6 +788,109 @@ TEST(RecorderPlayer, RecordingRoundTripsThroughStream)
   EXPECT_EQ(loaded.frameCount(), recorder.recording().frameCount());
 }
 
+TEST(RecorderPlayer, RecordingLoadRejectsCorruptStreams)
+{
+  // Build a valid serialized recording to corrupt and truncate.
+  ObjectManager objects;
+  SceneObject body;
+  body.type = ObjectType::RigidBody;
+  body.name = "ball";
+  objects.model().add(body);
+  objects.rebuild();
+
+  Recorder recorder;
+  recorder.start(0.01);
+  recorder.capture(objects.world());
+  recorder.capture(objects.world());
+
+  std::ostringstream out(std::ios::binary);
+  recorder.recording().save(out);
+  const std::string valid = out.str();
+  ASSERT_FALSE(valid.empty());
+
+  auto loads = [](const std::string& bytes) {
+    Recording r;
+    std::istringstream in(bytes, std::ios::binary);
+    return r.load(in);
+  };
+
+  // Sanity: the untruncated stream still loads.
+  ASSERT_TRUE(loads(valid));
+
+  // Empty stream: the magic read fails immediately.
+  EXPECT_FALSE(loads(""));
+
+  // Same length, wrong magic: rejected by the magic comparison.
+  std::string badMagic = valid;
+  badMagic[0] = static_cast<char>(badMagic[0] ^ 0xFF);
+  EXPECT_FALSE(loads(badMagic));
+
+  // Every proper prefix truncates somewhere inside the declared structure
+  // (header, frame count, per-frame header, or blob) and must fail-close rather
+  // than load a partial recording.
+  for (std::size_t cut = 0; cut < valid.size(); ++cut) {
+    EXPECT_FALSE(loads(valid.substr(0, cut))) << "cut=" << cut;
+  }
+}
+
+TEST(SceneIO, RejectsOutOfRangeEnums)
+{
+  // jointkind / shapetype must fail-close on out-of-range values, matching the
+  // validation already applied to type / sensorkind. A well-formed object with
+  // only the enum out of range proves the enum validator is the rejection
+  // cause.
+  const char* validJoint
+      = "dartsim-scene 3\n"
+        "timestep 0.001\n"
+        "object\nid 1\ntype 1\nparent 0\nname arm\nend\n"
+        "object\nid 2\ntype 2\nparent 1\nmultibody 1\nname base\n"
+        "jointkind 1\nend\n";
+  const char* badJoint
+      = "dartsim-scene 3\n"
+        "timestep 0.001\n"
+        "object\nid 1\ntype 1\nparent 0\nname arm\nend\n"
+        "object\nid 2\ntype 2\nparent 1\nmultibody 1\nname base\n"
+        "jointkind 99\nend\n";
+  const char* validShape
+      = "dartsim-scene 3\n"
+        "timestep 0.001\n"
+        "object\nid 1\ntype 0\nparent 0\nname body\nshapetype 1\nend\n";
+  const char* badShape
+      = "dartsim-scene 3\n"
+        "timestep 0.001\n"
+        "object\nid 1\ntype 0\nparent 0\nname body\nshapetype 99\nend\n";
+
+  // The valid variants load (proving the structure is otherwise well-formed),
+  // while the out-of-range variants reject into a still-empty model. Each load
+  // uses a fresh model because a failed load leaves the output untouched.
+  SceneModel loadedJoint;
+  EXPECT_TRUE(scene_io::load(validJoint, loadedJoint));
+  SceneModel badJointOut;
+  EXPECT_FALSE(scene_io::load(badJoint, badJointOut));
+  EXPECT_TRUE(badJointOut.empty());
+
+  SceneModel loadedShape;
+  EXPECT_TRUE(scene_io::load(validShape, loadedShape));
+  SceneModel badShapeOut;
+  EXPECT_FALSE(scene_io::load(badShape, badShapeOut));
+  EXPECT_TRUE(badShapeOut.empty());
+}
+
+TEST(NameManager, DefaultBaseNameCoversAllObjectTypes)
+{
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::RigidBody), "Body");
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::MultiBody), "MultiBody");
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::Link), "Link");
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::Joint), "Joint");
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::FreeFrame), "FreeFrame");
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::FixedFrame), "FixedFrame");
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::Sensor), "Sensor");
+  EXPECT_EQ(NameManager::defaultBaseName(ObjectType::Collision), "Collision");
+  // An out-of-range type falls back to a generic label instead of crashing.
+  EXPECT_EQ(
+      NameManager::defaultBaseName(static_cast<ObjectType>(999)), "Object");
+}
+
 //==============================================================================
 // SceneIO: human-readable project round-trip
 //==============================================================================
