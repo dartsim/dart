@@ -119,3 +119,59 @@ long/stiff systems (≥~64 links); a stiff contact barrier (C4) would compound
 this, so even when Phase C opens it must start at the compliant/AL rungs
 (C1–C3), not the barrier. Revisit when gate 1 has a scoped owner and the RIQN
 convergence follow-ups (relative tolerance / acceleration) have landed.
+
+## Contact-Query Redesign Scoping (Gate 1) — 2026-05-30
+
+This section addresses **Go/No-Go gate 1** by scoping the
+contact-query-at-trial-configuration workstream. It is the hard prerequisite
+for every rung (C1–C4): RIQN needs the contact set evaluated at the _trial_
+`qᵏ⁺¹` on each inner iteration, and `World::collide()` (a once-per-step full
+rebuild, no distance-at-configuration query) cannot serve that loop.
+
+### Required seam
+
+A contact potential enters the forced DEL residual as a generalized force
+`Q_c = −∂E_c/∂q = −barrier'(d(q)) · ∂d/∂q`. So the query must return, for each
+active pair at a trial configuration, the signed distance `d(q)` **and** its
+generalized gradient `∂d/∂q` (a row of the contact Jacobian). Internal seam,
+not public surface:
+
+```
+ContactQuery built once per step from link geometry + a persistent broad phase;
+  query.evaluate(trialLinkTransforms) -> [{pair, d, ∂d/∂q}]   // reused per RIQN iter
+```
+
+### Design (reuse-first)
+
+1. **Persistent broad phase** — refit/advance an AABB sweep-and-prune across the
+   step instead of rebuilding; **reuse** the experimental IPC active-set
+   sweep-and-prune (`#2770`).
+2. **Incremental narrow phase** — primitive distances at the trial config via
+   the existing `detail/deformable_contact/primitive_distance.hpp`
+   (point-triangle / edge-edge / point-plane); warm-started, since the active
+   set changes slowly within a step.
+3. **Generalized gradient** — `∂d/∂q = (∂d/∂x_world)·(∂x_world/∂q)`. The
+   primitive-distance kernels already give `∂d/∂x` (closest-point normal); the
+   contact-point Jacobian `∂x_world/∂q` comes from the shared spatial-algebra
+   helpers (the link body Jacobian mapped to the contact point).
+4. **CCD line-search cap** — **reuse** `continuous_collision_step.*` as a RIQN
+   step-length bound near contact.
+
+### Net-new (the adapter work)
+
+- **Rigid/articulated candidate generation**: `candidate_set.hpp` is
+  mesh-vertex-specific; feed it (or a sibling) rigid/articulated link geometry.
+- **The reduced-coordinate glue**: (world contact point) → (link, body-frame
+  point) → `Sᵢᵀ` generalized force — mapping a Cartesian contact quantity into
+  the articulated residual.
+- **The per-step warm-started query object** with the active-set bookkeeping.
+
+### Sizing, owner, and the remaining gate-1 step
+
+This is a mid-size collision workstream (comparable to a PLAN phase), not a
+slice. It **must coordinate with PLAN-081 (deformable IPC)**, which owns the
+collision/CCD/sweep stack the design reuses — that plan, or a jointly-owned
+sub-plan, is the natural owner. Gate 1 is now **scoped** (this section); the
+remaining gate-1 action is to assign that owner and open the workstream as its
+own `PLAN-` entry. Gate 2 (the C2 single-contact robustness spike) is tracked
+separately and stays open until run.

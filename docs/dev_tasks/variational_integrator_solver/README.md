@@ -200,8 +200,8 @@ dartpy + GUI surface are complete and verified. The remaining gaps to the
    `multibody_dynamics.cpp`; hoist into a shared internal header (coordinate with
    PLAN-080, the natural owner of the shared O(n) impulse-ABI).
 5. **Productionization / graduation.** Variable time step, GPU/batched execution,
-   and promotion out of `experimental` are open; define graduation criteria when
-   contact lands.
+   and promotion out of `experimental` are open. The graduation checklist lives
+   in [graduation-criteria.md](graduation-criteria.md).
 6. **More demo surface.** A loop-closure GUI scene now (Phase B2 is done) and a
    contact scene once Phase C lands.
 
