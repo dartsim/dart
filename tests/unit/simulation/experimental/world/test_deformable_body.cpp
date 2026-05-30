@@ -940,6 +940,139 @@ TEST(DeformableBody, FemCubeSettlesOnGroundBarrierWithoutPenetrating)
 }
 
 //==============================================================================
+// A FEM cube dropped onto a static sphere obstacle settles against the curved
+// surface intersection-free: the radial clamped-log obstacle barrier (now a
+// projected-Newton term) keeps every node outside the sphere while the stable
+// neo-Hookean elasticity conforms the cube to the obstacle, all finite. This
+// exercises FEM elasticity and the sphere obstacle barrier (energy, gradient,
+// and Hessian) together.
+TEST(DeformableBody, FemCubeSettlesOnSphereObstacleWithoutPenetrating)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.004);
+
+  const Eigen::Vector3d sphereCenter(0.1, 0.1, 0.0);
+  const double sphereRadius = 0.5;
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  sphereOptions.position = sphereCenter;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  // A small FEM cube released just above the sphere's top.
+  auto body = world.addDeformableBody(
+      "fem_cube",
+      makeFemCubeBody(
+          0.16, Eigen::Vector3d(0.02, 0.02, 0.62), /*youngsModulus=*/2.0e5));
+
+  const auto minSurfaceDistance = [&]() {
+    double minimum = std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      minimum = std::min(
+          minimum, (body.getPosition(i) - sphereCenter).norm() - sphereRadius);
+    }
+    return minimum;
+  };
+
+  ASSERT_GT(minSurfaceDistance(), 0.05);
+  world.step(250);
+
+  // The cube has fallen onto the sphere (well below its release height) ...
+  double minZ = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    minZ = std::min(minZ, body.getPosition(i).z());
+  }
+  EXPECT_LT(minZ, 0.55);
+  // ... but no node penetrates the sphere surface, and all stay finite.
+  EXPECT_GT(minSurfaceDistance(), -1e-3);
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+  }
+}
+
+//==============================================================================
+// A static box opted in as a deformable obstacle exerts a clamped-log barrier
+// along the outward surface normal: a node resting just outside a box face (in
+// the activation band) is pushed straight out along that face normal.
+TEST(DeformableBody, BoxObstacleBarrierRepelsNodeAlongFaceNormal)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  auto box = world.addRigidBody("obstacle_box", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  // 0.505 is inside the band off the +x face (surface 0.5, distance 0.005).
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.505, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  auto body = world.addDeformableBody("node", options);
+
+  world.step(10);
+
+  const auto position = body.getPosition(0);
+  EXPECT_GT(position.x(), 0.52);        // repelled past the band edge along +x
+  EXPECT_LT(position.x(), 2.0);         // finite (no blow-up)
+  EXPECT_NEAR(position.y(), 0.0, 1e-9); // purely along the face normal
+  EXPECT_NEAR(position.z(), 0.0, 1e-9);
+}
+
+//==============================================================================
+// A FEM cube dropped onto a static box obstacle settles on the surface
+// intersection-free: the box obstacle barrier (energy, gradient, and Hessian)
+// keeps every node outside the box while the FEM elasticity conforms the cube
+// to the obstacle, all finite.
+TEST(DeformableBody, FemCubeSettlesOnBoxObstacleWithoutPenetrating)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.004);
+
+  const Eigen::Vector3d boxCenter(0.0, 0.0, 0.0);
+  const Eigen::Vector3d boxHalf(0.3, 0.3, 0.3); // top face at z = 0.3
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  boxOptions.position = boxCenter;
+  auto box = world.addRigidBody("obstacle_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  auto body = world.addDeformableBody(
+      "fem_cube",
+      makeFemCubeBody(
+          0.16, Eigen::Vector3d(-0.06, -0.06, 0.5), /*youngsModulus=*/2.0e5));
+
+  const auto minBoxSurfaceDistance = [&]() {
+    double minimum = std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      const Eigen::Vector3d local = body.getPosition(i) - boxCenter;
+      const Eigen::Vector3d clamped
+          = local.cwiseMax(-boxHalf).cwiseMin(boxHalf);
+      minimum = std::min(minimum, (local - clamped).norm());
+    }
+    return minimum;
+  };
+
+  ASSERT_GT(minBoxSurfaceDistance(), 0.05);
+  world.step(250);
+
+  double minZ = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    minZ = std::min(minZ, body.getPosition(i).z());
+    EXPECT_TRUE(body.getPosition(i).allFinite());
+  }
+  EXPECT_LT(minZ, 0.45);                     // fell onto the box
+  EXPECT_GE(minBoxSurfaceDistance(), -1e-3); // no node inside the box
+}
+
+//==============================================================================
 TEST(DeformableBody, StepCountWithExecutorRunsDefaultDeformableStage)
 {
   sx::World world;
