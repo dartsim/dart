@@ -156,6 +156,40 @@ struct DeformableBoundaryConditions
   std::vector<DeformableNeumannBoundary> neumann;
 };
 
+/// Internal opt-in configuration selecting the Vertex Block Descent (VBD) inner
+/// solver for a deformable body.
+///
+/// This component is intentionally not serialized and is not exposed through
+/// the public facade: the public deformable stage stays algorithm-neutral, and
+/// which inner solver runs is an internal/explicit-opt-in decision rather than
+/// a leaked solver registry. When absent or `enabled == false`, the default
+/// gradient-descent solver runs.
+struct DeformableVbdConfig
+{
+  bool enabled = false;
+  std::size_t iterations = 20;
+  /// Stop sweeping early once the largest per-vertex update falls below this
+  /// length (0 disables early termination).
+  double convergenceDisplacement = 0.0;
+  /// Over-relax each sweep with Chebyshev acceleration (same fixed point,
+  /// faster convergence).
+  bool useChebyshev = false;
+  /// Estimated spectral radius in (0, 1) for the Chebyshev recurrence.
+  double chebyshevRho = 0.95;
+  /// Stiffness-proportional (Rayleigh) damping coefficient k_d (0 disables it).
+  double rayleighDamping = 0.0;
+  /// Worker threads for the colored sweep (1 = serial). With more than one
+  /// thread the deterministic multithreaded driver runs, which does not apply
+  /// Chebyshev over-relaxation or residual early termination (those run only on
+  /// the serial path).
+  unsigned int workerThreads = 1;
+  /// Penalty stiffness k_c for static ground/obstacle half-space contact
+  /// (0 disables ground contact, so the body falls freely past barriers). With
+  /// a positive value the VBD solve keeps the body resting on the ground
+  /// barrier set instead of routing the body to the default solver.
+  double contactStiffness = 0.0;
+};
+
 /// Transient scratch buffers reused by the default deformable solver.
 ///
 /// These buffers are intentionally not serialized; they are resized lazily from
