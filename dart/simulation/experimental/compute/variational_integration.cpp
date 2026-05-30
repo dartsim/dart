@@ -216,6 +216,8 @@ struct VarLink
   std::vector<int> children;
   // Per-residual-evaluation scratch.
   Eigen::Isometry3d deltaTransform = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d nextRelative
+      = Eigen::Isometry3d::Identity(); // T_{lambda(i),i} at q^{k+1}
   Vector6 averageVelocity = Vector6::Zero();
   Vector6 momentum = Vector6::Zero();
 };
@@ -373,12 +375,11 @@ Eigen::VectorXd computeResidual(
     const Eigen::VectorXd seg = nextPosition.segment(
         static_cast<Eigen::Index>(link.dofOffset),
         static_cast<Eigen::Index>(link.dof));
-    const Eigen::Isometry3d nextRelative
-        = jointMotionTransform(joint, seg) * link.offset;
+    link.nextRelative = jointMotionTransform(joint, seg) * link.offset;
     link.deltaTransform
         = link.currentRelative.inverse()
           * tree.links[static_cast<std::size_t>(link.parent)].deltaTransform
-          * nextRelative;
+          * link.nextRelative;
     link.averageVelocity = dm::se3Log(link.deltaTransform) / timeStep;
   }
 
@@ -494,6 +495,160 @@ Eigen::VectorXd applyArticulatedInverseMass(
     }
   }
   return qddot;
+}
+
+// O(n) exact recursive-Jacobian (Newton) step: solve J(q^k+1) * dq = b for the
+// forced discrete Euler-Lagrange Jacobian J = d(residual)/d(q^{k+1}), via a
+// non-symmetric articulated-body recursion (a backward articulated-operator
+// sweep then a forward delta-twist sweep, the exact analog of
+// `applyArticulatedInverseMass`). `b` is the residual; the returned dq is the
+// Newton increment to *subtract* from the current iterate.
+//
+// Why this is exact and O(n): with the residual built by `computeResidual`, the
+// only dependence on q^{k+1} flows through the per-link average velocity
+// `Vbar_i = log(dT_i)/dt`; the force-transport operators (Ad of the q^k
+// relative transforms), the previous-step momentum-transport term, and the
+// gravity wrench are all constants w.r.t. q^{k+1}. Linearizing about the
+// current iterate:
+//   forward (motion):  xi_i = Ad(nextRel_i^{-1}) xi_parent + S_i dq_i,
+//                      dVbar_i = (1/dt) Jr_i xi_i,   Jr_i = dexp^{-1}_right(dt
+//                      Vbar_i)
+//   backward (force):  dP_i  = D_i dVbar_i + sum_c Ad(relK_c^{-1})^T dP_c,
+//   joint residual:    df_a  = S_a^T dP_a,
+// where `xi_i` is the body-frame perturbation of the relative transform dT_i,
+// `nextRel_i` is the relative transform at q^{k+1} (the motion transport, NOT
+// the q^k relative), `relK_c` is the q^k relative (the constant force
+// transport), and `D_i = dmu_i/dVbar_i` is the exact sensitivity of the
+// discrete-momentum map `mu(V) = dexpInvTranspose(dt V, G V)`. Defining the
+// per-link effective operator K_i = (1/dt) D_i Jr_i (maps a body-frame motion
+// perturbation to a body-frame force), the linear map dq -> df is articulated
+// exactly like the mass matrix, with G_i replaced by the (generally
+// non-symmetric) K_i and the motion/force transports kept distinct. The
+// articulated factorization below therefore solves it in O(n) without any dense
+// factorization, and reduces to `applyArticulatedInverseMass` (up to the dt
+// scaling) in the small-step limit Jr_i -> I, D_i -> G_i (dt Vbar -> 0).
+// Keeping D_i exact (rather than its leading dexp^{-1}(dt Vbar)^T G term)
+// matters on stiff mid-rollout configurations: with the leading-term-only D the
+// full Newton step overshoots there and the damped iteration stalls, whereas
+// the exact D makes alpha = 1 accepted with quadratic convergence regardless of
+// chain length.
+//
+// Scope: Euclidean joints (revolute/prismatic, single-DOF here). The motion
+// subspace S_i is the link-frame joint subspace (a 6-vector for A1 joints).
+Eigen::VectorXd applyExactNewtonStep(
+    const VarTree& tree, const Eigen::VectorXd& b, double timeStep)
+{
+  const std::size_t n = tree.links.size();
+  std::vector<Matrix6> articulated(n, Matrix6::Zero());
+  std::vector<Vector6> bias(n, Vector6::Zero());
+  std::vector<Matrix6> motionToChild(n, Matrix6::Identity()); // A_i (motion)
+  std::vector<Eigen::MatrixXd> forceProjector(
+      n); // U_i = Pi_i S_i      (6 x dof)
+  std::vector<Eigen::MatrixXd> motionProjector(
+      n); // M_i = Pi_i^T S_i (so M_i^T = S_i^T Pi_i)            (6 x dof)
+  std::vector<Eigen::MatrixXd> dInverse(n); // (S_i^T Pi_i S_i)^{-1}
+  std::vector<Eigen::VectorXd> uForce(n);   // b_i - S_i^T bias_i  (dof)
+
+  // Per-link effective operator K_i = (1/dt) D_i Jr_i, where
+  //   D_i = dmu_i/dVbar_i is the *exact* sensitivity of the discrete momentum
+  //         mu(V) = dexpInvTranspose(dt V, G V) (so the full step is a true
+  //         Newton step, not just the leading dexpInv^T G term -- the dropped
+  //         second-order curvature is what made the undamped step overshoot and
+  //         stall on stiff mid-rollout configurations), and
+  //   Jr_i  = dexp^{-1}_right(dt Vbar_i) is the velocity sensitivity.
+  // D_i is formed by a 6-column central difference of the exact momentum map --
+  // an O(1)-per-link analytic-operator derivative consistent with the
+  // residual's own `dexpInvTranspose`, so the whole sweep stays O(n).
+  for (std::size_t i = 0; i < n; ++i) {
+    const VarLink& link = tree.links[i];
+    const Vector6 velocity = link.averageVelocity;
+    const Matrix6& g = link.inertia;
+    Matrix6 momentumSensitivity;
+    constexpr double eps = 1e-7;
+    for (int c = 0; c < 6; ++c) {
+      Vector6 plus = velocity;
+      Vector6 minus = velocity;
+      plus[c] += eps;
+      minus[c] -= eps;
+      momentumSensitivity.col(c)
+          = (dm::dexpInvTranspose(timeStep * plus, g * plus)
+             - dm::dexpInvTranspose(timeStep * minus, g * minus))
+            / (2.0 * eps);
+    }
+    const Matrix6 velocitySensitivity
+        = dm::dexpInvMatrixRight(timeStep * velocity);
+    articulated[i]
+        = (1.0 / timeStep) * momentumSensitivity * velocitySensitivity;
+  }
+
+  // Backward sweep: accumulate the articulated operator and bias toward the
+  // root (non-symmetric rank-1 elimination: the force-side projector is
+  // forceProjector_i = Pi_i S_i and the motion-side row is S_i^T Pi_i, so the
+  // update subtracts (Pi_i S_i) D^{-1} (S_i^T Pi_i); for a symmetric Pi_i this
+  // is the usual U D^{-1} U^T).
+  for (std::size_t reverse = 0; reverse < n; ++reverse) {
+    const std::size_t i = n - 1 - reverse;
+    const VarLink& link = tree.links[i];
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      forceProjector[i] = articulated[i] * link.subspace; // 6 x dof
+      motionProjector[i]
+          = articulated[i].transpose() * link.subspace; // 6 x dof
+      const Eigen::MatrixXd d = link.subspace.transpose() * forceProjector[i];
+      dInverse[i] = d.inverse();
+      uForce[i] = b.segment(seg, dof) - link.subspace.transpose() * bias[i];
+    }
+    if (link.parent >= 0) {
+      Matrix6 ia = articulated[i];
+      Vector6 pa = bias[i];
+      if (link.dof > 0) {
+        // Non-symmetric rank-1 elimination: force-side projector Pi_i S_i times
+        // the motion-side row S_i^T Pi_i (= motionProjector_i^T). For the
+        // symmetric mass-matrix limit (D_i -> G_i) this reduces to the standard
+        // U D^{-1} U^T of `applyArticulatedInverseMass`.
+        ia.noalias() -= forceProjector[i] * dInverse[i]
+                        * (motionProjector[i].transpose());
+        pa.noalias() += forceProjector[i] * (dInverse[i] * uForce[i]);
+      }
+      // Distinct transports: motion parent->child uses the q^{k+1} relative;
+      // force child->parent uses the q^k relative (the constant force transport
+      // of the residual's backward sweep).
+      motionToChild[i] = adjoint(link.nextRelative.inverse());
+      const Matrix6 forceToParent
+          = adjoint(link.currentRelative.inverse()).transpose();
+      const auto p = static_cast<std::size_t>(link.parent);
+      articulated[p].noalias() += forceToParent * ia * motionToChild[i];
+      bias[p].noalias() += forceToParent * pa;
+    }
+  }
+
+  // Forward sweep: propagate the body-frame delta-twist xi and read the joint
+  // increments dq.
+  Eigen::VectorXd dq
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  std::vector<Vector6> twist(n, Vector6::Zero());
+  for (std::size_t i = 0; i < n; ++i) {
+    const VarLink& link = tree.links[i];
+    if (link.parent < 0) {
+      twist[i].setZero();
+      continue;
+    }
+    const Vector6 parentTwist
+        = motionToChild[i] * twist[static_cast<std::size_t>(link.parent)];
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      const Eigen::VectorXd jointDelta
+          = dInverse[i]
+            * (uForce[i] - forceProjector[i].transpose() * parentTwist);
+      dq.segment(seg, dof) = jointDelta;
+      twist[i] = parentTwist + link.subspace * jointDelta;
+    } else {
+      twist[i] = parentTwist;
+    }
+  }
+  return dq;
 }
 
 // Body-frame spatial Jacobian of every link (6 x dofCount, [angular; linear] in
@@ -704,20 +859,30 @@ VariationalSolveReport integrateMultibodyVariational(
         = jointRetract(joint, position.segment(seg, n), tangent);
   }
 
-  // The RIQN quasi-Newton step is dt * M(q^k)^{-1} * residual via the O(n)
-  // articulated-body inverse-mass apply (linear-time; no dense factorization),
-  // retracted per joint so spherical/floating coordinates stay on their
-  // SO(3)/SE(3) manifolds.
+  // Root-find policy. Two linear-time preconditioners are available:
   //
-  // The fixed dt*M^{-1} preconditioner is an approximate (not exact) inverse
-  // Jacobian, so the plain iteration's convergence *rate* degrades for long
-  // chains (iteration counts blow up well beyond a few dozen links). When the
-  // generalized coordinates form a vector space -- i.e. every movable joint is
-  // Euclidean (revolute/prismatic) -- we accelerate the fixed-point iteration
-  // with depth-1 Anderson (a/k/a Anderson(1)/Aitken) mixing, which restores
-  // fast convergence on long chains at negligible cost. Spherical/floating
-  // coordinates live on a manifold where linear iterate mixing is invalid, so
-  // they fall back to the plain step (behaviorally identical to before).
+  //  - Exact recursive-Jacobian Newton (`applyExactNewtonStep`): solves
+  //    J(q^k+1) dq = residual for the *exact* forced-DEL Jacobian J =
+  //    d(residual)/d(q^{k+1}) by a non-symmetric articulated-body recursion.
+  //    Its convergence rate is configuration-/length-independent (a few
+  //    iterations regardless of chain length), so long/stiff chains converge
+  //    well within the iteration budget. Requires Euclidean generalized
+  //    coordinates (the delta-twist / momentum-sensitivity linearization and
+  //    the additive joint update are vector-space operations).
+  //
+  //  - Fixed quasi-Newton step dt * M(q^k)^{-1} * residual via the O(n)
+  //    articulated inverse-mass apply, retracted per joint so
+  //    spherical/floating coordinates stay on their SO(3)/SE(3) manifolds. This
+  //    is only an approximate inverse Jacobian, so its convergence *rate*
+  //    degrades for long chains -- but it is manifold-correct, which the exact
+  //    step is not yet.
+  //
+  // Policy: use the exact Newton step whenever every movable joint is Euclidean
+  // (revolute/prismatic) -- that is exactly where the long-chain convergence
+  // problem lives, and the exact step is strictly more accurate there, so short
+  // chains converge identically (the converged DEL root is preconditioner-
+  // independent). Spherical/floating coordinates keep the manifold-correct
+  // quasi-Newton step (behaviorally identical to before).
   bool euclideanCoordinates = true;
   for (const auto& link : tree.links) {
     if (link.dof == 0) {
@@ -731,15 +896,25 @@ VariationalSolveReport integrateMultibodyVariational(
     }
   }
 
-  // Depth-m Anderson history (type-II). The fixed-point residual is the RIQN
-  // step itself: r_k = step_k = dt M^{-1} f(q^k). We keep the last m
-  // differences of the steps (F columns) and of the iterates (X columns), and
-  // at each iteration solve gamma = argmin ||step_k - F gamma|| (small n x m
-  // least squares) for the accelerated increment step_k + (X - F) gamma. m = 1
-  // recovers Aitken/secant acceleration.
-  constexpr std::size_t kAndersonDepth = 5;
-  std::vector<Eigen::VectorXd> stepDeltas;
-  std::vector<Eigen::VectorXd> positionDeltas;
+  // Retract `base` by `-scale * increment` per joint (the Newton update,
+  // damped by `scale`), so spherical/floating coordinates stay on their
+  // manifolds. Shared by the line search and the accepted update.
+  const auto retractStep = [&](const Eigen::VectorXd& base,
+                               const Eigen::VectorXd& increment,
+                               double scale) {
+    Eigen::VectorXd result = base;
+    for (const auto& link : tree.links) {
+      if (link.dof == 0) {
+        continue;
+      }
+      const auto& joint = registry.get<comps::Joint>(link.joint);
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto n = static_cast<Eigen::Index>(link.dof);
+      result.segment(seg, n) = jointRetract(
+          joint, base.segment(seg, n), -scale * increment.segment(seg, n));
+    }
+    return result;
+  };
 
   // `tolerance` is a per-coordinate accuracy; the convergence test is on the
   // L2 norm of the (dofCount-dimensional) residual, so scale by sqrt(dofCount)
@@ -748,54 +923,63 @@ VariationalSolveReport integrateMultibodyVariational(
   // system and the hardest steps of long chains stall just above it.
   const double normTolerance
       = tolerance * std::sqrt(static_cast<double>(tree.dofCount));
-  Eigen::VectorXd previousStep;     // dt M^{-1} f(q^{k-1})
-  Eigen::VectorXd previousPosition; // q^{k-1}
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
     const Eigen::VectorXd residual = computeResidual(
         registry, tree, nextPosition, state, gravity, timeStep, appliedForce);
     report.iterations = static_cast<std::size_t>(iteration) + 1;
     report.residualNorm = residual.norm();
-    if (report.residualNorm <= normTolerance) {
+    const double residualNorm = report.residualNorm;
+    if (residualNorm <= normTolerance) {
       report.converged = true;
       break;
     }
 
-    const Eigen::VectorXd step
-        = applyArticulatedInverseMass(tree, timeStep * residual);
-    Eigen::VectorXd increment = step; // plain RIQN update (subtracted below)
-    if (euclideanCoordinates && iteration > 0) {
-      stepDeltas.push_back(step - previousStep);
-      positionDeltas.push_back(nextPosition - previousPosition);
-      if (stepDeltas.size() > kAndersonDepth) {
-        stepDeltas.erase(stepDeltas.begin());
-        positionDeltas.erase(positionDeltas.begin());
-      }
-      const auto m = static_cast<Eigen::Index>(stepDeltas.size());
-      Eigen::MatrixXd stepMatrix(step.size(), m);
-      Eigen::MatrixXd positionMatrix(step.size(), m);
-      for (Eigen::Index c = 0; c < m; ++c) {
-        stepMatrix.col(c) = stepDeltas[static_cast<std::size_t>(c)];
-        positionMatrix.col(c) = positionDeltas[static_cast<std::size_t>(c)];
-      }
-      const Eigen::VectorXd gamma
-          = stepMatrix.colPivHouseholderQr().solve(step);
-      if (gamma.allFinite()) {
-        increment = step + (positionMatrix - stepMatrix) * gamma;
-      }
-    }
+    // The exact Newton step already solves J dq = residual, so it is applied
+    // directly; the quasi-Newton step uses dt * M^{-1} * residual. Both yield
+    // an increment to *subtract* from the current iterate. `computeResidual`
+    // populated the per-link average velocity and q^{k+1} relative transforms
+    // the exact step needs.
+    const Eigen::VectorXd increment
+        = euclideanCoordinates
+              ? applyExactNewtonStep(tree, residual, timeStep)
+              : applyArticulatedInverseMass(tree, timeStep * residual);
 
-    previousStep = step;
-    previousPosition = nextPosition;
-    for (const auto& link : tree.links) {
-      if (link.dof == 0) {
-        continue;
-      }
-      const auto& joint = registry.get<comps::Joint>(link.joint);
-      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
-      const auto n = static_cast<Eigen::Index>(link.dof);
-      nextPosition.segment(seg, n) = jointRetract(
-          joint, nextPosition.segment(seg, n), -increment.segment(seg, n));
+    // Damped-Newton globalization (backtracking line search). The exact Newton
+    // step has fast *local* convergence but, like any Newton method, an
+    // undamped full step can overshoot when an iterate wanders far from the
+    // root (the hardest mid-rollout steps of a long/stiff chain reach such
+    // states). Try the full step first; if it does not reduce the residual
+    // norm, backtrack by halving until it does. Near the root the full step is
+    // always accepted (alpha = 1), preserving the quadratic rate; each trial
+    // residual is O(n), so a handful of backtracks keeps the step linear-time.
+    double alpha = 1.0;
+    Eigen::VectorXd trialPosition = retractStep(nextPosition, increment, alpha);
+    double trialNorm = computeResidual(
+                           registry,
+                           tree,
+                           trialPosition,
+                           state,
+                           gravity,
+                           timeStep,
+                           appliedForce)
+                           .norm();
+    constexpr int kMaxBacktracks = 20;
+    for (int backtrack = 0;
+         backtrack < kMaxBacktracks && !(trialNorm < residualNorm);
+         ++backtrack) {
+      alpha *= 0.5;
+      trialPosition = retractStep(nextPosition, increment, alpha);
+      trialNorm = computeResidual(
+                      registry,
+                      tree,
+                      trialPosition,
+                      state,
+                      gravity,
+                      timeStep,
+                      appliedForce)
+                      .norm();
     }
+    nextPosition = std::move(trialPosition);
   }
 
   // Non-convergence is a hard error, not a silent best-effort step: the caller

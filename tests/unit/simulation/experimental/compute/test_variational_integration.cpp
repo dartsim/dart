@@ -1270,12 +1270,14 @@ TEST(VariationalIntegration, StateSerializationRoundTripsTrajectory)
 }
 
 // PLAN-082 A2 long-chain convergence gate: a 64-link revolute chain converges
-// within the default iteration budget at every step. Without Anderson
-// acceleration the fixed dt*M^{-1} quasi-Newton rate makes such a chain peak
-// near ~456 iterations (measured) -- far past any reasonable budget, raising
-// the non-convergence error; Anderson bounds it to a few dozen. (Still-longer
-// chains, e.g. ~100 links, converge too -- bounded near ~205 -- but need a
-// larger explicit budget than the default on the hardest steps.)
+// within the default iteration budget at every step. The fixed dt*M^{-1}
+// quasi-Newton rate makes such a chain peak near ~456 iterations (measured) --
+// far past any reasonable budget, raising the non-convergence error -- because
+// dt*M^{-1} is only an approximate inverse Jacobian. The exact recursive-
+// Jacobian Newton preconditioner (`applyExactNewtonStep`) bounds the iteration
+// count to a few regardless of length (see LongChainExactPreconditioner... for
+// the >=100-link cases the quasi-Newton step cannot reach within the default
+// budget).
 TEST(VariationalIntegration, LongChainConvergesWithinDefaultBudget)
 {
   sx::World world;
@@ -1316,6 +1318,80 @@ TEST(VariationalIntegration, LongChainConvergesWithinDefaultBudget)
     maxIters = std::max(maxIters, report.iterations);
   }
   EXPECT_LE(maxIters, 100u) << "max RIQN iterations " << maxIters;
+}
+
+// Exact recursive-Jacobian (Newton) preconditioner headline gate: passive
+// chains of >=100 links (the cases the fixed dt*M^{-1} quasi-Newton step peaks
+// near ~205 iterations on -- beyond the default 100 budget) converge in only a
+// handful of iterations *within the default budget*, and the iteration count is
+// length-independent (it does not grow from 100 to 128 links). Each call uses
+// the default maxIterations; a non-converging step throws, so completing the
+// rollout proves every step stayed within budget. Energy stays finite and the
+// chain actually evolves (behavioral sanity), confirming a real integration --
+// not a degenerate "converged at the guess" path.
+TEST(VariationalIntegration, LongChainExactPreconditionerConvergesWithinBudget)
+{
+  for (const int links : {100, 128}) {
+    sx::World world;
+    auto robot = world.addMultibody("chain");
+    auto parent = robot.addLink("base");
+    for (int i = 0; i < links; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(i == 0 ? 0.0 : 0.3, 0.0, 0.0);
+      sx::JointSpec spec;
+      spec.name = "j" + std::to_string(i);
+      spec.type = sx::JointType::Revolute;
+      spec.axis = Eigen::Vector3d::UnitY();
+      spec.transformFromParent = offset;
+      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+      link.setMass(1.0);
+      link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+      parent = link;
+    }
+    const double dt = 1e-3;
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    for (auto joint : robot.getJoints()) {
+      joint.setPosition(Eigen::VectorXd::Constant(1, 0.3)); // released bent
+    }
+    world.updateKinematics();
+
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+    const double energy0
+        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+    ASSERT_GT(std::abs(energy0), 1e-6);
+
+    sxc::MultibodyVariationalState state;
+    std::size_t maxIters = 0;
+    const double tip0 = parent.getTransform().translation().z();
+    double maxTipDrop = 0.0;
+    for (int k = 0; k < 300; ++k) {
+      // Default budget (100). With the fixed dt*M^{-1} preconditioner this
+      // would raise the non-convergence error on the hardest steps (~205 >
+      // 100); the exact Newton step converges in only a few.
+      const auto report = sxc::integrateMultibodyVariational(
+          registry, structure, gravity, dt, state);
+      ASSERT_TRUE(report.converged) << "links=" << links << " step=" << k
+                                    << " residual=" << report.residualNorm;
+      maxIters = std::max(maxIters, report.iterations);
+      const double energy
+          = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+      ASSERT_FALSE(std::isnan(energy)) << "links=" << links << " step=" << k;
+      world.updateKinematics();
+      maxTipDrop = std::max(
+          maxTipDrop, tip0 - parent.getTransform().translation().z());
+    }
+
+    // Exact preconditioner: a handful of iterations, well within the default
+    // budget, on a chain the fixed quasi-Newton step cannot solve in budget.
+    EXPECT_LE(maxIters, 20u)
+        << "links=" << links << " max Newton iterations " << maxIters;
+    // The chain actually swings down under gravity (real integration).
+    EXPECT_GT(maxTipDrop, 1e-3)
+        << "links=" << links << " tip drop " << maxTipDrop;
+  }
 }
 
 // Zero default-path overhead: with the default ("semi-implicit") integration

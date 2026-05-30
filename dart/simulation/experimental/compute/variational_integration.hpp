@@ -105,12 +105,11 @@ struct VariationalLoopConstraint
 ///
 /// Each step solves the forced discrete Euler-Lagrange equation
 /// `D2 Ld(q^{k-1}, q^k) + D1 Ld(q^k, q^{k+1}) + F^k = 0` for the next
-/// configuration by RIQN: the residual is evaluated in O(n) by a discrete
-/// recursive Newton-Euler sweep (DRNEA), and the quasi-Newton update applies
-/// the approximate inverse Jacobian `dt * M(q^k)^{-1}` via an O(n)
-/// articulated-body-inertia (ABA) inverse-mass solve, so the whole step is
-/// linear-time in the degree-of-freedom count. Gravity enters as a forcing-side
-/// spatial impulse (not a Lagrangian potential).
+/// configuration by a Newton root-find: the residual is evaluated in O(n) by a
+/// discrete recursive Newton-Euler sweep (DRNEA), and the Newton update applies
+/// the inverse Jacobian in O(n) via an articulated-body recursion, so the whole
+/// step is linear-time in the degree-of-freedom count. Gravity enters as a
+/// forcing-side spatial impulse (not a Lagrangian potential).
 ///
 /// Scope (Phase A1): fixed-base open chains with fixed, revolute, and prismatic
 /// joints; fixed time step. Other joint types and floating bases are rejected.
@@ -129,13 +128,17 @@ struct VariationalLoopConstraint
 /// O(n) inverse-mass apply: `lambda = (J M^{-1} J^T)^{-1} (-g)`,
 /// `dq = M^{-1} J^T lambda`. This keeps closed loops satisfied each step.
 ///
-/// The `dt * M^{-1}` quasi-Newton preconditioner is only an approximate inverse
-/// Jacobian, so the plain iteration's convergence rate degrades for long
-/// chains. When the generalized coordinates form a vector space (every movable
-/// joint is revolute/prismatic) the RIQN fixed-point iteration is accelerated
-/// with depth-m Anderson mixing, which keeps the iteration count bounded for
-/// large degree-of-freedom counts; spherical/floating coordinates live on a
-/// manifold where linear mixing is invalid and use the plain step.
+/// Preconditioner policy: when the generalized coordinates form a vector space
+/// (every movable joint is revolute/prismatic) the update is the *exact*
+/// recursive-Jacobian Newton step -- it solves `J(q^{k+1}) dq = residual` for
+/// the exact forced-DEL Jacobian via a non-symmetric articulated-body recursion
+/// in O(n) -- so the iteration count stays bounded and length-independent, and
+/// long/stiff chains converge well within the iteration budget. Spherical and
+/// floating coordinates live on a manifold the exact step does not yet handle,
+/// so they fall back to the fixed `dt * M(q^k)^{-1}` quasi-Newton step (only an
+/// approximate inverse Jacobian, manifold-correct). The converged DEL root is
+/// independent of the preconditioner, so this never changes the integrated
+/// trajectory, only the iteration count.
 DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
