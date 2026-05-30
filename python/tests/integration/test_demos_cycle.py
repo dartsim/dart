@@ -22,6 +22,37 @@ import pytest
 from examples.demos import make_demo_scenes, run  # noqa: E402
 
 
+def _gui_run_demos_available() -> bool:
+    """True when the dartpy Filament viewer entry point is built.
+
+    Reduced builds disable the GUI (for example the macOS arm64 CI job builds
+    with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF``, and the GUI depends on the
+    experimental target). Without the viewer the runner returns early, so tests
+    that exercise the cycle/screenshot paths skip in that configuration.
+    """
+
+    try:
+        import dartpy as dart
+    except Exception:  # pragma: no cover - dartpy import failure
+        return False
+    return hasattr(dart, "gui") and hasattr(dart.gui, "run_demos")
+
+
+def _deformable_bindings_available() -> bool:
+    """True when the experimental deformable bindings are compiled in.
+
+    Builds with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF`` ship a reduced
+    ``dartpy.simulation_experimental`` without the deformable types, so the
+    solver-free grid-builder check skips there rather than erroring.
+    """
+
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception:  # pragma: no cover - reduced build without the submodule
+        return False
+    return hasattr(sx, "DeformableBodyOptions")
+
+
 def test_registry_has_scenes() -> None:
     scenes = make_demo_scenes()
     assert len(scenes) >= 1
@@ -34,6 +65,8 @@ def test_registry_has_scenes() -> None:
 
 
 def test_runner_cycle_returns_zero() -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
     rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
     assert rc == 0
 
@@ -58,6 +91,12 @@ def test_ipc_deformable_grid_builder_topology() -> None:
     horizontal + vertical + two-diagonal-per-cell spring edges, and two
     triangles per cell.
     """
+
+    if not _deformable_bindings_available():
+        pytest.skip(
+            "DeformableBodyOptions unavailable "
+            "(experimental simulation disabled in this build)"
+        )
 
     from examples.demos._ipc_deformable_bridge import build_grid_options
 
@@ -219,6 +258,9 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     """`--screenshot` writes a real PPM via the dartpy.gui Filament viewer
     (PLAN-103 Phase 2 replacement for the old JSON state stub)."""
+
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     scenes = make_demo_scenes()
     target = scenes[0]
