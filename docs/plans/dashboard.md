@@ -164,13 +164,23 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Implement Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as
-  a DART-owned deformable solver on the existing experimental deformable ECS
-  components and the variational implicit-Euler objective. Track slice-level
-  work in `docs/dev_tasks/vbd_deformable_solver/`, starting with the per-vertex
-  block kernels, graph coloring, and the block-descent driver, then FEM
-  hyperelasticity, acceleration, solver wiring, contact/friction, and CPU/GPU
-  performance.
+- Next step: The DART-owned VBD CPU+CUDA solver landed on `main` (#2781):
+  per-vertex block kernels, graph coloring, the colored Gauss-Seidel
+  block-descent driver, Stable Neo-Hookean tetrahedra, Chebyshev/Rayleigh
+  acceleration, the implicit-Euler stepper, the opt-in World wiring
+  (`comps::DeformableVbdConfig` + the `advanceDeformableBody` VBD branch), the
+  algorithm-neutral public `configureDeformableSolver` API and dartpy binding,
+  static half-space ground contact + Coulomb friction, the CUDA mass-spring and
+  tetrahedral rollouts (CUDA-graph capture + mixed precision), the CPU baseline
+  benchmark, and the first GUI showcases (cloth/net/beam). Remaining work, in
+  order: route VBD tet elasticity through the shared `deformable_elasticity` FEM
+  kernels so VBD honors the body's FEM material choice; let VBD honor the merged
+  sphere/box obstacle barriers instead of falling back to the default solver;
+  Phase 7 surface self-collision/friction (vertex-triangle / edge-edge penalty,
+  reusing the PLAN-081 `detail/deformable_contact` kernels); the TinyVBD
+  parity/regression example with committed benchmark JSON; then Phase 8b SoA +
+  Gaia-CPU benchmark and Phase 9 RTX-4090 same-GPU Table 1 reproduction. Reconcile
+  and retire `docs/dev_tasks/vbd_deformable_solver/` once self-collision closes.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

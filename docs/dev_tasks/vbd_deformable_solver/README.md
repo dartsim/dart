@@ -82,9 +82,10 @@
         when opted in, the default solver runs otherwise, VBD matches the
         gradient-descent solver on a contact-free scene, and a hanging chain is
         stable, with no regression in the existing deformable suite.
-  - [ ] Remaining Phase 6 work: thread element damping and Chebyshev into the
-        World VBD path, extend it to tetrahedral and surface-contact bodies, and
-        decide the public solver-selection surface.
+  - [x] Threaded Chebyshev acceleration + Rayleigh damping into the World VBD
+        path, extended it to tetrahedral bodies, and shipped the public,
+        algorithm-neutral `configureDeformableSolver` solver-selection API
+        (#2781). Surface-contact bodies remain deferred to Phase 7.
 - [ ] Phase 7: vertex-based contact and friction (reusing the existing
       `deformable_contact` distance/barrier/CCD kernels).
   - [x] Half-space penalty-contact sub-slice: `contact_kernel.hpp`
@@ -166,10 +167,10 @@
         verts 40.4 ms / 9.2 ms (~4.4x). The GPU tet solver wins and scales on
         this GPU for the paper's domain; a device-resident tet rollout would
         widen the margin further.
-  - [ ] Remaining Phase 9 work: CUDA-graph capture of the per-color sweeps,
-        a device-resident tetrahedral rollout, float/mixed precision, and
-        reproducing the paper's tetrahedral scenes on an RTX-4090 host (see the
-        same-GPU reproduction plan below).
+  - [x] Landed CUDA-graph capture of the per-color sweeps, a device-resident
+        tetrahedral rollout, and float/mixed precision (#2781). Remaining Phase 9
+        work: reproducing the paper's tetrahedral scenes on an RTX-4090 host (see
+        the same-GPU reproduction plan below).
 - [ ] Phase 10: complete the upstream example/scene corpus as DART-native
       tests, examples, benchmarks, profiling artifacts, and headless Filament
       visual evidence.
