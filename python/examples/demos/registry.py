@@ -25,6 +25,11 @@ from .scenes.hardcoded_design import SCENE as HARDCODED_DESIGN
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.heightmap import SCENE as HEIGHTMAP
 from .scenes.hybrid_dynamics import SCENE as HYBRID_DYNAMICS
+from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
+from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
+from .scenes.ipc_deformable_net import SCENE as IPC_DEFORMABLE_NET
+from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SCRIPTED
+from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
 from .scenes.joint_constraints import SCENE as JOINT_CONSTRAINTS
 from .scenes.kr5_arm import SCENE as KR5_ARM
 from .scenes.lcp_physics import SCENE as LCP_PHYSICS
@@ -43,9 +48,11 @@ from .scenes.shapes import SCENE as SHAPES
 from .scenes.simple_frames import SCENE as SIMPLE_FRAMES
 from .scenes.soft_bodies import SCENE as SOFT_BODIES
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
-from .scenes.vehicle import SCENE as VEHICLE
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
+from .scenes.sx_variational_chain import SCENE as SX_VARIATIONAL_CHAIN
+from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
+from .scenes.vehicle import SCENE as VEHICLE
 
 
 def make_demo_scenes() -> list[PythonDemoScene]:
@@ -100,4 +107,14 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_FLOATING_BASE,
         SX_CONTACT,
         EXPERIMENTAL_RIGID_BODY_GUI,
+        SX_VARIATIONAL_CHAIN,
+        SX_VARIATIONAL_TUMBLER,
+        # IPC Deformable (sx) — its own dedicated category so the IPC
+        # deformable-solver showcases group together rather than mixing into
+        # the general experimental scenes above.
+        IPC_DEFORMABLE_NET,
+        IPC_DEFORMABLE_DRAPE,
+        IPC_DEFORMABLE_TRAMPOLINE,
+        IPC_DEFORMABLE_FRICTION_SLIDE,
+        IPC_DEFORMABLE_SCRIPTED,
     ]

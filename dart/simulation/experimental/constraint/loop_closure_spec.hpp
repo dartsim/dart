@@ -52,6 +52,11 @@ struct LoopClosureSpec
   LoopClosureFamily family = LoopClosureFamily::Rigid;
   Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
+
+  /// Target separation for the `Distance` family (the fixed distance to
+  /// maintain between the endpoint positions). Ignored by the `Point` and
+  /// `Rigid` families. Defaults to 0 (coincident endpoints).
+  double distance = 0.0;
 };
 
 } // namespace dart::simulation::experimental

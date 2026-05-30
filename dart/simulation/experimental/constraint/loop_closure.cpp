@@ -194,7 +194,7 @@ LoopClosureResidual LoopClosure::computeResidual() const
       break;
     case LoopClosureFamily::Distance:
       residual.value.resize(1);
-      residual.value[0] = linearResidual.norm();
+      residual.value[0] = linearResidual.norm() - closure.distance;
       break;
   }
 

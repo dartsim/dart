@@ -692,6 +692,29 @@ void simulateMultibody(
           - joint.dampingCoefficient.cwiseProduct(joint.velocity);
   }
 
+  // Map each link's accumulated external wrench (body frame, [angular; linear])
+  // to a generalized force via its body Jacobian: appliedForce += J_i^T w_i.
+  // tree.links[i] is in structure order, so structure.links[i] is link i.
+  {
+    bool anyExternalForce = false;
+    for (const auto linkEntity : structure.links) {
+      if (!registry.get<comps::Link>(linkEntity).externalForce.isZero()) {
+        anyExternalForce = true;
+        break;
+      }
+    }
+    if (anyExternalForce) {
+      const std::vector<Eigen::MatrixXd> bodyJacobian = linkBodyJacobians(tree);
+      for (std::size_t i = 0; i < tree.links.size(); ++i) {
+        const Vector6 wrench
+            = registry.get<comps::Link>(structure.links[i]).externalForce;
+        if (!wrench.isZero()) {
+          appliedForce.noalias() += bodyJacobian[i].transpose() * wrench;
+        }
+      }
+    }
+  }
+
   const MassAndBias mb = computeMassAndBias(
       tree.links, tree.dofCount, gravity, qdot, tree.armature);
 
@@ -1293,6 +1316,13 @@ void MultibodyForwardDynamicsStage::execute(
     }
 
     simulateMultibody(registry, structure, gravity, timeStep, linkContacts);
+
+    // External forces are one-shot per step (like legacy
+    // BodyNode::addExtForce): clear them after they have been consumed by this
+    // step's dynamics.
+    for (const auto linkEntity : structure.links) {
+      registry.get<comps::Link>(linkEntity).externalForce.setZero();
+    }
   }
 }
 
