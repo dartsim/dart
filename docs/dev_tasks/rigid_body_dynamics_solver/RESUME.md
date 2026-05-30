@@ -308,9 +308,12 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     - **`readWorld` / multi-skeleton:** a `World`-level loader that converts each
       skeleton (the bridge already attaches every root body under one base, so
       multi-tree skeletons work; a whole-`World` convenience is the next step).
-    - **Joint features:** carry limits, damping, spring stiffness, and friction
-      from the legacy joint into the experimental joint (all already exposed on
-      the experimental `Joint`).
+  - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
+    limits, damping, spring stiffness + rest position, and Coulomb friction are
+    carried into the experimental joint (`copyJointProperties`, default on),
+    round-trip tested. Multi-DOF joint properties are left at defaults (the
+    experimental dynamics applies these per-coordinate forces for the 1-DOF
+    joints; extend to multi-DOF once those properties are honored there).
 
 ### Subsystem C — MVP GUI example (DONE)
 

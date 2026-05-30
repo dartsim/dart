@@ -626,8 +626,10 @@ skeleton, options)` and dartpy `build_multibody_from_skeleton` /
     universal, ball, free (floating base), and planar joints on a fixed base,
     re-expresses each link's frame onto its outgoing joint (carrying the
     center-of-mass offset and inertia), converts the screw pitch and free-joint
-    coordinate conventions, and reproduces the legacy skeleton's mass matrix and
-    Coriolis/gravity dynamics. Combined with `dart::io` URDF/SDF parsing this
+    coordinate conventions, carries revolute/prismatic joint properties
+    (position/velocity/effort limits, damping, spring stiffness and rest
+    position, Coulomb friction), and reproduces the legacy skeleton's mass matrix
+    and Coriolis/gravity dynamics. Combined with `dart::io` URDF/SDF parsing this
     loads a model file into the experimental World. Branching offsets, collision
     shapes, and rotated parent-side offsets on ball/free/planar joints are not
     yet translated and raise a descriptive error.

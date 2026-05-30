@@ -496,6 +496,59 @@ TEST(SkeletonToMultibody, FreeMatchesLegacyDynamics)
 }
 
 //==============================================================================
+// Per-coordinate joint properties (limits, damping, spring, friction) of a
+// revolute joint are carried into the experimental joint.
+TEST(SkeletonToMultibody, CopiesRevoluteJointProperties)
+{
+  auto skeleton = dd::Skeleton::create("properties");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  joint->setName("hinge");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  joint->setPositionLowerLimit(0, -1.2);
+  joint->setPositionUpperLimit(0, 1.5);
+  joint->setVelocityLowerLimit(0, -3.0);
+  joint->setVelocityUpperLimit(0, 3.0);
+  joint->setForceLowerLimit(0, -10.0);
+  joint->setForceUpperLimit(0, 10.0);
+  joint->setDampingCoefficient(0, 0.7);
+  joint->setSpringStiffness(0, 5.0);
+  joint->setRestPosition(0, 0.25);
+  joint->setCoulombFriction(0, 0.4);
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+
+  sx::World world;
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  const auto hinge = multibody.getJoint("hinge");
+  ASSERT_TRUE(hinge.has_value());
+  EXPECT_NEAR(hinge->getPositionLowerLimits()[0], -1.2, 1e-12);
+  EXPECT_NEAR(hinge->getPositionUpperLimits()[0], 1.5, 1e-12);
+  EXPECT_NEAR(hinge->getVelocityLowerLimits()[0], -3.0, 1e-12);
+  EXPECT_NEAR(hinge->getVelocityUpperLimits()[0], 3.0, 1e-12);
+  EXPECT_NEAR(hinge->getEffortLowerLimits()[0], -10.0, 1e-12);
+  EXPECT_NEAR(hinge->getEffortUpperLimits()[0], 10.0, 1e-12);
+  EXPECT_NEAR(hinge->getDampingCoefficient()[0], 0.7, 1e-12);
+  EXPECT_NEAR(hinge->getSpringStiffness()[0], 5.0, 1e-12);
+  EXPECT_NEAR(hinge->getRestPosition()[0], 0.25, 1e-12);
+  EXPECT_NEAR(hinge->getCoulombFriction()[0], 0.4, 1e-12);
+
+  // copy_joint_properties = false leaves the experimental defaults.
+  sx::World plain;
+  sx::io::SkeletonToMultibodyOptions options;
+  options.copyJointProperties = false;
+  sx::Multibody bare
+      = sx::io::buildMultibodyFromSkeleton(plain, *skeleton, options);
+  const auto bareHinge = bare.getJoint("hinge");
+  ASSERT_TRUE(bareHinge.has_value());
+  EXPECT_EQ(bareHinge->getDampingCoefficient()[0], 0.0);
+  EXPECT_EQ(bareHinge->getSpringStiffness()[0], 0.0);
+}
+
+//==============================================================================
 // A valid first body followed by an unsupported (Euler) joint must reject the
 // whole skeleton and leave the World with no partial multibody: the plan pass
 // validates everything before any World state is created.

@@ -1703,7 +1703,10 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw("name", &sim::io::SkeletonToMultibodyOptions::name)
       .def_rw(
           "base_link_name", &sim::io::SkeletonToMultibodyOptions::baseLinkName)
-      .def_rw("copy_state", &sim::io::SkeletonToMultibodyOptions::copyState);
+      .def_rw("copy_state", &sim::io::SkeletonToMultibodyOptions::copyState)
+      .def_rw(
+          "copy_joint_properties",
+          &sim::io::SkeletonToMultibodyOptions::copyJointProperties);
 
   m.def(
       "build_multibody_from_skeleton",

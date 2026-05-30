@@ -208,6 +208,52 @@ std::pair<Eigen::VectorXd, Eigen::VectorXd> mapJointState(
   return {position, velocity};
 }
 
+/// Copy per-coordinate joint properties (position/velocity/effort limits,
+/// damping, spring stiffness, rest position, Coulomb friction) from a legacy
+/// joint to the experimental joint. Both joints share the same coordinate count
+/// and order (used for revolute and prismatic joints).
+void copyJointProperties(const dynamics::Joint& legacy, Joint& experimental)
+{
+  const auto dof = static_cast<Eigen::Index>(legacy.getNumDofs());
+  Eigen::VectorXd lower(dof);
+  Eigen::VectorXd upper(dof);
+  Eigen::VectorXd damping(dof);
+  Eigen::VectorXd stiffness(dof);
+  Eigen::VectorXd restPosition(dof);
+  Eigen::VectorXd friction(dof);
+
+  for (Eigen::Index i = 0; i < dof; ++i) {
+    const auto c = static_cast<std::size_t>(i);
+    damping[i] = legacy.getDampingCoefficient(c);
+    stiffness[i] = legacy.getSpringStiffness(c);
+    restPosition[i] = legacy.getRestPosition(c);
+    friction[i] = legacy.getCoulombFriction(c);
+  }
+  experimental.setDampingCoefficient(damping);
+  experimental.setSpringStiffness(stiffness);
+  experimental.setRestPosition(restPosition);
+  experimental.setCoulombFriction(friction);
+
+  for (Eigen::Index i = 0; i < dof; ++i) {
+    const auto c = static_cast<std::size_t>(i);
+    lower[i] = legacy.getPositionLowerLimit(c);
+    upper[i] = legacy.getPositionUpperLimit(c);
+  }
+  experimental.setPositionLimits(lower, upper);
+  for (Eigen::Index i = 0; i < dof; ++i) {
+    const auto c = static_cast<std::size_t>(i);
+    lower[i] = legacy.getVelocityLowerLimit(c);
+    upper[i] = legacy.getVelocityUpperLimit(c);
+  }
+  experimental.setVelocityLimits(lower, upper);
+  for (Eigen::Index i = 0; i < dof; ++i) {
+    const auto c = static_cast<std::size_t>(i);
+    lower[i] = legacy.getForceLowerLimit(c);
+    upper[i] = legacy.getForceUpperLimit(c);
+  }
+  experimental.setEffortLimits(lower, upper);
+}
+
 /// The constant offset that places body `b`'s experimental link frame onto its
 /// outgoing joint, so that joint stays anchored at this link's frame origin.
 /// Leaf bodies keep the legacy body frame (identity offset).
@@ -230,6 +276,7 @@ struct LinkPlan
 {
   const dynamics::BodyNode* body = nullptr;
   const dynamics::BodyNode* parentBody = nullptr; // null => synthetic base
+  const dynamics::Joint* joint = nullptr;         // legacy parent joint
   std::string linkName;
   JointSpec spec;
   double pitch = 0.0; // experimental screw pitch (applied after construction)
@@ -317,6 +364,7 @@ Multibody buildMultibodyFromSkeleton(
     LinkPlan plan;
     plan.body = body;
     plan.parentBody = parentBody;
+    plan.joint = joint;
     plan.linkName = body->getName();
     plan.spec.name = joint->getName();
     plan.spec.type = mapped.type;
@@ -361,16 +409,23 @@ Multibody buildMultibodyFromSkeleton(
   for (const auto& plan : plans) {
     const Link parentLink = plan.parentBody ? linkOf.at(plan.parentBody) : base;
     Link link = multibody.addLink(plan.linkName, parentLink, plan.spec);
+    Joint parentJoint = link.getParentJoint();
+
     if (plan.spec.type == JointType::Screw) {
-      link.getParentJoint().setPitch(plan.pitch);
+      parentJoint.setPitch(plan.pitch);
     }
     link.setMass(plan.mass);
     link.setCenterOfMass(plan.com);
     link.setInertia(plan.inertia);
 
     if (plan.position.size() > 0) {
-      link.getParentJoint().setPosition(plan.position);
-      link.getParentJoint().setVelocity(plan.velocity);
+      parentJoint.setPosition(plan.position);
+      parentJoint.setVelocity(plan.velocity);
+    }
+    if (options.copyJointProperties && plan.joint != nullptr
+        && (plan.spec.type == JointType::Revolute
+            || plan.spec.type == JointType::Prismatic)) {
+      copyJointProperties(*plan.joint, parentJoint);
     }
 
     linkOf.emplace(plan.body, link);

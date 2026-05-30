@@ -58,10 +58,15 @@ struct SkeletonToMultibodyOptions
   std::string baseLinkName = "base";
 
   /// When true (the default), copy the current generalized positions and
-  /// velocities of supported single-DOF joints (revolute, prismatic) into the
-  /// created multibody. When false, the multibody is left at the zero
-  /// configuration.
+  /// velocities of the supported joints into the created multibody. When false,
+  /// the multibody is left at the zero configuration.
   bool copyState = true;
+
+  /// When true (the default), copy per-coordinate joint properties — position,
+  /// velocity, and effort limits, damping, spring stiffness and rest position,
+  /// and Coulomb friction — from revolute and prismatic joints into the created
+  /// multibody. Other joint types are left at their defaults.
+  bool copyJointProperties = true;
 };
 
 /// Build an experimental `Multibody` from a legacy `dynamics::Skeleton`.
