@@ -412,3 +412,35 @@ TEST(FemTetElement, FixedCorotationalHessianIsSymmetricPositiveDefinite)
   const Eigen::SelfAdjointEigenSolver<fem::Matrix12d> solver(h);
   EXPECT_GT(solver.eigenvalues().minCoeff(), -1e-7);
 }
+
+//==============================================================================
+// Under a pure uniform scale F = c*I (rotation R = I), the fixed-corotational
+// energy density has the closed form 3*mu*(c - 1)^2 + (lambda/2)*(c^3 - 1)^2.
+// Scaling every rest node by c about the origin produces exactly F = c*I, so
+// the element energy must equal restVolume times that closed form. This pins
+// the absolute energy value, which the finite-difference gradient test cannot
+// (it only checks the energy's derivative).
+TEST(FemTetElement, FixedCorotationalEnergyMatchesUniformScaleClosedForm)
+{
+  const Nodes rest = restTetrahedron();
+  const fem::TetRestShape shape
+      = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
+  const fem::LameParameters lame = fem::lameParameters(1.0e4, 0.3);
+
+  for (const double c : {0.92, 1.0, 1.07}) {
+    Nodes scaled = rest;
+    for (auto& node : scaled) {
+      node *= c;
+    }
+    const fem::TetElementResult result = fem::evaluateFixedCorotationalTet(
+        scaled[0], scaled[1], scaled[2], scaled[3], shape, lame);
+    ASSERT_TRUE(result.valid);
+    const double expectedDensity
+        = 3.0 * lame.mu * (c - 1.0) * (c - 1.0)
+          + 0.5 * lame.lambda * (c * c * c - 1.0) * (c * c * c - 1.0);
+    EXPECT_NEAR(
+        result.energy,
+        shape.restVolume * expectedDensity,
+        1e-9 * (1.0 + std::abs(shape.restVolume * expectedDensity)));
+  }
+}
