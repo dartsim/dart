@@ -3658,6 +3658,7 @@ void runVbdDeformableSolve(
     double timeStep,
     double youngsModulus,
     double poissonRatio,
+    bool useFixedCorotationalTets,
     const std::vector<StaticGroundBarrier>& barriers,
     double frictionCoeff,
     const comps::DeformableVbdConfig& config,
@@ -3746,6 +3747,12 @@ void runVbdDeformableSolve(
   options.useChebyshev = config.useChebyshev;
   options.chebyshevRho = config.chebyshevRho;
   options.rayleighDamping = config.rayleighDamping;
+  // Route tetrahedra through the shared FEM elasticity kernels so a VBD body
+  // applies the same hyperelastic material (Stable Neo-Hookean or
+  // fixed-corotational) the default solver would, instead of the VBD-local
+  // Stable Neo-Hookean copy.
+  options.useFemTetKernel = true;
+  options.useFixedCorotationalTets = useFixedCorotationalTets;
   // state.positions holds x^t for this step (the write-back to the live state
   // happens after the solve), so it is the Rayleigh displacement reference.
   // parallelBlockDescentDeformable falls back to the full-featured serial
@@ -4436,6 +4443,7 @@ void advanceDeformableBody(
         timeStep,
         material.youngsModulus,
         material.poissonRatio,
+        material.useFixedCorotationalElasticity,
         barriers,
         frictionCoefficient,
         *vbdConfig,

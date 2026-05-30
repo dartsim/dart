@@ -229,7 +229,9 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         tetAdjacency,
         mu,
         lambda,
-        timeStep);
+        timeStep,
+        options.useFemTetKernel,
+        options.useFixedCorotationalTets);
     if (useRayleigh) {
       Eigen::Matrix3d elasticHessian = block.hessian;
       elasticHessian.diagonal().array() -= masses[vertex] * invDt2;

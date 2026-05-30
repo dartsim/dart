@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/acceleration.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/contact_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/neo_hookean.hpp>
@@ -49,6 +50,11 @@
 #include <cstdint>
 
 namespace dart::simulation::experimental::detail::deformable_vbd {
+
+/// Shorthand for the shared FEM tetrahedral elasticity kernels that VBD can
+/// optionally route through (see BlockDescentOptions::useFemTetKernel).
+namespace elasticity
+    = ::dart::simulation::experimental::detail::deformable_elasticity;
 
 /// One distance-spring element for the mass-spring block-descent driver.
 struct SpringElement
@@ -119,6 +125,17 @@ struct BlockDescentOptions
   /// Adds (k_d/h) H_elastic to each block and opposes the per-step
   /// displacement.
   double rayleighDamping = 0.0;
+  /// Route tetrahedral elasticity through the shared `deformable_elasticity`
+  /// FEM kernels (so a VBD body honors the same hyperelastic material the
+  /// default solver would apply) instead of the VBD-local Stable Neo-Hookean
+  /// kernel. Off by default to keep the standalone drivers byte-identical; the
+  /// World VBD path turns it on.
+  bool useFemTetKernel = false;
+  /// When `useFemTetKernel` is set, evaluate tetrahedra with the
+  /// fixed-corotational FEM material (honoring
+  /// `DeformableMaterial::useFixedCorotationalElasticity`) rather than Stable
+  /// Neo-Hookean. Ignored when `useFemTetKernel` is false.
+  bool useFixedCorotationalTets = false;
 };
 
 /// Outcome of a block-descent solve.
@@ -333,6 +350,50 @@ inline VertexColoring colorTetMesh(
 namespace detail {
 
 //==============================================================================
+/// Per-vertex tetrahedral elasticity term routed through the shared FEM kernels
+/// (Stable Neo-Hookean or fixed-corotational). Extracts the local vertex's 3x1
+/// force (the negated gradient sub-block) and 3x3 diagonal Hessian block from
+/// the element's 12x1 gradient / 12x12 Hessian, so a VBD body reproduces the
+/// same hyperelastic material the default solver applies. Degenerate
+/// (non-positive rest-volume) tetrahedra contribute nothing.
+inline void addFemTetTerm(
+    VertexBlock& block,
+    std::uint8_t localVertex,
+    const TetRestShape& rest,
+    const std::array<Eigen::Vector3d, 4>& positions,
+    double mu,
+    double lambda,
+    bool useFixedCorotational)
+{
+  if (!(rest.restVolume > 0.0)) {
+    return;
+  }
+  elasticity::TetRestShape femRest;
+  femRest.inverseRestEdges = rest.restShapeInverse;
+  femRest.restVolume = rest.restVolume;
+  femRest.valid = true;
+  const elasticity::LameParameters lame{mu, lambda};
+  const elasticity::TetElementResult result
+      = useFixedCorotational ? elasticity::evaluateFixedCorotationalTet(
+                                   positions[0],
+                                   positions[1],
+                                   positions[2],
+                                   positions[3],
+                                   femRest,
+                                   lame)
+                             : elasticity::evaluateStableNeoHookeanTet(
+                                   positions[0],
+                                   positions[1],
+                                   positions[2],
+                                   positions[3],
+                                   femRest,
+                                   lame);
+  const int base = 3 * static_cast<int>(localVertex);
+  block.force -= result.gradient.segment<3>(base);
+  block.hessian += result.hessian.block<3, 3>(base, base);
+}
+
+//==============================================================================
 /// Assemble the inertia + incident-tetrahedron Neo-Hookean block for one free
 /// vertex at the current positions.
 inline VertexBlock assembleTetVertexBlock(
@@ -344,7 +405,9 @@ inline VertexBlock assembleTetVertexBlock(
     const TetAdjacency& adjacency,
     double mu,
     double lambda,
-    double timeStep)
+    double timeStep,
+    bool useFemTetKernel = false,
+    bool useFixedCorotationalTets = false)
 {
   VertexBlock block;
   addInertiaTerm(
@@ -360,8 +423,19 @@ inline VertexBlock assembleTetVertexBlock(
            positions[tet.vertices[1]],
            positions[tet.vertices[2]],
            positions[tet.vertices[3]]};
-    addNeoHookeanTetTerm(
-        block, localVertex, tet.rest, tetPositions, mu, lambda);
+    if (useFemTetKernel) {
+      addFemTetTerm(
+          block,
+          localVertex,
+          tet.rest,
+          tetPositions,
+          mu,
+          lambda,
+          useFixedCorotationalTets);
+    } else {
+      addNeoHookeanTetTerm(
+          block, localVertex, tet.rest, tetPositions, mu, lambda);
+    }
   }
   return block;
 }
@@ -412,7 +486,9 @@ inline BlockDescentStats blockDescentTetMesh(
             adjacency,
             mu,
             lambda,
-            timeStep);
+            timeStep,
+            options.useFemTetKernel,
+            options.useFixedCorotationalTets);
         const Eigen::Vector3d delta
             = solveVertexBlock(block, options.regularization);
         positions[vertex] += delta;
@@ -439,7 +515,9 @@ inline BlockDescentStats blockDescentTetMesh(
         adjacency,
         mu,
         lambda,
-        timeStep);
+        timeStep,
+        options.useFemTetKernel,
+        options.useFixedCorotationalTets);
     residualNormSquared += block.force.squaredNorm();
   }
   stats.finalResidualNormSquared = residualNormSquared;
@@ -524,7 +602,9 @@ inline VertexBlock assembleDeformableVertexBlock(
     const TetAdjacency& tetAdjacency,
     double mu,
     double lambda,
-    double timeStep)
+    double timeStep,
+    bool useFemTetKernel = false,
+    bool useFixedCorotationalTets = false)
 {
   VertexBlock block;
   addInertiaTerm(
@@ -556,8 +636,19 @@ inline VertexBlock assembleDeformableVertexBlock(
              positions[tet.vertices[1]],
              positions[tet.vertices[2]],
              positions[tet.vertices[3]]};
-      addNeoHookeanTetTerm(
-          block, localVertex, tet.rest, tetPositions, mu, lambda);
+      if (useFemTetKernel) {
+        addFemTetTerm(
+            block,
+            localVertex,
+            tet.rest,
+            tetPositions,
+            mu,
+            lambda,
+            useFixedCorotationalTets);
+      } else {
+        addNeoHookeanTetTerm(
+            block, localVertex, tet.rest, tetPositions, mu, lambda);
+      }
     }
   }
   return block;
@@ -622,7 +713,9 @@ inline BlockDescentStats blockDescentDeformable(
         tetAdjacency,
         mu,
         lambda,
-        timeStep);
+        timeStep,
+        options.useFemTetKernel,
+        options.useFixedCorotationalTets);
     if (useRayleigh) {
       // The elastic Hessian is the full block Hessian minus the (m/h^2) I
       // inertia term that addInertiaTerm placed on the diagonal.

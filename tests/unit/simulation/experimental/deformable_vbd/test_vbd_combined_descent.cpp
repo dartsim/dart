@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp>
 
 #include <gtest/gtest.h>
@@ -479,4 +480,93 @@ TEST(VbdCombinedDescent, RayleighDampingIsStableAndChangesResult)
     maxDifference = std::max(maxDifference, (damped[i] - undamped[i]).norm());
   }
   EXPECT_GT(maxDifference, 1e-6);
+}
+
+//==============================================================================
+// Option B: with useFemTetKernel set, the VBD tetrahedral term is routed
+// through the shared deformable_elasticity FEM kernels, so a VBD body honors
+// the body's hyperelastic material. The per-vertex block force must equal the
+// corresponding FEM element force, and selecting fixed-corotational must change
+// the force away from Stable Neo-Hookean (the live divergence this fixes: VBD
+// previously always applied its own Stable Neo-Hookean, ignoring the material
+// choice).
+TEST(VbdCombinedDescent, FemTetKernelHonorsMaterialChoice)
+{
+  namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
+
+  // One deformed (stretched + sheared) tetrahedron; inertial target == current
+  // position so the inertia term contributes zero force and the block force is
+  // exactly the elastic tet force.
+  const std::array<Vec3, 4> rest
+      = {Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)};
+  const std::vector<Vec3> positions
+      = {Vec3(0, 0, 0),
+         Vec3(1.25, 0.12, -0.03),
+         Vec3(-0.06, 1.10, 0.08),
+         Vec3(0.02, 0.05, 0.92)};
+  const std::vector<double> masses(4, 1.0);
+  const std::vector<Vec3> inertialTargets = positions;
+  std::vector<vbd::TetMeshElement> tets;
+  tets.push_back({{0, 1, 2, 3}, vbd::makeTetRestShape(rest)});
+  const auto adjacency = vbd::TetAdjacency::build(4, tets);
+  const double mu = 3000.0;
+  const double lambda = 6000.0;
+  const double timeStep = 0.01;
+
+  // Independent FEM reference element forces for vertex 0.
+  fem::TetRestShape femRest;
+  femRest.inverseRestEdges = tets[0].rest.restShapeInverse;
+  femRest.restVolume = tets[0].rest.restVolume;
+  femRest.valid = true;
+  const fem::LameParameters lame{mu, lambda};
+  const Vec3 snhForce0 = -fem::evaluateStableNeoHookeanTet(
+                              positions[0],
+                              positions[1],
+                              positions[2],
+                              positions[3],
+                              femRest,
+                              lame)
+                              .gradient.segment<3>(0);
+  const Vec3 fcrForce0 = -fem::evaluateFixedCorotationalTet(
+                              positions[0],
+                              positions[1],
+                              positions[2],
+                              positions[3],
+                              femRest,
+                              lame)
+                              .gradient.segment<3>(0);
+
+  // The two materials genuinely disagree on this deformed configuration.
+  EXPECT_GT((snhForce0 - fcrForce0).norm(), 1e-6);
+
+  const vbd::VertexBlock snhBlock = vbd::detail::assembleTetVertexBlock(
+      0,
+      positions,
+      masses,
+      inertialTargets,
+      tets,
+      adjacency,
+      mu,
+      lambda,
+      timeStep,
+      /*useFemTetKernel=*/true,
+      /*useFixedCorotationalTets=*/false);
+  const vbd::VertexBlock fcrBlock = vbd::detail::assembleTetVertexBlock(
+      0,
+      positions,
+      masses,
+      inertialTargets,
+      tets,
+      adjacency,
+      mu,
+      lambda,
+      timeStep,
+      /*useFemTetKernel=*/true,
+      /*useFixedCorotationalTets=*/true);
+
+  // Each routed block force matches its FEM element force exactly...
+  EXPECT_LT((snhBlock.force - snhForce0).norm(), 1e-9);
+  EXPECT_LT((fcrBlock.force - fcrForce0).norm(), 1e-9);
+  // ...and the material selection actually changes the VBD force.
+  EXPECT_GT((snhBlock.force - fcrBlock.force).norm(), 1e-6);
 }
