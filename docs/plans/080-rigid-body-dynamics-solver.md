@@ -7,9 +7,16 @@
   delivered as the first solver under a multi-solver, multi-physics architecture
   that keeps the public facade free of solver, coupler, and backend types.
 - Current evidence:
-  - Experimental `step()` is only basic free-body integration with no gravity,
-    no articulated dynamics, no contacts, no constraint solver
-    (`dart/simulation/experimental/compute/world_step_stage.cpp`).
+  - The rigid-body MVP shipped (PR #2705, merged 2026-05-25): `World::step()`
+    runs gravity, articulated forward dynamics for all joint types (fixed,
+    revolute, prismatic, screw, universal, planar, ball, free), a floating base,
+    sequential-impulse contacts, and a collision-query bridge
+    (`dart/simulation/experimental/compute/world_step_stage.cpp`,
+    `compute/multibody_dynamics.cpp`). A `dynamics::Skeleton` → `Multibody`
+    model-loading bridge has started
+    (`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`). The
+    remaining gaps are the coupled boxed-LCP/PGS contact solve and the rest of
+    model loading.
   - Legacy DART 6 dynamics baseline: `dart/dynamics/`, `dart/constraint/`,
     `dart/simulation/world.cpp`.
   - Reusable foundations: boxed-LCP library `dart/math/lcp/` (PLAN-020), native

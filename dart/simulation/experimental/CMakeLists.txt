@@ -76,6 +76,7 @@ add_library(
   io/deformable_scene_io.cpp
   io/gmsh_tet_mesh.cpp
   io/serializer.cpp
+  io/skeleton_to_multibody.cpp
   multibody/joint.cpp
   multibody/link.cpp
   multibody/multibody.cpp

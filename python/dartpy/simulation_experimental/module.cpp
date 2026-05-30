@@ -49,11 +49,14 @@
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/io/gmsh_tet_mesh.hpp>
+#include <dart/simulation/experimental/io/skeleton_to_multibody.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/space/state_space.hpp>
 #include <dart/simulation/experimental/world.hpp>
+
+#include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Cholesky>
 #include <nanobind/eigen/dense.h>
@@ -1693,6 +1696,28 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::io::DeformableSceneDiagnostics::maxDisplacement)
       .def_ro("min_z", &sim::io::DeformableSceneDiagnostics::minZ)
       .def_ro("max_z", &sim::io::DeformableSceneDiagnostics::maxZ);
+
+  nb::class_<sim::io::SkeletonToMultibodyOptions>(
+      m, "SkeletonToMultibodyOptions")
+      .def(nb::init<>())
+      .def_rw("name", &sim::io::SkeletonToMultibodyOptions::name)
+      .def_rw(
+          "base_link_name", &sim::io::SkeletonToMultibodyOptions::baseLinkName)
+      .def_rw("copy_state", &sim::io::SkeletonToMultibodyOptions::copyState);
+
+  m.def(
+      "build_multibody_from_skeleton",
+      [](sim::World& world,
+         const dart::dynamics::Skeleton& skeleton,
+         const sim::io::SkeletonToMultibodyOptions& options) {
+        return sim::io::buildMultibodyFromSkeleton(world, skeleton, options);
+      },
+      nb::arg("world"),
+      nb::arg("skeleton"),
+      nb::arg("options") = sim::io::SkeletonToMultibodyOptions{},
+      // The returned Multibody handle holds a raw World*, so keep the World
+      // alive as long as the handle lives, matching World.add_multibody.
+      nb::keep_alive<0, 1>());
 
   m.def(
       "load_deformable_scene",

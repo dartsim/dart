@@ -178,24 +178,29 @@ correct gravity torques. See `compute/multibody_dynamics.cpp`.
 
 ## Current Branch
 
-Working in `/home/js/dev/dartsim/dart/task_2` on
-`feature/experimental-rigid-body-dynamics` (PR #2705). `origin/main`
-`b7f5380679c` has been merged locally; conflict resolution and verification are
-still in progress.
+PR #2705 (the rigid-body MVP) **merged to `main` on 2026-05-25** (merge commit
+`003c2d0e39`). The MVP convention re-alignment and the GUI example (Subsystem C)
+are done and on `main`.
+
+Current work is on `feature/experimental-model-loader` in
+`/home/js/dev/dartsim/dart/task_1`: the first slice of Subsystem B (model
+loading) — a `dynamics::Skeleton` → experimental `Multibody` bridge. See the
+Subsystem B section below for what landed and what remains.
 
 ## Immediate Next Step
 
-**Blocker — land the MVP PR #2705.** Finish the local main merge and verification:
-the integration convention is now #2698-style pure/persistent force inputs plus
-a transient gravity force-assembly buffer for default `World::step()`. Next,
-build and run the focused C++/Python gates, fix fallout, add the required
-dart-gui example (Subsystem C), then push only after maintainer approval.
+**MVP done (PR #2705 merged).** The #2698 convention re-alignment shipped and
+the required dart-gui example (Subsystem C) is on `main`
+(`examples/demos/scenes/experimental_rigid_body_gui.cpp` plus the Python `sx_*`
+demos). The blocker described in earlier sessions is resolved.
 
-**All joint types are now implemented and verified** (fixed, revolute,
-prismatic, screw, universal, planar, ball, free) with a floating base via a
-`Free` joint, including the config-dependent-subspace `cJ` term and SO(3)/SE(3)
-manifold integration. The two remaining roadmap subsystems are each a dedicated
-multi-session effort with a specific architectural prerequisite, detailed below.
+**All joint types are implemented and verified** (fixed, revolute, prismatic,
+screw, universal, planar, ball, free) with a floating base via a `Free` joint,
+including the config-dependent-subspace `cJ` term and SO(3)/SE(3) manifold
+integration. **Subsystem B (model loading) is now started** — see below.
+The remaining work is Subsystem A (coupled boxed-LCP) and the rest of
+Subsystem B, each a dedicated multi-session effort with a specific
+architectural prerequisite, detailed below.
 
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
@@ -258,18 +263,54 @@ There is no experimental-World loader yet, so this needs a translation layer:
   URDF/Skeleton COM offsets directly (no reframing). Verified by an offset-COM
   pendulum (C++ + dartpy). Child-joint origins relative to the body frame still
   map onto `transformFromParent` as today.
-- **Remaining:** the actual translation pass — walk the parsed `Skeleton`,
-  create links/joints, map joint types and transforms, and (optionally) collision
-  shapes — likely in a new `dart/simulation/experimental/io` bridge. Verify a
-  known URDF loads with the right DOF count, tree structure, and a sane
-  forward-dynamics step, in C++ and dartpy.
+- **(STARTED — slice 1) The translation pass.**
+  `dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}` adds
+  `io::buildMultibodyFromSkeleton(world, skeleton, options)` (dartpy
+  `build_multibody_from_skeleton` + `SkeletonToMultibodyOptions`). Composed with
+  `dart::io::readSkeleton` (URDF/SDF/MJCF → legacy `Skeleton`) it loads a model
+  file into the experimental World; the Python test loads `KR5` this way.
+  - **Frame-mapping decision (the crux).** The experimental dynamics anchors
+    every joint at its parent link's frame **origin** (`childInParent =
+jointMotion(q) * transformFromParent`), while a legacy joint carries
+    arbitrary parent/child offsets `A`, `C`. The loader therefore (a) places each
+    experimental link's frame on that link's **outgoing** joint via
+    `O_b = childJoint.transformFromParentBodyNode`, (b) adds a synthetic fixed
+    `base` link for the world frame so a root body's offset is realized, and
+    (c) per edge computes `M = O_parent^-1 * A`,
+    `transformFromParent = M * C^-1 * O_b`, `axis_exp = M.linear() * axis`, with
+    inertia/COM re-expressed in the placed frame. For a moving joint `M` must be
+    translation-free; that single check rejects both offset roots and
+    branches whose siblings do not share a parent-side frame. Verified by
+    matching the legacy `Skeleton` mass matrix + Coriolis/gravity forces
+    (DART-6 parity) for revolute, prismatic, and welded-base chains (C++ +
+    dartpy).
+  - **Remaining for Subsystem B:**
+    - **Branching at an offset** (a parent link with ≥2 child joints at
+      different frames). The clean fix is to insert a massless fixed
+      intermediate link per branch to carry each child-joint offset — blocked
+      only by `Link::setMass` requiring positive mass (allow a structural/zero
+      mass fixed link, or special-case it in the bridge).
+    - **Multi-DOF and floating roots:** map screw (pitch), universal (axis2),
+      ball→`Spherical`, free→`Floating`, planar→`Planar`. The structure is easy;
+      the care is matching the multi-DOF **coordinate conventions** when copying
+      positions/velocities (the bridge already copies 1-DOF state). A floating
+      base maps to a `Free` joint from the synthetic base.
+    - **Collision/visual shapes:** translate `BodyNode` shape nodes to
+      `Link::setCollisionShape` (sphere/box today; see Phase 2 shape backlog).
+    - **`readWorld` / multi-skeleton:** a `World`-level loader that converts each
+      skeleton (the bridge already attaches every root body under one base, so
+      multi-tree skeletons work; a whole-`World` convenience is the next step).
+    - **Joint features:** carry limits, damping, spring stiffness, and friction
+      from the legacy joint into the experimental joint (all already exposed on
+      the experimental `Joint`).
 
-### Subsystem C — MVP GUI example (required for the MVP)
+### Subsystem C — MVP GUI example (DONE)
 
-Today the only experimental example is **headless**
-(`python/examples/experimental_rigid_body/main.py`). The MVP needs at least one
-**GUI** example that steps the experimental rigid-body `World` and renders it
-live.
+Landed on `main`: `examples/demos/scenes/experimental_rigid_body_gui.cpp` steps
+the experimental rigid-body `World` and renders it live in `dart-demos`, and the
+Python `sx_*` demos (`python/examples/demos/scenes/sx_articulated.py`,
+`sx_floating_base.py`) cover it from dartpy. The historical note below is kept
+for context.
 
 Grounding (verified in-tree):
 

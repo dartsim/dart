@@ -38,10 +38,12 @@ __all__: list[str] = [
     "MultibodyOptions",
     "RigidBody",
     "RigidBodyOptions",
+    "SkeletonToMultibodyOptions",
     "StateSpace",
     "StateVariable",
     "World",
     "WorldSyncStage",
+    "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
@@ -56,6 +58,8 @@ from typing import Annotated, overload
 
 import numpy
 from numpy.typing import NDArray
+
+import dartpy.dynamics
 
 
 class JointType(enum.Enum):
@@ -1321,6 +1325,29 @@ class DeformableSceneDiagnostics:
 
     @property
     def max_z(self) -> float: ...
+
+class SkeletonToMultibodyOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @name.setter
+    def name(self, arg: str, /) -> None: ...
+
+    @property
+    def base_link_name(self) -> str: ...
+
+    @base_link_name.setter
+    def base_link_name(self, arg: str, /) -> None: ...
+
+    @property
+    def copy_state(self) -> bool: ...
+
+    @copy_state.setter
+    def copy_state(self, arg: bool, /) -> None: ...
+
+def build_multibody_from_skeleton(world: World, skeleton: dartpy.dynamics.Skeleton, options: SkeletonToMultibodyOptions = ...) -> Multibody: ...
 
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 

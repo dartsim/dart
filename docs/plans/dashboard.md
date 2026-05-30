@@ -127,9 +127,16 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Land Phase 0.1 (World gravity in the rigid-body integration stage)
-  on the experimental World, then articulated-body forward dynamics; track
-  slice-level work in `docs/dev_tasks/rigid_body_dynamics_solver/`.
+- Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25): gravity,
+  all joint types, floating base, sequential-impulse contacts, collision-query
+  bridge, derived quantities/actuators/limits, and the required dart-gui example.
+  Current frontier is model loading — a `dynamics::Skeleton` → experimental
+  `Multibody` bridge landed (`io::buildMultibodyFromSkeleton`, weld/revolute/
+  prismatic on a fixed base, DART-6 mass/Coriolis/gravity parity). Remaining:
+  the coupled boxed-LCP/PGS contact solve (the one item still needing the
+  step-pipeline reordering) and the rest of model loading (branching offsets,
+  multi-DOF/floating joints, shapes, `readWorld`). Slice-level work is tracked in
+  `docs/dev_tasks/rigid_body_dynamics_solver/` (`RESUME.md`).
 - Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.
