@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -153,8 +154,6 @@ dart::simulation::WorldPtr createVehicleWorld()
         "Failed to load vehicle world from " + std::string(kWorldUri));
   }
 
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
   auto ground = requireSkeleton(world, "ground skeleton");
   ground->setName(kVehicleGroundName);
   if (auto* body = ground->getBodyNode("ground")) {
@@ -188,6 +187,9 @@ dart::simulation::WorldPtr createVehicleWorld()
                  : Eigen::Vector3d(0.78, 0.64, 0.18));
     }
   }
+
+  // vehicle.skel is authored Y-up; reorient to the canonical Z-up convention.
+  reorientWorldToZUp(world);
 
   return world;
 }

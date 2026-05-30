@@ -178,5 +178,21 @@ int main()
       return status;
     }
   }
+
+  // Unknown-scene guard: an unrecognized --scene id must fail loudly with a
+  // nonzero status (the branch returns before launching the GUI), not silently
+  // fall back to the first scene -- otherwise headless screenshot/cycle runs
+  // capture the wrong scene and still exit 0. Regression for that fall-through.
+  {
+    char arg0[] = "demos";
+    char argFlag[] = "--scene";
+    char argBogus[] = "definitely_not_a_scene";
+    char* argv[] = {arg0, argFlag, argBogus};
+    if (dart::gui::runDemos(3, argv, entries) == EXIT_SUCCESS) {
+      return fail("runDemos returned success for an unknown --scene id");
+    }
+    std::cout << "unknown-scene guard OK: runDemos rejects an unknown id.\n";
+  }
+
   return EXIT_SUCCESS;
 }

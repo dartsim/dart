@@ -1070,6 +1070,25 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added opt-in **adaptive barrier stiffness** (kappa) to the experimental
+    deformable solver (PLAN-081 M6). When a body sets
+    `DeformableMaterialProperties.useAdaptiveBarrierStiffness` (dartpy
+    `use_adaptive_barrier_stiffness`), its ground and obstacle (sphere/box/capsule)
+    contact barriers scale kappa per step from the mass / time-step force balance
+    `kappa = clamp((maxNodalMass / dt^2) * d_hat^2, 25, 1e6)` instead of the fixed
+    default. The barrier's curvature contribution scales like `kappa / d_hat^2`
+    and a node's inertial stiffness like `mass / dt^2`, so this balance keeps the
+    contact equally well-conditioned across mass/stiffness ratios; for a unit
+    nodal mass at `dt = 1/250`, `d_hat = 2e-2` it evaluates to exactly the
+    historical fixed `kappa = 25`, which the adaptive form generalizes (toward the
+    paper's Fig. 12 large-ratio robustness). It is floored at the fixed default
+    so contact robustness never regresses and capped to keep the Hessian
+    well-conditioned. Off (the default) is byte-identical, so every existing scene
+    is unchanged; the lagged-friction normal-force estimate and the self-contact
+    barrier (which carries its own stiffness) keep the fixed kappa. Adds a
+    regression in which a heavy node settles measurably higher (the stiffer
+    adaptive barrier balances gravity farther from the surface, mass-independently)
+    than with the fixed kappa.
   - Added a capsule (rod/wire) collision shape and a static **capsule obstacle
     barrier** for the experimental deformable solver (PLAN-081 M3 codimensional
     collision objects). `CollisionShape::makeCapsule(radius, halfHeight)` adds a
@@ -2160,6 +2179,11 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Fixed python example discovery and added the Issue #743 regression. ([#2311](https://github.com/dartsim/dart/pull/2311), [#743](https://github.com/dartsim/dart/issues/743))
   - Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
   - Reoriented the Y-up `pixi run py-demos` scenes (`rigid_chain`, `rigid_cubes`, `mixed_chain`, `add_delete_skels`, `rigid_loop`, `soft_bodies`, `kr5_arm`) to the canonical Z-up convention so gravity and the camera up-vector are consistent across the catalog; golden-set parity is preserved because geometry and gravity are rotated by the same rigid transform.
+  - Reoriented the matching Y-up C++ `pixi run demos` scenes to Z-up via shared `reorientWorldToZUp`/`reorientSkeletonToZUp` helpers, keeping the C++ golden-set parity smoke green. Covered: `rigid_chain`, `rigid_cubes`, `mixed_chain`, `add_delete_skels`, `rigid_loop`, `soft_bodies`, `vehicle`, `hybrid_dynamics`, `human_joint_limits`, `rigid_shapes`, `lcp_physics`, and the balance-controller scenes `biped_stand` and `joint_constraints`. The biped controllers compute balance from the sagittal (X) center-of-mass/pressure offset and track joint-space targets, both invariant under the rigid `RotX(+90°)` rotation; per-scene touch-ups flipped Y-up cameras to Z-up and redirected the lateral push perturbations from world `Z` to `Y`.
+  - Fixed `atlas_simbicon`: its model and SIMBICON controller are Z-up, but the sagittal torso-balance gain was inverted (a leftover from the Y-up→Z-up port), so the Atlas toppled backward. Corrected the sign (`State::_updateTorqueForStanceLeg`, both stance branches) so the pelvis feedback is restorative; the Atlas now balances upright. The coronal term was already correct.
+  - Added a robot-agnostic Python SIMBICON controller to `pixi run py-demos` with new `atlas_simbicon`, `g1_simbicon`, and `simbicon_duo` scenes. A single config-driven controller (`scenes/_simbicon.py`) implements the SIMBICON FSM, world-frame torso/swing-hip control, and the `theta_d = theta_d0 + c_d*d + c_v*v` balance feedback, parameterized per robot (`scenes/_simbicon_robots.py`); both the bundled Atlas v5 and the (locally cached) Unitree G1 balance/step under it, including together in one world. Uses the paper's hip-midpoint COM proxy (dartpy exposes no `getCOM`), a foot-height contact proxy, and Stable PD so stiff gains stay stable on G1's light, low-inertia joints.
+  - Improved the Python SIMBICON balance robustness with two evidence-driven control fixes. State traces showed both robots fail the same way: the stance leg creeps into a slightly deeper crouch each cycle so the pelvis gradually sinks until it drops out of the control window. (1) Added stance-leg height regulation (`height_kp`) that extends the stance knee back toward the standing pelvis height captured at spawn, and (2) completed the world-frame torso control as a true PD by wiring in the previously-unused `torso_kd` damping term (derived from the pelvis angular velocity). With `height_kp=2.0`, Atlas balances and steps in place for 3000+ steps (it toppled around step 2800 before) and G1's time-to-fall nearly doubles (1170 → 2204 steps). A residual lateral (coronal) instability still topples both over longer horizons; sweeping the coronal feedback gain and a per-side sign flip did not improve it, so the deeper lateral foot-placement work is left as a documented limit rather than masked.
+  - Made `dart::gui::runDemos`/`--scene` accept both hyphenated and snake_case scene ids (`atlas-simbicon` and `atlas_simbicon`) and print the available scenes on an unknown id instead of silently starting the first scene, which makes headless screenshot capture reliable.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

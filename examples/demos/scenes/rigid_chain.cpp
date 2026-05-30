@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -40,7 +41,6 @@ dart::simulation::WorldPtr createRigidChainWorld()
     throw std::runtime_error("Failed to load dart://sample/skel/chain.skel");
   }
 
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->setTimeStep(1.0 / 2000.0);
 
   auto chain = world->getSkeleton(0);
@@ -66,6 +66,9 @@ dart::simulation::WorldPtr createRigidChainWorld()
     chain->getBodyNode(i)->setColor(
         Eigen::Vector3d(0.20 + 0.60 * t, 0.58 - 0.28 * t, 0.90 - 0.45 * t));
   }
+
+  // chain.skel is authored Y-up; reorient to the canonical Z-up convention.
+  reorientWorldToZUp(world);
 
   return world;
 }
