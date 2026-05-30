@@ -148,6 +148,78 @@ inline BarrierScalarDerivatives c2ClampedLogBarrier(
 }
 
 //==============================================================================
+inline PrimitiveBarrierResult pointPointBarrier(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const double squaredActivationDistance,
+    const double stiffness = 1.0)
+{
+  const double squaredDistance = pointPointSquaredDistance(a, b);
+  const auto barrier
+      = c2ClampedLogBarrier(squaredDistance, squaredActivationDistance);
+
+  PrimitiveBarrierResult result = detail::makeInactivePrimitiveBarrier(
+      squaredDistance, barrier.safeSquaredDistance, squaredActivationDistance);
+  result.active = barrier.active;
+
+  const double kappa = detail::nonnegativeFiniteStiffness(stiffness);
+  if (!barrier.active || kappa <= 0.0) {
+    return result;
+  }
+
+  Vector12d distanceGradient = Vector12d::Zero();
+  distanceGradient.head<6>() = pointPointSquaredDistanceGradient(a, b);
+  Matrix12d distanceHessian = Matrix12d::Zero();
+  distanceHessian.topLeftCorner<6, 6>() = pointPointSquaredDistanceHessian();
+
+  result.value = kappa * barrier.value;
+  result.gradient = kappa * barrier.firstDerivative * distanceGradient;
+  result.hessian = kappa
+                   * (barrier.secondDerivative
+                          * (distanceGradient * distanceGradient.transpose())
+                      + barrier.firstDerivative * distanceHessian);
+  return result;
+}
+
+//==============================================================================
+inline PrimitiveBarrierResult pointEdgeBarrier(
+    const Eigen::Vector3d& p,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const double squaredActivationDistance,
+    const double stiffness = 1.0)
+{
+  const auto distance = pointEdgeSquaredDistance(p, a, b);
+  const auto barrier = c2ClampedLogBarrier(
+      distance.squaredDistance, squaredActivationDistance);
+
+  PrimitiveBarrierResult result = detail::makeInactivePrimitiveBarrier(
+      distance.squaredDistance,
+      barrier.safeSquaredDistance,
+      squaredActivationDistance);
+  result.active = barrier.active;
+
+  const double kappa = detail::nonnegativeFiniteStiffness(stiffness);
+  if (!barrier.active || kappa <= 0.0) {
+    return result;
+  }
+
+  Vector12d distanceGradient = Vector12d::Zero();
+  distanceGradient.head<9>() = pointEdgeSquaredDistanceGradient(p, a, b);
+  Matrix12d distanceHessian = Matrix12d::Zero();
+  distanceHessian.topLeftCorner<9, 9>()
+      = pointEdgeSquaredDistanceHessian(p, a, b);
+
+  result.value = kappa * barrier.value;
+  result.gradient = kappa * barrier.firstDerivative * distanceGradient;
+  result.hessian = kappa
+                   * (barrier.secondDerivative
+                          * (distanceGradient * distanceGradient.transpose())
+                      + barrier.firstDerivative * distanceHessian);
+  return result;
+}
+
+//==============================================================================
 inline PrimitiveBarrierResult pointTriangleBarrier(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,

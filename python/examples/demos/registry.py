@@ -64,6 +64,11 @@ from .scenes.soft_bodies import SCENE as SOFT_BODIES
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
+from .scenes.sx_rigid_ipc import SCENE as SX_RIGID_IPC
+from .scenes.sx_rigid_ipc_incline import SCENE as SX_RIGID_IPC_INCLINE
+from .scenes.sx_rigid_ipc_pile import SCENE as SX_RIGID_IPC_PILE
+from .scenes.sx_rigid_ipc_slide import SCENE as SX_RIGID_IPC_SLIDE
+from .scenes.sx_rigid_ipc_tunnel import SCENE as SX_RIGID_IPC_TUNNEL
 from .scenes.sx_variational_chain import SCENE as SX_VARIATIONAL_CHAIN
 from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
 from .scenes.vbd_beam import SCENE as VBD_BEAM
@@ -124,6 +129,18 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_FLOATING_BASE,
         SX_CONTACT,
         EXPERIMENTAL_RIGID_BODY_GUI,
+        # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
+        # a drop, friction (flat + inclined), a multi-body pile, then the
+        # intersection-free (no-tunneling) guarantee. Only scenes that run in
+        # real time are registered; heavier contact scenes (a triangulated
+        # sphere, a tight box stack) are intentionally omitted until the rigid
+        # IPC performance work lands, since the solver currently runs at only a
+        # few frames per second for those (they are covered by C++ regressions).
+        SX_RIGID_IPC,
+        SX_RIGID_IPC_SLIDE,
+        SX_RIGID_IPC_INCLINE,
+        SX_RIGID_IPC_PILE,
+        SX_RIGID_IPC_TUNNEL,
         SX_VARIATIONAL_CHAIN,
         SX_VARIATIONAL_TUMBLER,
         # Differentiable physics (sx::World + sx.diff). Reproduces the paper's

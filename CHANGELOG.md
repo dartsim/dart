@@ -884,6 +884,118 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     line-search limiter, with point-triangle and physical box-edge CCD
     regressions and benchmark counters. This is a CCD limiter only, not rigid
     contact response or IPC parity.
+  - Added an opt-in experimental rigid IPC world-step stage that builds
+    mesh-like rigid surfaces and physical dynamics objective terms from runtime
+    rigid-body state, runs the internal projected-Newton barrier solve, and
+    writes solved poses/velocities back without replacing the default rigid
+    contact stage.
+  - Added experimental `World::setRigidBodySolver()` selection so callers can
+    keep the default sequential-impulse rigid pipeline or opt into the rigid
+    IPC free-rigid dynamics stage without exposing solver registries.
+  - Added deterministic runtime sphere triangulation for the experimental rigid
+    IPC world-step stage, allowing analytic sphere collision shapes to
+    participate in the internal mesh-like barrier surface assembly.
+  - Added durable diagnostics to the opt-in experimental rigid IPC world-step
+    stage, reporting solve status, last step and line-search bounds, and
+    aggregate conservative CCD line-search counters.
+  - Added the first activated-contact runtime regression for the opt-in
+    experimental rigid IPC world-step stage, verifying mesh barriers move a
+    dynamic body away from a static surface while reporting line-search
+    diagnostics.
+  - Added point-point curved CCD to rigid IPC conservative line search so
+    vertex-vertex barrier rows can limit unsafe steps and report point-point
+    diagnostics.
+  - Hardened the opt-in experimental rigid IPC world-step stage so malformed
+    runtime mesh topology, non-finite mesh vertices, and invalid box extents
+    are skipped before internal barrier assembly or CCD.
+  - Made the opt-in experimental rigid IPC world-step stage skip non-converged
+    solve results instead of applying partial runtime poses silently, with
+    diagnostics for result application.
+  - Added internal lagged smoothed Coulomb friction potentials for rigid IPC
+    vertex-vertex, edge-vertex, edge-edge, and face-vertex contacts, including
+    world-coordinate derivative coverage and reduced-coordinate coverage for
+    vertex-vertex and edge-vertex terms.
+  - Assembled the first internal lagged friction rows into the rigid IPC
+    projected-Newton objective using lagged active barrier constraints, per-body
+    friction coefficients, and runtime active-friction diagnostics.
+  - Added bounded outer lagged-friction passes to the internal rigid IPC
+    projected-Newton solve, including a zero-iteration friction disable,
+    refreshed momentum-balance diagnostics, and runtime active-pass counts.
+  - Added a runtime regression proving lagged rigid IPC friction observably
+    brakes a tangential slide at an activated mesh contact relative to the
+    frictionless solve, and reports active friction constraints/passes.
+  - Added the first rigid IPC performance benchmark (`bm_rigid_ipc_solver`)
+    covering the per-primitive reduced barrier kernels, scene-level assembly,
+    the projected-Newton solve, and the conservative CCD line search, with a
+    benchmark methodology and baseline tracker. Initial measurements show the
+    scene assembly is O(N^2) (no broad phase yet).
+  - Optimized rigid IPC barrier assembly with a conservative world-AABB
+    broad-phase cull that skips surface pairs already beyond the activation
+    distance. The cull is behavior-preserving (covered by an equivalence
+    regression) and drops the measured scene-assembly complexity from O(N^2) to
+    O(N) (~4.4x faster at 32 bodies, widening with scene size).
+  - Added a same-scene per-step comparison benchmark of the incumbent
+    sequential-impulse rigid path against the opt-in rigid IPC path via
+    `World::setRigidBodySolver()`, establishing the DART rigid baseline to beat.
+    The rigid IPC scaffold is currently ~3 orders of magnitude slower per step,
+    quantifying the optimization gap.
+  - Optimized the rigid IPC conservative line search with a swept broad-phase
+    cull that skips surface pairs whose start-pose AABBs are farther apart than
+    the bodies can move over the step, reusing the curved-trajectory speed bound
+    so it stays consistent with the per-primitive CCD (including a rotational
+    motion bound, the CCD convergence tolerance, and the minimum separation).
+    The cull is behavior-preserving, with anti-tunneling, far-skip, and
+    tolerance-band regressions.
+  - Replaced the rigid IPC barrier-assembly and line-search all-pairs O(N^2)
+    surface enumeration with a sort-and-sweep broad phase that reuses the
+    deformable IPC sweep utilities (shared IPC primitives), keeping the exact
+    distance/reach cull on the sweep candidates so the assembled system and
+    line-search result are unchanged while large multi-body scenes become
+    sub-quadratic.
+  - Added a `sx_rigid_ipc` Python demo scene (registered in the py-demos
+    Experimental category) showing a free box settle on static ground through
+    the opt-in rigid IPC barrier solver (`World.rigid_body_solver = IPC`).
+  - Fixed the rigid IPC freeze-on-contact "sink-then-stick" failure by adding
+    IPC adaptive barrier stiffness (porting the reference
+    `initial_barrier_stiffness`/`update_barrier_stiffness` onto DART's
+    squared-distance clamped-log barrier). A fixed `kappa = 1` was orders of
+    magnitude too soft, so a body under gravity crept into the barrier band
+    until a step penetrated and the conservative line search then blocked every
+    subsequent step, freezing the body permanently. The solve now picks an
+    initial `kappa` that balances the barrier gradient against the inertial
+    energy gradient, clamped to `[kappa_min, 100*kappa_min]`, and doubles it
+    when the closest pair keeps approaching. A box on static ground now produces
+    continued contact dynamics (slides and is friction-braked toward rest) while
+    staying intersection-free, instead of sticking. Added a relative
+    projected-Newton gradient-convergence floor (the stiff barrier makes the
+    absolute tolerance unreachable at a resting contact) and made the opt-in
+    stage apply the best intersection-free configuration a bounded solve reaches
+    (matching the reference, which steps with the optimizer's best feasible
+    iterate) instead of discarding any not-fully-converged result. The
+    anti-tunneling guarantee is unchanged: a line-search-blocked or failed solve
+    is still never written back. Covered by adaptive-stiffness unit tests and a
+    no-freeze sliding-contact runtime regression.
+  - Added a `sx_rigid_ipc_slide` Python demo scene (registered in the py-demos
+    Experimental category) showing a box slide across static ground and be
+    friction-braked to rest through the rigid IPC barrier solver, now viable
+    thanks to the freeze-on-contact fix.
+  - Added a two-box-stack runtime regression proving the adaptive-stiffness fix
+    generalizes to multiple dynamic bodies and body-body contact: a stack of two
+    free boxes on static ground settles into a stable, intersection-free
+    equilibrium (simultaneous body-ground and body-body barriers, a single
+    scene-level adaptive kappa) instead of freezing, interpenetrating, or
+    separating.
+  - Expanded the rigid IPC py-demos suite (Experimental category) with three
+    more real-time scenes, each verified to behave correctly (no freeze,
+    penetration, or explosion) and to run at an interactive frame rate:
+    `sx_rigid_ipc_incline` (a box sliding down a tilted ramp under friction),
+    `sx_rigid_ipc_pile` (boxes dropped into a pile, multi-body contact), and
+    `sx_rigid_ipc_tunnel` (a fast box stopped dead by a thin wall, showcasing the
+    intersection-free / no-tunneling guarantee). Heavier contact scenes (a
+    triangulated sphere, a tight box stack) are intentionally not shipped as GUI
+    demos yet because the rigid IPC solver currently runs at only a few frames
+    per second for those; that capability stays covered by C++ regressions, and
+    the demos will follow once the rigid IPC performance work lands.
   - Extended the static rigid surface CCD obstacle opt-in to static SPHERE
     collision shapes (PLAN-081 Phase 2 non-box rigid surface coverage). An
     opted-in static sphere is tessellated into a UV-sphere triangle mesh that

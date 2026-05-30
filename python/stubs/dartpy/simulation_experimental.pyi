@@ -42,6 +42,7 @@ __all__: list[str] = [
     "PhysicalParameter",
     "RigidBody",
     "RigidBodyOptions",
+    "RigidBodySolver",
     "StateSpace",
     "StateVariable",
     "StepDerivatives",
@@ -116,6 +117,10 @@ class LoopClosureResidualCoordinates(enum.Enum):
 class WorldSyncStage(enum.Enum):
     KINEMATICS = 0
 
+class RigidBodySolver(enum.Enum):
+    SEQUENTIAL_IMPULSE = 0
+
+    IPC = 1
 class ContactSolverMethod(enum.Enum):
     SEQUENTIAL_IMPULSE = 0
 
@@ -1498,6 +1503,12 @@ class World:
 
     @gravity.setter
     def gravity(self, arg: object, /) -> None: ...
+
+    @property
+    def rigid_body_solver(self) -> RigidBodySolver: ...
+
+    @rigid_body_solver.setter
+    def rigid_body_solver(self, arg: RigidBodySolver, /) -> None: ...
 
     @property
     def multibody_options(self) -> MultibodyOptions: ...

@@ -55,6 +55,11 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_rigid_ipc_solver
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_rigid_ipc_solver.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_vbd_vertex_block_kernel
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_vertex_block_kernel.cpp
   )
