@@ -173,6 +173,15 @@ void defSkeleton(nb::module_& m)
             self.setForces(toVector(forces));
           },
           nb::arg("forces"))
+      .def(
+          "getConstraintForces",
+          [](const Skeleton& self) -> Eigen::VectorXd {
+            return self.getConstraintForces();
+          })
+      .def(
+          "getCOM",
+          [](const Skeleton& self) -> Eigen::Vector3d { return self.getCOM(); })
+      .def("clearExternalForces", &Skeleton::clearExternalForces)
       .def("enableSelfCollisionCheck", &Skeleton::enableSelfCollisionCheck)
       .def("disableSelfCollisionCheck", &Skeleton::disableSelfCollisionCheck)
       .def(

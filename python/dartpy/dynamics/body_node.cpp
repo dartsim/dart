@@ -109,6 +109,21 @@ void defBodyNode(nb::module_& m)
             return self.getInertia();
           })
       .def("setInertia", &BodyNode::setInertia, nb::arg("inertia"))
+      .def(
+          "addExtForce",
+          &BodyNode::addExtForce,
+          nb::arg("force"),
+          nb::arg("offset") = Eigen::Vector3d::Zero(),
+          nb::arg("is_force_local") = false,
+          nb::arg("is_offset_local") = true)
+      .def(
+          "setExtForce",
+          &BodyNode::setExtForce,
+          nb::arg("force"),
+          nb::arg("offset") = Eigen::Vector3d::Zero(),
+          nb::arg("is_force_local") = false,
+          nb::arg("is_offset_local") = true)
+      .def("clearExternalForces", &BodyNode::clearExternalForces)
       .def("getOrCreateIK", [](BodyNode& self) { return self.getOrCreateIK(); })
       .def(
           "getIK",
