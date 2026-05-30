@@ -105,24 +105,32 @@ Matrix6 adjoint(const Eigen::Isometry3d& transform)
 }
 
 //==============================================================================
-// Spatial motion cross product (crm) for V = [w; v].
-Matrix6 motionCross(const Vector6& value)
+// Motion cross product crm(m) applied to a motion vector x, without forming the
+// 6x6 matrix: crm(m) x = [ m.w × x.w ; m.v × x.w + m.w × x.v ]. Equivalent to
+// `motionCross(m) * x` but ~3x fewer flops (used on the analytic-derivative hot
+// path).
+inline Vector6 crossMotion(const Vector6& m, const Vector6& x)
 {
-  const Eigen::Vector3d angular = value.head<3>();
-  const Eigen::Vector3d linear = value.tail<3>();
-
-  Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = skew(angular);
-  result.bottomLeftCorner<3, 3>() = skew(linear);
-  result.bottomRightCorner<3, 3>() = skew(angular);
-  return result;
+  Vector6 out;
+  const Eigen::Vector3d mAngular = m.head<3>();
+  const Eigen::Vector3d mLinear = m.tail<3>();
+  out.head<3>() = mAngular.cross(x.head<3>());
+  out.tail<3>() = mLinear.cross(x.head<3>()) + mAngular.cross(x.tail<3>());
+  return out;
 }
 
 //==============================================================================
-// Spatial force cross product (crf) = -crm(V)^T for V = [w; v].
-Matrix6 forceCross(const Vector6& value)
+// Force cross product crf(v) = -crm(v)^T applied to a force vector f, without
+// forming the 6x6 matrix: crf(v) f = [ v.w × f.top + v.v × f.bot ; v.w × f.bot
+// ]. Equivalent to `forceCross(v) * f`.
+inline Vector6 crossForce(const Vector6& v, const Vector6& f)
 {
-  return -motionCross(value).transpose();
+  Vector6 out;
+  const Eigen::Vector3d vAngular = v.head<3>();
+  const Eigen::Vector3d vLinear = v.tail<3>();
+  out.head<3>() = vAngular.cross(f.head<3>()) + vLinear.cross(f.tail<3>());
+  out.tail<3>() = vAngular.cross(f.tail<3>());
+  return out;
 }
 
 //==============================================================================
@@ -554,10 +562,10 @@ Eigen::VectorXd recursiveNewtonEuler(
       velocity[i] = link.parentToChild * velocity[parent] + jointVelocity;
       acceleration[i] = link.parentToChild * acceleration[parent]
                         + jointAcceleration + jointBias
-                        + motionCross(velocity[i]) * jointVelocity;
+                        + crossMotion(velocity[i], jointVelocity);
     }
     force[i] = link.inertia * acceleration[i]
-               + forceCross(velocity[i]) * (link.inertia * velocity[i]);
+               + crossForce(velocity[i], link.inertia * velocity[i]);
   }
 
   Eigen::VectorXd tau
@@ -1144,9 +1152,9 @@ InverseDynamicsDerivatives rneaDerivatives(
         a[i] = link.subspace * qddot.segment(link.dofOffset, link.dof);
       }
       v[i] = link.parentToChild * v[p] + jv[i];
-      a[i] += link.parentToChild * a[p] + motionCross(v[i]) * jv[i];
+      a[i] += link.parentToChild * a[p] + crossMotion(v[i], jv[i]);
     }
-    f[i] = link.inertia * a[i] + forceCross(v[i]) * (link.inertia * v[i]);
+    f[i] = link.inertia * a[i] + crossForce(v[i], link.inertia * v[i]);
   }
 
   // Total accumulated force F_i = f_i + Σ_children X_c^T F_c (needed by the
@@ -1185,13 +1193,13 @@ InverseDynamicsDerivatives rneaDerivatives(
           da[i] = link.parentToChild * da[p];
           if (i == m) {
             // ∂X_m/∂q_j = -crm(S_m) X_m acting on the parent motion/accel.
-            dv[i] += -motionCross(subspaceM) * (link.parentToChild * v[p]);
-            da[i] += -motionCross(subspaceM) * (link.parentToChild * a[p]);
+            dv[i] += -crossMotion(subspaceM, link.parentToChild * v[p]);
+            da[i] += -crossMotion(subspaceM, link.parentToChild * a[p]);
           }
-          da[i] += motionCross(dv[i]) * jv[i];
+          da[i] += crossMotion(dv[i], jv[i]);
         }
-        df[i] = link.inertia * da[i] + forceCross(dv[i]) * (link.inertia * v[i])
-                + forceCross(v[i]) * (link.inertia * dv[i]);
+        df[i] = link.inertia * da[i] + crossForce(dv[i], link.inertia * v[i])
+                + crossForce(v[i], link.inertia * dv[i]);
       }
       std::vector<Vector6> dForce = df;
       for (std::size_t r = 0; r < count; ++r) {
@@ -1207,7 +1215,7 @@ InverseDynamicsDerivatives rneaDerivatives(
           if (i == m) {
             // δ(X_m^T) F_m = X_m^T crf(S_m) F_m.
             dForce[p] += link.childToParentForce
-                         * (forceCross(subspaceM) * totalForce[i]);
+                         * crossForce(subspaceM, totalForce[i]);
           }
         }
       }
@@ -1226,12 +1234,12 @@ InverseDynamicsDerivatives rneaDerivatives(
           da[i] = link.parentToChild * da[p];
           if (i == m) {
             dv[i] += subspaceM;
-            da[i] += motionCross(v[i]) * subspaceM;
+            da[i] += crossMotion(v[i], subspaceM);
           }
-          da[i] += motionCross(dv[i]) * jv[i];
+          da[i] += crossMotion(dv[i], jv[i]);
         }
-        df[i] = link.inertia * da[i] + forceCross(dv[i]) * (link.inertia * v[i])
-                + forceCross(v[i]) * (link.inertia * dv[i]);
+        df[i] = link.inertia * da[i] + crossForce(dv[i], link.inertia * v[i])
+                + crossForce(v[i], link.inertia * dv[i]);
       }
       std::vector<Vector6> dForce = df;
       for (std::size_t r = 0; r < count; ++r) {
