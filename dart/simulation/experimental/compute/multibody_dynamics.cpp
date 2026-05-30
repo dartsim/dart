@@ -41,6 +41,7 @@
 #include "dart/simulation/experimental/comps/link.hpp"
 #include "dart/simulation/experimental/comps/multibody.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
+#include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -57,17 +58,15 @@ namespace dart::simulation::experimental::compute {
 
 namespace {
 
-using Vector6 = Eigen::Matrix<double, 6, 1>;
-using Matrix6 = Eigen::Matrix<double, 6, 6>;
-using Subspace = Eigen::Matrix<double, 6, Eigen::Dynamic>;
-
-//==============================================================================
-Eigen::Matrix3d skew(const Eigen::Vector3d& v)
-{
-  Eigen::Matrix3d m;
-  m << 0.0, -v.z(), v.y(), v.z(), 0.0, -v.x(), -v.y(), v.x(), 0.0;
-  return m;
-}
+// Shared 6D spatial-algebra primitives (skew/adjoint/spatialInertia) and the
+// Vector6/Matrix6/Subspace aliases live in
+// detail/multibody_spatial_algebra.hpp.
+using detail::adjoint;
+using detail::Matrix6;
+using detail::skew;
+using detail::spatialInertia;
+using detail::Subspace;
+using detail::Vector6;
 
 //==============================================================================
 // SO(3) exponential map: a rotation vector (axis * angle) to a rotation matrix.
@@ -89,22 +88,6 @@ Eigen::Vector3d rotationLog(const Eigen::Matrix3d& rotation)
 }
 
 //==============================================================================
-// Spatial motion adjoint for the [angular; linear] convention. For a transform
-// T = (R, p) that expresses frame B in frame A (x_A = R x_B + p), this maps a
-// spatial motion vector from B to A.
-Matrix6 adjoint(const Eigen::Isometry3d& transform)
-{
-  const Eigen::Matrix3d rotation = transform.linear();
-  const Eigen::Vector3d translation = transform.translation();
-
-  Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = rotation;
-  result.bottomLeftCorner<3, 3>() = skew(translation) * rotation;
-  result.bottomRightCorner<3, 3>() = rotation;
-  return result;
-}
-
-//==============================================================================
 // Spatial motion cross product (crm) for V = [w; v].
 Matrix6 motionCross(const Vector6& value)
 {
@@ -123,25 +106,6 @@ Matrix6 motionCross(const Vector6& value)
 Matrix6 forceCross(const Vector6& value)
 {
   return -motionCross(value).transpose();
-}
-
-//==============================================================================
-Matrix6 spatialInertia(const comps::MassProperties& mass)
-{
-  // Spatial inertia about the link frame origin in the [angular; linear]
-  // convention, for a body with rotational inertia `inertia` about its center
-  // of mass `c`:
-  //   [[ I_C - m c x c x , m c x ],
-  //    [ -m c x          , m 1   ]].
-  // With the center of mass at the origin (c = 0) this reduces to the
-  // block-diagonal form diag(I_C, m 1).
-  const Eigen::Matrix3d comCross = skew(mass.localCenterOfMass);
-  Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = mass.inertia - mass.mass * comCross * comCross;
-  result.topRightCorner<3, 3>() = mass.mass * comCross;
-  result.bottomLeftCorner<3, 3>() = -mass.mass * comCross;
-  result.bottomRightCorner<3, 3>() = mass.mass * Eigen::Matrix3d::Identity();
-  return result;
 }
 
 //==============================================================================

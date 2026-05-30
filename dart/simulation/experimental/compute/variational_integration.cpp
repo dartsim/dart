@@ -18,6 +18,7 @@
 #include "dart/simulation/experimental/comps/loop_closure.hpp"
 #include "dart/simulation/experimental/comps/multibody.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
+#include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -38,23 +39,20 @@ namespace dart::simulation::experimental::compute {
 namespace {
 
 namespace dm = detail::variational;
-using dm::Matrix6;
-using dm::Vector6;
-using Subspace = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-// NOTE: skew/adjoint/spatialInertia and the joint relative-transform/subspace
-// helpers below duplicate the Phase-A1 subset of
-// compute/multibody_dynamics.cpp. They are kept local to avoid refactoring that
-// working, tested translation unit mid-implementation; a follow-up should hoist
-// the shared spatial-algebra and kinematic-tree machinery into an internal
-// header used by both stages.
-
-Eigen::Matrix3d skew(const Eigen::Vector3d& v)
-{
-  Eigen::Matrix3d m;
-  m << 0.0, -v.z(), v.y(), v.z(), 0.0, -v.x(), -v.y(), v.x(), 0.0;
-  return m;
-}
+// The shared 6D spatial-algebra primitives (skew/adjoint/spatialInertia) and
+// the Vector6/Matrix6/Subspace aliases live in
+// detail/multibody_spatial_algebra.hpp, shared with
+// compute/multibody_dynamics.cpp. The VI-specific discrete-mechanics kernels
+// (dexpInv et al.) stay in detail/variational/discrete_mechanics_math.hpp (the
+// `dm` alias above). The joint relative-transform/subspace and retract helpers
+// below are VI-specific (Phase-A1 joint subset) and stay local.
+using detail::adjoint;
+using detail::Matrix6;
+using detail::skew;
+using detail::spatialInertia;
+using detail::Subspace;
+using detail::Vector6;
 
 // SO(3) exponential / logarithm on rotation vectors (axis * angle).
 Eigen::Matrix3d rotationExp3(const Eigen::Vector3d& v)
@@ -70,30 +68,6 @@ Eigen::Vector3d rotationLog3(const Eigen::Matrix3d& rotation)
 {
   const Eigen::AngleAxisd angleAxis(rotation);
   return angleAxis.angle() * angleAxis.axis();
-}
-
-// Spatial motion adjoint Ad_T for the [angular; linear] convention.
-Matrix6 adjoint(const Eigen::Isometry3d& transform)
-{
-  const Eigen::Matrix3d rotation = transform.linear();
-  const Eigen::Vector3d translation = transform.translation();
-  Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = rotation;
-  result.bottomLeftCorner<3, 3>() = skew(translation) * rotation;
-  result.bottomRightCorner<3, 3>() = rotation;
-  return result;
-}
-
-// Spatial inertia about the link frame origin, [angular; linear] convention.
-Matrix6 spatialInertia(const comps::MassProperties& mass)
-{
-  const Eigen::Matrix3d comCross = skew(mass.localCenterOfMass);
-  Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = mass.inertia - mass.mass * comCross * comCross;
-  result.topRightCorner<3, 3>() = mass.mass * comCross;
-  result.bottomLeftCorner<3, 3>() = -mass.mass * comCross;
-  result.bottomRightCorner<3, 3>() = mass.mass * Eigen::Matrix3d::Identity();
-  return result;
 }
 
 // Relative transform produced by a joint at the given generalized position
