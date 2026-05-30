@@ -1468,7 +1468,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::frictionCoefficient)
       .def_rw(
           "use_finite_element_elasticity",
-          &sim::DeformableMaterialProperties::useFiniteElementElasticity);
+          &sim::DeformableMaterialProperties::useFiniteElementElasticity)
+      .def_rw(
+          "use_fixed_corotational_elasticity",
+          &sim::DeformableMaterialProperties::useFixedCorotationalElasticity);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(
@@ -1565,6 +1568,24 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw("edge_stiffness", &sim::DeformableBodyOptions::edgeStiffness)
       .def_rw("damping", &sim::DeformableBodyOptions::damping)
       .def_rw("material", &sim::DeformableBodyOptions::material);
+
+  nb::class_<sim::DeformableSolverOptions>(m, "DeformableSolverOptions")
+      .def(nb::init<>())
+      .def_rw("iterations", &sim::DeformableSolverOptions::iterations)
+      .def_rw(
+          "convergence_tolerance",
+          &sim::DeformableSolverOptions::convergenceTolerance)
+      .def_rw(
+          "use_acceleration", &sim::DeformableSolverOptions::useAcceleration)
+      .def_rw(
+          "acceleration_spectral_radius",
+          &sim::DeformableSolverOptions::accelerationSpectralRadius)
+      .def_rw(
+          "stiffness_damping", &sim::DeformableSolverOptions::stiffnessDamping)
+      .def_rw("worker_threads", &sim::DeformableSolverOptions::workerThreads)
+      .def_rw(
+          "ground_contact_stiffness",
+          &sim::DeformableSolverOptions::groundContactStiffness);
 
   nb::class_<sim::DeformableBody>(m, "DeformableBody")
       .def_prop_ro("is_valid", &sim::DeformableBody::isValid)
@@ -1691,7 +1712,9 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   m.def(
       "collect_deformable_scene_diagnostics",
-      &sim::io::collectDeformableSceneDiagnostics,
+      [](const sim::World& world) {
+        return sim::io::collectDeformableSceneDiagnostics(world);
+      },
       nb::arg("world"));
 
   m.def(
@@ -1804,6 +1827,15 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "num_deformable_bodies",
           [](const sim::World& self) { return self.getDeformableBodyCount(); })
+      .def(
+          "configure_deformable_solver",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::DeformableSolverOptions& options) {
+            self.configureDeformableSolver(name, options);
+          },
+          nb::arg("name"),
+          nb::arg("options"))
       .def(
           "add_loop_closure",
           [](sim::World& self,

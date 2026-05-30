@@ -54,6 +54,7 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
       PRIVATE ${PROJECT_NAME}-collision-native
     )
   endif()
+  dart_experimental_add_unit_test_dir(deformable_vbd ${CMAKE_CURRENT_SOURCE_DIR}/deformable_vbd)
   dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/world)
   dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/frame)
   dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
@@ -69,6 +70,12 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
     dart_experimental_add_test(
       test_deformable_psd_projection_cuda
       ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_deformable_psd_projection_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL simulation-experimental-cuda
+    )
+    dart_experimental_add_test(
+      test_vbd_block_descent_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_vbd_block_descent_cuda.cpp
       LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
       LABEL simulation-experimental-cuda
     )

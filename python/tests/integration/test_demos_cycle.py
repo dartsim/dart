@@ -111,6 +111,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_friction_slide",
         "ipc_deformable_fem_bar",
         "ipc_deformable_fem_twist",
+        "ipc_deformable_fcr_twist",
         "ipc_deformable_fem_drop",
         "ipc_deformable_fem_sphere",
         "ipc_deformable_fem_box",
