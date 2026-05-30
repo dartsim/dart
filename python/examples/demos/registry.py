@@ -39,6 +39,7 @@ from .scenes.ipc_deformable_fem_sphere import SCENE as IPC_DEFORMABLE_FEM_SPHERE
 from .scenes.ipc_deformable_fem_twist import SCENE as IPC_DEFORMABLE_FEM_TWIST
 from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
 from .scenes.ipc_deformable_net import SCENE as IPC_DEFORMABLE_NET
+from .scenes.ipc_deformable_obj_cloth import SCENE as IPC_DEFORMABLE_OBJ_CLOTH
 from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SCRIPTED
 from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
 from .scenes.joint_constraints import SCENE as JOINT_CONSTRAINTS
@@ -154,5 +155,6 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FEM_BOX,
         IPC_DEFORMABLE_FEM_BUCKLE,
         IPC_DEFORMABLE_FEM_MSH,
+        IPC_DEFORMABLE_OBJ_CLOTH,
         IPC_DEFORMABLE_SCRIPTED,
     ]

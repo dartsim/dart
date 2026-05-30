@@ -122,6 +122,14 @@ Static (then moving) codimensional obstacles with barrier + CCD, plus the
 `.obj` / `.seg` / `.pt` importers. Unblocks Fig 2 (knives, points), Fig 17
 (pin-cushions), Fig 18 (codim rollers), and the 9-scene codim-unit family.
 
+Progress: the **`.obj` triangle-mesh importer** has landed
+(`io::loadObjTriangleMesh*`, exposed to dartpy as `load_obj_triangle_mesh`),
+with a `build_cloth_from_obj` helper and a `Deformable .obj Cloth (IPC)` draped
+showcase. Remaining M3: the `.seg` (edge) and `.pt` (point) importers, and the
+codimensional triangle/edge/vertex collision **objects** themselves (barrier +
+CCD against the deformable surface, extending the sphere/box obstacle machinery
+to non-volumetric geometry).
+
 ### M4 — Upstream asset pipeline + `.msh` (GMSH) importer
 
 Progress: the **GMSH `.msh` tetrahedral-mesh importer** has landed
