@@ -2,12 +2,17 @@
 
 ## Last Session Summary
 
-PLAN-103 Phases 1–4 are landed on branch `demos-app`; Phase 5 is the explicit
-"not now" retire-later checklist. The Python `dart-demos` app now hosts 29
-scenes (vs. 38 in C++ — 76% coverage) including modern scenarios and Tier
-A/B C++ ports; a cross-language golden parity smoke runs in both languages
+PLAN-103 Phases 1–4 are landed on `main` (PR #2762). Phase 5 is the explicit
+"not now" retire-later checklist. The Python `dart-demos` app now hosts 37
+scenes (vs. 41 in C++ — 90% coverage) including modern scenarios and Tier
+A/B/C C++ ports; a cross-language golden parity smoke runs in both languages
 against shared fixtures (3 scenes wired); and a notebook gallery seed lives
 in `python/tutorials/`. C++ `dart-demos` (PLAN-102) remains frozen-but-present.
+
+Branch `examples-strategy-breadth` adds 8 more Python scenes
+(`hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`, `vehicle`,
+`biped_stand`, `experimental_rigid_body_gui`, `collision_sandbox`) plus
+`HeightmapShape` and `PointCloudShape` dartpy bindings.
 
 ## Current Branch
 
@@ -26,22 +31,35 @@ in `python/tutorials/`. C++ `dart-demos` (PLAN-102) remains frozen-but-present.
 Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
 
 1. **Grow Python breadth toward C++ coverage.** The Python runner now hosts
-   29 of the 38 C++ scenes (added: `empty`, `shapes`, `simple_frames`,
-   `polyhedron_visual`, `rigid_cubes`, `add_delete_skels`,
-   `capsule_ground_contact`, `box_stacking`, `rigid_loop`, `mixed_chain`,
-   `soft_bodies`, `mimic_pendulums`, `coupler_constraint`, `hardcoded_design`,
-   `free_joint_cases`, `rigid_shapes`). To unlock those ports we added
-   `CapsuleShape`/`CylinderShape`/`EllipsoidShape`/`ConeShape`/`PyramidShape`/
-   `LineSegmentShape`/`PlaneShape` bindings under
-   `python/dartpy/dynamics/shape.cpp` and `Skeleton::{getVelocities,
-setVelocities,getForces}` under `python/dartpy/dynamics/skeleton.cpp`. The 9
-   remaining C++ scenes are blocked or interactive-only:
-   `drag_and_drop`, `imgui`, `tinkertoy`, `simulation_event_handler` need
-   GUI-only callbacks; `heightmap` / `point_cloud` need
-   `HeightmapShape`/`PointCloudShape` bindings; `atlas_puppet`, `hubo_puppet`,
-   `fetch`, `g1_puppet`, `vehicle`, `human_joint_limits`, `hybrid_dynamics`,
-   `joint_constraints`, `biped_stand`, `experimental_deformable` need full
-   IK/controller subsystems (or other heavyweight bindings).
+   37 of 41 C++ scenes (90 %). Branch `examples-strategy-breadth` added 8
+   more ports (`hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`,
+   `vehicle`, `biped_stand`, `experimental_rigid_body_gui`,
+   `collision_sandbox`) and the `HeightmapShape`/`PointCloudShape` dartpy
+   bindings that unlock the visualization ports. The 13 remaining C++ scenes
+   need new bindings or controller infrastructure that is out of scope for a
+   pure Python port:
+   - **Viewer-callback / interactive UI** — `drag_and_drop`, `imgui`,
+     `tinkertoy`, `simulation_event_handler`. Need Python bindings for
+     `dart::gui::KeyboardAction`, gizmo callbacks, and event handlers
+     threaded through `ApplicationOptions`.
+   - **Custom `ConstraintBase` subclass** — `human_joint_limits`. Needs a
+     trampoline binding for `dart::constraint::ConstraintBase` so a
+     `NeuralJointLimitConstraint` analogue can be written in Python.
+   - **PD / SPD controller missing `addExtForce` + `getConstraintForces`** —
+     `joint_constraints` (the load-only port works but the SPD controller
+     with constraint-force correction does not).
+   - **Heavyweight puppet IK / mocap controllers** — `atlas_puppet`,
+     `hubo_puppet`, `fetch`, `g1_puppet`. Need gizmo + IK pendant +
+     MJCF/ReadOptions package-resolver bindings.
+   - **SIMBICON walking controller in C++** — `atlas_simbicon`. The
+     controller and state-machine sources live under
+     `tests/integration/atlas_simbicon/` and are not Python-bound.
+   - **Runtime-loaded analytical IKFast** — `wam_ikfast`. Needs a
+     `SharedLibraryIkFast` binding.
+   - **`sx::World` deformable mesh build** — `experimental_deformable`.
+     `DeformableBody`/`DeformableBodyOptions` bindings exist but the scene
+     also depends on a tet-mesh construction helper (or a Python adapter to
+     `dartpy.simulation_experimental.load_deformable_scene`).
 2. **Extend the golden set.** `boxes` and `rigid_chain` are now wired. The C++
    `rigid_chain` scene replaced `dart::math::Random::uniform` with a
    deterministic damped-sine initial pose so cross-language state matches; the
