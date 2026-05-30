@@ -137,6 +137,30 @@ public:
   void setCenterOfMass(const Eigen::Vector3d& centerOfMass);
 
   //--------------------------------------------------------------------------
+  // External forces
+  //--------------------------------------------------------------------------
+
+  /// Apply an external force to this link at an application point.
+  ///
+  /// The force accumulates into the link's external-force buffer and is
+  /// consumed by the next `World::step()` under either integration family
+  /// (semi-implicit forward dynamics or the variational integrator), then
+  /// cleared. This is a one-shot, per-step force in the style of legacy
+  /// `BodyNode::addExtForce`: it must be re-applied every step to keep acting.
+  ///
+  /// @param force The applied force vector.
+  /// @param point The application point. Defaults to the link frame origin.
+  /// @param forceInWorldFrame Whether `force` is expressed in the world frame
+  ///        (true, default) or the link frame (false).
+  /// @param pointInWorldFrame Whether `point` is expressed in the world frame
+  ///        (true) or the link frame (false, default).
+  void applyForce(
+      const Eigen::Vector3d& force,
+      const Eigen::Vector3d& point = Eigen::Vector3d::Zero(),
+      bool forceInWorldFrame = true,
+      bool pointInWorldFrame = false);
+
+  //--------------------------------------------------------------------------
   // Collision geometry
   //--------------------------------------------------------------------------
 

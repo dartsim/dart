@@ -50,12 +50,22 @@ class SceneSetup:
     present, the runner wraps it as a ``pre_step`` that runs the inner
     controller body once per viewer step.
 
+    ``force_drag`` is an optional callable invoked by the viewer's mouse
+    "force-drag" while the user left-drags one of this scene's renderables that
+    is not backed by a legacy BodyNode (e.g. the sx SimpleFrame mirrors). It
+    receives a single event mapping with keys ``renderable_name`` (str),
+    ``application_point`` (np.ndarray, world frame), ``force`` (np.ndarray,
+    world frame), and ``active`` (bool), and returns nothing. The handler must
+    (re)apply the one-shot force on every step while ``active`` is true and stop
+    once an event with ``active`` false arrives.
+
     ``info`` carries scene-specific metadata (e.g. ``golden_skeletons``).
     """
 
     world: Any
     pre_step: Callable[[], None] | None = None
     step: Callable[[int], None] | None = None
+    force_drag: Callable[[dict[str, Any]], None] | None = None
     info: dict[str, Any] = field(default_factory=dict)
 
 
@@ -114,15 +124,22 @@ def _validate_scene(scene_id: str | None, scenes: list[PythonDemoScene]) -> None
 def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
-    Returns either a dartpy.World or a (dartpy.World, pre_step) tuple. The
-    viewer binding inspects the return value: a bare World is treated as
-    physics-only; a (World, callable) tuple registers the callable as the
-    viewer's per-step hook (used by experimental-world scenes that own an
-    sx::World and a render-mirror dart::simulation::World).
+    Returns one of:
+      * a bare ``dartpy.World`` (physics-only), or
+      * a ``(World, pre_step)`` tuple, or
+      * a ``(World, pre_step, force_drag)`` tuple.
+
+    The viewer binding inspects the return value: a bare World is treated as
+    physics-only; element 1 (if not ``None``) registers as the viewer's per-step
+    hook; element 2 (if not ``None``) registers as the viewer's mouse
+    force-drag handler. Both are used by experimental-world scenes that own an
+    sx::World and a render-mirror dart::simulation::World.
     """
 
     def factory() -> Any:
         setup = scene.build()
+        if setup.force_drag is not None:
+            return (setup.world, setup.pre_step, setup.force_drag)
         if setup.pre_step is not None:
             return (setup.world, setup.pre_step)
         return setup.world

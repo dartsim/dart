@@ -142,7 +142,34 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-gpu-psd-perf-gate` - stacked on
+`feature/ipc-contact-distance-diagnostic` - SINGLE PR off main (the #2738-#2760
+stacked train is fully MERGED to main; per the standing directive all future IPC
+work is one PR, not a stacked train). Adds a CONTACT CLOSEST-APPROACH DIAGNOSTIC
+to DeformableSolverStats: `minActiveContactDistance` (smallest point-triangle /
+edge-edge distance among the active self-contact barrier set at the converged
+iterate -- the IPC intersection-free "minimum distance" statistic, Fig 23 /
+Table 1) + `convergedActiveContactCount` (that active set's size at termination,
+a single-iteration snapshot distinct from the cumulative
+`selfContactBarrierActiveContacts`). New free fn
+`accumulateContactDistanceDiagnostics` recomputes each barrier candidate's
+squared distance at scratch.next, counts those < d_hat^2, tracks the min;
+called once after the outer loop next to `accumulateFrictionDiagnostics`,
+reusing `contactScratch.barrierCandidates` (terminal-rebuilt when capped,
+last-in-loop when converged-early -- same staleness friction accepts).
+Cross-body fold: sum counts, min of mins (gated on the running count so the
+first contacting body seeds the min, robust to a 0.0 distance). BEHAVIOR-
+PRESERVING (diagnostic only). Regressions SelfContactBarrierReportsConverged
+ContactDistance (positive approach < d_hat=2e-2, count <= cumulative) +
+...NoConvergedContactDistanceFarApart (both 0). Bench counters
+converged_active_contacts / min_active_contact_distance on
+BM_DeformableSelfContactBarrierStage (smoke: count 15/120/480 vs cumulative
+255/2.04k/8.16k, min dist 0.0168 < 0.02 d_hat). 6/6 self-contact tests pass.
+NEXT (user directive 2026-05-29): now #2762 made py-demos the first-class
+viewer, MIGRATE all IPC examples/experimentals (paper figures) into the
+consolidated py-demos standalone in proper categories, scalably -- then continue
+the remaining Phase 2/3 items.
+
+Prior branch `feature/ipc-gpu-psd-perf-gate` - stacked on
 `feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
 threshold tuning. New cuda test GpuVsCpuPerfGateAtSolverScale: projects 12x12
 barrier batches across {256,1024,4096,16384}, asserts GPU==CPU parity at every

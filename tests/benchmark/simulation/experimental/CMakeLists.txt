@@ -15,6 +15,11 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_variational_integration
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_variational_integration.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_deformable_body
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_deformable_body.cpp
   )

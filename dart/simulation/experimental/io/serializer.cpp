@@ -33,6 +33,7 @@
 #include "dart/simulation/experimental/io/serializer.hpp"
 
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/compute/variational_integration.hpp"
 #include "dart/simulation/experimental/io/binary_io.hpp"
 #include "dart/simulation/experimental/io/category_serializer.hpp"
 
@@ -211,6 +212,10 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
 
   registerComponentIfNeeded<comps::MultibodyTag>(registry);
   registerComponentIfNeeded<comps::MultibodyStructure>(registry);
+
+  // The variational integrator's persistent two-step history (no entity
+  // references, so no remap pass entry needed).
+  registerComponentIfNeeded<compute::MultibodyVariationalState>(registry);
 
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 

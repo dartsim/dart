@@ -88,6 +88,25 @@ struct RenderableSelection
   std::string label;
 };
 
+/// Payload for the viewer's mouse "force-drag" (a mouse spring).
+///
+/// Emitted by the selection controller when the user left-drags a renderable
+/// that is not backed by a legacy `dart::dynamics::BodyNode` (e.g. the
+/// SimpleFrame mirrors of an experimental `sx::World`). Applications resolve
+/// `renderableName` to their own body and (re)apply `force` at
+/// `applicationPoint` (both world-frame) every step while `active` is true,
+/// then stop once a final event with `active == false` arrives. Renderables
+/// backed by a BodyNode are handled in-engine via `addExtForce` and never
+/// reach this callback.
+struct ForceDragEvent
+{
+  RenderableId renderableId = 0;
+  std::string renderableName;
+  Eigen::Vector3d applicationPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  bool active = false;
+};
+
 inline constexpr std::size_t kMaxViewportPanes = 4u;
 
 enum class ViewportLayoutMode
@@ -236,6 +255,16 @@ struct ApplicationOptions
   /// The callback receives id 0 when a click clears selection. Applications can
   /// ignore ids they do not own.
   std::function<void(RenderableId)> onRenderableSelected;
+
+  /// Optional callback fired while the user mouse "force-drags" a renderable
+  /// that is not backed by a legacy `dart::dynamics::BodyNode`.
+  ///
+  /// The selection controller computes a world-frame spring-damper force and
+  /// invokes this each frame with `active == true` (the application must
+  /// (re)apply the one-shot force to its own body every step), then once with
+  /// `active == false` on release. Used by the experimental-World demos to
+  /// push/pull `sx::World` links rendered via SimpleFrame mirrors.
+  std::function<void(const ForceDragEvent&)> onForceDrag;
 
   /// Enables a docking workspace over the main viewport so panels can be
   /// docked and rearranged. Only takes effect when the GUI build was compiled

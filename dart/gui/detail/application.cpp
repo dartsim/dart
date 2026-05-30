@@ -41,6 +41,7 @@
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/native_window.hpp>
+#include <dart/gui/detail/offscreen_parity.hpp>
 #include <dart/gui/detail/perf_hud.hpp>
 #include <dart/gui/detail/render_context.hpp>
 #include <dart/gui/detail/render_environment.hpp>
@@ -78,6 +79,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 
 namespace {
@@ -131,6 +133,7 @@ using dart::gui::detail::Renderable;
 using dart::gui::detail::renderApplicationFrame;
 using dart::gui::detail::resizeAutomaticApplicationWindow;
 using dart::gui::detail::resolveWindowDpiScale;
+using dart::gui::detail::runOffscreenParitySelfCheck;
 using dart::gui::detail::SceneFrameUpdater;
 using dart::gui::detail::SceneLights;
 using dart::gui::detail::ScreenshotCapture;
@@ -205,6 +208,7 @@ void applySceneOptions(
   appOptions.cameraUpdater = src.cameraUpdater;
   appOptions.viewportLayoutProvider = src.viewportLayoutProvider;
   appOptions.onViewportPaneActivated = src.onViewportPaneActivated;
+  appOptions.onForceDrag = src.onForceDrag;
 }
 
 int demoSceneIndex(
@@ -301,6 +305,7 @@ int runGuiBackendApplicationImpl(
       appOptions.selectedRenderableProvider
           = applicationOptions.selectedRenderableProvider;
       appOptions.onRenderableSelected = applicationOptions.onRenderableSelected;
+      appOptions.onForceDrag = applicationOptions.onForceDrag;
       appOptions.dockingEnabled = applicationOptions.dockingEnabled;
       appOptions.preStep = applicationOptions.preStep;
       appOptions.postStep = applicationOptions.postStep;
@@ -437,6 +442,10 @@ int runGuiBackendApplicationImpl(
       }
       applySceneOptions(
           appOptions, sceneOptions, renderOutputModeExplicit, renderOutputMode);
+      // The demos host uses the docked workspace layout so the catalog sidebar
+      // and the status HUD never overlap; this is a no-op (floating overlay
+      // fallback) on builds without ImGui docking support.
+      appOptions.dockingEnabled = true;
       std::vector<dart::gui::Panel> panels;
       panels.reserve(appOptions.panels.size() + 1);
       panels.push_back(makeDemoSidebarPanel(*demoCatalog, activeIndex));
@@ -695,6 +704,27 @@ int runGuiBackendApplicationImpl(
       runOptions.screenshotPath,
       lifecycle.screenshotRequested,
       profile);
+
+  // Phase-1 gate of the Filament offscreen-viewport spike: when
+  // DART_GUI_OFFSCREEN_PARITY is set, render the live scene to an offscreen
+  // RenderTarget and confirm it matches the swapchain render (diagnostic only;
+  // see docs/design/dartsim_gui_toolkit_decisions.md Decision 3).
+  bool offscreenParitySucceeded = true;
+  if (runOptions.headless
+      && isTruthyEnvironmentVariable("DART_GUI_OFFSCREEN_PARITY")) {
+    if (std::string_view(renderContext.backendName) == "noop") {
+      std::cout << "[offscreen-parity] SKIP: noop backend produces no pixels\n";
+    } else {
+      offscreenParitySucceeded = runOffscreenParitySelfCheck(
+          renderContext,
+          static_cast<std::uint32_t>(
+              runOptions.width > 0 ? runOptions.width : 1),
+          static_cast<std::uint32_t>(
+              runOptions.height > 0 ? runOptions.height : 1),
+          std::cout);
+    }
+  }
+
   if (runOptions.maxFrames >= 0) {
     std::cout << "Final contacts: " << finalContacts << "\n";
   }
@@ -712,7 +742,10 @@ int runGuiBackendApplicationImpl(
       colorGrading,
       materialResources);
 
-  return screenshotSucceeded && frameCaptureSucceeded ? 0 : 1;
+  return screenshotSucceeded && frameCaptureSucceeded
+                 && offscreenParitySucceeded
+             ? 0
+             : 1;
 }
 
 bool hasSceneOption(int argc, char* argv[])

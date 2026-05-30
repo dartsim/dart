@@ -48,6 +48,7 @@ set(
   "${DART_GUI_FILAMENT_BACKEND_DIR}/imgui_overlay.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/input.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/native_window.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/offscreen_parity.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/panel.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/perf_hud.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/render_context.cpp"

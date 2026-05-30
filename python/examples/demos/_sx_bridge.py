@@ -104,6 +104,13 @@ class SxRenderBridge:
         self._surfaces: list[tuple[Any, Any, int]] = []
         # (deformable_body, [(node_index, SimpleFrame)]) pinned-node markers.
         self._pins: list[tuple[Any, list[tuple[int, dart.SimpleFrame]]]] = []
+        # SimpleFrame name -> sx object, so the viewer's force-drag can resolve
+        # the picked renderable (identified by its frame name) back to the sx
+        # body/link that owns the physics.
+        self._by_name: dict[str, Any] = {}
+        # Active mouse force-drag, if any: (sx_object, force, point). Re-applied
+        # before each sx step because Link.apply_force is one-shot.
+        self._drag: tuple[Any, np.ndarray, np.ndarray] | None = None
 
     def add_link_visual(
         self,
@@ -118,6 +125,7 @@ class SxRenderBridge:
         frame.create_visual_aspect().set_color(list(color))
         self.render_world.add_simple_frame(frame)
         self._mappings.append((sx_link, frame))
+        self._by_name[frame_name] = sx_link
         return frame
 
     def add_rigid_body_visual(
@@ -211,9 +219,44 @@ class SxRenderBridge:
                 except Exception:  # noqa: BLE001
                     pass
 
-    def pre_step(self) -> None:
-        """Advance sx physics by one step, then sync render frames."""
+    def force_drag(self, event: dict[str, Any]) -> None:
+        """Viewer mouse force-drag handler (see ``SceneSetup.force_drag``).
 
+        On an active event, resolve the picked frame name to its sx object and
+        store the world-frame force + application point; on an inactive event,
+        clear the stored drag. The force is (re)applied in ``pre_step`` before
+        each sx step because ``Link.apply_force`` is one-shot.
+        """
+
+        if not event.get("active", False):
+            self._drag = None
+            return
+        sx_object = self._by_name.get(event.get("renderable_name", ""))
+        if sx_object is None or not hasattr(sx_object, "apply_force"):
+            self._drag = None
+            return
+        force = np.asarray(event["force"], dtype=float).reshape(3)
+        point = np.asarray(event["application_point"], dtype=float).reshape(3)
+        self._drag = (sx_object, force, point)
+
+    def pre_step(self) -> None:
+        """Advance sx physics by one step, then sync render frames.
+
+        If a mouse force-drag is active, (re)apply its one-shot force just
+        before the step so the spring is consumed by this step.
+        """
+
+        if self._drag is not None:
+            sx_object, force, point = self._drag
+            try:
+                sx_object.apply_force(
+                    force,
+                    point,
+                    force_in_world_frame=True,
+                    point_in_world_frame=True,
+                )
+            except Exception:  # noqa: BLE001
+                pass
         try:
             self._sx_world.step()
         except Exception:  # noqa: BLE001
