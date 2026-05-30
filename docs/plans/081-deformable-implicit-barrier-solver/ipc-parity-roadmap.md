@@ -76,10 +76,11 @@ follow-up material variant. Rest data (`restPositions`,
 
 ### M2 — Obstacle barrier completeness (analytic + box) + codim wiring
 
-Progress: the **projected-Newton Hessian for the sphere obstacle barrier** has
-landed (rank-1 radial curvature `max(0, B''(d)) n n^T`), so sphere-obstacle
-contact is now a first-class Newton term; a FEM slab draping over a sphere
-obstacle is shown in py-demos. Remaining M2:
+Progress: the **sphere obstacle barrier Hessian** and a full **box obstacle
+barrier** (energy + gradient + projected-Newton Hessian, via local-frame clamp
+for face/edge/corner) have landed, so sphere- and box-obstacle contact are now
+first-class Newton terms; FEM slabs draping over a sphere and over a box are
+shown in py-demos. Remaining M2:
 
 Generalize obstacle contact into a real clamped-log **force** everywhere: an
 analytic half-space (plane) collision object, a box-obstacle barrier force
@@ -96,6 +97,11 @@ Static (then moving) codimensional obstacles with barrier + CCD, plus the
 (pin-cushions), Fig 18 (codim rollers), and the 9-scene codim-unit family.
 
 ### M4 — Upstream asset pipeline + `.msh` (GMSH) importer
+
+Progress: the **GMSH `.msh` tetrahedral-mesh importer** has landed
+(`io::loadGmshTetMesh*`, ASCII format 2.x; exposed to dartpy as
+`load_gmsh_tet_mesh`), with a py-demos scene loading a bundled tet-bar mesh into
+an FEM cantilever. Remaining M4:
 
 A fetch-into-fixtures workflow for the upstream meshes pinned at
 `573d2c7e0…` (no vendoring, no runtime dependency), plus a GMSH `.msh`
