@@ -136,9 +136,24 @@ struct VariationalLoopConstraint
 /// long/stiff chains converge well within the iteration budget. Spherical and
 /// floating coordinates live on a manifold the exact step does not yet handle,
 /// so they fall back to the fixed `dt * M(q^k)^{-1}` quasi-Newton step (only an
-/// approximate inverse Jacobian, manifold-correct). The converged DEL root is
-/// independent of the preconditioner, so this never changes the integrated
+/// approximate inverse Jacobian, manifold-correct), accelerated by
+/// tangent-space Anderson mixing (see `andersonDepth`). The converged DEL root
+/// is independent of the preconditioner, so this never changes the integrated
 /// trajectory, only the iteration count.
+///
+/// `andersonDepth` is the depth-m history of the tangent-space Anderson
+/// acceleration applied to the manifold (spherical/floating) quasi-Newton
+/// fixed-point iteration: the per-iteration tangent updates and the tangent
+/// log-differences between consecutive iterates are mixed (a least-squares
+/// secant/Anderson(m) extrapolation, retracted with the per-joint manifold map)
+/// before the manifold retraction. On a long, stiff spherical/floating chain
+/// the plain `dt * M^{-1}` fixed point reaches a per-step residual plateau and
+/// cannot drive the residual below a length-dependent floor; the acceleration
+/// pushes through that plateau, so the manifold path converges to tolerances
+/// (and on steps) the plain step cannot reach, at a comparable iteration count.
+/// `0` disables it (the plain quasi-Newton fixed point), exposed so callers and
+/// tests can compare the plain and accelerated paths. It has no effect on the
+/// Euclidean exact-Newton path.
 DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
@@ -147,7 +162,8 @@ DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     MultibodyVariationalState& state,
     int maxIterations = 100,
     double tolerance = 1e-10,
-    const std::vector<VariationalLoopConstraint>& constraints = {});
+    const std::vector<VariationalLoopConstraint>& constraints = {},
+    std::size_t andersonDepth = 5);
 
 /// Total mechanical energy (kinetic + gravitational potential) of one multibody
 /// at its current configuration and velocity.

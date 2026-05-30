@@ -1474,6 +1474,278 @@ TEST(VariationalIntegration, DISABLED_RiqnIterationsVsChainLength)
   }
 }
 
+// Manifold-Anderson convergence gate (long spherical chain). A long chain of
+// links each on a Spherical joint lives on the SO(3) manifold, so it takes the
+// manifold-correct fixed dt*M^{-1} quasi-Newton step (NOT the Euclidean exact-
+// Newton path), accelerated by the tangent-space Anderson mixing. The plain
+// fixed point (Anderson disabled) on a long, heavy, fast-spinning chain hits a
+// per-step accuracy plateau and fails to reach a tight tolerance on most steps;
+// the tangent-space Anderson acceleration pushes through that plateau and
+// converges every step within a small iteration budget. Run the identical
+// scene with the acceleration disabled (depth 0, the plain control) vs enabled
+// (depth 5) and compare: the accelerated path converges on far more steps
+// (here every step) within the same budget, with sane (near-conserved) energy.
+//
+// (Why a convergence-fraction gate rather than a raw iteration-count delta:
+// measured on this codebase the manifold quasi-Newton step is well conditioned
+// and converges in ~4-5 iterations until it reaches the residual-evaluation
+// accuracy floor of a multi-DOF spherical chain -- there is no long slow
+// iteration tail to shave, unlike a long Euclidean chain. The acceleration's
+// payoff is therefore reaching a *lower residual floor*, i.e. converging to a
+// tolerance the plain step cannot reach at all; at that tolerance the plain
+// step exhausts the budget while the accelerated step needs only a handful of
+// iterations -- the strongest, most reproducible form of the iteration-count
+// comparison.)
+TEST(VariationalIntegration, ManifoldAndersonAcceleratesSphericalChain)
+{
+  constexpr int kLinks = 20;
+  const double dt = 1e-3;
+  const int steps = 200;
+  const int budget = 50;
+  // Per-coordinate tolerance the plain manifold step plateaus above on most
+  // steps but the Anderson-accelerated step reaches every step.
+  const double tol = 1e-6;
+
+  // A long, heavy chain hanging straight down along -Z (a stable, extended
+  // equilibrium that does not fold into a singular configuration as a
+  // horizontal chain would), spun fast so the per-step DEL residual is large
+  // enough to exercise genuine RIQN iteration (a near-equilibrium passive chain
+  // converges from the initial guess in ~1 iteration and never exercises the
+  // solve).
+  const auto buildChain = [](sx::World& world) {
+    auto robot = world.addMultibody("spherical_chain");
+    auto parent = robot.addLink("base");
+    for (int i = 0; i < kLinks; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(0, 0, i == 0 ? 0.0 : -0.6);
+      sx::JointSpec spec;
+      spec.name = "j" + std::to_string(i);
+      spec.type = sx::JointType::Spherical;
+      spec.transformFromParent = offset;
+      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+      link.setMass(3.0);
+      link.setInertia(Eigen::Vector3d(0.3, 0.3, 0.3).asDiagonal());
+      parent = link;
+    }
+    return robot;
+  };
+
+  // Roll the identical scene out with a given Anderson depth, recording how
+  // many steps converged within the budget (the iteration cap is a
+  // non-convergence hard error, so a step that exhausts it throws), the
+  // max/mean iterations of the converged steps, and the energy drift.
+  struct Result
+  {
+    std::size_t convergedSteps = 0;
+    std::size_t maxIters = 0;
+    double meanIters = 0.0;
+    double maxEnergyDrift = 0.0;
+  };
+  const auto rollout = [&](std::size_t andersonDepth) {
+    sx::World world;
+    auto robot = buildChain(world);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    // Bend each joint slightly off-axis and spin neighbouring links in opposite
+    // directions so they shear past each other (a large, configuration-varying
+    // per-step residual).
+    auto joints = robot.getJoints();
+    for (std::size_t i = 0; i < joints.size(); ++i) {
+      joints[i].setPosition((Eigen::VectorXd(3) << 0.0, 0.03, 0.0).finished());
+      const double s = (i % 2 == 0) ? 1.0 : -1.0;
+      joints[i].setVelocity(
+          (Eigen::VectorXd(3) << 0.0, 8.0 * s, 3.0 * s).finished());
+    }
+    world.updateKinematics();
+
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+    const double energy0
+        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+
+    Result result;
+    sxc::MultibodyVariationalState state;
+    std::size_t totalIters = 0;
+    for (int k = 0; k < steps; ++k) {
+      try {
+        const auto report = sxc::integrateMultibodyVariational(
+            registry,
+            structure,
+            gravity,
+            dt,
+            state,
+            budget,
+            tol,
+            /*constraints=*/{},
+            /*andersonDepth=*/andersonDepth);
+        ++result.convergedSteps;
+        totalIters += report.iterations;
+        result.maxIters = std::max(result.maxIters, report.iterations);
+        const double energy = sxc::computeMultibodyMechanicalEnergy(
+            registry, structure, gravity);
+        EXPECT_FALSE(std::isnan(energy)) << "depth=" << andersonDepth;
+        result.maxEnergyDrift = std::max(
+            result.maxEnergyDrift,
+            std::abs(energy - energy0) / std::abs(energy0));
+      } catch (const sx::InvalidOperationException&) {
+        // A step exhausted the iteration budget without reaching `tol`.
+        break;
+      }
+    }
+    if (result.convergedSteps > 0) {
+      result.meanIters
+          = static_cast<double>(totalIters) / result.convergedSteps;
+    }
+    return result;
+  };
+
+  const Result plain = rollout(/*andersonDepth=*/0);       // disabled control
+  const Result accelerated = rollout(/*andersonDepth=*/5); // tangent Anderson
+
+  // Headline win: with the acceleration disabled the plain manifold
+  // quasi-Newton step plateaus above the tolerance and converges on only a
+  // small fraction of steps before a step exhausts the budget; the
+  // tangent-space Anderson acceleration converges on every step.
+  EXPECT_EQ(accelerated.convergedSteps, static_cast<std::size_t>(steps))
+      << "accelerated did not converge every step (converged "
+      << accelerated.convergedSteps << "/" << steps << ")";
+  // A clear margin (the plain control converges on far fewer steps), not a
+  // narrow tie. Measured: plain ~18/200, accelerated 200/200.
+  EXPECT_LT(plain.convergedSteps * 4u, accelerated.convergedSteps)
+      << "plain converged " << plain.convergedSteps << "/" << steps
+      << " steps; accelerated converged " << accelerated.convergedSteps << "/"
+      << steps
+      << " -- the acceleration did not meaningfully extend convergence";
+  // The accelerated path stays well within the iteration budget every step (the
+  // plateau the plain step cannot cross is reached cheaply with mixing).
+  EXPECT_LT(accelerated.maxIters, static_cast<std::size_t>(budget))
+      << "accelerated max iters " << accelerated.maxIters
+      << " reached the budget " << budget;
+  EXPECT_LE(accelerated.meanIters, 12.0)
+      << "accelerated mean iters " << accelerated.meanIters << " too high";
+
+  // Identical converged behavior: the accelerated rollout's energy stays in a
+  // tight band (no drift introduced by the acceleration; the converged DEL root
+  // is preconditioner-independent).
+  EXPECT_LT(accelerated.maxEnergyDrift, 1e-2)
+      << "accelerated energy drift " << accelerated.maxEnergyDrift
+      << " too large";
+}
+
+// Manifold-Anderson no-regression gate (floating base + spherical chain). A
+// floating-base body carrying a spherical chain takes the same manifold
+// quasi-Newton + tangent-space Anderson path. A floating base is well
+// conditioned (it converges in ~1 iteration), so this is a correctness gate
+// rather than a speed win: enabling the acceleration must keep the mixed
+// SE(3)+SO(3) system converging with sane, near-conserved energy and an
+// unchanged trajectory (the accelerated and plain runs reach the same root).
+TEST(VariationalIntegration, ManifoldAndersonFloatingSphericalChainStaysCorrect)
+{
+  constexpr int kSphericalLinks = 12;
+  const double dt = 1e-3;
+  const int steps = 150;
+
+  const auto buildChain = [](sx::World& world) {
+    auto robot = world.addMultibody("floating_spherical");
+    auto base = robot.addLink("base");
+    sx::JointSpec floatSpec;
+    floatSpec.name = "float";
+    floatSpec.type = sx::JointType::Floating;
+    auto parent = robot.addLink("body", base, floatSpec);
+    parent.setMass(1.0);
+    parent.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
+    for (int i = 0; i < kSphericalLinks; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+      sx::JointSpec spec;
+      spec.name = "s" + std::to_string(i);
+      spec.type = sx::JointType::Spherical;
+      spec.transformFromParent = offset;
+      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+      link.setMass(0.6);
+      link.setInertia(Eigen::Vector3d(0.02, 0.02, 0.02).asDiagonal());
+      parent = link;
+    }
+    return robot;
+  };
+
+  struct Result
+  {
+    std::size_t maxIters = 0;
+    double maxEnergyDrift = 0.0;
+    Eigen::VectorXd finalConfig;
+  };
+  const auto rollout = [&](std::size_t andersonDepth) {
+    sx::World world;
+    auto robot = buildChain(world);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    auto joints = robot.getJoints();
+    for (std::size_t i = 1; i < joints.size(); ++i) { // joint 0 is the float
+      joints[i].setPosition((Eigen::VectorXd(3) << 0.0, 0.25, 0.0).finished());
+    }
+    world.updateKinematics();
+
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+    const double energy0
+        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+
+    Result result;
+    sxc::MultibodyVariationalState state;
+    for (int k = 0; k < steps; ++k) {
+      const auto report = sxc::integrateMultibodyVariational(
+          registry,
+          structure,
+          gravity,
+          dt,
+          state,
+          /*maxIterations=*/100,
+          /*tolerance=*/1e-10,
+          /*constraints=*/{},
+          /*andersonDepth=*/andersonDepth);
+      EXPECT_TRUE(report.converged)
+          << "depth=" << andersonDepth << " step=" << k
+          << " residual=" << report.residualNorm;
+      result.maxIters = std::max(result.maxIters, report.iterations);
+      const double energy
+          = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+      EXPECT_FALSE(std::isnan(energy)) << "depth=" << andersonDepth;
+      result.maxEnergyDrift = std::max(
+          result.maxEnergyDrift,
+          std::abs(energy - energy0) / std::abs(energy0));
+    }
+    Eigen::Index dof = 0;
+    for (auto joint : joints) {
+      dof += joint.getPosition().size();
+    }
+    result.finalConfig.resize(dof);
+    Eigen::Index offset = 0;
+    for (auto joint : joints) {
+      const Eigen::VectorXd q = joint.getPosition();
+      result.finalConfig.segment(offset, q.size()) = q;
+      offset += q.size();
+    }
+    return result;
+  };
+
+  const Result plain = rollout(/*andersonDepth=*/0);
+  const Result accelerated = rollout(/*andersonDepth=*/5);
+
+  // Both converge (a floating base is well conditioned, so a handful of
+  // iterations suffices) with sane energy, and the acceleration does not change
+  // the integrated trajectory (the DEL root is preconditioner-independent).
+  EXPECT_LE(accelerated.maxIters, 20u)
+      << "accelerated max iters " << accelerated.maxIters;
+  EXPECT_LT(accelerated.maxEnergyDrift, 1e-2)
+      << "accelerated energy drift too large";
+  ASSERT_EQ(accelerated.finalConfig.size(), plain.finalConfig.size());
+  EXPECT_LT((accelerated.finalConfig - plain.finalConfig).norm(), 1e-6)
+      << "accelerated and plain floating+spherical trajectories diverged";
+}
+
 namespace {
 
 // Build a single floating body (fixed virtual base + Floating joint + body) of

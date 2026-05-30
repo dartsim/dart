@@ -796,7 +796,8 @@ VariationalSolveReport integrateMultibodyVariational(
     MultibodyVariationalState& state,
     int maxIterations,
     double tolerance,
-    const std::vector<VariationalLoopConstraint>& constraints)
+    const std::vector<VariationalLoopConstraint>& constraints,
+    std::size_t andersonDepth)
 {
   VariationalSolveReport report;
   if (structure.links.empty()) {
@@ -873,16 +874,20 @@ VariationalSolveReport integrateMultibodyVariational(
   //  - Fixed quasi-Newton step dt * M(q^k)^{-1} * residual via the O(n)
   //    articulated inverse-mass apply, retracted per joint so
   //    spherical/floating coordinates stay on their SO(3)/SE(3) manifolds. This
-  //    is only an approximate inverse Jacobian, so its convergence *rate*
-  //    degrades for long chains -- but it is manifold-correct, which the exact
-  //    step is not yet.
+  //    is only an approximate inverse Jacobian -- it is well conditioned enough
+  //    to converge in a few iterations, but on a long/stiff manifold chain it
+  //    reaches a per-step residual plateau and cannot drive the residual below
+  //    a length-dependent floor -- but it is manifold-correct, which the exact
+  //    step is not yet. It is accelerated by tangent-space Anderson mixing (see
+  //    the Anderson history below), which pushes through that plateau so the
+  //    manifold path converges to tolerances the plain step cannot reach.
   //
   // Policy: use the exact Newton step whenever every movable joint is Euclidean
   // (revolute/prismatic) -- that is exactly where the long-chain convergence
   // problem lives, and the exact step is strictly more accurate there, so short
   // chains converge identically (the converged DEL root is preconditioner-
   // independent). Spherical/floating coordinates keep the manifold-correct
-  // quasi-Newton step (behaviorally identical to before).
+  // quasi-Newton step, now Anderson-accelerated in the tangent space.
   bool euclideanCoordinates = true;
   for (const auto& link : tree.links) {
     if (link.dof == 0) {
@@ -916,6 +921,49 @@ VariationalSolveReport integrateMultibodyVariational(
     return result;
   };
 
+  // The tangent displacement from iterate `from` to iterate `to`, stacked per
+  // joint: tau_a = jointLogDifference(to_a, from_a) so jointRetract(from_a,
+  // tau_a) == to_a. This is the manifold-correct "to - from" the tangent-space
+  // Anderson history mixes (a spherical/floating joint's raw coordinate
+  // difference is not a tangent vector; its per-joint log is).
+  const auto perJointLogDifference
+      = [&](const Eigen::VectorXd& to, const Eigen::VectorXd& from) {
+          Eigen::VectorXd tangent
+              = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+          for (const auto& link : tree.links) {
+            if (link.dof == 0) {
+              continue;
+            }
+            const auto& joint = registry.get<comps::Joint>(link.joint);
+            const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+            const auto n = static_cast<Eigen::Index>(link.dof);
+            tangent.segment(seg, n) = jointLogDifference(
+                joint, to.segment(seg, n), from.segment(seg, n));
+          }
+          return tangent;
+        };
+
+  // Tangent-space Anderson (type-II) acceleration of the manifold quasi-Newton
+  // fixed point. The fixed-point map is q^{k+1} = retract(q^k, -step^k) with
+  // the tangent update step^k = dt M(q^k)^{-1} f(q^k); the fixed-point residual
+  // in tangent coordinates at the current iterate is exactly step^k (zero at a
+  // fixed point). We keep the last m differences of the tangent updates (F
+  // columns) and of the iterates' tangent displacements (X columns, the
+  // per-joint logs of q^k relative to q^{k-1}), and at each iteration solve
+  // gamma = argmin ||step^k - F gamma|| (a small dofCount x m least squares)
+  // for the accelerated increment step^k + (X - F) gamma, retracted with
+  // jointRetract. Mixing validity: near convergence the consecutive iterates --
+  // and thus the base points of every per-joint tangent vector -- are close, so
+  // treating the stacked per-joint tangents as one Euclidean vector (no
+  // parallel transport) introduces only higher-order error that vanishes as
+  // step -> 0; this matched the test without transport (the globalization below
+  // also caps any early-iterate excursion). m = 1 recovers Aitken/secant
+  // acceleration; the Euclidean exact-Newton path never enters this branch.
+  std::vector<Eigen::VectorXd> stepDeltas;
+  std::vector<Eigen::VectorXd> iterateDeltas;
+  Eigen::VectorXd previousStep;     // tangent update at q^{k-1}
+  Eigen::VectorXd previousPosition; // q^{k-1}
+
   // `tolerance` is a per-coordinate accuracy; the convergence test is on the
   // L2 norm of the (dofCount-dimensional) residual, so scale by sqrt(dofCount)
   // to keep the per-coordinate accuracy uniform across chain lengths. Without
@@ -939,47 +987,127 @@ VariationalSolveReport integrateMultibodyVariational(
     // an increment to *subtract* from the current iterate. `computeResidual`
     // populated the per-link average velocity and q^{k+1} relative transforms
     // the exact step needs.
-    const Eigen::VectorXd increment
+    const Eigen::VectorXd step
         = euclideanCoordinates
               ? applyExactNewtonStep(tree, residual, timeStep)
               : applyArticulatedInverseMass(tree, timeStep * residual);
 
-    // Damped-Newton globalization (backtracking line search). The exact Newton
-    // step has fast *local* convergence but, like any Newton method, an
-    // undamped full step can overshoot when an iterate wanders far from the
-    // root (the hardest mid-rollout steps of a long/stiff chain reach such
-    // states). Try the full step first; if it does not reduce the residual
-    // norm, backtrack by halving until it does. Near the root the full step is
-    // always accepted (alpha = 1), preserving the quadratic rate; each trial
-    // residual is O(n), so a handful of backtracks keeps the step linear-time.
-    double alpha = 1.0;
-    Eigen::VectorXd trialPosition = retractStep(nextPosition, increment, alpha);
-    double trialNorm = computeResidual(
-                           registry,
-                           tree,
-                           trialPosition,
-                           state,
-                           gravity,
-                           timeStep,
-                           appliedForce)
-                           .norm();
-    constexpr int kMaxBacktracks = 20;
-    for (int backtrack = 0;
-         backtrack < kMaxBacktracks && !(trialNorm < residualNorm);
-         ++backtrack) {
-      alpha *= 0.5;
-      trialPosition = retractStep(nextPosition, increment, alpha);
-      trialNorm = computeResidual(
-                      registry,
-                      tree,
-                      trialPosition,
-                      state,
-                      gravity,
-                      timeStep,
-                      appliedForce)
-                      .norm();
+    // Manifold tangent-space Anderson mixing (spherical/floating path only).
+    // Accumulate the step/iterate-displacement history and form the accelerated
+    // increment; the Euclidean exact-Newton path keeps `step` unchanged. The
+    // least squares is Tikhonov-regularized (a small ridge relative to the
+    // column scale) because the step-difference columns become nearly linearly
+    // dependent as the iterates settle, and an unregularized type-II solve then
+    // produces a wild gamma that throws the increment far off -- the
+    // regularizer (plus the opportunistic accept/safeguard below) keeps the
+    // acceleration stable on long stiff manifold chains.
+    Eigen::VectorXd andersonIncrement;
+    bool haveAnderson = false;
+    if (!euclideanCoordinates && andersonDepth > 0 && iteration > 0) {
+      stepDeltas.push_back(step - previousStep);
+      iterateDeltas.push_back(
+          perJointLogDifference(nextPosition, previousPosition));
+      if (stepDeltas.size() > andersonDepth) {
+        stepDeltas.erase(stepDeltas.begin());
+        iterateDeltas.erase(iterateDeltas.begin());
+      }
+      const auto m = static_cast<Eigen::Index>(stepDeltas.size());
+      Eigen::MatrixXd stepMatrix(step.size(), m);
+      Eigen::MatrixXd iterateMatrix(step.size(), m);
+      for (Eigen::Index c = 0; c < m; ++c) {
+        stepMatrix.col(c) = stepDeltas[static_cast<std::size_t>(c)];
+        iterateMatrix.col(c) = iterateDeltas[static_cast<std::size_t>(c)];
+      }
+      // Solve (F^T F + lambda I) gamma = F^T step (normal equations with a
+      // ridge scaled by the column magnitudes) for the type-II mixing
+      // coefficients.
+      const Eigen::MatrixXd ftf = stepMatrix.transpose() * stepMatrix;
+      const double ridge
+          = 1e-12 * (ftf.trace() / static_cast<double>(m) + 1e-30);
+      const Eigen::MatrixXd regularized
+          = ftf + ridge * Eigen::MatrixXd::Identity(m, m);
+      const Eigen::VectorXd gamma
+          = regularized.ldlt().solve(stepMatrix.transpose() * step);
+      if (gamma.allFinite()) {
+        andersonIncrement = step + (iterateMatrix - stepMatrix) * gamma;
+        haveAnderson = andersonIncrement.allFinite();
+      }
     }
-    nextPosition = std::move(trialPosition);
+    previousStep = step;
+    previousPosition = nextPosition;
+
+    // Globalization differs by preconditioner because the two steps have
+    // different convergence structure.
+    //
+    // Euclidean exact-Newton path: a damped-Newton backtracking line search.
+    // The exact step has fast *local* convergence but an undamped full step can
+    // overshoot when an iterate wanders far from the root (the hardest
+    // mid-rollout steps of a long/stiff chain reach such states); try the full
+    // step first and backtrack by halving until it reduces the residual. Near
+    // the root the full step is always accepted (alpha = 1), preserving the
+    // quadratic rate; each trial residual is O(n), so a handful of backtracks
+    // keeps the step linear-time.
+    //
+    // Manifold quasi-Newton path: the *undamped* full step. The fixed-point
+    // iteration q <- retract(q, -dt M^{-1} f) is contractive but NOT monotone
+    // in the residual norm (an intermediate iterate can transiently raise ||f||
+    // while still converging), so a residual-decrease line search would
+    // wrongly reject legitimate full steps and strangle the iteration to a
+    // standstill. Anderson is layered on top as an opportunistic accelerator:
+    // accept its full step when it strictly reduces the residual (a guaranteed
+    // improvement over the plain iterate this iteration), otherwise take the
+    // plain full step. The opportunistic accept never lets a poor Anderson
+    // direction make progress worse than the plain fixed point.
+    if (euclideanCoordinates) {
+      double alpha = 1.0;
+      Eigen::VectorXd trialPosition = retractStep(nextPosition, step, alpha);
+      double trialNorm = computeResidual(
+                             registry,
+                             tree,
+                             trialPosition,
+                             state,
+                             gravity,
+                             timeStep,
+                             appliedForce)
+                             .norm();
+      constexpr int kMaxBacktracks = 20;
+      for (int backtrack = 0;
+           backtrack < kMaxBacktracks && !(trialNorm < residualNorm);
+           ++backtrack) {
+        alpha *= 0.5;
+        trialPosition = retractStep(nextPosition, step, alpha);
+        trialNorm = computeResidual(
+                        registry,
+                        tree,
+                        trialPosition,
+                        state,
+                        gravity,
+                        timeStep,
+                        appliedForce)
+                        .norm();
+      }
+      nextPosition = std::move(trialPosition);
+      continue;
+    }
+
+    if (haveAnderson) {
+      Eigen::VectorXd andersonPosition
+          = retractStep(nextPosition, andersonIncrement, 1.0);
+      const double andersonNorm = computeResidual(
+                                      registry,
+                                      tree,
+                                      andersonPosition,
+                                      state,
+                                      gravity,
+                                      timeStep,
+                                      appliedForce)
+                                      .norm();
+      if (andersonNorm < residualNorm) {
+        nextPosition = std::move(andersonPosition);
+        continue;
+      }
+    }
+    nextPosition = retractStep(nextPosition, step, 1.0);
   }
 
   // Non-convergence is a hard error, not a silent best-effort step: the caller
