@@ -5,10 +5,9 @@ import math
 import os
 from pathlib import Path
 
+import dartpy as dart
 import numpy as np
 import pytest
-
-import dartpy as dart
 
 
 def _cache_reports_experimental_disabled() -> bool:
@@ -310,12 +309,8 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
 
     assert hasattr(sx.RigidBody, "is_deformable_ground_barrier")
     assert not hasattr(sx.Link, "is_deformable_ground_barrier")
-    assert (
-        "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
-    )
-    assert (
-        "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
-    )
+    assert "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
+    assert "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
 
 
 def test_experimental_state_space_metadata_value_object():
@@ -2534,6 +2529,34 @@ def test_experimental_deformable_body_topology_python_api():
     # The unit corner tetrahedron has volume 1/6.
     assert body.tetrahedron_rest_volume(0) == pytest.approx(1.0 / 6.0)
     assert body.node_mass(0) == pytest.approx(1.0)
+
+
+def test_experimental_adaptive_barrier_stiffness_holds_heavy_node_higher():
+    sx = _simulation_experimental()
+
+    def settle(adaptive: bool) -> float:
+        world = sx.World(time_step=0.01)
+        world.gravity = [0.0, 0.0, -0.5]
+        ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+        ground.is_static = True
+        ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
+        ground.is_deformable_ground_barrier = True
+
+        options = sx.DeformableBodyOptions()
+        options.positions = [np.array([0.0, 0.0, 0.015])]
+        options.masses = [40.0]
+        options.material.use_adaptive_barrier_stiffness = adaptive
+        body = world.add_deformable_body("heavy_node", options)
+        world.step(600)
+        return float(body.node_position(0)[2])
+
+    fixed_z = settle(False)
+    adaptive_z = settle(True)
+    # Both settle intersection-free in the activation band (d_hat = 2e-2).
+    assert 0.0 < fixed_z < 2e-2
+    assert 0.0 < adaptive_z < 2e-2
+    # The stiffer adaptive barrier holds the heavy node measurably higher.
+    assert adaptive_z > fixed_z + 1e-3
 
 
 def test_experimental_world_exposes_deformable_solver_diagnostics():

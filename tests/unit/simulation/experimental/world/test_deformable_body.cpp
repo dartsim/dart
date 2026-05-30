@@ -1287,6 +1287,53 @@ TEST(DeformableBody, StaticGroundBarrierPreventsCrossing)
 }
 
 //==============================================================================
+// Opt-in adaptive barrier stiffness scales the ground barrier with the node
+// mass: a heavy node under gravity settles in the activation band where the
+// barrier force balances gravity. The stiffer adaptive kappa balances at a
+// larger distance from the surface than the fixed kappa, so the heavy node
+// settles measurably higher (and both stay intersection-free above z = 0).
+TEST(DeformableBody, AdaptiveBarrierStiffnessHoldsHeavyNodeFurtherFromGround)
+{
+  const auto settleHeavyNode = [](bool adaptive) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -0.5));
+    world.setTimeStep(0.01);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+    ground.setDeformableGroundBarrier(true); // top face at z = 0
+
+    // A single heavy node starting inside the activation band (d_hat = 2e-2).
+    // The mass (40) is heavy enough that the adaptive kappa is far above the
+    // fixed default, so the two settle at clearly different distances.
+    sx::DeformableBodyOptions options;
+    options.positions = {Eigen::Vector3d(0.0, 0.0, 0.015)};
+    options.masses = {40.0};
+    options.material.useAdaptiveBarrierStiffness = adaptive;
+    auto body = world.addDeformableBody("heavy_node", options);
+
+    world.step(600);
+    return body.getPosition(0).z();
+  };
+
+  const double fixedZ = settleHeavyNode(/*adaptive=*/false);
+  const double adaptiveZ = settleHeavyNode(/*adaptive=*/true);
+
+  // Both settle intersection-free inside the activation band.
+  EXPECT_GT(fixedZ, 0.0);
+  EXPECT_LT(fixedZ, 2e-2);
+  EXPECT_GT(adaptiveZ, 0.0);
+  EXPECT_LT(adaptiveZ, 2e-2);
+  EXPECT_TRUE(std::isfinite(adaptiveZ));
+  // The stiffer adaptive barrier holds the heavy node measurably higher.
+  EXPECT_GT(adaptiveZ, fixedZ + 1e-3);
+}
+
+//==============================================================================
 // A static sphere opted in as a surface-CCD obstacle exerts a full radial
 // barrier force: a node resting inside the activation band (d_hat = 2e-2) at
 // the sphere's side is pushed radially outward toward the band edge, not just

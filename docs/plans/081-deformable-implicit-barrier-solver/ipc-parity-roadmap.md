@@ -162,11 +162,22 @@ mesh-vs-obstacle and codim contacts. Unblocks the friction figures: Fig 5 (card
 house), Fig 7 (cement arch), Fig 8 (ball-on-roller), Fig 16 (Armadillo roller),
 Fig 20 (stick-slip rod).
 
-### M6 — Adaptive barrier stiffness (κ homotopy)
+### M6 — Adaptive barrier stiffness (κ homotopy) — LANDED
 
-IPC stiffness adaptation with a minimum-stiffness scale and force-balance
-update; additive (defaults to today's fixed κ). Unblocks Fig 12 (large
-mass/stiffness ratios) robustness.
+Opt-in adaptive barrier stiffness has landed
+(`DeformableMaterialProperties.useAdaptiveBarrierStiffness`, dartpy
+`use_adaptive_barrier_stiffness`). Per step, the ground/obstacle barrier κ is set
+from the mass/time-step force balance `κ = clamp((maxNodalMass/dt²)·d_hat², 25,
+1e6)` — the barrier curvature `~κ/d_hat²` balances the inertial stiffness
+`mass/dt²`, keeping the contact equally conditioned across mass/stiffness ratios
+(toward Fig 12). For unit mass at dt=1/250, d_hat=2e-2 this is exactly the
+historical fixed κ=25, so the adaptive form generalizes the constant; it is
+floored at the default (never softer) and capped. Off (the default) is
+byte-identical. A regression checks a heavy node settles measurably higher (the
+stiffer adaptive barrier balances gravity farther from the surface,
+mass-independently) than with fixed κ. Remaining M6 follow-up: in-Newton κ
+homotopy (increase κ mid-solve if the min distance drops), and applying the
+adaptive κ to the self-contact barrier (which today carries its own stiffness).
 
 ### M7 — Scale + performance (CPU then GPU) until beating the reference
 
