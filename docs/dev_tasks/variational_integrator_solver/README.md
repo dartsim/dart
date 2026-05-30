@@ -236,7 +236,8 @@ gaps to the [north star](#north-star), in priority order:
    recursive-Jacobian preconditioner is Euclidean-only; spherical/floating chains
    use the manifold Anderson (verified to 20 links). A Lie-group extension of the
    preconditioner would scale floating chains the way the Euclidean one does.
-4. **Contact demo scene.** A GUI contact scene once Phase C lands (the
-   loop-closure scene is done).
+4. **Contact demo scene — landed.** `sx_variational_contact` (a VI pendulum tip
+   caught by the compliant ground plane) joins the chain / tumbler / loop-closure
+   scenes in the demos registry and the demos-cycle test.
 
 Code is the source of truth; keep this file lean and current.
