@@ -114,6 +114,28 @@ namespace dart::simulation::experimental {
 namespace {
 
 //==============================================================================
+// Folds the full internal solver stats into the curated public diagnostics.
+DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
+    const compute::DeformableSolverStats& stats)
+{
+  DeformableSolverDiagnostics diagnostics;
+  diagnostics.bodyCount = stats.bodyCount;
+  diagnostics.nodeCount = stats.nodeCount;
+  diagnostics.edgeCount = stats.edgeCount;
+  diagnostics.solverIterations = stats.solverIterations;
+  diagnostics.objectiveEvaluations = stats.objectiveEvaluations;
+  diagnostics.lineSearchTrials = stats.lineSearchTrials;
+  diagnostics.projectedNewtonSteps = stats.projectedNewtonSteps;
+  diagnostics.projectedNewtonFallbacks = stats.projectedNewtonFallbacks;
+  diagnostics.selfContactBarrierActiveContacts
+      = stats.selfContactBarrierActiveContacts;
+  diagnostics.frictionDissipation = stats.frictionDissipation;
+  diagnostics.minActiveContactDistance = stats.minActiveContactDistance;
+  diagnostics.convergedActiveContactCount = stats.convergedActiveContactCount;
+  return diagnostics;
+}
+
+//==============================================================================
 void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
 {
   compute::WorldKinematicsGraph graph(world);
@@ -1613,6 +1635,8 @@ void World::step(compute::ComputeExecutor& executor)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);
   step(executor, pipeline);
+  m_lastDeformableSolverDiagnostics
+      = makeDeformableSolverDiagnostics(deformableDynamics.getLastStats());
 }
 
 //==============================================================================
@@ -1640,6 +1664,8 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);
   step(count, executor, pipeline);
+  m_lastDeformableSolverDiagnostics
+      = makeDeformableSolverDiagnostics(deformableDynamics.getLastStats());
 }
 
 //==============================================================================
@@ -1710,6 +1736,13 @@ void World::step(
   for (std::size_t i = 0; i < count; ++i) {
     step(executor, pipeline);
   }
+}
+
+//==============================================================================
+const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
+    const
+{
+  return m_lastDeformableSolverDiagnostics;
 }
 
 //==============================================================================

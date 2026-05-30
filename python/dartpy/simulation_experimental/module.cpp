@@ -1456,6 +1456,38 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "depth", [](const sim::Contact& self) { return self.depth; });
 
+  nb::class_<sim::DeformableSolverDiagnostics>(m, "DeformableSolverDiagnostics")
+      .def_ro("body_count", &sim::DeformableSolverDiagnostics::bodyCount)
+      .def_ro("node_count", &sim::DeformableSolverDiagnostics::nodeCount)
+      .def_ro("edge_count", &sim::DeformableSolverDiagnostics::edgeCount)
+      .def_ro(
+          "solver_iterations",
+          &sim::DeformableSolverDiagnostics::solverIterations)
+      .def_ro(
+          "objective_evaluations",
+          &sim::DeformableSolverDiagnostics::objectiveEvaluations)
+      .def_ro(
+          "line_search_trials",
+          &sim::DeformableSolverDiagnostics::lineSearchTrials)
+      .def_ro(
+          "projected_newton_steps",
+          &sim::DeformableSolverDiagnostics::projectedNewtonSteps)
+      .def_ro(
+          "projected_newton_fallbacks",
+          &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
+      .def_ro(
+          "self_contact_barrier_active_contacts",
+          &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
+      .def_ro(
+          "friction_dissipation",
+          &sim::DeformableSolverDiagnostics::frictionDissipation)
+      .def_ro(
+          "min_active_contact_distance",
+          &sim::DeformableSolverDiagnostics::minActiveContactDistance)
+      .def_ro(
+          "converged_active_contact_count",
+          &sim::DeformableSolverDiagnostics::convergedActiveContactCount);
+
   nb::class_<sim::DeformableMaterialProperties>(
       m, "DeformableMaterialProperties")
       .def(nb::init<>())
@@ -1975,6 +2007,13 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("n") = 1,
           nb::call_guard<nb::gil_scoped_release>())
+      .def_prop_ro(
+          "last_deformable_solver_diagnostics",
+          &sim::World::getLastDeformableSolverDiagnostics,
+          nb::rv_policy::reference_internal,
+          "Curated diagnostics from the deformable solve on the most recent "
+          "step that used the built-in pipeline (mesh sizes, projected-Newton "
+          "convergence, self-contact activity, contact closest-approach).")
       .def_prop_rw(
           "time_step", &sim::World::getTimeStep, &sim::World::setTimeStep)
       .def_prop_rw("time", &sim::World::getTime, &sim::World::setTime)
