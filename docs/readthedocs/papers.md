@@ -195,8 +195,8 @@ Springer, 2006.
 | `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact     | in-progress | high     | adopt     |
 | `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration | planned     | high     | adopt     |
 | `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration | referenced  | medium   | reference |
-| `chen-2024-vbd`                | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                         | integration | in-progress | high     | adopt     |
-| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                              | contact     | referenced  | medium   | evaluate  |
+| `chen-2024-vbd`                | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration | in-progress | high     | adopt     |
+| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact     | referenced  | medium   | evaluate  |
 | `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact     | referenced  | medium   | evaluate  |
 | `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration | referenced  | high     | baseline  |
 | `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration | referenced  | high     | evaluate  |
