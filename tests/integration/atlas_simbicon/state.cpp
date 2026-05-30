@@ -490,8 +490,12 @@ void State::_updateTorqueForStanceLeg()
 
     // Torso control on sagittal plane
     double pelvisSagittalAngle = getSagittalPelvisAngle();
+    // Positive gain: under the Z-up convention the sagittal torso feedback must
+    // push the pelvis back upright. The legacy -5000 inverted this into
+    // positive feedback, so Atlas toppled backward (the coronal term below
+    // stays -5000).
     double tauTorsoSagittal
-        = -5000.0 * (pelvisSagittalAngle + mDesiredGlobalPelvisAngleOnSagittal)
+        = 5000.0 * (pelvisSagittalAngle + mDesiredGlobalPelvisAngleOnSagittal)
           - 1.0 * (0);
     mTorque[mSagittalLeftHip] = tauTorsoSagittal - mTorque[mSagittalRightHip];
 
@@ -520,8 +524,12 @@ void State::_updateTorqueForStanceLeg()
 
     // Torso control on sagittal plane
     double pelvisSagittalAngle = getSagittalPelvisAngle();
+    // Positive gain: under the Z-up convention the sagittal torso feedback must
+    // push the pelvis back upright. The legacy -5000 inverted this into
+    // positive feedback, so Atlas toppled backward (the coronal term below
+    // stays -5000).
     double tauTorsoSagittal
-        = -5000.0 * (pelvisSagittalAngle + mDesiredGlobalPelvisAngleOnSagittal)
+        = 5000.0 * (pelvisSagittalAngle + mDesiredGlobalPelvisAngleOnSagittal)
           - 1.0 * (0);
     mTorque[mSagittalRightHip] = tauTorsoSagittal - mTorque[mSagittalLeftHip];
 

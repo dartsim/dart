@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/config.hpp>
 
@@ -785,6 +786,12 @@ HumanJointLimitsScene createHumanJointLimitsScene()
       = installHumanJointLimitConstraints(*world, human);
 
   colorHuman(human);
+
+  // kima_human_edited.skel is authored Y-up; reorient to the canonical Z-up
+  // convention. The joint-limit constraints are joint-angle based, so the
+  // rotated motion is identical.
+  reorientWorldToZUp(world);
+
   return {world, customConstraintCount};
 }
 
