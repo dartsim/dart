@@ -16,6 +16,7 @@ import numpy as np
 import dartpy as dart
 
 from ..runner import PythonDemoScene, SceneSetup
+from ._z_up import reorient_to_z_up
 
 _URI = "dart://sample/skel/chain.skel"
 _LOOP_NAME = "rigid_loop"
@@ -36,7 +37,6 @@ def build() -> SceneSetup:
     world = dart.io.SkelParser.read_world(_URI)
     if world is None:
         raise RuntimeError(f"Failed to load {_URI}")
-    world.set_gravity([0.0, -9.81, 0.0])
     world.set_time_step(1.0 / 2000.0)
 
     chain = world.get_skeleton(0)
@@ -50,6 +50,10 @@ def build() -> SceneSetup:
         if index < num_dofs:
             pose[index] = 0.4 * math.pi
     chain.set_positions(pose)
+
+    # chain.skel is authored Y-up; reorient to Z-up before deriving the loop
+    # constraint anchor from link 6's (now Z-up) world transform.
+    reorient_to_z_up(world)
 
     link6 = chain.get_body_node("link 6")
     link10 = chain.get_body_node("link 10")

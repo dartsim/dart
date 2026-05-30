@@ -10,6 +10,7 @@ from __future__ import annotations
 import dartpy as dart
 
 from ..runner import PythonDemoScene, SceneSetup
+from ._z_up import reorient_to_z_up
 
 
 def build() -> SceneSetup:
@@ -19,6 +20,11 @@ def build() -> SceneSetup:
     ground = urdf.parse_skeleton("dart://sample/urdf/KR5/ground.urdf")
     world.add_skeleton(kr5)
     world.add_skeleton(ground)
+    # The KR5 URDF root and ground.urdf are authored Y-up (the arm's root joint
+    # carries a RotX(-90deg); the ground slab's normal is +Y). Reorient the
+    # whole world to the canonical Z-up convention so the arm stands on the
+    # ground under -Z gravity.
+    reorient_to_z_up(world)
     return SceneSetup(world=world, info={"robot": kr5.get_name()})
 
 
