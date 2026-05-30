@@ -889,6 +889,21 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     no-penetration guarantee. First-order (steepest-descent) solve with fixed
     barrier stiffness; projected Newton and adaptive stiffness are later slices.
     Includes focused regressions and a benchmark with barrier counters.
+  - Added experimental IPC barrier forces for static sphere obstacles (PLAN-081
+    Phase 3). A static rigid sphere opted in as a deformable surface-CCD obstacle
+    now exerts a full radial clamped-log barrier force: each deformable node
+    within the activation band of the sphere's surface is pushed out along the
+    outward radial normal, so a deformable settles smoothly against any side of
+    the sphere -- a true 3D contact force, unlike the vertical-only ground
+    barrier. Reuses the existing `setDeformableSurfaceCcdObstacle` opt-in
+    (untagged shapes, boxes, and non-obstacle scenes are unchanged, so existing
+    behavior is preserved; on the prior code surface-CCD-obstacle spheres were a
+    no-op). Energy + gradient only -- the projected-Newton Hessian, box and
+    codimensional obstacles are later increments; the line search on the
+    barrier-inclusive energy keeps slowly-approaching nodes outside, and the
+    surface CCD limiter remains the tunnelling guard for fast motion. Adds
+    regressions that a node in the band is pushed radially outward and that an
+    untagged sphere is inert.
   - Added internal experimental IPC projected-Newton search direction for the
     deformable solve: each iteration assembles the per-step Hessian (inertia +
     spring + self-contact barrier + static ground barrier) with per-element

@@ -723,6 +723,16 @@ struct StaticGroundBarrier
 };
 
 //==============================================================================
+// A static sphere obstacle that exerts a full radial clamped-log barrier force
+// on nearby deformable nodes (unlike the vertical-only ground barrier above),
+// so a deformable settles smoothly at ~d_hat against any side of the sphere.
+struct SphereObstacleBarrier
+{
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  double radius = 0.0;
+};
+
+//==============================================================================
 struct DeformableContactSolverScratch
 {
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
@@ -1620,6 +1630,40 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
 }
 
 //==============================================================================
+// Static rigid SPHERE bodies opted in as deformable surface-CCD obstacles also
+// exert a full radial barrier force on nearby deformable nodes. They are
+// collected by center + radius (the smooth radial barrier needs no
+// tessellation). Boxes opted in as surface-CCD obstacles are skipped here --
+// their barrier force is a later increment -- and the surface CCD limiter
+// remains the conservative no-penetration gate.
+std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
+    const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<SphereObstacleBarrier> obstacles;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    if (geometry.shape.type != CollisionShapeType::Sphere
+        || !(geometry.shape.radius > 0.0)
+        || !std::isfinite(geometry.shape.radius)
+        || !transform.position.allFinite()) {
+      continue;
+    }
+    obstacles.push_back(
+        SphereObstacleBarrier{transform.position, geometry.shape.radius});
+  }
+  return obstacles;
+}
+
+//==============================================================================
 // The supporting static-ground contact under a node: the highest barrier
 // surface across all barriers at the node's (x, y), together with that
 // surface's geometric normal. Mirrors the max-top selection of the legacy
@@ -2146,6 +2190,64 @@ double addStaticGroundBarrierEnergy(
 }
 
 //==============================================================================
+// Full radial clamped-log barrier for static sphere obstacles: each free node
+// within the activation band of a sphere's surface is pushed out along the
+// outward radial normal, so a deformable settles smoothly at ~d_hat against any
+// side of the sphere (a true 3D contact force, unlike the vertical-only ground
+// barrier). Energy + gradient only -- the projected-Newton Hessian, box and
+// codimensional obstacles are later increments; the line search on the
+// barrier-inclusive energy keeps nodes outside because the clamped-log energy
+// diverges as the distance approaches zero.
+double addSphereObstacleBarrierEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<SphereObstacleBarrier>& obstacles,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (obstacles.empty()) {
+    return 0.0;
+  }
+
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  constexpr double barrierScale = 25.0;
+
+  double energy = 0.0;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+
+    for (const auto& obstacle : obstacles) {
+      const Eigen::Vector3d offset = positions[i] - obstacle.center;
+      const double centerDistance = offset.norm();
+      const double distance = centerDistance - obstacle.radius;
+      if (distance <= 0.0 || !std::isfinite(distance)) {
+        return std::numeric_limits<double>::infinity();
+      }
+      if (distance >= activationDistance || centerDistance <= 0.0) {
+        continue;
+      }
+
+      const double normalizedDistance = distance / activationDistance;
+      const double distanceOffset = distance - activationDistance;
+      energy += -barrierScale * distanceOffset * distanceOffset
+                * std::log(normalizedDistance);
+
+      if (gradient != nullptr) {
+        const double derivative
+            = -barrierScale
+              * (2.0 * distanceOffset * std::log(normalizedDistance)
+                 + distanceOffset * distanceOffset / distance);
+        // dDistance/dx is the outward radial unit normal.
+        (*gradient)[i] += derivative * (offset / centerDistance);
+      }
+    }
+  }
+
+  return energy;
+}
+
+//==============================================================================
 // Tangential speed below which static-ground friction smoothly vanishes (the
 // IPC mollifier velocity threshold epsv). Scaled by the time step to a
 // displacement radius.
@@ -2652,6 +2754,7 @@ double evaluateDeformableObjective(
     const std::vector<Eigen::Vector3d>& inertialTargets,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
@@ -2704,6 +2807,8 @@ double evaluateDeformableObjective(
   }
 
   energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
+  energy += addSphereObstacleBarrierEnergy(
+      positions, fixed, sphereObstacles, gradient);
   if (contactBarrier != nullptr) {
     energy += addSelfContactBarrierEnergy(
         positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
@@ -3722,6 +3827,7 @@ void advanceDeformableBody(
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
     double frictionCoefficient,
     DeformableSolverStats& stats)
 {
@@ -3768,8 +3874,8 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  if (model.edges.empty() && barriers.empty() && rigidSurfaceSnapshots.empty()
-      && movingRigidSurfaceSnapshots.empty()
+  if (model.edges.empty() && barriers.empty() && sphereObstacles.empty()
+      && rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty()
       && contactScratch.surfaceTriangles.empty()) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
@@ -3867,6 +3973,7 @@ void advanceDeformableBody(
           scratch.inertialTargets,
           scratch.activeFixed,
           barriers,
+          sphereObstacles,
           timeStep,
           &scratch.gradient,
           &contactBarrier,
@@ -3980,6 +4087,7 @@ void advanceDeformableBody(
                 scratch.inertialTargets,
                 scratch.activeFixed,
                 barriers,
+                sphereObstacles,
                 timeStep,
                 nullptr,
                 &contactBarrier,
@@ -4125,6 +4233,7 @@ void advanceDeformableBody(
           scratch.inertialTargets,
           scratch.activeFixed,
           barriers,
+          sphereObstacles,
           timeStep,
           &scratch.gradient,
           &terminalBarrier,
@@ -4585,6 +4694,7 @@ void DeformableDynamicsStage::execute(
   }
 
   const auto barriers = collectStaticGroundBarriers(world);
+  const auto sphereObstacles = collectSphereObstacleBarriers(world);
   const auto rigidSurfaceSnapshots
       = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
@@ -4653,6 +4763,7 @@ void DeformableDynamicsStage::execute(
         gravity,
         timeStep,
         barriers,
+        sphereObstacles,
         material.frictionCoefficient,
         m_lastStats);
   }

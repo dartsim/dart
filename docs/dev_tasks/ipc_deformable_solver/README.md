@@ -187,11 +187,20 @@
         termination, a single-iteration snapshot distinct from the cumulative
         `selfContactBarrierActiveContacts`). Behavior-preserving (diagnostic
         only); feeds the Fig. 23 / Table 1 contact statistics.
+  - [x] Static sphere obstacle barrier force: a static rigid sphere opted in via
+        `setDeformableSurfaceCcdObstacle` now exerts a full radial clamped-log
+        barrier (energy + gradient) that pushes deformable nodes out along the
+        outward radial normal -- a 3D contact force, unlike the vertical-only
+        ground barrier. Additive (surface-CCD-obstacle spheres were previously a
+        no-op; boxes and non-opted scenes unchanged); the surface CCD limiter is
+        the tunnelling guard for fast motion. Box obstacles, the projected-Newton
+        Hessian, and codimensional obstacles are later increments.
   - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
         host<->device copies remain; keeping the assembly/solve on-device is a
         follow-up), matrix-free CG for very large meshes, adaptive barrier
-        stiffness, barrier forces for rigid/codimensional obstacles, and
-        complementarity/solver-stat diagnostics. Known approximation: the
+        stiffness, barrier forces for rigid BOX and codimensional obstacles (the
+        sphere obstacle barrier is covered) plus their projected-Newton Hessian,
+        and complementarity/solver-stat diagnostics. Known approximation: the
         contact active set is rebuilt once per outer iteration and held fixed
         across the inner Newton/line-search step (standard IPC), rather than
         re-queried within the line search.
