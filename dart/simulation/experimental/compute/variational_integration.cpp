@@ -857,6 +857,55 @@ Eigen::VectorXd variationalContactPointForce(
 }
 
 //==============================================================================
+VariationalContactHook makeVariationalGroundContactHook(
+    VariationalGroundContact contact)
+{
+  const double normalNorm = contact.planeNormal.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      normalNorm < 1e-12,
+      InvalidOperationException,
+      "VariationalGroundContact plane normal must be non-zero");
+  contact.planeNormal /= normalNorm;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.stiffness < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact stiffness must be non-negative");
+
+  // Compliant (penalty) ground contact: for each body-fixed point penetrating
+  // the half-space at the trial configuration, the one-sided quadratic
+  // potential E = 1/2 k max(0,-d)^2 contributes the normal force k(-d) n,
+  // mapped to a generalized force by the trial-config point Jacobian. Folded
+  // into the forced-DEL residual on the forcing side like gravity/applied
+  // force.
+  return [contact = std::move(contact)](
+             const VariationalContactContext& context) -> Eigen::VectorXd {
+    Eigen::VectorXd generalizedForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    if (contact.stiffness == 0.0) {
+      return generalizedForce;
+    }
+    for (const VariationalContactPoint& point : contact.points) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          point.linkIndex >= context.linkWorldTransforms.size(),
+          InvalidOperationException,
+          "VariationalGroundContact contact point references an out-of-range "
+          "link index");
+      const Eigen::Vector3d worldPoint
+          = context.linkWorldTransforms[point.linkIndex] * point.localPoint;
+      const double signedDistance
+          = contact.planeNormal.dot(worldPoint - contact.planePoint);
+      if (signedDistance < 0.0) {
+        const Eigen::Vector3d normalForce
+            = contact.stiffness * (-signedDistance) * contact.planeNormal;
+        generalizedForce += variationalContactPointForce(
+            context, point.linkIndex, point.localPoint, normalForce);
+      }
+    }
+    return generalizedForce;
+  };
+}
+
+//==============================================================================
 VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,

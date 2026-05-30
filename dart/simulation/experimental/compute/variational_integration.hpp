@@ -145,6 +145,47 @@ variationalContactPointForce(
     const Eigen::Vector3d& localPoint,
     const Eigen::Vector3d& worldForce);
 
+/// **EXPERIMENTAL (PLAN-082 Phase C).** A body-fixed contact point: the point
+/// at body-frame position `localPoint` on link `linkIndex`, evaluated against
+/// the contact geometry at the trial configuration.
+struct VariationalContactPoint
+{
+  std::size_t linkIndex = 0; ///< link carrying the point
+  Eigen::Vector3d localPoint = Eigen::Vector3d::Zero(); ///< body-frame position
+};
+
+/// **EXPERIMENTAL (PLAN-082 Phase C, rung C2 — compliant contact).** A static
+/// ground half-space `{x : n . (x - p0) >= 0}` and a set of body-fixed contact
+/// points repelled by a one-sided quadratic penalty potential
+/// `E = 1/2 k max(0,-d)^2`, where `d = n . (p - p0)` is the signed distance of
+/// a world contact point `p` to the plane. Its gradient is the compliant normal
+/// force `F = k max(0,-d) n` (the VBD/XPBD compliant-contact force law). This
+/// is the real distance/gradient query the gate-2 spike's hard-coded plane
+/// stood in for, for the link-point-vs-analytic-ground case: bounded curvature
+/// RIQN absorbs, leaving a small `mg/k` residual penetration (see the contact
+/// roadmap's `k <= 1e4 mg` envelope).
+struct VariationalGroundContact
+{
+  Eigen::Vector3d planeNormal
+      = Eigen::Vector3d::UnitZ(); ///< unit normal, out of the ground
+  Eigen::Vector3d planePoint
+      = Eigen::Vector3d::Zero(); ///< any point on the plane
+  double stiffness = 0.0;        ///< penalty stiffness k (N/m), >= 0
+  std::vector<VariationalContactPoint> points; ///< body-fixed contact points
+};
+
+/// **EXPERIMENTAL (PLAN-082 Phase C, rung C2).** Build an in-loop
+/// `VariationalContactHook` for compliant ground contact. Each RIQN iteration
+/// it evaluates every contact point's world position at the trial
+/// configuration, computes the signed plane distance, and for penetrating
+/// points (`d < 0`) accumulates the compliant normal force `k(-d) n` mapped to
+/// a generalized force by `variationalContactPointForce`. Empty `points` or
+/// `stiffness == 0` yields a no-op hook (byte-for-byte identical to the
+/// no-contact integrator). Throws if the plane normal is zero or the stiffness
+/// is negative; the normal is normalized defensively.
+[[nodiscard]] DART_EXPERIMENTAL_API VariationalContactHook
+makeVariationalGroundContactHook(VariationalGroundContact contact);
+
 /// Advance one multibody by one step with the linear-time variational
 /// integrator (Lee, Liu, Park, Srinivasa, WAFR 2016 / arXiv:1609.02898).
 ///

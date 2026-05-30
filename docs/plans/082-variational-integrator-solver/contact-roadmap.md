@@ -256,3 +256,46 @@ contact-query-at-trial-configuration workstream) remains the blocking
 prerequisite; the spike's hard-coded ground plane stands in for the real
 distance/gradient query that workstream must deliver. The 2026-05-28 NO-GO's
 gate-2 half is now satisfied; gate 1 still gates the rung.
+
+## C2 implemented (2026-05-30): compliant ground contact via the real query
+
+The compliant-contact rung (**C2**) now ships for the **link-point-vs-analytic-
+ground** case, promoting the gate-2 spike's hard-coded `z = 0` plane into a real,
+configurable distance/gradient query. `makeVariationalGroundContactHook`
+(`compute/variational_integration.{hpp,cpp}`) builds a `VariationalContactHook`
+from a `VariationalGroundContact` config — an analytic half-space
+`{x : n·(x − p₀) ≥ 0}` plus a set of body-fixed `VariationalContactPoint`s. Each
+RIQN iteration, at the trial `qᵏ⁺¹`, it evaluates every point's world position,
+computes the signed distance `d = n·(p − p₀)`, and for penetrating points
+(`d < 0`) folds the VBD/XPBD quadratic-penalty force `F = k(−d)·n` into the
+forced-DEL residual via the reduced-coordinate glue `variationalContactPointForce`
+(`J(p)ᵀF`). This realizes the seam's `evaluate(trial) → {d, ∂d/∂q}` for analytic
+ground geometry and the (world contact point) → (link, body-frame point) → `Sᵢᵀ`
+generalized-force mapping that gate 1 named as the net-new adapter work.
+
+Verified (`VariationalGroundContact.*`, 4 tests):
+
+- **Configurable-plane rest** — a slider dropped onto a plane at a non-zero
+  offset settles at `offset − mg/k` (not the spike's `−mg/k`), confirming a real
+  configurable query and the bounded `mg/k` residual penetration.
+- **Rotational Jacobian / anti-tunneling** — a revolute chain's tip contact point
+  is held near the plane where the contact-free swing dips far below, exercising
+  the rotational point Jacobian `R(J_linear − [p]J_angular)` a slider cannot.
+- **Inertness** — zero stiffness reproduces the no-contact trajectory; degenerate
+  configs (zero normal / negative stiffness) throw at construction.
+
+Bounded curvature stays inside the gate-2 `k ≲ 1e4·mg` envelope; the default-off
+path is still byte-for-byte identical (the existing spike identity test).
+
+### Still future (the rest of Phase C)
+
+- **C1 friction** — the lagged smoothed IPC friction _force law_ (the tangent
+  geometry exists; the force law does not).
+- **C3 augmented-Lagrangian** bounded forces for hard, drift-free non-penetration
+  - Coulomb friction without a global solve.
+- **Link-vs-link contact** — the full gate-1 workstream (persistent broad phase +
+  incremental narrow phase reusing the IPC sweep/primitive-distance stack). The
+  C2 rung covers link-point-vs-analytic-ground only; arbitrary link-geometry
+  pairs still need the candidate-generation + warm-started query object, which
+  remains owned by / coordinated with PLAN-081.
+- A **contact GUI demo** scene once friction lands.

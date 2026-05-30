@@ -2230,3 +2230,199 @@ TEST(VariationalContactSpike, EmptyHookReproducesNoContactTrajectoryExactly)
     EXPECT_EQ(noHook[i], emptyHook[i]) << "trajectory diverged at sample " << i;
   }
 }
+
+// ===========================================================================
+// PLAN-082 Phase C rung C2 -- compliant ground contact via a real, configurable
+// query. makeVariationalGroundContactHook promotes the gate-2 spike's
+// hard-coded z = 0 plane into an analytic half-space + body-fixed contact
+// points (the real distance/gradient query for the link-point-vs-ground case),
+// with the VBD/XPBD quadratic-penalty force law F = k max(0,-d) n.
+// ===========================================================================
+
+// A prismatic slider dropped onto a plane at a NON-zero offset settles at
+// (offset - mg/k): proves the plane is a real configurable query (not the
+// hard-coded z = 0) and the compliant penalty leaves the bounded mg/k residual.
+TEST(VariationalGroundContact, CompliantSliderRestsBelowConfigurablePlane)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  const double planeZ = 0.1; // a plane well away from the hard-coded z = 0.
+  const double k = 1.0e3 * mass * g; // inside the k <= 1e4 mg envelope.
+  const int steps = 3000;
+
+  sx::World world;
+  auto carriage = addVerticalSlider(world, mass);
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  carriage.getParentJoint().setPosition(
+      Eigen::VectorXd::Constant(1, planeZ + 0.05)); // start above the plane.
+  world.updateKinematics();
+
+  const auto& structure = structureOf(world);
+  sxc::VariationalGroundContact contact;
+  contact.planeNormal = Eigen::Vector3d::UnitZ();
+  contact.planePoint = Eigen::Vector3d(0.0, 0.0, planeZ);
+  contact.stiffness = k;
+  contact.points.push_back(
+      {structure.links.size() - 1,
+       Eigen::Vector3d::Zero()}); // carriage origin.
+  const auto hook = sxc::makeVariationalGroundContactHook(contact);
+
+  auto& registry = world.getRegistry();
+  const Eigen::Vector3d gravity = world.getGravity();
+  sxc::MultibodyVariationalState state;
+  for (int step = 0; step < steps; ++step) {
+    const auto report = sxc::integrateMultibodyVariational(
+        registry, structure, gravity, dt, state, 100, 1e-10, {}, 5, hook);
+    ASSERT_TRUE(report.converged) << "step " << step;
+    ASSERT_TRUE(std::isfinite(report.residualNorm)) << "step " << step;
+  }
+
+  const double finalZ = carriage.getParentJoint().getPosition()[0];
+  const double analytic = mass * g / k; // expected mg/k penetration.
+  // Settles just below the configurable plane (z ~ planeZ - mg/k); a still-
+  // hard-coded z = 0 query would instead settle near -mg/k, far below.
+  EXPECT_NEAR(finalZ, planeZ - analytic, 2.0 * analytic + 1.0e-4);
+  EXPECT_GT(finalZ, planeZ - 0.02);
+}
+
+// A revolute chain whose last link carries a tip contact point: a ground plane
+// below the chain stops the tip from swinging through it. Compared against the
+// contact-free swing (which dips far below), this exercises the *rotational*
+// contact point Jacobian R (J_linear - [p] J_angular) a slider cannot.
+TEST(VariationalGroundContact, CompliantContactStopsRevoluteChainTunneling)
+{
+  const double dt = 1.0e-3;
+  const int steps = 1500;
+  const double linkLen = 0.3;
+  const double planeZ = -0.05;
+  const double k = 5.0e3;
+
+  struct ChainRun
+  {
+    double minTipZ = 1.0e9;
+    bool finite = true;
+    bool converged = true;
+  };
+
+  const auto runChain = [&](bool withContact) {
+    sx::World world;
+    auto robot = world.addMultibody("chain");
+    auto parent = robot.addLink("base");
+    sx::Link tip = parent;
+    for (int i = 0; i < 2; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(i == 0 ? 0.0 : linkLen, 0.0, 0.0);
+      sx::JointSpec spec;
+      spec.name = "j" + std::to_string(i);
+      spec.type = sx::JointType::Revolute;
+      spec.axis = Eigen::Vector3d::UnitY();
+      spec.transformFromParent = offset;
+      tip = robot.addLink("l" + std::to_string(i), parent, spec);
+      tip.setMass(1.0);
+      tip.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+      parent = tip;
+    }
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    world.updateKinematics(); // start horizontal (joints at 0); gravity swings.
+
+    const auto& structure = structureOf(world);
+    const std::size_t tipLink = structure.links.size() - 1;
+    const Eigen::Vector3d tipLocal(linkLen, 0.0, 0.0); // far end of last link.
+
+    sxc::VariationalContactHook hook;
+    if (withContact) {
+      sxc::VariationalGroundContact contact;
+      contact.planeNormal = Eigen::Vector3d::UnitZ();
+      contact.planePoint = Eigen::Vector3d(0.0, 0.0, planeZ);
+      contact.stiffness = k;
+      contact.points.push_back({tipLink, tipLocal});
+      hook = sxc::makeVariationalGroundContactHook(contact);
+    }
+
+    auto& registry = world.getRegistry();
+    const Eigen::Vector3d gravity = world.getGravity();
+    sxc::MultibodyVariationalState state;
+    ChainRun run;
+    for (int step = 0; step < steps; ++step) {
+      const auto report = sxc::integrateMultibodyVariational(
+          registry, structure, gravity, dt, state, 100, 1e-10, {}, 5, hook);
+      run.converged = run.converged && report.converged;
+      run.finite = run.finite && std::isfinite(report.residualNorm);
+      world.updateKinematics();
+      const double tipZ = (tip.getWorldTransform() * tipLocal).z();
+      run.minTipZ = std::min(run.minTipZ, tipZ);
+    }
+    return run;
+  };
+
+  const ChainRun freeSwing = runChain(false);
+  const ChainRun held = runChain(true);
+
+  EXPECT_TRUE(freeSwing.finite);
+  EXPECT_TRUE(freeSwing.converged);
+  EXPECT_TRUE(held.finite);
+  EXPECT_TRUE(held.converged);
+  // Contact-free, the tip swings well below the plane.
+  EXPECT_LT(freeSwing.minTipZ, planeZ - 0.1);
+  // With contact the tip is stopped near the plane (a bounded penalty
+  // penetration), nowhere near the free swing.
+  EXPECT_GT(held.minTipZ, planeZ - 0.05);
+  EXPECT_GT(held.minTipZ, freeSwing.minTipZ + 0.1);
+}
+
+// The factory's no-op path (zero stiffness) leaves the trajectory identical to
+// the no-contact integrator (the compliant force is exactly zero, folded as
+// residual -= dt * 0).
+TEST(VariationalGroundContact, ZeroStiffnessMatchesNoContact)
+{
+  const auto run = [](bool withZeroHook) {
+    sx::World world;
+    auto carriage = addVerticalSlider(world, 1.0);
+    world.setTimeStep(1.0e-3);
+    world.enterSimulationMode();
+    carriage.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.5));
+    world.updateKinematics();
+
+    const auto& structure = structureOf(world);
+    sxc::VariationalContactHook hook;
+    if (withZeroHook) {
+      sxc::VariationalGroundContact contact; // stiffness defaults to 0.
+      contact.points.push_back(
+          {structure.links.size() - 1, Eigen::Vector3d::Zero()});
+      hook = sxc::makeVariationalGroundContactHook(contact);
+    }
+    auto& registry = world.getRegistry();
+    const Eigen::Vector3d gravity = world.getGravity();
+    sxc::MultibodyVariationalState state;
+    std::vector<double> trajectory;
+    for (int step = 0; step < 100; ++step) {
+      sxc::integrateMultibodyVariational(
+          registry, structure, gravity, 1.0e-3, state, 100, 1e-10, {}, 5, hook);
+      trajectory.push_back(carriage.getParentJoint().getPosition()[0]);
+    }
+    return trajectory;
+  };
+  const std::vector<double> noContact = run(false);
+  const std::vector<double> zeroStiff = run(true);
+  ASSERT_EQ(noContact.size(), zeroStiff.size());
+  for (std::size_t i = 0; i < noContact.size(); ++i) {
+    EXPECT_NEAR(noContact[i], zeroStiff[i], 1.0e-12) << "diverged at " << i;
+  }
+}
+
+// Degenerate configs are rejected at hook construction (no silent bad contact).
+TEST(VariationalGroundContact, RejectsDegenerateConfig)
+{
+  sxc::VariationalGroundContact zeroNormal;
+  zeroNormal.planeNormal = Eigen::Vector3d::Zero();
+  zeroNormal.stiffness = 1.0;
+  EXPECT_ANY_THROW((void)sxc::makeVariationalGroundContactHook(zeroNormal));
+
+  sxc::VariationalGroundContact negativeStiffness;
+  negativeStiffness.stiffness = -1.0;
+  EXPECT_ANY_THROW(
+      (void)sxc::makeVariationalGroundContactHook(negativeStiffness));
+}
