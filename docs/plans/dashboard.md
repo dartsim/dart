@@ -320,17 +320,27 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Next
 - Dimension: Easy start
-- Next step: v1 is implemented (engine `dartsim/engine` unit-tested by
-  `UNIT_dartsim_engine`; `dartsim/ui` editor builds and renders the
-  experimental scene headless). Pursue the remaining follow-ups: viewport
-  pick-to-tree selection sync, and co-evolution to adopt experimental
-  shape/loader APIs (replace editor-side shape descriptors) per PLAN-050.
+- Next step: v1 plus the post-MVP **workbench completion** are landed — every
+  panel/menu drives the engine through tested `dartsim/ui/*_actions` seams
+  (project, history, outliner, inspector, palette, relationship, simulation,
+  console, watch, viewport), selection syncs across viewport/tree/inspector, and
+  the editor covers create/edit/relationship/simulation/record-replay/watch and
+  a four-view layout. The `dartsim_workbench_completion` dev task is retired into
+  the design doc; its remaining work is experimental-API-gated and tracked there:
+  runtime sensor output panes + joint render layers/visibility filters, richer
+  relationship inspectors/grouping, a Scene Tree context-menu popup affordance,
+  extracting the `editor.cpp` project file-dialog flow into its own tested seam,
+  and adopting experimental shape/loader APIs (replace editor-side shape
+  descriptors) per PLAN-050.
 - Gate: The headless engine is covered by command/undo, object, selection,
   name-uniqueness, and project-round-trip tests with zero GUI/renderer includes;
-  the editor loop (design → run → record → replay) works on the experimental
-  World only; the renderer stays backend-hidden (PLAN-060); and the default
-  `dartsim` headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a
-  non-blank editor frame while legacy `--scene` smokes keep contrast.
+  the filtered `dartsim/engine/*` + `dartsim/ui/*_actions` surface holds ≥95%
+  line coverage (`pixi run coverage-report-dartsim`); the editor loop (design →
+  run → record → replay) works on the experimental World only; the renderer
+  stays backend-hidden (PLAN-060), enforced for `dartsim/engine` and
+  `dartsim/ui` by `scripts/check_api_boundaries.py`; and the default `dartsim`
+  headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a non-blank
+  editor frame while legacy `--scene` smokes keep contrast.
 
 ### PLAN-102: Demos App
 

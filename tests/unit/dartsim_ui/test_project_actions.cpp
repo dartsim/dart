@@ -387,6 +387,9 @@ TEST(DartsimProjectActions, OpenReplacementWithDialogReportsCancelAndFailure)
   EXPECT_FALSE(canceled.promptRequired);
   EXPECT_FALSE(canceled.result.ok);
   EXPECT_EQ(canceled.result.message, "Open canceled");
+  // Cancellation is not an error: the menu reports it but must not fall back to
+  // the in-app modal.
+  EXPECT_EQ(canceled.result.followUp, ui::ProjectActionFollowUp::None);
 
   const auto failed = ui::requestOpenProjectReplacementWithDialog(
       engine, [](const ui::ProjectFileDialogRequest&) {
@@ -396,6 +399,8 @@ TEST(DartsimProjectActions, OpenReplacementWithDialogReportsCancelAndFailure)
   EXPECT_FALSE(failed.promptRequired);
   EXPECT_FALSE(failed.result.ok);
   EXPECT_EQ(failed.result.message, "Open dialog failed: backend unavailable");
+  // A failed native dialog should fall back to the in-app modal.
+  EXPECT_EQ(failed.result.followUp, ui::ProjectActionFollowUp::ModalFallback);
 
   const auto failedWithoutDetail = ui::requestOpenProjectReplacementWithDialog(
       engine, [](const ui::ProjectFileDialogRequest&) {
@@ -405,6 +410,9 @@ TEST(DartsimProjectActions, OpenReplacementWithDialogReportsCancelAndFailure)
   EXPECT_FALSE(failedWithoutDetail.promptRequired);
   EXPECT_FALSE(failedWithoutDetail.result.ok);
   EXPECT_EQ(failedWithoutDetail.result.message, "Open dialog failed");
+  EXPECT_EQ(
+      failedWithoutDetail.result.followUp,
+      ui::ProjectActionFollowUp::ModalFallback);
 
   const auto empty = ui::requestOpenProjectReplacementWithDialog(
       engine, [](const ui::ProjectFileDialogRequest&) {
@@ -414,11 +422,84 @@ TEST(DartsimProjectActions, OpenReplacementWithDialogReportsCancelAndFailure)
   EXPECT_FALSE(empty.promptRequired);
   EXPECT_FALSE(empty.result.ok);
   EXPECT_EQ(empty.result.message, "Open canceled");
+  EXPECT_EQ(empty.result.followUp, ui::ProjectActionFollowUp::None);
 
-  EXPECT_FALSE(
-      ui::requestOpenProjectReplacementWithDialog(
-          engine, ui::ProjectFileDialog{})
-          .result.ok);
+  // An unavailable dialog (no callable) must fall back to the in-app modal —
+  // this path silently failed to fall back before the followUp enum landed.
+  const auto unavailable = ui::requestOpenProjectReplacementWithDialog(
+      engine, ui::ProjectFileDialog{});
+  EXPECT_FALSE(unavailable.result.ok);
+  EXPECT_EQ(unavailable.result.message, "Open dialog unavailable");
+  EXPECT_EQ(
+      unavailable.result.followUp, ui::ProjectActionFollowUp::ModalFallback);
+
+  // A selected path that then fails to load (here, a path that does not exist)
+  // falls back to the modal too, just like a dialog failure.
+  const std::filesystem::path missing
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_dialog_selected_missing_open.dartsim";
+  std::filesystem::remove(missing);
+  const auto selectedButBadLoad = ui::requestOpenProjectReplacementWithDialog(
+      engine, [&](const ui::ProjectFileDialogRequest&) {
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Selected, missing.string(), {}};
+      });
+  EXPECT_FALSE(selectedButBadLoad.promptRequired);
+  EXPECT_FALSE(selectedButBadLoad.result.ok);
+  EXPECT_EQ(
+      selectedButBadLoad.result.followUp,
+      ui::ProjectActionFollowUp::ModalFallback);
+}
+
+TEST(DartsimProjectActions, SaveWithDialogReportsFollowUpForFailures)
+{
+  SimEngine engine;
+
+  // Cancellation reports but does not fall back.
+  const auto canceled = ui::saveProjectWithDialog(
+      engine,
+      [](const ui::ProjectFileDialogRequest&) {
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Canceled, {}, {}};
+      },
+      true);
+  EXPECT_FALSE(canceled.ok);
+  EXPECT_EQ(canceled.message, "Save canceled");
+  EXPECT_EQ(canceled.followUp, ui::ProjectActionFollowUp::None);
+
+  // A failed dialog falls back to the in-app modal.
+  const auto failed = ui::saveProjectWithDialog(
+      engine,
+      [](const ui::ProjectFileDialogRequest&) {
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Failed, {}, "backend unavailable"};
+      },
+      true);
+  EXPECT_FALSE(failed.ok);
+  EXPECT_EQ(failed.followUp, ui::ProjectActionFollowUp::ModalFallback);
+
+  // An unavailable dialog falls back too (previously a silent no-fallback).
+  const auto unavailable
+      = ui::saveProjectWithDialog(engine, ui::ProjectFileDialog{}, true);
+  EXPECT_FALSE(unavailable.ok);
+  EXPECT_EQ(unavailable.message, "Save dialog unavailable");
+  EXPECT_EQ(unavailable.followUp, ui::ProjectActionFollowUp::ModalFallback);
+
+  // A selected path that then fails to save (here, a path under a directory
+  // that does not exist) falls back to the modal too.
+  const std::filesystem::path badDir = std::filesystem::temp_directory_path()
+                                       / "dartsim_ui_nonexistent_save_dir_xyz"
+                                       / "x.dartsim";
+  const auto selectedButBadSave = ui::saveProjectWithDialog(
+      engine,
+      [&](const ui::ProjectFileDialogRequest&) {
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Selected, badDir.string(), {}};
+      },
+      true);
+  EXPECT_FALSE(selectedButBadSave.ok);
+  EXPECT_EQ(
+      selectedButBadSave.followUp, ui::ProjectActionFollowUp::ModalFallback);
 }
 
 TEST(DartsimProjectActions, OpenAcceptsExtensionlessProjectPath)
