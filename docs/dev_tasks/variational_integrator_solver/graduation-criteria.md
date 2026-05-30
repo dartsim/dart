@@ -37,14 +37,17 @@ rigor). `[x]` = met today, `[ ]` = open.
       the manifold preconditioner to very long floating chains stays a
       north-star item, but the supported envelope is now stated, not implicit.)
 - [x] **Contact & friction** available, with the supported envelope stated.
-      Phase C landed the compliant/AL rungs — **C1** lagged Coulomb friction,
-      **C2** compliant ground contact, **C3** augmented-Lagrangian drift-free
-      contact (`makeVariationalGroundContactHook` /
-      `VariationalGroundContactSolver`), reachable from `World::step()` via
-      `Multibody::setGroundContact`, plus a **link-vs-link** sphere-sphere slice
-      (`makeVariationalLinkSphereContactHook`). Supported contact envelope:
-      link-point-vs-analytic-ground and sphere-sphere link pairs, `k ≲ 1e4·mg`
-      (see [`supported-envelope.md`](supported-envelope.md)); **arbitrary link
+      Phase C landed the compliant/AL rungs. **C1** lagged Coulomb friction and
+      **C2** compliant ground contact are reachable from `World::step()` via
+      `Multibody::setGroundContact` (folded as `makeVariationalGroundContactHook`).
+      **C3** augmented-Lagrangian drift-free centering is available through the
+      explicit `VariationalGroundContactSolver` API — the caller owns the
+      dual-update cadence, which an undamped symplectic step needs for stability,
+      so it is intentionally not baked into the silent default path. A
+      **link-vs-link** sphere-sphere slice (`makeVariationalLinkSphereContactHook`)
+      also landed. Supported contact envelope: link-point-vs-analytic-ground and
+      sphere-sphere link pairs, `k ≲ 1e4·mg` (see
+      [`supported-envelope.md`](supported-envelope.md)); **arbitrary link
       geometry** (the rigid-IPC-stack adapter) is a stated first-class
       limitation / future workstream, not a silent gap.
 

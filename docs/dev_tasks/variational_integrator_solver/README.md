@@ -32,21 +32,23 @@ and verified **today**; unchecked items are the [gaps below](#gaps-from-current-
 - [ ] **Contact & friction** — the deferred Phase C: compliant/penalty →
       augmented-Lagrangian bounded force → (optional) IPC barrier, all as forces
       in the forced DEL residual so symplectic structure + O(n) survive.
-      **C1-C3 contact have landed** — compliant ground contact, lagged
-      regularized-Coulomb friction, and augmented-Lagrangian drift-free contact
-      (`makeVariationalGroundContactHook` / `VariationalGroundContactSolver`), for
-      the link-point-vs-analytic-ground case; link-vs-link contact remains
+      **C1/C2 are reachable from `World::step()`** (`Multibody::setGroundContact`
+      → `makeVariationalGroundContactHook`: lagged regularized-Coulomb friction +
+      compliant ground contact); **C3** augmented-Lagrangian drift-free centering
+      is available through the explicit `VariationalGroundContactSolver` API. A
+      **link-vs-link** sphere-sphere slice (`makeVariationalLinkSphereContactHook`)
+      landed; **arbitrary link geometry** (the rigid-IPC-stack adapter) remains
       _(the largest remaining gap)_.
 - [x] **Scales to extreme chains** — the exact recursive-Jacobian preconditioner
       (paper Appendix) lands ~3 iterations independent of length, verified to 128
       links; supported bounds in [`supported-envelope.md`](supported-envelope.md).
 - [x] **Manifold-aware convergence acceleration** — tangent-space Anderson for
       spherical/floating chains (Euclidean preconditioner + manifold Anderson).
-- [~] **Graduation** from `experimental` to a supported solver — all
-  [graduation criteria](graduation-criteria.md) are now met/declared (ready
-  to propose); the `experimental → supported` flip needs the maintainer's
-  `PLAN-` entry + adversarial review. Variable `Δt`, GPU/batched execution are
-  explicit non-blockers (stretch).
+- [ ] **Graduation** from `experimental` to a supported solver — all
+      [graduation criteria](graduation-criteria.md) are now met/declared (ready
+      to propose); the `experimental → supported` flip needs the maintainer's
+      `PLAN-` entry + adversarial review. Variable `Δt`, GPU/batched execution are
+      explicit non-blockers (stretch).
 
 ## Current Status
 
