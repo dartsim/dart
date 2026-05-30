@@ -129,9 +129,11 @@ matches the default solver. Remaining work, in order:
    (`vbdRolloutTetMeshCuda`), and a single-precision (mixed-precision)
    mass-spring rollout (templated kernels + `useSinglePrecision`, ~2.7-6x faster
    on the FP64-limited Ada GPU) now land too, all verified on the local RTX 5000
-   Ada. Next: the RTX-4090 same-GPU reproduction plan in the dev-task README
-   (build on a 4090, run paper scenes + Gaia, compare to Table 1), and a
-   single-precision tet rollout.
+   Ada. A single-precision (mixed-precision) tet rollout now lands too (the tet
+   device path is templated on the scalar type; ~9-13x faster than double on the
+   FP64-limited Ada GPU). Next: the RTX-4090 same-GPU reproduction plan in the
+   dev-task README (build on a 4090, run paper scenes + Gaia, compare to
+   Table 1).
 5. Phase 10: reproduce the paper scenes as DART examples/tests/benchmarks with
    profiling JSON and headless Filament visual evidence; the TinyVBD tilted
    strand (20 verts, stiffness 1e8, mass ratio 1:1000) is the first

@@ -192,6 +192,9 @@ struct VbdCudaTetRolloutProblem
   /// Capture one step into a CUDA graph and replay it for every step (see
   /// VbdCudaRolloutProblem::useCudaGraph).
   bool useCudaGraph = false;
+  /// Run the rollout in single precision (mixed precision); see
+  /// VbdCudaRolloutProblem::useSinglePrecision.
+  bool useSinglePrecision = false;
 };
 
 /// Run a device-resident tetrahedral VBD rollout. Uploads once, runs the full

@@ -1195,6 +1195,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     Ada (whose FP64 throughput is 1/64 of FP32) the float path is markedly
     faster — about 2.7x at 16k vertices and roughly 6x at 4k vertices in the
     rollout benchmark — at float precision.
+  - Extended single precision to the tetrahedral CUDA rollout: the tet device
+    path (the `DVec3` vector type, the Stable Neo-Hookean accumulator, and the
+    tet color-sweep kernel) is templated on the scalar type, and
+    `useSinglePrecision` runs `vbdRolloutTetMeshCuda` in float. A device-skipping
+    test confirms the float tet rollout tracks the double rollout to float
+    accuracy; on the RTX 5000 Ada the float tet rollout is about 9-13x faster
+    (the heavy per-vertex Neo-Hookean FP64 math benefits even more than the
+    mass-spring path), at float precision.
   - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
     20-vertex tilted strand with structural and skip springs, 100 iterations per
     step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step

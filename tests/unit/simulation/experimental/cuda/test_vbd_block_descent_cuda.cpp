@@ -759,3 +759,36 @@ TEST(CudaVbdBlockDescent, MixedPrecisionRolloutMatchesDouble)
         << "component " << i;
   }
 }
+
+//==============================================================================
+// The single-precision tetrahedral rollout tracks the double tet rollout to
+// float accuracy.
+TEST(CudaVbdBlockDescent, MixedPrecisionTetRolloutMatchesDouble)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const TetScene scene = makeTetBar(4);
+  const std::size_t n = scene.positions.size();
+  const auto coloring = vbd::colorTetMesh(n, scene.tets);
+  const auto adjacency = vbd::TetAdjacency::build(n, scene.tets);
+  const Vec3 gravity(0.0, -9.81, 0.0);
+  constexpr std::size_t steps = 20;
+  constexpr std::size_t iterations = 40;
+
+  cuda::VbdCudaTetRolloutProblem doubleProblem = makeTetRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, false);
+  cuda::vbdRolloutTetMeshCuda(doubleProblem);
+
+  cuda::VbdCudaTetRolloutProblem floatProblem = makeTetRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, false);
+  floatProblem.useSinglePrecision = true;
+  cuda::vbdRolloutTetMeshCuda(floatProblem);
+
+  ASSERT_EQ(doubleProblem.positions.size(), floatProblem.positions.size());
+  for (std::size_t i = 0; i < doubleProblem.positions.size(); ++i) {
+    EXPECT_NEAR(doubleProblem.positions[i], floatProblem.positions[i], 1e-2)
+        << "component " << i;
+  }
+}

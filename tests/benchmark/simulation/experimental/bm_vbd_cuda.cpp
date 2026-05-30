@@ -555,4 +555,37 @@ BENCHMARK(BM_VbdCudaTetRollout)
     ->Args({512, 0})
     ->Args({512, 1});
 
+//==============================================================================
+// Tetrahedral rollout in double vs single (mixed) precision.
+static void BM_VbdCudaTetMixedRollout(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("no CUDA device available");
+    return;
+  }
+  const int cubes = static_cast<int>(state.range(0));
+  const bool single = state.range(1) != 0;
+  const std::size_t steps = 50;
+  const TetBar scene = makeTetBar(cubes);
+  cuda::VbdCudaTetRolloutProblem seed
+      = makeTetRolloutProblem(scene, 20, steps, false);
+  seed.useSinglePrecision = single;
+  for (auto _ : state) {
+    state.PauseTiming();
+    cuda::VbdCudaTetRolloutProblem problem = seed;
+    state.ResumeTiming();
+    cuda::vbdRolloutTetMeshCuda(problem);
+    benchmark::DoNotOptimize(problem.positions);
+  }
+  state.counters["vertices"] = static_cast<double>(scene.positions.size());
+  state.counters["tets"] = static_cast<double>(scene.tets.size());
+  state.counters["steps"] = static_cast<double>(steps);
+  state.counters["single"] = single ? 1.0 : 0.0;
+}
+BENCHMARK(BM_VbdCudaTetMixedRollout)
+    ->Args({128, 0})
+    ->Args({128, 1})
+    ->Args({512, 0})
+    ->Args({512, 1});
+
 BENCHMARK_MAIN();
