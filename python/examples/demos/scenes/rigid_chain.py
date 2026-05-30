@@ -13,6 +13,7 @@ import math
 import dartpy as dart
 
 from ..runner import PythonDemoScene, SceneSetup
+from ._z_up import reorient_to_z_up
 
 _CHAIN_URI = "dart://sample/skel/chain.skel"
 _CHAIN_NAME = "rigid_chain"
@@ -23,7 +24,6 @@ def build() -> SceneSetup:
     if world is None:
         raise RuntimeError(f"Failed to load {_CHAIN_URI}")
 
-    world.set_gravity([0.0, -9.81, 0.0])
     world.set_time_step(1.0 / 2000.0)
 
     chain = world.get_skeleton(0)
@@ -34,6 +34,9 @@ def build() -> SceneSetup:
     num_dofs = chain.get_num_dofs()
     initial_pose = [0.4 * math.sin(0.7 * i) for i in range(num_dofs)]
     chain.set_positions(initial_pose)
+
+    # chain.skel is authored Y-up; reorient to the canonical Z-up convention.
+    reorient_to_z_up(world)
 
     return SceneSetup(world=world, info={"golden_skeletons": [_CHAIN_NAME]})
 
