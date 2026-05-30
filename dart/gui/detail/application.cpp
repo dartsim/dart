@@ -859,16 +859,17 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
   if (!initialId.empty()) {
     index = ::demoSceneIndex(scenes, initialId, -1);
     if (index < 0) {
-      // Don't silently fall back to the first scene: an unknown id is almost
-      // always a typo, and a silent fallback makes headless screenshots capture
-      // the wrong scene.
+      // Don't fall back to the first scene: an unknown id is almost always a
+      // typo, and a silent fallback makes headless screenshot/cycle runs render
+      // (and exit 0 on) the wrong scene -- the exact case this guard prevents.
+      // Fail loudly with a nonzero status instead.
       std::cerr << "runDemos: unknown --scene '" << initialId
                 << "'. Available scenes:";
       for (const auto& scene : scenes) {
         std::cerr << ' ' << scene.id;
       }
       std::cerr << '\n';
-      index = 0;
+      return 1;
     }
   }
 
