@@ -113,15 +113,36 @@ contacts** — beating the paper's contact-scene ratios — and the analytic tim
   Jacobians) and drives the cart to a target by gradient descent — loss reduced
   ~630× monotonically. Plus the contact-free throw-to-target and mass-recovery
   system-ID (`DiffOptimization.{ThrowReachesTarget,MassRecovered}ByGradientDescent`).
-- **VII-C** complementarity-aware saddle escape: the mechanism is covered by
-  `DiffContactGradientModes.ComplementarityAwareUnsaddlesClampingGradient` and
-  `PreContactSurrogateAddsTowardContactGradient`.
-- **VII-D** articulated multibody-link contact trajectory optimization (Atlas
-  jump, jump-worm): requires **articulated multibody-link contact gradients**,
-  which currently throw `NotImplementedException` (free-body contacts only). This
-  is the remaining documented follow-up to reach the literal Atlas headline; the
-  analytic dynamics derivatives (A) and scalable contact gradient (B) above are
-  the prerequisites and are now in place.
+- **VII-C** complementarity-aware drone lift-off / saddle escape (Fig 8),
+  end-to-end: `DiffPaperExperiments.DroneLiftOffComplementarityAwareEscapesClampingSaddle`
+  optimizes a free rigid-body drone's vertical thrust to reach a target height.
+  With the naive (`Analytic`) gradient the ground contact is clamping
+  (`∂q̇'/∂τ = 0`), so SGD stalls and the drone stays grounded (thrust ≈ 0, height
+  ≈ 0.2, loss 0.845); the `ComplementarityAware` gradient escapes — thrust grows
+  past gravity, the drone lifts off and climbs to the target (height ≈ 1.38 of a
+  1.5 target, loss ≈ 0.007). The per-step mechanism is additionally unit-tested
+  by `DiffContactGradientModes.ComplementarityAwareUnsaddlesClampingGradient`.
+
+## Remaining paper experiments — honest feasibility
+
+A scoped investigation graded the experiments not yet reproduced:
+
+- **VII-D Catapult** (3-DOF arm batting a free ball) and the fixed-base
+  **Jump-Worm / Half-Cheetah** Jacobian tables (Table II/III): require
+  **articulated multibody-link contact gradients**, which currently throw
+  `NotImplementedException` — the contact gradient supports free-body contacts
+  only (the forward step already resolves articulated-link contacts; only the
+  gradient path is missing). This is a real, high-effort feature; the analytic
+  dynamics derivatives and the scalable contact gradient above are its
+  prerequisites and are in place.
+- **Atlas Jacobian table**: additionally needs mesh/capsule colliders and a
+  URDF loader the experimental World does not have — reproducible only as a
+  box-approximated, degraded model.
+- **Atlas jump-from-crouch and Jump-Worm "jump as high as possible"**: require
+  **floating-base articulated dynamics** (and its gradient); the experimental
+  forward dynamics is **fixed-base only** (`multibody_dynamics.cpp`), so any
+  body that leaves the ground is out of scope without a multi-quarter
+  floating-base + collision-geometry investment.
 
 ## Reproducing
 

@@ -16,6 +16,7 @@ from .scenes.cartpole_gym_env import SCENE as CARTPOLE_GYM_ENV
 from .scenes.cartpole_mpc import SCENE as CARTPOLE_MPC
 from .scenes.coupler_constraint import SCENE as COUPLER_CONSTRAINT
 from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
+from .scenes.diff_drone_liftoff import SCENE as DIFF_DRONE_LIFTOFF
 from .scenes.diff_throw_to_target import SCENE as DIFF_THROW_TO_TARGET
 from .scenes.empty import SCENE as EMPTY
 from .scenes.free_joint_cases import SCENE as FREE_JOINT_CASES
@@ -94,6 +95,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         # still builds and renders them.
         DIFF_THROW_TO_TARGET,
         DIFF_CARTPOLE_TRAJOPT,
+        DIFF_DRONE_LIFTOFF,
         # IPC Deformable (sx) — its own dedicated category so the IPC
         # deformable-solver showcases group together rather than mixing into
         # the general experimental scenes above.
