@@ -20,10 +20,10 @@ from .scenes.free_joint_cases import SCENE as FREE_JOINT_CASES
 from .scenes.hardcoded_design import SCENE as HARDCODED_DESIGN
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
+from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
 from .scenes.ipc_deformable_net import SCENE as IPC_DEFORMABLE_NET
-from .scenes.ipc_deformable_scripted_dirichlet import (
-    SCENE as IPC_DEFORMABLE_SCRIPTED,
-)
+from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SCRIPTED
+from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
 from .scenes.kr5_arm import SCENE as KR5_ARM
 from .scenes.legged_balance import SCENE as LEGGED_BALANCE
 from .scenes.mimic_pendulums import SCENE as MIMIC_PENDULUMS
@@ -85,8 +85,12 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_ARTICULATED,
         SX_FLOATING_BASE,
         SX_CONTACT,
-        # Experimental IPC deformable solver (sx::World deformable bodies).
+        # IPC Deformable (sx) — its own dedicated category so the IPC
+        # deformable-solver showcases group together rather than mixing into
+        # the general experimental scenes above.
         IPC_DEFORMABLE_NET,
         IPC_DEFORMABLE_DRAPE,
+        IPC_DEFORMABLE_TRAMPOLINE,
+        IPC_DEFORMABLE_FRICTION_SLIDE,
         IPC_DEFORMABLE_SCRIPTED,
     ]

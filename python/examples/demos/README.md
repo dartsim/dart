@@ -36,23 +36,36 @@ The runner mirrors C++ `dart-demos` to keep the cross-language UX consistent:
 headless screenshot path; today it writes a deterministic JSON state snapshot
 so the contract works end-to-end.
 
-## Experimental IPC deformable scenes
+## IPC Deformable (sx) scenes
 
-The `Experimental` category includes deformable-body scenes driven by the
-`dartpy.simulation_experimental` IPC solver (point-mass/spring with IPC-style
-clamped-log barriers, projected Newton, and conservative CCD):
+The dedicated **`IPC Deformable (sx)`** category groups the deformable-body
+scenes driven by the `dartpy.simulation_experimental` IPC solver
+(point-mass/spring with IPC-style clamped-log barriers, sparse projected Newton,
+lagged smoothed-Coulomb friction, and conservative CCD). They live in their own
+category so the IPC showcases stay together instead of mixing into the general
+`Experimental` (sx) scenes:
 
-| Scene id                            | Shows                                             |
-| ----------------------------------- | ------------------------------------------------- |
-| `ipc_deformable_net`                | A pinned spring net sagging/swaying under gravity |
-| `ipc_deformable_drape`              | A mat draping over a step onto a ground barrier   |
-| `ipc_deformable_scripted_dirichlet` | A banner billowing under a scripted Dirichlet BC  |
+| Scene id                            | Shows                                                 | IPC capability exercised                  |
+| ----------------------------------- | ----------------------------------------------------- | ----------------------------------------- |
+| `ipc_deformable_net`                | A pinned spring net sagging/swaying under gravity     | Projected-Newton elastodynamics           |
+| `ipc_deformable_drape`              | A mat draping over a step onto a ground barrier       | Ground + self-contact clamped-log barrier |
+| `ipc_deformable_trampoline`         | A corner-pinned membrane sagging and rebounding       | Taut-membrane projected-Newton dynamics   |
+| `ipc_deformable_friction_slide`     | A launched mat skidding to rest on a frictional floor | Lagged smoothed-Coulomb ground friction   |
+| `ipc_deformable_scripted_dirichlet` | A banner billowing under a scripted Dirichlet BC      | Scripted Dirichlet boundary conditions    |
 
 These are DART-native point-mass/spring showcases, **not** faithful IPC
-paper-figure reproductions (no FEM/codimensional elasticity). They share
-`_ipc_deformable_bridge.py`, which builds the grid topology and mirrors each
-deformable onto the render world as per-node spheres plus a spring wireframe
-(the dynamic surface-mesh render path is not yet exposed through
+paper-figure reproductions: the solver is mass-spring, so the _contact, barrier,
+friction, and projected-Newton machinery_ is genuine IPC, but the _elasticity_
+is not FEM/codimensional. The catalog of upstream paper scenes lives at
+`docs/plans/081-deformable-implicit-barrier-solver/ipc_scene_corpus_manifest.json`;
+faithful corpus reproduction stays `planned` (it needs vendored assets and an
+FEM/codimensional material model), so these scenes evoke the paper's _themes_
+(draping, self-contact, friction, scripted boundaries) rather than reproducing
+its figures.
+
+The scenes share `_ipc_deformable_bridge.py`, which builds the grid topology and
+mirrors each deformable onto the render world as per-node spheres plus a spring
+wireframe (the dynamic surface-mesh render path is not yet exposed through
 `dartpy.gui.run_demos`). Add another deformable scene by building its
 `DeformableBodyOptions` with `build_grid_options(...)` and rendering it through
 `IpcDeformableBridge`.

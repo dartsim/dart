@@ -74,7 +74,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_net",
     title="Deformable Net (IPC)",
-    category="Experimental",
+    category="IPC Deformable (sx)",
     summary="A pinned spring net sags and sways under the IPC deformable solver.",
     build=build,
 )

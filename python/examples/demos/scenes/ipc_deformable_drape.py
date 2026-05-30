@@ -64,8 +64,7 @@ def build() -> SceneSetup:
     world.time_step = 0.005
 
     _add_ground_barrier_box(world, "ground", _GROUND_CENTER, _GROUND_HALF)
-    _add_ground_barrier_box(
-        world, "drape_obstacle", _OBSTACLE_CENTER, _OBSTACLE_HALF)
+    _add_ground_barrier_box(world, "drape_obstacle", _OBSTACLE_CENTER, _OBSTACLE_HALF)
     body = world.add_deformable_body("deformable_drape", options)
     world.enter_simulation_mode()
 
@@ -95,7 +94,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_drape",
     title="Deformable Drape (IPC)",
-    category="Experimental",
+    category="IPC Deformable (sx)",
     summary="A mat drapes over a step onto the ground via IPC ground + self-contact barriers.",
     build=build,
 )

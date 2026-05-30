@@ -86,7 +86,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_scripted_dirichlet",
     title="Scripted Deformable Banner (IPC)",
-    category="Experimental",
+    category="IPC Deformable (sx)",
     summary="A pinned banner billows under a scripted Dirichlet boundary condition.",
     build=build,
 )

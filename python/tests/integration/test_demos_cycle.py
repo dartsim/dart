@@ -94,6 +94,36 @@ def test_ipc_deformable_grid_builder_topology() -> None:
     assert (second.node_a, second.node_b, second.node_c) == (1, columns + 1, columns)
 
 
+def test_ipc_deformable_scenes_share_dedicated_category() -> None:
+    """The IPC deformable scenes live in their own dedicated menu category.
+
+    The five IPC showcases must group under ``IPC Deformable (sx)`` (not the
+    general ``Experimental`` sx category), so the viewer renders them together.
+    """
+
+    scenes = make_demo_scenes()
+    by_id = {scene.id: scene for scene in scenes}
+
+    expected_ipc = {
+        "ipc_deformable_net",
+        "ipc_deformable_drape",
+        "ipc_deformable_trampoline",
+        "ipc_deformable_friction_slide",
+        "ipc_deformable_scripted_dirichlet",
+    }
+    assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
+
+    for scene_id in expected_ipc:
+        assert by_id[scene_id].category == "IPC Deformable (sx)"
+
+    # Every scene in the dedicated category is an IPC deformable scene, and
+    # none of them leaked back into the general Experimental category.
+    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable (sx)"]
+    assert set(ipc_category) == expected_ipc
+    experimental = [s.id for s in scenes if s.category == "Experimental"]
+    assert not any(s.startswith("ipc_deformable_") for s in experimental)
+
+
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     """`--screenshot` writes a real PPM via the dartpy.gui Filament viewer
     (PLAN-103 Phase 2 replacement for the old JSON state stub)."""
@@ -102,8 +132,19 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     target = scenes[0]
     out = tmp_path / "snap.ppm"
     rc = run(
-        ["--scene", target.id, "--frames", "1", "--headless",
-         "--width", "160", "--height", "120", "--screenshot", str(out)],
+        [
+            "--scene",
+            target.id,
+            "--frames",
+            "1",
+            "--headless",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(out),
+        ],
         scenes,
     )
     # Soft-fail (rc != 0) is acceptable when the scene's assets can't load
