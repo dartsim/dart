@@ -21,6 +21,7 @@ from .scenes.hardcoded_design import SCENE as HARDCODED_DESIGN
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
 from .scenes.ipc_deformable_fem_bar import SCENE as IPC_DEFORMABLE_FEM_BAR
+from .scenes.ipc_deformable_fem_drop import SCENE as IPC_DEFORMABLE_FEM_DROP
 from .scenes.ipc_deformable_fem_twist import SCENE as IPC_DEFORMABLE_FEM_TWIST
 from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
 from .scenes.ipc_deformable_net import SCENE as IPC_DEFORMABLE_NET
@@ -100,5 +101,6 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FRICTION_SLIDE,
         IPC_DEFORMABLE_FEM_BAR,
         IPC_DEFORMABLE_FEM_TWIST,
+        IPC_DEFORMABLE_FEM_DROP,
         IPC_DEFORMABLE_SCRIPTED,
     ]
