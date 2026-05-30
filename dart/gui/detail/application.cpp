@@ -205,6 +205,7 @@ void applySceneOptions(
   appOptions.cameraUpdater = src.cameraUpdater;
   appOptions.viewportLayoutProvider = src.viewportLayoutProvider;
   appOptions.onViewportPaneActivated = src.onViewportPaneActivated;
+  appOptions.onForceDrag = src.onForceDrag;
 }
 
 int demoSceneIndex(
@@ -301,6 +302,7 @@ int runGuiBackendApplicationImpl(
       appOptions.selectedRenderableProvider
           = applicationOptions.selectedRenderableProvider;
       appOptions.onRenderableSelected = applicationOptions.onRenderableSelected;
+      appOptions.onForceDrag = applicationOptions.onForceDrag;
       appOptions.dockingEnabled = applicationOptions.dockingEnabled;
       appOptions.preStep = applicationOptions.preStep;
       appOptions.postStep = applicationOptions.postStep;

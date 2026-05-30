@@ -113,6 +113,7 @@ private:
     GizmoRotateAxis,
     BodyTranslate,
     BodyRotate,
+    Force,
   };
 
   struct ActiveBodyNodeDrag
@@ -124,6 +125,22 @@ private:
     Eigen::Vector3d savedGlobalOffset = Eigen::Vector3d::Zero();
     Eigen::Vector3d savedLocalOffset = Eigen::Vector3d::Zero();
     Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+  };
+
+  /// State for a mouse "force-drag" (a mouse spring) begun on left-press over a
+  /// renderable. `bodyNode` is non-null for legacy `World` renderables (force
+  /// applied in-engine via `addExtForce`) and null for SimpleFrame-only
+  /// renderables (e.g. sx mirrors), which are forwarded to
+  /// `DartScene::onForceDrag`. The local offset records where on the body the
+  /// grab landed so off-center grabs produce torque; the ray depth fixes the
+  /// drag plane so the target follows the cursor in screen space.
+  struct ActiveForceDrag
+  {
+    dart::gui::RenderableId renderableId = 0;
+    std::string renderableName;
+    dart::dynamics::BodyNode* bodyNode = nullptr;
+    Eigen::Vector3d savedLocalOffset = Eigen::Vector3d::Zero();
+    double rayDepth = 0.0;
   };
 
   bool beginBodyNodeDrag(
@@ -140,6 +157,20 @@ private:
 
   bool applyBodyNodeDragRotation(
       const Eigen::Vector3d& worldAxis, double angle);
+
+  bool beginForceDrag(
+      DartScene& scene,
+      const dart::gui::RenderableDescriptor& descriptor,
+      const dart::gui::PickRay& cursorRay,
+      const Eigen::Vector3d& hitPointWorld,
+      dart::gui::ViewerLifecycleState& lifecycle);
+
+  void updateForceDrag(
+      DartScene& scene,
+      const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      const dart::gui::PickRay& cursorRay);
+
+  void endForceDrag(DartScene& scene);
 
   bool mWasLeftMousePressed = false;
   std::optional<std::size_t> mActivePointerPaneIndex;
@@ -161,6 +192,7 @@ private:
   Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedRotationAxis = Eigen::Vector3d::UnitZ();
   std::optional<ActiveBodyNodeDrag> mActiveBodyNodeDrag;
+  std::optional<ActiveForceDrag> mActiveForceDrag;
   dart::gui::RenderableId mSelectedRenderableId = 0;
   std::string mSelectedLabel = "none";
   std::optional<Eigen::Vector3d> mSelectedPoint;

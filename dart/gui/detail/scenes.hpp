@@ -83,6 +83,7 @@ struct DartScene
       renderableProvider;
   std::function<dart::gui::RenderableSelection()> selectedRenderableProvider;
   std::function<void(dart::gui::RenderableId)> onRenderableSelected;
+  std::function<void(const dart::gui::ForceDragEvent&)> onForceDrag;
   std::function<void(dart::gui::ViewportPaneKind)> onViewportPaneActivated;
   ViewportPaneActivationState viewportPaneActivation;
   bool dockingEnabled = false;
@@ -154,6 +155,7 @@ struct AppOptions
       renderableProvider;
   std::function<dart::gui::RenderableSelection()> selectedRenderableProvider;
   std::function<void(dart::gui::RenderableId)> onRenderableSelected;
+  std::function<void(const dart::gui::ForceDragEvent&)> onForceDrag;
   bool dockingEnabled = false;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;

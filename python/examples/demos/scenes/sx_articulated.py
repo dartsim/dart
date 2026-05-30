@@ -71,6 +71,7 @@ def build() -> SceneSetup:
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
         info={"sx_world": world, "dofs": robot.num_dofs},
     )
 
