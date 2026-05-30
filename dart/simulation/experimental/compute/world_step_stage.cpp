@@ -737,6 +737,19 @@ struct SphereObstacleBarrier
   double radius = 0.0;
 };
 
+// A static (oriented) box opted in as a deformable obstacle exerts a
+// clamped-log barrier on nearby deformable nodes along the outward surface
+// normal -- the box analogue of the sphere obstacle barrier. The closest point
+// on the box surface (and hence the surface distance and outward normal) is
+// found by clamping the node into the box's local frame, which handles
+// face/edge/corner contact uniformly.
+struct BoxObstacleBarrier
+{
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d rotation = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d halfExtents = Eigen::Vector3d::Zero();
+};
+
 //==============================================================================
 struct DeformableContactSolverScratch
 {
@@ -1675,6 +1688,37 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
 }
 
 //==============================================================================
+std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<BoxObstacleBarrier> obstacles;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    if (geometry.shape.type != CollisionShapeType::Box
+        || !geometry.shape.halfExtents.allFinite()
+        || (geometry.shape.halfExtents.array() <= 0.0).any()
+        || !transform.position.allFinite()
+        || !transform.orientation.coeffs().allFinite()) {
+      continue;
+    }
+    BoxObstacleBarrier obstacle;
+    obstacle.center = transform.position;
+    obstacle.rotation = transform.orientation.normalized().toRotationMatrix();
+    obstacle.halfExtents = geometry.shape.halfExtents;
+    obstacles.push_back(obstacle);
+  }
+  return obstacles;
+}
+
+//==============================================================================
 // The supporting static-ground contact under a node: the highest barrier
 // surface across all barriers at the node's (x, y), together with that
 // surface's geometric normal. Mirrors the max-top selection of the legacy
@@ -2259,6 +2303,82 @@ double addSphereObstacleBarrierEnergy(
 }
 
 //==============================================================================
+// Closest-surface distance from a node to an oriented box obstacle, with the
+// outward world-frame surface normal set when the distance is positive. The
+// node is clamped into the box's local frame; |local - clamp(local)| is the
+// distance to the surface (0 inside/on the box), uniform across face, edge, and
+// corner contact.
+double boxObstacleSurfaceDistance(
+    const Eigen::Vector3d& position,
+    const BoxObstacleBarrier& obstacle,
+    Eigen::Vector3d& outwardNormal)
+{
+  const Eigen::Vector3d local
+      = obstacle.rotation.transpose() * (position - obstacle.center);
+  const Eigen::Vector3d clamped
+      = local.cwiseMax(-obstacle.halfExtents).cwiseMin(obstacle.halfExtents);
+  const Eigen::Vector3d delta = local - clamped;
+  const double distance = delta.norm();
+  if (distance > 0.0 && std::isfinite(distance)) {
+    outwardNormal = obstacle.rotation * (delta / distance);
+  }
+  return distance;
+}
+
+//==============================================================================
+// Adds the clamped-log barrier energy/gradient pushing free deformable nodes
+// out of the activation band of an oriented box obstacle, along the outward
+// surface normal. The box analogue of addSphereObstacleBarrierEnergy.
+double addBoxObstacleBarrierEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<BoxObstacleBarrier>& obstacles,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (obstacles.empty()) {
+    return 0.0;
+  }
+
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  constexpr double barrierScale = 25.0;
+
+  double energy = 0.0;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || !std::isfinite(distance)) {
+        // On or inside the box: a penetration the barrier forbids.
+        return std::numeric_limits<double>::infinity();
+      }
+      if (distance >= activationDistance) {
+        continue;
+      }
+
+      const double normalizedDistance = distance / activationDistance;
+      const double distanceOffset = distance - activationDistance;
+      energy += -barrierScale * distanceOffset * distanceOffset
+                * std::log(normalizedDistance);
+
+      if (gradient != nullptr) {
+        const double derivative
+            = -barrierScale
+              * (2.0 * distanceOffset * std::log(normalizedDistance)
+                 + distanceOffset * distanceOffset / distance);
+        (*gradient)[i] += derivative * normal;
+      }
+    }
+  }
+
+  return energy;
+}
+
+//==============================================================================
 // Tangential speed below which static-ground friction smoothly vanishes (the
 // IPC mollifier velocity threshold epsv). Scaled by the time step to a
 // displacement radius.
@@ -2820,6 +2940,7 @@ double evaluateDeformableObjective(
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
@@ -2879,6 +3000,8 @@ double evaluateDeformableObjective(
   energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
   energy += addSphereObstacleBarrierEnergy(
       positions, fixed, sphereObstacles, gradient);
+  energy
+      += addBoxObstacleBarrierEnergy(positions, fixed, boxObstacles, gradient);
   if (contactBarrier != nullptr) {
     energy += addSelfContactBarrierEnergy(
         positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
@@ -3639,6 +3762,8 @@ bool computeProjectedNewtonDirection(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
     const SelfContactFrictionInputs* selfContactFriction,
@@ -3914,6 +4039,74 @@ bool computeProjectedNewtonDirection(
     }
   }
 
+  // Static sphere obstacle barrier Hessian. The full per-node barrier Hessian
+  // is B''(d) n n^T + (B'(d)/|x-c|)(I - n n^T) with n the outward radial
+  // normal; its tangential eigenvalues B'(d)/|x-c| are non-positive (the
+  // barrier force pulls the node radially out), so the PSD projection keeps
+  // only the rank-1 radial term max(0, B''(d)) n n^T -- the sphere analogue of
+  // the vertical ground barrier curvature, now along the radial normal.
+  if (!sphereObstacles.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    constexpr double barrierScale = 25.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (!isFree(i)) {
+        continue;
+      }
+      for (const auto& obstacle : sphereObstacles) {
+        const Eigen::Vector3d offset = positions[i] - obstacle.center;
+        const double centerDistance = offset.norm();
+        const double d = centerDistance - obstacle.radius;
+        if (d <= 0.0 || d >= activationDistance || centerDistance <= 0.0
+            || !std::isfinite(d)) {
+          continue;
+        }
+        const double distanceOffset = d - activationDistance;
+        const double logRatio = std::log(d / activationDistance);
+        const double second = -barrierScale
+                              * (2.0 * logRatio + 4.0 * distanceOffset / d
+                                 - (distanceOffset * distanceOffset) / (d * d));
+        const double curvature = std::max(0.0, second);
+        if (curvature <= 0.0) {
+          continue;
+        }
+        const Eigen::Vector3d normal = offset / centerDistance;
+        addBlock3(i, i, curvature * (normal * normal.transpose()));
+      }
+    }
+  }
+
+  // Static box obstacle barrier Hessian: the rank-1 radial curvature
+  // max(0, B''(d)) n n^T along the outward box-surface normal, the box analogue
+  // of the sphere obstacle barrier Hessian above (the tangential eigenvalues
+  // are again non-positive and drop out under PSD projection).
+  if (!boxObstacles.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    constexpr double barrierScale = 25.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (!isFree(i)) {
+        continue;
+      }
+      for (const auto& obstacle : boxObstacles) {
+        Eigen::Vector3d normal;
+        const double d
+            = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+        if (d <= 0.0 || d >= activationDistance || !std::isfinite(d)) {
+          continue;
+        }
+        const double distanceOffset = d - activationDistance;
+        const double logRatio = std::log(d / activationDistance);
+        const double second = -barrierScale
+                              * (2.0 * logRatio + 4.0 * distanceOffset / d
+                                 - (distanceOffset * distanceOffset) / (d * d));
+        const double curvature = std::max(0.0, second);
+        if (curvature <= 0.0) {
+          continue;
+        }
+        addBlock3(i, i, curvature * (normal * normal.transpose()));
+      }
+    }
+  }
+
   // Lagged ground-friction Hessian: a 3x3 tangent-plane block per node with an
   // active friction normal force. With P = I - n n^T the tangent projector onto
   // the plane orthogonal to the lagged ground normal n, T = u_T/||u_T|| the
@@ -4111,6 +4304,7 @@ void advanceDeformableBody(
     double timeStep,
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
     const comps::DeformableMaterial& material,
     DeformableSolverStats& stats)
 {
@@ -4190,23 +4384,25 @@ void advanceDeformableBody(
 
   // VBD handles static ground/obstacle barriers itself (penalty contact) when
   // contactStiffness > 0, but it cannot honor rigid-surface CCD or static
-  // sphere obstacles. The body's own surface mesh is excluded here: VBD solves
-  // inertia + springs + tet elasticity (+ ground contact) and treats the body
-  // as free of surface self-contact (a later slice wires VBD self-contact into
-  // the World path). A body with ground barriers but no VBD contact stiffness,
-  // or with sphere obstacles, falls back to the default solver so it still
-  // rests on / collides with them. The default-solver fast path below keeps the
-  // stricter surface check so non-VBD bodies still get self-contact.
+  // sphere/box obstacles. The body's own surface mesh is excluded here: VBD
+  // solves inertia + springs + tet elasticity (+ ground contact) and treats the
+  // body as free of surface self-contact (a later slice wires VBD self-contact
+  // into the World path). A body with ground barriers but no VBD contact
+  // stiffness, or with sphere/box obstacles, falls back to the default solver
+  // so it still rests on / collides with them. The default-solver fast path
+  // below keeps the stricter surface check so non-VBD bodies still get
+  // self-contact.
   const bool rigidSurfaceFree
       = rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty();
   const bool vbdHandlesBarriers
       = barriers.empty()
         || (vbdConfig != nullptr && vbdConfig->contactStiffness > 0.0);
   const bool contactFree = rigidSurfaceFree && barriers.empty()
-                           && sphereObstacles.empty()
+                           && sphereObstacles.empty() && boxObstacles.empty()
                            && contactScratch.surfaceTriangles.empty();
   if (vbdConfig != nullptr && vbdConfig->enabled && rigidSurfaceFree
-      && sphereObstacles.empty() && vbdHandlesBarriers) {
+      && sphereObstacles.empty() && boxObstacles.empty()
+      && vbdHandlesBarriers) {
     runVbdDeformableSolve(
         state,
         model,
@@ -4319,6 +4515,7 @@ void advanceDeformableBody(
           scratch.activeFixed,
           barriers,
           sphereObstacles,
+          boxObstacles,
           timeStep,
           &scratch.gradient,
           &contactBarrier,
@@ -4434,6 +4631,7 @@ void advanceDeformableBody(
                 scratch.activeFixed,
                 barriers,
                 sphereObstacles,
+                boxObstacles,
                 timeStep,
                 nullptr,
                 &contactBarrier,
@@ -4485,6 +4683,8 @@ void advanceDeformableBody(
           scratch.next,
           scratch.activeFixed,
           barriers,
+          sphereObstacles,
+          boxObstacles,
           &contactBarrier,
           &groundFriction,
           &selfContactFriction,
@@ -4582,6 +4782,7 @@ void advanceDeformableBody(
           scratch.activeFixed,
           barriers,
           sphereObstacles,
+          boxObstacles,
           timeStep,
           &scratch.gradient,
           &terminalBarrier,
@@ -5044,6 +5245,7 @@ void DeformableDynamicsStage::execute(
 
   const auto barriers = collectStaticGroundBarriers(world);
   const auto sphereObstacles = collectSphereObstacleBarriers(world);
+  const auto boxObstacles = collectBoxObstacleBarriers(world);
   const auto rigidSurfaceSnapshots
       = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
@@ -5118,6 +5320,7 @@ void DeformableDynamicsStage::execute(
         timeStep,
         barriers,
         sphereObstacles,
+        boxObstacles,
         material,
         m_lastStats);
   }

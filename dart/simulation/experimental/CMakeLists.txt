@@ -74,6 +74,7 @@ add_library(
   frame/free_frame.cpp
   io/binary_io.cpp
   io/deformable_scene_io.cpp
+  io/gmsh_tet_mesh.cpp
   io/serializer.cpp
   multibody/joint.cpp
   multibody/link.cpp
