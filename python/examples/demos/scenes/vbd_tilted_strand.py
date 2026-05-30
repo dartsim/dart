@@ -31,7 +31,7 @@ def _make_strand_options() -> "sx.DeformableBodyOptions":
         # Pinned at node 0; the strand extends in +x and tilts up in +z, then
         # sags under gravity. The heavy free end (1000x mass) against the stiff
         # springs is the high mass-ratio stress the TinyVBD scene exercises.
-        positions.append(np.array([i * _SPACING, 0.0, 1.5 + i * _SPACING * _TAN_ANGLE]))
+        positions.append(np.array([i * _SPACING, 0.0, 1.1 + i * _SPACING * _TAN_ANGLE]))
         masses.append(1000.0 if i == _NUM_VERTS - 1 else 1.0)
     options.positions = positions
     options.masses = masses
@@ -62,7 +62,11 @@ def build() -> SceneSetup:
     bridge = SxRenderBridge(world, name="vbd_tilted_strand_render")
     body = world.get_deformable_body("vbd_tilted_strand")
     bridge.add_deformable_visual(
-        body, (0.90, 0.40, 0.55), radius=0.02, fixed_color=(0.30, 0.65, 0.95)
+        body,
+        (0.90, 0.40, 0.55),
+        radius=0.04,
+        fixed_color=(0.30, 0.65, 0.95),
+        thickness=6.0,
     )
     bridge.sync()
 
