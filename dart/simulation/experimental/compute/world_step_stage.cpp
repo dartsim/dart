@@ -46,12 +46,16 @@
 #include "dart/simulation/experimental/compute/deformable_psd_backend.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/experimental/detail/boxed_lcp_contact.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp"
 #include "dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/experimental/world.hpp"
+#include "dart/simulation/experimental/world_options.hpp"
 
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
@@ -76,6 +80,7 @@
 namespace dart::simulation::experimental::compute {
 
 namespace dc = dart::simulation::experimental::detail::deformable_contact;
+namespace dvbd = dart::simulation::experimental::detail::deformable_vbd;
 namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
 
 namespace {
@@ -705,6 +710,54 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
     return material->friction;
   }
   return 1.0;
+}
+
+//==============================================================================
+// Positional correction (projection) for rigid-body normal contacts: removes
+// residual penetration beyond a small allowance without injecting velocity, so
+// resting stacks do not sink. Shared by the sequential-impulse and boxed-LCP
+// contact paths; the sequential path inlines an equivalent loop over its
+// precomputed constraints, while the LCP path drives this from the raw
+// contacts. Only rigid-body/rigid-body pairs with at least one dynamic body
+// are corrected.
+void resolveRigidBodyContactPositions(
+    entt::registry& registry,
+    const std::vector<Contact>& contacts,
+    double /*timeStep*/)
+{
+  constexpr double allowance = 1e-4;
+  constexpr double correctionFactor = 0.2;
+  for (const auto& contact : contacts) {
+    const auto entityA = contact.bodyA.getEntity();
+    const auto entityB = contact.bodyB.getEntity();
+    if (!registry.all_of<comps::RigidBodyTag>(entityA)
+        || !registry.all_of<comps::RigidBodyTag>(entityB)) {
+      continue;
+    }
+
+    const double penetration = contact.depth - allowance;
+    if (penetration <= 0.0) {
+      continue;
+    }
+
+    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
+    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const double invMassA
+        = staticA ? 0.0
+                  : inverseMass(registry.get<comps::MassProperties>(entityA));
+    const double invMassB
+        = staticB ? 0.0
+                  : inverseMass(registry.get<comps::MassProperties>(entityB));
+    const double totalInverseMass = invMassA + invMassB;
+    if (totalInverseMass <= 0.0) {
+      continue;
+    }
+
+    const Eigen::Vector3d correction
+        = (correctionFactor * penetration / totalInverseMass) * contact.normal;
+    registry.get<comps::Transform>(entityA).position -= invMassA * correction;
+    registry.get<comps::Transform>(entityB).position += invMassB * correction;
+  }
 }
 
 //==============================================================================
@@ -2884,7 +2937,42 @@ struct FemElasticityInputs
   const std::vector<comps::DeformableTetrahedron>* tetrahedra = nullptr;
   const std::vector<fem::TetRestShape>* restShapes = nullptr;
   fem::LameParameters lame;
+  // Selects the isotropic material: false (default) is the inversion-robust
+  // stable neo-Hookean kernel; true is fixed-corotational (the IPC paper's
+  // other material), opt-in via
+  // DeformableMaterial.useFixedCorotationalElasticity.
+  bool fixedCorotational = false;
 };
+
+// Dispatches one tetrahedron to the configured FEM material kernel. Both
+// kernels share the TetElementResult shape, so the rest of the assembly is
+// identical.
+inline fem::TetElementResult evaluateFemTetElement(
+    const FemElasticityInputs& inputs,
+    const std::vector<Eigen::Vector3d>& positions,
+    const comps::DeformableTetrahedron& tet,
+    const fem::TetRestShape& rest,
+    const bool computeHessian)
+{
+  if (inputs.fixedCorotational) {
+    return fem::evaluateFixedCorotationalTet(
+        positions[tet.nodeA],
+        positions[tet.nodeB],
+        positions[tet.nodeC],
+        positions[tet.nodeD],
+        rest,
+        inputs.lame,
+        computeHessian);
+  }
+  return fem::evaluateStableNeoHookeanTet(
+      positions[tet.nodeA],
+      positions[tet.nodeB],
+      positions[tet.nodeC],
+      positions[tet.nodeD],
+      rest,
+      inputs.lame,
+      computeHessian);
+}
 
 // Adds the stable neo-Hookean strain energy/gradient over every valid
 // tetrahedron, scattering each element's 12-vector force gradient into its four
@@ -2904,14 +2992,8 @@ double addFemElasticityEnergy(
   double energy = 0.0;
   for (std::size_t t = 0; t < count; ++t) {
     const auto& tet = tets[t];
-    const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
-        positions[tet.nodeA],
-        positions[tet.nodeB],
-        positions[tet.nodeC],
-        positions[tet.nodeD],
-        rests[t],
-        inputs.lame,
-        /*computeHessian=*/false);
+    const fem::TetElementResult element = evaluateFemTetElement(
+        inputs, positions, tet, rests[t], /*computeHessian=*/false);
     if (!element.valid) {
       continue;
     }
@@ -3582,6 +3664,169 @@ void prepareDeformableBoundaryConditions(
 }
 
 //==============================================================================
+/// Transient cached topology for the experimental Vertex Block Descent inner
+/// solver: the spring and tetrahedron element lists plus the vertex-graph
+/// coloring (over the union of springs and tets) and the per-element incident
+/// adjacencies, rebuilt only when the element topology changes. Defined here
+/// (not in comps) so the heavy kernel headers stay out of the component
+/// headers; it is stored per body and never serialized.
+struct DeformableVbdScratch
+{
+  std::vector<dvbd::SpringElement> springs;
+  std::vector<dvbd::TetMeshElement> tets;
+  dvbd::VertexColoring coloring;
+  dvbd::SpringAdjacency springAdjacency;
+  dvbd::TetAdjacency tetAdjacency;
+  // Per-vertex static ground-contact planes, rebuilt each step from the barrier
+  // set at the warm-start position (lagged); a zero stiffness marks "no ground
+  // under this vertex".
+  std::vector<dvbd::ContactPlane> contactPlanes;
+  std::size_t cachedNodeCount = 0;
+  std::size_t cachedEdgeCount = 0;
+  std::size_t cachedTetCount = 0;
+  bool initialized = false;
+};
+
+//==============================================================================
+/// Solve one implicit-Euler step for a contact-free deformable body with the
+/// Vertex Block Descent inner solver: graph-colored Gauss-Seidel block
+/// coordinate descent on the same variational objective the default solver
+/// minimizes, warm-started at the inertial target. Handles both distance
+/// springs and volumetric Stable Neo-Hookean tetrahedra (the latter using the
+/// body's Lame parameters, which the default gradient solver does not yet
+/// model). Fills `scratch.next`; the caller's write-back updates
+/// positions/velocities. With `config.contactStiffness > 0` it also resolves
+/// static ground/obstacle half-space contact (penalty + optional Coulomb
+/// friction); it does not yet handle rigid-obstacle CCD or surface
+/// self-contact.
+void runVbdDeformableSolve(
+    const comps::DeformableNodeState& state,
+    const comps::DeformableSpringModel& model,
+    const comps::DeformableMeshTopology& topology,
+    comps::DeformableSolverScratch& scratch,
+    DeformableVbdScratch& vbdScratch,
+    double timeStep,
+    double youngsModulus,
+    double poissonRatio,
+    const std::vector<StaticGroundBarrier>& barriers,
+    double frictionCoeff,
+    const comps::DeformableVbdConfig& config,
+    DeformableSolverStats& stats)
+{
+  const std::size_t nodeCount = scratch.next.size();
+
+  if (!vbdScratch.initialized || vbdScratch.cachedNodeCount != nodeCount
+      || vbdScratch.cachedEdgeCount != model.edges.size()
+      || vbdScratch.cachedTetCount != topology.tetrahedra.size()) {
+    vbdScratch.springs.clear();
+    vbdScratch.springs.reserve(model.edges.size());
+    for (const auto& edge : model.edges) {
+      vbdScratch.springs.push_back(
+          {static_cast<std::uint32_t>(edge.nodeA),
+           static_cast<std::uint32_t>(edge.nodeB),
+           edge.restLength});
+    }
+
+    vbdScratch.tets.clear();
+    vbdScratch.tets.reserve(topology.tetrahedra.size());
+    for (const auto& tet : topology.tetrahedra) {
+      const std::array<std::uint32_t, 4> vertices
+          = {static_cast<std::uint32_t>(tet.nodeA),
+             static_cast<std::uint32_t>(tet.nodeB),
+             static_cast<std::uint32_t>(tet.nodeC),
+             static_cast<std::uint32_t>(tet.nodeD)};
+      const dvbd::TetRestShape rest = dvbd::makeTetRestShape(
+          {topology.restPositions[tet.nodeA],
+           topology.restPositions[tet.nodeB],
+           topology.restPositions[tet.nodeC],
+           topology.restPositions[tet.nodeD]});
+      vbdScratch.tets.push_back({vertices, rest});
+    }
+
+    vbdScratch.coloring
+        = dvbd::colorDeformable(nodeCount, vbdScratch.springs, vbdScratch.tets);
+    vbdScratch.springAdjacency
+        = dvbd::SpringAdjacency::build(nodeCount, vbdScratch.springs);
+    vbdScratch.tetAdjacency
+        = dvbd::TetAdjacency::build(nodeCount, vbdScratch.tets);
+    vbdScratch.cachedNodeCount = nodeCount;
+    vbdScratch.cachedEdgeCount = model.edges.size();
+    vbdScratch.cachedTetCount = topology.tetrahedra.size();
+    vbdScratch.initialized = true;
+  }
+
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    if (scratch.activeFixed[i] == 0u) {
+      scratch.next[i] = scratch.inertialTargets[i];
+    }
+  }
+
+  // Build the per-vertex static-contact planes from the barrier set at the
+  // warm-start position (lagged for the step). A vertex over a barrier
+  // footprint gets a z-up half-space at the barrier top with the configured
+  // penalty stiffness; vertices off the footprint get a zero-stiffness
+  // (inactive) plane and fall freely.
+  const std::vector<dvbd::ContactPlane>* contactPlanes = nullptr;
+  if (config.contactStiffness > 0.0 && !barriers.empty()) {
+    vbdScratch.contactPlanes.assign(nodeCount, dvbd::ContactPlane{});
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      dvbd::ContactPlane& plane = vbdScratch.contactPlanes[i];
+      plane.normal = Eigen::Vector3d::UnitZ();
+      plane.offset = 0.0;
+      plane.stiffness = 0.0;
+      if (scratch.activeFixed[i] != 0u) {
+        continue;
+      }
+      const auto groundTop = staticGroundTopAt(scratch.next[i], barriers);
+      if (groundTop.has_value()) {
+        plane.offset = *groundTop;
+        plane.stiffness = config.contactStiffness;
+      }
+    }
+    contactPlanes = &vbdScratch.contactPlanes;
+  }
+
+  const dvbd::LameParameters lame
+      = dvbd::lameFromYoungPoisson(youngsModulus, poissonRatio);
+
+  dvbd::BlockDescentOptions options;
+  options.iterations = config.iterations;
+  options.clampSpringHessian = true;
+  options.convergenceDisplacement = config.convergenceDisplacement;
+  options.useChebyshev = config.useChebyshev;
+  options.chebyshevRho = config.chebyshevRho;
+  options.rayleighDamping = config.rayleighDamping;
+  // state.positions holds x^t for this step (the write-back to the live state
+  // happens after the solve), so it is the Rayleigh displacement reference.
+  // parallelBlockDescentDeformable falls back to the full-featured serial
+  // driver when workerThreads <= 1.
+  const dvbd::BlockDescentStats result = dvbd::parallelBlockDescentDeformable(
+      scratch.next,
+      state.masses,
+      scratch.activeFixed,
+      scratch.inertialTargets,
+      vbdScratch.springs,
+      model.stiffness,
+      vbdScratch.springAdjacency,
+      vbdScratch.tets,
+      lame.mu,
+      lame.lambda,
+      vbdScratch.tetAdjacency,
+      timeStep,
+      vbdScratch.coloring,
+      options,
+      config.workerThreads,
+      &state.positions,
+      contactPlanes,
+      frictionCoeff);
+
+  ++stats.vbdBodyCount;
+  stats.vbdSweeps += result.iterations;
+  stats.vbdVertexUpdates += result.vertexUpdates;
+  stats.vbdResidualNormSquared = result.finalResidualNormSquared;
+}
+
+//==============================================================================
 // Assemble the sparse per-step Hessian (inertia + spring + self-contact barrier
 // + static ground barrier) with per-element PSD projection and solve
 // H d = -gradient for the projected-Newton search direction via a sparse
@@ -3743,14 +3988,8 @@ bool computeProjectedNewtonDirection(
     tetBlockNodes.reserve(tetCount);
     for (std::size_t t = 0; t < tetCount; ++t) {
       const auto& tet = tets[t];
-      const fem::TetElementResult element = fem::evaluateStableNeoHookeanTet(
-          positions[tet.nodeA],
-          positions[tet.nodeB],
-          positions[tet.nodeC],
-          positions[tet.nodeD],
-          rests[t],
-          femElasticity->lame,
-          /*computeHessian=*/true);
+      const fem::TetElementResult element = evaluateFemTetElement(
+          *femElasticity, positions, tet, rests[t], /*computeHessian=*/true);
       if (!element.valid) {
         continue;
       }
@@ -4129,6 +4368,8 @@ void advanceDeformableBody(
     const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
     DeformableContactSolverScratch& contactScratch,
+    DeformableVbdScratch& vbdScratch,
+    const comps::DeformableVbdConfig* vbdConfig,
     std::span<const SurfaceContactSnapshot> surfaceSnapshots,
     std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
     std::span<const SurfaceContactSnapshot> movingRigidSurfaceSnapshots,
@@ -4173,6 +4414,7 @@ void advanceDeformableBody(
     femElasticity.restShapes = &contactScratch.femRestShapes;
     femElasticity.lame
         = fem::lameParameters(material.youngsModulus, material.poissonRatio);
+    femElasticity.fixedCorotational = material.useFixedCorotationalElasticity;
     femElasticityPtr = &femElasticity;
   }
 
@@ -4214,11 +4456,42 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  if (model.edges.empty() && barriers.empty() && sphereObstacles.empty()
-      && boxObstacles.empty() && rigidSurfaceSnapshots.empty()
-      && movingRigidSurfaceSnapshots.empty()
-      && contactScratch.surfaceTriangles.empty()
-      && femElasticityPtr == nullptr) {
+  // VBD handles static ground/obstacle barriers itself (penalty contact) when
+  // contactStiffness > 0, but it cannot honor rigid-surface CCD or static
+  // sphere/box obstacles. The body's own surface mesh is excluded here: VBD
+  // solves inertia + springs + tet elasticity (+ ground contact) and treats the
+  // body as free of surface self-contact (a later slice wires VBD self-contact
+  // into the World path). A body with ground barriers but no VBD contact
+  // stiffness, or with sphere/box obstacles, falls back to the default solver
+  // so it still rests on / collides with them. The default-solver fast path
+  // below keeps the stricter surface check so non-VBD bodies still get
+  // self-contact.
+  const bool rigidSurfaceFree
+      = rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty();
+  const bool vbdHandlesBarriers
+      = barriers.empty()
+        || (vbdConfig != nullptr && vbdConfig->contactStiffness > 0.0);
+  const bool contactFree = rigidSurfaceFree && barriers.empty()
+                           && sphereObstacles.empty() && boxObstacles.empty()
+                           && contactScratch.surfaceTriangles.empty();
+  if (vbdConfig != nullptr && vbdConfig->enabled && rigidSurfaceFree
+      && sphereObstacles.empty() && boxObstacles.empty()
+      && vbdHandlesBarriers) {
+    runVbdDeformableSolve(
+        state,
+        model,
+        topology,
+        scratch,
+        vbdScratch,
+        timeStep,
+        material.youngsModulus,
+        material.poissonRatio,
+        barriers,
+        frictionCoefficient,
+        *vbdConfig,
+        stats);
+  } else if (
+      model.edges.empty() && contactFree && femElasticityPtr == nullptr) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (scratch.activeFixed[i] == 0u) {
         scratch.next[i] = scratch.inertialTargets[i];
@@ -4780,6 +5053,17 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
   auto& registry = world.getRegistry();
 
+  // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the frictionless
+  // normal Delassus system with the pivoting Dantzig solver, applying the
+  // resulting impulses to body velocities. The default SequentialImpulse path
+  // below is unchanged.
+  if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
+    (void)detail::solveBoxedLcpContacts(
+        registry, contacts, world.getTimeStep());
+    resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
+    return;
+  }
+
   // Precompute per-contact constants for a sequential-impulse normal solve.
   struct NormalConstraint
   {
@@ -5102,6 +5386,9 @@ void DeformableDynamicsStage::execute(
         = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
     auto& contactScratch
         = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
+    auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(entity);
+    const auto* vbdConfig
+        = registry.try_get<comps::DeformableVbdConfig>(entity);
     advanceDeformableBody(
         entity,
         state,
@@ -5109,6 +5396,8 @@ void DeformableDynamicsStage::execute(
         topology,
         scratch,
         contactScratch,
+        vbdScratch,
+        vbdConfig,
         surfaceSnapshots,
         rigidSurfaceSnapshots,
         movingRigidSurfaceSnapshots,

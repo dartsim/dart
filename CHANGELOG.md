@@ -549,6 +549,33 @@
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
 
 - Simulation
+  - Added opt-in analytic differentiable simulation to the experimental `World`
+    (the Nimble method, arXiv:2103.16021): a build-time `DART_BUILD_DIFF` option
+    plus a runtime `WorldOptions::differentiable` flag (off by default, with
+    bitwise-identical results and no snapshot allocation when off). When enabled,
+    `World::getStepDerivatives()` returns DART-owned state/control/parameter
+    Jacobians and `World::applyStepVjp()` an efficient vector-Jacobian product,
+    computed by implicit differentiation of the boxed-LCP contact solve (the
+    clamping-block `A_CC⁻¹` gradient with the friction upper-bound mapping) and
+    the articulated-body dynamics. Covers all joint types (including SO(3)/SE(3)
+    manifold position Jacobians), frictionless and Coulomb-friction contact,
+    rotational/off-COM and multi-contact, and mass/inertia/friction parameter
+    derivatives; adds an opt-in boxed-LCP rigid-body contact path
+    (`WorldOptions::contactSolverMethod`), a framework-neutral `diff::rollout`,
+    contact-gradient refinement modes (`ContactGradientMode`), and a dartpy
+    `sx.diff` bridge (`timestep` as a `torch.autograd.Function`, `rollout`,
+    `get_step_derivatives`/`apply_step_vjp`) with lazy torch import. The
+    articulated-body dynamics derivatives are analytic (`O(dof²)`
+    recursive-Newton-Euler derivative recursions, with a finite-difference
+    fallback for manifold/configuration-dependent joints) and the contact
+    gradient exploits the block-sparse Delassus system, so the
+    analytic-vs-finite-difference speedup grows with system size — reproducing
+    the paper's scaling result and, on that hardware-normalized metric, matching
+    or beating the reference `nimblephysics` implementation measured on the same
+    machine. The paper's gradient-based trajectory-optimization experiment is
+    reproduced on a cartpole. All gradients are finite-difference-of-step
+    verified; no solver, reverse-pass cache, ECS, or tensor-backend types are
+    exposed publicly.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
@@ -964,6 +991,79 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     restores a perturbed node toward rest), a `BM_DeformableFemBarStep`
     benchmark, and a `Deformable FEM Bar (IPC)` py-demos scene (a tetrahedral
     cantilever sagging under gravity) in the `IPC Deformable (sx)` category.
+  - Added the fixed-corotational (FCR) tetrahedral FEM material to the
+    experimental deformable solver (PLAN-081 M1 follow-up), the IPC paper's
+    other isotropic elasticity model alongside neo-Hookean. The
+    `fem_tet_element.hpp` kernel gains the FCR energy `mu*||F - R||^2 +
+(lambda/2)*(J - 1)^2` (with `R` the polar-decomposition rotation), its exact
+    first Piola-Kirchhoff stress, and a positive-definite Gauss-Newton element
+    Hessian, validated by rest-state zero-force, rotation-invariance, and
+    finite-difference gradient / SPD-Hessian tests. It is selected by the new
+    opt-in `DeformableMaterialProperties.useFixedCorotationalElasticity` flag
+    (also exposed to `dartpy` as `use_fixed_corotational_elasticity`) on top of
+    `useFiniteElementElasticity`; the objective and projected-Newton assembly
+    dispatch to whichever material is configured through a shared element seam,
+    so the default stable neo-Hookean path is unchanged. Adds solver regressions
+    (an FCR tetrahedron stationary at rest; restores a perturbed node toward
+    rest) and a `Deformable FCR Twist (IPC)` py-demos scene (a tetrahedral bar
+    twisted at both ends, untwisting under the fixed-corotational material).
+  - Added a `BM_DeformableFcrBarStep` per-step benchmark for the
+    fixed-corotational FEM material (mirroring `BM_DeformableFemBarStep` at the
+    same cell counts) so the two FEM materials' per-step solver cost can be
+    compared at matching mesh resolution -- the per-step-time axis of the IPC
+    paper's Fig. 23 / Table 1. Shares one polar-decomposition SVD per element
+    between the fixed-corotational energy and stress (the line search evaluates
+    both every probe), measurably cutting the per-step cost; the kernel math is
+    unchanged (all fixed-corotational tests still pass bit-for-bit). Adds a
+    closed-form fixed-corotational energy regression under a uniform scale
+    `F = c*I` (`3*mu*(c-1)^2 + (lambda/2)*(c^3-1)^2`), which pins the absolute
+    energy value that the finite-difference gradient test cannot.
+  - Replaced the fixed-corotational element's Gauss-Newton Hessian with the exact
+    analytic Hessian `2*mu*(I9 - dR/dF) + lambda*(g*g^T + (J - 1)*d^2J/dF^2)`,
+    where the polar-rotation gradient `dR/dF` is solved from the corotational
+    identity `(tr(S) I - S) w = axl(R^T dF - dF^T R)`, validated by a
+    finite-difference Hessian match. Like the IPC paper's per-element Hessian it
+    is generally indefinite, so the solver PSD-projects it through the existing
+    batched seam; severely inverted elements (where the rotation gradient is
+    undefined) fall back to the always-PSD Gauss-Newton form (regression added).
+    The exact Newton curvature converges the line search far faster than the
+    Gauss-Newton approximation, cutting the `BM_DeformableFcrBarStep` per-step
+    time about 7x (to near stable-neo-Hookean parity at equal mesh resolution)
+    while leaving the energy, gradient, and settled solution unchanged (every
+    fixed-corotational kernel and solver test still passes).
+  - Added a `newton_iters_per_step` counter to the `BM_DeformableFemBarStep` and
+    `BM_DeformableFcrBarStep` benchmarks (averaged from the per-step solver
+    diagnostics), surfacing the projected-Newton iteration count -- the
+    convergence axis the IPC paper's Table 1 reports -- alongside the wall-clock
+    per-step time. It quantifies the exact fixed-corotational Hessian's
+    convergence: both materials now take ~5-6 Newton iterations per step at
+    matching mesh resolution, confirming the exact curvature brought
+    fixed-corotational convergence to stable-neo-Hookean parity (the earlier
+    Gauss-Newton form's slowness was extra iterations, not per-iteration cost).
+  - Exposed a read-only `DeformableSolverDiagnostics` snapshot of the deformable
+    solver's per-step statistics on the experimental `World`
+    (`World::getLastDeformableSolverDiagnostics`, dartpy
+    `world.last_deformable_solver_diagnostics`). It is a curated, stable subset
+    of the internal `DeformableSolverStats` -- mesh sizes, projected-Newton
+    convergence (iterations, objective evaluations, line-search trials, Newton
+    steps vs steepest-descent fallbacks), self-contact activity, friction
+    dissipation, and the contact closest-approach diagnostic -- captured after
+    each built-in-pipeline step so tools and Python scripts can observe solver
+    behavior (e.g. per-step Newton iteration counts) without the explicit
+    stage/pipeline API. The user-supplied-pipeline `step` overloads leave it
+    unchanged (read the stage's own `getLastStats` there). Adds C++ and Python
+    regressions.
+  - Added a `Deformable FEM Self-Contact (IPC)` py-demos scene: a slender
+    tetrahedral FEM beam whose pinned ends are driven toward each other by
+    opposing scripted Dirichlet boundaries, so the soft FEM core buckles and
+    folds onto itself; the always-on clamped-log self-contact barrier holds the
+    folding surface apart at a positive separation. This is the first DART-native
+    showcase of self-collision (the heart of the IPC method) on a volumetric FEM
+    body, toward the paper's self-collision stress tests, with a reusable
+    `build_fem_compression_bar` bridge helper. A regression drives the beam
+    through the buckle and asserts -- via the new solver diagnostics -- that the
+    self-contact barrier activates, holds every active contact at a strictly
+    positive distance (no interpenetration), and keeps the solve finite.
   - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
     counter-rotated at both ends by opposing scripted Dirichlet boundary
     conditions, then released so the stable neo-Hookean core untwists
@@ -1250,6 +1350,235 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
     safety checks, and benchmark counters.
+  - Added internal experimental Vertex Block Descent (VBD) per-vertex block
+    kernels for the variational implicit-Euler objective: the inertia
+    force/Hessian, the mass-spring force/Hessian with an opt-in PSD clamp, and a
+    regularized symmetric-positive-definite 3x3 block Newton solve with a
+    zero-step fallback, with finite-difference derivative regression tests and a
+    microbenchmark.
+  - Added internal experimental VBD vertex graph coloring (element-induced
+    vertex adjacency plus deterministic Welsh-Powell greedy coloring and a
+    conflict-free verifier) so same-color vertex blocks can be updated in
+    parallel while colors are swept Gauss-Seidel, with regression tests and a
+    coloring benchmark.
+  - Added an internal experimental single-body VBD block-descent driver
+    (colored Gauss-Seidel mass-spring solve over the same objective the existing
+    deformable stage minimizes), with regression tests for monotone energy
+    decrease, residual convergence, converged-state parity against an
+    independent gradient-descent minimizer, same-color independence, and a
+    grid-step benchmark. This is internal solver groundwork only and is not yet
+    wired into the deformable world step.
+  - Added an internal experimental Stable Neo-Hookean tetrahedral energy kernel
+    for VBD (energy density, analytic first Piola stress, and per-vertex force
+    plus exact 3x3 Hessian via the analytic stress differential), with
+    finite-difference force/Hessian regression tests, rest-state equilibrium,
+    element-inversion stability, and a microbenchmark.
+  - Wired the VBD Stable Neo-Hookean tetrahedral blocks into a single-body
+    block-descent driver (tet adjacency, tet-induced vertex coloring, and a
+    colored Gauss-Seidel volumetric solve), validated for rest stability,
+    residual convergence, monotone energy decrease, and converged-state parity
+    against an independent global gradient-descent minimizer of the tet
+    objective, with a tetrahedral-bar step benchmark. Internal solver
+    groundwork only; not wired into the deformable world step.
+  - Added internal experimental VBD acceleration and damping primitives:
+    adaptive inertial/previous-step initialization (gravity-projected
+    acceleration blend), Chebyshev semi-iterative weights and over-relaxation,
+    and stiffness-proportional Rayleigh damping for the per-vertex block, each
+    unit-tested. These are standalone helpers, not yet threaded through a
+    multi-step VBD stepping loop.
+  - Added an internal experimental single-body VBD mass-spring stepper that
+    performs one implicit-Euler step (inertial targets, adaptive warm start,
+    colored block-descent sweeps with optional Chebyshev over-relaxation,
+    velocity update, and previous-velocity bookkeeping), validated against the
+    implicit-Euler free-fall trajectory, fixed-vertex immobility, multi-step
+    stability, Chebyshev no-op/convergence, and adaptive-init convergence.
+    Internal solver groundwork only; not wired behind the deformable world
+    stage.
+  - Wired VBD into the experimental deformable world stage as an internal,
+    opt-in inner solver for contact-free mass-spring bodies, selected per body
+    through a non-public `comps::DeformableVbdConfig` so the public deformable
+    stage stays algorithm-neutral. The stage caches the spring
+    coloring/adjacency per body and reuses the existing inertial-target setup
+    and write-back. Integration tests confirm the VBD path runs only when opted
+    in, the default solver runs otherwise, VBD agrees with the gradient-descent
+    solver on a contact-free scene, and a hanging chain is stable, with no
+    regression in the existing deformable suite. Tetrahedral, surface-contact,
+    ground-barrier, and rigid-obstacle bodies still use the default solver.
+  - Added residual-based early termination to the VBD block-descent solver (a
+    convergence-displacement threshold, exposed through the internal config) and
+    a `bm_vbd_world_solver` benchmark comparing the VBD inner solver against the
+    default gradient-descent solver on a matched contact-free mass-spring grid
+    in the real World pipeline. With early termination, single-threaded VBD is
+    roughly 2-4x faster per step than the default solver on the benchmarked
+    scenes. Multithreaded CPU sweeps remain future work.
+  - Added an experimental CUDA Vertex Block Descent mass-spring kernel
+    (`compute/cuda/vbd_block_descent_cuda`) behind `DART_ENABLE_EXPERIMENTAL_CUDA`:
+    a per-color parallel block-update kernel with an analytic SPD 3x3 solve and a
+    single-stream Gauss-Seidel sweep over colors. A device-skipping test confirms
+    the GPU result matches the CPU block-descent solve, and a GPU-vs-CPU
+    benchmark shows the GPU roughly 9x faster at 4k vertices and 26x faster at
+    16k vertices, scaling near-flat while the CPU path grows linearly. A
+    tetrahedral GPU kernel and paper-scene comparisons remain future work.
+  - Added a device-resident CUDA VBD rollout (`vbdRolloutMassSpringCuda`) that
+    runs the full per-step pipeline (inertial-target prediction, colored sweeps,
+    velocity update) on the GPU for many steps with one upload and one download,
+    plus inertial-target and velocity-update kernels. A device-skipping test
+    confirms it matches the CPU stepper over 20 steps; the rollout benchmark
+    measures ~1.08 ms/step steady-state, about 45x faster than the
+    single-threaded CPU at 16k vertices.
+  - Added a CUDA Stable Neo-Hookean tetrahedral VBD kernel
+    (`vbdStepTetMeshCuda`) with a device port of the analytic per-vertex
+    force/Hessian and a tet-colored sweep. A device-skipping test confirms the
+    GPU tetrahedral solve matches the CPU `blockDescentTetMesh` to 1e-6,
+    extending the GPU win to the paper's volumetric domain. A tet GPU-vs-CPU
+    benchmark shows the GPU about 1.5x faster at ~500 vertices and 4.4x at ~2000
+    vertices, with the margin growing with mesh size.
+  - Added a device-resident CUDA tetrahedral VBD rollout
+    (`vbdRolloutTetMeshCuda`), the volumetric counterpart of the mass-spring
+    rollout: the full per-step pipeline (inertial-target prediction, colored
+    Neo-Hookean sweeps, velocity update) runs on the GPU for many steps with a
+    single upload and download. A device-skipping test confirms it matches the
+    equivalent CPU per-step tet pipeline over 20 steps.
+  - Added optional CUDA-graph capture to both device-resident rollouts
+    (`useCudaGraph`): one step's identical launch sequence is captured into a
+    CUDA graph and replayed for every step, amortizing the per-launch overhead
+    of the many small per-color kernels. A device-skipping test confirms the
+    graph rollout matches the directly-launched rollout bit-for-bit, and the tet
+    rollout benchmark runs with and without graph capture.
+  - Added a single-precision (mixed-precision) device-resident mass-spring
+    rollout. The device kernels are templated on the scalar type, and the
+    `useSinglePrecision` flag runs the rollout in float (host state stays double
+    and is converted on upload/download). A device-skipping test confirms the
+    float rollout tracks the double rollout to float accuracy. On the RTX 5000
+    Ada (whose FP64 throughput is 1/64 of FP32) the float path is markedly
+    faster — about 2.7x at 16k vertices and roughly 6x at 4k vertices in the
+    rollout benchmark — at float precision.
+  - Extended single precision to the tetrahedral CUDA rollout: the tet device
+    path (the `DVec3` vector type, the Stable Neo-Hookean accumulator, and the
+    tet color-sweep kernel) is templated on the scalar type, and
+    `useSinglePrecision` runs `vbdRolloutTetMeshCuda` in float. A device-skipping
+    test confirms the float tet rollout tracks the double rollout to float
+    accuracy; on the RTX 5000 Ada the float tet rollout is about 9-13x faster
+    (the heavy per-vertex Neo-Hookean FP64 math benefits even more than the
+    mass-spring path), at float precision.
+  - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
+    20-vertex tilted strand with structural and skip springs, 100 iterations per
+    step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step
+    versus the TinyVBD reference on the same scene across sizes (the strand
+    length is configurable in both), with DART about 2.7-3.0x faster at 20, 100,
+    and 400 vertices (e.g. 0.16 vs 0.49 ms, 0.78 vs 2.33 ms, 3.18 vs 8.67 ms per
+    step). DART's CPU VBD thus wins robustly, not just at one size; it uses a
+    double LDLT 3x3 block solve plus tight assembly while TinyVBD uses a float
+    colPivHouseholderQr solve. The Gaia GPU framework and the paper's
+    tetrahedral RTX-4090 scene numbers remain future work.
+  - Added a multithreaded VBD block-descent driver
+    (`parallelBlockDescentMassSpring`) that runs the colored Gauss-Seidel sweep
+    on a fixed worker-thread pool with a `std::barrier` between colors. Because
+    same-color vertices are independent, the parallel result is bit-identical to
+    the serial driver (verified). Thread scaling on a 96x96 grid gave roughly
+    1.65x/2.6x/3.5x speedups at 2/4/8 threads.
+  - Added an internal experimental VBD half-space penalty-contact kernel
+    (`contact_kernel.hpp`: `ContactPlane`, `addHalfSpacePenaltyContact`, energy
+    `E_c = (k_c/2) d^2`) and a contact-aware mass-spring driver
+    (`blockDescentMassSpringGround`), so deformable bodies rest on static
+    ground/obstacle half-spaces instead of tunneling. Tests cover the
+    finite-difference force match, inactivity above the plane, the
+    positive-semidefinite contact Hessian, a particle resting on the ground, and
+    a spring net sagging onto the ground.
+  - Added semi-implicit Coulomb friction for VBD half-space contact
+    (`addHalfSpaceFriction`: tangential penalty clamped to the Coulomb limit
+    `mu * lambda`, with a positive-semidefinite Hessian in both the sticking and
+    sliding regimes) and the contact+friction driver
+    `blockDescentMassSpringGroundFriction`. Tests cover the sticking-regime
+    finite-difference force match, the Coulomb-capped sliding force, and a
+    sliding particle decelerated to rest by kinetic friction.
+    Vertex-triangle/edge-edge contact and self-collision remain future work.
+  - Added a `dart-demos` GUI scene `experimental_vbd` ("Deformable VBD
+    (Experimental)") that drives a contact-free hanging cloth through the VBD
+    inner solver, selected via the internal `comps::DeformableVbdConfig` through
+    `World::getRegistry()` so the public deformable facade stays
+    solver-agnostic. Run it with `pixi run demos -- --scene experimental_vbd`;
+    it joins the headless demo-cycle smoke test for visual-regression coverage.
+    This is the first user-runnable VBD visual showcase (PLAN-104 Phase 10).
+  - Added a combined springs + tetrahedra VBD block-descent driver
+    (`blockDescentDeformable` with `colorDeformable` and a combined per-vertex
+    assembler) that minimizes inertia + distance-spring + Stable Neo-Hookean
+    tetrahedron energy in one graph-colored Gauss-Seidel sweep. It reduces
+    bit-for-bit to `blockDescentMassSpring` with no tets and to
+    `blockDescentTetMesh` with no springs, and its converged state matches an
+    independent global gradient-descent minimizer of the combined objective.
+  - Extended the experimental World VBD path to tetrahedral bodies: the stage
+    now builds Stable Neo-Hookean tetrahedra from the body topology and its
+    `DeformableMaterial` Lame parameters, so VBD models material-dependent
+    volumetric elasticity that the default gradient solver does not. The opt-in
+    gate was relaxed to run VBD on bodies free of external contact (ground and
+    rigid-surface) sources; surface self-contact for VBD bodies remains a later
+    slice. Tests confirm a tetrahedral body routes through VBD, stays stable
+    under gravity, and that a stiffer material settles measurably closer to its
+    rest shape.
+  - Threaded Chebyshev semi-iterative acceleration and stiffness-proportional
+    Rayleigh damping into the World VBD path. `blockDescentDeformable` now
+    optionally over-relaxes each sweep with Chebyshev (same fixed point, faster
+    convergence when the spectral radius is matched) and adds Rayleigh damping
+    opposing the per-step displacement, both selected through new
+    `DeformableVbdConfig` knobs (`useChebyshev`/`chebyshevRho`/
+    `rayleighDamping`). Tests confirm Chebyshev converges to the same minimizer,
+    Rayleigh keeps the per-vertex system positive definite while changing the
+    iterate, the World accelerated solve matches the plain one, and World
+    Rayleigh damping dissipates kinetic energy. Chebyshev is opt-in and
+    conservative by default because too high a spectral radius can over-relax.
+  - Wired the deterministic multithreaded color sweep into the World VBD path.
+    Added `parallelBlockDescentDeformable` (the springs + tetrahedra counterpart
+    of the mass-spring parallel driver: a worker pool updates each color's
+    disjoint vertex slices with a `std::barrier` between colors) and a
+    `workerThreads` knob on `DeformableVbdConfig`. With more than one worker the
+    World VBD solve runs the multithreaded sweep, which is bit-identical to the
+    serial driver (verified at the kernel level for springs + tets and at the
+    World level over ten steps). The serial path keeps Chebyshev and residual
+    early termination; the multithreaded path omits them (they need a global
+    extrapolation / cross-thread reduction) and falls back to the serial driver
+    for a single worker.
+  - Wired static ground/obstacle contact (and optional Coulomb friction) into
+    the World VBD path. `blockDescentDeformable` and
+    `parallelBlockDescentDeformable` now accept per-vertex `ContactPlane`s and a
+    friction coefficient, adding the VBD half-space penalty and semi-implicit
+    Coulomb friction terms per vertex. The stage builds the per-vertex planes
+    each step from the static ground-barrier set (z-up half-spaces at the
+    per-xy barrier top via `staticGroundTopAt`, lagged at the warm-start
+    position), gated by a new `DeformableVbdConfig::contactStiffness`. The VBD
+    gate was relaxed to run on bodies with ground barriers when the contact
+    stiffness is positive; a body with barriers but no VBD contact stiffness
+    still falls back to the default solver so it rests on the ground, and
+    rigid-surface CCD and surface self-contact remain default-solver-only.
+    Tests confirm a VBD spring patch rests on a ground barrier instead of
+    falling through and that Coulomb friction shortens a sliding patch's travel.
+  - Added a public, algorithm-neutral way to select the iterative deformable
+    inner solver from the experimental World facade:
+    `World::configureDeformableSolver(name, DeformableSolverOptions)`. The
+    options struct (iterations, convergence tolerance, acceleration, stiffness
+    damping, worker threads, ground-contact stiffness) carries no solver-name
+    vocabulary; the World step pipeline owns the translation to the internal
+    opt-in inner-solver component, so the public surface stays solver-agnostic
+    and the binding never touches `comps/`. This is the supported way for
+    dartpy and examples to opt a deformable body into the VBD solver. Tests
+    confirm it routes a body through the VBD path, honors ground contact, and
+    throws for an unknown body name.
+  - Bound the deformable solver config to dartpy: `DeformableSolverOptions` and
+    `World.configure_deformable_solver(name, options)` are now available from
+    Python (the binding never includes internal `comps/` headers, satisfying the
+    API-boundary rule). This is what lets the Python demos select the VBD solver.
+  - Added Vertex Block Descent deformable scenes to the Python `py-demos` app —
+    the VBD paper demos that the current contact-free World VBD path reproduces:
+    a mass-spring hanging cloth (`vbd_cloth`) and net (`vbd_net`), and a
+    tetrahedral cantilever beam (`vbd_beam`, the single-body analogue of the
+    paper's twisting beams). Each builds an experimental `sx.World`, opts the
+    body into VBD via `configure_deformable_solver`, and renders through a new
+    `SxRenderBridge.add_deformable_visual` as a live deforming surface
+    wireframe (spring edges for the mass-spring cloth/net, boundary-triangle
+    edges for the tetrahedral beam) with pinned nodes marked, instead of an
+    isolated per-node point cloud. The paper's multi-body / self-collision
+    scenes (216 squishy balls, 10,368 models, tearing cloth) need surface
+    self-contact and are deferred.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

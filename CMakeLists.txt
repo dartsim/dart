@@ -418,6 +418,12 @@ dart_option(
   OFF
   CATEGORY build
 )
+dart_option(
+  DART_BUILD_DIFF
+  "Build opt-in differentiable simulation support for dart::simulation::experimental"
+  OFF
+  CATEGORY build
+)
 set(
   DART_CUDA_ARCHITECTURES
   ""
@@ -434,6 +440,15 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
   endif()
 
   enable_language(CUDA)
+endif()
+
+if(DART_BUILD_DIFF)
+  if(NOT DART_BUILD_SIMULATION_EXPERIMENTAL)
+    message(
+      FATAL_ERROR
+      "DART_BUILD_DIFF requires DART_BUILD_SIMULATION_EXPERIMENTAL=ON"
+    )
+  endif()
 endif()
 
 dart_configure_compiler_cache()

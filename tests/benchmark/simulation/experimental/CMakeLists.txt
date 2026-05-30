@@ -55,14 +55,51 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_vbd_vertex_block_kernel
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_vertex_block_kernel.cpp
+  )
+
+  dart_experimental_add_benchmark(
+    bm_vbd_block_descent
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_block_descent.cpp
+  )
+
+  dart_experimental_add_benchmark(
+    bm_vbd_neo_hookean
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_neo_hookean.cpp
+  )
+
+  dart_experimental_add_benchmark(
+    bm_vbd_world_solver
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_world_solver.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )
+
+  # Differentiable simulation gradient benchmark (PLAN-110): analytic step
+  # Jacobian vs finite-differencing, and diff-ON vs diff-OFF step overhead.
+  # Exercises the detail-only differentiable code path, so it is registered
+  # only when DART_BUILD_DIFF is ON.
+  if(DART_BUILD_DIFF)
+    dart_experimental_add_benchmark(
+      bm_diff_gradient
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_diff_gradient.cpp
+    )
+  endif()
 
   if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
     dart_experimental_add_benchmark(
       bm_cuda_rigid_body_state_batch
       ${CMAKE_CURRENT_SOURCE_DIR}/bm_cuda_rigid_body_state_batch.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL "simulation-experimental-cuda"
+    )
+    dart_experimental_add_benchmark(
+      bm_vbd_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_cuda.cpp
       LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
       LABEL "simulation-experimental-cuda"
     )

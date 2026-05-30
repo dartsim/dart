@@ -56,13 +56,49 @@ direct native project file pickers for Open and Save As; inspector enum
 choices for shape type and child link joint kind; viewport selection sync;
 transform-gizmo action seams; and viewport rendering of the experimental scene
 (verified headless with a non-blank smoke check plus a foreground-geometry
-pixel check). Remaining follow-ups: richer first-run dock layout, viewport
-fit/focus and camera presets, multi-selection inspector behavior, richer joint
-relationship affordances, and co-evolution to adopt experimental shape/loader
-APIs (replacing editor-side shape descriptors) as they land (see PLAN-050). The
-`## Architecture Overview`
-and later sections record the original rationale; treat this section as the
-authoritative as-built note where they differ.
+pixel check).
+
+The post-MVP **workbench completion** brought `dartsim` to feature parity. The
+durable UI architecture decision it established: every panel and menu drives the
+engine through tested, backend-hidden view-model **action seams** under
+`dartsim/ui/include/dartsim_ui/*_actions.hpp` (project, history, outliner,
+inspector, palette, relationship, simulation, console, watch, viewport), each
+with its own `UNIT_dartsim_ui_*Actions` target, rather than anonymous
+`editor.cpp` lambdas. New editor behavior is added as an action/view-model seam
+first and then wired into `editor.cpp` as a thin view. The completed surface
+covers project lifecycle (native picker plus in-app browser/manual-path
+fallback, dirty-replacement confirmation, recent projects), undo/redo history
+labels, viewport pick/selection sync and transform gizmos, a context-sensitive
+Create palette, the typed Inspector with multi-selection, frame/link
+relationship edits, an explicit Edit/Simulation mode boundary with in-mode
+restart and first/prev/next/last replay navigation, a Watch panel with persisted
+named presets, editor-owned camera/range/contact sensor and collision
+descriptors, viewport camera presets/modes/lock with selection tracking,
+view-only layer filters, and a single/four-view layout with per-pane camera
+memory and all-pane fit/focus. Console automation drives the same seams. The
+filtered `dartsim/engine/*` plus testable `dartsim/ui/*_actions` surface is held
+at ≥95% line coverage, measured by `pixi run coverage-report-dartsim`.
+
+The native file picker is the only OS/windowing dependency in `dartsim/ui`
+(`project_file_dialog.cpp`, nativefiledialog-extended). It crosses the
+`dart::gui` boundary as an opaque `void* parentNativeWindow` (no backend type),
+and the renderer-backend boundary (no Filament/GLFW/ImGui/OpenGL/Vulkan/Metal in
+`dartsim/engine` or `dartsim/ui`, and no `dart/gui` include in the headless
+engine) is enforced by `scripts/check_api_boundaries.py`
+(`dartsim-ui-backend-leak` and `dartsim-engine-backend-leak`).
+
+Genuinely-deferred follow-ups — each gated on a capability that does not exist
+yet, not on this app: runtime sensor output panes and joint render layers /
+joint visibility filters (wait on the experimental World exposing sensor values
+and joint render data); richer relationship inspectors and grouping (wait on
+more authored object metadata); a Scene Tree context-menu popup affordance (waits
+on the panel API exposing context menus); extracting the project file-dialog
+orchestration out of `editor.cpp` into its own tested seam (the last untested
+dialog-flow branch, tracked under PLAN-101); and co-evolution to adopt
+experimental shape/loader APIs, replacing editor-side shape descriptors, as they
+land (see PLAN-050). The `## Architecture Overview` and later sections record the
+original rationale; treat this section as the authoritative as-built note where
+they differ.
 
 ## Summary
 

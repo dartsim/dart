@@ -61,6 +61,7 @@ dart::gui::ApplicationOptions makeWamIkFastScene();
 dart::gui::ApplicationOptions makeHuboPuppetScene();
 dart::gui::ApplicationOptions makeExperimentalRigidBodyScene();
 dart::gui::ApplicationOptions makeExperimentalDeformableScene();
+dart::gui::ApplicationOptions makeExperimentalVbdDeformableScene();
 dart::gui::ApplicationOptions makeG1PuppetScene();
 dart::gui::ApplicationOptions makeHumanJointLimitsScene();
 

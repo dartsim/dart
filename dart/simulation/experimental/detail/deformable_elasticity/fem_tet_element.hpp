@@ -180,6 +180,43 @@ inline Matrix9d determinantHessian(const Eigen::Matrix3d& f)
   return h;
 }
 
+/// Derivative d vec(R) / d vec(F) (column-stacked vec ordering) of the polar
+/// rotation R from F = R S, given R and the symmetric stretch S = R^T F.
+///
+/// Differentiating F = R S and isolating the skew part gives
+/// (tr(S) I - S) w = axl(R^T dF - dF^T R), with dR = R [w]x. Applying this to
+/// each of the nine unit perturbations of F assembles the 9x9 derivative. The
+/// matrix (tr(S) I - S) has eigenvalues s_j + s_k (sums of the *other* two
+/// singular values), so it is invertible for any non-degenerate non-inverted
+/// element; ``false`` is returned when it is singular (a collapsed/inverted
+/// element), so the caller can fall back to the Gauss-Newton Hessian.
+inline bool rotationGradient(
+    const Eigen::Matrix3d& r, const Eigen::Matrix3d& s, Matrix9d& dRdF)
+{
+  const Eigen::Matrix3d a = s.trace() * Eigen::Matrix3d::Identity() - s;
+  const double detA = a.determinant();
+  if (!std::isfinite(detA) || std::abs(detA) < 1e-12) {
+    return false;
+  }
+  const Eigen::Matrix3d aInv = a.inverse();
+  for (int col = 0; col < 3; ++col) {
+    for (int row = 0; row < 3; ++row) {
+      // Unit perturbation dF = e_row e_col^T, so M = R^T dF places the row-th
+      // column of R^T into column `col` and is zero elsewhere.
+      Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
+      m.col(col) = r.transpose().col(row);
+      Eigen::Vector3d axl;
+      axl.x() = m(2, 1) - m(1, 2);
+      axl.y() = m(0, 2) - m(2, 0);
+      axl.z() = m(1, 0) - m(0, 1);
+      const Eigen::Vector3d w = aInv * axl;
+      const Eigen::Matrix3d dR = r * skew(w);
+      dRdF.col(row + 3 * col) = Eigen::Map<const Vector9d>(dR.data());
+    }
+  }
+  return true;
+}
+
 } // namespace detail
 
 /// Stable neo-Hookean strain-energy density (rest-state-zeroed).
@@ -293,6 +330,174 @@ inline TetElementResult evaluateStableNeoHookeanTet(
 
   if (computeHessian) {
     const Matrix9d hMaterial = stableNeoHookeanEnergyHessian(f, lame);
+    result.hessian.noalias() = w * (dFdq.transpose() * hMaterial * dFdq);
+  }
+
+  result.valid = true;
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Fixed-corotational elasticity (the IPC paper's other isotropic material).
+//
+//   psi(F) = mu ||F - R||_F^2 + (lambda/2)(J - 1)^2
+//
+// with R the rotation from the polar decomposition F = R S. The first
+// Piola-Kirchhoff stress is exactly P = 2*mu*(F - R) + lambda*(J - 1) dJ/dF:
+// the rotation-gradient cross term <F - R, dR/dF> vanishes because R^T dR is
+// skew and (F - R) = R(S - I) with S symmetric. The element Hessian uses the
+// positive-definite Gauss-Newton approximation 2*mu*I9 + lambda
+// (dJ/dF)(dJ/dF)^T (treating the rotation as fixed), which gives a valid Newton
+// descent direction without the intricate rotation Hessian; the exact analytic
+// eigensystem is a later accuracy/perf follow-up.
+// ---------------------------------------------------------------------------
+
+/// Rotation R from the polar decomposition F = R S (a proper rotation, det +1).
+inline Eigen::Matrix3d polarRotation(const Eigen::Matrix3d& f)
+{
+  Eigen::JacobiSVD<Eigen::Matrix3d> svd(
+      f, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  Eigen::Matrix3d u = svd.matrixU();
+  const Eigen::Matrix3d& v = svd.matrixV();
+  // Reflect the smallest-singular-value axis if U V^T is a reflection, so R is
+  // a proper rotation (det R = +1).
+  if ((u * v.transpose()).determinant() < 0.0) {
+    u.col(2) *= -1.0;
+  }
+  return u * v.transpose();
+}
+
+/// Fixed-corotational strain-energy density, given the precomputed polar
+/// rotation ``r`` of ``f`` so the per-element SVD can be shared with the
+/// stress.
+inline double fixedCorotationalEnergyDensity(
+    const Eigen::Matrix3d& f,
+    const Eigen::Matrix3d& r,
+    const LameParameters& lame)
+{
+  const double j = f.determinant();
+  return lame.mu * (f - r).squaredNorm()
+         + 0.5 * lame.lambda * (j - 1.0) * (j - 1.0);
+}
+
+/// Fixed-corotational strain-energy density.
+inline double fixedCorotationalEnergyDensity(
+    const Eigen::Matrix3d& f, const LameParameters& lame)
+{
+  return fixedCorotationalEnergyDensity(f, polarRotation(f), lame);
+}
+
+/// Fixed-corotational first Piola-Kirchhoff stress (exact), given the
+/// precomputed polar rotation ``r`` of ``f``.
+inline Eigen::Matrix3d fixedCorotationalFirstPiola(
+    const Eigen::Matrix3d& f,
+    const Eigen::Matrix3d& r,
+    const LameParameters& lame)
+{
+  const double j = f.determinant();
+  Eigen::Matrix3d p = 2.0 * lame.mu * (f - r);
+  p.noalias() += lame.lambda * (j - 1.0) * detail::determinantGradient(f);
+  return p;
+}
+
+/// Fixed-corotational first Piola-Kirchhoff stress (exact).
+inline Eigen::Matrix3d fixedCorotationalFirstPiola(
+    const Eigen::Matrix3d& f, const LameParameters& lame)
+{
+  return fixedCorotationalFirstPiola(f, polarRotation(f), lame);
+}
+
+/// Positive-definite Gauss-Newton material Hessian for the fixed-corotational
+/// model (column-stacked vec(F) ordering). Used directly for
+/// inverted/degenerate elements (where the exact rotation Hessian is undefined)
+/// and as the inversion- robust fallback inside the element evaluator.
+inline Matrix9d fixedCorotationalGaussNewtonHessian(
+    const Eigen::Matrix3d& f, const LameParameters& lame)
+{
+  const Eigen::Matrix3d g = detail::determinantGradient(f);
+  const Eigen::Map<const Vector9d> vecG(g.data());
+  Matrix9d h = Matrix9d::Zero();
+  h.diagonal().array() += 2.0 * lame.mu;
+  h.noalias() += lame.lambda * (vecG * vecG.transpose());
+  return h;
+}
+
+/// Exact fixed-corotational material Hessian d^2 psi / d vec(F)^2
+/// (column-stacked vec ordering), given the precomputed polar rotation ``r``.
+/// It is
+///
+///   2*mu*(I9 - dR/dF) + lambda*( vec(g) vec(g)^T + (J - 1) * d^2 J/dF^2 ),
+///
+/// with g = dJ/dF the cofactor. Unlike the Gauss-Newton approximation this is
+/// in general indefinite, exactly like the IPC paper's per-element Hessian, so
+/// the solver projects it to PSD through the existing batched seam before
+/// assembly. Returns ``false`` (leaving ``h`` untouched) when the rotation
+/// gradient is undefined for a collapsed/inverted element, so the caller uses
+/// Gauss-Newton.
+inline bool fixedCorotationalExactMaterialHessian(
+    const Eigen::Matrix3d& f,
+    const Eigen::Matrix3d& r,
+    const LameParameters& lame,
+    Matrix9d& h)
+{
+  const Eigen::Matrix3d s = r.transpose() * f;
+  Matrix9d dRdF;
+  if (!detail::rotationGradient(r, s, dRdF)) {
+    return false;
+  }
+  const double j = f.determinant();
+  const Eigen::Matrix3d g = detail::determinantGradient(f);
+  const Eigen::Map<const Vector9d> vecG(g.data());
+  h.noalias() = 2.0 * lame.mu * (Matrix9d::Identity() - dRdF);
+  h.noalias() += lame.lambda
+                 * (vecG * vecG.transpose()
+                    + (j - 1.0) * detail::determinantHessian(f));
+  // The true Hessian is symmetric; symmetrize away the rotation gradient's tiny
+  // numerical asymmetry so the PSD projection sees an exactly symmetric block.
+  h = 0.5 * (h + h.transpose()).eval();
+  return true;
+}
+
+/// Evaluate the fixed-corotational element (energy + 12x1 gradient + PD 12x12
+/// Gauss-Newton Hessian), scaled by the rest volume.
+inline TetElementResult evaluateFixedCorotationalTet(
+    const Eigen::Vector3d& x0,
+    const Eigen::Vector3d& x1,
+    const Eigen::Vector3d& x2,
+    const Eigen::Vector3d& x3,
+    const TetRestShape& rest,
+    const LameParameters& lame,
+    const bool computeHessian = true)
+{
+  TetElementResult result;
+  if (!rest.valid) {
+    return result;
+  }
+
+  const Eigen::Matrix3d f
+      = deformationGradient(x0, x1, x2, x3, rest.inverseRestEdges);
+  const double w = rest.restVolume;
+
+  // The polar-decomposition rotation is the only SVD in the kernel; compute it
+  // once and share it between the energy and the stress (the line search
+  // evaluates both every probe, so this halves the per-element SVD cost).
+  const Eigen::Matrix3d r = polarRotation(f);
+
+  result.energy = w * fixedCorotationalEnergyDensity(f, r, lame);
+
+  const Eigen::Matrix3d p = fixedCorotationalFirstPiola(f, r, lame);
+  const Matrix9x12d dFdq = deformationGradientJacobian(rest.inverseRestEdges);
+  const Eigen::Map<const Vector9d> vecP(p.data());
+  result.gradient.noalias() = w * (dFdq.transpose() * vecP);
+
+  if (computeHessian) {
+    // Use the exact (generally indefinite) material Hessian, which the solver
+    // PSD-projects; fall back to the always-PSD Gauss-Newton form only when the
+    // rotation gradient is undefined (a collapsed/inverted element).
+    Matrix9d hMaterial;
+    if (!fixedCorotationalExactMaterialHessian(f, r, lame, hMaterial)) {
+      hMaterial = fixedCorotationalGaussNewtonHessian(f, lame);
+    }
     result.hessian.noalias() = w * (dFdq.transpose() * hMaterial * dFdq);
   }
 

@@ -151,6 +151,10 @@ struct DeformableSolverStats
   // (frictionCoefficient == 0). Feed the paper's friction benchmark statistics.
   double frictionDissipation = 0.0;
   std::size_t activeFrictionContacts = 0;
+  std::size_t vbdBodyCount = 0;
+  std::size_t vbdSweeps = 0;
+  std::size_t vbdVertexUpdates = 0;
+  double vbdResidualNormSquared = 0.0;
   // Contact closest-approach diagnostic at the converged iterate, folded across
   // the step's deformable bodies. minActiveContactDistance is the smallest
   // point-triangle / edge-edge distance among the active self-contact barrier
@@ -287,10 +291,16 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
-/// Resolves contacts between free rigid bodies with sequential normal impulses
-/// (frictionless, fully inelastic). Static bodies (non-positive mass) act as
-/// immovable. This is the first contact-solver slice; friction, restitution
-/// tuning, joints/links, and an LCP formulation are future work.
+/// Resolves contacts between free rigid bodies. Static bodies (non-positive
+/// mass) act as immovable.
+///
+/// Two solver paths are available, selected per-World via
+/// `WorldOptions::contactSolverMethod`:
+///   - `SequentialImpulse` (default): the long-standing sequential normal +
+///     friction impulse solve with positional correction.
+///   - `BoxedLcp`: an opt-in boxed-LCP normal solve (frictionless first slice)
+///     via the pivoting Dantzig solver. Contacts outside that scope (friction,
+///     articulated links) fall through to the sequential-impulse behavior.
 class DART_EXPERIMENTAL_API RigidBodyContactStage final : public WorldStepStage
 {
 public:

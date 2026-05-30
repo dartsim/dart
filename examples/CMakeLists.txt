@@ -18,4 +18,10 @@ if(DART_BUILD_GUI OR NOT DART_IN_SOURCE_BUILD)
   # dart-demos app (examples/demos), switchable at runtime from the sidebar.
   add_subdirectory(hello_world)
   add_subdirectory(demos)
+
+  # experimental_differentiable_gui stays standalone: it is special-build-coupled
+  # on the opt-in differentiable build (DART_BUILD_DIFF / DART_HAS_DIFF), which is
+  # off in the default build that compiles dart-demos. Its own CMakeLists returns
+  # early when GUI, experimental simulation, or DART_HAS_DIFF are unavailable.
+  add_subdirectory(experimental_differentiable_gui)
 endif()

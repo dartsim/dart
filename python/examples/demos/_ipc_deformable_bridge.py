@@ -241,6 +241,7 @@ def _fem_bar_options(
     youngs_modulus: float,
     poisson_ratio: float,
     density: float,
+    use_fixed_corotational: bool = False,
 ) -> "sx.DeformableBodyOptions":
     options = sx.DeformableBodyOptions()
     options.positions = positions
@@ -249,6 +250,7 @@ def _fem_bar_options(
     options.material.poisson_ratio = poisson_ratio
     options.material.density = density
     options.material.use_finite_element_elasticity = True
+    options.material.use_fixed_corotational_elasticity = use_fixed_corotational
     return options
 
 
@@ -292,6 +294,7 @@ def build_fem_twist_bar(
     twist_end_time: float,
     poisson_ratio: float = 0.3,
     density: float = 1.0e3,
+    use_fixed_corotational: bool = False,
 ) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
     """A FEM beam twisted at both ends by opposing scripted rotations.
 
@@ -300,7 +303,63 @@ def build_fem_twist_bar(
     then release; the elastic FEM core resists the shear and untwists. The
     scripted drive uses a linear ``omega x r`` extrapolation, so ``twist_rate``
     and ``twist_end_time`` are kept small to stay near a true rotation. Toward
-    the IPC paper's Fig. 4 (rod twist) / Fig. 14 (mat twist) themes.
+    the IPC paper's Fig. 4 (rod twist) / Fig. 14 (mat twist) themes. Set
+    ``use_fixed_corotational`` to drive the bar with the fixed-corotational
+    material instead of the default stable neo-Hookean kernel.
+    """
+
+    positions, tetrahedra, edges, node_index, (nx, ny, nz) = _fem_bar_mesh(
+        cells_x, cells_y, cells_z, cell_size, origin
+    )
+    options = _fem_bar_options(
+        positions,
+        tetrahedra,
+        youngs_modulus,
+        poisson_ratio,
+        density,
+        use_fixed_corotational=use_fixed_corotational,
+    )
+
+    axis_y = origin[1] + 0.5 * cells_y * cell_size
+    axis_z = origin[2] + 0.5 * cells_z * cell_size
+
+    def end_face(i: int) -> list[int]:
+        return [node_index(i, j, k) for k in range(nz) for j in range(ny)]
+
+    conditions = []
+    for face_i, sign in ((0, 1.0), (nx - 1, -1.0)):
+        condition = sx.DeformableDirichletBoundaryCondition()
+        condition.nodes = end_face(face_i)
+        condition.angular_velocity = np.array([sign * twist_rate, 0.0, 0.0])
+        condition.center = np.array([origin[0] + face_i * cell_size, axis_y, axis_z])
+        condition.start_time = 0.0
+        condition.end_time = twist_end_time
+        conditions.append(condition)
+    options.dirichlet_boundary_conditions = conditions
+    return options, edges
+
+
+def build_fem_compression_bar(
+    *,
+    cells_x: int,
+    cells_y: int,
+    cells_z: int,
+    cell_size: float,
+    origin: Sequence[float],
+    youngs_modulus: float,
+    compression_rate: float,
+    compression_end_time: float,
+    poisson_ratio: float = 0.3,
+    density: float = 1.0e3,
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """A slender FEM beam whose two pinned end faces are driven toward each other.
+
+    Opposing scripted ``DeformableDirichletBoundaryCondition``s translate the end
+    faces inward (along the bar's long x axis) at ``compression_rate`` until
+    ``compression_end_time``; the soft FEM core buckles and folds onto itself, so
+    its surface comes into contact with itself. This exercises the self-contact
+    barrier on a volumetric FEM body -- a DART-native step toward the IPC paper's
+    self-collision stress tests.
     """
 
     positions, tetrahedra, edges, node_index, (nx, ny, nz) = _fem_bar_mesh(
@@ -320,10 +379,10 @@ def build_fem_twist_bar(
     for face_i, sign in ((0, 1.0), (nx - 1, -1.0)):
         condition = sx.DeformableDirichletBoundaryCondition()
         condition.nodes = end_face(face_i)
-        condition.angular_velocity = np.array([sign * twist_rate, 0.0, 0.0])
+        condition.linear_velocity = np.array([sign * compression_rate, 0.0, 0.0])
         condition.center = np.array([origin[0] + face_i * cell_size, axis_y, axis_z])
         condition.start_time = 0.0
-        condition.end_time = twist_end_time
+        condition.end_time = compression_end_time
         conditions.append(condition)
     options.dirichlet_boundary_conditions = conditions
     return options, edges

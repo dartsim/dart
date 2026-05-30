@@ -44,6 +44,12 @@
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/experimental/diff/physical_parameter.hpp>
+#include <dart/simulation/experimental/diff/step_derivatives.hpp>
+#include <dart/simulation/experimental/diff/step_gradient.hpp>
+#ifdef DART_HAS_DIFF
+  #include <dart/simulation/experimental/diff/rollout.hpp>
+#endif
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -446,6 +452,25 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   nb::enum_<sim::WorldSyncStage>(m, "WorldSyncStage")
       .value("KINEMATICS", sim::WorldSyncStage::Kinematics);
+
+  nb::enum_<sim::ContactSolverMethod>(m, "ContactSolverMethod")
+      .value("SEQUENTIAL_IMPULSE", sim::ContactSolverMethod::SequentialImpulse)
+      .value("BOXED_LCP", sim::ContactSolverMethod::BoxedLcp);
+
+  nb::enum_<sim::ContactGradientMode>(m, "ContactGradientMode")
+      .value("ANALYTIC", sim::ContactGradientMode::Analytic)
+      .value(
+          "COMPLEMENTARITY_AWARE",
+          sim::ContactGradientMode::ComplementarityAware)
+      .value(
+          "PRE_CONTACT_SURROGATE",
+          sim::ContactGradientMode::PreContactSurrogate);
+
+  nb::enum_<sim::PhysicalParameter>(m, "PhysicalParameter")
+      .value("MASS", sim::PhysicalParameter::MASS)
+      .value("CENTER_OF_MASS", sim::PhysicalParameter::CENTER_OF_MASS)
+      .value("INERTIA", sim::PhysicalParameter::INERTIA)
+      .value("FRICTION", sim::PhysicalParameter::FRICTION);
 
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
@@ -1456,6 +1481,144 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "depth", [](const sim::Contact& self) { return self.depth; });
 
+  nb::class_<sim::StepDerivatives>(m, "StepDerivatives")
+      .def_prop_ro(
+          "state_jacobian",
+          [](const sim::StepDerivatives& self) { return self.stateJacobian; })
+      .def_prop_ro(
+          "control_jacobian",
+          [](const sim::StepDerivatives& self) { return self.controlJacobian; })
+      .def_prop_ro(
+          "parameter_jacobian",
+          [](const sim::StepDerivatives& self) {
+            return self.parameterJacobian;
+          })
+      .def("__repr__", [](const sim::StepDerivatives& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "state_jacobian",
+            std::to_string(self.stateJacobian.rows()) + "x"
+                + std::to_string(self.stateJacobian.cols()));
+        fields.emplace_back(
+            "control_jacobian",
+            std::to_string(self.controlJacobian.rows()) + "x"
+                + std::to_string(self.controlJacobian.cols()));
+        fields.emplace_back(
+            "parameter_jacobian",
+            std::to_string(self.parameterJacobian.rows()) + "x"
+                + std::to_string(self.parameterJacobian.cols()));
+        return format_repr("StepDerivatives", fields);
+      });
+
+  nb::class_<sim::StepGradient>(m, "StepGradient")
+      .def_prop_ro(
+          "state", [](const sim::StepGradient& self) { return self.state; })
+      .def_prop_ro(
+          "control", [](const sim::StepGradient& self) { return self.control; })
+      .def("__repr__", [](const sim::StepGradient& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("state", std::to_string(self.state.size()));
+        fields.emplace_back("control", std::to_string(self.control.size()));
+        return format_repr("StepGradient", fields);
+      });
+
+#ifdef DART_HAS_DIFF
+  // Framework-neutral multi-step rollout (PLAN-110 rollout item). Exposed in
+  // C++ on the experimental module here; __init__.py re-exports it onto the
+  // pure-Python ``sx.diff`` namespace as ``sx.diff.rollout`` /
+  // ``sx.diff.RolloutTrajectory``. This is the torch-free path; the torch
+  // ``sx.diff.timestep`` chaining bridge stays as-is.
+  nb::class_<sim::diff::RolloutTrajectory>(m, "RolloutTrajectory")
+      .def_prop_ro(
+          "states",
+          [](const sim::diff::RolloutTrajectory& self) {
+            // Stack the recorded trajectory into a (steps+1) x state_dim
+            // row-major matrix so Python sees a single numpy array.
+            const auto rows = static_cast<Eigen::Index>(self.states.size());
+            const Eigen::Index cols = rows > 0 ? self.states.front().size() : 0;
+            Eigen::MatrixXd out(rows, cols);
+            for (Eigen::Index i = 0; i < rows; ++i) {
+              out.row(i) = self.states[static_cast<std::size_t>(i)].transpose();
+            }
+            return out;
+          })
+      .def_prop_ro("num_steps", &sim::diff::RolloutTrajectory::numSteps)
+      .def(
+          "gradients",
+          [](const sim::diff::RolloutTrajectory& self,
+             const nb::handle& finalStateGrad) {
+            const sim::diff::RolloutGradient gradient
+                = self.rolloutVjp(toVectorX(finalStateGrad));
+            // Stack the per-step control gradients into a steps x num_efforts
+            // matrix; an empty rollout (no steps) yields a 0 x 0 array.
+            const auto rows
+                = static_cast<Eigen::Index>(gradient.controlGrads.size());
+            const Eigen::Index cols
+                = rows > 0 ? gradient.controlGrads.front().size() : 0;
+            Eigen::MatrixXd controlGrads(rows, cols);
+            for (Eigen::Index t = 0; t < rows; ++t) {
+              controlGrads.row(t)
+                  = gradient.controlGrads[static_cast<std::size_t>(t)]
+                        .transpose();
+            }
+            return nb::make_tuple(gradient.initialStateGrad, controlGrads);
+          },
+          nb::arg("final_state_grad"))
+      .def("__repr__", [](const sim::diff::RolloutTrajectory& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("steps", std::to_string(self.numSteps()));
+        const Eigen::Index stateDim
+            = self.states.empty() ? 0 : self.states.front().size();
+        fields.emplace_back("state_dim", std::to_string(stateDim));
+        return format_repr("RolloutTrajectory", fields);
+      });
+
+  m.def(
+      "rollout",
+      [](sim::World& world,
+         const nb::handle& initialStateVector,
+         const Eigen::MatrixXd& controlSequence,
+         std::size_t steps) {
+        return sim::diff::rollout(
+            world, toVectorX(initialStateVector), controlSequence, steps);
+      },
+      nb::arg("world"),
+      nb::arg("initial_state_vector"),
+      nb::arg("control_sequence"),
+      nb::arg("steps"));
+#endif // DART_HAS_DIFF
+  nb::class_<sim::DeformableSolverDiagnostics>(m, "DeformableSolverDiagnostics")
+      .def_ro("body_count", &sim::DeformableSolverDiagnostics::bodyCount)
+      .def_ro("node_count", &sim::DeformableSolverDiagnostics::nodeCount)
+      .def_ro("edge_count", &sim::DeformableSolverDiagnostics::edgeCount)
+      .def_ro(
+          "solver_iterations",
+          &sim::DeformableSolverDiagnostics::solverIterations)
+      .def_ro(
+          "objective_evaluations",
+          &sim::DeformableSolverDiagnostics::objectiveEvaluations)
+      .def_ro(
+          "line_search_trials",
+          &sim::DeformableSolverDiagnostics::lineSearchTrials)
+      .def_ro(
+          "projected_newton_steps",
+          &sim::DeformableSolverDiagnostics::projectedNewtonSteps)
+      .def_ro(
+          "projected_newton_fallbacks",
+          &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
+      .def_ro(
+          "self_contact_barrier_active_contacts",
+          &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
+      .def_ro(
+          "friction_dissipation",
+          &sim::DeformableSolverDiagnostics::frictionDissipation)
+      .def_ro(
+          "min_active_contact_distance",
+          &sim::DeformableSolverDiagnostics::minActiveContactDistance)
+      .def_ro(
+          "converged_active_contact_count",
+          &sim::DeformableSolverDiagnostics::convergedActiveContactCount);
+
   nb::class_<sim::DeformableMaterialProperties>(
       m, "DeformableMaterialProperties")
       .def(nb::init<>())
@@ -1468,7 +1631,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::frictionCoefficient)
       .def_rw(
           "use_finite_element_elasticity",
-          &sim::DeformableMaterialProperties::useFiniteElementElasticity);
+          &sim::DeformableMaterialProperties::useFiniteElementElasticity)
+      .def_rw(
+          "use_fixed_corotational_elasticity",
+          &sim::DeformableMaterialProperties::useFixedCorotationalElasticity);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(
@@ -1565,6 +1731,24 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw("edge_stiffness", &sim::DeformableBodyOptions::edgeStiffness)
       .def_rw("damping", &sim::DeformableBodyOptions::damping)
       .def_rw("material", &sim::DeformableBodyOptions::material);
+
+  nb::class_<sim::DeformableSolverOptions>(m, "DeformableSolverOptions")
+      .def(nb::init<>())
+      .def_rw("iterations", &sim::DeformableSolverOptions::iterations)
+      .def_rw(
+          "convergence_tolerance",
+          &sim::DeformableSolverOptions::convergenceTolerance)
+      .def_rw(
+          "use_acceleration", &sim::DeformableSolverOptions::useAcceleration)
+      .def_rw(
+          "acceleration_spectral_radius",
+          &sim::DeformableSolverOptions::accelerationSpectralRadius)
+      .def_rw(
+          "stiffness_damping", &sim::DeformableSolverOptions::stiffnessDamping)
+      .def_rw("worker_threads", &sim::DeformableSolverOptions::workerThreads)
+      .def_rw(
+          "ground_contact_stiffness",
+          &sim::DeformableSolverOptions::groundContactStiffness);
 
   nb::class_<sim::DeformableBody>(m, "DeformableBody")
       .def_prop_ro("is_valid", &sim::DeformableBody::isValid)
@@ -1691,7 +1875,9 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   m.def(
       "collect_deformable_scene_diagnostics",
-      &sim::io::collectDeformableSceneDiagnostics,
+      [](const sim::World& world) {
+        return sim::io::collectDeformableSceneDiagnostics(world);
+      },
       nb::arg("world"));
 
   m.def(
@@ -1715,11 +1901,29 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::class_<sim::World>(m, "World")
       .def(
           "__init__",
-          [](sim::World* self, double timeStep) {
-            new (self) sim::World();
-            self->setTimeStep(timeStep);
+          [](sim::World* self,
+             double timeStep,
+             const nb::handle& gravity,
+             bool differentiable,
+             sim::ContactSolverMethod contactSolverMethod,
+             sim::ContactGradientMode contactGradientMode) {
+            sim::WorldOptions options;
+            options.timeStep = timeStep;
+            if (!gravity.is_none()) {
+              options.gravity = toVector3(gravity);
+            }
+            options.differentiable = differentiable;
+            options.contactSolverMethod = contactSolverMethod;
+            options.contactGradientMode = contactGradientMode;
+            new (self) sim::World(options);
           },
-          nb::arg("time_step") = 0.001)
+          nb::arg("time_step") = 0.001,
+          nb::kw_only(),
+          nb::arg("gravity") = nb::none(),
+          nb::arg("differentiable") = false,
+          nb::arg("contact_solver_method")
+          = sim::ContactSolverMethod::SequentialImpulse,
+          nb::arg("contact_gradient_mode") = sim::ContactGradientMode::Analytic)
       .def(
           "add_free_frame",
           [](sim::World& self,
@@ -1804,6 +2008,15 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "num_deformable_bodies",
           [](const sim::World& self) { return self.getDeformableBodyCount(); })
+      .def(
+          "configure_deformable_solver",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::DeformableSolverOptions& options) {
+            self.configureDeformableSolver(name, options);
+          },
+          nb::arg("name"),
+          nb::arg("options"))
       .def(
           "add_loop_closure",
           [](sim::World& self,
@@ -1943,6 +2156,13 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("n") = 1,
           nb::call_guard<nb::gil_scoped_release>())
+      .def_prop_ro(
+          "last_deformable_solver_diagnostics",
+          &sim::World::getLastDeformableSolverDiagnostics,
+          nb::rv_policy::reference_internal,
+          "Curated diagnostics from the deformable solve on the most recent "
+          "step that used the built-in pipeline (mesh sizes, projected-Newton "
+          "convergence, self-contact activity, contact closest-approach).")
       .def_prop_rw(
           "time_step", &sim::World::getTimeStep, &sim::World::setTimeStep)
       .def_prop_rw("time", &sim::World::getTime, &sim::World::setTime)
@@ -1962,6 +2182,57 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
+      .def_prop_ro("is_differentiable", &sim::World::isDifferentiable)
+      .def_prop_ro("contact_solver_method", &sim::World::getContactSolverMethod)
+      .def_prop_rw(
+          "contact_gradient_mode",
+          &sim::World::getContactGradientMode,
+          &sim::World::setContactGradientMode)
+      .def_prop_ro("num_dofs", &sim::World::getNumDofs)
+      .def_prop_ro("num_efforts", &sim::World::getNumEfforts)
+      .def_prop_rw(
+          "state_vector",
+          &sim::World::getStateVector,
+          [](sim::World& self, const nb::handle& state) {
+            self.setStateVector(toVectorX(state));
+          })
+      .def_prop_rw(
+          "control_vector",
+          &sim::World::getControlVector,
+          [](sim::World& self, const nb::handle& control) {
+            self.setControlVector(toVectorX(control));
+          })
+      .def("get_step_derivatives", &sim::World::getStepDerivatives)
+      .def(
+          "apply_step_vjp",
+          [](const sim::World& self, const nb::handle& dLossDNextState) {
+            return self.applyStepVjp(toVectorX(dLossDNextState));
+          },
+          nb::arg("d_loss_d_next_state"))
+      .def(
+          "add_differentiable_parameter",
+          [](sim::World& self,
+             const sim::RigidBody& body,
+             sim::PhysicalParameter parameter,
+             const nb::handle& lowerBound,
+             const nb::handle& upperBound) {
+            sim::PhysicalParameterSelector selector(body, parameter);
+            if (!lowerBound.is_none()) {
+              selector.lowerBound = nb::cast<double>(lowerBound);
+            }
+            if (!upperBound.is_none()) {
+              selector.upperBound = nb::cast<double>(upperBound);
+            }
+            self.addDifferentiableParameter(selector);
+          },
+          nb::arg("body"),
+          nb::arg("parameter") = sim::PhysicalParameter::MASS,
+          nb::kw_only(),
+          nb::arg("lower_bound") = nb::none(),
+          nb::arg("upper_bound") = nb::none())
+      .def_prop_ro(
+          "num_differentiable_parameters",
+          &sim::World::getNumDifferentiableParameters)
       .def("collide", &sim::World::collide)
       .def("clear", &sim::World::clear)
       .def("__repr__", [](const sim::World& self) {

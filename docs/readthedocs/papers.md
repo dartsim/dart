@@ -183,23 +183,25 @@ Springer, 2006.
 
 ## Algorithms & Methods (Papers)
 
-| ID                             | Reference                                                                                                                  | Topic       | Status      | Priority | Verdict   |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------- | -------- | --------- |
-| `featherstone-1983`            | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics    | planned     | high     | adopt     |
-| `liu-jain-mbs`                 | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics    | implemented | —        | adopt     |
-| `tan-lcp`                      | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact     | implemented | —        | adopt     |
-| `stewart-trinkle-1996`         | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact     | referenced  | medium   | baseline  |
-| `baraff-1996`                  | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics    | referenced  | low      | reference |
-| `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration | referenced  | medium   | evaluate  |
-| `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision   | implemented | —        | adopt     |
-| `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact     | in-progress | high     | adopt     |
-| `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration | planned     | high     | adopt     |
-| `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration | referenced  | medium   | reference |
-| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024)                                                                                 | contact     | referenced  | medium   | evaluate  |
-| `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact     | referenced  | medium   | evaluate  |
-| `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration | referenced  | high     | baseline  |
-| `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration | referenced  | high     | evaluate  |
-| `kobilarov-crane-desbrun-2009` | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration | referenced  | medium   | reference |
+| ID                             | Reference                                                                                                                  | Topic          | Status      | Priority | Verdict   |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------- | -------- | --------- |
+| `featherstone-1983`            | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics       | planned     | high     | adopt     |
+| `liu-jain-mbs`                 | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics       | implemented | —        | adopt     |
+| `tan-lcp`                      | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact        | implemented | —        | adopt     |
+| `stewart-trinkle-1996`         | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact        | referenced  | medium   | baseline  |
+| `baraff-1996`                  | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics       | referenced  | low      | reference |
+| `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration    | referenced  | medium   | evaluate  |
+| `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision      | implemented | —        | adopt     |
+| `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact        | in-progress | high     | adopt     |
+| `werling-2021`                 | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable | in-progress | high     | adopt     |
+| `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration    | planned     | high     | adopt     |
+| `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration    | referenced  | medium   | reference |
+| `chen-2024-vbd`                | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration    | in-progress | high     | adopt     |
+| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact        | referenced  | medium   | evaluate  |
+| `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact        | referenced  | medium   | evaluate  |
+| `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration    | referenced  | high     | baseline  |
+| `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration    | referenced  | high     | evaluate  |
+| `kobilarov-crane-desbrun-2009` | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration    | referenced  | medium   | reference |
 
 ### `featherstone-1983`
 
@@ -334,6 +336,95 @@ Related public resources:
   exposing the upstream project name as a solver identity, and the upstream
   repository should remain a reference/baseline rather than a runtime
   dependency.
+
+### `werling-2021`
+
+Werling, K., Omens, D., Lee, J., Exarchos, I., & Liu, C. K. "Fast and
+Feature-Complete Differentiable Physics for Articulated Rigid Bodies."
+_Robotics: Science and Systems (RSS)_, 2021. arXiv:2103.16021.
+
+Related public resources:
+
+- Paper: [arxiv.org/abs/2103.16021](https://arxiv.org/abs/2103.16021)
+- Project docs: [nimblephysics.org/docs](https://nimblephysics.org/docs/)
+- Reference implementation (a DART fork):
+  [keenon/nimblephysics](https://github.com/keenon/nimblephysics)
+
+```bib
+@inproceedings{Werling2021Differentiable,
+  author = {Keenon Werling and Dalton Omens and Jeongseok Lee and Ioannis Exarchos and C. Karen Liu},
+  title = {Fast and Feature-Complete Differentiable Physics for Articulated Rigid Bodies},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year = {2021},
+  eprint = {2103.16021}
+}
+```
+
+- **Type:** paper · **Topic:** differentiable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-110`](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation.md),
+  its [Nimble paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation/nimble-gap-audit.md),
+  and [differentiable-simulation design](https://github.com/dartsim/dart/blob/main/docs/design/differentiable_simulation.md).
+- **Notes:** Target method for opt-in differentiable simulation: analytic
+  gradients through the contact LCP in generalized coordinates by implicit
+  differentiation of the complementarity conditions, exploiting active-set
+  sparsity (a small clamping-block solve) for speed. The paper itself is a DART
+  fork, so its forward-pass ingredients map directly onto DART's boxed-LCP
+  library, articulated-body dynamics, and `tan-lcp` contact formulation.
+
+  The DART implementation is experimental, DART-owned, and **opt-in** (off by
+  default, zero cost when disabled) — a deliberate divergence from the
+  always-on upstream. DART does not vendor or link the upstream repository as a
+  runtime dependency, and public APIs use DART-owned method/quantity names
+  rather than the upstream project name as a solver identity.
+
+  This entry should not be described as complete: full parity requires the
+  boxed-LCP contact path in the experimental world (PLAN-080 prerequisite), the
+  clamping/separating/tied classification and clamping-block gradient, contact
+  Jacobian derivatives, the parameter (mass/COM/inertia/friction) selector,
+  the PyTorch `autograd.Function` bridge, finite-difference-checked correctness,
+  and trajectory-optimization plus system-identification examples.
+
+### `chen-2024-vbd`
+
+Anka He Chen, Ziheng Liu, Yin Yang, and Cem Yuksel. "Vertex Block Descent."
+_ACM Transactions on Graphics (SIGGRAPH 2024)_, 43(4), 2024. DOI:
+[10.1145/3658179](https://doi.org/10.1145/3658179).
+
+Related public resources:
+
+- Paper PDF: <https://graphics.cs.utah.edu/research/projects/vbd/vbd-siggraph2024.pdf>
+- Project page: <https://ankachan.github.io/Projects/VertexBlockDescent/index.html>
+- Talk: <https://www.youtube.com/watch?v=2HCgKfKy3W8>
+- Reference implementations: [AnkaChan/Gaia](https://github.com/AnkaChan/Gaia),
+  [AnkaChan/TinyVBD](https://github.com/AnkaChan/TinyVBD)
+
+```bib
+@article{Chen2024VBD,
+  author = {Chen, Anka He and Liu, Ziheng and Yang, Yin and Yuksel, Cem},
+  title = {Vertex Block Descent},
+  journal = {ACM Transactions on Graphics},
+  volume = {43},
+  number = {4},
+  year = {2024},
+  doi = {10.1145/3658179}
+}
+```
+
+- **Type:** paper · **Topic:** integration/deformable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
+  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/vbd_deformable_solver/vbd-paper-gap-audit.md).
+- **Notes:** Block coordinate descent on the variational implicit-Euler
+  objective for elastodynamics: each vertex is a 3-DOF block updated with one
+  regularized Newton step using a positive-definite local 3x3 Hessian, with
+  graph-colored parallel Gauss-Seidel sweeps and adaptive
+  initialization/Chebyshev acceleration. DART targets it as a second deformable
+  inner solver on the same experimental deformable ECS components and the same
+  variational objective the current gradient-descent stage already minimizes.
+  The DART implementation is experimental and DART-owned; DART does not vendor
+  or link `Gaia`/`TinyVBD` as a runtime dependency, and the public deformable
+  stage stays algorithm-neutral. It should not be described as full VBD parity,
+  FEM hyperelasticity, VBD contact/friction, GPU VBD, or reference/paper
+  performance parity until the relevant PLAN-104 phase lands with evidence.
 
 ### `lee-vi-2016`
 
@@ -501,17 +592,19 @@ MuJoCo XML (MJCF). <https://mujoco.readthedocs.io/en/stable/XMLreference.html>
 Software references that informed the experimental API shape, terminology, and
 algorithm-family choices. These are baselines/comparisons, not dependencies.
 
-| ID            | Engine                               | Used for                                          | Status     | Verdict   |
-| ------------- | ------------------------------------ | ------------------------------------------------- | ---------- | --------- |
-| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API            | referenced | baseline  |
-| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos | referenced | baseline  |
-| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA | referenced | baseline  |
-| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary  | referenced | baseline  |
-| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging         | referenced | reference |
-| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                 | referenced | reference |
-| `genesis`     | Genesis                              | entity/morph model, batched sim                   | referenced | reference |
-| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`         | referenced | reference |
-| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops           | referenced | baseline  |
+| ID            | Engine                               | Used for                                               | Status     | Verdict   |
+| ------------- | ------------------------------------ | ------------------------------------------------------ | ---------- | --------- |
+| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API                 | referenced | baseline  |
+| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos      | referenced | baseline  |
+| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA      | referenced | baseline  |
+| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary       | referenced | baseline  |
+| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging              | referenced | reference |
+| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                      | referenced | reference |
+| `genesis`     | Genesis                              | entity/morph model, batched sim                        | referenced | reference |
+| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`              | referenced | reference |
+| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops                | referenced | baseline  |
+| `gaia`        | Gaia (VBD research framework)        | VBD correctness/performance baseline (`chen-2024-vbd`) | referenced | baseline  |
+| `tinyvbd`     | TinyVBD (minimal VBD reference)      | VBD algorithm reference (`chen-2024-vbd`)              | referenced | baseline  |
 
 ### Notes on engine verdicts
 
@@ -523,6 +616,10 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
   API patterns and the GPU/batched roadmap, but their engine-specific names
   (e.g., "Articulation", Unity-style "Rigidbody") are deliberately _not_ adopted
   where they diverge from the robotics literature.
+- **`gaia`, `tinyvbd` — baseline:** the reference implementations of Vertex
+  Block Descent (`chen-2024-vbd`). DART's PLAN-104 VBD solver is compared
+  against them for correctness and performance on matched scenes, but DART
+  reimplements VBD independently and does not vendor or link them.
 
 Design-doc links for these comparisons live in
 [`simulation_experimental_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)

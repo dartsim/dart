@@ -826,6 +826,35 @@ TEST(DeformableBody, FemTetrahedronIsStationaryAtRest)
 }
 
 //==============================================================================
+// World exposes a curated snapshot of the deformable solver's per-step
+// diagnostics from the most recent built-in-pipeline step. Before stepping it
+// is zero; after a step it reflects the mesh and the projected-Newton solve.
+TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  world.addDeformableBody("fem", makeFemTetrahedronBody());
+
+  const auto& before = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(before.bodyCount, 0u);
+  EXPECT_EQ(before.nodeCount, 0u);
+  EXPECT_EQ(before.solverIterations, 0u);
+
+  world.step(5);
+
+  const auto& after = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(after.bodyCount, 1u);
+  EXPECT_EQ(after.nodeCount, 4u);
+  EXPECT_GE(after.solverIterations, 1u);
+  EXPECT_GE(after.objectiveEvaluations, 1u);
+  EXPECT_GE(after.projectedNewtonSteps + after.projectedNewtonFallbacks, 1u);
+  // No contacts for a single free-hanging tetrahedron.
+  EXPECT_EQ(after.selfContactBarrierActiveContacts, 0u);
+  EXPECT_EQ(after.convergedActiveContactCount, 0u);
+}
+
+//==============================================================================
 // A FEM tetrahedron given an initial outward velocity on a free node is pulled
 // back toward its rest shape by the elastic restoring force, and the implicit
 // solve dissipates the motion so it settles near rest rather than diverging.
@@ -858,6 +887,62 @@ TEST(DeformableBody, FemTetrahedronRestoresStretchedNodeTowardRest)
   // After many steps the elastic restoring force + implicit dissipation settle
   // the free node back near its rest position (0, 0, 1); a body with no elastic
   // force would never return.
+  world.step(400);
+  EXPECT_TRUE(body.getPosition(3).allFinite());
+  expectVectorNear(body.getPosition(3), Eigen::Vector3d(0.0, 0.0, 1.0), 5e-2);
+}
+
+//==============================================================================
+// The fixed-corotational material is selected by an additional opt-in flag on
+// top of useFiniteElementElasticity. At its rest shape it stores zero strain
+// energy and exerts zero force, so the tetrahedron stays put across many steps,
+// exactly like the default stable neo-Hookean kernel.
+TEST(DeformableBody, FemFixedCorotationalTetrahedronIsStationaryAtRest)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+  sx::DeformableBodyOptions options = makeFemTetrahedronBody();
+  options.material.useFixedCorotationalElasticity = true;
+  auto body = world.addDeformableBody("fcr_rest", options);
+
+  world.step(25);
+
+  expectVectorNear(body.getPosition(0), Eigen::Vector3d::Zero());
+  expectVectorNear(body.getPosition(1), Eigen::Vector3d::UnitX());
+  expectVectorNear(body.getPosition(2), Eigen::Vector3d::UnitY());
+  expectVectorNear(body.getPosition(3), Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+// A fixed-corotational FEM tetrahedron given an outward velocity on a free node
+// is pulled back toward its rest shape and settles there, confirming the FCR
+// dispatch path is wired through both the energy/gradient objective and the
+// projected-Newton Hessian assembly.
+TEST(DeformableBody, FemFixedCorotationalRestoresStretchedNodeTowardRest)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  auto options = makeFemTetrahedronBody(/*youngsModulus=*/1.0e3);
+  options.material.useFixedCorotationalElasticity = true;
+  options.fixedNodes = {0, 1, 2};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, 10.0)};
+  auto body = world.addDeformableBody("fcr_stretch", options);
+
+  double peakDisplacement = 0.0;
+  for (int step = 0; step < 60; ++step) {
+    world.step();
+    peakDisplacement
+        = std::max(peakDisplacement, std::abs(body.getPosition(3).z() - 1.0));
+    EXPECT_TRUE(body.getPosition(3).allFinite());
+  }
+  EXPECT_GT(peakDisplacement, 0.02);
+
   world.step(400);
   EXPECT_TRUE(body.getPosition(3).allFinite());
   expectVectorNear(body.getPosition(3), Eigen::Vector3d(0.0, 0.0, 1.0), 5e-2);
