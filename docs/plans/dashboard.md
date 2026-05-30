@@ -187,6 +187,7 @@ its own line so status updates remain git-history friendly.
   solver registries/ECS storage, and every promoted runtime slice passes
   `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries`.
+
 ### PLAN-104: Vertex Block Descent Solver
 
 - Owner doc:
