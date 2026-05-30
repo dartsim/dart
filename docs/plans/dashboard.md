@@ -157,6 +157,28 @@ its own line so status updates remain git-history friendly.
   `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries` green.
 
+### PLAN-082: Linear-Time Variational Integrator
+
+- Owner doc:
+  [`082-variational-integrator-solver.md`](082-variational-integrator-solver.md)
+- Status: Proposed
+- Horizon: Next
+- Dimension: Algorithm extensibility
+- Next step: Run the O(n) impulse-ABI de-risking spike first — the experimental
+  World has no ABA today (dense `M.ldlt()` solve), and the linear-time claim
+  depends on it — then start Phase A1 (fixed-base MVP on a dense-solve
+  placeholder) under a new `docs/dev_tasks/variational_integrator_solver/`
+  folder. Durable design lives in
+  [`../design/simulation_variational_integrator.md`](../design/simulation_variational_integrator.md);
+  contact/friction is a deferred go/no-go sidecar.
+- Gate: Phase A1 proves symplectic energy behavior (no secular energy drift over
+  ≥1e5 steps where semi-implicit Euler drifts), analytic single-DOF correctness,
+  bounded RIQN iterations with a defined non-convergence error, and
+  determinism/serialization round-trip; Phase A2 proves sub-quadratic O(n)
+  scaling via benchmark JSON; `check-api-boundaries` stays green with no
+  solver/stage/component/backend leak; contact/friction stays behind the
+  contact-roadmap go/no-go.
+
 ### PLAN-035: Native Collision Feature Dashboard
 
 - Owner doc:

@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -133,6 +134,39 @@ void Link::setCenterOfMass(const Eigen::Vector3d& centerOfMass)
 
   getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.localCenterOfMass
       = centerOfMass;
+}
+
+//==============================================================================
+void Link::applyForce(
+    const Eigen::Vector3d& force,
+    const Eigen::Vector3d& point,
+    bool forceInWorldFrame,
+    bool pointInWorldFrame)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid link handle");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !force.allFinite() || !point.allFinite(),
+      InvalidArgumentException,
+      "Link external force and point must contain only finite values");
+
+  namespace dm = detail::variational;
+
+  // Mirror legacy BodyNode::addExtForce: resolve the force and application
+  // point into the link frame, build the wrench [torque; force] at the point,
+  // then transport it to the link origin and accumulate in the link frame.
+  const Eigen::Isometry3d& worldTransform = getWorldTransform();
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+
+  Eigen::Isometry3d pointTransform = Eigen::Isometry3d::Identity();
+  pointTransform.translation()
+      = pointInWorldFrame ? worldTransform.inverse() * point : point;
+
+  Eigen::Matrix<double, 6, 1> wrench = Eigen::Matrix<double, 6, 1>::Zero();
+  wrench.tail<3>()
+      = forceInWorldFrame ? worldTransform.linear().transpose() * force : force;
+
+  linkComp.externalForce += dm::dAdInvT(pointTransform, wrench);
 }
 
 //==============================================================================

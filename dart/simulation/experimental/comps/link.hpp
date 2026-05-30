@@ -62,6 +62,14 @@ struct Link
 
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 
+  /// Accumulated external spatial force (wrench) expressed in the link frame,
+  /// using the `[angular; linear]` = `[torque; force]` convention shared by the
+  /// dynamics stages. Set by `Link::applyForce`, read by both the semi-implicit
+  /// forward-dynamics and variational-integrator paths, and cleared after each
+  /// world step (one-shot per step, mirroring legacy `BodyNode::addExtForce`).
+  Eigen::Matrix<double, 6, 1> externalForce
+      = Eigen::Matrix<double, 6, 1>::Zero();
+
   static constexpr auto entityFields()
   {
     return std::make_tuple(&Link::parentJoint, &Link::childJoints);

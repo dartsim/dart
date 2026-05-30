@@ -59,7 +59,8 @@ bool renderBuiltInStatusPanel(
     DebugDrawOptions& contactDebugOptions,
     ViewerLifecycleState& lifecycle,
     double guiScale,
-    bool dockingEnabled);
+    bool dockingEnabled,
+    double leftMarginPx = 20.0);
 
 void renderApplicationPanels(
     std::vector<dart::gui::Panel>& panels,

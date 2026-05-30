@@ -7,6 +7,7 @@
 #include "dart/gui/application.hpp"
 #include "dart/simulation/world.hpp"
 
+#include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -108,11 +109,17 @@ void defGuiViewer(nb::module_& m)
             // frame. Captured by a stable shared_ptr so subsequent factory
             // invocations don't tear it down mid-step.
             auto pre_step_holder = std::make_shared<nb::callable>();
+            // Hold the optional Python force-drag handler alive past the
+            // factory call so the viewer's onForceDrag can invoke it each frame
+            // the user drags an sx renderable (see the (World, pre_step,
+            // force_drag) tuple form below).
+            auto force_drag_holder = std::make_shared<nb::callable>();
             try {
               nb::object result = factory();
               // Accept either:
               //   factory() -> World
               //   factory() -> (World, pre_step_callable)
+              //   factory() -> (World, pre_step_callable, force_drag_callable)
               dart::simulation::WorldPtr world;
               if (nb::isinstance<nb::tuple>(result)) {
                 nb::tuple t = nb::cast<nb::tuple>(result);
@@ -123,6 +130,9 @@ void defGuiViewer(nb::module_& m)
                 world = nb::cast<dart::simulation::WorldPtr>(t[0]);
                 if (t.size() >= 2 && !t[1].is_none()) {
                   *pre_step_holder = nb::cast<nb::callable>(t[1]);
+                }
+                if (t.size() >= 3 && !t[2].is_none()) {
+                  *force_drag_holder = nb::cast<nb::callable>(t[2]);
                 }
               } else {
                 world = nb::cast<dart::simulation::WorldPtr>(std::move(result));
@@ -149,6 +159,23 @@ void defGuiViewer(nb::module_& m)
                   (*pre_step_holder)();
                 } catch (const std::exception& e) {
                   fprintf(stderr, "py-demos pre_step error: %s\n", e.what());
+                }
+              };
+            }
+            if (force_drag_holder && *force_drag_holder) {
+              options.onForceDrag = [force_drag_holder](
+                                        const dart::gui::ForceDragEvent& e) {
+                nb::gil_scoped_acquire gil;
+                try {
+                  nb::dict event;
+                  event["renderable_name"] = e.renderableName;
+                  event["application_point"] = nb::cast(e.applicationPoint);
+                  event["force"] = nb::cast(e.force);
+                  event["active"] = e.active;
+                  (*force_drag_holder)(event);
+                } catch (const std::exception& err) {
+                  fprintf(
+                      stderr, "py-demos force_drag error: %s\n", err.what());
                 }
               };
             }

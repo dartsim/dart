@@ -1243,6 +1243,10 @@ void BM_DeformableSelfContactBarrierStage(benchmark::State& state)
       = static_cast<double>(stats.selfContactBarrierCandidateBuilds);
   state.counters["barrier_active_contacts"]
       = static_cast<double>(stats.selfContactBarrierActiveContacts);
+  state.counters["converged_active_contacts"]
+      = static_cast<double>(stats.convergedActiveContactCount);
+  state.counters["min_active_contact_distance"]
+      = stats.minActiveContactDistance;
   state.counters["solver_iterations"]
       = static_cast<double>(stats.solverIterations);
   state.counters["line_search_trials"]

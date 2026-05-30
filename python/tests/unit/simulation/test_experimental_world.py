@@ -308,6 +308,15 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
         "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
     )
 
+    assert hasattr(sx.RigidBody, "is_deformable_ground_barrier")
+    assert not hasattr(sx.Link, "is_deformable_ground_barrier")
+    assert (
+        "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
+    )
+    assert (
+        "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
+    )
+
 
 def test_experimental_state_space_metadata_value_object():
     sx = _simulation_experimental()
@@ -880,6 +889,40 @@ def test_experimental_world_gravity():
 
     with pytest.raises(Exception, match="finite"):
         world.gravity = (float("nan"), 0.0, 0.0)
+
+
+def test_experimental_multibody_options_selector():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    # Solver config is a value object; selection is by documented method-family
+    # name only (no per-setting setters).
+    assert world.multibody_options.integration_family == "semi-implicit"
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert world.multibody_options.integration_family == "variational integrator"
+    with pytest.raises(Exception):
+        world.multibody_options = sx.MultibodyOptions(integration_family="nonsense")
+    # A rejected assignment leaves the previous valid selection in place.
+    assert world.multibody_options.integration_family == "variational integrator"
+
+    # The variational integrator runs on the default step() path.
+    arm = world.add_multibody("pendulum")
+    base = arm.add_link("base")
+    bob = arm.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge", type=sx.JointType.REVOLUTE, axis=(0.0, 1.0, 0.0)
+        ),
+    )
+    bob.mass = 1.0
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
+    world.time_step = 1e-3
+    world.enter_simulation_mode()
+    world.step(10)
+    assert world.time == pytest.approx(10e-3)
 
 
 def test_experimental_rigid_body_dynamic_quantities():
@@ -1980,6 +2023,11 @@ def test_experimental_collision_query():
     assert body_b.is_deformable_surface_ccd_obstacle
     body_b.is_deformable_surface_ccd_obstacle = False
     assert not body_b.is_deformable_surface_ccd_obstacle
+    assert not body_b.is_deformable_ground_barrier
+    body_b.is_deformable_ground_barrier = True
+    assert body_b.is_deformable_ground_barrier
+    body_b.is_deformable_ground_barrier = False
+    assert not body_b.is_deformable_ground_barrier
     assert world.add_rigid_body("c").collision_shape is None
 
     contacts = world.collide()
