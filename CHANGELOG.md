@@ -1017,6 +1017,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     stage/pipeline API. The user-supplied-pipeline `step` overloads leave it
     unchanged (read the stage's own `getLastStats` there). Adds C++ and Python
     regressions.
+  - Added a `Deformable FEM Self-Contact (IPC)` py-demos scene: a slender
+    tetrahedral FEM beam whose pinned ends are driven toward each other by
+    opposing scripted Dirichlet boundaries, so the soft FEM core buckles and
+    folds onto itself; the always-on clamped-log self-contact barrier holds the
+    folding surface apart at a positive separation. This is the first DART-native
+    showcase of self-collision (the heart of the IPC method) on a volumetric FEM
+    body, toward the paper's self-collision stress tests, with a reusable
+    `build_fem_compression_bar` bridge helper. A regression drives the beam
+    through the buckle and asserts -- via the new solver diagnostics -- that the
+    self-contact barrier activates, holds every active contact at a strictly
+    positive distance (no interpenetration), and keeps the solve finite.
   - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
     counter-rotated at both ends by opposing scripted Dirichlet boundary
     conditions, then released so the stable neo-Hookean core untwists
