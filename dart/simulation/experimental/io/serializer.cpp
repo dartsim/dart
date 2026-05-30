@@ -229,8 +229,8 @@ private:
       std::uint32_t formatVersion) const override
   {
     // CollisionShape mesh vertices/triangles were added to the serialized
-    // CollisionGeometry in binary format version 6.
-    if (formatVersion < 6u) {
+    // CollisionGeometry in binary format version 7.
+    if (formatVersion < 7u) {
       deserializeCollisionGeometryV2(input, component);
       return;
     }

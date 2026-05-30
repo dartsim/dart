@@ -68,6 +68,7 @@ add_library(
   comps/multibody.cpp
   comps/name.cpp
   comps/rigid_body.cpp
+  detail/boxed_lcp_contact.cpp
   detail/deformable_contact/continuous_collision_step.cpp
   detail/rigid_ipc_barrier.cpp
   detail/rigid_ipc_ccd.cpp
@@ -122,6 +123,22 @@ target_compile_definitions(
   ${target_name}
   PRIVATE DART_BUILDING_DART_EXPERIMENTAL
 )
+
+# Opt-in differentiable simulation (PLAN-110). The diff sources are pure
+# C++/Eigen and compile into the experimental target only when DART_BUILD_DIFF is
+# ON. DART_HAS_DIFF is PUBLIC so in-tree consumers (the diff tests) inherit it
+# and can compile the detail-only differentiable code path. Differentiability
+# remains a runtime opt-in via WorldOptions::differentiable.
+if(DART_BUILD_DIFF)
+  target_sources(
+    ${target_name}
+    PRIVATE
+      detail/contact_jacobians.cpp
+      detail/smooth_jacobians.cpp
+      diff/rollout.cpp
+  )
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_DIFF)
+endif()
 
 if(DART_ENABLE_EXPERIMENTAL_CUDA)
   find_package(CUDAToolkit REQUIRED)

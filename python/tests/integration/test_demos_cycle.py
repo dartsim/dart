@@ -94,6 +94,56 @@ def test_ipc_deformable_grid_builder_topology() -> None:
     assert (second.node_a, second.node_b, second.node_c) == (1, columns + 1, columns)
 
 
+def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
+    """The FEM buckling showcase actually self-collides, intersection-free.
+
+    Driving a slender FEM beam's pinned ends together makes it buckle and fold
+    onto itself; the self-contact barrier must (a) activate and (b) hold the
+    folding surface at a positive separation (no interpenetration), with the
+    solve staying finite. Verified through the solver-diagnostics snapshot.
+    """
+
+    import dartpy.simulation_experimental as sx
+    import numpy as np
+    from examples.demos._ipc_deformable_bridge import build_fem_compression_bar
+
+    options, _edges = build_fem_compression_bar(
+        cells_x=24,
+        cells_y=2,
+        cells_z=2,
+        cell_size=0.05,
+        origin=(-0.6, -0.05, 0.5),
+        youngs_modulus=2.0e4,
+        compression_rate=0.12,
+        compression_end_time=3.0,
+    )
+
+    world = sx.World()
+    world.gravity = [0.0, 0.0, -3.0]
+    world.time_step = 0.004
+    body = world.add_deformable_body("fem_buckle", options)
+    world.enter_simulation_mode()
+
+    max_active = 0
+    positive_separation_samples = 0
+    for _ in range(260):
+        world.step()
+        diag = world.last_deformable_solver_diagnostics
+        max_active = max(max_active, diag.self_contact_barrier_active_contacts)
+        if diag.converged_active_contact_count > 0:
+            # The barrier must hold the active contacts strictly apart.
+            assert diag.min_active_contact_distance > 0.0
+            positive_separation_samples += 1
+
+    # The beam self-collided (the barrier activated) over the compression.
+    assert max_active > 0
+    assert positive_separation_samples > 0
+
+    # The solve stayed finite throughout (the barrier never let it blow up).
+    final = np.array([body.node_position(i) for i in range(body.node_count)])
+    assert np.isfinite(final).all()
+
+
 def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     """The IPC deformable scenes live in their own dedicated menu category.
 
@@ -115,6 +165,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_drop",
         "ipc_deformable_fem_sphere",
         "ipc_deformable_fem_box",
+        "ipc_deformable_fem_buckle",
         "ipc_deformable_fem_msh",
         "ipc_deformable_scripted_dirichlet",
     }
