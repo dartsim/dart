@@ -45,22 +45,23 @@ lagged smoothed-Coulomb friction, and conservative CCD). They live in their own
 category so the IPC showcases stay together instead of mixing into the general
 `Experimental` (sx) scenes:
 
-| Scene id                            | Shows                                                 | IPC capability exercised                  |
-| ----------------------------------- | ----------------------------------------------------- | ----------------------------------------- |
-| `ipc_deformable_net`                | A pinned spring net sagging/swaying under gravity     | Projected-Newton elastodynamics           |
-| `ipc_deformable_drape`              | A mat draping over a step onto a ground barrier       | Ground + self-contact clamped-log barrier |
-| `ipc_deformable_trampoline`         | A corner-pinned membrane sagging and rebounding       | Taut-membrane projected-Newton dynamics   |
-| `ipc_deformable_friction_slide`     | A launched mat skidding to rest on a frictional floor | Lagged smoothed-Coulomb ground friction   |
-| `ipc_deformable_fem_bar`            | A tetrahedral cantilever sagging under gravity        | Stable neo-Hookean **FEM** elasticity     |
-| `ipc_deformable_scripted_dirichlet` | A banner billowing under a scripted Dirichlet BC      | Scripted Dirichlet boundary conditions    |
+| Scene id                            | Shows                                                 | IPC capability exercised                   |
+| ----------------------------------- | ----------------------------------------------------- | ------------------------------------------ |
+| `ipc_deformable_net`                | A pinned spring net sagging/swaying under gravity     | Projected-Newton elastodynamics            |
+| `ipc_deformable_drape`              | A mat draping over a step onto a ground barrier       | Ground + self-contact clamped-log barrier  |
+| `ipc_deformable_trampoline`         | A corner-pinned membrane sagging and rebounding       | Taut-membrane projected-Newton dynamics    |
+| `ipc_deformable_friction_slide`     | A launched mat skidding to rest on a frictional floor | Lagged smoothed-Coulomb ground friction    |
+| `ipc_deformable_fem_bar`            | A tetrahedral cantilever sagging under gravity        | Stable neo-Hookean **FEM** elasticity      |
+| `ipc_deformable_fem_twist`          | A tetrahedral bar twisted at both ends, then released | **FEM** volumetric shear (toward Fig 4/14) |
+| `ipc_deformable_scripted_dirichlet` | A banner billowing under a scripted Dirichlet BC      | Scripted Dirichlet boundary conditions     |
 
 These are DART-native showcases, **not** faithful IPC paper-figure
 reproductions. The _contact, barrier, friction, and projected-Newton machinery_
 is genuine IPC; most scenes use a mass-spring elasticity model, while
-`ipc_deformable_fem_bar` exercises the new opt-in stable neo-Hookean **FEM**
-volumetric elasticity (PLAN-081 M1, the keystone toward the paper's volumetric
-scenes). Codimensional collision and the upstream mesh corpus are still needed
-for true figure reproduction. The catalog of upstream paper scenes lives at
+`ipc_deformable_fem_bar` and `ipc_deformable_fem_twist` exercise the new opt-in
+stable neo-Hookean **FEM** volumetric elasticity (PLAN-081 M1, the keystone
+toward the paper's volumetric scenes). Codimensional collision and the upstream
+mesh corpus are still needed for true figure reproduction. The catalog of upstream paper scenes lives at
 `docs/plans/081-deformable-implicit-barrier-solver/ipc_scene_corpus_manifest.json`;
 faithful corpus reproduction stays `planned` (it needs vendored assets,
 codimensional collision, and broader FEM coverage), so these scenes evoke the
