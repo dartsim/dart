@@ -1004,6 +1004,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     time about 7x (to near stable-neo-Hookean parity at equal mesh resolution)
     while leaving the energy, gradient, and settled solution unchanged (every
     fixed-corotational kernel and solver test still passes).
+  - Exposed a read-only `DeformableSolverDiagnostics` snapshot of the deformable
+    solver's per-step statistics on the experimental `World`
+    (`World::getLastDeformableSolverDiagnostics`, dartpy
+    `world.last_deformable_solver_diagnostics`). It is a curated, stable subset
+    of the internal `DeformableSolverStats` -- mesh sizes, projected-Newton
+    convergence (iterations, objective evaluations, line-search trials, Newton
+    steps vs steepest-descent fallbacks), self-contact activity, friction
+    dissipation, and the contact closest-approach diagnostic -- captured after
+    each built-in-pipeline step so tools and Python scripts can observe solver
+    behavior (e.g. per-step Newton iteration counts) without the explicit
+    stage/pipeline API. The user-supplied-pipeline `step` overloads leave it
+    unchanged (read the stage's own `getLastStats` there). Adds C++ and Python
+    regressions.
   - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
     counter-rotated at both ends by opposing scripted Dirichlet boundary
     conditions, then released so the stable neo-Hookean core untwists

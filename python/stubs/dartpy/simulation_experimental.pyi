@@ -18,6 +18,7 @@ __all__: list[str] = [
     "DeformableSceneDiagnostics",
     "DeformableSceneInfo",
     "DeformableSceneLoadOptions",
+    "DeformableSolverDiagnostics",
     "DeformableSolverOptions",
     "DeformableSurfaceTriangle",
     "DeformableTetrahedron",
@@ -872,6 +873,43 @@ class Contact:
     @property
     def depth(self) -> float: ...
 
+class DeformableSolverDiagnostics:
+    @property
+    def body_count(self) -> int: ...
+
+    @property
+    def node_count(self) -> int: ...
+
+    @property
+    def edge_count(self) -> int: ...
+
+    @property
+    def solver_iterations(self) -> int: ...
+
+    @property
+    def objective_evaluations(self) -> int: ...
+
+    @property
+    def line_search_trials(self) -> int: ...
+
+    @property
+    def projected_newton_steps(self) -> int: ...
+
+    @property
+    def projected_newton_fallbacks(self) -> int: ...
+
+    @property
+    def self_contact_barrier_active_contacts(self) -> int: ...
+
+    @property
+    def friction_dissipation(self) -> float: ...
+
+    @property
+    def min_active_contact_distance(self) -> float: ...
+
+    @property
+    def converged_active_contact_count(self) -> int: ...
+
 class DeformableMaterialProperties:
     def __init__(self) -> None: ...
 
@@ -1381,6 +1419,9 @@ class World:
     def sync(self, stage: WorldSyncStage = WorldSyncStage.KINEMATICS) -> None: ...
 
     def step(self, n: int = ...) -> None: ...
+
+    @property
+    def last_deformable_solver_diagnostics(self) -> DeformableSolverDiagnostics: ...
 
     @property
     def time_step(self) -> float: ...
