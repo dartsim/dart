@@ -405,6 +405,20 @@ class IpcDeformableBridge:
         frame.create_visual_aspect().set_color(list(color))
         self.render_world.add_simple_frame(frame)
 
+    def add_rigid_sphere_visual(
+        self,
+        center: Sequence[float],
+        radius: float,
+        color: tuple[float, float, float],
+        name: str = "sphere_obstacle",
+    ) -> None:
+        """A static sphere SimpleFrame (e.g. a deformable obstacle barrier)."""
+
+        frame = dart.SimpleFrame(dart.Frame.world(), name, _translation(center))
+        frame.set_shape(dart.SphereShape(float(radius)))
+        frame.create_visual_aspect().set_color(list(color))
+        self.render_world.add_simple_frame(frame)
+
     def sync(self) -> None:
         """Copy every deformable node position onto its sphere + wireframe."""
 
