@@ -36,14 +36,17 @@ rigor). `[x]` = met today, `[ ]` = open.
       explicitly in [`supported-envelope.md`](supported-envelope.md). (Extending
       the manifold preconditioner to very long floating chains stays a
       north-star item, but the supported envelope is now stated, not implicit.)
-- [ ] **Contact & friction** available _or_ the supported envelope explicitly
-      excludes contact. A "supported" solver that silently cannot do contact is
-      a documentation trap; either Phase C lands (compliant/AL rungs) or the
-      docs state the contact-free envelope as a first-class limitation. _Partial:
-      **C1-C3 contact have landed** (compliant + lagged friction + augmented
-      Lagrangian; `makeVariationalGroundContactHook` /
-      `VariationalGroundContactSolver` — link-point-vs-analytic-ground);
-      link-vs-link contact remains before this is met._
+- [x] **Contact & friction** available, with the supported envelope stated.
+      Phase C landed the compliant/AL rungs — **C1** lagged Coulomb friction,
+      **C2** compliant ground contact, **C3** augmented-Lagrangian drift-free
+      contact (`makeVariationalGroundContactHook` /
+      `VariationalGroundContactSolver`), reachable from `World::step()` via
+      `Multibody::setGroundContact`, plus a **link-vs-link** sphere-sphere slice
+      (`makeVariationalLinkSphereContactHook`). Supported contact envelope:
+      link-point-vs-analytic-ground and sphere-sphere link pairs, `k ≲ 1e4·mg`
+      (see [`supported-envelope.md`](supported-envelope.md)); **arbitrary link
+      geometry** (the rigid-IPC-stack adapter) is a stated first-class
+      limitation / future workstream, not a silent gap.
 
 ### API & integration
 
@@ -54,9 +57,19 @@ rigor). `[x]` = met today, `[ ]` = open.
       `DefaultPathDoesNotEngageVariationalIntegrator` gate).
 - [x] Determinism (bit-identical reruns) + binary save/load round-trips the
       two-step history without re-bootstrapping.
-- [ ] **API frozen with a deprecation policy.** The `integrationFamily` name,
-      `MultibodyOptions` fields, and the non-convergence error contract are
-      declared stable; future additions are additive.
+- [x] **API frozen with a deprecation policy (surface declared; committed at the
+      graduation flip).** The stable public surface is: the
+      `"variational integrator"` `integrationFamily` name; the `MultibodyOptions`
+      value-object fields; the loop-closure API (`add_loop_closure` /
+      `LoopClosureSpec`); the ground/link-contact API
+      (`Multibody::setGroundContact` / `addGroundContactPoint`, dartpy
+      `set_ground_contact` / `add_ground_contact_point`); and the non-convergence
+      error contract (a hard `InvalidOperationException`, never a silent
+      NaN/fallback). Deprecation policy: none of these are changed or removed
+      without a deprecation cycle; future capability is **additive** (new
+      `MultibodyOptions` fields default to current behavior, new contact builders
+      are additive). The freeze is committed when the family flips to supported
+      (review step below).
 
 ### Engineering quality
 
@@ -90,6 +103,21 @@ them is fine as long as the supported envelope says so:
 4. Adversarial review (mirroring the PLAN-082 4-agent review) before flipping
    the family from experimental to supported.
 
-Until then the VI stays a fully-functional **experimental** family — usable and
-opt-in, but without the stability promise. Keep this file in sync with the
-North Star as the open items close.
+## Readiness assessment (2026-05-30)
+
+**All graduation criteria above are now met or declared.** Correctness/numerics
+(incl. convergence-at-scale), API & integration (incl. the API-freeze surface
+declared above), and engineering quality (incl. Phase C contact and the published
+performance + choosing-an-integrator guidance in
+[`performance.md`](performance.md)) are all `[x]`. **Process steps 1 and 3 are
+executed**; the VI is **ready to propose for graduation**.
+
+The remaining steps are maintainer-owned and cannot be self-approved: **(2)** open
+the graduation `PLAN-` entry linking this evidence with an owner, and **(4)** the
+adversarial review before the `experimental → supported` flip. The
+arbitrary-geometry link-vs-link adapter and the C4 barrier are **explicit
+non-blockers** (future workstreams), not graduation gates.
+
+Until that review and flip, the VI stays a fully-functional **experimental**
+family — usable and opt-in, but without the stability promise. Keep this file in
+sync with the North Star as the remaining process steps complete.

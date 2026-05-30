@@ -42,8 +42,11 @@ and verified **today**; unchecked items are the [gaps below](#gaps-from-current-
       links; supported bounds in [`supported-envelope.md`](supported-envelope.md).
 - [x] **Manifold-aware convergence acceleration** — tangent-space Anderson for
       spherical/floating chains (Euclidean preconditioner + manifold Anderson).
-- [ ] **Graduation** from `experimental` to a supported solver (variable `Δt`,
-      GPU/batched execution are open stretch goals).
+- [~] **Graduation** from `experimental` to a supported solver — all
+  [graduation criteria](graduation-criteria.md) are now met/declared (ready
+  to propose); the `experimental → supported` flip needs the maintainer's
+  `PLAN-` entry + adversarial review. Variable `Δt`, GPU/batched execution are
+  explicit non-blockers (stretch).
 
 ## Current Status
 
@@ -221,11 +224,12 @@ gaps to the [north star](#north-star), in priority order:
    [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md));
    barrier (C4) last — stiff curvature mis-scales the `Δt·M⁻¹` quasi-Newton.
 2. **Graduation to a supported solver.** The [graduation
-   checklist](graduation-criteria.md) now has the convergence-at-scale and
-   performance-characterization criteria met (this round); the open items are
-   contact-or-an-explicit-contact-free-envelope and the API freeze + deprecation
-   policy. Variable time step and GPU/batched execution stay explicit
-   non-blockers (stretch).
+   checklist](graduation-criteria.md) is now **all met/declared** — including
+   Phase C contact (the contact criterion) and the API-freeze surface — so the VI
+   is **ready to propose for graduation**. The remaining steps are maintainer-
+   owned (cannot be self-approved): open the graduation `PLAN-` entry and the
+   adversarial review before the `experimental → supported` flip. Variable time
+   step and GPU/batched execution stay explicit non-blockers (stretch).
 3. **Manifold preconditioner for very long _floating_ chains.** The exact
    recursive-Jacobian preconditioner is Euclidean-only; spherical/floating chains
    use the manifold Anderson (verified to 20 links). A Lie-group extension of the
