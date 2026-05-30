@@ -59,8 +59,10 @@ dart::gui::ApplicationOptions makeAtlasPuppetScene();
 dart::gui::ApplicationOptions makeAtlasSimbiconScene();
 dart::gui::ApplicationOptions makeWamIkFastScene();
 dart::gui::ApplicationOptions makeHuboPuppetScene();
+#ifdef DART_DEMOS_HAS_SIMULATION_EXPERIMENTAL
 dart::gui::ApplicationOptions makeExperimentalRigidBodyScene();
 dart::gui::ApplicationOptions makeExperimentalDeformableScene();
+#endif
 dart::gui::ApplicationOptions makeG1PuppetScene();
 dart::gui::ApplicationOptions makeHumanJointLimitsScene();
 

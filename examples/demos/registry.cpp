@@ -266,7 +266,10 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
 
   // Experimental physics solver (sx::World) — kept at the bottom of the
   // catalog so the in-development surface doesn't push the canonical scenes
-  // off-screen in the Demos sidebar.
+  // off-screen in the Demos sidebar. Present only when the optional
+  // dart::simulation::experimental module is built (it can be configured off,
+  // e.g. DART_BUILD_SIMULATION_EXPERIMENTAL=OFF).
+#ifdef DART_DEMOS_HAS_SIMULATION_EXPERIMENTAL
   scenes.push_back(
       {"experimental_rigid_body",
        "Rigid Body (Experimental)",
@@ -279,6 +282,7 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Experimental",
        "A spring-net deformable body on the experimental physics solver.",
        &makeExperimentalDeformableScene});
+#endif
 
   return scenes;
 }
