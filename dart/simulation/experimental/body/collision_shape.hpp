@@ -47,6 +47,8 @@ enum class CollisionShapeType
   Sphere,
   Box,
   Mesh,
+  // Appended last so the serialized ordinals of the earlier types are stable.
+  Capsule,
 };
 
 /// Public value object describing a body's collision geometry.
@@ -66,7 +68,9 @@ struct CollisionShape
   double radius = 0.5;
 
   /// Box half extents along the body x/y/z axes (used when type == Box). Each
-  /// component must be positive.
+  /// component must be positive. For a Capsule, `halfExtents.z()` doubles as
+  /// the axial half-height (the segment runs +/- that distance along the body z
+  /// axis, swept by `radius`); this reuse keeps the serialized layout stable.
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
 
   /// Mesh vertices in the body frame (used when type == Mesh).
@@ -103,6 +107,20 @@ struct CollisionShape
     shape.type = CollisionShapeType::Mesh;
     shape.vertices = std::move(vertices);
     shape.triangles = std::move(triangles);
+    return shape;
+  }
+
+  /// Create a capsule collision shape (a z-axis segment of half-length
+  /// `halfHeight` swept by `radius`). Both must be positive. The half-height is
+  /// stored in `halfExtents.z()` (x/y are set to `radius` so every component
+  /// stays positive for the shared shape validators).
+  [[nodiscard]] static CollisionShape makeCapsule(
+      double radius, double halfHeight)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Capsule;
+    shape.radius = radius;
+    shape.halfExtents = Eigen::Vector3d(radius, radius, halfHeight);
     return shape;
   }
 };

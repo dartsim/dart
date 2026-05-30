@@ -2242,6 +2242,15 @@ std::vector<Contact> World::collide()
       case CollisionShapeType::Box:
         shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
         break;
+      case CollisionShapeType::Capsule:
+        // The native engine has no capsule primitive; approximate it with its
+        // axis-aligned bounding box for rigid-rigid queries. Deformable-vs-
+        // capsule contact uses the analytic capsule obstacle barrier instead.
+        shape = std::make_unique<ncol::BoxShape>(Eigen::Vector3d(
+            collisionShape.radius,
+            collisionShape.radius,
+            collisionShape.halfExtents.z() + collisionShape.radius));
+        break;
       case CollisionShapeType::Mesh:
         shape = std::make_unique<ncol::MeshShape>(
             collisionShape.vertices, collisionShape.triangles);
