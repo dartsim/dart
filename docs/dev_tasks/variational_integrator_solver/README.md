@@ -219,19 +219,28 @@ gaps to the [north star](#north-star), in priority order:
    the AL slider centered at `d ≈ 0` (vs the penalty `−mg/k`). **Link-vs-link
    contact has a first slice**: `makeVariationalLinkSphereContactHook` does
    compliant **sphere-sphere self-contact** between links (verified — a link
-   sliding into a fixed base sphere is stopped, no pass-through). Remaining:
-   **arbitrary link geometry**, now **re-pathed** to _adapt the rigid IPC contact
-   stack_ (`#2777`: contact Jacobians, curved-trajectory CCD, candidate
-   generation) into an in-loop signed-distance/gradient query, no longer a
-   net-new collision workstream (see the
-   [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md));
-   barrier (C4) last — stiff curvature mis-scales the `Δt·M⁻¹` quasi-Newton.
+   sliding into a fixed base sphere is stopped, no pass-through). C1–C3 are all
+   reachable from `World::step()` (C3 opt-in via `dualUpdateCadence`). Remaining:
+   **arbitrary link geometry** — the rigid IPC stack's `primitive_distance.hpp`
+   already gives reusable analytic `(d, ∂d/∂q)` kernels, but the dominant missing
+   piece is **rigid/articulated candidate generation** (its `candidate_set.hpp` is
+   mesh-vertex specific) plus a warm-started per-step query — a ~2–3-week
+   PLAN-scale workstream coordinated with PLAN-081, not an in-task slice (see the
+   [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md)).
+   The **C4 IPC barrier** is intentionally **out of scope** — this task stops at
+   C3 (stiff barrier curvature mis-scales the `Δt·M⁻¹` quasi-Newton; it is the
+   _optional_ last rung).
 2. **Graduation to a supported solver.** The [graduation
    checklist](graduation-criteria.md) is now **all met/declared** — including
    Phase C contact (the contact criterion) and the API-freeze surface — so the VI
-   is **ready to propose for graduation**. The remaining steps are maintainer-
-   owned (cannot be self-approved): open the graduation `PLAN-` entry and the
-   adversarial review before the `experimental → supported` flip. Variable time
+   is **ready to propose for graduation**. The flip itself is **structural, not a
+   toggle**: `experimental` is encoded in the namespace / directory /
+   `DART_EXPERIMENTAL_API` macro / CMake gate, with no per-family stability flag,
+   and the VI shares the module with the `World` and every other solver — so
+   graduating means a maintainer-scale whole-module promotion or a VI extraction
+   refactor (see the graduation-mechanics section of
+   [`graduation-criteria.md`](graduation-criteria.md)), plus the `PLAN-` entry and
+   adversarial review. Variable time
    step and GPU/batched execution stay explicit non-blockers (stretch).
 3. **Manifold preconditioner for very long _floating_ chains.** The exact
    recursive-Jacobian preconditioner is Euclidean-only; spherical/floating chains

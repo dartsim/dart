@@ -341,16 +341,30 @@ overshoots before the body can move). Verified
   line, an equal-and-opposite force mapped to both links' point Jacobians),
   verified by `SphereContactStopsSlidingLink` (a link sliding into a fixed base
   sphere is stopped, no pass-through). **Arbitrary link geometry** is the
-  remaining gap, now **re-pathed by the rigid IPC contact solver** (`#2777`,
-  [`082-rigid-implicit-barrier-contact.md`](../082-rigid-implicit-barrier-contact.md)):
-  its `detail/contact_jacobians.{hpp,cpp}`, `detail/rigid_ipc_ccd.*`, and the
-  `detail/deformable_contact/` geometry (`candidate_set.hpp`,
-  `continuous_collision_step.*`, `tangent_stencil.hpp`) already provide the rigid
-  candidate generation, curved-trajectory CCD, and contact Jacobians, so this is
-  no longer a net-new collision workstream but **adapting that stack into an
-  in-loop signed-distance + `∂d/∂q` query** at the trial `qᵏ⁺¹` and feeding it
-  the C1-C3 force laws — coordinated with PLAN-082-rigid-implicit-barrier-contact
-  / PLAN-081.
+  remaining gap, **re-pathed onto the rigid IPC contact solver** (`#2777`,
+  [`082-rigid-implicit-barrier-contact.md`](../082-rigid-implicit-barrier-contact.md)).
+  Concrete scope (from a 2026-05-30 stack audit):
+  - **Reusable today** — `detail/deformable_contact/primitive_distance.hpp` has
+    the analytic squared-distance + gradient (+ Hessian) kernels for all primitive
+    pairs (`pointTriangle`/`pointEdge`/`edgeEdge`/`pointPoint`), coordinate-
+    agnostic in world space; `detail/rigid_ipc_ccd.*` gives the curved-trajectory
+    CCD usable as a RIQN line-search step bound. Distance/gradient is **separable**
+    from the IPC log-barrier (`barrier_kernel.hpp`), so the VI can feed its own
+    C1–C3 force law instead. Extracting signed `d` and `∂d/∂q` from the
+    squared-distance kernels is a thin wrapper (`∂d = ∂(d²)/(2d)`), chained to
+    generalized coordinates via the link point Jacobians already in
+    `VariationalContactContext`.
+  - **The dominant missing piece** — **rigid/articulated candidate generation**.
+    `detail/deformable_contact/candidate_set.hpp` is mesh-vertex specific (broad
+    phase over surface vertices/edges/triangles), not over articulated-link
+    geometry, and there is no persistent warm-started "refit link AABBs at the
+    trial config, re-check the active set" query object. That broad-phase adapter
+    - a per-step query object is the net-new work.
+  - **Estimate** — ~2–3 weeks of focused work (no fundamental blocker), which is
+    why this stays a PLAN-scale workstream coordinated with
+    PLAN-082-rigid-implicit-barrier-contact / PLAN-081, not an in-task slice. The
+    hand-specified sphere-sphere hook is the gate-1 minimum already landed.
+
 - **World-surface productionization + a contact GUI demo — landed.** C1/C2
   (compliant penalty + lagged friction, with Kelvin-Voigt damping) are now
   reachable from `World::step()`: a per-multibody `comps::VariationalContact`

@@ -123,6 +123,33 @@ adversarial review before the `experimental → supported` flip. The
 arbitrary-geometry link-vs-link adapter and the C4 barrier are **explicit
 non-blockers** (future workstreams), not graduation gates.
 
+### Graduation mechanics — why the flip is module-wide, not a VI toggle
+
+The `experimental` status is **structural**, not a per-solver flag. It is encoded
+in (a) the namespace `dart::simulation::experimental`, (b) the directory
+`dart/simulation/experimental/`, (c) the `DART_EXPERIMENTAL_API` export macro, and
+(d) the CMake gate `DART_BUILD_SIMULATION_EXPERIMENTAL` (default `OFF`). There is
+**no code-level per-family stability marker** — the `MultibodyIntegrationMethod`
+enum (`world.hpp`) has only `SemiImplicit` / `Variational`, with no maturity
+field, and semi-implicit Euler lives under the same experimental umbrella.
+
+Consequently the VI **cannot be flipped to "supported" in isolation**: it shares
+the experimental module with the `World` class itself, the semi-implicit family,
+collision, deformable, and rigid-IPC. Graduation therefore means one of two
+maintainer-scale moves, neither a one-line toggle:
+
+1. **Graduate the whole `simulation::experimental` module** out of experimental
+   status (the entire next-gen simulation architecture — far beyond the VI), or
+2. **Extract the VI** into its own supported namespace/target
+   (`dart::simulation::variational_integrator` or similar) — a ~50–100-file
+   relocation + namespace/macro/CMake/include rewiring, plus disentangling the
+   shared `World`/stage/`comps` infrastructure it depends on.
+
+This is the concrete reason step (4) is maintainer-owned: it is a structural
+refactor and an architecture decision, not an approval the solver can self-grant.
+The criteria above being met makes the VI _ready to propose_; the flip remains a
+deliberate, maintainer-scoped action.
+
 Until that review and flip, the VI stays a fully-functional **experimental**
 family — usable and opt-in, but without the stability promise. Keep this file in
 sync with the North Star as the remaining process steps complete.
