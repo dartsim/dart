@@ -15,6 +15,7 @@ import numpy as np
 import dartpy as dart
 
 from ..runner import PythonDemoScene, SceneSetup
+from ._z_up import reorient_to_z_up
 
 _WORLD_URI = "dart://sample/skel/fullbody1.skel"
 _BIPED_NAME = "fullbody1"
@@ -39,7 +40,7 @@ def build() -> SceneSetup:
     world = dart.io.SkelParser.read_world(_WORLD_URI)
     if world is None:
         raise RuntimeError(f"Failed to load hybrid_dynamics world from {_WORLD_URI}")
-    world.set_gravity([0.0, -9.81, 0.0])
+    reorient_to_z_up(world)
 
     biped = world.get_skeleton(_BIPED_NAME)
     if biped is None:

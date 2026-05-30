@@ -16,6 +16,7 @@ import numpy as np
 import dartpy as dart
 
 from ..runner import PythonDemoScene, SceneSetup
+from ._z_up import reorient_to_z_up
 
 _WORLD_URI = "dart://sample/skel/vehicle.skel"
 _CAR_NAME = "car_skeleton"
@@ -31,7 +32,7 @@ def build() -> SceneSetup:
     world = dart.io.SkelParser.read_world(_WORLD_URI)
     if world is None:
         raise RuntimeError(f"Failed to load vehicle world from {_WORLD_URI}")
-    world.set_gravity([0.0, -9.81, 0.0])
+    reorient_to_z_up(world)
 
     car = world.get_skeleton(_CAR_NAME)
     if car is None:
