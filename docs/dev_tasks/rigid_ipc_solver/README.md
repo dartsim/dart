@@ -138,6 +138,17 @@
         opt-in stage now exposes a max-iteration knob for custom pipelines and
         tests, reports whether a result was applied, and skips non-converged
         solve results instead of writing partial poses back silently.
+  - [x] Phase 3r: add kinematic (prescribed-motion) rigid bodies. A
+        `KinematicBodyTag` body advances by its prescribed linear/angular
+        velocity each step and acts as a moving obstacle: the barrier/dynamics
+        see it at its end pose, lagged friction uses its start->end motion so it
+        drags contacting dynamic bodies, and the conservative CCD line search
+        sweeps its start->end motion so a moving obstacle stays anti-tunneling
+        safe. `RigidBody::setKinematic()` selects it; the no-kinematic path is
+        unchanged (all solver overrides are gated). Covered by prescribed-velocity
+        advance, conveyor friction-drag (Fig. 13 mechanism, linear form), and
+        moving-wall anti-tunneling regressions. The tag is runtime-only (not yet
+        serialized); a Python binding and a turntable demo are follow-ups.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.

@@ -4054,6 +4054,145 @@ TEST(World, StepUsesSelectedRigidIpcSolver)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.2, 1e-8);
 }
 
+// A kinematic rigid body is advanced by its prescribed (linear + angular)
+// velocity each step by the rigid IPC stage, with the velocity preserved (it is
+// not integrated under gravity or zeroed by contact response).
+TEST(World, RigidIpcKinematicBodyAdvancesAtPrescribedVelocity)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81)); // ignored for kinematic
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.mass = 1.0;
+  options.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  options.angularVelocity = Eigen::Vector3d(0.0, 0.0, 2.0);
+  auto body = world.addRigidBody("kinematic", options);
+  body.setCollisionShape(sx::CollisionShape::makeBox({0.2, 0.2, 0.2}));
+  body.setKinematic(true);
+  EXPECT_TRUE(body.isKinematic());
+  EXPECT_FALSE(body.isStatic());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  // Advanced by the prescribed linear velocity (no gravity fall) and rotated by
+  // omega*dt = 0.2 rad about z.
+  EXPECT_NEAR(body.getTranslation().x(), 0.1, 1e-9);
+  EXPECT_NEAR(body.getTranslation().z(), 0.0, 1e-9);
+  EXPECT_NEAR(body.getLinearVelocity().x(), 1.0, 1e-9);
+  EXPECT_NEAR(body.getAngularVelocity().z(), 2.0, 1e-9);
+  const Eigen::AngleAxisd rotated{Eigen::Quaterniond(body.getRotation())};
+  EXPECT_NEAR(rotated.angle(), 0.2, 1e-6);
+}
+
+// Fig. 13 mechanism (linear form): a kinematic conveyor floor moving in +x
+// drags a resting free box forward through lagged Coulomb friction. The moving
+// obstacle's surface motion must enter the friction term for this to happen.
+TEST(World, RigidIpcKinematicConveyorDragsRestingBox)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions floorOptions;
+  floorOptions.position = Eigen::Vector3d(0.0, 0.0, -0.1);
+  floorOptions.linearVelocity = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto floor = world.addRigidBody("conveyor", floorOptions);
+  floor.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.1}));
+  floor.setKinematic(true);
+  floor.setFriction(1.0);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.1 + 1e-3);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  box.setFriction(1.0);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBoxZ = box.getTranslation().z();
+  for (int s = 0; s < 100; ++s) {
+    world.step(executor, pipeline);
+    EXPECT_FALSE(ipcStage.getLastStats().failed) << "step " << s;
+    minBoxZ = std::min(minBoxZ, box.getTranslation().z());
+  }
+
+  // Dragged forward by the moving floor (started at rest), in the floor's
+  // direction, without ever penetrating the floor top (z = 0, box half 0.1).
+  EXPECT_GT(box.getTranslation().x(), 0.02);
+  EXPECT_GT(box.getLinearVelocity().x(), 0.0);
+  EXPECT_GT(minBoxZ, 0.1 - 5e-3);
+}
+
+// Fig. 13 (Turntable): a free box resting on a kinematic turntable rotating
+// about the vertical axis is carried around by surface friction. The rotating
+// obstacle's tangential surface motion drags the box (mu = 1), so a box
+// starting on the +x axis is pulled toward +y (counter-clockwise) while staying
+// seated on the table -- the rotational analogue of the conveyor drag.
+TEST(World, RigidIpcKinematicTurntableCarriesRestingBox)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions tableOptions;
+  tableOptions.position = Eigen::Vector3d(0.0, 0.0, -0.1);
+  tableOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 1.0); // CCW about z
+  auto table = world.addRigidBody("turntable", tableOptions);
+  table.setCollisionShape(sx::CollisionShape::makeBox({0.6, 0.6, 0.1}));
+  table.setKinematic(true);
+  table.setFriction(1.0);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.3, 0.0, 0.1 + 1e-3);
+  auto box = world.addRigidBody("rider", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  box.setFriction(1.0);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBoxZ = box.getTranslation().z();
+  double maxBoxY = 0.0;
+  int failCount = 0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    if (ipcStage.getLastStats().failed) {
+      ++failCount;
+    }
+    minBoxZ = std::min(minBoxZ, box.getTranslation().z());
+    maxBoxY = std::max(maxBoxY, box.getTranslation().y());
+  }
+
+  // Carried tangentially (CCW) by the rotating table: a box on the +x axis is
+  // dragged well toward +y with positive tangential velocity, and never
+  // penetrates the table top (z = 0, box half 0.1). A `failed` step is a
+  // conservative solver skip (the safe, no-penetration path), not an
+  // intersection violation, so the asserted invariant is intersection-freedom
+  // plus a meaningful tangential drag rather than zero skips.
+  EXPECT_GT(maxBoxY, 0.05);
+  EXPECT_GT(box.getLinearVelocity().y(), 0.0);
+  EXPECT_GT(minBoxZ, 0.1 - 5e-3);
+  EXPECT_LE(failCount, 3);
+}
+
 // Test that invalid solver selections are rejected instead of silently falling
 // through to a different rigid-body pipeline.
 TEST(World, SetRigidBodySolverRejectsInvalidEnum)

@@ -455,6 +455,32 @@ bool RigidBody::isStatic() const
 }
 
 //==============================================================================
+void RigidBody::setKinematic(bool isKinematic)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  auto& registry = getWorld()->getRegistry();
+  if (isKinematic) {
+    // Kinematic and static are mutually exclusive: a kinematic body is advanced
+    // by its prescribed velocity, not held immovable.
+    registry.remove<comps::StaticBodyTag>(getEntity());
+    registry.emplace_or_replace<comps::KinematicBodyTag>(getEntity());
+  } else {
+    registry.remove<comps::KinematicBodyTag>(getEntity());
+  }
+}
+
+//==============================================================================
+bool RigidBody::isKinematic() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().all_of<comps::KinematicBodyTag>(getEntity());
+}
+
+//==============================================================================
 void RigidBody::setRestitution(double restitution)
 {
   DART_EXPERIMENTAL_THROW_T_IF(

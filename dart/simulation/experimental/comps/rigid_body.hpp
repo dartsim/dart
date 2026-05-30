@@ -54,4 +54,17 @@ struct StaticBodyTag
   DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
 };
 
+/// Tag marking a rigid body as kinematic (prescribed motion): the rigid IPC
+/// contact stage advances it by its prescribed (linear/angular) velocity each
+/// step and treats it as a moving obstacle -- contacting dynamic bodies cannot
+/// penetrate it and are dragged by its surface friction -- but it receives no
+/// contact or dynamics degrees of freedom and is unaffected by gravity or
+/// collision response. Runtime-only configuration; intentionally not
+/// serialized.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct KinematicBodyTag
+{
+};
+
 } // namespace dart::simulation::experimental::comps

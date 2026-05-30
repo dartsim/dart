@@ -4950,6 +4950,7 @@ void advanceDeformableBody(
 struct RigidIpcRuntimeBody
 {
   entt::entity entity = entt::null;
+  bool kinematic = false;
   sxdetail::RigidIpcPose initialPose;
   sxdetail::RigidIpcBarrierSurface surface;
   sxdetail::RigidIpcBodyDynamicsTerm dynamicsTerm;
@@ -4984,6 +4985,38 @@ sxdetail::RigidIpcPose toRigidIpcPose(const comps::Transform& transform)
   pose.position = transform.position;
   pose.rotation = rotationVectorFromQuaternion(transform.orientation);
   return pose;
+}
+
+//==============================================================================
+// Advance a kinematic body's pose by its prescribed (world-frame) linear and
+// angular velocity over one timestep: x_end = x + v*dt, R_end =
+// exp(omega*dt)*R.
+sxdetail::RigidIpcPose integrateRigidIpcKinematicPose(
+    const World& world,
+    const entt::entity entity,
+    const sxdetail::RigidIpcPose& startPose)
+{
+  const auto& registry = world.getRegistry();
+  const auto& velocity = registry.get<comps::Velocity>(entity);
+  const double timeStep = world.getTimeStep();
+
+  sxdetail::RigidIpcPose endPose = startPose;
+  if (!(timeStep > 0.0) || !std::isfinite(timeStep)) {
+    return endPose;
+  }
+  endPose.position = startPose.position + velocity.linear * timeStep;
+
+  const Eigen::Vector3d rotationDelta = velocity.angular * timeStep;
+  const double angle = rotationDelta.norm();
+  if (std::isfinite(angle) && angle > 1e-12) {
+    const Eigen::Quaterniond startQuat
+        = quaternionFromRotationVector(startPose.rotation);
+    const Eigen::Quaterniond deltaQuat(
+        Eigen::AngleAxisd(angle, rotationDelta / angle));
+    endPose.rotation
+        = rotationVectorFromQuaternion((deltaQuat * startQuat).normalized());
+  }
+  return endPose;
 }
 
 //==============================================================================
@@ -5182,12 +5215,16 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 {
   const auto& registry = world.getRegistry();
   const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
+  const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+  // Static and kinematic bodies both have prescribed motion: they contribute no
+  // dynamics objective (no inertial target) and feel no gravity in the solve.
+  const bool prescribedMotion = isStatic || isKinematic;
   const auto& velocity = registry.get<comps::Velocity>(entity);
   const auto& mass = registry.get<comps::MassProperties>(entity);
   const auto& force = registry.get<comps::Force>(entity);
 
   sxdetail::RigidIpcBodyDynamicsState state;
-  state.active = !isStatic;
+  state.active = !prescribedMotion;
   state.pose = pose;
   state.velocity.head<3>() = velocity.linear;
   state.velocity.tail<3>() = velocity.angular;
@@ -5195,7 +5232,7 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
   state.inertia = mass.inertia;
   state.generalizedForce.head<3>() = force.force;
   state.generalizedForce.tail<3>() = force.torque;
-  if (!isStatic && mass.mass > 0.0 && std::isfinite(mass.mass)) {
+  if (!prescribedMotion && mass.mass > 0.0 && std::isfinite(mass.mass)) {
     state.generalizedForce.head<3>() += mass.mass * world.getGravity();
   }
 
@@ -5226,13 +5263,26 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto& transform = view.get<comps::Transform>(entity);
 
+    const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
+    const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+
     RigidIpcRuntimeBody body;
     body.entity = entity;
+    body.kinematic = isKinematic;
     body.initialPose = toRigidIpcPose(transform);
     body.surface.body = bodies.size();
     body.surface.pose = body.initialPose;
-    body.surface.dynamic = !registry.all_of<comps::StaticBodyTag>(entity);
+    body.surface.dynamic = !isStatic && !isKinematic;
+    body.surface.kinematic = isKinematic;
+    body.surface.kinematicStartPose = body.initialPose;
     body.surface.frictionCoefficient = frictionOf(registry, entity);
+    if (isKinematic) {
+      // The obstacle advances under its prescribed velocity over the step; the
+      // solver evaluates the barrier/dynamics at this end pose while the line
+      // search and lagged friction use the start->end motion.
+      body.surface.pose
+          = integrateRigidIpcKinematicPose(world, entity, body.initialPose);
+    }
     if (!copyCollisionShapeToRigidIpcSurface(geometry.shape, body.surface)) {
       ++stats.skippedUnsupportedShapeCount;
       continue;
@@ -5279,6 +5329,29 @@ void applyRigidIpcPoseToRuntimeBody(
     velocity.linear = (pose.position - body.initialPose.position) / timeStep;
     velocity.angular = (pose.rotation - body.initialPose.rotation) / timeStep;
   }
+
+  auto& props = registry.get<comps::FreeFrameProperties>(body.entity);
+  const auto worldTransform = toIsometry(transform, transform.orientation);
+  const auto& frameState = registry.get<comps::FrameState>(body.entity);
+  props.localTransform
+      = computeFrameWorldTransform(registry, frameState.parentFrame).inverse()
+        * worldTransform;
+
+  auto& cache = registry.get<comps::FrameCache>(body.entity);
+  cache.needTransformUpdate = true;
+}
+
+//==============================================================================
+// Advance a kinematic obstacle to its prescribed end-of-step pose. Unlike the
+// dynamic write-back this preserves the body's velocity (the prescribed
+// kinematic velocity), so the obstacle keeps moving at a constant rate.
+void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
+{
+  auto& registry = world.getRegistry();
+  auto& transform = registry.get<comps::Transform>(body.entity);
+  transform.position = body.surface.pose.position;
+  transform.orientation
+      = quaternionFromRotationVector(body.surface.pose.rotation);
 
   auto& props = registry.get<comps::FreeFrameProperties>(body.entity);
   const auto worldTransform = toIsometry(transform, transform.orientation);
@@ -5345,8 +5418,9 @@ void RigidBodyVelocityStage::execute(
 
   for (std::size_t i = 0; i < forces.entities.size(); ++i) {
     const auto entity = forces.entities[i];
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
-      continue; // Static bodies do not accelerate.
+    if (registry.all_of<comps::StaticBodyTag>(entity)
+        || registry.all_of<comps::KinematicBodyTag>(entity)) {
+      continue; // Static and kinematic bodies do not accelerate.
     }
 
     const Eigen::Vector3d force(
@@ -5391,8 +5465,9 @@ void RigidBodyPositionStage::execute(
       comps::FrameState,
       comps::FrameCache>();
   for (auto entity : view) {
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
-      continue; // Static bodies do not move.
+    if (registry.all_of<comps::StaticBodyTag>(entity)
+        || registry.all_of<comps::KinematicBodyTag>(entity)) {
+      continue; // Static and kinematic bodies do not move under this stage.
     }
     integrateRigidBodyPosition(registry, entity, timeStep);
   }
@@ -5699,6 +5774,15 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.reset();
 
   const auto runtimeBodies = collectRigidIpcRuntimeBodies(world, m_lastStats);
+
+  // Kinematic obstacles advance under their prescribed velocity every step,
+  // whether or not any dynamic body is present to solve against.
+  for (const auto& body : runtimeBodies) {
+    if (body.kinematic) {
+      applyKinematicRuntimeBody(world, body);
+    }
+  }
+
   if (runtimeBodies.empty() || m_lastStats.dynamicBodyCount == 0u) {
     return;
   }

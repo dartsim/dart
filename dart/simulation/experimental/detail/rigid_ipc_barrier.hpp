@@ -112,6 +112,15 @@ struct RigidIpcBarrierSurface
   std::vector<Eigen::Vector3i> triangles;
   double frictionCoefficient = 1.0;
   bool dynamic = true;
+  // Kinematic (prescribed-motion) obstacle: holds no solver DOFs (dynamic ==
+  // false), but its pose advances from `kinematicStartPose` to `pose` over the
+  // step. The barrier and dynamics see it at the end pose (`pose`); friction
+  // and the conservative CCD line search use the start->end motion so it both
+  // drags contacting dynamic bodies and stays swept-collision safe. Ignored
+  // unless `kinematic` is set, so non-kinematic scenes are bit-for-bit
+  // unchanged.
+  bool kinematic = false;
+  RigidIpcPose kinematicStartPose;
 };
 
 struct RigidIpcBarrierConstraint

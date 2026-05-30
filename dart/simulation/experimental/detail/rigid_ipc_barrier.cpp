@@ -2225,6 +2225,33 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
   result.surfaces.assign(surfaces.begin(), surfaces.end());
   std::vector<RigidIpcBarrierSurface> laggedSurfaces(
       surfaces.begin(), surfaces.end());
+
+  // Kinematic (prescribed-motion) obstacles advance from their start pose to
+  // their end pose over the step. `result.surfaces`/`laggedSurfaces` hold the
+  // END pose (the implicit configuration the barrier and dynamics see); the lag
+  // used by lagged friction is overridden to the START pose so a moving
+  // obstacle drags contacting dynamic bodies, and the line search below sweeps
+  // the start->end motion. Every override is gated on `hasKinematic`, so scenes
+  // with no kinematic obstacle take the exact original code path.
+  bool hasKinematic = false;
+  for (const auto& surface : surfaces) {
+    if (surface.kinematic) {
+      hasKinematic = true;
+      break;
+    }
+  }
+  const auto applyKinematicLag
+      = [&surfaces](std::vector<RigidIpcBarrierSurface>& lag) {
+          for (std::size_t i = 0; i < lag.size(); ++i) {
+            if (surfaces[i].kinematic) {
+              lag[i].pose = surfaces[i].kinematicStartPose;
+            }
+          }
+        };
+  if (hasKinematic) {
+    applyKinematicLag(laggedSurfaces);
+  }
+
   const double stepTolerance = std::max(0.0, options.stepTolerance);
   const double frictionConvergenceTolerance
       = std::max(0.0, options.frictionConvergenceTolerance);
@@ -2371,8 +2398,25 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         std::vector<RigidIpcBarrierSurface> candidateSurfaces = result.surfaces;
         applyRigidIpcNewtonDelta(
             candidateSurfaces, result.assembly, step.delta);
-        result.lineSearch = computeRigidIpcLineSearchStepBound(
-            result.surfaces, candidateSurfaces, options.lineSearch);
+        // The Newton delta only moves dynamic surfaces, so candidateSurfaces
+        // holds each kinematic obstacle at its END pose. Sweep from a start
+        // configuration with kinematic obstacles at their START pose so the
+        // conservative CCD checks the obstacle's start->end motion
+        // (anti-tunneling against a moving obstacle); dynamic surfaces keep
+        // their current iterate.
+        if (hasKinematic) {
+          std::vector<RigidIpcBarrierSurface> lineSearchStart = result.surfaces;
+          for (std::size_t i = 0; i < lineSearchStart.size(); ++i) {
+            if (surfaces[i].kinematic) {
+              lineSearchStart[i].pose = surfaces[i].kinematicStartPose;
+            }
+          }
+          result.lineSearch = computeRigidIpcLineSearchStepBound(
+              lineSearchStart, candidateSurfaces, options.lineSearch);
+        } else {
+          result.lineSearch = computeRigidIpcLineSearchStepBound(
+              result.surfaces, candidateSurfaces, options.lineSearch);
+        }
         recordSolveLineSearchStats(result);
         step = computeRigidIpcProjectedNewtonStep(
             result.assembly, result.lineSearch, newtonOptions);
@@ -2416,6 +2460,9 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     }
 
     laggedSurfaces = result.surfaces;
+    if (hasKinematic) {
+      applyKinematicLag(laggedSurfaces);
+    }
     result.assembly = assembleRigidIpcObjectiveSystem(
         result.surfaces,
         laggedSurfaces,
