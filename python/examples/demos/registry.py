@@ -36,6 +36,9 @@ from .scenes.soft_bodies import SCENE as SOFT_BODIES
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
+from .scenes.vbd_beam import SCENE as VBD_BEAM
+from .scenes.vbd_cloth import SCENE as VBD_CLOTH
+from .scenes.vbd_net import SCENE as VBD_NET
 
 
 def make_demo_scenes() -> list[PythonDemoScene]:
@@ -80,4 +83,12 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_ARTICULATED,
         SX_FLOATING_BASE,
         SX_CONTACT,
+        # Vertex Block Descent (VBD) deformable scenes from the paper that the
+        # current contact-free World VBD path reproduces (mass-spring cloth/net,
+        # tetrahedral cantilever beam). Multi-body and self-collision scenes
+        # (216 squishy balls, 10368 models, tearing cloth) need surface
+        # self-contact and are deferred.
+        VBD_CLOTH,
+        VBD_NET,
+        VBD_BEAM,
     ]

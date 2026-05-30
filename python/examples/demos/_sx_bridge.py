@@ -63,6 +63,8 @@ class SxRenderBridge:
         self.render_world.set_time_step(
             getattr(sx_world, "time_step", 0.001))
         self._mappings: list[tuple[Any, dart.SimpleFrame]] = []
+        # (deformable_body, [per-node SimpleFrame]) for deformable point clouds.
+        self._deformables: list[tuple[Any, list[dart.SimpleFrame]]] = []
 
     def add_link_visual(
         self,
@@ -88,6 +90,41 @@ class SxRenderBridge:
     ) -> "dart.SimpleFrame":
         return self.add_link_visual(sx_body, shape, color, name=name)
 
+    def add_deformable_visual(
+        self,
+        deformable_body: Any,
+        color: tuple[float, float, float],
+        radius: float = 0.018,
+        fixed_color: tuple[float, float, float] | None = None,
+    ) -> list["dart.SimpleFrame"]:
+        """Render a deformable body as a per-node sphere point cloud.
+
+        One SimpleFrame sphere is created per node and re-positioned from
+        ``deformable_body.node_position(i)`` each frame, mirroring the C++
+        deformable demo's "Point Masses" view. Pinned nodes use ``fixed_color``
+        when given.
+        """
+
+        frames: list[dart.SimpleFrame] = []
+        group = len(self._deformables)
+        node_count = int(deformable_body.node_count)
+        for i in range(node_count):
+            frame = dart.SimpleFrame(
+                dart.Frame.world(), f"sx_node_{group}_{i}", np.eye(4))
+            frame.set_shape(dart.SphereShape(radius))
+            node_color = color
+            if fixed_color is not None:
+                try:
+                    if deformable_body.is_fixed_node(i):
+                        node_color = fixed_color
+                except Exception:  # noqa: BLE001
+                    pass
+            frame.create_visual_aspect().set_color(list(node_color))
+            self.render_world.add_simple_frame(frame)
+            frames.append(frame)
+        self._deformables.append((deformable_body, frames))
+        return frames
+
     def sync(self) -> None:
         """Copy each sx body's world transform onto its SimpleFrame."""
 
@@ -99,6 +136,16 @@ class SxRenderBridge:
                 frame.set_transform(_isometry_to_matrix(tf))
             except Exception:  # noqa: BLE001
                 pass
+
+        for body, frames in self._deformables:
+            for i, frame in enumerate(frames):
+                try:
+                    position = np.asarray(body.node_position(i))
+                    transform = np.eye(4)
+                    transform[:3, 3] = position
+                    frame.set_transform(transform)
+                except Exception:  # noqa: BLE001
+                    pass
 
     def pre_step(self) -> None:
         """Advance sx physics by one step, then sync render frames."""

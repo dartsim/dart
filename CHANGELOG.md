@@ -1305,6 +1305,19 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     dartpy and examples to opt a deformable body into the VBD solver. Tests
     confirm it routes a body through the VBD path, honors ground contact, and
     throws for an unknown body name.
+  - Bound the deformable solver config to dartpy: `DeformableSolverOptions` and
+    `World.configure_deformable_solver(name, options)` are now available from
+    Python (the binding never includes internal `comps/` headers, satisfying the
+    API-boundary rule). This is what lets the Python demos select the VBD solver.
+  - Added Vertex Block Descent deformable scenes to the Python `py-demos` app —
+    the VBD paper demos that the current contact-free World VBD path reproduces:
+    a mass-spring hanging cloth (`vbd_cloth`) and net (`vbd_net`), and a
+    tetrahedral cantilever beam (`vbd_beam`, the single-body analogue of the
+    paper's twisting beams). Each builds an experimental `sx.World`, opts the
+    body into VBD via `configure_deformable_solver`, and renders the nodes as a
+    point cloud through a new `SxRenderBridge.add_deformable_visual`. The paper's
+    multi-body / self-collision scenes (216 squishy balls, 10,368 models,
+    tearing cloth) need surface self-contact and are deferred.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position
