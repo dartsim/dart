@@ -91,7 +91,8 @@ Eigen::Vector3d rotationLog(const Eigen::Matrix3d& rotation)
 // Motion cross product crm(m) applied to a motion vector x, without forming the
 // 6x6 matrix: crm(m) x = [ m.w × x.w ; m.v × x.w + m.w × x.v ]. Equivalent to
 // `motionCross(m) * x` but ~3x fewer flops (used on the analytic-derivative hot
-// path). Uses the shared `adjoint`/`skew`/`spatialInertia` from the dedup header.
+// path). Uses the shared `adjoint`/`skew`/`spatialInertia` from the dedup
+// header.
 inline Vector6 crossMotion(const Vector6& m, const Vector6& x)
 {
   Vector6 out;
