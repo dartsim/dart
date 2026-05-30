@@ -46,34 +46,37 @@ constexpr double kMinSpringLength = 1e-12;
 //==============================================================================
 // Solve the symmetric positive-definite 3x3 system H d = f via the analytic
 // cofactor inverse. Returns the zero step if H is not positive-definite.
+// Templated on the scalar type so the same kernels serve double and the faster
+// single-precision (mixed-precision) rollout.
+template <typename T>
 __device__ inline void solveSym3(
-    double h00,
-    double h01,
-    double h02,
-    double h11,
-    double h12,
-    double h22,
-    double fx,
-    double fy,
-    double fz,
-    double& dx,
-    double& dy,
-    double& dz)
+    T h00,
+    T h01,
+    T h02,
+    T h11,
+    T h12,
+    T h22,
+    T fx,
+    T fy,
+    T fz,
+    T& dx,
+    T& dy,
+    T& dz)
 {
-  const double c00 = h11 * h22 - h12 * h12;
-  const double c01 = h02 * h12 - h01 * h22;
-  const double c02 = h01 * h12 - h02 * h11;
-  const double det = h00 * c00 + h01 * c01 + h02 * c02;
-  if (!(det > 0.0)) {
-    dx = 0.0;
-    dy = 0.0;
-    dz = 0.0;
+  const T c00 = h11 * h22 - h12 * h12;
+  const T c01 = h02 * h12 - h01 * h22;
+  const T c02 = h01 * h12 - h02 * h11;
+  const T det = h00 * c00 + h01 * c01 + h02 * c02;
+  if (!(det > T(0))) {
+    dx = T(0);
+    dy = T(0);
+    dz = T(0);
     return;
   }
-  const double c11 = h00 * h22 - h02 * h02;
-  const double c12 = h02 * h01 - h00 * h12;
-  const double c22 = h00 * h11 - h01 * h01;
-  const double inv = 1.0 / det;
+  const T c11 = h00 * h22 - h02 * h02;
+  const T c12 = h02 * h01 - h00 * h12;
+  const T c22 = h00 * h11 - h01 * h01;
+  const T inv = T(1) / det;
   dx = inv * (c00 * fx + c01 * fy + c02 * fz);
   dy = inv * (c01 * fx + c11 * fy + c12 * fz);
   dz = inv * (c02 * fx + c12 * fy + c22 * fz);
@@ -84,21 +87,22 @@ __device__ inline void solveSym3(
 // share no spring, so all updates here are independent (no data races); a
 // vertex reads only its other-colored neighbors, which this kernel never
 // writes.
+template <typename T>
 __global__ void vbdColorSweepKernel(
-    double* positions,
-    const double* inertialTargets,
-    const double* masses,
+    T* positions,
+    const T* inertialTargets,
+    const T* masses,
     const std::uint8_t* fixed,
     const std::uint32_t* springA,
     const std::uint32_t* springB,
-    const double* springRest,
+    const T* springRest,
     const std::uint32_t* incidentOffsets,
     const std::uint32_t* incidentSprings,
     const std::uint32_t* colorVertices,
     std::uint32_t colorBegin,
     std::uint32_t colorEnd,
-    double stiffness,
-    double invDt2)
+    T stiffness,
+    T invDt2)
 {
   const std::uint32_t slot = colorBegin + blockIdx.x * blockDim.x + threadIdx.x;
   if (slot >= colorEnd) {
@@ -110,21 +114,21 @@ __global__ void vbdColorSweepKernel(
   }
 
   const std::uint32_t b = 3u * v;
-  const double px = positions[b];
-  const double py = positions[b + 1];
-  const double pz = positions[b + 2];
+  const T px = positions[b];
+  const T py = positions[b + 1];
+  const T pz = positions[b + 2];
 
   // Inertia term: f = -(m/h^2)(x - y), H = (m/h^2) I.
-  const double coeff = masses[v] * invDt2;
-  double fx = -coeff * (px - inertialTargets[b]);
-  double fy = -coeff * (py - inertialTargets[b + 1]);
-  double fz = -coeff * (pz - inertialTargets[b + 2]);
-  double h00 = coeff;
-  double h11 = coeff;
-  double h22 = coeff;
-  double h01 = 0.0;
-  double h02 = 0.0;
-  double h12 = 0.0;
+  const T coeff = masses[v] * invDt2;
+  T fx = -coeff * (px - inertialTargets[b]);
+  T fy = -coeff * (py - inertialTargets[b + 1]);
+  T fz = -coeff * (pz - inertialTargets[b + 2]);
+  T h00 = coeff;
+  T h11 = coeff;
+  T h22 = coeff;
+  T h01 = T(0);
+  T h02 = T(0);
+  T h12 = T(0);
 
   const std::uint32_t begin = incidentOffsets[v];
   const std::uint32_t end = incidentOffsets[v + 1];
@@ -133,19 +137,19 @@ __global__ void vbdColorSweepKernel(
     const std::uint32_t a = springA[spring];
     const std::uint32_t other = (a == v) ? springB[spring] : a;
     const std::uint32_t ob = 3u * other;
-    const double dxp = positions[ob] - px;
-    const double dyp = positions[ob + 1] - py;
-    const double dzp = positions[ob + 2] - pz;
-    const double length = sqrt(dxp * dxp + dyp * dyp + dzp * dzp);
-    if (length <= kMinSpringLength) {
+    const T dxp = positions[ob] - px;
+    const T dyp = positions[ob + 1] - py;
+    const T dzp = positions[ob + 2] - pz;
+    const T length = sqrt(dxp * dxp + dyp * dyp + dzp * dzp);
+    if (length <= T(kMinSpringLength)) {
       continue;
     }
-    const double invLen = 1.0 / length;
-    const double nx = dxp * invLen;
-    const double ny = dyp * invLen;
-    const double nz = dzp * invLen;
-    const double rest = springRest[spring];
-    const double stretch = length - rest;
+    const T invLen = T(1) / length;
+    const T nx = dxp * invLen;
+    const T ny = dyp * invLen;
+    const T nz = dzp * invLen;
+    const T rest = springRest[spring];
+    const T stretch = length - rest;
 
     // Force toward the neighbor when stretched.
     fx += stiffness * stretch * nx;
@@ -153,12 +157,12 @@ __global__ void vbdColorSweepKernel(
     fz += stiffness * stretch * nz;
 
     // H += k[ transverse I + (1 - transverse) n n^T ], transverse clamped >= 0.
-    double transverse = 1.0 - rest * invLen;
-    if (transverse < 0.0) {
-      transverse = 0.0;
+    T transverse = T(1) - rest * invLen;
+    if (transverse < T(0)) {
+      transverse = T(0);
     }
-    const double longitudinal = stiffness * (1.0 - transverse);
-    const double diag = stiffness * transverse;
+    const T longitudinal = stiffness * (T(1) - transverse);
+    const T diag = stiffness * transverse;
     h00 += diag + longitudinal * nx * nx;
     h11 += diag + longitudinal * ny * ny;
     h22 += diag + longitudinal * nz * nz;
@@ -167,10 +171,10 @@ __global__ void vbdColorSweepKernel(
     h12 += longitudinal * ny * nz;
   }
 
-  double dx;
-  double dy;
-  double dz;
-  solveSym3(h00, h01, h02, h11, h12, h22, fx, fy, fz, dx, dy, dz);
+  T dx;
+  T dy;
+  T dz;
+  solveSym3<T>(h00, h01, h02, h11, h12, h22, fx, fy, fz, dx, dy, dz);
   positions[b] = px + dx;
   positions[b + 1] = py + dy;
   positions[b + 2] = pz + dz;
@@ -180,16 +184,17 @@ __global__ void vbdColorSweepKernel(
 // Predict the inertial target y = x + h v + h^2 g for every vertex, save the
 // step-start position, and warm-start the optimization at y. Fixed vertices
 // keep their position.
+template <typename T>
 __global__ void vbdInertialTargetKernel(
-    double* positions,
-    const double* velocities,
-    double* stepStartPositions,
-    double* inertialTargets,
+    T* positions,
+    const T* velocities,
+    T* stepStartPositions,
+    T* inertialTargets,
     const std::uint8_t* fixed,
-    double gx,
-    double gy,
-    double gz,
-    double timeStep,
+    T gx,
+    T gy,
+    T gz,
+    T timeStep,
     std::uint32_t vertexCount)
 {
   const std::uint32_t v = blockIdx.x * blockDim.x + threadIdx.x;
@@ -197,9 +202,9 @@ __global__ void vbdInertialTargetKernel(
     return;
   }
   const std::uint32_t b = 3u * v;
-  const double px = positions[b];
-  const double py = positions[b + 1];
-  const double pz = positions[b + 2];
+  const T px = positions[b];
+  const T py = positions[b + 1];
+  const T pz = positions[b + 2];
   stepStartPositions[b] = px;
   stepStartPositions[b + 1] = py;
   stepStartPositions[b + 2] = pz;
@@ -209,10 +214,10 @@ __global__ void vbdInertialTargetKernel(
     inertialTargets[b + 2] = pz;
     return;
   }
-  const double h2 = timeStep * timeStep;
-  const double yx = px + timeStep * velocities[b] + h2 * gx;
-  const double yy = py + timeStep * velocities[b + 1] + h2 * gy;
-  const double yz = pz + timeStep * velocities[b + 2] + h2 * gz;
+  const T h2 = timeStep * timeStep;
+  const T yx = px + timeStep * velocities[b] + h2 * gx;
+  const T yy = py + timeStep * velocities[b + 1] + h2 * gy;
+  const T yz = pz + timeStep * velocities[b + 2] + h2 * gz;
   inertialTargets[b] = yx;
   inertialTargets[b + 1] = yy;
   inertialTargets[b + 2] = yz;
@@ -223,12 +228,13 @@ __global__ void vbdInertialTargetKernel(
 
 //==============================================================================
 // Backward-Euler velocity update v = (x - x^t) / h. Fixed vertices are held.
+template <typename T>
 __global__ void vbdVelocityUpdateKernel(
-    const double* positions,
-    double* velocities,
-    const double* stepStartPositions,
+    const T* positions,
+    T* velocities,
+    const T* stepStartPositions,
     const std::uint8_t* fixed,
-    double timeStep,
+    T timeStep,
     std::uint32_t vertexCount)
 {
   const std::uint32_t v = blockIdx.x * blockDim.x + threadIdx.x;
@@ -237,12 +243,12 @@ __global__ void vbdVelocityUpdateKernel(
   }
   const std::uint32_t b = 3u * v;
   if (fixed[v] != 0u) {
-    velocities[b] = 0.0;
-    velocities[b + 1] = 0.0;
-    velocities[b + 2] = 0.0;
+    velocities[b] = T(0);
+    velocities[b + 1] = T(0);
+    velocities[b + 2] = T(0);
     return;
   }
-  const double invDt = 1.0 / timeStep;
+  const T invDt = T(1) / timeStep;
   velocities[b] = (positions[b] - stepStartPositions[b]) * invDt;
   velocities[b + 1] = (positions[b + 1] - stepStartPositions[b + 1]) * invDt;
   velocities[b + 2] = (positions[b + 2] - stepStartPositions[b + 2]) * invDt;
@@ -550,7 +556,7 @@ void vbdStepMassSpringCuda(VbdCudaMassSpringProblem& problem)
       }
       const unsigned int count = end - begin;
       const unsigned int blocks = (count + kThreads - 1) / kThreads;
-      vbdColorSweepKernel<<<blocks, kThreads>>>(
+      vbdColorSweepKernel<double><<<blocks, kThreads>>>(
           dPositions.get(),
           dInertial.get(),
           dMasses.get(),
@@ -573,31 +579,46 @@ void vbdStepMassSpringCuda(VbdCudaMassSpringProblem& problem)
   dPositions.download(problem.positions);
 }
 
-//==============================================================================
-void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
+namespace {
+
+// Templated mass-spring rollout: device state and arithmetic use scalar type T.
+// Host data (always double on the problem) is converted to T on upload and back
+// to double on download, so T=float gives the mixed-precision rollout while
+// T=double reproduces the full-precision path exactly.
+template <typename T>
+void rolloutMassSpringImpl(VbdCudaRolloutProblem& problem)
 {
   const std::size_t nodeCount = problem.nodeCount;
-  if (nodeCount == 0 || problem.colorOffsets.size() < 2) {
-    return;
-  }
 
-  DeviceArray<double> dPositions(problem.positions);
-  DeviceArray<double> dVelocities(problem.velocities);
-  DeviceArray<double> dMasses(problem.masses);
+  std::vector<T> hPositions(problem.positions.begin(), problem.positions.end());
+  std::vector<T> hVelocities(
+      problem.velocities.begin(), problem.velocities.end());
+  const std::vector<T> hMasses(problem.masses.begin(), problem.masses.end());
+  const std::vector<T> hSpringRest(
+      problem.springRest.begin(), problem.springRest.end());
+
+  DeviceArray<T> dPositions(hPositions);
+  DeviceArray<T> dVelocities(hVelocities);
+  DeviceArray<T> dMasses(hMasses);
   DeviceArray<std::uint8_t> dFixed(problem.fixed);
   DeviceArray<std::uint32_t> dSpringA(problem.springA);
   DeviceArray<std::uint32_t> dSpringB(problem.springB);
-  DeviceArray<double> dSpringRest(problem.springRest);
+  DeviceArray<T> dSpringRest(hSpringRest);
   DeviceArray<std::uint32_t> dIncidentOffsets(problem.incidentOffsets);
   DeviceArray<std::uint32_t> dIncidentSprings(problem.incidentSprings);
   DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
 
   // Per-step scratch kept resident on the device for the whole rollout.
-  const std::vector<double> zeros(3 * nodeCount, 0.0);
-  DeviceArray<double> dStepStart(zeros);
-  DeviceArray<double> dInertial(zeros);
+  const std::vector<T> zeros(3 * nodeCount, T(0));
+  DeviceArray<T> dStepStart(zeros);
+  DeviceArray<T> dInertial(zeros);
 
-  const double invDt2 = 1.0 / (problem.timeStep * problem.timeStep);
+  const T invDt2 = T(1) / (T(problem.timeStep) * T(problem.timeStep));
+  const T timeStep = T(problem.timeStep);
+  const T stiffness = T(problem.stiffness);
+  const T gx = T(problem.gravity[0]);
+  const T gy = T(problem.gravity[1]);
+  const T gz = T(problem.gravity[2]);
   const std::size_t colorCount = problem.colorOffsets.size() - 1;
   constexpr unsigned int kThreads = 128;
   const unsigned int vertexBlocks
@@ -607,16 +628,16 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
   throwIfCudaError(cudaStreamCreate(&stream), "stream create");
 
   const auto recordStep = [&]() {
-    vbdInertialTargetKernel<<<vertexBlocks, kThreads, 0, stream>>>(
+    vbdInertialTargetKernel<T><<<vertexBlocks, kThreads, 0, stream>>>(
         dPositions.get(),
         dVelocities.get(),
         dStepStart.get(),
         dInertial.get(),
         dFixed.get(),
-        problem.gravity[0],
-        problem.gravity[1],
-        problem.gravity[2],
-        problem.timeStep,
+        gx,
+        gy,
+        gz,
+        timeStep,
         static_cast<std::uint32_t>(nodeCount));
 
     for (std::size_t iteration = 0; iteration < problem.iterations;
@@ -629,7 +650,7 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
         }
         const unsigned int count = end - begin;
         const unsigned int blocks = (count + kThreads - 1) / kThreads;
-        vbdColorSweepKernel<<<blocks, kThreads, 0, stream>>>(
+        vbdColorSweepKernel<T><<<blocks, kThreads, 0, stream>>>(
             dPositions.get(),
             dInertial.get(),
             dMasses.get(),
@@ -642,25 +663,42 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
             dColorVertices.get(),
             begin,
             end,
-            problem.stiffness,
+            stiffness,
             invDt2);
       }
     }
 
-    vbdVelocityUpdateKernel<<<vertexBlocks, kThreads, 0, stream>>>(
+    vbdVelocityUpdateKernel<T><<<vertexBlocks, kThreads, 0, stream>>>(
         dPositions.get(),
         dVelocities.get(),
         dStepStart.get(),
         dFixed.get(),
-        problem.timeStep,
+        timeStep,
         static_cast<std::uint32_t>(nodeCount));
   };
 
   runDeviceRollout(stream, recordStep, problem.stepCount, problem.useCudaGraph);
 
   (void)cudaStreamDestroy(stream);
-  dPositions.download(problem.positions);
-  dVelocities.download(problem.velocities);
+  dPositions.download(hPositions);
+  dVelocities.download(hVelocities);
+  problem.positions.assign(hPositions.begin(), hPositions.end());
+  problem.velocities.assign(hVelocities.begin(), hVelocities.end());
+}
+
+} // namespace
+
+//==============================================================================
+void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem)
+{
+  if (problem.nodeCount == 0 || problem.colorOffsets.size() < 2) {
+    return;
+  }
+  if (problem.useSinglePrecision) {
+    rolloutMassSpringImpl<float>(problem);
+  } else {
+    rolloutMassSpringImpl<double>(problem);
+  }
 }
 
 //==============================================================================
@@ -756,7 +794,7 @@ void vbdRolloutTetMeshCuda(VbdCudaTetRolloutProblem& problem)
   throwIfCudaError(cudaStreamCreate(&stream), "stream create");
 
   const auto recordStep = [&]() {
-    vbdInertialTargetKernel<<<vertexBlocks, kThreads, 0, stream>>>(
+    vbdInertialTargetKernel<double><<<vertexBlocks, kThreads, 0, stream>>>(
         dPositions.get(),
         dVelocities.get(),
         dStepStart.get(),
@@ -798,7 +836,7 @@ void vbdRolloutTetMeshCuda(VbdCudaTetRolloutProblem& problem)
       }
     }
 
-    vbdVelocityUpdateKernel<<<vertexBlocks, kThreads, 0, stream>>>(
+    vbdVelocityUpdateKernel<double><<<vertexBlocks, kThreads, 0, stream>>>(
         dPositions.get(),
         dVelocities.get(),
         dStepStart.get(),

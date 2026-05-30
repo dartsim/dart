@@ -669,3 +669,93 @@ TEST(CudaVbdBlockDescent, GraphRolloutMatchesPlainRollout)
         << "component " << i;
   }
 }
+
+namespace {
+
+cuda::VbdCudaRolloutProblem makeMassSpringRolloutProblem(
+    const Scene& scene,
+    const vbd::VertexColoring& coloring,
+    const vbd::SpringAdjacency& adjacency,
+    const Vec3& gravity,
+    std::size_t iterations,
+    std::size_t steps,
+    bool useSinglePrecision)
+{
+  cuda::VbdCudaRolloutProblem problem;
+  problem.nodeCount = scene.positions.size();
+  problem.stiffness = scene.stiffness;
+  problem.timeStep = scene.timeStep;
+  problem.iterations = iterations;
+  problem.stepCount = steps;
+  problem.useSinglePrecision = useSinglePrecision;
+  problem.gravity[0] = gravity.x();
+  problem.gravity[1] = gravity.y();
+  problem.gravity[2] = gravity.z();
+  for (const auto& p : scene.positions) {
+    problem.positions.push_back(p.x());
+    problem.positions.push_back(p.y());
+    problem.positions.push_back(p.z());
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+    problem.velocities.push_back(0.0);
+  }
+  problem.masses = scene.masses;
+  problem.fixed = scene.fixed;
+  for (const auto& spring : scene.springs) {
+    problem.springA.push_back(spring.a);
+    problem.springB.push_back(spring.b);
+    problem.springRest.push_back(spring.restLength);
+  }
+  problem.incidentOffsets.push_back(0);
+  for (std::size_t v = 0; v < scene.positions.size(); ++v) {
+    for (const std::uint32_t s : adjacency.incidentSprings[v]) {
+      problem.incidentSprings.push_back(s);
+    }
+    problem.incidentOffsets.push_back(
+        static_cast<std::uint32_t>(problem.incidentSprings.size()));
+  }
+  problem.colorOffsets.push_back(0);
+  for (const auto& group : coloring.groups) {
+    for (const std::uint32_t v : group) {
+      problem.colorVertices.push_back(v);
+    }
+    problem.colorOffsets.push_back(
+        static_cast<std::uint32_t>(problem.colorVertices.size()));
+  }
+  return problem;
+}
+
+} // namespace
+
+//==============================================================================
+// The single-precision (mixed-precision) rollout tracks the double rollout to
+// float accuracy: the same fixed point, just computed in float.
+TEST(CudaVbdBlockDescent, MixedPrecisionRolloutMatchesDouble)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const Scene scene = makeGrid(8);
+  const auto coloring
+      = vbd::colorSprings(scene.positions.size(), scene.springs);
+  const auto adjacency
+      = vbd::SpringAdjacency::build(scene.positions.size(), scene.springs);
+  const Vec3 gravity(0.0, -9.81, 0.0);
+  constexpr std::size_t steps = 20;
+  constexpr std::size_t iterations = 40;
+
+  cuda::VbdCudaRolloutProblem doubleProblem = makeMassSpringRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, false);
+  cuda::vbdRolloutMassSpringCuda(doubleProblem);
+
+  cuda::VbdCudaRolloutProblem floatProblem = makeMassSpringRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, true);
+  cuda::vbdRolloutMassSpringCuda(floatProblem);
+
+  ASSERT_EQ(doubleProblem.positions.size(), floatProblem.positions.size());
+  for (std::size_t i = 0; i < doubleProblem.positions.size(); ++i) {
+    EXPECT_NEAR(doubleProblem.positions[i], floatProblem.positions[i], 5e-3)
+        << "component " << i;
+  }
+}

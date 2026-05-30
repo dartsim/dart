@@ -1162,8 +1162,7 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     GPU tetrahedral solve matches the CPU `blockDescentTetMesh` to 1e-6,
     extending the GPU win to the paper's volumetric domain. A tet GPU-vs-CPU
     benchmark shows the GPU about 1.5x faster at ~500 vertices and 4.4x at ~2000
-    vertices, with the margin growing with mesh size. Mixed precision remains
-    future work.
+    vertices, with the margin growing with mesh size.
   - Added a device-resident CUDA tetrahedral VBD rollout
     (`vbdRolloutTetMeshCuda`), the volumetric counterpart of the mass-spring
     rollout: the full per-step pipeline (inertial-target prediction, colored
@@ -1176,6 +1175,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     of the many small per-color kernels. A device-skipping test confirms the
     graph rollout matches the directly-launched rollout bit-for-bit, and the tet
     rollout benchmark runs with and without graph capture.
+  - Added a single-precision (mixed-precision) device-resident mass-spring
+    rollout. The device kernels are templated on the scalar type, and the
+    `useSinglePrecision` flag runs the rollout in float (host state stays double
+    and is converted on upload/download). A device-skipping test confirms the
+    float rollout tracks the double rollout to float accuracy. On the RTX 5000
+    Ada (whose FP64 throughput is 1/64 of FP32) the float path is markedly
+    faster — about 2.7x at 16k vertices and roughly 6x at 4k vertices in the
+    rollout benchmark — at float precision.
   - Added a VBD benchmark on the upstream TinyVBD reference default scene (a
     20-vertex tilted strand with structural and skip springs, 100 iterations per
     step). On a single CPU thread, DART's VBD runs at roughly 0.21 ms/step

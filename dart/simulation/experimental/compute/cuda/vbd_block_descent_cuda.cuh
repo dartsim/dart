@@ -114,6 +114,10 @@ struct VbdCudaRolloutProblem
   /// for every step, amortizing per-launch overhead. The per-step launch shape
   /// is identical across steps, so a single captured graph replays exactly.
   bool useCudaGraph = false;
+  /// Run the rollout in single precision (mixed precision): host state stays
+  /// double, but the device arrays and arithmetic use float. On GPUs with a low
+  /// double-throughput ratio this is markedly faster, at float accuracy.
+  bool useSinglePrecision = false;
 };
 
 /// Run a device-resident VBD mass-spring rollout. Uploads once, runs the full

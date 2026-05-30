@@ -255,6 +255,38 @@ static void BM_VbdCudaRollout(benchmark::State& state)
 }
 BENCHMARK(BM_VbdCudaRollout)->Arg(32)->Arg(64)->Arg(128);
 
+//==============================================================================
+// Mass-spring rollout in double vs single (mixed) precision. On GPUs with a low
+// FP64:FP32 throughput ratio the single-precision path is markedly faster.
+static void BM_VbdCudaMixedRollout(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("no CUDA device available");
+    return;
+  }
+  const int side = static_cast<int>(state.range(0));
+  const bool single = state.range(1) != 0;
+  const std::size_t steps = 50;
+  const GridScene scene = makeGrid(side);
+  cuda::VbdCudaRolloutProblem base = makeRolloutProblem(scene, 20, steps);
+  base.useSinglePrecision = single;
+  for (auto _ : state) {
+    state.PauseTiming();
+    cuda::VbdCudaRolloutProblem problem = base;
+    state.ResumeTiming();
+    cuda::vbdRolloutMassSpringCuda(problem);
+    benchmark::DoNotOptimize(problem.positions);
+  }
+  state.counters["vertices"] = static_cast<double>(side * side);
+  state.counters["steps"] = static_cast<double>(steps);
+  state.counters["single"] = single ? 1.0 : 0.0;
+}
+BENCHMARK(BM_VbdCudaMixedRollout)
+    ->Args({64, 0})
+    ->Args({64, 1})
+    ->Args({128, 0})
+    ->Args({128, 1});
+
 namespace {
 
 // A tetrahedral bar of `cubes` stacked unit cubes (six Kuhn tets each), bottom
