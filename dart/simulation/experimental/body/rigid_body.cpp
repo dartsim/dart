@@ -81,6 +81,70 @@ void validateInertia(const Eigen::Matrix3d& inertia)
       "RigidBody inertia must be symmetric positive definite");
 }
 
+//==============================================================================
+void validateCollisionShape(
+    const dart::simulation::experimental::CollisionShape& shape,
+    const char* ownerName)
+{
+  using dart::simulation::experimental::CollisionShapeType;
+  using dart::simulation::experimental::InvalidArgumentException;
+
+  switch (shape.type) {
+    case CollisionShapeType::Sphere:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0,
+          InvalidArgumentException,
+          "{} sphere collision shape radius must be positive and finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Box:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.halfExtents.allFinite()
+              || (shape.halfExtents.array() <= 0.0).any(),
+          InvalidArgumentException,
+          "{} box collision shape half extents must be positive and finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Mesh: {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          shape.vertices.empty(),
+          InvalidArgumentException,
+          "{} mesh collision shape must contain at least one vertex",
+          ownerName);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          shape.triangles.empty(),
+          InvalidArgumentException,
+          "{} mesh collision shape must contain at least one triangle",
+          ownerName);
+
+      for (const Eigen::Vector3d& vertex : shape.vertices) {
+        DART_EXPERIMENTAL_THROW_T_IF(
+            !vertex.allFinite(),
+            InvalidArgumentException,
+            "{} mesh collision shape vertices must be finite",
+            ownerName);
+      }
+
+      const int vertexCount = static_cast<int>(shape.vertices.size());
+      for (const Eigen::Vector3i& triangle : shape.triangles) {
+        DART_EXPERIMENTAL_THROW_T_IF(
+            triangle.minCoeff() < 0 || triangle.maxCoeff() >= vertexCount,
+            InvalidArgumentException,
+            "{} mesh collision shape triangle indices are out of range",
+            ownerName);
+        DART_EXPERIMENTAL_THROW_T_IF(
+            triangle.x() == triangle.y() || triangle.x() == triangle.z()
+                || triangle.y() == triangle.z(),
+            InvalidArgumentException,
+            "{} mesh collision shape triangles must use three distinct "
+            "vertices",
+            ownerName);
+      }
+      break;
+    }
+  }
+}
+
 } // namespace
 
 namespace dart::simulation::experimental {
@@ -454,21 +518,7 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  switch (shape.type) {
-    case CollisionShapeType::Sphere:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !std::isfinite(shape.radius) || shape.radius <= 0.0,
-          InvalidArgumentException,
-          "Sphere collision shape radius must be positive and finite");
-      break;
-    case CollisionShapeType::Box:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !shape.halfExtents.allFinite()
-              || (shape.halfExtents.array() <= 0.0).any(),
-          InvalidArgumentException,
-          "Box collision shape half extents must be positive and finite");
-      break;
-  }
+  validateCollisionShape(shape, "RigidBody");
 
   auto& registry = getWorld()->getRegistry();
   comps::CollisionGeometry geometry{shape};

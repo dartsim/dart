@@ -42,6 +42,7 @@ __all__: list[str] = [
     "PhysicalParameter",
     "RigidBody",
     "RigidBodyOptions",
+    "RigidBodySolver",
     "StateSpace",
     "StateVariable",
     "StepDerivatives",
@@ -51,6 +52,9 @@ __all__: list[str] = [
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
+    "load_obj_triangle_mesh",
+    "load_point_set",
+    "load_seg_line_mesh",
 ]
 
 
@@ -113,6 +117,10 @@ class LoopClosureResidualCoordinates(enum.Enum):
 class WorldSyncStage(enum.Enum):
     KINEMATICS = 0
 
+class RigidBodySolver(enum.Enum):
+    SEQUENTIAL_IMPULSE = 0
+
+    IPC = 1
 class ContactSolverMethod(enum.Enum):
     SEQUENTIAL_IMPULSE = 0
 
@@ -921,6 +929,7 @@ class StepGradient:
     def control(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
 
     def __repr__(self) -> str: ...
+
 class DeformableSolverDiagnostics:
     @property
     def body_count(self) -> int: ...
@@ -1414,6 +1423,12 @@ def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnos
 
 def load_gmsh_tet_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
+def load_obj_triangle_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
+def load_seg_line_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
+def load_point_set(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
 class World:
     def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC) -> None: ...
 
@@ -1488,6 +1503,12 @@ class World:
 
     @gravity.setter
     def gravity(self, arg: object, /) -> None: ...
+
+    @property
+    def rigid_body_solver(self) -> RigidBodySolver: ...
+
+    @rigid_body_solver.setter
+    def rigid_body_solver(self, arg: RigidBodySolver, /) -> None: ...
 
     @property
     def multibody_options(self) -> MultibodyOptions: ...
