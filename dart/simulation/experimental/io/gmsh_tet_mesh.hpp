@@ -51,12 +51,13 @@ struct TetMesh
   std::vector<std::array<std::size_t, 4>> tetrahedra;
 };
 
-/// Parse a GMSH ASCII ``.msh`` (format version 2.x) tetrahedral mesh from a
-/// stream. Reads the ``$Nodes`` block and the 4-node tetrahedron (``$Elements``
-/// element type 4) connectivity, remapping GMSH node ids to 0-based indices;
+/// Parse a GMSH ASCII ``.msh`` (format version 2.x or 4.x) tetrahedral mesh
+/// from a stream. Reads the ``$Nodes`` and the 4-node tetrahedron
+/// (``$Elements`` element type 4) connectivity for both the legacy (2.x) and
+/// entity-block (4.x) layouts, remapping GMSH node ids to 0-based indices;
 /// other element types (points, lines, triangles) are ignored. Throws
-/// ``InvalidArgumentException`` on malformed input or an unsupported (non-2.x
-/// or binary) format.
+/// ``InvalidArgumentException`` on malformed input or an unsupported (binary,
+/// or version &lt; 2 / &ge; 5) format.
 TetMesh loadGmshTetMesh(std::istream& input);
 
 /// Same as ``loadGmshTetMesh``, reading from a file path.

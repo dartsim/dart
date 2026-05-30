@@ -95,6 +95,23 @@ TEST(GmshTetMesh, ParsesNodesAndTetrahedraIgnoringOtherElements)
 }
 
 //==============================================================================
+TEST(GmshTetMesh, ParsesFormat41EntityBlocks)
+{
+  // GMSH 4.1 entity-block layout: node tags then coordinates per block; a
+  // per-block element type. One tetrahedron over four nodes.
+  const io::TetMesh mesh = parse(
+      "$MeshFormat\n4.1 0 8\n$EndMeshFormat\n"
+      "$Nodes\n1 4 1 4\n2 1 0 4\n1\n2\n3\n4\n"
+      "0 0 0\n1 0 0\n0 1 0\n0 0 1\n$EndNodes\n"
+      "$Elements\n1 1 1 1\n3 1 4 1\n1 1 2 3 4\n$EndElements\n");
+
+  ASSERT_EQ(mesh.positions.size(), 4u);
+  ASSERT_EQ(mesh.tetrahedra.size(), 1u);
+  EXPECT_TRUE(mesh.positions[3].isApprox(Eigen::Vector3d(0.0, 0.0, 1.0)));
+  EXPECT_EQ(mesh.tetrahedra[0], (std::array<std::size_t, 4>{0, 1, 2, 3}));
+}
+
+//==============================================================================
 TEST(GmshTetMesh, RejectsMalformedAndUnsupportedMeshes)
 {
   // Unsupported (binary) format.
@@ -104,9 +121,9 @@ TEST(GmshTetMesh, RejectsMalformedAndUnsupportedMeshes)
           "$Elements\n0\n$EndElements\n"),
       sx::InvalidArgumentException);
 
-  // Unsupported version (4.x).
+  // Unsupported version (5.x is beyond the supported 2.x/4.x range).
   EXPECT_THROW(
-      parse("$MeshFormat\n4.1 0 8\n$EndMeshFormat\n"),
+      parse("$MeshFormat\n5.0 0 8\n$EndMeshFormat\n"),
       sx::InvalidArgumentException);
 
   // Tetra references an unknown node id.

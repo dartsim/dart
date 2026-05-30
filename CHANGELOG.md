@@ -934,11 +934,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added a GMSH `.msh` tetrahedral-mesh importer (PLAN-081 M4) so deformable
     FEM bodies can be built from external tet meshes rather than only procedural
     grids. `dart::simulation::experimental::io::loadGmshTetMesh` /
-    `loadGmshTetMeshFile` parse GMSH ASCII format 2.x: the `$Nodes` block and the
-    4-node tetrahedron (`$Elements` type 4) connectivity, remapping node ids to
+    `loadGmshTetMeshFile` parse GMSH ASCII format 2.x and 4.x (both the legacy
+    flat layout and the entity-block layout): the `$Nodes` and the 4-node
+    tetrahedron (`$Elements` type 4) connectivity, remapping node ids to
     0-based indices and ignoring non-tetra elements, raising
-    `InvalidArgumentException` on malformed or unsupported (binary / non-2.x)
-    input. Exposed to `dartpy` as `load_gmsh_tet_mesh(path)` returning a
+    `InvalidArgumentException` on malformed or unsupported (binary, or
+    version &lt; 2 / &ge; 5) input. Exposed to `dartpy` as
+    `load_gmsh_tet_mesh(path)` returning a
     `DeformableBodyOptions` (positions + tetrahedra). Adds parse / rejection /
     FEM-simulation regressions and a `Deformable FEM from .msh (IPC)` py-demos
     scene that loads a bundled tet-bar mesh and sags it as an FEM cantilever.
