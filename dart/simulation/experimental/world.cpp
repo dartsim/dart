@@ -46,6 +46,7 @@
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/compute/sequential_executor.hpp"
+#include "dart/simulation/experimental/compute/variational_integration.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure.hpp"
@@ -152,7 +153,14 @@ void validateLoopClosureKinematicsPolicySupport(const World& world)
 }
 
 //==============================================================================
-void validateLoopClosureDynamicsPolicySupport(const World& world)
+// `variationalSelected` is passed in (an enum comparison the caller already
+// has) rather than re-derived from a string here, so the per-step default path
+// carries no configuration-string work. The variational integrator solves a
+// supported subset of loop closures (see compute::bindVariationalLoopClosure);
+// the semi-implicit pipeline has no loop-closure solving stage and rejects
+// every Solve closure.
+void validateLoopClosureDynamicsPolicySupport(
+    const World& world, bool variationalSelected)
 {
   auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
   for (auto entity : view) {
@@ -164,6 +172,19 @@ void validateLoopClosureDynamicsPolicySupport(const World& world)
     }
 
     const auto& name = view.get<comps::Name>(entity);
+    if (variationalSelected) {
+      const auto binding
+          = compute::bindVariationalLoopClosure(world.getRegistry(), entity);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          binding.status
+              == compute::VariationalLoopClosureBinding::Status::Unsupported,
+          InvalidOperationException,
+          "LoopClosure '{}' cannot be solved by the variational integrator: {}",
+          name.name,
+          binding.reason);
+      continue; // Supported: the variational stage will enforce it.
+    }
+
     DART_EXPERIMENTAL_THROW_T(
         InvalidOperationException,
         "LoopClosure '{}' requests dynamic solving, but the active pipeline "
@@ -1182,6 +1203,7 @@ LoopClosure World::addLoopClosure(
   closure.frameB = resolveLoopClosureFrame(*this, spec.frameB, "frameB");
   closure.offsetA = spec.offsetA;
   closure.offsetB = spec.offsetB;
+  closure.distance = spec.distance;
 
   return LoopClosure(entity, this);
 }
@@ -1505,21 +1527,54 @@ void World::step(std::size_t count)
 }
 
 //==============================================================================
+void World::setMultibodyOptions(const MultibodyOptions& options)
+{
+  const std::string& family = options.integrationFamily;
+  if (family == "semi-implicit" || family == "semi-implicit Euler") {
+    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
+  } else if (family == "variational integrator" || family == "variational") {
+    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
+  } else {
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidArgumentException,
+        "Unknown multibody integrationFamily '{}'; supported method-family "
+        "names are 'semi-implicit' and 'variational integrator'",
+        family);
+  }
+}
+
+//==============================================================================
+MultibodyOptions World::getMultibodyOptions() const
+{
+  MultibodyOptions options;
+  options.integrationFamily
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? "variational integrator"
+            : "semi-implicit";
+  return options;
+}
+
+//==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::MultibodyVariationalIntegrationStage multibodyVariational;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
+  compute::WorldStepStage& multibodyStage
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
   compute::WorldStepPipeline pipeline;
   // Integrate rigid-body positions after the multibody stage so two-sided
   // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
   // the multibody solve) take effect in the same step's pose update.
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
+      .addStage(multibodyStage)
       .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);
@@ -1533,15 +1588,20 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::MultibodyVariationalIntegrationStage multibodyVariational;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
+  compute::WorldStepStage& multibodyStage
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
   compute::WorldStepPipeline pipeline;
   // Integrate rigid-body positions after the multibody stage so two-sided
   // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
   // the multibody solve) take effect in the same step's pose update.
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
+      .addStage(multibodyStage)
       .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);
@@ -1593,7 +1653,9 @@ void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
   validateLoopClosureKinematicsPolicySupport(*this);
-  validateLoopClosureDynamicsPolicySupport(*this);
+  validateLoopClosureDynamicsPolicySupport(
+      *this,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
 
   if (!m_simulationMode) {
     enterSimulationMode();

@@ -841,6 +841,17 @@ capability names. Users should request method families or policies and receive
 documented fallback behavior or unsupported-capability errors when the current
 build lacks the required implementation backend.
 
+Capability selection is exposed through **domain-scoped value objects set as a
+whole**, not a setter/getter per capability, so new capability fields are added
+without growing the `World` method surface. The first realized example is
+`MultibodyOptions { std::string integrationFamily; }`
+(`World::setMultibodyOptions`/`getMultibodyOptions`, `multibody_options` in
+dartpy), whose `integrationFamily` maps onto the "Integration family" matrix row;
+the unimplemented rows and a possible world-level grouping are deferred until a
+second capability exists. Selection is parsed to an internal representation on
+set, so the per-step path carries no configuration cost when a non-default family
+is not in use.
+
 ## Future Capability Shapes
 
 These sections describe C++ target shapes, not guaranteed DART 7 APIs.
