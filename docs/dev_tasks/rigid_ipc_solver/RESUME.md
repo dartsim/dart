@@ -1,5 +1,51 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-30: paper-parity examples + Filament rendering fidelity
+
+Branch `feature/rigid-ipc-paper-parity` off `main` (the rigid IPC manifest work
+is now merged to `main` via PR #2777). Delivered, each built + verified +
+committed:
+
+- **Paper-parity C++ experiment suite**
+  (`tests/unit/simulation/experimental/contact/test_rigid_ipc_paper_experiments.cpp`).
+  Encodes the rigid-ipc paper figures the free-body stage can express, asserting
+  the two IPC invariants (intersection-free + Coulomb threshold):
+  - Fig. 18 high-school friction test via tilted gravity over flat ground
+    (slide below tan(theta)=0.5, stick above; friction monotonically resists,
+    slide-vs-rest discriminated by final speed since the scaffold allows a few cm
+    of transient creep near the exact threshold).
+  - Fig. 7 spolling coin: a spun triangulated disk braked by friction,
+    intersection-free.
+  - Figs. 16/17 Erleben degenerate edge-on-face drop settles without
+    penetration/divergence.
+- **Filament rendering fidelity** (`dart/gui/detail/render_environment.cpp`):
+  GTAO (bent normals, HIGH) + bloom + screen-space contact shadows + FXAA now
+  apply in BOTH headless and windowed (was windowed-only), 4 shadow cascades,
+  3072 headless shadow map, temporal dithering. Headless captures now match the
+  windowed grounding — verified by before/after headless screenshots of the
+  rigid IPC scenes. MSAA + volumetric fog stay windowed-only.
+- **Python mesh `CollisionShape` binding**: `CollisionShape.mesh(vertices,
+  triangles)` + `CollisionShapeType.MESH` (closing the Python gap vs C++
+  `makeMesh`); unit-tested through the rigid IPC path; stub regenerated.
+- **New py-demo** `sx_rigid_ipc_edge_drop` (Figs. 16/17 degenerate drop),
+  verified real-time (~24 ms/step, ~42 fps physics-only) and in the demos-cycle
+  smoke (10 passed). The existing `sx_rigid_ipc_incline` already covers Fig. 18.
+
+KINEMATIC / SCRIPTED BODY FEASIBILITY (next high-value unlock; Fig. 13 turntable,
+Fig. 12 Lewis). Scoped but NOT implemented: the lagged-friction potential already
+takes `(laggedPose, currentPose)` per body, so a moving obstacle's drag could
+reuse it by setting the obstacle's lagged=start / current=end pose. HOWEVER the
+conservative CCD line search treats `result.surfaces` as the sweep start, which
+would hold the obstacle's END pose, so the obstacle's swept motion would NOT be
+checked — breaking the anti-tunneling guarantee. Correct support requires
+threading a separate kinematic start-pose into
+`computeRigidIpcLineSearchStepBound` (and the stage computing each kinematic
+body's end pose from a prescribed velocity). Bounded but multi-site; do it as a
+dedicated slice with a quantitative turntable-drag regression. Articulated paper
+scenes (lock box, mechanisms, bolt, punching press, wrecking-ball/anchor chains,
+card house) remain out of scope for the free-body stage; many-body scenes (arch
+101 blocks, 3D packing, 560-box wrecking ball) are gated on the perf gap.
+
 ## Last Session Summary
 
 Created PLAN-082's rigid IPC implementation surface: a dedicated plan, active
