@@ -168,22 +168,24 @@ _CUBE_TETRAHEDRA = (
 )
 
 
-def build_fem_bar(
-    *,
+def _fem_bar_mesh(
     cells_x: int,
     cells_y: int,
     cells_z: int,
     cell_size: float,
     origin: Sequence[float],
-    youngs_modulus: float,
-    poisson_ratio: float = 0.3,
-    density: float = 1.0e3,
-) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
-    """A tetrahedralized FEM beam pinned at its ``x == 0`` face.
+) -> tuple[
+    list[np.ndarray],
+    list["sx.DeformableTetrahedron"],
+    list[tuple[int, int]],
+    Callable[[int, int, int], int],
+    tuple[int, int, int],
+]:
+    """Shared hexahedral->tetrahedral mesh for the FEM bar scenes.
 
-    Returns the ``DeformableBodyOptions`` (opting in to stable neo-Hookean FEM
-    elasticity, with tetrahedra and no spring edges) plus the unique tet edge
-    list for the render wireframe.
+    Returns node positions, tetrahedra, the unique tet edge list (render
+    wireframe), the ``node_index(i, j, k)`` accessor, and the ``(nx, ny, nz)``
+    node-grid dimensions.
     """
 
     nx, ny, nz = cells_x + 1, cells_y + 1, cells_z + 1
@@ -191,15 +193,18 @@ def build_fem_bar(
     def node_index(i: int, j: int, k: int) -> int:
         return i + nx * (j + ny * k)
 
-    positions: list[Sequence[float]] = []
+    positions: list[np.ndarray] = []
     for k in range(nz):
         for j in range(ny):
             for i in range(nx):
                 positions.append(
-                    (
-                        origin[0] + i * cell_size,
-                        origin[1] + j * cell_size,
-                        origin[2] + k * cell_size,
+                    np.asarray(
+                        (
+                            origin[0] + i * cell_size,
+                            origin[1] + j * cell_size,
+                            origin[2] + k * cell_size,
+                        ),
+                        dtype=float,
                     )
                 )
 
@@ -227,17 +232,101 @@ def build_fem_bar(
                     ):
                         edges.add((u, v) if u < v else (v, u))
 
-    fixed = [node_index(0, j, k) for k in range(nz) for j in range(ny)]
+    return positions, tetrahedra, sorted(edges), node_index, (nx, ny, nz)
 
+
+def _fem_bar_options(
+    positions: list[np.ndarray],
+    tetrahedra: list["sx.DeformableTetrahedron"],
+    youngs_modulus: float,
+    poisson_ratio: float,
+    density: float,
+) -> "sx.DeformableBodyOptions":
     options = sx.DeformableBodyOptions()
-    options.positions = [np.asarray(p, dtype=float) for p in positions]
+    options.positions = positions
     options.tetrahedra = tetrahedra
-    options.fixed_nodes = fixed
     options.material.youngs_modulus = youngs_modulus
     options.material.poisson_ratio = poisson_ratio
     options.material.density = density
     options.material.use_finite_element_elasticity = True
-    return options, sorted(edges)
+    return options
+
+
+def build_fem_bar(
+    *,
+    cells_x: int,
+    cells_y: int,
+    cells_z: int,
+    cell_size: float,
+    origin: Sequence[float],
+    youngs_modulus: float,
+    poisson_ratio: float = 0.3,
+    density: float = 1.0e3,
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """A tetrahedralized FEM beam pinned at its ``x == 0`` face.
+
+    Returns the ``DeformableBodyOptions`` (opting in to stable neo-Hookean FEM
+    elasticity, with tetrahedra and no spring edges) plus the unique tet edge
+    list for the render wireframe.
+    """
+
+    positions, tetrahedra, edges, node_index, (_, ny, nz) = _fem_bar_mesh(
+        cells_x, cells_y, cells_z, cell_size, origin
+    )
+    options = _fem_bar_options(
+        positions, tetrahedra, youngs_modulus, poisson_ratio, density
+    )
+    options.fixed_nodes = [node_index(0, j, k) for k in range(nz) for j in range(ny)]
+    return options, edges
+
+
+def build_fem_twist_bar(
+    *,
+    cells_x: int,
+    cells_y: int,
+    cells_z: int,
+    cell_size: float,
+    origin: Sequence[float],
+    youngs_modulus: float,
+    twist_rate: float,
+    twist_end_time: float,
+    poisson_ratio: float = 0.3,
+    density: float = 1.0e3,
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """A FEM beam twisted at both ends by opposing scripted rotations.
+
+    The two end faces are driven by ``DeformableDirichletBoundaryCondition``s
+    that counter-rotate about the bar's long (x) axis until ``twist_end_time``,
+    then release; the elastic FEM core resists the shear and untwists. The
+    scripted drive uses a linear ``omega x r`` extrapolation, so ``twist_rate``
+    and ``twist_end_time`` are kept small to stay near a true rotation. Toward
+    the IPC paper's Fig. 4 (rod twist) / Fig. 14 (mat twist) themes.
+    """
+
+    positions, tetrahedra, edges, node_index, (nx, ny, nz) = _fem_bar_mesh(
+        cells_x, cells_y, cells_z, cell_size, origin
+    )
+    options = _fem_bar_options(
+        positions, tetrahedra, youngs_modulus, poisson_ratio, density
+    )
+
+    axis_y = origin[1] + 0.5 * cells_y * cell_size
+    axis_z = origin[2] + 0.5 * cells_z * cell_size
+
+    def end_face(i: int) -> list[int]:
+        return [node_index(i, j, k) for k in range(nz) for j in range(ny)]
+
+    conditions = []
+    for face_i, sign in ((0, 1.0), (nx - 1, -1.0)):
+        condition = sx.DeformableDirichletBoundaryCondition()
+        condition.nodes = end_face(face_i)
+        condition.angular_velocity = np.array([sign * twist_rate, 0.0, 0.0])
+        condition.center = np.array([origin[0] + face_i * cell_size, axis_y, axis_z])
+        condition.start_time = 0.0
+        condition.end_time = twist_end_time
+        conditions.append(condition)
+    options.dirichlet_boundary_conditions = conditions
+    return options, edges
 
 
 class IpcDeformableBridge:
@@ -350,6 +439,7 @@ class IpcDeformableBridge:
 __all__ = [
     "IpcDeformableBridge",
     "build_fem_bar",
+    "build_fem_twist_bar",
     "build_grid_options",
     "grid_index",
     "math",

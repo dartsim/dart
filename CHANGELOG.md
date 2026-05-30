@@ -924,6 +924,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     restores a perturbed node toward rest), a `BM_DeformableFemBarStep`
     benchmark, and a `Deformable FEM Bar (IPC)` py-demos scene (a tetrahedral
     cantilever sagging under gravity) in the `IPC Deformable (sx)` category.
+  - Added a `Deformable FEM Twist (IPC)` py-demos scene: a tetrahedral FEM beam
+    counter-rotated at both ends by opposing scripted Dirichlet boundary
+    conditions, then released so the stable neo-Hookean core untwists
+    elastically -- a DART-native step toward the IPC paper's Fig. 4 (rod twist)
+    / Fig. 14 (mat twist) volumetric-shear themes. Shares a reusable
+    hexahedral-to-tetrahedral bar mesh helper with the FEM cantilever scene; the
+    demos cycle smoke covers it.
   - Added internal experimental IPC projected-Newton search direction for the
     deformable solve: each iteration assembles the per-step Hessian (inertia +
     spring + self-contact barrier + static ground barrier) with per-element
