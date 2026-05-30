@@ -10,6 +10,7 @@ from __future__ import annotations
 import dartpy as dart
 
 from ..runner import PythonDemoScene, SceneSetup
+from ._z_up import reorient_to_z_up
 
 
 _URI = "dart://sample/skel/cubes.skel"
@@ -19,7 +20,8 @@ def build() -> SceneSetup:
     world = dart.io.SkelParser.read_world(_URI)
     if world is None:
         raise RuntimeError(f"Failed to load {_URI}")
-    world.set_gravity([0.0, -9.81, 0.0])
+    # cubes.skel is authored Y-up; reorient to the canonical Z-up convention.
+    reorient_to_z_up(world)
     skeletons = [world.get_skeleton(i).get_name() for i in range(world.get_num_skeletons())]
     return SceneSetup(world=world, info={"skeletons": skeletons})
 
