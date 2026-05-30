@@ -54,6 +54,7 @@
 #include "dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
+#include "dart/simulation/experimental/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
@@ -82,6 +83,7 @@ namespace dart::simulation::experimental::compute {
 namespace dc = dart::simulation::experimental::detail::deformable_contact;
 namespace dvbd = dart::simulation::experimental::detail::deformable_vbd;
 namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
+namespace sxdetail = dart::simulation::experimental::detail;
 
 namespace {
 
@@ -1697,6 +1699,8 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         barriers.push_back(barrier);
         break;
       }
+      case CollisionShapeType::Mesh:
+        break;
     }
   }
 
@@ -4942,6 +4946,378 @@ void advanceDeformableBody(
   }
 }
 
+//==============================================================================
+struct RigidIpcRuntimeBody
+{
+  entt::entity entity = entt::null;
+  sxdetail::RigidIpcPose initialPose;
+  sxdetail::RigidIpcBarrierSurface surface;
+  sxdetail::RigidIpcBodyDynamicsTerm dynamicsTerm;
+};
+
+//==============================================================================
+Eigen::Vector3d rotationVectorFromQuaternion(
+    const Eigen::Quaterniond& orientation)
+{
+  const Eigen::Quaterniond normalized = normalizeOrIdentity(orientation);
+  const Eigen::AngleAxisd angleAxis(normalized);
+  if (!std::isfinite(angleAxis.angle()) || angleAxis.angle() == 0.0
+      || !angleAxis.axis().allFinite()) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  return angleAxis.angle() * angleAxis.axis();
+}
+
+//==============================================================================
+Eigen::Quaterniond quaternionFromRotationVector(const Eigen::Vector3d& rotation)
+{
+  const Eigen::Matrix3d matrix = sxdetail::rigidIpcRotationVectorToMatrix(
+      rotation.allFinite() ? rotation : Eigen::Vector3d::Zero());
+  return normalizeOrIdentity(Eigen::Quaterniond(matrix));
+}
+
+//==============================================================================
+sxdetail::RigidIpcPose toRigidIpcPose(const comps::Transform& transform)
+{
+  sxdetail::RigidIpcPose pose;
+  pose.position = transform.position;
+  pose.rotation = rotationVectorFromQuaternion(transform.orientation);
+  return pose;
+}
+
+//==============================================================================
+bool isPositiveFiniteVector(const Eigen::Vector3d& value)
+{
+  return value.allFinite() && (value.array() > 0.0).all();
+}
+
+//==============================================================================
+bool isValidRigidIpcMeshTriangle(
+    const Eigen::Vector3i& triangle, const std::size_t vertexCount)
+{
+  if (triangle.minCoeff() < 0) {
+    return false;
+  }
+
+  const auto maxVertex = static_cast<std::size_t>(triangle.maxCoeff());
+  if (maxVertex >= vertexCount) {
+    return false;
+  }
+
+  return triangle.x() != triangle.y() && triangle.x() != triangle.z()
+         && triangle.y() != triangle.z();
+}
+
+//==============================================================================
+bool isValidRigidIpcMeshShape(const CollisionShape& shape)
+{
+  if (shape.vertices.empty() || shape.triangles.empty()) {
+    return false;
+  }
+
+  for (const Eigen::Vector3d& vertex : shape.vertices) {
+    if (!vertex.allFinite()) {
+      return false;
+    }
+  }
+
+  for (const Eigen::Vector3i& triangle : shape.triangles) {
+    if (!isValidRigidIpcMeshTriangle(triangle, shape.vertices.size())) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+void copyBoxToRigidIpcSurface(
+    const Eigen::Vector3d& halfExtents,
+    sxdetail::RigidIpcBarrierSurface& surface)
+{
+  const double x = halfExtents.x();
+  const double y = halfExtents.y();
+  const double z = halfExtents.z();
+  surface.vertices
+      = {Eigen::Vector3d(-x, -y, -z),
+         Eigen::Vector3d(x, -y, -z),
+         Eigen::Vector3d(x, y, -z),
+         Eigen::Vector3d(-x, y, -z),
+         Eigen::Vector3d(-x, -y, z),
+         Eigen::Vector3d(x, -y, z),
+         Eigen::Vector3d(x, y, z),
+         Eigen::Vector3d(-x, y, z)};
+  surface.triangles
+      = {Eigen::Vector3i(0, 2, 1),
+         Eigen::Vector3i(0, 3, 2),
+         Eigen::Vector3i(4, 5, 6),
+         Eigen::Vector3i(4, 6, 7),
+         Eigen::Vector3i(0, 1, 5),
+         Eigen::Vector3i(0, 5, 4),
+         Eigen::Vector3i(1, 2, 6),
+         Eigen::Vector3i(1, 6, 5),
+         Eigen::Vector3i(2, 3, 7),
+         Eigen::Vector3i(2, 7, 6),
+         Eigen::Vector3i(3, 0, 4),
+         Eigen::Vector3i(3, 4, 7)};
+}
+
+//==============================================================================
+void copySphereToRigidIpcSurface(
+    const double radius, sxdetail::RigidIpcBarrierSurface& surface)
+{
+  constexpr std::size_t latitudeBands = 6;
+  constexpr std::size_t longitudeSegments = 12;
+  constexpr double pi = 3.141592653589793238462643383279502884;
+
+  surface.vertices.clear();
+  surface.triangles.clear();
+  surface.vertices.reserve(2 + (latitudeBands - 1) * longitudeSegments);
+  surface.triangles.reserve(2 * longitudeSegments * (latitudeBands - 1));
+
+  surface.vertices.emplace_back(0.0, 0.0, radius);
+  for (std::size_t latitude = 1; latitude < latitudeBands; ++latitude) {
+    const double phi = pi * static_cast<double>(latitude)
+                       / static_cast<double>(latitudeBands);
+    const double z = radius * std::cos(phi);
+    const double ringRadius = radius * std::sin(phi);
+    for (std::size_t longitude = 0; longitude < longitudeSegments;
+         ++longitude) {
+      const double theta = 2.0 * pi * static_cast<double>(longitude)
+                           / static_cast<double>(longitudeSegments);
+      surface.vertices.emplace_back(
+          ringRadius * std::cos(theta), ringRadius * std::sin(theta), z);
+    }
+  }
+  const auto bottom = static_cast<int>(surface.vertices.size());
+  surface.vertices.emplace_back(0.0, 0.0, -radius);
+
+  const auto ringVertex
+      = [](std::size_t latitude, std::size_t longitude) -> int {
+    return static_cast<int>(
+        1 + latitude * longitudeSegments + longitude % longitudeSegments);
+  };
+
+  for (std::size_t longitude = 0; longitude < longitudeSegments; ++longitude) {
+    const int current = ringVertex(0, longitude);
+    const int next = ringVertex(0, longitude + 1);
+    surface.triangles.emplace_back(0, current, next);
+  }
+
+  for (std::size_t latitude = 0; latitude + 1 < latitudeBands - 1; ++latitude) {
+    for (std::size_t longitude = 0; longitude < longitudeSegments;
+         ++longitude) {
+      const int upperCurrent = ringVertex(latitude, longitude);
+      const int upperNext = ringVertex(latitude, longitude + 1);
+      const int lowerCurrent = ringVertex(latitude + 1, longitude);
+      const int lowerNext = ringVertex(latitude + 1, longitude + 1);
+      surface.triangles.emplace_back(upperCurrent, lowerCurrent, upperNext);
+      surface.triangles.emplace_back(upperNext, lowerCurrent, lowerNext);
+    }
+  }
+
+  const std::size_t lastRing = latitudeBands - 2;
+  for (std::size_t longitude = 0; longitude < longitudeSegments; ++longitude) {
+    const int current = ringVertex(lastRing, longitude);
+    const int next = ringVertex(lastRing, longitude + 1);
+    surface.triangles.emplace_back(bottom, next, current);
+  }
+}
+
+//==============================================================================
+bool copyCollisionShapeToRigidIpcSurface(
+    const CollisionShape& shape, sxdetail::RigidIpcBarrierSurface& surface)
+{
+  switch (shape.type) {
+    case CollisionShapeType::Mesh:
+      if (!isValidRigidIpcMeshShape(shape)) {
+        return false;
+      }
+      surface.vertices = shape.vertices;
+      surface.triangles = shape.triangles;
+      return true;
+    case CollisionShapeType::Box:
+      if (!isPositiveFiniteVector(shape.halfExtents)) {
+        return false;
+      }
+      copyBoxToRigidIpcSurface(shape.halfExtents, surface);
+      return true;
+    case CollisionShapeType::Sphere:
+      if (!(shape.radius > 0.0) || !std::isfinite(shape.radius)) {
+        return false;
+      }
+      copySphereToRigidIpcSurface(shape.radius, surface);
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+RigidIpcSolveStatus toPublicRigidIpcSolveStatus(
+    const sxdetail::RigidIpcProjectedNewtonSolveStatus status)
+{
+  switch (status) {
+    case sxdetail::RigidIpcProjectedNewtonSolveStatus::NoDofs:
+      return RigidIpcSolveStatus::NoDofs;
+    case sxdetail::RigidIpcProjectedNewtonSolveStatus::Converged:
+      return RigidIpcSolveStatus::Converged;
+    case sxdetail::RigidIpcProjectedNewtonSolveStatus::MaxIterations:
+      return RigidIpcSolveStatus::MaxIterations;
+    case sxdetail::RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked:
+      return RigidIpcSolveStatus::LineSearchBlocked;
+    case sxdetail::RigidIpcProjectedNewtonSolveStatus::FactorizationFailed:
+      return RigidIpcSolveStatus::FactorizationFailed;
+  }
+
+  return RigidIpcSolveStatus::FactorizationFailed;
+}
+
+//==============================================================================
+sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
+    const World& world,
+    const entt::entity entity,
+    const sxdetail::RigidIpcPose& pose)
+{
+  const auto& registry = world.getRegistry();
+  const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
+  const auto& velocity = registry.get<comps::Velocity>(entity);
+  const auto& mass = registry.get<comps::MassProperties>(entity);
+  const auto& force = registry.get<comps::Force>(entity);
+
+  sxdetail::RigidIpcBodyDynamicsState state;
+  state.active = !isStatic;
+  state.pose = pose;
+  state.velocity.head<3>() = velocity.linear;
+  state.velocity.tail<3>() = velocity.angular;
+  state.mass = mass.mass;
+  state.inertia = mass.inertia;
+  state.generalizedForce.head<3>() = force.force;
+  state.generalizedForce.tail<3>() = force.torque;
+  if (!isStatic && mass.mass > 0.0 && std::isfinite(mass.mass)) {
+    state.generalizedForce.head<3>() += mass.mass * world.getGravity();
+  }
+
+  return sxdetail::makeRigidIpcBodyDynamicsTerm(state, world.getTimeStep());
+}
+
+//==============================================================================
+std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
+    const World& world, RigidIpcSolverStats& stats)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::CollisionGeometry,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force,
+      comps::FrameState,
+      comps::FreeFrameProperties,
+      comps::FrameCache>();
+
+  std::vector<RigidIpcRuntimeBody> bodies;
+  bodies.reserve(view.size_hint());
+  for (const auto entity : view) {
+    ++stats.bodyCount;
+
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+
+    RigidIpcRuntimeBody body;
+    body.entity = entity;
+    body.initialPose = toRigidIpcPose(transform);
+    body.surface.body = bodies.size();
+    body.surface.pose = body.initialPose;
+    body.surface.dynamic = !registry.all_of<comps::StaticBodyTag>(entity);
+    body.surface.frictionCoefficient = frictionOf(registry, entity);
+    if (!copyCollisionShapeToRigidIpcSurface(geometry.shape, body.surface)) {
+      ++stats.skippedUnsupportedShapeCount;
+      continue;
+    }
+
+    body.dynamicsTerm
+        = makeRuntimeRigidIpcDynamicsTerm(world, entity, body.initialPose);
+    if (body.surface.dynamic) {
+      ++stats.dynamicBodyCount;
+    }
+    ++stats.surfaceCount;
+    bodies.push_back(std::move(body));
+  }
+
+  return bodies;
+}
+
+//==============================================================================
+std::size_t findRuntimeBodyIndex(
+    const std::vector<RigidIpcRuntimeBody>& bodies, const entt::entity entity)
+{
+  for (std::size_t i = 0; i < bodies.size(); ++i) {
+    if (bodies[i].entity == entity) {
+      return i;
+    }
+  }
+  return bodies.size();
+}
+
+//==============================================================================
+void applyRigidIpcPoseToRuntimeBody(
+    World& world,
+    const RigidIpcRuntimeBody& body,
+    const sxdetail::RigidIpcPose& pose)
+{
+  auto& registry = world.getRegistry();
+  auto& transform = registry.get<comps::Transform>(body.entity);
+  auto& velocity = registry.get<comps::Velocity>(body.entity);
+
+  const double timeStep = world.getTimeStep();
+  transform.position = pose.position;
+  transform.orientation = quaternionFromRotationVector(pose.rotation);
+  if (timeStep > 0.0 && std::isfinite(timeStep)) {
+    velocity.linear = (pose.position - body.initialPose.position) / timeStep;
+    velocity.angular = (pose.rotation - body.initialPose.rotation) / timeStep;
+  }
+
+  auto& props = registry.get<comps::FreeFrameProperties>(body.entity);
+  const auto worldTransform = toIsometry(transform, transform.orientation);
+  const auto& frameState = registry.get<comps::FrameState>(body.entity);
+  props.localTransform
+      = computeFrameWorldTransform(registry, frameState.parentFrame).inverse()
+        * worldTransform;
+
+  auto& cache = registry.get<comps::FrameCache>(body.entity);
+  cache.needTransformUpdate = true;
+}
+
+//==============================================================================
+void applyRigidIpcRuntimeResult(
+    World& world,
+    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+{
+  auto& registry = world.getRegistry();
+  std::vector<entt::entity> dynamicEntities;
+  dynamicEntities.reserve(bodies.size());
+  for (const auto& body : bodies) {
+    if (body.surface.dynamic) {
+      dynamicEntities.push_back(body.entity);
+    }
+  }
+
+  const auto orderedEntities
+      = orderRigidBodiesParentBeforeChild(registry, dynamicEntities);
+  for (const auto entity : orderedEntities) {
+    const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
+    if (bodyIndex >= bodies.size() || bodyIndex >= result.surfaces.size()) {
+      continue;
+    }
+    applyRigidIpcPoseToRuntimeBody(
+        world, bodies[bodyIndex], result.surfaces[bodyIndex].pose);
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -5289,6 +5665,201 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 std::size_t RigidBodyContactStage::getIterations() const noexcept
 {
   return m_iterations;
+}
+
+//==============================================================================
+RigidIpcContactStage::RigidIpcContactStage(const std::size_t maxIterations)
+  : m_maxIterations(maxIterations)
+{
+}
+
+//==============================================================================
+std::string_view RigidIpcContactStage::getName() const noexcept
+{
+  return "rigid_ipc_contact";
+}
+
+//==============================================================================
+ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::Constraint,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataLocality,
+      {{"rigid_body.transform", ComputeAccessMode::ReadWrite},
+       {"rigid_body.velocity", ComputeAccessMode::ReadWrite},
+       {"rigid_body.mass", ComputeAccessMode::Read},
+       {"rigid_body.force", ComputeAccessMode::Read},
+       {"collision_geometry", ComputeAccessMode::Read}}};
+}
+
+//==============================================================================
+void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
+{
+  m_lastStats.reset();
+
+  const auto runtimeBodies = collectRigidIpcRuntimeBodies(world, m_lastStats);
+  if (runtimeBodies.empty() || m_lastStats.dynamicBodyCount == 0u) {
+    return;
+  }
+
+  std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
+  std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
+  surfaces.reserve(runtimeBodies.size());
+  dynamicsTerms.reserve(runtimeBodies.size());
+  for (const auto& body : runtimeBodies) {
+    surfaces.push_back(body.surface);
+    dynamicsTerms.push_back(body.dynamicsTerm);
+  }
+
+  // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
+  // collision surfaces and the average dynamic-body mass. These drive the IPC
+  // adaptive-kappa scheme so the barrier is stiff enough to hold bodies at a
+  // gap > 0 under gravity instead of letting them creep into penetration.
+  const double timeStep = world.getTimeStep();
+  Eigen::Vector3d aabbMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d aabbMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  double massSum = 0.0;
+  std::size_t massCount = 0;
+  for (const auto& body : runtimeBodies) {
+    const Eigen::Matrix3d rotation
+        = sxdetail::rigidIpcRotationVectorToMatrix(body.surface.pose.rotation);
+    for (const Eigen::Vector3d& localVertex : body.surface.vertices) {
+      const Eigen::Vector3d worldVertex
+          = rotation * localVertex + body.surface.pose.position;
+      aabbMin = aabbMin.cwiseMin(worldVertex);
+      aabbMax = aabbMax.cwiseMax(worldVertex);
+    }
+    if (body.surface.dynamic && body.dynamicsTerm.active && timeStep > 0.0
+        && std::isfinite(timeStep)) {
+      const double mass
+          = body.dynamicsTerm.diagonalWeights[0] * timeStep * timeStep;
+      if (std::isfinite(mass) && mass > 0.0) {
+        massSum += mass;
+        ++massCount;
+      }
+    }
+  }
+  double bboxDiagonal = 1.0;
+  if (aabbMin.allFinite() && aabbMax.allFinite()
+      && (aabbMax.array() >= aabbMin.array()).all()) {
+    const double diagonal = (aabbMax - aabbMin).norm();
+    if (std::isfinite(diagonal) && diagonal > 0.0) {
+      bboxDiagonal = diagonal;
+    }
+  }
+  const double averageMass
+      = massCount > 0u ? massSum / static_cast<double>(massCount) : 1.0;
+
+  sxdetail::RigidIpcProjectedNewtonSolveOptions options;
+  constexpr double activationDistance = 1e-2;
+  options.barrier.squaredActivationDistance
+      = activationDistance * activationDistance;
+  options.barrier.stiffness = 1.0;
+  options.adaptiveStiffness.enabled = true;
+  options.adaptiveStiffness.averageMass = averageMass;
+  options.adaptiveStiffness.bboxDiagonal = bboxDiagonal;
+  options.friction.coefficient = 1.0;
+  options.friction.staticFrictionDisplacement
+      = std::max(0.0, 1e-3 * world.getTimeStep());
+  options.dynamicsTerms = std::move(dynamicsTerms);
+  options.maxIterations = m_maxIterations;
+  // The apply policy below writes back a not-fully-converged result when it
+  // made progress, relying on every accepted Newton step having passed the
+  // conservative line-search feasibility check. That guarantee only holds with
+  // the line search enabled, so pin it explicitly (it is the default, but the
+  // anti-tunneling invariant must not silently depend on that default).
+  options.useLineSearch = true;
+  options.newton.gradientTolerance = 1e-10;
+  // The adaptive barrier is stiff (kappa can reach ~1e6), so the absolute
+  // gradient tolerance is unreachable at a resting contact. A relative floor
+  // lets a near-stationary contact converge instead of being skipped as
+  // non-converged (which would otherwise freeze the body at near-rest).
+  options.newton.relativeGradientTolerance = 1e-6;
+  options.stepTolerance = 1e-12;
+
+  sxdetail::RigidIpcProjectedNewtonSolveResult result;
+  ComputeGraph graph;
+  graph.addNode(
+      "rigid_ipc_projected_newton_solve",
+      [&]() {
+        result = sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+            surfaces, options);
+      },
+      getMetadata());
+  executor.execute(graph);
+
+  m_lastStats.status = toPublicRigidIpcSolveStatus(result.status);
+  m_lastStats.activeConstraints = result.assembly.activeConstraints.size();
+  m_lastStats.activeFrictionConstraints
+      = result.assembly.activeFrictionConstraints.size();
+  m_lastStats.activeDynamicsTerms = result.assembly.activeDynamicsTerms;
+  m_lastStats.solverIterations = result.stats.iterations;
+  m_lastStats.frictionIterations = result.stats.frictionIterations;
+  m_lastStats.acceptedSteps = result.stats.acceptedSteps;
+  m_lastStats.lineSearchLimitedSteps = result.stats.lineSearchLimitedSteps;
+  m_lastStats.initialValue = result.stats.initialValue;
+  m_lastStats.finalValue = result.stats.finalValue;
+  m_lastStats.initialGradientNorm = result.stats.initialGradientNorm;
+  m_lastStats.finalGradientNorm = result.stats.finalGradientNorm;
+  m_lastStats.finalMomentumBalance = result.stats.finalMomentumBalance;
+  m_lastStats.lastStepNorm = result.stats.lastStepNorm;
+  m_lastStats.barrierStiffness = result.stats.barrierStiffness;
+  m_lastStats.barrierStiffnessIncreases
+      = result.stats.barrierStiffnessIncreases;
+  m_lastStats.lastLineSearchStepBound = result.lineSearch.stepBound;
+  m_lastStats.lastLineSearchIndeterminate = result.lineSearch.indeterminate;
+  m_lastStats.lineSearchPointPointChecks
+      = result.stats.lineSearchPointPointChecks;
+  m_lastStats.lineSearchPointEdgeChecks
+      = result.stats.lineSearchPointEdgeChecks;
+  m_lastStats.lineSearchEdgeEdgeChecks = result.stats.lineSearchEdgeEdgeChecks;
+  m_lastStats.lineSearchPointTriangleChecks
+      = result.stats.lineSearchPointTriangleChecks;
+  m_lastStats.lineSearchHits = result.stats.lineSearchHits;
+  m_lastStats.lineSearchMisses = result.stats.lineSearchMisses;
+  m_lastStats.lineSearchIndeterminateCount
+      = result.stats.lineSearchIndeterminateCount;
+  m_lastStats.lineSearchZeroStepCount = result.stats.lineSearchZeroStepCount;
+  m_lastStats.converged = result.converged;
+  m_lastStats.failed = result.failed;
+
+  // A failed solve (conservative line search blocked the step, or the
+  // factorization failed) never writes back: applying it could penetrate.
+  if (result.failed) {
+    return;
+  }
+  // Otherwise apply the last intersection-free iterate the bounded solve
+  // reached. Every accepted Newton step is a descent step bounded by the
+  // conservative line-search feasibility check, so even a not-fully-converged
+  // result (e.g. a stiff friction-limited contact that plateaus before the
+  // gradient tolerance) is a valid, penetration-free forward step that the next
+  // substep re-solves from -- like the reference IPC, which advances with the
+  // optimizer's feasible iterate rather than discarding a non-converged step.
+  // (Unlike the reference this iterate is not Armijo energy-minimized; the
+  // sufficient-decrease guarantee is a documented follow-up.) A solve that made
+  // no progress at all (e.g. a zero iteration budget) is still skipped.
+  if (!result.converged && !result.madeProgress()) {
+    m_lastStats.nonConvergedResultSkipped = true;
+    return;
+  }
+
+  m_lastStats.resultApplied = true;
+  applyRigidIpcRuntimeResult(world, runtimeBodies, result);
+}
+
+//==============================================================================
+std::size_t RigidIpcContactStage::getMaxIterations() const noexcept
+{
+  return m_maxIterations;
+}
+
+//==============================================================================
+const RigidIpcSolverStats& RigidIpcContactStage::getLastStats() const noexcept
+{
+  return m_lastStats;
 }
 
 //==============================================================================

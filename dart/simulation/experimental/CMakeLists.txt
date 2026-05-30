@@ -70,11 +70,14 @@ add_library(
   comps/rigid_body.cpp
   detail/boxed_lcp_contact.cpp
   detail/deformable_contact/continuous_collision_step.cpp
+  detail/rigid_ipc_barrier.cpp
+  detail/rigid_ipc_ccd.cpp
   frame/fixed_frame.cpp
   frame/frame.cpp
   frame/free_frame.cpp
   io/binary_io.cpp
   io/deformable_scene_io.cpp
+  io/detail/rigid_ipc_fixture.cpp
   io/gmsh_tet_mesh.cpp
   io/obj_triangle_mesh.cpp
   io/serializer.cpp

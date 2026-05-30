@@ -454,6 +454,9 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::WorldSyncStage>(m, "WorldSyncStage")
       .value("KINEMATICS", sim::WorldSyncStage::Kinematics);
 
+  nb::enum_<sim::RigidBodySolver>(m, "RigidBodySolver")
+      .value("SEQUENTIAL_IMPULSE", sim::RigidBodySolver::SequentialImpulse)
+      .value("IPC", sim::RigidBodySolver::Ipc);
   nb::enum_<sim::ContactSolverMethod>(m, "ContactSolverMethod")
       .value("SEQUENTIAL_IMPULSE", sim::ContactSolverMethod::SequentialImpulse)
       .value("BOXED_LCP", sim::ContactSolverMethod::BoxedLcp);
@@ -2191,6 +2194,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::World& self, const nb::handle& gravity) {
             self.setGravity(toVector3(gravity));
           })
+      .def_prop_rw(
+          "rigid_body_solver",
+          &sim::World::getRigidBodySolver,
+          &sim::World::setRigidBodySolver)
       .def_prop_rw(
           "multibody_options",
           &sim::World::getMultibodyOptions,

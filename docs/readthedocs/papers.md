@@ -193,6 +193,7 @@ Springer, 2006.
 | `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration    | referenced  | medium   | evaluate  |
 | `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision      | implemented | —        | adopt     |
 | `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact        | in-progress | high     | adopt     |
+| `rigid-ipc-2021`                | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                             | contact         | in-progress  | high      | adopt      |
 | `werling-2021`                 | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable | in-progress | high     | adopt     |
 | `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration    | planned     | high     | adopt     |
 | `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration    | referenced  | medium   | reference |
@@ -337,6 +338,60 @@ Related public resources:
   repository should remain a reference/baseline rather than a runtime
   dependency.
 
+### `rigid-ipc-2021`
+
+Zachary Ferguson, Minchen Li, Teseo Schneider, Francisca Gil-Ureta, Timothy
+Langlois, Chenfanfu Jiang, Denis Zorin, Danny M. Kaufman, and Daniele Panozzo.
+"Intersection-free Rigid Body Dynamics." _ACM Transactions on Graphics_, 40(4),
+Article 183, 2021. DOI:
+[10.1145/3450626.3459802](https://doi.org/10.1145/3450626.3459802).
+
+Related public resources:
+
+- Paper/project page:
+  [ipc-sim.github.io/rigid-ipc](https://ipc-sim.github.io/rigid-ipc/)
+- Reference implementation:
+  [ipc-sim/rigid-ipc](https://github.com/ipc-sim/rigid-ipc)
+
+```bib
+@article{Ferguson2021RigidIPC,
+  author = {Zachary Ferguson and Minchen Li and Teseo Schneider and Francisca Gil-Ureta and Timothy Langlois and Chenfanfu Jiang and Denis Zorin and Danny M. Kaufman and Daniele Panozzo},
+  title = {Intersection-free Rigid Body Dynamics},
+  journal = {ACM Transactions on Graphics},
+  volume = {40},
+  number = {4},
+  articleno = {183},
+  year = {2021},
+  doi = {10.1145/3450626.3459802}
+}
+```
+
+- **Type:** paper · **Topic:** contact/integration · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact.md)
+  and its
+  [rigid-ipc manifest](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/rigid_ipc_fixture_manifest.json).
+- **Notes:** Provides the target method family for robust rigid-body contact:
+  reduced-coordinate incremental potentials, contact barriers, curved-trajectory
+  continuous collision detection with minimum separation, projected Newton,
+  friction, and a fixture/test/benchmark corpus for rigid scenes. The DART
+  implementation is experimental and DART-owned; the upstream repository is a
+  reference and benchmark baseline, not a runtime dependency.
+
+  Current DART work has the audited upstream manifest, an internal fixture
+  reader with first experimental-`World` replay state, supported
+  OBJ/OFF/MSH/STL mesh replay plus polygonal inline geometry replay into
+  native-backed mesh collision shapes, upstream comparison `.txt` shape-row
+  ingestion, direct CCD row readers, and first internal curved-trajectory CCD
+  tests for face-vertex, edge-edge, and point-edge primitives. The first direct
+  evaluator regressions cover upstream-style
+  expected-TOI rows, parameter-space residual equations for those contacts, and
+  first parameter-box subdivision queries for those contacts, plus first
+  root-row full-step misses, not full corpus parity. The complete implementation
+  still needs remaining comparison script command coverage, full conservative
+  CCD parity, barrier derivatives and Hessians, sparse projected Newton, lagged
+  smoothed friction, same-domain rigid method selection, CPU/GPU benchmark
+  packets, comparison baselines, and headless Filament evidence for promoted
+  scenes.
 ### `werling-2021`
 
 Werling, K., Omens, D., Lee, J., Exarchos, I., & Liu, C. K. "Fast and
