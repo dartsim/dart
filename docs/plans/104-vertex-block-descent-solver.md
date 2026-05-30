@@ -1,6 +1,6 @@
-# PLAN-082: Vertex Block Descent Solver
+# PLAN-104: Vertex Block Descent Solver
 
-- Operating state: `PLAN-082` in [`dashboard.md`](dashboard.md)
+- Operating state: `PLAN-104` in [`dashboard.md`](dashboard.md)
 - Outcome: the experimental `World` can step deformable bodies with a
   DART-owned Vertex Block Descent (VBD) solver — a per-vertex, graph-colored
   block coordinate descent on the variational implicit-Euler objective — that
@@ -42,10 +42,10 @@
 
 ## Relationship To PLAN-081
 
-PLAN-081 (IPC) and PLAN-082 (VBD) both target robust deformable dynamics on the
+PLAN-081 (IPC) and PLAN-104 (VBD) both target robust deformable dynamics on the
 same experimental deformable ECS components and the same variational
 implicit-Euler objective. They differ in the inner solver: PLAN-081 pursues an
-implicit-barrier projected-Newton-style method; PLAN-082 pursues per-vertex
+implicit-barrier projected-Newton-style method; PLAN-104 pursues per-vertex
 block coordinate descent. VBD reuses the PLAN-081 `deformable_contact` kernels
 for contact/friction rather than duplicating them. The public deformable stage
 stays algorithm-neutral; which inner solver runs is an internal/explicit-opt-in

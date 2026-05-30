@@ -1241,7 +1241,7 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `World::getRegistry()` so the public deformable facade stays
     solver-agnostic. Run it with `pixi run demos -- --scene experimental_vbd`;
     it joins the headless demo-cycle smoke test for visual-regression coverage.
-    This is the first user-runnable VBD visual showcase (PLAN-082 Phase 10).
+    This is the first user-runnable VBD visual showcase (PLAN-104 Phase 10).
   - Added a combined springs + tetrahedra VBD block-descent driver
     (`blockDescentDeformable` with `colorDeformable` and a combined per-vertex
     assembler) that minimizes inertia + distance-spring + Stable Neo-Hookean

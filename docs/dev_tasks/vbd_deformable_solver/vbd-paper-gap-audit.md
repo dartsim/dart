@@ -1,6 +1,6 @@
 # VBD Paper / Reference Gap Audit
 
-This audit grounds PLAN-082 against the Vertex Block Descent paper and its
+This audit grounds PLAN-104 against the Vertex Block Descent paper and its
 reference implementations. It records what the method requires, what the DART
 experimental world already provides, and what each phase must add. It is a
 planning artifact; it does not itself claim implemented behavior.
@@ -169,7 +169,7 @@ Projected Newton. Limitation: information propagates only `n_colors` graph-hops
 per iteration, so very stiff global problems converge slower than Newton, and
 high stiffness ratios (~1:10,000) converge slowly.
 
-PLAN-082 gates, to be filled with controlled benchmark JSON:
+PLAN-104 gates, to be filled with controlled benchmark JSON:
 
 - Iterations-to-converged-energy vs the existing DART gradient-descent solver on
   matched mass-spring scenes (correctness + efficiency, Phase 3). The first

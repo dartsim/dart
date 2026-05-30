@@ -4,8 +4,8 @@
 
 - [ ] Phase 0: ground the upstream Vertex Block Descent (VBD) method, reference
       implementations, and the paper-vs-DART gap audit; add the references
-      catalog entry and the PLAN-082 dashboard/plan files.
-  - [x] Grounding sub-slice: PLAN-082 dashboard entry, the numbered plan file,
+      catalog entry and the PLAN-104 dashboard/plan files.
+  - [x] Grounding sub-slice: PLAN-104 dashboard entry, the numbered plan file,
         the `chen-2024-vbd` references catalog entry, the comparative
         `tinyvbd`/`gaia` entries, the VBD paper/reference gap audit, and this
         dev-task tracker.

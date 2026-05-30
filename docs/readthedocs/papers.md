@@ -336,7 +336,7 @@ Related public resources:
 ```
 
 - **Type:** paper · **Topic:** integration/deformable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
-- **Where used:** [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-vertex-block-descent-solver.md)
+- **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
   and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/vbd_deformable_solver/vbd-paper-gap-audit.md).
 - **Notes:** Block coordinate descent on the variational implicit-Euler
   objective for elastodynamics: each vertex is a 3-DOF block updated with one
@@ -349,7 +349,7 @@ Related public resources:
   or link `Gaia`/`TinyVBD` as a runtime dependency, and the public deformable
   stage stays algorithm-neutral. It should not be described as full VBD parity,
   FEM hyperelasticity, VBD contact/friction, GPU VBD, or reference/paper
-  performance parity until the relevant PLAN-082 phase lands with evidence.
+  performance parity until the relevant PLAN-104 phase lands with evidence.
 
 ## Model Formats & Standards
 
@@ -416,7 +416,7 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
   (e.g., "Articulation", Unity-style "Rigidbody") are deliberately _not_ adopted
   where they diverge from the robotics literature.
 - **`gaia`, `tinyvbd` — baseline:** the reference implementations of Vertex
-  Block Descent (`chen-2024-vbd`). DART's PLAN-082 VBD solver is compared
+  Block Descent (`chen-2024-vbd`). DART's PLAN-104 VBD solver is compared
   against them for correctness and performance on matched scenes, but DART
   reimplements VBD independently and does not vendor or link them.
 

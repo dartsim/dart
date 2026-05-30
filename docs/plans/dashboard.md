@@ -157,10 +157,10 @@ its own line so status updates remain git-history friendly.
   `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries` green.
 
-### PLAN-082: Vertex Block Descent Solver
+### PLAN-104: Vertex Block Descent Solver
 
 - Owner doc:
-  [`082-vertex-block-descent-solver.md`](082-vertex-block-descent-solver.md)
+  [`104-vertex-block-descent-solver.md`](104-vertex-block-descent-solver.md)
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility

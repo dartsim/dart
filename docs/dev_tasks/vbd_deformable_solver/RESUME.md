@@ -2,7 +2,7 @@
 
 ## Last Session Summary
 
-Started PLAN-082: implementing Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as a DART-owned deformable solver in the experimental World. Landed
+Started PLAN-104: implementing Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as a DART-owned deformable solver in the experimental World. Landed
 Phases 0-4, the Phase 5 acceleration/damping primitives, Phase 6 (stepping loop
 and World solver wiring), and Phase 8a (CPU baseline comparison plus residual
 early termination) with all gates green: lint clean, focused build, 61 VBD tests
@@ -10,7 +10,7 @@ across 8 binaries plus the 43-case deformable regression suite, and benchmark
 smoke showing VBD roughly 2-4x faster than the in-repo gradient-descent baseline
 on contact-free mass-spring scenes.
 
-- Phase 0 grounding: PLAN-082 dashboard entry and numbered plan file, the
+- Phase 0 grounding: PLAN-104 dashboard entry and numbered plan file, the
   `chen-2024-vbd` references catalog entry plus comparative `tinyvbd`/`gaia`
   entries, the VBD paper/reference gap audit (verified formulas + Table 1
   targets), and this tracker.
