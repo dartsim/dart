@@ -1663,7 +1663,9 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   m.def(
       "collect_deformable_scene_diagnostics",
-      &sim::io::collectDeformableSceneDiagnostics,
+      [](const sim::World& world) {
+        return sim::io::collectDeformableSceneDiagnostics(world);
+      },
       nb::arg("world"));
 
   nb::class_<sim::World>(m, "World")
