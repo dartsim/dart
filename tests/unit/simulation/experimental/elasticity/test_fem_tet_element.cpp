@@ -331,6 +331,35 @@ fem::Vector12d fcrFiniteGradient(
   return grad;
 }
 
+// Central-difference Hessian via differencing the analytic fixed-corotational
+// gradient (the gold-standard check for the exact element Hessian).
+fem::Matrix12d fcrFiniteHessian(
+    const Nodes& x,
+    const fem::TetRestShape& rest,
+    const fem::LameParameters& lame)
+{
+  constexpr double h = 1e-6;
+  fem::Matrix12d hess = fem::Matrix12d::Zero();
+  for (int node = 0; node < 4; ++node) {
+    for (int axis = 0; axis < 3; ++axis) {
+      Nodes plus = x;
+      Nodes minus = x;
+      plus[node][axis] += h;
+      minus[node][axis] -= h;
+      const fem::Vector12d gradPlus
+          = fem::evaluateFixedCorotationalTet(
+                plus[0], plus[1], plus[2], plus[3], rest, lame)
+                .gradient;
+      const fem::Vector12d gradMinus
+          = fem::evaluateFixedCorotationalTet(
+                minus[0], minus[1], minus[2], minus[3], rest, lame)
+                .gradient;
+      hess.col(3 * node + axis) = (gradPlus - gradMinus) / (2.0 * h);
+    }
+  }
+  return hess;
+}
+
 } // namespace
 
 //==============================================================================
@@ -391,8 +420,12 @@ TEST(FemTetElement, FixedCorotationalGradientMatchesFiniteDifference)
 }
 
 //==============================================================================
-// The Gauss-Newton fixed-corotational Hessian is symmetric positive definite.
-TEST(FemTetElement, FixedCorotationalHessianIsSymmetricPositiveDefinite)
+// The exact fixed-corotational element Hessian (rotation-gradient form) matches
+// the finite-difference Hessian of the analytic gradient. Unlike the
+// Gauss-Newton approximation it is generally indefinite (exactly like the IPC
+// paper's per-element Hessian, which the solver PSD-projects), so this checks
+// the value, not definiteness.
+TEST(FemTetElement, FixedCorotationalHessianMatchesFiniteDifference)
 {
   const Nodes rest = restTetrahedron();
   const Nodes x = deformedTetrahedron();
@@ -403,14 +436,38 @@ TEST(FemTetElement, FixedCorotationalHessianIsSymmetricPositiveDefinite)
   const fem::Matrix12d h
       = fem::evaluateFixedCorotationalTet(x[0], x[1], x[2], x[3], shape, lame)
             .hessian;
+  const fem::Matrix12d numeric = fcrFiniteHessian(x, shape, lame);
+
   EXPECT_LT(
       (h - h.transpose()).cwiseAbs().maxCoeff(),
       1e-9 * (1.0 + h.cwiseAbs().maxCoeff()));
-  // The 9 free DOFs (node 0 fixed) span a PD subspace; the smallest eigenvalue
-  // over the whole 12x12 is >= 0 (the rigid translation modes are the
-  // nullspace).
-  const Eigen::SelfAdjointEigenSolver<fem::Matrix12d> solver(h);
-  EXPECT_GT(solver.eigenvalues().minCoeff(), -1e-7);
+  const double tol = 1e-4 * (1.0 + numeric.cwiseAbs().maxCoeff());
+  EXPECT_LT((h - numeric).cwiseAbs().maxCoeff(), tol);
+}
+
+//==============================================================================
+// The rotation-gradient Hessian is only defined for non-inverted elements; a
+// severely inverted element falls back to the always-symmetric Gauss-Newton
+// Hessian and must still produce a finite, symmetric block (the solver then
+// PSD-projects it) rather than a NaN.
+TEST(FemTetElement, FixedCorotationalInvertedElementHessianStaysFinite)
+{
+  const Nodes rest = restTetrahedron();
+  const fem::TetRestShape shape
+      = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
+  const fem::LameParameters lame = fem::lameParameters(1.0e3, 0.3);
+
+  // Reflect node 3 through the opposite face so the element is inverted (J <
+  // 0).
+  Nodes inverted = rest;
+  inverted[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+  const fem::TetElementResult result = fem::evaluateFixedCorotationalTet(
+      inverted[0], inverted[1], inverted[2], inverted[3], shape, lame);
+  ASSERT_TRUE(result.valid);
+  EXPECT_TRUE(result.hessian.allFinite());
+  EXPECT_LT(
+      (result.hessian - result.hessian.transpose()).cwiseAbs().maxCoeff(),
+      1e-9 * (1.0 + result.hessian.cwiseAbs().maxCoeff()));
 }
 
 //==============================================================================
