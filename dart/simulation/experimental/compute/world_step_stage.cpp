@@ -3473,6 +3473,7 @@ bool computeProjectedNewtonDirection(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
     const SelfContactFrictionInputs* selfContactFriction,
@@ -3745,6 +3746,42 @@ bool computeProjectedNewtonDirection(
           static_cast<Eigen::Index>(3 * i + 2),
           static_cast<Eigen::Index>(3 * i + 2),
           std::max(0.0, second));
+    }
+  }
+
+  // Static sphere obstacle barrier Hessian. The full per-node barrier Hessian
+  // is B''(d) n n^T + (B'(d)/|x-c|)(I - n n^T) with n the outward radial
+  // normal; its tangential eigenvalues B'(d)/|x-c| are non-positive (the
+  // barrier force pulls the node radially out), so the PSD projection keeps
+  // only the rank-1 radial term max(0, B''(d)) n n^T -- the sphere analogue of
+  // the vertical ground barrier curvature, now along the radial normal.
+  if (!sphereObstacles.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    constexpr double barrierScale = 25.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (!isFree(i)) {
+        continue;
+      }
+      for (const auto& obstacle : sphereObstacles) {
+        const Eigen::Vector3d offset = positions[i] - obstacle.center;
+        const double centerDistance = offset.norm();
+        const double d = centerDistance - obstacle.radius;
+        if (d <= 0.0 || d >= activationDistance || centerDistance <= 0.0
+            || !std::isfinite(d)) {
+          continue;
+        }
+        const double distanceOffset = d - activationDistance;
+        const double logRatio = std::log(d / activationDistance);
+        const double second = -barrierScale
+                              * (2.0 * logRatio + 4.0 * distanceOffset / d
+                                 - (distanceOffset * distanceOffset) / (d * d));
+        const double curvature = std::max(0.0, second);
+        if (curvature <= 0.0) {
+          continue;
+        }
+        const Eigen::Vector3d normal = offset / centerDistance;
+        addBlock3(i, i, curvature * (normal * normal.transpose()));
+      }
     }
   }
 
@@ -4287,6 +4324,7 @@ void advanceDeformableBody(
           scratch.next,
           scratch.activeFixed,
           barriers,
+          sphereObstacles,
           &contactBarrier,
           &groundFriction,
           &selfContactFriction,
