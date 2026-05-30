@@ -437,6 +437,10 @@ int runGuiBackendApplicationImpl(
       }
       applySceneOptions(
           appOptions, sceneOptions, renderOutputModeExplicit, renderOutputMode);
+      // The demos host uses the docked workspace layout so the catalog sidebar
+      // and the status HUD never overlap; this is a no-op (floating overlay
+      // fallback) on builds without ImGui docking support.
+      appOptions.dockingEnabled = true;
       std::vector<dart::gui::Panel> panels;
       panels.reserve(appOptions.panels.size() + 1);
       panels.push_back(makeDemoSidebarPanel(*demoCatalog, activeIndex));
