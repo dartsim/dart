@@ -850,6 +850,69 @@ TEST(DeformableBody, StaticGroundBarrierPreventsCrossing)
 }
 
 //==============================================================================
+// A static sphere opted in as a surface-CCD obstacle exerts a full radial
+// barrier force: a node resting inside the activation band (d_hat = 2e-2) at
+// the sphere's side is pushed radially outward toward the band edge, not just
+// along the vertical that the ground barrier handles. (The barrier is the
+// smooth contact force; the surface CCD limiter is the tunnelling guard for
+// fast motion.)
+TEST(DeformableBody, SphereObstacleBarrierRepelsNodeRadially)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  // 0.505 is inside the band (surface 0.5, distance 0.005 < d_hat 0.02).
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.505, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  auto body = world.addDeformableBody("node", options);
+
+  world.step(10);
+
+  // The radial barrier drives the node out of the activation band along +x. A
+  // vertical-only (ground-style) barrier could never produce this purely-radial
+  // push, which is the point of the obstacle barrier.
+  const auto position = body.getPosition(0);
+  EXPECT_GT(position.x(), 0.52); // repelled past the band edge (radially)
+  EXPECT_LT(position.x(), 2.0);  // finite (no blow-up)
+  EXPECT_NEAR(position.y(), 0.0, 1e-9); // purely radial (+x), no deflection
+  EXPECT_NEAR(position.z(), 0.0, 1e-9);
+}
+
+//==============================================================================
+// Without the opt-in the same sphere is inert: a force-free node in the band
+// does not move (no barrier force).
+TEST(DeformableBody, SphereObstacleBarrierRequiresOptIn)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("ordinary_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_FALSE(sphere.isDeformableSurfaceCcdObstacle());
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.505, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  auto body = world.addDeformableBody("node", options);
+
+  world.step(30);
+
+  // No barrier force, so the static node stays put.
+  EXPECT_NEAR(body.getPosition(0).x(), 0.505, 1e-6);
+}
+
+//==============================================================================
 TEST(DeformableBody, ActiveStaticGroundContactAllowsTangentialMotion)
 {
   sx::World world;
