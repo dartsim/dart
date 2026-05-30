@@ -208,9 +208,12 @@ gaps to the [north star](#north-star), in priority order:
    per-contact dual + Kelvin-Voigt damping). Verified: rest at `mg/k`, a swinging
    revolute tip held off the plane, a sliding block decelerated by friction, and
    the AL slider centered at `d ≈ 0` (vs the penalty `−mg/k`). Remaining:
-   **link-vs-link contact** (the full gate-1 persistent-broad-phase workstream,
-   owned with PLAN-081); barrier (C4) last — stiff curvature mis-scales the
-   `Δt·M⁻¹` quasi-Newton.
+   **link-vs-link contact** — now **re-pathed** to _adapt the rigid IPC contact
+   stack_ (`#2777`: contact Jacobians, curved-trajectory CCD, candidate
+   generation) into an in-loop signed-distance/gradient query, no longer a
+   net-new collision workstream (see the
+   [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md));
+   barrier (C4) last — stiff curvature mis-scales the `Δt·M⁻¹` quasi-Newton.
 2. **Graduation to a supported solver.** The [graduation
    checklist](graduation-criteria.md) now has the convergence-at-scale and
    performance-characterization criteria met (this round); the open items are

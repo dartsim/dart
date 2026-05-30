@@ -176,6 +176,21 @@ remaining gate-1 action is to assign that owner and open the workstream as its
 own `PLAN-` entry. Gate 2 (the C2 single-contact robustness spike) is tracked
 separately and stays open until run.
 
+**Update (2026-05-30): gate 1 re-pathed by the rigid IPC contact solver
+(`#2777`).** PLAN-082-rigid-implicit-barrier-contact landed a DART-owned
+rigid-body contact stack — `detail/contact_jacobians.{hpp,cpp}` (rigid contact
+Jacobians, the Cartesian half of the reduced-coordinate glue),
+`detail/rigid_ipc_ccd.*` (curved-trajectory CCD), and the shared
+`detail/deformable_contact/` geometry (`candidate_set.hpp`,
+`continuous_collision_step.*`, `tangent_stencil.hpp`, `primitive_distance.hpp`).
+That is the candidate-generation + distance/CCD infrastructure gate 1 was scoped
+to build, so the remaining gate-1 work shrinks from "stand up a new
+contact-query stack" to "**adapt that stack into a signed-distance + `∂d/∂q`
+query at the trial `qᵏ⁺¹`**" for the VI's RIQN loop, then feed it the C1-C3 force
+laws (now implemented). Natural owner: a jointly-owned sub-plan with
+PLAN-082-rigid-implicit-barrier-contact / PLAN-081. With both the C1-C3 rungs and
+that stack landed, this adapter is the single dominant remaining gap.
+
 ## C2 spike result (gate 2) — 2026-05-29
 
 This section records **Go/No-Go gate 2**: a spike confirming RIQN robustness to
@@ -319,9 +334,17 @@ overshoots before the body can move). Verified
 
 ### Still future (the rest of Phase C)
 
-- **Link-vs-link contact** — the full gate-1 workstream (persistent broad phase +
-  incremental narrow phase reusing the IPC sweep/primitive-distance stack). The
-  C2 rung covers link-point-vs-analytic-ground only; arbitrary link-geometry
-  pairs still need the candidate-generation + warm-started query object, which
-  remains owned by / coordinated with PLAN-081.
+- **Link-vs-link contact** — the remaining gate-1 prerequisite, now substantially
+  **re-pathed by the rigid IPC contact solver** (`#2777`,
+  [`082-rigid-implicit-barrier-contact.md`](../082-rigid-implicit-barrier-contact.md)):
+  its `detail/contact_jacobians.{hpp,cpp}`, `detail/rigid_ipc_ccd.*`, and the
+  `detail/deformable_contact/` geometry (`candidate_set.hpp`,
+  `continuous_collision_step.*`, `tangent_stencil.hpp`) already provide the rigid
+  candidate generation, curved-trajectory CCD, and contact Jacobians the VI's
+  RIQN loop needs. So this is no longer a net-new collision workstream but
+  **adapting that stack into an in-loop contact query** (signed distance +
+  `∂d/∂q` at the trial `qᵏ⁺¹`) and feeding it the C1-C3 force laws + the
+  reduced-coordinate glue already built. The C1-C3 rungs cover
+  link-point-vs-analytic-ground; arbitrary link-geometry pairs need this adapter,
+  coordinated with PLAN-082-rigid-implicit-barrier-contact / PLAN-081.
 - A **contact GUI demo** scene (now unblocked — friction has landed).
