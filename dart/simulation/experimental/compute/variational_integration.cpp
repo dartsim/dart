@@ -17,6 +17,7 @@
 #include "dart/simulation/experimental/comps/link.hpp"
 #include "dart/simulation/experimental/comps/loop_closure.hpp"
 #include "dart/simulation/experimental/comps/multibody.hpp"
+#include "dart/simulation/experimental/comps/variational_contact.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
@@ -1729,8 +1730,40 @@ void MultibodyVariationalIntegrationStage::execute(
         constraints.push_back(binding.constraint);
       }
     }
+    // Build the opt-in compliant-contact hook from the multibody's contact
+    // config (PLAN-082 Phase C rungs C1/C2); absent => contact-free.
+    VariationalContactHook contactHook;
+    if (const auto* contactConfig
+        = registry.try_get<comps::VariationalContact>(entity)) {
+      VariationalGroundContact contact;
+      contact.planeNormal = contactConfig->planeNormal;
+      contact.planePoint = contactConfig->planePoint;
+      contact.stiffness = contactConfig->stiffness;
+      contact.frictionCoefficient = contactConfig->frictionCoefficient;
+      contact.frictionRegularization = contactConfig->frictionRegularization;
+      contact.dampingCoefficient = contactConfig->dampingCoefficient;
+      const std::size_t pointCount = contactConfig->pointLinkIndices.size();
+      contact.points.reserve(pointCount);
+      for (std::size_t i = 0; i < pointCount; ++i) {
+        contact.points.push_back(
+            {contactConfig->pointLinkIndices[i],
+             contactConfig->pointLocalPositions[i]});
+      }
+      if (contact.stiffness > 0.0 && !contact.points.empty()) {
+        contactHook = makeVariationalGroundContactHook(contact);
+      }
+    }
     integrateMultibodyVariational(
-        registry, structure, gravity, timeStep, state, 100, 1e-10, constraints);
+        registry,
+        structure,
+        gravity,
+        timeStep,
+        state,
+        100,
+        1e-10,
+        constraints,
+        5,
+        contactHook);
 
     // External forces are one-shot per step (like legacy
     // BodyNode::addExtForce): clear them after they have been consumed by this

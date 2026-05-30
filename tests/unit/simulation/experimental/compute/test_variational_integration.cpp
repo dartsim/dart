@@ -2623,3 +2623,57 @@ TEST(
   EXPECT_GT(al.meanDual, 0.5 * mass * g);
   EXPECT_LT(al.meanDual, 2.0 * mass * g);
 }
+
+// PLAN-082 Phase C: compliant ground contact reaches the integrator through the
+// World surface. A slider on the variational-integrator family, configured via
+// Multibody::setGroundContact + addGroundContactPoint and stepped with
+// world.step() (not the compute API), drops onto the plane and rests at the
+// mg/k penetration -- exercising the comps::VariationalContact stage wiring.
+TEST(VariationalGroundContact, WorldSurfaceCompliantContactRestsOnGround)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  const double k = 1.0e3 * mass * g;
+  const double damping = 200.0; // ~critical (2*sqrt(k*m)) to settle the drop.
+  const int steps = 3000;
+
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(mass);
+  carriage.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  carriage.getParentJoint().setPosition(
+      Eigen::VectorXd::Constant(1, 0.02)); // start above the plane.
+  world.updateKinematics();
+
+  // Configure compliant ground contact through the World surface (the new stage
+  // wiring), not the compute API.
+  robot.setGroundContact(
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::Zero(),
+      k,
+      /*frictionCoefficient=*/0.0,
+      /*frictionRegularization=*/1.0e-4,
+      damping);
+  robot.addGroundContactPoint(carriage, Eigen::Vector3d::Zero());
+
+  for (int step = 0; step < steps; ++step) {
+    world.step();
+  }
+
+  const double finalZ = carriage.getParentJoint().getPosition()[0];
+  const double analytic = mass * g / k; // mg/k penetration.
+  EXPECT_TRUE(std::isfinite(finalZ));
+  EXPECT_LT(finalZ, 0.0);   // settled in contact, below the plane.
+  EXPECT_GT(finalZ, -0.01); // held near the plane (not free-falling through).
+  EXPECT_NEAR(finalZ, -analytic, 1.5 * analytic); // ~mg/k penetration.
+}

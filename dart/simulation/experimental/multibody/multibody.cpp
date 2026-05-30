@@ -655,4 +655,47 @@ Eigen::MatrixXd Multibody::getWorldJacobian(const Link& link) const
       registry, structure, link.getEntity());
 }
 
+//==============================================================================
+void Multibody::setGroundContact(
+    const Eigen::Vector3d& planeNormal,
+    const Eigen::Vector3d& planePoint,
+    double stiffness,
+    double frictionCoefficient,
+    double frictionRegularization,
+    double dampingCoefficient)
+{
+  auto& registry = m_world->getRegistry();
+  auto& contact
+      = registry.emplace_or_replace<comps::VariationalContact>(m_entity);
+  contact.planeNormal = planeNormal;
+  contact.planePoint = planePoint;
+  contact.stiffness = stiffness;
+  contact.frictionCoefficient = frictionCoefficient;
+  contact.frictionRegularization = frictionRegularization;
+  contact.dampingCoefficient = dampingCoefficient;
+}
+
+//==============================================================================
+void Multibody::addGroundContactPoint(
+    const Link& link, const Eigen::Vector3d& localPoint)
+{
+  auto& registry = m_world->getRegistry();
+  auto* contact = registry.try_get<comps::VariationalContact>(m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact == nullptr,
+      InvalidArgumentException,
+      "addGroundContactPoint requires setGroundContact() to be called first");
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  const auto it = std::find(
+      structure.links.begin(), structure.links.end(), link.getEntity());
+  DART_EXPERIMENTAL_THROW_T_IF(
+      it == structure.links.end(),
+      InvalidArgumentException,
+      "addGroundContactPoint: link is not part of this multibody");
+  contact->pointLinkIndices.push_back(
+      static_cast<std::size_t>(it - structure.links.begin()));
+  contact->pointLocalPositions.push_back(localPoint);
+}
+
 } // namespace dart::simulation::experimental

@@ -133,8 +133,8 @@ SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
 
 ## GUI Demos (visual verification)
 
-Two py-demos scenes exercise the VI through the viewer (e.g.
-`pixi run py-demos -- --scene sx_variational_chain`):
+Several py-demos scenes exercise the VI through the viewer (e.g.
+`pixi run py-demos -- --scene sx_variational_contact`):
 
 - **`sx_variational_chain`** — a 5-link passive revolute chain released from
   horizontal; the symplectic VI keeps it swinging with no secular energy loss
@@ -142,11 +142,14 @@ Two py-demos scenes exercise the VI through the viewer (e.g.
 - **`sx_variational_tumbler`** — a torque-free floating asymmetric body in zero
   gravity, tumbling without energy/momentum drift (the Phase B1 floating-base
   path).
+- **`sx_loop_closure`** — a planar arm with a DISTANCE loop closure held to
+  machine precision while it swings (Phase B2).
+- **`sx_variational_contact`** — a pendulum tip caught by compliant ground
+  contact + friction, configured through the World surface
+  (`Multibody.set_ground_contact`; Phase C rungs C1/C2).
 
-Both select the VI via `World.multibody_options`; the headless cycle smoke
-(`python/tests/integration/test_demos_cycle.py`) builds and steps them. More
-scenes (a loop-closure scene now that B2 is done; a contact scene once Phase C
-lands) are north-star surface.
+All select the VI via `World.multibody_options`; the headless cycle smoke
+(`python/tests/integration/test_demos_cycle.py`) builds and steps them.
 
 ## Original Phase-A1 Goal (achieved)
 

@@ -71,6 +71,7 @@ from .scenes.sx_rigid_ipc_pile import SCENE as SX_RIGID_IPC_PILE
 from .scenes.sx_rigid_ipc_slide import SCENE as SX_RIGID_IPC_SLIDE
 from .scenes.sx_rigid_ipc_tunnel import SCENE as SX_RIGID_IPC_TUNNEL
 from .scenes.sx_variational_chain import SCENE as SX_VARIATIONAL_CHAIN
+from .scenes.sx_variational_contact import SCENE as SX_VARIATIONAL_CONTACT
 from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
 from .scenes.vbd_beam import SCENE as VBD_BEAM
 from .scenes.vbd_cloth import SCENE as VBD_CLOTH
@@ -144,6 +145,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_RIGID_IPC_TUNNEL,
         SX_VARIATIONAL_CHAIN,
         SX_VARIATIONAL_TUMBLER,
+        SX_VARIATIONAL_CONTACT,
         SX_LOOP_CLOSURE,
         # Differentiable physics (sx::World + sx.diff). Reproduces the paper's
         # gradient-based experiments as browsable, animated scenes. Each scene
