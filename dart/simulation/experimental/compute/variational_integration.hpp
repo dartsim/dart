@@ -241,6 +241,11 @@ public:
     return mDuals;
   }
 
+  /// Seed the duals, e.g. warm-started from persisted state across a save/load
+  /// (or across the `World::step()` stage's per-step solver rebuild). The size
+  /// must match the contact-point count; throws otherwise.
+  void setDuals(std::vector<double> duals);
+
 private:
   VariationalGroundContact mContact;
   std::vector<double> mDuals; ///< per contact point, >= 0

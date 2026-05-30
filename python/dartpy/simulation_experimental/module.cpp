@@ -1219,10 +1219,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("friction_coefficient") = 0.0,
           nb::arg("friction_regularization") = 1.0e-4,
           nb::arg("damping_coefficient") = 0.0,
+          nb::arg("dual_update_cadence") = 0,
           "Configure compliant ground contact for the variational integrator "
           "(an analytic half-space + penalty/friction/damping); add points "
-          "with "
-          "add_ground_contact_point().")
+          "with add_ground_contact_point(). dual_update_cadence=0 is the C2 "
+          "compliant penalty; >0 enables the C3 augmented-Lagrangian rung, "
+          "advancing the duals every N steps for drift-free contact.")
       .def(
           "add_ground_contact_point",
           &sim::Multibody::addGroundContactPoint,

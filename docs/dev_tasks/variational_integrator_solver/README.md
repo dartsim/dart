@@ -32,10 +32,11 @@ and verified **today**; unchecked items are the [gaps below](#gaps-from-current-
 - [ ] **Contact & friction** — the deferred Phase C: compliant/penalty →
       augmented-Lagrangian bounded force → (optional) IPC barrier, all as forces
       in the forced DEL residual so symplectic structure + O(n) survive.
-      **C1/C2 are reachable from `World::step()`** (`Multibody::setGroundContact`
-      → `makeVariationalGroundContactHook`: lagged regularized-Coulomb friction +
-      compliant ground contact); **C3** augmented-Lagrangian drift-free centering
-      is available through the explicit `VariationalGroundContactSolver` API. A
+      **C1/C2/C3 are all reachable from `World::step()`** via
+      `Multibody::setGroundContact`: lagged regularized-Coulomb friction +
+      compliant penalty by default, and the **C3** augmented-Lagrangian drift-free
+      rung opt-in via `dualUpdateCadence` (`0` = C2; `N>0` advances the duals
+      every `N` steps, persisted in `VariationalContactDualState`). A
       **link-vs-link** sphere-sphere slice (`makeVariationalLinkSphereContactHook`)
       landed; **arbitrary link geometry** (the rigid-IPC-stack adapter) remains
       _(the largest remaining gap)_.

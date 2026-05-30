@@ -662,7 +662,8 @@ void Multibody::setGroundContact(
     double stiffness,
     double frictionCoefficient,
     double frictionRegularization,
-    double dampingCoefficient)
+    double dampingCoefficient,
+    std::size_t dualUpdateCadence)
 {
   auto& registry = m_world->getRegistry();
   auto& contact
@@ -673,6 +674,10 @@ void Multibody::setGroundContact(
   contact.frictionCoefficient = frictionCoefficient;
   contact.frictionRegularization = frictionRegularization;
   contact.dampingCoefficient = dampingCoefficient;
+  contact.dualUpdateCadence = dualUpdateCadence;
+  // Reconfiguring contact resets the augmented-Lagrangian dual accumulator so a
+  // new (or re-pointed) contact set starts cold rather than with stale duals.
+  registry.remove<comps::VariationalContactDualState>(m_entity);
 }
 
 //==============================================================================

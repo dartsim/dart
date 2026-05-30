@@ -381,13 +381,22 @@ public:
   /// `addGroundContactPoint()`. Only active under the `"variational
   /// integrator"` integration family; a no-op for other families. Resets any
   /// previously configured contact points.
+  ///
+  /// @param dualUpdateCadence Augmented-Lagrangian (C3) cadence. `0` (default)
+  ///        keeps the robust C2 compliant penalty, which rests at the `mg/k`
+  ///        penetration. `N > 0` enables the drift-free AL rung, advancing the
+  ///        per-point duals every `N` steps so the penetration drives to ~0;
+  ///        the cadence must be slower than the primal (a handful of steps) for
+  ///        stability on the undamped symplectic step. Pair `N > 0` with some
+  ///        `dampingCoefficient`.
   void setGroundContact(
       const Eigen::Vector3d& planeNormal,
       const Eigen::Vector3d& planePoint,
       double stiffness,
       double frictionCoefficient = 0.0,
       double frictionRegularization = 1.0e-4,
-      double dampingCoefficient = 0.0);
+      double dampingCoefficient = 0.0,
+      std::size_t dualUpdateCadence = 0);
 
   /// **EXPERIMENTAL (PLAN-082 Phase C).** Add a body-fixed contact point at
   /// `localPoint` (body frame) on `link`, evaluated against the plane set by

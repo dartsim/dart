@@ -18,6 +18,7 @@
 #include "dart/simulation/experimental/comps/loop_closure.hpp"
 #include "dart/simulation/experimental/comps/multibody.hpp"
 #include "dart/simulation/experimental/comps/variational_contact.hpp"
+#include "dart/simulation/experimental/comps/variational_contact_dual_state.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
@@ -29,6 +30,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -1090,6 +1092,17 @@ VariationalContactHook VariationalGroundContactSolver::hook() const
 }
 
 //==============================================================================
+void VariationalGroundContactSolver::setDuals(std::vector<double> duals)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      duals.size() != mContact.points.size(),
+      InvalidOperationException,
+      "VariationalGroundContactSolver::setDuals size must match the contact "
+      "point count");
+  mDuals = std::move(duals);
+}
+
+//==============================================================================
 void VariationalGroundContactSolver::updateDuals(
     const std::vector<Eigen::Isometry3d>& linkWorldTransforms)
 {
@@ -1809,11 +1822,17 @@ void MultibodyVariationalIntegrationStage::execute(
         constraints.push_back(binding.constraint);
       }
     }
-    // Build the opt-in compliant-contact hook from the multibody's contact
-    // config (PLAN-082 Phase C rungs C1/C2); absent => contact-free.
+    // Build the opt-in contact hook from the multibody's contact config
+    // (PLAN-082 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
+    // penalty); cadence > 0 => the stateful C3 augmented-Lagrangian rung, whose
+    // duals persist in VariationalContactDualState and advance on an outer-loop
+    // cadence after the step. Absent => contact-free.
+    const auto* contactConfig
+        = registry.try_get<comps::VariationalContact>(entity);
+    std::optional<VariationalGroundContactSolver> alSolver;
+    std::size_t dualUpdateCadence = 0;
     VariationalContactHook contactHook;
-    if (const auto* contactConfig
-        = registry.try_get<comps::VariationalContact>(entity)) {
+    if (contactConfig != nullptr) {
       VariationalGroundContact contact;
       contact.planeNormal = contactConfig->planeNormal;
       contact.planePoint = contactConfig->planePoint;
@@ -1829,7 +1848,24 @@ void MultibodyVariationalIntegrationStage::execute(
              contactConfig->pointLocalPositions[i]});
       }
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
-        contactHook = makeVariationalGroundContactHook(contact);
+        if (contactConfig->dualUpdateCadence > 0) {
+          // C3: a stateful AL solver seeded from the persisted (warm-started)
+          // duals. The solver must outlive the integrate call -- its hook reads
+          // the live duals by reference -- so it is held in `alSolver` here.
+          dualUpdateCadence = contactConfig->dualUpdateCadence;
+          auto& dualState
+              = registry.get_or_emplace<comps::VariationalContactDualState>(
+                  entity);
+          if (dualState.duals.size() != contact.points.size()) {
+            dualState.duals.assign(contact.points.size(), 0.0);
+            dualState.stepsSinceDualUpdate = 0;
+          }
+          alSolver.emplace(contact);
+          alSolver->setDuals(dualState.duals);
+          contactHook = alSolver->hook();
+        } else {
+          contactHook = makeVariationalGroundContactHook(contact);
+        }
       }
     }
     integrateMultibodyVariational(
@@ -1843,6 +1879,25 @@ void MultibodyVariationalIntegrationStage::execute(
         constraints,
         5,
         contactHook);
+
+    // C3 outer loop: after the converged step, advance the AL duals on the
+    // configured cadence from the post-step per-link world transforms (a fresh
+    // VarTree reads the converged joint positions), then persist them for the
+    // next step and for save/load.
+    if (alSolver.has_value()) {
+      auto& dualState
+          = registry.get<comps::VariationalContactDualState>(entity);
+      if (++dualState.stepsSinceDualUpdate >= dualUpdateCadence) {
+        dualState.stepsSinceDualUpdate = 0;
+        const VarTree postTree = buildVarTree(registry, structure);
+        std::vector<Eigen::Isometry3d> postTransforms(postTree.links.size());
+        for (std::size_t i = 0; i < postTree.links.size(); ++i) {
+          postTransforms[i] = postTree.links[i].worldTransform;
+        }
+        alSolver->updateDuals(postTransforms);
+        dualState.duals = alSolver->duals();
+      }
+    }
 
     // External forces are one-shot per step (like legacy
     // BodyNode::addExtForce): clear them after they have been consumed by this

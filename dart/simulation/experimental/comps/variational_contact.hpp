@@ -49,6 +49,13 @@ struct VariationalContact
   double frictionRegularization = 1.0e-4; ///< friction velocity scale (m/s)
   double dampingCoefficient = 0.0;        ///< Kelvin-Voigt normal damping
 
+  /// Augmented-Lagrangian (C3) dual-update cadence. `0` keeps the C2 compliant
+  /// penalty (the robust default); `N > 0` enables the drift-free AL rung,
+  /// advancing the per-point duals every `N` steps -- an outer-loop cadence
+  /// slower than the primal, which the undamped symplectic step needs for
+  /// stability. The duals live in the `VariationalContactDualState` component.
+  std::size_t dualUpdateCadence = 0;
+
   /// Contact-point link indices (into the multibody structure's link order).
   std::vector<std::size_t> pointLinkIndices;
   /// Contact-point body-frame positions, parallel to `pointLinkIndices`.

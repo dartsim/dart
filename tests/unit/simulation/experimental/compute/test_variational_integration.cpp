@@ -2761,6 +2761,128 @@ TEST(VariationalGroundContact, ConfigRoundTripsThroughBinarySaveLoad)
   EXPECT_GT(finalZ, -0.05); // held near the plane, not free-fallen through.
 }
 
+// PLAN-082 Phase C rung C3 through the World surface: a nonzero dual-update
+// cadence on Multibody::setGroundContact enables the augmented-Lagrangian rung
+// on the world.step() path (duals persisted in VariationalContactDualState,
+// advanced every `cadence` steps by the stage). The AL run centers the contact
+// at ~0 penetration (the dual carries the weight), versus the C2 compliant
+// run's steady -mg/k offset -- proving C3 is reachable from World::step(), not
+// only the compute-API solver.
+TEST(VariationalGroundContact, WorldSurfaceAugmentedLagrangianCentersContact)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  const double k = 1.0e3 * mass * g; // soft: pure-penalty rest is mg/k.
+  const int steps = 1500;
+  const int window = 500;
+  const double penaltyPenetration = mass * g / k;
+
+  const auto run = [&](std::size_t dualUpdateCadence) {
+    sx::World world;
+    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    auto carriage = addVerticalSlider(world, mass);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    carriage.getParentJoint().setPosition(
+        Eigen::VectorXd::Constant(
+            1, -penaltyPenetration)); // pure-penalty rest.
+    world.updateKinematics();
+    auto robot = world.getMultibody("slider");
+    robot->setGroundContact(
+        Eigen::Vector3d::UnitZ(),
+        Eigen::Vector3d::Zero(),
+        k,
+        /*frictionCoefficient=*/0.0,
+        /*frictionRegularization=*/1.0e-4,
+        /*dampingCoefficient=*/200.0, // ~critical (2*sqrt(k*m)) to settle.
+        dualUpdateCadence);
+    robot->addGroundContactPoint(carriage, Eigen::Vector3d::Zero());
+    double meanZ = 0.0;
+    int count = 0;
+    for (int step = 0; step < steps; ++step) {
+      world.step();
+      if (step >= steps - window) {
+        meanZ += carriage.getParentJoint().getPosition()[0];
+        ++count;
+      }
+    }
+    return meanZ / count;
+  };
+
+  const double penaltyMeanZ = run(/*dualUpdateCadence=*/0);
+  const double alMeanZ = run(/*dualUpdateCadence=*/20);
+
+  // C2 (cadence 0) rests in steady penetration (~ -mg/k).
+  EXPECT_LT(penaltyMeanZ, -0.5 * penaltyPenetration);
+  // C3 (cadence 20) centers the contact at ~0: the dual carries the weight.
+  EXPECT_LT(std::abs(alMeanZ), 0.3 * penaltyPenetration);
+}
+
+// PLAN-082 Phase C: the C3 augmented-Lagrangian dual state round-trips through
+// binary save/load so an AL contact scene resumes bit-identically. The duals
+// (and the cadence counter) are warm-started across steps; persisting them in
+// VariationalContactDualState means a mid-rollout save/load continues the exact
+// same trajectory rather than restarting the dual ascent from zero.
+TEST(VariationalGroundContact, AugmentedLagrangianDualStateRoundTrips)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  const double k = 1.0e3 * mass * g;
+  const double penaltyPenetration = mass * g / k;
+
+  sx::World reference;
+  reference.setMultibodyOptions(
+      {.integrationFamily = "variational integrator"});
+  auto carriage = addVerticalSlider(reference, mass);
+  reference.setTimeStep(dt);
+  reference.enterSimulationMode();
+  carriage.getParentJoint().setPosition(
+      Eigen::VectorXd::Constant(1, -penaltyPenetration));
+  reference.updateKinematics();
+  reference.getMultibody("slider")->setGroundContact(
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::Zero(),
+      k,
+      /*frictionCoefficient=*/0.0,
+      /*frictionRegularization=*/1.0e-4,
+      /*dampingCoefficient=*/200.0,
+      /*dualUpdateCadence=*/20);
+  reference.getMultibody("slider")->addGroundContactPoint(
+      carriage, Eigen::Vector3d::Zero());
+
+  // Step past several dual updates so the saved dual accumulator is non-trivial
+  // and the cadence counter is mid-interval (55 % 20 = 15).
+  for (int step = 0; step < 55; ++step) {
+    reference.step();
+  }
+
+  std::stringstream buffer(std::ios::in | std::ios::out | std::ios::binary);
+  reference.saveBinary(buffer);
+
+  for (int step = 0; step < 100; ++step) {
+    reference.step();
+  }
+  const double referenceFinal
+      = reference.getMultibody("slider")->getJoints()[0].getPosition()[0];
+
+  sx::World loaded;
+  buffer.seekg(0);
+  loaded.loadBinary(buffer);
+  loaded.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  ASSERT_TRUE(loaded.getMultibody("slider").has_value());
+  for (int step = 0; step < 100; ++step) {
+    loaded.step();
+  }
+  const double loadedFinal
+      = loaded.getMultibody("slider")->getJoints()[0].getPosition()[0];
+
+  // Bit-identical: the duals + cadence counter + config + VI history all came
+  // back, so the continuation is the same trajectory (no dual-ascent restart).
+  EXPECT_EQ(loadedFinal, referenceFinal);
+}
+
 // PLAN-082 Phase C link-vs-link contact (first slice): sphere-sphere
 // self-contact. A link sliding toward a fixed sphere on the base is stopped by
 // compliant sphere-sphere contact -- the moving sphere does not pass through

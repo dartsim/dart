@@ -364,9 +364,15 @@ overshoots before the body can move). Verified
   a serialized `Property` component (registered in `io/serializer.cpp`,
   `kBinaryFormatVersion` bumped to 8; its link-index parallel array round-trips
   via a new generic POD-vector path in `auto_serialization.hpp`), verified by
-  `ConfigRoundTripsThroughBinarySaveLoad`. The remaining **stateful C3 AL solver**
-  is intentionally **not** auto-wired into `World::step()`: its drift-free dual
-  feedback needs an outer-loop update cadence slower than the primal for stability
-  on the undamped symplectic step — a tuning knob that belongs with the caller via
-  the explicit `VariationalGroundContactSolver` API, not the silent default path.
-  The robust C1/C2 compliant rung is the auto-path default.
+  `ConfigRoundTripsThroughBinarySaveLoad`. The **stateful C3 AL rung is now
+  wired through `World::step()`** too, opt-in via
+  `setGroundContact(..., dualUpdateCadence)`: `0` keeps the robust C2 compliant
+  default; `N>0` has the stage seed a `VariationalGroundContactSolver` from the
+  persisted duals, fold its hook into the step, and advance the duals every `N`
+  steps from the post-step transforms (the outer-loop cadence the undamped
+  symplectic step needs for stability). The duals + cadence counter live in the
+  serialized `comps::VariationalContactDualState`, so an AL scene resumes
+  bit-identically across save/load — verified by
+  `WorldSurfaceAugmentedLagrangianCentersContact` (drift-free centering on the
+  `world.step()` path) and `AugmentedLagrangianDualStateRoundTrips`. The
+  `VariationalGroundContactSolver` C++ API remains for direct cadence control.
