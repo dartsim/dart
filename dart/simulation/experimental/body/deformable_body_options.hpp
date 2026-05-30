@@ -90,6 +90,12 @@ struct DeformableMaterialProperties
   /// Must be finite and non-negative. Zero (the default) disables friction, so
   /// existing contact behavior is unchanged unless friction is opted in.
   double frictionCoefficient = 0.0;
+
+  /// Opt in to stable neo-Hookean tetrahedral FEM elasticity (using
+  /// ``youngsModulus`` / ``poissonRatio``) instead of the default mass-spring
+  /// edge model. Requires the body to carry tetrahedra. Off by default, so
+  /// existing spring bodies are unchanged.
+  bool useFiniteElementElasticity = false;
 };
 
 /// Scripted Dirichlet boundary condition over deformable nodes.
