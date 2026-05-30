@@ -797,11 +797,20 @@ Eigen::VectorXd evaluateContactForce(
     const entt::registry& registry,
     const VarTree& tree,
     const Eigen::VectorXd& nextPosition,
+    double timeStep,
+    const Eigen::VectorXd& previousVelocity,
     const VariationalContactHook& contactHook)
 {
   if (!contactHook) {
     return {};
   }
+  // q^k (step-start) per-link world transforms + body Jacobians, for lagged
+  // contact laws (friction): `tree` is the un-advanced q^k tree.
+  std::vector<Eigen::Isometry3d> previousWorldTransforms(tree.links.size());
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    previousWorldTransforms[i] = tree.links[i].worldTransform;
+  }
+  const std::vector<Eigen::MatrixXd> previousJacobians = bodyJacobians(tree);
   // Trial-configuration kinematics: a VarTree copy whose relative/world
   // transforms are advanced to q^{k+1} (the q^k tree is left untouched).
   VarTree trial = tree;
@@ -825,7 +834,13 @@ Eigen::VectorXd evaluateContactForce(
   }
   const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(trial);
   const VariationalContactContext context{
-      worldTransforms, jacobians, trial.dofCount};
+      worldTransforms,
+      jacobians,
+      trial.dofCount,
+      previousWorldTransforms,
+      previousJacobians,
+      previousVelocity,
+      timeStep};
   Eigen::VectorXd contactForce = contactHook(context);
   DART_EXPERIMENTAL_THROW_T_IF(
       contactForce.size() != static_cast<Eigen::Index>(trial.dofCount),
@@ -870,6 +885,16 @@ VariationalContactHook makeVariationalGroundContactHook(
       contact.stiffness < 0.0,
       InvalidOperationException,
       "VariationalGroundContact stiffness must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction coefficient must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient > 0.0
+          && contact.frictionRegularization <= 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction regularization must be positive when "
+      "friction is enabled");
 
   // Compliant (penalty) ground contact: for each body-fixed point penetrating
   // the half-space at the trial configuration, the one-sided quadratic
@@ -895,10 +920,48 @@ VariationalContactHook makeVariationalGroundContactHook(
       const double signedDistance
           = contact.planeNormal.dot(worldPoint - contact.planePoint);
       if (signedDistance < 0.0) {
-        const Eigen::Vector3d normalForce
-            = contact.stiffness * (-signedDistance) * contact.planeNormal;
+        const double normalMagnitude = contact.stiffness * (-signedDistance);
+        // C2 compliant normal force k(-d) n.
+        Eigen::Vector3d contactForce = normalMagnitude * contact.planeNormal;
+        // C1 lagged friction: a regularized Coulomb force opposing the contact
+        // point's *lagged* (q^k) sliding velocity, bounded by mu times the
+        // lagged normal magnitude. Everything is taken from q^k, so the
+        // friction force is constant across the step's RIQN iterates -- smooth
+        // for the root-find (the roadmap's "lagged friction"), converging like
+        // the frictionless case while still saturating at mu*|Fn|.
+        if (contact.frictionCoefficient > 0.0 && context.timeStep > 0.0) {
+          const Eigen::Vector3d previousPoint
+              = context.previousLinkWorldTransforms[point.linkIndex]
+                * point.localPoint;
+          const double previousDistance
+              = contact.planeNormal.dot(previousPoint - contact.planePoint);
+          if (previousDistance < 0.0) {
+            const double laggedNormal = contact.stiffness * (-previousDistance);
+            // Lagged contact-point world velocity J_world(p) v = R (J_lin - [p]
+            // J_ang) v, evaluated at q^k.
+            const Eigen::Matrix3d previousRotation
+                = context.previousLinkWorldTransforms[point.linkIndex].linear();
+            const Eigen::MatrixXd& previousJacobian
+                = context.previousLinkBodyJacobians[point.linkIndex];
+            const Eigen::Vector3d pointVelocity
+                = previousRotation
+                  * (previousJacobian.bottomRows<3>()
+                     - detail::skew(point.localPoint)
+                           * previousJacobian.topRows<3>())
+                  * context.previousVelocity;
+            const Eigen::Vector3d tangentVelocity
+                = pointVelocity
+                  - contact.planeNormal.dot(pointVelocity)
+                        * contact.planeNormal;
+            const double epsilon = contact.frictionRegularization;
+            contactForce
+                -= contact.frictionCoefficient * laggedNormal * tangentVelocity
+                   / std::sqrt(
+                       tangentVelocity.squaredNorm() + epsilon * epsilon);
+          }
+        }
         generalizedForce += variationalContactPointForce(
-            context, point.linkIndex, point.localPoint, normalForce);
+            context, point.linkIndex, point.localPoint, contactForce);
       }
     }
     return generalizedForce;
@@ -1092,8 +1155,8 @@ VariationalSolveReport integrateMultibodyVariational(
   // vector and the call reduces to the plain `computeResidual(appliedForce)`,
   // so the no-contact path is numerically identical and does no extra work.
   const auto residualAt = [&](const Eigen::VectorXd& trialPosition) {
-    const Eigen::VectorXd contactForce
-        = evaluateContactForce(registry, tree, trialPosition, contactHook);
+    const Eigen::VectorXd contactForce = evaluateContactForce(
+        registry, tree, trialPosition, timeStep, velocity, contactHook);
     if (contactForce.size() == 0) {
       return computeResidual(
           registry,

@@ -32,10 +32,10 @@ and verified **today**; unchecked items are the [gaps below](#gaps-from-current-
 - [ ] **Contact & friction** — the deferred Phase C: compliant/penalty →
       augmented-Lagrangian bounded force → (optional) IPC barrier, all as forces
       in the forced DEL residual so symplectic structure + O(n) survive.
-      **C2 compliant ground contact has landed** (a real, configurable
-      link-point-vs-analytic-ground query — `makeVariationalGroundContactHook`);
-      C1 friction, C3 augmented-Lagrangian, and link-vs-link remain
-      _(the largest remaining gap)_.
+      **C1 lagged friction + C2 compliant ground contact have landed** (a real,
+      configurable link-point-vs-analytic-ground query with regularized-Coulomb
+      friction — `makeVariationalGroundContactHook`); C3 augmented-Lagrangian and
+      link-vs-link remain _(the largest remaining gap)_.
 - [x] **Scales to extreme chains** — the exact recursive-Jacobian preconditioner
       (paper Appendix) lands ~3 iterations independent of length, verified to 128
       links; supported bounds in [`supported-envelope.md`](supported-envelope.md).
@@ -122,11 +122,11 @@ SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
       finite-difference-verified (`ConstraintJacobianMatchesFiniteDifference`,
       `RigidConstraintJacobianMatchesFiniteDifference`); closures hold through
       `world.step()` (`LoopClosure{,Distance,Rigid}SolvedThroughWorldStep`).
-- [x] **Phase C — Contact & friction: C2 compliant ground contact landed.**
-      Progression in the plan sidecar: NO-GO (2026-05-28) → gate-2 spike GO →
-      **C2 real compliant ground contact** (`makeVariationalGroundContactHook`,
-      2026-05-30). C1 friction, C3 augmented-Lagrangian, and link-vs-link contact
-      (the full gate-1 broad-phase workstream) remain.
+- [x] **Phase C — Contact & friction: C1+C2 (compliant contact + lagged
+      friction) landed.** Progression in the plan sidecar: NO-GO (2026-05-28) →
+      gate-2 spike GO → **C2 compliant ground contact + C1 lagged friction**
+      (`makeVariationalGroundContactHook`, 2026-05-30). C3 augmented-Lagrangian
+      and link-vs-link contact (the full gate-1 broad-phase workstream) remain.
 
 ## GUI Demos (visual verification)
 
@@ -197,12 +197,13 @@ gaps to the [north star](#north-star), in priority order:
    A compliant-contact robustness **spike cleared gate 2 (GO** for the
    compliant/AL rungs, `k ≲ 1e4·mg` — see [`supported-envelope.md`](supported-envelope.md));
    an opt-in in-loop `VariationalContactHook` exists (default-off byte-for-byte
-   identical). **C2 compliant ground contact has now landed** — a real,
-   configurable link-point-vs-analytic-ground query
+   identical). **C1 lagged friction + C2 compliant ground contact have now
+   landed** — a real, configurable link-point-vs-analytic-ground query
    (`makeVariationalGroundContactHook`: an analytic half-space + body-fixed
-   contact points, VBD/XPBD quadratic penalty, reduced-coordinate glue), verified
-   to rest at `mg/k` and to hold a swinging revolute tip off the plane. Remaining:
-   **C1** lagged friction, **C3** augmented-Lagrangian bounded force, and
+   contact points, VBD/XPBD quadratic penalty, reduced-coordinate glue, plus a
+   lagged regularized-Coulomb friction force), verified to rest at `mg/k`, hold a
+   swinging revolute tip off the plane, and decelerate a sliding block under
+   friction. Remaining: **C3** augmented-Lagrangian bounded force, and
    **link-vs-link contact** (the full gate-1 persistent-broad-phase workstream,
    owned with PLAN-081); barrier (C4) last — stiff curvature mis-scales the
    `Δt·M⁻¹` quasi-Newton.

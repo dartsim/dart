@@ -121,6 +121,19 @@ struct VariationalContactContext
   /// Movable generalized-coordinate count (the `Q_c` the hook returns has this
   /// length).
   std::size_t dofCount;
+  /// Per-link world transform at the *previous* configuration `q^k` (the start
+  /// of the step), same link order. Lagged contact laws (friction) use it for
+  /// the contact-point position (normal magnitude) at the step start.
+  const std::vector<Eigen::Isometry3d>& previousLinkWorldTransforms;
+  /// Per-link body-frame spatial Jacobian at `q^k`. With `previousVelocity` it
+  /// gives the lagged contact-point sliding velocity that fixes the friction
+  /// direction over the step (so friction stays constant across RIQN iterates,
+  /// hence smooth for the root-find -- the roadmap's "lagged friction").
+  const std::vector<Eigen::MatrixXd>& previousLinkBodyJacobians;
+  /// Generalized velocity at `q^k` (lagged).
+  const Eigen::VectorXd& previousVelocity;
+  /// The integration time step (s).
+  double timeStep;
 };
 
 /// **EXPERIMENTAL SPIKE.** In-loop contact-force hook for the variational
@@ -171,6 +184,10 @@ struct VariationalGroundContact
   Eigen::Vector3d planePoint
       = Eigen::Vector3d::Zero(); ///< any point on the plane
   double stiffness = 0.0;        ///< penalty stiffness k (N/m), >= 0
+  double frictionCoefficient
+      = 0.0; ///< Coulomb friction mu (>= 0); 0 disables friction (rung C1)
+  double frictionRegularization = 1.0e-4; ///< friction velocity scale eps_v
+                                          ///< (m/s); > 0 required when mu > 0
   std::vector<VariationalContactPoint> points; ///< body-fixed contact points
 };
 

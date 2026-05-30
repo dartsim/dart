@@ -2425,4 +2425,108 @@ TEST(VariationalGroundContact, RejectsDegenerateConfig)
   negativeStiffness.stiffness = -1.0;
   EXPECT_ANY_THROW(
       (void)sxc::makeVariationalGroundContactHook(negativeStiffness));
+
+  sxc::VariationalGroundContact frictionNoEps;
+  frictionNoEps.stiffness = 1.0;
+  frictionNoEps.frictionCoefficient = 0.5;
+  frictionNoEps.frictionRegularization = 0.0; // invalid with friction enabled.
+  EXPECT_ANY_THROW((void)sxc::makeVariationalGroundContactHook(frictionNoEps));
+}
+
+// PLAN-082 Phase C rung C1 -- lagged regularized-Coulomb friction. A block
+// sliding on the ground decelerates to rest with friction (kinetic friction
+// ~ mu*mg opposing motion) but slides freely without it, exercising the
+// q^k-anchored tangential-sliding term and the mu*|Fn| saturation.
+TEST(VariationalGroundContact, LaggedFrictionDeceleratesSlidingBlock)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  const double k = 1.0e4;
+  const double v0 = 1.0; // initial horizontal slide speed.
+  const int steps = 2000;
+
+  struct SlideRun
+  {
+    double finalXSpeed = 0.0;
+    double xDisplacement = 0.0;
+    double restZ = 0.0;
+    bool finite = true;
+    bool converged = true;
+  };
+
+  // A planar block: base -> prismatic X -> carrier -> prismatic Z -> block, so
+  // the block has horizontal (slide) and vertical (settle) freedom.
+  const auto runSlide = [&](double mu) {
+    sx::World world;
+    auto robot = world.addMultibody("block");
+    auto base = robot.addLink("base");
+    sx::JointSpec xspec;
+    xspec.name = "x";
+    xspec.type = sx::JointType::Prismatic;
+    xspec.axis = Eigen::Vector3d::UnitX();
+    auto carrier = robot.addLink("carrier", base, xspec);
+    carrier.setMass(0.01);
+    carrier.setInertia(Eigen::Vector3d(1.0e-4, 1.0e-4, 1.0e-4).asDiagonal());
+    sx::JointSpec zspec;
+    zspec.name = "z";
+    zspec.type = sx::JointType::Prismatic;
+    zspec.axis = Eigen::Vector3d::UnitZ();
+    auto block = robot.addLink("block", carrier, zspec);
+    block.setMass(mass);
+    block.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    block.getParentJoint().setPosition(
+        Eigen::VectorXd::Constant(
+            1,
+            -mass * g
+                / k)); // start at the resting penetration: steady contact,
+                       // no elastic bounce (clean kinetic-friction test).
+    carrier.getParentJoint().setVelocity(
+        Eigen::VectorXd::Constant(1, v0)); // initial horizontal slide.
+    world.updateKinematics();
+
+    const auto& structure = structureOf(world);
+    sxc::VariationalGroundContact contact;
+    contact.planeNormal = Eigen::Vector3d::UnitZ();
+    contact.planePoint = Eigen::Vector3d::Zero();
+    contact.stiffness = k;
+    contact.frictionCoefficient = mu;
+    contact.frictionRegularization = 1.0e-4;
+    contact.points.push_back(
+        {structure.links.size() - 1, Eigen::Vector3d::Zero()}); // block origin.
+    const auto hook = sxc::makeVariationalGroundContactHook(contact);
+
+    auto& registry = world.getRegistry();
+    const Eigen::Vector3d gravity = world.getGravity();
+    sxc::MultibodyVariationalState state;
+    SlideRun run;
+    for (int step = 0; step < steps; ++step) {
+      const auto report = sxc::integrateMultibodyVariational(
+          registry, structure, gravity, dt, state, 100, 1e-10, {}, 5, hook);
+      run.converged = run.converged && report.converged;
+      run.finite = run.finite && std::isfinite(report.residualNorm);
+    }
+    run.finalXSpeed = std::abs(carrier.getParentJoint().getVelocity()[0]);
+    run.xDisplacement = std::abs(carrier.getParentJoint().getPosition()[0]);
+    run.restZ = block.getParentJoint().getPosition()[0];
+    return run;
+  };
+
+  const SlideRun frictionless = runSlide(0.0);
+  const SlideRun frictional = runSlide(0.5);
+
+  EXPECT_TRUE(frictionless.finite);
+  EXPECT_TRUE(frictionless.converged);
+  EXPECT_TRUE(frictional.finite);
+  EXPECT_TRUE(frictional.converged);
+  // Both settle onto the plane with the bounded mg/k penetration.
+  EXPECT_NEAR(frictional.restZ, -mass * g / k, 5.0e-3);
+  // Frictionless keeps sliding at ~v0; friction decelerates it to near rest.
+  EXPECT_GT(frictionless.finalXSpeed, 0.8 * v0);
+  EXPECT_LT(frictional.finalXSpeed, 0.1 * v0);
+  // And friction travels far less.
+  EXPECT_LT(frictional.xDisplacement, 0.5 * frictionless.xDisplacement);
 }

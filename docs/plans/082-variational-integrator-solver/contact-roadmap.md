@@ -257,7 +257,7 @@ prerequisite; the spike's hard-coded ground plane stands in for the real
 distance/gradient query that workstream must deliver. The 2026-05-28 NO-GO's
 gate-2 half is now satisfied; gate 1 still gates the rung.
 
-## C2 implemented (2026-05-30): compliant ground contact via the real query
+## C1+C2 implemented (2026-05-30): compliant ground contact + lagged friction
 
 The compliant-contact rung (**C2**) now ships for the **link-point-vs-analytic-
 ground** case, promoting the gate-2 spike's hard-coded `z = 0` plane into a real,
@@ -287,10 +287,22 @@ Verified (`VariationalGroundContact.*`, 4 tests):
 Bounded curvature stays inside the gate-2 `k ≲ 1e4·mg` envelope; the default-off
 path is still byte-for-byte identical (the existing spike identity test).
 
+**C1 lagged friction** ships alongside it: `VariationalGroundContact` gains
+`frictionCoefficient` (Coulomb `μ`) and `frictionRegularization` (`ε_v`), and the
+hook adds a regularized-Coulomb tangential force `−μ·|Fₙ|·v̂ₜ` opposing the
+contact point's sliding. It is **lagged** — the friction direction (the contact
+point's tangential velocity) and the normal magnitude are evaluated at `qᵏ` (the
+step-start velocity mapped through the `qᵏ` point Jacobian), so the friction
+force is _constant across the step's RIQN iterates_. That keeps it smooth for the
+root-find (it converges like the frictionless case, dodging the tangential-
+regularization stiffness a trial-config friction would inject near `vₜ = 0`) —
+exactly the roadmap's "lagged ⇒ inner solve stays well-conditioned." Verified
+(`LaggedFrictionDeceleratesSlidingBlock`): a block sliding on the plane
+decelerates to rest under kinetic friction `~μ·mg`, while the frictionless block
+keeps sliding at its initial speed.
+
 ### Still future (the rest of Phase C)
 
-- **C1 friction** — the lagged smoothed IPC friction _force law_ (the tangent
-  geometry exists; the force law does not).
 - **C3 augmented-Lagrangian** bounded forces for hard, drift-free non-penetration
   - Coulomb friction without a global solve.
 - **Link-vs-link contact** — the full gate-1 workstream (persistent broad phase +
@@ -298,4 +310,4 @@ path is still byte-for-byte identical (the existing spike identity test).
   C2 rung covers link-point-vs-analytic-ground only; arbitrary link-geometry
   pairs still need the candidate-generation + warm-started query object, which
   remains owned by / coordinated with PLAN-081.
-- A **contact GUI demo** scene once friction lands.
+- A **contact GUI demo** scene (now unblocked — friction has landed).
