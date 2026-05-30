@@ -54,6 +54,13 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
       PRIVATE ${PROJECT_NAME}-collision-native
     )
   endif()
+  dart_experimental_add_unit_test_dir(io ${CMAKE_CURRENT_SOURCE_DIR}/io)
+  if(TARGET test_rigid_ipc_fixture)
+    target_link_libraries(
+      test_rigid_ipc_fixture
+      PRIVATE ${PROJECT_NAME}-collision-native
+    )
+  endif()
   dart_experimental_add_unit_test_dir(deformable_vbd ${CMAKE_CURRENT_SOURCE_DIR}/deformable_vbd)
   dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/world)
   dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/frame)

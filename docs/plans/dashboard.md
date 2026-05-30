@@ -157,6 +157,37 @@ its own line so status updates remain git-history friendly.
   `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries` green.
 
+### PLAN-082: Rigid Implicit-Barrier Contact Solver
+
+- Owner doc:
+  [`082-rigid-implicit-barrier-contact.md`](082-rigid-implicit-barrier-contact.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Continue the active dev task from fixture replay, comparison
+  script ingestion, curved-trajectory CCD/residual/subdivision slices, local
+  rigid barrier derivatives, scene-level sparse barrier assembly, and
+  conservative line-search feasibility, and barrier/dynamics Newton solve
+  scaffolding, first physical dynamics-term construction, opt-in runtime rigid
+  IPC stage, same-domain `World` rigid solver selection, and runtime sphere
+  triangulation, durable stage diagnostics, and the first activated-contact
+  runtime regression plus vertex-vertex line-search CCD, invalid runtime
+  geometry rejection, explicit non-converged-result skipping, and
+  primitive-family friction potentials, first lagged friction assembly, and
+  bounded outer lagged-friction passes into remaining geometry corpus coverage,
+  runtime fixture behavior, production convergence criteria, production-ready
+  default activation criteria, mixed-domain coupling, rigorous interval
+  arithmetic, direct CCD evaluator parity, remaining comparison script
+  commands, and full fixture/test/benchmark/visual parity.
+- Gate: Full rigid IPC progress is not complete until the implementation covers
+  every manifest row with DART-owned tests, examples, benchmarks, comparison
+  packets, CPU/GPU evidence where applicable, and headless Filament visual
+  captures; `scripts/check_rigid_ipc_fixture_manifest.py` stays green with an
+  audited upstream checkout, public APIs remain backend-neutral and free of
+  solver registries/ECS storage, and every promoted runtime slice passes
+  `pixi run lint`, `pixi run build`, focused C++ tests, and
+  `check-api-boundaries`.
+
 ### PLAN-104: Vertex Block Descent Solver
 
 - Owner doc:
