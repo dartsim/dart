@@ -93,6 +93,9 @@
 - `diff_throw_to_target` and `diff_cartpole_trajopt` now have replay panels
   with playback stride/reset controls, target-error plots, trajectory traces,
   and optimized velocity/force summaries.
+- Demo-sidebar search matching and first-appearance category grouping now have
+  direct GUI regression tests, so the tree/list navigation behavior is pinned
+  by behavior rather than source-string checks alone.
 - Python demo line-segment visuals now use snake_case dartpy APIs in the sx
   deformable bridge, IPC deformable bridge, and polyhedron scene so warnings-as
   errors panel tests stay clean.
@@ -218,6 +221,8 @@ pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_drape.
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_cg_solver.py python/examples/demos/scenes/ipc_deformable_cg_contact.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/examples/demos/_ipc_deformable_bridge.py python/examples/demos/scenes/polyhedron_visual.py python/examples/demos/scenes/vbd_cloth.py python/examples/demos/scenes/vbd_net.py python/examples/demos/scenes/vbd_beam.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/diff_throw_to_target.py python/examples/demos/scenes/diff_cartpole_trajopt.py python/tests/unit/test_py_demo_panels.py
+cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
+ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q

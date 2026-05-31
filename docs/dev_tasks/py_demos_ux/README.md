@@ -66,6 +66,9 @@ navigation, and a path for scene-specific controls.
 - Add replay and optimization panels to `diff_throw_to_target` and
   `diff_cartpole_trajopt`, exposing target error, trajectory/height traces,
   optimized decision variables, and playback stride/reset controls.
+- Add direct GUI regression coverage for demo-sidebar search matching and
+  first-appearance category grouping, replacing fragile source-only checks for
+  the tree/list navigation behavior.
 - Move Python demo line-segment visual updates to snake_case dartpy APIs so
   panel tests and demo captures stay free of camelCase deprecation warnings.
 - Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape

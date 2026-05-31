@@ -80,7 +80,6 @@
 #include <utility>
 #include <vector>
 
-#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -280,58 +279,6 @@ std::string formatFixed(double value, int precision)
   return stream.str();
 }
 
-std::string normalizedSearchText(std::string_view value)
-{
-  std::string normalized;
-  normalized.reserve(value.size());
-  for (const unsigned char ch : value) {
-    normalized.push_back(static_cast<char>(std::tolower(ch)));
-  }
-  return normalized;
-}
-
-bool containsSearchText(std::string_view haystack, const std::string& needle)
-{
-  if (needle.empty()) {
-    return true;
-  }
-  return normalizedSearchText(haystack).find(needle) != std::string::npos;
-}
-
-bool demoSceneMatchesSearch(
-    const dart::gui::DemoSceneEntry& scene, const std::string& searchText)
-{
-  return containsSearchText(scene.id, searchText)
-         || containsSearchText(scene.title, searchText)
-         || containsSearchText(scene.category, searchText)
-         || containsSearchText(scene.summary, searchText);
-}
-
-struct DemoCategoryGroup
-{
-  std::string category;
-  std::vector<std::size_t> sceneIndices;
-};
-
-std::vector<DemoCategoryGroup> groupDemoScenesByCategory(
-    const std::vector<dart::gui::DemoSceneEntry>& scenes)
-{
-  std::vector<DemoCategoryGroup> groups;
-  for (std::size_t i = 0; i < scenes.size(); ++i) {
-    const auto& scene = scenes[i];
-    auto group = std::find_if(
-        groups.begin(), groups.end(), [&scene](const DemoCategoryGroup& entry) {
-          return entry.category == scene.category;
-        });
-    if (group == groups.end()) {
-      groups.push_back({scene.category, {i}});
-      continue;
-    }
-    group->sceneIndices.push_back(i);
-  }
-  return groups;
-}
-
 std::string& demoSidebarSearch()
 {
   static std::string search;
@@ -440,10 +387,11 @@ dart::gui::Panel makeDemoSidebarPanel(
         search.clear();
       }
     }
-    const std::string normalizedSearch = normalizedSearchText(search);
+    const std::string normalizedSearch
+        = dart::gui::detail::normalizedDemoSearchText(search);
     std::size_t visibleSceneCount = 0;
     for (const auto& scene : scenes) {
-      if (demoSceneMatchesSearch(scene, normalizedSearch)) {
+      if (dart::gui::detail::demoSceneMatchesSearch(scene, normalizedSearch)) {
         ++visibleSceneCount;
       }
     }
@@ -456,13 +404,14 @@ dart::gui::Panel makeDemoSidebarPanel(
     // the scene list later interleaves categories. Scenes within each category
     // are indented list rows (selectable text instead of buttons).
     bool anyVisible = false;
-    const std::vector<DemoCategoryGroup> categoryGroups
-        = groupDemoScenesByCategory(scenes);
+    const std::vector<dart::gui::detail::DemoCategoryGroup> categoryGroups
+        = dart::gui::detail::groupDemoScenesByCategory(scenes);
     for (const auto& group : categoryGroups) {
       std::size_t visibleCount = 0;
       bool categoryHasActive = false;
       for (const std::size_t i : group.sceneIndices) {
-        if (demoSceneMatchesSearch(scenes[i], normalizedSearch)) {
+        if (dart::gui::detail::demoSceneMatchesSearch(
+                scenes[i], normalizedSearch)) {
           ++visibleCount;
         }
         categoryHasActive
@@ -486,7 +435,8 @@ dart::gui::Panel makeDemoSidebarPanel(
         builder.indent();
         for (const std::size_t i : group.sceneIndices) {
           const auto& entry = scenes[i];
-          if (!demoSceneMatchesSearch(entry, normalizedSearch)) {
+          if (!dart::gui::detail::demoSceneMatchesSearch(
+                  entry, normalizedSearch)) {
             continue;
           }
           const bool isActive = static_cast<int>(i) == activeIndex;

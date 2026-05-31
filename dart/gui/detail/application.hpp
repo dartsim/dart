@@ -33,11 +33,74 @@
 #ifndef DART_GUI_DETAIL_APPLICATION_HPP_
 #define DART_GUI_DETAIL_APPLICATION_HPP_
 
+#include <dart/gui/application.hpp>
+
+#include <algorithm>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <cctype>
+#include <cstddef>
+
 namespace dart::gui {
 struct ApplicationOptions;
 } // namespace dart::gui
 
 namespace dart::gui::detail {
+
+struct DemoCategoryGroup
+{
+  std::string category;
+  std::vector<std::size_t> sceneIndices;
+};
+
+inline std::string normalizedDemoSearchText(std::string_view value)
+{
+  std::string normalized;
+  normalized.reserve(value.size());
+  for (const unsigned char ch : value) {
+    normalized.push_back(static_cast<char>(std::tolower(ch)));
+  }
+  return normalized;
+}
+
+inline bool demoCatalogContainsSearchText(
+    std::string_view haystack, const std::string& needle)
+{
+  if (needle.empty()) {
+    return true;
+  }
+  return normalizedDemoSearchText(haystack).find(needle) != std::string::npos;
+}
+
+inline bool demoSceneMatchesSearch(
+    const dart::gui::DemoSceneEntry& scene, const std::string& searchText)
+{
+  return demoCatalogContainsSearchText(scene.id, searchText)
+         || demoCatalogContainsSearchText(scene.title, searchText)
+         || demoCatalogContainsSearchText(scene.category, searchText)
+         || demoCatalogContainsSearchText(scene.summary, searchText);
+}
+
+inline std::vector<DemoCategoryGroup> groupDemoScenesByCategory(
+    const std::vector<dart::gui::DemoSceneEntry>& scenes)
+{
+  std::vector<DemoCategoryGroup> groups;
+  for (std::size_t i = 0; i < scenes.size(); ++i) {
+    const auto& scene = scenes[i];
+    auto group = std::find_if(
+        groups.begin(), groups.end(), [&scene](const DemoCategoryGroup& entry) {
+          return entry.category == scene.category;
+        });
+    if (group == groups.end()) {
+      groups.push_back({scene.category, {i}});
+      continue;
+    }
+    group->sceneIndices.push_back(i);
+  }
+  return groups;
+}
 
 int runGuiBackendApplication(int argc, char* argv[]);
 

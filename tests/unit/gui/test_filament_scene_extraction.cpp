@@ -34,6 +34,7 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
+#include <dart/gui/detail/application.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
 #include <dart/gui/detail/gui_scale.hpp>
 #include <dart/gui/detail/input.hpp>
@@ -867,6 +868,63 @@ TEST(FilamentSceneExtraction, DockingPanelFallbackRequiresDockingSupport)
           "const double defaultAlpha = dockingActive ? 1.0 : 0.72"),
       std::string::npos);
   EXPECT_NE(panelSource.find("if (!dockingActive)"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DemoCatalogSearchMatchesSceneMetadata)
+{
+  const auto factory = [] {
+    return dart::gui::ApplicationOptions{};
+  };
+  const dart::gui::DemoSceneEntry scene{
+      "ipc_deformable_fem_buckle",
+      "IPC FEM Buckle",
+      "IPC Deformable (sx)",
+      "Self-contact buckling demo",
+      factory};
+
+  EXPECT_EQ(dart::gui::detail::normalizedDemoSearchText("  FEM  "), "  fem  ");
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("FEM")));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("deformable")));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("SELF-CONTACT")));
+  EXPECT_TRUE(dart::gui::detail::demoSceneMatchesSearch(scene, ""));
+  EXPECT_FALSE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("cartpole")));
+}
+
+TEST(FilamentSceneExtraction, DemoCatalogGroupsNonContiguousCategories)
+{
+  const auto factory = [] {
+    return dart::gui::ApplicationOptions{};
+  };
+  const std::vector<dart::gui::DemoSceneEntry> scenes{
+      {"hello_world", "Hello World", "Getting Started", "intro", factory},
+      {"sx_contact", "Contact sx", "Experimental", "contact", factory},
+      {"boxes", "Boxes", "Rigid Body", "rigid", factory},
+      {"empty", "Empty", "Getting Started", "empty", factory},
+      {"sx_articulated", "Articulated sx", "Experimental", "joints", factory},
+  };
+
+  const auto groups = dart::gui::detail::groupDemoScenesByCategory(scenes);
+
+  ASSERT_EQ(groups.size(), 3u);
+  EXPECT_EQ(groups[0].category, "Getting Started");
+  ASSERT_EQ(groups[0].sceneIndices.size(), 2u);
+  EXPECT_EQ(groups[0].sceneIndices[0], 0u);
+  EXPECT_EQ(groups[0].sceneIndices[1], 3u);
+  EXPECT_EQ(groups[1].category, "Experimental");
+  ASSERT_EQ(groups[1].sceneIndices.size(), 2u);
+  EXPECT_EQ(groups[1].sceneIndices[0], 1u);
+  EXPECT_EQ(groups[1].sceneIndices[1], 4u);
+  EXPECT_EQ(groups[2].category, "Rigid Body");
+  ASSERT_EQ(groups[2].sceneIndices.size(), 1u);
+  EXPECT_EQ(groups[2].sceneIndices[0], 2u);
 }
 
 TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
