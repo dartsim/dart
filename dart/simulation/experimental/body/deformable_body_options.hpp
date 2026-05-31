@@ -108,6 +108,13 @@ struct DeformableMaterialProperties
   /// off (the default) keeps the fixed barrier stiffness, so contact behavior
   /// is unchanged.
   bool useAdaptiveBarrierStiffness = false;
+
+  /// Opt in to the iterative (conjugate-gradient) projected-Newton linear
+  /// solve. CG never factorizes the Hessian, so its memory footprint stays near
+  /// O(nnz) and it scales to large meshes; off (the default) uses the sparse
+  /// Cholesky direct solve, which is faster for small/medium meshes. Meshes
+  /// above the direct-solve node cap always use CG regardless of this flag.
+  bool useIterativeLinearSolver = false;
 };
 
 /// Scripted Dirichlet boundary condition over deformable nodes.

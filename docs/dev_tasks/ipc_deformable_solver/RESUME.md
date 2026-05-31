@@ -1,6 +1,6 @@
 # Resume: IPC Deformable Solver
 
-## Current State (2026-05-30) — PLAN-081 M1–M6 landed; M5/M7 in progress
+## Current State (2026-05-30) — PLAN-081 M1–M6 COMPLETE; M7 iterative-CG increment landing
 
 This session drove the experimental deformable solver from "mass-spring scaffold"
 to broad IPC paper-parity (Li et al. 2020). All work shipped as one-PR-per-slice
@@ -25,36 +25,71 @@ AI attribution). Net status by milestone:
 - **M6 adaptive barrier stiffness — COMPLETE.** Opt-in
   `useAdaptiveBarrierStiffness`: per-step `κ = clamp((maxNodalMass/dt²)·d_hat², 25,
 1e6)`; recovers the historical fixed κ=25 at unit mass, off is byte-identical.
-- **M5 obstacle friction — capsule LANDED, sphere/box BLOCKED.** Capsule friction
-  works (barrier-only → free tangential slide). Sphere/box friction is masked by
-  the surface-CCD limiter scaling the whole step vector; needs the CCD to limit
-  only the normal approach (higher-risk, cf. #2732). See `## M5 / M7 Next` below.
-- **M7 scale + GPU — NOT STARTED.** A CUDA backend exists for PSD projection + VBD
-  (another track, #2781); extending the full deformable IPC solve / matrix-free CG
-  to GPU is the remaining large effort.
+- **M5 obstacle friction — COMPLETE.** Capsule friction works (barrier-only → free
+  tangential slide). Sphere/box friction unblocked by the opt-in **barrier-only
+  obstacle** mode (#2809): `RigidBody.setDeformableObstacleBarrierOnly` adds a
+  `DeformableObstacleNoCcdTag` that `entt::exclude`s the obstacle from the
+  surface-CCD collect view, so the clamped-log barrier alone prevents penetration
+  while tangential sliding + friction survive (the CCD limiter no longer scales the
+  whole step). The "right" CCD fix (limit only the normal approach, keep fast-motion
+  CCD safety) remains a documented higher-risk follow-up, cf. #2732.
+- **M7 scale + performance — four increments landed** (#2810/#2811/#2812 + the
+  public iterative-solve diagnostic). (1) Opt-in **iterative
+  conjugate-gradient projected-Newton linear solve**
+  (`DeformableMaterialProperties.useIterativeLinearSolver`, #2810): reuses the
+  sparse SPD Hessian assembly but solves with CG instead of `SimplicialLDLT`, so it
+  never factorizes (memory ~O(nnz), gentler scaling than direct fill-in). Meshes
+  above the direct node cap (20k) take CG automatically (ceiling raised to 1M
+  nodes) instead of degrading to gradient descent; non-convergence falls back to
+  steepest descent like the direct path. (2) **Incomplete-Cholesky preconditioner**
+  (#2811): upgraded from diagonal (Jacobi); on stiff barrier contact it collapses
+  the CG iteration count so the iterative path carries the solve within the cap
+  (fallbacks drop below the direct solver's, fewer Newton iters/step). (3)
+  **Chunky-3D scaling benchmark** (this PR): `BM_DeformableCube3d{Direct,Cg}Step`
+  on a solid N^3 cube (wide Hessian bandwidth) makes the crossover measurable --
+  direct 3D fill-in climbs super-linearly while IC-CG stays ~O(nnz); measured ~5x
+  faster CG at ~4k nodes (11.3 vs 2.3 s/step). A CUDA backend exists for PSD
+  projection + VBD (another track, #2781); on-device GPU assembly/solve, a truly
+  matrix-free Hessian-vector CG, an AMG preconditioner for the largest systems,
+  and the 688K-node Fig-22 run + Table-1 reference comparison remain.
 
 Session PR train (all merged to `main`): #2787 FEM keystone, #2788 FEM twist,
 #2789 FEM+ground, #2790 sphere barrier Hessian, #2791 box barrier, #2792/#2793
 GMSH 2.x/4.x, #2794 FCR material, #2795 FCR benchmark+SVD-dedup, #2796 exact FCR
 Hessian, #2797 solver diagnostics, #2798 FEM self-contact showcase, #2799
 benchmark Newton-iters, #2800 `.obj` importer, #2802 `.seg`/`.pt` importers, #2804
-capsule obstacle, #2805 adaptive stiffness, + capsule-friction (open/landing).
-IPC Deformable (sx) py-demos category now has ~15 scenes.
+capsule obstacle, #2805 adaptive stiffness, #2809 barrier-only obstacle (M5 done),
+#2810 iterative-CG solve (M7 increment 1), #2811 incomplete-Cholesky
+preconditioner (M7 increment 2), #2812 chunky-3D scaling benchmark (M7 increment
+3), and the public iterative-solve diagnostic (this PR, M7 increment 4). The IPC
+Deformable (sx) py-demos category
+now has ~21 scenes (latest: `ipc_deformable_cg_solver`, `ipc_deformable_cg_contact`).
 
-### M5 / M7 Next (resume here)
+### M7 Next (resume here)
 
-1. **Finish M5 (sphere/box obstacle friction).** The blocker is in the surface
-   CCD limiter (`detail/deformable_contact/continuous_collision_step` + the
-   `staticRigidSurfaceCcd*` path in `compute/world_step_stage.cpp`): it scales the
-   _whole_ candidate step by the time-of-impact to stop gravity-driven
-   penetration, which also kills tangential sliding (a frictionless node on a box
-   obstacle slides only ~0.05 vs free). The barrier force already prevents
-   penetration, so the CCD should only bound the _normal-approach_ component, not
-   the full step. Then feed sphere/box obstacle normal forces into the friction
-   term exactly like `addCapsuleObstacleNormalForces` does for the capsule.
-2. **M7 (GPU/scale).** Extend the existing CUDA PSD-projection backend to the full
-   deformable assembly, or add a matrix-free CG path; benchmark per-step time vs
-   the paper's Fig 23 / Table 1 and IPC's CPU reference.
+M1–M6 + M5 are all complete; **M7 (scale + performance) is the only remaining
+milestone.** Three increments landed (iterative CG solve #2810; incomplete-Cholesky
+preconditioner #2811; chunky-3D scaling benchmark, this PR). The remaining M7 work,
+roughly in increasing-risk order:
+
+1. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
+   (triplets → `SparseMatrix`) before the CG solve; a matrix-free Hessian-vector
+   product (per-element block × vector, scattered) would drop the assembly memory
+   for very large meshes (Fig 22, 688K nodes). CG params live in
+   `computeProjectedNewtonDirection` in `compute/world_step_stage.cpp` (tolerance
+   `1e-8`, `maxIterations = 2*dim`, `Eigen::Lower`, `Eigen::IncompleteCholesky`).
+2. **AMG / multigrid preconditioner** for the largest systems (beyond what
+   incomplete-Cholesky handles).
+3. **GPU assembly + solve.** Extend the existing CUDA PSD-projection backend
+   (#2781) to the full deformable assembly + a GPU CG, beyond the current PSD
+   offload.
+4. **Profiling-grade benchmark + reference comparison.** Emit Fig-23-shaped
+   per-scene statistics (avg/max contacts/step, Newton iters/step, peak memory,
+   s/step) and the Table-1 CPU comparison vs the IPC reference. The
+   `BM_DeformableCube3d{Direct,Cg}Step` chunky-3D benchmarks (this PR) already
+   make the direct-vs-iterative crossover measurable; what remains is peak-memory
+   tracking, the avg/max contacts-per-step axis on contact scenes, and the
+   side-by-side comparison against the published IPC reference numbers.
 
 ### Conventions / gotchas (verified this session)
 

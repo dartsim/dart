@@ -135,6 +135,8 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
   diagnostics.lineSearchTrials = stats.lineSearchTrials;
   diagnostics.projectedNewtonSteps = stats.projectedNewtonSteps;
   diagnostics.projectedNewtonFallbacks = stats.projectedNewtonFallbacks;
+  diagnostics.projectedNewtonIterativeSolves
+      = stats.projectedNewtonIterativeSolves;
   diagnostics.selfContactBarrierActiveContacts
       = stats.selfContactBarrierActiveContacts;
   diagnostics.frictionDissipation = stats.frictionDissipation;
@@ -765,6 +767,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
       = options.material.useFixedCorotationalElasticity;
   data.material.useAdaptiveBarrierStiffness
       = options.material.useAdaptiveBarrierStiffness;
+  data.material.useIterativeLinearSolver
+      = options.material.useIterativeLinearSolver;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);

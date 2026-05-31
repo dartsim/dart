@@ -31,6 +31,8 @@ from .scenes.heightmap import SCENE as HEIGHTMAP
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.hybrid_dynamics import SCENE as HYBRID_DYNAMICS
 from .scenes.ipc_deformable_capsule_rod import SCENE as IPC_DEFORMABLE_CAPSULE_ROD
+from .scenes.ipc_deformable_cg_contact import SCENE as IPC_DEFORMABLE_CG_CONTACT
+from .scenes.ipc_deformable_cg_solver import SCENE as IPC_DEFORMABLE_CG_SOLVER
 from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
 from .scenes.ipc_deformable_fcr_twist import SCENE as IPC_DEFORMABLE_FCR_TWIST
 from .scenes.ipc_deformable_fem_bar import SCENE as IPC_DEFORMABLE_FEM_BAR
@@ -190,6 +192,8 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FEM_BOX,
         IPC_DEFORMABLE_FEM_BUCKLE,
         IPC_DEFORMABLE_FEM_MSH,
+        IPC_DEFORMABLE_CG_SOLVER,
+        IPC_DEFORMABLE_CG_CONTACT,
         IPC_DEFORMABLE_OBJ_CLOTH,
         IPC_DEFORMABLE_CAPSULE_ROD,
         IPC_DEFORMABLE_SEG_STRAND,
