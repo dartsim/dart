@@ -10,12 +10,14 @@ bodies into a parallel dart.simulation.World for rendering.
 
 from __future__ import annotations
 
+from collections import deque
+
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 import numpy as np
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _WALL_HALF = (0.05, 1.0, 1.0)
 _BOX_HALF = (0.2, 0.2, 0.2)
@@ -57,9 +59,34 @@ def build() -> SceneSetup:
     )
     bridge.sync()
 
+    speed_history: deque[float] = deque(maxlen=120)
+    clearance_history: deque[float] = deque(maxlen=120)
+    wall_left_face = 1.0 - _WALL_HALF[0]
+
+    def build_panel(builder: object, context: object) -> None:
+        velocity = np.asarray(box.linear_velocity, dtype=float)
+        box_x = float(np.asarray(box.translation, dtype=float)[0])
+        leading_face = box_x + _BOX_HALF[0]
+        clearance = float(wall_left_face - leading_face)
+        speed_x = float(velocity[0])
+        speed_history.append(speed_x)
+        clearance_history.append(clearance)
+        builder.text("solver: rigid IPC")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"time step: {world.time_step:.4f} s")
+        builder.text(f"launch speed: {_IMPACT_SPEED:.1f} m/s")
+        builder.text(f"box vx: {speed_x:.3f} m/s")
+        builder.text(f"wall clearance: {clearance:.3f} m")
+        builder.plot_lines("Box vx", list(speed_history))
+        builder.plot_lines("Clearance", list(clearance_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel("Rigid IPC Tunnel", build_panel)],
         info={"sx_world": world, "rigid_body_solver": "ipc"},
     )
 
@@ -67,8 +94,10 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_rigid_ipc_tunnel",
     title="Rigid IPC No-Tunneling (sx)",
-    category="Experimental",
-    summary="A fast box is stopped by a thin wall via the rigid IPC continuous collision detection "
-    "(no tunneling).",
+    category="Rigid IPC (sx)",
+    summary=(
+        "A fast box is stopped by a thin wall via the rigid IPC continuous "
+        "collision detection (no tunneling)."
+    ),
     build=build,
 )

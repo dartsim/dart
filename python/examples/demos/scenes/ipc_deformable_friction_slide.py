@@ -17,7 +17,7 @@ from __future__ import annotations
 import dartpy.simulation_experimental as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_grid_options
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _COLUMNS = 12
 _ROWS = 8
@@ -81,9 +81,16 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="deformable_slider")
 
+    def build_panel(builder: object, context: object) -> None:
+        builder.text(f"grid: {_COLUMNS} x {_ROWS}")
+        builder.text(f"friction coefficient: {_FRICTION:.2f}")
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC Friction Slide", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

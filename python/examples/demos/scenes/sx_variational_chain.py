@@ -13,13 +13,15 @@ onto a SimpleFrame box visual so the C++ viewer renders the motion.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _NUM_LINKS = 5
 _LINK_LENGTH = 0.5
@@ -88,13 +90,29 @@ def build() -> SceneSetup:
             dart.BoxShape(np.array([_LINK_LENGTH, 0.08, 0.08])),
             palette[i % len(palette)],
             name=f"link{i}_visual",
-        )
+    )
     bridge.sync()
+
+    tip_height_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        tip_height = float(np.asarray(links[-1].translation, dtype=float).reshape(3)[2])
+        tip_height_history.append(tip_height)
+        builder.text("integrator: variational")
+        builder.text(f"links: {_NUM_LINKS}")
+        builder.text(f"dofs: {robot.num_dofs}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"time step: {world.time_step:.4f} s")
+        builder.text(f"tip height: {tip_height:.3f} m")
+        builder.plot_lines("Tip height", list(tip_height_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
 
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
         force_drag=bridge.force_drag,
+        panels=[ScenePanel("Variational Chain", build_panel)],
         info={"sx_world": world, "dofs": robot.num_dofs},
     )
 
@@ -102,7 +120,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_variational_chain",
     title="Variational Chain (sx)",
-    category="Experimental",
+    category="Variational Integrators (sx)",
     summary="A passive chain swings without numerical damping (symplectic VI).",
     build=build,
 )

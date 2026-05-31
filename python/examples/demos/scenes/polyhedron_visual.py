@@ -46,9 +46,9 @@ def _static_visual_skel(name: str, shape: "dart.Shape", color: tuple, alpha: flo
 def _wireframe() -> "dart.LineSegmentShape":
     shape = dart.LineSegmentShape(2.0)
     for v in _VERTICES:
-        shape.addVertex(np.array(v))
+        shape.add_vertex(np.array(v))
     for a, b in _WIREFRAME_EDGES:
-        shape.addConnection(a, b)
+        shape.add_connection(a, b)
     return shape
 
 
@@ -59,13 +59,13 @@ def _ground_grid() -> "dart.LineSegmentShape":
     idx = 0
     for i in range(n + 1):
         coord = -half + 2.0 * half * i / n
-        grid.addVertex(np.array([-half, coord, -0.02]))
-        grid.addVertex(np.array([half, coord, -0.02]))
-        grid.addConnection(idx, idx + 1)
+        grid.add_vertex(np.array([-half, coord, -0.02]))
+        grid.add_vertex(np.array([half, coord, -0.02]))
+        grid.add_connection(idx, idx + 1)
         idx += 2
-        grid.addVertex(np.array([coord, -half, -0.02]))
-        grid.addVertex(np.array([coord, half, -0.02]))
-        grid.addConnection(idx, idx + 1)
+        grid.add_vertex(np.array([coord, -half, -0.02]))
+        grid.add_vertex(np.array([coord, half, -0.02]))
+        grid.add_connection(idx, idx + 1)
         idx += 2
     return grid
 

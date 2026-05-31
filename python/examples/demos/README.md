@@ -1,7 +1,8 @@
 # dart-demos (Python)
 
-A headless scene-registry runner that hosts DART's Python demo scenes. This is
-the Python-first surface from PLAN-103; C++ `dart-demos` (PLAN-102) stays frozen.
+A scene-registry runner that hosts DART's Python demo scenes in the shared
+Filament viewer. This is the Python-first surface from PLAN-103; C++
+`dart-demos` (PLAN-102) stays frozen.
 
 ## Run
 
@@ -16,7 +17,7 @@ Or directly (without pixi), from the repo root:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:python \
-    python -m examples.demos --scene hello_world --frames 5
+    .pixi/envs/default/bin/python -m examples.demos --scene hello_world --frames 5
 ```
 
 ## CLI
@@ -28,13 +29,54 @@ The runner mirrors C++ `dart-demos` to keep the cross-language UX consistent:
 | `--scene <id>`      | Select the initial scene (default: first registered)       |
 | `--cycle-scenes`    | Advance through every scene for `--frames` frames and exit |
 | `--frames N`        | Per-scene step budget (default 60 single, 4 cycle)         |
-| `--screenshot PATH` | Phase 1: write a JSON state snapshot at PATH               |
-| `--headless`        | Accepted no-op (Python demos are always headless)          |
+| `--screenshot PATH` | Write the final rendered frame as a binary PPM image       |
+| `--out DIR`         | Write a numbered binary PPM frame sequence                 |
+| `--headless`        | Render without opening an interactive window               |
+| `--show-ui`         | Include ImGui panels in headless screenshots               |
 | `--list`            | Print the catalog and exit                                 |
 
-`--screenshot` writes a real non-blank PPM once Phase 2 wires the `dartpy.gui`
-headless screenshot path; today it writes a deterministic JSON state snapshot
-so the contract works end-to-end.
+`--screenshot` and `--out` use the real Filament render path. For visual
+debugging, avoid `--backend noop`: it can exercise CPU code but produces blank
+pixels and is not evidence for layout, camera, lighting, or material quality.
+
+## Visual debugging
+
+Capture one frame:
+
+```bash
+pixi run py-demo-capture -- --scene sx_articulated --frames 2 \
+    --width 640 --height 360
+```
+
+The helper writes a PPM, converts it to PNG, rejects blank captures, and prints
+the artifact paths. With `--show-ui`, it also rejects screenshots that do not
+show the docked workspace and drops early warm-up frames before ImGui is visible
+from the converted frame sequence. Capture the docked ImGui workspace:
+
+```bash
+pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 \
+    --width 1280 --height 720
+```
+
+The docked workspace has a top `Simulation` toolbar, a searchable `Demos`
+navigator, scene-specific panels on the right, and a bottom DART diagnostics
+panel. Use `Replay` to rebuild the active scene from the beginning and
+`Reset Layout` to restore the default docks after rearranging panels. When
+frame recording is active, the `Simulation` panel also exposes a frame playback
+cursor over the recorded PPM sequence with first/previous/play/next/last
+controls and the selected frame path.
+
+Capture a short frame sequence and request MP4 encoding when `ffmpeg` is
+available:
+
+```bash
+pixi run py-demo-capture -- --scene sx_articulated --frames 24 \
+    --width 640 --height 360 --video
+```
+
+The lower-level viewer still accepts `--screenshot` and `--out` directly when
+you need raw PPM output. Inspect the generated PNG or MP4 before calling a
+visual change done.
 
 ## IPC Deformable (sx) scenes
 
@@ -77,17 +119,40 @@ its figures.
 The scenes share `_ipc_deformable_bridge.py`, which builds the grid topology and
 mirrors each deformable onto the render world as per-node spheres plus a spring
 wireframe (the dynamic surface-mesh render path is not yet exposed through
-`dartpy.gui.run_demos`). Add another deformable scene by building its
-`DeformableBodyOptions` with `build_grid_options(...)` and rendering it through
-`IpcDeformableBridge`.
+`dartpy.gui.run_demos`). `IpcDeformableBridge.build_diagnostics_panel(...)`
+adds shared solver diagnostics such as node counts, fixed nodes, z-range, and a
+minimum-height plot to custom scene panels. Add another deformable scene by
+building its `DeformableBodyOptions` with `build_grid_options(...)` and
+rendering it through `IpcDeformableBridge`.
 
 ## Add a scene
 
 1. Create `scenes/<name>.py` defining a module-level `SCENE` of type
    `PythonDemoScene` whose `build()` returns a `SceneSetup` (a `world` plus an
-   optional custom `step(n)` and `info` dict).
+   optional custom `pre_step`, `step(n)`, `force_drag`, scene panels, and
+   `info` dict).
 2. Import it in `registry.py` and append it to the ordered list in
    `make_demo_scenes()`, placed within its category group.
 
 That's the only change needed; no CMake edits, no test edits beyond the cycle
 smoke (which iterates the registry).
+
+Scene-specific controls use renderer-neutral `ScenePanel` callbacks:
+
+```python
+def build_panel(builder, context):
+    builder.text(f"time: {world.time:.3f} s")
+    changed, friction = builder.slider("Friction", body.friction, 0.0, 1.0)
+    if changed:
+        body.friction = friction
+
+return SceneSetup(
+    world=bridge.render_world,
+    pre_step=bridge.pre_step,
+    panels=[ScenePanel("Rigid IPC Slide", build_panel)],
+)
+```
+
+The callback receives DART's `PanelBuilder` abstraction, not ImGui. Use the
+builder for text, buttons, checkboxes, sliders, selects, plots, and tables; use
+`context` only as a read-only viewer-state snapshot.

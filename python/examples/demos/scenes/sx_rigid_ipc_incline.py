@@ -11,13 +11,14 @@ dart.simulation.World for rendering.
 from __future__ import annotations
 
 import math
+from collections import deque
 
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 import numpy as np
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _RAMP_HALF = (2.0, 1.0, 0.1)
 _BOX_HALF = (0.2, 0.2, 0.2)
@@ -32,6 +33,11 @@ def _full(half: tuple[float, float, float]) -> np.ndarray:
 def _tilt_quaternion() -> tuple[float, float, float, float]:
     # Rotation about the y-axis by the tilt angle, as (w, x, y, z).
     return (math.cos(_TILT_RAD / 2.0), 0.0, math.sin(_TILT_RAD / 2.0), 0.0)
+
+
+def _down_slope_axis() -> np.ndarray:
+    axis = np.array([math.cos(_TILT_RAD), 0.0, -math.sin(_TILT_RAD)])
+    return axis / np.linalg.norm(axis)
 
 
 def build() -> SceneSetup:
@@ -77,9 +83,30 @@ def build() -> SceneSetup:
     )
     bridge.sync()
 
+    down_slope = _down_slope_axis()
+    speed_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        velocity = np.asarray(box.linear_velocity, dtype=float)
+        down_slope_speed = float(np.dot(velocity, down_slope))
+        speed_history.append(down_slope_speed)
+        builder.text("solver: rigid IPC")
+        builder.text(f"tilt: {math.degrees(_TILT_RAD):.1f} deg")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"down-slope speed: {down_slope_speed:.3f} m/s")
+        changed, friction = builder.slider("Friction", float(box.friction), 0.0, 1.0)
+        if changed:
+            box.friction = float(friction)
+            ramp.friction = float(friction)
+        builder.plot_lines("Speed", list(speed_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel("Rigid IPC Incline", build_panel)],
         info={"sx_world": world, "rigid_body_solver": "ipc"},
     )
 
@@ -87,7 +114,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_rigid_ipc_incline",
     title="Rigid IPC Inclined Slide (sx)",
-    category="Experimental",
+    category="Rigid IPC (sx)",
     summary="A box slides down a tilted ramp under friction via the rigid IPC barrier solver.",
     build=build,
 )

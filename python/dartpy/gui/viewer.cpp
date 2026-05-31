@@ -6,6 +6,7 @@
 
 #include "dart/gui/application.hpp"
 #include "dart/simulation/world.hpp"
+#include "gui/panel.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -60,6 +61,11 @@ private:
 
 void defGuiViewer(nb::module_& m)
 {
+  m.def(
+      "is_docking_available",
+      &dart::gui::isDockingAvailable,
+      "Return whether the GUI build includes Dear ImGui docking support.");
+
   // Run the interactive viewer (Filament + ImGui) against a single world.
   // Argv flags propagate to the C++ runtime: --scene, --cycle-scenes,
   // --frames, --headless, --screenshot <path>, --width, --height, --backend.
@@ -120,6 +126,8 @@ void defGuiViewer(nb::module_& m)
               //   factory() -> World
               //   factory() -> (World, pre_step_callable)
               //   factory() -> (World, pre_step_callable, force_drag_callable)
+              //   factory() -> (World, pre_step_callable, force_drag_callable,
+              //                 panels)
               dart::simulation::WorldPtr world;
               if (nb::isinstance<nb::tuple>(result)) {
                 nb::tuple t = nb::cast<nb::tuple>(result);
@@ -134,6 +142,12 @@ void defGuiViewer(nb::module_& m)
                 if (t.size() >= 3 && !t[2].is_none()) {
                   *force_drag_holder = nb::cast<nb::callable>(t[2]);
                 }
+                if (t.size() >= 4 && !t[3].is_none()) {
+                  nb::iterable panels = nb::cast<nb::iterable>(t[3]);
+                  for (nb::handle panel : panels) {
+                    options.panels.push_back(makeGuiPanelFromPython(panel));
+                  }
+                }
               } else {
                 world = nb::cast<dart::simulation::WorldPtr>(std::move(result));
               }
@@ -144,10 +158,11 @@ void defGuiViewer(nb::module_& m)
                   "py-demos factory error for scene '%s': %s\n",
                   scene_id.c_str(),
                   e.what());
+              throw;
             }
-            // Always hand the viewer a valid (possibly empty) world so
-            // downstream null-pointer checks don't crash the host. The
-            // sidebar still lets the user pick another scene.
+            // If the factory returns None/null without throwing, still hand
+            // the viewer a valid world so downstream null-pointer checks do
+            // not crash the host.
             if (options.world == nullptr) {
               options.world
                   = dart::simulation::World::create(scene_id + "_placeholder");
@@ -159,6 +174,7 @@ void defGuiViewer(nb::module_& m)
                   (*pre_step_holder)();
                 } catch (const std::exception& e) {
                   fprintf(stderr, "py-demos pre_step error: %s\n", e.what());
+                  throw;
                 }
               };
             }
@@ -168,6 +184,7 @@ void defGuiViewer(nb::module_& m)
                 nb::gil_scoped_acquire gil;
                 try {
                   nb::dict event;
+                  event["renderable_id"] = e.renderableId;
                   event["renderable_name"] = e.renderableName;
                   event["application_point"] = nb::cast(e.applicationPoint);
                   event["force"] = nb::cast(e.force);

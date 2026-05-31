@@ -77,6 +77,10 @@ void updateImGuiMouseInput(
     int framebufferWidth,
     int framebufferHeight);
 
+void updateImGuiMouseCursor(GLFWwindow* window, ImGuiIO& io);
+
+void destroyImGuiMouseCursors(GLFWwindow* window);
+
 bool isSceneMouseInputCapturedByUi(bool showUi, const ImGuiIO& io);
 
 bool isDragModifierDown(GLFWwindow* window);

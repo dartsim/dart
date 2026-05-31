@@ -11,17 +11,22 @@ body off the VBD path onto the default solver.
 
 from __future__ import annotations
 
+from collections import deque
+
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 import numpy as np
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _SPHERE_RADIUS = 0.32
 _SPHERE_CENTER = (0.0, 0.0, _SPHERE_RADIUS)  # resting on the ground top (z = 0)
 _GROUND_CENTER = (0.0, 0.0, -0.5)
 _GROUND_HALF = (2.0, 2.0, 0.5)
+_CLOTH_SIDE = 11
+_CLOTH_SPACING = 0.08
+_CLOTH_HEIGHT = _SPHERE_RADIUS * 2.0 + 0.15
 
 
 def _make_cloth_options(side: int, spacing: float, height: float):
@@ -93,7 +98,11 @@ def build() -> SceneSetup:
     # A free cloth slightly wider than the sphere, released just above its top.
     world.add_deformable_body(
         "drape",
-        _make_cloth_options(side=11, spacing=0.08, height=_SPHERE_RADIUS * 2.0 + 0.15),
+        _make_cloth_options(
+            side=_CLOTH_SIDE,
+            spacing=_CLOTH_SPACING,
+            height=_CLOTH_HEIGHT,
+        ),
     )
 
     solver = sx.DeformableSolverOptions()
@@ -121,17 +130,67 @@ def build() -> SceneSetup:
     )
     bridge.sync()
 
+    sphere_center = np.asarray(_SPHERE_CENTER, dtype=float)
+    sphere_clearance_history = deque(maxlen=120)
+    ground_clearance_history = deque(maxlen=120)
+    drape_depth_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        del context
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("solver: VBD with static obstacle barrier")
+        builder.text(f"cloth: {_CLOTH_SIDE} x {_CLOTH_SIDE} nodes")
+        builder.text(f"sphere radius: {_SPHERE_RADIUS:.2f} m")
+        if positions.size:
+            sphere_clearance = float(
+                np.min(np.linalg.norm(positions - sphere_center, axis=1))
+                - _SPHERE_RADIUS
+            )
+            ground_clearance = float(np.min(positions[:, 2]))
+            drape_depth = _CLOTH_HEIGHT - ground_clearance
+            mean_speed = (
+                float(np.mean(np.linalg.norm(velocities, axis=1)))
+                if velocities.size
+                else 0.0
+            )
+            sphere_clearance_history.append(sphere_clearance)
+            ground_clearance_history.append(ground_clearance)
+            drape_depth_history.append(drape_depth)
+            builder.text(f"sphere clearance: {sphere_clearance:.4f} m")
+            builder.text(f"ground clearance: {ground_clearance:.4f} m")
+            builder.text(f"drape depth: {drape_depth:.3f} m")
+            builder.text(f"mean node speed: {mean_speed:.3f} m/s")
+        diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
+        if diagnostics is not None:
+            builder.text(
+                f"solver iters: {diagnostics.solver_iterations} | "
+                f"contacts: {diagnostics.converged_active_contact_count}"
+            )
+        if sphere_clearance_history:
+            builder.separator()
+            builder.plot_lines("Sphere clearance", list(sphere_clearance_history))
+            builder.plot_lines("Ground clearance", list(ground_clearance_history))
+            builder.plot_lines("Drape depth", list(drape_depth_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
-        info={"sx_world": world, "nodes": 11 * 11},
+        panels=[ScenePanel("VBD Sphere Drape", build_panel)],
+        info={"sx_world": world, "nodes": _CLOTH_SIDE * _CLOTH_SIDE},
     )
 
 
 SCENE = PythonDemoScene(
     id="vbd_obstacle_drape",
     title="VBD Cloth over Sphere (sx)",
-    category="Experimental",
+    category="Vertex Block Descent (sx)",
     summary="A VBD cloth drapes over a static sphere obstacle without sinking through it.",
     build=build,
 )

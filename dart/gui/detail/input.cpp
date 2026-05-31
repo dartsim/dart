@@ -38,6 +38,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
+#include <array>
 #include <limits>
 
 #include <cctype>
@@ -62,6 +63,84 @@ using dart::gui::togglePaused;
 using dart::gui::updateOrbitCameraController;
 
 namespace {
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 1)
+  #define DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS 1
+#else
+  #define DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS 0
+#endif
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 4)
+  #define DART_GUI_DETAIL_HAS_GLFW_EXTENDED_CURSORS 1
+#else
+  #define DART_GUI_DETAIL_HAS_GLFW_EXTENDED_CURSORS 0
+#endif
+
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+struct ImGuiMouseCursorState
+{
+  std::array<GLFWcursor*, ImGuiMouseCursor_COUNT> cursors{};
+  GLFWcursor* lastCursor = nullptr;
+  bool initialized = false;
+  bool cursorHidden = false;
+};
+
+ImGuiMouseCursorState& imguiMouseCursorState()
+{
+  static ImGuiMouseCursorState state;
+  return state;
+}
+
+GLFWcursor* createStandardCursor(int shape)
+{
+  GLFWerrorfun previousErrorCallback = glfwSetErrorCallback(nullptr);
+  GLFWcursor* cursor = glfwCreateStandardCursor(shape);
+  glfwSetErrorCallback(previousErrorCallback);
+  return cursor;
+}
+
+void initializeImGuiMouseCursors(ImGuiMouseCursorState& state)
+{
+  if (state.initialized) {
+    return;
+  }
+
+  state.cursors[ImGuiMouseCursor_Arrow]
+      = createStandardCursor(GLFW_ARROW_CURSOR);
+  state.cursors[ImGuiMouseCursor_TextInput]
+      = createStandardCursor(GLFW_IBEAM_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeNS]
+      = createStandardCursor(GLFW_VRESIZE_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeEW]
+      = createStandardCursor(GLFW_HRESIZE_CURSOR);
+  state.cursors[ImGuiMouseCursor_Hand] = createStandardCursor(GLFW_HAND_CURSOR);
+  #if DART_GUI_DETAIL_HAS_GLFW_EXTENDED_CURSORS
+  state.cursors[ImGuiMouseCursor_ResizeAll]
+      = createStandardCursor(GLFW_RESIZE_ALL_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeNESW]
+      = createStandardCursor(GLFW_RESIZE_NESW_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeNWSE]
+      = createStandardCursor(GLFW_RESIZE_NWSE_CURSOR);
+  state.cursors[ImGuiMouseCursor_NotAllowed]
+      = createStandardCursor(GLFW_NOT_ALLOWED_CURSOR);
+  #endif
+  state.initialized = true;
+}
+
+GLFWcursor* cursorForImGuiMouseCursor(
+    const ImGuiMouseCursorState& state, ImGuiMouseCursor imguiCursor)
+{
+  if (imguiCursor >= 0 && imguiCursor < ImGuiMouseCursor_COUNT) {
+    if (GLFWcursor* cursor = state.cursors[imguiCursor]) {
+      return cursor;
+    }
+  }
+
+  return state.cursors[ImGuiMouseCursor_Arrow];
+}
+#endif
 
 void handleScroll(GLFWwindow* window, double xOffset, double yOffset)
 {
@@ -286,6 +365,10 @@ void updateImGuiMouseInput(
     int framebufferWidth,
     int framebufferHeight)
 {
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+  io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+#endif
+
   for (bool& mouseDown : io.MouseDown) {
     mouseDown = false;
   }
@@ -320,6 +403,70 @@ void updateImGuiMouseInput(
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
   io.MouseDown[2]
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+}
+
+void updateImGuiMouseCursor(GLFWwindow* window, ImGuiIO& io)
+{
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+  io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+  if (window == nullptr || ImGui::GetCurrentContext() == nullptr) {
+    return;
+  }
+
+  auto& state = imguiMouseCursorState();
+  initializeImGuiMouseCursors(state);
+
+  if ((io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) != 0
+      || glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+    state.lastCursor = nullptr;
+    state.cursorHidden = false;
+    return;
+  }
+
+  const ImGuiMouseCursor imguiCursor = ImGui::GetMouseCursor();
+  if (imguiCursor == ImGuiMouseCursor_None || io.MouseDrawCursor) {
+    if (!state.cursorHidden) {
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+      state.lastCursor = nullptr;
+      state.cursorHidden = true;
+    }
+    return;
+  }
+
+  GLFWcursor* cursor = cursorForImGuiMouseCursor(state, imguiCursor);
+  if (state.cursorHidden) {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    state.cursorHidden = false;
+  }
+  if (state.lastCursor != cursor) {
+    glfwSetCursor(window, cursor);
+    state.lastCursor = cursor;
+  }
+#else
+  (void)window;
+  (void)io;
+#endif
+}
+
+void destroyImGuiMouseCursors(GLFWwindow* window)
+{
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+  auto& state = imguiMouseCursorState();
+  if (window != nullptr) {
+    glfwSetCursor(window, nullptr);
+  }
+  for (GLFWcursor*& cursor : state.cursors) {
+    if (cursor != nullptr) {
+      glfwDestroyCursor(cursor);
+      cursor = nullptr;
+    }
+  }
+  state.lastCursor = nullptr;
+  state.initialized = false;
+  state.cursorHidden = false;
+#else
+  (void)window;
+#endif
 }
 
 bool isSceneMouseInputCapturedByUi(bool showUi, const ImGuiIO& io)

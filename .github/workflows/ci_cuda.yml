@@ -42,7 +42,17 @@ permissions:
 jobs:
   cuda-build:
     name: CUDA Build
-    runs-on: ubuntu-latest
+    # Security: `ubuntu-latest-gpu` is a long-lived self-hosted runner. Never run
+    # untrusted fork-PR code on it. Fork PRs still run this required check on a
+    # GitHub-hosted runner as a CUDA compile fallback; trusted same-repo events
+    # use the GPU runner and additionally execute the CUDA tests.
+    runs-on: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name != github.repository &&
+        'ubuntu-latest' ||
+        'ubuntu-latest-gpu'
+      }}
     timeout-minutes: 60
     env:
       DART_PARALLEL_JOBS: "8"
@@ -65,5 +75,21 @@ jobs:
       - name: Configure compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
+      - name: Show GPU (nvidia-smi)
+        if: >-
+          ${{
+            github.event_name != 'pull_request' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        run: nvidia-smi
+
       - name: Build CUDA targets
         run: pixi run --locked -e cuda build-cuda
+
+      - name: Run CUDA tests on GPU
+        if: >-
+          ${{
+            github.event_name != 'pull_request' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        run: pixi run --locked -e cuda test-cuda

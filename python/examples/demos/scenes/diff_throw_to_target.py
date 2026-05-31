@@ -30,7 +30,7 @@ import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Small DOF / short horizon / few iters so the headless cycle smoke stays fast.
 _TIME_STEP = 1e-2
@@ -86,6 +86,13 @@ def _positions_of(states: np.ndarray) -> list[np.ndarray]:
     """Extract the (px, py, pz) of each recorded state row."""
 
     return [np.asarray(states[i, :3], dtype=float) for i in range(states.shape[0])]
+
+
+def _sample_plot_values(values: list[float], limit: int = 120) -> list[float]:
+    if len(values) <= limit:
+        return [float(value) for value in values]
+    indices = np.linspace(0, len(values) - 1, limit, dtype=int)
+    return [float(values[int(index)]) for index in indices]
 
 
 def _rollout_positions(
@@ -170,6 +177,11 @@ def build() -> SceneSetup:
     trail: list[np.ndarray] = []
     pre_trail: list[np.ndarray] = []
     note = ""
+    optimization = {
+        "iters": 0,
+        "loss": float("inf"),
+        "velocity": np.zeros(3, dtype=float),
+    }
 
     diff = getattr(sx, "diff", None)
     has_rollout = diff is not None and hasattr(diff, "rollout")
@@ -181,6 +193,7 @@ def build() -> SceneSetup:
             optimized = result["optimized"]
             trail = result["post_trail"]
             pre_trail = result["pre_trail"]
+            optimization = result
             note = (
                 f"optimized v0 in {result['iters']} iters, "
                 f"loss={result['loss']:.2e}"
@@ -251,21 +264,79 @@ def build() -> SceneSetup:
     render_world.add_simple_frame(projectile_frame)
 
     playhead = {"i": 0}
+    playback = {"stride": 1}
+    distance_plot = _sample_plot_values(
+        [float(np.linalg.norm(position - _TARGET)) for position in trail]
+    )
+    height_plot = _sample_plot_values([float(position[2]) for position in trail])
+    final_distance = (
+        float(np.linalg.norm(np.asarray(trail[-1], dtype=float) - _TARGET))
+        if trail
+        else 0.0
+    )
 
     def pre_step() -> None:
         if not trail:
             return
         projectile_frame.set_transform(_translation(trail[playhead["i"]]))
-        playhead["i"] = (playhead["i"] + 1) % len(trail)
+        stride = max(1, int(playback["stride"]))
+        playhead["i"] = (playhead["i"] + stride) % len(trail)
+
+    def build_panel(builder: object, context: object) -> None:
+        del context
+        current_index = playhead["i"] if trail else 0
+        current_position = (
+            np.asarray(trail[current_index], dtype=float)
+            if trail
+            else np.array([0.0, 0.0, 5.0])
+        )
+        current_distance = float(np.linalg.norm(current_position - _TARGET))
+        velocity = np.asarray(optimization.get("velocity", np.zeros(3)), dtype=float)
+
+        builder.text("mode: initial-velocity replay")
+        builder.text(f"optimized: {'yes' if optimized else 'fallback'}")
+        builder.text(
+            f"frame: {current_index + 1}/{len(trail)} | "
+            f"target distance={current_distance:.3f} m"
+        )
+        builder.text(
+            f"target xyz: {_TARGET[0]:.2f}, {_TARGET[1]:.2f}, {_TARGET[2]:.2f} m"
+        )
+        builder.text(f"final distance: {final_distance:.3f} m")
+        if optimized:
+            builder.text(
+                "initial velocity: "
+                f"{velocity[0]:.2f}, {velocity[1]:.2f}, {velocity[2]:.2f} m/s"
+            )
+            builder.text(
+                f"iters: {int(optimization.get('iters', 0))} | "
+                f"loss={float(optimization.get('loss', 0.0)):.2e}"
+            )
+        else:
+            builder.text(note)
+        changed, stride_value = builder.slider(
+            "Playback stride", float(playback["stride"]), 1.0, 8.0
+        )
+        if changed:
+            playback["stride"] = max(1, int(round(stride_value)))
+        if builder.button("Reset replay") and trail:
+            playhead["i"] = 0
+            projectile_frame.set_transform(_translation(trail[0]))
+        if distance_plot:
+            builder.separator()
+            builder.plot_lines("Target distance", distance_plot)
+            builder.plot_lines("Projectile height", height_plot)
 
     return SceneSetup(
         world=render_world,
         pre_step=pre_step,
+        panels=[ScenePanel("Diff Throw Target", build_panel)],
         info={
             "optimized": optimized,
             "steps": len(trail),
             "note": note,
             "target": _TARGET.tolist(),
+            "final_distance": final_distance,
         },
     )
 

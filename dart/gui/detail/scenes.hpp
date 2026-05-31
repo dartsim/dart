@@ -87,9 +87,6 @@ struct DartScene
   std::function<void(dart::gui::ViewportPaneKind)> onViewportPaneActivated;
   ViewportPaneActivationState viewportPaneActivation;
   bool dockingEnabled = false;
-  /// Set once after the default dock layout has been applied (or skipped
-  /// because a saved layout exists). Runtime-only; not copied from AppOptions.
-  bool dockLayoutInitialized = false;
 };
 
 enum class ExampleScene

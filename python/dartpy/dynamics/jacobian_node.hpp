@@ -1,8 +1,6 @@
 #pragma once
 
-namespace nanobind {
-class module_;
-} // namespace nanobind
+#include <nanobind/nanobind.h>
 
 namespace dart::python_nb {
 

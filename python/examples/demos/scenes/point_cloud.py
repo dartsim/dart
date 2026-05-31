@@ -44,7 +44,7 @@ def _make_point_cloud_frame() -> "dart.SimpleFrame":
     shape.set_overall_color(np.array([0.20, 0.38, 0.94, 1.0]))
     shape.set_point_shape_type(dart.PointCloudShape.PointShapeType.BOX)
 
-    frame = dart.SimpleFrame(dart.Frame.World(), "point_cloud")
+    frame = dart.SimpleFrame(dart.Frame.world(), "point_cloud")
     frame.set_shape(shape)
     frame.create_visual_aspect().set_rgba(np.array([0.20, 0.38, 0.94, 1.0]))
     return frame
