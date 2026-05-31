@@ -6024,17 +6024,17 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D spolling-coin friction row: a spinning disk remains intersection-free on a frictional support while contact friction dissipates angular velocity.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::spolling_coin",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration",
       "required_assets_or_importer": [
         "meshes/cylinder.obj",
         "meshes/plane.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::spolling_coin",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration'",
+      "notes_or_gap": "Covered by DART-owned Fig. 7 paper experiment coverage for the 3D friction fixture mechanism. The paper-figure visual alias remains planned until it has matching example and headless visual evidence."
     },
     {
       "upstream_path": "fixtures/3D/friction/turntable/turntable-mu=0.0.json",

@@ -1,5 +1,29 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: spolling coin friction fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Marked `fixtures/3D/friction/spolling-coin.json` implemented in the generated
+  manifest. The owning DART coverage is
+  `RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration`:
+  a spinning disk remains intersection-free on a frictional support while
+  contact friction dissipates angular velocity.
+- Kept the Fig. 7 paper visual alias
+  `fixtures/paper-figures/07-spolling-coint.json` planned. It still needs a
+  DART example plus headless visual evidence before retirement.
+
+Validation in this slice:
+
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: sliding friction fixture row
 
 Delivered a bounded Phase 4/6 friction-manifest slice:

@@ -110,6 +110,19 @@ IMPLEMENTED_FRICTION_FIXTURE_ROWS = {
             "corpus rows remain planned until they have matching DART evidence."
         ),
     },
+    "fixtures/3D/friction/spolling-coin.json": {
+        "test": "SpinningCoinIsBrakedByFrictionWithoutPenetration",
+        "expected_invariant": (
+            "DART covers the audited 3D spolling-coin friction row: a spinning "
+            "disk remains intersection-free on a frictional support while "
+            "contact friction dissipates angular velocity."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned Fig. 7 paper experiment coverage for the 3D "
+            "friction fixture mechanism. The paper-figure visual alias remains "
+            "planned until it has matching example and headless visual evidence."
+        ),
+    },
 }
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {

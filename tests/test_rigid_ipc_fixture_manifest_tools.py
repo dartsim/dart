@@ -225,6 +225,24 @@ def test_rigid_ipc_manifest_marks_sliding_friction_row_implemented(tmp_path):
     assert "differential sliding-cube" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_spolling_coin_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = tmp_path / "fixtures" / "3D" / "friction" / "spolling-coin.json"
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"coefficient_friction":0.2}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/friction/spolling-coin.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "SpinningCoinIsBrakedByFrictionWithoutPenetration" in row["dart_artifact"]
+    assert "angular velocity" in row["expected_invariant"]
+    assert "visual alias remains planned" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_below_threshold_paper_alias_implemented(
     tmp_path,
 ):

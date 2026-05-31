@@ -246,6 +246,12 @@
         `fixtures/3D/friction/sliding.json`. The DART paper experiment now
         compares the `mu=0.05` sliding cube against a frictionless run and
         proves observable braking without penetration.
+  - [x] Add exact upstream 3D spolling-coin friction fixture coverage for
+        `fixtures/3D/friction/spolling-coin.json`. The DART paper experiment
+        proves the spinning disk remains intersection-free while contact
+        friction dissipates angular velocity. The Fig. 7 paper visual alias
+        remains planned until it has matching example and headless visual
+        evidence.
   - [ ] Extend friction into broader corpus coverage and production convergence
         criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
@@ -306,6 +312,10 @@
   - [x] Mark the audited 3D sliding friction fixture row
         (`fixtures/3D/friction/sliding.json`) as implemented after exact
         differential sliding-cube coverage landed.
+  - [x] Mark the audited 3D spolling-coin friction fixture row
+        (`fixtures/3D/friction/spolling-coin.json`) as implemented after exact
+        spinning-disk friction coverage landed. The Fig. 7 paper visual alias
+        remains planned.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -396,8 +406,11 @@ DART-owned implementation.
   `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is
   marked implemented through exact stick coverage. The 3D sliding friction row
   is also marked implemented through differential `mu=0.05` sliding-cube
-  coverage. The `mu=0.5` threshold rows remain planned because they still need
-  matching DART stick evidence.
+  coverage. The 3D spolling-coin friction fixture row is marked implemented
+  through Fig. 7 spin-damping and intersection-free coverage, while its
+  paper-figure visual alias remains planned until DART has matching example and
+  headless visual evidence. The `mu=0.5` threshold rows remain planned because
+  they still need matching DART stick evidence.
   The rigid-body hash-grid source row is marked implemented through the
   DART-owned large hash-grid benchmark; the generic hash-grid source row remains
   planned until DART has brute-force-vs-culled broad-phase parity coverage.
