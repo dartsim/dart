@@ -54,7 +54,7 @@ IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS = frozenset(
     f"tests/data/large-rb-hashgrid/large-rb-hashgrid-{index:03d}.json"
     for index in range(2)
 )
-IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS = {
+IMPLEMENTED_FRICTION_FIXTURE_ROWS = {
     "fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json": {
         "test": "FrictionThresholdBelowFixtureRowSlides",
         "expected_invariant": (
@@ -95,6 +95,19 @@ IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS = {
             "3D high-friction fixture row. The at-threshold mu=0.5 row and "
             "broader friction corpus remain planned until they have matching "
             "DART evidence."
+        ),
+    },
+    "fixtures/3D/friction/sliding.json": {
+        "test": "SlidingCubeFixtureRowIsBrakedByFriction",
+        "expected_invariant": (
+            "DART covers the audited 3D sliding friction row: with an initial "
+            "tangential speed and mu=0.05, the cube remains intersection-free "
+            "and is observably braked relative to a frictionless run."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned differential sliding-cube regression for "
+            "the upstream 3D friction fixture mechanism. Broader friction "
+            "corpus rows remain planned until they have matching DART evidence."
         ),
     },
 }
@@ -485,8 +498,8 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
             "has matching broad-phase bounds coverage and benchmark profile "
             "evidence."
         )
-    if source_kind == "fixture" and path in IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS:
-        implemented = IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS[path]
+    if source_kind == "fixture" and path in IMPLEMENTED_FRICTION_FIXTURE_ROWS:
+        implemented = IMPLEMENTED_FRICTION_FIXTURE_ROWS[path]
         status = "implemented"
         test_name = implemented["test"]
         artifact = (

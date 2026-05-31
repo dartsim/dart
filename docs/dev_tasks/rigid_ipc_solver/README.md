@@ -242,6 +242,10 @@
   - [x] Add exact upstream high-friction incline coverage for the 3D friction
         fixture row with `mu=1.0`, preserving intersection-free rest/stick
         behavior while keeping the at-threshold `mu=0.5` row open.
+  - [x] Add exact upstream 3D sliding friction fixture coverage for
+        `fixtures/3D/friction/sliding.json`. The DART paper experiment now
+        compares the `mu=0.05` sliding cube against a frictionless run and
+        proves observable braking without penetration.
   - [ ] Extend friction into broader corpus coverage and production convergence
         criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
@@ -299,6 +303,9 @@
         (`fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=1.json`)
         as implemented after exact `RigidIpcPaperExperiments` stick coverage
         landed.
+  - [x] Mark the audited 3D sliding friction fixture row
+        (`fixtures/3D/friction/sliding.json`) as implemented after exact
+        differential sliding-cube coverage landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -387,8 +394,10 @@ DART-owned implementation.
   The below-threshold Fig. 18 high-school-physics friction fixture row
   (`mu=0.49`) and its paper alias are now marked implemented through exact
   `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is
-  marked implemented through exact stick coverage; the `mu=0.5` threshold rows
-  remain planned because they still need matching DART stick evidence.
+  marked implemented through exact stick coverage. The 3D sliding friction row
+  is also marked implemented through differential `mu=0.05` sliding-cube
+  coverage. The `mu=0.5` threshold rows remain planned because they still need
+  matching DART stick evidence.
   The rigid-body hash-grid source row is marked implemented through the
   DART-owned large hash-grid benchmark; the generic hash-grid source row remains
   planned until DART has brute-force-vs-culled broad-phase parity coverage.

@@ -6003,17 +6003,17 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D sliding friction row: with an initial tangential speed and mu=0.05, the cube remains intersection-free and is observably braked relative to a frictionless run.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::sliding",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction",
       "required_assets_or_importer": [
         "meshes/cube.obj",
         "meshes/plane.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::sliding",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction'",
+      "notes_or_gap": "Covered by DART-owned differential sliding-cube regression for the upstream 3D friction fixture mechanism. Broader friction corpus rows remain planned until they have matching DART evidence."
     },
     {
       "upstream_path": "fixtures/3D/friction/spolling-coin.json",

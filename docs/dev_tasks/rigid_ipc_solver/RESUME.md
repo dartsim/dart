@@ -1,5 +1,28 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: sliding friction fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added exact DART-owned coverage for `fixtures/3D/friction/sliding.json`:
+  a cube with initial tangential velocity and `mu=0.05` remains
+  intersection-free and is observably braked relative to a frictionless run in
+  `RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction`.
+- Marked that upstream 3D friction fixture row implemented in the generated
+  manifest.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: rigid-body hash-grid source row
 
 Delivered a bounded Phase 6 algorithm-source manifest slice:

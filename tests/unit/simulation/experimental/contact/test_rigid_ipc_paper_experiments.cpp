@@ -202,6 +202,60 @@ InclineRun runInclinedFrictionBlock(double inclineRad, double mu, int steps)
   return run;
 }
 
+struct HorizontalSlideRun
+{
+  double displacement = 0.0;
+  double speed = 0.0;
+  double minCenterZ = 0.0;
+  bool everFailed = false;
+};
+
+// Reproduce the 3D friction/sliding fixture mechanism: a cube with a large
+// initial tangential velocity slides over a frictional plane. The fixture uses
+// mu = 0.05, so the expected effect is modest but observable deceleration
+// relative to a frictionless run while the cube remains intersection-free.
+HorizontalSlideRun runHorizontalSlidingCube(double mu, int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("sliding_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({30.0, 5.0, 0.5}));
+  ground.setFriction(mu);
+
+  sx::RigidBodyOptions blockOptions;
+  blockOptions.mass = 1.0;
+  blockOptions.position = Eigen::Vector3d(-3.0, 0.0, 0.5 + 1e-3);
+  blockOptions.linearVelocity = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto block = world.addRigidBody("sliding_block", blockOptions);
+  block.setCollisionShape(sx::CollisionShape::makeBox({0.5, 0.5, 0.5}));
+  block.setFriction(mu);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  HorizontalSlideRun run;
+  run.minCenterZ = block.getTranslation().z();
+  const double startX = block.getTranslation().x();
+  for (int s = 0; s < steps; ++s) {
+    world.step(executor, pipeline);
+    if (ipcStage.getLastStats().failed) {
+      run.everFailed = true;
+    }
+    run.minCenterZ = std::min(run.minCenterZ, block.getTranslation().z());
+  }
+
+  run.displacement = block.getTranslation().x() - startX;
+  run.speed = block.getLinearVelocity().x();
+  return run;
+}
+
 } // namespace
 
 // Fig. 18: with a low coefficient (mu = 0.2 well below tan(theta) = 0.5) the
@@ -292,6 +346,25 @@ TEST(RigidIpcPaperExperiments, FrictionThresholdHighFixtureRowSticks)
   EXPECT_GT(above.minCenterZ, 0.1 - 5e-3);
   EXPECT_LT(std::abs(above.downSlopeDisplacement), 5e-3);
   EXPECT_LT(std::abs(above.downSlopeSpeed), 0.05);
+}
+
+TEST(RigidIpcPaperExperiments, SlidingCubeFixtureRowIsBrakedByFriction)
+{
+  const HorizontalSlideRun frictionless
+      = runHorizontalSlidingCube(/*mu=*/0.0, /*steps=*/100);
+  const HorizontalSlideRun frictional
+      = runHorizontalSlidingCube(/*mu=*/0.05, /*steps=*/100);
+
+  EXPECT_FALSE(frictionless.everFailed);
+  EXPECT_FALSE(frictional.everFailed);
+  EXPECT_GT(frictionless.minCenterZ, 0.5 - 5e-3);
+  EXPECT_GT(frictional.minCenterZ, 0.5 - 5e-3);
+
+  EXPECT_GT(frictionless.displacement, 4.0);
+  EXPECT_GT(frictional.displacement, 1.0);
+  EXPECT_LT(frictional.displacement, frictionless.displacement);
+  EXPECT_LT(frictional.speed, frictionless.speed - 0.05);
+  EXPECT_GT(frictional.speed, 0.0);
 }
 
 // Fig. 7 ("Spolling coin"): a coin spinning on a frictional surface is braked
