@@ -1070,6 +1070,25 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added opt-in **adaptive barrier stiffness** (kappa) to the experimental
+    deformable solver (PLAN-081 M6). When a body sets
+    `DeformableMaterialProperties.useAdaptiveBarrierStiffness` (dartpy
+    `use_adaptive_barrier_stiffness`), its ground and obstacle (sphere/box/capsule)
+    contact barriers scale kappa per step from the mass / time-step force balance
+    `kappa = clamp((maxNodalMass / dt^2) * d_hat^2, 25, 1e6)` instead of the fixed
+    default. The barrier's curvature contribution scales like `kappa / d_hat^2`
+    and a node's inertial stiffness like `mass / dt^2`, so this balance keeps the
+    contact equally well-conditioned across mass/stiffness ratios; for a unit
+    nodal mass at `dt = 1/250`, `d_hat = 2e-2` it evaluates to exactly the
+    historical fixed `kappa = 25`, which the adaptive form generalizes (toward the
+    paper's Fig. 12 large-ratio robustness). It is floored at the fixed default
+    so contact robustness never regresses and capped to keep the Hessian
+    well-conditioned. Off (the default) is byte-identical, so every existing scene
+    is unchanged; the lagged-friction normal-force estimate and the self-contact
+    barrier (which carries its own stiffness) keep the fixed kappa. Adds a
+    regression in which a heavy node settles measurably higher (the stiffer
+    adaptive barrier balances gravity farther from the surface, mass-independently)
+    than with the fixed kappa.
   - Added a capsule (rod/wire) collision shape and a static **capsule obstacle
     barrier** for the experimental deformable solver (PLAN-081 M3 codimensional
     collision objects). `CollisionShape::makeCapsule(radius, halfHeight)` adds a
