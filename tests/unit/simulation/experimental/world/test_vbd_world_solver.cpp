@@ -831,9 +831,13 @@ TEST(VbdWorldSolver, VbdBodyRestsOnBoxObstacle)
     double minimum = 1e9;
     for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
       const Eigen::Vector3d local = body->getPosition(i) - boxCenter;
-      const Eigen::Vector3d clamped
-          = local.cwiseMax(-boxHalf).cwiseMin(boxHalf);
-      minimum = std::min(minimum, (local - clamped).norm());
+      const Eigen::Vector3d signedOffset = local.cwiseAbs() - boxHalf;
+      const Eigen::Vector3d outside
+          = signedOffset.cwiseMax(Eigen::Vector3d::Zero());
+      const double distance = outside.squaredNorm() > 0.0
+                                  ? outside.norm()
+                                  : signedOffset.maxCoeff();
+      minimum = std::min(minimum, distance);
     }
     return minimum;
   };
