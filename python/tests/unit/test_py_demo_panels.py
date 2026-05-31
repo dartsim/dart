@@ -15,11 +15,13 @@ from examples.demos.runner import (
 from examples.demos.scenes import (
     diff_drone_liftoff,
     experimental_rigid_body_gui,
+    ipc_deformable_capsule_rod,
     ipc_deformable_fem_buckle,
     ipc_deformable_fem_sphere,
     ipc_deformable_friction_slide,
     ipc_deformable_plate_friction,
     ipc_deformable_rod_friction,
+    ipc_deformable_trampoline,
     sx_articulated,
     sx_contact,
     sx_floating_base,
@@ -234,6 +236,25 @@ def test_ipc_friction_obstacle_scenes_expose_speed_panels() -> None:
         assert any(
             event.startswith("text:friction coefficient:") for event in builder.events
         )
+        assert any(
+            event.startswith("text:solver: deformable IPC")
+            for event in builder.events
+        )
+
+
+def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (ipc_deformable_capsule_rod, "IPC Capsule Rod", "plot:Rod clearance:"),
+        (ipc_deformable_trampoline, "IPC Trampoline", "plot:Center height:"),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert any(event.startswith(expected_plot) for event in builder.events)
         assert any(
             event.startswith("text:solver: deformable IPC")
             for event in builder.events
