@@ -59,17 +59,23 @@ Paper audit:
     stiffness rows in supported serial, contact-free, frictionless mass-spring
     scenes, with row-counter and behavior coverage in
     `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain`.
+  - The same internal finite-stiffness flag now also wires progressive
+    tetrahedral material rows for supported serial, frictionless pure-tet
+    scenes, with a dimensionless Lamé multiplier, a separate
+    `vbdAvbdFiniteStiffnessTetRows` diagnostic counter, coexistence with the
+    existing lagged VBD self-contact penalty, and regression coverage in
+    `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial`.
   - The supported World mass-spring envelope now routes contact-normal,
     attachment, and finite-stiffness spring rows through one combined serial
     AVBD row solve, with regression coverage in
     `VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness`.
-  - Fallback coverage now guards the unsupported World envelopes: tetrahedral
-    bodies, friction, self-contact, Chebyshev, Rayleigh damping, parallel
-    settings, and unsupported requested row families all keep using the
-    existing VBD path without reporting partial AVBD row counters.
-  - Still missing World wiring for finite-stiffness tetrahedral rows,
-    self-contact, friction, full row-family generation, parallel
-    dual/stiffness updates, and GPU parity.
+  - Fallback coverage now guards the unsupported World envelopes:
+    mixed spring-plus-tet topology, mass-spring self-contact, friction,
+    Chebyshev, Rayleigh damping, parallel settings, and unsupported requested
+    row families all keep using the existing VBD path without reporting partial
+    AVBD row counters.
+  - Still missing AVBD self-contact rows, friction, full row-family generation,
+    parallel dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
@@ -109,7 +115,7 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Wire finite-stiffness tetrahedral material rows into the supported World VBD
-   envelope, then broaden diagnostics for tet-row counters and fallback cases.
-2. Add the next bounded AVBD row family, starting with contact/friction bounds
+1. Add the next bounded AVBD row family, starting with contact/friction bounds
    or self-contact rows in the same combined-row solve.
+2. Broaden the supported World envelopes toward mixed spring/tet bodies and
+   parallel dual/stiffness updates once the next row-family tests exist.

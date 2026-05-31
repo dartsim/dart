@@ -4311,6 +4311,9 @@ struct DeformableVbdScratch
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdSpringDescriptors;
   dvbd::AvbdScalarRowInventory avbdSpringInventory;
   std::vector<dvbd::AvbdSpringFiniteStiffnessRow> avbdSpringRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdTetDescriptors;
+  dvbd::AvbdScalarRowInventory avbdTetInventory;
+  std::vector<dvbd::AvbdTetMaterialFiniteStiffnessRow> avbdTetRows;
   std::vector<std::uint8_t> avbdSolveFixed;
   // Self-contact candidate set + per-vertex incident lists, rebuilt each step
   // (lagged) from the body's swept start-to-warm-start surface motion.
@@ -4585,7 +4588,7 @@ void runVbdDeformableSolve(
   const bool wantsAvbdRows = config.useAvbdContactNormalRows
                              || config.useAvbdAttachmentRows
                              || config.useAvbdFiniteStiffnessRows;
-  const bool canUseAvbdRows
+  const bool canUseAvbdMassSpringRows
       = wantsAvbdRows
         && (!config.useAvbdContactNormalRows || contactPlanes != nullptr)
         && (!config.useAvbdAttachmentRows || hasFixedNodes)
@@ -4593,10 +4596,19 @@ void runVbdDeformableSolve(
         && vbdScratch.tets.empty() && frictionCoeff <= 0.0
         && selfContact == nullptr && config.workerThreads <= 1
         && !options.useChebyshev && options.rayleighDamping <= 0.0;
+  const bool canUseAvbdTetMaterialRows
+      = config.useAvbdFiniteStiffnessRows && !config.useAvbdContactNormalRows
+        && !config.useAvbdAttachmentRows && contactPlanes == nullptr
+        && vbdScratch.springs.empty() && !vbdScratch.tets.empty()
+        && frictionCoeff <= 0.0 && config.workerThreads <= 1
+        && !options.useChebyshev && options.rayleighDamping <= 0.0;
 
   dvbd::BlockDescentStats result;
-  if (canUseAvbdRows) {
+  if (canUseAvbdMassSpringRows) {
     const auto bodyId = static_cast<std::uint64_t>(entt::to_integral(entity));
+    vbdScratch.avbdTetDescriptors.clear();
+    vbdScratch.avbdTetRows.clear();
+    vbdScratch.avbdTetInventory.records().clear();
 
     vbdScratch.avbdContactDescriptors.clear();
     if (config.useAvbdContactNormalRows && contactPlanes != nullptr) {
@@ -4775,6 +4787,77 @@ void runVbdDeformableSolve(
     stats.vbdAvbdContactNormalRows += vbdScratch.avbdContactRows.size();
     stats.vbdAvbdAttachmentRows += vbdScratch.avbdAttachmentRows.size();
     stats.vbdAvbdFiniteStiffnessRows += vbdScratch.avbdSpringRows.size();
+  } else if (canUseAvbdTetMaterialRows) {
+    const auto bodyId = static_cast<std::uint64_t>(entt::to_integral(entity));
+
+    vbdScratch.avbdContactDescriptors.clear();
+    vbdScratch.avbdContactRows.clear();
+    vbdScratch.avbdContactInventory.records().clear();
+    vbdScratch.avbdAttachmentDescriptors.clear();
+    vbdScratch.avbdAttachmentRows.clear();
+    vbdScratch.avbdAttachmentInventory.records().clear();
+    vbdScratch.avbdSpringDescriptors.clear();
+    vbdScratch.avbdSpringRows.clear();
+    vbdScratch.avbdSpringInventory.records().clear();
+    vbdScratch.avbdSolveFixed.clear();
+
+    dvbd::AvbdRowWarmStartOptions warmStartOptions;
+    warmStartOptions.alpha = config.avbdAlpha;
+    warmStartOptions.gamma = config.avbdGamma;
+    warmStartOptions.maxStiffness = std::min(1.0, config.avbdMaxStiffness);
+
+    vbdScratch.avbdTetDescriptors.clear();
+    vbdScratch.avbdTetDescriptors.reserve(vbdScratch.tets.size());
+    for (std::size_t i = 0; i < vbdScratch.tets.size(); ++i) {
+      dvbd::AvbdScalarRowDescriptor descriptor;
+      descriptor.key.role = dvbd::AvbdScalarRowRole::DeformableTet;
+      descriptor.key.objectA = bodyId;
+      descriptor.key.featureA = static_cast<std::uint64_t>(i);
+      descriptor.kind = dvbd::AvbdScalarRowKind::FiniteStiffness;
+      descriptor.startStiffness = config.avbdFiniteStiffnessStart;
+      descriptor.materialStiffness = 1.0;
+      descriptor.maxStiffness = 1.0;
+      vbdScratch.avbdTetDescriptors.push_back(descriptor);
+    }
+    vbdScratch.avbdTetInventory.syncActiveRows(
+        vbdScratch.avbdTetDescriptors, warmStartOptions);
+
+    vbdScratch.avbdTetRows.clear();
+    vbdScratch.avbdTetRows.reserve(vbdScratch.avbdTetInventory.size());
+    for (const dvbd::AvbdScalarRowRecord& record :
+         vbdScratch.avbdTetInventory.records()) {
+      vbdScratch.avbdTetRows.push_back(
+          dvbd::AvbdTetMaterialFiniteStiffnessRow{
+              static_cast<std::uint32_t>(record.descriptor.key.featureA),
+              record.state,
+              dvbd::maxAvbdDescriptorStiffness(
+                  record.descriptor, warmStartOptions)});
+    }
+
+    dvbd::AvbdTetMaterialFiniteStiffnessOptions tetOptions;
+    tetOptions.beta = config.avbdBeta;
+    tetOptions.maxStiffness = std::min(1.0, config.avbdMaxStiffness);
+    result = dvbd::blockDescentTetMeshAvbdFiniteStiffness(
+        scratch.next,
+        state.masses,
+        scratch.activeFixed,
+        scratch.inertialTargets,
+        vbdScratch.tets,
+        lame.mu,
+        lame.lambda,
+        timeStep,
+        vbdScratch.avbdTetRows,
+        vbdScratch.coloring,
+        vbdScratch.tetAdjacency,
+        options,
+        tetOptions,
+        selfContact);
+
+    for (std::size_t i = 0; i < vbdScratch.avbdTetRows.size(); ++i) {
+      vbdScratch.avbdTetInventory[i].state = vbdScratch.avbdTetRows[i].state;
+    }
+    stats.vbdAvbdFiniteStiffnessRows += vbdScratch.avbdTetRows.size();
+    stats.vbdAvbdFiniteStiffnessTetRows += vbdScratch.avbdTetRows.size();
   } else {
     vbdScratch.avbdContactDescriptors.clear();
     vbdScratch.avbdContactRows.clear();
@@ -4785,6 +4868,9 @@ void runVbdDeformableSolve(
     vbdScratch.avbdSpringDescriptors.clear();
     vbdScratch.avbdSpringRows.clear();
     vbdScratch.avbdSpringInventory.records().clear();
+    vbdScratch.avbdTetDescriptors.clear();
+    vbdScratch.avbdTetRows.clear();
+    vbdScratch.avbdTetInventory.records().clear();
     vbdScratch.avbdSolveFixed.clear();
 
     // state.positions holds x^t for this step (the write-back to the live state

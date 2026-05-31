@@ -78,12 +78,16 @@ half-space contact-normal, hard point-attachment, and finite-stiffness spring
 row drivers, plus a standalone finite-stiffness tetrahedral material row
 driver. The supported frictionless mass-spring World envelope carries the
 contact-normal, attachment, and spring finite-stiffness families in one serial
-AVBD row solve. Explicit fallback coverage keeps unsupported tetrahedral,
-frictional, self-contact, Chebyshev, Rayleigh-damped, parallel, and
-unsupported-row requests on the existing VBD path without partial AVBD row
-counters. Those slices are still foundation work; hard-contact/friction
-completeness, World-wired tetrahedral rows, self-contact, rigid/soft coupling,
-GPU parity, demos, and benchmark packets remain open.
+AVBD row solve. The supported frictionless pure-tetrahedral World envelope now
+carries finite-stiffness material rows with a dimensionless Lamé multiplier and
+separate tet-row diagnostics, while still using the existing lagged VBD
+self-contact penalty rather than AVBD self-contact rows. Explicit fallback
+coverage keeps unsupported mixed spring-plus-tet, mass-spring self-contact,
+frictional, Chebyshev, Rayleigh-damped, parallel, and unsupported-row requests
+on the existing VBD path without partial AVBD row counters. Those slices are
+still foundation work; hard-contact/friction completeness, AVBD self-contact
+rows, rigid/soft coupling, GPU parity, demos, and benchmark packets remain
+open.
 
 ## Relationship To PLAN-081
 

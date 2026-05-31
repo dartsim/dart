@@ -115,39 +115,43 @@ The first AVBD implementation slices add:
   scenes, keyed by body/entity and spring index, with focused
   `VbdFiniteStiffness.*` tests and
   `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain` coverage; and
-- a standalone finite-stiffness tetrahedral material row slice:
+- a finite-stiffness tetrahedral material row slice:
   `AvbdTetMaterialFiniteStiffnessRow`, strain-norm row error, scaled Lamé
   material stamping, and `blockDescentTetMeshAvbdFiniteStiffness`, with focused
-  `VbdFiniteStiffness.*` tests, but not yet World-wired; and
+  `VbdFiniteStiffness.*` tests plus a narrow internal World VBD integration
+  path for supported serial, frictionless pure-tet scenes, separate tet-row
+  diagnostics, coexistence with the existing lagged VBD self-contact penalty,
+  and `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial`
+  coverage; and
 - a combined serial mass-spring AVBD row solve for those contact-normal,
   attachment, and finite-stiffness spring rows, with
   `VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness`
   coverage; and
-- explicit World fallback coverage so unsupported tetrahedral, frictional,
-  self-contact, Chebyshev, Rayleigh-damped, parallel, and unsupported-row
-  requests keep using the existing VBD path without reporting partial AVBD row
-  counters.
+- explicit World fallback coverage so unsupported mixed spring-plus-tet,
+  mass-spring self-contact, frictional, Chebyshev, Rayleigh-damped, parallel,
+  and unsupported-row requests keep using the existing VBD path without
+  reporting partial AVBD row counters.
 
 Those are foundation pieces only. They are not a full World AVBD solver, not a
 full hard-contact/friction solver, and not CPU/GPU parity.
 
 ## Component Gap Matrix
 
-| AVBD component                                                                                     | DART status                                                                                                                                                   | Closing phase |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| Scalar hard-row dual state, clamping, warm start, alpha regularization, finite-stiffness ramp      | First internal utility and unit tests started                                                                                                                 | A0            |
-| Constraint row inventory and storage for contacts, joints, attachments, friction, motors, fracture | Deterministic scalar row inventory started; active static contact-normal, hard-attachment, and finite-spring World rows wired only                            | A1            |
-| CPU AVBD primal/dual loop over DART VBD vertices and rigid bodies                                  | Narrow serial mass-spring contact-normal, hard-attachment, and finite-spring World rows now combine; unsupported envelopes fall back; rigid/full rows missing | A2-A4         |
-| 6-DOF rigid block assembly with quaternion/tangent angular updates                                 | Missing in VBD path; DART has separate multibody foundations                                                                                                  | A3            |
-| Inequality/contact/friction row bounds with static/dynamic friction switching                      | Contact-normal lower-bound slice started; no AVBD friction dual cone                                                                                          | A4            |
-| Joint, attachment, motor, fracture, and breakable hard constraints                                 | Scalar hard point-attachment kernel and narrow World attachment wiring started; joints, motors, and fracture missing                                          | A5            |
-| Unified rigid/soft interactions and cloth/articulated-body coupling                                | Missing                                                                                                                                                       | A6            |
-| Collision candidate generation, contact persistence, and row warm-start mapping                    | Static half-space row keys started; manifolds, dynamic contacts, and broad row generation missing                                                             | A7            |
-| Hessian approximation for hard constraints and stiffness-rescaling friction                        | Finite-stiffness spring and standalone tet-material ramps started; hard-constraint quasi-Newton Hessian and friction stiffness rescaling missing              | A8            |
-| CPU parallel color sweeps plus deterministic dual update pass                                      | Serial contact-normal dual pass started; parallel dual/update scheduling missing                                                                              | A9            |
-| CUDA/GPU AVBD backend for all row families and scene corpus                                        | VBD CUDA mass-spring/tet rollout only                                                                                                                         | G1-G5         |
-| DART-owned reproductions of 2D/3D demos and paper/video scenes                                     | Missing beyond existing VBD demos                                                                                                                             | D1-D6         |
-| Benchmark packets beating reference demos and paper numbers on CPU/GPU                             | Missing                                                                                                                                                       | P1-P4         |
+| AVBD component                                                                                     | DART status                                                                                                                                                                                        | Closing phase |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| Scalar hard-row dual state, clamping, warm start, alpha regularization, finite-stiffness ramp      | First internal utility and unit tests started                                                                                                                                                      | A0            |
+| Constraint row inventory and storage for contacts, joints, attachments, friction, motors, fracture | Deterministic scalar row inventory started; active static contact-normal, hard-attachment, and finite-spring World rows wired only                                                                 | A1            |
+| CPU AVBD primal/dual loop over DART VBD vertices and rigid bodies                                  | Narrow serial mass-spring contact-normal, hard-attachment, and finite-spring World rows now combine; pure-tet finite-material rows wired; unsupported envelopes fall back; rigid/full rows missing | A2-A4         |
+| 6-DOF rigid block assembly with quaternion/tangent angular updates                                 | Missing in VBD path; DART has separate multibody foundations                                                                                                                                       | A3            |
+| Inequality/contact/friction row bounds with static/dynamic friction switching                      | Contact-normal lower-bound slice started; no AVBD friction dual cone                                                                                                                               | A4            |
+| Joint, attachment, motor, fracture, and breakable hard constraints                                 | Scalar hard point-attachment kernel and narrow World attachment wiring started; joints, motors, and fracture missing                                                                               | A5            |
+| Unified rigid/soft interactions and cloth/articulated-body coupling                                | Missing                                                                                                                                                                                            | A6            |
+| Collision candidate generation, contact persistence, and row warm-start mapping                    | Static half-space row keys started; manifolds, dynamic contacts, and broad row generation missing                                                                                                  | A7            |
+| Hessian approximation for hard constraints and stiffness-rescaling friction                        | Finite-stiffness spring and pure-tet material ramps started; hard-constraint quasi-Newton Hessian and friction stiffness rescaling missing                                                         | A8            |
+| CPU parallel color sweeps plus deterministic dual update pass                                      | Serial contact-normal dual pass started; parallel dual/update scheduling missing                                                                                                                   | A9            |
+| CUDA/GPU AVBD backend for all row families and scene corpus                                        | VBD CUDA mass-spring/tet rollout only                                                                                                                                                              | G1-G5         |
+| DART-owned reproductions of 2D/3D demos and paper/video scenes                                     | Missing beyond existing VBD demos                                                                                                                                                                  | D1-D6         |
+| Benchmark packets beating reference demos and paper numbers on CPU/GPU                             | Missing                                                                                                                                                                                            | P1-P4         |
 
 ## Implementation Workstreams
 
