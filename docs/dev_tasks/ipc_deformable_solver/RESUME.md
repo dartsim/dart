@@ -261,8 +261,13 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-matrix-free-cg` - local stacked continuation on top of
-`feature/ipc-deformable-cg-iteration-diagnostics` after
+`feature/ipc-deformable-matrix-free-cg` - published as PR #2821 against `main`,
+with one local unpushed review-fix commit (`abc7b05f92e`, "Preserve legacy
+deformable material serialization"). Before pushing that follow-up, fetch and
+merge the latest `origin/main` into the PR branch, rerun the focused validation
+if the merge touches code, and get explicit approval for the push, thread
+resolution, and any Codex review re-trigger. The branch is a continuation on top
+of `feature/ipc-deformable-cg-iteration-diagnostics` after
 #2810/#2811/#2812/#2813 were all squash-merged. The four older
 `feature/ipc-deformable-*` branch commits are patch-equivalent to current `main`
 (`git cherry -v main <branch>` reports `-` for each), but their local and remote
@@ -291,7 +296,10 @@ The current matrix-free slice adds explicit
 covered on static-ground contact by a C++ FEM cube regression that matches
 direct sparse, sparse IC-CG, and matrix-free CG equilibria while proving the
 matrix-free path keeps zero sparse-Hessian footprint, plus a dartpy single-node
-ground-contact regression that matches the direct solve.
+ground-contact regression that matches the direct solve. The local review-fix
+commit bumps the simulation-experimental binary format to v9 and gates material
+deserialization so v8 files default `useMatrixFreeLinearSolver` to false instead
+of consuming the next byte.
 
 Prior branch `feature/ipc-gpu-psd-perf-gate` - stacked on
 `feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
