@@ -2883,6 +2883,92 @@ TEST(VariationalGroundContact, AugmentedLagrangianDualStateRoundTrips)
   EXPECT_EQ(loadedFinal, referenceFinal);
 }
 
+// PLAN-082 Phase C: the C2 default ground-contact hook (dualUpdateCadence == 0)
+// applies Kelvin-Voigt normal damping, not just the penalty --
+// setGroundContact's dampingCoefficient takes effect on the auto World::step()
+// path, not only the AL solver. A slider dropped onto a damped plane absorbs
+// the impact and barely rebounds, while the undamped penalty contact bounces
+// back up. Without the damping term the two runs would be byte-identical.
+TEST(VariationalGroundContact, DampingSettlesContactOnDefaultPath)
+{
+  const double mass = 1.0;
+  const double g = 9.81;
+  const double dt = 1.0e-3;
+  // Soft enough that the undamped bounce is not numerically dissipated away.
+  const double k = 1.0e2 * mass * g;
+  const int steps = 1500;
+
+  // Highest point the slider reaches after first crossing into the half-space.
+  const auto reboundHeight = [&](double damping) {
+    sx::World world;
+    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    auto carriage = addVerticalSlider(world, mass);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    carriage.getParentJoint().setPosition(
+        Eigen::VectorXd::Constant(1, 0.05)); // start above the plane.
+    world.updateKinematics();
+    world.getMultibody("slider")->setGroundContact(
+        Eigen::Vector3d::UnitZ(),
+        Eigen::Vector3d::Zero(),
+        k,
+        /*frictionCoefficient=*/0.0,
+        /*frictionRegularization=*/1.0e-4,
+        damping,
+        /*dualUpdateCadence=*/0);
+    world.getMultibody("slider")->addGroundContactPoint(
+        carriage, Eigen::Vector3d::Zero());
+    bool contacted = false;
+    double maxRebound = -std::numeric_limits<double>::infinity();
+    for (int step = 0; step < steps; ++step) {
+      world.step();
+      const double z = carriage.getParentJoint().getPosition()[0];
+      if (z < 0.0) {
+        contacted = true;
+      }
+      if (contacted && z > maxRebound) {
+        maxRebound = z;
+      }
+    }
+    return maxRebound;
+  };
+
+  const double undampedRebound = reboundHeight(0.0);
+  const double dampedRebound
+      = reboundHeight(200.0); // > critical (2*sqrt(k*m)).
+  // The undamped penalty contact rebounds back up substantially.
+  EXPECT_GT(undampedRebound, 5.0e-3);
+  // Damping (now applied on the cadence-0 path) absorbs the impact, so the
+  // slider barely rebounds. (Without the damping term `dampedRebound` would
+  // equal `undampedRebound`.)
+  EXPECT_LT(dampedRebound, 0.25 * undampedRebound);
+}
+
+// PLAN-082 Phase C: addGroundContactPoint rejects a Link from a different
+// World. Separate registries can reuse raw entity ids, so without the
+// getWorld() guard a foreign link could alias a numerically-equal link and
+// register contact on the wrong body.
+TEST(VariationalGroundContact, RejectsContactPointFromForeignWorld)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  robot.setGroundContact(
+      Eigen::Vector3d::UnitZ(), Eigen::Vector3d::Zero(), 1.0e3);
+
+  // A link that belongs to a different World.
+  sx::World other;
+  auto otherRobot = other.addMultibody("other");
+  auto foreignLink = otherRobot.addLink("foreign");
+
+  EXPECT_THROW(
+      robot.addGroundContactPoint(foreignLink, Eigen::Vector3d::Zero()),
+      sx::InvalidArgumentException);
+  // A link from this World still registers fine.
+  EXPECT_NO_THROW(robot.addGroundContactPoint(base, Eigen::Vector3d::Zero()));
+}
+
 // PLAN-082 Phase C link-vs-link contact (first slice): sphere-sphere
 // self-contact. A link sliding toward a fixed sphere on the base is stopped by
 // compliant sphere-sphere contact -- the moving sphere does not pass through

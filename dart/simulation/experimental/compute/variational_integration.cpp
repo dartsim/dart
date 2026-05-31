@@ -923,15 +923,42 @@ VariationalContactHook makeVariationalGroundContactHook(
       const double signedDistance
           = contact.planeNormal.dot(worldPoint - contact.planePoint);
       if (signedDistance < 0.0) {
-        const double normalMagnitude = contact.stiffness * (-signedDistance);
-        // C2 compliant normal force k(-d) n.
+        // Lagged (q^k) contact-point world velocity J_world(p) v = R (J_lin -
+        // [p] J_ang) v, shared by the Kelvin-Voigt normal damping and the C1
+        // friction below. Both are taken from q^k, so the per-point force stays
+        // constant across the step's RIQN iterates -- smooth for the root-find.
+        Eigen::Vector3d pointVelocity = Eigen::Vector3d::Zero();
+        const bool useVelocity = (contact.dampingCoefficient > 0.0
+                                  || contact.frictionCoefficient > 0.0)
+                                 && context.timeStep > 0.0;
+        if (useVelocity) {
+          const Eigen::Matrix3d previousRotation
+              = context.previousLinkWorldTransforms[point.linkIndex].linear();
+          const Eigen::MatrixXd& previousJacobian
+              = context.previousLinkBodyJacobians[point.linkIndex];
+          pointVelocity = previousRotation
+                          * (previousJacobian.bottomRows<3>()
+                             - detail::skew(point.localPoint)
+                                   * previousJacobian.topRows<3>())
+                          * context.previousVelocity;
+        }
+        // C2 compliant normal force with Kelvin-Voigt damping:
+        // max(0, k(-d) - c (v . n)) n. The max(0, .) keeps the contact
+        // non-adhesive when the point separates faster than the penalty pushes.
+        const double normalMagnitude = std::max(
+            0.0,
+            contact.stiffness * (-signedDistance)
+                - contact.dampingCoefficient
+                      * pointVelocity.dot(contact.planeNormal));
+        if (normalMagnitude <= 0.0) {
+          continue;
+        }
         Eigen::Vector3d contactForce = normalMagnitude * contact.planeNormal;
         // C1 lagged friction: a regularized Coulomb force opposing the contact
-        // point's *lagged* (q^k) sliding velocity, bounded by mu times the
-        // lagged normal magnitude. Everything is taken from q^k, so the
-        // friction force is constant across the step's RIQN iterates -- smooth
-        // for the root-find (the roadmap's "lagged friction"), converging like
-        // the frictionless case while still saturating at mu*|Fn|.
+        // point's lagged (q^k) sliding velocity, bounded by mu times the
+        // *lagged* normal magnitude k(-d^k) (not the trial normal), so the
+        // friction force is constant across the step's RIQN iterates --
+        // converging like the frictionless case while saturating at mu*|Fn|.
         if (contact.frictionCoefficient > 0.0 && context.timeStep > 0.0) {
           const Eigen::Vector3d previousPoint
               = context.previousLinkWorldTransforms[point.linkIndex]
@@ -940,18 +967,6 @@ VariationalContactHook makeVariationalGroundContactHook(
               = contact.planeNormal.dot(previousPoint - contact.planePoint);
           if (previousDistance < 0.0) {
             const double laggedNormal = contact.stiffness * (-previousDistance);
-            // Lagged contact-point world velocity J_world(p) v = R (J_lin - [p]
-            // J_ang) v, evaluated at q^k.
-            const Eigen::Matrix3d previousRotation
-                = context.previousLinkWorldTransforms[point.linkIndex].linear();
-            const Eigen::MatrixXd& previousJacobian
-                = context.previousLinkBodyJacobians[point.linkIndex];
-            const Eigen::Vector3d pointVelocity
-                = previousRotation
-                  * (previousJacobian.bottomRows<3>()
-                     - detail::skew(point.localPoint)
-                           * previousJacobian.topRows<3>())
-                  * context.previousVelocity;
             const Eigen::Vector3d tangentVelocity
                 = pointVelocity
                   - contact.planeNormal.dot(pointVelocity)

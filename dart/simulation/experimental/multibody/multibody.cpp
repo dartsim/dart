@@ -684,6 +684,14 @@ void Multibody::setGroundContact(
 void Multibody::addGroundContactPoint(
     const Link& link, const Eigen::Vector3d& localPoint)
 {
+  // Reject links from a different World up front: separate registries can reuse
+  // the same raw entity id, so a foreign link could otherwise alias a
+  // numerically-equal link here and register contact on the wrong body (mirrors
+  // the getWorldJacobian guard).
+  DART_EXPERIMENTAL_THROW_T_IF(
+      link.getWorld() != m_world,
+      InvalidArgumentException,
+      "addGroundContactPoint: link belongs to a different world");
   auto& registry = m_world->getRegistry();
   auto* contact = registry.try_get<comps::VariationalContact>(m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
