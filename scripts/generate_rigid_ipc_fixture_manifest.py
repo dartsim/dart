@@ -44,6 +44,9 @@ COMPARISON_ROOTS = ["comparisons"]
 IMPLEMENTED_ROOT_CCD_DATA_ROWS = frozenset(
     f"tests/data/ccd-test-{index:03d}.json" for index in range(4)
 )
+IMPLEMENTED_KINEMATIC_CCD_DATA_ROWS = frozenset(
+    f"tests/data/kinematic/ccd-test-{index:03d}.json" for index in range(3)
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -358,6 +361,28 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
             "Covered by hermetic DART load and evaluator regressions for the "
             "first audited root direct-CCD rows; corpus-scale interval-root "
             "parity remains tracked by Phase 2c."
+        )
+    elif source_kind == "test-data" and path in IMPLEMENTED_KINEMATIC_CCD_DATA_ROWS:
+        status = "implemented"
+        artifact = (
+            "test_rigid_ipc_fixture::"
+            "RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits"
+        )
+        command = (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_fixture --gtest_color=no "
+            "--gtest_filter="
+            "RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'"
+        )
+        expected_invariant = (
+            "DART loads the audited kinematic direct-CCD row and preserves the "
+            "upstream guard against zero-time hits when the row starts "
+            "separated."
+        )
+        notes_or_gap = (
+            "Covered by hermetic DART load and evaluator regressions for the "
+            "first audited kinematic direct-CCD rows; remaining kinematic rows "
+            "and corpus-scale interval-root parity remain tracked by Phase 2c."
         )
 
     return {

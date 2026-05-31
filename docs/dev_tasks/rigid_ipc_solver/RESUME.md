@@ -1,5 +1,28 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: implemented manifest status for first kinematic CCD rows
+
+Delivered a bounded Phase 6 manifest slice:
+
+- Updated the rigid IPC fixture manifest generator so
+  `tests/data/kinematic/ccd-test-000..002.json` are emitted as `implemented`
+  rows with the owning zero-time-hit DART regression and command recorded in the
+  row metadata.
+- Added generator unit coverage that proves the first audited kinematic rows are
+  promoted while the next uncovered kinematic row remains planned.
+- Kept Phase 6 open: the rest of the kinematic corpus and broader CCD data rows
+  still need matching DART evidence before row retirement.
+
+Validation in this slice:
+
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: kinematic CCD rows avoid zero-time hits
 
 Delivered a bounded Phase 2c CCD parity slice:
