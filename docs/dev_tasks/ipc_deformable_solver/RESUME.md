@@ -24,7 +24,7 @@ AI attribution). Net status by milestone:
 - **M4 GMSH importer — COMPLETE** (`.msh` 2.x + 4.x).
 - **M6 adaptive barrier stiffness — COMPLETE.** Opt-in
   `useAdaptiveBarrierStiffness`: per-step `κ = clamp((maxNodalMass/dt²)·d_hat², 25,
-  1e6)`; recovers the historical fixed κ=25 at unit mass, off is byte-identical.
+1e6)`; recovers the historical fixed κ=25 at unit mass, off is byte-identical.
 - **M5 obstacle friction — capsule LANDED, sphere/box BLOCKED.** Capsule friction
   works (barrier-only → free tangential slide). Sphere/box friction is masked by
   the surface-CCD limiter scaling the whole step vector; needs the CCD to limit
@@ -46,10 +46,10 @@ IPC Deformable (sx) py-demos category now has ~15 scenes.
 1. **Finish M5 (sphere/box obstacle friction).** The blocker is in the surface
    CCD limiter (`detail/deformable_contact/continuous_collision_step` + the
    `staticRigidSurfaceCcd*` path in `compute/world_step_stage.cpp`): it scales the
-   *whole* candidate step by the time-of-impact to stop gravity-driven
+   _whole_ candidate step by the time-of-impact to stop gravity-driven
    penetration, which also kills tangential sliding (a frictionless node on a box
    obstacle slides only ~0.05 vs free). The barrier force already prevents
-   penetration, so the CCD should only bound the *normal-approach* component, not
+   penetration, so the CCD should only bound the _normal-approach_ component, not
    the full step. Then feed sphere/box obstacle normal forces into the friction
    term exactly like `addCapsuleObstacleNormalForces` does for the capsule.
 2. **M7 (GPU/scale).** Extend the existing CUDA PSD-projection backend to the full
