@@ -683,6 +683,65 @@ TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
   EXPECT_GT((cube.getRotation() - startRotation).norm(), 1e-3);
 }
 
+TEST(RigidIpcPaperExperiments, SpinningCubeOverPlaneFixtureRowAdvancesSafely)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  constexpr double planeTopZ = -0.5001;
+  constexpr double planeHalfThickness = 0.05;
+  sx::RigidBodyOptions planeOptions;
+  planeOptions.isStatic = true;
+  planeOptions.position
+      = Eigen::Vector3d(2.0, -2.0, planeTopZ - planeHalfThickness);
+  auto plane = world.addRigidBody("spinning_cube_plane", planeOptions);
+  plane.setCollisionShape(
+      sx::CollisionShape::makeBox({5.0, 5.0, planeHalfThickness}));
+
+  constexpr double cubeHalfExtent = 0.5;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d::Zero();
+  cubeOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 180.0);
+  auto cube = world.addRigidBody("spinning_cube_over_plane", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const Eigen::Matrix3d startRotation = cube.getRotation();
+  double minClearance = std::numeric_limits<double>::infinity();
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    EXPECT_FALSE(ipcStage.getLastStats().failed) << "step " << s;
+
+    const Eigen::Matrix3d R = cube.getRotation();
+    double lowest = std::numeric_limits<double>::infinity();
+    for (double dx : {-cubeHalfExtent, cubeHalfExtent}) {
+      for (double dy : {-cubeHalfExtent, cubeHalfExtent}) {
+        for (double dz : {-cubeHalfExtent, cubeHalfExtent}) {
+          const Eigen::Vector3d v
+              = cube.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+          lowest = std::min(lowest, v.z());
+        }
+      }
+    }
+    minClearance = std::min(minClearance, lowest - planeTopZ);
+  }
+
+  EXPECT_GT(minClearance, -5e-4);
+  EXPECT_LT(cube.getTranslation().head<2>().norm(), 1e-2);
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_TRUE(cube.getRotation().allFinite());
+  EXPECT_TRUE(cube.getAngularVelocity().allFinite());
+  EXPECT_GT((cube.getRotation() - startRotation).norm(), 1e-3);
+}
+
 TEST(
     RigidIpcPaperExperiments,
     RotatingScaledSphereFixtureRowAdvancesWithoutContact)

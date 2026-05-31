@@ -193,6 +193,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "evidence."
         ),
     },
+    "fixtures/3D/unit-tests/spinning-cube-over-plane.json": {
+        "test": "SpinningCubeOverPlaneFixtureRowAdvancesSafely",
+        "expected_invariant": (
+            "DART covers the audited 3D spinning-cube-over-plane row: a cube "
+            "with zero gravity and high angular velocity spins above a fixed "
+            "plane, stays finite, and preserves nonnegative clearance."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact spinning-cube runtime coverage "
+            "for the 3D unit-test fixture mechanism. Contacting 3D unit-test "
+            "fixture rows remain planned until they have matching DART "
+            "runtime evidence."
+        ),
+    },
     "fixtures/3D/unit-tests/rotation/rotating-sphere.json": {
         "test": "RotatingScaledSphereFixtureRowAdvancesWithoutContact",
         "expected_invariant": (

@@ -1,5 +1,31 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: spinning-cube-over-plane fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned no-contact runtime coverage for
+  `fixtures/3D/unit-tests/spinning-cube-over-plane.json`: a cube with zero
+  gravity and high angular velocity spins above a fixed near plane, remains
+  finite, and preserves nonnegative clearance in
+  `RigidIpcPaperExperiments.SpinningCubeOverPlaneFixtureRowAdvancesSafely`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. Contacting edge/vertex unit-test rows remain planned until they
+  have matching DART runtime evidence; an exploratory edge-edge runtime probe
+  failed locally and was not retired.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SpinningCubeOverPlaneFixtureRowAdvancesSafely`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: torque rotation fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

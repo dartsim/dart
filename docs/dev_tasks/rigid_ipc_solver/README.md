@@ -199,8 +199,9 @@
   - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
         through the opt-in runtime stage. Free rotating cube and scaled-sphere /
         ellipsoid rows advance orientation under zero gravity, stay finite, and
-        do not translate. A no-contact torque row gains angular velocity about
-        the applied torque axis without translating.
+        do not translate. A no-contact spinning cube over a near plane preserves
+        clearance while rotating. A no-contact torque row gains angular velocity
+        about the applied torque axis without translating.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.
@@ -345,6 +346,9 @@
   - [x] Mark the audited 3D rotating-cube unit-test fixture row
         (`fixtures/3D/unit-tests/rotation/rotating-cube.json`) as implemented
         after no-contact rotating-cube runtime coverage landed.
+  - [x] Mark the audited 3D spinning-cube-over-plane unit-test fixture row
+        (`fixtures/3D/unit-tests/spinning-cube-over-plane.json`) as implemented
+        after no-contact near-plane spinning-cube runtime coverage landed.
   - [x] Mark the audited 3D scaled-sphere and ellipsoid rotation unit-test
         fixture rows (`fixtures/3D/unit-tests/rotation/rotating-sphere.json`,
         `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-major.json`,
