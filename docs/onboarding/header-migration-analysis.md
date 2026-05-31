@@ -1,12 +1,15 @@
 # DART Header Migration Analysis: PascalCase → snake_case
 
-This document analyzes the DART 6 → DART 8 header file naming transition and records the current implementation.
+This document analyzes the DART 6 -> DART 7 header file naming transition and
+records the current implementation.
 
 ## Executive Summary
 
 - **Status**: Public headers under `dart/` are now snake_case; PascalCase compatibility headers are generated at build/install time by CMake.
 - **Compatibility**: Wrapper generation handles common acronyms (DART/FCL/ODE/IK/IO/IMPL/CAllocator/LcpSolver) and skips case-only wrappers on case-insensitive filesystems to avoid collisions.
-- **Remaining**: Top-level umbrella headers `dart/All.hpp` and `dart/Export.hpp` remain PascalCase (case-only) and are candidates for DART 8 cleanup.
+- **Remaining**: Top-level umbrella headers `dart/All.hpp` and
+  `dart/Export.hpp` remain PascalCase (case-only) and are candidates for DART 7
+  clean-break cleanup.
 
 ## Scope (This PR)
 
@@ -39,7 +42,7 @@ The CMake compat header logic resides in `cmake/dart_defs.cmake`:
 1. **Detection**: `dart_is_snake_case()` checks if a filename contains no uppercase letters.
 2. **Conversion**: `dart_snake_to_pascal()` converts `my_class.hpp` → `MyClass.hpp` and preserves common acronyms.
 3. **Generation**: Creates a PascalCase wrapper header containing:
-   - Deprecation comment (removal planned for DART 8.0)
+   - Deprecation comment (removal planned for DART 7 clean break)
    - Cross-compiler deprecation warning (`#pragma message` / `#warning`)
    - Include directive to the actual snake_case header
 4. **Case-insensitive guard**: On case-insensitive filesystems, wrapper generation is skipped for case-only renames (no underscore) to avoid collisions.
@@ -54,7 +57,7 @@ The CMake compat header logic resides in `cmake/dart_defs.cmake`:
 // DEPRECATED: RigidBody.hpp is deprecated.
 // Please use rigid_body.hpp instead.
 //
-// This header will be removed in DART 8.0.
+// This header will be removed in the DART 7 clean break.
 
 #ifndef DART_SUPPRESS_DEPRECATED_HEADER_WARNING
 #if defined(_MSC_VER)
@@ -87,7 +90,8 @@ The compat mechanism is used across core modules (via `dart_install_compat_heade
 ## 2. Current File Naming State
 
 - **`dart/` public headers**: snake_case (includes `detail/` headers).
-- **Umbrella headers**: `dart/All.hpp` and `dart/Export.hpp` remain PascalCase (case-only); plan to revisit in DART 8.
+- **Umbrella headers**: `dart/All.hpp` and `dart/Export.hpp` remain PascalCase
+  (case-only); plan to revisit before the DART 7 clean break.
 - **`dart/simulation/experimental/`**: snake_case (unchanged).
 - **Tests**: Naming conventions unchanged (`test_` + PascalCase for legacy tests).
 
@@ -140,17 +144,20 @@ If a component already has a concrete header named `<component>.hpp` (snake_case
 - **Install-time copies without warnings**: Reduces noise but hides deprecations, making the migration timeline harder to enforce.
 - **Checked-in PascalCase wrappers**: Avoids CMake generation but adds long-term maintenance burden and risks divergence from the canonical headers.
 - **Compiler include maps/module maps**: Not portable across toolchains and adds extra build-system complexity.
-- **Drop compat immediately**: Maximum churn for downstreams and breaks `gz-physics` users; not acceptable for DART 7.x.
+- **Drop compat immediately**: Maximum churn for downstreams and breaks
+  `gz-physics` users unless those users stay on the DART 6.16 support lane.
 
 ## 6. Recommended Migration Strategy
 
-### DART 7.x (Current)
+### DART 7 Clean-Break Preparation
 
 - Keep snake_case headers as the primary API.
-- Generate PascalCase wrappers with deprecation warnings to preserve downstream compatibility.
-- Validate gz-physics compatibility with `pixi run -e gazebo test-gz` after each batch.
+- Generate PascalCase wrappers with deprecation warnings while clean-break gates
+  are being closed.
+- Validate gz-physics compatibility with `pixi run -e gazebo test-gz` on the
+  DART 6.16 support lane when compatibility patches are backported.
 
-### DART 8.0 (Clean Break)
+### DART 7 Clean Break
 
 - Remove PascalCase compatibility headers entirely.
 - Rename the remaining case-only umbrella headers (`dart/All.hpp`, `dart/Export.hpp`).

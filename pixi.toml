@@ -289,6 +289,11 @@ check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
+check-dart7-clean-break-policy = { cmd = [
+  "python",
+  "scripts/check_dart7_clean_break_policy.py",
+] }
+
 check-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 check-compute-backend-boundaries = { cmd = [
   "python",
@@ -332,6 +337,7 @@ check-lint = { depends-on = [
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
   "check-docs-policy",
+  "check-dart7-clean-break-policy",
   "check-api-boundaries",
   "check-compute-backend-boundaries",
   "check-no-gpu-runtime-dependencies",
@@ -1961,6 +1967,7 @@ check-lint = { depends-on = [
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
   "check-docs-policy",
+  "check-dart7-clean-break-policy",
   "check-api-boundaries",
   "check-api-boundary-inventory",
   "check-ai-commands",

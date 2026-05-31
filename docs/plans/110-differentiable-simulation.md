@@ -188,5 +188,5 @@ tracked in `docs/dev_tasks/differentiable_simulation/`.
   split into a separate initiative.
 - Finite-difference evidence reveals a needed change in the analytic derivation,
   the position-Jacobian treatment, or the architecture doc.
-- A maintainer reprioritizes against other DART 7 → DART 8 work, or promotes the
-  deferred GPU/batched/deformable differentiable tracks.
+- A maintainer reprioritizes against other DART 7 clean-break work, or promotes
+  the deferred GPU/batched/deformable differentiable tracks.
