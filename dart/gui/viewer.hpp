@@ -92,6 +92,7 @@ struct ViewerLifecycleState
   bool screenshotRequested = false;
   bool frameOutputEnabled = false;
   bool exitRequested = false;
+  bool dockLayoutResetRequested = false;
   /// Set by the demos sidebar to ask the application loop to swap the active
   /// scene to `requestedScene` without recreating the window.
   bool sceneSwitchRequested = false;
@@ -235,6 +236,13 @@ DART_GUI_API void requestExit(ViewerLifecycleState& state);
 
 DART_GUI_API void requestSceneSwitch(
     ViewerLifecycleState& state, std::string sceneId);
+
+DART_GUI_API void requestSceneReplay(
+    ViewerLifecycleState& state, std::string sceneId);
+
+DART_GUI_API void requestDockLayoutReset(ViewerLifecycleState& state);
+
+DART_GUI_API bool consumeDockLayoutResetRequest(ViewerLifecycleState& state);
 
 DART_GUI_API bool shouldAdvanceSimulation(const ViewerLifecycleState& state);
 

@@ -350,15 +350,15 @@ void buildDefaultDockLayout(
   }
   if (useBottom) {
     bottom = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Down, 0.26f, nullptr, &center);
+        center, ImGuiDir_Down, 0.20f, nullptr, &center);
   }
   if (useLeft) {
     left = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Left, 0.20f, nullptr, &center);
+        center, ImGuiDir_Left, 0.24f, nullptr, &center);
   }
   if (useRight) {
     right = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Right, 0.25f, nullptr, &center);
+        center, ImGuiDir_Right, 0.34f, nullptr, &center);
   }
 
   for (const auto& panel : panels) {
@@ -433,16 +433,18 @@ void updateFrameUi(
   if (dartScene.dockingEnabled) {
     const ImGuiID dockId = ImGui::DockSpaceOverViewport(
         0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-    if (!dartScene.dockLayoutInitialized) {
+    const bool resetDockLayout
+        = dart::gui::consumeDockLayoutResetRequest(lifecycle);
+    if (resetDockLayout || !dartScene.dockLayoutInitialized) {
       dartScene.dockLayoutInitialized = true;
-      // Apply the default layout only when no saved layout exists; a restored
-      // imgui.ini layout leaves the root dock node already split.
-      const ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
-      if (node == nullptr || node->IsLeafNode()) {
-        buildDefaultDockLayout(dockId, panels);
-      }
+      // Apply the default layout deterministically on startup. The py-demos
+      // workspace is an examples browser first; a stale imgui.ini layout should
+      // not make its first frame look broken or obscure the viewport.
+      buildDefaultDockLayout(dockId, panels);
     }
   }
+#else
+  dart::gui::consumeDockLayoutResetRequest(lifecycle);
 #endif
   const std::string selectedLabel = selectionController.selectedLabel();
   const auto cameraBasis

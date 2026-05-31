@@ -609,6 +609,7 @@ bool SelectionController::beginForceDrag(
     const Eigen::Vector3d& hitPointWorld,
     ViewerLifecycleState& lifecycle)
 {
+  (void)lifecycle;
   auto* bodyNode = bodyNodeForDescriptor(descriptor);
   // Non-BodyNode renderables (e.g. sx SimpleFrame mirrors) need an application
   // sink. Without one there is nothing to push, so skip and let camera orbit.
@@ -638,7 +639,6 @@ bool SelectionController::beginForceDrag(
   mLeftMouseStartedDrag = true;
   mSelectedDragMode = DragMode::Force;
   mSelectionBoundsVisible = false;
-  lifecycle.paused = true;
   return true;
 }
 
@@ -953,7 +953,6 @@ bool SelectionController::updateMouseSelection(
     if (mSelectedDragMode == DragMode::Force) {
       const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
       updateForceDrag(scene, descriptors, ray);
-      lifecycle.paused = true;
     } else if (mSelectedDragMode == DragMode::Rotate) {
       const double cursorDelta = (cursorX - mSelectedDragLastCursorX)
                                  - (cursorY - mSelectedDragLastCursorY);

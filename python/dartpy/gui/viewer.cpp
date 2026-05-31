@@ -6,6 +6,7 @@
 
 #include "dart/gui/application.hpp"
 #include "dart/simulation/world.hpp"
+#include "gui/panel.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -120,6 +121,8 @@ void defGuiViewer(nb::module_& m)
               //   factory() -> World
               //   factory() -> (World, pre_step_callable)
               //   factory() -> (World, pre_step_callable, force_drag_callable)
+              //   factory() -> (World, pre_step_callable, force_drag_callable,
+              //                 panels)
               dart::simulation::WorldPtr world;
               if (nb::isinstance<nb::tuple>(result)) {
                 nb::tuple t = nb::cast<nb::tuple>(result);
@@ -133,6 +136,12 @@ void defGuiViewer(nb::module_& m)
                 }
                 if (t.size() >= 3 && !t[2].is_none()) {
                   *force_drag_holder = nb::cast<nb::callable>(t[2]);
+                }
+                if (t.size() >= 4 && !t[3].is_none()) {
+                  nb::iterable panels = nb::cast<nb::iterable>(t[3]);
+                  for (nb::handle panel : panels) {
+                    options.panels.push_back(makeGuiPanelFromPython(panel));
+                  }
                 }
               } else {
                 world = nb::cast<dart::simulation::WorldPtr>(std::move(result));
@@ -168,6 +177,7 @@ void defGuiViewer(nb::module_& m)
                 nb::gil_scoped_acquire gil;
                 try {
                   nb::dict event;
+                  event["renderable_id"] = e.renderableId;
                   event["renderable_name"] = e.renderableName;
                   event["application_point"] = nb::cast(e.applicationPoint);
                   event["force"] = nb::cast(e.force);

@@ -69,14 +69,17 @@
 #include <array>
 #include <exception>
 #include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
 #include <vector>
 
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -88,7 +91,13 @@ using dart::gui::elapsedMs;
 using dart::gui::OrbitCameraController;
 using dart::gui::printProfile;
 using dart::gui::ProfileAccumulator;
+using dart::gui::requestDockLayoutReset;
+using dart::gui::requestSceneReplay;
+using dart::gui::requestSceneSwitch;
+using dart::gui::requestSingleStep;
 using dart::gui::RunOptions;
+using dart::gui::toggleFrameOutputCapture;
+using dart::gui::togglePaused;
 using dart::gui::ViewerLifecycleState;
 using dart::gui::detail::ApplicationInputState;
 using dart::gui::detail::ApplicationWindow;
@@ -239,6 +248,140 @@ int demoSceneIndex(
   return fallback;
 }
 
+std::string sanitizePathComponent(std::string_view value)
+{
+  std::string sanitized;
+  sanitized.reserve(value.size());
+  for (const unsigned char ch : value) {
+    if (std::isalnum(ch) || ch == '-' || ch == '_') {
+      sanitized.push_back(static_cast<char>(ch));
+    } else {
+      sanitized.push_back('_');
+    }
+  }
+  return sanitized.empty() ? "scene" : sanitized;
+}
+
+std::string defaultDemoFrameOutputDirectory(std::string_view sceneId)
+{
+  std::error_code error;
+  std::filesystem::path root = std::filesystem::temp_directory_path(error);
+  if (error) {
+    root = ".";
+  }
+  return (root / "dart_demos_frames" / sanitizePathComponent(sceneId)).string();
+}
+
+std::string formatFixed(double value, int precision)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(precision) << value;
+  return stream.str();
+}
+
+std::string normalizedSearchText(std::string_view value)
+{
+  std::string normalized;
+  normalized.reserve(value.size());
+  for (const unsigned char ch : value) {
+    normalized.push_back(static_cast<char>(std::tolower(ch)));
+  }
+  return normalized;
+}
+
+bool containsSearchText(std::string_view haystack, const std::string& needle)
+{
+  if (needle.empty()) {
+    return true;
+  }
+  return normalizedSearchText(haystack).find(needle) != std::string::npos;
+}
+
+bool demoSceneMatchesSearch(
+    const dart::gui::DemoSceneEntry& scene, const std::string& searchText)
+{
+  return containsSearchText(scene.id, searchText)
+         || containsSearchText(scene.title, searchText)
+         || containsSearchText(scene.category, searchText)
+         || containsSearchText(scene.summary, searchText);
+}
+
+std::string& demoSidebarSearch()
+{
+  static std::string search;
+  return search;
+}
+
+dart::gui::Panel makeDemoSimulationPanel(
+    const std::vector<dart::gui::DemoSceneEntry>& scenes, int activeIndex)
+{
+  dart::gui::Panel panel;
+  panel.title = "Simulation";
+  panel.dockSide = dart::gui::DockSide::Top;
+  panel.initialSize = std::array<double, 2>{760.0, 72.0};
+  panel.autoResize = false;
+  panel.buildWithContext = [&scenes, activeIndex](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    dart::gui::ViewerLifecycleState* lifecycle = context.lifecycle;
+    if (lifecycle == nullptr) {
+      builder.text("Simulation controls unavailable.");
+      return;
+    }
+
+    const dart::gui::DemoSceneEntry* active = nullptr;
+    if (activeIndex >= 0 && activeIndex < static_cast<int>(scenes.size())) {
+      active = &scenes[static_cast<std::size_t>(activeIndex)];
+    }
+
+    if (builder.button(lifecycle->paused ? "Start" : "Pause")) {
+      togglePaused(*lifecycle);
+    }
+    builder.sameLine();
+    if (builder.button("Step")) {
+      requestSingleStep(*lifecycle);
+    }
+    builder.sameLine();
+    if (builder.button("Reset") && active != nullptr) {
+      requestSceneSwitch(*lifecycle, active->id);
+    }
+    builder.sameLine();
+    if (builder.button("Replay") && active != nullptr) {
+      requestSceneReplay(*lifecycle, active->id);
+    }
+    builder.itemTooltip("Restart and run the active demo from the beginning.");
+    builder.sameLine();
+    if (builder.button("Reset Layout")) {
+      requestDockLayoutReset(*lifecycle);
+    }
+    builder.itemTooltip("Restore the default docked workspace layout.");
+    builder.sameLine();
+    const bool recordingFrames = lifecycle->frameOutputEnabled
+                                 && !lifecycle->frameOutputDirectory.empty();
+    const std::string recordDirectory
+        = active == nullptr ? defaultDemoFrameOutputDirectory("scene")
+                            : defaultDemoFrameOutputDirectory(active->id);
+    std::string status = "time " + formatFixed(context.simulationTime, 3)
+                         + " s | contacts "
+                         + std::to_string(context.contactCount);
+    if (active != nullptr) {
+      status += " | " + active->title;
+    }
+
+    if (builder.button(recordingFrames ? "Stop Record" : "Record Frames")) {
+      toggleFrameOutputCapture(*lifecycle, recordDirectory);
+    }
+    builder.sameLine();
+    builder.text(status);
+    if (recordingFrames) {
+      builder.sameLine();
+      builder.text("recording frames");
+      builder.itemTooltip(lifecycle->frameOutputDirectory);
+    }
+  };
+  return panel;
+}
+
 // Built-in sidebar panel listing the demo catalog grouped by category (ordered
 // by first appearance). Selecting a different scene requests a runtime switch.
 dart::gui::Panel makeDemoSidebarPanel(
@@ -262,39 +405,75 @@ dart::gui::Panel makeDemoSidebarPanel(
     }
     builder.separator();
 
-    // Tree-style catalog: each category is a collapsible header, scenes
-    // within are indented list rows (selectable text instead of buttons).
-    std::string lastCategory;
-    bool categoryOpen = true;
-    bool inCategory = false;
-    for (std::size_t i = 0; i < scenes.size(); ++i) {
-      const auto& entry = scenes[i];
-      if (i == 0 || entry.category != lastCategory) {
-        if (inCategory) {
-          builder.unindent();
-          inCategory = false;
-        }
-        lastCategory = entry.category;
-        categoryOpen = builder.collapsingHeader(entry.category, true);
-        if (categoryOpen) {
-          builder.indent();
-          inCategory = true;
-        }
-      }
-      if (!categoryOpen) {
-        continue;
-      }
-      const bool isActive = static_cast<int>(i) == activeIndex;
-      const std::string label = entry.title + "##demo_" + entry.id;
-      const bool clicked = builder.selectable(label, isActive);
-      // Explain what each scene demonstrates when the row is hovered.
-      builder.itemTooltip(entry.summary);
-      if (clicked && !isActive && context.lifecycle != nullptr) {
-        dart::gui::requestSceneSwitch(*context.lifecycle, entry.id);
+    std::string& search = demoSidebarSearch();
+    builder.text("Search");
+    builder.textInput("##demo_search", search);
+    if (!search.empty()) {
+      builder.sameLine();
+      if (builder.button("Clear")) {
+        search.clear();
       }
     }
-    if (inCategory) {
-      builder.unindent();
+    builder.separator();
+
+    // Tree-style catalog: each category is a collapsible header, scenes
+    // within are indented list rows (selectable text instead of buttons).
+    const std::string normalizedSearch = normalizedSearchText(search);
+    bool anyVisible = false;
+    for (std::size_t categoryStart = 0; categoryStart < scenes.size();) {
+      const std::string_view category = scenes[categoryStart].category;
+      std::size_t categoryEnd = categoryStart + 1;
+      while (categoryEnd < scenes.size()
+             && scenes[categoryEnd].category == category) {
+        ++categoryEnd;
+      }
+
+      std::size_t visibleCount = 0;
+      bool categoryHasActive = false;
+      for (std::size_t i = categoryStart; i < categoryEnd; ++i) {
+        if (demoSceneMatchesSearch(scenes[i], normalizedSearch)) {
+          ++visibleCount;
+        }
+        categoryHasActive
+            = categoryHasActive || static_cast<int>(i) == activeIndex;
+      }
+      const std::size_t totalCount = categoryEnd - categoryStart;
+      if (visibleCount == 0u) {
+        categoryStart = categoryEnd;
+        continue;
+      }
+
+      anyVisible = true;
+      std::string header = std::string(category) + " (";
+      if (!normalizedSearch.empty()) {
+        header += std::to_string(visibleCount) + "/";
+      }
+      header += std::to_string(totalCount) + ")##demo_category_"
+                + sanitizePathComponent(category);
+      const bool defaultOpen = !normalizedSearch.empty() || categoryHasActive;
+      const bool categoryOpen = builder.collapsingHeader(header, defaultOpen);
+      if (categoryOpen) {
+        builder.indent();
+        for (std::size_t i = categoryStart; i < categoryEnd; ++i) {
+          const auto& entry = scenes[i];
+          if (!demoSceneMatchesSearch(entry, normalizedSearch)) {
+            continue;
+          }
+          const bool isActive = static_cast<int>(i) == activeIndex;
+          const std::string label = entry.title + "##demo_" + entry.id;
+          const bool clicked = builder.selectable(label, isActive);
+          // Explain what each scene demonstrates when the row is hovered.
+          builder.itemTooltip(entry.summary);
+          if (clicked && !isActive && context.lifecycle != nullptr) {
+            requestSceneSwitch(*context.lifecycle, entry.id);
+          }
+        }
+        builder.unindent();
+      }
+      categoryStart = categoryEnd;
+    }
+    if (!anyVisible) {
+      builder.text("No demos match the current search.");
     }
   };
   return panel;
@@ -464,7 +643,8 @@ int runGuiBackendApplicationImpl(
       // fallback) on builds without ImGui docking support.
       appOptions.dockingEnabled = true;
       std::vector<dart::gui::Panel> panels;
-      panels.reserve(appOptions.panels.size() + 1);
+      panels.reserve(appOptions.panels.size() + 2);
+      panels.push_back(makeDemoSimulationPanel(*demoCatalog, activeIndex));
       panels.push_back(makeDemoSidebarPanel(*demoCatalog, activeIndex));
       for (auto& scenePanel : appOptions.panels) {
         panels.push_back(std::move(scenePanel));

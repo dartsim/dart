@@ -344,7 +344,8 @@ bool renderBuiltInStatusPanel(
   ImGui::TextWrapped(
       "DART scene viewer: inspect renderables, shadows, and debug overlays.");
   ImGui::TextWrapped(
-      "Mouse: left orbit, right/middle pan, wheel zoom, click select.");
+      "Mouse: left-drag empty space to orbit; left-drag supported bodies to "
+      "apply external force; right/middle pan, wheel zoom, click select.");
   ImGui::TextWrapped(
       "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
       "Esc exit.");
@@ -460,7 +461,7 @@ void renderApplicationPanels(
     if (!dockingActive) {
       windowFlags |= ImGuiWindowFlags_NoSavedSettings;
     }
-    if (panel.autoResize) {
+    if (panel.autoResize && !dockingActive) {
       windowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
     }
     if (panel.horizontalScrollbar) {

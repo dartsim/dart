@@ -9,13 +9,15 @@ the box and ground into a parallel dart.simulation.World for rendering.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # sx CollisionShape.box takes half-extents; dart.BoxShape takes full extents.
 _GROUND_HALF = (2.0, 2.0, 0.25)
@@ -53,9 +55,34 @@ def build() -> SceneSetup:
         name="ipc_box_visual")
     bridge.sync()
 
+    height_history: deque[float] = deque(maxlen=120)
+    speed_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        height = float(np.asarray(box.translation, dtype=float)[2])
+        speed = float(np.linalg.norm(np.asarray(box.linear_velocity, dtype=float)))
+        height_history.append(height)
+        speed_history.append(speed)
+
+        builder.text("solver: rigid IPC")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"time step: {world.time_step:.4f} s")
+        builder.text(f"box height: {height:.3f} m")
+        builder.text(f"box speed: {speed:.3f} m/s")
+        changed, friction = builder.slider("Friction", float(box.friction), 0.0, 1.0)
+        if changed:
+            box.friction = float(friction)
+            ground.friction = float(friction)
+        builder.plot_lines("Box height", list(height_history))
+        builder.plot_lines("Box speed", list(speed_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel("Rigid IPC Contact", build_panel)],
         info={"sx_world": world, "rigid_body_solver": "ipc"},
     )
 

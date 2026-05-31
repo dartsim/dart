@@ -35,6 +35,27 @@ SINGLE_SCENE_DEFAULT_FRAMES = 60
 
 
 @dataclass
+class ScenePanel:
+    """A renderer-neutral custom panel owned by a Python demo scene.
+
+    ``build(builder, context)`` is called once per UI frame. ``builder`` is the
+    DART panel abstraction (text, buttons, sliders, plots, tables, etc.);
+    ``context`` is a read-only snapshot of viewer state. Scene panels should
+    capture scene-owned state explicitly instead of mutating ``context``.
+    """
+
+    title: str
+    build: Callable[[Any, Any], None]
+    dock_side: str = "right"
+    initial_size: tuple[float, float] | None = (320.0, 440.0)
+    initial_position: tuple[float, float] | None = None
+    auto_resize: bool = False
+    background_alpha: float | None = None
+    horizontal_scrollbar: bool = False
+    menu_bar: bool = False
+
+
+@dataclass
 class SceneSetup:
     """The per-scene state returned by a scene's ``build()``.
 
@@ -53,11 +74,15 @@ class SceneSetup:
     ``force_drag`` is an optional callable invoked by the viewer's mouse
     "force-drag" while the user left-drags one of this scene's renderables that
     is not backed by a legacy BodyNode (e.g. the sx SimpleFrame mirrors). It
-    receives a single event mapping with keys ``renderable_name`` (str),
-    ``application_point`` (np.ndarray, world frame), ``force`` (np.ndarray,
-    world frame), and ``active`` (bool), and returns nothing. The handler must
-    (re)apply the one-shot force on every step while ``active`` is true and stop
-    once an event with ``active`` false arrives.
+    receives a single event mapping with keys ``renderable_id`` (int),
+    ``renderable_name`` (str), ``application_point`` (np.ndarray, world frame),
+    ``force`` (np.ndarray, world frame), and ``active`` (bool), and returns
+    nothing. The handler must (re)apply the one-shot force on every step while
+    ``active`` is true and stop once an event with ``active`` false arrives.
+
+    ``panels`` carries optional custom UI panels for scene-specific controls
+    and diagnostics. Panels are rendered through DART's renderer-neutral
+    ``PanelBuilder`` abstraction and dock on the right by default.
 
     ``info`` carries scene-specific metadata (e.g. ``golden_skeletons``).
     """
@@ -66,6 +91,7 @@ class SceneSetup:
     pre_step: Callable[[], None] | None = None
     step: Callable[[int], None] | None = None
     force_drag: Callable[[dict[str, Any]], None] | None = None
+    panels: list[ScenePanel] = field(default_factory=list)
     info: dict[str, Any] = field(default_factory=dict)
 
 
@@ -111,10 +137,15 @@ def _print_catalog(scenes: list[PythonDemoScene]) -> None:
         print(f"  {entry.id:<28s} {entry.title} — {entry.summary}")
 
 
+def _canonical_scene_id(scene_id: str) -> str:
+    return scene_id.replace("-", "_")
+
+
 def _validate_scene(scene_id: str | None, scenes: list[PythonDemoScene]) -> None:
     if scene_id is None:
         return
-    if not any(entry.id == scene_id for entry in scenes):
+    canonical = _canonical_scene_id(scene_id)
+    if not any(entry.id == canonical for entry in scenes):
         available = ", ".join(entry.id for entry in scenes)
         raise SystemExit(
             f"unknown --scene '{scene_id}'. Known scenes: {available}"
@@ -127,17 +158,21 @@ def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
     Returns one of:
       * a bare ``dartpy.World`` (physics-only), or
       * a ``(World, pre_step)`` tuple, or
-      * a ``(World, pre_step, force_drag)`` tuple.
+      * a ``(World, pre_step, force_drag)`` tuple, or
+      * a ``(World, pre_step, force_drag, panels)`` tuple.
 
     The viewer binding inspects the return value: a bare World is treated as
     physics-only; element 1 (if not ``None``) registers as the viewer's per-step
     hook; element 2 (if not ``None``) registers as the viewer's mouse
-    force-drag handler. Both are used by experimental-world scenes that own an
-    sx::World and a render-mirror dart::simulation::World.
+    force-drag handler; element 3 (if not ``None``) registers scene-specific
+    panels. These are used by experimental-world scenes that own an sx::World
+    and a render-mirror dart::simulation::World.
     """
 
     def factory() -> Any:
         setup = scene.build()
+        if setup.panels:
+            return (setup.world, setup.pre_step, setup.force_drag, setup.panels)
         if setup.force_drag is not None:
             return (setup.world, setup.pre_step, setup.force_drag)
         if setup.pre_step is not None:

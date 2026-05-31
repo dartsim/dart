@@ -30,6 +30,7 @@ Usage from an sx scene's `build()`::
 
 from __future__ import annotations
 
+from collections import deque
 from typing import Any
 
 import dartpy as dart
@@ -104,13 +105,38 @@ class SxRenderBridge:
         self._surfaces: list[tuple[Any, Any, int]] = []
         # (deformable_body, [(node_index, SimpleFrame)]) pinned-node markers.
         self._pins: list[tuple[Any, list[tuple[int, dart.SimpleFrame]]]] = []
-        # SimpleFrame name -> sx object, so the viewer's force-drag can resolve
-        # the picked renderable (identified by its frame name) back to the sx
-        # body/link that owns the physics.
+        # SimpleFrame name / renderable id -> sx object, so the viewer's
+        # force-drag can resolve the picked renderable back to the sx body/link
+        # that owns the physics.
         self._by_name: dict[str, Any] = {}
+        self._by_renderable_id: dict[int, Any] = {}
         # Active mouse force-drag, if any: (sx_object, force, point). Re-applied
         # before each sx step because Link.apply_force is one-shot.
         self._drag: tuple[Any, np.ndarray, np.ndarray] | None = None
+        self.force_drag_enabled = True
+        self.force_drag_scale = 1.0
+        self._last_drag_target = "none"
+        self._last_drag_magnitude = 0.0
+        self._force_history: deque[float] = deque(maxlen=120)
+
+    def _register_frame(self, frame: "dart.SimpleFrame", sx_object: Any) -> str:
+        actual_name = str(self.render_world.add_simple_frame(frame))
+        self._by_name[actual_name] = sx_object
+        self._refresh_renderable_ids()
+        return actual_name
+
+    def _refresh_renderable_ids(self) -> None:
+        gui = getattr(dart, "gui", None)
+        if gui is None or not hasattr(gui, "extract_renderables"):
+            return
+        try:
+            renderables = gui.extract_renderables(self.render_world)
+        except Exception:  # noqa: BLE001
+            return
+        for renderable in renderables:
+            sx_object = self._by_name.get(renderable.shape_frame_name)
+            if sx_object is not None:
+                self._by_renderable_id[int(renderable.id)] = sx_object
 
     def add_link_visual(
         self,
@@ -123,9 +149,9 @@ class SxRenderBridge:
         frame = dart.SimpleFrame(dart.Frame.world(), frame_name, np.eye(4))
         frame.set_shape(shape)
         frame.create_visual_aspect().set_color(list(color))
-        self.render_world.add_simple_frame(frame)
+        actual_name = self._register_frame(frame, sx_link)
         self._mappings.append((sx_link, frame))
-        self._by_name[frame_name] = sx_link
+        self._by_name[actual_name] = sx_link
         return frame
 
     def add_rigid_body_visual(
@@ -184,7 +210,7 @@ class SxRenderBridge:
             )
             sphere.set_shape(dart.SphereShape(radius))
             sphere.create_visual_aspect().set_color(list(pin_color))
-            self.render_world.add_simple_frame(sphere)
+            self._register_frame(sphere, body)
             pin_frames.append((i, sphere))
         self._pins.append((body, pin_frames))
         return frame
@@ -219,6 +245,27 @@ class SxRenderBridge:
                 except Exception:  # noqa: BLE001
                     pass
 
+    def _resolve_drag_target(self, event: dict[str, Any]) -> Any | None:
+        renderable_id = int(event.get("renderable_id", 0) or 0)
+        if renderable_id:
+            sx_object = self._by_renderable_id.get(renderable_id)
+            if sx_object is None:
+                self._refresh_renderable_ids()
+                sx_object = self._by_renderable_id.get(renderable_id)
+            if sx_object is not None:
+                return sx_object
+        return self._by_name.get(event.get("renderable_name", ""))
+
+    def _is_force_target(self, sx_object: Any | None) -> bool:
+        if sx_object is None or not hasattr(sx_object, "apply_force"):
+            return False
+        try:
+            if bool(getattr(sx_object, "is_static", False)):
+                return False
+        except Exception:  # noqa: BLE001
+            return False
+        return True
+
     def force_drag(self, event: dict[str, Any]) -> None:
         """Viewer mouse force-drag handler (see ``SceneSetup.force_drag``).
 
@@ -230,14 +277,94 @@ class SxRenderBridge:
 
         if not event.get("active", False):
             self._drag = None
+            self._last_drag_magnitude = 0.0
             return
-        sx_object = self._by_name.get(event.get("renderable_name", ""))
-        if sx_object is None or not hasattr(sx_object, "apply_force"):
+        if not self.force_drag_enabled:
             self._drag = None
+            self._last_drag_target = "disabled"
+            self._last_drag_magnitude = 0.0
             return
-        force = np.asarray(event["force"], dtype=float).reshape(3)
+        sx_object = self._resolve_drag_target(event)
+        if not self._is_force_target(sx_object):
+            self._drag = None
+            self._last_drag_target = "none"
+            self._last_drag_magnitude = 0.0
+            return
+        force = (
+            np.asarray(event["force"], dtype=float).reshape(3)
+            * float(self.force_drag_scale)
+        )
         point = np.asarray(event["application_point"], dtype=float).reshape(3)
         self._drag = (sx_object, force, point)
+        self._last_drag_target = str(getattr(sx_object, "name", "target"))
+        self._last_drag_magnitude = float(np.linalg.norm(force))
+        self._force_history.append(self._last_drag_magnitude)
+
+    def _apply_drag_force(
+        self, sx_object: Any, force: np.ndarray, point: np.ndarray
+    ) -> tuple[Any, np.ndarray | None, np.ndarray | None] | None:
+        if hasattr(sx_object, "apply_torque"):
+            previous_force = (
+                np.asarray(getattr(sx_object, "force"), dtype=float).reshape(3)
+                if hasattr(sx_object, "force")
+                else None
+            )
+            previous_torque = (
+                np.asarray(getattr(sx_object, "torque"), dtype=float).reshape(3)
+                if hasattr(sx_object, "torque")
+                else None
+            )
+            sx_object.apply_force(force)
+            try:
+                translation = np.asarray(sx_object.translation, dtype=float).reshape(3)
+                sx_object.apply_torque(np.cross(point - translation, force))
+            except Exception:  # noqa: BLE001
+                pass
+            return (sx_object, previous_force, previous_torque)
+
+        sx_object.apply_force(
+            force,
+            point,
+            force_in_world_frame=True,
+            point_in_world_frame=True,
+        )
+        return None
+
+    def _restore_rigid_force(
+        self, restore: tuple[Any, np.ndarray | None, np.ndarray | None]
+    ) -> None:
+        sx_object, previous_force, previous_torque = restore
+        try:
+            if previous_force is not None:
+                sx_object.force = previous_force
+            elif hasattr(sx_object, "clear_force"):
+                sx_object.clear_force()
+            if previous_torque is not None:
+                sx_object.torque = previous_torque
+            elif hasattr(sx_object, "clear_torque"):
+                sx_object.clear_torque()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def build_control_panel(self, builder: Any, context: Any) -> None:
+        """Render generic sx bridge controls into a DART ``PanelBuilder``."""
+
+        builder.text("External force")
+        builder.text("Left-drag a dynamic body in the viewport.")
+        changed, enabled = builder.checkbox("Enable force drag", self.force_drag_enabled)
+        if changed:
+            self.force_drag_enabled = bool(enabled)
+            if not self.force_drag_enabled:
+                self._drag = None
+        changed, scale = builder.slider(
+            "Force scale", float(self.force_drag_scale), 0.1, 5.0
+        )
+        if changed:
+            self.force_drag_scale = float(scale)
+        builder.text(f"target: {self._last_drag_target}")
+        builder.text(f"force: {self._last_drag_magnitude:.2f} N")
+        if self._force_history:
+            builder.plot_lines("Force magnitude", list(self._force_history))
 
     def pre_step(self) -> None:
         """Advance sx physics by one step, then sync render frames.
@@ -246,19 +373,19 @@ class SxRenderBridge:
         before the step so the spring is consumed by this step.
         """
 
+        restores: list[tuple[Any, np.ndarray | None, np.ndarray | None]] = []
         if self._drag is not None:
             sx_object, force, point = self._drag
             try:
-                sx_object.apply_force(
-                    force,
-                    point,
-                    force_in_world_frame=True,
-                    point_in_world_frame=True,
-                )
+                restore = self._apply_drag_force(sx_object, force, point)
+                if restore is not None:
+                    restores.append(restore)
             except Exception:  # noqa: BLE001
                 pass
         try:
             self._sx_world.step()
         except Exception:  # noqa: BLE001
             pass
+        for restore in restores:
+            self._restore_rigid_force(restore)
         self.sync()

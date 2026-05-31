@@ -64,10 +64,11 @@ std::string makeFrameOutputPath(
 std::string activeFrameOutputDirectory(
     const RunOptions& options, const ViewerLifecycleState& state)
 {
+  (void)options;
   if (state.frameOutputEnabled && !state.frameOutputDirectory.empty()) {
     return state.frameOutputDirectory;
   }
-  return options.frameOutputDirectory;
+  return {};
 }
 
 } // namespace
@@ -129,8 +130,8 @@ void toggleFrameOutputCapture(
 bool shouldCaptureFrameOutput(
     const RunOptions& options, const ViewerLifecycleState& state)
 {
-  return shouldCaptureFrameOutput(options)
-         || (state.frameOutputEnabled && !state.frameOutputDirectory.empty());
+  (void)options;
+  return state.frameOutputEnabled && !state.frameOutputDirectory.empty();
 }
 
 std::string makeFrameOutputPath(
@@ -169,6 +170,25 @@ void requestSceneSwitch(ViewerLifecycleState& state, std::string sceneId)
 {
   state.requestedScene = std::move(sceneId);
   state.sceneSwitchRequested = true;
+}
+
+void requestSceneReplay(ViewerLifecycleState& state, std::string sceneId)
+{
+  requestSceneSwitch(state, std::move(sceneId));
+  state.paused = false;
+  state.stepOnce = false;
+}
+
+void requestDockLayoutReset(ViewerLifecycleState& state)
+{
+  state.dockLayoutResetRequested = true;
+}
+
+bool consumeDockLayoutResetRequest(ViewerLifecycleState& state)
+{
+  const bool requested = state.dockLayoutResetRequested;
+  state.dockLayoutResetRequested = false;
+  return requested;
 }
 
 bool shouldAdvanceSimulation(const ViewerLifecycleState& state)

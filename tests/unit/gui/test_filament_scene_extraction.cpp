@@ -865,6 +865,87 @@ TEST(FilamentSceneExtraction, DockingPanelFallbackRequiresDockingSupport)
   EXPECT_NE(panelSource.find("if (!dockingActive)"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
+{
+  const auto applicationSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
+  const auto uiFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "ui_frame.cpp");
+  const auto panelSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
+  const auto runnerSource = readSourceFile(
+      std::filesystem::path("python") / "examples" / "demos" / "runner.py");
+  const auto viewerBindingSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "gui" / "viewer.cpp");
+  const auto selectionSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
+
+  EXPECT_NE(
+      applicationSource.find("makeDemoSimulationPanel"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("panel.title = \"Simulation\""),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("panel.dockSide = dart::gui::DockSide::Top"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("builder.textInput(\"##demo_search\", search)"),
+      std::string::npos);
+  EXPECT_NE(applicationSource.find("categoryHasActive"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("toggleFrameOutputCapture"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestSceneSwitch(*lifecycle, active->id)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestSceneReplay(*lifecycle, active->id)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestDockLayoutReset(*lifecycle)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("consumeDockLayoutResetRequest(lifecycle)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("buildDefaultDockLayout(dockId, panels)"),
+      std::string::npos);
+  EXPECT_EQ(
+      uiFrameSource.find("node == nullptr || node->IsLeafNode()"),
+      std::string::npos);
+  EXPECT_NE(runnerSource.find("dock_side: str = \"right\""), std::string::npos);
+  EXPECT_NE(runnerSource.find("auto_resize: bool = False"), std::string::npos);
+  EXPECT_NE(
+      panelSource.find("panel.autoResize && !dockingActive"),
+      std::string::npos);
+  EXPECT_EQ(
+      applicationSource.find(
+          "scenePanel.dockSide = dart::gui::DockSide::Right"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("center, ImGuiDir_Down, 0.20f"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("center, ImGuiDir_Left, 0.24f"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("center, ImGuiDir_Right, 0.34f"), std::string::npos);
+  EXPECT_NE(
+      viewerBindingSource.find("makeGuiPanelFromPython(panel)"),
+      std::string::npos);
+  EXPECT_EQ(
+      selectionSource.find(
+          "mSelectedDragMode = DragMode::Force;\n"
+          "  mSelectionBoundsVisible = false;\n"
+          "  lifecycle.paused = true;"),
+      std::string::npos);
+  EXPECT_EQ(
+      selectionSource.find(
+          "if (mSelectedDragMode == DragMode::Force) {\n"
+          "      const PickRay ray = makePanePickRay(inputPane, cursorX, "
+          "cursorY);\n"
+          "      updateForceDrag(scene, descriptors, ray);\n"
+          "      lifecycle.paused = true;"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
 {
   const auto headers
@@ -5009,6 +5090,18 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_FALSE(state.exitRequested);
   dart::gui::requestExit(state);
   EXPECT_TRUE(state.exitRequested);
+  state.paused = true;
+  state.stepOnce = true;
+  dart::gui::requestSceneReplay(state, "demo_scene");
+  EXPECT_TRUE(state.sceneSwitchRequested);
+  EXPECT_EQ(state.requestedScene, "demo_scene");
+  EXPECT_FALSE(state.paused);
+  EXPECT_FALSE(state.stepOnce);
+  EXPECT_FALSE(dart::gui::consumeDockLayoutResetRequest(state));
+  dart::gui::requestDockLayoutReset(state);
+  EXPECT_TRUE(state.dockLayoutResetRequested);
+  EXPECT_TRUE(dart::gui::consumeDockLayoutResetRequest(state));
+  EXPECT_FALSE(state.dockLayoutResetRequested);
 
   dart::gui::RunOptions windowOnly;
   windowOnly.guiScale = 10.0;
@@ -5021,6 +5114,16 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   dart::gui::normalizeRunOptions(sequenceOutput);
   EXPECT_EQ(sequenceOutput.maxFrames, 1);
   EXPECT_TRUE(dart::gui::shouldCaptureFrameOutput(sequenceOutput));
+  dart::gui::ViewerLifecycleState sequenceState;
+  sequenceState.frameOutputDirectory = sequenceOutput.frameOutputDirectory;
+  sequenceState.frameOutputEnabled
+      = !sequenceOutput.frameOutputDirectory.empty();
+  EXPECT_TRUE(
+      dart::gui::shouldCaptureFrameOutput(sequenceOutput, sequenceState));
+  dart::gui::toggleFrameOutputCapture(sequenceState, "frames");
+  EXPECT_FALSE(sequenceState.frameOutputEnabled);
+  EXPECT_FALSE(
+      dart::gui::shouldCaptureFrameOutput(sequenceOutput, sequenceState));
   EXPECT_EQ(
       std::filesystem::path(dart::gui::makeFrameOutputPath(sequenceOutput, 7))
           .filename()

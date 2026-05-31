@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import math
 import sys
+from collections import deque
 from typing import Any, Callable, Iterable, Sequence
 
 import dartpy as dart
@@ -507,6 +508,7 @@ class IpcDeformableBridge:
         # (body, [node SimpleFrame, ...], edge LineSegmentShape) per deformable.
         self._deformables: list[tuple[Any, list[Any], Any]] = []
         self._step_failed = False
+        self._min_height_history: deque[float] = deque(maxlen=120)
 
     def add_deformable_visual(
         self,
@@ -593,6 +595,49 @@ class IpcDeformableBridge:
                 position = np.asarray(body.node_position(i), dtype=float)
                 frame.set_transform(_translation(position))
                 edge_shape.setVertex(i, position)
+
+    def _node_positions(self) -> list[np.ndarray]:
+        positions: list[np.ndarray] = []
+        for body, _node_frames, _edge_shape in self._deformables:
+            for i in range(int(body.node_count)):
+                positions.append(np.asarray(body.node_position(i), dtype=float))
+        return positions
+
+    def _fixed_node_count(self) -> int:
+        fixed = 0
+        for body, _node_frames, _edge_shape in self._deformables:
+            for i in range(int(body.node_count)):
+                try:
+                    fixed += int(bool(body.is_fixed_node(i)))
+                except Exception:  # noqa: BLE001
+                    pass
+        return fixed
+
+    def build_diagnostics_panel(self, builder: Any, context: Any) -> None:
+        """Render generic IPC deformable solver diagnostics."""
+
+        del context
+        node_count = sum(
+            int(body.node_count) for body, _frames, _edge in self._deformables
+        )
+        positions = self._node_positions()
+        builder.text("solver: deformable IPC")
+        builder.text(f"world time: {self._sx_world.time:.3f} s")
+        builder.text(f"time step: {self._sx_world.time_step:.4f} s")
+        builder.text(f"nodes: {node_count} | fixed: {self._fixed_node_count()}")
+        if positions:
+            stacked = np.vstack(positions)
+            minimum = np.min(stacked, axis=0)
+            maximum = np.max(stacked, axis=0)
+            self._min_height_history.append(float(minimum[2]))
+            builder.text(f"z range: {minimum[2]:.3f} .. {maximum[2]:.3f} m")
+            builder.text(
+                f"span xy: {maximum[0] - minimum[0]:.3f} x "
+                f"{maximum[1] - minimum[1]:.3f} m"
+            )
+        builder.text(f"step failed: {'yes' if self._step_failed else 'no'}")
+        if self._min_height_history:
+            builder.plot_lines("Min z", list(self._min_height_history))
 
     def pre_step(self) -> None:
         """Advance the sx deformable physics one step, then sync the render.
