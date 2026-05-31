@@ -47,11 +47,10 @@ explicitly requests it.
 
 ## Automated Reviews (Codex, Code Quality, Copilot, etc.)
 
-When a draft PR is first published, wait a reasonable time for the automatic
-Codex review to start. The PR body may show a small Codex activity indicator
-(for example, an eyes/count badge) before the submitted review appears. Do not
-post `@codex review` for that first review unless no indicator and no review
-appears after a reasonable wait.
+When a draft PR is first published, request the first Codex review with a
+top-level `@codex review` once explicit maintainer/user approval covers PR
+comments; it can run while the PR remains draft. If Codex already shows an
+activity signal or submitted review, do not post a duplicate trigger.
 
 1. Make the local fix silently (no reply)
 2. Run the relevant local gates, including `pixi run lint` before any commit
@@ -68,6 +67,10 @@ appears after a reasonable wait.
    approval; do not re-trigger Codex solely for non-Codex bot findings unless
    Codex comments were also addressed.
 8. Monitor CI: `gh pr checks $1`
-9. Check for new review, repeat until no comments + CI green
+9. Check for new review, repeat until no actionable comments remain
+10. For draft PRs, mark ready after explicit approval once Codex is clean and
+    local `pixi run test-all` passes on the current head; merge still waits for
+    required hosted checks unless a maintainer explicitly approves a policy
+    bypass
 
 Full iterative loop: `docs/onboarding/ai-tools.md` § "Autonomous Review-Fix-Monitor Loop"

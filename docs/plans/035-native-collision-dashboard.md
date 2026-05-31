@@ -524,7 +524,7 @@ reference-engine names, when setting goals.
   native-backed facades. Keep deprecation warnings enabled by default, keep
   reference implementations test/benchmark-only, and move hot paths toward
   direct native scene/query data instead of multi-detector virtual boundaries.
-- **DART 8 cleanup window**
+- **DART 7 clean-break cleanup window**
   Remove legacy detector names, factory keys, package components, and any
   multi-detector runtime abstraction that exists only to support retired
   backends. Expose a clean native collision API centered on native scenes,

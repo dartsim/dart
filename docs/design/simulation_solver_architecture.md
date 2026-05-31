@@ -11,7 +11,7 @@ the existing compute-graph executor.
 It is the internal-organization companion to the public-facade design docs:
 
 - [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)
-  owns the public C++ object model, naming policy, and DART 8 promotion rules.
+  owns the public C++ object model, naming policy, and DART 7 promotion rules.
 - [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)
   owns the dartpy surface.
 
@@ -33,7 +33,7 @@ free-body integration stage plus forward kinematics) into a simulator that:
 3. supports more than one physics domain (rigid bodies first; deformables,
    particles, and fluids later) coupled inside one deterministic step;
 4. keeps a stable public facade so the solver internals, execution backend, and
-   data layout can change before and after DART 8 promotion.
+   data layout can change before and after DART 7 promotion.
 
 The core design sentence is:
 

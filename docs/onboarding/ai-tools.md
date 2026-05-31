@@ -502,31 +502,55 @@ This avoids noisy bot-to-bot conversations while still leveraging automated veri
 
 > **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
 
-### First Codex Review After Publishing A Draft
+### Codex Review For Draft PRs
 
-When a draft PR is first marked ready for review, Codex review is expected to
-start automatically. The PR body may show a small Codex activity indicator, such
-as an eyes/count badge, before the submitted review appears.
+For fast-moving work, trigger the first Codex review while the PR is still a
+draft when explicit maintainer/user approval covers PR comments. Use a top-level
+comment:
 
-Do not immediately post `@codex review` for the first review. Wait a reasonable
-time for either the activity indicator or a submitted Codex review. Consider a
-manual `@codex review` only after that wait if neither signal appears.
+```bash
+gh pr comment <PR> --body "@codex review"
+```
+
+This keeps the PR draft for human readiness while getting automated feedback
+early. If a Codex activity signal or submitted review already appears, do not
+post a duplicate trigger. After posting, wait for a submitted review, a no-issues
+comment, a thumbs-up reaction, or an eyes reaction before treating the trigger as
+accepted; do not re-trigger unless there is a concrete timeout/blocker or a
+follow-up push addressed Codex findings.
 
 After an approved follow-up push that addresses Codex review comments, request a
 fresh top-level Codex review with `@codex review`. This is the normal completion
 step for a Codex review-fix round, not an inline reply. A manual trigger is a PR
 comment and still requires explicit maintainer/user approval.
 
+### Draft Ready Fast Path
+
+To move quickly without bypassing branch protection, a draft PR can be marked
+ready for review once all of these are true on the current head:
+
+- Codex review has no unresolved actionable threads, or the latest Codex result
+  is a no-issues comment/reaction.
+- Local `pixi run test-all` passed after the last pushed change, and the
+  worktree is clean.
+- PR metadata is correct: base, milestone, title, template, and testing
+  evidence match the current branch.
+
+Hosted CI may still be pending when the draft is marked ready. Merge still waits
+for branch protection and required checks unless a maintainer explicitly
+approves a policy bypass.
+
 ### Codex Re-Trigger Cadence And Throttling
 
-Re-trigger Codex at most once per review-fix round, and only after an approved
-push that addressed its comments. Rapid, repeated `@codex review` requests across
-many quick rounds can slow or suspend Codex: observed review latency grows round
-over round and a later re-trigger can receive no review at all. If Codex stays
-silent well beyond its usual turnaround after a re-trigger, treat it as a
-throttle/timeout blocker, not a reason to re-request. Record the converged state
-as evidence instead — all surfaced findings fixed and their threads resolved —
-and report the throttle rather than re-spamming the PR with more triggers.
+After explicit maintainer/user approval for the PR comment, re-trigger Codex at
+most once per review-fix round, and only after an approved push that addressed
+its comments. Rapid, repeated `@codex review` requests across many quick rounds
+can slow or suspend Codex: observed review latency grows round over round and a
+later re-trigger can receive no review at all. If Codex stays silent well beyond
+its usual turnaround after a re-trigger, treat it as a throttle/timeout blocker,
+not a reason to re-request. Record the converged state as evidence instead — all
+surfaced findings fixed and their threads resolved — and report the throttle
+rather than re-spamming the PR with more triggers.
 
 ### Updating Published PRs
 
@@ -575,7 +599,8 @@ After identifying an AI-generated review comment to address:
    `gh pr comment <PR> --body "@codex review"`
 7. **Monitor for results**:
    - New review comments → repeat from step 1
-   - "No issues" or 👍 reaction → done, PR is ready for human review
+   - "No issues" or 👍 reaction + local `pixi run test-all` on the current head
+     → draft PR is ready for human review
 
 Apply the same no-inline-reply handling to `github-code-quality[bot]` findings:
 fix valid findings locally, push only after approval, and do not post an
@@ -646,7 +671,9 @@ For agents iterating on automated reviews, the complete loop is:
 7. Monitor CI: `gh pr checks <PR>`
 8. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
 9. If new review has comments → go to step 2
-10. If no new comments AND CI is green → done
+10. If no new comments AND local `pixi run test-all` passed on the current head
+    → mark draft PRs ready for human review after approval
+11. Keep monitoring hosted CI until required checks pass before merge
 ```
 
 **Checking for new reviews:**
@@ -681,7 +708,8 @@ when nothing is pending, any check fails, or the head SHA moves.
 **Stop conditions:**
 
 - Codex review returns no comments (or only 👍 reactions)
-- All CI checks pass (green)
+- Local `pixi run test-all` passes on the current head for draft-ready state
+- All required CI checks pass for merge-ready state
 - Pre-existing failures (e.g., `simulation-experimental` "Not Run") can be ignored
 
 ---

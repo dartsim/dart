@@ -50,7 +50,7 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 - Each workstream lands as small verifiable slices with focused tests; gap-matrix
   rows flip to PRESENT with evidence.
 - Parity gate: experimental dynamics match legacy DART 6 on identical scenes
-  (energy-drift bounds and trajectory tolerance) before any DART 8 promotion
+  (energy-drift bounds and trajectory tolerance) before any DART 7 promotion
   claim for the affected capability.
 - The public API never exposes `Solver`, `Coupler`, `PhysicsDomain`, schedule
   phase types, ECS storage, component types, execution-backend names, or the
@@ -65,4 +65,4 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 - A phase completes, splits, or is reprioritized.
 - The native-collision bridge or boxed-LCP contract changes shape.
 - Parity evidence reveals a needed design change in the architecture doc.
-- A maintainer reprioritizes against other DART 7 → DART 8 work.
+- A maintainer reprioritizes against other DART 7 clean-break work.

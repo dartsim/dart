@@ -127,7 +127,8 @@ recorded measurements, mirroring PLAN-080/081 rigor.
 - The contact-query redesign (Phase C prerequisite) is scoped or lands.
 - The solver-architecture lifecycle (`finalize`, substep windowing) lands,
   changing the State/selection seam.
-- A phase completes, splits, or is reprioritized against other DART 7→8 work.
+- A phase completes, splits, or is reprioritized against other DART 7
+  clean-break work.
 
 ## Next Step
 

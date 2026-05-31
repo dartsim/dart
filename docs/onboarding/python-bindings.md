@@ -61,26 +61,27 @@ dartpy/
 
 - Core classes/functions (dynamics, collision, math, simulation, constraint,
   optimizer) are promoted onto `dartpy` directly.
-- Legacy submodules remain importable in DART 7.x but will be removed in DART
-  8.0. Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
-  `DARTPY_ENABLE_LEGACY_MODULES`.
+- Legacy submodules remain available on the DART 6.16 support lane. Main keeps
+  migration warnings only while the DART 7 clean-break gates are being closed;
+  the DART 7 public contract should not carry the legacy dartpy 6 API surface.
+  Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
+  `DARTPY_ENABLE_LEGACY_MODULES` while that temporary surface exists.
 
 **Source**: See `python/dartpy/` directory for module implementations
 
 ### Experimental World Bindings And Transition
 
-DART 7 keeps the classic Skeleton-backed `dart::simulation::World` and
-`dartpy.World` path stable while the ECS-backed world matures behind explicit
-experimental namespaces. C++ users opt in through
+Before the DART 7 clean-break release, the ECS-backed world matures behind
+explicit experimental namespaces. C++ users opt in through
 `dart::simulation::experimental`; Python users opt in through
 `dartpy.simulation_experimental`, which is built only when
 `DART_BUILD_SIMULATION_EXPERIMENTAL=ON`. Bindings for this module should expose
 only public experimental wrapper types and must not expose EnTT, `comps`, or
-other ECS internals until the C++ API provides public wrappers. The DART 8 path
-is to remove the classic world after the experimental world reaches parity and
-promote the experimental shape into the official stable simulation namespace.
-dartpy 8 removes the legacy dartpy 6 API surface instead of carrying it beside
-the promoted API.
+other ECS internals until the C++ API provides public wrappers. The DART 7 path
+is to promote this shape into the official stable simulation namespace only
+after parity gates pass, then remove the classic world and legacy dartpy 6
+surface from the public contract instead of carrying them beside the promoted
+API.
 
 Durable API-shape rationale for this surface lives in
 [simulation_experimental_python_api.md](../design/simulation_experimental_python_api.md).

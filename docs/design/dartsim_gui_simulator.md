@@ -118,8 +118,8 @@ authoritative scene state; it observes engine state and submits commands.
 
 The simulator targets the **experimental World API** only
 (`dart::simulation::experimental`, alias `sx`; Python
-`dartpy.simulation_experimental`). That API is the DART 7 experimental and DART 8
-official simulation surface (see
+`dartpy.simulation_experimental`). That API is the DART 7 experimental surface
+until clean-break promotion (see
 [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md) and
 [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)).
 
@@ -135,7 +135,8 @@ official simulation surface (see
 - A headless engine that is **independently testable** and is the single owner of
   scene state, selection, and the undo/redo history.
 - Strict reliance on the **experimental World** as the physics/state model, so
-  the simulator co-evolves with and validates the DART 8 simulation API.
+  the simulator co-evolves with and validates the DART 7 clean-break simulation
+  API.
 - Stay **backend-hidden** per PLAN-060: no rendering-backend or UI-toolkit types
   leak across the engine boundary or any public surface.
 
@@ -519,8 +520,8 @@ backend-hidden (no Filament types above the `dart::gui` boundary).
 ## Experimental-API Gaps And Co-Evolution
 
 The simulator is a forcing function for the experimental World's promotion to the
-DART 8 official API. The following gaps block full simulator features and should
-feed the experimental API design effort (see
+DART 7 clean-break API. The following gaps block full simulator features and
+should feed the experimental API design effort (see
 `docs/dev_tasks/simulation_experimental_api_design/` and PLAN-050):
 
 | Simulator need                       | Experimental World status | Interim approach in dartsim                    |
