@@ -81,10 +81,10 @@
       "unit-ccd": 7
     },
     "target_type_counts": {
-      "benchmark": 98,
+      "benchmark": 100,
       "example": 123,
       "manual": 77,
-      "test": 500
+      "test": 498
     }
   },
   "entries": [
@@ -9780,17 +9780,17 @@
       "source_kind": "test-data",
       "alias_of": "",
       "family": "ccd-data-large-rb-hashgrid",
-      "topic": "rigid CCD data regression",
-      "priority": "P0",
-      "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "topic": "rigid hash-grid broad-phase data regression",
+      "priority": "P1",
+      "dart_target_type": "benchmark",
+      "expected_invariant": "DART broad-phase coverage records conservative scene bounds for the large rigid-body hash-grid corpus and emits reproducible profile evidence.",
       "visual_evidence_requirement": "not-required",
-      "benchmark_profile_artifact": "not-required",
+      "benchmark_profile_artifact": "hash-grid benchmark JSON packet",
       "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::large_rb_hashgrid_000",
+      "dart_artifact": "benchmark rigid_ipc_hashgrid::large_rb_hashgrid_000",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::large_rb_hashgrid_000",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bm-rigid-ipc -- --benchmark_filter=large_rb_hashgrid_000",
+      "notes_or_gap": "The audited upstream hash-grid source keeps this large-scene benchmark commented out; retire this planned row only after DART has matching broad-phase bounds coverage and benchmark profile evidence."
     },
     {
       "upstream_path": "tests/data/large-rb-hashgrid/large-rb-hashgrid-001.json",
@@ -9798,17 +9798,17 @@
       "source_kind": "test-data",
       "alias_of": "",
       "family": "ccd-data-large-rb-hashgrid",
-      "topic": "rigid CCD data regression",
-      "priority": "P0",
-      "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "topic": "rigid hash-grid broad-phase data regression",
+      "priority": "P1",
+      "dart_target_type": "benchmark",
+      "expected_invariant": "DART broad-phase coverage records conservative scene bounds for the large rigid-body hash-grid corpus and emits reproducible profile evidence.",
       "visual_evidence_requirement": "not-required",
-      "benchmark_profile_artifact": "not-required",
+      "benchmark_profile_artifact": "hash-grid benchmark JSON packet",
       "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::large_rb_hashgrid_001",
+      "dart_artifact": "benchmark rigid_ipc_hashgrid::large_rb_hashgrid_001",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::large_rb_hashgrid_001",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bm-rigid-ipc -- --benchmark_filter=large_rb_hashgrid_001",
+      "notes_or_gap": "The audited upstream hash-grid source keeps this large-scene benchmark commented out; retire this planned row only after DART has matching broad-phase bounds coverage and benchmark profile evidence."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-000.json",

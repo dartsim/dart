@@ -52,6 +52,10 @@ IMPLEMENTED_WRECKING_BALL_CCD_DATA_ROWS = frozenset(
 )
 
 
+def is_large_rb_hashgrid_data(path: str) -> bool:
+    return path.startswith("tests/data/large-rb-hashgrid/")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -250,6 +254,20 @@ def classify_entry(path: str, source_kind: str) -> dict[str, str]:
         parts = path.split("/")
         family_token = parts[2] if len(parts) > 3 else slug(path)
         family = "ccd-data-" + family_token.replace("_", "-")
+        if is_large_rb_hashgrid_data(path):
+            return {
+                "family": family,
+                "topic": "rigid hash-grid broad-phase data regression",
+                "priority": "P1",
+                "dart_target_type": "benchmark",
+                "expected_invariant": (
+                    "DART broad-phase coverage records conservative scene "
+                    "bounds for the large rigid-body hash-grid corpus and "
+                    "emits reproducible profile evidence."
+                ),
+                "visual_evidence_requirement": "not-required",
+                "benchmark_profile_artifact": "hash-grid benchmark JSON packet",
+            }
         return {
             "family": family,
             "topic": "rigid CCD data regression",
@@ -344,6 +362,15 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
         "Classified from upstream rigid-ipc path; retire this planned row "
         "only after DART has matching code, tests, benchmarks, and evidence."
     )
+    if source_kind == "test-data" and is_large_rb_hashgrid_data(path):
+        command = f"pixi run bm-rigid-ipc -- --benchmark_filter={command_slug}"
+        artifact = f"benchmark rigid_ipc_hashgrid::{command_slug}"
+        notes_or_gap = (
+            "The audited upstream hash-grid source keeps this large-scene "
+            "benchmark commented out; retire this planned row only after DART "
+            "has matching broad-phase bounds coverage and benchmark profile "
+            "evidence."
+        )
     if source_kind == "test-data" and path in IMPLEMENTED_ROOT_CCD_DATA_ROWS:
         status = "implemented"
         artifact = (

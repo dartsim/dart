@@ -1,5 +1,27 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: large hash-grid manifest semantics
+
+Delivered a bounded Phase 6 manifest cleanup slice:
+
+- Reclassified the remaining
+  `tests/data/large-rb-hashgrid/large-rb-hashgrid-000..001.json` rows as
+  planned broad-phase benchmark rows instead of direct CCD TOI rows.
+- Recorded the upstream provenance gap: the audited rigid-ipc hash-grid source
+  keeps the large-scene benchmark commented out, so DART should not retire
+  those rows until it has matching scene-bounds coverage and reproducible
+  profile evidence.
+- Kept Phase 6 open: the two large-rigid-body hash-grid data rows remain
+  planned, now with accurate benchmark-target evidence requirements.
+
+Validation in this slice:
+
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: audited kinematic CCD manifest retirement
 
 Delivered a bounded Phase 6 manifest slice:
