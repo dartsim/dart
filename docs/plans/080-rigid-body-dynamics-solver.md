@@ -80,4 +80,4 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 - A phase completes, splits, or is reprioritized.
 - The native-collision bridge or boxed-LCP contract changes shape.
 - Parity evidence reveals a needed design change in the architecture doc.
-- A maintainer reprioritizes against DART 7 clean-break release work.
+- A maintainer reprioritizes against other DART 7 clean-break work.
