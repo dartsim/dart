@@ -213,8 +213,8 @@ per scene. Acceptance: match or undercut IPC's per-step CPU time at equal
 accuracy on shared scenes (Table 1, Fig 23), then report GPU acceleration as
 net-new.
 
-**First increment landed:** an opt-in iterative (Jacobi-preconditioned
-conjugate-gradient) projected-Newton linear solve
+**First increment landed:** an opt-in iterative conjugate-gradient
+projected-Newton linear solve
 (`DeformableMaterialProperties.useIterativeLinearSolver` / dartpy
 `use_iterative_linear_solver`). It reuses the existing sparse SPD Hessian
 assembly but solves with CG instead of `SimplicialLDLT`, so it never factorizes
@@ -230,12 +230,24 @@ solve paths (CG run never factorizes), with a `cg_solver` py-demo and a
 `BM_DeformableCgBarStep` benchmark mirroring the direct FEM-bar benchmark for
 per-step scaling comparison.
 
+**Second increment landed:** the CG preconditioner was strengthened from
+diagonal (Jacobi) to **incomplete-Cholesky**. Stiff barrier contact makes the
+Hessian ill-conditioned, where Jacobi-CG stalls against its iteration cap and
+falls back to steepest descent; the incomplete-Cholesky preconditioner (a sparse
+approximate factorization that drops fill, so the solve still stays near O(nnz))
+collapses the CG iteration count so the iterative path carries stiff contact
+within the cap. On a settling stiff FEM contact scene this cuts the iterative
+solver's fallbacks below the direct solver's and reduces Newton iterations per
+step. Verified by a regression in which a stiff (E = 1e6) FEM cube settles on a
+ground barrier through the iterative path with accepted CG steps dominating
+fallbacks and the same equilibrium as the direct solve, plus a `cg_contact`
+py-demo.
+
 Remaining M7 work: a truly matrix-free Hessian-vector CG (skip the sparse
-assembly entirely), a stronger preconditioner (incomplete-Cholesky / AMG) so
-stiff barrier-contact Hessians converge without falling back, on-device GPU
-assembly + solve beyond the current PSD offload, the 688K-node Fig-22 scale
-run, and the profiling-grade per-scene Fig-23 statistics harness with the
-Table-1 CPU comparison against the reference.
+assembly entirely), an AMG / multigrid preconditioner for the largest systems,
+on-device GPU assembly + solve beyond the current PSD offload, the 688K-node
+Fig-22 scale run, and the profiling-grade per-scene Fig-23 statistics harness
+with the Table-1 CPU comparison against the reference.
 
 ## Honest status
 
