@@ -453,8 +453,8 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// incident local vertex through the lagged self-contact adjacency. Friction
 /// tangent rows generated as adjacent pairs use the lagged tangential dual to
 /// switch between static and dynamic Coulomb modes. Full contact-manifold
-/// friction persistence, tetrahedral row mixing, and parallel dual scheduling
-/// remain later slices.
+/// friction persistence, World self-contact friction generation, tetrahedral
+/// row mixing, and parallel dual scheduling remain later slices.
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -476,10 +476,21 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     const AvbdHalfSpaceFrictionOptions* frictionOptions = nullptr,
     std::vector<AvbdSelfContactNormalRow>* selfContactRows = nullptr,
     const SelfContactAdjacency* selfContact = nullptr,
-    const AvbdSelfContactNormalOptions* selfContactOptions = nullptr)
+    const AvbdSelfContactNormalOptions* selfContactOptions = nullptr,
+    std::vector<AvbdSelfContactFrictionRow>* selfContactFrictionRows = nullptr,
+    const AvbdSelfContactFrictionOptions* selfContactFrictionOptions = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
+  const auto hasFreeSelfContactFrictionVertex
+      = [&](const AvbdSelfContactFrictionRow& row) {
+          for (const std::uint32_t node : row.nodes) {
+            if (node < vertexCount && fixed[node] == 0u) {
+              return true;
+            }
+          }
+          return false;
+        };
   const auto assemble = [&](std::uint32_t vertex) {
     VertexBlock block;
     addInertiaTerm(
@@ -524,6 +535,36 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
             (*selfContactRows)[entry.constraint],
             entry.localVertex,
             selfContactOptions->alpha);
+      }
+    }
+    if (selfContactFrictionRows != nullptr
+        && selfContactFrictionOptions != nullptr) {
+      for (std::size_t i = 0; i < selfContactFrictionRows->size();) {
+        const AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
+        const std::uint8_t localVertex
+            = avbdSelfContactLocalVertex(row, vertex);
+        if (localVertex < 4u) {
+          if (i + 1 < selfContactFrictionRows->size()
+              && avbdSelfContactSameFrictionPrimitive(
+                  row, (*selfContactFrictionRows)[i + 1])) {
+            addAvbdSelfContactFrictionTangentPair(
+                block,
+                positions,
+                row,
+                (*selfContactFrictionRows)[i + 1],
+                localVertex,
+                *selfContactFrictionOptions);
+            i += 2;
+            continue;
+          }
+          addAvbdSelfContactFrictionTangent(
+              block,
+              positions,
+              row,
+              localVertex,
+              selfContactFrictionOptions->alpha);
+        }
+        ++i;
       }
     }
     for (const AvbdHalfSpaceContactRow& row : contactRows) {
@@ -654,6 +695,32 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
         }
         row.state = updateAvbdSelfContactNormalRow(
             row.state, positions, row, *selfContactOptions);
+      }
+    }
+    if (selfContactFrictionRows != nullptr
+        && selfContactFrictionOptions != nullptr) {
+      for (std::size_t i = 0; i < selfContactFrictionRows->size();) {
+        AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
+        if (!hasFreeSelfContactFrictionVertex(row)) {
+          ++i;
+          continue;
+        }
+        if (i + 1 < selfContactFrictionRows->size()
+            && avbdSelfContactSameFrictionPrimitive(
+                row, (*selfContactFrictionRows)[i + 1])
+            && hasFreeSelfContactFrictionVertex(
+                (*selfContactFrictionRows)[i + 1])) {
+          updateAvbdSelfContactFrictionTangentPair(
+              row,
+              (*selfContactFrictionRows)[i + 1],
+              positions,
+              *selfContactFrictionOptions);
+          i += 2;
+          continue;
+        }
+        row.state = updateAvbdSelfContactFrictionTangentRow(
+            row.state, positions, row, *selfContactFrictionOptions);
+        ++i;
       }
     }
   }

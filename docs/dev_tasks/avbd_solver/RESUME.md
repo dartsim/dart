@@ -25,6 +25,10 @@ paired force to the circular Coulomb cone. Supported serial mass-spring
 self-contact scenes can also generate one AVBD self-contact normal row per
 lagged point-triangle / edge-edge primitive, stamp each incident local vertex
 through the shared scalar row, and report `vbdAvbdSelfContactNormalRows`.
+Standalone self-contact friction tangent rows now reuse lagged point-triangle /
+edge-edge tangent stencils in the combined mass-spring row driver, with focused
+coverage for tangent direction, static/dynamic pair switching, circular-cone
+projection, and tangential-motion resistance.
 Unsupported mixed spring-plus-tet, mass-spring self-contact without the
 self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
 Rayleigh-damped, parallel, and unsupported-row requests have explicit fallback
@@ -40,11 +44,11 @@ tangent rows and supported World self-contact normal rows.
 
 ## Immediate Next Step
 
-Start the next bounded AVBD contact/friction slice: fuller contact-manifold
-friction persistence or self-contact friction are the preferred row-family gaps.
-Keep the supported envelope narrow and preserve fallback coverage for topology
-mixes, damping/acceleration, parallel solves, and unsupported requested row
-combinations.
+Start the next bounded AVBD contact/friction slice: World generation for
+self-contact friction rows or fuller contact-manifold friction persistence are
+the preferred row-family gaps. Keep the supported envelope narrow and preserve
+fallback coverage for topology mixes, damping/acceleration, parallel solves, and
+unsupported requested row combinations.
 
 ## Context That Would Be Lost
 
@@ -65,9 +69,11 @@ combinations.
   use the tet-material finite-stiffness row path, supported static-contact
   mass-spring World scenes generate bounded friction-tangent rows with pairwise
   static/dynamic switching, and supported serial mass-spring self-contact scenes
-  generate AVBD self-contact normal rows. This does not imply
-  hard-contact/friction completeness, full contact-manifold friction
-  persistence, self-contact friction, rigid/soft coupling, or GPU parity.
+  generate AVBD self-contact normal rows. Standalone self-contact friction rows
+  now exist in the combined mass-spring driver, but World generation for those
+  rows is still missing. This does not imply hard-contact/friction completeness,
+  full contact-manifold friction persistence, rigid/soft coupling, or GPU
+  parity.
 
 ## How to Resume
 

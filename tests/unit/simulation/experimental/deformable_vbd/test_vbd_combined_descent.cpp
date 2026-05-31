@@ -39,6 +39,8 @@
 #include <array>
 #include <vector>
 
+#include <cmath>
+
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
@@ -836,4 +838,200 @@ TEST(VbdCombinedDescent, AvbdSelfContactNormalRowNoopsOutsideActivationBand)
   EXPECT_DOUBLE_EQ(forceMagnitude, 0.0);
   EXPECT_DOUBLE_EQ(block.force.norm(), 0.0);
   EXPECT_DOUBLE_EQ(block.hessian.norm(), 0.0);
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdSelfContactFrictionTangentOpposesSlip)
+{
+  const std::array<Vec3, 4> stepStart
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const std::vector<Vec3> positions
+      = {stepStart[0] + Vec3(0.1, 0.0, 0.0),
+         stepStart[1],
+         stepStart[2],
+         stepStart[3]};
+
+  vbd::AvbdSelfContactFrictionRow row;
+  row.nodes = {0, 1, 2, 3};
+  row.stepStartPositions = stepStart;
+  row.axis = 0;
+  row.state.stiffness = 100.0;
+  row.bounds = {-100.0, 100.0};
+
+  vbd::VertexBlock block;
+  const double forceMagnitude = vbd::addAvbdSelfContactFrictionTangent(
+      block, positions, row, /*localVertex=*/0, /*alpha=*/0.0);
+
+  EXPECT_NEAR(forceMagnitude, -10.0, 1e-12);
+  EXPECT_NEAR(block.force.x(), -10.0, 1e-12);
+  EXPECT_NEAR(block.force.y(), 0.0, 1e-12);
+  EXPECT_NEAR(block.force.z(), 0.0, 1e-12);
+  EXPECT_NEAR(block.hessian(0, 0), 100.0, 1e-12);
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdSelfContactFrictionPairProjectsStaticForceToCone)
+{
+  const std::array<Vec3, 4> stepStart
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const std::vector<Vec3> positions
+      = {stepStart[0] + Vec3(1.0, 1.0, 0.0),
+         stepStart[1],
+         stepStart[2],
+         stepStart[3]};
+
+  vbd::AvbdSelfContactFrictionRow rowX;
+  rowX.nodes = {0, 1, 2, 3};
+  rowX.stepStartPositions = stepStart;
+  rowX.axis = 0;
+  rowX.state.stiffness = 10.0;
+  rowX.bounds = {-5.0, 5.0};
+
+  vbd::AvbdSelfContactFrictionRow rowY = rowX;
+  rowY.axis = 1;
+
+  vbd::AvbdSelfContactFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_TRUE(vbd::avbdSelfContactFrictionPreviousDualInsideCone(rowX, rowY));
+  bool clamped = false;
+  const Eigen::Vector2d force = vbd::avbdSelfContactFrictionTangentPairForce(
+      rowX, rowY, positions, options, &clamped);
+
+  EXPECT_TRUE(clamped);
+  EXPECT_NEAR(force.norm(), 5.0, 1e-12);
+  EXPECT_NEAR(force.x(), force.y(), 1e-12);
+  EXPECT_LT(force.x(), 0.0);
+
+  vbd::updateAvbdSelfContactFrictionTangentPair(rowX, rowY, positions, options);
+  EXPECT_NEAR(std::hypot(rowX.state.lambda, rowY.state.lambda), 5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdSelfContactFrictionPairSwitchesToDynamicSlip)
+{
+  const std::array<Vec3, 4> stepStart
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const std::vector<Vec3> positions
+      = {stepStart[0] + Vec3(0.0, 2.0, 0.0),
+         stepStart[1],
+         stepStart[2],
+         stepStart[3]};
+
+  vbd::AvbdSelfContactFrictionRow rowX;
+  rowX.nodes = {0, 1, 2, 3};
+  rowX.stepStartPositions = stepStart;
+  rowX.axis = 0;
+  rowX.state.stiffness = 10.0;
+  rowX.state.lambda = -5.0;
+  rowX.bounds = {-5.0, 5.0};
+
+  vbd::AvbdSelfContactFrictionRow rowY = rowX;
+  rowY.axis = 1;
+  rowY.state.lambda = 0.0;
+
+  vbd::AvbdSelfContactFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_FALSE(vbd::avbdSelfContactFrictionPreviousDualInsideCone(rowX, rowY));
+  const Eigen::Vector2d force = vbd::avbdSelfContactFrictionTangentPairForce(
+      rowX, rowY, positions, options);
+  EXPECT_NEAR(force.x(), 0.0, 1e-12);
+  EXPECT_NEAR(force.y(), -5.0, 1e-12);
+
+  vbd::updateAvbdSelfContactFrictionTangentPair(rowX, rowY, positions, options);
+  EXPECT_NEAR(rowX.state.lambda, 0.0, 1e-12);
+  EXPECT_NEAR(rowY.state.lambda, -5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdSelfContactFrictionRowsReduceTangentialMotion)
+{
+  const std::array<Vec3, 4> stepStart
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const std::vector<double> masses(stepStart.size(), 1.0);
+  const std::vector<std::uint8_t> fixed = {0u, 1u, 1u, 1u};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(stepStart.size(), springs);
+  const auto adjacency = vbd::SpringAdjacency::build(stepStart.size(), springs);
+
+  std::vector<Vec3> inertialTargets(stepStart.begin(), stepStart.end());
+  inertialTargets[0] += Vec3(1.0, 0.0, 0.0);
+
+  const auto solve = [&](bool enableFriction) {
+    std::vector<Vec3> positions(stepStart.begin(), stepStart.end());
+    std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
+    std::vector<vbd::AvbdPointAttachmentRow> attachments;
+    std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+    std::vector<vbd::AvbdSelfContactFrictionRow> frictionRows;
+
+    vbd::AvbdSelfContactFrictionRow rowX;
+    rowX.nodes = {0, 1, 2, 3};
+    rowX.stepStartPositions = stepStart;
+    rowX.axis = 0;
+    rowX.state.stiffness = 200.0;
+    rowX.bounds = {-100.0, 100.0};
+    vbd::AvbdSelfContactFrictionRow rowY = rowX;
+    rowY.axis = 1;
+    if (enableFriction) {
+      frictionRows = {rowX, rowY};
+    }
+
+    vbd::BlockDescentOptions options;
+    options.iterations = 4;
+    vbd::AvbdHalfSpaceContactOptions contactOptions;
+    vbd::AvbdPointAttachmentOptions attachmentOptions;
+    vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+    vbd::AvbdSelfContactFrictionOptions frictionOptions;
+
+    vbd::blockDescentMassSpringAvbdRows(
+        positions,
+        masses,
+        fixed,
+        inertialTargets,
+        springs,
+        /*fallbackSpringStiffness=*/0.0,
+        /*timeStep=*/0.1,
+        contacts,
+        attachments,
+        springRows,
+        coloring,
+        adjacency,
+        options,
+        contactOptions,
+        attachmentOptions,
+        springOptions,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        enableFriction ? &frictionRows : nullptr,
+        enableFriction ? &frictionOptions : nullptr);
+    return positions[0].x() - stepStart[0].x();
+  };
+
+  const double withoutFriction = solve(false);
+  const double withFriction = solve(true);
+  EXPECT_GT(withoutFriction, 0.9);
+  EXPECT_GT(withFriction, 0.05);
+  EXPECT_LT(withFriction, withoutFriction);
 }

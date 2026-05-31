@@ -257,15 +257,17 @@ its own line so status updates remain git-history friendly.
   block-descent kernel for active mass-spring rows, a scalar hard
   point-attachment row kernel/driver, a finite-stiffness spring row
   kernel/driver, a combined serial mass-spring AVBD row driver for those row
-  families plus bounded friction tangents and self-contact normal rows, and
-  narrow internal World opt-ins in the supported static-contact mass-spring,
-  self-contact mass-spring, and pure-tetrahedral envelopes, with explicit
+  families plus bounded friction tangents, self-contact normal rows, and
+  standalone self-contact friction rows, and narrow internal World opt-ins in
+  the supported static-contact mass-spring, self-contact mass-spring, and
+  pure-tetrahedral envelopes, with explicit
   fallback coverage for unsupported topology mixes, unrequested self-contact
   AVBD rows, Chebyshev, Rayleigh-damped, parallel, and unsupported-row requests;
   adjacent friction tangent pairs now use lagged-dual static/dynamic switching
-  and pairwise circular-cone projection. It is not a scene-level parity claim.
-  The next local slice is fuller contact-manifold friction persistence or
-  self-contact friction in the same combined-row solve.
+  and pairwise circular-cone projection, including the standalone self-contact
+  friction rows. It is not a scene-level parity claim. The next local slice is
+  World self-contact friction generation or fuller contact-manifold friction
+  persistence in the same combined-row solve.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

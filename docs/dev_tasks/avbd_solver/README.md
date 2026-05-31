@@ -97,15 +97,25 @@ Paper audit:
     incident local vertex through the lagged adjacency, reports
     `vbdAvbdSelfContactNormalRows`, and has regression coverage in
     `VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart`.
+  - First self-contact friction row slice started:
+    `AvbdSelfContactFrictionRow`,
+    `addAvbdSelfContactFrictionTangent`, and
+    `updateAvbdSelfContactFrictionTangentRow`. The row reuses the IPC
+    point-triangle / edge-edge tangent stencils against lagged primitive
+    positions, participates in `blockDescentMassSpringAvbdRows`, and has
+    focused `VbdCombinedDescent.AvbdSelfContactFriction*` coverage for tangent
+    direction, static/dynamic pair switching, circular-cone projection, and
+    tangential-motion resistance. World generation for these rows is still
+    missing.
   - Fallback coverage now guards the unsupported World envelopes:
     mixed spring-plus-tet topology, mass-spring self-contact without the
     self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
     Rayleigh damping, parallel settings, and unsupported requested row families
     all keep using the existing VBD path without reporting partial AVBD row
     counters.
-  - Still missing full contact-manifold friction persistence, self-contact
-    friction, full row-family generation, parallel dual/stiffness updates, and
-    GPU parity.
+  - Still missing full contact-manifold friction persistence, World
+    self-contact friction generation, full row-family generation, parallel
+    dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
@@ -145,11 +155,12 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Start the next bounded AVBD contact/friction slice: fuller
-   contact-manifold friction persistence or self-contact friction are the
-   preferred next row-family gaps now that static contact/friction,
-   attachments, finite-stiffness rows, self-contact normals, and pairwise
-   static/dynamic friction switching have narrow World paths.
+1. Start the next bounded AVBD contact/friction slice: World generation for
+   self-contact friction rows or fuller contact-manifold friction persistence
+   are the preferred next row-family gaps now that static contact/friction,
+   attachments, finite-stiffness rows, self-contact normals, pairwise
+   static/dynamic friction switching, and standalone self-contact friction rows
+   have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.
