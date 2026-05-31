@@ -791,10 +791,11 @@ struct SphereObstacleBarrier
 
 // A static (oriented) box opted in as a deformable obstacle exerts a
 // clamped-log barrier on nearby deformable nodes along the outward surface
-// normal -- the box analogue of the sphere obstacle barrier. The closest point
-// on the box surface (and hence the surface distance and outward normal) is
-// found by clamping the node into the box's local frame, which handles
-// face/edge/corner contact uniformly.
+// normal -- the box analogue of the sphere obstacle barrier. Outside the box,
+// the closest point on the box surface is found by clamping the node into the
+// box's local frame, which handles face/edge/corner contact uniformly. Inside
+// the box, the nearest exit face supplies the outward normal and penetration
+// depth.
 struct BoxObstacleBarrier
 {
   Eigen::Vector3d center = Eigen::Vector3d::Zero();
@@ -2440,11 +2441,13 @@ double addSphereObstacleBarrierEnergy(
 }
 
 //==============================================================================
-// Closest-surface distance from a node to an oriented box obstacle, with the
-// outward world-frame surface normal set when the distance is positive. The
-// node is clamped into the box's local frame; |local - clamp(local)| is the
-// distance to the surface (0 inside/on the box), uniform across face, edge, and
-// corner contact.
+// Signed closest-surface distance from a node to an oriented box obstacle, with
+// the outward world-frame surface normal set for outside, on-surface, and
+// inside nodes. Outside the box, the node is clamped into the box's local
+// frame; |local - clamp(local)| is the distance to the surface, uniform across
+// face, edge, and corner contact. Inside the box, the nearest exit face
+// provides the outward normal and the returned distance is negative penetration
+// depth.
 double boxObstacleSurfaceDistance(
     const Eigen::Vector3d& position,
     const BoxObstacleBarrier& obstacle,
@@ -2458,8 +2461,22 @@ double boxObstacleSurfaceDistance(
   const double distance = delta.norm();
   if (distance > 0.0 && std::isfinite(distance)) {
     outwardNormal = obstacle.rotation * (delta / distance);
+    return distance;
   }
-  return distance;
+
+  Eigen::Index nearestAxis = 0;
+  double nearestMargin = std::numeric_limits<double>::infinity();
+  for (Eigen::Index axis = 0; axis < 3; ++axis) {
+    const double margin = obstacle.halfExtents[axis] - std::abs(local[axis]);
+    if (margin < nearestMargin) {
+      nearestMargin = margin;
+      nearestAxis = axis;
+    }
+  }
+  Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
+  localNormal[nearestAxis] = local[nearestAxis] >= 0.0 ? 1.0 : -1.0;
+  outwardNormal = obstacle.rotation * localNormal;
+  return -nearestMargin;
 }
 
 //==============================================================================
@@ -4012,9 +4029,7 @@ void runVbdDeformableSolve(
         Eigen::Vector3d normal;
         const double surfaceDistance
             = boxObstacleSurfaceDistance(position, box, normal);
-        // boxObstacleSurfaceDistance leaves the normal unset on/inside the box
-        // (surfaceDistance == 0); the lagged plane re-arms once the node exits.
-        if (surfaceDistance <= 0.0 || surfaceDistance >= band) {
+        if (!std::isfinite(surfaceDistance) || surfaceDistance >= band) {
           continue;
         }
         const Eigen::Vector3d surfacePoint

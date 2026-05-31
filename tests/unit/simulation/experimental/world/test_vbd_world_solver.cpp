@@ -760,6 +760,46 @@ TEST(VbdWorldSolver, VbdBodyRestsOnBoxObstacle)
 }
 
 //==============================================================================
+// A VBD body that starts inside a static box obstacle still gets a lagged
+// half-space plane from the nearest exit face, so the first solve moves it out
+// instead of leaving it embedded until an outside-only barrier can arm.
+TEST(VbdWorldSolver, VbdBoxObstacleRepelsInitiallyEmbeddedNode)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const Eigen::Vector3d boxHalf(0.5, 0.5, 0.5);
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  auto box = world.addRigidBody("obstacle_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.45, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  options.masses = {0.1};
+  auto body = world.addDeformableBody("embedded_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 30;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  const auto position = body.getPosition(0);
+  EXPECT_TRUE(position.allFinite());
+  EXPECT_GT(position.x(), 0.49);
+  EXPECT_NEAR(position.y(), 0.0, 1e-12);
+  EXPECT_NEAR(position.z(), 0.0, 1e-12);
+}
+
+//==============================================================================
 // Option A: the World VBD path resists surface self-collision. A body's free
 // top triangle falls toward its own pinned bottom triangle; the IPC point-
 // triangle / edge-edge barrier (entered per-vertex during the colored sweeps)
