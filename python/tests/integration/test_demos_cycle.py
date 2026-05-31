@@ -85,7 +85,18 @@ def test_registry_has_scenes() -> None:
 def test_runner_cycle_returns_zero() -> None:
     if not _gui_run_demos_available():
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
-    rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
+    # Render with the display-less "noop" backend. This is a runner cycle
+    # smoke: it asserts every scene builds and steps a few frames without the
+    # host crashing (it never inspects pixels), so it must not depend on an X
+    # display or a GPU -- the standard pytest CI jobs provide neither (only the
+    # dedicated xvfb-backed "Headless Rendering Tests" job does). Without this
+    # the OpenGL backend calls XOpenDisplay, fails ("Failed to open X display"),
+    # and exits the process mid-test. Real headless rendering stays covered by
+    # test_runner_screenshot_writes_ppm and the xvfb rendering CI job.
+    rc = run(
+        ["--cycle-scenes", "--frames", "2", "--headless", "--backend", "noop"],
+        make_demo_scenes(),
+    )
     assert rc == 0
 
 
