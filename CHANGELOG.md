@@ -1913,12 +1913,12 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     static-contact mass-spring scenes. The supported mass-spring friction
     tangent pairs now use the previous tangential dual to switch between static
     sticking and dynamic sliding and project pair forces to the circular
-    Coulomb cone. A standalone AVBD self-contact friction tangent row now
-    reuses lagged point-triangle / edge-edge tangent stencils in the combined
-    mass-spring row driver, with pairwise static/dynamic switching and
-    cone-projection coverage. Full AVBD contact/friction, World self-contact
-    friction generation, rigid/soft coupling, GPU parity, demos, and benchmark
-    parity remain future work.
+    Coulomb cone. AVBD self-contact friction tangent rows now reuse lagged
+    point-triangle / edge-edge tangent stencils in the combined mass-spring row
+    driver, with supported World generation for serial self-contact scenes plus
+    pairwise static/dynamic switching and cone-projection coverage. Full AVBD
+    contact/friction, broader self-contact friction envelopes, rigid/soft
+    coupling, GPU parity, demos, and benchmark parity remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

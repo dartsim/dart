@@ -453,7 +453,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// incident local vertex through the lagged self-contact adjacency. Friction
 /// tangent rows generated as adjacent pairs use the lagged tangential dual to
 /// switch between static and dynamic Coulomb modes. Full contact-manifold
-/// friction persistence, World self-contact friction generation, tetrahedral
+/// friction persistence, broader self-contact friction envelopes, tetrahedral
 /// row mixing, and parallel dual scheduling remain later slices.
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
