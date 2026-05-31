@@ -410,8 +410,9 @@ DynamicsTree buildDynamicsTree(
     dynamics.jointEntity = linkComp.parentJoint;
     tree.jointOf[i] = linkComp.parentJoint;
 
-    const Eigen::Isometry3d childInParent
-        = jointMotionTransform(joint) * linkComp.transformFromParentJoint;
+    const Eigen::Isometry3d childInParent = linkComp.transformFromParentToJoint
+                                            * jointMotionTransform(joint)
+                                            * linkComp.transformFromParentJoint;
     dynamics.parentToChild = adjoint(childInParent.inverse());
     dynamics.childToParentForce = dynamics.parentToChild.transpose();
     dynamics.worldTransform

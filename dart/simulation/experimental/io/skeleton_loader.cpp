@@ -32,6 +32,7 @@
 #include "dart/simulation/experimental/io/skeleton_loader.hpp"
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
+#include "dart/simulation/experimental/comps/link.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -251,9 +252,26 @@ JointSpec makeJointSpec(const dynamics::Joint& joint)
       .type = mapJointType(joint),
       .axis = mapJointAxis(joint),
       .axis2 = mapJointAxis2(joint),
-      .transformFromParent = joint.getTransformFromParentBodyNode()
-                             * joint.getTransformFromChildBodyNode().inverse(),
+      .transformFromParent = joint.getTransformFromChildBodyNode().inverse(),
   };
+}
+
+void setParentToJointTransform(Link& link, const Eigen::Isometry3d& transform)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !transform.matrix().allFinite(),
+      InvalidArgumentException,
+      "Link parent-to-joint transform must contain only finite values");
+
+  World* world = link.getWorld();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      world == nullptr,
+      InvalidArgumentException,
+      "Cannot set parent-to-joint transform on an invalid loaded Link");
+
+  auto& registry = world->getRegistry();
+  auto& linkComp = registry.get<comps::Link>(link.getEntity());
+  linkComp.transformFromParentToJoint = transform;
 }
 
 void copyBodyInertia(const dynamics::BodyNode& source, Link& target)
@@ -397,7 +415,11 @@ void copyJointState(const dynamics::Joint& source, Joint& target)
   }
   target.setPosition(mapJointVector(source, source.getPositions()));
   target.setVelocity(mapJointVector(source, source.getVelocities()));
-  target.setForce(mapJointVector(source, source.getForces()));
+  const Eigen::VectorXd sourceForce
+      = source.getActuatorType() == dynamics::Joint::FORCE
+            ? source.getCommands()
+            : source.getForces();
+  target.setForce(mapJointVector(source, sourceForce));
   target.setPositionLimits(
       mapJointVector(source, source.getPositionLowerLimits()),
       mapJointVector(source, source.getPositionUpperLimits()));
@@ -466,6 +488,8 @@ Multibody addSkeleton(
       link = multibody.addLink(
           bodyNode.getName(), *parentLink, makeJointSpec(*parentJoint));
     }
+    setParentToJointTransform(
+        link, parentJoint->getTransformFromParentBodyNode());
 
     copyBodyInertia(bodyNode, link);
     copyCollisionShape(bodyNode, link);

@@ -96,6 +96,7 @@ void configureSingleDofJoint(
   joint->setPosition(0, position);
   joint->setVelocity(0, velocity);
   joint->setForce(0, force);
+  joint->setCommand(0, force);
   joint->setPositionLowerLimit(0, -0.75);
   joint->setPositionUpperLimit(0, 0.8);
   joint->setVelocityLowerLimit(0, -1.25);
@@ -131,6 +132,7 @@ void configureJointVectors(
   joint->setPositions(position);
   joint->setVelocities(velocity);
   joint->setForces(force);
+  joint->setCommands(force);
 }
 
 void expectBoxCollisionShape(
@@ -398,6 +400,38 @@ TEST(SkeletonLoader, TranslatesSupportedTreeProperties)
   EXPECT_DOUBLE_EQ(lift.getPosition()[0], -0.1);
   EXPECT_DOUBLE_EQ(lift.getVelocity()[0], 0.5);
   EXPECT_DOUBLE_EQ(lift.getCommandVelocity()[0], 0.75);
+
+  world.enterSimulationMode();
+  const auto* classicRoot = skeleton->getBodyNode("root");
+  const auto* classicSlider = skeleton->getBodyNode("slider");
+  ASSERT_NE(classicRoot, nullptr);
+  ASSERT_NE(classicSlider, nullptr);
+  EXPECT_TRUE(root->getWorldTransform().matrix().isApprox(
+      classicRoot->getTransform().matrix(), 1e-12));
+  EXPECT_TRUE(slider->getWorldTransform().matrix().isApprox(
+      classicSlider->getTransform().matrix(), 1e-12));
+}
+
+TEST(SkeletonLoader, TranslatesForceActuatorCommandsAsEffort)
+{
+  auto skeleton = dynamics::Skeleton::create("force_command");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("force_link"));
+  (void)body;
+  joint->setName("force_hinge");
+  joint->setForce(0, -0.25);
+  joint->setCommand(0, 1.25);
+
+  sx::World world;
+  const sx::Multibody multibody = sx::io::addSkeleton(world, *skeleton);
+
+  auto loadedJoint = multibody.getJoint("force_hinge");
+  ASSERT_TRUE(loadedJoint.has_value());
+  EXPECT_EQ(loadedJoint->getActuatorType(), sx::ActuatorType::Force);
+  EXPECT_DOUBLE_EQ(loadedJoint->getForce()[0], 1.25);
 }
 
 TEST(SkeletonLoader, LoadedPendulumMatchesClassicStep)
