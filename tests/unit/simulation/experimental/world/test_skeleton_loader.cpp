@@ -70,6 +70,7 @@
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace {
@@ -606,6 +607,27 @@ TEST(SkeletonLoader, RejectsWorldNameConflictBeforeCreatingMultibodies)
       sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
   EXPECT_EQ(world.getMultibodyCount(), 1u);
   EXPECT_FALSE(world.getMultibody("loader_tree").has_value());
+}
+
+TEST(SkeletonLoader, RejectsWorldGeneratedNameConflictBeforeCreatingMultibodies)
+{
+  auto unnamedSkeleton = createSupportedTreeSkeleton();
+  auto explicitGeneratedNameSkeleton = createPendulumSkeleton();
+  explicitGeneratedNameSkeleton->setName("multibody_001");
+
+  auto legacyWorld = dart::simulation::World::create("legacy_world");
+  legacyWorld->addSkeleton(unnamedSkeleton);
+  legacyWorld->addSkeleton(explicitGeneratedNameSkeleton);
+
+  // World::addSkeleton() canonicalizes empty legacy names. Force this malformed
+  // source state so addWorld guards the experimental auto-name path too.
+  const_cast<std::string&>(unnamedSkeleton->getName()).clear();
+
+  sx::World world;
+  EXPECT_THROW(
+      sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
+  EXPECT_FALSE(world.getMultibody("multibody_001").has_value());
 }
 
 TEST(SkeletonLoader, RejectsWorldJointAxisConflictBeforeCreatingMultibodies)

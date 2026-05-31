@@ -66,6 +66,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <format>
 #include <functional>
 #include <memory>
 #include <numbers>
@@ -77,6 +78,20 @@
 #include <cstddef>
 
 namespace dart::simulation::experimental::io {
+
+namespace detail {
+
+class SkeletonLoaderWorldAccess
+{
+public:
+  static std::size_t multibodyCounter(const World& world)
+  {
+    return world.m_multibodyCounter;
+  }
+};
+
+} // namespace detail
+
 namespace {
 
 std::string uniqueName(
@@ -399,12 +414,50 @@ void validateSkeletonLoadSupported(const dynamics::Skeleton& skeleton)
   }
 }
 
+std::string resolveWorldMultibodyName(
+    const World& targetWorld,
+    const dynamics::Skeleton& skeleton,
+    std::unordered_set<std::string>& sourceNames,
+    std::size_t& generatedMultibodyCounter,
+    std::size_t sourceIndex)
+{
+  std::string resolvedName = skeleton.getName();
+  if (resolvedName.empty()) {
+    do {
+      resolvedName
+          = std::format("multibody_{:03d}", ++generatedMultibodyCounter);
+    } while (targetWorld.hasMultibody(resolvedName)
+             || sourceNames.contains(resolvedName));
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      targetWorld.hasMultibody(resolvedName),
+      InvalidArgumentException,
+      "Cannot translate legacy Skeleton at index {} to Multibody '{}' because "
+      "the target World already contains a Multibody with that name",
+      sourceIndex,
+      resolvedName);
+
+  const bool inserted = sourceNames.insert(resolvedName).second;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !inserted,
+      InvalidArgumentException,
+      "Cannot translate legacy World because Skeleton at index {} resolves to "
+      "duplicate Multibody name '{}'",
+      sourceIndex,
+      resolvedName);
+
+  return resolvedName;
+}
+
 void validateWorldLoadSupported(
     const World& targetWorld,
     const ::dart::simulation::World& sourceWorld,
     const SkeletonLoadOptions& options)
 {
   std::unordered_set<std::string> sourceNames;
+  std::size_t generatedMultibodyCounter
+      = detail::SkeletonLoaderWorldAccess::multibodyCounter(targetWorld);
   for (std::size_t i = 0; i < sourceWorld.getNumSkeletons(); ++i) {
     const dynamics::SkeletonPtr skeleton = sourceWorld.getSkeleton(i);
     DART_EXPERIMENTAL_THROW_T_IF(
@@ -415,26 +468,8 @@ void validateWorldLoadSupported(
 
     World scratchWorld;
     (void)addSkeleton(scratchWorld, *skeleton, options);
-
-    const std::string& skeletonName = skeleton->getName();
-    if (skeletonName.empty()) {
-      continue;
-    }
-
-    DART_EXPERIMENTAL_THROW_T_IF(
-        targetWorld.hasMultibody(skeletonName),
-        InvalidArgumentException,
-        "Cannot translate legacy Skeleton '{}' because the target World "
-        "already contains a Multibody with that name",
-        skeletonName);
-
-    const bool inserted = sourceNames.insert(skeletonName).second;
-    DART_EXPERIMENTAL_THROW_T_IF(
-        !inserted,
-        InvalidArgumentException,
-        "Cannot translate legacy World because multiple source Skeletons are "
-        "named '{}'",
-        skeletonName);
+    (void)resolveWorldMultibodyName(
+        targetWorld, *skeleton, sourceNames, generatedMultibodyCounter, i);
   }
 }
 
