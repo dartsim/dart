@@ -254,6 +254,21 @@ def test_rigid_ipc_manifest_marks_rigid_toi_source_row_implemented(tmp_path):
     assert "rotational trajectory" in row["expected_invariant"]
 
 
+def test_rigid_ipc_manifest_marks_rigid_hash_grid_source_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+
+    row = module.row_for_path(
+        "tests/ccd/test_rigid_body_hash_grid.cpp", "test-source", tmp_path
+    )
+
+    assert row["status"] == "implemented"
+    assert "BM_RigidIpcLargeHashgridSceneBounds" in row["dart_artifact"]
+    assert "large rigid-body hash-grid corpus" in row["expected_invariant"]
+    assert "test_hash_grid.cpp row" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_leaves_synthetic_wrecking_ball_ccd_rows_planned(
     tmp_path,
 ):

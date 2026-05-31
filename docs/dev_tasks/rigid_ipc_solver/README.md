@@ -286,6 +286,10 @@
         row (`tests/ccd/test_rigid_body_time_of_impact.cpp`) as implemented
         after matching DART barrier-kernel, reduced rigid-barrier, and
         `RigidIpcCcdCase` regressions were verified.
+  - [x] Mark the audited rigid-body hash-grid source row
+        (`tests/ccd/test_rigid_body_hash_grid.cpp`) as implemented through
+        DART-owned large hash-grid benchmark evidence. The generic hash-grid
+        source row remains planned.
   - [x] Mark the audited below-threshold high-school-physics friction fixture
         rows (`fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json`
         and the Fig. 18 paper alias) as implemented after exact
@@ -385,6 +389,9 @@ DART-owned implementation.
   `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is
   marked implemented through exact stick coverage; the `mu=0.5` threshold rows
   remain planned because they still need matching DART stick evidence.
+  The rigid-body hash-grid source row is marked implemented through the
+  DART-owned large hash-grid benchmark; the generic hash-grid source row remains
+  planned until DART has brute-force-vs-culled broad-phase parity coverage.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under

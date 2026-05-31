@@ -1,5 +1,28 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: rigid-body hash-grid source row
+
+Delivered a bounded Phase 6 algorithm-source manifest slice:
+
+- Marked the audited source row `tests/ccd/test_rigid_body_hash_grid.cpp`
+  implemented in the generated manifest. Its concrete upstream coverage is the
+  large rigid-body hash-grid scene-bounds experiment, which DART now owns as
+  `BM_RigidIpcLargeHashgridSceneBounds`.
+- Kept the generic `tests/ccd/test_hash_grid.cpp` row planned. DART still needs
+  brute-force-vs-culled broad-phase parity coverage before that row should be
+  retired.
+
+Validation in this slice:
+
+- `pixi run bm --target bm_rigid_ipc_solver --build-type Release -- --benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/rigid_ipc_large_hashgrid_source_row.json --benchmark_out_format=json`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: high-friction incline fixture row
 
 Delivered a bounded Phase 4/6 friction-manifest slice:

@@ -141,6 +141,28 @@ IMPLEMENTED_TEST_SOURCE_ROWS = {
             "Phase 2c."
         ),
     },
+    "tests/ccd/test_rigid_body_hash_grid.cpp": {
+        "artifact": ("bm_rigid_ipc_solver::" "BM_RigidIpcLargeHashgridSceneBounds/*"),
+        "command": (
+            "pixi run bm --target bm_rigid_ipc_solver --build-type Release -- "
+            "--benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds "
+            "--benchmark_out=.benchmark_results/"
+            "rigid_ipc_large_hashgrid_source_row.json "
+            "--benchmark_out_format=json"
+        ),
+        "expected_invariant": (
+            "DART covers the audited rigid-body hash-grid source row by "
+            "loading the large rigid-body hash-grid corpus, computing "
+            "conservative swept scene bounds, and proving those bounds contain "
+            "the upstream exact scene bounds."
+        ),
+        "notes_or_gap": (
+            "The audited source row's concrete coverage is the large-scene "
+            "bounds experiment; DART owns that as benchmark evidence without "
+            "exposing an upstream hash-grid API. Generic hash-grid parity "
+            "remains tracked by the separate test_hash_grid.cpp row."
+        ),
+    },
 }
 
 

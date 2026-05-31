@@ -16857,14 +16857,14 @@
       "topic": "rigid barrier or CCD algorithm unit test",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART unit test covers the same barrier, hash-grid, or rigid time-of-impact responsibility with derivative or conservative bounds where applicable.",
+      "expected_invariant": "DART covers the audited rigid-body hash-grid source row by loading the large rigid-body hash-grid corpus, computing conservative swept scene bounds, and proving those bounds contain the upstream exact scene bounds.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_algorithm::test_rigid_body_hash_grid",
+      "status": "implemented",
+      "dart_artifact": "bm_rigid_ipc_solver::BM_RigidIpcLargeHashgridSceneBounds/*",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_algorithm::test_rigid_body_hash_grid",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bm --target bm_rigid_ipc_solver --build-type Release -- --benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds --benchmark_out=.benchmark_results/rigid_ipc_large_hashgrid_source_row.json --benchmark_out_format=json",
+      "notes_or_gap": "The audited source row's concrete coverage is the large-scene bounds experiment; DART owns that as benchmark evidence without exposing an upstream hash-grid API. Generic hash-grid parity remains tracked by the separate test_hash_grid.cpp row."
     },
     {
       "upstream_path": "tests/ccd/test_rigid_body_time_of_impact.cpp",
