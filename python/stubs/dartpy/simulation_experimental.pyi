@@ -43,6 +43,7 @@ __all__: list[str] = [
     "StateVariable",
     "World",
     "WorldSyncStage",
+    "build_multibodies_from_world",
     "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
@@ -60,6 +61,7 @@ import numpy
 from numpy.typing import NDArray
 
 import dartpy.dynamics
+import dartpy.simulation
 
 
 class JointType(enum.Enum):
@@ -1360,6 +1362,8 @@ class SkeletonToMultibodyOptions:
     def copy_joint_properties(self, arg: bool, /) -> None: ...
 
 def build_multibody_from_skeleton(world: World, skeleton: dartpy.dynamics.Skeleton, options: SkeletonToMultibodyOptions = ...) -> Multibody: ...
+
+def build_multibodies_from_world(world: World, legacy_world: dartpy.simulation.World, options: SkeletonToMultibodyOptions = ...) -> list[Multibody]: ...
 
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 

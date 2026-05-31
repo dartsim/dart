@@ -38,6 +38,8 @@
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <dart/simulation/world.hpp>
+
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -63,8 +65,8 @@ namespace dart::simulation::experimental::io {
 
 namespace {
 
-// Tolerance for treating a joint offset's rotation as identity (ball/free/planar
-// joints require identity-rotation parent/child offsets).
+// Tolerance for treating a joint offset's rotation as identity
+// (ball/free/planar joints require identity-rotation parent/child offsets).
 constexpr double kAnchorTolerance = 1e-9;
 
 /// Rotation matrix from an exponential-coordinate rotation vector (Rodrigues).
@@ -402,6 +404,30 @@ Multibody buildMultibodyFromSkeleton(
   }
 
   return multibody;
+}
+
+//==============================================================================
+std::vector<Multibody> buildMultibodiesFromWorld(
+    World& world,
+    const dart::simulation::World& legacyWorld,
+    const SkeletonToMultibodyOptions& options)
+{
+  const std::size_t count = legacyWorld.getNumSkeletons();
+  std::vector<Multibody> multibodies;
+  multibodies.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    const auto skeleton = legacyWorld.getSkeleton(i);
+    if (!skeleton) {
+      continue;
+    }
+    // Name each multibody after its skeleton (skeleton names are unique within
+    // the legacy world); the other options apply to every skeleton.
+    SkeletonToMultibodyOptions perSkeleton = options;
+    perSkeleton.name.clear();
+    multibodies.push_back(
+        buildMultibodyFromSkeleton(world, *skeleton, perSkeleton));
+  }
+  return multibodies;
 }
 
 } // namespace dart::simulation::experimental::io

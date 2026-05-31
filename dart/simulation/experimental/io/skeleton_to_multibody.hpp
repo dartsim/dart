@@ -38,6 +38,11 @@
 #include <dart/dynamics/fwd.hpp>
 
 #include <string>
+#include <vector>
+
+namespace dart::simulation {
+class World;
+} // namespace dart::simulation
 
 namespace dart::simulation::experimental {
 class World;
@@ -108,6 +113,27 @@ struct SkeletonToMultibodyOptions
 DART_EXPERIMENTAL_API Multibody buildMultibodyFromSkeleton(
     World& world,
     const dynamics::Skeleton& skeleton,
+    const SkeletonToMultibodyOptions& options = {});
+
+/// Build one experimental `Multibody` per skeleton in a legacy
+/// `simulation::World`, loading a whole scene (for example, every robot parsed
+/// from an SDF world by `dart::io::readWorld`) into the experimental `World`.
+///
+/// Each multibody is named after its source skeleton (so `options.name` is
+/// ignored); the remaining options apply to every skeleton. Each skeleton is
+/// translated by `buildMultibodyFromSkeleton`, so the same supported-joint set
+/// and limitations apply.
+///
+/// @param world The experimental world that will own the created multibodies.
+/// @param legacyWorld The legacy world whose skeletons are translated.
+/// @param options Translation options (base link name, state copy); `name` is
+///        ignored.
+/// @return The created `Multibody` handles, in skeleton order.
+/// @throws InvalidOperationException if any skeleton uses an unsupported
+///         feature (see `buildMultibodyFromSkeleton`).
+DART_EXPERIMENTAL_API std::vector<Multibody> buildMultibodiesFromWorld(
+    World& world,
+    const dart::simulation::World& legacyWorld,
     const SkeletonToMultibodyOptions& options = {});
 
 } // namespace dart::simulation::experimental::io

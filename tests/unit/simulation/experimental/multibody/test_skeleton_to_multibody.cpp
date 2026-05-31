@@ -35,6 +35,8 @@
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <dart/simulation/world.hpp>
+
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/euler_joint.hpp>
@@ -50,6 +52,9 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
+
+#include <string>
+#include <vector>
 
 namespace sx = dart::simulation::experimental;
 namespace dd = dart::dynamics;
@@ -546,6 +551,36 @@ TEST(SkeletonToMultibody, CopiesRevoluteJointProperties)
   ASSERT_TRUE(bareHinge.has_value());
   EXPECT_EQ(bareHinge->getDampingCoefficient()[0], 0.0);
   EXPECT_EQ(bareHinge->getSpringStiffness()[0], 0.0);
+}
+
+//==============================================================================
+// Every skeleton in a legacy world is converted into its own multibody, named
+// after its source skeleton.
+TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
+{
+  auto legacyWorld = dart::simulation::World::create();
+  legacyWorld->addSkeleton(makeDoublePendulum()); // "double_pendulum", 2 DOF
+
+  auto slider = dd::Skeleton::create("slider");
+  auto [joint, body]
+      = slider->createJointAndBodyNodePair<dd::PrismaticJoint>(nullptr);
+  joint->setName("slide");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+  legacyWorld->addSkeleton(slider);
+
+  sx::World world;
+  const std::vector<sx::Multibody> multibodies
+      = sx::io::buildMultibodiesFromWorld(world, *legacyWorld);
+
+  EXPECT_EQ(multibodies.size(), 2u);
+  EXPECT_EQ(world.getMultibodyCount(), 2u);
+  EXPECT_TRUE(world.getMultibody("double_pendulum").has_value());
+  EXPECT_TRUE(world.getMultibody("slider").has_value());
+  EXPECT_EQ(multibodies[0].getDOFCount(), 2u);
+  EXPECT_EQ(multibodies[1].getDOFCount(), 1u);
 }
 
 //==============================================================================

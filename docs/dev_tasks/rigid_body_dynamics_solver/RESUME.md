@@ -231,6 +231,13 @@ and `OffsetRootMatchesLegacyDynamics` (C++) and a dartpy branching parity test.
 Ball/free/planar still require identity-rotation parent/child offsets
 (translation is fine). Full experimental suite 39/39; Python loader suite 9/9.
 
+**(DONE) `readWorld` / multi-skeleton.** `io::buildMultibodiesFromWorld(world,
+legacyWorld, options)` (dartpy `build_multibodies_from_world`) converts every
+skeleton of a legacy `simulation::World` into its own multibody, named after the
+skeleton. C++ + dartpy tests. (A file-based one-call loader can wrap
+`dart::io::readWorld` + this, but would pull `dart-io` into the experimental
+lib's link, so it is left to the caller for now.)
+
 **Resume here, in order (remaining Subsystem B + Subsystem A):**
 
 1. **Collision shapes.** Translate `BodyNode` shape nodes (with a
@@ -239,11 +246,7 @@ Ball/free/planar still require identity-rotation parent/child offsets
    from the body origin (common) cannot be represented. Either add an offset to
    `CollisionShape` (a small experimental-API change) or restrict to
    origin-coincident shapes. Decide the API shape first.
-2. **`readWorld` / multi-skeleton convenience.** Add a `World`-level loader that
-   converts each skeleton of a legacy `simulation::World` (or a file via
-   `dart::io::readWorld`). Thin; each root body already attaches under one base,
-   so multi-tree works today.
-3. **Subsystem A — coupled boxed-LCP.** The remaining headline gap. Reorder the
+2. **Subsystem A — coupled boxed-LCP.** The remaining headline gap. Reorder the
    `World::step` pipeline to (1) all velocity integration, (2) one unified
    contact/constraint solve over all bodies via `dart/math/lcp`, (3) all position
    integration. Multi-session; touches the core step loop and every passing test
@@ -365,8 +368,7 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     links: a parent with sibling joints at different offsets, and offset/rotated
     roots, load directly. See the committed sections above.
   - **Remaining for Subsystem B (see "Resume here, in order" above):** collision
-    shapes (needs a `CollisionShape` pose-offset field) and a `readWorld` /
-    multi-skeleton convenience.
+    shapes (needs a `CollisionShape` pose-offset field).
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),

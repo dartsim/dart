@@ -56,6 +56,8 @@
 #include <dart/simulation/experimental/space/state_space.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <dart/simulation/world.hpp>
+
 #include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Cholesky>
@@ -1734,6 +1736,20 @@ void defSimulationExperimentalModule(nb::module_& m)
       // The returned Multibody handle holds a raw World*, so keep the World
       // alive as long as the handle lives, matching World.add_multibody.
       nb::keep_alive<0, 1>());
+
+  m.def(
+      "build_multibodies_from_world",
+      [](sim::World& world,
+         const dart::simulation::World& legacyWorld,
+         const sim::io::SkeletonToMultibodyOptions& options) {
+        return sim::io::buildMultibodiesFromWorld(world, legacyWorld, options);
+      },
+      nb::arg("world"),
+      nb::arg("legacy_world"),
+      nb::arg("options") = sim::io::SkeletonToMultibodyOptions{});
+  // The returned handles reference `world`; the caller must keep it alive (a
+  // returned list is not weak-referenceable, so no keep_alive edge is
+  // attached).
 
   m.def(
       "load_deformable_scene",

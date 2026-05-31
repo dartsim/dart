@@ -294,6 +294,30 @@ def test_build_multibody_branching_tree_matches_legacy():
     )
 
 
+def test_build_multibodies_from_world():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World()
+    legacy_world.add_skeleton(_two_link_revolute_skeleton())  # "double_pendulum"
+
+    slider = dart.Skeleton("slider")
+    joint, body = slider.create_prismatic_joint_and_body_node_pair()
+    joint.set_axis(np.array([0.0, 0.0, 1.0]))
+    body.set_inertia(
+        dart.Inertia(1.0, [0.0, 0.0, 0.0], np.diag([0.01, 0.01, 0.01]))
+    )
+    legacy_world.add_skeleton(slider)
+
+    world = sx.World()
+    multibodies = sx.build_multibodies_from_world(world, legacy_world)
+
+    assert len(multibodies) == 2
+    assert world.num_multibodies == 2
+    assert {mb.name for mb in multibodies} == {"double_pendulum", "slider"}
+    assert multibodies[0].num_dofs == 2
+    assert multibodies[1].num_dofs == 1
+
+
 def test_build_multibody_from_urdf_skeleton():
     sx = _simulation_experimental()
 
