@@ -4288,14 +4288,17 @@ void runVbdDeformableSolve(
       for (const SphereObstacleBarrier& sphere : sphereObstacles) {
         const Eigen::Vector3d offset = position - sphere.center;
         const double centerDistance = offset.norm();
-        if (centerDistance <= 0.0) {
+        if (!std::isfinite(centerDistance)) {
           continue;
+        }
+        Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+        if (centerDistance > 0.0) {
+          normal = offset / centerDistance;
         }
         const double surfaceDistance = centerDistance - sphere.radius;
         if (surfaceDistance >= band) {
           continue;
         }
-        const Eigen::Vector3d normal = offset / centerDistance;
         const double planeOffset = normal.dot(sphere.center) + sphere.radius;
         const double gap = normal.dot(position) - planeOffset;
         if (gap < bestGap) {

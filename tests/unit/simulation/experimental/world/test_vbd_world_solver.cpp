@@ -802,6 +802,46 @@ TEST(VbdWorldSolver, VbdBodyRestsOnSphereObstacle)
 }
 
 //==============================================================================
+// A VBD node exactly at a static sphere obstacle center has no radial direction
+// to normalize, so it still gets a deterministic upward contact plane instead
+// of being skipped as unconstrained.
+TEST(VbdWorldSolver, VbdSphereObstacleRepelsCenterEmbeddedNode)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const double sphereRadius = 0.5;
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero()};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  options.masses = {0.1};
+  auto body = world.addDeformableBody("embedded_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 30;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  const auto position = body.getPosition(0);
+  EXPECT_TRUE(position.allFinite());
+  EXPECT_NEAR(position.x(), 0.0, 1e-12);
+  EXPECT_NEAR(position.y(), 0.0, 1e-12);
+  EXPECT_GT(position.z(), 0.0);
+}
+
+//==============================================================================
 // Option C: the same holds for a static box obstacle -- VBD keeps the patch on
 // the box's top face without penetrating it.
 TEST(VbdWorldSolver, VbdBodyRestsOnBoxObstacle)
