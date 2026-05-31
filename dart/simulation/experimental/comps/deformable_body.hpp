@@ -209,6 +209,11 @@ struct DeformableVbdConfig
   /// is inside the supported CPU mass-spring envelope. Unsupported cases fall
   /// back to the existing VBD penalty-contact path.
   bool useAvbdContactNormalRows = false;
+  /// Internal AVBD slice flag: use warm-started augmented-Lagrangian
+  /// self-contact normal rows for lagged point-triangle / edge-edge candidates
+  /// when the current scene is inside the supported CPU mass-spring envelope.
+  /// Unsupported cases fall back to the existing VBD self-contact penalty path.
+  bool useAvbdSelfContactNormalRows = false;
   /// Internal AVBD slice flag: replace exact fixed-node skipping with
   /// warm-started hard point-attachment rows for pinned/scripted nodes when the
   /// current scene is inside the supported CPU mass-spring envelope.

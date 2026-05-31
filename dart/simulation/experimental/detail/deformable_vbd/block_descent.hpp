@@ -448,9 +448,11 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// finite-stiffness spring rows all contribute to the same primal vertex block,
 /// then each row family updates its persistent dual/stiffness state after every
 /// sweep. The optional friction-tangent rows provide the first bounded row
-/// family in the same serial driver; static/dynamic friction switching, full
-/// friction cones, tetrahedral row mixing, and parallel dual scheduling remain
-/// later slices.
+/// family in the same serial driver. Optional self-contact normal rows share
+/// one scalar row per point-triangle / edge-edge primitive and stamp each
+/// incident local vertex through the lagged self-contact adjacency. Static /
+/// dynamic friction switching, full friction cones, tetrahedral row mixing, and
+/// parallel dual scheduling remain later slices.
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -469,7 +471,10 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     const AvbdPointAttachmentOptions& attachmentOptions,
     const AvbdSpringFiniteStiffnessOptions& springOptions,
     std::vector<AvbdHalfSpaceFrictionRow>* frictionRows = nullptr,
-    const AvbdHalfSpaceFrictionOptions* frictionOptions = nullptr)
+    const AvbdHalfSpaceFrictionOptions* frictionOptions = nullptr,
+    std::vector<AvbdSelfContactNormalRow>* selfContactRows = nullptr,
+    const SelfContactAdjacency* selfContact = nullptr,
+    const AvbdSelfContactNormalOptions* selfContactOptions = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
@@ -502,6 +507,21 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
             positions[vertex],
             positions[other],
             options.clampSpringHessian);
+      }
+    }
+    if (selfContactRows != nullptr && selfContact != nullptr
+        && selfContactOptions != nullptr
+        && vertex < selfContact->incident.size()) {
+      for (const SelfContactEntry& entry : selfContact->incident[vertex]) {
+        if (entry.constraint >= selfContactRows->size()) {
+          continue;
+        }
+        addAvbdSelfContactNormal(
+            block,
+            positions,
+            (*selfContactRows)[entry.constraint],
+            entry.localVertex,
+            selfContactOptions->alpha);
       }
     }
     for (const AvbdHalfSpaceContactRow& row : contactRows) {
@@ -588,6 +608,22 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
         }
         row.state = updateAvbdHalfSpaceFrictionTangentRow(
             row.state, positions[row.vertex], row, *frictionOptions);
+      }
+    }
+    if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+      for (AvbdSelfContactNormalRow& row : *selfContactRows) {
+        bool hasFreeVertex = false;
+        for (const std::uint32_t node : row.nodes) {
+          if (node < vertexCount && fixed[node] == 0u) {
+            hasFreeVertex = true;
+            break;
+          }
+        }
+        if (!hasFreeVertex) {
+          continue;
+        }
+        row.state = updateAvbdSelfContactNormalRow(
+            row.state, positions, row, *selfContactOptions);
       }
     }
   }

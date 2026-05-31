@@ -56,14 +56,16 @@ namespace contact
 
 /// One incident self-contact constraint for a single vertex: the four nodes of
 /// the point-triangle or edge-edge primitive pair, this vertex's local index
-/// (0..3) within that stencil, and which barrier (VT vs EE) to evaluate. This
-/// is enough to recompute the vertex's barrier block during a Gauss-Seidel
-/// sweep.
+/// (0..3) within that stencil, which barrier (VT vs EE) to evaluate, and the
+/// primitive constraint index in point-triangle-then-edge-edge candidate order.
+/// This is enough to recompute the vertex's barrier block during a
+/// Gauss-Seidel sweep and to stamp a shared AVBD scalar row for the primitive.
 struct SelfContactEntry
 {
   std::array<std::uint32_t, 4> nodes{0, 0, 0, 0};
   std::uint8_t localVertex = 0;
   bool isEdgeEdge = false;
+  std::uint32_t constraint = 0;
 };
 
 /// Per-vertex incident self-contact constraints, built once per step (lagged)
@@ -94,16 +96,18 @@ struct SelfContactAdjacency
     adjacency.stiffness = stiffness;
     adjacency.incident.resize(vertexCount);
 
-    const auto scatter
-        = [&](const std::array<std::uint32_t, 4>& nodes, bool isEdgeEdge) {
-            for (std::uint8_t k = 0; k < 4; ++k) {
-              if (nodes[k] < vertexCount) {
-                adjacency.incident[nodes[k]].push_back(
-                    SelfContactEntry{nodes, k, isEdgeEdge});
-              }
-            }
-          };
+    const auto scatter = [&](const std::array<std::uint32_t, 4>& nodes,
+                             bool isEdgeEdge,
+                             std::uint32_t constraint) {
+      for (std::uint8_t k = 0; k < 4; ++k) {
+        if (nodes[k] < vertexCount) {
+          adjacency.incident[nodes[k]].push_back(
+              SelfContactEntry{nodes, k, isEdgeEdge, constraint});
+        }
+      }
+    };
 
+    std::uint32_t constraint = 0;
     for (const auto& candidate : candidates.pointTriangleCandidates) {
       const auto& triangle = triangles[candidate.triangle];
       scatter(
@@ -111,7 +115,8 @@ struct SelfContactAdjacency
            static_cast<std::uint32_t>(triangle.nodeA),
            static_cast<std::uint32_t>(triangle.nodeB),
            static_cast<std::uint32_t>(triangle.nodeC)},
-          /*isEdgeEdge=*/false);
+          /*isEdgeEdge=*/false,
+          constraint++);
     }
     for (const auto& candidate : candidates.edgeEdgeCandidates) {
       const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
@@ -121,7 +126,8 @@ struct SelfContactAdjacency
            static_cast<std::uint32_t>(edgeA.nodeB),
            static_cast<std::uint32_t>(edgeB.nodeA),
            static_cast<std::uint32_t>(edgeB.nodeB)},
-          /*isEdgeEdge=*/true);
+          /*isEdgeEdge=*/true,
+          constraint++);
     }
     return adjacency;
   }

@@ -19,13 +19,14 @@ error, separate tet-row diagnostics, and coexistence with the existing lagged
 VBD self-contact penalty. A bounded friction-tangent row primitive now
 participates in the serial mass-spring AVBD row driver, and supported
 static-contact mass-spring World scenes generate two tangent rows per active
-contact-normal row. A local self-contact normal row kernel now covers
-point-triangle and edge-edge primitive directions, AVBD hard-row stamping, and
-dual/stiffness updates, but it is not wired into World row generation yet.
-Unsupported mixed spring-plus-tet, mass-spring self-contact,
-finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
-and unsupported-row requests have explicit fallback coverage that keeps them on
-the existing VBD path.
+contact-normal row. Supported serial mass-spring self-contact scenes can also
+generate one AVBD self-contact normal row per lagged point-triangle /
+edge-edge primitive, stamp each incident local vertex through the shared scalar
+row, and report `vbdAvbdSelfContactNormalRows`.
+Unsupported mixed spring-plus-tet, mass-spring self-contact without the
+self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
+Rayleigh-damped, parallel, and unsupported-row requests have explicit fallback
+coverage that keeps them on the existing VBD path.
 
 ## Current Branch
 
@@ -33,15 +34,15 @@ the existing VBD path.
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
-tangent rows and a local self-contact normal row kernel.
+tangent rows and supported World self-contact normal rows.
 
 ## Immediate Next Step
 
-Wire AVBD self-contact normal rows into row generation/inventory as the next
-bounded slice. Keep the supported envelope narrow, share one scalar row state
-per primitive, stamp each incident local vertex from that row, and preserve the
-current unsupported mass-spring self-contact fallback until World coverage proves
-the new path.
+Start the next bounded AVBD contact/friction slice: static/dynamic friction
+switching, fuller friction-cone persistence, or self-contact friction are the
+preferred row-family gaps. Keep the supported envelope narrow and preserve
+fallback coverage for topology mixes, damping/acceleration, parallel solves, and
+unsupported requested row combinations.
 
 ## Context That Would Be Lost
 
@@ -60,10 +61,10 @@ the new path.
   rows, and finite-stiffness spring rows, including a combined serial
   mass-spring row solve for those three families. Pure-tet World scenes can now
   use the tet-material finite-stiffness row path, supported static-contact
-  mass-spring World scenes generate bounded friction-tangent rows, and the local
-  self-contact normal kernel is tested. This does not imply hard-contact/friction
-  completeness, static/dynamic friction switching, World AVBD self-contact row
-  support, rigid/soft coupling, or GPU parity.
+  mass-spring World scenes generate bounded friction-tangent rows, and supported
+  serial mass-spring self-contact scenes generate AVBD self-contact normal rows.
+  This does not imply hard-contact/friction completeness, static/dynamic
+  friction switching, self-contact friction, rigid/soft coupling, or GPU parity.
 
 ## How to Resume
 
@@ -75,7 +76,7 @@ build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_filter='VbdCombi
 build/default/cpp/Release/bin/test_vbd_attachment
 build/default/cpp/Release/bin/test_vbd_finite_stiffness
 build/default/cpp/Release/bin/test_vbd_contact --gtest_filter='VbdContact.Avbd*'
-build/default/cpp/Release/bin/test_vbd_world_solver --gtest_filter='VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial:VbdWorldSolver.AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes:VbdWorldSolver.AvbdContactNormalRowsFallbackForFriction:VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness:VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode:VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact'
+build/default/cpp/Release/bin/test_vbd_world_solver --gtest_filter='VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial:VbdWorldSolver.AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes:VbdWorldSolver.AvbdContactNormalRowsFallbackForFriction:VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness:VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode:VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact'
 ```
 
 Then continue Phase A1 from
