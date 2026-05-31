@@ -1,5 +1,34 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: large hash-grid benchmark evidence
+
+Delivered a bounded Phase 6 benchmark-evidence slice:
+
+- Added `tests/fixtures/rigid_ipc/large_hashgrid_bounds.tsv`, a compact
+  audited fixture for the remaining
+  `tests/data/large-rb-hashgrid/large-rb-hashgrid-000..001.json` rows. It
+  records upstream source hashes, body/source primitive counts, per-body
+  pose/local-bound records, and upstream exact scene bounds without vendoring
+  the full upstream JSON data.
+- Added
+  `BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_{000,001}` to
+  `bm_rigid_ipc_solver`. The benchmark computes conservative swept scene
+  bounds from the compact per-body records, verifies those bounds contain the
+  upstream exact scene bounds, and emits profile counters.
+- Updated the rigid IPC manifest generator so all 405 `test-data` rows are now
+  emitted as `implemented`. Broader Phase 6 remains open on fixture, algorithm,
+  benchmark-script, comparison, and visual-evidence rows.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target bm_rigid_ipc_solver`
+- `pixi run bm --target bm_rigid_ipc_solver --build-type Release -- --benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/rigid_ipc_large_hashgrid_benchmark_pixi.json --benchmark_out_format=json`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: large hash-grid manifest semantics
 
 Delivered a bounded Phase 6 manifest cleanup slice:

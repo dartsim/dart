@@ -50,6 +50,10 @@ IMPLEMENTED_KINEMATIC_CCD_DATA_ROWS = frozenset(
 IMPLEMENTED_WRECKING_BALL_CCD_DATA_ROWS = frozenset(
     f"tests/data/wrecking-ball/ccd-test-{index:03d}.json" for index in range(386)
 )
+IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS = frozenset(
+    f"tests/data/large-rb-hashgrid/large-rb-hashgrid-{index:03d}.json"
+    for index in range(2)
+)
 
 
 def is_large_rb_hashgrid_data(path: str) -> bool:
@@ -371,7 +375,32 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
             "has matching broad-phase bounds coverage and benchmark profile "
             "evidence."
         )
-    if source_kind == "test-data" and path in IMPLEMENTED_ROOT_CCD_DATA_ROWS:
+    if source_kind == "test-data" and path in IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS:
+        status = "implemented"
+        artifact = (
+            "bm_rigid_ipc_solver::"
+            "BM_RigidIpcLargeHashgridSceneBounds/"
+            f"{command_slug}"
+        )
+        command = (
+            "pixi run bm --target bm_rigid_ipc_solver --build-type Release -- "
+            "--benchmark_filter="
+            f"BM_RigidIpcLargeHashgridSceneBounds/{command_slug} "
+            "--benchmark_out=.benchmark_results/"
+            f"rigid_ipc_{command_slug}.json --benchmark_out_format=json"
+        )
+        expected_invariant = (
+            "DART loads compact audited large rigid-body hash-grid bounds, "
+            "computes conservative swept scene bounds, and proves the benchmark "
+            "bounds contain the upstream exact scene bounds."
+        )
+        notes_or_gap = (
+            "Covered by DART-owned benchmark coverage for the audited large "
+            "rigid-body hash-grid rows; the benchmark fixture records the "
+            "upstream source hashes and exact scene bounds without vendoring "
+            "the full upstream JSON data."
+        )
+    elif source_kind == "test-data" and path in IMPLEMENTED_ROOT_CCD_DATA_ROWS:
         status = "implemented"
         artifact = (
             "test_rigid_ipc_fixture::"

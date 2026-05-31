@@ -79,7 +79,7 @@ def test_rigid_ipc_manifest_leaves_uncovered_ccd_rows_planned(tmp_path):
     assert row["status"] == "planned"
 
 
-def test_rigid_ipc_manifest_keeps_large_hashgrid_rows_planned(tmp_path):
+def test_rigid_ipc_manifest_marks_large_hashgrid_rows_implemented(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
     data_path = (
         tmp_path / "tests" / "data" / "large-rb-hashgrid" / "large-rb-hashgrid-000.json"
@@ -93,10 +93,12 @@ def test_rigid_ipc_manifest_keeps_large_hashgrid_rows_planned(tmp_path):
         tmp_path,
     )
 
-    assert row["status"] == "planned"
+    assert row["status"] == "implemented"
     assert row["dart_target_type"] == "benchmark"
-    assert "bm-rigid-ipc" in row["dart_command_or_ctest_or_benchmark"]
-    assert "commented out" in row["notes_or_gap"]
+    assert "BM_RigidIpcLargeHashgridSceneBounds" in row["dart_artifact"]
+    assert "bm_rigid_ipc_solver" in row["dart_command_or_ctest_or_benchmark"]
+    assert "upstream exact scene bounds" in row["expected_invariant"]
+    assert "source hashes" in row["notes_or_gap"]
 
 
 def test_rigid_ipc_manifest_marks_first_kinematic_ccd_rows_implemented(tmp_path):

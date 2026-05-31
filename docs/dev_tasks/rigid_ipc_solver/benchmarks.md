@@ -32,6 +32,11 @@ Cases covered:
   barrier solve on a two-body point contact.
 - `BM_RigidIpcLineSearchStepBound` — conservative curved-CCD line-search bound
   for a crossing triangle pair.
+- `BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_{000,001}` — compact
+  audited large rigid-body hash-grid data rows. The benchmark computes
+  conservative swept scene bounds from per-body pose/local-bound records,
+  verifies those bounds contain the upstream exact scene bounds, and emits JSON
+  profile counters for body/source primitive counts and bound slack.
 
 ## Comparison baselines (the bar to beat)
 

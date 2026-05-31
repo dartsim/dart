@@ -9783,14 +9783,14 @@
       "topic": "rigid hash-grid broad-phase data regression",
       "priority": "P1",
       "dart_target_type": "benchmark",
-      "expected_invariant": "DART broad-phase coverage records conservative scene bounds for the large rigid-body hash-grid corpus and emits reproducible profile evidence.",
+      "expected_invariant": "DART loads compact audited large rigid-body hash-grid bounds, computes conservative swept scene bounds, and proves the benchmark bounds contain the upstream exact scene bounds.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "hash-grid benchmark JSON packet",
-      "status": "planned",
-      "dart_artifact": "benchmark rigid_ipc_hashgrid::large_rb_hashgrid_000",
+      "status": "implemented",
+      "dart_artifact": "bm_rigid_ipc_solver::BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_000",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "pixi run bm-rigid-ipc -- --benchmark_filter=large_rb_hashgrid_000",
-      "notes_or_gap": "The audited upstream hash-grid source keeps this large-scene benchmark commented out; retire this planned row only after DART has matching broad-phase bounds coverage and benchmark profile evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bm --target bm_rigid_ipc_solver --build-type Release -- --benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_000 --benchmark_out=.benchmark_results/rigid_ipc_large_rb_hashgrid_000.json --benchmark_out_format=json",
+      "notes_or_gap": "Covered by DART-owned benchmark coverage for the audited large rigid-body hash-grid rows; the benchmark fixture records the upstream source hashes and exact scene bounds without vendoring the full upstream JSON data."
     },
     {
       "upstream_path": "tests/data/large-rb-hashgrid/large-rb-hashgrid-001.json",
@@ -9801,14 +9801,14 @@
       "topic": "rigid hash-grid broad-phase data regression",
       "priority": "P1",
       "dart_target_type": "benchmark",
-      "expected_invariant": "DART broad-phase coverage records conservative scene bounds for the large rigid-body hash-grid corpus and emits reproducible profile evidence.",
+      "expected_invariant": "DART loads compact audited large rigid-body hash-grid bounds, computes conservative swept scene bounds, and proves the benchmark bounds contain the upstream exact scene bounds.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "hash-grid benchmark JSON packet",
-      "status": "planned",
-      "dart_artifact": "benchmark rigid_ipc_hashgrid::large_rb_hashgrid_001",
+      "status": "implemented",
+      "dart_artifact": "bm_rigid_ipc_solver::BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_001",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "pixi run bm-rigid-ipc -- --benchmark_filter=large_rb_hashgrid_001",
-      "notes_or_gap": "The audited upstream hash-grid source keeps this large-scene benchmark commented out; retire this planned row only after DART has matching broad-phase bounds coverage and benchmark profile evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bm --target bm_rigid_ipc_solver --build-type Release -- --benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_001 --benchmark_out=.benchmark_results/rigid_ipc_large_rb_hashgrid_001.json --benchmark_out_format=json",
+      "notes_or_gap": "Covered by DART-owned benchmark coverage for the audited large rigid-body hash-grid rows; the benchmark fixture records the upstream source hashes and exact scene bounds without vendoring the full upstream JSON data."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-000.json",

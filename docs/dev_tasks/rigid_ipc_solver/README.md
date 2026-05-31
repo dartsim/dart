@@ -267,10 +267,11 @@
         the generated manifest after their conservative-TOI regression landed.
   - [x] Reclassify the remaining large rigid-body hash-grid data rows
         (`tests/data/large-rb-hashgrid/large-rb-hashgrid-000..001.json`) as
-        planned broad-phase benchmark rows instead of direct CCD TOI rows. The
-        audited upstream hash-grid source keeps that large-scene benchmark
-        commented out, so these rows remain planned until DART has matching
-        bounds coverage and profile evidence.
+        broad-phase benchmark rows instead of direct CCD TOI rows, then mark
+        them implemented after DART-owned benchmark coverage landed. The
+        benchmark computes conservative swept scene bounds from compact audited
+        per-body records, verifies those bounds contain the upstream exact scene
+        bounds, and emits profile counters.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -349,9 +350,9 @@ DART-owned implementation.
   corpus now preserves the upstream conservative-TOI check: when DART reports a
   hit, a replay truncated at that reported bound does not report another hit.
   The remaining large rigid-body hash-grid data rows are not direct CCD TOI
-  cases; the manifest now keeps them as planned broad-phase benchmark rows
-  requiring conservative scene-bounds coverage and reproducible profile
-  evidence.
+  cases; the manifest now marks them implemented through a DART-owned benchmark
+  that computes conservative swept scene bounds from compact per-body records
+  and verifies those bounds contain the upstream exact scene bounds.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
@@ -422,21 +423,18 @@ DART-owned implementation.
 2. Extend Phase 4 from bounded outer lagged-friction passes and fixture-driven
    friction controls into broader corpus coverage and production convergence
    criteria.
-3. Add DART-owned broad-phase benchmark coverage for the remaining
-   `tests/data/large-rb-hashgrid/large-rb-hashgrid-000..001.json` rows before
-   retiring those planned manifest entries.
-4. Extend Phase 2 with upstream corpus parity: more direct
+3. Extend Phase 2 with upstream corpus parity: more direct
    `tests/data/ccd-test-*` evaluator checks, kinematic rows, codimensional
    coverage, rigorous interval arithmetic, and accepted tolerances against the
    audited reference.
-5. Extend Phase 1 from mesh and inline replay into fuller fixture coverage:
+4. Extend Phase 1 from mesh and inline replay into fuller fixture coverage:
    fixture-row runtime examples and remaining comparison script commands.
    Default stepping, opt-in IPC friction replay, fixture-driven stage policy,
    and kinematic fixture replay are covered, but a public-facing example remains
    open until the importer surface is no longer internal-only.
-6. Keep selecting P0 rows from `fixtures/3D/unit-tests/tunneling.json`, direct
+5. Keep selecting P0 rows from `fixtures/3D/unit-tests/tunneling.json`, direct
    `tests/data/ccd-test-*` files, and one simple paper figure fixture.
-7. Keep the default `World::step()` behavior unchanged until a tested
+6. Keep the default `World::step()` behavior unchanged until a tested
    DART-owned method policy can select the implicit-barrier path without
    exposing registry or backend internals.
 
