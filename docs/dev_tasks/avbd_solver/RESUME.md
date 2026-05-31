@@ -30,7 +30,9 @@ tangent stencils in the combined mass-spring row driver, with supported World
 generation for serial mass-spring self-contact scenes and focused coverage for
 tangent direction, static/dynamic pair switching, circular-cone projection,
 tangential-motion resistance, World row generation, and World-level tangential
-slip reduction.
+slip reduction. Static-contact and self-contact friction rows also have a
+combined-row coexistence regression so both row families can participate in the
+same supported AVBD mass-spring solve.
 Unsupported mixed spring-plus-tet, mass-spring self-contact without the
 self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
 Rayleigh-damped, parallel, and unsupported-row requests have explicit fallback
@@ -38,11 +40,12 @@ coverage that keeps them on the existing VBD path.
 
 ## Current Branch
 
-`feature/avbd-plan104-foundation` - checkpoint commits based on current
+`feature/avbd-plan104-combined-friction` - checkpoint commits based on current
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
-tangent rows and supported World self-contact normal rows.
+tangent rows, supported World self-contact normal/friction rows, and combined
+static/self-contact friction row coexistence coverage.
 
 ## Immediate Next Step
 
@@ -72,7 +75,9 @@ unsupported requested row combinations.
   mass-spring World scenes generate bounded friction-tangent rows with pairwise
   static/dynamic switching, and supported serial mass-spring self-contact scenes
   generate AVBD self-contact normal rows and matching self-contact friction rows
-  when material friction is positive. This does not imply
+  when material friction is positive. A combined static/self-contact friction
+  regression now guards both row families in one supported World solve. This
+  does not imply
   hard-contact/friction completeness, full contact-manifold friction
   persistence, broader self-contact friction envelopes, rigid/soft coupling, or
   GPU parity.
@@ -87,7 +92,7 @@ build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_filter='VbdCombi
 build/default/cpp/Release/bin/test_vbd_attachment
 build/default/cpp/Release/bin/test_vbd_finite_stiffness
 build/default/cpp/Release/bin/test_vbd_contact --gtest_filter='VbdContact.Avbd*'
-build/default/cpp/Release/bin/test_vbd_world_solver --gtest_filter='VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial:VbdWorldSolver.AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes:VbdWorldSolver.AvbdContactNormalRowsFallbackForFriction:VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody:VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness:VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode:VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact'
+build/default/cpp/Release/bin/test_vbd_world_solver --gtest_filter='VbdWorldSolver.AvbdContactAndSelfContactFrictionRowsCombine:VbdWorldSolver.AvbdSelfContactFrictionRowsReduceTangentialMotion:VbdWorldSolver.AvbdSelfContactNormalRowsIncludeFrictionTangentRows:VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial:VbdWorldSolver.AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes:VbdWorldSolver.AvbdContactNormalRowsFallbackForFriction:VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody:VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness:VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode:VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact'
 ```
 
 Then continue Phase A1 from
