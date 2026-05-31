@@ -199,7 +199,9 @@ struct WorldStepPipelineStages
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::MultibodyVelocityStage multibodyVelocity;
+  compute::MultibodyContactStage multibodyContact;
+  compute::MultibodyPositionStage multibodyPosition;
   compute::MultibodyVariationalIntegrationStage multibodyVariational;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
@@ -207,7 +209,11 @@ struct WorldStepPipelineStages
 
   compute::WorldStepPipeline& buildDefault(bool variationalSelected)
   {
-    appendDynamicsStages(selectMultibodyStage(variationalSelected));
+    if (variationalSelected) {
+      appendVariationalDynamicsStages();
+    } else {
+      appendSemiImplicitSplitStages();
+    }
     pipeline.addStage(kinematics);
     return pipeline;
   }
@@ -215,29 +221,33 @@ struct WorldStepPipelineStages
   compute::WorldStepPipeline& buildWithFinalStage(
       compute::WorldStepStage& finalStage)
   {
-    appendDynamicsStages(multibodyDynamics);
+    appendSemiImplicitSplitStages();
     pipeline.addStage(finalStage);
     return pipeline;
   }
 
 private:
-  compute::WorldStepStage& selectMultibodyStage(bool variationalSelected)
-  {
-    return variationalSelected
-               ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-               : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-  }
-
-  void appendDynamicsStages(compute::WorldStepStage& multibodyStage)
+  void appendVariationalDynamicsStages()
   {
     // Integrate rigid-body positions after the multibody stage so two-sided
     // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
     // the multibody solve) take effect in the same step's pose update.
     pipeline.addStage(rigidBodyVelocity)
         .addStage(rigidBodyContact)
-        .addStage(multibodyStage)
+        .addStage(multibodyVariational)
         .addStage(deformableDynamics)
         .addStage(rigidBodyPosition);
+  }
+
+  void appendSemiImplicitSplitStages()
+  {
+    pipeline.addStage(rigidBodyVelocity)
+        .addStage(multibodyVelocity)
+        .addStage(rigidBodyContact)
+        .addStage(multibodyContact)
+        .addStage(rigidBodyPosition)
+        .addStage(multibodyPosition)
+        .addStage(deformableDynamics);
   }
 };
 

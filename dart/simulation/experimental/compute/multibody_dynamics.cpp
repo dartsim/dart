@@ -50,6 +50,7 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -386,6 +387,16 @@ struct LinkContact
 };
 
 //==============================================================================
+// Internal handoff between the split semi-implicit multibody velocity, contact,
+// and position stages. This intentionally stores only velocities, not mass
+// matrices or dynamics trees, so each solve stage recomputes configuration
+// dependent operators from the current registry state.
+struct PendingMultibodyVelocity
+{
+  Eigen::VectorXd velocity;
+};
+
+//==============================================================================
 // Build the per-link spatial dynamics for a multibody at its current
 // configuration. Links are in construction order (parent-before-child).
 DynamicsTree buildDynamicsTree(
@@ -627,27 +638,10 @@ MassAndBias computeMassAndBias(
 }
 
 //==============================================================================
-void simulateMultibody(
-    entt::registry& registry,
-    const comps::MultibodyStructure& structure,
-    const Eigen::Vector3d& gravity,
-    double timeStep,
-    const std::vector<LinkContact>& linkContacts)
+Eigen::VectorXd gatherMultibodyVelocity(
+    const entt::registry& registry, const DynamicsTree& tree)
 {
-  if (structure.links.empty()) {
-    return;
-  }
-
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0) {
-    return;
-  }
-
-  // Current generalized velocity plus applied and passive (spring/damping)
-  // generalized efforts.
   Eigen::VectorXd qdot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  Eigen::VectorXd appliedForce
       = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     if (tree.links[i].dof == 0) {
@@ -655,6 +649,47 @@ void simulateMultibody(
     }
     const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
     qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
+  }
+  return qdot;
+}
+
+//==============================================================================
+Eigen::VectorXd gatherMultibodyVelocity(
+    entt::registry& registry, const comps::MultibodyStructure& structure)
+{
+  const DynamicsTree tree = buildDynamicsTree(registry, structure);
+  if (tree.dofCount == 0) {
+    return {};
+  }
+  return gatherMultibodyVelocity(registry, tree);
+}
+
+//==============================================================================
+Eigen::VectorXd computeUnconstrainedMultibodyVelocity(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    double timeStep)
+{
+  if (structure.links.empty()) {
+    return {};
+  }
+
+  const DynamicsTree tree = buildDynamicsTree(registry, structure);
+  if (tree.dofCount == 0) {
+    return {};
+  }
+
+  // Current generalized velocity plus applied and passive (spring/damping)
+  // generalized efforts.
+  const Eigen::VectorXd qdot = gatherMultibodyVelocity(registry, tree);
+  Eigen::VectorXd appliedForce
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    if (tree.links[i].dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
 
     // Determine the commanded actuation effort by actuator type. Force applies
     // the clamped joint effort; Passive applies none. Passive spring and
@@ -793,246 +828,396 @@ void simulateMultibody(
     }
   }
 
-  // Resolve contacts on this multibody's links against immovable obstacles with
-  // a sequential, unilateral normal-impulse solve (one-sided: the obstacle does
-  // not move). For a contact on link `i` with world normal `n` (pointing into
-  // the link) at point `p`, the contact-point normal Jacobian is
-  // `jn = (R J_point_linear)^T n`, where `J_point_linear` shifts the link's
-  // body linear Jacobian to `p`. A Baumgarte bias removes residual penetration.
-  if (!linkContacts.empty()) {
-    const Eigen::MatrixXd inverseMass = mb.massMatrix.inverse();
-    const std::vector<Eigen::MatrixXd> bodyJacobian = linkBodyJacobians(tree);
-    constexpr double penetrationSlop = 1e-4;
-    constexpr double baumgarteFactor = 0.2;
-    constexpr int contactIterations = 8;
+  return nextVelocity;
+}
 
-    // Precompute the contact-space Jacobians (normal + two tangents) once. A
-    // contact against a dynamic rigid body also stores that body's inverse mass
-    // and inertia and the contact arm, so the impulse is applied to both bodies
-    // (two-sided); an immovable obstacle leaves these zero (one-sided).
-    struct ContactRow
-    {
-      Eigen::VectorXd normalJacobian;
-      Eigen::VectorXd tangentJacobian1;
-      Eigen::VectorXd tangentJacobian2;
-      Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
-      Eigen::Vector3d tangent1 = Eigen::Vector3d::Zero();
-      Eigen::Vector3d tangent2 = Eigen::Vector3d::Zero();
-      double normalDenominator = 0.0;
-      double tangentDenominator1 = 0.0;
-      double tangentDenominator2 = 0.0;
-      double bias = 0.0;
-      double restitutionTarget = 0.0;
-      double friction = 1.0;
-      double normalImpulse = 0.0;
-      double tangentImpulse1 = 0.0;
-      double tangentImpulse2 = 0.0;
-      entt::entity otherBody = entt::null;
-      double otherInvMass = 0.0;
-      Eigen::Matrix3d otherInvInertia = Eigen::Matrix3d::Zero();
-      Eigen::Vector3d otherArm = Eigen::Vector3d::Zero();
-      bool active = false;
-    };
-    std::vector<ContactRow> rows(linkContacts.size());
+//==============================================================================
+void solveMultibodyLinkContacts(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::VectorXd& nextVelocity,
+    double timeStep,
+    const std::vector<LinkContact>& linkContacts)
+{
+  if (linkContacts.empty() || structure.links.empty()) {
+    return;
+  }
 
-    // Relative contact-point velocity along a world direction: the link's
-    // point velocity (via its Jacobian) minus the rigid obstacle's point
-    // velocity (zero for an immovable obstacle).
-    const auto relativeVelocity = [&](const ContactRow& row,
-                                      const Eigen::VectorXd& jacobian,
-                                      const Eigen::Vector3d& direction) {
-      double value = jacobian.dot(nextVelocity);
-      if (row.otherBody != entt::null) {
-        const auto& velocity = registry.get<comps::Velocity>(row.otherBody);
-        value -= (velocity.linear + velocity.angular.cross(row.otherArm))
-                     .dot(direction);
-      }
-      return value;
-    };
+  const DynamicsTree tree = buildDynamicsTree(registry, structure);
+  if (tree.dofCount == 0) {
+    return;
+  }
 
-    // Apply a contact impulse: drive the link via M^-1 J^T and apply the
-    // equal-and-opposite impulse to the rigid obstacle (Newton's third law).
-    const auto applyImpulse = [&](const ContactRow& row,
-                                  const Eigen::VectorXd& jacobian,
-                                  const Eigen::Vector3d& direction,
-                                  double deltaImpulse) {
-      nextVelocity += inverseMass * jacobian * deltaImpulse;
-      if (row.otherBody != entt::null) {
-        auto& velocity = registry.get<comps::Velocity>(row.otherBody);
-        velocity.linear -= deltaImpulse * row.otherInvMass * direction;
-        velocity.angular -= deltaImpulse * row.otherInvInertia
-                            * row.otherArm.cross(direction);
-      }
-    };
+  DART_EXPERIMENTAL_THROW_T_IF(
+      nextVelocity.size() != static_cast<Eigen::Index>(tree.dofCount),
+      InvalidArgumentException,
+      "Staged multibody velocity dimension ({}) does not match the expected "
+      "DOF count ({})",
+      nextVelocity.size(),
+      tree.dofCount);
 
-    for (std::size_t c = 0; c < linkContacts.size(); ++c) {
-      const auto& contact = linkContacts[c];
-      const auto linkIt = std::find(
-          structure.links.begin(), structure.links.end(), contact.link);
-      if (linkIt == structure.links.end()) {
-        continue;
-      }
-      const auto index
-          = static_cast<std::size_t>(linkIt - structure.links.begin());
+  const MassAndBias mb = computeMassAndBias(
+      tree.links,
+      tree.dofCount,
+      Eigen::Vector3d::Zero(),
+      nextVelocity,
+      tree.armature);
 
-      const Eigen::Matrix3d rotation
-          = tree.links[index].worldTransform.linear();
-      const Eigen::Vector3d origin
-          = tree.links[index].worldTransform.translation();
-      const Eigen::MatrixXd angularJacobian
-          = rotation * bodyJacobian[index].topRows(3);
-      const Eigen::MatrixXd pointLinearJacobian
-          = rotation * bodyJacobian[index].bottomRows(3)
-            - skew(contact.point - origin) * angularJacobian;
+  const Eigen::MatrixXd inverseMass = mb.massMatrix.inverse();
+  const std::vector<Eigen::MatrixXd> bodyJacobian = linkBodyJacobians(tree);
+  constexpr double penetrationSlop = 1e-4;
+  constexpr double baumgarteFactor = 0.2;
+  constexpr int contactIterations = 8;
 
-      auto& row = rows[c];
+  // Precompute the contact-space Jacobians (normal + two tangents) once. A
+  // contact against a dynamic rigid body also stores that body's inverse mass
+  // and inertia and the contact arm, so the impulse is applied to both bodies
+  // (two-sided); an immovable obstacle leaves these zero (one-sided).
+  struct ContactRow
+  {
+    Eigen::VectorXd normalJacobian;
+    Eigen::VectorXd tangentJacobian1;
+    Eigen::VectorXd tangentJacobian2;
+    Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+    Eigen::Vector3d tangent1 = Eigen::Vector3d::Zero();
+    Eigen::Vector3d tangent2 = Eigen::Vector3d::Zero();
+    double normalDenominator = 0.0;
+    double tangentDenominator1 = 0.0;
+    double tangentDenominator2 = 0.0;
+    double bias = 0.0;
+    double restitutionTarget = 0.0;
+    double friction = 1.0;
+    double normalImpulse = 0.0;
+    double tangentImpulse1 = 0.0;
+    double tangentImpulse2 = 0.0;
+    entt::entity otherBody = entt::null;
+    double otherInvMass = 0.0;
+    Eigen::Matrix3d otherInvInertia = Eigen::Matrix3d::Zero();
+    Eigen::Vector3d otherArm = Eigen::Vector3d::Zero();
+    bool active = false;
+  };
+  std::vector<ContactRow> rows(linkContacts.size());
 
-      // Couple a dynamic rigid-body obstacle: cache its inverse mass, inverse
-      // world inertia, and the contact arm.
-      if (contact.otherBody != entt::null
-          && registry.all_of<comps::MassProperties, comps::Transform>(
-              contact.otherBody)
-          && !registry.all_of<comps::StaticBodyTag>(contact.otherBody)) {
-        const auto& otherMass
-            = registry.get<comps::MassProperties>(contact.otherBody);
-        const auto& otherTransform
-            = registry.get<comps::Transform>(contact.otherBody);
-        if (otherMass.mass > 0.0 && std::isfinite(otherMass.mass)) {
-          row.otherBody = contact.otherBody;
-          row.otherInvMass = 1.0 / otherMass.mass;
-          const Eigen::Matrix3d orientation
-              = otherTransform.orientation.normalized().toRotationMatrix();
-          const Eigen::Matrix3d worldInertia
-              = orientation * otherMass.inertia * orientation.transpose();
-          Eigen::LDLT<Eigen::Matrix3d> inertiaSolver(worldInertia);
-          if (inertiaSolver.info() == Eigen::Success
-              && inertiaSolver.isPositive()) {
-            row.otherInvInertia
-                = inertiaSolver.solve(Eigen::Matrix3d::Identity());
-          }
-          row.otherArm = contact.point - otherTransform.position;
+  // Relative contact-point velocity along a world direction: the link's
+  // point velocity (via its Jacobian) minus the rigid obstacle's point
+  // velocity (zero for an immovable obstacle).
+  const auto relativeVelocity = [&](const ContactRow& row,
+                                    const Eigen::VectorXd& jacobian,
+                                    const Eigen::Vector3d& direction) {
+    double value = jacobian.dot(nextVelocity);
+    if (row.otherBody != entt::null) {
+      const auto& velocity = registry.get<comps::Velocity>(row.otherBody);
+      value -= (velocity.linear + velocity.angular.cross(row.otherArm))
+                   .dot(direction);
+    }
+    return value;
+  };
+
+  // Apply a contact impulse: drive the link via M^-1 J^T and apply the
+  // equal-and-opposite impulse to the rigid obstacle (Newton's third law).
+  const auto applyImpulse = [&](const ContactRow& row,
+                                const Eigen::VectorXd& jacobian,
+                                const Eigen::Vector3d& direction,
+                                double deltaImpulse) {
+    nextVelocity += inverseMass * jacobian * deltaImpulse;
+    if (row.otherBody != entt::null) {
+      auto& velocity = registry.get<comps::Velocity>(row.otherBody);
+      velocity.linear -= deltaImpulse * row.otherInvMass * direction;
+      velocity.angular
+          -= deltaImpulse * row.otherInvInertia * row.otherArm.cross(direction);
+    }
+  };
+
+  for (std::size_t c = 0; c < linkContacts.size(); ++c) {
+    const auto& contact = linkContacts[c];
+    const auto linkIt = std::find(
+        structure.links.begin(), structure.links.end(), contact.link);
+    if (linkIt == structure.links.end()) {
+      continue;
+    }
+    const auto index
+        = static_cast<std::size_t>(linkIt - structure.links.begin());
+
+    const Eigen::Matrix3d rotation = tree.links[index].worldTransform.linear();
+    const Eigen::Vector3d origin
+        = tree.links[index].worldTransform.translation();
+    const Eigen::MatrixXd angularJacobian
+        = rotation * bodyJacobian[index].topRows(3);
+    const Eigen::MatrixXd pointLinearJacobian
+        = rotation * bodyJacobian[index].bottomRows(3)
+          - skew(contact.point - origin) * angularJacobian;
+
+    auto& row = rows[c];
+
+    // Couple a dynamic rigid-body obstacle: cache its inverse mass, inverse
+    // world inertia, and the contact arm.
+    if (contact.otherBody != entt::null
+        && registry.all_of<comps::MassProperties, comps::Transform>(
+            contact.otherBody)
+        && !registry.all_of<comps::StaticBodyTag>(contact.otherBody)) {
+      const auto& otherMass
+          = registry.get<comps::MassProperties>(contact.otherBody);
+      const auto& otherTransform
+          = registry.get<comps::Transform>(contact.otherBody);
+      if (otherMass.mass > 0.0 && std::isfinite(otherMass.mass)) {
+        row.otherBody = contact.otherBody;
+        row.otherInvMass = 1.0 / otherMass.mass;
+        const Eigen::Matrix3d orientation
+            = otherTransform.orientation.normalized().toRotationMatrix();
+        const Eigen::Matrix3d worldInertia
+            = orientation * otherMass.inertia * orientation.transpose();
+        Eigen::LDLT<Eigen::Matrix3d> inertiaSolver(worldInertia);
+        if (inertiaSolver.info() == Eigen::Success
+            && inertiaSolver.isPositive()) {
+          row.otherInvInertia
+              = inertiaSolver.solve(Eigen::Matrix3d::Identity());
         }
+        row.otherArm = contact.point - otherTransform.position;
       }
-
-      const Eigen::Vector3d normal = contact.normal.normalized();
-      row.normal = normal;
-      row.normalJacobian = pointLinearJacobian.transpose() * normal;
-      const Eigen::Vector3d normalArm = row.otherArm.cross(normal);
-      row.normalDenominator
-          = row.normalJacobian.dot(inverseMass * row.normalJacobian)
-            + row.otherInvMass + normalArm.dot(row.otherInvInertia * normalArm);
-      if (row.normalDenominator <= 0.0) {
-        continue; // the contact cannot move either body (e.g. fixed base)
-      }
-
-      // Two tangent directions orthogonal to the contact normal.
-      const Eigen::Vector3d reference = std::abs(normal.x()) < 0.9
-                                            ? Eigen::Vector3d::UnitX()
-                                            : Eigen::Vector3d::UnitY();
-      const Eigen::Vector3d tangent1 = normal.cross(reference).normalized();
-      const Eigen::Vector3d tangent2 = normal.cross(tangent1);
-      row.tangent1 = tangent1;
-      row.tangent2 = tangent2;
-      row.tangentJacobian1 = pointLinearJacobian.transpose() * tangent1;
-      row.tangentJacobian2 = pointLinearJacobian.transpose() * tangent2;
-      const Eigen::Vector3d tangentArm1 = row.otherArm.cross(tangent1);
-      const Eigen::Vector3d tangentArm2 = row.otherArm.cross(tangent2);
-      row.tangentDenominator1
-          = row.tangentJacobian1.dot(inverseMass * row.tangentJacobian1)
-            + row.otherInvMass
-            + tangentArm1.dot(row.otherInvInertia * tangentArm1);
-      row.tangentDenominator2
-          = row.tangentJacobian2.dot(inverseMass * row.tangentJacobian2)
-            + row.otherInvMass
-            + tangentArm2.dot(row.otherInvInertia * tangentArm2);
-      row.bias = baumgarteFactor
-                 * std::max(0.0, contact.depth - penetrationSlop) / timeStep;
-      row.friction = contact.friction;
-
-      // Restitution target: rebound at -e * (approaching normal velocity),
-      // ignoring slow approaches to avoid jitter at rest.
-      constexpr double restitutionThreshold = 1e-2;
-      const double approachingVelocity
-          = relativeVelocity(row, row.normalJacobian, normal);
-      row.restitutionTarget = (approachingVelocity < -restitutionThreshold)
-                                  ? -contact.restitution * approachingVelocity
-                                  : 0.0;
-      row.active = true;
     }
 
-    for (int iteration = 0; iteration < contactIterations; ++iteration) {
-      for (auto& row : rows) {
-        if (!row.active) {
-          continue;
-        }
+    const Eigen::Vector3d normal = contact.normal.normalized();
+    row.normal = normal;
+    row.normalJacobian = pointLinearJacobian.transpose() * normal;
+    const Eigen::Vector3d normalArm = row.otherArm.cross(normal);
+    row.normalDenominator
+        = row.normalJacobian.dot(inverseMass * row.normalJacobian)
+          + row.otherInvMass + normalArm.dot(row.otherInvInertia * normalArm);
+    if (row.normalDenominator <= 0.0) {
+      continue; // the contact cannot move either body (e.g. fixed base)
+    }
 
-        // Normal impulse with accumulation (unilateral: lambda_n >= 0).
-        const double normalVelocity
-            = relativeVelocity(row, row.normalJacobian, row.normal);
-        const double deltaNormal
-            = (-normalVelocity + std::max(row.bias, row.restitutionTarget))
-              / row.normalDenominator;
-        const double newNormal = std::max(0.0, row.normalImpulse + deltaNormal);
+    // Two tangent directions orthogonal to the contact normal.
+    const Eigen::Vector3d reference = std::abs(normal.x()) < 0.9
+                                          ? Eigen::Vector3d::UnitX()
+                                          : Eigen::Vector3d::UnitY();
+    const Eigen::Vector3d tangent1 = normal.cross(reference).normalized();
+    const Eigen::Vector3d tangent2 = normal.cross(tangent1);
+    row.tangent1 = tangent1;
+    row.tangent2 = tangent2;
+    row.tangentJacobian1 = pointLinearJacobian.transpose() * tangent1;
+    row.tangentJacobian2 = pointLinearJacobian.transpose() * tangent2;
+    const Eigen::Vector3d tangentArm1 = row.otherArm.cross(tangent1);
+    const Eigen::Vector3d tangentArm2 = row.otherArm.cross(tangent2);
+    row.tangentDenominator1
+        = row.tangentJacobian1.dot(inverseMass * row.tangentJacobian1)
+          + row.otherInvMass
+          + tangentArm1.dot(row.otherInvInertia * tangentArm1);
+    row.tangentDenominator2
+        = row.tangentJacobian2.dot(inverseMass * row.tangentJacobian2)
+          + row.otherInvMass
+          + tangentArm2.dot(row.otherInvInertia * tangentArm2);
+    row.bias = baumgarteFactor * std::max(0.0, contact.depth - penetrationSlop)
+               / timeStep;
+    row.friction = contact.friction;
+
+    // Restitution target: rebound at -e * (approaching normal velocity),
+    // ignoring slow approaches to avoid jitter at rest.
+    constexpr double restitutionThreshold = 1e-2;
+    const double approachingVelocity
+        = relativeVelocity(row, row.normalJacobian, normal);
+    row.restitutionTarget = (approachingVelocity < -restitutionThreshold)
+                                ? -contact.restitution * approachingVelocity
+                                : 0.0;
+    row.active = true;
+  }
+
+  for (int iteration = 0; iteration < contactIterations; ++iteration) {
+    for (auto& row : rows) {
+      if (!row.active) {
+        continue;
+      }
+
+      // Normal impulse with accumulation (unilateral: lambda_n >= 0).
+      const double normalVelocity
+          = relativeVelocity(row, row.normalJacobian, row.normal);
+      const double deltaNormal
+          = (-normalVelocity + std::max(row.bias, row.restitutionTarget))
+            / row.normalDenominator;
+      const double newNormal = std::max(0.0, row.normalImpulse + deltaNormal);
+      applyImpulse(
+          row, row.normalJacobian, row.normal, newNormal - row.normalImpulse);
+      row.normalImpulse = newNormal;
+
+      // Two-tangent Coulomb friction, each impulse bounded by mu * lambda_n.
+      const double bound = row.friction * row.normalImpulse;
+      if (row.tangentDenominator1 > 0.0) {
+        const double vt
+            = relativeVelocity(row, row.tangentJacobian1, row.tangent1);
+        const double newImpulse = std::clamp(
+            row.tangentImpulse1 - vt / row.tangentDenominator1, -bound, bound);
         applyImpulse(
-            row, row.normalJacobian, row.normal, newNormal - row.normalImpulse);
-        row.normalImpulse = newNormal;
-
-        // Two-tangent Coulomb friction, each impulse bounded by mu * lambda_n.
-        const double bound = row.friction * row.normalImpulse;
-        if (row.tangentDenominator1 > 0.0) {
-          const double vt
-              = relativeVelocity(row, row.tangentJacobian1, row.tangent1);
-          const double newImpulse = std::clamp(
-              row.tangentImpulse1 - vt / row.tangentDenominator1,
-              -bound,
-              bound);
-          applyImpulse(
-              row,
-              row.tangentJacobian1,
-              row.tangent1,
-              newImpulse - row.tangentImpulse1);
-          row.tangentImpulse1 = newImpulse;
-        }
-        if (row.tangentDenominator2 > 0.0) {
-          const double vt
-              = relativeVelocity(row, row.tangentJacobian2, row.tangent2);
-          const double newImpulse = std::clamp(
-              row.tangentImpulse2 - vt / row.tangentDenominator2,
-              -bound,
-              bound);
-          applyImpulse(
-              row,
-              row.tangentJacobian2,
-              row.tangent2,
-              newImpulse - row.tangentImpulse2);
-          row.tangentImpulse2 = newImpulse;
-        }
+            row,
+            row.tangentJacobian1,
+            row.tangent1,
+            newImpulse - row.tangentImpulse1);
+        row.tangentImpulse1 = newImpulse;
+      }
+      if (row.tangentDenominator2 > 0.0) {
+        const double vt
+            = relativeVelocity(row, row.tangentJacobian2, row.tangent2);
+        const double newImpulse = std::clamp(
+            row.tangentImpulse2 - vt / row.tangentDenominator2, -bound, bound);
+        applyImpulse(
+            row,
+            row.tangentJacobian2,
+            row.tangent2,
+            newImpulse - row.tangentImpulse2);
+        row.tangentImpulse2 = newImpulse;
       }
     }
   }
+}
+
+//==============================================================================
+void enforceMultibodyVelocityLimits(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::VectorXd& nextVelocity)
+{
+  Eigen::Index expectedDof = 0;
+  for (const auto linkEntity : structure.links) {
+    const auto& link = registry.get<comps::Link>(linkEntity);
+    if (link.parentJoint == entt::null) {
+      continue;
+    }
+
+    const auto& joint = registry.get<comps::Joint>(link.parentJoint);
+    expectedDof += static_cast<Eigen::Index>(joint.getDOF());
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      nextVelocity.size() != expectedDof,
+      InvalidArgumentException,
+      "Staged multibody velocity dimension ({}) does not match the expected "
+      "DOF count ({})",
+      nextVelocity.size(),
+      expectedDof);
 
   // Enforce velocity limits by clamping the generalized velocity.
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    const auto dof = tree.links[i].dof;
+  Eigen::Index velocityOffset = 0;
+  for (const auto linkEntity : structure.links) {
+    const auto& link = registry.get<comps::Link>(linkEntity);
+    if (link.parentJoint == entt::null) {
+      continue;
+    }
+
+    const auto& joint = registry.get<comps::Joint>(link.parentJoint);
+    const auto dof = static_cast<Eigen::Index>(joint.getDOF());
     if (dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
     if (joint.limits.velocityLower.size() != static_cast<Eigen::Index>(dof)
         || joint.limits.velocityUpper.size()
                != static_cast<Eigen::Index>(dof)) {
+      velocityOffset += dof;
       continue;
     }
-    for (std::size_t d = 0; d < dof; ++d) {
-      const auto globalDof
-          = static_cast<Eigen::Index>(tree.links[i].dofOffset + d);
+    for (Eigen::Index d = 0; d < dof; ++d) {
+      const auto globalDof = velocityOffset + d;
       nextVelocity[globalDof] = std::clamp(
           nextVelocity[globalDof],
-          joint.limits.velocityLower[static_cast<Eigen::Index>(d)],
-          joint.limits.velocityUpper[static_cast<Eigen::Index>(d)]);
+          joint.limits.velocityLower[d],
+          joint.limits.velocityUpper[d]);
+    }
+    velocityOffset += dof;
+  }
+}
+
+//==============================================================================
+std::vector<LinkContact> collectMultibodyLinkContacts(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const std::vector<Contact>& contacts)
+{
+  const auto isRigidBody = [&](entt::entity entity) {
+    return registry.all_of<comps::RigidBodyTag>(entity);
+  };
+  const auto isDynamic = [&](entt::entity entity) {
+    return !registry.all_of<comps::StaticBodyTag>(entity);
+  };
+  const auto frictionOf = [&](entt::entity entity) {
+    if (const auto* material
+        = registry.try_get<comps::ContactMaterial>(entity)) {
+      return material->friction;
+    }
+    return 1.0;
+  };
+  const auto restitutionOf = [&](entt::entity entity) {
+    if (const auto* material
+        = registry.try_get<comps::ContactMaterial>(entity)) {
+      return material->restitution;
+    }
+    return 0.0;
+  };
+
+  std::vector<LinkContact> linkContacts;
+  for (const auto& contact : contacts) {
+    const auto entityA = contact.bodyA.getEntity();
+    const auto entityB = contact.bodyB.getEntity();
+    const auto& links = structure.links;
+    const bool aInBody
+        = std::find(links.begin(), links.end(), entityA) != links.end();
+    const bool bInBody
+        = std::find(links.begin(), links.end(), entityB) != links.end();
+    const double friction
+        = std::sqrt(frictionOf(entityA) * frictionOf(entityB));
+    const double restitution
+        = std::max(restitutionOf(entityA), restitutionOf(entityB));
+
+    // The contact normal points bodyA -> bodyB; orient it into the link. A
+    // dynamic rigid-body obstacle is passed as otherBody for the two-sided
+    // impulse; a static obstacle leaves it null (one-sided).
+    if (aInBody && !bInBody && isRigidBody(entityB)) {
+      linkContacts.push_back(
+          {entityA,
+           -contact.normal,
+           contact.point,
+           contact.depth,
+           friction,
+           restitution,
+           isDynamic(entityB) ? entityB : entt::null});
+    } else if (bInBody && !aInBody && isRigidBody(entityA)) {
+      linkContacts.push_back(
+          {entityB,
+           contact.normal,
+           contact.point,
+           contact.depth,
+           friction,
+           restitution,
+           isDynamic(entityA) ? entityA : entt::null});
     }
   }
 
+  return linkContacts;
+}
+
+//==============================================================================
+void clearMultibodyExternalForces(
+    entt::registry& registry, const comps::MultibodyStructure& structure)
+{
+  for (const auto linkEntity : structure.links) {
+    registry.get<comps::Link>(linkEntity).externalForce.setZero();
+  }
+}
+
+//==============================================================================
+void simulateMultibody(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    const std::vector<LinkContact>& linkContacts)
+{
+  Eigen::VectorXd nextVelocity = computeUnconstrainedMultibodyVelocity(
+      registry, structure, gravity, timeStep);
+  if (nextVelocity.size() == 0) {
+    return;
+  }
+
+  solveMultibodyLinkContacts(
+      registry, structure, nextVelocity, timeStep, linkContacts);
+  enforceMultibodyVelocityLimits(registry, structure, nextVelocity);
   integrateMultibodyPositions(registry, structure, nextVelocity, timeStep);
 }
 
@@ -1182,76 +1367,151 @@ void MultibodyForwardDynamicsStage::execute(
   // later slice (they need the unified constraint solve across multibodies).
   const std::vector<Contact> contacts = world.collide();
 
-  const auto isRigidBody = [&](entt::entity entity) {
-    return registry.all_of<comps::RigidBodyTag>(entity);
-  };
-  const auto isDynamic = [&](entt::entity entity) {
-    return !registry.all_of<comps::StaticBodyTag>(entity);
-  };
-  const auto frictionOf = [&](entt::entity entity) {
-    if (const auto* material
-        = registry.try_get<comps::ContactMaterial>(entity)) {
-      return material->friction;
-    }
-    return 1.0;
-  };
-  const auto restitutionOf = [&](entt::entity entity) {
-    if (const auto* material
-        = registry.try_get<comps::ContactMaterial>(entity)) {
-      return material->restitution;
-    }
-    return 0.0;
-  };
-
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-
-    std::vector<LinkContact> linkContacts;
-    for (const auto& contact : contacts) {
-      const auto entityA = contact.bodyA.getEntity();
-      const auto entityB = contact.bodyB.getEntity();
-      const auto& links = structure.links;
-      const bool aInBody
-          = std::find(links.begin(), links.end(), entityA) != links.end();
-      const bool bInBody
-          = std::find(links.begin(), links.end(), entityB) != links.end();
-      const double friction
-          = std::sqrt(frictionOf(entityA) * frictionOf(entityB));
-      const double restitution
-          = std::max(restitutionOf(entityA), restitutionOf(entityB));
-
-      // The contact normal points bodyA -> bodyB; orient it into the link. A
-      // dynamic rigid-body obstacle is passed as otherBody for the two-sided
-      // impulse; a static obstacle leaves it null (one-sided).
-      if (aInBody && !bInBody && isRigidBody(entityB)) {
-        linkContacts.push_back(
-            {entityA,
-             -contact.normal,
-             contact.point,
-             contact.depth,
-             friction,
-             restitution,
-             isDynamic(entityB) ? entityB : entt::null});
-      } else if (bInBody && !aInBody && isRigidBody(entityA)) {
-        linkContacts.push_back(
-            {entityB,
-             contact.normal,
-             contact.point,
-             contact.depth,
-             friction,
-             restitution,
-             isDynamic(entityA) ? entityA : entt::null});
-      }
-    }
+    const std::vector<LinkContact> linkContacts
+        = collectMultibodyLinkContacts(registry, structure, contacts);
 
     simulateMultibody(registry, structure, gravity, timeStep, linkContacts);
+    if (registry.all_of<PendingMultibodyVelocity>(entity)) {
+      registry.remove<PendingMultibodyVelocity>(entity);
+    }
 
     // External forces are one-shot per step (like legacy
     // BodyNode::addExtForce): clear them after they have been consumed by this
     // step's dynamics.
-    for (const auto linkEntity : structure.links) {
-      registry.get<comps::Link>(linkEntity).externalForce.setZero();
+    clearMultibodyExternalForces(registry, structure);
+  }
+}
+
+//==============================================================================
+std::string_view MultibodyVelocityStage::getName() const noexcept
+{
+  return "multibody_velocity";
+}
+
+//==============================================================================
+ComputeStageMetadata MultibodyVelocityStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::ArticulatedBody,
+      toMask(ComputeStageAcceleration::TaskParallel)};
+}
+
+//==============================================================================
+void MultibodyVelocityStage::execute(
+    World& world, ComputeExecutor& /*executor*/)
+{
+  auto& registry = world.getRegistry();
+  const Eigen::Vector3d gravity = world.getGravity();
+  const double timeStep = world.getTimeStep();
+
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    Eigen::VectorXd nextVelocity = computeUnconstrainedMultibodyVelocity(
+        registry, structure, gravity, timeStep);
+    if (nextVelocity.size() == 0) {
+      if (registry.all_of<PendingMultibodyVelocity>(entity)) {
+        registry.remove<PendingMultibodyVelocity>(entity);
+      }
+    } else {
+      registry.emplace_or_replace<PendingMultibodyVelocity>(
+          entity, PendingMultibodyVelocity{std::move(nextVelocity)});
+    }
+
+    clearMultibodyExternalForces(registry, structure);
+  }
+}
+
+//==============================================================================
+std::string_view MultibodyContactStage::getName() const noexcept
+{
+  return "multibody_contact";
+}
+
+//==============================================================================
+ComputeStageMetadata MultibodyContactStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::ArticulatedBody,
+      toMask(ComputeStageAcceleration::TaskParallel)};
+}
+
+//==============================================================================
+void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
+{
+  auto& registry = world.getRegistry();
+  const double timeStep = world.getTimeStep();
+  const std::vector<Contact> contacts = world.collide();
+
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    const std::vector<LinkContact> linkContacts
+        = collectMultibodyLinkContacts(registry, structure, contacts);
+    if (linkContacts.empty()) {
+      continue;
+    }
+
+    auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
+    if (pendingVelocity == nullptr) {
+      Eigen::VectorXd currentVelocity
+          = gatherMultibodyVelocity(registry, structure);
+      if (currentVelocity.size() == 0) {
+        continue;
+      }
+      pendingVelocity = &registry.emplace_or_replace<PendingMultibodyVelocity>(
+          entity, PendingMultibodyVelocity{std::move(currentVelocity)});
+    }
+
+    solveMultibodyLinkContacts(
+        registry, structure, pendingVelocity->velocity, timeStep, linkContacts);
+  }
+}
+
+//==============================================================================
+std::string_view MultibodyPositionStage::getName() const noexcept
+{
+  return "multibody_position";
+}
+
+//==============================================================================
+ComputeStageMetadata MultibodyPositionStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::ArticulatedBody,
+      toMask(ComputeStageAcceleration::TaskParallel)};
+}
+
+//==============================================================================
+void MultibodyPositionStage::execute(
+    World& world, ComputeExecutor& /*executor*/)
+{
+  auto& registry = world.getRegistry();
+  const double timeStep = world.getTimeStep();
+
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    Eigen::VectorXd nextVelocity;
+    if (const auto* pendingVelocity
+        = registry.try_get<PendingMultibodyVelocity>(entity)) {
+      nextVelocity = pendingVelocity->velocity;
+    } else {
+      nextVelocity = gatherMultibodyVelocity(registry, structure);
+    }
+
+    if (nextVelocity.size() == 0) {
+      continue;
+    }
+
+    enforceMultibodyVelocityLimits(registry, structure, nextVelocity);
+    integrateMultibodyPositions(registry, structure, nextVelocity, timeStep);
+
+    if (registry.all_of<PendingMultibodyVelocity>(entity)) {
+      registry.remove<PendingMultibodyVelocity>(entity);
     }
   }
 }

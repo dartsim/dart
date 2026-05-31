@@ -346,14 +346,26 @@ dart-simulation-experimental test_multibody_constraint test_world
 test_skeleton_to_multibody`, focused CTest over the new/adjacent tests, and
   full `ctest --test-dir build/default/cpp/Release --output-on-failure -L
 simulation-experimental` (40/40).
-- **(DONE locally) Slice 0 — `World::step` pipeline builder factor.** Factored
-  the four default/custom-stage pipeline builders in `world.cpp` through one
-  stack-owned `WorldStepPipelineStages` helper. This preserves the current
-  order, including the default overloads' variational multibody branch and the
-  custom-stage overloads' existing semi-implicit multibody stage. Verified with
-  focused build + `test_world`, full `ctest --test-dir
-build/default/cpp/Release --output-on-failure -L simulation-experimental`
-  (40/40), and `pixi run lint`.
+- **(DONE locally, commit `0684f723132`) Slice 0 — `World::step` pipeline
+  builder factor.** Factored the four default/custom-stage pipeline builders in
+  `world.cpp` through one stack-owned `WorldStepPipelineStages` helper. This
+  preserves the current order, including the default overloads' variational
+  multibody branch and the custom-stage overloads' existing semi-implicit
+  multibody stage. Verified with focused build + `test_world`, full
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (40/40), and `pixi run lint`.
+- **(DONE locally) Slice 2 — semi-implicit multibody
+  velocity/contact/position split.** Added `MultibodyVelocityStage`,
+  `MultibodyContactStage`, and `MultibodyPositionStage`, with an internal
+  transient staged-velocity component so link-contact impulses and velocity
+  limits still act before positions are written back. The default
+  semi-implicit pipeline is now all velocity work first, then rigid/link
+  contact stages, then rigid/multibody position stages, followed by deformable
+  dynamics and kinematics; the variational branch keeps its previous ordering.
+  Verified with focused build + CTest for `test_multibody_constraint`,
+  `test_world`, and `test_skeleton_to_multibody`, plus full
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (40/40), and `pixi run lint`.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2

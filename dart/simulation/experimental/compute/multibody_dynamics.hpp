@@ -152,4 +152,42 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
+/// Computes unconstrained articulated-body velocities without advancing
+/// positions.
+///
+/// This is the velocity half of the semi-implicit multibody step. It leaves the
+/// solved generalized velocities in a transient internal staging component so
+/// contact/constraint stages can operate before positions are written back.
+class DART_EXPERIMENTAL_API MultibodyVelocityStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Resolves current link-vs-rigid-body contacts against staged multibody
+/// velocities.
+///
+/// This stage preserves the existing link-contact solve while making it an
+/// explicit velocity-level stage between unconstrained velocity integration and
+/// position write-back.
+class DART_EXPERIMENTAL_API MultibodyContactStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Applies multibody velocity limits and advances joint positions from the
+/// staged semi-implicit velocities.
+class DART_EXPERIMENTAL_API MultibodyPositionStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
 } // namespace dart::simulation::experimental::compute
