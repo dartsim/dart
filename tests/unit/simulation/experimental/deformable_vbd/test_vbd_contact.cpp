@@ -256,6 +256,36 @@ TEST(VbdContact, AvbdFrictionTangentPairSwitchesToDynamicSlipDirection)
 }
 
 //==============================================================================
+TEST(VbdContact, AvbdBoxContactFeatureCodeSeparatesBoxManifolds)
+{
+  const Vec3 halfExtents(1.0, 2.0, 3.0);
+
+  const std::uint64_t positiveXFace
+      = vbd::avbdBoxContactFeatureCode(Vec3(1.2, 0.0, 0.0), halfExtents);
+  const std::uint64_t positiveXFaceInside
+      = vbd::avbdBoxContactFeatureCode(Vec3(0.95, 0.0, 0.0), halfExtents);
+  const std::uint64_t positiveYFace
+      = vbd::avbdBoxContactFeatureCode(Vec3(0.0, 2.2, 0.0), halfExtents);
+  const std::uint64_t positiveXPositiveYEdge
+      = vbd::avbdBoxContactFeatureCode(Vec3(1.2, 2.2, 0.0), halfExtents);
+  const std::uint64_t positiveCorner
+      = vbd::avbdBoxContactFeatureCode(Vec3(1.2, 2.2, 3.2), halfExtents);
+
+  EXPECT_EQ(positiveXFaceInside, positiveXFace);
+  EXPECT_NE(positiveYFace, positiveXFace);
+  EXPECT_NE(positiveXPositiveYEdge, positiveXFace);
+  EXPECT_NE(positiveXPositiveYEdge, positiveYFace);
+  EXPECT_NE(positiveCorner, positiveXPositiveYEdge);
+
+  EXPECT_NE(
+      vbd::packAvbdBoxContactFeatureId(0, positiveXFace),
+      vbd::packAvbdBoxContactFeatureId(1, positiveXFace));
+  EXPECT_NE(
+      vbd::packAvbdBoxContactFeatureId(0, positiveXFace),
+      vbd::packAvbdBoxContactFeatureId(0, positiveYFace));
+}
+
+//==============================================================================
 TEST(VbdContact, InactiveAbovePlaneAndHessianIsPsd)
 {
   vbd::ContactPlane plane;

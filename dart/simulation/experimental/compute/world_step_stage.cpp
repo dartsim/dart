@@ -4510,11 +4510,16 @@ void runVbdDeformableSolve(
         const double planeOffset = normal.dot(surfacePoint);
         const double gap = normal.dot(position) - planeOffset;
         if (gap < bestGap) {
+          const Eigen::Vector3d localPosition
+              = box.rotation.transpose() * (position - box.center);
+          const std::uint64_t featureCode
+              = dvbd::avbdBoxContactFeatureCode(localPosition, box.halfExtents);
           bestGap = gap;
           bestNormal = normal;
           bestOffset = planeOffset;
           bestObjectId = kAvbdStaticBoxObjectId;
-          bestFeatureId = static_cast<std::uint64_t>(b);
+          bestFeatureId = dvbd::packAvbdBoxContactFeatureId(
+              static_cast<std::uint64_t>(b), featureCode);
           found = true;
         }
       }

@@ -22,9 +22,12 @@ falling back when there is no active contact or self-contact friction source. A
 bounded friction-tangent row primitive now
 participates in the serial mass-spring AVBD row driver, and supported
 static-contact mass-spring World scenes generate two tangent rows per active
-contact-normal row. Adjacent tangent-row pairs now use the lagged tangential
-dual to switch between static sticking and dynamic sliding and project the
-paired force to the circular Coulomb cone. Supported serial mass-spring
+contact-normal row. Static box obstacle contact rows now include face/edge/corner
+feature IDs so normal and friction rows reset when the contacted box manifold
+changes while still warm-starting same-feature penetrations. Adjacent tangent-row
+pairs now use the lagged tangential dual to switch between static sticking and
+dynamic sliding and project the paired force to the circular Coulomb cone.
+Supported serial mass-spring
 self-contact scenes can also generate one AVBD self-contact normal row per
 lagged point-triangle / edge-edge primitive, stamp each incident local vertex
 through the shared scalar row, and report `vbdAvbdSelfContactNormalRows`.
@@ -47,21 +50,22 @@ existing VBD path.
 
 ## Current Branch
 
-`feature/avbd-plan104-combined-friction` - checkpoint commits based on current
+`feature/avbd-plan104-contact-manifold-friction` - checkpoint commits based on current
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
-tangent rows, supported World self-contact normal/friction rows, and combined
-static/self-contact friction row coexistence coverage.
+tangent rows, static box feature IDs, supported World self-contact
+normal/friction rows, and combined static/self-contact friction row coexistence
+coverage.
 
 ## Immediate Next Step
 
-Start the next bounded AVBD contact/friction slice: fuller contact-manifold
-friction persistence, dynamic contact manifold IDs, or the first
-rigid/articulated AVBD block foundation are the preferred row-family gaps. Keep
-the supported envelope narrow and preserve fallback coverage for topology
-mixes, damping/acceleration, parallel solves, and unsupported requested row
-combinations.
+Continue the next bounded AVBD contact/friction slice: tangent dual projection
+across changing smooth contact frames, dynamic/rigid contact manifold IDs, or
+the first rigid/articulated AVBD block foundation are the preferred row-family
+gaps. Keep the supported envelope narrow and preserve fallback coverage for
+topology mixes, damping/acceleration, parallel solves, and unsupported
+requested row combinations.
 
 ## Context That Would Be Lost
 
@@ -82,7 +86,8 @@ combinations.
   use the tet-material finite-stiffness row path and, when requested, combine it
   with AVBD self-contact normal/friction rows. Supported static-contact
   mass-spring World scenes generate bounded friction-tangent rows with pairwise
-  static/dynamic switching, and supported serial mass-spring self-contact scenes
+  static/dynamic switching, and static box obstacle row keys now distinguish
+  faces, edges, and corners. Supported serial mass-spring self-contact scenes
   generate AVBD self-contact normal rows and matching self-contact friction rows
   when material friction is positive. A combined static/self-contact friction
   regression now guards both row families in one supported World solve. This

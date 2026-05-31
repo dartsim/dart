@@ -93,15 +93,17 @@ also combine finite-stiffness material rows with AVBD self-contact normal rows
 and matching bounded self-contact friction tangent rows when requested.
 The supported mass-spring friction tangent pairs now use the lagged tangential
 dual to switch between static sticking and dynamic sliding and project paired
-forces to the circular Coulomb cone.
+forces to the circular Coulomb cone. Static box obstacle row keys now include
+face/edge/corner feature IDs so rows warm-start across small same-feature
+penetrations but reset when contact moves to another box manifold.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
-completeness, full contact-manifold friction persistence, dynamic contact
-manifold IDs, rigid/soft coupling, GPU parity, demos, and benchmark packets
-remain open.
+completeness, tangent dual projection across changing smooth contact frames,
+dynamic/rigid contact manifold IDs, rigid/soft coupling, GPU parity, demos, and
+benchmark packets remain open.
 
 ## Relationship To PLAN-081
 
