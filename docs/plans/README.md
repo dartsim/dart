@@ -72,6 +72,7 @@ they should not own priority, timeline, or active implementation state.
 | [`082-rigid-implicit-barrier-contact.md`](082-rigid-implicit-barrier-contact.md)           | PLAN-082 rigid IPC scope, manifest, and acceptance criteria     |
 | [`110-differentiable-simulation.md`](110-differentiable-simulation.md)                     | PLAN-110 differentiable simulation scope, audits, and gates     |
 | [`101-dartsim-gui-simulator.md`](101-dartsim-gui-simulator.md)                             | PLAN-101 dartsim GUI simulator scope, phases, and acceptance    |
+| [`120-inverse-kinematics-and-motion.md`](120-inverse-kinematics-and-motion.md)             | PLAN-120 IK solver portfolio, whole-body parity, and motion IK  |
 | Numbered initiative files, such as `010-*.md`                                              | Active plan scope, evidence, open gaps, and acceptance criteria |
 | [`AGENTS.md`](AGENTS.md)                                                                   | Local rules for agents editing plan docs                        |
 | [`../ai/north-star.md`](../ai/north-star.md)                                               | Mission, current state, missing capabilities, and readiness bar |
