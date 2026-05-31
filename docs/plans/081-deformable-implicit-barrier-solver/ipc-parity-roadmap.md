@@ -169,13 +169,22 @@ deformable sliding along a rod decelerates with `frictionCoefficient`. This work
 because the capsule obstacle is barrier-only (no over-limiting surface CCD), so
 the tangential slide is unconstrained — directly demonstrating mesh-vs-obstacle
 friction (toward Fig 8 / Fig 20 roller themes). Ships C++ + dartpy regressions and
-a `Deformable Friction on Capsule Rod (IPC)` showcase. **Remaining M5 (the real
-blocker):** sphere/box obstacle friction is still masked by the surface-CCD
-limiter, which scales the _whole_ step vector (normal + tangential) to prevent
-gravity-driven penetration, killing the tangential slide. The fix is to make the
-surface CCD limit only the _normal_ approach component (not the whole step) so
-the barrier handles non-penetration and friction can act tangentially — a
-focused, higher-risk change to the CCD contracts (cf. #2732).
+a `Deformable Friction on Capsule Rod (IPC)` showcase.
+
+**Sphere/box obstacle friction has also LANDED**, via an opt-in **barrier-only
+obstacle** mode (`RigidBody::setDeformableObstacleBarrierOnly`, dartpy
+`is_deformable_obstacle_barrier_only`): the obstacle keeps its clamped-log barrier
+but is `entt::exclude`-d from the surface-CCD collect, so the deformable slides
+tangentially (the barrier alone prevents penetration for the quasi-static contact)
+and the sphere/box obstacle normal forces feed the lagged Coulomb friction term. A
+strip shoved across a barrier-only box plate is decelerated by friction
+(`Deformable Friction on Box Plate (IPC)` showcase + C++/dartpy regressions);
+existing CCD-obstacle scenes are unchanged. **Remaining M5 (lower priority):** the
+"right" fix that keeps the conservative CCD _and_ allows tangential sliding —
+making the surface CCD limit only the _normal_ approach component (not the whole
+step) — so friction works without giving up the fast-motion CCD safety net. That
+is a focused, higher-risk change to the CCD contracts (cf. #2732); the barrier-only
+mode is the safe, shipped path for quasi-static obstacle-friction scenes.
 
 ### M6 — Adaptive barrier stiffness (κ homotopy) — LANDED
 

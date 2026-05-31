@@ -319,6 +319,46 @@ def test_ipc_deformable_rod_friction_decelerates_sliding_strip() -> None:
     assert high_friction < 0.5 * frictionless
 
 
+def test_ipc_deformable_barrier_only_box_friction_decelerates_strip() -> None:
+    """Friction against a barrier-only box plate decelerates a sliding strip.
+
+    A strip shoved across a barrier-only box (excluded from the surface CCD) slides
+    far frictionless but is held back under friction, staying above the top face --
+    the CCD-free path to box/sphere obstacle friction.
+    """
+
+    import numpy as np
+
+    from examples.demos.scenes import ipc_deformable_plate_friction as scene
+
+    def slid(mu: float) -> tuple[float, float]:
+        options, _edges = scene._build_strip()
+        options.material.friction_coefficient = mu
+        world = scene.sx.World()
+        world.gravity = [0.0, 0.0, -9.81]
+        world.time_step = 0.004
+        plate = world.add_rigid_body("plate", position=scene._PLATE_CENTER)
+        plate.is_static = True
+        plate.set_collision_shape(scene.sx.CollisionShape.box(scene._PLATE_HALF))
+        plate.is_deformable_surface_ccd_obstacle = True
+        plate.is_deformable_obstacle_barrier_only = True
+        body = world.add_deformable_body("strip", options)
+        x0 = float(np.mean([body.node_position(i)[0] for i in range(body.node_count)]))
+        for _ in range(200):
+            world.step()
+        positions = np.array([body.node_position(i) for i in range(body.node_count)])
+        assert np.isfinite(positions).all()
+        return float(np.mean(positions[:, 0]) - x0), float(positions[:, 2].min())
+
+    frictionless, free_z = slid(0.0)
+    high_friction, mu_z = slid(0.8)
+    assert frictionless > 0.5
+    assert high_friction < 0.5 * frictionless
+    # Both stay above the box top face (z = 0.5).
+    assert free_z > 0.49
+    assert mu_z > 0.5
+
+
 def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
     """The .seg and .pt importers feed real deformable solves.
 
@@ -385,6 +425,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_obj_cloth",
         "ipc_deformable_capsule_rod",
         "ipc_deformable_rod_friction",
+        "ipc_deformable_plate_friction",
         "ipc_deformable_seg_strand",
         "ipc_deformable_pt_particles",
         "ipc_deformable_scripted_dirichlet",
