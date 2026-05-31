@@ -244,7 +244,9 @@ lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
 
 `dart::io` (`dart/io/read.hpp`) parses to the **legacy** types only:
 `readSkeleton` → `dynamics::SkeletonPtr`, `readWorld` → `simulation::WorldPtr`.
-There is no experimental-World loader yet, so this needs a translation layer:
+The first experimental-World bridge composes the legacy Skeleton parser with
+the experimental importer; richer diagnostics and unsupported-feature reporting
+still need the remaining translation layer:
 
 - Walk the legacy `Skeleton`'s `BodyNode` tree; for each `BodyNode` create an
   experimental `Link` (mass, inertia) and for each parent `Joint` map the legacy
@@ -258,11 +260,28 @@ There is no experimental-World loader yet, so this needs a translation layer:
   URDF/Skeleton COM offsets directly (no reframing). Verified by an offset-COM
   pendulum (C++ + dartpy). Child-joint origins relative to the body frame still
   map onto `transformFromParent` as today.
-- **Remaining:** the actual translation pass — walk the parsed `Skeleton`,
-  create links/joints, map joint types and transforms, and (optionally) collision
-  shapes — likely in a new `dart/simulation/experimental/io` bridge. Verify a
-  known URDF loads with the right DOF count, tree structure, and a sane
-  forward-dynamics step, in C++ and dartpy.
+- **DONE first C++/dartpy bridge:** `simulation::experimental::io::addSkeleton`
+  /`addWorld` and dartpy `simulation_experimental.add_skeleton()`/`add_world()`
+  now translate already-parsed legacy `dynamics::Skeleton` and
+  `simulation::World` objects into experimental `World`/`Multibody` handles for
+  Weld/Revolute/Prismatic/Screw/Universal/Ball/Planar/Free tree joints. It maps
+  names, synthetic root anchors, parent-joint transforms, axes, screw pitch,
+  joint state/limits, actuator family, passive spring/damping/friction, mass,
+  inertia, local COM offsets, and one centered collidable Box/Sphere/Capsule/
+  Cylinder/Mesh shape per link when the legacy shape maps exactly to the
+  experimental `CollisionShape` facade. URI-loading overloads accept explicit
+  `dart::io::ReadOptions`, including dartpy bindings for format selection, SDF
+  default root-joint selection, and URDF package directories.
+  `test_skeleton_loader` verifies structure/property transfer,
+  classic-vs-experimental pendulum stepping from a loaded Skeleton, higher-DOF
+  joint-family coverage, basic collision-shape transfer, default Skeleton/World
+  URI loading, multi-skeleton legacy-World import, and honest rejection of
+  unsupported legacy-only joints or unrepresentable collision shapes; the dartpy
+  regression covers the already-parsed handoff, URI-string loading, shape
+  transfer, world import, and `SkeletonLoadOptions`.
+- **Remaining:** remaining legacy-only joint families, collision shape source
+  offsets, multiple collision shapes, visual geometry, materials, resource
+  retriever bindings, diagnostics, and richer load-result ergonomics.
 
 ### Subsystem C — MVP GUI example (required for the MVP)
 

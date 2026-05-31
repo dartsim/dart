@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/common/constants.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/link.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
@@ -100,14 +101,65 @@ void writeLegacyJointV1(
   io::writePOD(output, mappedChild);
 }
 
-void saveLegacyV1WorldWithCurrentEntities(
-    std::ostream& output, const dart::simulation::experimental::World& world)
+void writeMassPropertiesV8(
+    std::ostream& output,
+    const dart::simulation::experimental::comps::MassProperties& mass)
+{
+  namespace io = dart::simulation::experimental::io;
+
+  io::writePOD(output, mass.mass);
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i; j < 3; ++j) {
+      io::writePOD(output, mass.inertia(i, j));
+    }
+  }
+  io::writeVector3d(output, mass.localCenterOfMass);
+}
+
+void writeLegacyLinkV8(
+    std::ostream& output,
+    const dart::simulation::experimental::comps::Link& link,
+    const dart::simulation::experimental::io::EntityMap& entityMap,
+    bool includeExternalForce)
+{
+  namespace io = dart::simulation::experimental::io;
+
+  io::writeString(output, link.name);
+  writeMassPropertiesV8(output, link.mass);
+  io::writeIsometry3d(output, link.transformFromParentJoint);
+
+  const auto mappedParent
+      = link.parentJoint != entt::null
+            ? static_cast<std::uint32_t>(entityMap.at(link.parentJoint))
+            : static_cast<std::uint32_t>(entt::null);
+  io::writePOD(output, mappedParent);
+
+  io::writePOD(output, link.childJoints.size());
+  for (const auto childJoint : link.childJoints) {
+    const auto mappedChild
+        = childJoint != entt::null
+              ? static_cast<std::uint32_t>(entityMap.at(childJoint))
+              : static_cast<std::uint32_t>(entt::null);
+    io::writePOD(output, mappedChild);
+  }
+
+  io::writeIsometry3d(output, link.worldTransform);
+  if (includeExternalForce) {
+    for (Eigen::Index i = 0; i < link.externalForce.size(); ++i) {
+      io::writePOD(output, link.externalForce[i]);
+    }
+  }
+}
+
+void saveLegacyWorldWithCurrentEntities(
+    std::ostream& output,
+    const dart::simulation::experimental::World& world,
+    std::uint32_t legacyVersion)
 {
   namespace comps = dart::simulation::experimental::comps;
   namespace io = dart::simulation::experimental::io;
 
   constexpr std::uint32_t magicNumber = 0x44525437;
-  constexpr std::uint32_t legacyVersion = 1;
   io::writePOD(output, magicNumber);
   io::writePOD(output, legacyVersion);
 
@@ -144,14 +196,32 @@ void saveLegacyV1WorldWithCurrentEntities(
     io::writePOD(output, componentTypes.size());
     for (const auto& typeName : componentTypes) {
       io::writeString(output, typeName);
-      if (typeName == comps::Joint::getTypeName()) {
+      if (legacyVersion == 1u && typeName == comps::Joint::getTypeName()) {
         writeLegacyJointV1(
             output, registry.get<comps::Joint>(entity), entityMap);
+      } else if (typeName == comps::Link::getTypeName()) {
+        writeLegacyLinkV8(
+            output,
+            registry.get<comps::Link>(entity),
+            entityMap,
+            legacyVersion >= 5u);
       } else {
         serializers.at(typeName)->save(output, entity, registry, entityMap);
       }
     }
   }
+}
+
+void saveLegacyV1WorldWithCurrentEntities(
+    std::ostream& output, const dart::simulation::experimental::World& world)
+{
+  saveLegacyWorldWithCurrentEntities(output, world, /*legacyVersion=*/1u);
+}
+
+void saveLegacyV8WorldWithCurrentEntities(
+    std::ostream& output, const dart::simulation::experimental::World& world)
+{
+  saveLegacyWorldWithCurrentEntities(output, world, /*legacyVersion=*/8u);
 }
 
 } // namespace
@@ -401,6 +471,70 @@ TEST(Serialization, LoadsLegacyV1JointRecord)
   EXPECT_TRUE(jointComp.commandVelocity.isZero());
 }
 
+TEST(Serialization, LoadsLegacyV8LinkRecord)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace comps = dart::simulation::experimental::comps;
+
+  sx::World world1;
+  auto mb = world1.addMultibody("robot");
+  auto base = mb.addLink("base");
+  auto link = mb.addLink(
+      "link",
+      base,
+      sx::JointSpec{.name = "joint", .type = sx::JointType::Revolute});
+
+  Eigen::Isometry3d legacyJointToLink = Eigen::Isometry3d::Identity();
+  legacyJointToLink.translate(Eigen::Vector3d(0.25, -0.5, 0.75));
+  legacyJointToLink.rotate(Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ()));
+
+  Eigen::Isometry3d unsavedParentToJoint = Eigen::Isometry3d::Identity();
+  unsavedParentToJoint.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
+
+  Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
+  worldTransform.translate(Eigen::Vector3d(-1.0, 0.5, 2.0));
+
+  Eigen::Matrix<double, 6, 1> externalForce;
+  externalForce << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0;
+
+  auto& linkComp = world1.getRegistry().get<comps::Link>(link.getEntity());
+  linkComp.transformFromParentToJoint = unsavedParentToJoint;
+  linkComp.transformFromParentJoint = legacyJointToLink;
+  linkComp.worldTransform = worldTransform;
+  linkComp.externalForce = externalForce;
+
+  std::stringstream legacy;
+  saveLegacyV8WorldWithCurrentEntities(legacy, world1);
+
+  sx::World world2;
+  world2.loadBinary(legacy);
+
+  auto mbRestored = world2.getMultibody("robot");
+  ASSERT_TRUE(mbRestored.has_value());
+  auto linkRestored = mbRestored->getLink("link");
+  ASSERT_TRUE(linkRestored.has_value());
+
+  const auto& restoredLinkComp
+      = world2.getRegistry().get<comps::Link>(linkRestored->getEntity());
+  EXPECT_TRUE(restoredLinkComp.transformFromParentToJoint.isApprox(
+      Eigen::Isometry3d::Identity()));
+  EXPECT_TRUE(
+      restoredLinkComp.transformFromParentJoint.isApprox(legacyJointToLink));
+  EXPECT_TRUE(restoredLinkComp.worldTransform.isApprox(worldTransform));
+  EXPECT_TRUE(restoredLinkComp.externalForce.isApprox(externalForce));
+
+  auto jointRestored = mbRestored->getJoint("joint");
+  ASSERT_TRUE(jointRestored.has_value());
+  EXPECT_EQ(restoredLinkComp.parentJoint, jointRestored->getEntity());
+
+  auto baseRestored = mbRestored->getLink("base");
+  ASSERT_TRUE(baseRestored.has_value());
+  const auto& restoredBaseComp
+      = world2.getRegistry().get<comps::Link>(baseRestored->getEntity());
+  ASSERT_EQ(restoredBaseComp.childJoints.size(), 1u);
+  EXPECT_EQ(restoredBaseComp.childJoints.front(), jointRestored->getEntity());
+}
+
 // Test save/load preserves names
 TEST(Serialization, PreservesNames)
 {
@@ -456,6 +590,11 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
 
+  auto cylinder = world1.addRigidBody("cylinder");
+  cylinder.setCollisionShape(
+      sx::CollisionShape::makeCylinder(
+          /*radius=*/0.2, /*halfHeight=*/0.7));
+
   auto mesh = world1.addRigidBody("mesh");
   mesh.setCollisionShape(
       sx::CollisionShape::makeMesh(
@@ -492,6 +631,16 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   ASSERT_TRUE(ballShape.has_value());
   EXPECT_EQ(ballShape->type, sx::CollisionShapeType::Sphere);
   EXPECT_DOUBLE_EQ(ballShape->radius, 0.3);
+
+  auto cylinderRestored = world2.getRigidBody("cylinder");
+  ASSERT_TRUE(cylinderRestored.has_value());
+
+  auto cylinderShape = cylinderRestored->getCollisionShape();
+  ASSERT_TRUE(cylinderShape.has_value());
+  EXPECT_EQ(cylinderShape->type, sx::CollisionShapeType::Cylinder);
+  EXPECT_DOUBLE_EQ(cylinderShape->radius, 0.2);
+  EXPECT_TRUE(
+      cylinderShape->halfExtents.isApprox(Eigen::Vector3d(0.2, 0.2, 0.7)));
 
   auto meshRestored = world2.getRigidBody("mesh");
   ASSERT_TRUE(meshRestored.has_value());

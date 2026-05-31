@@ -2257,6 +2257,10 @@ std::vector<Contact> World::collide()
             collisionShape.radius,
             collisionShape.halfExtents.z() + collisionShape.radius));
         break;
+      case CollisionShapeType::Cylinder:
+        shape = std::make_unique<ncol::CylinderShape>(
+            collisionShape.radius, 2.0 * collisionShape.halfExtents.z());
+        break;
       case CollisionShapeType::Mesh:
         shape = std::make_unique<ncol::MeshShape>(
             collisionShape.vertices, collisionShape.triangles);

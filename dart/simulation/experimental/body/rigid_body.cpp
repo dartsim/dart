@@ -115,6 +115,16 @@ void validateCollisionShape(
           "and finite",
           ownerName);
       break;
+    case CollisionShapeType::Cylinder:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.halfExtents.z())
+              || shape.halfExtents.z() <= 0.0,
+          InvalidArgumentException,
+          "{} cylinder collision shape radius and half-height must be "
+          "positive and finite",
+          ownerName);
+      break;
     case CollisionShapeType::Mesh: {
       DART_EXPERIMENTAL_THROW_T_IF(
           shape.vertices.empty(),
