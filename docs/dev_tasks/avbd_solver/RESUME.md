@@ -30,14 +30,16 @@ the existing VBD path.
 `feature/avbd-plan104-foundation` - checkpoint commits based on current
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
-finite-stiffness material rows, plus the first bounded friction-tangent row
-kernel/driver slice.
+finite-stiffness material rows, plus supported World static-contact friction
+tangent rows.
 
 ## Immediate Next Step
 
-Wire the bounded friction-tangent rows into supported World mass-spring contact
-scenes with diagnostics and fallback coverage, or start AVBD self-contact rows
-if that proves too coupled.
+Start AVBD self-contact normal rows as the next bounded row family. Keep the
+slice narrow: define the self-contact scalar row state and local block stamping
+first, then wire World generation only after the kernel tests prove the row
+matches the existing lagged VBD barrier direction and preserves unsupported
+fallback envelopes.
 
 ## Context That Would Be Lost
 

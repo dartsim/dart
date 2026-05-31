@@ -127,7 +127,9 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Wire the bounded friction-tangent rows into supported World mass-spring
-   contact scenes with diagnostics and fallback coverage.
-2. Add the next bounded AVBD row family, starting with self-contact rows or the
-   remaining static/dynamic friction switching logic.
+1. Start the next bounded AVBD row family: self-contact normal rows are the
+   preferred next slice because static ground contact/friction, attachments,
+   finite-stiffness springs, and pure-tet finite-material rows are now wired.
+2. In parallel planning, keep static/dynamic friction switching, full friction
+   cones, rigid/articulated rows, GPU parity, demos, and benchmark packets as
+   open AVBD parity gates rather than completion claims.
