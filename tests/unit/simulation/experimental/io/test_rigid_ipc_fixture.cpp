@@ -855,17 +855,26 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
 
   const auto runSlide
       = [=](const double activationDistance,
-            const int frictionIterations) -> SolverSettingOutcome {
+            const int frictionIterations,
+            const double staticFrictionSpeedBound,
+            const double frictionConvergenceTolerance) -> SolverSettingOutcome {
     std::ostringstream source;
     source << R"json(
 {
   "scene_type": "distance_barrier_rb_problem",
   "timestep": 0.05,
+  "ipc_solver": {
+    "velocity_conv_tol": )json"
+           << frictionConvergenceTolerance << R"json(,
+    "is_velocity_conv_tol_abs": true
+  },
   "distance_barrier_constraint": {
     "initial_barrier_activation_distance": )json"
            << activationDistance << R"json(
   },
   "friction_constraints": {
+    "static_friction_speed_bound": )json"
+           << staticFrictionSpeedBound << R"json(,
     "iterations": )json"
            << frictionIterations << R"json(
   },
@@ -901,6 +910,16 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
       ADD_FAILURE() << "missing parsed non-negative friction iterations";
       return {};
     }
+    if (!fixture.staticFrictionSpeedBound.has_value()
+        || *fixture.staticFrictionSpeedBound < 0.0) {
+      ADD_FAILURE() << "missing parsed non-negative static friction speed";
+      return {};
+    }
+    if (!fixture.velocityConvergenceTolerance.has_value()
+        || *fixture.velocityConvergenceTolerance < 0.0) {
+      ADD_FAILURE() << "missing parsed non-negative convergence tolerance";
+      return {};
+    }
 
     sx::World world;
     const expio::RigidIpcReplayState state
@@ -914,17 +933,30 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
     stageOptions.activationDistance = *fixture.barrierActivationDistance;
     stageOptions.frictionIterations
         = static_cast<std::size_t>(*fixture.frictionIterations);
+    stageOptions.staticFrictionSpeedBound = *fixture.staticFrictionSpeedBound;
+    stageOptions.frictionConvergenceTolerance
+        = *fixture.velocityConvergenceTolerance;
     sx::compute::RigidIpcContactStage ipcStage(stageOptions);
     EXPECT_DOUBLE_EQ(ipcStage.getActivationDistance(), activationDistance);
     EXPECT_EQ(
         ipcStage.getFrictionIterations(),
         static_cast<std::size_t>(frictionIterations));
+    EXPECT_DOUBLE_EQ(
+        ipcStage.getStaticFrictionSpeedBound(), staticFrictionSpeedBound);
+    EXPECT_DOUBLE_EQ(
+        ipcStage.getFrictionConvergenceTolerance(),
+        frictionConvergenceTolerance);
     const sx::compute::RigidIpcContactStageOptions appliedOptions
         = ipcStage.getOptions();
     EXPECT_DOUBLE_EQ(appliedOptions.activationDistance, activationDistance);
     EXPECT_EQ(
         appliedOptions.frictionIterations,
         static_cast<std::size_t>(frictionIterations));
+    EXPECT_DOUBLE_EQ(
+        appliedOptions.staticFrictionSpeedBound, staticFrictionSpeedBound);
+    EXPECT_DOUBLE_EQ(
+        appliedOptions.frictionConvergenceTolerance,
+        frictionConvergenceTolerance);
 
     sx::compute::SequentialExecutor executor;
     sx::compute::WorldStepPipeline pipeline;
@@ -943,8 +975,13 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
         body->getTranslation().z()};
   };
 
-  const SolverSettingOutcome inactiveNarrowBand = runSlide(0.001, 1);
-  const SolverSettingOutcome activeFrictionDisabled = runSlide(0.01, 0);
+  const SolverSettingOutcome inactiveNarrowBand = runSlide(0.001, 1, 1e-3, 0.0);
+  const SolverSettingOutcome activeFrictionDisabled
+      = runSlide(0.01, 0, 1e-3, 0.0);
+  const SolverSettingOutcome staticFrictionDisabled
+      = runSlide(0.01, 3, 0.0, 0.0);
+  const SolverSettingOutcome frictionToleranceEarlyStop
+      = runSlide(0.01, 3, 1e-3, 1e100);
 
   EXPECT_TRUE(inactiveNarrowBand.stats.converged);
   EXPECT_EQ(inactiveNarrowBand.stats.activeConstraints, 0u);
@@ -959,10 +996,25 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
   EXPECT_EQ(activeFrictionDisabled.stats.frictionIterations, 0u);
   EXPECT_GT(activeFrictionDisabled.z, initialHeight);
 
+  EXPECT_TRUE(staticFrictionDisabled.stats.converged);
+  EXPECT_GT(staticFrictionDisabled.stats.activeConstraints, 0u);
+  EXPECT_EQ(staticFrictionDisabled.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(staticFrictionDisabled.stats.frictionIterations, 0u);
+  EXPECT_GT(staticFrictionDisabled.z, initialHeight);
+
+  EXPECT_TRUE(frictionToleranceEarlyStop.stats.converged);
+  EXPECT_GT(frictionToleranceEarlyStop.stats.activeConstraints, 0u);
+  EXPECT_GT(frictionToleranceEarlyStop.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(frictionToleranceEarlyStop.stats.frictionIterations, 1u);
+
   sx::compute::RigidIpcContactStageOptions invalidOptions;
   invalidOptions.activationDistance = -1.0;
+  invalidOptions.staticFrictionSpeedBound = -1.0;
+  invalidOptions.frictionConvergenceTolerance = -1.0;
   const sx::compute::RigidIpcContactStage invalidStage(invalidOptions);
   EXPECT_DOUBLE_EQ(invalidStage.getActivationDistance(), 1e-2);
+  EXPECT_DOUBLE_EQ(invalidStage.getStaticFrictionSpeedBound(), 1e-3);
+  EXPECT_DOUBLE_EQ(invalidStage.getFrictionConvergenceTolerance(), 0.0);
 }
 
 TEST(RigidIpcFixtureReplay, ReplaysComparisonScriptMshScene)

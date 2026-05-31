@@ -392,6 +392,15 @@ struct RigidIpcContactStageOptions
 
   /// Number of lagged friction outer passes. Zero disables lagged friction.
   std::size_t frictionIterations = 1;
+
+  /// Static-friction speed bound (`epsv`) in world units per second. The stage
+  /// converts this to the solver's per-step displacement threshold using the
+  /// world timestep. Zero disables lagged friction.
+  double staticFrictionSpeedBound = 1e-3;
+
+  /// Absolute momentum-balance tolerance for stopping lagged friction passes.
+  /// Zero requires the configured number of friction passes.
+  double frictionConvergenceTolerance = 0.0;
 };
 
 /// Opt-in rigid IPC world-step stage for free rigid bodies.
@@ -413,6 +422,8 @@ public:
   [[nodiscard]] std::size_t getMaxIterations() const noexcept;
   [[nodiscard]] double getActivationDistance() const noexcept;
   [[nodiscard]] std::size_t getFrictionIterations() const noexcept;
+  [[nodiscard]] double getStaticFrictionSpeedBound() const noexcept;
+  [[nodiscard]] double getFrictionConvergenceTolerance() const noexcept;
   [[nodiscard]] RigidIpcContactStageOptions getOptions() const noexcept;
   [[nodiscard]] const RigidIpcSolverStats& getLastStats() const noexcept;
 

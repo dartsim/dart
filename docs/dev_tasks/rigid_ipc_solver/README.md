@@ -36,8 +36,9 @@
           replayed friction metadata affects lagged rigid IPC contact behavior.
     - [x] Add the first explicit stage-policy bridge for parsed solver
           metadata: `RigidIpcContactStageOptions` can carry fixture/comparison
-          `dHat` and lagged-friction iteration settings into the opt-in runtime
-          stage, with a fixture replay regression for both settings.
+          `dHat`, `epsv`/static-friction speed, velocity tolerance, and
+          lagged-friction iteration settings into the opt-in runtime stage, with
+          a fixture replay regression for those settings.
     - [ ] Add a reusable runtime fixture example and cover remaining comparison
           script commands and mesh formats beyond OBJ/OFF/MSH/STL/inline
           polygons.
@@ -199,6 +200,12 @@
         parsed fixture/comparison metadata into the projected-Newton solve, and
         zero iterations disable runtime friction rows while preserving barrier
         contact behavior.
+  - [x] Phase 4g: make the opt-in runtime stage's lagged-friction static-speed
+        and convergence-tolerance policy configurable. `RigidIpcContactStageOptions`
+        now carries fixture/comparison `epsv`/`static_friction_speed_bound` and
+        velocity-tolerance metadata into the projected-Newton solve; replay
+        coverage proves zero static-friction speed disables lagged friction and
+        a high tolerance stops outer friction passes early.
   - [ ] Extend friction into broader corpus coverage and production convergence
         criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
@@ -206,8 +213,8 @@
 - [ ] Phase 5b: extend solver selection toward persisted scene policy,
       diagnostics, examples, and mixed rigid/deformable coupling.
   - [x] Add the first explicit opt-in stage options for max iterations, barrier
-        activation distance, and lagged-friction iterations without exposing a
-        solver registry.
+        activation distance, lagged-friction iterations, static-friction speed,
+        and friction convergence tolerance without exposing a solver registry.
   - [ ] Continue toward persisted scene policy, diagnostics, examples, and
         mixed rigid/deformable coupling.
 - [ ] Phase 6: complete the manifest rows as DART-native tests, examples,
@@ -350,8 +357,9 @@ DART-owned implementation.
    geometry rejection plus explicit non-converged-result skipping into broader
    convergence criteria, corpus contact behavior, and production-ready default
    activation criteria.
-2. Extend Phase 4 from bounded outer lagged-friction passes into runtime
-   fixture behavior, corpus coverage, and production convergence criteria.
+2. Extend Phase 4 from bounded outer lagged-friction passes and fixture-driven
+   friction controls into broader corpus coverage and production convergence
+   criteria.
 3. Extend Phase 2 with upstream corpus parity: more direct
    `tests/data/ccd-test-*` evaluator checks, kinematic rows, codimensional
    coverage, rigorous interval arithmetic, and accepted tolerances against the

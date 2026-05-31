@@ -1,5 +1,35 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: rigid IPC runtime friction tolerances
+
+Delivered another bounded stage-policy slice for Phases 1, 4, and 5:
+
+- Extended `RigidIpcContactStageOptions` with
+  `staticFrictionSpeedBound` (`epsv`) and
+  `frictionConvergenceTolerance`. Defaults preserve the existing runtime stage
+  behavior: static friction uses `1e-3 * dt`, and zero convergence tolerance
+  requires the configured lagged-friction pass count.
+- Routed those options into the opt-in runtime projected-Newton solve. The
+  stage converts static-friction speed to the solver's per-step static-friction
+  displacement and passes the absolute friction convergence tolerance through
+  to the internal lagged-friction early-stop check.
+- Expanded the fixture replay stage-policy regression so parsed
+  `friction_constraints.static_friction_speed_bound` and
+  `ipc_solver.velocity_conv_tol` can drive `RigidIpcContactStageOptions`.
+  Coverage now proves zero static-friction speed disables runtime friction rows
+  and a high convergence tolerance stops lagged-friction passes after the first
+  active pass.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter=World.RigidIpcContactStage*'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: rigid IPC stage options for fixture solver metadata
 
 Delivered a bounded stage-policy slice for Phases 1, 4, and 5:

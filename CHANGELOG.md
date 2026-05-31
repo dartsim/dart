@@ -938,6 +938,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     distance, and lagged-friction passes without exposing a solver registry.
     Fixture replay coverage now applies parsed `dHat` and friction-iteration
     metadata to that stage configuration.
+  - Extended `RigidIpcContactStageOptions` with lagged-friction static-speed
+    and convergence-tolerance controls, allowing fixture/comparison `epsv` and
+    velocity-tolerance metadata to drive the opt-in runtime IPC friction solve.
   - Added the first rigid IPC performance benchmark (`bm_rigid_ipc_solver`)
     covering the per-primitive reduced barrier kernels, scene-level assembly,
     the projected-Newton solve, and the conservative CCD line search, with a

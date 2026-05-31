@@ -105,6 +105,14 @@ makeRigidIpcContactStageOptionsForMaxIterations(const std::size_t maxIterations)
       || options.activationDistance <= 0.0) {
     options.activationDistance = kDefaultRigidIpcContactStageActivationDistance;
   }
+  if (!std::isfinite(options.staticFrictionSpeedBound)
+      || options.staticFrictionSpeedBound < 0.0) {
+    options.staticFrictionSpeedBound = 1e-3;
+  }
+  if (!std::isfinite(options.frictionConvergenceTolerance)
+      || options.frictionConvergenceTolerance < 0.0) {
+    options.frictionConvergenceTolerance = 0.0;
+  }
   return options;
 }
 
@@ -6673,10 +6681,11 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.adaptiveStiffness.bboxDiagonal = bboxDiagonal;
   options.friction.coefficient = 1.0;
   options.friction.staticFrictionDisplacement
-      = std::max(0.0, 1e-3 * world.getTimeStep());
+      = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
   options.dynamicsTerms = std::move(dynamicsTerms);
   options.maxIterations = m_options.maxIterations;
   options.frictionIterations = m_options.frictionIterations;
+  options.frictionConvergenceTolerance = m_options.frictionConvergenceTolerance;
   // The apply policy below writes back a not-fully-converged result when it
   // made progress, relying on every accepted Newton step having passed the
   // conservative line-search feasibility check. That guarantee only holds with
@@ -6781,6 +6790,18 @@ double RigidIpcContactStage::getActivationDistance() const noexcept
 std::size_t RigidIpcContactStage::getFrictionIterations() const noexcept
 {
   return m_options.frictionIterations;
+}
+
+//==============================================================================
+double RigidIpcContactStage::getStaticFrictionSpeedBound() const noexcept
+{
+  return m_options.staticFrictionSpeedBound;
+}
+
+//==============================================================================
+double RigidIpcContactStage::getFrictionConvergenceTolerance() const noexcept
+{
+  return m_options.frictionConvergenceTolerance;
 }
 
 //==============================================================================
