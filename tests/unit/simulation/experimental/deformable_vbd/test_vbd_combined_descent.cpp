@@ -960,6 +960,52 @@ TEST(VbdCombinedDescent, AvbdSelfContactFrictionPairSwitchesToDynamicSlip)
 }
 
 //==============================================================================
+TEST(
+    VbdCombinedDescent,
+    AvbdSelfContactFrictionDualProjectionPreservesGeneralizedImpulse)
+{
+  const std::array<Vec3, 4> stepStart
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+
+  vbd::AvbdSelfContactFrictionRow rowX;
+  rowX.nodes = {0, 1, 2, 3};
+  rowX.stepStartPositions = stepStart;
+  rowX.axis = 0;
+  rowX.state.lambda = 3.0;
+
+  vbd::AvbdSelfContactFrictionRow rowY = rowX;
+  rowY.axis = 1;
+  rowY.state.lambda = 4.0;
+
+  const Eigen::Vector2d unchanged
+      = vbd::projectAvbdSelfContactFrictionDualToTangentPair(
+          rowX.state.lambda, rowY.state.lambda, rowX, rowY, rowX, rowY);
+  EXPECT_NEAR(unchanged.x(), 3.0, 1e-12);
+  EXPECT_NEAR(unchanged.y(), 4.0, 1e-12);
+
+  const std::array<Vec3, 4> rotatedStepStart
+      = {Vec3(-0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0),
+         Vec3(-1.0, 0.0, 0.0)};
+  vbd::AvbdSelfContactFrictionRow rotatedX = rowX;
+  rotatedX.stepStartPositions = rotatedStepStart;
+  rotatedX.axis = 0;
+  vbd::AvbdSelfContactFrictionRow rotatedY = rotatedX;
+  rotatedY.axis = 1;
+
+  const Eigen::Vector2d projected
+      = vbd::projectAvbdSelfContactFrictionDualToTangentPair(
+          rowX.state.lambda, rowY.state.lambda, rowX, rowY, rotatedX, rotatedY);
+  EXPECT_NEAR(projected.x(), 4.0, 1e-12);
+  EXPECT_NEAR(projected.y(), -3.0, 1e-12);
+  EXPECT_NEAR(projected.norm(), 5.0, 1e-12);
+}
+
+//==============================================================================
 TEST(VbdCombinedDescent, AvbdSelfContactFrictionRowsReduceTangentialMotion)
 {
   const std::array<Vec3, 4> stepStart

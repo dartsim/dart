@@ -303,6 +303,61 @@ inline Eigen::Vector3d avbdSelfContactFrictionLocalDirection(
 }
 
 //==============================================================================
+inline contact::Vector12d avbdSelfContactFrictionGeneralizedDirection(
+    const AvbdSelfContactFrictionRow& row)
+{
+  const std::uint8_t axis = row.axis < 2u ? row.axis : 0u;
+  const contact::Matrix2x12d projection
+      = avbdSelfContactFrictionProjection(row);
+  return projection.row(axis).transpose();
+}
+
+//==============================================================================
+inline Eigen::Vector2d projectAvbdSelfContactFrictionDualToTangentPair(
+    double previousFirstLambda,
+    double previousSecondLambda,
+    const AvbdSelfContactFrictionRow& previousFirst,
+    const AvbdSelfContactFrictionRow& previousSecond,
+    const AvbdSelfContactFrictionRow& currentFirst,
+    const AvbdSelfContactFrictionRow& currentSecond)
+{
+  const contact::Vector12d previousDual
+      = previousFirstLambda
+            * avbdSelfContactFrictionGeneralizedDirection(previousFirst)
+        + previousSecondLambda
+              * avbdSelfContactFrictionGeneralizedDirection(previousSecond);
+
+  const contact::Vector12d currentFirstDirection
+      = avbdSelfContactFrictionGeneralizedDirection(currentFirst);
+  const contact::Vector12d currentSecondDirection
+      = avbdSelfContactFrictionGeneralizedDirection(currentSecond);
+
+  const double gram00 = currentFirstDirection.squaredNorm();
+  const double gram01 = currentFirstDirection.dot(currentSecondDirection);
+  const double gram11 = currentSecondDirection.squaredNorm();
+  const double rhs0 = currentFirstDirection.dot(previousDual);
+  const double rhs1 = currentSecondDirection.dot(previousDual);
+  const double determinant = gram00 * gram11 - gram01 * gram01;
+  const double scale = std::max({1.0, std::abs(gram00), std::abs(gram11)});
+  if (std::isfinite(determinant)
+      && std::abs(determinant)
+             > 64.0 * std::numeric_limits<double>::epsilon() * scale * scale) {
+    return Eigen::Vector2d(
+        (gram11 * rhs0 - gram01 * rhs1) / determinant,
+        (gram00 * rhs1 - gram01 * rhs0) / determinant);
+  }
+
+  Eigen::Vector2d projected = Eigen::Vector2d::Zero();
+  if (std::isfinite(gram00) && gram00 > 0.0) {
+    projected.x() = rhs0 / gram00;
+  }
+  if (std::isfinite(gram11) && gram11 > 0.0) {
+    projected.y() = rhs1 / gram11;
+  }
+  return projected;
+}
+
+//==============================================================================
 inline bool avbdSelfContactFrictionPreviousDualInsideCone(
     const AvbdSelfContactFrictionRow& first,
     const AvbdSelfContactFrictionRow& second,

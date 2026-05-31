@@ -273,9 +273,10 @@ its own line so status updates remain git-history friendly.
   faces, edges, and corners so same-feature rows warm-start while box-manifold
   changes reset normal/friction state; persisting static half-space friction
   rows also project their decayed dual into the current tangent basis when smooth
-  obstacle normals change. It is not a scene-level parity claim. The next local
-  slice is self-contact tangent-frame persistence, dynamic/rigid contact
-  manifold IDs, or the first rigid/articulated AVBD block foundation.
+  obstacle normals change, and persisting self-contact friction rows project
+  their generalized tangential dual into the current 12D tangent stencil. It is
+  not a scene-level parity claim. The next local slice is dynamic/rigid contact
+  manifold IDs or the first rigid/articulated AVBD block foundation.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
