@@ -38,6 +38,28 @@ def _gui_run_demos_available() -> bool:
     return hasattr(dart, "gui") and hasattr(dart.gui, "run_demos")
 
 
+def _simulation_experimental_has(*names: str) -> bool:
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception:  # pragma: no cover - reduced build without the submodule
+        return False
+    return all(hasattr(sx, name) for name in names)
+
+
+def _require_simulation_experimental_symbols(*names: str):
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception as exc:  # pragma: no cover - reduced build without submodule
+        pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
+    missing = [name for name in names if not hasattr(sx, name)]
+    if missing:
+        formatted = ", ".join(
+            f"simulation_experimental.{name}" for name in missing
+        )
+        pytest.skip(f"{formatted} unavailable in this build")
+    return sx
+
+
 def _deformable_bindings_available() -> bool:
     """True when the experimental deformable bindings are compiled in.
 
@@ -46,26 +68,7 @@ def _deformable_bindings_available() -> bool:
     solver-free grid-builder check skips there rather than erroring.
     """
 
-    try:
-        import dartpy.simulation_experimental as sx
-    except Exception:  # pragma: no cover - reduced build without the submodule
-        return False
-    return hasattr(sx, "DeformableBodyOptions")
-
-
-def _require_sx_attrs(*names: str) -> None:
-    """Skip when a reduced build omits experimental deformable APIs."""
-
-    try:
-        import dartpy.simulation_experimental as sx
-    except Exception:  # pragma: no cover - reduced build without the submodule
-        pytest.skip("dartpy.simulation_experimental unavailable")
-    missing = [name for name in names if not hasattr(sx, name)]
-    if missing:
-        pytest.skip(
-            "experimental deformable API unavailable in this build: "
-            + ", ".join(missing)
-        )
+    return _simulation_experimental_has("DeformableBodyOptions")
 
 
 def test_registry_has_scenes() -> None:
@@ -157,9 +160,12 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     solve staying finite. Verified through the solver-diagnostics snapshot.
     """
 
-    _require_sx_attrs("DeformableTetrahedron", "DeformableDirichletBoundaryCondition")
-
-    import dartpy.simulation_experimental as sx
+    sx = _require_simulation_experimental_symbols(
+        "DeformableBodyOptions",
+        "DeformableDirichletBoundaryCondition",
+        "DeformableTetrahedron",
+        "World",
+    )
     import numpy as np
     from examples.demos._ipc_deformable_bridge import build_fem_compression_bar
 
@@ -208,10 +214,8 @@ def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
     pinned edge, the solve stays finite, and nothing falls through the ground.
     """
 
-    _require_sx_attrs("load_obj_triangle_mesh")
-
     # The importer round-trips the bundled mesh into a usable surface.
-    import dartpy.simulation_experimental as sx
+    sx = _require_simulation_experimental_symbols("load_obj_triangle_mesh", "World")
     import numpy as np
     from examples.demos.scenes.ipc_deformable_obj_cloth import _CLOTH_PATH, build
 
@@ -244,7 +248,7 @@ def test_ipc_deformable_cloth_drapes_over_capsule_rod_without_penetrating() -> N
     sphere/box settle tests, verified by the analytic point-to-segment distance.
     """
 
-    _require_sx_attrs("load_obj_triangle_mesh")
+    _require_simulation_experimental_symbols("load_obj_triangle_mesh", "World")
 
     import numpy as np
 
@@ -287,6 +291,13 @@ def test_ipc_deformable_rod_friction_decelerates_sliding_strip() -> None:
     slides measurably less with friction than without, while staying on the rod.
     """
 
+    _require_simulation_experimental_symbols(
+        "CollisionShape",
+        "DeformableBodyOptions",
+        "DeformableEdge",
+        "World",
+    )
+
     import numpy as np
 
     from examples.demos.scenes import ipc_deformable_rod_friction as scene
@@ -326,6 +337,13 @@ def test_ipc_deformable_barrier_only_box_friction_decelerates_strip() -> None:
     far frictionless but is held back under friction, staying above the top face --
     the CCD-free path to box/sphere obstacle friction.
     """
+
+    _require_simulation_experimental_symbols(
+        "CollisionShape",
+        "DeformableBodyOptions",
+        "DeformableEdge",
+        "World",
+    )
 
     import numpy as np
 
@@ -367,7 +385,11 @@ def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
     the ground barrier without tunneling through it -- both staying finite.
     """
 
-    _require_sx_attrs("load_seg_line_mesh", "load_point_set")
+    _require_simulation_experimental_symbols(
+        "load_point_set",
+        "load_seg_line_mesh",
+        "World",
+    )
 
     import numpy as np
     from examples.demos.scenes.ipc_deformable_pt_particles import (

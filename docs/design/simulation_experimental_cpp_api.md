@@ -841,6 +841,15 @@ capability names. Users should request method families or policies and receive
 documented fallback behavior or unsupported-capability errors when the current
 build lacks the required implementation backend.
 
+For example, a future Dojo-style differentiable rigid-body path would not expose
+`Dojo` as a public solver identity. It would be represented as a rigid-domain
+method family with documented capabilities: maximal- or constrained-coordinate
+state, variational integration, hard-contact NCP/SOC friction, an
+interior-point contact solve, and analytic differentiability. That keeps it
+under the same `World`/`MultibodyOptions` style as the existing
+generalized-coordinate boxed-LCP/Nimble-style path and preserves method-based
+fallback and unsupported-capability errors.
+
 Capability selection is exposed through **domain-scoped value objects set as a
 whole**, not a setter/getter per capability, so new capability fields are added
 without growing the `World` method surface. The first realized example is
@@ -909,6 +918,11 @@ immutable replacement or explicit commit semantics, and documented separation
 between structural/static fields and dynamic arrays. Backend internals remain
 hidden. Public contracts should cover shape, dtype, batch dimensions,
 determinism assumptions, and verified derivative behavior.
+
+Multiple differentiable methods can coexist as solver capabilities. The first
+PLAN-110 path differentiates the existing boxed-LCP rigid-body step; a Dojo-style
+path would own a separate forward solver and reverse pass, then return the same
+DART-owned derivative value objects where its finite-difference gates pass.
 
 ### Custom Compute And Solver Plugins
 
