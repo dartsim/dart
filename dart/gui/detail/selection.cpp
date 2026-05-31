@@ -64,6 +64,7 @@ using dart::gui::extractRenderables;
 using dart::gui::intersectPlane;
 using dart::gui::makeOrbitCameraBasis;
 using dart::gui::makePerspectivePickRay;
+using dart::gui::makePerspectiveProjection;
 using dart::gui::OrbitCamera;
 using dart::gui::pickNearestGizmoHandle;
 using dart::gui::pickNearestRenderable;
@@ -80,6 +81,7 @@ bool solveIkHandle(IkHandle& handle);
 
 namespace {
 
+constexpr double kPi = 3.14159265358979323846;
 constexpr double kRotationRadiansPerPixel = 0.01;
 constexpr double kGizmoWorldScale = 1.0;
 
@@ -144,6 +146,46 @@ PickRay makePanePickRay(
       static_cast<double>(std::max(1, pane.height)));
   return makePerspectivePickRay(
       pane.camera, localCursorX, localCursorY, pane.width, pane.height);
+}
+
+std::optional<Eigen::Vector2d> projectWorldPointToPane(
+    const ViewportPaneFrame& pane, const Eigen::Vector3d& position)
+{
+  if (!position.allFinite() || pane.width <= 0 || pane.height <= 0) {
+    return std::nullopt;
+  }
+
+  const dart::gui::OrbitCameraBasis basis
+      = dart::gui::makeOrbitCameraBasis(pane.camera);
+  const Eigen::Vector3d cameraSpace = position - basis.eye;
+  const double depth = cameraSpace.dot(basis.forward);
+  const dart::gui::PerspectiveProjection projection
+      = makePerspectiveProjection(pane.camera, pane.width, pane.height);
+  if (!std::isfinite(depth) || depth <= projection.nearPlane
+      || depth >= projection.farPlane) {
+    return std::nullopt;
+  }
+
+  const double verticalFovRadians = projection.verticalFovDegrees * kPi / 180.0;
+  const double halfHeight = std::tan(verticalFovRadians * 0.5) * depth;
+  const double halfWidth = halfHeight * projection.aspectRatio;
+  if (!std::isfinite(halfWidth) || !std::isfinite(halfHeight)
+      || halfWidth <= 1e-12 || halfHeight <= 1e-12) {
+    return std::nullopt;
+  }
+
+  const double ndcX = cameraSpace.dot(basis.right) / halfWidth;
+  const double ndcY = cameraSpace.dot(basis.up) / halfHeight;
+  if (!std::isfinite(ndcX) || !std::isfinite(ndcY) || ndcX < -1.0 || ndcX > 1.0
+      || ndcY < -1.0 || ndcY > 1.0) {
+    return std::nullopt;
+  }
+
+  return Eigen::Vector2d(
+      static_cast<double>(pane.x)
+          + (ndcX + 1.0) * 0.5 * static_cast<double>(pane.width),
+      static_cast<double>(pane.y)
+          + (1.0 - ndcY) * 0.5 * static_cast<double>(pane.height));
 }
 
 void getFramebufferCursorPosition(
@@ -898,7 +940,73 @@ void SelectionController::endForceDrag(DartScene& scene)
   mActiveForceDrag.reset();
 }
 
+bool SelectionController::beginForceDragAtPointer(
+    const FrameViewport& viewport,
+    DartScene& scene,
+    const std::vector<RenderableDescriptor>& descriptors,
+    double cursorX,
+    double cursorY,
+    std::optional<RenderableId> expectedRenderableId,
+    Eigen::Vector3d& startPoint,
+    ViewerLifecycleState& lifecycle)
+{
+  const std::size_t inputPaneIndex
+      = pointerPaneIndex(viewport, cursorX, cursorY);
+  const std::size_t maxPaneIndex
+      = viewport.paneCount > 0
+            ? std::min(
+                  viewport.paneCount - 1u, dart::gui::kMaxViewportPanes - 1u)
+            : 0u;
+  const ViewportPaneFrame& inputPane
+      = viewport.panes[std::min(inputPaneIndex, maxPaneIndex)];
+  const PickRay cursorRay = makePanePickRay(inputPane, cursorX, cursorY);
+  const auto hit = pickNearestRenderable(descriptors, cursorRay);
+  if (!hit
+      || (expectedRenderableId.has_value()
+          && hit->id != *expectedRenderableId)) {
+    return false;
+  }
+
+  const RenderableDescriptor& descriptor = descriptors[hit->renderableIndex];
+  if (!beginForceDrag(scene, descriptor, cursorRay, hit->point, lifecycle)) {
+    return false;
+  }
+
+  startPoint = hit->point;
+  mSelectedRenderableId = hit->id;
+  mSelectedPoint = hit->point;
+  mSelectedNormal = hit->normal;
+  mSelectedLabel = selectionLabelForRenderable(scene, descriptor);
+  return true;
+}
+
+bool SelectionController::updateForceDragAtPointer(
+    const FrameViewport& viewport,
+    DartScene& scene,
+    const std::vector<RenderableDescriptor>& descriptors,
+    double cursorX,
+    double cursorY)
+{
+  if (!mActiveForceDrag) {
+    return false;
+  }
+
+  const std::size_t inputPaneIndex
+      = pointerPaneIndex(viewport, cursorX, cursorY);
+  const std::size_t maxPaneIndex
+      = viewport.paneCount > 0
+            ? std::min(
+                  viewport.paneCount - 1u, dart::gui::kMaxViewportPanes - 1u)
+            : 0u;
+  const ViewportPaneFrame& inputPane
+      = viewport.panes[std::min(inputPaneIndex, maxPaneIndex)];
+  const PickRay cursorRay = makePanePickRay(inputPane, cursorX, cursorY);
+  updateForceDrag(scene, descriptors, cursorRay);
+  return mActiveForceDrag.has_value();
+}
+
 bool SelectionController::beginScriptedForceDrag(
+    const FrameViewport& viewport,
     DartScene& scene,
     const std::vector<RenderableDescriptor>& descriptors,
     std::string_view target,
@@ -911,28 +1019,38 @@ bool SelectionController::beginScriptedForceDrag(
     return false;
   }
 
-  startPoint = descriptor->worldTransform.translation();
-  const PickRay ray{
-      startPoint - Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitX()};
-  if (!beginForceDrag(scene, *descriptor, ray, startPoint, lifecycle)) {
+  const ViewportPaneFrame& pane = activeViewportPane(viewport);
+  const auto cursor
+      = projectWorldPointToPane(pane, descriptor->worldTransform.translation());
+  if (!cursor.has_value()) {
     return false;
   }
 
-  mSelectedRenderableId = descriptor->id;
-  mSelectedPoint = startPoint;
-  mSelectedNormal.reset();
-  mSelectedLabel = selectionLabelForRenderable(scene, *descriptor);
-  return true;
+  return beginForceDragAtPointer(
+      viewport,
+      scene,
+      descriptors,
+      cursor->x(),
+      cursor->y(),
+      descriptor->id,
+      startPoint,
+      lifecycle);
 }
 
-void SelectionController::updateScriptedForceDragToTarget(
+bool SelectionController::updateScriptedForceDragToTarget(
+    const FrameViewport& viewport,
     DartScene& scene,
     const std::vector<RenderableDescriptor>& descriptors,
     const Eigen::Vector3d& targetPoint)
 {
-  const PickRay ray{
-      targetPoint - Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitX()};
-  updateForceDrag(scene, descriptors, ray);
+  const ViewportPaneFrame& pane = activeViewportPane(viewport);
+  const auto cursor = projectWorldPointToPane(pane, targetPoint);
+  if (!cursor.has_value()) {
+    return false;
+  }
+
+  return updateForceDragAtPointer(
+      viewport, scene, descriptors, cursor->x(), cursor->y());
 }
 
 void SelectionController::cancelActiveDrag(DartScene& scene)

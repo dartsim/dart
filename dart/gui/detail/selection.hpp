@@ -108,13 +108,15 @@ public:
       dart::gui::ViewerLifecycleState& lifecycle);
 
   bool beginScriptedForceDrag(
+      const FrameViewport& viewport,
       DartScene& scene,
       const std::vector<dart::gui::RenderableDescriptor>& descriptors,
       std::string_view target,
       Eigen::Vector3d& startPoint,
       dart::gui::ViewerLifecycleState& lifecycle);
 
-  void updateScriptedForceDragToTarget(
+  bool updateScriptedForceDragToTarget(
+      const FrameViewport& viewport,
       DartScene& scene,
       const std::vector<dart::gui::RenderableDescriptor>& descriptors,
       const Eigen::Vector3d& targetPoint);
@@ -193,6 +195,23 @@ private:
       const dart::gui::PickRay& cursorRay);
 
   void endForceDrag(DartScene& scene);
+
+  bool beginForceDragAtPointer(
+      const FrameViewport& viewport,
+      DartScene& scene,
+      const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      double cursorX,
+      double cursorY,
+      std::optional<dart::gui::RenderableId> expectedRenderableId,
+      Eigen::Vector3d& startPoint,
+      dart::gui::ViewerLifecycleState& lifecycle);
+
+  bool updateForceDragAtPointer(
+      const FrameViewport& viewport,
+      DartScene& scene,
+      const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      double cursorX,
+      double cursorY);
 
   bool mWasLeftMousePressed = false;
   std::optional<std::size_t> mActivePointerPaneIndex;

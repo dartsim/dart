@@ -83,6 +83,12 @@
   events, and writes the scripted gesture into `manifest.json`. Scene teardown
   explicitly cancels active drags before renderables are destroyed so stale
   drag state cannot leak into a subsequent demo.
+- Scripted force-drag now projects the target through the active viewport pane
+  and picks it from framebuffer coordinates before starting the drag, so the
+  headless proof covers the same viewport-coordinate hit testing used by real
+  user drags. If the scripted target moves outside the active pane, the
+  gesture cancels and logs `force_drag_target_unreachable` instead of leaving
+  stale drag state active.
 - Slider and plot labels now render above the control in scene panels, using
   hidden ImGui ids for the actual widgets, so narrow right-docked panels do not
   clip labels or waste horizontal plot/slider space. The bottom diagnostics
@@ -319,6 +325,7 @@ Scripted force-drag proof:
 
 ```bash
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pointer_final
 ```
 
 The event log recorded `force_drag_started`, eight
@@ -326,7 +333,11 @@ The event log recorded `force_drag_started`, eight
 frame
 `/tmp/dart_py_demo_capture_force_drag/png_frames/frame_000006.png` showed
 `ipc_slide_box_visual` selected with active external-force status and force
-magnitude in the docked workspace.
+magnitude in the docked workspace. The updated pointer-path proof produced the
+same event sequence from viewport-coordinate picking, and the viewed frame
+`/tmp/dart_py_demo_capture_force_drag_pointer_final/png_frames/frame_000006.png`
+showed the selected target, spring/force overlay, and force magnitude in the
+docked workspace.
 
 Focused checks:
 
@@ -357,16 +368,15 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest pytho
 pixi run build-py-dev-docking
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pointer_final
 pixi run test-unit gui
 pixi run lint
 ```
 
 ## Next
 
-1. Add coordinate-level viewer-input coverage for mouse force-drag once tests
-   can inject pointer drags into the Filament viewer loop.
-2. Consider process- or worker-isolated demo construction if a future demo
+1. Consider process- or worker-isolated demo construction if a future demo
    factory can block indefinitely before returning to the C++ viewer loop.
-3. Add image thumbnail playback only if the UI renderer grows a texture-backed
+2. Add image thumbnail playback only if the UI renderer grows a texture-backed
    panel image primitive; the current playback surface controls and identifies
    recorded PPM frames from inside the workspace.

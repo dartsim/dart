@@ -242,6 +242,7 @@ void SceneFrameUpdater::update(
     if (!mScriptedForceDrag->started
         && currentFrame >= mScriptedForceDrag->afterFrames) {
       if (mSelectionController.beginScriptedForceDrag(
+              viewport,
               mDartScene,
               descriptors,
               mScriptedForceDrag->target,
@@ -272,22 +273,31 @@ void SceneFrameUpdater::update(
       const Eigen::Vector3d targetPoint
           = mScriptedForceDrag->startPoint
             + mScriptedForceDrag->targetOffset * std::min(1.0, alpha);
-      mSelectionController.updateScriptedForceDragToTarget(
-          mDartScene, descriptors, targetPoint);
-      appendScriptedForceDragEvent(
-          mScriptedForceDrag,
-          "force_drag_updated",
-          currentFrame,
-          mSelectionController.interactionStatus());
-      ++mScriptedForceDrag->elapsedFrames;
-      if (mScriptedForceDrag->elapsedFrames >= duration) {
+      if (!mSelectionController.updateScriptedForceDragToTarget(
+              viewport, mDartScene, descriptors, targetPoint)) {
         mSelectionController.cancelActiveDrag(mDartScene);
         mScriptedForceDrag->completed = true;
         appendScriptedForceDragEvent(
             mScriptedForceDrag,
-            "force_drag_released",
+            "force_drag_target_unreachable",
             currentFrame,
-            "scripted force-drag completed");
+            "scripted force-drag target moved outside the active viewport");
+      } else {
+        appendScriptedForceDragEvent(
+            mScriptedForceDrag,
+            "force_drag_updated",
+            currentFrame,
+            mSelectionController.interactionStatus());
+        ++mScriptedForceDrag->elapsedFrames;
+        if (mScriptedForceDrag->elapsedFrames >= duration) {
+          mSelectionController.cancelActiveDrag(mDartScene);
+          mScriptedForceDrag->completed = true;
+          appendScriptedForceDragEvent(
+              mScriptedForceDrag,
+              "force_drag_released",
+              currentFrame,
+              "scripted force-drag completed");
+        }
       }
     }
   }

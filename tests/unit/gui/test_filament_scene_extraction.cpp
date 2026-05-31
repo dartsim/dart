@@ -1231,19 +1231,39 @@ TEST(FilamentSceneExtraction, ScriptedForceDragTargetsRenderableAndCancels)
   descriptor.shapeFrameName = "script_shape";
   descriptor.shapeNodeName = "script_node";
   descriptor.bodyName = "script_body";
+  descriptor.geometry.kind = dart::gui::ShapeKind::Box;
+  descriptor.geometry.hasLocalBounds = true;
+  descriptor.geometry.localBoundsMin = Eigen::Vector3d::Constant(-0.5);
+  descriptor.geometry.localBoundsMax = Eigen::Vector3d::Constant(0.5);
+  descriptor.geometry.shapeType = "BoxShape";
   descriptor.worldTransform = Eigen::Isometry3d::Identity();
-  descriptor.worldTransform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
   std::vector<dart::gui::RenderableDescriptor> descriptors{descriptor};
+
+  dart::gui::detail::FrameViewport viewport;
+  viewport.width = 640;
+  viewport.height = 480;
+  viewport.paneCount = 1u;
+  viewport.panes[0].x = 0;
+  viewport.panes[0].y = 0;
+  viewport.panes[0].width = 640;
+  viewport.panes[0].height = 480;
+  viewport.panes[0].active = true;
+  viewport.panes[0].camera.target = Eigen::Vector3d::Zero();
+  viewport.panes[0].camera.yaw = 0.0;
+  viewport.panes[0].camera.pitch = 0.0;
+  viewport.panes[0].camera.distance = 4.0;
 
   dart::gui::ViewerLifecycleState lifecycle;
   Eigen::Vector3d startPoint = Eigen::Vector3d::Zero();
   ASSERT_TRUE(selection.beginScriptedForceDrag(
-      scene, descriptors, "script_shape", startPoint, lifecycle));
-  EXPECT_TRUE(
-      startPoint.isApprox(descriptor.worldTransform.translation(), 1e-12));
+      viewport, scene, descriptors, "script_shape", startPoint, lifecycle));
+  EXPECT_TRUE(startPoint.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
 
-  selection.updateScriptedForceDragToTarget(
-      scene, descriptors, startPoint + Eigen::Vector3d(0.5, 0.0, 0.25));
+  EXPECT_TRUE(selection.updateScriptedForceDragToTarget(
+      viewport,
+      scene,
+      descriptors,
+      startPoint + Eigen::Vector3d(0.0, 0.35, 0.25)));
 
   ASSERT_EQ(events.size(), 1u);
   EXPECT_EQ(events.back().renderableId, descriptor.id);
@@ -1264,10 +1284,10 @@ TEST(FilamentSceneExtraction, ScriptedForceDragTargetsRenderableAndCancels)
   EXPECT_TRUE(selection.forceDragDebugLines().empty());
 
   ASSERT_TRUE(selection.beginScriptedForceDrag(
-      scene, descriptors, "id:91", startPoint, lifecycle));
+      viewport, scene, descriptors, "id:91", startPoint, lifecycle));
   selection.cancelActiveDrag(scene);
   EXPECT_FALSE(selection.beginScriptedForceDrag(
-      scene, descriptors, "missing_target", startPoint, lifecycle));
+      viewport, scene, descriptors, "missing_target", startPoint, lifecycle));
 }
 
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
