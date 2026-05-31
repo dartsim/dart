@@ -194,6 +194,7 @@ Springer, 2006.
 | `gjk-1988`                         | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
 | `ipc-2020`                         | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
 | `rigid-ipc-2021`                   | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
+| `lan-2022-pdipc`                   | Lan et al., "Penetration-free Projective Dynamics on the GPU" (2022)                                                       | contact/integration/GPU            | planned     | high     | evaluate  |
 | `chen-2023-spb`                    | Chen, Diaz & Yuksel, "Shortest Path to Boundary for Self-Intersecting Meshes" (2023)                                       | contact/collision                  | planned     | high     | evaluate  |
 | `werling-2021`                     | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
 | `howell-2022-dojo`                 | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
@@ -409,6 +410,42 @@ Related public resources:
   smoothed friction, same-domain rigid method selection, CPU/GPU benchmark
   packets, comparison baselines, and headless Filament evidence for promoted
   scenes.
+
+### `lan-2022-pdipc`
+
+Lei Lan, Guanqun Ma, Yin Yang, Changxi Zheng, Minchen Li, and Chenfanfu Jiang.
+"Penetration-free Projective Dynamics on the GPU." _ACM Transactions on
+Graphics_, 41(4), Article 69, 2022. DOI:
+[10.1145/3528223.3530069](https://doi.org/10.1145/3528223.3530069).
+
+Related public resources:
+
+- Paper PDF:
+  [lan2022pdipc.pdf](https://www.math.ucla.edu/multiples/publication/lan2022pdipc.pdf)
+- GAMES webinar deck:
+  [Games2022240](https://games-1312234642.cos.ap-guangzhou.myqcloud.com/pdf/Games2022240%E8%93%9D%E7%A3%8A.pdf)
+- Summary page:
+  [Physics-Based Animation](https://www.physicsbasedanimation.com/2022/05/27/penetration-free-projective-dynamics-on-the-gpu/)
+- Paper video:
+  [youtube.com/watch?v=acEplzIIOEs](https://www.youtube.com/watch?v=acEplzIIOEs)
+- CCD reference implementation:
+  [Continuous-Collision-Detection/Fast-Approximate-Root-CCD](https://github.com/Continuous-Collision-Detection/Fast-Approximate-Root-CCD)
+- Robotics projective-dynamics reference:
+  [DragonZoom/projective-dynamics-for-robotics](https://github.com/DragonZoom/projective-dynamics-for-robotics)
+
+- **Type:** paper · **Topic:** contact/integration/GPU · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-081 PD-IPC GPU gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md).
+- **Notes:** Candidate GPU acceleration path for IPC-class deformable contact:
+  it combines projective dynamics, IPC barriers, two-level local/global
+  iteration, A-Jacobi, patch-based GPU collision culling, and
+  minimum-gradient-Newton CCD pruning for solids and shells. DART should treat
+  the fast CCD shortcut as an optimization to validate against conservative
+  native CCD, because the public non-author CCD implementation reports missed
+  point-triangle and edge-edge collisions. Keep the method internal and
+  backend-neutral until CPU reference tests, A-Jacobi convergence evidence,
+  conservative-CCD fallback policy, GPU packet benchmarks, and headless visual
+  evidence pass.
 
 ### `werling-2021`
 

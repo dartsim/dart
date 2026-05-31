@@ -104,9 +104,11 @@ its own line so status updates remain git-history friendly.
   resource-access metadata behind a verified scheduler contract (honest
   declarations, deferred structural changes, deterministic reductions, cost
   gate); heterogeneous batches and single-scene contact/constraint GPU work
-  (Pattern B, only after Pattern A evidence justifies it); and differentiable
-  state types if differentiability is promoted from a deferred to a committed
-  capability. Rationale for each lives in
+  (Pattern B, only after Pattern A evidence justifies it), including any PD-IPC
+  GPU contact path tracked under
+  [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md);
+  and differentiable state types if differentiability is promoted from a
+  deferred to a committed capability. Rationale for each lives in
   [`../design/compute_backend_research.md`](../design/compute_backend_research.md).
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
@@ -154,6 +156,11 @@ its own line so status updates remain git-history friendly.
   [`081-deformable-implicit-barrier-solver/spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md):
   first source/code audit, then a standalone tetrahedral query and DCD recovery
   spike before any solver or public API claim.
+  Track Penetration-free Projective Dynamics on the GPU as a separate
+  GPU-accelerated IPC sidecar in
+  [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md):
+  first source/code audit, then a CPU-verifiable projective IPC slice and
+  fast-CCD validation before any A-Jacobi, GPU-culling, or speedup claim.
 - Gate: Full IPC-parity progress is not complete until the implementation
   distinguishes the first point-mass/static-ground slice from full IPC, keeps
   IPC naming backend-neutral, proves mesh contact, barrier, distance, CCD,
@@ -166,7 +173,13 @@ its own line so status updates remain git-history friendly.
   matrix, tetrahedral traversal and feasible-region tests, vertex-tet and
   edge-tet DCD candidate tests, pre-intersected recovery evidence, limitation
   coverage, CCD/DCD comparison packets, and no public SPB/reference-project,
-  Embree, MeshFrame2, CuMatrix, solver, ECS, or backend-type leak.
+  Embree, MeshFrame2, CuMatrix, solver, ECS, or backend-type leak. PD-IPC
+  additionally needs the sidecar source/code matrix, CPU reference tests for the
+  two-level projective IPC loop, fast-CCD validation against conservative DART
+  CCD including public false-negative examples, A-Jacobi residual/convergence
+  tests, optional GPU culling and solver packets with setup/transfer/readback
+  timing, and no public PD-IPC/A-Jacobi/reference-project/CUDA or backend-type
+  leak.
 
 ### PLAN-082: Rigid Implicit-Barrier Contact Solver
 

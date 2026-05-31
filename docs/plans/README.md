@@ -71,6 +71,7 @@ they should not own priority, timeline, or active implementation state.
 | [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)                                             | Generated native-collision benchmark evidence manifest          |
 | [`081-deformable-implicit-barrier-solver.md`](081-deformable-implicit-barrier-solver.md)                                               | PLAN-081 deformable IPC scope, slices, and acceptance evidence  |
 | [`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md)       | PLAN-081 IPC paper/repository parity checklist                  |
+| [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md)     | PLAN-081 PD-IPC GPU source audit and implementation sequence    |
 | [`081-deformable-implicit-barrier-solver/spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md)                   | PLAN-081 SPB source audit and self-intersection recovery plan   |
 | [`082-rigid-implicit-barrier-contact.md`](082-rigid-implicit-barrier-contact.md)                                                       | PLAN-082 rigid IPC scope, manifest, and acceptance criteria     |
 | [`082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md`](082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md) | PLAN-082 simultaneous-impact intake and go/no-go sidecar        |
