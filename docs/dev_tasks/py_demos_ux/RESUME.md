@@ -93,6 +93,9 @@
 - `vbd_cloth`, `vbd_net`, and `vbd_beam` now have VBD diagnostics panels with
   sag, sway/span, free-end height, mean node speed, and solver iteration
   metrics.
+- `vbd_tilted_strand`, `vbd_obstacle_drape`, and `vbd_self_fold` now have VBD
+  diagnostics panels with TinyVBD stress metrics, obstacle clearance, layer
+  separation, self-contact counts, and solver iteration metrics.
 - `diff_throw_to_target` and `diff_cartpole_trajopt` now have replay panels
   with playback stride/reset controls, target-error plots, trajectory traces,
   and optimized velocity/force summaries.
@@ -231,6 +234,9 @@ pixi run py-demo-capture -- --scene ipc_deformable_cg_contact --show-ui --frames
 pixi run py-demo-capture -- --scene vbd_cloth --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_cloth_panel
 pixi run py-demo-capture -- --scene vbd_net --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_net_panel
 pixi run py-demo-capture -- --scene vbd_beam --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_beam_panel
+pixi run py-demo-capture -- --scene vbd_tilted_strand --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_tilted_strand_panel
+pixi run py-demo-capture -- --scene vbd_obstacle_drape --show-ui --frames 60 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_obstacle_drape_panel
+pixi run py-demo-capture -- --scene vbd_self_fold --show-ui --frames 60 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_self_fold_panel
 pixi run py-demo-capture -- --scene diff_throw_to_target --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_diff_throw_panel
 pixi run py-demo-capture -- --scene diff_cartpole_trajopt --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_diff_cartpole_panel
 pixi run py-demo-capture -- --scene ipc_deformable_obj_cloth --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_obj_cloth_panel
@@ -267,7 +273,7 @@ pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_plate_
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_capsule_rod.py python/examples/demos/scenes/ipc_deformable_trampoline.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_drape.py python/examples/demos/scenes/ipc_deformable_net.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_cg_solver.py python/examples/demos/scenes/ipc_deformable_cg_contact.py python/tests/unit/test_py_demo_panels.py
-pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/examples/demos/_ipc_deformable_bridge.py python/examples/demos/scenes/polyhedron_visual.py python/examples/demos/scenes/vbd_cloth.py python/examples/demos/scenes/vbd_net.py python/examples/demos/scenes/vbd_beam.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/examples/demos/_ipc_deformable_bridge.py python/examples/demos/scenes/polyhedron_visual.py python/examples/demos/scenes/vbd_cloth.py python/examples/demos/scenes/vbd_net.py python/examples/demos/scenes/vbd_beam.py python/examples/demos/scenes/vbd_tilted_strand.py python/examples/demos/scenes/vbd_obstacle_drape.py python/examples/demos/scenes/vbd_self_fold.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/diff_throw_to_target.py python/examples/demos/scenes/diff_cartpole_trajopt.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_obj_cloth.py python/examples/demos/scenes/ipc_deformable_seg_strand.py python/examples/demos/scenes/ipc_deformable_pt_particles.py python/examples/demos/scenes/ipc_deformable_scripted_dirichlet.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_fem_bar.py python/examples/demos/scenes/ipc_deformable_fem_twist.py python/examples/demos/scenes/ipc_deformable_fcr_twist.py python/examples/demos/scenes/ipc_deformable_fem_drop.py python/examples/demos/scenes/ipc_deformable_fem_box.py python/examples/demos/scenes/ipc_deformable_fem_msh.py python/tests/unit/test_py_demo_panels.py

@@ -12,11 +12,13 @@ VBD's per-vertex block solve.
 
 from __future__ import annotations
 
+from collections import deque
+
 import dartpy.simulation_experimental as sx
 import numpy as np
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _NUM_VERTS = 20
 _SPACING = 0.05
@@ -70,9 +72,61 @@ def build() -> SceneSetup:
     )
     bridge.sync()
 
+    initial_positions = np.asarray(
+        [body.node_position(i) for i in range(int(body.node_count))],
+        dtype=float,
+    )
+    initial_tip_height = float(initial_positions[-1, 2])
+    initial_end_to_end = float(
+        np.linalg.norm(initial_positions[-1] - initial_positions[0])
+    )
+    tip_drop_history = deque(maxlen=120)
+    stretch_history = deque(maxlen=120)
+    speed_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        del context
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("reference: TinyVBD tilted strand")
+        builder.text(f"nodes: {_NUM_VERTS} | pins: 1 | mass ratio: 1:1000")
+        builder.text("edge stiffness: 1.00e8 | VBD sweeps: 100")
+        if positions.size:
+            tip_height = float(positions[-1, 2])
+            tip_drop = initial_tip_height - tip_height
+            end_to_end = float(np.linalg.norm(positions[-1] - positions[0]))
+            stretch = end_to_end - initial_end_to_end
+            mean_speed = (
+                float(np.mean(np.linalg.norm(velocities, axis=1)))
+                if velocities.size
+                else 0.0
+            )
+            tip_drop_history.append(tip_drop)
+            stretch_history.append(stretch)
+            speed_history.append(mean_speed)
+            builder.text(f"free-end height: {tip_height:.3f} m")
+            builder.text(f"free-end drop: {tip_drop:.3f} m")
+            builder.text(f"end-to-end stretch: {stretch:.5f} m")
+            builder.text(f"mean node speed: {mean_speed:.3f} m/s")
+        diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
+        if diagnostics is not None:
+            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+        if tip_drop_history:
+            builder.separator()
+            builder.plot_lines("Free-end drop", list(tip_drop_history))
+            builder.plot_lines("End-to-end stretch", list(stretch_history))
+            builder.plot_lines("Mean speed", list(speed_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("VBD Tilted Strand", build_panel)],
         info={"sx_world": world, "nodes": _NUM_VERTS},
     )
 

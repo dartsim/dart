@@ -55,6 +55,9 @@ from examples.demos.scenes import (
     vbd_beam,
     vbd_cloth,
     vbd_net,
+    vbd_obstacle_drape,
+    vbd_self_fold,
+    vbd_tilted_strand,
 )
 
 
@@ -326,6 +329,9 @@ def test_vbd_showcase_scenes_expose_solver_panels() -> None:
         (vbd_cloth, "VBD Cloth", "plot:Cloth sag:"),
         (vbd_net, "VBD Net", "plot:Net sag:"),
         (vbd_beam, "VBD Beam", "plot:Tip sag:"),
+        (vbd_tilted_strand, "VBD Tilted Strand", "plot:Free-end drop:"),
+        (vbd_obstacle_drape, "VBD Sphere Drape", "plot:Sphere clearance:"),
+        (vbd_self_fold, "VBD Self Contact", "plot:Layer clearance:"),
     ):
         setup = scene_module.build()
         builder = _FakePanelBuilder()

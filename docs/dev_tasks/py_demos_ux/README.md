@@ -66,6 +66,10 @@ navigation, and a path for scene-specific controls.
 - Add VBD diagnostics panels to `vbd_cloth`, `vbd_net`, and `vbd_beam`,
   exposing sag, sway/span, free-end height, node speed, and solver iteration
   metrics for the contact-free deformable VBD showcases.
+- Add VBD diagnostics panels to `vbd_tilted_strand`,
+  `vbd_obstacle_drape`, and `vbd_self_fold`, exposing TinyVBD stress metrics,
+  obstacle clearance, layer separation, self-contact counts, and solver
+  iteration metrics for the new VBD showcase scenes.
 - Add replay and optimization panels to `diff_throw_to_target` and
   `diff_cartpole_trajopt`, exposing target error, trajectory/height traces,
   optimized decision variables, and playback stride/reset controls.
