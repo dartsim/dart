@@ -1,5 +1,30 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: two-triangle plane fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`: a cube falls
+  onto a fixed two-triangle mesh plane, activates rigid IPC contact, stays
+  finite, and preserves nonnegative clearance in
+  `RigidIpcPaperExperiments.CubeSettlesOnTwoTrianglePlaneFixtureRow`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. The two-triangle tet row and 8K tessellated-plane row remain
+  planned until they have matching topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CubeSettlesOnTwoTrianglePlaneFixtureRow`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: Dzhanibekov wing-nut fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

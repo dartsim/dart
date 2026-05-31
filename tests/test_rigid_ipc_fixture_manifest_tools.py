@@ -342,6 +342,33 @@ def test_rigid_ipc_manifest_marks_tunneling_unit_row_implemented(tmp_path):
     assert "3D unit-test fixture mechanism" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_two_triangle_plane_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path
+        / "fixtures"
+        / "3D"
+        / "unit-tests"
+        / "tessellated-plane"
+        / "two-triangles.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "CubeSettlesOnTwoTrianglePlaneFixtureRow" in row["dart_artifact"]
+    assert "two-triangle mesh plane" in row["expected_invariant"]
+    assert "8K tessellated-plane rows remain planned" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_rotating_cube_unit_row_implemented(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
     data_path = (

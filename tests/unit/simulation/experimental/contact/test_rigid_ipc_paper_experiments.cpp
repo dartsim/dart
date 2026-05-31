@@ -209,6 +209,19 @@ sx::CollisionShape makeWingNutLikeMesh()
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeTwoTrianglePlaneMesh(double halfExtent)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {-halfExtent, -halfExtent, 0.0},
+      {halfExtent, -halfExtent, 0.0},
+      {-halfExtent, halfExtent, 0.0},
+      {halfExtent, halfExtent, 0.0},
+  };
+  std::vector<Eigen::Vector3i> triangles = {{1, 2, 0}, {1, 3, 2}};
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 // Build one arch voussoir (wedge block) spanning the angular range
 // [theta0, theta1] in the world x-z plane, between inner and outer radii, with
 // half-width halfW along y. Writes the world centroid (the body position) into
@@ -706,6 +719,60 @@ TEST(RigidIpcPaperExperiments, HighSpeedCubeDoesNotTunnelThroughWall)
   EXPECT_LT(cube.getTranslation().x(), 0.0);
   EXPECT_LE(maxCubeX, -wallHalfThickness + 1e-3);
   EXPECT_GT(ipcStage.getLastStats().lineSearchHits, 0u);
+}
+
+TEST(RigidIpcPaperExperiments, CubeSettlesOnTwoTrianglePlaneFixtureRow)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions planeOptions;
+  planeOptions.isStatic = true;
+  planeOptions.position = Eigen::Vector3d::Zero();
+  auto plane = world.addRigidBody("two_triangle_plane", planeOptions);
+  plane.setCollisionShape(makeTwoTrianglePlaneMesh(/*halfExtent=*/5.0));
+
+  constexpr double cubeHalfExtent = 0.5;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d(0.0, 0.0, 0.75);
+  auto cube = world.addRigidBody("two_triangle_plane_cube", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBottomZ = cube.getTranslation().z() - cubeHalfExtent;
+  bool sawActiveContact = false;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    const Eigen::Matrix3d R = cube.getRotation();
+    double lowest = std::numeric_limits<double>::infinity();
+    for (double dx : {-cubeHalfExtent, cubeHalfExtent}) {
+      for (double dy : {-cubeHalfExtent, cubeHalfExtent}) {
+        for (double dz : {-cubeHalfExtent, cubeHalfExtent}) {
+          const Eigen::Vector3d v
+              = cube.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+          lowest = std::min(lowest, v.z());
+        }
+      }
+    }
+    minBottomZ = std::min(minBottomZ, lowest);
+  }
+
+  EXPECT_GT(minBottomZ, -5e-3);
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_TRUE(cube.getLinearVelocity().allFinite());
 }
 
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)

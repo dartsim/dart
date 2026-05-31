@@ -196,6 +196,9 @@
         through the opt-in runtime stage. A rotated cube with a large time-step
         velocity toward a fixed wall remains intersection-free, and the stage
         reports a conservative CCD line-search hit.
+  - [x] Add the first audited tessellated-plane fixture coverage through the
+        opt-in runtime stage. A cube falls onto a fixed two-triangle mesh plane,
+        activates contact, stays finite, and preserves nonnegative clearance.
   - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
         through the opt-in runtime stage. Free rotating cube and scaled-sphere /
         ellipsoid rows advance orientation under zero gravity, stay finite, and
@@ -345,6 +348,10 @@
   - [x] Mark the audited 3D tunneling unit-test fixture row
         (`fixtures/3D/unit-tests/tunneling.json`) as implemented after
         high-speed cube-vs-wall conservative line-search coverage landed.
+  - [x] Mark the audited 3D two-triangle tessellated-plane unit-test fixture row
+        (`fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`) as
+        implemented after cube-on-two-triangle-plane runtime coverage landed.
+        The tet and 8K tessellated-plane rows remain planned.
   - [x] Mark the audited 3D rotating-cube unit-test fixture row
         (`fixtures/3D/unit-tests/rotation/rotating-cube.json`) as implemented
         after no-contact rotating-cube runtime coverage landed.
