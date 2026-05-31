@@ -41,6 +41,7 @@
 #include "dart/simulation/experimental/comps/link.hpp"
 #include "dart/simulation/experimental/comps/multibody.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
+#include "dart/simulation/experimental/compute/multibody_constraint.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -78,14 +79,6 @@ Eigen::Matrix3d rotationExp(const Eigen::Vector3d& rotationVector)
     return Eigen::Matrix3d::Identity();
   }
   return Eigen::AngleAxisd(angle, rotationVector / angle).toRotationMatrix();
-}
-
-//==============================================================================
-// SO(3) logarithm map: a rotation matrix to a rotation vector (axis * angle).
-Eigen::Vector3d rotationLog(const Eigen::Matrix3d& rotation)
-{
-  const Eigen::AngleAxisd angleAxis(rotation);
-  return angleAxis.angle() * angleAxis.axis();
 }
 
 //==============================================================================
@@ -1040,71 +1033,7 @@ void simulateMultibody(
     }
   }
 
-  // Write back the new velocity/acceleration and integrate positions. Euclidean
-  // joints integrate linearly and apply position limits as hard stops; ball and
-  // free joints integrate their orientation on the SO(3)/SE(3) manifold via the
-  // exponential map. Floating joints apply limits to translation coordinates
-  // only because angular coordinates are stored as a rotation vector.
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    if (tree.links[i].dof == 0) {
-      continue;
-    }
-    auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    const Eigen::VectorXd previousVelocity = joint.velocity;
-    joint.velocity
-        = nextVelocity.segment(tree.links[i].dofOffset, tree.links[i].dof);
-    const auto updateAccelerationFromVelocityDelta = [&]() {
-      joint.acceleration = (joint.velocity - previousVelocity) / timeStep;
-    };
-
-    if (joint.type == comps::JointType::Spherical) {
-      // Body angular velocity integrated by right multiplication on SO(3).
-      const Eigen::Matrix3d rotation = rotationExp(joint.position.head<3>());
-      joint.position.head<3>() = rotationLog(
-          rotation * rotationExp(joint.velocity.head<3>() * timeStep));
-      updateAccelerationFromVelocityDelta();
-      continue;
-    }
-    if (joint.type == comps::JointType::Floating) {
-      // Velocity is [linear; angular] body twist. Translation advances in the
-      // parent frame (R * v) and orientation integrates on SO(3).
-      const Eigen::Matrix3d rotation = rotationExp(joint.position.tail<3>());
-      joint.position.head<3>()
-          += rotation * joint.velocity.head<3>() * timeStep;
-      joint.position.tail<3>() = rotationLog(
-          rotation * rotationExp(joint.velocity.tail<3>() * timeStep));
-      if (joint.limits.lower.size() == joint.position.size()
-          && joint.limits.upper.size() == joint.position.size()) {
-        for (Eigen::Index d = 0; d < 3; ++d) {
-          if (joint.position[d] < joint.limits.lower[d]) {
-            joint.position[d] = joint.limits.lower[d];
-            joint.velocity[d] = std::max(joint.velocity[d], 0.0);
-          } else if (joint.position[d] > joint.limits.upper[d]) {
-            joint.position[d] = joint.limits.upper[d];
-            joint.velocity[d] = std::min(joint.velocity[d], 0.0);
-          }
-        }
-      }
-      updateAccelerationFromVelocityDelta();
-      continue;
-    }
-
-    joint.position += joint.velocity * timeStep;
-
-    if (joint.limits.lower.size() == joint.position.size()
-        && joint.limits.upper.size() == joint.position.size()) {
-      for (Eigen::Index d = 0; d < joint.position.size(); ++d) {
-        if (joint.position[d] < joint.limits.lower[d]) {
-          joint.position[d] = joint.limits.lower[d];
-          joint.velocity[d] = std::max(joint.velocity[d], 0.0);
-        } else if (joint.position[d] > joint.limits.upper[d]) {
-          joint.position[d] = joint.limits.upper[d];
-          joint.velocity[d] = std::min(joint.velocity[d], 0.0);
-        }
-      }
-    }
-    updateAccelerationFromVelocityDelta();
-  }
+  integrateMultibodyPositions(registry, structure, nextVelocity, timeStep);
 }
 
 } // namespace

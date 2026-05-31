@@ -48,6 +48,7 @@ add_library(
   compute/compute_stage_metadata.cpp
   compute/deformable_psd_backend.cpp
   compute/execution_profile.cpp
+  compute/multibody_constraint.cpp
   compute/multibody_dynamics.cpp
   compute/parallel_executor.cpp
   compute/rigid_body_state_batch.cpp

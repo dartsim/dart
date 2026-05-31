@@ -312,14 +312,14 @@ individually-reviewed gated PRs, suite as guardrail, revert per slice.
 Validated plan (read-only design workflow + two adversarial critiques):
 
 - **Target**: `[Velocity] RigidBodyVelocity + MultibodyVelocity` → `[Solve]
-  UnifiedConstraintStage (one boxed LCP)` → `[Position] RigidBodyPosition +
-  MultibodyPosition`, then Deformable, Kinematics. The hard part is splitting
+UnifiedConstraintStage (one boxed LCP)` → `[Position] RigidBodyPosition +
+MultibodyPosition`, then Deformable, Kinematics. The hard part is splitting
   `simulateMultibody` (`multibody_dynamics.cpp:637`), which today fuses the qddot
   velocity solve + link-contact GS + manifold position integration into one
   per-multibody call.
 - **Unification math**: both solves are the same Delassus form. Generalize the
   rigid `delassusEntry` (`world_step_stage.cpp:5181`) to "sum over shared
-  bodies", where a shared *link* contributes `J_i^T M^-1 J_j` (the existing
+  bodies", where a shared _link_ contributes `J_i^T M^-1 J_j` (the existing
   `J^T M^-1 J` denominator at `multibody_dynamics.cpp:928`). Link-vs-link then
   falls out mathematically but still needs new collision routing
   (`multibody_dynamics.cpp:1282-1316` currently drops both-in-body pairs).
@@ -334,36 +334,48 @@ Validated plan (read-only design workflow + two adversarial critiques):
   still in their own stage; (3+4, **merged** — do not bisect the link-contact
   set across two solvers) unify rigid + link-static + link-dynamic-rigid into
   `UnifiedConstraintStage`; (5) link-vs-link + new routing.
+- **(DONE locally, uncommitted) Slice 1 — multibody position integration
+  helper.** Added `compute/multibody_constraint.{hpp,cpp}` with
+  `integrateMultibodyPositions(registry, structure, nextVelocity, timeStep)`,
+  wired `simulateMultibody` to call it after velocity limits, and added
+  `test_multibody_constraint` for direct spherical/floating manifold integration
+  and position-limit clamping. This is behavior-preserving: it does not reorder
+  `World::step`, move contact solving, or split velocity integration yet.
+  Verified with `cmake --build build/default/cpp/Release --target
+dart-simulation-experimental test_multibody_constraint test_world
+test_skeleton_to_multibody`, focused CTest over the new/adjacent tests, and
+  full `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (40/40).
 - **Blockers the critiques verified (address before the relevant slice):**
-  - *Positions last.* Keep the existing invariant (`world.cpp:1606` comment): no
+  - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
     order (`RigidBodyPosition` before `MultibodyPosition`) violates it.
-  - *Per-multibody loop hoist.* The stage loops over multibodies and calls
+  - _Per-multibody loop hoist._ The stage loops over multibodies and calls
     `simulateMultibody` per body; a single LCP must hoist that loop and index
     per-multibody solve contexts.
-  - *Velocity clamp placement.* The joint velocity-limit clamp runs **after** the
+  - _Velocity clamp placement._ The joint velocity-limit clamp runs **after** the
     contact solve today (`multibody_dynamics.cpp:1021`); keep it post-solve, not
     in the velocity stage.
-  - *Per-row restitution/Baumgarte.* Rigid uses threshold `1e-3`, no bias; link
+  - _Per-row restitution/Baumgarte._ Rigid uses threshold `1e-3`, no bias; link
     uses `1e-2` + Baumgarte (`multibody_dynamics.cpp:961,980`). Carry a per-row
     threshold + bias (0 for rigid rows) so the rigid `1e-9` swap stays
     bit-identical and link resting/restitution is preserved — do NOT collapse to
     one global convention.
-  - *Friction `findex` stride.* The rank-deficient fallback extracts the
+  - _Friction `findex` stride._ The rank-deficient fallback extracts the
     normal-only block by striding `i*3` (`world_step_stage.cpp:5288-5392`); that
     breaks once dense link rows interleave. Recompute `findex` against the
     unified global row index and rework the fallback for link rows.
-  - *Fallback friction over links.* The fallback's sequential Coulomb sweep only
+  - _Fallback friction over links._ The fallback's sequential Coulomb sweep only
     samples/applies rigid `comps::Velocity`; it has no link `M^-1 J^T` path, so
     it would silently skip link friction. Generalize before merging link contacts.
-  - *M^-1 lifetime.* Do NOT cache `M^-1`/`DynamicsTree` in an EnTT component
+  - _M^-1 lifetime._ Do NOT cache `M^-1`/`DynamicsTree` in an EnTT component
     across stages (reference-invalidation hazard); recompute `M^-1` once in the
     solve stage (the project favors bit-stability over the micro-opt).
-  - *Determinism gate.* No existing test covers contact-path determinism; add a
+  - _Determinism gate._ No existing test covers contact-path determinism; add a
     "assembled `A,b,lo,hi,findex` element-identical for a multibody-free world"
     diff test as a hard gate for the unify slice (the `1e-9` swap depends on the
     rigid sub-block being bit-identical).
-  - *Out of scope initially*: the variational integrator path
+  - _Out of scope initially_: the variational integrator path
     (`variational_integration.cpp:1101`) keeps its own contact handling — gate
     `UnifiedConstraintStage` on `method != Variational`. Joint limits stay
     post-integration clamps; motors stay the pre-contact equality solve. Islands
