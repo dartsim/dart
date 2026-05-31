@@ -33,9 +33,11 @@ the lateral topple is per-robot or an interaction in the shared world. Do
 - Coronal **gain tuning is a dead end** (measured): `cv_coronal` up and a
   per-side `coronal_swing_sign` flip both made things worse. The next attempt
   must be structural (foot placement / contact timing), not a new gain.
-- The COM proxy is the hip midpoint (dartpy exposes no `getCOM`) and foot
-  contact is a height proxy (no per-body collision query) — both are
-  approximations that may matter for lateral balance.
+- Balance feedback currently uses the hip midpoint as a COM proxy even though
+  dartpy exposes skeleton COM position (`getCOM` / `get_com`). The remaining
+  gap is COM linear velocity: use a finite-difference velocity estimate or add a
+  focused `getCOMLinearVelocity` binding before spending time on a custom COM
+  position implementation.
 - The exact sweep/trace harnesses used last session lived in `/tmp` and are
   reproduced verbatim in `01-diagnosis.md` (they were not committed).
 

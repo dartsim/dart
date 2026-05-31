@@ -69,10 +69,12 @@ Ordered roughly by expected value / effort. None verified yet.
    per-body collision query in dartpy). If the proxy mis-fires, the gait desyncs
    and the robot loses lateral balance. Consider using the world's contact
    results filtered by the foot body if a per-body query can be exposed.
-3. **COM proxy accuracy.** Balance feedback uses the hip-midpoint as the COM
-   proxy (no `getCOM` in dartpy). For lateral balance this approximation may be
-   too coarse; consider a mass-weighted COM from body transforms + inertias, or
-   expose `getCOM`/`getCOMLinearVelocity` in dartpy.
+3. **COM proxy accuracy.** Balance feedback currently uses the hip midpoint as a
+   COM proxy even though dartpy exposes skeleton COM position (`getCOM` /
+   `get_com`). For lateral balance, first test the real COM position with a
+   finite-difference velocity estimate; if that proves useful, add a focused
+   `getCOMLinearVelocity` binding instead of re-implementing COM position in
+   Python.
 4. **Coronal-specific gains/targets** (only after a structural change): give the
    coronal plane its own `cd`/`cv` and a nonzero default stance width so the
    support polygon is wider; lateral SIMBICON is sensitive to stance width.
