@@ -263,6 +263,22 @@ TEST(RigidIpcPaperExperiments, FrictionMonotonicallyResistsSlideAcrossThreshold)
   EXPECT_GT(below.downSlopeDisplacement, above.downSlopeDisplacement);
 }
 
+// Fig. 18 fixture row: the upstream corpus pins the below-threshold
+// high-school physics example at mu = 0.49 for tan(theta) = 0.5. DART uses the
+// same threshold condition in a robust flat-ground formulation and preserves
+// the expected sliding behavior for that row.
+TEST(RigidIpcPaperExperiments, FrictionThresholdBelowFixtureRowSlides)
+{
+  const double theta = std::atan(0.5);
+
+  const InclineRun below
+      = runInclinedFrictionBlock(theta, /*mu=*/0.49, /*steps=*/200);
+  EXPECT_FALSE(below.everFailed);
+  EXPECT_GT(below.minCenterZ, 0.1 - 5e-3);
+  EXPECT_GT(below.downSlopeDisplacement, 0.01);
+  EXPECT_GT(below.downSlopeSpeed, 0.03);
+}
+
 // Fig. 7 ("Spolling coin"): a coin spinning on a frictional surface is braked
 // by friction. We use a thin triangulated disk resting flat on the ground, spun
 // about its symmetry (z) axis. The contact patch friction must dissipate the

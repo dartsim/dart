@@ -1,5 +1,33 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: below-threshold friction fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added exact DART-owned Fig. 18 coverage for the audited below-threshold
+  high-school-physics row: `mu=0.49` against `tan(theta)=0.5` remains
+  intersection-free and keeps sliding down-slope in
+  `RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides`.
+- Marked the upstream 3D friction fixture row
+  `fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json`
+  and its Fig. 18 paper alias implemented in the generated manifest.
+- Kept the `mu=0.5` at-threshold rows planned. Direct verification showed the
+  current runtime does not yet provide stick evidence for that exact row, so it
+  should not be retired until the solver behavior or acceptance criterion is
+  tightened.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: barrier and rigid TOI source rows
 
 Delivered a bounded Phase 6 algorithm-source audit slice:

@@ -54,6 +54,12 @@ IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS = frozenset(
     f"tests/data/large-rb-hashgrid/large-rb-hashgrid-{index:03d}.json"
     for index in range(2)
 )
+IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS = frozenset(
+    {
+        "fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json",
+        "fixtures/paper-figures/18-high-school-physics-friction-test-mu=0.49.json",
+    }
+)
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {
         "artifact": (
@@ -419,7 +425,30 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
             "has matching broad-phase bounds coverage and benchmark profile "
             "evidence."
         )
-    if source_kind == "test-data" and path in IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS:
+    if source_kind == "fixture" and path in IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS:
+        status = "implemented"
+        artifact = (
+            "test_rigid_ipc_paper_experiments::"
+            "RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides"
+        )
+        command = (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_paper_experiments --gtest_color=no "
+            "--gtest_filter="
+            "RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides'"
+        )
+        expected_invariant = (
+            "DART covers the audited below-threshold high-school physics "
+            "friction row: with tan(theta)=0.5 and mu=0.49, the block remains "
+            "intersection-free and continues sliding down-slope."
+        )
+        notes_or_gap = (
+            "Covered by DART-owned Fig. 18 paper experiment coverage for the "
+            "3D friction fixture and paper alias. The at-threshold mu=0.5 row "
+            "and broader friction corpus remain planned until they have "
+            "matching DART evidence."
+        )
+    elif source_kind == "test-data" and path in IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS:
         status = "implemented"
         artifact = (
             "bm_rigid_ipc_solver::"

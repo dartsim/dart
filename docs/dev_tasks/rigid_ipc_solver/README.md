@@ -233,6 +233,12 @@
         velocity-tolerance metadata into the projected-Newton solve; replay
         coverage proves zero static-friction speed disables lagged friction and
         a high tolerance stops outer friction passes early.
+  - [x] Add first exact upstream friction-threshold fixture coverage for the
+        below-threshold Fig. 18 row. The DART paper experiment now checks
+        `mu=0.49` against `tan(theta)=0.5`, preserving intersection-free
+        down-slope sliding for both the 3D friction fixture row and its paper
+        alias. The at-threshold `mu=0.5` rows remain planned until the solver
+        has matching stick evidence.
   - [ ] Extend friction into broader corpus coverage and production convergence
         criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
@@ -277,6 +283,11 @@
         row (`tests/ccd/test_rigid_body_time_of_impact.cpp`) as implemented
         after matching DART barrier-kernel, reduced rigid-barrier, and
         `RigidIpcCcdCase` regressions were verified.
+  - [x] Mark the audited below-threshold high-school-physics friction fixture
+        rows (`fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json`
+        and the Fig. 18 paper alias) as implemented after exact
+        `RigidIpcPaperExperiments` coverage landed. The `mu=0.5` threshold rows
+        remain planned.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -362,6 +373,10 @@ DART-owned implementation.
   implemented through DART's barrier-kernel/reduced-rigid-barrier and
   `RigidIpcCcdCase` regression suites. Other algorithm-source helper, generic
   CCD, and hash-grid rows remain planned until similarly matched.
+  The below-threshold Fig. 18 high-school-physics friction fixture row
+  (`mu=0.49`) and its paper alias are now marked implemented through exact
+  `RigidIpcPaperExperiments` coverage; the `mu=0.5` threshold rows remain
+  planned because they still need matching DART stick evidence.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
