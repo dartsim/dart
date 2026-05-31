@@ -259,6 +259,45 @@ def test_ipc_deformable_cloth_drapes_over_capsule_rod_without_penetrating() -> N
     assert min_surface > 0.0
 
 
+def test_ipc_deformable_rod_friction_decelerates_sliding_strip() -> None:
+    """Coulomb friction against the capsule rod obstacle stops a sliding strip.
+
+    A deformable strip shoved along the (barrier-only, CCD-free) capsule rod
+    slides measurably less with friction than without, while staying on the rod.
+    """
+
+    import numpy as np
+
+    from examples.demos.scenes import ipc_deformable_rod_friction as scene
+
+    def slid_distance(mu: float) -> float:
+        options, _edges = scene._build_strip()
+        options.material.friction_coefficient = mu
+        world = scene.sx.World()
+        world.gravity = [0.0, 0.0, -9.81]
+        world.time_step = 0.004
+        rod = world.add_rigid_body(
+            "rod", position=scene._ROD_CENTER, orientation=scene._ROD_ORIENTATION
+        )
+        rod.is_static = True
+        rod.set_collision_shape(
+            scene.sx.CollisionShape.capsule(scene._ROD_RADIUS, scene._ROD_HALF_HEIGHT)
+        )
+        rod.is_deformable_surface_ccd_obstacle = True
+        body = world.add_deformable_body("strip", options)
+        y0 = float(np.mean([body.node_position(i)[1] for i in range(body.node_count)]))
+        for _ in range(200):
+            world.step()
+        positions = np.array([body.node_position(i) for i in range(body.node_count)])
+        assert np.isfinite(positions).all()
+        return float(np.mean(positions[:, 1]) - y0)
+
+    frictionless = slid_distance(0.0)
+    high_friction = slid_distance(0.8)
+    assert frictionless > 0.5
+    assert high_friction < 0.5 * frictionless
+
+
 def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
     """The .seg and .pt importers feed real deformable solves.
 
@@ -322,6 +361,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_msh",
         "ipc_deformable_obj_cloth",
         "ipc_deformable_capsule_rod",
+        "ipc_deformable_rod_friction",
         "ipc_deformable_seg_strand",
         "ipc_deformable_pt_particles",
         "ipc_deformable_scripted_dirichlet",

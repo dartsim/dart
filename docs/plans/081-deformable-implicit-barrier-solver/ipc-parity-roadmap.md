@@ -155,12 +155,27 @@ A fetch-into-fixtures workflow for the upstream meshes pinned at
 tet-mesh importer in `dart/io`. Port the contact-free tutorial scenes
 (`2cubesFall` DBC/NBC) first as regression fixtures, then the contact scenes.
 
-### M5 — Mesh-vs-obstacle friction completeness
+### M5 — Mesh-vs-obstacle friction completeness — capsule LANDED
 
 Extend lagged smoothed Coulomb friction beyond the static-ground coefficient to
 mesh-vs-obstacle and codim contacts. Unblocks the friction figures: Fig 5 (card
 house), Fig 7 (cement arch), Fig 8 (ball-on-roller), Fig 16 (Armadillo roller),
 Fig 20 (stick-slip rod).
+
+Progress: **capsule (rod) obstacle friction has landed.** A node contacting a
+static capsule feeds the capsule barrier's radial normal force/direction into the
+existing lagged Coulomb friction term (dominant per-node contact wins), so a
+deformable sliding along a rod decelerates with `frictionCoefficient`. This works
+because the capsule obstacle is barrier-only (no over-limiting surface CCD), so
+the tangential slide is unconstrained — directly demonstrating mesh-vs-obstacle
+friction (toward Fig 8 / Fig 20 roller themes). Ships C++ + dartpy regressions and
+a `Deformable Friction on Capsule Rod (IPC)` showcase. **Remaining M5 (the real
+blocker):** sphere/box obstacle friction is still masked by the surface-CCD
+limiter, which scales the _whole_ step vector (normal + tangential) to prevent
+gravity-driven penetration, killing the tangential slide. The fix is to make the
+surface CCD limit only the _normal_ approach component (not the whole step) so
+the barrier handles non-penetration and friction can act tangentially — a
+focused, higher-risk change to the CCD contracts (cf. #2732).
 
 ### M6 — Adaptive barrier stiffness (κ homotopy) — LANDED
 

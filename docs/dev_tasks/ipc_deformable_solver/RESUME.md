@@ -1,5 +1,78 @@
 # Resume: IPC Deformable Solver
 
+## Current State (2026-05-30) — PLAN-081 M1–M6 landed; M5/M7 in progress
+
+This session drove the experimental deformable solver from "mass-spring scaffold"
+to broad IPC paper-parity (Li et al. 2020). All work shipped as one-PR-per-slice
+off `main` (milestone DART 7.0, `pixi run test-all` 6/6, admin-squash-merged, no
+AI attribution). Net status by milestone:
+
+- **M1 FEM elasticity — COMPLETE.** Stable neo-Hookean + fixed-corotational (FCR)
+  tetrahedral kernels (`detail/deformable_elasticity/fem_tet_element.hpp`), both
+  FD-validated, opt-in via `DeformableMaterialProperties.useFiniteElementElasticity`
+  / `useFixedCorotationalElasticity`. FCR uses the **exact analytic Hessian**
+  (rotation-gradient `(tr(S)I−S)w = axl(RᵀδF−δFᵀR)`), PSD-projected by the solver,
+  Gauss-Newton fallback for inverted elements. ~7× faster FCR step (to neo-Hookean
+  parity); benchmarked in wall-time **and** Newton iterations/step.
+- **M2 obstacle barriers — COMPLETE.** Sphere + box + capsule static obstacles
+  each get the clamped-log barrier force (energy + gradient + rank-1 radial
+  Hessian) through the projected-Newton assembly.
+- **M3 codim importers + capsule object — COMPLETE.** `.msh`/`.obj`/`.seg`/`.pt`
+  importers (`io/gmsh_tet_mesh`, `io/obj_triangle_mesh`, `io/codim_mesh`); capsule
+  (rod/wire) collision shape + obstacle barrier (the first codimensional object,
+  barrier-only so cloth drapes freely).
+- **M4 GMSH importer — COMPLETE** (`.msh` 2.x + 4.x).
+- **M6 adaptive barrier stiffness — COMPLETE.** Opt-in
+  `useAdaptiveBarrierStiffness`: per-step `κ = clamp((maxNodalMass/dt²)·d_hat², 25,
+  1e6)`; recovers the historical fixed κ=25 at unit mass, off is byte-identical.
+- **M5 obstacle friction — capsule LANDED, sphere/box BLOCKED.** Capsule friction
+  works (barrier-only → free tangential slide). Sphere/box friction is masked by
+  the surface-CCD limiter scaling the whole step vector; needs the CCD to limit
+  only the normal approach (higher-risk, cf. #2732). See `## M5 / M7 Next` below.
+- **M7 scale + GPU — NOT STARTED.** A CUDA backend exists for PSD projection + VBD
+  (another track, #2781); extending the full deformable IPC solve / matrix-free CG
+  to GPU is the remaining large effort.
+
+Session PR train (all merged to `main`): #2787 FEM keystone, #2788 FEM twist,
+#2789 FEM+ground, #2790 sphere barrier Hessian, #2791 box barrier, #2792/#2793
+GMSH 2.x/4.x, #2794 FCR material, #2795 FCR benchmark+SVD-dedup, #2796 exact FCR
+Hessian, #2797 solver diagnostics, #2798 FEM self-contact showcase, #2799
+benchmark Newton-iters, #2800 `.obj` importer, #2802 `.seg`/`.pt` importers, #2804
+capsule obstacle, #2805 adaptive stiffness, + capsule-friction (open/landing).
+IPC Deformable (sx) py-demos category now has ~15 scenes.
+
+### M5 / M7 Next (resume here)
+
+1. **Finish M5 (sphere/box obstacle friction).** The blocker is in the surface
+   CCD limiter (`detail/deformable_contact/continuous_collision_step` + the
+   `staticRigidSurfaceCcd*` path in `compute/world_step_stage.cpp`): it scales the
+   *whole* candidate step by the time-of-impact to stop gravity-driven
+   penetration, which also kills tangential sliding (a frictionless node on a box
+   obstacle slides only ~0.05 vs free). The barrier force already prevents
+   penetration, so the CCD should only bound the *normal-approach* component, not
+   the full step. Then feed sphere/box obstacle normal forces into the friction
+   term exactly like `addCapsuleObstacleNormalForces` does for the capsule.
+2. **M7 (GPU/scale).** Extend the existing CUDA PSD-projection backend to the full
+   deformable assembly, or add a matrix-free CG path; benchmark per-step time vs
+   the paper's Fig 23 / Table 1 and IPC's CPU reference.
+
+### Conventions / gotchas (verified this session)
+
+- One PR per slice off `main`; `pixi run test-all` must be 6/6; admin-squash-merge
+  (NO `--delete-branch`); milestone DART 7.0; never add AI attribution.
+- After `pixi run generate-stubs`, revert the unrelated stubs (`__init__.pyi`,
+  `dynamics.pyi`, `gui/__init__.pyi`) — keep only `simulation_experimental.pyi`.
+- `pixi run update-api-boundary-inventory` when a public dartpy binding changes.
+- Adding a `CollisionShapeType` enum value breaks **every** switch on it under
+  `-Werror=switch` — grep the **whole repo** (incl. `examples/`) for
+  `case CollisionShapeType::Mesh`.
+- C++ `DeformableBodyOptions` field is `surfaceTriangles` (camelCase); the dartpy
+  alias is `surface_triangles`.
+- `test-all`'s linting reflows `module.cpp` docstrings + `CHANGELOG.md` AFTER a
+  `git add`; re-`git add` (or amend) before merging.
+- The detailed live state also lives in the assistant memory
+  `SESSION_HANDOFF.md`.
+
 ## Last Session Summary
 
 The branch established a machine-checkable manifest for the audited upstream
