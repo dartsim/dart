@@ -38,6 +38,7 @@
 #include <Eigen/Core>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 
 #include <cmath>
@@ -53,6 +54,53 @@ struct ContactPlane
   double offset = 0.0;
   double stiffness = 0.0;
 };
+
+inline constexpr std::uint64_t kAvbdBoxContactFeatureCodeCount = 27;
+
+//==============================================================================
+/// Encode the closest box surface feature for AVBD static-obstacle contact row
+/// keys. The ternary per-axis code distinguishes the six faces, twelve edges,
+/// and eight corners; a point just inside a face maps to that face so rows warm
+/// start across small penetrations but reset when contact moves to another box
+/// feature.
+inline std::uint64_t avbdBoxContactFeatureCode(
+    const Eigen::Vector3d& localPosition, const Eigen::Vector3d& halfExtents)
+{
+  std::array<int, 3> status{1, 1, 1};
+  bool outside = false;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (localPosition[axis] < -halfExtents[axis]) {
+      status[axis] = 0;
+      outside = true;
+    } else if (localPosition[axis] > halfExtents[axis]) {
+      status[axis] = 2;
+      outside = true;
+    }
+  }
+
+  if (!outside) {
+    int nearestAxis = 0;
+    double nearestMargin = std::numeric_limits<double>::infinity();
+    for (int axis = 0; axis < 3; ++axis) {
+      const double margin = halfExtents[axis] - std::abs(localPosition[axis]);
+      if (margin < nearestMargin) {
+        nearestMargin = margin;
+        nearestAxis = axis;
+      }
+    }
+    status[nearestAxis] = localPosition[nearestAxis] >= 0.0 ? 2 : 0;
+  }
+
+  return static_cast<std::uint64_t>(status[0] + 3 * status[1] + 9 * status[2]);
+}
+
+//==============================================================================
+inline std::uint64_t packAvbdBoxContactFeatureId(
+    std::uint64_t boxIndex, std::uint64_t featureCode)
+{
+  return boxIndex * kAvbdBoxContactFeatureCodeCount
+         + (featureCode % kAvbdBoxContactFeatureCodeCount);
+}
 
 /// One active AVBD half-space normal row for a deformable vertex. Row
 /// generation and persistence live outside this narrow kernel; this struct is

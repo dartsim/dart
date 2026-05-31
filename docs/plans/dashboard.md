@@ -267,9 +267,12 @@ its own line so status updates remain git-history friendly.
   AVBD rows, Chebyshev, Rayleigh-damped, parallel, and unsupported-row requests;
   adjacent friction tangent pairs now use lagged-dual static/dynamic switching
   and pairwise circular-cone projection, including supported World generation
-  for self-contact friction rows. It is not a scene-level parity claim. The
-  next local slice is fuller contact-manifold friction persistence, dynamic
-  contact manifold IDs, or the first rigid/articulated AVBD block foundation.
+  for self-contact friction rows. Static box obstacle row keys now distinguish
+  faces, edges, and corners so same-feature rows warm-start while box-manifold
+  changes reset normal/friction state. It is not a scene-level parity claim. The
+  next local slice is tangent dual projection across changing smooth contact
+  frames, dynamic/rigid contact manifold IDs, or the first rigid/articulated
+  AVBD block foundation.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

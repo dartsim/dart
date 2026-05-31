@@ -33,8 +33,12 @@ Paper audit:
     `DeformableVbdConfig::useAvbdContactNormalRows` for active static
     half-space contact-normal rows in supported serial mass-spring static
     contact scenes. The scratch cache now carries stable row IDs from
-    body/entity, vertex, and static obstacle feature IDs, with regression
-    coverage in `VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact`.
+    body/entity, vertex, and static obstacle feature IDs. Static box obstacle
+    feature IDs now distinguish faces, edges, and corners so AVBD normal and
+    friction rows reset across box-manifold changes while warm-starting across
+    small same-feature penetrations, with regression coverage in
+    `VbdContact.AvbdBoxContactFeatureCodeSeparatesBoxManifolds` and
+    `VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact`.
   - Narrow World wiring also started behind internal
     `DeformableVbdConfig::useAvbdAttachmentRows` for pinned or scripted
     deformable nodes in supported serial mass-spring scenes. It keeps
@@ -126,8 +130,8 @@ Paper audit:
     self-contact AVBD flag, Chebyshev, Rayleigh damping, parallel settings, and
     unsupported requested row families all keep using the existing VBD path
     without reporting partial AVBD row counters.
-  - Still missing full contact-manifold friction persistence, dynamic contact
-    manifold IDs, full row-family generation, rigid/articulated blocks,
+  - Still missing full contact-manifold friction persistence, dynamic/rigid
+    contact manifold IDs, full row-family generation, rigid/articulated blocks,
     parallel dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
@@ -168,13 +172,14 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Start the next bounded AVBD contact/friction or rigid-block slice: fuller
-   contact-manifold friction persistence, dynamic contact manifold IDs, or the
-   first 6-DOF rigid/articulated AVBD block foundation are the preferred next
-   gaps now that static contact/friction, attachments, finite-stiffness rows,
-   self-contact normals, pairwise static/dynamic friction switching, supported
-   World self-contact friction rows, pure-tet self-contact friction rows, and
-   combined static/self-contact friction row coexistence have narrow CPU paths.
+1. Continue the next bounded AVBD contact/friction or rigid-block slice: tangent
+   dual projection across changing smooth contact frames, dynamic/rigid contact
+   manifold IDs, or the first 6-DOF rigid/articulated AVBD block foundation are
+   the preferred next gaps now that static box feature IDs, static
+   contact/friction, attachments, finite-stiffness rows, self-contact normals,
+   pairwise static/dynamic friction switching, supported World self-contact
+   friction rows, pure-tet self-contact friction rows, and combined
+   static/self-contact friction row coexistence have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.
