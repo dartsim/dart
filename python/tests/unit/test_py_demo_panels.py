@@ -35,6 +35,9 @@ from examples.demos.scenes import (
     sx_rigid_ipc_tunnel,
     sx_variational_chain,
     sx_variational_tumbler,
+    vbd_beam,
+    vbd_cloth,
+    vbd_net,
 )
 
 
@@ -282,6 +285,23 @@ def test_ipc_cg_showcase_scenes_expose_solver_panels() -> None:
         assert "text:solver: deformable IPC" in builder.events
         assert any(event.startswith("text:linear solve:") for event in builder.events)
         assert any(event.startswith(expected_plot) for event in builder.events)
+
+
+def test_vbd_showcase_scenes_expose_solver_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (vbd_cloth, "VBD Cloth", "plot:Cloth sag:"),
+        (vbd_net, "VBD Net", "plot:Net sag:"),
+        (vbd_beam, "VBD Beam", "plot:Tip sag:"),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert any(event.startswith(expected_plot) for event in builder.events)
+        assert any(event.startswith("text:solver iters:") for event in builder.events)
 
 
 @pytest.mark.skipif(

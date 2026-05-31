@@ -9,12 +9,14 @@ tetrahedral body through the VBD inner solver with the body's Lame parameters
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Six Kuhn tetrahedra tiling one cube's eight corners (n = 4*di + 2*dj + dk).
 _KUHN = (
@@ -92,9 +94,60 @@ def build() -> SceneSetup:
         body, (0.85, 0.45, 0.20), radius=0.025, fixed_color=(0.30, 0.65, 0.95))
     bridge.sync()
 
+    initial_positions = np.asarray(
+        [body.node_position(i) for i in range(int(body.node_count))],
+        dtype=float,
+    )
+    free_end_indices = np.flatnonzero(
+        np.isclose(initial_positions[:, 0], float(length_cubes) * 0.15)
+    )
+    free_end_height0 = float(np.mean(initial_positions[free_end_indices, 2]))
+    tip_sag_history = deque(maxlen=120)
+    height_history = deque(maxlen=120)
+    speed_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text(f"cells: {length_cubes} x 1 x 1")
+        builder.text("pins: root face")
+        if positions.size:
+            free_end_height = float(np.mean(positions[free_end_indices, 2]))
+            tip_sag = free_end_height0 - free_end_height
+            mean_speed = (
+                float(np.mean(np.linalg.norm(velocities, axis=1)))
+                if velocities.size
+                else 0.0
+            )
+            span = np.max(positions, axis=0) - np.min(positions, axis=0)
+            tip_sag_history.append(tip_sag)
+            height_history.append(free_end_height)
+            speed_history.append(mean_speed)
+            builder.text(f"free-end height: {free_end_height:.3f} m")
+            builder.text(f"tip sag: {tip_sag:.3f} m")
+            builder.text(
+                f"span xyz: {span[0]:.3f} x {span[1]:.3f} x {span[2]:.3f} m"
+            )
+            builder.text(f"mean node speed: {mean_speed:.3f} m/s")
+        diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
+        if diagnostics is not None:
+            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+        if tip_sag_history:
+            builder.separator()
+            builder.plot_lines("Tip sag", list(tip_sag_history))
+            builder.plot_lines("Free-end height", list(height_history))
+            builder.plot_lines("Mean speed", list(speed_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("VBD Beam", build_panel)],
         info={"sx_world": world, "nodes": (length_cubes + 1) * 4},
     )
 

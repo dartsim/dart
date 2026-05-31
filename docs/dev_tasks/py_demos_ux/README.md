@@ -60,6 +60,11 @@ navigation, and a path for scene-specific controls.
 - Add CG-solver diagnostics panels to `ipc_deformable_cg_solver` and
   `ipc_deformable_cg_contact`, exposing cantilever tip drop, FEM-cube ground
   clearance, solver path labels, and shared IPC deformable diagnostics.
+- Add VBD diagnostics panels to `vbd_cloth`, `vbd_net`, and `vbd_beam`,
+  exposing sag, sway/span, free-end height, node speed, and solver iteration
+  metrics for the contact-free deformable VBD showcases.
+- Move Python demo line-segment visual updates to snake_case dartpy APIs so
+  panel tests and demo captures stay free of camelCase deprecation warnings.
 - Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape
   point instead of the body origin when a visual shape has a local offset, and
   add direct controller regression coverage for both BodyNode and external

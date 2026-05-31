@@ -7,6 +7,7 @@ under gravity between its pinned corners.
 
 from __future__ import annotations
 
+from collections import deque
 import math
 
 import numpy as np
@@ -14,7 +15,7 @@ import numpy as np
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
 def _make_net_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
@@ -84,9 +85,51 @@ def build() -> SceneSetup:
         body, (0.20, 0.70, 0.55), radius=0.03, fixed_color=(0.95, 0.50, 0.16))
     bridge.sync()
 
+    pin_indices = (0, columns - 1)
+    sag_history = deque(maxlen=120)
+    sway_history = deque(maxlen=120)
+    speed_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text(f"grid: {columns} x {rows}")
+        builder.text("pins: two top corners")
+        if positions.size:
+            pin_height = float(np.mean([positions[i, 2] for i in pin_indices]))
+            min_z = float(np.min(positions[:, 2]))
+            sag = pin_height - min_z
+            sway = float(np.mean(positions[:, 1]))
+            lateral_speed = (
+                float(np.mean(np.linalg.norm(velocities[:, :2], axis=1)))
+                if velocities.size
+                else 0.0
+            )
+            sag_history.append(sag)
+            sway_history.append(sway)
+            speed_history.append(lateral_speed)
+            builder.text(f"net sag: {sag:.3f} m")
+            builder.text(f"mean lateral sway: {sway:.3f} m")
+            builder.text(f"mean lateral speed: {lateral_speed:.3f} m/s")
+        diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
+        if diagnostics is not None:
+            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+        if sag_history:
+            builder.separator()
+            builder.plot_lines("Net sag", list(sag_history))
+            builder.plot_lines("Lateral sway", list(sway_history))
+            builder.plot_lines("Lateral speed", list(speed_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("VBD Net", build_panel)],
         info={"sx_world": world, "nodes": columns * rows},
     )
 

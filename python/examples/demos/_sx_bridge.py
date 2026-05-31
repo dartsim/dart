@@ -187,9 +187,9 @@ class SxRenderBridge:
 
         line = dart.LineSegmentShape(float(thickness))
         for i in range(node_count):
-            line.addVertex(np.asarray(body.node_position(i), dtype=float))
+            line.add_vertex(np.asarray(body.node_position(i), dtype=float))
         for node_a, node_b in _deformable_wireframe_edges(body):
-            line.addConnection(node_a, node_b)
+            line.add_connection(node_a, node_b)
 
         frame = dart.SimpleFrame(
             dart.Frame.world(), f"sx_surface_{len(self._surfaces)}", np.eye(4)
@@ -227,12 +227,14 @@ class SxRenderBridge:
             except Exception:  # noqa: BLE001
                 pass
 
-        # Rewrite wireframe vertices in place (setVertex bumps the shape
+        # Rewrite wireframe vertices in place (set_vertex bumps the shape
         # version, so the viewer re-uploads the deformed geometry).
         for body, line, node_count in self._surfaces:
             for i in range(node_count):
                 try:
-                    line.setVertex(i, np.asarray(body.node_position(i), dtype=float))
+                    line.set_vertex(
+                        i, np.asarray(body.node_position(i), dtype=float)
+                    )
                 except Exception:  # noqa: BLE001
                     pass
 

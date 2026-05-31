@@ -594,7 +594,7 @@ class IpcDeformableBridge:
             for i, frame in enumerate(node_frames):
                 position = np.asarray(body.node_position(i), dtype=float)
                 frame.set_transform(_translation(position))
-                edge_shape.setVertex(i, position)
+                edge_shape.set_vertex(i, position)
 
     def _node_positions(self) -> list[np.ndarray]:
         positions: list[np.ndarray] = []

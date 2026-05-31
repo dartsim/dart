@@ -9,6 +9,7 @@ it through the VBD inner solver (selected with the public, solver-agnostic
 
 from __future__ import annotations
 
+from collections import deque
 import math
 
 import numpy as np
@@ -16,7 +17,7 @@ import numpy as np
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
 def _make_cloth_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
@@ -88,9 +89,51 @@ def build() -> SceneSetup:
         body, (0.12, 0.57, 0.91), fixed_color=(0.95, 0.50, 0.16))
     bridge.sync()
 
+    top_indices = list(range(columns))
+    sag_history = deque(maxlen=120)
+    span_y_history = deque(maxlen=120)
+    speed_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text(f"grid: {columns} x {rows}")
+        builder.text(f"pins: top row ({len(top_indices)} nodes)")
+        if positions.size:
+            pin_height = float(np.mean([positions[i, 2] for i in top_indices]))
+            min_z = float(np.min(positions[:, 2]))
+            sag = pin_height - min_z
+            span_y = float(np.max(positions[:, 1]) - np.min(positions[:, 1]))
+            mean_speed = (
+                float(np.mean(np.linalg.norm(velocities, axis=1)))
+                if velocities.size
+                else 0.0
+            )
+            sag_history.append(sag)
+            span_y_history.append(span_y)
+            speed_history.append(mean_speed)
+            builder.text(f"cloth sag: {sag:.3f} m")
+            builder.text(f"out-of-plane span: {span_y:.3f} m")
+            builder.text(f"mean node speed: {mean_speed:.3f} m/s")
+        diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
+        if diagnostics is not None:
+            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+        if sag_history:
+            builder.separator()
+            builder.plot_lines("Cloth sag", list(sag_history))
+            builder.plot_lines("Out-of-plane span", list(span_y_history))
+            builder.plot_lines("Mean speed", list(speed_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("VBD Cloth", build_panel)],
         info={"sx_world": world, "nodes": columns * rows},
     )
 
