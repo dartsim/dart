@@ -96,6 +96,64 @@ sx::CollisionShape makeDiskMesh(double radius, double halfHeight, int segments)
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeEllipsoidMesh(
+    const Eigen::Vector3d& radii, int stacks, int slices)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  std::vector<Eigen::Vector3i> triangles;
+  vertices.reserve(static_cast<std::size_t>((stacks - 1) * slices + 2));
+  triangles.reserve(static_cast<std::size_t>(2 * slices * (stacks - 1)));
+
+  const int top = 0;
+  vertices.emplace_back(0.0, 0.0, radii.z());
+  for (int i = 1; i < stacks; ++i) {
+    const double theta = std::numbers::pi * static_cast<double>(i) / stacks;
+    const double ringRadius = std::sin(theta);
+    const double z = std::cos(theta);
+    for (int j = 0; j < slices; ++j) {
+      const double phi
+          = 2.0 * std::numbers::pi * static_cast<double>(j) / slices;
+      vertices.emplace_back(
+          radii.x() * ringRadius * std::cos(phi),
+          radii.y() * ringRadius * std::sin(phi),
+          radii.z() * z);
+    }
+  }
+  const int bottom = static_cast<int>(vertices.size());
+  vertices.emplace_back(0.0, 0.0, -radii.z());
+
+  auto ringVertex = [slices](int ring, int index) {
+    return 1 + ring * slices + (index % slices);
+  };
+
+  for (int j = 0; j < slices; ++j) {
+    const int n = (j + 1) % slices;
+    triangles.emplace_back(top, ringVertex(0, j), ringVertex(0, n));
+  }
+
+  for (int ring = 0; ring < stacks - 2; ++ring) {
+    for (int j = 0; j < slices; ++j) {
+      const int n = (j + 1) % slices;
+      const int a = ringVertex(ring, j);
+      const int b = ringVertex(ring, n);
+      const int c = ringVertex(ring + 1, j);
+      const int d = ringVertex(ring + 1, n);
+      triangles.emplace_back(a, c, d);
+      triangles.emplace_back(a, d, b);
+    }
+  }
+
+  const int lastRing = stacks - 2;
+  for (int j = 0; j < slices; ++j) {
+    const int n = (j + 1) % slices;
+    triangles.emplace_back(
+        bottom, ringVertex(lastRing, n), ringVertex(lastRing, j));
+  }
+
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 // Build one arch voussoir (wedge block) spanning the angular range
 // [theta0, theta1] in the world x-z plane, between inner and outer radii, with
 // half-width halfW along y. Writes the world centroid (the body position) into
@@ -311,6 +369,37 @@ TurntableRun runKinematicTurntableRider(double mu, int steps)
   }
   run.finalYVelocity = box.getLinearVelocity().y();
   return run;
+}
+
+void expectFreeEllipsoidAdvancesWithoutContact(const Eigen::Vector3d& angular)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 1.0;
+  bodyOptions.position = Eigen::Vector3d::Zero();
+  bodyOptions.angularVelocity = angular;
+  auto body = world.addRigidBody("rotating_ellipsoid", bodyOptions);
+  body.setCollisionShape(makeEllipsoidMesh(
+      Eigen::Vector3d(2.0, 1.0, 0.5), /*stacks=*/8, /*slices=*/16));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const Eigen::Matrix3d startRotation = body.getRotation();
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_NEAR(body.getTranslation().norm(), 0.0, 1e-12);
+  EXPECT_TRUE(body.getRotation().allFinite());
+  EXPECT_TRUE(body.getAngularVelocity().allFinite());
+  EXPECT_GT((body.getRotation() - startRotation).norm(), 1e-3);
 }
 
 } // namespace
@@ -592,6 +681,34 @@ TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
   EXPECT_TRUE(cube.getRotation().allFinite());
   EXPECT_TRUE(cube.getAngularVelocity().allFinite());
   EXPECT_GT((cube.getRotation() - startRotation).norm(), 1e-3);
+}
+
+TEST(
+    RigidIpcPaperExperiments,
+    RotatingScaledSphereFixtureRowAdvancesWithoutContact)
+{
+  expectFreeEllipsoidAdvancesWithoutContact(Eigen::Vector3d(0.0, 0.0, -180.0));
+}
+
+TEST(
+    RigidIpcPaperExperiments,
+    RotatingEllipsoidMajorFixtureRowAdvancesWithoutContact)
+{
+  expectFreeEllipsoidAdvancesWithoutContact(Eigen::Vector3d(180.0, 0.0, 0.0));
+}
+
+TEST(
+    RigidIpcPaperExperiments,
+    RotatingEllipsoidIntermediateFixtureRowAdvancesWithoutContact)
+{
+  expectFreeEllipsoidAdvancesWithoutContact(Eigen::Vector3d(0.0, 180.0, 0.0));
+}
+
+TEST(
+    RigidIpcPaperExperiments,
+    RotatingEllipsoidMinorFixtureRowAdvancesWithoutContact)
+{
+  expectFreeEllipsoidAdvancesWithoutContact(Eigen::Vector3d(0.0, 0.0, 180.0));
 }
 
 // Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its

@@ -8381,16 +8381,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D intermediate-axis rotating ellipsoid row: a free ellipsoid mesh with zero gravity and angular velocity advances without contact, stays finite, and does not translate.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::rotating_ellipsoid_intermediate",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.RotatingEllipsoidIntermediateFixtureRowAdvancesWithoutContact",
       "required_assets_or_importer": [
         "meshes/sphere.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::rotating_ellipsoid_intermediate",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RotatingEllipsoidIntermediateFixtureRowAdvancesWithoutContact'",
+      "notes_or_gap": "Covered by DART-owned no-contact intermediate-axis ellipsoid runtime coverage for the 3D rotation fixture mechanism. Dzhanibekov and torque rotation rows remain planned until they have matching DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-major.json",
@@ -8401,16 +8401,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D major-axis rotating ellipsoid row: a free ellipsoid mesh with zero gravity and angular velocity advances without contact, stays finite, and does not translate.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::rotating_ellipsoid_major",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.RotatingEllipsoidMajorFixtureRowAdvancesWithoutContact",
       "required_assets_or_importer": [
         "meshes/sphere.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::rotating_ellipsoid_major",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RotatingEllipsoidMajorFixtureRowAdvancesWithoutContact'",
+      "notes_or_gap": "Covered by DART-owned no-contact major-axis ellipsoid runtime coverage for the 3D rotation fixture mechanism. Dzhanibekov and torque rotation rows remain planned until they have matching DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-minor.json",
@@ -8421,16 +8421,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D minor-axis rotating ellipsoid row: a free ellipsoid mesh with zero gravity and angular velocity advances without contact, stays finite, and does not translate.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::rotating_ellipsoid_minor",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.RotatingEllipsoidMinorFixtureRowAdvancesWithoutContact",
       "required_assets_or_importer": [
         "meshes/sphere.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::rotating_ellipsoid_minor",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RotatingEllipsoidMinorFixtureRowAdvancesWithoutContact'",
+      "notes_or_gap": "Covered by DART-owned no-contact minor-axis ellipsoid runtime coverage for the 3D rotation fixture mechanism. Dzhanibekov and torque rotation rows remain planned until they have matching DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/rotation/rotating-sphere.json",
@@ -8441,16 +8441,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D rotating scaled-sphere row: a free ellipsoid mesh with zero gravity and angular velocity advances without contact, stays finite, and does not translate.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::rotating_sphere",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.RotatingScaledSphereFixtureRowAdvancesWithoutContact",
       "required_assets_or_importer": [
         "meshes/sphere.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::rotating_sphere",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RotatingScaledSphereFixtureRowAdvancesWithoutContact'",
+      "notes_or_gap": "Covered by DART-owned no-contact scaled-sphere runtime coverage for the 3D rotation fixture mechanism. Dzhanibekov and torque rotation rows remain planned until they have matching DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/rotation/torque-test.json",

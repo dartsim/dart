@@ -197,8 +197,9 @@
         velocity toward a fixed wall remains intersection-free, and the stage
         reports a conservative CCD line-search hit.
   - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
-        through the opt-in runtime stage. A free rotating cube advances its
-        orientation under zero gravity, stays finite, and does not translate.
+        through the opt-in runtime stage. Free rotating cube and scaled-sphere /
+        ellipsoid rows advance orientation under zero gravity, stay finite, and
+        do not translate.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.
@@ -343,6 +344,12 @@
   - [x] Mark the audited 3D rotating-cube unit-test fixture row
         (`fixtures/3D/unit-tests/rotation/rotating-cube.json`) as implemented
         after no-contact rotating-cube runtime coverage landed.
+  - [x] Mark the audited 3D scaled-sphere and ellipsoid rotation unit-test
+        fixture rows (`fixtures/3D/unit-tests/rotation/rotating-sphere.json`,
+        `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-major.json`,
+        `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-intermediate.json`,
+        and `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-minor.json`) as
+        implemented after no-contact ellipsoid runtime coverage landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -441,10 +448,10 @@ DART-owned implementation.
   rotating-cylinder drag coverage, while the `mu=0` row and Fig. 13 visual
   aliases remain planned. The 3D tunneling unit-test fixture row is marked
   implemented through high-speed cube-vs-wall runtime coverage that reports a
-  conservative CCD line-search hit without penetration. The rotating-cube
-  unit-test fixture row is marked implemented through no-contact orientation
-  integration coverage. The `mu=0.5` threshold rows remain planned because they
-  still need matching DART stick evidence.
+  conservative CCD line-search hit without penetration. The rotating-cube and
+  scaled-sphere/ellipsoid unit-test fixture rows are marked implemented through
+  no-contact orientation integration coverage. The `mu=0.5` threshold rows
+  remain planned because they still need matching DART stick evidence.
   The rigid-body hash-grid source row is marked implemented through the
   DART-owned large hash-grid benchmark; the generic hash-grid source row remains
   planned until DART has brute-force-vs-culled broad-phase parity coverage.

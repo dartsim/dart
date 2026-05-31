@@ -362,6 +362,40 @@ def test_rigid_ipc_manifest_marks_rotating_cube_unit_row_implemented(tmp_path):
     assert "rotating-cube runtime coverage" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_ellipsoid_rotation_rows_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    cases = {
+        "fixtures/3D/unit-tests/rotation/rotating-sphere.json": (
+            "RotatingScaledSphereFixtureRowAdvancesWithoutContact",
+            "scaled-sphere",
+        ),
+        "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-major.json": (
+            "RotatingEllipsoidMajorFixtureRowAdvancesWithoutContact",
+            "major-axis",
+        ),
+        "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-intermediate.json": (
+            "RotatingEllipsoidIntermediateFixtureRowAdvancesWithoutContact",
+            "intermediate-axis",
+        ),
+        "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-minor.json": (
+            "RotatingEllipsoidMinorFixtureRowAdvancesWithoutContact",
+            "minor-axis",
+        ),
+    }
+
+    for path, (test_name, invariant_text) in cases.items():
+        data_path = tmp_path / path
+        data_path.parent.mkdir(parents=True, exist_ok=True)
+        data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+        row = module.row_for_path(path, "fixture", tmp_path)
+
+        assert row["status"] == "implemented"
+        assert test_name in row["dart_artifact"]
+        assert invariant_text in row["expected_invariant"]
+        assert "3D rotation fixture mechanism" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_below_threshold_paper_alias_implemented(
     tmp_path,
 ):

@@ -193,6 +193,62 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "evidence."
         ),
     },
+    "fixtures/3D/unit-tests/rotation/rotating-sphere.json": {
+        "test": "RotatingScaledSphereFixtureRowAdvancesWithoutContact",
+        "expected_invariant": (
+            "DART covers the audited 3D rotating scaled-sphere row: a free "
+            "ellipsoid mesh with zero gravity and angular velocity advances "
+            "without contact, stays finite, and does not translate."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact scaled-sphere runtime coverage "
+            "for the 3D rotation fixture mechanism. Dzhanibekov and torque "
+            "rotation rows remain planned until they have matching DART "
+            "runtime evidence."
+        ),
+    },
+    "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-major.json": {
+        "test": "RotatingEllipsoidMajorFixtureRowAdvancesWithoutContact",
+        "expected_invariant": (
+            "DART covers the audited 3D major-axis rotating ellipsoid row: a "
+            "free ellipsoid mesh with zero gravity and angular velocity "
+            "advances without contact, stays finite, and does not translate."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact major-axis ellipsoid runtime "
+            "coverage for the 3D rotation fixture mechanism. Dzhanibekov and "
+            "torque rotation rows remain planned until they have matching "
+            "DART runtime evidence."
+        ),
+    },
+    "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-intermediate.json": {
+        "test": "RotatingEllipsoidIntermediateFixtureRowAdvancesWithoutContact",
+        "expected_invariant": (
+            "DART covers the audited 3D intermediate-axis rotating ellipsoid "
+            "row: a free ellipsoid mesh with zero gravity and angular velocity "
+            "advances without contact, stays finite, and does not translate."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact intermediate-axis ellipsoid "
+            "runtime coverage for the 3D rotation fixture mechanism. "
+            "Dzhanibekov and torque rotation rows remain planned until they "
+            "have matching DART runtime evidence."
+        ),
+    },
+    "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-minor.json": {
+        "test": "RotatingEllipsoidMinorFixtureRowAdvancesWithoutContact",
+        "expected_invariant": (
+            "DART covers the audited 3D minor-axis rotating ellipsoid row: a "
+            "free ellipsoid mesh with zero gravity and angular velocity "
+            "advances without contact, stays finite, and does not translate."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact minor-axis ellipsoid runtime "
+            "coverage for the 3D rotation fixture mechanism. Dzhanibekov and "
+            "torque rotation rows remain planned until they have matching "
+            "DART runtime evidence."
+        ),
+    },
 }
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {
