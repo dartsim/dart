@@ -37,6 +37,7 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <limits>
 
 #include <cstdint>
@@ -64,8 +65,30 @@ struct AvbdHalfSpaceContactRow
   AvbdScalarRowBounds bounds{0.0, std::numeric_limits<double>::infinity()};
 };
 
+/// One active AVBD friction-tangent row for a deformable vertex against a
+/// half-space contact. The row constrains tangential displacement from the
+/// previous step along one tangent axis and clamps its force to a lagged
+/// Coulomb limit supplied through `bounds`.
+struct AvbdHalfSpaceFrictionRow
+{
+  std::uint32_t vertex = 0;
+  Eigen::Vector3d stepStartPosition = Eigen::Vector3d::Zero();
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
+  AvbdScalarRowState state;
+  double previousConstraintValue = 0.0;
+  AvbdScalarRowBounds bounds;
+};
+
 /// Per-sweep AVBD normal-contact update parameters.
 struct AvbdHalfSpaceContactOptions
+{
+  double alpha = 0.0;
+  double beta = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
+/// Per-sweep AVBD friction-tangent update parameters.
+struct AvbdHalfSpaceFrictionOptions
 {
   double alpha = 0.0;
   double beta = 1.0;
@@ -82,10 +105,29 @@ inline AvbdScalarRowBounds avbdContactNormalBounds()
 }
 
 //==============================================================================
+inline AvbdScalarRowBounds avbdFrictionTangentBounds(double forceLimit)
+{
+  const double limit = std::max(0.0, forceLimit);
+  AvbdScalarRowBounds bounds;
+  bounds.lower = -limit;
+  bounds.upper = limit;
+  return bounds;
+}
+
+//==============================================================================
 inline double avbdHalfSpaceContactConstraintValue(
     const Eigen::Vector3d& position, const ContactPlane& plane)
 {
   return plane.offset - plane.normal.dot(position);
+}
+
+//==============================================================================
+inline double avbdHalfSpaceFrictionConstraintValue(
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& stepStartPosition,
+    const Eigen::Vector3d& axis)
+{
+  return axis.dot(stepStartPosition - position);
 }
 
 //==============================================================================
@@ -155,6 +197,47 @@ inline AvbdScalarRowState updateAvbdHalfSpaceContactNormalRow(
       options.alpha);
   return updateAvbdHardConstraintRow(
       row, constraintValue, options.beta, bounds, options.maxStiffness);
+}
+
+//==============================================================================
+/// Stamp one active AVBD half-space friction row into a VBD vertex block. The
+/// scalar row is the negative tangent displacement since the start of the step:
+/// `axis . (x_t - x)`, so a positive row force pushes along `axis` and a
+/// negative row force pushes against tangential motion along `axis`. Bounds
+/// should be the lagged Coulomb interval `[-mu lambda_n, mu lambda_n]`.
+inline double addAvbdHalfSpaceFrictionTangent(
+    VertexBlock& block,
+    const Eigen::Vector3d& position,
+    const AvbdHalfSpaceFrictionRow& row,
+    double alpha)
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdHalfSpaceFrictionConstraintValue(
+          position, row.stepStartPosition, row.axis),
+      row.previousConstraintValue,
+      alpha);
+  const double forceMagnitude
+      = computeAvbdHardConstraintForce(row.state, constraintValue, row.bounds);
+  block.force.noalias() += forceMagnitude * row.axis;
+  block.hessian.noalias()
+      += row.state.stiffness * (row.axis * row.axis.transpose());
+  return forceMagnitude;
+}
+
+//==============================================================================
+inline AvbdScalarRowState updateAvbdHalfSpaceFrictionTangentRow(
+    AvbdScalarRowState state,
+    const Eigen::Vector3d& position,
+    const AvbdHalfSpaceFrictionRow& row,
+    const AvbdHalfSpaceFrictionOptions& options)
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdHalfSpaceFrictionConstraintValue(
+          position, row.stepStartPosition, row.axis),
+      row.previousConstraintValue,
+      options.alpha);
+  return updateAvbdHardConstraintRow(
+      state, constraintValue, options.beta, row.bounds, options.maxStiffness);
 }
 
 //==============================================================================
