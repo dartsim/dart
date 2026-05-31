@@ -267,7 +267,7 @@ def test_rigid_ipc_manifest_marks_high_friction_turntable_row_implemented(
     assert row["status"] == "implemented"
     assert "TurntableHighFrictionFixtureRowCarriesRider" in row["dart_artifact"]
     assert "mu=1.0" in row["expected_invariant"]
-    assert "Lower-friction turntable rows" in row["notes_or_gap"]
+    assert "mu=0.0" in row["notes_or_gap"]
 
 
 def test_rigid_ipc_manifest_marks_moderate_friction_turntable_row_implemented(
@@ -294,7 +294,34 @@ def test_rigid_ipc_manifest_marks_moderate_friction_turntable_row_implemented(
     assert row["status"] == "implemented"
     assert "TurntableModerateFrictionFixtureRowCarriesRider" in row["dart_artifact"]
     assert "mu=0.5" in row["expected_invariant"]
-    assert "mu=0.0 and mu=0.1" in row["notes_or_gap"]
+    assert "mu=0.0" in row["notes_or_gap"]
+
+
+def test_rigid_ipc_manifest_marks_low_friction_turntable_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path
+        / "fixtures"
+        / "3D"
+        / "friction"
+        / "turntable"
+        / "turntable-mu=0.1.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"coefficient_friction":0.1}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/friction/turntable/turntable-mu=0.1.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "TurntableLowFrictionFixtureRowCarriesRider" in row["dart_artifact"]
+    assert "mu=0.1" in row["expected_invariant"]
+    assert "mu=0.0" in row["notes_or_gap"]
 
 
 def test_rigid_ipc_manifest_marks_below_threshold_paper_alias_implemented(
