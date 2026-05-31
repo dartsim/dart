@@ -868,6 +868,8 @@ TEST(FilamentSceneExtraction, DockingPanelFallbackRequiresDockingSupport)
           "const double defaultAlpha = dockingActive ? 1.0 : 0.72"),
       std::string::npos);
   EXPECT_NE(panelSource.find("if (!dockingActive)"), std::string::npos);
+  EXPECT_NE(panelSource.find("\"Debug overlays\""), std::string::npos);
+  EXPECT_NE(panelSource.find("\"Viewer help\""), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, DemoCatalogSearchMatchesSceneMetadata)
@@ -1012,7 +1014,7 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
           "scenePanel.dockSide = dart::gui::DockSide::Right"),
       std::string::npos);
   EXPECT_NE(
-      uiFrameSource.find("center, ImGuiDir_Down, 0.20f"), std::string::npos);
+      uiFrameSource.find("center, ImGuiDir_Down, 0.15f"), std::string::npos);
   EXPECT_NE(
       uiFrameSource.find("center, ImGuiDir_Left, 0.24f"), std::string::npos);
   EXPECT_NE(
@@ -1033,6 +1035,25 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
           "cursorY);\n"
           "      updateForceDrag(scene, descriptors, ray);\n"
           "      lifecycle.paused = true;"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, PanelControlsUseDockFriendlyLabels)
+{
+  const auto panelSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
+
+  EXPECT_NE(panelSource.find("visiblePanelLabel"), std::string::npos);
+  EXPECT_NE(
+      panelSource.find("ImGui::TextUnformatted(displayLabel.c_str())"),
+      std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::SliderScalar("), std::string::npos);
+  EXPECT_NE(panelSource.find("\"##value\""), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::PlotLines("), std::string::npos);
+  EXPECT_NE(panelSource.find("\"##lines\""), std::string::npos);
+  EXPECT_NE(
+      panelSource.find(
+          "ImGui::SetNextItemWidth(-std::numeric_limits<float>::min())"),
       std::string::npos);
 }
 

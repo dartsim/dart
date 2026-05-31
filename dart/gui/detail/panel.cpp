@@ -42,6 +42,15 @@
 
 namespace {
 
+std::string visiblePanelLabel(std::string_view label)
+{
+  const auto idMarker = label.find("##");
+  if (idMarker == std::string_view::npos) {
+    return std::string(label);
+  }
+  return std::string(label.substr(0, idMarker));
+}
+
 class ImGuiPanelBuilder final : public dart::gui::PanelBuilder
 {
 public:
@@ -121,8 +130,16 @@ public:
       double maximum) override
   {
     const std::string labelValue(label);
-    return ImGui::SliderScalar(
-        labelValue.c_str(), ImGuiDataType_Double, &value, &minimum, &maximum);
+    const std::string displayLabel = visiblePanelLabel(label);
+    ImGui::PushID(labelValue.c_str());
+    if (!displayLabel.empty()) {
+      ImGui::TextUnformatted(displayLabel.c_str());
+    }
+    ImGui::SetNextItemWidth(-std::numeric_limits<float>::min());
+    const bool changed = ImGui::SliderScalar(
+        "##value", ImGuiDataType_Double, &value, &minimum, &maximum);
+    ImGui::PopID();
+    return changed;
   }
 
   bool colorEdit(std::string_view label, Eigen::Vector4d& rgba) override
@@ -193,6 +210,7 @@ public:
       std::string_view label, std::span<const double> values) override
   {
     const std::string labelValue(label);
+    const std::string displayLabel = visiblePanelLabel(label);
     const auto valueGetter = [](void* data, int index) {
       const auto* values = static_cast<const std::span<const double>*>(data);
       return static_cast<float>((*values)[static_cast<std::size_t>(index)]);
@@ -201,8 +219,13 @@ public:
                                 std::numeric_limits<int>::max())
                                 ? std::numeric_limits<int>::max()
                                 : static_cast<int>(values.size());
+    ImGui::PushID(labelValue.c_str());
+    if (!displayLabel.empty()) {
+      ImGui::TextUnformatted(displayLabel.c_str());
+    }
+    ImGui::SetNextItemWidth(-std::numeric_limits<float>::min());
     ImGui::PlotLines(
-        labelValue.c_str(),
+        "##lines",
         valueGetter,
         &values,
         valueCount,
@@ -211,6 +234,7 @@ public:
         std::numeric_limits<float>::max(),
         std::numeric_limits<float>::max(),
         ImVec2(0.0f, 72.0f));
+    ImGui::PopID();
   }
 
   bool beginTable(
@@ -340,33 +364,53 @@ bool renderBuiltInStatusPanel(
   }
   ImGui::SetNextWindowBgAlpha(dockingActive ? 1.0f : 0.72f);
   ImGui::Begin(kBuiltInStatusPanelTitle, nullptr, statusFlags);
-  ImGui::PushTextWrapPos(
-      ImGui::GetCursorPosX() + 300.0f * static_cast<float>(guiScale));
-  ImGui::TextWrapped(
-      "DART scene viewer: inspect renderables, shadows, and debug overlays.");
-  ImGui::TextWrapped(
-      "Mouse: left-drag empty space to orbit; left-drag a dynamic body or sx "
-      "renderable to apply external force with a visible spring line; "
-      "right/middle pan, wheel zoom, click select.");
-  ImGui::TextWrapped(
-      "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
-      "Esc exit.");
-  if (showIkHint) {
+
+  const auto renderViewerHelp = [&] {
+    ImGui::PushTextWrapPos(
+        ImGui::GetCursorPosX() + 300.0f * static_cast<float>(guiScale));
     ImGui::TextWrapped(
-        "IK: press 1-4 to show/select a target, then drag its gizmo.");
+        "DART scene viewer: inspect renderables, shadows, and debug overlays.");
+    ImGui::TextWrapped(
+        "Mouse: left-drag empty space to orbit; left-drag a dynamic body or sx "
+        "renderable to apply external force with a visible spring line; "
+        "right/middle pan, wheel zoom, click select.");
+    ImGui::TextWrapped(
+        "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
+        "Esc exit.");
+    if (showIkHint) {
+      ImGui::TextWrapped(
+          "IK: press 1-4 to show/select a target, then drag its gizmo.");
+    }
+    ImGui::PopTextWrapPos();
+  };
+
+  if (!dockingActive) {
+    renderViewerHelp();
+    ImGui::Separator();
   }
-  ImGui::PopTextWrapPos();
-  ImGui::Separator();
-  ImGui::Text("scene: %s", sceneName);
-  ImGui::Text("time: %.3f", simulationTime);
-  ImGui::Text("contacts: %zu", contactCount);
-  ImGui::PushTextWrapPos(
-      ImGui::GetCursorPosX() + 300.0f * static_cast<float>(guiScale));
-  ImGui::Text("selected: %s", selectedLabel.c_str());
-  if (!interactionStatus.empty()) {
-    ImGui::Text("%s", interactionStatus.c_str());
+
+  if (dockingActive) {
+    ImGui::Text(
+        "scene: %s  time: %.3f  contacts: %zu  selected: %s",
+        sceneName,
+        simulationTime,
+        contactCount,
+        selectedLabel.c_str());
+    if (!interactionStatus.empty()) {
+      ImGui::Text("%s", interactionStatus.c_str());
+    }
+  } else {
+    ImGui::Text("scene: %s", sceneName);
+    ImGui::Text("time: %.3f", simulationTime);
+    ImGui::Text("contacts: %zu", contactCount);
+    ImGui::PushTextWrapPos(
+        ImGui::GetCursorPosX() + 300.0f * static_cast<float>(guiScale));
+    ImGui::Text("selected: %s", selectedLabel.c_str());
+    if (!interactionStatus.empty()) {
+      ImGui::Text("%s", interactionStatus.c_str());
+    }
+    ImGui::PopTextWrapPos();
   }
-  ImGui::PopTextWrapPos();
   if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
     togglePaused(lifecycle);
   }
@@ -378,32 +422,53 @@ bool renderBuiltInStatusPanel(
   ImGui::Checkbox("Orbit light", &orbitLight);
 
   bool debugOptionsChanged = false;
-  debugOptionsChanged |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
-  ImGui::SameLine();
-  debugOptionsChanged
-      |= ImGui::Checkbox("World", &staticDebugOptions.drawWorldFrame);
-  ImGui::SameLine();
-  debugOptionsChanged
-      |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
-  debugOptionsChanged
-      |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
-  ImGui::SameLine();
-  debugOptionsChanged
-      |= ImGui::Checkbox("Inertia", &staticDebugOptions.drawInertiaBoxes);
-  ImGui::SameLine();
-  debugOptionsChanged |= ImGui::Checkbox(
-      "Collision", &staticDebugOptions.drawCollisionShapeBounds);
-  ImGui::SameLine();
-  debugOptionsChanged
-      |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
-  ImGui::SameLine();
-  debugOptionsChanged
-      |= ImGui::Checkbox("Support", &staticDebugOptions.drawSupportPolygons);
-  debugOptionsChanged
-      |= ImGui::Checkbox("Normals", &contactDebugOptions.drawContactNormals);
-  ImGui::SameLine();
-  debugOptionsChanged
-      |= ImGui::Checkbox("Forces", &contactDebugOptions.drawContactForces);
+  const auto renderDebugControls = [&] {
+    bool changed = false;
+    changed |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
+    ImGui::SameLine();
+    changed |= ImGui::Checkbox("World", &staticDebugOptions.drawWorldFrame);
+    ImGui::SameLine();
+    changed |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
+    changed |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
+    ImGui::SameLine();
+    changed |= ImGui::Checkbox("Inertia", &staticDebugOptions.drawInertiaBoxes);
+    ImGui::SameLine();
+    changed |= ImGui::Checkbox(
+        "Collision", &staticDebugOptions.drawCollisionShapeBounds);
+    ImGui::SameLine();
+    changed |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
+    ImGui::SameLine();
+    changed
+        |= ImGui::Checkbox("Support", &staticDebugOptions.drawSupportPolygons);
+    changed
+        |= ImGui::Checkbox("Normals", &contactDebugOptions.drawContactNormals);
+    ImGui::SameLine();
+    changed
+        |= ImGui::Checkbox("Forces", &contactDebugOptions.drawContactForces);
+    return changed;
+  };
+
+  if (dockingActive) {
+    ImGui::SameLine();
+    if (ImGui::Button("Debug overlays")) {
+      ImGui::OpenPopup("DART debug overlays");
+    }
+    if (ImGui::BeginPopup("DART debug overlays")) {
+      debugOptionsChanged |= renderDebugControls();
+      ImGui::EndPopup();
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("Viewer help");
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+      ImGui::BeginTooltip();
+      renderViewerHelp();
+      ImGui::EndTooltip();
+    }
+    ImGui::End();
+    return debugOptionsChanged;
+  }
+
+  debugOptionsChanged |= renderDebugControls();
   ImGui::End();
 
   return debugOptionsChanged;

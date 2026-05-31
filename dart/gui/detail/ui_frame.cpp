@@ -360,7 +360,7 @@ void buildDefaultDockLayout(
   }
   if (useBottom) {
     bottom = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Down, 0.20f, nullptr, &center);
+        center, ImGuiDir_Down, 0.15f, nullptr, &center);
   }
   if (useLeft) {
     left = ImGui::DockBuilderSplitNode(

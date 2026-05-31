@@ -72,6 +72,12 @@
 - Active force-drag now has visible feedback: the DART status panel shows the
   dragged target and current force magnitude, and the viewport renders a spring
   line plus force arrow while the drag is active.
+- Slider and plot labels now render above the control in scene panels, using
+  hidden ImGui ids for the actual widgets, so narrow right-docked panels do not
+  clip labels or waste horizontal plot/slider space. The bottom diagnostics
+  dock is also smaller in the default layout to preserve more viewport area,
+  and the docked `DART` panel puts live scene diagnostics before collapsible
+  debug/help details.
 - `UNIT_gui_FilamentSceneExtraction` now has direct controller coverage for
   external SimpleFrame-style force-drag callback routing and BodyNode
   shape-offset application points.

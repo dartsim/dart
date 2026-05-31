@@ -115,6 +115,12 @@ navigation, and a path for scene-specific controls.
 - Show active force-drag feedback in the viewer: the DART status panel now
   names the dragged target and force magnitude, and the viewport renders a
   spring/force debug line while the drag is active.
+- Make panel controls more readable in narrow right-docked scene panels by
+  rendering slider and plot labels above their controls instead of consuming
+  horizontal plot/slider space, and shrink the bottom diagnostics dock so the
+  default workspace leaves more room for the 3D viewport. In docked mode, the
+  built-in `DART` panel now shows scene/time/selection diagnostics first and
+  keeps verbose viewer help/debug toggles in collapsible sections.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
   current filtered/total scene count.
