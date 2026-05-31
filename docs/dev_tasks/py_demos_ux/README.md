@@ -52,7 +52,8 @@ navigation, and a path for scene-specific controls.
   run under the same startup budget by default, with
   `DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS` available as a Python-specific
   override, so pure-Python stalls surface as startup failures that can be
-  restored through the same path.
+  restored through the same path. Integration coverage pins throwing, slow,
+  stalled, and no-render-state switch targets.
 - Surface demo activation state in the docked UI: rows mark a requested demo as
   starting, the Simulation/Demos panels show startup or fallback status, and
   Python factory exceptions now reach the C++ transactional restore path instead

@@ -59,8 +59,8 @@
   active demo. If the requested demo throws during factory startup, cannot
   create render state, fails its first frame, or returns after the startup
   budget, the host restores the previous demo instead of leaving the workspace
-  stuck on the broken target. Integration coverage now pins both throwing and
-  slow-returning target factories.
+  stuck on the broken target. Integration coverage now pins throwing,
+  slow-returning, stalled, and no-render-state target factories.
 - Python demo factories now run under the shared demo startup budget by default
   (`DART_DEMO_SCENE_STARTUP_TIMEOUT_MS`, default 5000 ms), with
   `DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS` available as a Python-specific
