@@ -105,6 +105,16 @@ void validateCollisionShape(
           "{} box collision shape half extents must be positive and finite",
           ownerName);
       break;
+    case CollisionShapeType::Capsule:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.halfExtents.z())
+              || shape.halfExtents.z() <= 0.0,
+          InvalidArgumentException,
+          "{} capsule collision shape radius and half-height must be positive "
+          "and finite",
+          ownerName);
+      break;
     case CollisionShapeType::Mesh: {
       DART_EXPERIMENTAL_THROW_T_IF(
           shape.vertices.empty(),
@@ -599,6 +609,30 @@ bool RigidBody::isDeformableSurfaceCcdObstacle() const
   return getWorld()
       ->getRegistry()
       .all_of<comps::DeformableSurfaceCcdObstacleTag>(getEntity());
+}
+
+//==============================================================================
+void RigidBody::setDeformableObstacleBarrierOnly(bool enabled)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  auto& registry = getWorld()->getRegistry();
+  if (enabled) {
+    registry.get_or_emplace<comps::DeformableObstacleNoCcdTag>(getEntity());
+  } else {
+    registry.remove<comps::DeformableObstacleNoCcdTag>(getEntity());
+  }
+}
+
+//==============================================================================
+bool RigidBody::isDeformableObstacleBarrierOnly() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().all_of<comps::DeformableObstacleNoCcdTag>(
+      getEntity());
 }
 
 //==============================================================================

@@ -480,7 +480,8 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
       .value("BOX", sim::CollisionShapeType::Box)
-      .value("MESH", sim::CollisionShapeType::Mesh);
+      .value("MESH", sim::CollisionShapeType::Mesh)
+      .value("CAPSULE", sim::CollisionShapeType::Capsule);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
       .def_static("sphere", &sim::CollisionShape::makeSphere, nb::arg("radius"))
@@ -516,6 +517,11 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("vertices"),
           nb::arg("triangles"))
+      .def_static(
+          "capsule",
+          &sim::CollisionShape::makeCapsule,
+          nb::arg("radius"),
+          nb::arg("half_height"))
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
@@ -1231,6 +1237,27 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("name"),
           nb::keep_alive<0, 1>())
+      .def(
+          "set_ground_contact",
+          &sim::Multibody::setGroundContact,
+          nb::arg("plane_normal"),
+          nb::arg("plane_point"),
+          nb::arg("stiffness"),
+          nb::arg("friction_coefficient") = 0.0,
+          nb::arg("friction_regularization") = 1.0e-4,
+          nb::arg("damping_coefficient") = 0.0,
+          nb::arg("dual_update_cadence") = 0,
+          "Configure compliant ground contact for the variational integrator "
+          "(an analytic half-space + penalty/friction/damping); add points "
+          "with add_ground_contact_point(). dual_update_cadence=0 is the C2 "
+          "compliant penalty; >0 enables the C3 augmented-Lagrangian rung, "
+          "advancing the duals every N steps for drift-free contact.")
+      .def(
+          "add_ground_contact_point",
+          &sim::Multibody::addGroundContactPoint,
+          nb::arg("link"),
+          nb::arg("local_point"),
+          "Add a body-fixed contact point against the configured ground plane.")
       .def_prop_rw(
           "name",
           [](const sim::Multibody& self) {
@@ -1373,6 +1400,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           "is_deformable_surface_ccd_obstacle",
           &sim::RigidBody::isDeformableSurfaceCcdObstacle,
           &sim::RigidBody::setDeformableSurfaceCcdObstacle)
+      .def_prop_rw(
+          "is_deformable_obstacle_barrier_only",
+          &sim::RigidBody::isDeformableObstacleBarrierOnly,
+          &sim::RigidBody::setDeformableObstacleBarrierOnly)
       .def_prop_rw(
           "is_deformable_ground_barrier",
           &sim::RigidBody::isDeformableGroundBarrier,
@@ -1643,6 +1674,9 @@ void defSimulationExperimentalModule(nb::module_& m)
           "projected_newton_fallbacks",
           &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
       .def_ro(
+          "projected_newton_iterative_solves",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeSolves)
+      .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
       .def_ro(
@@ -1670,7 +1704,13 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::useFiniteElementElasticity)
       .def_rw(
           "use_fixed_corotational_elasticity",
-          &sim::DeformableMaterialProperties::useFixedCorotationalElasticity);
+          &sim::DeformableMaterialProperties::useFixedCorotationalElasticity)
+      .def_rw(
+          "use_adaptive_barrier_stiffness",
+          &sim::DeformableMaterialProperties::useAdaptiveBarrierStiffness)
+      .def_rw(
+          "use_iterative_linear_solver",
+          &sim::DeformableMaterialProperties::useIterativeLinearSolver);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(

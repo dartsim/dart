@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -60,7 +61,6 @@ dart::simulation::WorldPtr createRigidLoopWorld()
     throw std::runtime_error("Failed to load dart://sample/skel/chain.skel");
   }
 
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->setTimeStep(1.0 / 2000.0);
 
   auto chain = world->getSkeleton(0);
@@ -76,6 +76,10 @@ dart::simulation::WorldPtr createRigidLoopWorld()
     }
   }
   chain->setPositions(initialPose);
+
+  // chain.skel is authored Y-up; reorient to Z-up before deriving the loop
+  // constraint anchor from link 6's (now Z-up) world transform.
+  reorientWorldToZUp(world);
 
   auto* link6 = chain->getBodyNode("link 6");
   auto* link10 = chain->getBodyNode("link 10");

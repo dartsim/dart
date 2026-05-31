@@ -31,6 +31,8 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/export.hpp>
+
 #include <Eigen/Core>
 
 #include <array>
@@ -61,9 +63,10 @@ struct TriangleMesh
 /// faces (more than three vertices) are fan-triangulated. Throws
 /// ``InvalidArgumentException`` on a malformed vertex/face or an out-of-range
 /// index.
-TriangleMesh loadObjTriangleMesh(std::istream& input);
+DART_EXPERIMENTAL_API TriangleMesh loadObjTriangleMesh(std::istream& input);
 
 /// Same as ``loadObjTriangleMesh``, reading from a file path.
-TriangleMesh loadObjTriangleMeshFile(const std::filesystem::path& path);
+DART_EXPERIMENTAL_API TriangleMesh
+loadObjTriangleMeshFile(const std::filesystem::path& path);
 
 } // namespace dart::simulation::experimental::io

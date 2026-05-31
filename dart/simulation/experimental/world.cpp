@@ -135,6 +135,8 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
   diagnostics.lineSearchTrials = stats.lineSearchTrials;
   diagnostics.projectedNewtonSteps = stats.projectedNewtonSteps;
   diagnostics.projectedNewtonFallbacks = stats.projectedNewtonFallbacks;
+  diagnostics.projectedNewtonIterativeSolves
+      = stats.projectedNewtonIterativeSolves;
   diagnostics.selfContactBarrierActiveContacts
       = stats.selfContactBarrierActiveContacts;
   diagnostics.frictionDissipation = stats.frictionDissipation;
@@ -763,6 +765,10 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
       = options.material.useFiniteElementElasticity;
   data.material.useFixedCorotationalElasticity
       = options.material.useFixedCorotationalElasticity;
+  data.material.useAdaptiveBarrierStiffness
+      = options.material.useAdaptiveBarrierStiffness;
+  data.material.useIterativeLinearSolver
+      = options.material.useIterativeLinearSolver;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);
@@ -2241,6 +2247,15 @@ std::vector<Contact> World::collide()
         break;
       case CollisionShapeType::Box:
         shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
+        break;
+      case CollisionShapeType::Capsule:
+        // The native engine has no capsule primitive; approximate it with its
+        // axis-aligned bounding box for rigid-rigid queries. Deformable-vs-
+        // capsule contact uses the analytic capsule obstacle barrier instead.
+        shape = std::make_unique<ncol::BoxShape>(Eigen::Vector3d(
+            collisionShape.radius,
+            collisionShape.radius,
+            collisionShape.halfExtents.z() + collisionShape.radius));
         break;
       case CollisionShapeType::Mesh:
         shape = std::make_unique<ncol::MeshShape>(

@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -530,7 +531,7 @@ void applyParameters(
   }
 
   world->setTimeStep(1.0 / std::max(1.0, config.timeStepHz));
-  world->setGravity(Eigen::Vector3d(0.0, -config.gravityMagnitude, 0.0));
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -config.gravityMagnitude));
 }
 
 dart::simulation::WorldPtr createLcpPhysicsWorld(const LcpPhysicsConfig& config)
@@ -538,6 +539,12 @@ dart::simulation::WorldPtr createLcpPhysicsWorld(const LcpPhysicsConfig& config)
   auto world = createScenario(config.scenario);
   applyParameters(world, config);
   applySolver(world, config.solver);
+  // The scenario skeletons are authored Y-up; reorient each to the canonical
+  // Z-up convention (gravity is already set along -Z in applyParameters). This
+  // also covers the runtime scenario switch, which rebuilds via this function.
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    reorientSkeletonToZUp(world->getSkeleton(i));
+  }
   return world;
 }
 
@@ -667,7 +674,7 @@ void resetLcpWorld(LcpPhysicsState& state)
 dart::gui::OrbitCamera makeLcpCamera()
 {
   dart::gui::OrbitCamera camera;
-  camera.target = Eigen::Vector3d(0.0, 0.3, 0.0);
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.3);
   camera.yaw = 0.5880026035475675;
   camera.pitch = 0.7179841485128485;
   camera.distance = 4.358898943540674;

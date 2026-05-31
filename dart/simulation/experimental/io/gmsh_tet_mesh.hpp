@@ -31,6 +31,8 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/export.hpp>
+
 #include <Eigen/Core>
 
 #include <array>
@@ -58,9 +60,10 @@ struct TetMesh
 /// other element types (points, lines, triangles) are ignored. Throws
 /// ``InvalidArgumentException`` on malformed input or an unsupported (binary,
 /// or version &lt; 2 / &ge; 5) format.
-TetMesh loadGmshTetMesh(std::istream& input);
+DART_EXPERIMENTAL_API TetMesh loadGmshTetMesh(std::istream& input);
 
 /// Same as ``loadGmshTetMesh``, reading from a file path.
-TetMesh loadGmshTetMeshFile(const std::filesystem::path& path);
+DART_EXPERIMENTAL_API TetMesh
+loadGmshTetMeshFile(const std::filesystem::path& path);
 
 } // namespace dart::simulation::experimental::io

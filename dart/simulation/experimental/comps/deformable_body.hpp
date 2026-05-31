@@ -124,6 +124,16 @@ struct DeformableMaterial
   // material instead of the default stable neo-Hookean kernel. Ignored unless
   // useFiniteElementElasticity is true.
   bool useFixedCorotationalElasticity = false;
+  // Opt in to IPC-style adaptive barrier stiffness (kappa) for this body's
+  // ground/obstacle contact barriers, scaled per step from the mass/time-step
+  // force balance. Off by default keeps the fixed kappa = 25.
+  bool useAdaptiveBarrierStiffness = false;
+  // Opt in to the iterative (conjugate-gradient) projected-Newton linear solve
+  // for this body. The CG solve never factorizes, so its memory stays near
+  // O(nnz) and it scales to large meshes; off by default uses the sparse
+  // Cholesky direct solve (faster for small/medium meshes). Large meshes above
+  // the direct-solve node cap always use CG regardless of this flag.
+  bool useIterativeLinearSolver = false;
 };
 
 /// Time-ranged scripted Dirichlet boundary region for deformable nodes.

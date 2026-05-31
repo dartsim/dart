@@ -62,6 +62,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
+#include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseCholesky>
 #include <Eigen/SparseCore>
 #include <entt/entt.hpp>
@@ -791,15 +792,29 @@ struct SphereObstacleBarrier
 
 // A static (oriented) box opted in as a deformable obstacle exerts a
 // clamped-log barrier on nearby deformable nodes along the outward surface
-// normal -- the box analogue of the sphere obstacle barrier. The closest point
-// on the box surface (and hence the surface distance and outward normal) is
-// found by clamping the node into the box's local frame, which handles
-// face/edge/corner contact uniformly.
+// normal -- the box analogue of the sphere obstacle barrier. Outside the box,
+// the closest point on the box surface is found by clamping the node into the
+// box's local frame, which handles face/edge/corner contact uniformly. Inside
+// the box, the nearest exit face supplies the outward normal and penetration
+// depth.
 struct BoxObstacleBarrier
 {
   Eigen::Vector3d center = Eigen::Vector3d::Zero();
   Eigen::Matrix3d rotation = Eigen::Matrix3d::Identity();
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Zero();
+};
+
+// A static capsule (a segment swept by a radius -- a rod/wire) opted in as a
+// deformable obstacle exerts a clamped-log barrier on nearby deformable nodes
+// along the outward radial normal. The closest point on the capsule surface is
+// found from the point-to-segment closest point, so the distance is
+// |node - closestOnSegment| - radius. This is the codimensional (1D) obstacle
+// analogue of the sphere (0D point) and box obstacles.
+struct CapsuleObstacleBarrier
+{
+  Eigen::Vector3d pointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointB = Eigen::Vector3d::Zero();
+  double radius = 0.0;
 };
 
 //==============================================================================
@@ -1353,12 +1368,15 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
 
   const auto& registry = world.getRegistry();
+  // Barrier-only obstacles keep their contact barrier but are excluded from the
+  // CCD limiter, so a deformable can slide tangentially against them (and be
+  // decelerated by friction) instead of having its whole step over-limited.
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
-      comps::Transform>();
+      comps::Transform>(entt::exclude<comps::DeformableObstacleNoCcdTag>);
 
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
@@ -1699,6 +1717,7 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         barriers.push_back(barrier);
         break;
       }
+      case CollisionShapeType::Capsule:
       case CollisionShapeType::Mesh:
         break;
     }
@@ -1767,6 +1786,43 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
     obstacle.center = transform.position;
     obstacle.rotation = transform.orientation.normalized().toRotationMatrix();
     obstacle.halfExtents = geometry.shape.halfExtents;
+    obstacles.push_back(obstacle);
+  }
+  return obstacles;
+}
+
+//==============================================================================
+std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
+    const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<CapsuleObstacleBarrier> obstacles;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+    const double radius = geometry.shape.radius;
+    const double halfHeight = geometry.shape.halfExtents.z();
+    if (geometry.shape.type != CollisionShapeType::Capsule || !(radius > 0.0)
+        || !std::isfinite(radius) || !(halfHeight > 0.0)
+        || !std::isfinite(halfHeight) || !transform.position.allFinite()
+        || !transform.orientation.coeffs().allFinite()) {
+      continue;
+    }
+    // The capsule axis is the body z axis; map its two segment endpoints into
+    // the world frame.
+    const Eigen::Vector3d axis
+        = transform.orientation.normalized().toRotationMatrix().col(2);
+    CapsuleObstacleBarrier obstacle;
+    obstacle.pointA = transform.position - halfHeight * axis;
+    obstacle.pointB = transform.position + halfHeight * axis;
+    obstacle.radius = radius;
     obstacles.push_back(obstacle);
   }
   return obstacles;
@@ -2203,6 +2259,36 @@ double staticGroundBarrierActivationDistance()
 }
 
 //==============================================================================
+// The default (fixed) clamped-log barrier stiffness kappa shared by the ground,
+// obstacle, and self-contact barriers.
+constexpr double kDefaultBarrierStiffness = 25.0;
+
+//==============================================================================
+// IPC-style adaptive barrier stiffness (kappa) for a body, opted in per body.
+//
+// The clamped-log barrier's curvature contribution to the Hessian scales like
+// kappa / d_hat^2, while a node's inertial stiffness is mass / dt^2. Balancing
+// the two (so the barrier resolves contact in few iterations regardless of the
+// mass/stiffness ratio) gives kappa ~ (mass / dt^2) * d_hat^2. For a unit nodal
+// mass at dt = 1/250 and d_hat = 2e-2 this evaluates to exactly the historical
+// fixed kappa = 25, so the fixed value is just this balance at unit mass; the
+// adaptive form generalizes it, stiffening the barrier for heavier/faster
+// bodies. The result is floored at the fixed default (never softer, so contact
+// robustness never regresses) and capped to avoid an ill-conditioned Hessian.
+double adaptiveBarrierStiffness(
+    double maxNodalMass, double timeStep, double activationDistance)
+{
+  if (!(maxNodalMass > 0.0) || !(timeStep > 0.0) || !std::isfinite(maxNodalMass)
+      || !std::isfinite(timeStep)) {
+    return kDefaultBarrierStiffness;
+  }
+  constexpr double kMaxBarrierStiffness = 1.0e6;
+  const double balanced = (maxNodalMass / (timeStep * timeStep))
+                          * activationDistance * activationDistance;
+  return std::clamp(balanced, kDefaultBarrierStiffness, kMaxBarrierStiffness);
+}
+
+//==============================================================================
 bool satisfiesStaticGroundBarrier(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
@@ -2253,14 +2339,15 @@ double addStaticGroundBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (barriers.empty()) {
     return 0.0;
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  const double barrierScale = barrierStiffness;
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
@@ -2311,14 +2398,15 @@ double addSphereObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<SphereObstacleBarrier>& obstacles,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
     return 0.0;
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  const double barrierScale = barrierStiffness;
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
@@ -2357,11 +2445,13 @@ double addSphereObstacleBarrierEnergy(
 }
 
 //==============================================================================
-// Closest-surface distance from a node to an oriented box obstacle, with the
-// outward world-frame surface normal set when the distance is positive. The
-// node is clamped into the box's local frame; |local - clamp(local)| is the
-// distance to the surface (0 inside/on the box), uniform across face, edge, and
-// corner contact.
+// Signed closest-surface distance from a node to an oriented box obstacle, with
+// the outward world-frame surface normal set for outside, on-surface, and
+// inside nodes. Outside the box, the node is clamped into the box's local
+// frame; |local - clamp(local)| is the distance to the surface, uniform across
+// face, edge, and corner contact. Inside the box, the nearest exit face
+// provides the outward normal and the returned distance is negative penetration
+// depth.
 double boxObstacleSurfaceDistance(
     const Eigen::Vector3d& position,
     const BoxObstacleBarrier& obstacle,
@@ -2375,8 +2465,102 @@ double boxObstacleSurfaceDistance(
   const double distance = delta.norm();
   if (distance > 0.0 && std::isfinite(distance)) {
     outwardNormal = obstacle.rotation * (delta / distance);
+    return distance;
   }
-  return distance;
+
+  Eigen::Index nearestAxis = 0;
+  double nearestMargin = std::numeric_limits<double>::infinity();
+  for (Eigen::Index axis = 0; axis < 3; ++axis) {
+    const double margin = obstacle.halfExtents[axis] - std::abs(local[axis]);
+    if (margin < nearestMargin) {
+      nearestMargin = margin;
+      nearestAxis = axis;
+    }
+  }
+  Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
+  localNormal[nearestAxis] = local[nearestAxis] >= 0.0 ? 1.0 : -1.0;
+  outwardNormal = obstacle.rotation * localNormal;
+  return -nearestMargin;
+}
+
+//==============================================================================
+// Closest-surface distance from a node to a capsule obstacle, with the outward
+// radial surface normal set when positive. The distance is the point-to-segment
+// axis distance minus the radius; the normal points from the closest axis point
+// to the node.
+double capsuleObstacleSurfaceDistance(
+    const Eigen::Vector3d& position,
+    const CapsuleObstacleBarrier& obstacle,
+    Eigen::Vector3d& outwardNormal)
+{
+  const Eigen::Vector3d axis = obstacle.pointB - obstacle.pointA;
+  const double axisLengthSq = axis.squaredNorm();
+  double t = 0.0;
+  if (axisLengthSq > 0.0) {
+    t = (position - obstacle.pointA).dot(axis) / axisLengthSq;
+    t = std::clamp(t, 0.0, 1.0);
+  }
+  const Eigen::Vector3d closest = obstacle.pointA + t * axis;
+  const Eigen::Vector3d delta = position - closest;
+  const double axisDistance = delta.norm();
+  if (axisDistance > 0.0 && std::isfinite(axisDistance)) {
+    outwardNormal = delta / axisDistance;
+  }
+  return axisDistance - obstacle.radius;
+}
+
+//==============================================================================
+// Adds the clamped-log barrier energy/gradient pushing free deformable nodes
+// out of the activation band of a capsule obstacle, along the outward radial
+// normal. The capsule analogue of addBoxObstacleBarrierEnergy.
+double addCapsuleObstacleBarrierEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<CapsuleObstacleBarrier>& obstacles,
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
+{
+  if (obstacles.empty()) {
+    return 0.0;
+  }
+
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = barrierStiffness;
+
+  double energy = 0.0;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = capsuleObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || !std::isfinite(distance)) {
+        // On or inside the capsule: a penetration the barrier forbids.
+        return std::numeric_limits<double>::infinity();
+      }
+      if (distance >= activationDistance) {
+        continue;
+      }
+
+      const double normalizedDistance = distance / activationDistance;
+      const double distanceOffset = distance - activationDistance;
+      energy += -barrierScale * distanceOffset * distanceOffset
+                * std::log(normalizedDistance);
+
+      if (gradient != nullptr) {
+        const double derivative
+            = -barrierScale
+              * (2.0 * distanceOffset * std::log(normalizedDistance)
+                 + distanceOffset * distanceOffset / distance);
+        (*gradient)[i] += derivative * normal;
+      }
+    }
+  }
+
+  return energy;
 }
 
 //==============================================================================
@@ -2387,14 +2571,15 @@ double addBoxObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<BoxObstacleBarrier>& obstacles,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
     return 0.0;
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  const double barrierScale = barrierStiffness;
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
@@ -2460,7 +2645,9 @@ void computeStaticGroundNormalForces(
   }
 
   const double activationDistance = staticGroundBarrierActivationDistance();
-  constexpr double barrierScale = 25.0;
+  // The lagged friction normal-force estimate uses the base barrier stiffness
+  // (adaptive kappa scales the contact barriers, not this approximate force).
+  const double barrierScale = kDefaultBarrierStiffness;
   for (std::size_t i = 0; i < positions.size(); ++i) {
     if (fixed[i] != 0u) {
       continue;
@@ -2485,6 +2672,139 @@ void computeStaticGroundNormalForces(
     // surface normal only shapes friction's tangent plane below.
     normalForce[i] = -derivative;
     normalDirection[i] = contact->normal;
+  }
+}
+
+//==============================================================================
+// Merges the capsule obstacle barrier's per-node radial normal force and
+// direction into the friction normal-force arrays (populated first by
+// computeStaticGroundNormalForces). The dominant (largest-force) contact per
+// node wins, so a node resting on a capsule rod gets the rod's radial normal
+// for its friction tangent plane. The capsule obstacle is barrier-only (no
+// surface CCD), so tangential sliding is unconstrained and friction is
+// effective.
+void addCapsuleObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<CapsuleObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = capsuleObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || distance >= activationDistance
+          || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = normal;
+      }
+    }
+  }
+}
+
+//==============================================================================
+// Merges the sphere obstacle barrier's per-node radial normal force/direction
+// into the friction normal-force arrays (dominant contact per node wins). Used
+// for friction against barrier-only sphere obstacles.
+void addSphereObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<SphereObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      const Eigen::Vector3d offset = positions[i] - obstacle.center;
+      const double centerDistance = offset.norm();
+      const double distance = centerDistance - obstacle.radius;
+      if (distance <= 0.0 || distance >= activationDistance
+          || centerDistance <= 0.0 || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = offset / centerDistance;
+      }
+    }
+  }
+}
+
+//==============================================================================
+// Merges the box obstacle barrier's per-node surface normal force/direction
+// into the friction normal-force arrays (dominant contact per node wins). Used
+// for friction against barrier-only box obstacles.
+void addBoxObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<BoxObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || distance >= activationDistance
+          || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = normal;
+      }
+    }
   }
 }
 
@@ -3024,13 +3344,15 @@ double evaluateDeformableObjective(
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
     std::size_t* barrierActiveContacts = nullptr,
     const GroundFrictionInputs* groundFriction = nullptr,
     const SelfContactFrictionInputs* selfContactFriction = nullptr,
-    const FemElasticityInputs* femElasticity = nullptr)
+    const FemElasticityInputs* femElasticity = nullptr,
+    double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (gradient != nullptr) {
     if (gradient->size() != positions.size()) {
@@ -3080,11 +3402,14 @@ double evaluateDeformableObjective(
     energy
         += addFemElasticityEnergy(positions, fixed, *femElasticity, gradient);
   }
-  energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
+  energy += addStaticGroundBarrierEnergy(
+      positions, fixed, barriers, gradient, barrierStiffness);
   energy += addSphereObstacleBarrierEnergy(
-      positions, fixed, sphereObstacles, gradient);
-  energy
-      += addBoxObstacleBarrierEnergy(positions, fixed, boxObstacles, gradient);
+      positions, fixed, sphereObstacles, gradient, barrierStiffness);
+  energy += addBoxObstacleBarrierEnergy(
+      positions, fixed, boxObstacles, gradient, barrierStiffness);
+  energy += addCapsuleObstacleBarrierEnergy(
+      positions, fixed, capsuleObstacles, gradient, barrierStiffness);
   if (contactBarrier != nullptr) {
     energy += addSelfContactBarrierEnergy(
         positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
@@ -3307,6 +3632,101 @@ bool applyInterBodySurfaceContactCcdLimit(
 }
 
 //==============================================================================
+// Apply the self-surface CCD limiter to a fully assembled candidate
+// displacement. VBD uses this after its block solve so fast same-body surface
+// crossings keep the same no-tunneling limit as the default line-search path.
+bool applySurfaceContactCcdCandidateLimit(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    comps::DeformableSolverScratch& scratch)
+{
+  if (contactScratch.surfaceTriangles.empty()) {
+    return true;
+  }
+
+  const std::size_t nodeCount = current.size();
+  scratch.direction.resize(nodeCount);
+  scratch.gradient.assign(nodeCount, Eigen::Vector3d::Zero());
+  scratch.candidate = scratch.next;
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    scratch.direction[i] = scratch.candidate[i] - current[i];
+  }
+
+  double step = 1.0;
+  double directionalDerivative = 0.0;
+  const bool accepted = applySurfaceContactCcdLimit(
+      current,
+      scratch.direction,
+      scratch.gradient,
+      fixed,
+      contactScratch,
+      stats,
+      step,
+      scratch.candidate,
+      directionalDerivative);
+
+  if (accepted) {
+    scratch.next = scratch.candidate;
+    return true;
+  }
+
+  scratch.next = current;
+  return false;
+}
+
+//==============================================================================
+// Apply the inter-body deformable-surface CCD limiter to a fully assembled
+// candidate displacement. VBD uses this after its block solve so opt-in
+// surface bodies keep the same no-tunneling limit the default line-search path
+// applies between deformable bodies.
+bool applyInterBodySurfaceContactCcdCandidateLimit(
+    entt::entity entity,
+    std::span<const SurfaceContactSnapshot> surfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    comps::DeformableSolverScratch& scratch)
+{
+  if (surfaceSnapshots.empty()) {
+    return true;
+  }
+
+  const std::size_t nodeCount = current.size();
+  scratch.direction.resize(nodeCount);
+  scratch.gradient.assign(nodeCount, Eigen::Vector3d::Zero());
+  scratch.candidate = scratch.next;
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    scratch.direction[i] = scratch.candidate[i] - current[i];
+  }
+
+  double step = 1.0;
+  double directionalDerivative = 0.0;
+  const bool accepted = applyInterBodySurfaceContactCcdLimit(
+      entity,
+      surfaceSnapshots,
+      current,
+      scratch.direction,
+      scratch.gradient,
+      fixed,
+      contactScratch,
+      stats,
+      step,
+      scratch.candidate,
+      directionalDerivative);
+
+  if (accepted) {
+    scratch.next = scratch.candidate;
+    return true;
+  }
+
+  scratch.next = current;
+  return false;
+}
+
+//==============================================================================
 bool applyStaticRigidSurfaceCcdLimit(
     std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
     const std::vector<Eigen::Vector3d>& current,
@@ -3398,6 +3818,54 @@ bool applyStaticRigidSurfaceCcdLimit(
   directionalDerivative = buildLineSearchCandidate(
       current, direction, gradient, fixed, step, candidate);
   return true;
+}
+
+//==============================================================================
+// Apply the static rigid-surface CCD limiter to a fully assembled candidate
+// displacement, such as the World VBD path's post-solve iterate. This reuses
+// the default solver's step-bound machinery without coupling VBD to line-search
+// gradients.
+bool applyStaticRigidSurfaceCcdCandidateLimit(
+    std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    comps::DeformableSolverScratch& scratch)
+{
+  if (rigidSurfaceSnapshots.empty()) {
+    return true;
+  }
+
+  const std::size_t nodeCount = current.size();
+  scratch.direction.resize(nodeCount);
+  scratch.gradient.assign(nodeCount, Eigen::Vector3d::Zero());
+  scratch.candidate = scratch.next;
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    scratch.direction[i] = scratch.candidate[i] - current[i];
+  }
+
+  double step = 1.0;
+  double directionalDerivative = 0.0;
+  const bool accepted = applyStaticRigidSurfaceCcdLimit(
+      rigidSurfaceSnapshots,
+      current,
+      scratch.direction,
+      scratch.gradient,
+      fixed,
+      contactScratch,
+      stats,
+      step,
+      scratch.candidate,
+      directionalDerivative);
+
+  if (accepted) {
+    scratch.next = scratch.candidate;
+    return true;
+  }
+
+  scratch.next = current;
+  return false;
 }
 
 //==============================================================================
@@ -3685,6 +4153,11 @@ struct DeformableVbdScratch
   // set at the warm-start position (lagged); a zero stiffness marks "no ground
   // under this vertex".
   std::vector<dvbd::ContactPlane> contactPlanes;
+  // Self-contact candidate set + per-vertex incident lists, rebuilt each step
+  // (lagged) from the body's swept start-to-warm-start surface motion.
+  dc::ContactCandidateSet selfContactCandidates;
+  dc::detail::ContactCandidateSweepScratch selfContactSweepScratch;
+  dvbd::SelfContactAdjacency selfContactAdjacency;
   std::size_t cachedNodeCount = 0;
   std::size_t cachedEdgeCount = 0;
   std::size_t cachedTetCount = 0;
@@ -3692,17 +4165,18 @@ struct DeformableVbdScratch
 };
 
 //==============================================================================
-/// Solve one implicit-Euler step for a contact-free deformable body with the
+/// Solve one implicit-Euler step for a deformable body with the
 /// Vertex Block Descent inner solver: graph-colored Gauss-Seidel block
 /// coordinate descent on the same variational objective the default solver
 /// minimizes, warm-started at the inertial target. Handles both distance
-/// springs and volumetric Stable Neo-Hookean tetrahedra (the latter using the
-/// body's Lame parameters, which the default gradient solver does not yet
-/// model). Fills `scratch.next`; the caller's write-back updates
+/// springs and volumetric tetrahedra, with the World path routing tet
+/// elasticity through the shared FEM kernels so the body's material choice is
+/// honored. Fills `scratch.next`; the caller's write-back updates
 /// positions/velocities. With `config.contactStiffness > 0` it also resolves
 /// static ground/obstacle half-space contact (penalty + optional Coulomb
-/// friction); it does not yet handle rigid-obstacle CCD or surface
-/// self-contact.
+/// friction) and lagged surface self-contact normal penalties. Moving
+/// rigid-surface CCD and static capsule obstacle barriers still fall back to
+/// the default solver.
 void runVbdDeformableSolve(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -3712,7 +4186,12 @@ void runVbdDeformableSolve(
     double timeStep,
     double youngsModulus,
     double poissonRatio,
+    bool useFixedCorotationalTets,
     const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const std::vector<DeformableSurfaceTriangle>& surfaceTriangles,
+    std::span<const std::uint8_t> surfaceContactPointMask,
     double frictionCoeff,
     const comps::DeformableVbdConfig& config,
     DeformableSolverStats& stats)
@@ -3765,13 +4244,22 @@ void runVbdDeformableSolve(
     }
   }
 
-  // Build the per-vertex static-contact planes from the barrier set at the
-  // warm-start position (lagged for the step). A vertex over a barrier
-  // footprint gets a z-up half-space at the barrier top with the configured
-  // penalty stiffness; vertices off the footprint get a zero-stiffness
-  // (inactive) plane and fall freely.
+  // Build the per-vertex static-contact planes from the barrier + obstacle set
+  // at the warm-start position (lagged for the step). Each free vertex gets the
+  // single most-binding (smallest-gap) linearized half-space among the z-up
+  // ground barriers and the static sphere/box obstacles it is near: a z-up
+  // plane at the ground top, or the tangent plane at the closest sphere/box
+  // surface point along the outward surface normal. The half-space penalty (and
+  // Coulomb friction) act only on penetration, so an armed-but-separated plane
+  // is a no-op; vertices off every constraint get a zero-stiffness (inactive)
+  // plane and fall freely. One plane per vertex keeps the driver contract
+  // unchanged; a vertex pressed into ground and an obstacle at once resolves to
+  // the nearer constraint and recovers over steps.
   const std::vector<dvbd::ContactPlane>* contactPlanes = nullptr;
-  if (config.contactStiffness > 0.0 && !barriers.empty()) {
+  const bool anyStaticContact
+      = !barriers.empty() || !sphereObstacles.empty() || !boxObstacles.empty();
+  if (config.contactStiffness > 0.0 && anyStaticContact) {
+    const double band = staticGroundBarrierActivationDistance();
     vbdScratch.contactPlanes.assign(nodeCount, dvbd::ContactPlane{});
     for (std::size_t i = 0; i < nodeCount; ++i) {
       dvbd::ContactPlane& plane = vbdScratch.contactPlanes[i];
@@ -3781,9 +4269,69 @@ void runVbdDeformableSolve(
       if (scratch.activeFixed[i] != 0u) {
         continue;
       }
-      const auto groundTop = staticGroundTopAt(scratch.next[i], barriers);
+      const Eigen::Vector3d& position = scratch.next[i];
+      double bestGap = std::numeric_limits<double>::infinity();
+      Eigen::Vector3d bestNormal = Eigen::Vector3d::UnitZ();
+      double bestOffset = 0.0;
+      bool found = false;
+
+      const auto groundTop = staticGroundTopAt(position, barriers);
       if (groundTop.has_value()) {
-        plane.offset = *groundTop;
+        const double gap = position.z() - *groundTop;
+        if (gap < bestGap) {
+          bestGap = gap;
+          bestNormal = Eigen::Vector3d::UnitZ();
+          bestOffset = *groundTop;
+          found = true;
+        }
+      }
+
+      for (const SphereObstacleBarrier& sphere : sphereObstacles) {
+        const Eigen::Vector3d offset = position - sphere.center;
+        const double centerDistance = offset.norm();
+        if (!std::isfinite(centerDistance)) {
+          continue;
+        }
+        Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+        if (centerDistance > 0.0) {
+          normal = offset / centerDistance;
+        }
+        const double surfaceDistance = centerDistance - sphere.radius;
+        if (surfaceDistance >= band) {
+          continue;
+        }
+        const double planeOffset = normal.dot(sphere.center) + sphere.radius;
+        const double gap = normal.dot(position) - planeOffset;
+        if (gap < bestGap) {
+          bestGap = gap;
+          bestNormal = normal;
+          bestOffset = planeOffset;
+          found = true;
+        }
+      }
+
+      for (const BoxObstacleBarrier& box : boxObstacles) {
+        Eigen::Vector3d normal;
+        const double surfaceDistance
+            = boxObstacleSurfaceDistance(position, box, normal);
+        if (!std::isfinite(surfaceDistance) || surfaceDistance >= band) {
+          continue;
+        }
+        const Eigen::Vector3d surfacePoint
+            = position - surfaceDistance * normal;
+        const double planeOffset = normal.dot(surfacePoint);
+        const double gap = normal.dot(position) - planeOffset;
+        if (gap < bestGap) {
+          bestGap = gap;
+          bestNormal = normal;
+          bestOffset = planeOffset;
+          found = true;
+        }
+      }
+
+      if (found) {
+        plane.normal = bestNormal;
+        plane.offset = bestOffset;
         plane.stiffness = config.contactStiffness;
       }
     }
@@ -3800,6 +4348,55 @@ void runVbdDeformableSolve(
   options.useChebyshev = config.useChebyshev;
   options.chebyshevRho = config.chebyshevRho;
   options.rayleighDamping = config.rayleighDamping;
+  // Route tetrahedra through the shared FEM elasticity kernels so a VBD body
+  // applies the same hyperelastic material (Stable Neo-Hookean or
+  // fixed-corotational) the default solver would, instead of the VBD-local
+  // Stable Neo-Hookean copy.
+  options.useFemTetKernel = true;
+  options.useFixedCorotationalTets = useFixedCorotationalTets;
+  // Build the lagged self-contact candidate set + per-vertex incident lists
+  // from the body's swept start-to-warm-start surface motion. The IPC
+  // clamped-log point-triangle / edge-edge barrier then enters each free
+  // vertex's block during the colored sweeps, so a VBD surface resists folding
+  // onto itself. Self-contact uses its own IPC barrier stiffness, independent
+  // of the static ground/obstacle penalty stiffness; convex bodies that do not
+  // fold produce no candidates and pay nothing. The post-solve self CCD limit
+  // below remains the no-tunneling backstop for contacts that cross and land
+  // outside the barrier band.
+  const dvbd::SelfContactAdjacency* selfContact = nullptr;
+  if (surfaceTriangles.size() >= 2) {
+    const double dHat = selfContactBarrierActivationDistance();
+    // Find candidates across the full barrier activation band (not just the
+    // tight CCD min-separation the default solver uses), so VBD's lagged
+    // penalty barrier engages and decelerates an approaching surface before it
+    // can cross
+    // -- VBD has no CCD line-search backstop of its own.
+    dc::ContactCandidateOptions candidateOptions;
+    candidateOptions.activationDistance = dHat;
+    candidateOptions.exactDistanceFilter = true;
+    candidateOptions.excludeIncidentPointTriangles = true;
+    candidateOptions.excludeAdjacentEdges = true;
+    dc::buildMotionAwareContactCandidatesSweep(
+        state.positions,
+        scratch.next,
+        surfaceTriangles,
+        candidateOptions,
+        vbdScratch.selfContactCandidates,
+        vbdScratch.selfContactSweepScratch);
+    filterSurfaceContactPointCandidates(
+        vbdScratch.selfContactCandidates, surfaceContactPointMask);
+    vbdScratch.selfContactAdjacency = dvbd::SelfContactAdjacency::build(
+        nodeCount,
+        vbdScratch.selfContactCandidates,
+        surfaceTriangles,
+        dHat * dHat,
+        selfContactBarrierStiffness());
+    if (!vbdScratch.selfContactCandidates.pointTriangleCandidates.empty()
+        || !vbdScratch.selfContactCandidates.edgeEdgeCandidates.empty()) {
+      selfContact = &vbdScratch.selfContactAdjacency;
+    }
+  }
+
   // state.positions holds x^t for this step (the write-back to the live state
   // happens after the solve), so it is the Rayleigh displacement reference.
   // parallelBlockDescentDeformable falls back to the full-featured serial
@@ -3822,7 +4419,8 @@ void runVbdDeformableSolve(
       config.workerThreads,
       &state.positions,
       contactPlanes,
-      frictionCoeff);
+      frictionCoeff,
+      selfContact);
 
   ++stats.vbdBodyCount;
   stats.vbdSweeps += result.iterations;
@@ -3847,6 +4445,7 @@ bool computeProjectedNewtonDirection(
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
     const SelfContactFrictionInputs* selfContactFriction,
@@ -3855,15 +4454,23 @@ bool computeProjectedNewtonDirection(
     const std::vector<Eigen::Vector3d>& gradient,
     std::vector<Eigen::Vector3d>& direction,
     DeformableContactSolverScratch& solverCache,
-    DeformableSolverStats& stats)
+    DeformableSolverStats& stats,
+    double barrierStiffness = kDefaultBarrierStiffness,
+    bool useIterativeSolver = false)
 {
   const std::size_t nodeCount = positions.size();
-  // Sparse Cholesky scales to large meshes; the cap is a safety bound against
-  // pathological fill-in (a matrix-free CG / GPU solve is a later slice).
-  constexpr std::size_t kMaxSparseNodes = 20000;
-  if (nodeCount == 0 || nodeCount > kMaxSparseNodes) {
+  // The sparse direct (Cholesky) solve is fastest for small/medium meshes but
+  // its fill-in grows super-linearly, so it is capped. Above the direct cap (or
+  // when iterative solving is opted in) a matrix-light conjugate-gradient solve
+  // is used instead: it never factorizes, so it scales to far larger meshes at
+  // the cost of iterations. The hard cap is a runaway bound only.
+  constexpr std::size_t kMaxDirectNodes = 20000;
+  constexpr std::size_t kMaxIterativeNodes = 1000000;
+  if (nodeCount == 0 || nodeCount > kMaxIterativeNodes) {
     return false;
   }
+  const bool solveIteratively
+      = useIterativeSolver || nodeCount > kMaxDirectNodes;
 
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
   const double invDt2 = 1.0 / (timeStep * timeStep);
@@ -4091,7 +4698,7 @@ bool computeProjectedNewtonDirection(
   // Static ground barrier Hessian (vertical scalar per active free node).
   if (!barriers.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
-    constexpr double barrierScale = 25.0;
+    const double barrierScale = barrierStiffness;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i)) {
         continue;
@@ -4124,7 +4731,7 @@ bool computeProjectedNewtonDirection(
   // the vertical ground barrier curvature, now along the radial normal.
   if (!sphereObstacles.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
-    constexpr double barrierScale = 25.0;
+    const double barrierScale = barrierStiffness;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i)) {
         continue;
@@ -4158,7 +4765,7 @@ bool computeProjectedNewtonDirection(
   // are again non-positive and drop out under PSD projection).
   if (!boxObstacles.empty()) {
     const double activationDistance = staticGroundBarrierActivationDistance();
-    constexpr double barrierScale = 25.0;
+    const double barrierScale = barrierStiffness;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i)) {
         continue;
@@ -4167,6 +4774,38 @@ bool computeProjectedNewtonDirection(
         Eigen::Vector3d normal;
         const double d
             = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+        if (d <= 0.0 || d >= activationDistance || !std::isfinite(d)) {
+          continue;
+        }
+        const double distanceOffset = d - activationDistance;
+        const double logRatio = std::log(d / activationDistance);
+        const double second = -barrierScale
+                              * (2.0 * logRatio + 4.0 * distanceOffset / d
+                                 - (distanceOffset * distanceOffset) / (d * d));
+        const double curvature = std::max(0.0, second);
+        if (curvature <= 0.0) {
+          continue;
+        }
+        addBlock3(i, i, curvature * (normal * normal.transpose()));
+      }
+    }
+  }
+
+  // Capsule obstacle barrier Hessian: the same rank-1 radial block as the
+  // sphere/box obstacle barriers (curvature * n n^T along the outward radial
+  // normal; the tangential eigenvalues are non-positive and drop out under PSD
+  // projection).
+  if (!capsuleObstacles.empty()) {
+    const double activationDistance = staticGroundBarrierActivationDistance();
+    const double barrierScale = barrierStiffness;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (!isFree(i)) {
+        continue;
+      }
+      for (const auto& obstacle : capsuleObstacles) {
+        Eigen::Vector3d normal;
+        const double d
+            = capsuleObstacleSurfaceDistance(positions[i], obstacle, normal);
         if (d <= 0.0 || d >= activationDistance || !std::isfinite(d)) {
           continue;
         }
@@ -4292,65 +4931,109 @@ bool computeProjectedNewtonDirection(
   hessian.setFromTriplets(triplets.begin(), triplets.end());
   hessian.makeCompressed();
 
-  // Reuse the fill-reducing symbolic factorization when the sparsity pattern is
-  // unchanged from the last analyzed matrix (same column/row index arrays); the
-  // expensive ordering then runs once and only the numeric factorization
-  // repeats. This is behavior-preserving (analyzePattern + factorize gives the
-  // same result as compute()); any structural mismatch re-analyzes, so it is
-  // safe by construction.
-  auto& ldlt = solverCache.newtonSolver;
-  const auto cols = hessian.cols();
-  const auto nnz = hessian.nonZeros();
-  const int* outer = hessian.outerIndexPtr();
-  const int* inner = hessian.innerIndexPtr();
-  bool patternMatches
-      = solverCache.newtonPatternValid
-        && static_cast<Eigen::Index>(solverCache.newtonPatternOuter.size())
-               == cols + 1
-        && static_cast<Eigen::Index>(solverCache.newtonPatternInner.size())
-               == nnz;
-  if (patternMatches) {
-    for (Eigen::Index i = 0; i <= cols && patternMatches; ++i) {
-      patternMatches = solverCache.newtonPatternOuter[i] == outer[i];
+  Eigen::VectorXd solution;
+  if (solveIteratively) {
+    // Iterative path: an incomplete-Cholesky preconditioned conjugate-gradient
+    // solve. The inertia term (m/dt^2 on every free DOF) plus the PSD-projected
+    // spring/barrier blocks make the Hessian symmetric positive definite, so CG
+    // is guaranteed to converge; it only ever factorizes *incompletely* (a
+    // sparse approximate Cholesky that drops fill), so time and memory stay
+    // near O(nnz) and the solve scales to meshes well past the direct cap. The
+    // incomplete-Cholesky preconditioner is far stronger than a diagonal
+    // (Jacobi) one on the ill-conditioned Hessians that stiff barrier contact
+    // produces -- it collapses the CG iteration count there, so the iterative
+    // path converges within the cap (and thus matches the direct solve) on
+    // contact scenes where plain Jacobi-CG would stall and fall back. Reading
+    // only the lower triangle matches the direct solver's symmetric assumption.
+    // A non-converged or non-finite solve (including an incomplete-Cholesky
+    // breakdown that Eigen's diagonal shifting cannot repair) falls back to
+    // mass-scaled steepest descent below, exactly as the direct path does on an
+    // indefinite factorization.
+    Eigen::ConjugateGradient<
+        Eigen::SparseMatrix<double>,
+        Eigen::Lower,
+        Eigen::IncompleteCholesky<double>>
+        cg;
+    cg.setTolerance(1e-8);
+    cg.setMaxIterations(static_cast<Eigen::Index>(2) * dim);
+    cg.compute(hessian);
+    if (cg.info() != Eigen::Success) {
+      solverCache.newtonPatternValid = false;
+      return false;
     }
-    for (Eigen::Index i = 0; i < nnz && patternMatches; ++i) {
-      patternMatches = solverCache.newtonPatternInner[i] == inner[i];
+    solution = cg.solve(rhs);
+    if (cg.info() != Eigen::Success || !solution.allFinite()) {
+      solverCache.newtonPatternValid = false;
+      return false;
     }
-  }
-
-  if (patternMatches) {
-    ldlt.factorize(hessian);
-    ++stats.projectedNewtonNumericFactorizations;
+    ++stats.projectedNewtonIterativeSolves;
+    // The cached direct-solver symbolic pattern was not refreshed this step, so
+    // invalidate it: a later step that drops back to the direct path must
+    // re-analyze rather than trust a stale ordering.
+    solverCache.newtonPatternValid = false;
   } else {
-    ldlt.analyzePattern(hessian);
-    ldlt.factorize(hessian);
-    solverCache.newtonPatternOuter.assign(outer, outer + cols + 1);
-    solverCache.newtonPatternInner.assign(inner, inner + nnz);
-    solverCache.newtonPatternValid = true;
-    ++stats.projectedNewtonSymbolicFactorizations;
-    ++stats.projectedNewtonNumericFactorizations;
-  }
+    // Reuse the fill-reducing symbolic factorization when the sparsity pattern
+    // is unchanged from the last analyzed matrix (same column/row index
+    // arrays); the expensive ordering then runs once and only the numeric
+    // factorization repeats. This is behavior-preserving (analyzePattern +
+    // factorize gives the same result as compute()); any structural mismatch
+    // re-analyzes, so it is safe by construction.
+    auto& ldlt = solverCache.newtonSolver;
+    const auto cols = hessian.cols();
+    const auto nnz = hessian.nonZeros();
+    const int* outer = hessian.outerIndexPtr();
+    const int* inner = hessian.innerIndexPtr();
+    bool patternMatches
+        = solverCache.newtonPatternValid
+          && static_cast<Eigen::Index>(solverCache.newtonPatternOuter.size())
+                 == cols + 1
+          && static_cast<Eigen::Index>(solverCache.newtonPatternInner.size())
+                 == nnz;
+    if (patternMatches) {
+      for (Eigen::Index i = 0; i <= cols && patternMatches; ++i) {
+        patternMatches = solverCache.newtonPatternOuter[i] == outer[i];
+      }
+      for (Eigen::Index i = 0; i < nnz && patternMatches; ++i) {
+        patternMatches = solverCache.newtonPatternInner[i] == inner[i];
+      }
+    }
 
-  // The inertia term (m/dt^2 on every free DOF, with positive node masses
-  // enforced at construction) keeps the Hessian positive definite once the
-  // spring/barrier blocks are PSD-projected, so no diagonal regularization is
-  // needed (it would perturb the otherwise-exact solve). SimplicialLDLT's
-  // info() only flags a structural failure / exact-zero pivot, so the
-  // strictly-positive-D check is the actual positive-definiteness test (a
-  // negative pivot would otherwise factorize silently). This has the same
-  // intent as the dense LDLT isPositive() guard the rest of the module uses;
-  // the two verdicts can only differ for near-singular matrices, which the
-  // m/dt^2 inertia floor precludes here. Either failure falls back to steepest
-  // descent below.
-  if (ldlt.info() != Eigen::Success || (ldlt.vectorD().array() <= 0.0).any()) {
-    // Force a fresh analysis next time after a failed/indefinite factorization.
-    solverCache.newtonPatternValid = false;
-    return false;
-  }
-  const Eigen::VectorXd solution = ldlt.solve(rhs);
-  if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
-    solverCache.newtonPatternValid = false;
-    return false;
+    if (patternMatches) {
+      ldlt.factorize(hessian);
+      ++stats.projectedNewtonNumericFactorizations;
+    } else {
+      ldlt.analyzePattern(hessian);
+      ldlt.factorize(hessian);
+      solverCache.newtonPatternOuter.assign(outer, outer + cols + 1);
+      solverCache.newtonPatternInner.assign(inner, inner + nnz);
+      solverCache.newtonPatternValid = true;
+      ++stats.projectedNewtonSymbolicFactorizations;
+      ++stats.projectedNewtonNumericFactorizations;
+    }
+
+    // The inertia term (m/dt^2 on every free DOF, with positive node masses
+    // enforced at construction) keeps the Hessian positive definite once the
+    // spring/barrier blocks are PSD-projected, so no diagonal regularization is
+    // needed (it would perturb the otherwise-exact solve). SimplicialLDLT's
+    // info() only flags a structural failure / exact-zero pivot, so the
+    // strictly-positive-D check is the actual positive-definiteness test (a
+    // negative pivot would otherwise factorize silently). This has the same
+    // intent as the dense LDLT isPositive() guard the rest of the module uses;
+    // the two verdicts can only differ for near-singular matrices, which the
+    // m/dt^2 inertia floor precludes here. Either failure falls back to
+    // steepest descent below.
+    if (ldlt.info() != Eigen::Success
+        || (ldlt.vectorD().array() <= 0.0).any()) {
+      // Force a fresh analysis next time after a failed/indefinite
+      // factorization.
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
+    solution = ldlt.solve(rhs);
+    if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
   }
 
   direction.resize(nodeCount);
@@ -4382,6 +5065,7 @@ void advanceDeformableBody(
     const std::vector<StaticGroundBarrier>& barriers,
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
     const comps::DeformableMaterial& material,
     DeformableSolverStats& stats)
 {
@@ -4422,6 +5106,25 @@ void advanceDeformableBody(
     femElasticityPtr = &femElasticity;
   }
 
+  // Per-step barrier stiffness (kappa). Opt-in adaptive scaling balances the
+  // barrier against the heaviest free node's inertial stiffness; off it is the
+  // fixed default, so every existing scene is byte-identical.
+  double barrierStiffness = kDefaultBarrierStiffness;
+  if (material.useAdaptiveBarrierStiffness) {
+    double maxNodalMass = 0.0;
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      maxNodalMass = std::max(maxNodalMass, state.masses[i]);
+    }
+    barrierStiffness = adaptiveBarrierStiffness(
+        maxNodalMass, timeStep, staticGroundBarrierActivationDistance());
+  }
+
+  // Opt this body into the iterative (conjugate-gradient) Newton linear solve.
+  // Large meshes above the direct-solve node cap always take the iterative path
+  // regardless of this flag; the flag forces it for any size so callers can
+  // trade direct-solve speed for the factorization-free memory profile.
+  const bool useIterativeSolver = material.useIterativeLinearSolver;
+
   stats.nodeCount += nodeCount;
   stats.edgeCount += model.edges.size();
   syncSurfaceContactTopology(
@@ -4460,27 +5163,36 @@ void advanceDeformableBody(
   makeInitialPositionsFeasible(
       scratch.next, scratch.activeFixed, barriers, &stats);
 
-  // VBD handles static ground/obstacle barriers itself (penalty contact) when
-  // contactStiffness > 0, but it cannot honor rigid-surface CCD or static
-  // sphere/box obstacles. The body's own surface mesh is excluded here: VBD
-  // solves inertia + springs + tet elasticity (+ ground contact) and treats the
-  // body as free of surface self-contact (a later slice wires VBD self-contact
-  // into the World path). A body with ground barriers but no VBD contact
-  // stiffness, or with sphere/box obstacles, falls back to the default solver
-  // so it still rests on / collides with them. The default-solver fast path
-  // below keeps the stricter surface check so non-VBD bodies still get
+  // VBD handles static ground barriers and static sphere/box obstacles itself
+  // (lagged per-vertex half-space penalty contact + Coulomb friction) when
+  // contactStiffness > 0. Static rigid-surface CCD obstacles are always sphere
+  // or box bodies (collectStaticRigidSurfaceCcdObstacles skips other shapes),
+  // i.e. exactly the obstacles VBD handles via those barriers, so they no
+  // longer force the body onto the default solver; after the VBD solve, the
+  // shared self-surface and static rigid-surface CCD limiters still clip fast
+  // crossings before write-back. The VBD candidate is also clipped by the
+  // shared inter-body deformable-surface CCD limiter. VBD still cannot honor
+  // *moving* rigid-surface CCD. Surface triangles no longer disqualify VBD:
+  // runVbdDeformableSolve builds a lagged VT/EE self-contact candidate set and
+  // adds the normal barrier blocks during the colored sweeps. A body with
+  // static contacts but no VBD contact stiffness falls back to the default
+  // solver so it still rests on / collides with them. The default-solver fast
+  // path below keeps the stricter surface check so non-VBD bodies still get
   // self-contact.
-  const bool rigidSurfaceFree
-      = rigidSurfaceSnapshots.empty() && movingRigidSurfaceSnapshots.empty();
-  const bool vbdHandlesBarriers
-      = barriers.empty()
+  const bool movingRigidSurfaceFree = movingRigidSurfaceSnapshots.empty();
+  const bool anyStaticContact = !barriers.empty() || !sphereObstacles.empty()
+                                || !boxObstacles.empty()
+                                || !rigidSurfaceSnapshots.empty();
+  const bool vbdHandlesStaticContacts
+      = !anyStaticContact
         || (vbdConfig != nullptr && vbdConfig->contactStiffness > 0.0);
-  const bool contactFree = rigidSurfaceFree && barriers.empty()
-                           && sphereObstacles.empty() && boxObstacles.empty()
+  // VBD does not yet handle static capsule-rod obstacles, so a body near one
+  // falls back to the default solver (which does).
+  const bool contactFree = movingRigidSurfaceFree && !anyStaticContact
+                           && capsuleObstacles.empty()
                            && contactScratch.surfaceTriangles.empty();
-  if (vbdConfig != nullptr && vbdConfig->enabled && rigidSurfaceFree
-      && sphereObstacles.empty() && boxObstacles.empty()
-      && vbdHandlesBarriers) {
+  if (vbdConfig != nullptr && vbdConfig->enabled && movingRigidSurfaceFree
+      && capsuleObstacles.empty() && vbdHandlesStaticContacts) {
     runVbdDeformableSolve(
         state,
         model,
@@ -4490,10 +5202,33 @@ void advanceDeformableBody(
         timeStep,
         material.youngsModulus,
         material.poissonRatio,
+        material.useFiniteElementElasticity
+            && material.useFixedCorotationalElasticity,
         barriers,
+        sphereObstacles,
+        boxObstacles,
+        contactScratch.surfaceTriangles,
+        contactScratch.surfaceContactPointMask,
         frictionCoefficient,
         *vbdConfig,
         stats);
+    applySurfaceContactCcdCandidateLimit(
+        state.positions, scratch.activeFixed, contactScratch, stats, scratch);
+    applyInterBodySurfaceContactCcdCandidateLimit(
+        entity,
+        surfaceSnapshots,
+        state.positions,
+        scratch.activeFixed,
+        contactScratch,
+        stats,
+        scratch);
+    applyStaticRigidSurfaceCcdCandidateLimit(
+        rigidSurfaceSnapshots,
+        state.positions,
+        scratch.activeFixed,
+        contactScratch,
+        stats,
+        scratch);
   } else if (
       model.edges.empty() && contactFree && femElasticityPtr == nullptr) {
     for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -4558,11 +5293,31 @@ void advanceDeformableBody(
       // line search), opposing each contacting node's tangential displacement
       // over the step. With mu == 0 or no ground contact this is a no-op.
       GroundFrictionInputs groundFriction;
-      if (frictionCoefficient > 0.0 && !barriers.empty()) {
+      if (frictionCoefficient > 0.0
+          && (!barriers.empty() || !sphereObstacles.empty()
+              || !boxObstacles.empty() || !capsuleObstacles.empty())) {
         computeStaticGroundNormalForces(
             scratch.next,
             scratch.activeFixed,
             barriers,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addSphereObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            sphereObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addBoxObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            boxObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addCapsuleObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            capsuleObstacles,
             groundFrictionNormalForce,
             groundFrictionNormalDirection);
         groundFriction.coefficient = frictionCoefficient;
@@ -4594,13 +5349,15 @@ void advanceDeformableBody(
           barriers,
           sphereObstacles,
           boxObstacles,
+          capsuleObstacles,
           timeStep,
           &scratch.gradient,
           &contactBarrier,
           &stats.selfContactBarrierActiveContacts,
           &groundFriction,
           &selfContactFriction,
-          femElasticityPtr);
+          femElasticityPtr,
+          barrierStiffness);
       if (!std::isfinite(energy)) {
         brokeEarly = true;
         break;
@@ -4710,13 +5467,15 @@ void advanceDeformableBody(
                 barriers,
                 sphereObstacles,
                 boxObstacles,
+                capsuleObstacles,
                 timeStep,
                 nullptr,
                 &contactBarrier,
                 nullptr,
                 &groundFriction,
                 &selfContactFriction,
-                femElasticityPtr);
+                femElasticityPtr,
+                barrierStiffness);
             if (std::isfinite(candidateEnergy)
                 && candidateEnergy <= energy + armijo * directionalDerivative) {
               // Record the accepted step's infinity norm (the actual per-node
@@ -4763,6 +5522,7 @@ void advanceDeformableBody(
           barriers,
           sphereObstacles,
           boxObstacles,
+          capsuleObstacles,
           &contactBarrier,
           &groundFriction,
           &selfContactFriction,
@@ -4771,7 +5531,9 @@ void advanceDeformableBody(
           scratch.gradient,
           scratch.direction,
           contactScratch,
-          stats);
+          stats,
+          barrierStiffness,
+          useIterativeSolver);
       if (newtonDirection) {
         ++stats.projectedNewtonSteps;
       } else {
@@ -4827,11 +5589,31 @@ void advanceDeformableBody(
         terminalBarrier.stiffness = selfContactBarrierStiffness();
       }
       GroundFrictionInputs terminalGroundFriction;
-      if (frictionCoefficient > 0.0 && !barriers.empty()) {
+      if (frictionCoefficient > 0.0
+          && (!barriers.empty() || !sphereObstacles.empty()
+              || !boxObstacles.empty() || !capsuleObstacles.empty())) {
         computeStaticGroundNormalForces(
             scratch.next,
             scratch.activeFixed,
             barriers,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addSphereObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            sphereObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addBoxObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            boxObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addCapsuleObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            capsuleObstacles,
             groundFrictionNormalForce,
             groundFrictionNormalDirection);
         terminalGroundFriction.coefficient = frictionCoefficient;
@@ -4861,13 +5643,15 @@ void advanceDeformableBody(
           barriers,
           sphereObstacles,
           boxObstacles,
+          capsuleObstacles,
           timeStep,
           &scratch.gradient,
           &terminalBarrier,
           nullptr,
           &terminalGroundFriction,
           &terminalSelfContactFriction,
-          femElasticityPtr);
+          femElasticityPtr,
+          barrierStiffness);
       if (std::isfinite(terminalEnergy)) {
         lastGradSquared
             = gradientNormSquared(scratch.gradient, scratch.activeFixed);
@@ -5182,6 +5966,10 @@ bool copyCollisionShapeToRigidIpcSurface(
       }
       copySphereToRigidIpcSurface(shape.radius, surface);
       return true;
+    case CollisionShapeType::Capsule:
+      // Capsule rigid-IPC surfaces are not supported yet; deformable-vs-capsule
+      // contact uses the analytic capsule obstacle barrier.
+      return false;
   }
 
   return false;
@@ -5998,6 +6786,7 @@ void DeformableDynamicsStage::execute(
   const auto barriers = collectStaticGroundBarriers(world);
   const auto sphereObstacles = collectSphereObstacleBarriers(world);
   const auto boxObstacles = collectBoxObstacleBarriers(world);
+  const auto capsuleObstacles = collectCapsuleObstacleBarriers(world);
   const auto rigidSurfaceSnapshots
       = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
   const auto timeStep = world.getTimeStep();
@@ -6073,6 +6862,7 @@ void DeformableDynamicsStage::execute(
         barriers,
         sphereObstacles,
         boxObstacles,
+        capsuleObstacles,
         material,
         m_lastStats);
   }

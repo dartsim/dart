@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp>
 
 #include <gtest/gtest.h>
@@ -479,4 +480,227 @@ TEST(VbdCombinedDescent, RayleighDampingIsStableAndChangesResult)
     maxDifference = std::max(maxDifference, (damped[i] - undamped[i]).norm());
   }
   EXPECT_GT(maxDifference, 1e-6);
+}
+
+//==============================================================================
+// Contact barriers are inequality constraints, not elastic material stiffness:
+// stiffness-proportional Rayleigh damping must ignore self-contact Hessians.
+TEST(VbdCombinedDescent, RayleighDampingIgnoresSelfContactBarrierStiffness)
+{
+  namespace dc = dart::simulation::experimental::detail::deformable_contact;
+  namespace sim = dart::simulation::experimental;
+
+  const std::vector<Vec3> start
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const std::vector<double> masses(start.size(), 1.0);
+  const std::vector<std::uint8_t> fixed = {0u, 1u, 1u, 1u};
+  const std::vector<Vec3> inertialTargets = start;
+  const std::vector<vbd::SpringElement> springs;
+  const std::vector<vbd::TetMeshElement> tets;
+  const vbd::SpringAdjacency springAdjacency
+      = vbd::SpringAdjacency::build(start.size(), springs);
+  const vbd::TetAdjacency tetAdjacency
+      = vbd::TetAdjacency::build(start.size(), tets);
+  const vbd::VertexColoring coloring
+      = vbd::colorDeformable(start.size(), springs, tets);
+
+  dc::ContactCandidateSet candidates;
+  candidates.pointTriangleCandidates.push_back(
+      {/*point=*/0, /*triangle=*/0, 0.0});
+  const std::vector<sim::DeformableSurfaceTriangle> triangles = {{1, 2, 3}};
+  const vbd::SelfContactAdjacency selfContact
+      = vbd::SelfContactAdjacency::build(
+          start.size(),
+          candidates,
+          triangles,
+          /*squaredActivationDistance=*/4e-4,
+          /*stiffness=*/1e5);
+  ASSERT_TRUE(selfContact.active());
+
+  const std::vector<Vec3> stepStart
+      = {start[0] - Vec3(0.0, 0.0, 0.003), start[1], start[2], start[3]};
+
+  const auto solve = [&](double rayleigh) {
+    std::vector<Vec3> positions = start;
+    vbd::BlockDescentOptions options;
+    options.iterations = 4;
+    options.rayleighDamping = rayleigh;
+    vbd::blockDescentDeformable(
+        positions,
+        masses,
+        fixed,
+        inertialTargets,
+        springs,
+        /*springStiffness=*/0.0,
+        springAdjacency,
+        tets,
+        /*mu=*/0.0,
+        /*lambda=*/0.0,
+        tetAdjacency,
+        /*timeStep=*/0.01,
+        coloring,
+        options,
+        &stepStart,
+        nullptr,
+        0.0,
+        &selfContact);
+    return positions;
+  };
+
+  const std::vector<Vec3> undamped = solve(0.0);
+  const std::vector<Vec3> damped = solve(0.5);
+
+  EXPECT_GT((undamped[0] - start[0]).norm(), 1e-8);
+  ASSERT_EQ(damped.size(), undamped.size());
+  for (std::size_t i = 0; i < damped.size(); ++i) {
+    EXPECT_NEAR((damped[i] - undamped[i]).norm(), 0.0, 1e-12) << "node " << i;
+  }
+}
+
+//==============================================================================
+// Option B: with useFemTetKernel set, the VBD tetrahedral term is routed
+// through the shared deformable_elasticity FEM kernels, so a VBD body honors
+// the body's hyperelastic material. The per-vertex block force must equal the
+// corresponding FEM element force, and selecting fixed-corotational must change
+// the force away from Stable Neo-Hookean (the live divergence this fixes: VBD
+// previously always applied its own Stable Neo-Hookean, ignoring the material
+// choice).
+TEST(VbdCombinedDescent, FemTetKernelHonorsMaterialChoice)
+{
+  namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
+
+  // One deformed (stretched + sheared) tetrahedron; inertial target == current
+  // position so the inertia term contributes zero force and the block force is
+  // exactly the elastic tet force.
+  const std::array<Vec3, 4> rest
+      = {Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)};
+  const std::vector<Vec3> positions
+      = {Vec3(0, 0, 0),
+         Vec3(1.25, 0.12, -0.03),
+         Vec3(-0.06, 1.10, 0.08),
+         Vec3(0.02, 0.05, 0.92)};
+  const std::vector<double> masses(4, 1.0);
+  const std::vector<Vec3> inertialTargets = positions;
+  std::vector<vbd::TetMeshElement> tets;
+  tets.push_back({{0, 1, 2, 3}, vbd::makeTetRestShape(rest)});
+  const auto adjacency = vbd::TetAdjacency::build(4, tets);
+  const double mu = 3000.0;
+  const double lambda = 6000.0;
+  const double timeStep = 0.01;
+
+  // Independent FEM reference element forces for vertex 0.
+  fem::TetRestShape femRest;
+  femRest.inverseRestEdges = tets[0].rest.restShapeInverse;
+  femRest.restVolume = tets[0].rest.restVolume;
+  femRest.valid = true;
+  const fem::LameParameters lame{mu, lambda};
+  const Vec3 snhForce0 = -fem::evaluateStableNeoHookeanTet(
+                              positions[0],
+                              positions[1],
+                              positions[2],
+                              positions[3],
+                              femRest,
+                              lame)
+                              .gradient.segment<3>(0);
+  const Vec3 fcrForce0 = -fem::evaluateFixedCorotationalTet(
+                              positions[0],
+                              positions[1],
+                              positions[2],
+                              positions[3],
+                              femRest,
+                              lame)
+                              .gradient.segment<3>(0);
+
+  // The two materials genuinely disagree on this deformed configuration.
+  EXPECT_GT((snhForce0 - fcrForce0).norm(), 1e-6);
+
+  const vbd::VertexBlock snhBlock = vbd::detail::assembleTetVertexBlock(
+      0,
+      positions,
+      masses,
+      inertialTargets,
+      tets,
+      adjacency,
+      mu,
+      lambda,
+      timeStep,
+      /*useFemTetKernel=*/true,
+      /*useFixedCorotationalTets=*/false);
+  const vbd::VertexBlock fcrBlock = vbd::detail::assembleTetVertexBlock(
+      0,
+      positions,
+      masses,
+      inertialTargets,
+      tets,
+      adjacency,
+      mu,
+      lambda,
+      timeStep,
+      /*useFemTetKernel=*/true,
+      /*useFixedCorotationalTets=*/true);
+
+  // Each routed block force matches its FEM element force exactly...
+  EXPECT_LT((snhBlock.force - snhForce0).norm(), 1e-9);
+  EXPECT_LT((fcrBlock.force - fcrForce0).norm(), 1e-9);
+  // ...and the material selection actually changes the VBD force.
+  EXPECT_GT((snhBlock.force - fcrBlock.force).norm(), 1e-6);
+}
+
+//==============================================================================
+// Option A: a self-contact constraint scatters the IPC point-triangle / edge-
+// edge barrier's 12-vector into per-vertex blocks. Each involved vertex's block
+// must carry exactly that primitive's 3x1 force (negated gradient sub-block)
+// and 3x3 diagonal Hessian block, and the repulsion must push a point hovering
+// above a triangle away from it.
+TEST(VbdCombinedDescent, SelfContactBlockMatchesBarrier)
+{
+  namespace dc = dart::simulation::experimental::detail::deformable_contact;
+  namespace sim = dart::simulation::experimental;
+
+  // A point 1 cm above a triangle, inside the barrier activation band.
+  const std::vector<Vec3> positions
+      = {Vec3(0.3, 0.3, 0.01), // point (node 0)
+         Vec3(0.0, 0.0, 0.0),  // triangle node a (node 1)
+         Vec3(1.0, 0.0, 0.0),  // b (node 2)
+         Vec3(0.0, 1.0, 0.0)}; // c (node 3)
+  const std::vector<sim::DeformableSurfaceTriangle> triangles = {{1, 2, 3}};
+  dc::ContactCandidateSet candidates;
+  candidates.pointTriangleCandidates.push_back(
+      {/*point=*/0, /*triangle=*/0, 0.0});
+
+  const double dHat = 0.02;
+  const double kappa = 1.0e5;
+  const auto adjacency = vbd::SelfContactAdjacency::build(
+      positions.size(), candidates, triangles, dHat * dHat, kappa);
+  ASSERT_TRUE(adjacency.active());
+
+  const auto barrier = dc::pointTriangleBarrier(
+      positions[0],
+      positions[1],
+      positions[2],
+      positions[3],
+      dHat * dHat,
+      kappa);
+  ASSERT_TRUE(barrier.active);
+
+  // The point's block (local index 0) carries the barrier's vertex-0 sub-block.
+  vbd::VertexBlock pointBlock;
+  vbd::addSelfContactTerms(pointBlock, 0, adjacency, positions);
+  EXPECT_LT(
+      (pointBlock.force - (-barrier.gradient.segment<3>(0))).norm(), 1e-12);
+  EXPECT_LT(
+      (pointBlock.hessian - barrier.hessian.block<3, 3>(0, 0)).norm(), 1e-12);
+
+  // A triangle node's block (node 1 = local index 1) carries its sub-block.
+  vbd::VertexBlock triBlock;
+  vbd::addSelfContactTerms(triBlock, 1, adjacency, positions);
+  EXPECT_LT((triBlock.force - (-barrier.gradient.segment<3>(3))).norm(), 1e-12);
+  EXPECT_LT(
+      (triBlock.hessian - barrier.hessian.block<3, 3>(3, 3)).norm(), 1e-12);
+
+  // The repulsion pushes the point up, away from the triangle below it.
+  EXPECT_GT(pointBlock.force.z(), 0.0);
 }

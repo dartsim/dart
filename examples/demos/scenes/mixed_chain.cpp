@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -50,8 +51,6 @@ dart::simulation::WorldPtr createMixedChainWorld()
         "Failed to load test_articulated_bodies_10bodies.skel");
   }
 
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
   auto chain = world->getSkeleton(1);
   if (chain == nullptr) {
     throw std::runtime_error("Mixed chain world did not contain a chain");
@@ -73,6 +72,9 @@ dart::simulation::WorldPtr createMixedChainWorld()
         softLink ? Eigen::Vector3d(0.90, 0.42, 0.18)
                  : Eigen::Vector3d(0.30, 0.55, 0.85));
   }
+
+  // This skel is authored Y-up; reorient to the canonical Z-up convention.
+  reorientWorldToZUp(world);
 
   return world;
 }

@@ -101,6 +101,20 @@ struct DeformableMaterialProperties
   /// material (the IPC paper's other isotropic model) instead of the default
   /// stable neo-Hookean kernel. Ignored when finite-element elasticity is off.
   bool useFixedCorotationalElasticity = false;
+
+  /// Opt in to IPC-style adaptive barrier stiffness for this body's
+  /// ground/obstacle contact barriers. The stiffness is scaled per step from
+  /// the mass / time-step force balance (stiffer for heavier/faster bodies);
+  /// off (the default) keeps the fixed barrier stiffness, so contact behavior
+  /// is unchanged.
+  bool useAdaptiveBarrierStiffness = false;
+
+  /// Opt in to the iterative (conjugate-gradient) projected-Newton linear
+  /// solve. CG never factorizes the Hessian, so its memory footprint stays near
+  /// O(nnz) and it scales to large meshes; off (the default) uses the sparse
+  /// Cholesky direct solve, which is faster for small/medium meshes. Meshes
+  /// above the direct-solve node cap always use CG regardless of this flag.
+  bool useIterativeLinearSolver = false;
 };
 
 /// Scripted Dirichlet boundary condition over deformable nodes.

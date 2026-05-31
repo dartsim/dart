@@ -195,13 +195,24 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Implement Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as
-  a DART-owned deformable solver on the existing experimental deformable ECS
-  components and the variational implicit-Euler objective. Track slice-level
-  work in `docs/dev_tasks/vbd_deformable_solver/`, starting with the per-vertex
-  block kernels, graph coloring, and the block-descent driver, then FEM
-  hyperelasticity, acceleration, solver wiring, contact/friction, and CPU/GPU
-  performance.
+- Next step: The DART-owned VBD CPU+CUDA solver landed on `main` (#2781):
+  per-vertex block kernels, graph coloring, the colored Gauss-Seidel
+  block-descent driver, Stable Neo-Hookean tetrahedra, Chebyshev/Rayleigh
+  acceleration, the implicit-Euler stepper, the opt-in World wiring
+  (`comps::DeformableVbdConfig` + the `advanceDeformableBody` VBD branch), the
+  algorithm-neutral public `configureDeformableSolver` API and dartpy binding,
+  static half-space ground contact + Coulomb friction, the CUDA mass-spring and
+  tetrahedral rollouts (CUDA-graph capture + mixed precision), the CPU baseline
+  benchmark, and the first GUI showcases (cloth/net/beam). PR #2801 extends
+  that landed path by routing VBD tetrahedra through the shared
+  `deformable_elasticity` FEM kernels, preserving VBD on static sphere/box
+  obstacle barriers, adding lagged VT/EE surface self-collision penalties, and
+  adding the TinyVBD tilted-strand plus contact showcase py-demos; it also
+  retires the temporary `docs/dev_tasks/vbd_deformable_solver/` tracker by
+  promoting the gap audit into this plan. Remaining work, in order:
+  self-contact tangential friction, committed benchmark/profiling JSON for the
+  new scenes, paper tetrahedral scene reproduction, Phase 8b SoA + Gaia-CPU
+  comparison, and Phase 9 RTX-4090 same-GPU Table 1 reproduction.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
@@ -476,15 +487,21 @@ its own line so status updates remain git-history friendly.
   prerequisite are implemented and verified (FD-of-step validated; default build
   untouched and bitwise-identical when off). The work is committed on
   `feature/differentiable-simulation` and open as PR #2761 (milestone DART 7.0,
-  CHANGELOG included). Remaining is hardening/examples/promotion, not new
-  workstreams.
+  CHANGELOG included). Remaining for that path is hardening/examples/promotion,
+  not new workstreams. Dojo is now tracked as a separate planned evaluation
+  track under PLAN-110: maximal-coordinate variational hard-contact NCP/IPM with
+  implicit gradients, using Dojo.jl as method evidence and a comparison baseline
+  rather than a dependency.
 - Next step: Drive PR #2761 to merge (experimental surface, single-branch to
   `main`). Then: run the torch-autograd test (`pip install torch`); add the
   standalone worked trajectory-optimization / system-identification example
   programs (the GUI demo and the convergence tests already ship); harden the
   static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
   own PR); and extend the deferred parameters/contacts (CENTER_OF_MASS,
-  articulated multibody-link contact). Track in
+  articulated multibody-link contact). After the active path lands, run the
+  Dojo de-risking spike from
+  [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
+  before any public API or runtime dependency promise. Track in
   `docs/dev_tasks/differentiable_simulation/`.
 - Gate: differentiability is off by default with bitwise-identical results and
   zero snapshot allocation when off (`test_diff_zero_cost_parity` + on/off
@@ -499,3 +516,7 @@ its own line so status updates remain git-history friendly.
   core (`check-api-boundaries` green); and mode-switch/limit subgradient and
   elastic-approximation limits are documented with saddle-escape and
   pre-contact surrogates opt-in only (no FD gate by construction).
+  Dojo-style work additionally needs an internal NCP/IPM spike, central-path
+  smoothness/accuracy contract, finite-difference gradient agreement, one
+  reproduced Dojo example packet, benchmark/profiling JSON, and proof that no
+  Dojo.jl dependency or solver/cache/backend type leaks into the public surface.

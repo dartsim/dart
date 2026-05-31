@@ -96,13 +96,13 @@ sx::CollisionShape makeDiskMesh(double radius, double halfHeight, int segments)
 }
 
 // Build one arch voussoir (wedge block) spanning the angular range
-// [theta0, theta1] in the world x-z plane, between inner radius rIn and outer
-// radius rOut, with half-width halfW along y. Writes the world centroid (the
-// body position) into `center` and returns the body-frame collision mesh.
+// [theta0, theta1] in the world x-z plane, between inner and outer radii, with
+// half-width halfW along y. Writes the world centroid (the body position) into
+// `center` and returns the body-frame collision mesh.
 sx::CollisionShape makeVoussoirMesh(
     double theta0,
     double theta1,
-    double rIn,
+    double innerRadius,
     double rOut,
     double halfW,
     Eigen::Vector3d& center)
@@ -110,7 +110,7 @@ sx::CollisionShape makeVoussoirMesh(
   std::array<Eigen::Vector3d, 8> world;
   int k = 0;
   for (double theta : {theta0, theta1}) {
-    for (double r : {rIn, rOut}) {
+    for (double r : {innerRadius, rOut}) {
       for (double y : {-halfW, halfW}) {
         world[static_cast<std::size_t>(k++)]
             = Eigen::Vector3d(r * std::cos(theta), y, r * std::sin(theta));
@@ -461,7 +461,7 @@ TEST(RigidIpcPaperExperiments, MinimalFrictionArchStandsInEquilibrium)
   world.setTimeStep(0.005);
 
   constexpr int kBlocks = 3; // odd: the middle wedge is the keystone
-  constexpr double rIn = 1.0;
+  constexpr double innerRadius = 1.0;
   constexpr double rOut = 1.3;
   constexpr double halfW = 0.15;
   constexpr double lift = 0.02; // start just above the ground
@@ -481,7 +481,7 @@ TEST(RigidIpcPaperExperiments, MinimalFrictionArchStandsInEquilibrium)
     const double t0 = i * dTheta + 0.5 * angularGap;
     const double t1 = (i + 1) * dTheta - 0.5 * angularGap;
     Eigen::Vector3d center;
-    auto shape = makeVoussoirMesh(t0, t1, rIn, rOut, halfW, center);
+    auto shape = makeVoussoirMesh(t0, t1, innerRadius, rOut, halfW, center);
     localVertices.push_back(shape.vertices); // body-frame wedge vertices
     sx::RigidBodyOptions options;
     options.mass = 1.0;

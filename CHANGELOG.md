@@ -1070,6 +1070,134 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added an opt-in **barrier-only obstacle** mode that completes mesh-vs-obstacle
+    friction for sphere and box obstacles (PLAN-081 M5). `RigidBody`'s new
+    `setDeformableObstacleBarrierOnly` (dartpy
+    `is_deformable_obstacle_barrier_only`) excludes a deformable obstacle from the
+    surface-CCD line-search limiter while keeping its clamped-log contact barrier:
+    the CCD otherwise scales the _whole_ step (normal + tangential) to prevent
+    penetration, which masks tangential sliding and so obstacle friction; the
+    barrier alone prevents penetration for the quasi-static contact this targets.
+    With the CCD excluded, the sphere/box obstacle barrier normal forces feed the
+    lagged Coulomb friction term (`addSphereObstacleNormalForces` /
+    `addBoxObstacleNormalForces`, dominant per-node contact wins), so a deformable
+    sliding across a barrier-only plate is decelerated by friction. Existing
+    CCD-obstacle scenes are unchanged (the mode is opt-in; the CCD obstacle set is
+    `entt::exclude`-filtered). Adds a C++ and a dartpy regression (a strip shoved
+    across a barrier-only box plate slides far frictionless but is held back under
+    friction, staying on the face) and a `Deformable Friction on Box Plate (IPC)`
+    py-demos scene.
+  - Added **mesh-vs-obstacle friction** against the capsule rod obstacle
+    (PLAN-081 M5). A node in contact with a static capsule obstacle now feeds the
+    capsule barrier's radial normal force and direction into the existing lagged
+    smoothed Coulomb friction term (the dominant per-node contact -- ground or
+    capsule -- wins), so a deformable sliding along a rod is decelerated by
+    friction proportional to `frictionCoefficient`. Because the capsule obstacle
+    is barrier-only (no over-limiting surface CCD), the tangential slide is
+    unconstrained and the friction force is effective -- unblocking obstacle
+    friction that the sphere/box surface-CCD obstacles still mask. Adds a C++ and
+    a dartpy regression (a strip shoved along a rod slides far frictionless but is
+    held back under friction, staying on the rod) and a `Deformable Friction on
+Capsule Rod (IPC)` py-demos scene.
+  - Exposed the iterative-solve count through the public deformable solver
+    diagnostics (PLAN-081 M7). `DeformableSolverDiagnostics` (dartpy
+    `last_deformable_solver_diagnostics`) now carries
+    `projectedNewtonIterativeSolves` / `projected_newton_iterative_solves`, the
+    public mirror of the internal stat: it counts the Newton iterations whose
+    linear solve took the iterative (incomplete-Cholesky-preconditioned CG) path
+    instead of the sparse Cholesky factorization, so callers can observe and tune
+    which solve path a body uses (zero means every solve was direct). Adds C++
+    and Python regressions that the default direct solve reports zero while an
+    opt-in iterative body reports a nonzero count.
+  - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
+    experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
+    and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra
+    (pinned at one face) through the sparse Cholesky direct solve and the
+    incomplete-Cholesky-preconditioned conjugate gradient at matching cell
+    counts. Unlike the thin `BM_DeformableFemBarStep` beam (2x2 cross-section,
+    too small a bandwidth), the solid cube has a wide Hessian bandwidth, so the
+    direct solve's 3D fill-in makes its per-step time climb super-linearly while
+    the iterative solve stays near O(nnz): the iterative path overtakes the
+    direct solve by a few thousand nodes (on the development machine the per-step
+    cost crosses over near ~1k nodes and the iterative solve runs several times
+    faster by ~1.3k nodes). This is the per-step-scaling axis of the IPC paper's
+    Fig. 23 / Table 1 on the mesh shape where the iterative solver bites. Adds a
+    regression that a chunky 3D cube sags to the same equilibrium under both
+    solvers (mutually exclusive solve paths -- the iterative run never
+    factorizes), guarding the benchmark fixture.
+  - Strengthened the experimental deformable iterative solve's preconditioner
+    from diagonal (Jacobi) to **incomplete-Cholesky** (PLAN-081 M7). Stiff
+    barrier contact makes the projected-Newton Hessian ill-conditioned, where a
+    diagonal preconditioner leaves the conjugate gradient stalling against its
+    iteration cap and falling back to steepest descent; the incomplete-Cholesky
+    preconditioner (a sparse approximate factorization that drops fill, so the
+    solve still never fully factorizes and stays near O(nnz)) collapses the CG
+    iteration count so the iterative path carries stiff contact within the cap.
+    On a settling stiff FEM contact scene this cuts the iterative solver's
+    fallbacks below the direct solver's and reduces Newton iterations per step,
+    while remaining byte-compatible at the API level (still opt-in via
+    `useIterativeLinearSolver`). An incomplete-Cholesky breakdown that Eigen's
+    diagonal shifting cannot repair falls back to steepest descent, exactly as
+    the direct path does on an indefinite factorization. Adds a regression in
+    which a stiff FEM cube settles on a ground barrier through the iterative path
+    (never factorizing) with accepted CG steps dominating fallbacks and the same
+    equilibrium as the direct solver, plus a `cg_contact` py-demo of a stiff FEM
+    cube settling on a barrier via the incomplete-Cholesky CG solve.
+  - Added an opt-in **iterative (conjugate-gradient) linear solve** for the
+    experimental deformable projected-Newton step (PLAN-081 M7). When a body
+    sets `DeformableMaterialProperties.useIterativeLinearSolver` (dartpy
+    `use_iterative_linear_solver`), each Newton iteration solves its
+    symmetric-positive-definite Hessian with a Jacobi-preconditioned conjugate
+    gradient instead of the sparse Cholesky (SimplicialLDLT) factorization. CG
+    never factorizes, so its memory stays near O(nnz) and its per-step cost
+    grows more gently than direct fill-in as the mesh chunks up -- the scaling
+    axis of the IPC paper's Fig. 23 / Table 1. The same inertia floor plus
+    PSD-projected element blocks that keep the direct solve well-posed guarantee
+    CG convergence; a non-converged or non-finite solve falls back to mass-scaled
+    steepest descent, exactly as the direct path does on an indefinite
+    factorization. Meshes above the direct-solve node cap now take the iterative
+    path automatically (raising the effective solver ceiling from 20k to 1M
+    nodes) instead of degrading to gradient descent. Off (the default) is
+    byte-identical -- existing scenes keep the direct solve. Adds a regression in
+    which a dropped FEM cube settles to the same configuration under both solvers
+    while taking mutually exclusive solve paths (the iterative run never
+    factorizes), a `cg_solver` py-demo of a large CG-driven cantilever, and a
+    `BM_DeformableCgBarStep` benchmark mirroring the direct FEM-bar benchmark for
+    per-step scaling comparison.
+  - Added opt-in **adaptive barrier stiffness** (kappa) to the experimental
+    deformable solver (PLAN-081 M6). When a body sets
+    `DeformableMaterialProperties.useAdaptiveBarrierStiffness` (dartpy
+    `use_adaptive_barrier_stiffness`), its ground and obstacle (sphere/box/capsule)
+    contact barriers scale kappa per step from the mass / time-step force balance
+    `kappa = clamp((maxNodalMass / dt^2) * d_hat^2, 25, 1e6)` instead of the fixed
+    default. The barrier's curvature contribution scales like `kappa / d_hat^2`
+    and a node's inertial stiffness like `mass / dt^2`, so this balance keeps the
+    contact equally well-conditioned across mass/stiffness ratios; for a unit
+    nodal mass at `dt = 1/250`, `d_hat = 2e-2` it evaluates to exactly the
+    historical fixed `kappa = 25`, which the adaptive form generalizes (toward the
+    paper's Fig. 12 large-ratio robustness). It is floored at the fixed default
+    so contact robustness never regresses and capped to keep the Hessian
+    well-conditioned. Off (the default) is byte-identical, so every existing scene
+    is unchanged; the lagged-friction normal-force estimate and the self-contact
+    barrier (which carries its own stiffness) keep the fixed kappa. Adds a
+    regression in which a heavy node settles measurably higher (the stiffer
+    adaptive barrier balances gravity farther from the surface, mass-independently)
+    than with the fixed kappa.
+  - Added a capsule (rod/wire) collision shape and a static **capsule obstacle
+    barrier** for the experimental deformable solver (PLAN-081 M3 codimensional
+    collision objects). `CollisionShape::makeCapsule(radius, halfHeight)` adds a
+    `Capsule` shape type (a body-z-axis segment swept by a radius; exposed to
+    dartpy as `CollisionShape.capsule`). A static capsule opted in as a
+    deformable obstacle exerts the same clamped-log barrier (energy, gradient,
+    and rank-1 radial Hessian) as the sphere/box obstacles, with the surface
+    distance and outward normal taken from the analytic point-to-segment closest
+    point (`|node - closestOnAxis| - radius`). Unlike the sphere/box surface-CCD
+    obstacles the capsule is barrier-only, so a connected sheet drapes over it
+    freely. Adds a `CapsuleObstacleBarrierRepelsNodeRadially` solver regression,
+    a draped-cloth intersection-free regression, and a `Deformable Cloth over
+Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
+    toward the paper's Fig. 18 codimensional-roller theme). The native collision
+    engine approximates a capsule by its bounding box for rigid-rigid queries.
   - Added `.seg` (segment) and `.pt` (point) codimensional-geometry importers
     (PLAN-081 M3 asset pipeline), completing the experimental importer set
     alongside `.msh` (tets) and `.obj` (triangles).
@@ -1766,6 +1894,8 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Reject invalid `World::setTimeStep()` values (NaN, infinity, zero, and negative) at the API boundary to prevent invalid timesteps from reaching constraint solvers. ([#2533](https://github.com/dartsim/dart/pull/2533), [#2531](https://github.com/dartsim/dart/issues/2531), [#2532](https://github.com/dartsim/dart/pull/2532))
   - Fixed `BodyNodePool` alignment handling for over-aligned body nodes so AVX-512 builds no longer fail when Eigen raises `BodyNode` alignment to 64 bytes. ([#2537](https://github.com/dartsim/dart/pull/2537), [#2535](https://github.com/dartsim/dart/issues/2535))
   - Fixed simulation-experimental Debug logging source context so builds without `DART_EXPERIMENTAL_SOURCE_DIR` still report the source file name.
+  - Fixed Windows DLL exports for experimental GMSH, OBJ, SEG, and point-set
+    mesh importer APIs so C++ callers can link them from shared builds.
   - Fixed intermittent SEGFAULT in TranslationalJoint2D on macOS ARM64 (Release mode) caused by missing `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` on `TranslationalJoint2DUniqueProperties` which contains `Eigen::Matrix<double, 3, 2>`. NEON vectorized instructions require 16-byte alignment that was not guaranteed without this macro.
   - Fixed `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and `UniversalJoint::copy(const UniversalJoint*)` performing self-copy instead of copying from the argument.
   - Fixed weak inverse-kinematics pointer lifetime tracking and `SharedLibraryIkFast` forward-kinematics symbol loading.
@@ -2145,6 +2275,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Fixed python example discovery and added the Issue #743 regression. ([#2311](https://github.com/dartsim/dart/pull/2311), [#743](https://github.com/dartsim/dart/issues/743))
   - Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
   - Reoriented the Y-up `pixi run py-demos` scenes (`rigid_chain`, `rigid_cubes`, `mixed_chain`, `add_delete_skels`, `rigid_loop`, `soft_bodies`, `kr5_arm`) to the canonical Z-up convention so gravity and the camera up-vector are consistent across the catalog; golden-set parity is preserved because geometry and gravity are rotated by the same rigid transform.
+  - Reoriented the matching Y-up C++ `pixi run demos` scenes to Z-up via shared `reorientWorldToZUp`/`reorientSkeletonToZUp` helpers, keeping the C++ golden-set parity smoke green. Covered: `rigid_chain`, `rigid_cubes`, `mixed_chain`, `add_delete_skels`, `rigid_loop`, `soft_bodies`, `vehicle`, `hybrid_dynamics`, `human_joint_limits`, `rigid_shapes`, `lcp_physics`, and the balance-controller scenes `biped_stand` and `joint_constraints`. The biped controllers compute balance from the sagittal (X) center-of-mass/pressure offset and track joint-space targets, both invariant under the rigid `RotX(+90°)` rotation; per-scene touch-ups flipped Y-up cameras to Z-up and redirected the lateral push perturbations from world `Z` to `Y`.
+  - Fixed `atlas_simbicon`: its model and SIMBICON controller are Z-up, but the sagittal torso-balance gain was inverted (a leftover from the Y-up→Z-up port), so the Atlas toppled backward. Corrected the sign (`State::_updateTorqueForStanceLeg`, both stance branches) so the pelvis feedback is restorative; the Atlas now balances upright. The coronal term was already correct.
+  - Added a robot-agnostic Python SIMBICON controller to `pixi run py-demos` with new `atlas_simbicon`, `g1_simbicon`, and `simbicon_duo` scenes. A single config-driven controller (`scenes/_simbicon.py`) implements the SIMBICON FSM, world-frame torso/swing-hip control, and the `theta_d = theta_d0 + c_d*d + c_v*v` balance feedback, parameterized per robot (`scenes/_simbicon_robots.py`); both the bundled Atlas v5 and the (locally cached) Unitree G1 balance/step under it, including together in one world. Uses the paper's hip-midpoint COM proxy (dartpy exposes no `getCOM`), a foot-height contact proxy, and Stable PD so stiff gains stay stable on G1's light, low-inertia joints.
+  - Improved the Python SIMBICON balance robustness with two evidence-driven control fixes. State traces showed both robots fail the same way: the stance leg creeps into a slightly deeper crouch each cycle so the pelvis gradually sinks until it drops out of the control window. (1) Added stance-leg height regulation (`height_kp`) that extends the stance knee back toward the standing pelvis height captured at spawn, and (2) completed the world-frame torso control as a true PD by wiring in the previously-unused `torso_kd` damping term (derived from the pelvis angular velocity). With `height_kp=2.0`, Atlas balances and steps in place for 3000+ steps (it toppled around step 2800 before) and G1's time-to-fall nearly doubles (1170 → 2204 steps). A residual lateral (coronal) instability still topples both over longer horizons; sweeping the coronal feedback gain and a per-side sign flip did not improve it, so the deeper lateral foot-placement work is left as a documented limit rather than masked.
+  - Made `dart::gui::runDemos`/`--scene` accept both hyphenated and snake_case scene ids (`atlas-simbicon` and `atlas_simbicon`) and print the available scenes on an unknown id instead of silently starting the first scene, which makes headless screenshot capture reliable.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

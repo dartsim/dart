@@ -150,6 +150,8 @@ class CollisionShapeType(enum.Enum):
 
     MESH = 2
 
+    CAPSULE = 3
+
 class CollisionShape:
     @staticmethod
     def sphere(radius: float) -> CollisionShape: ...
@@ -159,6 +161,9 @@ class CollisionShape:
 
     @staticmethod
     def mesh(vertices: object, triangles: object) -> CollisionShape: ...
+
+    @staticmethod
+    def capsule(radius: float, half_height: float) -> CollisionShape: ...
 
     @property
     def type(self) -> CollisionShapeType: ...
@@ -816,6 +821,12 @@ class RigidBody(Frame):
     def is_deformable_surface_ccd_obstacle(self, arg: bool, /) -> None: ...
 
     @property
+    def is_deformable_obstacle_barrier_only(self) -> bool: ...
+
+    @is_deformable_obstacle_barrier_only.setter
+    def is_deformable_obstacle_barrier_only(self, arg: bool, /) -> None: ...
+
+    @property
     def is_deformable_ground_barrier(self) -> bool: ...
 
     @is_deformable_ground_barrier.setter
@@ -968,6 +979,9 @@ class DeformableSolverDiagnostics:
     def projected_newton_fallbacks(self) -> int: ...
 
     @property
+    def projected_newton_iterative_solves(self) -> int: ...
+
+    @property
     def self_contact_barrier_active_contacts(self) -> int: ...
 
     @property
@@ -1017,6 +1031,18 @@ class DeformableMaterialProperties:
 
     @use_fixed_corotational_elasticity.setter
     def use_fixed_corotational_elasticity(self, arg: bool, /) -> None: ...
+
+    @property
+    def use_adaptive_barrier_stiffness(self) -> bool: ...
+
+    @use_adaptive_barrier_stiffness.setter
+    def use_adaptive_barrier_stiffness(self, arg: bool, /) -> None: ...
+
+    @property
+    def use_iterative_linear_solver(self) -> bool: ...
+
+    @use_iterative_linear_solver.setter
+    def use_iterative_linear_solver(self, arg: bool, /) -> None: ...
 
 class DeformableEdge:
     def __init__(self, node_a: int = ..., node_b: int = ..., rest_length: float = ...) -> None: ...
