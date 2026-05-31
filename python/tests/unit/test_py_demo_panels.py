@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 
@@ -67,6 +69,7 @@ from examples.demos.scenes import (
     vbd_tilted_strand,
     vehicle,
 )
+from examples.demos.scenes._simbicon_robots import make_simbicon_panel
 
 
 def test_make_world_factory_returns_panels_tuple() -> None:
@@ -472,6 +475,54 @@ def test_legacy_control_scenes_expose_controller_panels() -> None:
 
         assert setup.pre_step is not None
         assert any(event.startswith(expected_plot) for event in builder.events)
+
+
+class _FakeSimbiconController:
+    def __init__(
+        self,
+        name: str,
+        state: int,
+        swing: str,
+        pelvis_height: float,
+        balance_sagittal: float,
+        balance_coronal: float,
+    ) -> None:
+        self.cfg = SimpleNamespace(name=name)
+        self._diagnostics = {
+            "name": name,
+            "state": state,
+            "swing": swing,
+            "control_enabled": True,
+            "state_time": 0.125,
+            "pelvis_height": pelvis_height,
+            "balance_sagittal": balance_sagittal,
+            "balance_sagittal_velocity": -0.02,
+            "balance_coronal": balance_coronal,
+            "balance_coronal_velocity": 0.03,
+        }
+
+    def diagnostics(self) -> dict[str, float | int | bool | str]:
+        return self._diagnostics
+
+
+def test_simbicon_panel_reports_duo_robot_diagnostics_without_assets() -> None:
+    panel = make_simbicon_panel(
+        "SIMBICON Duo",
+        [
+            _FakeSimbiconController("atlas", 1, "left", 0.91, -0.12, 0.03),
+            _FakeSimbiconController("g1", 2, "right", 0.42, 0.04, -0.02),
+        ],
+    )
+    builder = _FakePanelBuilder()
+
+    panel.build(builder, object())
+
+    assert "text:atlas: state 1 swing left" in builder.events
+    assert "text:g1: state 2 swing right" in builder.events
+    assert any(event.startswith("plot:atlas z:") for event in builder.events)
+    assert any(event.startswith("plot:g1 z:") for event in builder.events)
+    assert any(event.startswith("plot:g1 sag:") for event in builder.events)
+    assert any(event.startswith("plot:g1 cor:") for event in builder.events)
 
 
 @pytest.mark.skipif(

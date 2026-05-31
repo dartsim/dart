@@ -188,6 +188,9 @@
 - `joint_constraints`, `atlas_simbicon`, `g1_simbicon`, and `simbicon_duo`
   now have legacy locomotion panels with SPD sagittal-correction diagnostics
   and SIMBICON gait-state, pelvis-height, and balance-feedback plots.
+- The shared SIMBICON panel has direct no-network unit coverage for Atlas + G1
+  Duo diagnostics, so panel regressions are caught without fetching Unitree G1
+  assets.
 - `arm_push_box`, `cartpole_gym_env`, and `cartpole_mpc` now use
   `SceneSetup.pre_step` for interactive-viewer control. `SceneSetup.step` is
   documented as a headless whole-step escape hatch.
@@ -403,6 +406,7 @@ ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_Fil
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_follows_demo_startup_budget_by_default python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_can_use_python_specific_override python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_disable_requires_python_specific_override -q
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py::test_simbicon_panel_reports_duo_robot_diagnostics_without_assets -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_show_ui_uses_docked_workspace_regions -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q

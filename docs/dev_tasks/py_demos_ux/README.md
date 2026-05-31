@@ -119,6 +119,8 @@ navigation, and a path for scene-specific controls.
   `hybrid_dynamics`, `biped_stand`, `joint_constraints`, `vehicle`,
   `atlas_simbicon`, `g1_simbicon`, and `simbicon_duo`, exposing controller
   state, tracking/pose/command metrics, SIMBICON gait state, and live plots.
+  The shared SIMBICON panel has no-network unit coverage for Atlas + G1 Duo
+  diagnostics so G1 asset fetches do not gate panel regressions.
 - Move the Control & Modern whole-step controllers that need the interactive
   viewer to `pre_step`, keeping `SceneSetup.step` documented as a headless
   runner escape hatch.
