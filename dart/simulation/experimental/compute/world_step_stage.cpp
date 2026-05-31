@@ -32,11 +32,9 @@
 
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 
-#include "dart/simulation/experimental/body/contact.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/collision_geometry.hpp"
-#include "dart/simulation/experimental/comps/contact_material.hpp"
 #include "dart/simulation/experimental/comps/deformable_body.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/frame_types.hpp"
@@ -44,6 +42,7 @@
 #include "dart/simulation/experimental/compute/compute_executor.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/deformable_psd_backend.hpp"
+#include "dart/simulation/experimental/compute/rigid_body_constraint.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp"
@@ -670,50 +669,6 @@ void restoreStaticRigidBodyState(
   }
 }
 
-//==============================================================================
-double inverseMass(const comps::MassProperties& mass)
-{
-  return (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-}
-
-//==============================================================================
-Eigen::Matrix3d inverseWorldInertia(
-    const comps::MassProperties& mass, const comps::Transform& transform)
-{
-  if (!(mass.mass > 0.0) || !std::isfinite(mass.mass)) {
-    return Eigen::Matrix3d::Zero();
-  }
-
-  const Eigen::Matrix3d rotation
-      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
-  const Eigen::Matrix3d worldInertia
-      = rotation * mass.inertia * rotation.transpose();
-  Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
-  if (solver.info() != Eigen::Success || !solver.isPositive()) {
-    return Eigen::Matrix3d::Zero();
-  }
-  return solver.solve(Eigen::Matrix3d::Identity());
-}
-
-//==============================================================================
-double restitutionOf(const entt::registry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->restitution;
-  }
-  return 0.0;
-}
-
-//==============================================================================
-double frictionOf(const entt::registry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->friction;
-  }
-  return 1.0;
-}
-
-//==============================================================================
 struct StaticGroundBarrier
 {
   enum class Shape
@@ -5006,133 +4961,6 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
   auto& registry = world.getRegistry();
 
-  // Precompute per-contact constants for a sequential-impulse normal solve.
-  struct NormalConstraint
-  {
-    entt::entity bodyA;
-    entt::entity bodyB;
-    Eigen::Vector3d normal;
-    Eigen::Vector3d armA;
-    Eigen::Vector3d armB;
-    bool staticA;
-    bool staticB;
-    double invMassA;
-    double invMassB;
-    Eigen::Matrix3d invInertiaA;
-    Eigen::Matrix3d invInertiaB;
-    double effectiveMass;
-    double depth;
-    double restitutionVelocity;
-    double normalImpulse;
-    Eigen::Vector3d tangent1;
-    Eigen::Vector3d tangent2;
-    double tangentMass1;
-    double tangentMass2;
-    double tangentImpulse1;
-    double tangentImpulse2;
-    double friction;
-  };
-
-  const auto contactPointVelocity = [](const comps::Velocity& velocity,
-                                       const Eigen::Vector3d& arm,
-                                       bool isStatic) -> Eigen::Vector3d {
-    if (isStatic) {
-      return Eigen::Vector3d::Zero();
-    }
-    return velocity.linear + velocity.angular.cross(arm);
-  };
-
-  std::vector<NormalConstraint> constraints;
-  constraints.reserve(contacts.size());
-  for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
-
-    // This sequential-impulse solver handles rigid-body pairs only; contacts
-    // involving multibody links are resolved by the articulated contact solve.
-    if (!registry.all_of<comps::RigidBodyTag>(entityA)
-        || !registry.all_of<comps::RigidBodyTag>(entityB)) {
-      continue;
-    }
-
-    const auto& transformA = registry.get<comps::Transform>(entityA);
-    const auto& transformB = registry.get<comps::Transform>(entityB);
-    const auto& massA = registry.get<comps::MassProperties>(entityA);
-    const auto& massB = registry.get<comps::MassProperties>(entityB);
-
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
-
-    NormalConstraint constraint;
-    constraint.bodyA = entityA;
-    constraint.bodyB = entityB;
-    constraint.normal = contact.normal;
-    constraint.depth = contact.depth;
-    constraint.armA = contact.point - transformA.position;
-    constraint.armB = contact.point - transformB.position;
-    constraint.staticA = staticA;
-    constraint.staticB = staticB;
-    constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
-    constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
-    constraint.invInertiaA = staticA ? Eigen::Matrix3d::Zero()
-                                     : inverseWorldInertia(massA, transformA);
-    constraint.invInertiaB = staticB ? Eigen::Matrix3d::Zero()
-                                     : inverseWorldInertia(massB, transformB);
-
-    const Eigen::Vector3d crossA = constraint.armA.cross(constraint.normal);
-    const Eigen::Vector3d crossB = constraint.armB.cross(constraint.normal);
-    const double angular
-        = constraint.normal.dot(
-              (constraint.invInertiaA * crossA).cross(constraint.armA))
-          + constraint.normal.dot(
-              (constraint.invInertiaB * crossB).cross(constraint.armB));
-    constraint.effectiveMass
-        = constraint.invMassA + constraint.invMassB + angular;
-    if (constraint.effectiveMass <= 0.0) {
-      continue; // Both bodies are static.
-    }
-
-    // Restitution target from the pre-solve approach velocity (the impact
-    // speed). Combine the two materials by taking the larger bounce.
-    const double restitution = std::max(
-        restitutionOf(registry, entityA), restitutionOf(registry, entityB));
-    const auto& velocityA = registry.get<comps::Velocity>(entityA);
-    const auto& velocityB = registry.get<comps::Velocity>(entityB);
-    const double initialApproach
-        = (contactPointVelocity(velocityB, constraint.armB, constraint.staticB)
-           - contactPointVelocity(
-               velocityA, constraint.armA, constraint.staticA))
-              .dot(constraint.normal);
-    constexpr double restitutionThreshold = 1e-3;
-    constraint.restitutionVelocity
-        = (restitution > 0.0 && initialApproach < -restitutionThreshold)
-              ? -restitution * initialApproach
-              : 0.0;
-    constraint.normalImpulse = 0.0;
-
-    // Two tangent directions spanning the contact plane, plus their effective
-    // masses, for a friction-pyramid (box) Coulomb model.
-    constraint.tangent1 = constraint.normal.unitOrthogonal();
-    constraint.tangent2 = constraint.normal.cross(constraint.tangent1);
-    const auto tangentMass = [&](const Eigen::Vector3d& tangent) {
-      const Eigen::Vector3d crossTangentA = constraint.armA.cross(tangent);
-      const Eigen::Vector3d crossTangentB = constraint.armB.cross(tangent);
-      return constraint.invMassA + constraint.invMassB
-             + tangent.dot((constraint.invInertiaA * crossTangentA)
-                               .cross(constraint.armA))
-             + tangent.dot((constraint.invInertiaB * crossTangentB)
-                               .cross(constraint.armB));
-    };
-    constraint.tangentMass1 = tangentMass(constraint.tangent1);
-    constraint.tangentMass2 = tangentMass(constraint.tangent2);
-    constraint.tangentImpulse1 = 0.0;
-    constraint.tangentImpulse2 = 0.0;
-    constraint.friction = std::sqrt(
-        frictionOf(registry, entityA) * frictionOf(registry, entityB));
-
-    constraints.push_back(constraint);
-  }
-
   // Coupled contact solve. Assemble the contact-space inverse-mass (Delassus)
   // operator A and the right-hand side b over THREE rows per contact -- the
   // normal direction and two friction tangents -- then solve the boxed LCP
@@ -5148,112 +4976,19 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   // findex coupling: a friction row stores mu in `hi` and points `findex` at
   // its normal row, and the solver scales the bound by the solved normal
   // impulse.
+  auto contactProblem = assembleRigidBodyContactProblem(registry, contacts);
+  auto& constraints = contactProblem.constraints;
   const std::size_t n = constraints.size();
   if (n != 0) {
-    // One side of a contact as seen by the Delassus assembly. The relative
-    // contact velocity is (v_B - v_A), so body B contributes with sign +1 and
-    // body A with sign -1. Static sides have zero inverse mass and inertia and
-    // so contribute nothing (and never couple two contacts through ground).
-    struct ContactEnd
-    {
-      entt::entity entity;
-      double sign;
-      double invMass;
-      const Eigen::Matrix3d* invInertia;
-      const Eigen::Vector3d* arm;
-    };
-    const auto endsOf = [](const NormalConstraint& c) {
-      return std::array<ContactEnd, 2>{
-          ContactEnd{c.bodyA, -1.0, c.invMassA, &c.invInertiaA, &c.armA},
-          ContactEnd{c.bodyB, +1.0, c.invMassB, &c.invInertiaB, &c.armB}};
-    };
-    // The three constraint directions of a contact: normal, then the two
-    // friction tangents.
-    const auto directionOf
-        = [](const NormalConstraint& c, int row) -> const Eigen::Vector3d& {
-      return row == 0 ? c.normal : (row == 1 ? c.tangent1 : c.tangent2);
-    };
-    // Delassus entry between (contact i, direction dirI) and (contact j,
-    // direction dirJ): the change in the relative contact velocity along dirI
-    // per unit impulse along dirJ, summed over the bodies the two contacts
-    // share. Reduces to the normal effective mass / tangent masses on the
-    // block diagonal.
-    const auto delassusEntry = [](const std::array<ContactEnd, 2>& endsI,
-                                  const Eigen::Vector3d& dirI,
-                                  const std::array<ContactEnd, 2>& endsJ,
-                                  const Eigen::Vector3d& dirJ) {
-      double entry = 0.0;
-      for (const auto& ei : endsI) {
-        if (ei.invMass == 0.0) {
-          continue; // Static side: no contribution.
-        }
-        for (const auto& ej : endsJ) {
-          if (ei.entity != ej.entity) {
-            continue; // Bodies not shared between the two contacts.
-          }
-          entry += ei.sign * ej.sign
-                   * (ei.invMass * dirI.dot(dirJ)
-                      + dirI.dot(((*ei.invInertia) * ej.arm->cross(dirJ))
-                                     .cross(*ei.arm)));
-        }
-      }
-      return entry;
-    };
-
-    constexpr int kRowsPerContact = 3;
-    const auto size = static_cast<Eigen::Index>(n * kRowsPerContact);
-    Eigen::MatrixXd delassus = Eigen::MatrixXd::Zero(size, size);
-    Eigen::VectorXd rhs(size);
-    Eigen::VectorXd lo(size);
-    Eigen::VectorXd hi(size);
-    Eigen::VectorXi findex(size);
-    for (std::size_t i = 0; i < n; ++i) {
-      const auto& ci = constraints[i];
-      const auto endsI = endsOf(ci);
-      const Eigen::Index normalRow
-          = static_cast<Eigen::Index>(i) * kRowsPerContact;
-
-      // Relative contact velocity before any impulse is applied this step.
-      auto& velocityA = registry.get<comps::Velocity>(ci.bodyA);
-      auto& velocityB = registry.get<comps::Velocity>(ci.bodyB);
-      const Eigen::Vector3d relativeVelocity
-          = contactPointVelocity(velocityB, ci.armB, ci.staticB)
-            - contactPointVelocity(velocityA, ci.armA, ci.staticA);
-
-      // Normal row: drive the approach velocity to the restitution target.
-      rhs[normalRow] = ci.restitutionVelocity - relativeVelocity.dot(ci.normal);
-      lo[normalRow] = 0.0;
-      hi[normalRow] = std::numeric_limits<double>::infinity();
-      findex[normalRow] = -1;
-
-      // Friction rows: drive each tangential velocity to zero, bounded by the
-      // Coulomb cone. `hi` carries the friction coefficient mu; the solver
-      // scales it by the solved normal impulse referenced through `findex`.
-      for (int t = 1; t < kRowsPerContact; ++t) {
-        const Eigen::Index row = normalRow + t;
-        rhs[row] = -relativeVelocity.dot(directionOf(ci, t));
-        lo[row] = -ci.friction;
-        hi[row] = ci.friction;
-        findex[row] = static_cast<int>(normalRow);
-      }
-
-      // Fill the 3x3 Delassus block of contact i against every contact j.
-      for (std::size_t j = 0; j < n; ++j) {
-        const auto& cj = constraints[j];
-        const auto endsJ = endsOf(cj);
-        const Eigen::Index columnBase
-            = static_cast<Eigen::Index>(j) * kRowsPerContact;
-        for (int a = 0; a < kRowsPerContact; ++a) {
-          for (int b = 0; b < kRowsPerContact; ++b) {
-            delassus(normalRow + a, columnBase + b) = delassusEntry(
-                endsI, directionOf(ci, a), endsJ, directionOf(cj, b));
-          }
-        }
-      }
-    }
-
+    constexpr int kRowsPerContact = RigidBodyContactProblem::kRowsPerContact;
+    const Eigen::Index size = contactProblem.rhs.size();
     Eigen::VectorXd lambda;
-    const math::LcpProblem problem(delassus, rhs, lo, hi, findex);
+    const math::LcpProblem problem(
+        contactProblem.delassus,
+        contactProblem.rhs,
+        contactProblem.lo,
+        contactProblem.hi,
+        contactProblem.findex);
     math::DantzigSolver solver;
     math::LcpOptions lcpOptions = solver.getDefaultOptions();
     // A rank-deficient contact set (e.g. the near-coplanar contacts of a box
@@ -5276,14 +5011,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
             = constraint.normalImpulse * constraint.normal
               + lambda[normalRow + 1] * constraint.tangent1
               + lambda[normalRow + 2] * constraint.tangent2;
-        auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
-        auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
-        velocityB.linear += constraint.invMassB * impulse;
-        velocityB.angular
-            += constraint.invInertiaB * constraint.armB.cross(impulse);
-        velocityA.linear -= constraint.invMassA * impulse;
-        velocityA.angular
-            -= constraint.invInertiaA * constraint.armA.cross(impulse);
+        applyRigidBodyContactImpulse(registry, constraint, impulse);
       }
     } else {
       // The friction-augmented system did not solve cleanly: a rank-deficient
@@ -5300,11 +5028,11 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       Eigen::VectorXd normalB(normalSize);
       for (std::size_t i = 0; i < n; ++i) {
         const Eigen::Index ri = static_cast<Eigen::Index>(i);
-        normalB[ri] = rhs[ri * kRowsPerContact];
+        normalB[ri] = contactProblem.rhs[ri * kRowsPerContact];
         for (std::size_t j = 0; j < n; ++j) {
           const Eigen::Index rj = static_cast<Eigen::Index>(j);
-          normalA(ri, rj)
-              = delassus(ri * kRowsPerContact, rj * kRowsPerContact);
+          normalA(ri, rj) = contactProblem.delassus(
+              ri * kRowsPerContact, rj * kRowsPerContact);
         }
       }
       Eigen::VectorXd normalLambda;
@@ -5334,14 +5062,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
             = std::max(0.0, normalLambda[static_cast<Eigen::Index>(i)]);
         const Eigen::Vector3d impulse
             = constraint.normalImpulse * constraint.normal;
-        auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
-        auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
-        velocityB.linear += constraint.invMassB * impulse;
-        velocityB.angular
-            += constraint.invInertiaB * constraint.armB.cross(impulse);
-        velocityA.linear -= constraint.invMassA * impulse;
-        velocityA.angular
-            -= constraint.invInertiaA * constraint.armA.cross(impulse);
+        applyRigidBodyContactImpulse(registry, constraint, impulse);
       }
 
       for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
@@ -5351,18 +5072,20 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
           if (frictionLimit <= 0.0) {
             continue;
           }
-          auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
-          auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
           const auto solveFriction = [&](const Eigen::Vector3d& tangent,
                                          double tangentMass,
                                          double& tangentImpulse) {
             if (tangentMass <= 0.0) {
               return;
             }
+            const auto& velocityA
+                = registry.get<comps::Velocity>(constraint.bodyA);
+            const auto& velocityB
+                = registry.get<comps::Velocity>(constraint.bodyB);
             const Eigen::Vector3d tangentVelocity
-                = contactPointVelocity(
+                = computeRigidBodyContactPointVelocity(
                       velocityB, constraint.armB, constraint.staticB)
-                  - contactPointVelocity(
+                  - computeRigidBodyContactPointVelocity(
                       velocityA, constraint.armA, constraint.staticA);
             double tangentLambda = -tangentVelocity.dot(tangent) / tangentMass;
             const double clampedTangent = std::clamp(
@@ -5372,12 +5095,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
             const Eigen::Vector3d tangentImpulseVector
                 = tangentLambda * tangent;
-            velocityB.linear += constraint.invMassB * tangentImpulseVector;
-            velocityB.angular += constraint.invInertiaB
-                                 * constraint.armB.cross(tangentImpulseVector);
-            velocityA.linear -= constraint.invMassA * tangentImpulseVector;
-            velocityA.angular -= constraint.invInertiaA
-                                 * constraint.armA.cross(tangentImpulseVector);
+            applyRigidBodyContactImpulse(
+                registry, constraint, tangentImpulseVector);
           };
           solveFriction(
               constraint.tangent1,

@@ -366,6 +366,16 @@ simulation-experimental` (40/40), and `pixi run lint`.
   `test_world`, and `test_skeleton_to_multibody`, plus full
   `ctest --test-dir build/default/cpp/Release --output-on-failure -L
 simulation-experimental` (40/40), and `pixi run lint`.
+- **(DONE locally) Slice 3a — rigid-only LCP assembly seam and determinism
+  gate.** Extracted rigid contact problem assembly into
+  `compute/rigid_body_constraint.{hpp,cpp}` so `RigidBodyContactStage` now solves
+  the same assembled `A,b,lo,hi,findex` returned by a focused helper. Added
+  `test_rigid_body_constraint` to lock the rigid-only row ordering, normal
+  coupling block, Coulomb `findex` bounds, and element-exact repeat assembly for
+  a multibody-free stack scene. Verified with focused build + CTest for
+  `test_rigid_body_constraint` and `test_world`, plus full
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (41/41), and `pixi run lint`.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
@@ -391,10 +401,10 @@ simulation-experimental` (40/40), and `pixi run lint`.
   - _M^-1 lifetime._ Do NOT cache `M^-1`/`DynamicsTree` in an EnTT component
     across stages (reference-invalidation hazard); recompute `M^-1` once in the
     solve stage (the project favors bit-stability over the micro-opt).
-  - _Determinism gate._ No existing test covers contact-path determinism; add a
-    "assembled `A,b,lo,hi,findex` element-identical for a multibody-free world"
-    diff test as a hard gate for the unify slice (the `1e-9` swap depends on the
-    rigid sub-block being bit-identical).
+  - _Determinism gate._ The rigid-only assembly helper and
+    `test_rigid_body_constraint` now lock row order and element-exact
+    `A,b,lo,hi,findex` repeat assembly for a multibody-free world; the unify
+    slice should compare its rigid sub-block against that helper.
   - _Out of scope initially_: the variational integrator path
     (`variational_integration.cpp:1101`) keeps its own contact handling — gate
     `UnifiedConstraintStage` on `method != Variational`. Joint limits stay
@@ -434,18 +444,17 @@ link-vs-dynamic-rigid-body one-sided articulated contact (inside
 unified boxed-LCP/PGS solve over rigid-rigid AND link contacts at once (the
 pipeline reorder).
 
-- **Pipeline ordering (partly addressed):** the default `World::step` pipeline is
-  now `RigidBodyVelocityStage` → `RigidBodyContactStage` →
-  `MultibodyForwardDynamicsStage` → `RigidBodyPositionStage` → `KinematicsStage`
-  (rigid-body position integration moved after the multibody stage so two-sided
-  link-vs-rigid impulses land the same step). A fully coupled solve still wants
-  the stronger split: **(1) all velocity integration (rigid + multibody
-  unconstrained `qddot`→`qdot`), (2) one unified contact/constraint solve over
-  all bodies, (3) all position integration** — so rigid-rigid and link contacts
-  are resolved jointly rather than in separate Gauss-Seidel passes. This touches
-  the core step loop and all passing tests, so do it as its own slice with the
-  suite as the guardrail (revert if it destabilizes, as was done for the first
-  universal-joint attempt).
+- **Pipeline ordering (partly addressed):** the default semi-implicit
+  `World::step` pipeline now runs `RigidBodyVelocityStage` →
+  `MultibodyVelocityStage` → `RigidBodyContactStage` →
+  `MultibodyContactStage` → `RigidBodyPositionStage` →
+  `MultibodyPositionStage` → `DeformableDynamicsStage` → `KinematicsStage`. A
+  fully coupled solve still needs to replace the two contact stages with one
+  unified contact/constraint solve over all bodies so rigid-rigid and link
+  contacts are resolved jointly rather than in separate passes. This touches the
+  core step loop and all passing tests, so keep slicing with the suite as the
+  guardrail (revert if it destabilizes, as was done for the first universal-joint
+  attempt).
 - **After reordering:** assemble every contact as a constraint row with a
   Jacobian that maps the contact impulse to each involved body's velocity —
   rigid bodies via `invMass`/`invWorldInertia` + arm (already in
