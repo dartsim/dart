@@ -799,6 +799,28 @@ def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
     assert world.get_multibody("py_supported_world_loader") is None
 
 
+def test_experimental_add_world_rejects_invalid_body_inertia_without_mutation():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_invalid_inertia_world")
+    supported = dart.Skeleton("py_supported_world_loader")
+    supported.create_revolute_joint_and_body_node_pair()
+    legacy_world.add_skeleton(supported)
+
+    invalid = dart.Skeleton("py_zero_mass_world_loader")
+    _, body = invalid.create_revolute_joint_and_body_node_pair()
+    inertia = body.get_inertia()
+    inertia.set_mass(0.0)
+    body.set_inertia(inertia)
+    legacy_world.add_skeleton(invalid)
+
+    world = sx.World()
+    with pytest.raises(Exception, match="mass must be positive"):
+        sx.add_world(world, legacy_world)
+    assert world.num_multibodies == 0
+    assert world.get_multibody("py_supported_world_loader") is None
+
+
 def test_experimental_add_world_loads_uri():
     sx = _simulation_experimental()
 

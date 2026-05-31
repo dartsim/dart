@@ -358,6 +358,22 @@ dynamics::SkeletonPtr createParallelUniversalAxisSkeleton()
   return skeleton;
 }
 
+dynamics::SkeletonPtr createZeroMassSkeleton()
+{
+  auto skeleton = dynamics::Skeleton::create("zero_mass_loader");
+
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("zero_mass_body"));
+  (void)joint;
+  setBodyInertia(
+      body, 0.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones().asDiagonal());
+
+  return skeleton;
+}
+
 } // namespace
 
 TEST(SkeletonLoader, TranslatesSupportedTreeProperties)
@@ -597,6 +613,19 @@ TEST(SkeletonLoader, RejectsWorldJointAxisConflictBeforeCreatingMultibodies)
   auto legacyWorld = dart::simulation::World::create("legacy_world");
   legacyWorld->addSkeleton(createSupportedTreeSkeleton());
   legacyWorld->addSkeleton(createParallelUniversalAxisSkeleton());
+
+  sx::World world;
+  EXPECT_THROW(
+      sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
+  EXPECT_FALSE(world.getMultibody("loader_tree").has_value());
+}
+
+TEST(SkeletonLoader, RejectsWorldInvalidBodyInertiaBeforeCreatingMultibodies)
+{
+  auto legacyWorld = dart::simulation::World::create("legacy_world");
+  legacyWorld->addSkeleton(createSupportedTreeSkeleton());
+  legacyWorld->addSkeleton(createZeroMassSkeleton());
 
   sx::World world;
   EXPECT_THROW(

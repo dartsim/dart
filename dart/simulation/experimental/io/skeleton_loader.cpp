@@ -400,7 +400,9 @@ void validateSkeletonLoadSupported(const dynamics::Skeleton& skeleton)
 }
 
 void validateWorldLoadSupported(
-    const World& targetWorld, const ::dart::simulation::World& sourceWorld)
+    const World& targetWorld,
+    const ::dart::simulation::World& sourceWorld,
+    const SkeletonLoadOptions& options)
 {
   std::unordered_set<std::string> sourceNames;
   for (std::size_t i = 0; i < sourceWorld.getNumSkeletons(); ++i) {
@@ -410,7 +412,9 @@ void validateWorldLoadSupported(
         InvalidArgumentException,
         "Source World returned a null Skeleton at index {}",
         i);
-    validateSkeletonLoadSupported(*skeleton);
+
+    World scratchWorld;
+    (void)addSkeleton(scratchWorld, *skeleton, options);
 
     const std::string& skeletonName = skeleton->getName();
     if (skeletonName.empty()) {
@@ -709,7 +713,7 @@ std::vector<Multibody> addWorld(
     const ::dart::simulation::World& sourceWorld,
     const SkeletonLoadOptions& options)
 {
-  validateWorldLoadSupported(world, sourceWorld);
+  validateWorldLoadSupported(world, sourceWorld, options);
 
   std::vector<Multibody> multibodies;
   multibodies.reserve(sourceWorld.getNumSkeletons());
