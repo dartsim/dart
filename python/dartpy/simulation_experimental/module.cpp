@@ -1349,6 +1349,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::RigidBody::isDeformableSurfaceCcdObstacle,
           &sim::RigidBody::setDeformableSurfaceCcdObstacle)
       .def_prop_rw(
+          "is_deformable_obstacle_barrier_only",
+          &sim::RigidBody::isDeformableObstacleBarrierOnly,
+          &sim::RigidBody::setDeformableObstacleBarrierOnly)
+      .def_prop_rw(
           "is_deformable_ground_barrier",
           &sim::RigidBody::isDeformableGroundBarrier,
           &sim::RigidBody::setDeformableGroundBarrier)

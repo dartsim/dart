@@ -1366,12 +1366,15 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
 
   const auto& registry = world.getRegistry();
+  // Barrier-only obstacles keep their contact barrier but are excluded from the
+  // CCD limiter, so a deformable can slide tangentially against them (and be
+  // decelerated by friction) instead of having its whole step over-limited.
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
-      comps::Transform>();
+      comps::Transform>(entt::exclude<comps::DeformableObstacleNoCcdTag>);
 
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
@@ -2651,6 +2654,139 @@ void computeStaticGroundNormalForces(
     // surface normal only shapes friction's tangent plane below.
     normalForce[i] = -derivative;
     normalDirection[i] = contact->normal;
+  }
+}
+
+//==============================================================================
+// Merges the capsule obstacle barrier's per-node radial normal force and
+// direction into the friction normal-force arrays (populated first by
+// computeStaticGroundNormalForces). The dominant (largest-force) contact per
+// node wins, so a node resting on a capsule rod gets the rod's radial normal
+// for its friction tangent plane. The capsule obstacle is barrier-only (no
+// surface CCD), so tangential sliding is unconstrained and friction is
+// effective.
+void addCapsuleObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<CapsuleObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = capsuleObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || distance >= activationDistance
+          || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = normal;
+      }
+    }
+  }
+}
+
+//==============================================================================
+// Merges the sphere obstacle barrier's per-node radial normal force/direction
+// into the friction normal-force arrays (dominant contact per node wins). Used
+// for friction against barrier-only sphere obstacles.
+void addSphereObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<SphereObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      const Eigen::Vector3d offset = positions[i] - obstacle.center;
+      const double centerDistance = offset.norm();
+      const double distance = centerDistance - obstacle.radius;
+      if (distance <= 0.0 || distance >= activationDistance
+          || centerDistance <= 0.0 || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = offset / centerDistance;
+      }
+    }
+  }
+}
+
+//==============================================================================
+// Merges the box obstacle barrier's per-node surface normal force/direction
+// into the friction normal-force arrays (dominant contact per node wins). Used
+// for friction against barrier-only box obstacles.
+void addBoxObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<BoxObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || distance >= activationDistance
+          || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = normal;
+      }
+    }
   }
 }
 
@@ -4778,11 +4914,31 @@ void advanceDeformableBody(
       // line search), opposing each contacting node's tangential displacement
       // over the step. With mu == 0 or no ground contact this is a no-op.
       GroundFrictionInputs groundFriction;
-      if (frictionCoefficient > 0.0 && !barriers.empty()) {
+      if (frictionCoefficient > 0.0
+          && (!barriers.empty() || !sphereObstacles.empty()
+              || !boxObstacles.empty() || !capsuleObstacles.empty())) {
         computeStaticGroundNormalForces(
             scratch.next,
             scratch.activeFixed,
             barriers,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addSphereObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            sphereObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addBoxObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            boxObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addCapsuleObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            capsuleObstacles,
             groundFrictionNormalForce,
             groundFrictionNormalDirection);
         groundFriction.coefficient = frictionCoefficient;
@@ -5053,11 +5209,31 @@ void advanceDeformableBody(
         terminalBarrier.stiffness = selfContactBarrierStiffness();
       }
       GroundFrictionInputs terminalGroundFriction;
-      if (frictionCoefficient > 0.0 && !barriers.empty()) {
+      if (frictionCoefficient > 0.0
+          && (!barriers.empty() || !sphereObstacles.empty()
+              || !boxObstacles.empty() || !capsuleObstacles.empty())) {
         computeStaticGroundNormalForces(
             scratch.next,
             scratch.activeFixed,
             barriers,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addSphereObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            sphereObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addBoxObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            boxObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addCapsuleObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            capsuleObstacles,
             groundFrictionNormalForce,
             groundFrictionNormalDirection);
         terminalGroundFriction.coefficient = frictionCoefficient;

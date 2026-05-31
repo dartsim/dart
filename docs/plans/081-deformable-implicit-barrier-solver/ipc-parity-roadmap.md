@@ -155,12 +155,36 @@ A fetch-into-fixtures workflow for the upstream meshes pinned at
 tet-mesh importer in `dart/io`. Port the contact-free tutorial scenes
 (`2cubesFall` DBC/NBC) first as regression fixtures, then the contact scenes.
 
-### M5 — Mesh-vs-obstacle friction completeness
+### M5 — Mesh-vs-obstacle friction completeness — capsule LANDED
 
 Extend lagged smoothed Coulomb friction beyond the static-ground coefficient to
 mesh-vs-obstacle and codim contacts. Unblocks the friction figures: Fig 5 (card
 house), Fig 7 (cement arch), Fig 8 (ball-on-roller), Fig 16 (Armadillo roller),
 Fig 20 (stick-slip rod).
+
+Progress: **capsule (rod) obstacle friction has landed.** A node contacting a
+static capsule feeds the capsule barrier's radial normal force/direction into the
+existing lagged Coulomb friction term (dominant per-node contact wins), so a
+deformable sliding along a rod decelerates with `frictionCoefficient`. This works
+because the capsule obstacle is barrier-only (no over-limiting surface CCD), so
+the tangential slide is unconstrained — directly demonstrating mesh-vs-obstacle
+friction (toward Fig 8 / Fig 20 roller themes). Ships C++ + dartpy regressions and
+a `Deformable Friction on Capsule Rod (IPC)` showcase.
+
+**Sphere/box obstacle friction has also LANDED**, via an opt-in **barrier-only
+obstacle** mode (`RigidBody::setDeformableObstacleBarrierOnly`, dartpy
+`is_deformable_obstacle_barrier_only`): the obstacle keeps its clamped-log barrier
+but is `entt::exclude`-d from the surface-CCD collect, so the deformable slides
+tangentially (the barrier alone prevents penetration for the quasi-static contact)
+and the sphere/box obstacle normal forces feed the lagged Coulomb friction term. A
+strip shoved across a barrier-only box plate is decelerated by friction
+(`Deformable Friction on Box Plate (IPC)` showcase + C++/dartpy regressions);
+existing CCD-obstacle scenes are unchanged. **Remaining M5 (lower priority):** the
+"right" fix that keeps the conservative CCD _and_ allows tangential sliding —
+making the surface CCD limit only the _normal_ approach component (not the whole
+step) — so friction works without giving up the fast-motion CCD safety net. That
+is a focused, higher-risk change to the CCD contracts (cf. #2732); the barrier-only
+mode is the safe, shipped path for quasi-static obstacle-friction scenes.
 
 ### M6 — Adaptive barrier stiffness (κ homotopy) — LANDED
 

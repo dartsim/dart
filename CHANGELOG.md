@@ -1070,6 +1070,35 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added an opt-in **barrier-only obstacle** mode that completes mesh-vs-obstacle
+    friction for sphere and box obstacles (PLAN-081 M5). `RigidBody`'s new
+    `setDeformableObstacleBarrierOnly` (dartpy
+    `is_deformable_obstacle_barrier_only`) excludes a deformable obstacle from the
+    surface-CCD line-search limiter while keeping its clamped-log contact barrier:
+    the CCD otherwise scales the _whole_ step (normal + tangential) to prevent
+    penetration, which masks tangential sliding and so obstacle friction; the
+    barrier alone prevents penetration for the quasi-static contact this targets.
+    With the CCD excluded, the sphere/box obstacle barrier normal forces feed the
+    lagged Coulomb friction term (`addSphereObstacleNormalForces` /
+    `addBoxObstacleNormalForces`, dominant per-node contact wins), so a deformable
+    sliding across a barrier-only plate is decelerated by friction. Existing
+    CCD-obstacle scenes are unchanged (the mode is opt-in; the CCD obstacle set is
+    `entt::exclude`-filtered). Adds a C++ and a dartpy regression (a strip shoved
+    across a barrier-only box plate slides far frictionless but is held back under
+    friction, staying on the face) and a `Deformable Friction on Box Plate (IPC)`
+    py-demos scene.
+  - Added **mesh-vs-obstacle friction** against the capsule rod obstacle
+    (PLAN-081 M5). A node in contact with a static capsule obstacle now feeds the
+    capsule barrier's radial normal force and direction into the existing lagged
+    smoothed Coulomb friction term (the dominant per-node contact -- ground or
+    capsule -- wins), so a deformable sliding along a rod is decelerated by
+    friction proportional to `frictionCoefficient`. Because the capsule obstacle
+    is barrier-only (no over-limiting surface CCD), the tangential slide is
+    unconstrained and the friction force is effective -- unblocking obstacle
+    friction that the sphere/box surface-CCD obstacles still mask. Adds a C++ and
+    a dartpy regression (a strip shoved along a rod slides far frictionless but is
+    held back under friction, staying on the rod) and a `Deformable Friction on
+Capsule Rod (IPC)` py-demos scene.
   - Added opt-in **adaptive barrier stiffness** (kappa) to the experimental
     deformable solver (PLAN-081 M6). When a body sets
     `DeformableMaterialProperties.useAdaptiveBarrierStiffness` (dartpy

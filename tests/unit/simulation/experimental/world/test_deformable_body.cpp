@@ -1145,6 +1145,103 @@ TEST(DeformableBody, CapsuleObstacleBarrierRepelsNodeRadially)
 }
 
 //==============================================================================
+// Lagged Coulomb friction works against the (barrier-only, CCD-free) capsule
+// rod obstacle: a node resting on top of a horizontal rod and pushed along its
+// axis slides measurably less the larger the friction coefficient, while
+// staying on the rod surface. (Mesh-vs-obstacle friction, PLAN-081 M5, is
+// unblocked for the capsule because it carries no over-limiting surface CCD.)
+TEST(DeformableBody, CapsuleObstacleFrictionDeceleratesSlidingNode)
+{
+  const auto slideAlongRod = [](double frictionCoefficient) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    // A horizontal rod: the capsule axis (body z) laid along world y.
+    sx::RigidBodyOptions rodOptions;
+    rodOptions.isStatic = true;
+    rodOptions.orientation = Eigen::Quaterniond(
+        Eigen::AngleAxisd(-M_PI / 2.0, Eigen::Vector3d::UnitX()));
+    auto rod = world.addRigidBody("rod", rodOptions);
+    constexpr double radius = 0.2;
+    // The rod is long enough that the frictionless node stays on the
+    // cylindrical side over the test rather than sliding off an end cap.
+    rod.setCollisionShape(
+        sx::CollisionShape::makeCapsule(radius, /*halfHeight=*/3.0));
+    rod.setDeformableSurfaceCcdObstacle(true);
+
+    // A node resting on top of the rod (inside the radial band), pushed along
+    // the rod's axis (+y).
+    sx::DeformableBodyOptions options;
+    options.positions = {Eigen::Vector3d(0.0, 0.0, radius + 0.012)};
+    options.velocities = {Eigen::Vector3d(0.0, 2.0, 0.0)};
+    options.material.frictionCoefficient = frictionCoefficient;
+    auto body = world.addDeformableBody("slider", options);
+
+    world.step(200);
+    return body.getPosition(0);
+  };
+
+  const Eigen::Vector3d frictionless = slideAlongRod(0.0);
+  const Eigen::Vector3d highFriction = slideAlongRod(0.8);
+
+  // Both stay on the rod surface (radius 0.2, band d_hat = 2e-2) and finite.
+  EXPECT_GT(frictionless.z(), 0.2);
+  EXPECT_LT(frictionless.z(), 0.24);
+  EXPECT_GT(highFriction.z(), 0.2);
+  EXPECT_TRUE(highFriction.allFinite());
+  // The frictionless node slides far along the axis; friction holds it back.
+  EXPECT_GT(frictionless.y(), 1.0);
+  EXPECT_LT(highFriction.y(), 0.5 * frictionless.y());
+}
+
+//==============================================================================
+// A box obstacle opted into barrier-only mode (excluded from the surface CCD
+// limiter) lets a node slide tangentially across its top face, so Coulomb
+// friction can decelerate the slide -- the CCD-free path to sphere/box obstacle
+// friction (PLAN-081 M5). A node shoved across a wide barrier-only box slides
+// far frictionless but is held back under friction, staying above the top face.
+TEST(DeformableBody, BarrierOnlyBoxObstacleFrictionDeceleratesSlidingNode)
+{
+  const auto slideAcrossBox = [](double frictionCoefficient) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.isStatic = true;
+    auto box = world.addRigidBody("box", boxOptions);
+    // A wide plate (top face at z = 0.5) so the node stays on top.
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 1.0, 0.5)));
+    box.setDeformableSurfaceCcdObstacle(true);
+    box.setDeformableObstacleBarrierOnly(true);
+    EXPECT_TRUE(box.isDeformableObstacleBarrierOnly());
+
+    sx::DeformableBodyOptions options;
+    options.positions = {Eigen::Vector3d(-0.8, 0.0, 0.512)};
+    options.velocities = {Eigen::Vector3d(2.0, 0.0, 0.0)};
+    options.material.frictionCoefficient = frictionCoefficient;
+    auto body = world.addDeformableBody("slider", options);
+
+    world.step(200);
+    return body.getPosition(0);
+  };
+
+  const Eigen::Vector3d frictionless = slideAcrossBox(0.0);
+  const Eigen::Vector3d highFriction = slideAcrossBox(0.8);
+
+  // Both stay above the top face (z = 0.5, band d_hat = 2e-2) and finite.
+  EXPECT_GT(frictionless.z(), 0.5);
+  EXPECT_LT(frictionless.z(), 0.54);
+  EXPECT_GT(highFriction.z(), 0.5);
+  EXPECT_TRUE(highFriction.allFinite());
+  // The frictionless node slides far across the face; friction holds it back.
+  EXPECT_GT(frictionless.x() + 0.8, 1.0); // started at x = -0.8
+  EXPECT_LT(highFriction.x() - (-0.8), 0.5 * (frictionless.x() - (-0.8)));
+}
+
+//==============================================================================
 // A FEM cube dropped onto a static box obstacle settles on the surface
 // intersection-free: the box obstacle barrier (energy, gradient, and Hessian)
 // keeps every node outside the box while the FEM elasticity conforms the cube
