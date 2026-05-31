@@ -1,5 +1,30 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: legacy VTK fixture mesh replay
+
+Delivered a bounded fixture-import slice for Phase 1:
+
+- Audited the upstream IPC comparison scripts at the pinned rigid-ipc commit and
+  confirmed the current comparison-script importer already covers every
+  command/body-row option present in that corpus.
+- Added legacy VTK `UNSTRUCTURED_GRID` mesh loading to rigid IPC fixture replay.
+  The loader supports ASCII and binary point data, accepts triangle/polygon/quad
+  surface cells, triangulates supported surface cells, and attaches the result
+  as the same native mesh collision shape used by the existing OBJ/OFF/MSH/STL
+  paths.
+- Expanded the mesh-format replay regression with binary and ASCII VTK tetra
+  surfaces, covering the remaining mesh extension present in the audited
+  upstream corpus.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.LoadsOffStlMshAndVtkMeshAssets'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: reusable rigid IPC fixture stage policy
 
 Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:

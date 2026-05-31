@@ -182,6 +182,29 @@ void writeLittleEndianFloat(std::ofstream& output, const float value)
   writeLittleEndianUInt32(output, std::bit_cast<std::uint32_t>(value));
 }
 
+void writeBigEndianUInt32(std::ofstream& output, const std::uint32_t value)
+{
+  const std::array<char, 4> bytes{
+      static_cast<char>((value >> 24u) & 0xffu),
+      static_cast<char>((value >> 16u) & 0xffu),
+      static_cast<char>((value >> 8u) & 0xffu),
+      static_cast<char>(value & 0xffu)};
+  output.write(bytes.data(), bytes.size());
+}
+
+void writeBigEndianUInt64(std::ofstream& output, const std::uint64_t value)
+{
+  for (int shift = 56; shift >= 0; shift -= 8) {
+    const char byte = static_cast<char>((value >> shift) & 0xffu);
+    output.write(&byte, 1);
+  }
+}
+
+void writeBigEndianDouble(std::ofstream& output, const double value)
+{
+  writeBigEndianUInt64(output, std::bit_cast<std::uint64_t>(value));
+}
+
 void writeBinaryStl(
     const std::filesystem::path& path,
     const std::vector<std::array<Eigen::Vector3f, 3>>& triangles)
@@ -207,6 +230,47 @@ void writeBinaryStl(
       }
     }
     writeLittleEndianUInt16(output, 0u);
+  }
+}
+
+void writeBinaryVtkTetraSurface(const std::filesystem::path& path)
+{
+  std::filesystem::create_directories(path.parent_path());
+  std::ofstream output(path, std::ios::binary);
+  ASSERT_TRUE(output.is_open()) << path;
+
+  output << "# vtk DataFile Version 4.2\n";
+  output << "DART rigid IPC fixture test VTK\n";
+  output << "BINARY\n";
+  output << "DATASET UNSTRUCTURED_GRID\n";
+  output << "POINTS 4 double\n";
+  const std::array<Eigen::Vector3d, 4> vertices{
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0),
+      Eigen::Vector3d(0.0, 0.0, 1.0)};
+  for (const Eigen::Vector3d& vertex : vertices) {
+    for (Eigen::Index i = 0; i < vertex.size(); ++i) {
+      writeBigEndianDouble(output, vertex[i]);
+    }
+  }
+
+  output << "\nCELLS 4 16\n";
+  const std::array<Eigen::Vector3i, 4> triangles{
+      Eigen::Vector3i(0, 2, 1),
+      Eigen::Vector3i(0, 1, 3),
+      Eigen::Vector3i(1, 2, 3),
+      Eigen::Vector3i(2, 0, 3)};
+  for (const Eigen::Vector3i& triangle : triangles) {
+    writeBigEndianUInt32(output, 3u);
+    for (Eigen::Index i = 0; i < triangle.size(); ++i) {
+      writeBigEndianUInt32(output, static_cast<std::uint32_t>(triangle[i]));
+    }
+  }
+
+  output << "\nCELL_TYPES 4\n";
+  for (int i = 0; i < 4; ++i) {
+    writeBigEndianUInt32(output, 5u);
   }
 }
 
@@ -1248,7 +1312,7 @@ TEST(RigidIpcFixtureReplay, LoadsInlinePolygonGeometry)
   EXPECT_FALSE(world.collide().empty());
 }
 
-TEST(RigidIpcFixtureReplay, LoadsOffStlAndMshMeshAssets)
+TEST(RigidIpcFixtureReplay, LoadsOffStlMshAndVtkMeshAssets)
 {
   const expio::RigidIpcFixture fixture = loadFixture(R"json(
 {
@@ -1267,6 +1331,12 @@ TEST(RigidIpcFixtureReplay, LoadsOffStlAndMshMeshAssets)
     }, {
       "mesh": "tetra.msh",
       "position": [0.3, 0.3, 0.3]
+    }, {
+      "mesh": "tetra.vtk",
+      "position": [0.4, 0.4, 0.4]
+    }, {
+      "mesh": "tetra_ascii.vtk",
+      "position": [0.5, 0.5, 0.5]
     }]
   }
 }
@@ -1342,6 +1412,7 @@ OFF
   endfacet
 endsolid tetra
 )stl");
+  writeBinaryVtkTetraSurface(assetRoot / "tetra.vtk");
   writeTextFile(
       assetRoot / "tetra.msh",
       R"msh($MeshFormat
@@ -1372,6 +1443,28 @@ $Surface
 2 4 1
 $EndSurface
 )msh");
+  writeTextFile(
+      assetRoot / "tetra_ascii.vtk",
+      R"vtk(# vtk DataFile Version 4.2
+DART rigid IPC fixture test ASCII VTK
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 4 double
+0 0 0
+1 0 0
+0 1 0
+0 0 1
+CELLS 4 16
+3 0 2 1
+3 0 1 3
+3 1 2 3
+3 2 0 3
+CELL_TYPES 4
+5
+5
+5
+5
+)vtk");
 
   dart::simulation::experimental::World world;
   expio::RigidIpcReplayOptions options;
@@ -1379,14 +1472,14 @@ $EndSurface
   const expio::RigidIpcReplayState state
       = expio::populateRigidIpcReplayWorld(world, fixture, options);
 
-  ASSERT_EQ(state.bodies.size(), 4u);
+  ASSERT_EQ(state.bodies.size(), 6u);
   EXPECT_TRUE(state.bodies[0].collisionMeshLoaded);
   EXPECT_EQ(state.bodies[0].collisionMeshVertexCount, 4u);
   EXPECT_EQ(state.bodies[0].collisionMeshTriangleCount, 4u);
   EXPECT_EQ(state.bodies[0].collisionMeshStatus, "loaded");
   for (std::size_t i = 1; i < state.bodies.size(); ++i) {
     EXPECT_TRUE(state.bodies[i].collisionMeshLoaded);
-    EXPECT_EQ(state.bodies[i].collisionMeshVertexCount, i == 3u ? 4u : 12u);
+    EXPECT_EQ(state.bodies[i].collisionMeshVertexCount, i >= 3u ? 4u : 12u);
     EXPECT_EQ(state.bodies[i].collisionMeshTriangleCount, 4u);
     EXPECT_EQ(state.bodies[i].collisionMeshStatus, "loaded");
   }

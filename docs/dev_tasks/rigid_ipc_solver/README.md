@@ -13,9 +13,10 @@
     - [x] First internal replay path populates an experimental `World` with
           fixture timestep, gravity, rigid body poses, velocities, loads,
           material coefficients, and body-row metadata.
-    - [x] Attach supported OBJ, OFF, rigid-ipc MSH, binary STL, and ASCII STL
-          mesh assets to DART-native mesh collision shapes and prove replayed
-          mesh bodies participate in `World::collide()`.
+    - [x] Attach supported OBJ, OFF, rigid-ipc MSH, binary STL, ASCII STL, and
+          legacy VTK unstructured-grid surface mesh assets to DART-native mesh
+          collision shapes and prove replayed mesh bodies participate in
+          `World::collide()`.
     - [x] Preserve inline `vertices`/`edges`/`polygons` fixture records and
           replay polygonal inline geometry as native-backed mesh collision
           shapes.
@@ -46,9 +47,15 @@
           `type = kinematic` / prescribed-motion rows, and a replay regression
           proves `RigidIpcContactStage` advances the parsed linear and angular
           velocity instead of holding the body static.
-    - [ ] Add a reusable runtime fixture example and cover remaining comparison
-          script commands and mesh formats beyond OBJ/OFF/MSH/STL/inline
-          polygons.
+    - [x] Audit the upstream IPC comparison script command surface at the
+          audited commit and keep the importer covering all commands/body-row
+          options present in that corpus.
+    - [x] Cover the remaining audited upstream mesh extension beyond
+          OBJ/OFF/MSH/STL/inline polygons: legacy `.vtk` unstructured-grid
+          surface meshes now replay as native-backed mesh collision shapes.
+    - [ ] Add a reusable runtime fixture example that demonstrates the owned
+          load, replay, stage-policy, and opt-in IPC stepping path without
+          promoting the internal fixture importer as a public solver registry.
 - [ ] Phase 2: rigid curved-trajectory CCD and minimum-separation tests.
   - [x] Phase 2a: internal direct CCD test-data reader for upstream edge-edge
         and face-vertex rows.
