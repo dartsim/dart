@@ -448,8 +448,9 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// finite-stiffness spring rows all contribute to the same primal vertex block,
 /// then each row family updates its persistent dual/stiffness state after every
 /// sweep. The optional friction-tangent rows provide the first bounded row
-/// family in the same serial driver; World-level row generation, tetrahedral
-/// rows, full friction cones, and parallel dual scheduling remain later slices.
+/// family in the same serial driver; static/dynamic friction switching, full
+/// friction cones, tetrahedral row mixing, and parallel dual scheduling remain
+/// later slices.
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,

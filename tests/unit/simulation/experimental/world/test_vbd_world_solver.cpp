@@ -131,6 +131,7 @@ void expectNoAvbdRows(const compute::DeformableSolverStats& stats)
 {
   EXPECT_EQ(stats.vbdBodyCount, 1u);
   EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
@@ -415,6 +416,7 @@ TEST(VbdWorldSolver, AvbdAttachmentRowsHoldPinnedNode)
     ASSERT_EQ(stats.vbdBodyCount, 1u);
     ASSERT_EQ(stats.vbdAvbdAttachmentRows, 3u);
     ASSERT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+    ASSERT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
   }
 
   const auto body = world.getDeformableBody("chain");
@@ -458,6 +460,7 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsHardenSpringChain)
           useFiniteRows ? static_cast<std::size_t>(7) : 0u);
       EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
       EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+      EXPECT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
     }
 
     const auto body = world.getDeformableBody("chain");
@@ -510,6 +513,7 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsHardenTetrahedralMaterial)
           useFiniteRows ? static_cast<std::size_t>(1) : 0u);
       EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
       EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+      EXPECT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
     }
 
     const auto body = world.getDeformableBody("tet");
@@ -527,11 +531,12 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsHardenTetrahedralMaterial)
 
 //==============================================================================
 // The current finite-stiffness AVBD World slices are intentionally narrow. The
-// mass-spring row path is contact-free and self-contact-free, while the pure
-// tet material row path can coexist with the existing lagged VBD self-contact
-// penalty. Mixed spring-plus-tet topology, friction, Chebyshev, Rayleigh
-// damping, parallel execution, and unsupported requested row families must keep
-// using the existing VBD path and report no AVBD rows.
+// mass-spring row path supports static contact/friction rows but remains
+// self-contact-free, while the pure tet material row path can coexist with the
+// existing lagged VBD self-contact penalty. Mixed spring-plus-tet topology,
+// finite-stiffness-only friction scenes, Chebyshev, Rayleigh damping, parallel
+// execution, and unsupported requested row families must keep using the
+// existing VBD path and report no AVBD rows.
 TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
 {
   const auto baseConfig = [] {
@@ -593,10 +598,10 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
 }
 
 //==============================================================================
-// AVBD friction rows are not implemented yet. Frictional ground contact must
-// stay on the existing VBD penalty-contact/friction path instead of reporting
-// augmented contact-normal rows.
-TEST(VbdWorldSolver, AvbdContactNormalRowsFallbackForFriction)
+// A supported serial mass-spring ground-contact solve now keeps AVBD's friction
+// tangents in the same row inventory as the contact-normal rows. Each active
+// contact contributes two bounded tangent rows against a lagged Coulomb limit.
+TEST(VbdWorldSolver, AvbdContactNormalRowsIncludeFrictionTangentRows)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -617,7 +622,72 @@ TEST(VbdWorldSolver, AvbdContactNormalRowsFallbackForFriction)
 
   compute::DeformableDynamicsStage stage;
   stepOnce(world, stage);
-  expectNoAvbdRows(stage.getLastStats());
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_EQ(
+      stats.vbdAvbdFrictionTangentRows, 2u * stats.vbdAvbdContactNormalRows);
+  EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
+}
+
+//==============================================================================
+// World-generated AVBD friction rows must do more than report row counters:
+// over repeated steps, a frictional patch should slide less than the same
+// contact-normal AVBD solve with zero Coulomb bound.
+TEST(VbdWorldSolver, AvbdFrictionTangentRowsDecelerateSlidingBody)
+{
+  const auto travelledX = [](double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    addGroundBarrier(world);
+    sx::DeformableBodyOptions options = makeFallingPatchOptions(0.0, 0.6);
+    options.material.frictionCoefficient = friction;
+    world.addDeformableBody("patch", options);
+
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 40;
+    cfg.contactStiffness = 5.0e3;
+    cfg.useAvbdContactNormalRows = true;
+    cfg.avbdBeta = 2000.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 5.0e4;
+    enableVbdConfig(world, cfg);
+
+    compute::DeformableDynamicsStage stage;
+    const auto start = world.getDeformableBody("patch");
+    double startX = 0.0;
+    for (std::size_t i = 0; i < start->getNodeCount(); ++i) {
+      startX += start->getPosition(i).x();
+    }
+    startX /= static_cast<double>(start->getNodeCount());
+
+    for (int step = 0; step < 150; ++step) {
+      stepOnce(world, stage);
+      const auto& stats = stage.getLastStats();
+      EXPECT_EQ(stats.vbdBodyCount, 1u);
+      EXPECT_GT(stats.vbdAvbdContactNormalRows, 0u);
+      EXPECT_EQ(
+          stats.vbdAvbdFrictionTangentRows,
+          friction > 0.0 ? 2u * stats.vbdAvbdContactNormalRows : 0u);
+    }
+
+    const auto body = world.getDeformableBody("patch");
+    double endX = 0.0;
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      endX += body->getPosition(i).x();
+    }
+    endX /= static_cast<double>(body->getNodeCount());
+    return endX - startX;
+  };
+
+  const double frictionless = travelledX(0.0);
+  const double frictional = travelledX(0.8);
+  EXPECT_GT(frictionless, 0.05);
+  EXPECT_LT(frictional, frictionless);
 }
 
 //==============================================================================
@@ -654,6 +724,7 @@ TEST(VbdWorldSolver, AvbdRowsCombineContactAttachmentAndFiniteStiffness)
   const auto& stats = stage.getLastStats();
   EXPECT_EQ(stats.vbdBodyCount, 1u);
   EXPECT_GT(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdAttachmentRows, 3u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 12u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);

@@ -31,17 +31,18 @@ Paper audit:
     per-axis warm-start persistence, and dual/stiffness growth.
   - Narrow World wiring started behind internal
     `DeformableVbdConfig::useAvbdContactNormalRows` for active static
-    half-space contact-normal rows in supported serial, frictionless
-    mass-spring scenes. The scratch cache now carries stable row IDs from
+    half-space contact-normal rows in supported serial mass-spring static
+    contact scenes. The scratch cache now carries stable row IDs from
     body/entity, vertex, and static obstacle feature IDs, with regression
     coverage in `VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact`.
   - Narrow World wiring also started behind internal
     `DeformableVbdConfig::useAvbdAttachmentRows` for pinned or scripted
-    deformable nodes in supported serial, frictionless mass-spring scenes. It
-    keeps attachment rows in per-body scratch storage, uses rest-position
-    targets for ordinary pinned nodes and boundary targets for active
-    Dirichlet anchors, and exposes only internal per-step row counters for
-    tests such as `VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode`.
+    deformable nodes in supported serial mass-spring scenes. It keeps
+    attachment rows in per-body scratch storage, uses rest-position targets for
+    ordinary pinned nodes and boundary targets for active Dirichlet anchors,
+    can combine with the supported static-contact row envelope, and exposes
+    only internal per-step row counters for tests such as
+    `VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode`.
   - First finite-stiffness deformable row slice started:
     `AvbdSpringFiniteStiffnessRow`,
     `updateAvbdSpringFiniteStiffnessRow`, and
@@ -56,8 +57,8 @@ Paper audit:
     ramp/cap behavior, and standalone tet-material driver updates.
   - Narrow World wiring also started behind internal
     `DeformableVbdConfig::useAvbdFiniteStiffnessRows` for progressive spring
-    stiffness rows in supported serial, contact-free, frictionless mass-spring
-    scenes, with row-counter and behavior coverage in
+    stiffness rows in supported serial mass-spring scenes, with row-counter and
+    behavior coverage in
     `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain`.
   - The same internal finite-stiffness flag now also wires progressive
     tetrahedral material rows for supported serial, frictionless pure-tet
@@ -75,15 +76,17 @@ Paper audit:
     `updateAvbdHalfSpaceFrictionTangentRow`, with optional participation in
     `blockDescentMassSpringAvbdRows` and focused `VbdContact.Avbd*` coverage
     for Coulomb clamping, dual/stiffness updates, and tangential-motion
-    resistance. World-level friction row generation is still intentionally
-    fallback-only.
+    resistance. Supported static-contact mass-spring World scenes now generate
+    two bounded tangent rows per active AVBD contact normal, with
+    `VbdWorldSolver.AvbdContactNormalRowsIncludeFrictionTangentRows` and
+    `VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody` coverage.
   - Fallback coverage now guards the unsupported World envelopes:
-    mixed spring-plus-tet topology, mass-spring self-contact, friction,
-    Chebyshev, Rayleigh damping, parallel settings, and unsupported requested
-    row families all keep using the existing VBD path without reporting partial
-    AVBD row counters.
-  - Still missing World friction row generation, static/dynamic friction
-    switching, AVBD self-contact rows, full row-family generation, parallel
+    mixed spring-plus-tet topology, mass-spring self-contact,
+    finite-stiffness-only friction scenes, Chebyshev, Rayleigh damping,
+    parallel settings, and unsupported requested row families all keep using
+    the existing VBD path without reporting partial AVBD row counters.
+  - Still missing static/dynamic friction switching, full friction-cone
+    persistence, AVBD self-contact rows, full row-family generation, parallel
     dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and

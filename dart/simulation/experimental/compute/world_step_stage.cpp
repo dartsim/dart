@@ -4305,6 +4305,9 @@ struct DeformableVbdScratch
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdContactDescriptors;
   dvbd::AvbdScalarRowInventory avbdContactInventory;
   std::vector<dvbd::AvbdHalfSpaceContactRow> avbdContactRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdFrictionDescriptors;
+  dvbd::AvbdScalarRowInventory avbdFrictionInventory;
+  std::vector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdAttachmentDescriptors;
   dvbd::AvbdScalarRowInventory avbdAttachmentInventory;
   std::vector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
@@ -4588,12 +4591,16 @@ void runVbdDeformableSolve(
   const bool wantsAvbdRows = config.useAvbdContactNormalRows
                              || config.useAvbdAttachmentRows
                              || config.useAvbdFiniteStiffnessRows;
+  const bool useAvbdFrictionRows = config.useAvbdContactNormalRows
+                                   && contactPlanes != nullptr
+                                   && frictionCoeff > 0.0;
   const bool canUseAvbdMassSpringRows
       = wantsAvbdRows
         && (!config.useAvbdContactNormalRows || contactPlanes != nullptr)
         && (!config.useAvbdAttachmentRows || hasFixedNodes)
         && (!config.useAvbdFiniteStiffnessRows || !vbdScratch.springs.empty())
-        && vbdScratch.tets.empty() && frictionCoeff <= 0.0
+        && vbdScratch.tets.empty()
+        && (frictionCoeff <= 0.0 || useAvbdFrictionRows)
         && selfContact == nullptr && config.workerThreads <= 1
         && !options.useChebyshev && options.rayleighDamping <= 0.0;
   const bool canUseAvbdTetMaterialRows
@@ -4685,6 +4692,59 @@ void runVbdDeformableSolve(
               record.descriptor.bounds});
     }
 
+    vbdScratch.avbdFrictionDescriptors.clear();
+    if (useAvbdFrictionRows) {
+      vbdScratch.avbdFrictionDescriptors.reserve(
+          2 * vbdScratch.avbdContactRows.size());
+      for (std::size_t i = 0; i < vbdScratch.avbdContactRows.size(); ++i) {
+        const dvbd::AvbdHalfSpaceContactRow& contactRow
+            = vbdScratch.avbdContactRows[i];
+        const std::uint32_t vertex = contactRow.vertex;
+        const double laggedNormalForce = std::max(0.0, contactRow.state.lambda);
+        const double forceLimit = frictionCoeff * laggedNormalForce;
+        for (std::uint8_t axis = 0; axis < 2; ++axis) {
+          dvbd::AvbdScalarRowDescriptor descriptor;
+          descriptor.key.role = dvbd::AvbdScalarRowRole::FrictionTangent;
+          descriptor.key.objectA = bodyId;
+          descriptor.key.objectB = vbdScratch.contactObjectIds[vertex];
+          descriptor.key.featureA = static_cast<std::uint64_t>(vertex);
+          descriptor.key.featureB = vbdScratch.contactFeatureIds[vertex];
+          descriptor.key.row = 0;
+          descriptor.key.axis = axis;
+          descriptor.kind = dvbd::AvbdScalarRowKind::HardConstraint;
+          descriptor.bounds = dvbd::avbdFrictionTangentBounds(forceLimit);
+          descriptor.startStiffness = contactRow.plane.stiffness;
+          descriptor.maxStiffness = config.avbdMaxStiffness;
+          vbdScratch.avbdFrictionDescriptors.push_back(descriptor);
+        }
+      }
+    }
+    vbdScratch.avbdFrictionInventory.syncActiveRows(
+        vbdScratch.avbdFrictionDescriptors, warmStartOptions);
+
+    vbdScratch.avbdFrictionRows.clear();
+    vbdScratch.avbdFrictionRows.reserve(
+        vbdScratch.avbdFrictionInventory.size());
+    for (const dvbd::AvbdScalarRowRecord& record :
+         vbdScratch.avbdFrictionInventory.records()) {
+      const auto vertex
+          = static_cast<std::uint32_t>(record.descriptor.key.featureA);
+      const std::uint8_t axisId = record.descriptor.key.axis;
+      const dvbd::ContactPlane& plane = (*contactPlanes)[vertex];
+      const dc::Matrix3x2d basis
+          = dc::detail::fallbackBasisFromNormal(plane.normal);
+      const Eigen::Vector3d axis = basis.col(axisId < 2 ? axisId : 0);
+      vbdScratch.avbdFrictionRows.push_back(
+          dvbd::AvbdHalfSpaceFrictionRow{
+              vertex,
+              state.positions[vertex],
+              axis,
+              record.state,
+              dvbd::avbdHalfSpaceFrictionConstraintValue(
+                  state.positions[vertex], state.positions[vertex], axis),
+              record.descriptor.bounds});
+    }
+
     const bool hasRestTargets = topology.restPositions.size() == nodeCount;
     const bool hasDirichletMask = scratch.activeDirichlet.size() == nodeCount;
     vbdScratch.avbdAttachmentRows.clear();
@@ -4754,6 +4814,10 @@ void runVbdDeformableSolve(
     dvbd::AvbdSpringFiniteStiffnessOptions springOptions;
     springOptions.beta = config.avbdBeta;
     springOptions.maxStiffness = config.avbdMaxStiffness;
+    dvbd::AvbdHalfSpaceFrictionOptions frictionOptions;
+    frictionOptions.alpha = config.avbdAlpha;
+    frictionOptions.beta = config.avbdBeta;
+    frictionOptions.maxStiffness = config.avbdMaxStiffness;
     result = dvbd::blockDescentMassSpringAvbdRows(
         scratch.next,
         state.masses,
@@ -4770,7 +4834,9 @@ void runVbdDeformableSolve(
         options,
         contactOptions,
         attachmentOptions,
-        springOptions);
+        springOptions,
+        &vbdScratch.avbdFrictionRows,
+        &frictionOptions);
 
     for (std::size_t i = 0; i < vbdScratch.avbdContactRows.size(); ++i) {
       vbdScratch.avbdContactInventory[i].state
@@ -4784,7 +4850,12 @@ void runVbdDeformableSolve(
       vbdScratch.avbdSpringInventory[i].state
           = vbdScratch.avbdSpringRows[i].state;
     }
+    for (std::size_t i = 0; i < vbdScratch.avbdFrictionRows.size(); ++i) {
+      vbdScratch.avbdFrictionInventory[i].state
+          = vbdScratch.avbdFrictionRows[i].state;
+    }
     stats.vbdAvbdContactNormalRows += vbdScratch.avbdContactRows.size();
+    stats.vbdAvbdFrictionTangentRows += vbdScratch.avbdFrictionRows.size();
     stats.vbdAvbdAttachmentRows += vbdScratch.avbdAttachmentRows.size();
     stats.vbdAvbdFiniteStiffnessRows += vbdScratch.avbdSpringRows.size();
   } else if (canUseAvbdTetMaterialRows) {
@@ -4793,6 +4864,9 @@ void runVbdDeformableSolve(
     vbdScratch.avbdContactDescriptors.clear();
     vbdScratch.avbdContactRows.clear();
     vbdScratch.avbdContactInventory.records().clear();
+    vbdScratch.avbdFrictionDescriptors.clear();
+    vbdScratch.avbdFrictionRows.clear();
+    vbdScratch.avbdFrictionInventory.records().clear();
     vbdScratch.avbdAttachmentDescriptors.clear();
     vbdScratch.avbdAttachmentRows.clear();
     vbdScratch.avbdAttachmentInventory.records().clear();
@@ -4862,6 +4936,9 @@ void runVbdDeformableSolve(
     vbdScratch.avbdContactDescriptors.clear();
     vbdScratch.avbdContactRows.clear();
     vbdScratch.avbdContactInventory.records().clear();
+    vbdScratch.avbdFrictionDescriptors.clear();
+    vbdScratch.avbdFrictionRows.clear();
+    vbdScratch.avbdFrictionInventory.records().clear();
     vbdScratch.avbdAttachmentDescriptors.clear();
     vbdScratch.avbdAttachmentRows.clear();
     vbdScratch.avbdAttachmentInventory.records().clear();

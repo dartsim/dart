@@ -256,14 +256,14 @@ its own line so status updates remain git-history friendly.
   key/inventory warm-start cache, a standalone CPU half-space contact-normal
   block-descent kernel for active mass-spring rows, a scalar hard
   point-attachment row kernel/driver, a finite-stiffness spring row
-  kernel/driver, a combined serial mass-spring AVBD row driver for those three
-  families, and narrow internal World opt-ins in the supported frictionless
-  mass-spring envelope, with explicit fallback coverage for unsupported
-  tetrahedral, frictional, self-contact, Chebyshev, Rayleigh-damped, parallel,
-  and unsupported-row requests; it is not a scene-level parity claim. The next
-  local slice is finite-stiffness tetrahedral/material row coverage, followed
-  by contact/friction bounds or self-contact rows in the same combined-row
-  solve.
+  kernel/driver, a combined serial mass-spring AVBD row driver for those row
+  families plus bounded friction tangents, and narrow internal World opt-ins in
+  the supported static-contact mass-spring and pure-tetrahedral envelopes, with
+  explicit fallback coverage for unsupported topology mixes, self-contact,
+  Chebyshev, Rayleigh-damped, parallel, and unsupported-row requests; it is not
+  a scene-level parity claim. The next local slice is static/dynamic friction
+  switching, fuller contact/friction bounds, or self-contact rows in the same
+  combined-row solve.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
