@@ -34,7 +34,9 @@
 
 #include <dart/simulation/experimental/detail/deformable_elasticity/fem_tet_element.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/acceleration.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/attachment_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/contact_kernel.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/finite_stiffness_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/neo_hookean.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/self_contact.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
@@ -300,6 +302,264 @@ inline double massSpringObjective(
     energy += 0.5 * springStiffness * stretch * stretch;
   }
   return energy;
+}
+
+//==============================================================================
+/// Find the finite-stiffness row for `springIndex`. World-generated rows are
+/// stored in spring order, but the fallback scan keeps the standalone driver
+/// robust for tests that pass sparse or reordered row arrays.
+inline const AvbdSpringFiniteStiffnessRow* findAvbdSpringFiniteStiffnessRow(
+    const std::vector<AvbdSpringFiniteStiffnessRow>& rows,
+    std::uint32_t springIndex)
+{
+  if (springIndex < rows.size() && rows[springIndex].spring == springIndex) {
+    return &rows[springIndex];
+  }
+
+  const auto it
+      = std::find_if(rows.begin(), rows.end(), [springIndex](const auto& row) {
+          return row.spring == springIndex;
+        });
+  return it == rows.end() ? nullptr : &(*it);
+}
+
+//==============================================================================
+/// Mass-spring block descent with AVBD finite-stiffness spring rows. Each
+/// spring uses its row's current effective stiffness during the primal sweep,
+/// then the row stiffness is increased toward the material stiffness after the
+/// sweep based on the observed spring constraint error. These rows
+/// intentionally carry no dual value.
+inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double fallbackSpringStiffness,
+    double timeStep,
+    std::vector<AvbdSpringFiniteStiffnessRow>& springRows,
+    const VertexColoring& coloring,
+    const SpringAdjacency& adjacency,
+    const BlockDescentOptions& options,
+    const AvbdSpringFiniteStiffnessOptions& avbdOptions)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block;
+    addInertiaTerm(
+        block,
+        masses[vertex],
+        timeStep,
+        positions[vertex],
+        inertialTargets[vertex]);
+    for (const std::uint32_t springIndex : adjacency.incidentSprings[vertex]) {
+      const SpringElement& spring = springs[springIndex];
+      const std::uint32_t other = (spring.a == vertex) ? spring.b : spring.a;
+      const AvbdSpringFiniteStiffnessRow* row
+          = findAvbdSpringFiniteStiffnessRow(springRows, springIndex);
+      if (row != nullptr) {
+        addAvbdSpringFiniteStiffness(
+            block,
+            positions[vertex],
+            positions[other],
+            spring.restLength,
+            *row,
+            options.clampSpringHessian);
+      } else {
+        addSpringTerm(
+            block,
+            fallbackSpringStiffness,
+            spring.restLength,
+            positions[vertex],
+            positions[other],
+            options.clampSpringHessian);
+      }
+    }
+    return block;
+  };
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+
+    for (AvbdSpringFiniteStiffnessRow& row : springRows) {
+      if (row.spring >= springs.size()) {
+        continue;
+      }
+      const SpringElement& spring = springs[row.spring];
+      if (spring.a >= vertexCount || spring.b >= vertexCount) {
+        continue;
+      }
+      if (fixed[spring.a] != 0u && fixed[spring.b] != 0u) {
+        continue;
+      }
+      const double constraintValue = avbdSpringConstraintValue(
+          positions[spring.a], positions[spring.b], spring.restLength);
+      row.state = updateAvbdSpringFiniteStiffnessRow(
+          row.state, constraintValue, row, avbdOptions);
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
+//==============================================================================
+/// Mass-spring block descent with the currently wired AVBD deformable row
+/// families combined in one serial solve. This keeps the first World-level AVBD
+/// integration honest: contact-normal hard rows, scalar hard attachments, and
+/// finite-stiffness spring rows all contribute to the same primal vertex block,
+/// then each row family updates its persistent dual/stiffness state after every
+/// sweep. Broader row families, friction cones, tetrahedral rows, and parallel
+/// dual scheduling remain later slices.
+inline BlockDescentStats blockDescentMassSpringAvbdRows(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double fallbackSpringStiffness,
+    double timeStep,
+    std::vector<AvbdHalfSpaceContactRow>& contactRows,
+    std::vector<AvbdPointAttachmentRow>& attachmentRows,
+    std::vector<AvbdSpringFiniteStiffnessRow>& springRows,
+    const VertexColoring& coloring,
+    const SpringAdjacency& adjacency,
+    const BlockDescentOptions& options,
+    const AvbdHalfSpaceContactOptions& contactOptions,
+    const AvbdPointAttachmentOptions& attachmentOptions,
+    const AvbdSpringFiniteStiffnessOptions& springOptions)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block;
+    addInertiaTerm(
+        block,
+        masses[vertex],
+        timeStep,
+        positions[vertex],
+        inertialTargets[vertex]);
+    for (const std::uint32_t springIndex : adjacency.incidentSprings[vertex]) {
+      const SpringElement& spring = springs[springIndex];
+      const std::uint32_t other = (spring.a == vertex) ? spring.b : spring.a;
+      const AvbdSpringFiniteStiffnessRow* row
+          = findAvbdSpringFiniteStiffnessRow(springRows, springIndex);
+      if (row != nullptr) {
+        addAvbdSpringFiniteStiffness(
+            block,
+            positions[vertex],
+            positions[other],
+            spring.restLength,
+            *row,
+            options.clampSpringHessian);
+      } else {
+        addSpringTerm(
+            block,
+            fallbackSpringStiffness,
+            spring.restLength,
+            positions[vertex],
+            positions[other],
+            options.clampSpringHessian);
+      }
+    }
+    for (const AvbdHalfSpaceContactRow& row : contactRows) {
+      if (row.vertex == vertex) {
+        addAvbdHalfSpaceContactNormal(
+            block,
+            positions[vertex],
+            row.plane,
+            row.state,
+            row.previousConstraintValue,
+            contactOptions.alpha,
+            row.bounds);
+      }
+    }
+    for (const AvbdPointAttachmentRow& row : attachmentRows) {
+      if (row.vertex == vertex) {
+        addAvbdPointAttachment(
+            block, positions[vertex], row, attachmentOptions.alpha);
+      }
+    }
+    return block;
+  };
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+
+    for (AvbdHalfSpaceContactRow& row : contactRows) {
+      if (row.vertex >= vertexCount || fixed[row.vertex] != 0u) {
+        continue;
+      }
+      row.state = updateAvbdHalfSpaceContactNormalRow(
+          row.state,
+          positions[row.vertex],
+          row.plane,
+          contactOptions,
+          row.previousConstraintValue,
+          row.bounds);
+    }
+    for (AvbdPointAttachmentRow& row : attachmentRows) {
+      if (row.vertex >= vertexCount || fixed[row.vertex] != 0u) {
+        continue;
+      }
+      row.state = updateAvbdPointAttachmentRow(
+          row.state, positions[row.vertex], row, attachmentOptions);
+    }
+    for (AvbdSpringFiniteStiffnessRow& row : springRows) {
+      if (row.spring >= springs.size()) {
+        continue;
+      }
+      const SpringElement& spring = springs[row.spring];
+      if (spring.a >= vertexCount || spring.b >= vertexCount) {
+        continue;
+      }
+      if (fixed[spring.a] != 0u && fixed[spring.b] != 0u) {
+        continue;
+      }
+      const double constraintValue = avbdSpringConstraintValue(
+          positions[spring.a], positions[spring.b], spring.restLength);
+      row.state = updateAvbdSpringFiniteStiffnessRow(
+          row.state, constraintValue, row, springOptions);
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
 }
 
 //==============================================================================
@@ -906,6 +1166,165 @@ inline BlockDescentStats blockDescentMassSpringGround(
         positions[vertex] += solveVertexBlock(block, options.regularization);
         ++stats.vertexUpdates;
       }
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
+//==============================================================================
+/// Mass-spring block descent with active AVBD half-space normal rows. This is
+/// the first CPU AVBD contact-normal kernel slice: the primal sweep stamps the
+/// bounded hard-row force/Hessian into each affected vertex block, then the
+/// dual pass updates the row lambda/stiffness after every sweep. Row
+/// generation, persistent row-ID mapping, friction, and multi-contact manifolds
+/// are layered on top of this primitive.
+inline BlockDescentStats blockDescentMassSpringAvbdGround(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    double timeStep,
+    std::vector<AvbdHalfSpaceContactRow>& contactRows,
+    const VertexColoring& coloring,
+    const SpringAdjacency& adjacency,
+    const BlockDescentOptions& options,
+    const AvbdHalfSpaceContactOptions& avbdOptions)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block = detail::assembleVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        springs,
+        adjacency,
+        springStiffness,
+        timeStep,
+        options.clampSpringHessian);
+    for (const AvbdHalfSpaceContactRow& row : contactRows) {
+      if (row.vertex == vertex) {
+        addAvbdHalfSpaceContactNormal(
+            block,
+            positions[vertex],
+            row.plane,
+            row.state,
+            row.previousConstraintValue,
+            avbdOptions.alpha,
+            row.bounds);
+      }
+    }
+    return block;
+  };
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+    for (AvbdHalfSpaceContactRow& row : contactRows) {
+      if (row.vertex >= vertexCount || fixed[row.vertex] != 0u) {
+        continue;
+      }
+      row.state = updateAvbdHalfSpaceContactNormalRow(
+          row.state,
+          positions[row.vertex],
+          row.plane,
+          avbdOptions,
+          row.previousConstraintValue,
+          row.bounds);
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
+//==============================================================================
+/// Mass-spring block descent with active AVBD hard point-attachment rows. This
+/// is the first non-contact hard-row kernel slice: a full 3D attachment is
+/// represented by scalar rows, usually one per world axis, so row identity,
+/// warm starting, force bounds, and stiffness growth remain per scalar row.
+inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<SpringElement>& springs,
+    double springStiffness,
+    double timeStep,
+    std::vector<AvbdPointAttachmentRow>& attachmentRows,
+    const VertexColoring& coloring,
+    const SpringAdjacency& adjacency,
+    const BlockDescentOptions& options,
+    const AvbdPointAttachmentOptions& avbdOptions)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block = detail::assembleVertexBlock(
+        vertex,
+        positions,
+        masses,
+        inertialTargets,
+        springs,
+        adjacency,
+        springStiffness,
+        timeStep,
+        options.clampSpringHessian);
+    for (const AvbdPointAttachmentRow& row : attachmentRows) {
+      if (row.vertex == vertex) {
+        addAvbdPointAttachment(
+            block, positions[vertex], row, avbdOptions.alpha);
+      }
+    }
+    return block;
+  };
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+    for (AvbdPointAttachmentRow& row : attachmentRows) {
+      if (row.vertex >= vertexCount || fixed[row.vertex] != 0u) {
+        continue;
+      }
+      row.state = updateAvbdPointAttachmentRow(
+          row.state, positions[row.vertex], row, avbdOptions);
     }
   }
 

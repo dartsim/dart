@@ -32,9 +32,14 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 
 #include <Eigen/Core>
+
+#include <limits>
+
+#include <cstdint>
 
 namespace dart::simulation::experimental::detail::deformable_vbd {
 
@@ -46,6 +51,42 @@ struct ContactPlane
   double offset = 0.0;
   double stiffness = 0.0;
 };
+
+/// One active AVBD half-space normal row for a deformable vertex. Row
+/// generation and persistence live outside this narrow kernel; this struct is
+/// the CPU block-stamping slice for an already-active contact candidate.
+struct AvbdHalfSpaceContactRow
+{
+  std::uint32_t vertex = 0;
+  ContactPlane plane;
+  AvbdScalarRowState state;
+  double previousConstraintValue = 0.0;
+  AvbdScalarRowBounds bounds{0.0, std::numeric_limits<double>::infinity()};
+};
+
+/// Per-sweep AVBD normal-contact update parameters.
+struct AvbdHalfSpaceContactOptions
+{
+  double alpha = 0.0;
+  double beta = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
+//==============================================================================
+inline AvbdScalarRowBounds avbdContactNormalBounds()
+{
+  AvbdScalarRowBounds bounds;
+  bounds.lower = 0.0;
+  bounds.upper = std::numeric_limits<double>::infinity();
+  return bounds;
+}
+
+//==============================================================================
+inline double avbdHalfSpaceContactConstraintValue(
+    const Eigen::Vector3d& position, const ContactPlane& plane)
+{
+  return plane.offset - plane.normal.dot(position);
+}
 
 //==============================================================================
 /// Add the VBD penalty-contact term for a vertex against a static half-space to
@@ -69,6 +110,51 @@ inline void addHalfSpacePenaltyContact(
   block.force.noalias() += plane.stiffness * penetration * plane.normal;
   block.hessian.noalias()
       += plane.stiffness * (plane.normal * plane.normal.transpose());
+}
+
+//==============================================================================
+/// Stamp an active AVBD half-space normal row into a VBD vertex block. The
+/// scalar constraint is the penetration value `offset - normal . x`, so a
+/// positive row force pushes the vertex along the half-space normal. The caller
+/// is responsible for providing only active/persistent contact rows; unlike the
+/// penalty helper above, an AVBD row keeps its stiffness block while the row is
+/// active even if the current force clamps to zero.
+inline double addAvbdHalfSpaceContactNormal(
+    VertexBlock& block,
+    const Eigen::Vector3d& position,
+    const ContactPlane& plane,
+    const AvbdScalarRowState& row,
+    double previousConstraintValue,
+    double alpha,
+    AvbdScalarRowBounds bounds = avbdContactNormalBounds())
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdHalfSpaceContactConstraintValue(position, plane),
+      previousConstraintValue,
+      alpha);
+  const double forceMagnitude
+      = computeAvbdHardConstraintForce(row, constraintValue, bounds);
+  block.force.noalias() += forceMagnitude * plane.normal;
+  block.hessian.noalias()
+      += row.stiffness * (plane.normal * plane.normal.transpose());
+  return forceMagnitude;
+}
+
+//==============================================================================
+inline AvbdScalarRowState updateAvbdHalfSpaceContactNormalRow(
+    AvbdScalarRowState row,
+    const Eigen::Vector3d& position,
+    const ContactPlane& plane,
+    const AvbdHalfSpaceContactOptions& options,
+    double previousConstraintValue,
+    AvbdScalarRowBounds bounds = avbdContactNormalBounds())
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdHalfSpaceContactConstraintValue(position, plane),
+      previousConstraintValue,
+      options.alpha);
+  return updateAvbdHardConstraintRow(
+      row, constraintValue, options.beta, bounds, options.maxStiffness);
 }
 
 //==============================================================================
