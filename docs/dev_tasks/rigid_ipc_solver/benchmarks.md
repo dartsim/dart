@@ -144,13 +144,29 @@ starting, active-set reuse) follow from here.
 
 - **Dense simultaneous-contact scenes do not solve yet (every step is
   line-search-blocked).** A first attempt at the paper's friction arch (Fig. 11)
-  -- 7 wedge voussoirs + 2 static abutments + ground, all starting within the
-  barrier activation band -- had the projected-Newton solve report `failed` (the
-  conservative line search blocks the candidate step from the dense initial
-  contact set) on EVERY step. Because a failed solve is skipped (the safe,
-  no-penetration path), the arch stayed frozen at its initial pose instead of
-  settling into equilibrium: the keystone "not dropping" was an artifact of
-  nothing being applied, not real equilibrium. The single global
+  -- wedge voussoirs over a ground box, starting within the barrier activation
+  band -- the projected-Newton solve `failed` on EVERY step AFTER the first few,
+  freezing the arch (a failed solve is skipped, so "the keystone did not drop"
+  was an artifact of nothing being applied, not equilibrium).
+
+  Failure mode isolated (3/5/7-block arches, `RigidIpcSolverStats` per step): the
+  solve CONVERGES and applies for the first 2-3 steps (the blocks settle), then
+  transitions to persistent `LineSearchBlocked` (`failed=1`, `lsLimited~3`,
+  `lsZero=0`, `applied=0`) once the blocks reach tight compression. Crucially
+  `lsZero=0` and the adaptive `kappa` stays healthy (~1.1e4), so it is NOT an
+  initial-separation/gap-0 setup artifact and NOT a factorization failure -- it
+  is the conservative curved-CCD line search unable to find a feasible non-zero
+  step among many tight simultaneous contacts (the active-constraint count is
+  large -- ~310 for 3 blocks up to ~914 for 7 -- because the big wedge geometry
+  puts many vertex/triangle pairs inside the 1 cm activation band). This is the
+  SAME robustness gate as the open "rigorous interval-arithmetic CCD" item: the
+  line search likely hits CCD indeterminacy (iteration-budget exhaustion) on a
+  tight pair and conservatively returns a zero step. Fix levers, in order: (1) a
+  line search that returns the largest provably-feasible step instead of blocking
+  on indeterminacy; (2) rigorous interval CCD so tight pairs resolve instead of
+  exhausting; (3) per-contact / warm-started active sets. The arch is closer to
+  working than "frozen" suggests -- it settles for a few steps before the line
+  search stalls -- so this is a tractable robustness target, not a rewrite. The single global
   projected-Newton solve with one scene-level adaptive kappa does not yet handle
   many tight simultaneous contacts. This (not just per-step cost) is what gates
   the multi-body paper scenes -- arch (Fig. 11), 3D packing (Fig. 14), wrecking
