@@ -1,5 +1,32 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: large-mass-ratio fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/large-mass-ratio.json`: a large heavy cube falls
+  toward a small cube resting above a fixed mesh plane, the large-small gap
+  closes into the activation range, and both contacts preserve nonnegative
+  clearance with finite state in
+  `RigidIpcPaperExperiments.LargeMassRatioFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Broader stacked and
+  edge-feature 3D unit-test fixture rows remain planned until they have matching
+  DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.LargeMassRatioFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: two-triangle plane fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

@@ -369,6 +369,32 @@ def test_rigid_ipc_manifest_marks_two_triangle_plane_row_implemented(
     assert "8K tessellated-plane rows remain planned" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_large_mass_ratio_rows_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    cases = {
+        "fixtures/3D/unit-tests/large-mass-ratio.json": (
+            "3D large-mass-ratio row",
+            "non-visual Fig. 16 paper-unit alias",
+        ),
+        "fixtures/paper-figures/16-unit-tests/large-mass-ratio.json": (
+            "Fig. 16 large-mass-ratio unit-test alias",
+            "Visual paper-figure rows still require",
+        ),
+    }
+
+    for path, (invariant_text, notes_text) in cases.items():
+        data_path = tmp_path / path
+        data_path.parent.mkdir(parents=True, exist_ok=True)
+        data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+        row = module.row_for_path(path, "fixture", tmp_path)
+
+        assert row["status"] == "implemented"
+        assert "LargeMassRatioFixtureRowStaysSeparated" in row["dart_artifact"]
+        assert invariant_text in row["expected_invariant"]
+        assert notes_text in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_rotating_cube_unit_row_implemented(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
     data_path = (

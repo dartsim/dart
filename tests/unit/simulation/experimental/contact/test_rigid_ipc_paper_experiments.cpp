@@ -775,6 +775,71 @@ TEST(RigidIpcPaperExperiments, CubeSettlesOnTwoTrianglePlaneFixtureRow)
   EXPECT_TRUE(cube.getLinearVelocity().allFinite());
 }
 
+TEST(RigidIpcPaperExperiments, LargeMassRatioFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions planeOptions;
+  planeOptions.isStatic = true;
+  planeOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto plane = world.addRigidBody("large_mass_ratio_plane", planeOptions);
+  plane.setCollisionShape(makeTwoTrianglePlaneMesh(/*halfExtent=*/8.0));
+
+  constexpr double smallHalfExtent = 0.5;
+  sx::RigidBodyOptions smallOptions;
+  smallOptions.mass = 1.0;
+  smallOptions.position = Eigen::Vector3d(0.0, 0.0, 0.1);
+  auto smallCube
+      = world.addRigidBody("large_mass_ratio_small_cube", smallOptions);
+  smallCube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {smallHalfExtent, smallHalfExtent, smallHalfExtent}));
+
+  constexpr double largeHalfExtent = 5.0;
+  sx::RigidBodyOptions largeOptions;
+  largeOptions.mass = 1000.0;
+  largeOptions.position = Eigen::Vector3d(0.0, 0.0, 6.0);
+  auto largeCube
+      = world.addRigidBody("large_mass_ratio_large_cube", largeOptions);
+  largeCube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {largeHalfExtent, largeHalfExtent, largeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minSmallPlaneClearance
+      = smallCube.getTranslation().z() - smallHalfExtent + 0.5;
+  double minLargeSmallClearance
+      = largeCube.getTranslation().z() - largeHalfExtent
+        - (smallCube.getTranslation().z() + smallHalfExtent);
+  for (int s = 0; s < 80; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+
+    minSmallPlaneClearance = std::min(
+        minSmallPlaneClearance,
+        smallCube.getTranslation().z() - smallHalfExtent + 0.5);
+    minLargeSmallClearance = std::min(
+        minLargeSmallClearance,
+        largeCube.getTranslation().z() - largeHalfExtent
+            - (smallCube.getTranslation().z() + smallHalfExtent));
+  }
+
+  EXPECT_GT(minSmallPlaneClearance, -5e-3);
+  EXPECT_GT(minLargeSmallClearance, -5e-3);
+  EXPECT_LT(minLargeSmallClearance, 0.05);
+  EXPECT_TRUE(smallCube.getTranslation().allFinite());
+  EXPECT_TRUE(largeCube.getTranslation().allFinite());
+  EXPECT_TRUE(smallCube.getLinearVelocity().allFinite());
+  EXPECT_TRUE(largeCube.getLinearVelocity().allFinite());
+}
+
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
 {
   sx::World world;

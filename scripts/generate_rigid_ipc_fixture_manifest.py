@@ -193,6 +193,38 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "until they have matching topology-specific DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/large-mass-ratio.json": {
+        "test": "LargeMassRatioFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited 3D large-mass-ratio row: a large heavy "
+            "cube falls toward a small cube resting above a fixed mesh plane, "
+            "the large-small gap closes into the activation range, and both "
+            "contacts preserve nonnegative clearance with finite state."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned large-mass-ratio runtime coverage for the "
+            "3D unit-test fixture mechanism and its non-visual Fig. 16 "
+            "paper-unit alias. Broader stacked and edge-feature 3D unit-test "
+            "fixture rows remain planned until they have matching DART "
+            "runtime evidence."
+        ),
+    },
+    "fixtures/paper-figures/16-unit-tests/large-mass-ratio.json": {
+        "test": "LargeMassRatioFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the non-visual Fig. 16 large-mass-ratio unit-test "
+            "alias: a large heavy cube falls toward a small cube resting above "
+            "a fixed mesh plane, the large-small gap closes into the "
+            "activation range, and both contacts preserve nonnegative "
+            "clearance with finite state."
+        ),
+        "notes_or_gap": (
+            "This paper-unit row aliases the audited 3D large-mass-ratio "
+            "unit-test fixture, so it is retired by the same DART-owned "
+            "runtime coverage. Visual paper-figure rows still require example "
+            "and headless visual evidence before retirement."
+        ),
+    },
     "fixtures/3D/unit-tests/rotation/rotating-cube.json": {
         "test": "RotatingCubeFixtureRowAdvancesWithoutContact",
         "expected_invariant": (

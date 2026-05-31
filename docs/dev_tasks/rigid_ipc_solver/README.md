@@ -199,6 +199,10 @@
   - [x] Add the first audited tessellated-plane fixture coverage through the
         opt-in runtime stage. A cube falls onto a fixed two-triangle mesh plane,
         activates contact, stays finite, and preserves nonnegative clearance.
+  - [x] Add audited large-mass-ratio fixture coverage through the opt-in runtime
+        stage. A large heavy cube closes into a small cube resting above a fixed
+        mesh plane while both contacts preserve nonnegative clearance and finite
+        state.
   - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
         through the opt-in runtime stage. Free rotating cube and scaled-sphere /
         ellipsoid rows advance orientation under zero gravity, stay finite, and
@@ -352,6 +356,10 @@
         (`fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`) as
         implemented after cube-on-two-triangle-plane runtime coverage landed.
         The tet and 8K tessellated-plane rows remain planned.
+  - [x] Mark the audited 3D large-mass-ratio unit-test fixture row
+        (`fixtures/3D/unit-tests/large-mass-ratio.json`) and its non-visual
+        Fig. 16 paper-unit alias as implemented after large-cube/small-cube
+        runtime clearance coverage landed.
   - [x] Mark the audited 3D rotating-cube unit-test fixture row
         (`fixtures/3D/unit-tests/rotation/rotating-cube.json`) as implemented
         after no-contact rotating-cube runtime coverage landed.
