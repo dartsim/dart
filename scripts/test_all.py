@@ -715,17 +715,6 @@ def main():
     else:
         print_warning("Skipping simulation-experimental tests")
 
-    if not args.skip_cuda:
-        if _cuda_environment_active():
-            run_step("CUDA Tests", run_cuda_tests)
-        elif _cuda_runtime_detected():
-            print_warning(
-                "CUDA runtime detected; run `pixi run -e cuda test-all` "
-                "after the default validation"
-            )
-    else:
-        print_warning("Skipping CUDA tests")
-
     # Run Python tests
     if not args.skip_python:
         run_step("Python Tests", run_python_tests)
@@ -737,6 +726,17 @@ def main():
         run_step("Documentation", run_docs_tests)
     else:
         print_warning("Skipping documentation tests")
+
+    if not args.skip_cuda:
+        if _cuda_environment_active():
+            run_step("CUDA Tests", run_cuda_tests)
+        elif _cuda_runtime_detected():
+            print_warning(
+                "CUDA runtime detected; run `pixi run -e cuda test-all` "
+                "after the default validation"
+            )
+    else:
+        print_warning("Skipping CUDA tests")
 
     # Generate report
     success = generate_report(results)

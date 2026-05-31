@@ -86,3 +86,32 @@ def test_configured_feature_enabled_without_disable(monkeypatch):
     assert module._configured_feature_enabled(
         "DART_BUILD_EXAMPLES_OVERRIDE", "DART_BUILD_EXAMPLES"
     )
+
+
+def test_cuda_tests_run_after_python_and_docs(monkeypatch):
+    module = load_test_all_module()
+    order = []
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "test_all.py",
+            "--skip-lint",
+            "--skip-build",
+            "--skip-tests",
+            "--skip-simulation-experimental",
+        ],
+    )
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "cuda")
+
+    def record_step(name):
+        order.append(name)
+        return True
+
+    monkeypatch.setattr(module, "run_python_tests", lambda: record_step("Python Tests"))
+    monkeypatch.setattr(module, "run_docs_tests", lambda: record_step("Documentation"))
+    monkeypatch.setattr(module, "run_cuda_tests", lambda: record_step("CUDA Tests"))
+
+    assert module.main() == 0
+    assert order == ["Python Tests", "Documentation", "CUDA Tests"]
