@@ -55,6 +55,13 @@ struct Link
 
   MassProperties mass;
 
+  /// Constant transform from the parent link frame to the joint input frame
+  /// (applied before the joint motion). Identity anchors the joint at the
+  /// parent link origin.
+  Eigen::Isometry3d transformToParentJoint = Eigen::Isometry3d::Identity();
+
+  /// Constant transform from the joint output frame (after the joint motion) to
+  /// this link's frame.
   Eigen::Isometry3d transformFromParentJoint = Eigen::Isometry3d::Identity();
 
   entt::entity parentJoint = entt::null;

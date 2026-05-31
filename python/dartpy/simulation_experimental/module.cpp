@@ -591,7 +591,8 @@ void defSimulationExperimentalModule(nb::module_& m)
                       sim::JointType type,
                       const nb::handle& axis,
                       const nb::handle& axis2,
-                      const nb::handle& transform_from_parent) {
+                      const nb::handle& transform_from_parent,
+                      const nb::handle& transform_to_parent) {
             sim::JointSpec spec;
             spec.name = std::move(name);
             spec.type = type;
@@ -606,13 +607,17 @@ void defSimulationExperimentalModule(nb::module_& m)
             if (!transform_from_parent.is_none()) {
               spec.transformFromParent = toIsometry(transform_from_parent);
             }
+            if (!transform_to_parent.is_none()) {
+              spec.transformToParent = toIsometry(transform_to_parent);
+            }
             return spec;
           }),
           nb::arg("name") = "",
           nb::arg("type") = sim::JointType::Revolute,
           nb::arg("axis") = nb::none(),
           nb::arg("axis2") = nb::none(),
-          nb::arg("transform_from_parent") = nb::none())
+          nb::arg("transform_from_parent") = nb::none(),
+          nb::arg("transform_to_parent") = nb::none())
       .def_rw("name", &sim::JointSpec::name)
       .def_rw("type", &sim::JointSpec::type)
       .def_prop_rw(
@@ -638,6 +643,14 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           [](sim::JointSpec& self, const nb::handle& transform) {
             self.transformFromParent = toIsometry(transform);
+          })
+      .def_prop_rw(
+          "transform_to_parent",
+          [](const sim::JointSpec& self) {
+            return self.transformToParent.matrix();
+          },
+          [](sim::JointSpec& self, const nb::handle& transform) {
+            self.transformToParent = toIsometry(transform);
           })
       .def("__repr__", [](const sim::JointSpec& self) {
         std::vector<std::pair<std::string, std::string>> fields;

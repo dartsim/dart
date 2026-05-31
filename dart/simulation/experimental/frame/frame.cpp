@@ -168,7 +168,8 @@ Eigen::Isometry3d getFrameLocalTransform(
           InvalidOperationException,
           "Link parent joint is missing a Joint component");
 
-      return getJointTransform(*joint) * link->transformFromParentJoint;
+      return link->transformToParentJoint * getJointTransform(*joint)
+             * link->transformFromParentJoint;
     }
   }
 

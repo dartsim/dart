@@ -231,6 +231,8 @@ struct VarLink
   entt::entity joint = entt::null;
   std::size_t dof = 0;
   std::size_t dofOffset = 0;
+  Eigen::Isometry3d offsetTo
+      = Eigen::Isometry3d::Identity(); // parent to joint (pre-joint)
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity(); // link from joint
   Matrix6 inertia = Matrix6::Zero();                        // G_i (link frame)
   Subspace subspace{6, 0};                                  // S_i (link frame)
@@ -272,6 +274,7 @@ VarTree buildVarTree(
     const auto& linkComp = registry.get<comps::Link>(linkEntity);
     auto& link = tree.links[i];
     link.inertia = spatialInertia(linkComp.mass);
+    link.offsetTo = linkComp.transformToParentJoint;
     link.offset = linkComp.transformFromParentJoint;
     link.externalForce = linkComp.externalForce;
 
@@ -296,8 +299,9 @@ VarTree buildVarTree(
     link.dofOffset = tree.dofCount;
     tree.dofCount += link.dof;
     link.subspace = adjoint(link.offset.inverse()) * jointFrameSubspace;
-    link.currentRelative
-        = jointMotionTransform(joint, joint.position) * link.offset;
+    link.currentRelative = link.offsetTo
+                           * jointMotionTransform(joint, joint.position)
+                           * link.offset;
     link.worldTransform
         = tree.links[static_cast<std::size_t>(link.parent)].worldTransform
           * link.currentRelative;
@@ -400,7 +404,7 @@ Eigen::VectorXd computeResidual(
         static_cast<Eigen::Index>(link.dofOffset),
         static_cast<Eigen::Index>(link.dof));
     const Eigen::Isometry3d nextRelative
-        = jointMotionTransform(joint, seg) * link.offset;
+        = link.offsetTo * jointMotionTransform(joint, seg) * link.offset;
     link.deltaTransform
         = link.currentRelative.inverse()
           * tree.links[static_cast<std::size_t>(link.parent)].deltaTransform

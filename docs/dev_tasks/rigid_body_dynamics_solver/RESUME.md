@@ -182,10 +182,59 @@ PR #2705 (the rigid-body MVP) **merged to `main` on 2026-05-25** (merge commit
 `003c2d0e39`). The MVP convention re-alignment and the GUI example (Subsystem C)
 are done and on `main`.
 
-Current work is on `feature/experimental-model-loader` in
-`/home/js/dev/dartsim/dart/task_1`: the first slice of Subsystem B (model
-loading) — a `dynamics::Skeleton` → experimental `Multibody` bridge. See the
-Subsystem B section below for what landed and what remains.
+Current work is on branch `feature/experimental-model-loader` in
+`/home/js/dev/dartsim/dart/task_1` — Subsystem B (model loading), the
+`dynamics::Skeleton` → experimental `Multibody` bridge
+(`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`).
+
+### Committed on the branch (each lint+build+test green; not yet pushed)
+
+1. `01dbec5c828` — the bridge: serial/tree skeletons, fixed base,
+   weld/revolute/prismatic, COM/inertia reframing onto each link's outgoing
+   joint, a synthetic identity world base, exception-safe plan→apply structure,
+   DART-6 mass/Coriolis/gravity parity.
+2. `67be363b204` — all joint types (screw `/2π` pitch, universal, ball, free
+   floating base with the `[rot;trans]`↔`[trans;rot]` + `R^T` velocity swap,
+   planar), per-type DART-6 parity.
+3. `090f5799a78` — revolute/prismatic joint properties (limits, damping, spring,
+   friction) via `copyJointProperties`.
+
+Tests: `bin/test_skeleton_to_multibody` (C++, 13) +
+`python/tests/unit/simulation/test_experimental_model_loader.py` (8); full
+experimental suite 38/38.
+
+### Committed: pre-joint offset on `JointSpec`
+
+`JointSpec`/`LinkOptions::transformToParent` (dartpy `transform_to_parent`) adds
+a parent-side offset so the experimental joint matches legacy exactly:
+`child_in_parent = transformToParent · jointMotion(q) · transformFromParent`
+(legacy `A · Q(q) · C^-1`). Threaded through the forward dynamics, FK, and the
+variational integrator; the motion subspace is unchanged (`S_child =
+Ad(G_post^-1) · S_jointframe` is independent of the pre-offset). Default identity
+is a verified no-op (full experimental suite 38/38); a new
+`test_pre_joint_offset.cpp` covers FK and the fixed-base translation-invariance
+of the dynamics. This unlocks branching at an offset, offset roots, and
+arbitrary trees.
+
+**Resume here, in order:**
+
+1. Refactor the loader onto the pre-joint offset:
+   `JointSpec.transformToParent = A` (legacy `getTransformFromParentBodyNode`),
+   `transformFromParent = C^-1` (inverse `getTransformFromChildBodyNode`). Then
+   the synthetic-base `O_b` reframing, the `outgoingJointOffset` helper, and the
+   anchor/`reframable` restriction can all be dropped — every link's frame
+   becomes its legacy body frame (so inertia/COM map directly, no reframing).
+   Keep the synthetic identity base as the fixed world root. The screw-pitch and
+   free-velocity conversions stay. This drops the `mapped.reframable` and
+   `kAnchorTolerance` machinery and simplifies `buildMultibodyFromSkeleton`.
+2. Add **branching** support + tests: a parent body with sibling child joints at
+   different offsets now loads (each child joint carries its own
+   `transformToParent`); add a branched-skeleton DART-6 parity test (C++ +
+   dartpy). The existing rotated-frame/offset-root rejection tests will need
+   updating since those cases are now supported.
+3. `pixi run lint`; commit the loader refactor + branching slice.
+4. Then the remaining items: collision shapes (needs a `CollisionShape`
+   pose-offset field), `readWorld`/multi-skeleton, then Subsystem A (boxed-LCP).
 
 ## Immediate Next Step
 

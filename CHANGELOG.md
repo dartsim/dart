@@ -619,6 +619,16 @@
     DART frame geometry.
   - Added experimental rigid-body derived dynamic quantities in C++ and dartpy:
     linear/angular momentum, kinetic energy, and gravitational potential energy.
+  - Added an optional pre-joint (parent-side) offset to the experimental
+    multibody joint (`JointSpec`/`LinkOptions::transformToParent`, dartpy
+    `JointSpec.transform_to_parent`). The joint relative transform is now
+    `transformToParent * jointMotion(q) * transformFromParent`, matching the
+    legacy `A * Q(q) * C^-1` form, so a joint can be anchored away from the
+    parent link's frame origin (offset joints, and sibling joints at different
+    locations on a branching parent). The default identity preserves existing
+    behavior; the change threads through the forward dynamics, forward
+    kinematics, and the variational integrator (the motion subspace is
+    unaffected).
   - Added an experimental model-loading bridge that builds a `Multibody` from a
     legacy `dynamics::Skeleton`: C++ `io::buildMultibodyFromSkeleton(world,
 skeleton, options)` and dartpy `build_multibody_from_skeleton` /
