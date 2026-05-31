@@ -72,6 +72,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -4853,6 +4854,17 @@ void runVbdDeformableSolve(
               record.descriptor.bounds});
     }
 
+    std::map<dvbd::AvbdScalarRowKey, dvbd::AvbdHalfSpaceFrictionRow>
+        previousAvbdFrictionRows;
+    const std::size_t previousAvbdFrictionRowCount = std::min(
+        vbdScratch.avbdFrictionDescriptors.size(),
+        vbdScratch.avbdFrictionRows.size());
+    for (std::size_t i = 0; i < previousAvbdFrictionRowCount; ++i) {
+      previousAvbdFrictionRows.emplace(
+          vbdScratch.avbdFrictionDescriptors[i].key,
+          vbdScratch.avbdFrictionRows[i]);
+    }
+
     vbdScratch.avbdFrictionDescriptors.clear();
     if (useAvbdFrictionRows) {
       vbdScratch.avbdFrictionDescriptors.reserve(
@@ -4882,6 +4894,45 @@ void runVbdDeformableSolve(
     }
     vbdScratch.avbdFrictionInventory.syncActiveRows(
         vbdScratch.avbdFrictionDescriptors, warmStartOptions);
+    for (std::size_t i = 0; i + 1 < vbdScratch.avbdFrictionInventory.size();
+         i += 2) {
+      dvbd::AvbdScalarRowRecord& firstRecord
+          = vbdScratch.avbdFrictionInventory[i];
+      dvbd::AvbdScalarRowRecord& secondRecord
+          = vbdScratch.avbdFrictionInventory[i + 1];
+      auto expectedSecondKey = firstRecord.descriptor.key;
+      expectedSecondKey.axis = 1;
+      if (firstRecord.descriptor.key.axis != 0
+          || secondRecord.descriptor.key != expectedSecondKey) {
+        continue;
+      }
+      const auto previousFirst
+          = previousAvbdFrictionRows.find(firstRecord.descriptor.key);
+      const auto previousSecond
+          = previousAvbdFrictionRows.find(secondRecord.descriptor.key);
+      if (previousFirst == previousAvbdFrictionRows.end()
+          || previousSecond == previousAvbdFrictionRows.end()) {
+        continue;
+      }
+
+      const auto vertex
+          = static_cast<std::uint32_t>(firstRecord.descriptor.key.featureA);
+      const dvbd::ContactPlane& plane = (*contactPlanes)[vertex];
+      const dc::Matrix3x2d basis
+          = dc::detail::fallbackBasisFromNormal(plane.normal);
+      const Eigen::Vector2d projected
+          = dvbd::projectAvbdFrictionDualToTangentPair(
+              firstRecord.state.lambda,
+              secondRecord.state.lambda,
+              previousFirst->second.axis,
+              previousSecond->second.axis,
+              basis.col(0),
+              basis.col(1));
+      firstRecord.state.lambda = dvbd::clampAvbdRowForce(
+          projected.x(), firstRecord.descriptor.bounds);
+      secondRecord.state.lambda = dvbd::clampAvbdRowForce(
+          projected.y(), secondRecord.descriptor.bounds);
+    }
 
     vbdScratch.avbdFrictionRows.clear();
     vbdScratch.avbdFrictionRows.reserve(
