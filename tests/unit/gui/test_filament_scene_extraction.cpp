@@ -983,6 +983,17 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       std::filesystem::path("python") / "dartpy" / "gui" / "panel.cpp");
   const auto panelBindingHeaderSource = readSourceFile(
       std::filesystem::path("python") / "dartpy" / "gui" / "panel.hpp");
+  const auto triMeshBindingSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "math" / "tri_mesh.cpp");
+  const auto endEffectorBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "dynamics"
+      / "end_effector.hpp");
+  const auto hierarchicalIkBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "dynamics"
+      / "hierarchical_ik.hpp");
+  const auto jacobianNodeBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "dynamics"
+      / "jacobian_node.hpp");
   const auto selectionSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
 
@@ -1100,6 +1111,22 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
   EXPECT_NE(bindingHeaderInclude, std::string::npos);
   EXPECT_NE(dartPanelInclude, std::string::npos);
   EXPECT_LT(bindingHeaderInclude, dartPanelInclude);
+  const auto triMeshNanobindInclude
+      = triMeshBindingSource.find("#include <nanobind/nanobind.h>");
+  const auto triMeshDartInclude
+      = triMeshBindingSource.find("#include \"dart/math/tri_mesh.hpp\"");
+  EXPECT_NE(triMeshNanobindInclude, std::string::npos);
+  EXPECT_NE(triMeshDartInclude, std::string::npos);
+  EXPECT_LT(triMeshNanobindInclude, triMeshDartInclude);
+  EXPECT_NE(
+      endEffectorBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
+  EXPECT_NE(
+      hierarchicalIkBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
+  EXPECT_NE(
+      jacobianNodeBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
   EXPECT_EQ(
       selectionSource.find(
           "mSelectedDragMode = DragMode::Force;\n"

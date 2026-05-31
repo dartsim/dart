@@ -126,7 +126,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_variational_contact",
     title="Variational Contact (sx)",
-    category="Experimental",
+    category="Variational Integrators (sx)",
     summary="A VI pendulum tip caught by compliant ground contact + friction.",
     build=build,
 )

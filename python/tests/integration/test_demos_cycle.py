@@ -533,6 +533,8 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         "Variational Integrators (sx)": {
             "sx_variational_chain",
             "sx_variational_tumbler",
+            "sx_variational_contact",
+            "sx_loop_closure",
         },
         "Vertex Block Descent (sx)": {
             "vbd_cloth",
