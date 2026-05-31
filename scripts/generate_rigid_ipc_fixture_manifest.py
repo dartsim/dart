@@ -223,6 +223,21 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "headless visual evidence before retirement."
         ),
     },
+    "fixtures/3D/unit-tests/cube-falling-on-edge.json": {
+        "test": "CubeFallingOnEdgeFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited 3D cube-falling-on-edge row: a tilted "
+            "cube falls under gravity onto a separate tilted fixed box edge, "
+            "activates rigid IPC contact, stays finite, and reports no "
+            "meaningful native overlap after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned tilted-cube-on-edge runtime coverage for "
+            "the 3D unit-test fixture mechanism. Edge-edge, vertex/face, and "
+            "tet-corner rows remain planned until they have topology-specific "
+            "DART runtime evidence."
+        ),
+    },
     "fixtures/3D/unit-tests/large-mass-ratio.json": {
         "test": "LargeMassRatioFixtureRowStaysSeparated",
         "expected_invariant": (

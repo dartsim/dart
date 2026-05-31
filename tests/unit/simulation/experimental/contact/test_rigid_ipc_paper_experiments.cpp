@@ -30,6 +30,7 @@
 // exactly `mu`, which is what these tests rely on.
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
+#include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
@@ -926,6 +927,58 @@ TEST(RigidIpcPaperExperiments, FiveCubesFixtureRowStacksWithoutPenetration)
     EXPECT_TRUE(cube.getTranslation().allFinite());
     EXPECT_TRUE(cube.getLinearVelocity().allFinite());
   }
+}
+
+TEST(RigidIpcPaperExperiments, CubeFallingOnEdgeFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  constexpr double deg = std::numbers::pi / 180.0;
+  sx::RigidBodyOptions supportOptions;
+  supportOptions.isStatic = true;
+  supportOptions.position = Eigen::Vector3d(0.0, 0.0, 0.7);
+  supportOptions.orientation
+      = Eigen::AngleAxisd(-30.0 * deg, Eigen::Vector3d::UnitY());
+  auto support = world.addRigidBody("falling_on_edge_support", supportOptions);
+  support.setCollisionShape(sx::CollisionShape::makeBox({1.0, 0.5, 0.5}));
+
+  constexpr double cubeHalfExtent = 0.5;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d(0.0, 0.0, 2.2);
+  cubeOptions.orientation
+      = Eigen::AngleAxisd(30.0 * deg, Eigen::Vector3d::UnitY());
+  auto cube = world.addRigidBody("falling_on_edge_cube", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startZ = cube.getTranslation().z();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_LT(cube.getTranslation().z(), startZ - 0.2);
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_TRUE(cube.getLinearVelocity().allFinite());
 }
 
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
