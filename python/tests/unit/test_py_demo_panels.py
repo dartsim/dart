@@ -17,6 +17,9 @@ from examples.demos.scenes import (
     diff_drone_liftoff,
     diff_throw_to_target,
     experimental_rigid_body_gui,
+    arm_push_box,
+    cartpole_gym_env,
+    cartpole_mpc,
     ipc_deformable_capsule_rod,
     ipc_deformable_cg_contact,
     ipc_deformable_cg_solver,
@@ -38,6 +41,8 @@ from examples.demos.scenes import (
     ipc_deformable_scripted_dirichlet,
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
+    legged_balance,
+    sensor_descriptors,
     sx_articulated,
     sx_contact,
     sx_floating_base,
@@ -379,6 +384,27 @@ def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
             event.startswith("text:solver: deformable IPC")
             for event in builder.events
         )
+
+
+def test_control_modern_scenes_expose_interactive_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (legged_balance, "Legged Balance", "plot:Angle:"),
+        (arm_push_box, "Arm Push Box", "plot:Box x:"),
+        (cartpole_gym_env, "Cart-pole Env", "plot:Cart x:"),
+        (cartpole_mpc, "Cart-pole MPC", "plot:Force:"),
+        (sensor_descriptors, "Sensor Descriptors", "text:status: descriptor surface"),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert any(event.startswith(expected_plot) for event in builder.events)
+        if scene_module is not sensor_descriptors:
+            assert setup.pre_step is not None
+            assert setup.step is None
 
 
 @pytest.mark.skipif(

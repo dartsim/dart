@@ -115,6 +115,14 @@
 - The `Demos` navigator now groups categories by first appearance across the
   entire catalog rather than assuming each category is contiguous, and it shows
   the current filtered/total scene count beside the search field.
+- `legged_balance`, `arm_push_box`, `cartpole_gym_env`, `cartpole_mpc`, and
+  `sensor_descriptors` now have Control & Modern panels with controller state,
+  command metrics, sensor-surface status, and live plots.
+- `arm_push_box`, `cartpole_gym_env`, and `cartpole_mpc` now use
+  `SceneSetup.pre_step` for interactive-viewer control. `SceneSetup.step` is
+  documented as a headless whole-step escape hatch.
+- `arm_push_box` now uses a plane collision floor plus a visual floor, avoiding
+  LCP fallback warnings during panel capture while preserving the visible scene.
 
 ## Validation
 
@@ -220,6 +228,11 @@ pixi run py-demo-capture -- --scene ipc_deformable_fcr_twist --show-ui --frames 
 pixi run py-demo-capture -- --scene ipc_deformable_fem_drop --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_drop_panel
 pixi run py-demo-capture -- --scene ipc_deformable_fem_box --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_box_panel
 pixi run py-demo-capture -- --scene ipc_deformable_fem_msh --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_msh_panel
+pixi run py-demo-capture -- --scene legged_balance --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_legged_balance_panel
+pixi run py-demo-capture -- --scene arm_push_box --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_arm_push_box_panel
+pixi run py-demo-capture -- --scene cartpole_gym_env --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_cartpole_env_panel
+pixi run py-demo-capture -- --scene cartpole_mpc --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_cartpole_mpc_panel
+pixi run py-demo-capture -- --scene sensor_descriptors --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_sensor_descriptors_panel
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_sidebar_grouping
 ```
 
@@ -243,6 +256,7 @@ pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/example
 pixi run python -m py_compile python/examples/demos/scenes/diff_throw_to_target.py python/examples/demos/scenes/diff_cartpole_trajopt.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_obj_cloth.py python/examples/demos/scenes/ipc_deformable_seg_strand.py python/examples/demos/scenes/ipc_deformable_pt_particles.py python/examples/demos/scenes/ipc_deformable_scripted_dirichlet.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_fem_bar.py python/examples/demos/scenes/ipc_deformable_fem_twist.py python/examples/demos/scenes/ipc_deformable_fcr_twist.py python/examples/demos/scenes/ipc_deformable_fem_drop.py python/examples/demos/scenes/ipc_deformable_fem_box.py python/examples/demos/scenes/ipc_deformable_fem_msh.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/runner.py python/examples/demos/scenes/legged_balance.py python/examples/demos/scenes/arm_push_box.py python/examples/demos/scenes/cartpole_gym_env.py python/examples/demos/scenes/cartpole_mpc.py python/examples/demos/scenes/sensor_descriptors.py python/tests/unit/test_py_demo_panels.py
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q

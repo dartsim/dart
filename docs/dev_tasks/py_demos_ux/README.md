@@ -81,6 +81,14 @@ navigation, and a path for scene-specific controls.
   mean-speed metrics alongside shared IPC solver diagnostics.
 - Move Python demo line-segment visual updates to snake_case dartpy APIs so
   panel tests and demo captures stay free of camelCase deprecation warnings.
+- Add Control & Modern panels to `legged_balance`, `arm_push_box`,
+  `cartpole_gym_env`, `cartpole_mpc`, and `sensor_descriptors`, exposing
+  controller state, command signals, sensor-surface status, and live plots.
+- Move the Control & Modern whole-step controllers that need the interactive
+  viewer to `pre_step`, keeping `SceneSetup.step` documented as a headless
+  runner escape hatch.
+- Use a plane collision floor in `arm_push_box` so the contact-rich panel
+  capture stays free of LCP fallback spam while preserving the visible floor.
 - Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape
   point instead of the body origin when a visual shape has a local offset, and
   add direct controller regression coverage for both BodyNode and external

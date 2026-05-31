@@ -14,12 +14,9 @@ catalog. The CLI mirrors `dart-demos`:
 
 Scenes with a Python-side controller (`SceneSetup.pre_step`) have that
 callable forwarded to the viewer's per-step hook so the controller still
-runs inside the interactive loop. Scenes with the legacy
-`SceneSetup.step` (a custom whole-step loop) are also supported: their
-controller part is invoked as `pre_step` and the viewer's
-`simulateWorld` advances time as usual — for these scenes the world.step()
-that the legacy `step` callable also performs is harmless (double-step
-behavior is the same as the C++ scene's `preStep + world.step()` pattern).
+runs inside the interactive loop. `SceneSetup.step` remains a headless
+whole-step escape hatch for legacy parity tests; interactive demos should use
+`pre_step` so the viewer owns `world.step()`.
 """
 
 from __future__ import annotations
@@ -67,9 +64,8 @@ class SceneSetup:
     nothing.
 
     ``step`` is the legacy whole-loop variant: ``step(frames)`` advances the
-    world by ``frames`` steps. The viewer doesn't use it directly — when
-    present, the runner wraps it as a ``pre_step`` that runs the inner
-    controller body once per viewer step.
+    world by ``frames`` steps in headless runner paths. The interactive viewer
+    does not use it; interactive controllers should use ``pre_step``.
 
     ``force_drag`` is an optional callable invoked by the viewer's mouse
     "force-drag" while the user left-drags one of this scene's renderables that

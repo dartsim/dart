@@ -15,7 +15,7 @@ import numpy as np
 import dartpy as dart
 import dartpy.gui as dgui  # noqa: F401 — surfaces the headless GUI submodule
 
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
 def _make_target_box() -> dart.Skeleton:
@@ -62,14 +62,29 @@ def build() -> SceneSetup:
     # PLAN-090 fidelity-profile camera-sensor seam is reachable from Python.
     gui_surface = [name for name in dir(dgui) if not name.startswith("_")]
 
-    return SceneSetup(world=world, info={
-        "dartpy_gui_symbols": gui_surface,
-        "rendering_stub": True,
-        "depth_segmentation_status": (
-            "deferred to PLAN-090 fidelity profile seam; the headless "
-            "dartpy.gui submodule exposes renderable descriptors today"
-        ),
-    })
+    def build_panel(builder: object, context: object) -> None:
+        has_extract = "extract_renderables" in gui_surface
+        has_run_demos = "run_demos" in gui_surface
+        builder.text("status: descriptor surface")
+        builder.text(f"dartpy.gui symbols: {len(gui_surface)}")
+        builder.text(f"extract renderables: {has_extract}")
+        builder.text(f"interactive demos host: {has_run_demos}")
+        builder.text(
+            "depth/segmentation rendering: deferred to PLAN-090 camera seam"
+        )
+
+    return SceneSetup(
+        world=world,
+        panels=[ScenePanel("Sensor Descriptors", build_panel)],
+        info={
+            "dartpy_gui_symbols": gui_surface,
+            "rendering_stub": True,
+            "depth_segmentation_status": (
+                "deferred to PLAN-090 fidelity profile seam; the headless "
+                "dartpy.gui submodule exposes renderable descriptors today"
+            ),
+        },
+    )
 
 
 SCENE = PythonDemoScene(
