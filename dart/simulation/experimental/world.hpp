@@ -102,6 +102,10 @@ struct DeformableSolverDiagnostics
   /// ``DeformableMaterialProperties.useIterativeLinearSolver``. Zero means
   /// every solve used the direct factorization.
   std::size_t projectedNewtonIterativeSolves = 0;
+  /// Iterative solves that used matrix-free Hessian-vector products instead of
+  /// an assembled sparse Hessian. This is a subset of
+  /// ``projectedNewtonIterativeSolves``.
+  std::size_t projectedNewtonMatrixFreeSolves = 0;
   /// Total conjugate-gradient iterations consumed by those iterative linear
   /// solves, and the largest Eigen-reported relative residual estimate among
   /// them. Both are zero when every solve used the direct factorization.

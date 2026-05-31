@@ -335,15 +335,15 @@ DART-owned implementation.
 ## Immediate Next Steps
 
 1. Continue PLAN-081 M7 scale/performance work from the merged
-   `feature/ipc-deformable-*` PR train (#2810-#2813). The immediate local
-   continuation is the CG-iteration diagnostic slice: report successful
-   iterative linear-solve iterations, residual estimates, and sparse-Hessian
-   matrix footprint through the public deformable solver diagnostics and the M7
-   direct/CG benchmarks.
-2. Next high-impact implementation slice: truly matrix-free CG, replacing the
-   current triplets -> `SparseMatrix` assembly for the iterative path with
-   per-element Hessian-vector products and scatter. This is the memory step
-   needed before Fig. 22-scale meshes.
+   `feature/ipc-deformable-*` PR train (#2810-#2813). The local diagnostics
+   continuation reports successful iterative linear-solve iterations, residual
+   estimates, and sparse-Hessian matrix footprint through the public deformable
+   solver diagnostics and the M7 direct/CG benchmarks.
+2. Continue the matrix-free CG slice: the explicit
+   `useMatrixFreeLinearSolver` path now bypasses triplets -> `SparseMatrix`
+   assembly with local Hessian-vector products and block-Jacobi preconditioning.
+   Next, harden it on larger/contacting meshes, compare against sparse IC-CG,
+   and decide when it can become the automatic path for Fig. 22-scale meshes.
 3. Follow-on performance slices: AMG / multigrid preconditioning for the
    largest systems, on-device GPU assembly + solve beyond the existing PSD
    projection backend, and the Fig. 22 / Table 1 reference-comparison runs.

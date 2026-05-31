@@ -846,6 +846,7 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_EQ(before.solverIterations, 0u);
   EXPECT_EQ(before.projectedNewtonHessianNonZeros, 0u);
   EXPECT_EQ(before.projectedNewtonHessianStorageBytes, 0u);
+  EXPECT_EQ(before.projectedNewtonMatrixFreeSolves, 0u);
 
   world.step(5);
 
@@ -875,6 +876,7 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
   struct IterativeDiagnostics
   {
     std::size_t solves = 0;
+    std::size_t matrixFreeSolves = 0;
     std::size_t iterations = 0;
     std::size_t hessianNonZeros = 0;
     std::size_t hessianStorageBytes = 0;
@@ -894,6 +896,7 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
       world.step(1);
       const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
       total.solves += diagnostics.projectedNewtonIterativeSolves;
+      total.matrixFreeSolves += diagnostics.projectedNewtonMatrixFreeSolves;
       total.iterations += diagnostics.projectedNewtonIterativeIterations;
       total.hessianNonZeros = std::max(
           total.hessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
@@ -911,6 +914,7 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
 
   // The default direct solve never takes the iterative path...
   EXPECT_EQ(direct.solves, 0u);
+  EXPECT_EQ(direct.matrixFreeSolves, 0u);
   EXPECT_EQ(direct.iterations, 0u);
   EXPECT_GT(direct.hessianNonZeros, 0u);
   EXPECT_GT(direct.hessianStorageBytes, 0u);
@@ -918,6 +922,7 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
   // ...while the opt-in iterative solve surfaces through the public diagnostics
   // with CG effort, sparse-Hessian footprint, and a finite residual estimate.
   EXPECT_GT(iterative.solves, 0u);
+  EXPECT_EQ(iterative.matrixFreeSolves, 0u);
   EXPECT_GT(iterative.hessianNonZeros, 0u);
   EXPECT_GT(iterative.hessianStorageBytes, 0u);
   EXPECT_TRUE(std::isfinite(iterative.maxError));
@@ -3635,6 +3640,74 @@ TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
   for (std::size_t i = 0; i < direct.positions.size(); ++i) {
     ASSERT_TRUE(iterative.positions[i].allFinite());
     expectVectorNear(iterative.positions[i], direct.positions[i], 1e-4);
+  }
+}
+
+//==============================================================================
+// The matrix-free projected-Newton path evaluates Hessian-vector products from
+// local blocks instead of first assembling an Eigen SparseMatrix. It is kept as
+// an explicit opt-in so the existing sparse direct and sparse IC-CG paths
+// remain unchanged, but on a contact-free FEM cube it should produce the same
+// settled configuration while reporting zero sparse Hessian footprint.
+TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseDirectSolve)
+{
+  struct CubeRun
+  {
+    std::vector<Eigen::Vector3d> positions;
+    std::size_t cgSolves = 0;
+    std::size_t matrixFreeSolves = 0;
+    std::size_t numericFactorizations = 0;
+    std::size_t hessianNonZeros = 0;
+  };
+
+  const auto runCube = [](bool matrixFree) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.4), 1.5e5);
+    options.fixedNodes = {0, 1, 2, 3};
+    options.material.useMatrixFreeLinearSolver = matrixFree;
+    auto body = world.addDeformableBody("fem_cube", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    CubeRun run;
+    for (int i = 0; i < 80; ++i) {
+      world.step(executor, pipeline);
+      const auto& stats = stage.getLastStats();
+      run.cgSolves += stats.projectedNewtonIterativeSolves;
+      run.matrixFreeSolves += stats.projectedNewtonMatrixFreeSolves;
+      run.numericFactorizations += stats.projectedNewtonNumericFactorizations;
+      run.hessianNonZeros
+          = std::max(run.hessianNonZeros, stats.projectedNewtonHessianNonZeros);
+    }
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      run.positions.push_back(body.getPosition(i));
+    }
+    return run;
+  };
+
+  const CubeRun direct = runCube(false);
+  const CubeRun matrixFree = runCube(true);
+
+  EXPECT_EQ(direct.cgSolves, 0u);
+  EXPECT_EQ(direct.matrixFreeSolves, 0u);
+  EXPECT_GT(direct.numericFactorizations, 0u);
+  EXPECT_GT(direct.hessianNonZeros, 0u);
+
+  EXPECT_GT(matrixFree.cgSolves, 0u);
+  EXPECT_EQ(matrixFree.cgSolves, matrixFree.matrixFreeSolves);
+  EXPECT_EQ(matrixFree.numericFactorizations, 0u);
+  EXPECT_EQ(matrixFree.hessianNonZeros, 0u);
+
+  ASSERT_EQ(direct.positions.size(), matrixFree.positions.size());
+  for (std::size_t i = 0; i < direct.positions.size(); ++i) {
+    ASSERT_TRUE(matrixFree.positions[i].allFinite());
+    expectVectorNear(matrixFree.positions[i], direct.positions[i], 1e-4);
   }
 }
 

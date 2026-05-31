@@ -141,6 +141,8 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.projectedNewtonHessianStorageBytes;
   diagnostics.projectedNewtonIterativeSolves
       = stats.projectedNewtonIterativeSolves;
+  diagnostics.projectedNewtonMatrixFreeSolves
+      = stats.projectedNewtonMatrixFreeSolves;
   diagnostics.projectedNewtonIterativeIterations
       = stats.projectedNewtonIterativeIterations;
   diagnostics.projectedNewtonIterativeMaxError
@@ -777,6 +779,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
       = options.material.useAdaptiveBarrierStiffness;
   data.material.useIterativeLinearSolver
       = options.material.useIterativeLinearSolver;
+  data.material.useMatrixFreeLinearSolver
+      = options.material.useMatrixFreeLinearSolver;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);

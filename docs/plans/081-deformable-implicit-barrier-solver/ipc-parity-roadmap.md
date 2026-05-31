@@ -257,17 +257,21 @@ equilibrium under both solvers. This is the first concrete, measured rung of the
 Fig-23 / Table-1 per-step-scaling axis.
 
 **Diagnostic follow-up in progress:** the iterative solver's public diagnostics
-are being extended beyond the CG solve count with total CG iterations and the
-maximum Eigen-reported residual estimate for successful iterative Newton linear
-solves, plus the assembled compressed sparse Hessian's nonzero count and storage
-estimate. The FEM-bar and chunky 3D cube benchmarks report the same
-`cg_iters_per_step`, `cg_max_error`, `hessian_nonzeros`, and
-`hessian_storage_bytes` counters, giving the M7 profiling surface honest
-solve-effort and matrix-footprint axes before matrix-free assembly, AMG, or GPU
-solve work.
+now extend beyond the CG solve count with total CG iterations, the maximum
+Eigen-reported residual estimate for successful iterative Newton linear solves,
+and the assembled compressed sparse Hessian's nonzero count and storage estimate.
+The FEM-bar and chunky 3D cube benchmarks report the same `cg_iters_per_step`,
+`cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters.
 
-Remaining M7 work: a truly matrix-free Hessian-vector CG (skip the sparse
-assembly entirely), an AMG / multigrid preconditioner for the largest systems,
+**Matrix-free follow-up in progress:** an explicit
+`useMatrixFreeLinearSolver` path applies local Hessian blocks directly with a
+block-Jacobi preconditioner and reports `projectedNewtonMatrixFreeSolves`.
+Benchmark rows expose `matrix_free_solves_per_step` plus zero sparse-Hessian
+footprint counters. Remaining hardening: larger/contacting meshes, comparison
+against sparse IC-CG, and deciding when matrix-free CG becomes the automatic
+very-large-mesh path.
+
+Remaining M7 work: AMG / multigrid preconditioning for the largest systems,
 on-device GPU assembly + solve beyond the current PSD offload, the 688K-node
 Fig-22 scale run, and the profiling-grade per-scene Fig-23 statistics harness
 with the Table-1 CPU comparison against the reference.

@@ -1126,6 +1126,15 @@ Capsule Rod (IPC)` py-demos scene.
     The FEM-bar and chunky 3D cube benchmarks now emit `cg_iters_per_step`,
     `cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters
     toward the PLAN-081 Fig. 23 / Table 1 profiling surface.
+  - Added an explicit matrix-free deformable projected-Newton CG path
+    (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
+    (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`
+    Hessian assembly and applies local Hessian blocks directly with a
+    block-Jacobi preconditioner. The default direct and sparse IC-CG paths are
+    unchanged. `DeformableSolverDiagnostics` now reports
+    `projectedNewtonMatrixFreeSolves` /
+    `projected_newton_matrix_free_solves`; matrix-free benchmark rows emit
+    `matrix_free_solves_per_step` and zero sparse-Hessian footprint counters.
   - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
     experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
     and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra

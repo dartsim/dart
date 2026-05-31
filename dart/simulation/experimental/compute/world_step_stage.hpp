@@ -143,6 +143,10 @@ struct DeformableSolverStats
   // factorizes, so it scales to far larger meshes; a nonzero value here with
   // zero numeric factorizations means the whole solve ran iteratively.
   std::size_t projectedNewtonIterativeSolves = 0;
+  // Iterative solves that used the matrix-free Hessian-vector product path
+  // instead of an assembled sparse Hessian. This is a subset of
+  // projectedNewtonIterativeSolves.
+  std::size_t projectedNewtonMatrixFreeSolves = 0;
   // Total conjugate-gradient iterations consumed by successful iterative
   // projected-Newton linear solves. This is the solve-effort axis for the M7
   // scaling benchmarks; zero when every Newton step used the direct solver.

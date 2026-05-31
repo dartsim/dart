@@ -76,15 +76,16 @@ milestone.** Four increments landed (iterative CG solve #2810;
 incomplete-Cholesky preconditioner #2811; chunky-3D scaling benchmark #2812;
 public iterative-solve diagnostic #2813). The current branch is a small
 profiling follow-up that adds CG iterations, residual estimates, and assembled
-sparse-Hessian footprint counters. The remaining M7 work, roughly in
-increasing-risk order:
+sparse-Hessian footprint counters, followed by an explicit matrix-free CG path
+that applies local Hessian blocks directly with a block-Jacobi preconditioner.
+The remaining M7 work, roughly in increasing-risk order:
 
-1. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
-   (triplets → `SparseMatrix`) before the CG solve; a matrix-free Hessian-vector
-   product (per-element block × vector, scattered) would drop the assembly memory
-   for very large meshes (Fig 22, 688K nodes). CG params live in
-   `computeProjectedNewtonDirection` in `compute/world_step_stage.cpp` (tolerance
-   `1e-8`, `maxIterations = 2*dim`, `Eigen::Lower`, `Eigen::IncompleteCholesky`).
+1. **Matrix-free CG hardening.** The explicit
+   `useMatrixFreeLinearSolver` path now skips sparse Hessian assembly and reports
+   zero sparse-Hessian footprint, but it uses block-Jacobi rather than the sparse
+   incomplete-Cholesky preconditioner. Harden it on larger/contacting meshes,
+   compare it against sparse IC-CG, then decide when it can become the automatic
+   path for very large meshes (Fig 22, 688K nodes).
 2. **AMG / multigrid preconditioner** for the largest systems (beyond what
    incomplete-Cholesky handles).
 3. **GPU assembly + solve.** Extend the existing CUDA PSD-projection backend
@@ -257,14 +258,16 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-cg-iteration-diagnostics` - SINGLE PR off current
-`main` after #2810/#2811/#2812/#2813 were all squash-merged. The four older
-`feature/ipc-deformable-*` branch commits are patch-equivalent to current
-`main` (`git cherry -v main <branch>` reports `-` for each), but their local and
-remote refs still exist and should not be deleted without explicit approval.
+`feature/ipc-deformable-matrix-free-cg` - local stacked continuation on top of
+`feature/ipc-deformable-cg-iteration-diagnostics` after
+#2810/#2811/#2812/#2813 were all squash-merged. The four older
+`feature/ipc-deformable-*` branch commits are patch-equivalent to current `main`
+(`git cherry -v main <branch>` reports `-` for each), but their local and remote
+refs still exist and should not be deleted without explicit approval.
 
-This branch is behavior-preserving M7 profiling work. It extends the public
-deformable solver diagnostics beyond `projectedNewtonIterativeSolves` with
+The base diagnostics slice is behavior-preserving M7 profiling work. It extends
+the public deformable solver diagnostics beyond `projectedNewtonIterativeSolves`
+with
 `projectedNewtonIterativeIterations`, `projectedNewtonIterativeMaxError`,
 `projectedNewtonHessianNonZeros`, and
 `projectedNewtonHessianStorageBytes` (dartpy:
@@ -276,6 +279,12 @@ effort, residual estimates, and the assembled sparse-matrix footprint, not just
 path selection. The FEM-bar and chunky 3D cube benchmarks emit matching
 `cg_iters_per_step`, `cg_max_error`, `hessian_nonzeros`, and
 `hessian_storage_bytes` counters toward the Fig. 23 / Table 1 profiling surface.
+The current matrix-free slice adds explicit
+`DeformableMaterialProperties.useMatrixFreeLinearSolver` /
+`use_matrix_free_linear_solver`, reports
+`projectedNewtonMatrixFreeSolves` /
+`projected_newton_matrix_free_solves`, and adds benchmark rows with
+`matrix_free_solves_per_step` plus zero sparse-Hessian footprint counters.
 
 Prior branch `feature/ipc-gpu-psd-perf-gate` - stacked on
 `feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
