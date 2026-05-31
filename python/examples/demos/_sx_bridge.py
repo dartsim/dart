@@ -233,9 +233,7 @@ class SxRenderBridge:
         for body, line, node_count in self._surfaces:
             for i in range(node_count):
                 try:
-                    line.set_vertex(
-                        i, np.asarray(body.node_position(i), dtype=float)
-                    )
+                    line.set_vertex(i, np.asarray(body.node_position(i), dtype=float))
                 except Exception:  # noqa: BLE001
                     pass
 
@@ -270,6 +268,35 @@ class SxRenderBridge:
         except Exception:  # noqa: BLE001
             return "target state unavailable"
         return None
+
+    def _force_target_label(self, sx_object: Any, frame_name: str) -> str:
+        name = str(getattr(sx_object, "name", "") or "").strip()
+        return name or frame_name
+
+    def _force_target_hint(self) -> str:
+        if not self.force_drag_enabled:
+            return "disabled"
+
+        labels: list[str] = []
+        seen: set[int] = set()
+        for frame_name, sx_object in self._by_name.items():
+            identity = id(sx_object)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            if self._force_target_rejection(sx_object) is not None:
+                continue
+            labels.append(self._force_target_label(sx_object, frame_name))
+
+        if not labels:
+            return "none"
+        preview = labels[:3]
+        suffix = (
+            ""
+            if len(labels) <= len(preview)
+            else f", +{len(labels) - len(preview)} more"
+        )
+        return ", ".join(preview) + suffix
 
     def _event_vector(self, event: dict[str, Any], key: str) -> np.ndarray:
         if key not in event:
@@ -377,6 +404,7 @@ class SxRenderBridge:
 
         builder.text("External force")
         builder.text("Drag a dynamic body in the viewport to apply force.")
+        builder.text(f"drag target: {self._force_target_hint()}")
         changed, enabled = builder.checkbox(
             "Enable external force", self.force_drag_enabled
         )

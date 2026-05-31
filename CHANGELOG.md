@@ -2289,6 +2289,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     uses compact transport controls for simulation and recorded-frame playback,
     and `py-demo-capture --show-ui` rejects captures without the docked ImGui
     workspace while dropping warm-up frames before the UI is visible.
+  - Made sx Python demo external-force panels target-aware: they now list
+    mapped dynamic drag targets before a drag starts while continuing to report
+    disabled, static, unmapped, invalid, and applying states.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

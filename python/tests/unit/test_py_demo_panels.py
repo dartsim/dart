@@ -2,39 +2,40 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import dartpy as dart
 import numpy as np
 import pytest
-
-import dartpy as dart
 from examples.demos._sx_bridge import SxRenderBridge
 from examples.demos.runner import (
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
     ScenePanel,
     SceneSetup,
-    _validate_scene,
     _make_world_factory,
     _scene_build_timeout_ms,
+    _validate_scene,
 )
+from examples.demos.scenes._simbicon_robots import make_simbicon_panel
+
 from examples.demos.scenes import (
+    arm_push_box,
     atlas_simbicon,
+    biped_stand,
+    cartpole_gym_env,
+    cartpole_mpc,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
     diff_throw_to_target,
     experimental_rigid_body_gui,
-    arm_push_box,
-    biped_stand,
-    cartpole_gym_env,
-    cartpole_mpc,
     hybrid_dynamics,
     ipc_deformable_capsule_rod,
     ipc_deformable_cg_contact,
     ipc_deformable_cg_solver,
     ipc_deformable_drape,
-    ipc_deformable_fem_buckle,
     ipc_deformable_fcr_twist,
     ipc_deformable_fem_bar,
     ipc_deformable_fem_box,
+    ipc_deformable_fem_buckle,
     ipc_deformable_fem_drop,
     ipc_deformable_fem_msh,
     ipc_deformable_fem_sphere,
@@ -69,7 +70,6 @@ from examples.demos.scenes import (
     vbd_tilted_strand,
     vehicle,
 )
-from examples.demos.scenes._simbicon_robots import make_simbicon_panel
 
 
 def test_make_world_factory_returns_panels_tuple() -> None:
@@ -228,6 +228,7 @@ def test_high_value_sx_scenes_expose_custom_panels() -> None:
 
         assert any(event.startswith("plot:") for event in builder.events)
         assert "text:External force" in builder.events
+        assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
 
 
@@ -322,8 +323,7 @@ def test_ipc_friction_obstacle_scenes_expose_speed_panels() -> None:
             event.startswith("text:friction coefficient:") for event in builder.events
         )
         assert any(
-            event.startswith("text:solver: deformable IPC")
-            for event in builder.events
+            event.startswith("text:solver: deformable IPC") for event in builder.events
         )
 
 
@@ -343,8 +343,7 @@ def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
 
         assert any(event.startswith(expected_plot) for event in builder.events)
         assert any(
-            event.startswith("text:solver: deformable IPC")
-            for event in builder.events
+            event.startswith("text:solver: deformable IPC") for event in builder.events
         )
 
 
@@ -405,8 +404,7 @@ def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:
 
         assert any(event.startswith(expected_plot) for event in builder.events)
         assert any(
-            event.startswith("text:solver: deformable IPC")
-            for event in builder.events
+            event.startswith("text:solver: deformable IPC") for event in builder.events
         )
 
 
@@ -428,8 +426,7 @@ def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
 
         assert any(event.startswith(expected_plot) for event in builder.events)
         assert any(
-            event.startswith("text:solver: deformable IPC")
-            for event in builder.events
+            event.startswith("text:solver: deformable IPC") for event in builder.events
         )
 
 
@@ -632,6 +629,7 @@ def test_sx_bridge_external_force_panel_reports_disabled_and_static_targets() ->
     bridge.build_control_panel(disabled_builder, object())
 
     assert "text:status: disabled" in disabled_builder.events
+    assert "text:drag target: disabled" in disabled_builder.events
     assert "text:target: disabled" in disabled_builder.events
     assert static_target.applied_forces == []
 
@@ -649,6 +647,27 @@ def test_sx_bridge_external_force_panel_reports_disabled_and_static_targets() ->
     bridge.build_control_panel(static_builder, object())
 
     assert "text:status: static target" in static_builder.events
+    assert "text:drag target: none" in static_builder.events
     assert "text:target: ground" in static_builder.events
     assert "text:magnitude: 0.00 N" in static_builder.events
     assert static_target.applied_forces == []
+
+    dynamic_target = _FakeRigidBody()
+    dynamic_target.name = "box"
+    dynamic_bridge = SxRenderBridge(_FakeWorld(), name="external_force_hint_test")
+    dynamic_bridge.add_rigid_body_visual(
+        static_target,
+        dart.BoxShape(np.array([0.1, 0.1, 0.1])),
+        (0.5, 0.5, 0.5),
+        name="static_visual",
+    )
+    dynamic_bridge.add_rigid_body_visual(
+        dynamic_target,
+        dart.BoxShape(np.array([0.1, 0.1, 0.1])),
+        (0.2, 0.5, 0.8),
+        name="dynamic_visual",
+    )
+    hint_builder = _FakePanelBuilder()
+    dynamic_bridge.build_control_panel(hint_builder, object())
+
+    assert "text:drag target: box" in hint_builder.events

@@ -82,6 +82,9 @@
   useful UI-ready frame. Integration coverage runs a real scripted sx
   force-drag capture and checks manifest, event-log, frame, and UI-region
   artifacts.
+- sx bridge external-force panels now list mapped dynamic drag targets before a
+  user starts dragging, while static, disabled, unmapped, invalid, and applying
+  states remain visible in the same panel.
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.
@@ -480,6 +483,19 @@ force start/update/release plus `artifacts_written`. The viewed final frame
 shows the compact Simulation toolbar and UI-ready first retained frame; the
 viewed mid-drag frame shows `status: applying`, nonzero force magnitude, and the
 viewport force overlay.
+
+Latest external-force target-hint checkpoint:
+
+```bash
+pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/tests/unit/test_py_demo_panels.py
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py::test_high_value_sx_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_sx_bridge_external_force_panel_reports_disabled_and_static_targets -q
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 8 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_force_target_hint
+```
+
+The viewed screenshot
+`/tmp/dart_py_demo_force_target_hint/sx_rigid_ipc_slide.png` shows
+`drag target: ipc_slide_box` before any external-force drag starts, while
+`target: none` and `status: idle` remain visible.
 
 ## Next
 
