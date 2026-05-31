@@ -21,7 +21,7 @@ restate their rules:
 - [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)
   owns the public C++ object model, the solver capability matrix (whose
   `Differentiability` axis is `unsupported, finite-difference checked, analytic,
-autodiff`), and the DART 8 promotion contract.
+autodiff`), and the DART 7 promotion contract.
 - [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)
   owns the dartpy facade, the `StateSpace` metadata object, and the functional
   `sx.state.rollout` shape this design extends rather than forks.
@@ -570,9 +570,9 @@ which is currently unstarted — the dashboard reflects this honestly.
    internal-only evidence; public API waits for the PLAN-110 split/promotion
    decision.
 
-## DART 8 Promotion Contract
+## Stable Promotion Contract
 
-Promotes to stable DART 8 only after the promoted subset has: public wrapper value
+Promotes to stable API only after the promoted subset has: public wrapper value
 types for state/control/parameter derivatives with no `detail`/ECS/backend
 includes; finite-difference-checked correctness on the named scenes; focused C++
 and Python tests; a named build option (`DART_BUILD_DIFF`) with CI covering on

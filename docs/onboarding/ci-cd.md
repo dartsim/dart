@@ -227,18 +227,18 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 ### Core CI Workflows
 
-| Workflow             | Purpose               | Platforms      | Trigger                             | Doc-only skip |
-| -------------------- | --------------------- | -------------- | ----------------------------------- | ------------- |
-| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | Any branch push, PR, manual         | No            |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | Branch push core; PR/main full      | Yes           |
-| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule     | Yes           |
-| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule     | Yes           |
-| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                    | N/A           |
-| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                | N/A           |
-| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | PR path-scoped compile; manual GPU  | N/A           |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Branch push core; PR/main full      | Yes           |
-| `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual       | N/A           |
-| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
+| Workflow             | Purpose               | Platforms      | Trigger                               | Doc-only skip |
+| -------------------- | --------------------- | -------------- | ------------------------------------- | ------------- |
+| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | Any branch push, PR, manual           | No            |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | Branch push core; PR/main full        | Yes           |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule       | Yes           |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule       | Yes           |
+| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                      | N/A           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                  | N/A           |
+| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | PR path-scoped compile; manual GPU    | N/A           |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Release-branch push/PR; manual canary | Yes           |
+| `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual         | N/A           |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule   | Yes           |
 
 ### CI Tiering Policy
 

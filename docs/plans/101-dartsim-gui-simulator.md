@@ -26,7 +26,7 @@ the legacy World with hardcoded example scenes. A standalone GUI simulator that
 can
 author, run, and replay simulations on the experimental World both serves that
 "easy start" dimension and acts as a forcing function that validates the
-experimental World on its path to the DART 8 official API.
+experimental World on its path to the DART 7 clean-break API.
 
 ## Scope
 

@@ -487,7 +487,7 @@ drawing expressed as DART values instead of renderer types.
 - `dartpy` (top-level) - Core classes/functions (math, dynamics, collision, simulation, constraint, optimizer) exposed in snake_case
 - `dartpy.io` - File parsers (URDF, SDF, SKEL, MJCF) [alias for legacy `utils`]
 - `dartpy.gui` - Filament-backed GUI descriptors and helpers
-- Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable in DART 7.x but emit `DeprecationWarning` and will be removed in DART 8.0.
+- Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable while DART 7 clean-break gates are being closed, but emit `DeprecationWarning` and should not be part of the DART 7 public contract.
 
 **Key Files**:
 

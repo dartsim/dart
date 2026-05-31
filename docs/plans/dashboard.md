@@ -321,13 +321,18 @@ its own line so status updates remain git-history friendly.
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)
-- Status: Complete
-- Horizon: Later
+- Status: Active
+- Horizon: Now
 - Dimension: Release transition
-- Next step: Use the DART 7 gate table and packaging checklist during release
-  packaging or release-hardening passes.
-- Gate: Release gate evidence names the relevant local or CI command, blocker,
-  or external compatibility check for each touched release surface.
+- Next step: Drive the clean-break parity sprint from the DART 7 gate table:
+  world-centric model loading, rigid-body dynamics parity,
+  contact/constraint parity, serialization/replay, public API promotion, and
+  DART 6.16 support policy. Keep research-solver breadth out of the DART 7
+  release blocker set unless a promoted API depends on it.
+- Gate: DART 7 is not release-ready until the clean-break gates in the release
+  roadmap have direct evidence, package metadata no longer implies DART
+  6/gz-physics compatibility, and DART 6.16 support scope plus sunset trigger
+  are published.
 
 ### PLAN-050: Experimental World Split
 
@@ -336,11 +341,11 @@ its own line so status updates remain git-history friendly.
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Track any future DART 8 promotion work under the release roadmap
-  once the experimental world has parity gates.
+- Next step: Track DART 7 promotion work under the release roadmap once the
+  experimental world has parity gates.
 - Gate: `dartpy.simulation_experimental` is separate from legacy
-  `dartpy.simulation`, has focused import/API coverage, and the DART 7/8
-  transition path is documented in onboarding docs.
+  `dartpy.simulation`, has focused import/API coverage, and the clean-break
+  promotion path is documented in onboarding docs.
 
 ### PLAN-060: Backend-Hidden GUI Roadmap
 
@@ -354,16 +359,16 @@ its own line so status updates remain git-history friendly.
 - Gate: GUI promotion stays backend-hidden and aligned with the maintained
   Filament renderer onboarding guidance.
 
-### PLAN-070: DART 8 Compatibility Cleanup
+### PLAN-070: Post-DART-7 Compatibility Cleanup
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)
-- Status: Complete
+- Status: Parked
 - Horizon: Later
 - Dimension: Release transition
-- Next step: Use the compatibility-debt inventory and cleanup review checklist
-  during DART 7 packaging passes and DART 8 removal planning.
-- Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
-  package/export status, and gz-physics compatibility where relevant.
+- Next step: Reopen only after the DART 7 clean break ships and the next major
+  release has concrete DART 7-era compatibility debt to remove.
+- Gate: Future DART 8 cleanup decisions cite migration notes, changelog
+  entries, package/export status, and downstream support status where relevant.
 
 ### PLAN-090: Filament Renderer Performance
 
