@@ -183,26 +183,27 @@ Springer, 2006.
 
 ## Algorithms & Methods (Papers)
 
-| ID                             | Reference                                                                                                                  | Topic          | Status      | Priority | Verdict   |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------- | -------- | --------- |
-| `featherstone-1983`            | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics       | planned     | high     | adopt     |
-| `liu-jain-mbs`                 | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics       | implemented | —        | adopt     |
-| `tan-lcp`                      | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact        | implemented | —        | adopt     |
-| `stewart-trinkle-1996`         | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact        | referenced  | medium   | baseline  |
-| `baraff-1996`                  | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics       | referenced  | low      | reference |
-| `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration    | referenced  | medium   | evaluate  |
-| `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision      | implemented | —        | adopt     |
-| `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact        | in-progress | high     | adopt     |
-| `rigid-ipc-2021`               | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact        | in-progress | high     | adopt     |
-| `werling-2021`                 | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable | in-progress | high     | adopt     |
-| `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration    | planned     | high     | adopt     |
-| `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration    | referenced  | medium   | reference |
-| `chen-2024-vbd`                | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration    | in-progress | high     | adopt     |
-| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact        | referenced  | medium   | evaluate  |
-| `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact        | referenced  | medium   | evaluate  |
-| `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration    | referenced  | high     | baseline  |
-| `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration    | referenced  | high     | evaluate  |
-| `kobilarov-crane-desbrun-2009` | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration    | referenced  | medium   | reference |
+| ID                             | Reference                                                                                                                  | Topic                              | Status      | Priority | Verdict   |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ----------- | -------- | --------- |
+| `featherstone-1983`            | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics                           | planned     | high     | adopt     |
+| `liu-jain-mbs`                 | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics                           | implemented | —        | adopt     |
+| `tan-lcp`                      | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact                            | implemented | —        | adopt     |
+| `stewart-trinkle-1996`         | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact                            | referenced  | medium   | baseline  |
+| `baraff-1996`                  | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics                           | referenced  | low      | reference |
+| `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration                        | referenced  | medium   | evaluate  |
+| `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
+| `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
+| `rigid-ipc-2021`               | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
+| `werling-2021`                 | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
+| `howell-2022-dojo`             | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
+| `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
+| `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration                        | referenced  | medium   | reference |
+| `chen-2024-vbd`                | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
+| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
+| `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
+| `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration                        | referenced  | high     | baseline  |
+| `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration                        | referenced  | high     | evaluate  |
+| `kobilarov-crane-desbrun-2009` | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration                        | referenced  | medium   | reference |
 
 ### `featherstone-1983`
 
@@ -440,6 +441,42 @@ Related public resources:
   the PyTorch `autograd.Function` bridge, finite-difference-checked correctness,
   and trajectory-optimization plus system-identification examples.
 
+### `howell-2022-dojo`
+
+Howell, T. A., Le Cleac'h, S., Bruedigam, J., Chen, Q., Sun, J., Kolter, J. Z.,
+Schwager, M., & Manchester, Z. "Dojo: A Differentiable Physics Engine for
+Robotics." arXiv:2203.00806, 2022.
+
+Related public resources:
+
+- Paper: [arxiv.org/abs/2203.00806](https://arxiv.org/abs/2203.00806)
+- Project site: [sites.google.com/view/dojo-sim/home](https://sites.google.com/view/dojo-sim/home)
+- Reference implementation:
+  [dojo-sim/Dojo.jl](https://github.com/dojo-sim/Dojo.jl)
+
+```bib
+@article{howelllecleach2022,
+  title={Dojo: A Differentiable Physics Engine for Robotics},
+  author={Howell, Taylor and Le Cleac'h, Simon and Bruedigam, Jan and Chen, Qianzhong and Sun, Jiankai and Kolter, J. Zico and Schwager, Mac and Manchester, Zachary},
+  journal={arXiv preprint arXiv:2203.00806},
+  url={https://arxiv.org/abs/2203.00806},
+  year={2022}
+}
+```
+
+- **Type:** paper · **Topic:** differentiable/contact/integration · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:** [`PLAN-110`](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation.md)
+  and its [Dojo solver gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation/dojo-gap-audit.md).
+- **Notes:** Dojo is an additional differentiable-rigid-body solver reference,
+  not the current PLAN-110 implementation target. The method combines
+  maximal-coordinate rigid bodies, variational integration, hard contact as a
+  nonlinear complementarity problem with second-order cone friction constraints,
+  a custom primal-dual interior-point solver, and implicit gradients through the
+  relaxed solve. DART will evaluate whether those ideas justify a separate
+  opt-in solver family after the active Nimble-style boxed-LCP path lands. The
+  Dojo.jl repository is a comparison baseline only; DART does not vendor or link
+  it as a runtime dependency.
+
 ### `chen-2024-vbd`
 
 Anka He Chen, Ziheng Liu, Yin Yang, and Cem Yuksel. "Vertex Block Descent."
@@ -648,19 +685,20 @@ MuJoCo XML (MJCF). <https://mujoco.readthedocs.io/en/stable/XMLreference.html>
 Software references that informed the experimental API shape, terminology, and
 algorithm-family choices. These are baselines/comparisons, not dependencies.
 
-| ID            | Engine                               | Used for                                               | Status     | Verdict   |
-| ------------- | ------------------------------------ | ------------------------------------------------------ | ---------- | --------- |
-| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API                 | referenced | baseline  |
-| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos      | referenced | baseline  |
-| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA      | referenced | baseline  |
-| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary       | referenced | baseline  |
-| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging              | referenced | reference |
-| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                      | referenced | reference |
-| `genesis`     | Genesis                              | entity/morph model, batched sim                        | referenced | reference |
-| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`              | referenced | reference |
-| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops                | referenced | baseline  |
-| `gaia`        | Gaia (VBD research framework)        | VBD correctness/performance baseline (`chen-2024-vbd`) | referenced | baseline  |
-| `tinyvbd`     | TinyVBD (minimal VBD reference)      | VBD algorithm reference (`chen-2024-vbd`)              | referenced | baseline  |
+| ID            | Engine                               | Used for                                                                    | Status     | Verdict   |
+| ------------- | ------------------------------------ | --------------------------------------------------------------------------- | ---------- | --------- |
+| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API                                      | referenced | baseline  |
+| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos                           | referenced | baseline  |
+| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA                           | referenced | baseline  |
+| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary                            | referenced | baseline  |
+| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging                                   | referenced | reference |
+| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                                           | referenced | reference |
+| `genesis`     | Genesis                              | entity/morph model, batched sim                                             | referenced | reference |
+| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`                                   | referenced | reference |
+| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops                                     | referenced | baseline  |
+| `gaia`        | Gaia (VBD research framework)        | VBD correctness/performance baseline (`chen-2024-vbd`)                      | referenced | baseline  |
+| `tinyvbd`     | TinyVBD (minimal VBD reference)      | VBD algorithm reference (`chen-2024-vbd`)                                   | referenced | baseline  |
+| `dojo`        | Dojo.jl                              | Dojo-style differentiable rigid-body solver evaluation (`howell-2022-dojo`) | referenced | evaluate  |
 
 ### Notes on engine verdicts
 
@@ -676,6 +714,10 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
   Block Descent (`chen-2024-vbd`). DART's PLAN-104 VBD solver is compared
   against them for correctness and performance on matched scenes, but DART
   reimplements VBD independently and does not vendor or link them.
+- **`dojo` — evaluate:** a Julia implementation and paper/site reference for a
+  differentiable maximal-coordinate variational hard-contact NCP/IPM solver.
+  PLAN-110 uses it as method evidence for a possible second solver family, but
+  DART must first complete the Dojo gap audit and de-risking spike.
 
 Design-doc links for these comparisons live in
 [`simulation_experimental_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)
