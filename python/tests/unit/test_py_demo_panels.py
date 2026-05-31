@@ -16,7 +16,10 @@ from examples.demos.scenes import (
     diff_drone_liftoff,
     experimental_rigid_body_gui,
     ipc_deformable_fem_buckle,
+    ipc_deformable_fem_sphere,
     ipc_deformable_friction_slide,
+    ipc_deformable_plate_friction,
+    ipc_deformable_rod_friction,
     sx_articulated,
     sx_contact,
     sx_floating_base,
@@ -198,6 +201,43 @@ def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:
     assert any(
         event.startswith("text:solver: deformable IPC") for event in builder.events
     )
+
+
+def test_ipc_fem_sphere_scene_exposes_clearance_panel() -> None:
+    setup = ipc_deformable_fem_sphere.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["IPC FEM Sphere"]
+
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith("text:sphere clearance:") for event in builder.events)
+    assert any(event.startswith("plot:Sphere clearance:") for event in builder.events)
+    assert any(
+        event.startswith("text:solver: deformable IPC") for event in builder.events
+    )
+
+
+def test_ipc_friction_obstacle_scenes_expose_speed_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (ipc_deformable_plate_friction, "IPC Plate Friction", "plot:X speed:"),
+        (ipc_deformable_rod_friction, "IPC Rod Friction", "plot:Rod-axis speed:"),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert any(event.startswith(expected_plot) for event in builder.events)
+        assert any(
+            event.startswith("text:friction coefficient:") for event in builder.events
+        )
+        assert any(
+            event.startswith("text:solver: deformable IPC")
+            for event in builder.events
+        )
 
 
 @pytest.mark.skipif(

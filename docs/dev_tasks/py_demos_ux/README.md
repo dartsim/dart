@@ -45,11 +45,17 @@ navigation, and a path for scene-specific controls.
   `ipc_deformable_fem_buckle`, including replay/optimization summaries for the
   differentiable drone and compression/span/solver diagnostics for the FEM
   buckle scene.
+- Add a clearance-focused scene panel to `ipc_deformable_fem_sphere` with
+  sphere and ground clearance plots plus shared IPC deformable solver
+  diagnostics.
+- Add speed/clearance panels to `ipc_deformable_plate_friction` and
+  `ipc_deformable_rod_friction` so the barrier-only friction demos expose live
+  tangential-speed, clearance, friction-dissipation, and solver diagnostics.
 
 ## Remaining work
 
 - Add per-example controls for more high-value differentiable and IPC
-  deformable scenes beyond the first drone/FEM buckle slice.
+  deformable scenes beyond the first drone/FEM/friction showcase slice.
 - Add a recorded-frame playback surface once demos have a recording contract.
 - Add direct pointer/input-driven force-drag interaction coverage if the viewer
   test harness grows mouse-event injection.
