@@ -341,6 +341,23 @@ dynamics::SkeletonPtr createPendulumSkeleton()
   return skeleton;
 }
 
+dynamics::SkeletonPtr createParallelUniversalAxisSkeleton()
+{
+  auto skeleton = dynamics::Skeleton::create("parallel_universal_axis");
+
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
+          nullptr,
+          dynamics::UniversalJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("bad_universal_body"));
+  (void)body;
+  joint->setName("bad_universal");
+  joint->setAxis1(Eigen::Vector3d::UnitZ());
+  joint->setAxis2(Eigen::Vector3d::UnitZ());
+
+  return skeleton;
+}
+
 } // namespace
 
 TEST(SkeletonLoader, TranslatesSupportedTreeProperties)
@@ -572,6 +589,19 @@ TEST(SkeletonLoader, RejectsWorldNameConflictBeforeCreatingMultibodies)
   EXPECT_THROW(
       sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
   EXPECT_EQ(world.getMultibodyCount(), 1u);
+  EXPECT_FALSE(world.getMultibody("loader_tree").has_value());
+}
+
+TEST(SkeletonLoader, RejectsWorldJointAxisConflictBeforeCreatingMultibodies)
+{
+  auto legacyWorld = dart::simulation::World::create("legacy_world");
+  legacyWorld->addSkeleton(createSupportedTreeSkeleton());
+  legacyWorld->addSkeleton(createParallelUniversalAxisSkeleton());
+
+  sx::World world;
+  EXPECT_THROW(
+      sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
   EXPECT_FALSE(world.getMultibody("loader_tree").has_value());
 }
 

@@ -777,6 +777,28 @@ def test_experimental_add_world_rejects_name_conflict_without_mutation():
     assert world.get_multibody("py_first_world_loader") is None
 
 
+def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_axis_conflict_world")
+    supported = dart.Skeleton("py_supported_world_loader")
+    supported.create_revolute_joint_and_body_node_pair()
+    legacy_world.add_skeleton(supported)
+
+    invalid = dart.Skeleton("py_parallel_universal_axis")
+    joint, _ = invalid.create_universal_joint_and_body_node_pair()
+    joint.set_name("py_bad_universal")
+    joint.set_axis1(np.asarray([0.0, 0.0, 1.0], dtype=float))
+    joint.set_axis2(np.asarray([0.0, 0.0, 1.0], dtype=float))
+    legacy_world.add_skeleton(invalid)
+
+    world = sx.World()
+    with pytest.raises(Exception, match="axis must not be parallel"):
+        sx.add_world(world, legacy_world)
+    assert world.num_multibodies == 0
+    assert world.get_multibody("py_supported_world_loader") is None
+
+
 def test_experimental_add_world_loads_uri():
     sx = _simulation_experimental()
 

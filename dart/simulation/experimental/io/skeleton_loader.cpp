@@ -182,6 +182,49 @@ Eigen::Vector3d mapJointAxis2(const dynamics::Joint& joint)
   return Eigen::Vector3d::UnitX();
 }
 
+void validateJointAxesLoadSupported(const dynamics::Joint& joint)
+{
+  const JointType jointType = mapJointType(joint);
+  const Eigen::Vector3d axis = mapJointAxis(joint);
+  const Eigen::Vector3d axis2 = mapJointAxis2(joint);
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !axis.allFinite(),
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis contains non-finite "
+      "values",
+      joint.getName());
+  const double axisNorm = axis.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      axisNorm <= 1e-9,
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis is zero",
+      joint.getName());
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !axis2.allFinite(),
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis2 contains "
+      "non-finite "
+      "values",
+      joint.getName());
+  const double axis2Norm = axis2.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      axis2Norm <= 1e-9,
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis2 is zero",
+      joint.getName());
+
+  if (jointType == JointType::Planar || jointType == JointType::Universal) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        (axis / axisNorm).cross(axis2 / axis2Norm).norm() <= 1e-6,
+        InvalidArgumentException,
+        "Cannot translate legacy Joint '{}' because its axis must not be "
+        "parallel to axis2 for planar and universal joints",
+        joint.getName());
+  }
+}
+
 double mapJointPitch(const dynamics::Joint& joint)
 {
   if (const auto* screw = dynamic_cast<const dynamics::ScrewJoint*>(&joint)) {
@@ -200,7 +243,7 @@ void validateJointLoadSupported(const dynamics::Joint& joint)
       joint.getName());
 
   validateCoordinateChart(joint);
-  (void)mapJointType(joint);
+  validateJointAxesLoadSupported(joint);
 }
 
 ActuatorType mapActuatorType(const dynamics::Joint& joint)
