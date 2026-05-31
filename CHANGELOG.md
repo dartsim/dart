@@ -633,16 +633,17 @@
     legacy `dynamics::Skeleton`: C++ `io::buildMultibodyFromSkeleton(world,
 skeleton, options)` and dartpy `build_multibody_from_skeleton` /
     `SkeletonToMultibodyOptions`. It maps weld, revolute, prismatic, screw,
-    universal, ball, free (floating base), and planar joints on a fixed base,
-    re-expresses each link's frame onto its outgoing joint (carrying the
-    center-of-mass offset and inertia), converts the screw pitch and free-joint
-    coordinate conventions, carries revolute/prismatic joint properties
-    (position/velocity/effort limits, damping, spring stiffness and rest
-    position, Coulomb friction), and reproduces the legacy skeleton's mass matrix
-    and Coriolis/gravity dynamics. Combined with `dart::io` URDF/SDF parsing this
-    loads a model file into the experimental World. Branching offsets, collision
-    shapes, and rotated parent-side offsets on ball/free/planar joints are not
-    yet translated and raise a descriptive error.
+    universal, ball, free (floating base), and planar joints in arbitrary trees
+    on a fixed base — including offset and branching joints, by placing each
+    joint with the new pre-joint offset (transformToParent = A, transformFromParent
+    = C^-1) so each link frame coincides with its legacy body frame. It converts
+    the screw pitch and free-joint coordinate conventions, carries
+    revolute/prismatic joint properties (position/velocity/effort limits,
+    damping, spring stiffness and rest position, Coulomb friction), and
+    reproduces the legacy skeleton's mass matrix and Coriolis/gravity dynamics.
+    Combined with `dart::io` URDF/SDF parsing this loads a model file into the
+    experimental World. Collision shapes and rotated parent-side offsets on
+    ball/free/planar joints are not yet translated and raise a descriptive error.
   - Added experimental articulated-body forward dynamics for fixed-base
     multibodies: `World::step()` now integrates revolute and prismatic joint
     accelerations from joint efforts, gravity, and Coriolis/centrifugal terms

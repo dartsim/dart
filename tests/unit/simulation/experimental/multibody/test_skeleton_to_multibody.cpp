@@ -579,23 +579,71 @@ TEST(SkeletonToMultibody, RejectsUnsupportedJointType)
 }
 
 //==============================================================================
-TEST(SkeletonToMultibody, RejectsOffsetRootJoint)
+// A moving root joint with a rotated and translated parent-side offset is
+// carried by the pre-joint offset (transformToParent) and reproduces the legacy
+// dynamics.
+TEST(SkeletonToMultibody, OffsetRootMatchesLegacyDynamics)
 {
   auto skeleton = dd::Skeleton::create("offset_root");
   auto [joint, body]
       = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
   joint->setName("hinge");
   joint->setAxis(Eigen::Vector3d::UnitY());
-  // A non-zero parent-side offset on a moving root joint cannot be anchored at
-  // the world base origin in this slice.
-  joint->setTransformFromParentBodyNode(translation(0.5, 0.0, 0.0));
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.linear()
+      = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  offset.translation() = Eigen::Vector3d(0.5, 0.0, 0.2);
+  joint->setTransformFromParentBodyNode(offset);
   body->setName("body");
   body->setMass(1.0);
-  body->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+  body->setMomentOfInertia(0.02, 0.02, 0.01, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.3));
 
-  sx::World world;
-  EXPECT_THROW(
-      sx::io::buildMultibodyFromSkeleton(world, *skeleton),
-      sx::InvalidOperationException);
-  EXPECT_EQ(world.getMultibodyCount(), 0u);
+  Eigen::VectorXd q(1);
+  q << 0.4;
+  Eigen::VectorXd dq(1);
+  dq << 0.5;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+// A branching parent (two revolute children at different parent-side offsets)
+// loads and reproduces the legacy dynamics. Each child joint carries its own
+// transformToParent, so no synthetic intermediate links are needed.
+TEST(SkeletonToMultibody, BranchingTreeMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("branch");
+
+  auto [weld, root]
+      = skeleton->createJointAndBodyNodePair<dd::WeldJoint>(nullptr);
+  weld->setName("weld");
+  root->setName("root");
+  root->setMass(3.0);
+  root->setMomentOfInertia(0.1, 0.1, 0.1, 0.0, 0.0, 0.0);
+
+  auto [hinge1, link1]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(root);
+  hinge1->setName("hinge1");
+  hinge1->setAxis(Eigen::Vector3d::UnitY());
+  hinge1->setTransformFromParentBodyNode(translation(0.3, 0.0, 0.0));
+  link1->setName("link1");
+  link1->setMass(1.0);
+  link1->setMomentOfInertia(0.02, 0.02, 0.01, 0.0, 0.0, 0.0);
+  link1->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.25));
+
+  auto [hinge2, link2]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(root);
+  hinge2->setName("hinge2");
+  hinge2->setAxis(Eigen::Vector3d::UnitX());
+  hinge2->setTransformFromParentBodyNode(translation(-0.3, 0.0, 0.1));
+  link2->setName("link2");
+  link2->setMass(0.8);
+  link2->setMomentOfInertia(0.015, 0.015, 0.008, 0.0, 0.0, 0.0);
+  link2->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.2));
+
+  Eigen::VectorXd q(2);
+  q << 0.4, -0.3;
+  Eigen::VectorXd dq(2);
+  dq << 0.2, 0.5;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
 }

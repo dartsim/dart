@@ -76,35 +76,35 @@ struct SkeletonToMultibodyOptions
 /// and a center-of-mass offset), connected by the experimental `Joint` that
 /// matches the legacy parent `Joint`.
 ///
-/// Frame convention. The experimental dynamics anchors every joint at its
-/// parent link's frame origin, whereas a legacy joint carries arbitrary
-/// parent- and child-side offsets. To realize a legacy joint exactly, each
-/// experimental link's frame origin is placed on that link's own outgoing
-/// joint, and the inertia/center-of-mass are re-expressed in the placed frame.
-/// A synthetic fixed base link represents the world frame so that a root body's
-/// parent-joint offset is realized rather than dropped.
+/// Frame convention. Each experimental link frame coincides with its legacy
+/// body frame, so mass, inertia, center of mass, and the joint axis map across
+/// directly. The legacy parent- and child-side joint offsets become the
+/// experimental joint's `transformToParent` (= A) and `transformFromParent`
+/// (= C^-1), so the relative transform matches legacy exactly:
+/// `A · jointMotion(q) · C^-1`. This represents offset joints, offset roots,
+/// and branching parents (sibling joints at different locations) without
+/// reframing. A synthetic fixed base link represents the world frame; the
+/// skeleton's root bodies attach beneath it.
 ///
 /// Supported joints: weld (fixed), revolute, prismatic, screw, universal, ball
-/// (spherical), free (floating), and planar, forming serial chains or trees
-/// whose sibling joints share a common parent-side frame, on a fixed base.
-/// Generalized positions and velocities are copied when `options.copyState` is
-/// set (with the screw pitch and the free-joint coordinate order converted to
-/// the experimental convention).
+/// (spherical), free (floating), and planar, in arbitrary trees on a fixed
+/// base. Generalized positions and velocities are copied when
+/// `options.copyState` is set (with the screw pitch and the free-joint
+/// coordinate order converted to the experimental convention).
 ///
-/// Anchoring constraint: the axis-based joints (revolute, prismatic, screw,
-/// universal) tolerate a rotated parent-side offset (the axes are rotated into
-/// the placed frame); the orientation-coordinate joints (ball, free, planar)
-/// require an identity parent-side offset because their generalized coordinates
-/// are not yet re-expressed under a rotated parent frame.
+/// Limitation: the orientation-coordinate joints (ball, free, planar) require
+/// an identity-rotation parent- and child-side offset (a translational offset
+/// is fine), because their generalized coordinates are not yet re-expressed
+/// under a rotated joint frame. The axis-based joints (revolute, prismatic,
+/// screw, universal) and weld joints accept arbitrary offsets.
 ///
 /// @param world The experimental world that will own the created multibody.
 /// @param skeleton The legacy skeleton to translate.
 /// @param options Translation options (name, base link name, state copy).
 /// @return A handle to the created `Multibody`.
-/// @throws InvalidOperationException if the skeleton uses a joint type, a
-///         branching offset, a non-fixed root, or a non-positive link mass that
-///         this slice does not yet represent. The message names the unsupported
-///         feature.
+/// @throws InvalidOperationException if the skeleton uses an unsupported joint
+///         type, a rotated offset on a ball/free/planar joint, or a
+///         non-positive link mass. The message names the unsupported feature.
 DART_EXPERIMENTAL_API Multibody buildMultibodyFromSkeleton(
     World& world,
     const dynamics::Skeleton& skeleton,

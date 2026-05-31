@@ -63,9 +63,8 @@ namespace dart::simulation::experimental::io {
 
 namespace {
 
-// Translation offset whose direction perpendicular to a joint axis the
-// experimental anchoring convention cannot represent. Anything below this is
-// treated as "the joint is anchored at the parent link origin".
+// Tolerance for treating a joint offset's rotation as identity (ball/free/planar
+// joints require identity-rotation parent/child offsets).
 constexpr double kAnchorTolerance = 1e-9;
 
 /// Rotation matrix from an exponential-coordinate rotation vector (Rodrigues).
@@ -86,11 +85,11 @@ struct MappedJoint
   Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
   double pitch = 0.0; // experimental screw pitch (translation per radian)
   std::size_t dof = 0;
-  // Axis-based joints (revolute/prismatic/screw/universal) tolerate a rotated
-  // parent-side offset: their axes are rotated into the placed frame. The
-  // orientation-coordinate joints (ball/free/planar) require an identity
-  // parent-side offset because their generalized coordinates are not yet
-  // re-expressed under a rotated parent frame.
+  // Axis-based joints (revolute/prismatic/screw/universal) and weld joints
+  // accept arbitrary parent/child offsets. The orientation-coordinate joints
+  // (ball/free/planar) require identity-rotation offsets because their
+  // generalized coordinates are not yet re-expressed under a rotated joint
+  // frame; reframable is false for them.
   bool reframable = true;
 };
 
@@ -254,19 +253,6 @@ void copyJointProperties(const dynamics::Joint& legacy, Joint& experimental)
   experimental.setEffortLimits(lower, upper);
 }
 
-/// The constant offset that places body `b`'s experimental link frame onto its
-/// outgoing joint, so that joint stays anchored at this link's frame origin.
-/// Leaf bodies keep the legacy body frame (identity offset).
-Eigen::Isometry3d outgoingJointOffset(const dynamics::BodyNode& body)
-{
-  if (body.getNumChildBodyNodes() == 0) {
-    return Eigen::Isometry3d::Identity();
-  }
-  return body.getChildBodyNode(0)
-      ->getParentJoint()
-      ->getTransformFromParentBodyNode();
-}
-
 /// A fully-resolved plan for one experimental link, computed from the skeleton
 /// alone (no World mutation). Resolving every link up front lets the conversion
 /// reject an unrepresentable skeleton before anything is added to the World, so
@@ -297,19 +283,20 @@ Multibody buildMultibodyFromSkeleton(
 {
   const std::size_t bodyCount = skeleton.getNumBodyNodes();
 
-  // Per-body frame offset placing each link onto its own outgoing joint.
-  std::unordered_map<const dynamics::BodyNode*, Eigen::Isometry3d> offsetOf;
-  offsetOf.reserve(bodyCount);
-  for (std::size_t i = 0; i < bodyCount; ++i) {
-    const auto* body = skeleton.getBodyNode(i);
-    offsetOf.emplace(body, outgoingJointOffset(*body));
-  }
-
   // Plan pass: resolve every link from the skeleton alone and reject anything
   // unrepresentable before touching the World, so a rejected load leaves the
   // World unchanged. Bodies are visited in skeleton index order; a parent
   // always precedes its children, which also makes the experimental
   // joint-construction order match the legacy DOF ordering.
+  //
+  // The experimental joint relative transform mirrors the legacy one,
+  //   child_in_parent = transformToParent * jointMotion(q) *
+  //   transformFromParent,
+  // so each experimental link frame coincides with its legacy body frame: the
+  // axis, mass, center of mass, and inertia map across directly, and the joint
+  // is placed by transformToParent = A and transformFromParent = C^-1 (A/C the
+  // legacy parent/child offsets). This represents offset joints and branching
+  // parents without reframing.
   std::vector<LinkPlan> plans;
   plans.reserve(bodyCount);
   for (std::size_t i = 0; i < bodyCount; ++i) {
@@ -317,37 +304,26 @@ Multibody buildMultibodyFromSkeleton(
     const auto* joint = body->getParentJoint();
     const auto* parentBody = body->getParentBodyNode();
 
-    const Eigen::Isometry3d parentOffset
-        = parentBody ? offsetOf.at(parentBody) : Eigen::Isometry3d::Identity();
-    const Eigen::Isometry3d& childOffset = offsetOf.at(body);
-
     const MappedJoint mapped = mapJoint(*joint);
 
-    // childInParentLegacy(q) = A * Q(q) * C^-1, with A/C the legacy
-    // parent/child offsets. Re-expressed between the placed experimental frames
-    // it becomes
-    //   M * Q(q) * C^-1 * childOffset,   M = parentOffset^-1 * A.
-    // The experimental facade applies the joint motion at the parent origin, so
-    // M must place the joint there: M.translation() must vanish for any moving
-    // joint (otherwise it is an offset root joint, or a branch whose siblings
-    // do not share a parent-side frame). Orientation-coordinate joints
-    // additionally require M.linear() == I because their generalized
-    // coordinates are not yet re-expressed under a rotated parent frame.
     const Eigen::Isometry3d A = joint->getTransformFromParentBodyNode();
     const Eigen::Isometry3d C = joint->getTransformFromChildBodyNode();
-    const Eigen::Isometry3d M = parentOffset.inverse() * A;
 
-    if (mapped.type != JointType::Fixed) {
-      const bool offset = M.translation().norm() > kAnchorTolerance;
+    // The ball/free/planar coordinate conventions assume the joint frame is
+    // aligned with the parent and child body frames; a rotated parent- or
+    // child-side offset would require re-expressing their orientation
+    // coordinates, which is not yet implemented. A translational offset is fine
+    // (it is carried by transformToParent / transformFromParent).
+    if (!mapped.reframable) {
       const bool rotated
-          = !M.linear().isApprox(Eigen::Matrix3d::Identity(), kAnchorTolerance);
-      if (offset || (!mapped.reframable && rotated)) {
+          = !A.linear().isApprox(Eigen::Matrix3d::Identity(), kAnchorTolerance)
+            || !C.linear().isApprox(
+                Eigen::Matrix3d::Identity(), kAnchorTolerance);
+      if (rotated) {
         DART_EXPERIMENTAL_THROW_T(
             InvalidOperationException,
-            "buildMultibodyFromSkeleton cannot anchor joint '{}' at its parent "
-            "link origin. Offset root joints, branches whose sibling joints do "
-            "not share a parent-side frame, and rotated parent-side offsets on "
-            "ball/free/planar joints are not yet supported.",
+            "buildMultibodyFromSkeleton does not yet support a rotated parent- "
+            "or child-side offset on the ball/free/planar joint '{}'",
             joint->getName());
       }
     }
@@ -368,20 +344,14 @@ Multibody buildMultibodyFromSkeleton(
     plan.linkName = body->getName();
     plan.spec.name = joint->getName();
     plan.spec.type = mapped.type;
-    plan.spec.axis = M.linear() * mapped.axis;
-    plan.spec.axis2 = M.linear() * mapped.axis2;
-    plan.spec.transformFromParent = M * C.inverse() * childOffset;
+    plan.spec.axis = mapped.axis;
+    plan.spec.axis2 = mapped.axis2;
+    plan.spec.transformToParent = A;
+    plan.spec.transformFromParent = C.inverse();
     plan.pitch = mapped.pitch;
     plan.mass = mass;
-
-    // Inertial properties re-expressed in the placed link frame. The link frame
-    // equals the legacy body frame composed with childOffset, so a body-frame
-    // point p maps to childOffset^-1 * p and the moment about the center of
-    // mass rotates by R = childOffset.linear().
-    const Eigen::Matrix3d rotation = childOffset.linear();
-    plan.com = childOffset.inverse() * body->getLocalCOM();
-    plan.inertia
-        = rotation.transpose() * body->getInertia().getMoment() * rotation;
+    plan.com = body->getLocalCOM();
+    plan.inertia = body->getInertia().getMoment();
 
     if (options.copyState && mapped.dof > 0) {
       auto [position, velocity] = mapJointState(*joint, mapped);

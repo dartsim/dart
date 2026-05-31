@@ -216,25 +216,39 @@ is a verified no-op (full experimental suite 38/38); a new
 of the dynamics. This unlocks branching at an offset, offset roots, and
 arbitrary trees.
 
-**Resume here, in order:**
+### Committed: loader refactored onto the pre-joint offset + branching
 
-1. Refactor the loader onto the pre-joint offset:
-   `JointSpec.transformToParent = A` (legacy `getTransformFromParentBodyNode`),
-   `transformFromParent = C^-1` (inverse `getTransformFromChildBodyNode`). Then
-   the synthetic-base `O_b` reframing, the `outgoingJointOffset` helper, and the
-   anchor/`reframable` restriction can all be dropped — every link's frame
-   becomes its legacy body frame (so inertia/COM map directly, no reframing).
-   Keep the synthetic identity base as the fixed world root. The screw-pitch and
-   free-velocity conversions stay. This drops the `mapped.reframable` and
-   `kAnchorTolerance` machinery and simplifies `buildMultibodyFromSkeleton`.
-2. Add **branching** support + tests: a parent body with sibling child joints at
-   different offsets now loads (each child joint carries its own
-   `transformToParent`); add a branched-skeleton DART-6 parity test (C++ +
-   dartpy). The existing rotated-frame/offset-root rejection tests will need
-   updating since those cases are now supported.
-3. `pixi run lint`; commit the loader refactor + branching slice.
-4. Then the remaining items: collision shapes (needs a `CollisionShape`
-   pose-offset field), `readWorld`/multi-skeleton, then Subsystem A (boxed-LCP).
+`buildMultibodyFromSkeleton` now maps each joint with
+`transformToParent = A` (legacy `getTransformFromParentBodyNode`) and
+`transformFromParent = C^-1` (inverse `getTransformFromChildBodyNode`), so each
+experimental link frame coincides with its legacy body frame — axis, mass,
+center of mass, and inertia map across directly with no reframing. The
+synthetic-base `O_b` reframing, `outgoingJointOffset`, and the
+`M`/`kAnchorTolerance` anchor check are gone. This adds **branching parents**
+(sibling joints at different offsets, each carrying its own `transformToParent`)
+and **offset/rotated roots**, verified by `BranchingTreeMatchesLegacyDynamics`
+and `OffsetRootMatchesLegacyDynamics` (C++) and a dartpy branching parity test.
+Ball/free/planar still require identity-rotation parent/child offsets
+(translation is fine). Full experimental suite 39/39; Python loader suite 9/9.
+
+**Resume here, in order (remaining Subsystem B + Subsystem A):**
+
+1. **Collision shapes.** Translate `BodyNode` shape nodes (with a
+   `CollisionAspect`) to `Link::setCollisionShape` for sphere/box. Blocked on the
+   experimental `CollisionShape` having **no pose-offset field**: a shape offset
+   from the body origin (common) cannot be represented. Either add an offset to
+   `CollisionShape` (a small experimental-API change) or restrict to
+   origin-coincident shapes. Decide the API shape first.
+2. **`readWorld` / multi-skeleton convenience.** Add a `World`-level loader that
+   converts each skeleton of a legacy `simulation::World` (or a file via
+   `dart::io::readWorld`). Thin; each root body already attaches under one base,
+   so multi-tree works today.
+3. **Subsystem A — coupled boxed-LCP.** The remaining headline gap. Reorder the
+   `World::step` pipeline to (1) all velocity integration, (2) one unified
+   contact/constraint solve over all bodies via `dart/math/lcp`, (3) all position
+   integration. Multi-session; touches the core step loop and every passing test
+   — do it as its own slice with the suite as the guardrail, revert if it
+   destabilizes (as the first universal-joint attempt was).
 
 ## Immediate Next Step
 
@@ -346,17 +360,13 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     rotated parent offset; ball/free/planar require an identity parent offset
     (their orientation coordinates are not yet re-expressed under a rotated
     parent frame — a follow-up).
-  - **Remaining for Subsystem B:**
-    - **Branching at an offset** (a parent link with ≥2 child joints at
-      different frames). The clean fix is to insert a massless fixed
-      intermediate link per branch to carry each child-joint offset — blocked
-      only by `Link::setMass` requiring positive mass (allow a structural/zero
-      mass fixed link, or special-case it in the bridge).
-    - **Collision/visual shapes:** translate `BodyNode` shape nodes to
-      `Link::setCollisionShape` (sphere/box today; see Phase 2 shape backlog).
-    - **`readWorld` / multi-skeleton:** a `World`-level loader that converts each
-      skeleton (the bridge already attaches every root body under one base, so
-      multi-tree skeletons work; a whole-`World` convenience is the next step).
+  - **(DONE) Branching at an offset and offset/rotated roots.** Solved by the
+    pre-joint offset (`transformToParent`) rather than massless intermediate
+    links: a parent with sibling joints at different offsets, and offset/rotated
+    roots, load directly. See the committed sections above.
+  - **Remaining for Subsystem B (see "Resume here, in order" above):** collision
+    shapes (needs a `CollisionShape` pose-offset field) and a `readWorld` /
+    multi-skeleton convenience.
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),

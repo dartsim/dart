@@ -250,6 +250,50 @@ def test_build_multibody_floating_base_steps():
     assert free.velocity[2] < -1e-3
 
 
+def test_build_multibody_branching_tree_matches_legacy():
+    sx = _simulation_experimental()
+
+    # A branching parent: a root revolute body with two revolute children at
+    # different parent-side offsets. Each child joint carries its own offset.
+    skeleton = dart.Skeleton("branch")
+    j0, b0 = skeleton.create_revolute_joint_and_body_node_pair()
+    j0.set_axis(np.array([0.0, 1.0, 0.0]))
+    b0.set_inertia(dart.Inertia(2.0, [0.0, 0.0, -0.2], np.diag([0.05, 0.05, 0.03])))
+
+    offset1 = np.identity(4)
+    offset1[0, 3] = 0.3
+    j1, b1 = skeleton.create_revolute_joint_and_body_node_pair(b0)
+    j1.set_axis(np.array([0.0, 1.0, 0.0]))
+    j1.set_transform_from_parent_body_node(offset1)
+    b1.set_inertia(dart.Inertia(1.0, [0.0, 0.0, -0.25], np.diag([0.02, 0.02, 0.01])))
+
+    offset2 = np.identity(4)
+    offset2[0, 3] = -0.3
+    offset2[2, 3] = 0.1
+    j2, b2 = skeleton.create_revolute_joint_and_body_node_pair(b0)
+    j2.set_axis(np.array([1.0, 0.0, 0.0]))
+    j2.set_transform_from_parent_body_node(offset2)
+    b2.set_inertia(dart.Inertia(0.8, [0.0, 0.0, -0.2], np.diag([0.015, 0.015, 0.008])))
+
+    skeleton.set_positions([0.4, -0.3, 0.2])
+    skeleton.set_velocities([0.2, 0.5, -0.1])
+
+    legacy_mass = np.array(skeleton.get_mass_matrix())
+    legacy_coriolis_gravity = np.array(skeleton.get_coriolis_and_gravity_forces())
+
+    world = sx.World()
+    world.gravity = [0.0, 0.0, -9.81]
+    multibody = sx.build_multibody_from_skeleton(world, skeleton)
+
+    assert multibody.num_dofs == 3
+    assert np.allclose(np.array(multibody.mass_matrix), legacy_mass, atol=1e-9)
+    assert np.allclose(
+        np.array(multibody.coriolis_and_gravity_forces),
+        legacy_coriolis_gravity,
+        atol=1e-9,
+    )
+
+
 def test_build_multibody_from_urdf_skeleton():
     sx = _simulation_experimental()
 
