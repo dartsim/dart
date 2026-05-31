@@ -914,9 +914,28 @@ TEST(FilamentSceneExtraction, DemoCatalogSearchMatchesSceneMetadata)
       dart::gui::detail::demoSceneMatchesSearch(
           scene, dart::gui::detail::normalizedDemoSearchText("SELF-CONTACT")));
   EXPECT_TRUE(dart::gui::detail::demoSceneMatchesSearch(scene, ""));
+  EXPECT_TRUE(dart::gui::detail::demoSceneMatchesExperimentalFocus(scene));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneVisibleInNavigator(
+          scene, dart::gui::detail::normalizedDemoSearchText("FEM"), true));
   EXPECT_FALSE(
       dart::gui::detail::demoSceneMatchesSearch(
           scene, dart::gui::detail::normalizedDemoSearchText("cartpole")));
+
+  const dart::gui::DemoSceneEntry legacyScene{
+      "boxes", "Boxes", "Rigid Body", "stacked boxes", factory};
+  EXPECT_FALSE(
+      dart::gui::detail::demoSceneMatchesExperimentalFocus(legacyScene));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneVisibleInNavigator(
+          legacyScene,
+          dart::gui::detail::normalizedDemoSearchText("boxes"),
+          false));
+  EXPECT_FALSE(
+      dart::gui::detail::demoSceneVisibleInNavigator(
+          legacyScene,
+          dart::gui::detail::normalizedDemoSearchText("boxes"),
+          true));
 }
 
 TEST(FilamentSceneExtraction, DemoCatalogGroupsNonContiguousCategories)
@@ -976,6 +995,10 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       std::string::npos);
   EXPECT_NE(
       applicationSource.find("groupDemoScenesByCategory"), std::string::npos);
+  EXPECT_NE(applicationSource.find("Experimental focus"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("demoSidebarExperimentalFocus"),
+      std::string::npos);
   EXPECT_NE(applicationSource.find("visibleSceneCount"), std::string::npos);
   EXPECT_EQ(applicationSource.find("categoryEnd"), std::string::npos);
   EXPECT_NE(applicationSource.find("categoryHasActive"), std::string::npos);
@@ -996,6 +1019,12 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       std::string::npos);
   EXPECT_NE(
       applicationSource.find("pendingDemoFallbackIndex"), std::string::npos);
+  EXPECT_EQ(
+      applicationSource.find("&& !lifecycle->sceneSwitchRequested"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("sceneActivationPendingScene != entry.id"),
+      std::string::npos);
   EXPECT_NE(
       applicationSource.find("kDemoSceneStartupTimeoutMs"), std::string::npos);
   EXPECT_NE(
@@ -5484,6 +5513,13 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_EQ(state.sceneActivationPendingScene, "other_demo");
   EXPECT_NE(
       state.sceneActivationStatus.find("Starting demo 'other_demo'"),
+      std::string::npos);
+  dart::gui::requestSceneSwitch(state, "third_demo");
+  EXPECT_TRUE(state.sceneSwitchRequested);
+  EXPECT_EQ(state.requestedScene, "third_demo");
+  EXPECT_EQ(state.sceneActivationPendingScene, "third_demo");
+  EXPECT_NE(
+      state.sceneActivationStatus.find("Starting demo 'third_demo'"),
       std::string::npos);
   dart::gui::requestSceneReplay(state, "demo_scene");
   EXPECT_TRUE(state.sceneSwitchRequested);

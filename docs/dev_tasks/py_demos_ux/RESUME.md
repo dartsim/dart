@@ -72,6 +72,9 @@
   startup. A candidate scene that stalls or spends the first frame over the
   startup budget restores the previous active demo, leaving the rollback reason
   in the Simulation/Demos panels and scripted switch event log.
+- Pending sidebar demo switches are replaceable: clicking a different demo
+  while a previous request is still queued retargets the candidate instead of
+  leaving the user unable to change away from the pending row.
 - The docked `Simulation` panel now uses compact transport-style controls for
   start/pause, single-step, recording, and recorded-frame playback. Recorded
   frame playback stays visible when recording/captured frames exist, but no
@@ -85,6 +88,10 @@
 - sx bridge external-force panels now list mapped dynamic drag targets before a
   user starts dragging, while static, disabled, unmapped, invalid, and applying
   states remain visible in the same panel.
+- The Demos sidebar now has an `Experimental focus` toggle. It initializes from
+  the active scene, so launching an sx/experimental demo filters the navigator
+  to simulation-experimental categories by default while keeping legacy DART API
+  demos one checkbox away.
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.
@@ -496,6 +503,20 @@ The viewed screenshot
 `/tmp/dart_py_demo_force_target_hint/sx_rigid_ipc_slide.png` shows
 `drag target: ipc_slide_box` before any external-force drag starts, while
 `target: none` and `status: idle` remain visible.
+
+Latest experimental-focus checkpoint:
+
+```bash
+cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
+ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_gui_FilamentSceneExtraction
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 8 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_experimental_focus
+```
+
+The viewed screenshot
+`/tmp/dart_py_demo_experimental_focus/sx_rigid_ipc_slide.png` shows
+`Experimental focus` checked, `Showing 41/41 experimental demos`, sx/IPC
+categories in the sidebar, no legacy `Getting Started` category, and the
+right-docked Rigid IPC panel with target-aware external-force controls.
 
 ## Next
 

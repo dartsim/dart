@@ -614,6 +614,15 @@ std::string& demoSidebarSearch()
   return search;
 }
 
+bool& demoSidebarExperimentalFocus(bool defaultValue)
+{
+  static std::optional<bool> focus;
+  if (!focus.has_value()) {
+    focus = defaultValue;
+  }
+  return *focus;
+}
+
 dart::gui::Panel makeDemoSimulationPanel(
     const std::vector<dart::gui::DemoSceneEntry>& scenes, int activeIndex)
 {
@@ -779,11 +788,12 @@ dart::gui::Panel makeDemoSidebarPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     dart::gui::ViewerLifecycleState* lifecycle = context.lifecycle;
+    const dart::gui::DemoSceneEntry* active = nullptr;
     if (activeIndex >= 0 && activeIndex < static_cast<int>(scenes.size())) {
-      const auto& active = scenes[static_cast<std::size_t>(activeIndex)];
-      builder.text("Current: " + active.title);
-      if (!active.summary.empty()) {
-        builder.text(active.summary);
+      active = &scenes[static_cast<std::size_t>(activeIndex)];
+      builder.text("Current: " + active->title);
+      if (!active->summary.empty()) {
+        builder.text(active->summary);
       }
     }
     if (lifecycle != nullptr && !lifecycle->sceneActivationStatus.empty()) {
@@ -803,15 +813,33 @@ dart::gui::Panel makeDemoSidebarPanel(
     }
     const std::string normalizedSearch
         = dart::gui::detail::normalizedDemoSearchText(search);
+    const bool defaultExperimentalFocus
+        = active != nullptr
+          && dart::gui::detail::demoSceneMatchesExperimentalFocus(*active);
+    bool& experimentalFocus
+        = demoSidebarExperimentalFocus(defaultExperimentalFocus);
+    bool requestedExperimentalFocus = experimentalFocus;
+    if (builder.checkbox("Experimental focus", requestedExperimentalFocus)) {
+      experimentalFocus = requestedExperimentalFocus;
+    }
+    builder.itemTooltip(
+        "Show simulation-experimental and solver-focused demos.");
     std::size_t visibleSceneCount = 0;
+    std::size_t availableSceneCount = 0;
     for (const auto& scene : scenes) {
-      if (dart::gui::detail::demoSceneMatchesSearch(scene, normalizedSearch)) {
+      if (!experimentalFocus
+          || dart::gui::detail::demoSceneMatchesExperimentalFocus(scene)) {
+        ++availableSceneCount;
+      }
+      if (dart::gui::detail::demoSceneVisibleInNavigator(
+              scene, normalizedSearch, experimentalFocus)) {
         ++visibleSceneCount;
       }
     }
     builder.text(
         "Showing " + std::to_string(visibleSceneCount) + "/"
-        + std::to_string(scenes.size()) + " demos");
+        + std::to_string(availableSceneCount)
+        + (experimentalFocus ? " experimental demos" : " demos"));
     builder.separator();
 
     // Tree-style catalog: categories are grouped by first appearance even if
@@ -822,16 +850,21 @@ dart::gui::Panel makeDemoSidebarPanel(
         = dart::gui::detail::groupDemoScenesByCategory(scenes);
     for (const auto& group : categoryGroups) {
       std::size_t visibleCount = 0;
+      std::size_t totalCount = 0;
       bool categoryHasActive = false;
       for (const std::size_t i : group.sceneIndices) {
-        if (dart::gui::detail::demoSceneMatchesSearch(
-                scenes[i], normalizedSearch)) {
+        if (!experimentalFocus
+            || dart::gui::detail::demoSceneMatchesExperimentalFocus(
+                scenes[i])) {
+          ++totalCount;
+        }
+        if (dart::gui::detail::demoSceneVisibleInNavigator(
+                scenes[i], normalizedSearch, experimentalFocus)) {
           ++visibleCount;
         }
         categoryHasActive
             = categoryHasActive || static_cast<int>(i) == activeIndex;
       }
-      const std::size_t totalCount = group.sceneIndices.size();
       if (visibleCount == 0u) {
         continue;
       }
@@ -849,8 +882,8 @@ dart::gui::Panel makeDemoSidebarPanel(
         builder.indent();
         for (const std::size_t i : group.sceneIndices) {
           const auto& entry = scenes[i];
-          if (!dart::gui::detail::demoSceneMatchesSearch(
-                  entry, normalizedSearch)) {
+          if (!dart::gui::detail::demoSceneVisibleInNavigator(
+                  entry, normalizedSearch, experimentalFocus)) {
             continue;
           }
           const bool isActive = static_cast<int>(i) == activeIndex;
@@ -866,7 +899,7 @@ dart::gui::Panel makeDemoSidebarPanel(
           // Explain what each scene demonstrates when the row is hovered.
           builder.itemTooltip(entry.summary);
           if (clicked && !isActive && lifecycle != nullptr
-              && !lifecycle->sceneSwitchRequested) {
+              && lifecycle->sceneActivationPendingScene != entry.id) {
             requestSceneSwitch(*lifecycle, entry.id);
           }
         }
