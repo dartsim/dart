@@ -3513,6 +3513,60 @@ TEST(World, RigidBodyContactCoupledStackRests)
       ground.getTranslation().isApprox(Eigen::Vector3d(0.0, 0.0, -0.5)));
 }
 
+// Test that friction solved inside the coupled contact LCP turns a sliding
+// sphere into a rolling one. A single sphere on the ground is one contact, so
+// the contact-space matrix is non-singular and the solver takes the full
+// coupled normal+friction path (not the rank-deficient box-on-plane fallback).
+// Coulomb friction drives the contact-point slip to zero, converting forward
+// sliding into forward rolling without reversing the body.
+TEST(World, RigidBodyContactFrictionRollsSlidingSphere)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  // Large static ground so the sphere stays on it while rolling, top at z = 0.
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(20.0, 20.0, 0.5)));
+
+  // A sphere resting on the ground (center at z = 0.5) sliding in +x with no
+  // initial spin.
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  sphereOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setFriction(1.0);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(300);
+
+  const Eigen::Vector3d linear = sphere.getLinearVelocity();
+  const Eigen::Vector3d angular = sphere.getAngularVelocity();
+  // Velocity of the contact point (sphere bottom, arm = (0, 0, -r)).
+  const Eigen::Vector3d contactVelocity
+      = linear + angular.cross(Eigen::Vector3d(0.0, 0.0, -0.5));
+
+  // Friction (solved in the LCP) has driven the tangential slip at the contact
+  // to nearly zero -- the sphere is rolling, not sliding. (The exact rolling
+  // speed depends on the body inertia, so assert the slip and direction rather
+  // than a specific velocity.)
+  EXPECT_LT(std::hypot(contactVelocity.x(), contactVelocity.y()), 0.2);
+  // The body slowed from 2.0 m/s but kept moving forward (never reversed).
+  EXPECT_GT(linear.x(), 0.05);
+  EXPECT_LT(linear.x(), 1.95);
+  // It picked up forward spin (rolling: slip ~ 0 with v.x > 0 implies w.y > 0)
+  // and translated forward, and stayed resting on the ground.
+  EXPECT_GT(angular.y(), 0.05);
+  EXPECT_GT(sphere.getTranslation().x(), 0.3);
+  EXPECT_NEAR(sphere.getTranslation().z(), 0.5, 5e-2);
+}
+
 // Test that rigid-body integration keeps the integrated world pose
 // authoritative when a body has been reparented through the inherited frame
 // API.

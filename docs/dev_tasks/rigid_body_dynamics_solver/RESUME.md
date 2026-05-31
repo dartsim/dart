@@ -279,16 +279,40 @@ Verified by the drop/rest/bounce/friction guardrails plus a new coupled
 two-sphere-stack rest test (`RigidBodyContactCoupledStackRests`, non-singular
 2x2 off-diagonal coupling); full experimental suite 39/39, lint clean.
 
+**(DONE) Friction inside the LCP via `findex`.** The contact LCP now has three
+rows per contact (normal + two friction tangents). The friction rows store the
+coefficient `mu` in `hi`, set `lo = -mu`, and point `findex` at the contact's
+normal row (global index `3*i`); the ODE Dantzig solver scales that bound by the
+solved normal impulse to enforce `|lambda_t| <= mu*lambda_n`, so normal and
+friction are solved jointly. The Delassus assembly generalized cleanly: the same
+per-end formula with the row/column direction (normal or tangent) substituted,
+giving `effectiveMass`/`tangentMass1`/`tangentMass2` on the block diagonal. The
+right-hand side is `restitutionTarget - approach_n` for the normal row and
+`-approach_t` for the tangent rows (drive tangential velocity to zero). On the
+success path the solved normal+friction impulse is applied in one shot. The
+rank-deficient fallback now solves the **coupled normal-only** LCP (the
+normal-row block of the assembled operator) and only then the proven sequential
+friction sweep — extracting the normal block matters because adding friction
+rows makes the box-on-plane system fail the pivot more often, and the bare
+diagonal projection under-supported the box (large corner lever arms) and
+starved friction. Verified by the drop/rest/bounce/friction guardrails, the
+stack test, the 1e-9 swap, and a new `RigidBodyContactFrictionRollsSlidingSphere`
+test (single contact = coupled success path; friction drives the contact slip to
+zero so the sphere rolls). Full experimental suite 39/39, `test_world` 104/104,
+lint clean.
+
 **Next (remaining Subsystem A), in suggested order:**
-1. **Friction inside the LCP via `findex`** — replace the post-solve Coulomb
-   Gauss-Seidel sweep with tangent rows whose bounds reference the normal row
-   (`findex`, ODE convention) so normal+friction solve jointly. Guardrail: the
-   friction-decelerates and stack tests; watch the 1e-9 swap.
-2. **The full pipeline reorder** — velocity-integrate everything, then ONE
+
+1. **The full pipeline reorder** — velocity-integrate everything, then ONE
    unified boxed-LCP/PGS over rigid-rigid AND multibody-link contacts (and
    joint-limit/motor rows) together, then position-integrate. This subsumes the
-   separate `RigidBodyContactStage` and `simulateMultibody` contact passes.
-3. **Link-vs-link two-sided contacts** and **islands** for scaling.
+   separate `RigidBodyContactStage` and `simulateMultibody` contact passes, and
+   would also let the friction cone couple across the rigid/articulated split.
+2. **Link-vs-link two-sided contacts** and **islands** for scaling.
+3. **Friction-cone polish** — the ODE `findex` coupling freezes the friction
+   bound once per solve (a one-shot decoupling approximation); a pyramid->cone
+   or an outer normal/friction iteration would tighten coupled stacking
+   friction if a scene ever needs it.
 
 ## Immediate Next Step
 
@@ -308,13 +332,15 @@ architectural prerequisite, detailed below.
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
 What works today: rigid-body-vs-rigid-body and rigid-body-vs-static contacts
-(`RigidBodyContactStage` — a coupled normal boxed-LCP over all rigid-rigid
-contacts, then a sequential-impulse friction sweep + restitution + positional
-correction); link-vs-static-rigid-body and link-vs-dynamic-rigid-body one-sided
-articulated contact (inside `simulateMultibody`). **Missing:** link-vs-link
-(two-sided) contacts, friction inside the LCP, and a single unified
-boxed-LCP/PGS solve over rigid-rigid AND link contacts at once (the pipeline
-reorder).
+(`RigidBodyContactStage` — a coupled boxed-LCP over all rigid-rigid contacts that
+solves the normal impulses and Coulomb friction jointly, three rows per contact
+with the friction cone enforced via the solver's `findex`, plus restitution and
+positional correction; a rank-deficient set falls back to the coupled normal-only
+LCP + a sequential friction sweep); link-vs-static-rigid-body and
+link-vs-dynamic-rigid-body one-sided articulated contact (inside
+`simulateMultibody`). **Missing:** link-vs-link (two-sided) contacts and a single
+unified boxed-LCP/PGS solve over rigid-rigid AND link contacts at once (the
+pipeline reorder).
 
 - **Pipeline ordering (partly addressed):** the default `World::step` pipeline is
   now `RigidBodyVelocityStage` → `RigidBodyContactStage` →

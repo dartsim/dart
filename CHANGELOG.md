@@ -629,6 +629,19 @@
     behavior; the change threads through the forward dynamics, forward
     kinematics, and the variational integrator (the motion subspace is
     unaffected).
+  - Extended the experimental rigid-body contact boxed-LCP to solve Coulomb
+    friction jointly with the normal impulses. Each contact now contributes
+    three rows -- a normal row and two friction-tangent rows whose bounds are
+    coupled to the solved normal impulse through the solver's friction index
+    (`|lambda_t| <= mu * lambda_n`) -- so normal and friction are resolved in
+    one consistent solve instead of a normal solve followed by a separate
+    Gauss-Seidel friction sweep. A single isolated contact with no tangential
+    motion leaves the friction rows inactive (the elastic-collision velocity
+    swap stays exact); a rank-deficient contact set (a box resting flat on a
+    plane) falls back to the coupled normal-only solve plus the sequential
+    friction sweep. Verified by the existing drop/rest/bounce/friction tests
+    and a new sliding-sphere test that checks friction drives the contact slip
+    to zero (rolling) through the coupled solve.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the
