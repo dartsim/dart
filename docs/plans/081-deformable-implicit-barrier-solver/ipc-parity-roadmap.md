@@ -203,7 +203,7 @@ mass-independently) than with fixed κ. Remaining M6 follow-up: in-Newton κ
 homotopy (increase κ mid-solve if the min distance drops), and applying the
 adaptive κ to the self-contact barrier (which today carries its own stiffness).
 
-### M7 — Scale + performance (CPU then GPU) until beating the reference
+### M7 — Scale + performance (CPU then GPU) until beating the reference — iterative CG solve LANDED
 
 Matrix-free / AMGCL-class iterative linear solve for very large systems (Fig
 22, 688K nodes), on-device GPU assembly + solve beyond the current PSD offload,
@@ -212,6 +212,30 @@ and a profiling-grade benchmark harness that emits Fig-23-shaped statistics
 per scene. Acceptance: match or undercut IPC's per-step CPU time at equal
 accuracy on shared scenes (Table 1, Fig 23), then report GPU acceleration as
 net-new.
+
+**First increment landed:** an opt-in iterative (Jacobi-preconditioned
+conjugate-gradient) projected-Newton linear solve
+(`DeformableMaterialProperties.useIterativeLinearSolver` / dartpy
+`use_iterative_linear_solver`). It reuses the existing sparse SPD Hessian
+assembly but solves with CG instead of `SimplicialLDLT`, so it never factorizes
+— memory stays near O(nnz) and per-step cost grows more gently than direct
+fill-in as the mesh chunks up. The inertia floor + PSD-projected element blocks
+guarantee convergence; a non-converged/non-finite solve falls back to
+steepest descent exactly as the direct path does on an indefinite
+factorization. Meshes above the direct-solve node cap (20k) now take the
+iterative path automatically (effective ceiling raised to 1M nodes) instead of
+degrading to gradient descent. Verified by a regression in which a dropped FEM
+cube settles identically under both solvers while taking mutually exclusive
+solve paths (CG run never factorizes), with a `cg_solver` py-demo and a
+`BM_DeformableCgBarStep` benchmark mirroring the direct FEM-bar benchmark for
+per-step scaling comparison.
+
+Remaining M7 work: a truly matrix-free Hessian-vector CG (skip the sparse
+assembly entirely), a stronger preconditioner (incomplete-Cholesky / AMG) so
+stiff barrier-contact Hessians converge without falling back, on-device GPU
+assembly + solve beyond the current PSD offload, the 688K-node Fig-22 scale
+run, and the profiling-grade per-scene Fig-23 statistics harness with the
+Table-1 CPU comparison against the reference.
 
 ## Honest status
 

@@ -180,7 +180,9 @@ sx::DeformableBodyOptions makeTetraMeshOptions(int tetrahedronCount)
 // FEM elasticity (no spring edges). Used to benchmark the FEM assembly + sparse
 // projected-Newton solve cost as the element count grows.
 sx::DeformableBodyOptions makeFemBarOptions(
-    int cellsX, bool useFixedCorotational = false)
+    int cellsX,
+    bool useFixedCorotational = false,
+    bool useIterativeSolver = false)
 {
   cellsX = std::max(cellsX, 1);
   const int nx = cellsX + 1;
@@ -197,6 +199,7 @@ sx::DeformableBodyOptions makeFemBarOptions(
   options.material.poissonRatio = 0.3;
   options.material.useFiniteElementElasticity = true;
   options.material.useFixedCorotationalElasticity = useFixedCorotational;
+  options.material.useIterativeLinearSolver = useIterativeSolver;
 
   for (int k = 0; k < nz; ++k) {
     for (int j = 0; j < ny; ++j) {
@@ -927,10 +930,14 @@ void BM_DeformableTetraMeshStep(benchmark::State& state)
 //==============================================================================
 struct DeformableFemBarWorld
 {
-  explicit DeformableFemBarWorld(int cellsX, bool useFixedCorotational = false)
+  explicit DeformableFemBarWorld(
+      int cellsX,
+      bool useFixedCorotational = false,
+      bool useIterativeSolver = false)
   {
     body = world.addDeformableBody(
-        "fem_bar", makeFemBarOptions(cellsX, useFixedCorotational));
+        "fem_bar",
+        makeFemBarOptions(cellsX, useFixedCorotational, useIterativeSolver));
     nodeCount = body.getNodeCount();
     tetrahedronCount = body.getTetrahedronCount();
     for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -1003,6 +1010,42 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
   state.counters["contact_constraints"] = 0.0;
   // Average projected-Newton iterations per step, so the fixed-corotational
   // material's convergence can be compared to neo-Hookean at equal resolution.
+  state.counters["newton_iters_per_step"]
+      = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
+// The same stable neo-Hookean beam stepped through the iterative (conjugate-
+// gradient) projected-Newton linear solve instead of the sparse Cholesky
+// direct solve. Run at the same cell counts as BM_DeformableFemBarStep so the
+// per-step wall-clock and Newton-iteration counts can be compared directly:
+// CG never factorizes, so its memory stays near O(nnz) and its per-step cost
+// grows more gently than the direct solve's fill-in as the mesh chunks up --
+// the scaling axis of the IPC paper's Fig. 23 / Table 1. (On the thin bar
+// here, the direct solve's bandwidth is small, so CG's asymptotic advantage
+// only shows on larger, chunkier meshes; this benchmark measures the CG path's
+// cost and convergence so that scaling can be tracked.)
+void BM_DeformableCgBarStep(benchmark::State& state)
+{
+  const auto cellsX = static_cast<int>(state.range(0));
+  DeformableFemBarWorld fixture(
+      cellsX, /*useFixedCorotational=*/false, /*useIterativeSolver=*/true);
+
+  double totalNewtonIterations = 0.0;
+  for (auto _ : state) {
+    fixture.world.step();
+    totalNewtonIterations += static_cast<double>(
+        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
   state.SetItemsProcessed(
@@ -1476,8 +1519,9 @@ BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
 
-BENCHMARK(BM_DeformableFemBarStep)->Arg(2)->Arg(8)->Arg(24);
+BENCHMARK(BM_DeformableFemBarStep)->Arg(2)->Arg(8)->Arg(24)->Arg(48);
 BENCHMARK(BM_DeformableFcrBarStep)->Arg(2)->Arg(8)->Arg(24);
+BENCHMARK(BM_DeformableCgBarStep)->Arg(2)->Arg(8)->Arg(24)->Arg(48);
 
 // The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
 // dense-solve cap, so they exercise the sparse projected-Newton path; compare
