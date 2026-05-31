@@ -301,18 +301,78 @@ test (single contact = coupled success path; friction drives the contact slip to
 zero so the sphere rolls). Full experimental suite 39/39, `test_world` 104/104,
 lint clean.
 
-**Next (remaining Subsystem A), in suggested order:**
+**Next (remaining Subsystem A): the full pipeline reorder.** Velocity-integrate
+everything, then ONE unified boxed-LCP over rigid-rigid AND multibody-link
+contacts, then position-integrate — subsuming the separate `RigidBodyContactStage`
+and `simulateMultibody` contact passes so the friction cone couples across the
+rigid/articulated split. **This is a multi-slice refactor of the core step loop,
+not a safe increment** — design + adversarial review done (below); execute as
+individually-reviewed gated PRs, suite as guardrail, revert per slice.
 
-1. **The full pipeline reorder** — velocity-integrate everything, then ONE
-   unified boxed-LCP/PGS over rigid-rigid AND multibody-link contacts (and
-   joint-limit/motor rows) together, then position-integrate. This subsumes the
-   separate `RigidBodyContactStage` and `simulateMultibody` contact passes, and
-   would also let the friction cone couple across the rigid/articulated split.
-2. **Link-vs-link two-sided contacts** and **islands** for scaling.
-3. **Friction-cone polish** — the ODE `findex` coupling freezes the friction
-   bound once per solve (a one-shot decoupling approximation); a pyramid->cone
-   or an outer normal/friction iteration would tighten coupled stacking
-   friction if a scene ever needs it.
+Validated plan (read-only design workflow + two adversarial critiques):
+
+- **Target**: `[Velocity] RigidBodyVelocity + MultibodyVelocity` → `[Solve]
+  UnifiedConstraintStage (one boxed LCP)` → `[Position] RigidBodyPosition +
+  MultibodyPosition`, then Deformable, Kinematics. The hard part is splitting
+  `simulateMultibody` (`multibody_dynamics.cpp:637`), which today fuses the qddot
+  velocity solve + link-contact GS + manifold position integration into one
+  per-multibody call.
+- **Unification math**: both solves are the same Delassus form. Generalize the
+  rigid `delassusEntry` (`world_step_stage.cpp:5181`) to "sum over shared
+  bodies", where a shared *link* contributes `J_i^T M^-1 J_j` (the existing
+  `J^T M^-1 J` denominator at `multibody_dynamics.cpp:928`). Link-vs-link then
+  falls out mathematically but still needs new collision routing
+  (`multibody_dynamics.cpp:1282-1316` currently drops both-in-body pairs).
+- **Slicing** (each green on `pixi run test-all`): (0) factor the **four**
+  `World::step` pipeline builders (`world.cpp:1592/1619/1646/1665`) into one
+  helper — two append a caller stage and skip the variational branch, so
+  preserve that divergence; (1) extract the manifold **position-integration
+  tail** (`multibody_dynamics.cpp:1042-1107`) into a free
+  `integrateMultibodyPositions(...)` in a new `compute/multibody_constraint.*`
+  (cleanest, purely-mechanical seam — the recommended FIRST slice); (2) add
+  `MultibodyVelocityStage`/`MultibodyPositionStage` + reorder, link contacts
+  still in their own stage; (3+4, **merged** — do not bisect the link-contact
+  set across two solvers) unify rigid + link-static + link-dynamic-rigid into
+  `UnifiedConstraintStage`; (5) link-vs-link + new routing.
+- **Blockers the critiques verified (address before the relevant slice):**
+  - *Positions last.* Keep the existing invariant (`world.cpp:1606` comment): no
+    position stage runs until every velocity-writing stage has. A naive Slice-2
+    order (`RigidBodyPosition` before `MultibodyPosition`) violates it.
+  - *Per-multibody loop hoist.* The stage loops over multibodies and calls
+    `simulateMultibody` per body; a single LCP must hoist that loop and index
+    per-multibody solve contexts.
+  - *Velocity clamp placement.* The joint velocity-limit clamp runs **after** the
+    contact solve today (`multibody_dynamics.cpp:1021`); keep it post-solve, not
+    in the velocity stage.
+  - *Per-row restitution/Baumgarte.* Rigid uses threshold `1e-3`, no bias; link
+    uses `1e-2` + Baumgarte (`multibody_dynamics.cpp:961,980`). Carry a per-row
+    threshold + bias (0 for rigid rows) so the rigid `1e-9` swap stays
+    bit-identical and link resting/restitution is preserved — do NOT collapse to
+    one global convention.
+  - *Friction `findex` stride.* The rank-deficient fallback extracts the
+    normal-only block by striding `i*3` (`world_step_stage.cpp:5288-5392`); that
+    breaks once dense link rows interleave. Recompute `findex` against the
+    unified global row index and rework the fallback for link rows.
+  - *Fallback friction over links.* The fallback's sequential Coulomb sweep only
+    samples/applies rigid `comps::Velocity`; it has no link `M^-1 J^T` path, so
+    it would silently skip link friction. Generalize before merging link contacts.
+  - *M^-1 lifetime.* Do NOT cache `M^-1`/`DynamicsTree` in an EnTT component
+    across stages (reference-invalidation hazard); recompute `M^-1` once in the
+    solve stage (the project favors bit-stability over the micro-opt).
+  - *Determinism gate.* No existing test covers contact-path determinism; add a
+    "assembled `A,b,lo,hi,findex` element-identical for a multibody-free world"
+    diff test as a hard gate for the unify slice (the `1e-9` swap depends on the
+    rigid sub-block being bit-identical).
+  - *Out of scope initially*: the variational integrator path
+    (`variational_integration.cpp:1101`) keeps its own contact handling — gate
+    `UnifiedConstraintStage` on `method != Variational`. Joint limits stay
+    post-integration clamps; motors stay the pre-contact equality solve. Islands
+    and warm-starting are deliberate non-goals (flag, don't silently omit).
+
+Then: **link-vs-link** (slice 5) and **islands** for scaling; optional
+**friction-cone polish** — the ODE `findex` bound is frozen once per solve (a
+one-shot decoupling approximation); a true cone or an outer normal/friction
+iteration would tighten coupled stacking friction if a scene needs it.
 
 ## Immediate Next Step
 
