@@ -479,7 +479,8 @@ jobs:
         run: |
           mkdir -p /tmp/headless_output
           xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" \
-            ./build/default/cpp/Release/bin/rigid_cubes \
+            ./build/default/cpp/Release/bin/dart-demos \
+            --scene rigid_cubes \
             --headless --frames 10 \
             --screenshot /tmp/headless_output/rigid_cubes.ppm
           echo "Captured image:"
