@@ -261,17 +261,21 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-matrix-free-cg` - published as PR #2821 against `main`,
-with one local unpushed review-fix commit (`abc7b05f92e`, "Preserve legacy
-deformable material serialization"). Before pushing that follow-up, fetch and
-merge the latest `origin/main` into the PR branch, rerun the focused validation
-if the merge touches code, and get explicit approval for the push, thread
-resolution, and any Codex review re-trigger. The branch is a continuation on top
-of `feature/ipc-deformable-cg-iteration-diagnostics` after
-#2810/#2811/#2812/#2813 were all squash-merged. The four older
-`feature/ipc-deformable-*` branch commits are patch-equivalent to current `main`
-(`git cherry -v main <branch>` reports `-` for each), but their local and remote
-refs still exist and should not be deleted without explicit approval.
+`feature/ipc-deformable-matrix-free-cg` - published as PR #2821 against `main`.
+The hosted PR head is still `fc9f11a153a`, while the local branch has the
+addressed Codex review fix, local handoff updates, and a clean merge of current
+`origin/main` (`cb6218a950c`). Push only after explicit approval, then resolve
+the addressed Codex thread and request a fresh Codex review if approved. If time
+passes before the push, fetch `origin/main` again and merge it into the branch
+before pushing.
+
+The branch continues on top of `feature/ipc-deformable-cg-iteration-diagnostics`
+after #2810/#2811/#2812/#2813 were all squash-merged. The four older local
+`feature/ipc-deformable-*` branches are patch-equivalent to current
+`origin/main` (`git cherry -v origin/main <branch>` reports `-` for each), and
+their remote refs have been pruned from `origin`. The diagnostics branch remains
+local-only and is part of the active PR #2821 stack. Do not delete local branch
+refs without explicit approval.
 
 The base diagnostics slice is behavior-preserving M7 profiling work. It extends
 the public deformable solver diagnostics beyond `projectedNewtonIterativeSolves`
@@ -500,18 +504,17 @@ PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU per
 
 ## Immediate Next Step
 
-User directive (2026-05-28): KEEP BUILDING, NEVER STOP while a plan item remains,
-do everything in order (Codex review batched for Saturday). The three sequenced
-items (self-contact friction, Phase 5 harness, Phase 8 facade) are now done.
-REMAINING plan work, in rough priority: Phase 4 is now done except
-codimensional-obstacle friction (blocked on the codim-obstacle barrier);
-barrier-stall convergence robustness (the high-residual finding above; a strong
-next candidate -- additive, addresses a known limitation); live GPU-backend
-injection (wire the CUDA PSD primitive + a GPU-vs-CPU gate via an optional
-executor, world_step_stage stays GPU-free); adaptive barrier stiffness;
-rigid/codim obstacle barrier forces (disturbs #2732); remaining Phase 8 bindings
-(surface/tetra + DBC/NBC + scene loader); upstream corpus port once assets are
-vendored. Optimize CPU AND GPU throughout.
+PR #2821 is the active M7 matrix-free CG slice. The local branch is verified and
+ahead of the hosted PR head; the next approval-gated action is to push the local
+branch, resolve the addressed Codex review thread, and request a fresh Codex
+review. Do not reply inline to the bot review comment.
+
+After PR #2821 is updated and reviewed, continue M7 in bounded performance
+slices: harden matrix-free CG on larger contact-heavy meshes, decide the
+automatic large-mesh selection policy, then move to AMG / multigrid
+preconditioning, on-device GPU assembly + solve, and Fig. 22 / Table 1
+reference-comparison runs. Codimensional-obstacle friction remains blocked on
+codimensional-obstacle barrier support.
 
 ## Context That Would Be Lost
 
@@ -527,8 +530,19 @@ vendored. Optimize CPU AND GPU throughout.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-sparse-newton-solve
+git checkout feature/ipc-deformable-matrix-free-cg
 git status && git log -3 --oneline
+git fetch origin main
+git merge --no-ff origin/main
+cmake --build build/default/cpp/Release --target test_deformable_body dartpy
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SerializationLoadsLegacyV8Material:DeformableBody.SerializationPreservesMeshTopologyAndMaterial:DeformableBody.MatrixFreeLinearSolverMatchesSparseSolversOnGroundContact:DeformableBody.MatrixFreeLinearSolverMatchesSparseDirectSolve'
+PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'matrix_free_solver'
+pixi run check-api-boundary-inventory
+pixi run lint
+
+# Stop here for the current PR #2821 handoff. The remaining commands are
+# historical validation references for older IPC slices; run them only when
+# editing those older areas.
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
 ./build/default/cpp/Release/bin/bm_ipc_distance_kernels --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
@@ -586,13 +600,6 @@ cmake --build build/default/cpp/Release --target test_deformable_body bm_deforma
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.02s --benchmark_filter='BM_DeformableGridStage'
 ```
 
-Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
-scene replay base, `feature/ipc-deformable-contact-kernels` for the candidate
-set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
-`feature/ipc-tangent-stencils` for tangent scaffolding,
-`feature/ipc-motion-aware-candidates` for swept candidate culling,
-`feature/ipc-candidate-buffer-reuse` for reusable candidate buffers, or
-`feature/ipc-ccd-line-search`, `feature/ipc-sweep-scratch`, or
-`feature/ipc-interbody-surface-ccd`, `feature/ipc-ground-barrier-ccd`, or
-`feature/ipc-sweep-pair-traversal`, or `feature/ipc-rigid-surface-ccd` for the
-immediate stacked bases.
+Historical note: use older `feature/ipc-*` branches only for archaeology or
+targeted regression work on their slice; the current handoff branch is
+`feature/ipc-deformable-matrix-free-cg`.
