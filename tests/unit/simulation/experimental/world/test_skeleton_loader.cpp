@@ -434,6 +434,24 @@ TEST(SkeletonLoader, TranslatesForceActuatorCommandsAsEffort)
   EXPECT_DOUBLE_EQ(loadedJoint->getForce()[0], 1.25);
 }
 
+TEST(SkeletonLoader, RejectsMimicActuatorBeforeCreatingMultibody)
+{
+  auto skeleton = dynamics::Skeleton::create("mimic_command");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("mimic_link"));
+  (void)body;
+  joint->setName("mimic_hinge");
+  joint->setActuatorType(dynamics::Joint::MIMIC);
+
+  sx::World world;
+  EXPECT_THROW(
+      sx::io::addSkeleton(world, *skeleton), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
+}
+
 TEST(SkeletonLoader, LoadedPendulumMatchesClassicStep)
 {
   const auto skeleton = createPendulumSkeleton();

@@ -190,9 +190,21 @@ double mapJointPitch(const dynamics::Joint& joint)
   return 0.0;
 }
 
-ActuatorType mapActuatorType(dynamics::Joint::ActuatorType actuatorType)
+void validateJointLoadSupported(const dynamics::Joint& joint)
 {
-  switch (actuatorType) {
+  DART_EXPERIMENTAL_THROW_T_IF(
+      joint.getActuatorType() == dynamics::Joint::MIMIC,
+      InvalidArgumentException,
+      "Cannot translate legacy mimic actuator on Joint '{}' into an "
+      "experimental Joint yet",
+      joint.getName());
+}
+
+ActuatorType mapActuatorType(const dynamics::Joint& joint)
+{
+  validateJointLoadSupported(joint);
+
+  switch (joint.getActuatorType()) {
     case dynamics::Joint::FORCE:
       return ActuatorType::Force;
     case dynamics::Joint::PASSIVE:
@@ -206,10 +218,24 @@ ActuatorType mapActuatorType(dynamics::Joint::ActuatorType actuatorType)
     case dynamics::Joint::LOCKED:
       return ActuatorType::Locked;
     case dynamics::Joint::MIMIC:
-      return ActuatorType::Mimic;
+      break;
   }
 
   return ActuatorType::Force;
+}
+
+void validateSkeletonLoadSupported(const dynamics::Skeleton& skeleton)
+{
+  for (std::size_t i = 0; i < skeleton.getNumJoints(); ++i) {
+    const dynamics::Joint* joint = skeleton.getJoint(i);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        joint == nullptr,
+        InvalidArgumentException,
+        "Cannot translate legacy Skeleton '{}' because joint index {} is null",
+        skeleton.getName(),
+        i);
+    validateJointLoadSupported(*joint);
+  }
 }
 
 Eigen::VectorXd perDofVector(
@@ -409,7 +435,7 @@ void copyCollisionShape(const dynamics::BodyNode& source, Link& target)
 
 void copyJointState(const dynamics::Joint& source, Joint& target)
 {
-  target.setActuatorType(mapActuatorType(source.getActuatorType()));
+  target.setActuatorType(mapActuatorType(source));
   if (dynamic_cast<const dynamics::ScrewJoint*>(&source) != nullptr) {
     target.setPitch(mapJointPitch(source));
   }
@@ -458,6 +484,8 @@ Multibody addSkeleton(
     const dynamics::Skeleton& skeleton,
     const SkeletonLoadOptions& options)
 {
+  validateSkeletonLoadSupported(skeleton);
+
   Multibody multibody = world.addMultibody(skeleton.getName());
 
   std::unordered_set<std::string> usedLinkNames;
