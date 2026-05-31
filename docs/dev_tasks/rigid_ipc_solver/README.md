@@ -257,7 +257,7 @@
         (`tests/data/ccd-test-000..003.json`) as implemented in the generated
         manifest after their hermetic DART load/evaluator regressions landed.
   - [x] Mark the first audited kinematic direct-CCD rows
-        (`tests/data/kinematic/ccd-test-000..002.json`) as implemented in the
+        (`tests/data/kinematic/ccd-test-000..006.json`) as implemented in the
         generated manifest after their zero-time-hit guard regression landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.

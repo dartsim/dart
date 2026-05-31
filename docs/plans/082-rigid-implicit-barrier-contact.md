@@ -56,11 +56,13 @@
     The first expected-TOI evaluator regressions cover upstream-style
     edge-vertex, edge-edge, and face-vertex rows, while the first audited root
     rows (`tests/data/ccd-test-000..003.json`) now have hermetic
-    parser/topology and full-step miss regressions. Internal residual helpers
-    now cover the edge-vertex, edge-edge, and face-vertex parameter-space
-    equations used by interval-root rigid CCD, and first parameter-box
-    subdivision queries recover those expected contacts within the reference TOI
-    tolerance. Corpus-scale reference evaluator parity is still pending.
+    parser/topology and full-step miss regressions. The first audited kinematic
+    rows (`tests/data/kinematic/ccd-test-000..006.json`) are covered by the
+    zero-time-hit guard regression. Internal residual helpers now cover the
+    edge-vertex, edge-edge, and face-vertex parameter-space equations used by
+    interval-root rigid CCD, and first parameter-box subdivision queries recover
+    those expected contacts within the reference TOI tolerance. Corpus-scale
+    reference evaluator parity is still pending.
   - The first internal rigid curved-trajectory ACCD query covers 3D
     face-vertex, edge-edge, and point-edge primitives over linearly interpolated
     rotation vectors. Focused rotational tests show endpoint-linear primitive

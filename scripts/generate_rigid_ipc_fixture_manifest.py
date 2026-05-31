@@ -45,7 +45,7 @@ IMPLEMENTED_ROOT_CCD_DATA_ROWS = frozenset(
     f"tests/data/ccd-test-{index:03d}.json" for index in range(4)
 )
 IMPLEMENTED_KINEMATIC_CCD_DATA_ROWS = frozenset(
-    f"tests/data/kinematic/ccd-test-{index:03d}.json" for index in range(3)
+    f"tests/data/kinematic/ccd-test-{index:03d}.json" for index in range(7)
 )
 
 

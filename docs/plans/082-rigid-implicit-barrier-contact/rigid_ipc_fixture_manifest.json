@@ -9603,14 +9603,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited kinematic direct-CCD row and preserves the upstream guard against zero-time hits when the row starts separated.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_003",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_003",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited kinematic direct-CCD rows; remaining kinematic rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/kinematic/ccd-test-004.json",
@@ -9621,14 +9621,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited kinematic direct-CCD row and preserves the upstream guard against zero-time hits when the row starts separated.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_004",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_004",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited kinematic direct-CCD rows; remaining kinematic rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/kinematic/ccd-test-005.json",
@@ -9639,14 +9639,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited kinematic direct-CCD row and preserves the upstream guard against zero-time hits when the row starts separated.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_005",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_005",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited kinematic direct-CCD rows; remaining kinematic rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/kinematic/ccd-test-006.json",
@@ -9657,14 +9657,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited kinematic direct-CCD row and preserves the upstream guard against zero-time hits when the row starts separated.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_006",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_006",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited kinematic direct-CCD rows; remaining kinematic rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/kinematic/ccd-test-007.json",
