@@ -963,7 +963,10 @@ inline BlockDescentStats blockDescentTetMesh(
 /// Tetrahedral block descent with AVBD finite-stiffness material rows. Each
 /// tet uses its row's current effective stiffness as a scale on the body Lamé
 /// parameters during the primal sweep, then the scale ramps toward 1.0 from the
-/// observed deformation-gradient error after each sweep.
+/// observed deformation-gradient error after each sweep. Optional AVBD
+/// self-contact rows let pure-tet scenes share the same hard normal/friction
+/// row path as the mass-spring envelope; when they are absent, the existing
+/// lagged VBD self-contact penalty remains available.
 inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -978,10 +981,23 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     const TetAdjacency& adjacency,
     const BlockDescentOptions& options,
     const AvbdTetMaterialFiniteStiffnessOptions& avbdOptions,
-    const SelfContactAdjacency* selfContact = nullptr)
+    const SelfContactAdjacency* selfContact = nullptr,
+    std::vector<AvbdSelfContactNormalRow>* selfContactRows = nullptr,
+    const AvbdSelfContactNormalOptions* selfContactOptions = nullptr,
+    std::vector<AvbdSelfContactFrictionRow>* selfContactFrictionRows = nullptr,
+    const AvbdSelfContactFrictionOptions* selfContactFrictionOptions = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
+  const auto hasFreeSelfContactFrictionVertex
+      = [&](const AvbdSelfContactFrictionRow& row) {
+          for (const std::uint32_t node : row.nodes) {
+            if (node < vertexCount && fixed[node] == 0u) {
+              return true;
+            }
+          }
+          return false;
+        };
   const auto assemble = [&](std::uint32_t vertex) {
     VertexBlock block;
     addInertiaTerm(
@@ -1028,8 +1044,52 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
             effectiveLambda);
       }
     }
-    if (selfContact != nullptr) {
+    if (selfContactRows != nullptr && selfContact != nullptr
+        && selfContactOptions != nullptr
+        && vertex < selfContact->incident.size()) {
+      for (const SelfContactEntry& entry : selfContact->incident[vertex]) {
+        if (entry.constraint >= selfContactRows->size()) {
+          continue;
+        }
+        addAvbdSelfContactNormal(
+            block,
+            positions,
+            (*selfContactRows)[entry.constraint],
+            entry.localVertex,
+            selfContactOptions->alpha);
+      }
+    } else if (selfContact != nullptr) {
       addSelfContactTerms(block, vertex, *selfContact, positions);
+    }
+    if (selfContactFrictionRows != nullptr
+        && selfContactFrictionOptions != nullptr) {
+      for (std::size_t i = 0; i < selfContactFrictionRows->size();) {
+        const AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
+        const std::uint8_t localVertex
+            = avbdSelfContactLocalVertex(row, vertex);
+        if (localVertex < 4u) {
+          if (i + 1 < selfContactFrictionRows->size()
+              && avbdSelfContactSameFrictionPrimitive(
+                  row, (*selfContactFrictionRows)[i + 1])) {
+            addAvbdSelfContactFrictionTangentPair(
+                block,
+                positions,
+                row,
+                (*selfContactFrictionRows)[i + 1],
+                localVertex,
+                *selfContactFrictionOptions);
+            i += 2;
+            continue;
+          }
+          addAvbdSelfContactFrictionTangent(
+              block,
+              positions,
+              row,
+              localVertex,
+              selfContactFrictionOptions->alpha);
+        }
+        ++i;
+      }
     }
     return block;
   };
@@ -1070,6 +1130,48 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
           = avbdTetMaterialConstraintValue(tet.rest, tetPositions);
       row.state = updateAvbdTetMaterialFiniteStiffnessRow(
           row.state, constraintValue, row, avbdOptions);
+    }
+    if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+      for (AvbdSelfContactNormalRow& row : *selfContactRows) {
+        bool hasFreeVertex = false;
+        for (const std::uint32_t node : row.nodes) {
+          if (node < vertexCount && fixed[node] == 0u) {
+            hasFreeVertex = true;
+            break;
+          }
+        }
+        if (!hasFreeVertex) {
+          continue;
+        }
+        row.state = updateAvbdSelfContactNormalRow(
+            row.state, positions, row, *selfContactOptions);
+      }
+    }
+    if (selfContactFrictionRows != nullptr
+        && selfContactFrictionOptions != nullptr) {
+      for (std::size_t i = 0; i < selfContactFrictionRows->size();) {
+        AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
+        if (!hasFreeSelfContactFrictionVertex(row)) {
+          ++i;
+          continue;
+        }
+        if (i + 1 < selfContactFrictionRows->size()
+            && avbdSelfContactSameFrictionPrimitive(
+                row, (*selfContactFrictionRows)[i + 1])
+            && hasFreeSelfContactFrictionVertex(
+                (*selfContactFrictionRows)[i + 1])) {
+          updateAvbdSelfContactFrictionTangentPair(
+              row,
+              (*selfContactFrictionRows)[i + 1],
+              positions,
+              *selfContactFrictionOptions);
+          i += 2;
+          continue;
+        }
+        row.state = updateAvbdSelfContactFrictionTangentRow(
+            row.state, positions, row, *selfContactFrictionOptions);
+        ++i;
+      }
     }
   }
 

@@ -50,4 +50,7 @@ Read these files first:
   backends, ports all experiments/demos into tests/benchmarks/py-demos, records
   benchmark JSON proving DART beats reference and paper numbers for every
   claimed case, and performs any clean API/pipeline refactor needed for the
-  long-term DART 7/8 architecture.
+  long-term DART 7/8 architecture. For multi-session work, keep the active
+  `docs/dev_tasks/<task>/README.md` and `RESUME.md` explicit about the latest
+  completed slice, the next missing paper-parity gap, and why focused green
+  tests are not a full solver/paper completion claim.

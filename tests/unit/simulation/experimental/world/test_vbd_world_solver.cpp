@@ -272,6 +272,28 @@ sx::DeformableBodyOptions makeNearSelfContactSlidingSpringBody(double velocityX)
   return options;
 }
 
+sx::DeformableBodyOptions makeNearSelfContactTetBody()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.0, 0.6, 0.0),
+         Eigen::Vector3d(0.0, 0.0, -0.2),
+         Eigen::Vector3d(-0.2, -0.15, 0.01),
+         Eigen::Vector3d(0.2, -0.15, 0.01),
+         Eigen::Vector3d(0.0, 0.2, 0.01),
+         Eigen::Vector3d(0.0, 0.0, 0.21)};
+  options.masses = {1.0, 1.0, 1.0, 1.0, 0.1, 0.1, 0.1, 0.1};
+  options.fixedNodes = {0, 1, 2, 3};
+  options.surfaceTriangles = {{0, 1, 2}, {4, 5, 6}};
+  options.tetrahedra = {{0, 1, 2, 3}, {4, 5, 6, 7}};
+  options.material.youngsModulus = 1.0e5;
+  options.material.poissonRatio = 0.3;
+  options.damping = 1.0;
+  return options;
+}
+
 // Two same-body surface triangles where the top triangle would move completely
 // through the pinned bottom triangle in one step if VBD did not reuse the
 // self-surface CCD limiter after its block solve.
@@ -841,6 +863,51 @@ TEST(VbdWorldSolver, AvbdContactAndSelfContactFrictionRowsCombine)
   EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
+}
+
+//==============================================================================
+// Pure tetrahedral scenes can now use AVBD finite-stiffness material rows and
+// AVBD self-contact normal/friction rows together, rather than falling back to
+// the older VBD self-contact penalty when hard self-contact rows are requested.
+TEST(VbdWorldSolver, AvbdTetRowsCombineSelfContactFrictionRows)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  sx::DeformableBodyOptions options = makeNearSelfContactTetBody();
+  options.material.frictionCoefficient = 0.8;
+  world.addDeformableBody("tet-fold", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 12;
+  cfg.useAvbdFiniteStiffnessRows = true;
+  cfg.useAvbdSelfContactNormalRows = true;
+  cfg.avbdAlpha = 0.0;
+  cfg.avbdBeta = 2000.0;
+  cfg.avbdGamma = 1.0;
+  cfg.avbdMaxStiffness = 1.0e6;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_GT(stats.vbdAvbdSelfContactNormalRows, 0u);
+  EXPECT_EQ(
+      stats.vbdAvbdFrictionTangentRows,
+      2u * stats.vbdAvbdSelfContactNormalRows);
+  EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 2u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 2u);
+
+  const auto body = world.getDeformableBody("tet-fold");
+  ASSERT_TRUE(body.has_value());
+  for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+    EXPECT_TRUE(body->getPosition(i).allFinite()) << "node " << i;
+  }
 }
 
 //==============================================================================

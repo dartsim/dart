@@ -42,6 +42,11 @@ Completion requires direct evidence for all of the following:
 - explicit "not complete yet" language for any missing experiment, feature,
   backend, benchmark packet, visual artifact, or comparison.
 
+When an implementation spans multiple sessions, the plan or dev-task resume
+surface must record both the newly completed slice and the next missing
+paper-parity gap. Do not let checkpoint commits or focused green tests erase
+the broader CPU/GPU, demo, benchmark, and performance requirements.
+
 ## Gate Selection
 
 | Change type         | Required gates                                                                                                                                                     |
