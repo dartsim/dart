@@ -338,6 +338,13 @@ def test_ipc_deformable_barrier_only_box_friction_decelerates_strip() -> None:
     the CCD-free path to box/sphere obstacle friction.
     """
 
+    _require_simulation_experimental_symbols(
+        "CollisionShape",
+        "DeformableBodyOptions",
+        "DeformableEdge",
+        "World",
+    )
+
     import numpy as np
 
     from examples.demos.scenes import ipc_deformable_plate_friction as scene
