@@ -70,6 +70,7 @@ they should not own priority, timeline, or active implementation state.
 | [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)       | Durable row-level native-collision coverage matrix sidecar      |
 | [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md) | Generated native-collision benchmark evidence manifest          |
 | [`082-rigid-implicit-barrier-contact.md`](082-rigid-implicit-barrier-contact.md)           | PLAN-082 rigid IPC scope, manifest, and acceptance criteria     |
+| [`110-differentiable-simulation.md`](110-differentiable-simulation.md)                     | PLAN-110 differentiable simulation scope, audits, and gates     |
 | [`101-dartsim-gui-simulator.md`](101-dartsim-gui-simulator.md)                             | PLAN-101 dartsim GUI simulator scope, phases, and acceptance    |
 | Numbered initiative files, such as `010-*.md`                                              | Active plan scope, evidence, open gaps, and acceptance criteria |
 | [`AGENTS.md`](AGENTS.md)                                                                   | Local rules for agents editing plan docs                        |

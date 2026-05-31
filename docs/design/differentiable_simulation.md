@@ -33,7 +33,9 @@ autodiff`), and the DART 8 promotion contract.
 Active operating state lives in `docs/plans/dashboard.md` (PLAN-110) and
 `docs/dev_tasks/differentiable_simulation/`. Feature-by-feature parity tracking
 against the Nimble paper and repository lives in
-`docs/plans/110-differentiable-simulation/nimble-gap-audit.md`.
+`docs/plans/110-differentiable-simulation/nimble-gap-audit.md`; the planned
+Dojo-style solver evaluation lives in
+`docs/plans/110-differentiable-simulation/dojo-gap-audit.md`.
 
 This document was revised after architecture, plan, and API reviews. The
 "prose ran ahead of the code" in two places that those reviews corrected and
@@ -61,6 +63,23 @@ dynamics (`computeMultibodyDynamicsTerms`, `computeMultibodyLinkJacobian`), and 
 typed Model/State/Control/Contacts separation — which makes DART the natural home
 to reproduce and improve on that method rather than maintain a fork.
 
+PLAN-110 also tracks Dojo (Howell et al., arXiv 2203.00806) as an additional
+differentiable-rigid-body solver reference. Dojo is not the current
+implementation target: it uses a maximal-coordinate variational hard-contact
+NCP with nonlinear friction cones, a custom primal-dual interior-point solver,
+and implicit gradients through a relaxed contact solve. That is a separate
+evaluation track for a possible second opt-in solver family after the
+Nimble-style path lands.
+
+Architecturally, that means Dojo-style work fits behind the same experimental
+`World` multi-solver facade as the existing rigid solver. It is not a new public
+engine, and it is not a `ContactGradientMode` refinement of the boxed-LCP path.
+It would be an alternate rigid-body method family with its own model/state
+mapping, forward NCP/IPM solve, and solver-internal reverse pass. The public
+surface would continue to expose DART-owned state/control/parameter derivative
+objects; selection would use DART-owned solver-capability options, and unsupported
+builds would report unsupported-capability errors.
+
 The core design sentence is:
 
 > Differentiable simulation is an **opt-in mode** of the same experimental
@@ -79,11 +98,13 @@ seams; the internal reverse-pass architecture; the verification strategy (finite
 differencing is the correctness gate); honest documentation of correctness
 limits; and phasing, including the hard prerequisite on the LCP contact path.
 
-Out of scope (deferred): GPU/accelerator differentiable kernels; batched
-differentiable rollouts beyond a documented leading-dimension contract;
-autodiff-scalar templating of the _contact_ path; differentiable
-deformable/IPC contact (PLAN-081); and a public third-party custom-gradient
-plugin API.
+Out of scope for the current committed implementation: GPU/accelerator
+differentiable kernels; batched differentiable rollouts beyond a documented
+leading-dimension contract; autodiff-scalar templating of the _contact_ path;
+differentiable deformable/IPC contact (PLAN-081); and a public third-party
+custom-gradient plugin API. The Dojo-style maximal-coordinate variational/NCP/IPM
+solver is in scope only as a planned audit/spike track until PLAN-110 records a
+promotion or split decision.
 
 ## Background: What The Method Computes
 
@@ -183,13 +204,14 @@ sensitivity _across_ a mode switch.
 Surveyed for API ergonomics and the opt-in/overhead model (May 2026). Full notes
 and sources live in the PLAN-110 gap audit; the decision-relevant lessons:
 
-| Engine          | Diff mechanism                                      | Opt-in?                                                        | State model                                    | Contact gradient                                                            | Lesson taken into DART                                                              |
-| --------------- | --------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| **Nimble**      | Analytic LCP gradient + PyTorch `autograd.Function` | No — always on                                                 | `[q; q̇]` flat, mutable world context           | Exact hard-contact within mode; complementarity-aware heuristic for saddles | Adopt the method and the `autograd.Function` ergonomics; **reject always-on**       |
-| **Brax**        | JAX autodiff through pure functions                 | No — always on (functional)                                    | immutable pytree `State`                       | Soft; documented NaN/zero-gradient bugs                                     | Functional rollout composes with batch; soft-contact autodiff is the failure mode   |
-| **Newton 1.2**  | Warp reverse-mode tape, kernel adjoints             | **Yes** — `requires_grad` + `wp.Tape`; zero overhead otherwise | immutable `Model`+`State`+`Control`+`Contacts` | Per-solver; not all kernels have adjoints                                   | **Validates DART's structure and opt-in model**; reverse-only is a limit DART beats |
-| **Genesis 0.4** | Taichi source-transform AD                          | **Yes** — `SimOptions(requires_grad=True)` flag                | substep-indexed fields                         | Rigid-body diff still unstable                                              | Scene-level opt-in _flag_ (not a separate solver class) is the right ergonomic      |
-| **MJX**         | JAX autodiff; classic FD `mjd_transitionFD`         | inherent / FD in `autograd.Function`                           | immutable `mjx.Data`                           | Soft; stiff-contact oscillation                                             | FD-in-`autograd.Function` is the correctness _checker_ pattern                      |
+| Engine          | Diff mechanism                                      | Opt-in?                                                        | State model                                    | Contact gradient                                                            | Lesson taken into DART                                                                            |
+| --------------- | --------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Nimble**      | Analytic LCP gradient + PyTorch `autograd.Function` | No — always on                                                 | `[q; q̇]` flat, mutable world context           | Exact hard-contact within mode; complementarity-aware heuristic for saddles | Adopt the method and the `autograd.Function` ergonomics; **reject always-on**                     |
+| **Brax**        | JAX autodiff through pure functions                 | No — always on (functional)                                    | immutable pytree `State`                       | Soft; documented NaN/zero-gradient bugs                                     | Functional rollout composes with batch; soft-contact autodiff is the failure mode                 |
+| **Newton 1.2**  | Warp reverse-mode tape, kernel adjoints             | **Yes** — `requires_grad` + `wp.Tape`; zero overhead otherwise | immutable `Model`+`State`+`Control`+`Contacts` | Per-solver; not all kernels have adjoints                                   | **Validates DART's structure and opt-in model**; reverse-only is a limit DART beats               |
+| **Genesis 0.4** | Taichi source-transform AD                          | **Yes** — `SimOptions(requires_grad=True)` flag                | substep-indexed fields                         | Rigid-body diff still unstable                                              | Scene-level opt-in _flag_ (not a separate solver class) is the right ergonomic                    |
+| **MJX**         | JAX autodiff; classic FD `mjd_transitionFD`         | inherent / FD in `autograd.Function`                           | immutable `mjx.Data`                           | Soft; stiff-contact oscillation                                             | FD-in-`autograd.Function` is the correctness _checker_ pattern                                    |
+| **Dojo**        | Implicit gradients through a relaxed NCP/IPM solve  | Solver tolerance / central-path smoothness knob                | maximal-coordinate rigid bodies                | hard NCP with nonlinear friction cones                                      | Worth auditing as a second solver family; not a dependency or replacement for the active LCP path |
 
 Synthesis lessons that shaped the decisions: the Model/State/Control/Contacts
 structure DART already designed is the structure Newton converged on; opt-in via
@@ -197,7 +219,11 @@ a scene/world-level flag is the right ergonomic; the PyTorch `autograd.Function`
 bridge is the lowest-friction Python UX and decouples a C++/analytic backward
 from the framework; and contact-gradient correctness is an open problem (arXiv
 2207.05060) so DART's credibility comes from analytic exactness _plus_ honest
-documentation _plus_ a finite-difference gate.
+documentation _plus_ a finite-difference gate. Dojo adds a different research
+lesson: a maximal-coordinate variational hard-contact NCP/IPM solver can expose
+a smoothness/accuracy tradeoff through the interior-point central path, but that
+requires a separate solver contract and cannot be folded into the boxed-LCP
+reverse pass without a gap audit and spike.
 
 ## Design Decisions
 
@@ -538,6 +564,11 @@ which is currently unstarted — the dashboard reflects this honestly.
    escape (no FD gate; gated by a documented optimization-convergence benchmark);
    (5c) pre-contact surrogate (no FD gate; gated by a documented trajectory-opt
    task). Each labeled honestly.
+6. **Dojo-style solver evaluation (planned)** — audit and spike a separate
+   maximal-coordinate variational NCP/IPM solver with implicit gradients,
+   central-path smoothness control, and comparison examples. This starts as
+   internal-only evidence; public API waits for the PLAN-110 split/promotion
+   decision.
 
 ## DART 8 Promotion Contract
 
@@ -565,6 +596,8 @@ benchmark. The zero-cost `differentiable=false` default is part of the contract.
   objectives (a later utility slice).
 - A public third-party custom-gradient plugin API (needs the deferred ABI/GIL
   design).
+- Public Dojo-style maximal-coordinate/NCP/IPM solver API until the PLAN-110
+  Dojo gap audit and internal spike prove the path.
 
 ## Design Rationale
 
@@ -610,6 +643,6 @@ into the C++ core.
 - Tan, Siu & Liu. "Contact Handling for Articulated Rigid Bodies Using LCP."
   Catalog id `tan-lcp` — the LCP formulation this method differentiates.
 - Cross-engine survey (Brax arXiv:2106.13281; Newton/Warp; Genesis; MuJoCo MJX;
-  contact-gradient correctness arXiv:2207.05060; TOI-velocity arXiv:2305.00092;
-  hard-contacts-soft-gradients arXiv:2506.14186) — notes and sources in the
-  PLAN-110 gap audit.
+  Dojo arXiv:2203.00806; contact-gradient correctness arXiv:2207.05060;
+  TOI-velocity arXiv:2305.00092; hard-contacts-soft-gradients arXiv:2506.14186)
+  — notes and sources in the PLAN-110 gap audits.

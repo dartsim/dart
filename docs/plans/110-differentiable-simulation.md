@@ -1,15 +1,20 @@
-# PLAN-110: Differentiable Simulation (First Opt-In Gradient Capability)
+# PLAN-110: Differentiable Simulation (Opt-In Gradient Capabilities)
 
 - Operating state: `PLAN-110` in [`dashboard.md`](dashboard.md)
 - Outcome: the experimental `World` can, **opt-in**, produce analytic derivatives
-  of a physics step — state, control, and physical parameters — via implicit
+  of a physics step — state, control, and physical parameters — via DART-owned
+  differentiable solver capabilities. The first committed path is implicit
   differentiation of the contact LCP and articulated-body dynamics, matching the
-  Nimble method (arXiv:2103.16021). Derivatives are **exact within a contact mode**
-  (subgradients at mode/limit switches; elastic contact approximate) and verified
-  by finite differencing. Differentiability is off by default with bitwise-identical
+  Nimble method (arXiv:2103.16021). Derivatives are **exact within a contact
+  mode** (subgradients at mode/limit switches; elastic contact approximate) and
+  verified by finite differencing. The additional Dojo track evaluates a separate
+  maximal-coordinate variational hard-contact NCP solver with a primal-dual
+  interior-point method and implicit gradients (arXiv:2203.00806); it is a
+  planned evaluation track, not a replacement for the active Nimble-style
+  implementation. Differentiability is off by default with bitwise-identical
   results when off; the public surface exposes DART-owned derivative value types
-  and an optional PyTorch bridge, never solver internals, the reverse-pass cache,
-  or a tensor backend.
+  and optional framework bridges, never solver internals, reverse-pass caches, or
+  tensor backends.
 - Current evidence:
   - The solver architecture reserves the seam: a _coupler_ reverse pass for
     cross-domain interaction and (this plan) a _rigid-body-solver-internal_
@@ -35,6 +40,13 @@
   - DART's manifold position integration (SO(3)/SE(3) exp/log) makes the position
     Jacobian joint-type-keyed, not identity; implemented in
     `detail/smooth_jacobians.cpp`.
+  - Dojo adds a distinct differentiable-rigid-body reference: maximal-coordinate
+    state, variational integration, hard contact/friction as a nonlinear
+    complementarity problem with second-order cone constraints, a custom
+    primal-dual interior-point solver, and gradients from implicit
+    differentiation of a relaxed contact solve. The upstream Dojo.jl README says
+    the project is no longer actively developed, so DART treats Dojo as method
+    evidence and a comparison baseline, not a dependency.
 
 ## Owner Docs
 
@@ -42,10 +54,12 @@
   [`../design/differentiable_simulation.md`](../design/differentiable_simulation.md)
 - Feature-by-feature Nimble parity audit + cross-engine API survey:
   [`110-differentiable-simulation/nimble-gap-audit.md`](110-differentiable-simulation/nimble-gap-audit.md)
+- Dojo solver gap audit + integration notes:
+  [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
 - Public facade rules:
   [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
   [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
-- Research reference: `werling-2021` in
+- Research references: `werling-2021` and `howell-2022-dojo` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
 - Active implementation tracking (transient; durable owners are the design + gap
   audit): `docs/dev_tasks/differentiable_simulation/`.
@@ -61,13 +75,19 @@
 - Coordinates with PLAN-030 (deferred GPU/batched differentiable track) and
   PLAN-081 (deferred differentiable-deformable track); neither blocks the
   rigid-body analytic CPU method.
+- The Dojo track coordinates with PLAN-082 (variational integration) and the
+  rigid-body solver roadmap because it would require a separate maximal-coordinate
+  variational/NCP/IPM path rather than an extension of the existing boxed-LCP
+  reverse pass.
 
 ## Workstreams
 
-First slices of all five workstreams are implemented and verified (see the
-dashboard entry and `docs/dev_tasks/differentiable_simulation/`); each keeps
-`check-api-boundaries` green and is finite-difference-of-step validated. Slice
-detail lives in the dev-task roadmap.
+First slices of workstreams 1-5 are implemented and verified (see the dashboard
+entry and `docs/dev_tasks/differentiable_simulation/`); each keeps
+`check-api-boundaries` green and is finite-difference-of-step validated. The
+Dojo workstream is unstarted and must begin with the gap audit/spike below, not
+with public API or runtime dependencies. Slice detail for implemented work lives
+in the dev-task roadmap.
 
 1. **Opt-in seam + contact-free Jacobians** (implemented) — `WorldOptions::differentiable`
    (default false) + `DART_BUILD_DIFF`, nullable-sink snapshot plumbing, the
@@ -95,6 +115,17 @@ detail lives in the dev-task roadmap.
      construction** — asserted to produce a non-zero direction where ANALYTIC stalls);
    - 5c pre-contact surrogate (backward-only; **no FD gate** — asserted non-zero
      toward-contact where ANALYTIC is zero).
+6. **Dojo-style differentiable solver evaluation** (planned) — audit and
+   de-risk a separate maximal-coordinate variational hard-contact NCP/IPM solver:
+   model/state representation, nonlinear friction cone, primal-dual
+   interior-point residuals and central-path smoothness knob, implicit-gradient
+   KKT solve, examples/baselines, and coexistence with the current
+   boxed-LCP/Nimble-style path. This stays inside the experimental `World`
+   multi-solver architecture as an alternate rigid-domain method family with
+   DART-owned capability names, not as a `DojoWorld`, public solver registry, or
+   Dojo.jl dependency. The first slice is evidence-only: keep
+   [`dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
+   current, then run a minimal solver spike before any public API promise.
 
 Remaining follow-ups (not workstreams): worked trajectory-optimization /
 system-identification example programs, the torch-autograd end-to-end test (needs
@@ -139,6 +170,11 @@ tracked in `docs/dev_tasks/differentiable_simulation/`.
 - Architecture invariants held: it is the rigid-body-solver-internal reverse pass,
   the forward single-domain fast path is unchanged, and the public object model is
   not reshaped.
+- Dojo-style work remains an evaluation track until the gap audit is complete and
+  a minimal internal spike proves the maximal-coordinate variational/NCP/IPM
+  step, implicit-gradient solve, finite-difference agreement, and comparison
+  scenes can coexist with the current experimental `World` without leaking solver
+  internals or making Dojo.jl a runtime dependency.
 
 ## Revision Triggers
 
@@ -147,6 +183,9 @@ tracked in `docs/dev_tasks/differentiable_simulation/`.
   problem representation / `findex` convention changes (changes seams 1–2 and the
   friction-cone gradient).
 - The boxed-LCP solver interface (`dart/math/lcp/`) changes.
+- Dojo gap-audit evidence changes, or a maintainer decides whether the
+  maximal-coordinate variational/NCP/IPM track should be promoted, parked, or
+  split into a separate initiative.
 - Finite-difference evidence reveals a needed change in the analytic derivation,
   the position-Jacobian treatment, or the architecture doc.
 - A maintainer reprioritizes against other DART 7 → DART 8 work, or promotes the
