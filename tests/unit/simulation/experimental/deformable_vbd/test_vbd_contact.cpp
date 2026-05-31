@@ -39,6 +39,8 @@
 #include <functional>
 #include <vector>
 
+#include <cmath>
+
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
@@ -176,6 +178,81 @@ TEST(VbdContact, AvbdFrictionTangentUpdatesDualStateWithinBounds)
           row.state, Vec3(1.0, 0.0, 0.0), row, options);
   EXPECT_NEAR(clamped.lambda, -5.0, 1e-12);
   EXPECT_DOUBLE_EQ(clamped.stiffness, row.state.stiffness);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentPairProjectsStaticForceToCone)
+{
+  vbd::AvbdHalfSpaceFrictionRow rowX;
+  rowX.vertex = 0;
+  rowX.stepStartPosition = Vec3::Zero();
+  rowX.axis = Vec3::UnitX();
+  rowX.state.stiffness = 10.0;
+  rowX.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionRow rowY;
+  rowY.vertex = 0;
+  rowY.stepStartPosition = Vec3::Zero();
+  rowY.axis = Vec3::UnitY();
+  rowY.state.stiffness = 10.0;
+  rowY.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_TRUE(vbd::avbdFrictionPreviousDualInsideCone(rowX, rowY));
+  bool clamped = false;
+  const Eigen::Vector2d force = vbd::avbdHalfSpaceFrictionTangentPairForce(
+      Vec3(1.0, 1.0, 0.0), rowX, rowY, options, &clamped);
+
+  EXPECT_TRUE(clamped);
+  EXPECT_NEAR(force.norm(), 5.0, 1e-12);
+  EXPECT_NEAR(force.x(), force.y(), 1e-12);
+  EXPECT_LT(force.x(), 0.0);
+
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, Vec3(1.0, 1.0, 0.0), options);
+  EXPECT_NEAR(std::hypot(rowX.state.lambda, rowY.state.lambda), 5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentPairSwitchesToDynamicSlipDirection)
+{
+  vbd::AvbdHalfSpaceFrictionRow rowX;
+  rowX.vertex = 0;
+  rowX.stepStartPosition = Vec3::Zero();
+  rowX.axis = Vec3::UnitX();
+  rowX.state.stiffness = 10.0;
+  rowX.state.lambda = -5.0;
+  rowX.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionRow rowY;
+  rowY.vertex = 0;
+  rowY.stepStartPosition = Vec3::Zero();
+  rowY.axis = Vec3::UnitY();
+  rowY.state.stiffness = 20.0;
+  rowY.state.lambda = 0.0;
+  rowY.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_FALSE(vbd::avbdFrictionPreviousDualInsideCone(rowX, rowY));
+  const Eigen::Vector2d force = vbd::avbdHalfSpaceFrictionTangentPairForce(
+      Vec3(0.0, 2.0, 0.0), rowX, rowY, options);
+  EXPECT_NEAR(force.x(), 0.0, 1e-12);
+  EXPECT_NEAR(force.y(), -5.0, 1e-12);
+
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, Vec3(0.0, 2.0, 0.0), options);
+  EXPECT_NEAR(rowX.state.lambda, 0.0, 1e-12);
+  EXPECT_NEAR(rowY.state.lambda, -5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 20.0);
 }
 
 //==============================================================================

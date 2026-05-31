@@ -264,9 +264,10 @@ its own line so status updates remain git-history friendly.
   self-contact mass-spring, and pure-tetrahedral envelopes, with explicit
   fallback coverage for unsupported topology mixes, unrequested self-contact
   AVBD rows, Chebyshev, Rayleigh-damped, parallel, and unsupported-row requests;
-  it is not a scene-level parity claim. The next local slice is static/dynamic
-  friction switching, fuller contact/friction bounds, or self-contact friction
-  in the same combined-row solve.
+  adjacent friction tangent pairs now use lagged-dual static/dynamic switching
+  and pairwise circular-cone projection. It is not a scene-level parity claim.
+  The next local slice is fuller contact-manifold friction persistence or
+  self-contact friction in the same combined-row solve.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

@@ -450,9 +450,11 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// sweep. The optional friction-tangent rows provide the first bounded row
 /// family in the same serial driver. Optional self-contact normal rows share
 /// one scalar row per point-triangle / edge-edge primitive and stamp each
-/// incident local vertex through the lagged self-contact adjacency. Static /
-/// dynamic friction switching, full friction cones, tetrahedral row mixing, and
-/// parallel dual scheduling remain later slices.
+/// incident local vertex through the lagged self-contact adjacency. Friction
+/// tangent rows generated as adjacent pairs use the lagged tangential dual to
+/// switch between static and dynamic Coulomb modes. Full contact-manifold
+/// friction persistence, tetrahedral row mixing, and parallel dual scheduling
+/// remain later slices.
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -543,11 +545,24 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
       }
     }
     if (frictionRows != nullptr && frictionOptions != nullptr) {
-      for (const AvbdHalfSpaceFrictionRow& row : *frictionRows) {
+      for (std::size_t i = 0; i < frictionRows->size();) {
+        const AvbdHalfSpaceFrictionRow& row = (*frictionRows)[i];
         if (row.vertex == vertex) {
+          if (i + 1 < frictionRows->size()
+              && (*frictionRows)[i + 1].vertex == vertex) {
+            addAvbdHalfSpaceFrictionTangentPair(
+                block,
+                positions[vertex],
+                row,
+                (*frictionRows)[i + 1],
+                *frictionOptions);
+            i += 2;
+            continue;
+          }
           addAvbdHalfSpaceFrictionTangent(
               block, positions[vertex], row, frictionOptions->alpha);
         }
+        ++i;
       }
     }
     return block;
@@ -602,12 +617,27 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
           row.state, constraintValue, row, springOptions);
     }
     if (frictionRows != nullptr && frictionOptions != nullptr) {
-      for (AvbdHalfSpaceFrictionRow& row : *frictionRows) {
+      for (std::size_t i = 0; i < frictionRows->size();) {
+        AvbdHalfSpaceFrictionRow& row = (*frictionRows)[i];
         if (row.vertex >= vertexCount || fixed[row.vertex] != 0u) {
+          ++i;
+          continue;
+        }
+        if (i + 1 < frictionRows->size()
+            && (*frictionRows)[i + 1].vertex == row.vertex
+            && (*frictionRows)[i + 1].vertex < vertexCount
+            && fixed[(*frictionRows)[i + 1].vertex] == 0u) {
+          updateAvbdHalfSpaceFrictionTangentPair(
+              row,
+              (*frictionRows)[i + 1],
+              positions[row.vertex],
+              *frictionOptions);
+          i += 2;
           continue;
         }
         row.state = updateAvbdHalfSpaceFrictionTangentRow(
             row.state, positions[row.vertex], row, *frictionOptions);
+        ++i;
       }
     }
     if (selfContactRows != nullptr && selfContactOptions != nullptr) {

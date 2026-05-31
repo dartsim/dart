@@ -80,6 +80,10 @@ Paper audit:
     two bounded tangent rows per active AVBD contact normal, with
     `VbdWorldSolver.AvbdContactNormalRowsIncludeFrictionTangentRows` and
     `VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody` coverage.
+    Adjacent tangent-row pairs now use the lagged tangential dual to switch
+    between static sticking and dynamic sliding, and project the paired force to
+    the circular Coulomb cone with focused
+    `VbdContact.AvbdFrictionTangentPair*` coverage.
   - First self-contact normal row World slice started:
     `AvbdSelfContactNormalRow`, `avbdSelfContactNormalConstraintValue`,
     `addAvbdSelfContactNormal`, and `updateAvbdSelfContactNormalRow`. The
@@ -99,9 +103,9 @@ Paper audit:
     Rayleigh damping, parallel settings, and unsupported requested row families
     all keep using the existing VBD path without reporting partial AVBD row
     counters.
-  - Still missing static/dynamic friction switching, full friction-cone
-    persistence, self-contact friction, full row-family generation, parallel
-    dual/stiffness updates, and GPU parity.
+  - Still missing full contact-manifold friction persistence, self-contact
+    friction, full row-family generation, parallel dual/stiffness updates, and
+    GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
@@ -141,11 +145,11 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Start the next bounded AVBD contact/friction slice: static/dynamic friction
-   switching, fuller friction-cone persistence, or self-contact friction are the
+1. Start the next bounded AVBD contact/friction slice: fuller
+   contact-manifold friction persistence or self-contact friction are the
    preferred next row-family gaps now that static contact/friction,
-   attachments, finite-stiffness rows, and self-contact normals have narrow
-   World paths.
-2. In parallel planning, keep static/dynamic friction switching, full friction
-   cones, rigid/articulated rows, GPU parity, demos, and benchmark packets as
-   open AVBD parity gates rather than completion claims.
+   attachments, finite-stiffness rows, self-contact normals, and pairwise
+   static/dynamic friction switching have narrow World paths.
+2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
+   parity, demos, and benchmark packets as open AVBD parity gates rather than
+   completion claims.

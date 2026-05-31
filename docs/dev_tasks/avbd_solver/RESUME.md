@@ -19,10 +19,12 @@ error, separate tet-row diagnostics, and coexistence with the existing lagged
 VBD self-contact penalty. A bounded friction-tangent row primitive now
 participates in the serial mass-spring AVBD row driver, and supported
 static-contact mass-spring World scenes generate two tangent rows per active
-contact-normal row. Supported serial mass-spring self-contact scenes can also
-generate one AVBD self-contact normal row per lagged point-triangle /
-edge-edge primitive, stamp each incident local vertex through the shared scalar
-row, and report `vbdAvbdSelfContactNormalRows`.
+contact-normal row. Adjacent tangent-row pairs now use the lagged tangential
+dual to switch between static sticking and dynamic sliding and project the
+paired force to the circular Coulomb cone. Supported serial mass-spring
+self-contact scenes can also generate one AVBD self-contact normal row per
+lagged point-triangle / edge-edge primitive, stamp each incident local vertex
+through the shared scalar row, and report `vbdAvbdSelfContactNormalRows`.
 Unsupported mixed spring-plus-tet, mass-spring self-contact without the
 self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
 Rayleigh-damped, parallel, and unsupported-row requests have explicit fallback
@@ -38,11 +40,11 @@ tangent rows and supported World self-contact normal rows.
 
 ## Immediate Next Step
 
-Start the next bounded AVBD contact/friction slice: static/dynamic friction
-switching, fuller friction-cone persistence, or self-contact friction are the
-preferred row-family gaps. Keep the supported envelope narrow and preserve
-fallback coverage for topology mixes, damping/acceleration, parallel solves, and
-unsupported requested row combinations.
+Start the next bounded AVBD contact/friction slice: fuller contact-manifold
+friction persistence or self-contact friction are the preferred row-family gaps.
+Keep the supported envelope narrow and preserve fallback coverage for topology
+mixes, damping/acceleration, parallel solves, and unsupported requested row
+combinations.
 
 ## Context That Would Be Lost
 
@@ -61,10 +63,11 @@ unsupported requested row combinations.
   rows, and finite-stiffness spring rows, including a combined serial
   mass-spring row solve for those three families. Pure-tet World scenes can now
   use the tet-material finite-stiffness row path, supported static-contact
-  mass-spring World scenes generate bounded friction-tangent rows, and supported
-  serial mass-spring self-contact scenes generate AVBD self-contact normal rows.
-  This does not imply hard-contact/friction completeness, static/dynamic
-  friction switching, self-contact friction, rigid/soft coupling, or GPU parity.
+  mass-spring World scenes generate bounded friction-tangent rows with pairwise
+  static/dynamic switching, and supported serial mass-spring self-contact scenes
+  generate AVBD self-contact normal rows. This does not imply
+  hard-contact/friction completeness, full contact-manifold friction
+  persistence, self-contact friction, rigid/soft coupling, or GPU parity.
 
 ## How to Resume
 
@@ -76,7 +79,7 @@ build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_filter='VbdCombi
 build/default/cpp/Release/bin/test_vbd_attachment
 build/default/cpp/Release/bin/test_vbd_finite_stiffness
 build/default/cpp/Release/bin/test_vbd_contact --gtest_filter='VbdContact.Avbd*'
-build/default/cpp/Release/bin/test_vbd_world_solver --gtest_filter='VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial:VbdWorldSolver.AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes:VbdWorldSolver.AvbdContactNormalRowsFallbackForFriction:VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness:VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode:VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact'
+build/default/cpp/Release/bin/test_vbd_world_solver --gtest_filter='VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain:VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial:VbdWorldSolver.AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes:VbdWorldSolver.AvbdContactNormalRowsFallbackForFriction:VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody:VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness:VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode:VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact'
 ```
 
 Then continue Phase A1 from
