@@ -1652,7 +1652,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::useFixedCorotationalElasticity)
       .def_rw(
           "use_adaptive_barrier_stiffness",
-          &sim::DeformableMaterialProperties::useAdaptiveBarrierStiffness);
+          &sim::DeformableMaterialProperties::useAdaptiveBarrierStiffness)
+      .def_rw(
+          "use_iterative_linear_solver",
+          &sim::DeformableMaterialProperties::useIterativeLinearSolver);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(
