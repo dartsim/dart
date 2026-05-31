@@ -6,10 +6,10 @@ Proposal. This document owns durable API-shape rationale for the C++
 `dart::simulation::experimental` surface under
 `dart/simulation/experimental/**`.
 
-DART 7 treats this API as experimental and opt-in. DART 8 is the promotion
-target: the experimental simulation concepts shall become the official C++
-simulation API once parity gates are satisfied, and the legacy DART 6
-simulation API is removed rather than carried beside the new API.
+DART 7 treats this API as experimental and opt-in while parity gates are being
+closed. The experimental simulation concepts become the official DART 7 C++
+simulation API once those gates are satisfied, and the legacy DART 6 simulation
+API is removed rather than carried beside the new API.
 
 The companion Python binding design lives in
 [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md).
@@ -17,15 +17,15 @@ The companion Python binding design lives in
 ## Purpose
 
 The C++ experimental simulation API should give DART a clean public simulation
-surface for DART 8 while allowing the DART 7 implementation to mature behind an
-explicit experimental namespace. The API should expose research-facing physics
+surface for the DART 7 clean break while allowing the implementation to mature
+behind an explicit experimental namespace. The API should expose research-facing physics
 concepts and stable extension points without exposing ECS storage,
 implementation components, or backend execution details.
 
 The core design sentence is:
 
 > The experimental C++ simulation API is the DART 7 staging surface for the
-> official DART 8 simulation API, not a public contract for the underlying ECS
+> official clean-break simulation API, not a public contract for the underlying ECS
 > implementation.
 
 ## Design Principles
@@ -74,9 +74,10 @@ ownership and lifetime.
 
 ### Stable Facade, Replaceable Internals
 
-DART 7 treats this namespace as experimental. DART 8 should promote a stable
-facade: public headers, exported symbols, Doxygen behavior, examples, dartpy
-bindings, and migration notes become the compatibility contract.
+DART 7 treats this namespace as experimental while parity gates are being
+closed. Clean-break promotion should establish a stable facade: public headers,
+exported symbols, Doxygen behavior, examples, dartpy bindings, and migration
+notes become the compatibility contract.
 
 That stable facade should leave DART free to change implementation details:
 
@@ -192,7 +193,7 @@ backend-specific batch updates internally.
 ## Scope
 
 This design covers the supported shape of the experimental C++ API as it moves
-from DART 7 opt-in status to the official DART 8 simulation API.
+from opt-in status to the official DART 7 clean-break simulation API.
 
 It includes:
 
@@ -207,7 +208,7 @@ It includes:
 - stable public API rules that allow internal algorithm, solver, multi-physics,
   and compute-backend changes;
 - compute-graph exposure boundaries;
-- DART 8 promotion and legacy API removal rules.
+- DART 7 promotion and legacy API removal rules.
 
 It does not track active implementation tasks, release priority, or migration
 checklists. Those belong in `docs/plans/`, `docs/dev_tasks/`, release notes, or
@@ -216,8 +217,8 @@ the release roadmap.
 ## Non-Goals
 
 - Do not make the DART 7 experimental namespace a long-term compatibility
-  namespace after DART 8 promotion.
-- Do not keep the legacy DART 6 simulation API beside the promoted DART 8 API.
+  namespace after clean-break promotion.
+- Do not keep the legacy DART 6 simulation API beside the promoted DART 7 API.
 - Do not expose `entt::registry`, `entt::entity`, `comps`, component category
   types, raw component storage, `detail`, `internal`, backend task systems, GPU
   devices, streams, memory pools, or solver registries as user API.
@@ -242,7 +243,7 @@ the release roadmap.
   without the default rigid-body integration stage, and its executor overload
   lets the same kinematics-only path use backend-neutral compute execution.
   `World::updateKinematics()` remains available in DART 7 as the existing
-  synchronization spelling. The DART 8 target is fresh-by-default ordinary
+  synchronization spelling. The promotion target is fresh-by-default ordinary
   queries plus named synchronization hooks for predictable batching.
 - Default `World::step()` composes split rigid-body velocity/contact, multibody
   forward dynamics, rigid-body position, and kinematics stages through
@@ -268,10 +269,10 @@ the release roadmap.
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
   `examples/mimic_pendulums` are reference material for import compatibility
-  and semantics, not the DART 7/8 API shape.
+  and semantics, not the DART 7 clean-break API shape.
 - `World::getRegistry()` is a DART 7 implementation escape hatch for tests and
-  internal bring-up. It is explicitly excluded from DART 8 promotion unless a
-  later design creates a stable storage-inspection API.
+  internal bring-up. It is explicitly excluded from clean-break promotion unless
+  a later design creates a stable storage-inspection API.
 - `StateSpace` provides a bindable, storage-independent value object for named
   flat-vector metadata.
 - The experimental compute benchmark includes both world kinematics updates and
@@ -288,7 +289,7 @@ the release roadmap.
 - `docs/onboarding/api-boundaries.md` requires experimental APIs to have docs,
   tests, and ownership while keeping component storage, backend plumbing, and
   implementation namespaces out of public contracts.
-- `docs/onboarding/release-roadmap.md` defines DART 8 as the clean break that
+- `docs/onboarding/release-roadmap.md` defines DART 7 as the clean break that
   removes the legacy DART 6 API and promotes the new simulation API after
   parity gates pass.
 
@@ -306,7 +307,7 @@ and headers under:
 dart/simulation/experimental/**
 ```
 
-DART 8 promotes the supported subset into the official stable simulation API.
+DART 7 promotes the supported subset into the official stable simulation API.
 The exact final header layout can be decided during promotion, but the stable
 surface should preserve the same user-facing concepts and remove the DART
 6-era simulation API rather than wrapping it as a compatibility layer.
@@ -333,12 +334,12 @@ The expected public header families are:
 | `contacts`                   | Collision results and constraint/contact views.             | Public buffers/views with allocation and attribute rules.       |
 | Future `sensors`/`rendering` | Sensor owners, snapshots, viewers, and renderers.           | Separate ownership, sync, lifetime, and threading contracts.    |
 
-Header families are conceptual. The exact file layout can change during DART 8
+Header families are conceptual. The exact file layout can change during DART 7
 promotion, but public examples should never require implementation folders.
 
 ## Public Object Model
 
-| Concept                | DART 7 experimental owner                                                                                            | DART 8 promotion target                                                                                                               |
+| Concept                | DART 7 experimental owner                                                                                            | DART 7 promotion target                                                                                                               |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points.                                 | Official simulation world.                                                                                                            |
 | `RigidBody`            | World-owned handle for a single rigid object and frame.                                                              | Public rigid body handle with transform, velocity, inertial, force, and torque APIs, plus geometry/material APIs once wrappers exist. |
@@ -384,9 +385,9 @@ world.step();
 ```
 
 DART 7 may keep existing camelCase methods while the experimental API matures.
-For DART 8 promotion, public names should follow the DART 7/8 public API naming
-policy for the target namespace and headers. Compatibility wrappers for the
-legacy DART 6 simulation API are not part of the stable DART 8 surface.
+For clean-break promotion, public names should follow the DART 7 public API
+naming policy for the target namespace and headers. Compatibility wrappers for
+the legacy DART 6 simulation API are not part of the stable DART 7 surface.
 
 Design-mode errors, invalid handles, topology mismatches, and cross-world
 object use should fail through documented exceptions or status-returning
@@ -407,7 +408,7 @@ symmetric endpoint frames, semantic family, endpoint offsets, name lookup,
 count queries, validation, serialization, and a backend-neutral
 `LoopClosureRuntimePolicy`. `LoopClosure::computeResidual()` returns explicit
 closed-chain residual diagnostics without exposing solver rows. Constrained
-kinematic projection and dynamic solving remain DART 8 target concepts to
+kinematic projection and dynamic solving remain clean-break target concepts to
 stage behind the experimental namespace before promotion.
 
 The staged public C++ shape is a DART-owned handle and spec:
@@ -588,8 +589,8 @@ For DART 7, `World::step()` and `World::step(count)` enter simulation mode as a
 common-path convenience, while `World::sync(WorldSyncStage::Kinematics)` is the
 preferred explicit simulation-mode synchronization hook for predictable
 kinematics-only work placement. `World::updateKinematics()` remains a DART 7
-spelling over the same stage. DART 8 promotion must keep the C++ and Python
-lifecycle rules identical: zero-count repeated stepping is a no-op,
+spelling over the same stage. Clean-break promotion must keep the C++ and
+Python lifecycle rules identical: zero-count repeated stepping is a no-op,
 positive-count stepping validates/finalizes once before the first step, and
 topology mutation after finalization requires documented reset, rebuild, or
 clear behavior. Repeated stepping should reuse the same executor and pipeline
@@ -794,8 +795,8 @@ mask arguments. Heterogeneous topology batches are a later capability.
 
 ## Compute Surface
 
-The compute graph is a valid experimental extension point, but DART 8 promotion
-should include only backend-neutral concepts:
+The compute graph is a valid experimental extension point, but clean-break
+promotion should include only backend-neutral concepts:
 
 - graph nodes and explicit dependencies;
 - named stage bundles for full physics, kinematics-only updates, collision
@@ -933,7 +934,7 @@ threading, diagnostics, and Python GIL interactions when dartpy participates.
 ## Deferred Capabilities
 
 The following surfaces require public C++ owner APIs before they become part of
-the DART 8 contract:
+the DART 7 clean-break contract:
 
 - direct loading from existing model formats into the new world;
 - collision geometry, shape materials, contacts, constraints, and actuators;
@@ -945,15 +946,15 @@ the DART 8 contract:
   callback boundaries.
 
 Each addition should define tests, docs, examples, and API-boundary evidence
-before it is considered for DART 8 promotion.
+before it is considered for clean-break promotion.
 
 ## Design Rationale
 
 - `World` stays the common entry point because it is the C++ owner of topology,
   time, frame count, stepping, and serialization in the experimental stack.
 - The DART 7 experimental namespace gives maintainers room to iterate while
-  preserving a clean DART 8 promotion path.
-- DART 8 should remove the legacy simulation API instead of carrying two
+  preserving a clean DART 7 promotion path.
+- DART 7 should remove the legacy simulation API instead of carrying two
   stable world models with conflicting ownership rules.
 - Public value objects make construction, validation, binding, and docs clearer
   than exposing component structs.
@@ -966,12 +967,12 @@ before it is considered for DART 8 promotion.
   names, frames, and shape metadata as full physics.
 - Solver names should describe methods and capabilities so the API remains
   durable even when implementations, backends, or external bridges change.
-- Stable DART 8 APIs should permit implementation replacement and performance
+- Stable DART 7 APIs should permit implementation replacement and performance
   work behind the compatibility contract.
 
-## DART 8 Promotion Contract
+## DART 7 Promotion Contract
 
-DART 8 promotes the supported experimental simulation API into the official C++
+DART 7 promotes the supported experimental simulation API into the official C++
 simulation API only after the promoted subset has:
 
 1. public wrapper types for every user-facing concept;
@@ -981,14 +982,14 @@ simulation API only after the promoted subset has:
    lifetime;
 4. Doxygen or user-guide docs for ownership, invalidation, and unsupported
    cases;
-5. migration notes from the DART 6 simulation API to the promoted DART 8 API;
-6. dartpy 8 bindings for the Python-appropriate subset;
+5. migration notes from the DART 6 simulation API to the promoted DART 7 API;
+6. dartpy 7 bindings for the Python-appropriate subset;
 7. release notes that state the legacy DART 6 C++ and dartpy 6 simulation APIs
    are removed.
 
 Promotion should remove DART 7 experimental names from the recommended user
 path. If temporary aliases are needed during release preparation, they should
-be documented as release-scoped migration aids, not as stable DART 8
+be documented as release-scoped migration aids, not as stable DART 7
 compatibility APIs.
 
 ## Verification Expectations
@@ -1001,7 +1002,7 @@ Implementation PRs that change this API should include:
 - `pixi run lint`;
 - `pixi run build`;
 - focused C++ tests under `tests/unit/simulation/experimental/` or the promoted
-  DART 8 test path;
+  DART 7 test path;
 - `pixi run check-api-boundaries` when public headers, Doxygen scope, or dartpy
   bindings change;
 - `pixi run test-py` when Python bindings are affected;

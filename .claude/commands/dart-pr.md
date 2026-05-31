@@ -117,6 +117,13 @@ Use these practices:
    gh pr create --draft --base <target-branch> --milestone "<milestone>" \
      --title "<plain title>" --body-file <filled-template-file>
    ```
+   For fast feedback on a draft PR, also request Codex review after publication
+   when approval covers PR comments:
+   ```bash
+   gh pr comment <PR_NUMBER> --body "@codex review"
+   ```
+   If Codex already shows an activity signal or submitted review, do not post a
+   duplicate trigger.
 9. After a PR is published, prefer additive follow-up commits for updates so
    reviewers can inspect each review round. Amend or force-push only after
    explicit maintainer/user approval and only when the user explicitly requests
@@ -149,9 +156,15 @@ Use these practices:
 Never reply to AI-generated review comments from bot users such as
 `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
 `github-actions[bot]`, or `copilot[bot]`.
-When a draft PR is first published, wait a reasonable time for the automatic
-Codex review to start; the PR body may show a small Codex activity indicator
-before the submitted review appears. Make fixes silently. Push and ask for a new
-AI review with `@codex review` only after explicit maintainer/user approval and
-only when the automatic first review did not appear after a reasonable wait, or
-when the approved follow-up push addressed Codex review comments.
+When a draft PR is first published, a top-level `@codex review` is the preferred
+fast path once explicit maintainer/user approval covers PR comments; it can run
+while the PR remains draft. Make fixes silently. Push and ask for a new AI review
+with `@codex review` only after explicit maintainer/user approval and only when
+the approved follow-up push addressed Codex review comments, or when the first
+trigger has a concrete timeout/blocker.
+
+After Codex returns no actionable issues and local `pixi run test-all` passes on
+the current head, a draft PR is ready to mark ready for human review after
+explicit approval even if hosted CI is still pending. Do not merge until branch
+protection and required checks pass unless a maintainer explicitly approves a
+policy bypass.

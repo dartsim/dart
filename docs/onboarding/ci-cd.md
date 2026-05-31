@@ -227,36 +227,38 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 ### Core CI Workflows
 
-| Workflow             | Purpose               | Platforms      | Trigger                             | Doc-only skip |
-| -------------------- | --------------------- | -------------- | ----------------------------------- | ------------- |
-| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | Any branch push, PR, manual         | No            |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | Branch push core; PR/main full      | Yes           |
-| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule     | Yes           |
-| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule     | Yes           |
-| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                    | N/A           |
-| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                | N/A           |
-| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | PR path-scoped compile; manual GPU  | N/A           |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Branch push core; PR/main full      | Yes           |
-| `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual       | N/A           |
-| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
+| Workflow             | Purpose               | Platforms      | Trigger                               | Doc-only skip |
+| -------------------- | --------------------- | -------------- | ------------------------------------- | ------------- |
+| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | Any branch push, PR, manual           | No            |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | Branch push core; PR/main full        | Yes           |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule       | Yes           |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule       | Yes           |
+| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                      | N/A           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                  | N/A           |
+| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | PR path-scoped compile; manual GPU    | N/A           |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Release-branch push/PR; manual canary | Yes           |
+| `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual         | N/A           |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule   | Yes           |
 
 ### CI Tiering Policy
 
 Use CI tiers to reduce PR feedback cost without removing coverage from the
 project's continuous validation surface.
 
-| Tier                      | Required before merge | Examples                                                                                |
-| ------------------------- | --------------------- | --------------------------------------------------------------------------------------- |
-| Core branch push          | No                    | Lint, Ubuntu core release tests, gz-physics compatibility, path-scoped SIMD             |
-| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, gz-physics compatibility, baseline dartpy wheels |
-| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes             |
-| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags    |
-| Scheduled/manual coverage | No                    | FreeBSD VM, CUDA runtime smoke, repeated full matrix, maintenance lockfile updates      |
+| Tier                      | Required before merge | Examples                                                                                       |
+| ------------------------- | --------------------- | ---------------------------------------------------------------------------------------------- |
+| Core branch push          | No                    | Lint, Ubuntu core release tests, path-scoped SIMD                                              |
+| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                  |
+| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                    |
+| Release support PR        | Yes on release lines  | gz-physics compatibility on `release-6.16` PRs                                                 |
+| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags           |
+| Scheduled/manual coverage | No                    | FreeBSD VM, CUDA runtime smoke, gz-physics migration canaries, repeated full matrix, lockfiles |
 
 Guardrails:
 
-- Keep gz-physics compatibility in the required PR tier. The Gazebo downstream
-  build/test catches integration breakages that core unit tests can miss.
+- Keep gz-physics compatibility required for release-line PRs that maintain the
+  DART 6 support lane. On `main`/DART 7, use `ci_gz_physics.yml` as a manual
+  migration canary when downstream compatibility evidence is needed.
 - Treat core branch-push CI as early feedback only. It should be useful enough
   before a PR exists, but it is not a substitute for the required PR tier.
 - Do not move a job from required PR coverage to continuous-only coverage
@@ -289,8 +291,10 @@ Guardrails:
 - Essential validations run on every PR
 - Full matrix testing runs on main branch and releases
 - Debug builds run on schedule (2x per week)
-- Keep gz-physics compatibility in the required PR tier so downstream Gazebo
-  integration breakages are caught before merge.
+- Keep gz-physics compatibility in the release-support PR tier so downstream
+  Gazebo integration breakages are caught before release-line merges. For
+  `main` PRs, run the manual gz-physics canary only when the change is relevant
+  to downstream migration evidence.
 
 **Efficient resource usage:**
 
@@ -541,7 +545,8 @@ maintenance-workflow-only changes
 - macOS Release: Full tests
 - macOS Debug: Debug C++ tests
 - Windows Release: Full tests
-- Gazebo integration: Integration tests
+- Gazebo integration: required on release-line PRs; manual canary on `main`
+  when downstream migration evidence is needed
 - dartpy wheels: Baseline Python version on Ubuntu, macOS, and Windows
 
 **Feature branch pushes:**
@@ -549,8 +554,11 @@ maintenance-workflow-only changes
 - Lint
 - Ubuntu core release path: Release C++ tests, Release Python tests, examples,
   and install
-- Gazebo integration: gz-physics compatibility tests when code paths change
 - SIMD multi-arch tests when SIMD paths change
+
+**Release branch pushes and PRs:**
+
+- Gazebo integration: gz-physics compatibility tests for the DART 6 support lane
 
 **Scheduled runs:**
 
