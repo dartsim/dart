@@ -1,86 +1,168 @@
 # Resume: Variational Integrator Solver (PLAN-082)
 
-## Last Session Summary
+> **Canonical roadmap is the [README North Star + Gaps](README.md#north-star).**
+> This file is the fast-resume snapshot; the README is the source of truth for
+> _what_ is done and _what_ remains. Graduation status lives in
+> [`graduation-criteria.md`](graduation-criteria.md); the contact sequencing in
+> [`../../plans/082-variational-integrator-solver/contact-roadmap.md`](../../plans/082-variational-integrator-solver/contact-roadmap.md).
 
-PLAN-082 (plan + design doc + contact-roadmap sidecar + dashboard + catalog
-entries) landed after a 4-agent adversarial review. **Phase A1 core is
-implemented and verified**: SE(3) discrete-mechanics kernels (delegating to
-`dart::math::lie_group`), the DRNEA residual recursion, the RIQN root-find with
-a dense `M⁻¹` placeholder, two-step history with bootstrap, an articulated
-energy helper, and the `MultibodyVariationalIntegrationStage`. The reference
-review of the paper's bibliography is folded into the catalog and design doc.
+## Last Session Summary (2026-05-30)
 
-## Current Branch
+Phase A/B were already done. This session executed **Phase C contact & friction**
+end-to-end and the **graduation prep**, then proved out the two genuinely-remaining
+items with investigation evidence:
 
-`feature/variational-integrator-mvp` — Phase A1 core committed (kernels +
-integrator + 3 test suites) plus the PLAN-082 docs.
+- **C1 lagged Coulomb friction, C2 compliant ground contact, C3 augmented-
+  Lagrangian** drift-free contact — all landed, **all reachable from
+  `World::step()`** via `Multibody::setGroundContact(...)`. C3 is **opt-in** via
+  the `dualUpdateCadence` argument (`0` = robust C2 default; `N>0` advances the
+  per-point duals every `N` steps).
+- **Link-vs-link** sphere-sphere self-contact slice
+  (`makeVariationalLinkSphereContactHook`).
+- **Serialization**: the contact config (`comps::VariationalContact`, now a
+  serialized `Property`) and the AL dual state (`comps::VariationalContactDualState`,
+  a serialized `State`) round-trip across binary save/load (binary format **v8**);
+  added a generic POD-vector path to `io/auto_serialization.hpp` to carry
+  `std::vector<std::size_t>` / `std::vector<double>` fields.
+- **Demo + bindings**: Python `sx_variational_contact` scene (registered, in the
+  demos-cycle); dartpy `set_ground_contact` / `add_ground_contact_point`.
+- **Graduation**: every [criterion](graduation-criteria.md) met/declared; the
+  API-freeze surface declared; a readiness assessment + a "graduation mechanics"
+  section explaining why the flip is structural (see below).
+- **Dedup**: shared spatial-algebra primitives hoisted into a `detail/` header
+  (the old SI/VI duplication follow-up is closed).
+
+## Current Branch / PR
+
+- Branch: **`feature/vi-roadmap-followups`**, HEAD `53a6bcef4e2` (31 commits ahead
+  of `origin/main`, 0 behind — kept current).
+- PR: **#2779** — `OPEN`, `MERGEABLE`, `BLOCKED` (awaiting required CI + maintainer
+  review; **do not request merge** — maintainer-owned, and per process the Codex
+  bot must re-review after any silent fix; "no new findings" ≠ approval).
 
 ## Verified (all green)
 
-- `test_discrete_mechanics_math`, `test_discrete_mechanics_lie_group_parity`
-  (kernels == `dart::math::lie_group`; `dexp⁻¹ ≡ SE3::LeftJacobianInverse`),
-  `test_variational_integration` (prismatic free-fall accel = −9.81 to 1e-9;
-  pendulum first-step accel matches Newtonian; RIQN converges; **energy
-  conserved over 1e5 steps**; ABI inverse-mass == dense `M⁻¹` to 1e-9; floating
-  free-fall + tumbling energy conservation; **`MaintainsDistanceLoopClosure`** —
-  a Distance loop closure holds to 1e-6 while the 1-DOF arm swings). Full
-  experimental suite green.
+- Full experimental ctest: **43/43** (`pixi run test-simulation-experimental`),
+  re-run green after each merge of `origin/main`.
+- `test_variational_integration` contact/serialization gtests (12) incl.:
+  - `VariationalGroundContact.WorldSurfaceCompliantContactRestsOnGround` (C2 rests at `mg/k`)
+  - `…WorldSurfaceAugmentedLagrangianCentersContact` (C3 drift-free on `world.step()`)
+  - `…ConfigRoundTripsThroughBinarySaveLoad` (contact config persists)
+  - `…AugmentedLagrangianDualStateRoundTrips` (AL scene resumes **bit-identically**)
+  - `…LaggedFrictionDeceleratesSlidingBlock`, `…AugmentedLagrangianCentersContactAtZeroPenetration`
+  - `VariationalLinkContact.SphereContactStopsSlidingLink`
 
-## Immediate Next Step
+## What Remains (evidence-backed — NOT in-session-executable)
 
-The selector and the **O(n) ABI** (Phase A2 core) have landed:
-`computeMultibodyInverseMassProduct` (Featherstone ABA: backward
-articulated-inertia sweep + forward acceleration sweep) drives RIQN and matches
-the dense `M⁻¹` to 1e-9 (`ArticulatedInverseMassMatchesDenseSolve`); the
-integrator is linear-time, symplectic (energy-conserving over 1e5 steps), and
-selectable via `World::setMultibodyOptions({.integrationFamily = "variational integrator"})`.
-All committed PLAN-082 phases (A1, A2, B1, B2), every acceptance gate, the
-paper-experiment replication, and the post-plan follow-ups are complete and
-verified: A1's symplectic headline / momentum / non-convergence-error /
-determinism / **serialization**; A2's O(n) ABI + scaling benchmark + the
-**Anderson + `√n`-tolerance long-chain convergence fix**; B1's manifold
-finite-difference gate; B2's **Point/Distance/Rigid loop closures through the
-public API** (constraint Jacobians incl. the Rigid orientation Jacobian
-FD-verified; semi-implicit still rejects `Solve`); the **dartpy** integration-
-family selector; and the **improvements/corrections/new-features** write-up in
-the design doc. The branch is also **merged up to date with `origin/main`**
-(Eigen 5 SVD migration + clang-format 22; the unrelated deformable-IPC SEGFAULT
-was fixed upstream) and ships **two GUI demo scenes** for visual verification
-(`sx_variational_chain`, `sx_variational_tumbler`). Phase C is a recorded NO-GO.
+All four are the task's **own explicit deferrals**, now backed by concrete facts
+(not judgment calls). Ordered by tractability:
 
-The **canonical roadmap is the README's
-[North Star + Gaps](README.md#gaps-from-current-progress-road-to-the-north-star)**.
-In short, what remains: (1) **Phase C** contact/friction (NO-GO, the largest
-gap); (2) **≥100-link** exact recursive-Jacobian preconditioner; (3)
-**manifold-aware Anderson** for spherical/floating chains; (4) **dedup** the
-local spatial helpers shared with `multibody_dynamics.cpp`; (5)
-**productionization** (variable `Δt`, GPU/batched, graduation out of
-`experimental`); (6) **more demo scenes** (loop closure, contact).
+1. **Arbitrary-geometry link-vs-link contact — PLAN-scale (~2–3 weeks).** A
+   2026-05-30 stack audit: `detail/deformable_contact/primitive_distance.hpp`
+   already gives reusable analytic `(d, ∂d/∂q)` kernels (separable from the IPC
+   log-barrier), and `detail/rigid_ipc_ccd.*` gives CCD for a line-search bound.
+   The **dominant missing piece is rigid/articulated candidate generation** —
+   `candidate_set.hpp` is mesh-vertex specific; there is no warm-started "refit
+   link AABBs at the trial config, re-check the active set" query object. That
+   broad-phase adapter + per-step query is the net-new work. Coordinated with
+   PLAN-081 / `082-rigid-implicit-barrier-contact`. The sphere-sphere hook is the
+   gate-1 minimum already landed.
+2. **experimental → supported graduation — structural, maintainer-scoped.**
+   `experimental` is encoded in the namespace (`dart::simulation::experimental`),
+   directory, `DART_EXPERIMENTAL_API` macro, and CMake gate
+   (`DART_BUILD_SIMULATION_EXPERIMENTAL`). There is **no per-family stability
+   flag** — `MultibodyIntegrationMethod` (in `world.hpp`) is just
+   `SemiImplicit`/`Variational`. The VI **shares the module with `World` and every
+   other solver**, so it cannot be graduated in isolation: the flip is a
+   whole-module promotion or a ~50–100-file VI-extraction refactor. All criteria
+   are met → the VI is **ready to propose**; the flip itself is the maintainer's
+   call. See "Graduation mechanics" in [`graduation-criteria.md`](graduation-criteria.md).
+3. **C4 hard IPC barrier — out of scope by the task.** The contact-roadmap says
+   verbatim "barrier (C4) last" / "stop at C3"; C4 is the _optional_ rung (stiff
+   barrier curvature mis-scales the `Δt·M⁻¹` quasi-Newton). Do **not** implement
+   it as part of this task.
+4. **Manifold preconditioner for very long _floating_ chains — north-star
+   stretch.** The exact recursive-Jacobian preconditioner is Euclidean-only;
+   spherical/floating use the manifold Anderson (verified to ~20 links). A
+   Lie-group extension is open numerical-methods work, explicitly a stretch item.
 
-## Context That Would Be Lost
+## Key Files (hot paths)
 
-- The dense `M⁻¹` (via `computeMultibodyDynamicsTerms`) is a deliberate Phase A1
-  **placeholder** — O(n³), NOT linear-time. Do NOT claim O(n) until Phase A2's
-  ABI lands. The energy/analytic correctness is independent of this.
-- `dexp⁻¹` delegates to the exact `SE3::LeftJacobianInverse` (more accurate than
-  the paper's Bernoulli truncation); `discrete_mechanics_math.hpp` keeps the
-  VI-specific wrappers (`dexpInvTranspose`, `dAdT`/`dAdInvT`, `adInvRLinear`),
-  all cross-checked against `dart::math::lie_group` by the parity test.
-- Gravity is forcing-side (per-body spatial impulse), not a potential — never
-  add it both ways.
-- Phase A1 is fixed-base, revolute/prismatic only (Euclidean). Ball/free joints
-  need manifold-correct RIQN retraction (Phase B1; the reference impl has open
-  TODOs there). Floating base + loop closures are Phase B; contact is Phase C
-  (deferred, go/no-go).
-- The `MultibodyVariationalState` is currently a plain (non-serialized) ECS
-  component; the local Phase-A1 spatial helpers in `variational_integration.cpp`
-  duplicate a subset of `multibody_dynamics.cpp` (documented dedup follow-up).
+- `dart/simulation/experimental/compute/variational_integration.{hpp,cpp}` — the
+  integrator, the contact hooks (`makeVariationalGroundContactHook`,
+  `VariationalGroundContactSolver` with `setDuals`/`updateDuals`,
+  `makeVariationalLinkSphereContactHook`), and
+  `MultibodyVariationalIntegrationStage::execute` (the World-step wiring incl. the
+  C3 seed→integrate→update→persist outer loop).
+- `dart/simulation/experimental/comps/variational_contact.hpp` — contact config
+  (`Property`, incl. `dualUpdateCadence`).
+- `dart/simulation/experimental/comps/variational_contact_dual_state.hpp` — AL
+  duals + cadence counter (`State`, serialized).
+- `dart/simulation/experimental/io/{auto_serialization.hpp,serializer.cpp,binary_io.hpp}`
+  — serialization (generic POD-vector path; `kBinaryFormatVersion = 8`).
+- `dart/simulation/experimental/multibody/multibody.{hpp,cpp}` — `setGroundContact`
+  / `addGroundContactPoint`.
+- `python/dartpy/simulation_experimental/module.cpp` — dartpy bindings.
+- `tests/unit/simulation/experimental/compute/test_variational_integration.cpp`
+  — all VI/contact tests.
+- `python/examples/demos/scenes/sx_variational_contact.py` + `registry.py`.
+
+## Context That Would Be Lost (gotchas)
+
+- **C3 cadence stability.** The undamped symplectic step makes per-step dual
+  updates unstable; the dual ascent **must** be an outer loop slower than the
+  primal (`dualUpdateCadence > 1`) and paired with `dampingCoefficient > 0`. The
+  unit tests use cadence 20.
+- **Lagged friction.** Friction direction + normal are taken at `q^k` (constant
+  across the step's RIQN iterates), so contact converges like frictionless —
+  avoids the tangential-regularization stiffness blow-up near `v_t = 0`. Don't
+  "fix" it to use the trial config.
+- **Binary format v8 is unreleased** (exists only on this branch/PR), so adding
+  fields/components to it needs **no migration** — there are no old v8 files. Keep
+  folding VI-contact serialization into v8 until the PR merges.
+- **Component categories drive serialization**: `Property`/`State` are serialized
+  (PFR field-walk), `Cache` is not. The contact config is `Property`; the duals
+  are `State`. `pointLinkIndices` are positions in `structure.links` (NOT
+  `entt::entity`), so no entity-remap pass entry is needed.
+- **Contact-as-forcing only.** Contact enters strictly as a generalized force in
+  the forced-DEL residual (`residual -= dt·Q_c`); never as a velocity projection
+  (that breaks symplecticity). Equal-and-opposite for link-vs-link; root link
+  (index 0) has a zero Jacobian.
+- **Python tests/demos**: the built `_dartpy.so` lives in
+  `build/default/cpp/Release/python/dartpy/`, **not** the source tree — run pytest
+  from `python/tests` with `PYTHONPATH=$PWD/../../build/default/cpp/Release/python`.
+  Vector3d args need `np.array([...])` (not tuples); `Link.transform` is a numpy
+  4×4.
+- **Lint gotcha**: a leftover `.claude/worktrees/agent-*` worktree breaks
+  `pixi run lint` (the collision-isolation check rglobs duplicate sources) — remove
+  it with `git worktree remove --force` + `git worktree prune`.
+- **No AI attribution** in commits/PRs.
 
 ## How to Resume
 
 ```bash
-git checkout feature/variational-integrator-mvp
-git status && git log -5 --oneline
-# build + run just the VI tests:
-pixi run bash -lc 'cmake --build build/default/cpp/Release --target test_variational_integration -j && ctest --test-dir build/default/cpp/Release -R variational_integration --output-on-failure'
+git checkout feature/vi-roadmap-followups
+git fetch origin main && git merge origin/main --no-edit   # keep current; clean so far
+git log --oneline -8
+
+# Build + run the full experimental suite (the gate):
+pixi run build-simulation-experimental-tests
+pixi run test-simulation-experimental                      # expect 43/43
+
+# Run just the VI / contact tests:
+build/default/cpp/Release/bin/test_variational_integration \
+  --gtest_filter='VariationalGroundContact.*:VariationalLinkContact.*:VariationalIntegration.*'
+
+# Format before committing:
+pixi run lint-simulation-experimental   # clang-format C++
+pixi run lint-md                        # prettier docs
+
+# (Optional) dartpy in-place build for the Python demo / smoke:
+pixi run build-py-dev ON Release
 ```
+
+**If picking up item 1 (arbitrary geometry):** start from the contact-roadmap
+"Still future" section — wrap `primitive_distance.hpp`'s squared-distance kernels
+to emit signed `d` + `∂d/∂q` (`∂d = ∂(d²)/(2d)`), chain through the link point
+Jacobians already in `VariationalContactContext`, and build the rigid candidate-
+generation adapter (the real gap). Reuse the existing compliant/AL force laws.
