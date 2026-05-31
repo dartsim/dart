@@ -855,6 +855,39 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
 }
 
 //==============================================================================
+// The public solver diagnostics expose which linear-solve path each Newton
+// iteration took: the default direct (sparse Cholesky) solve never reports an
+// iterative solve, while a body opting in to the iterative
+// (incomplete-Cholesky-preconditioned CG) solve surfaces a nonzero count. This
+// is the public-API mirror of the internal projectedNewtonIterativeSolves stat,
+// so Python callers can observe and tune the solver path.
+TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
+{
+  const auto totalIterativeSolves = [](bool iterative) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    auto options = makeFemTetrahedronBody();
+    options.material.useIterativeLinearSolver = iterative;
+    world.addDeformableBody("fem", options);
+
+    std::size_t total = 0;
+    for (int i = 0; i < 8; ++i) {
+      world.step(1);
+      total += world.getLastDeformableSolverDiagnostics()
+                   .projectedNewtonIterativeSolves;
+    }
+    return total;
+  };
+
+  // The default direct solve never takes the iterative path...
+  EXPECT_EQ(totalIterativeSolves(false), 0u);
+  // ...while the opt-in iterative solve surfaces through the public
+  // diagnostics.
+  EXPECT_GT(totalIterativeSolves(true), 0u);
+}
+
+//==============================================================================
 // A FEM tetrahedron given an initial outward velocity on a free node is pulled
 // back toward its rest shape by the elastic restoring force, and the implicit
 // solve dissipates the motion so it settles near rest rather than diverging.

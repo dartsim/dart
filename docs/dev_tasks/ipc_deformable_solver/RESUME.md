@@ -33,7 +33,8 @@ AI attribution). Net status by milestone:
   while tangential sliding + friction survive (the CCD limiter no longer scales the
   whole step). The "right" CCD fix (limit only the normal approach, keep fast-motion
   CCD safety) remains a documented higher-risk follow-up, cf. #2732.
-- **M7 scale + performance — three increments landed.** (1) Opt-in **iterative
+- **M7 scale + performance — four increments landed** (#2810/#2811/#2812 + the
+  public iterative-solve diagnostic). (1) Opt-in **iterative
   conjugate-gradient projected-Newton linear solve**
   (`DeformableMaterialProperties.useIterativeLinearSolver`, #2810): reuses the
   sparse SPD Hessian assembly but solves with CG instead of `SimplicialLDLT`, so it
@@ -59,8 +60,9 @@ Hessian, #2797 solver diagnostics, #2798 FEM self-contact showcase, #2799
 benchmark Newton-iters, #2800 `.obj` importer, #2802 `.seg`/`.pt` importers, #2804
 capsule obstacle, #2805 adaptive stiffness, #2809 barrier-only obstacle (M5 done),
 #2810 iterative-CG solve (M7 increment 1), #2811 incomplete-Cholesky
-preconditioner (M7 increment 2), and the chunky-3D scaling benchmark (this PR, M7
-increment 3). The IPC Deformable (sx) py-demos category
+preconditioner (M7 increment 2), #2812 chunky-3D scaling benchmark (M7 increment
+3), and the public iterative-solve diagnostic (this PR, M7 increment 4). The IPC
+Deformable (sx) py-demos category
 now has ~21 scenes (latest: `ipc_deformable_cg_solver`, `ipc_deformable_cg_contact`).
 
 ### M7 Next (resume here)

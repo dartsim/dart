@@ -968,6 +968,9 @@ class DeformableSolverDiagnostics:
     def projected_newton_fallbacks(self) -> int: ...
 
     @property
+    def projected_newton_iterative_solves(self) -> int: ...
+
+    @property
     def self_contact_barrier_active_contacts(self) -> int: ...
 
     @property
