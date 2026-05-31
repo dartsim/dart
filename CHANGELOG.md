@@ -924,8 +924,8 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added sufficient-decrease backtracking to the internal rigid IPC
     projected-Newton solve. Feasible Newton candidates are now checked against
     the assembled objective after conservative CCD scaling, with diagnostics for
-    objective checks/backtracks and a safe decreasing-candidate fallback for
-    lagged-friction active-set changes.
+    objective checks/backtracks exposed through the opt-in runtime stage and a
+    safe decreasing-candidate fallback for lagged-friction active-set changes.
   - Added a runtime regression proving lagged rigid IPC friction observably
     brakes a tangential slide at an activated mesh contact relative to the
     frictionless solve, and reports active friction constraints/passes.

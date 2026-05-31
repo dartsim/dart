@@ -152,10 +152,11 @@
   - [x] Phase 3s: add sufficient-decrease backtracking to the internal
         projected-Newton solve. Feasible Newton steps now run through an
         Armijo-style objective check after conservative CCD scaling. The solve
-        records backtracking diagnostics and, when lagged friction or active-set
-        changes make strict Armijo too tight for the finite budget, accepts the
-        best finite objective-decreasing candidate instead of treating the step
-        as an unsafe line-search block.
+        records backtracking diagnostics (also surfaced through the opt-in
+        runtime stage stats) and, when lagged friction or active-set changes make
+        strict Armijo too tight for the finite budget, accepts the best finite
+        objective-decreasing candidate instead of treating the step as an unsafe
+        line-search block.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.

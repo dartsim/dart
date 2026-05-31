@@ -366,6 +366,8 @@ struct RigidIpcSolverStats
   std::size_t lineSearchMisses = 0;
   std::size_t lineSearchIndeterminateCount = 0;
   std::size_t lineSearchZeroStepCount = 0;
+  std::size_t sufficientDecreaseChecks = 0;
+  std::size_t sufficientDecreaseBacktracks = 0;
   bool converged = false;
   bool failed = false;
   bool resultApplied = false;

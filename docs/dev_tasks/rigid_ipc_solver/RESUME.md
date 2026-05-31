@@ -18,7 +18,8 @@ Delivered a bounded solver-quality slice for Phase 3:
   scaling and backtracks with an Armijo-style criterion before mutating copied
   poses.
 - Added aggregate internal diagnostics for sufficient-decrease objective checks
-  and backtracks.
+  and backtracks, and surfaced those counters through the opt-in runtime stage
+  stats.
 - Made the policy safe for lagged-friction/active-set cases: if the finite
   Armijo budget misses strict sufficient decrease but found a finite
   objective-decreasing candidate, the solve accepts that best decreasing

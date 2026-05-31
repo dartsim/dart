@@ -3518,6 +3518,8 @@ TEST(World, RigidIpcContactStageAdvancesMeshBodyFromRuntimeDynamics)
   EXPECT_EQ(stats.lineSearchMisses, 0u);
   EXPECT_EQ(stats.lineSearchIndeterminateCount, 0u);
   EXPECT_EQ(stats.lineSearchZeroStepCount, 0u);
+  EXPECT_EQ(stats.sufficientDecreaseChecks, stats.acceptedSteps);
+  EXPECT_EQ(stats.sufficientDecreaseBacktracks, 0u);
   EXPECT_TRUE(stats.resultApplied);
   EXPECT_FALSE(stats.nonConvergedResultSkipped);
 
@@ -3707,6 +3709,7 @@ TEST(World, RigidIpcContactStageSeparatesActivatedMeshBarrier)
   EXPECT_EQ(stats.lineSearchHits, 0u);
   EXPECT_EQ(stats.lineSearchIndeterminateCount, 0u);
   EXPECT_EQ(stats.lineSearchZeroStepCount, 0u);
+  EXPECT_GT(stats.sufficientDecreaseChecks, 0u);
   // The activated barrier pushes the body off the surface.
   EXPECT_GT(body.getTranslation().z(), initialHeight);
   EXPECT_GT(body.getLinearVelocity().z(), 0.0);

@@ -6707,6 +6707,9 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.lineSearchIndeterminateCount
       = result.stats.lineSearchIndeterminateCount;
   m_lastStats.lineSearchZeroStepCount = result.stats.lineSearchZeroStepCount;
+  m_lastStats.sufficientDecreaseChecks = result.stats.sufficientDecreaseChecks;
+  m_lastStats.sufficientDecreaseBacktracks
+      = result.stats.sufficientDecreaseBacktracks;
   m_lastStats.converged = result.converged;
   m_lastStats.failed = result.failed;
 
