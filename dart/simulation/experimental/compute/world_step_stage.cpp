@@ -3495,6 +3495,56 @@ bool applyInterBodySurfaceContactCcdLimit(
 }
 
 //==============================================================================
+// Apply the inter-body deformable-surface CCD limiter to a fully assembled
+// candidate displacement. VBD uses this after its block solve so opt-in
+// surface bodies keep the same no-tunneling limit the default line-search path
+// applies between deformable bodies.
+bool applyInterBodySurfaceContactCcdCandidateLimit(
+    entt::entity entity,
+    std::span<const SurfaceContactSnapshot> surfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    comps::DeformableSolverScratch& scratch)
+{
+  if (surfaceSnapshots.empty()) {
+    return true;
+  }
+
+  const std::size_t nodeCount = current.size();
+  scratch.direction.resize(nodeCount);
+  scratch.gradient.assign(nodeCount, Eigen::Vector3d::Zero());
+  scratch.candidate = scratch.next;
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    scratch.direction[i] = scratch.candidate[i] - current[i];
+  }
+
+  double step = 1.0;
+  double directionalDerivative = 0.0;
+  const bool accepted = applyInterBodySurfaceContactCcdLimit(
+      entity,
+      surfaceSnapshots,
+      current,
+      scratch.direction,
+      scratch.gradient,
+      fixed,
+      contactScratch,
+      stats,
+      step,
+      scratch.candidate,
+      directionalDerivative);
+
+  if (accepted) {
+    scratch.next = scratch.candidate;
+    return true;
+  }
+
+  scratch.next = current;
+  return false;
+}
+
+//==============================================================================
 bool applyStaticRigidSurfaceCcdLimit(
     std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
     const std::vector<Eigen::Vector3d>& current,
@@ -4873,13 +4923,15 @@ void advanceDeformableBody(
   // i.e. exactly the obstacles VBD handles via those barriers, so they no
   // longer force the body onto the default solver; after the VBD solve, the
   // shared static rigid-surface CCD limiter still clips fast crossings before
-  // write-back. VBD still cannot honor *moving* rigid-surface CCD. Surface
-  // triangles no longer disqualify VBD: runVbdDeformableSolve builds a lagged
-  // VT/EE self-contact candidate set and adds the normal barrier blocks during
-  // the colored sweeps. A body with static contacts but no VBD contact
-  // stiffness falls back to the default solver so it still rests on / collides
-  // with them. The default-solver fast path below keeps the stricter surface
-  // check so non-VBD bodies still get self-contact.
+  // write-back. The VBD candidate is also clipped by the shared inter-body
+  // deformable-surface CCD limiter. VBD still cannot honor *moving*
+  // rigid-surface CCD. Surface triangles no longer disqualify VBD:
+  // runVbdDeformableSolve builds a lagged VT/EE self-contact candidate set and
+  // adds the normal barrier blocks during the colored sweeps. A body with
+  // static contacts but no VBD contact stiffness falls back to the default
+  // solver so it still rests on / collides with them. The default-solver fast
+  // path below keeps the stricter surface check so non-VBD bodies still get
+  // self-contact.
   const bool movingRigidSurfaceFree = movingRigidSurfaceSnapshots.empty();
   const bool anyStaticContact = !barriers.empty() || !sphereObstacles.empty()
                                 || !boxObstacles.empty()
@@ -4912,6 +4964,14 @@ void advanceDeformableBody(
         frictionCoefficient,
         *vbdConfig,
         stats);
+    applyInterBodySurfaceContactCcdCandidateLimit(
+        entity,
+        surfaceSnapshots,
+        state.positions,
+        scratch.activeFixed,
+        contactScratch,
+        stats,
+        scratch);
     applyStaticRigidSurfaceCcdCandidateLimit(
         rigidSurfaceSnapshots,
         state.positions,

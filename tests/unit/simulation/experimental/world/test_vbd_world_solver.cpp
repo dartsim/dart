@@ -164,6 +164,43 @@ sx::DeformableBodyOptions makeFallingPatchOptions(double z0, double velocityX)
   return options;
 }
 
+// A free point on a deformable body moving toward another body's triangle
+// surface. The body's own triangle is fixed far above the crossing point; the
+// unreferenced point still participates in inter-body CCD for surface-only
+// bodies.
+sx::DeformableBodyOptions makeInterBodyMovingPointOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 3.0),
+         Eigen::Vector3d(1.0, -1.0, 3.0),
+         Eigen::Vector3d(0.0, 1.0, 3.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+sx::DeformableBodyOptions makeInterBodyTriangleObstacleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
 // Two horizontal triangles in a single deformable body: a wide triangle pinned
 // in the z = 0 plane and a smaller free triangle just above it (held rigid by
 // edge springs). Under gravity the top triangle falls toward the bottom; with
@@ -837,6 +874,35 @@ TEST(VbdWorldSolver, VbdStaticRigidSurfaceCcdLimitsFastCrossing)
   EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
   EXPECT_LT(body.getPosition(0).x(), -0.05);
   EXPECT_GT(body.getPosition(0).x(), -1.0);
+}
+
+//==============================================================================
+// VBD bodies with surface topology still need the shared inter-body CCD limiter
+// after the block solve; otherwise two deformable surfaces can pass through
+// each other in one large step.
+TEST(VbdWorldSolver, VbdInterBodySurfaceCcdLimitsFastCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto moving
+      = world.addDeformableBody("moving", makeInterBodyMovingPointOptions());
+  world.addDeformableBody("obstacle", makeInterBodyTriangleObstacleOptions());
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 10;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 2u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+  EXPECT_GT(moving.getPosition(3).z(), 0.0);
+  EXPECT_LT(moving.getPosition(3).z(), 1.0);
 }
 
 //==============================================================================
