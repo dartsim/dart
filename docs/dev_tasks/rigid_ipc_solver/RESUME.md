@@ -344,7 +344,7 @@ normal-pushing, and a real-time kinematic demo (a box-on-box turntable measured
 `RigidIpcKinematicTurntableCarriesRestingBox` regression rather than shipped as a
 demo). The `KinematicBodyTag` is runtime-only (not serialized).
 
-DENSE-CONTACT ROBUSTNESS — improved (unfroze the minimal friction arch, Fig. 11).
+Dense-contact robustness -- improved (unfroze the friction arch, Fig. 11).
 Dense resting contacts used to settle a few steps then freeze: the conservative
 curved ACCD line search exhausted its iteration budget on a couple of tight pairs
 (`Indeterminate`), which the line search treated as a zero step ->
@@ -353,16 +353,19 @@ curved ACCD line search exhausted its iteration budget on a couple of tight pair
 `Indeterminate` exit (a proven lower bound on the true TOI), and the line search
 uses it as a positive limiting step instead of blocking -- intersection-free
 preserved, blocking only on zero proven progress. The line-search CCD budget was
-raised 64 -> 256. Result: the 3-voussoir `MinimalFrictionArchStandsInEquilibrium`
-test (Fig. 11) now holds, the two-box stack converges faster, and the updated
-`LineSearchUsesProvenSafeTimeOnIterationExhaustion` asserts the new safe contract.
-Larger arches now stall on a genuine hard face-face contact (not indeterminacy) --
-the remaining dense-contact gate (see benchmarks.md).
+raised 64 -> 256. Follow-up fix: zero-step line-search blocks now give adaptive
+kappa a bounded retry path, the runtime stage carries raised kappa forward across
+active-contact steps, and exact zero-progress resting-contact plateaus write back
+the unchanged safe pose instead of surfacing as persistent failed solves. Result:
+the five-voussoir `FiveVoussoirFrictionArchStandsInEquilibrium` test (Fig. 11)
+now holds, the two-box stack converges faster, and
+`LineSearchUsesProvenSafeTimeOnIterationExhaustion` asserts the safe-time
+contract.
 
 Still out of scope: articulated paper scenes (lock box, mechanisms, bolt,
 punching press, wrecking-ball/anchor chains, card house) need joints; the larger
-many-body scenes (full arch, 3D packing, 560-box wrecking ball) are gated on the
-remaining hard-contact resolution above plus the ~3-orders-of-magnitude per-step
+many-body scenes (3D packing, 560-box wrecking ball) are gated on broader corpus
+coverage plus the ~3-orders-of-magnitude per-step
 perf gap.
 
 ## Last Session Summary
@@ -736,6 +739,11 @@ remain open fallback slices.
 - The first implementation rows should come from P0 correctness fixtures:
   `fixtures/3D/unit-tests/tunneling.json`, direct `tests/data/ccd-test-*`, and
   one simple paper-facing fixture.
+- The five-voussoir Fig. 11 friction arch is now a runtime regression for dense
+  exact-contact resting plateaus. The opt-in stage retries zero-step line-search
+  blocks by raising adaptive kappa, carries raised kappa forward while contacts
+  remain active, and treats an exact zero-progress resting-contact plateau as a
+  safe unchanged-pose write-back instead of a persistent failed solve.
 
 ## How To Resume
 
@@ -758,8 +766,9 @@ PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest pyt
 
 Next high-value slices (none started): (1) robust normal-push for kinematic
 obstacles (the documented limitation); (2) the IPC performance climb (the
-~3-orders-of-magnitude per-step gap gates the many-body paper scenes -- arch,
-3D packing, wrecking ball -- and a real-time turntable/conveyor demo); (3)
+~3-orders-of-magnitude per-step gap gates the remaining many-body paper scenes
+-- 3D packing, wrecking ball, and larger corpus rows -- plus a real-time
+turntable/conveyor demo); (3)
 articulated paper scenes (lock box, mechanisms, bolt, punching press, chains)
 need a joint/articulation path the free-body rigid IPC stage does not have.
 Otherwise continue from the README's "Immediate Next Steps".

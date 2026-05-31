@@ -1007,9 +1007,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     stage apply the best intersection-free configuration a bounded solve reaches
     (matching the reference, which steps with the optimizer's best feasible
     iterate) instead of discarding any not-fully-converged result. The
-    anti-tunneling guarantee is unchanged: a line-search-blocked or failed solve
-    is still never written back. Covered by adaptive-stiffness unit tests and a
-    no-freeze sliding-contact runtime regression.
+    anti-tunneling guarantee is unchanged: unsafe failed solves are still never
+    written back. Covered by adaptive-stiffness unit tests and a no-freeze
+    sliding-contact runtime regression.
+  - Hardened dense exact-contact resting plateaus in the opt-in rigid IPC
+    runtime stage. A zero-step line-search block now gives adaptive kappa a
+    bounded stiffness-increase retry before failing, the stage carries raised
+    kappa forward across active-contact runtime steps, and an exact
+    zero-progress resting-contact plateau writes back the unchanged safe pose
+    instead of reporting a persistent failed solve. The Fig. 11 arch regression
+    now uses five voussoirs and asserts the stage does not fail while the arch
+    remains intersection-free.
   - Added a `sx_rigid_ipc_slide` Python demo scene (registered in the py-demos
     Experimental category) showing a box slide across static ground and be
     friction-braked to rest through the rigid IPC barrier solver, now viable

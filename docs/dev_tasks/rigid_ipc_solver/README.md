@@ -182,6 +182,13 @@
         strict Armijo too tight for the finite budget, accepts the best finite
         objective-decreasing candidate instead of treating the step as an unsafe
         line-search block.
+  - [x] Phase 3t: harden dense exact-contact resting plateaus in the runtime
+        stage. Adaptive kappa now retries a zero-step line-search block with a
+        higher stiffness, the opt-in stage carries raised stiffness forward
+        across runtime steps while contacts remain active, and an exact
+        zero-progress resting-contact plateau writes back the unchanged safe pose
+        instead of surfacing as a persistent failed solve. Covered by the
+        five-voussoir Fig. 11 arch regression.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.

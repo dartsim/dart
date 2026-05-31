@@ -162,35 +162,32 @@ starting, active-set reuse) follow from here.
   safe progress was proven. This keeps the intersection-free guarantee (the bound
   is a proven lower bound on the TOI, strictly before any crossing -- covered by
   `LineSearchUsesProvenSafeTimeOnIterationExhaustion`) while letting dense resting
-  contacts advance. Result: the minimal 3-voussoir friction arch now stands in
-  equilibrium (`MinimalFrictionArchStandsInEquilibrium`, Fig. 11), and the
+  contacts advance. Result: the minimal friction arch stands in equilibrium
+  (Fig. 11), and the
   two-box stack converges faster (fewer frozen retries). The line-search CCD
   budget was also raised (64 -> 256) so tight pairs reach a larger safe bound
-  before falling back. All 51 barrier + 17 rigid-IPC world tests stay green.
+  before falling back.
 
-- **[OPEN] Larger arches: one interface reaches EXACT contact and the barrier
-  never stiffens to hold the gap.** With the indeterminacy fix, a 5-block arch
-  settles for 3 steps then sticks (isolated with per-step `RigidIpcSolverStats`):
-  step 4+ is `LineSearchBlocked` with `lsZero=1`, `indet=0` -- exactly ONE
-  primitive pair reaches `distance <= 0` (a `Hit` at TOI 0), so the line search
-  correctly blocks to avoid penetration. The telling stat: `barrierStiffness`
-  stays at its initial ~1.1e4 with `barrierStiffnessIncreases=0` -- the adaptive
-  kappa NEVER increases, so the soft barrier lets that interface creep to exact
-  contact, and then it deadlocks (at-contact -> blocked -> no applied step -> no
-  kappa update -> still at contact). So the gate is NOT the line search itself
-  (it is doing the right thing) -- it is core IPC resting-contact robustness in
-  dense compression: the barrier must hold every interface at a positive gap.
-  Two coupled fixes, both touching core numerics (high regression risk across ALL
-  scenes -- verify the full suite + every anti-tunneling/stack/kinematic test):
-  (1) a positive minimum-separation CCD/barrier ("dHat min separation") so
-  interfaces are held a small distance apart and the line search never sees an
-  exact-contact `Hit`; and/or (2) make the adaptive kappa actually increase when
-  a closest pair keeps approaching across steps in a dense system (it does not
-  fire here -- investigate `updateRigidIpcBarrierStiffness` and whether a blocked
-  solve should bump kappa for the next step). This still gates the larger
-  multi-body paper scenes -- arch (Fig. 11, full), 3D packing (Fig. 14), wrecking
-  ball (Fig. 8). The 3-block arch is shipped as a test; reproduce the 5-block with
-  voussoir wedge meshes (`CollisionShape::makeMesh`).
+- **[RESOLVED, partial] Larger arches reached exact contact and surfaced a
+  persistent failed solve.** With the indeterminacy fix alone, a 5-block arch
+  settled for 3 steps then stuck (isolated with per-step `RigidIpcSolverStats`):
+  step 4+ was `LineSearchBlocked` with `lsZero=1`, `indet=0` -- exactly one
+  primitive pair reached `distance <= 0` (a `Hit` at TOI 0), so the line search
+  correctly blocked to avoid penetration. The telling stat:
+  `barrierStiffness` stayed at its initial ~1.1e4 with
+  `barrierStiffnessIncreases=0` -- the adaptive kappa never increased, so the
+  soft barrier let that interface creep to exact contact, and then it deadlocked
+  (at-contact -> blocked -> no applied step -> no kappa update -> still at
+  contact).
+
+  Fix (landed, runtime robustness): a zero-step line-search block now gives
+  adaptive kappa one bounded retry path before failing, the opt-in runtime stage
+  carries raised kappa forward while contacts remain active, and an exact
+  zero-progress resting-contact plateau writes back the unchanged safe pose
+  rather than surfacing as a persistent failure. The five-voussoir Fig. 11 arch
+  is now shipped as `FiveVoussoirFrictionArchStandsInEquilibrium`. Broader dense
+  multi-body scenes -- 3D packing (Fig. 14), wrecking ball (Fig. 8), and larger
+  production scene sets -- still need corpus coverage and performance work.
 
 ## Optimization roadmap (CPU and GPU)
 

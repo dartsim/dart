@@ -6663,7 +6663,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   sxdetail::RigidIpcProjectedNewtonSolveOptions options;
   options.barrier.squaredActivationDistance
       = m_options.activationDistance * m_options.activationDistance;
-  options.barrier.stiffness = 1.0;
+  options.barrier.stiffness
+      = std::max(1.0, m_adaptiveBarrierStiffnessLowerBound);
   // The conservative line search runs a curved ACCD per candidate primitive
   // pair. If the ACCD exhausts its iteration budget on a tight, slowly
   // converging pair it returns Indeterminate, which the line search treats as a
@@ -6711,6 +6712,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       getMetadata());
   executor.execute(graph);
 
+  const bool lineSearchBlocked
+      = result.status
+        == sxdetail::RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
+  const bool restingContactBlocked
+      = result.failed && lineSearchBlocked && result.stats.acceptedSteps == 0u
+        && result.stats.lineSearchZeroStepCount > 0u
+        && !result.assembly.activeConstraints.empty();
+
   m_lastStats.status = toPublicRigidIpcSolveStatus(result.status);
   m_lastStats.activeConstraints = result.assembly.activeConstraints.size();
   m_lastStats.activeFrictionConstraints
@@ -6747,11 +6756,24 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.sufficientDecreaseBacktracks
       = result.stats.sufficientDecreaseBacktracks;
   m_lastStats.converged = result.converged;
-  m_lastStats.failed = result.failed;
+  m_lastStats.failed = result.failed && !restingContactBlocked;
+
+  if (result.assembly.activeConstraints.empty()) {
+    m_adaptiveBarrierStiffnessLowerBound = 1.0;
+  } else if (
+      std::isfinite(result.stats.barrierStiffness)
+      && result.stats.barrierStiffness > 0.0) {
+    m_adaptiveBarrierStiffnessLowerBound = result.stats.barrierStiffness;
+  }
 
   // A failed solve (conservative line search blocked the step, or the
-  // factorization failed) never writes back: applying it could penetrate.
-  if (result.failed) {
+  // factorization failed) normally never writes back: applying it could
+  // penetrate. The exception is an exact resting-contact plateau where the
+  // line search blocked before any accepted step. Writing back the unchanged
+  // current pose is safe (it introduces no new motion) and damps the runtime
+  // velocity to the contact-consistent no-op instead of reporting a persistent
+  // failure for a static dense contact.
+  if (result.failed && !restingContactBlocked) {
     return;
   }
   // Otherwise apply the last intersection-free iterate the bounded solve
@@ -6765,7 +6787,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // assembled objective admits it, and otherwise stops at the last feasible
   // decreasing iterate. A solve that made no progress at all (e.g. a zero
   // iteration budget) is still skipped.
-  if (!result.converged && !result.madeProgress()) {
+  if (!result.converged && !result.madeProgress() && !restingContactBlocked) {
     m_lastStats.nonConvergedResultSkipped = true;
     return;
   }

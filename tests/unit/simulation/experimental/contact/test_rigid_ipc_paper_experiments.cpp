@@ -443,24 +443,19 @@ TEST(RigidIpcPaperExperiments, DegenerateVertexDropStaysIntersectionFree)
   EXPECT_TRUE(box.getLinearVelocity().allFinite());
 }
 
-// Fig. 11 (Arch), minimal form: a three-voussoir semicircular arch stands in
-// equilibrium under gravity, held by friction at the wedge interfaces and the
-// ground (no abutments). The keystone (top wedge) is wedged between the two
-// springers; friction resists the outward thrust at the ground. The keystone
-// must not collapse and nothing may penetrate the ground.
-//
-// This is the minimal arch the current solver supports: larger arches reach a
-// hard face-face contact the conservative line search still stalls on (the
-// dense-contact robustness gate tracked in benchmarks.md). It exercises the
-// proven-safe-time line-search bound that lets dense resting contacts advance
-// instead of freezing.
-TEST(RigidIpcPaperExperiments, MinimalFrictionArchStandsInEquilibrium)
+// Fig. 11 (Arch): a five-voussoir semicircular arch stands in equilibrium under
+// gravity, held by friction at the wedge interfaces and the ground (no
+// abutments). The keystone (top wedge) is wedged between the springers;
+// friction resists the outward thrust at the ground. The keystone must not
+// collapse, nothing may penetrate the ground, and the dense exact-contact
+// plateau must not report a persistent failed solve.
+TEST(RigidIpcPaperExperiments, FiveVoussoirFrictionArchStandsInEquilibrium)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world.setTimeStep(0.005);
 
-  constexpr int kBlocks = 3; // odd: the middle wedge is the keystone
+  constexpr int kBlocks = 5; // odd: the middle wedge is the keystone
   constexpr double innerRadius = 1.0;
   constexpr double rOut = 1.3;
   constexpr double halfW = 0.15;
@@ -502,6 +497,19 @@ TEST(RigidIpcPaperExperiments, MinimalFrictionArchStandsInEquilibrium)
   double minVoussoirZ = lift;
   for (int s = 0; s < 80; ++s) {
     world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed)
+        << "step " << s << " status=" << static_cast<int>(stats.status)
+        << " accepted=" << stats.acceptedSteps
+        << " kappa=" << stats.barrierStiffness
+        << " kappaIncreases=" << stats.barrierStiffnessIncreases
+        << " lsZero=" << stats.lineSearchZeroStepCount;
+    EXPECT_TRUE(stats.resultApplied)
+        << "step " << s << " status=" << static_cast<int>(stats.status)
+        << " accepted=" << stats.acceptedSteps
+        << " kappa=" << stats.barrierStiffness
+        << " kappaIncreases=" << stats.barrierStiffnessIncreases
+        << " lsZero=" << stats.lineSearchZeroStepCount;
     for (std::size_t i = 0; i < voussoirs.size(); ++i) {
       const Eigen::Matrix3d R = voussoirs[i].getRotation();
       const Eigen::Vector3d t = voussoirs[i].getTranslation();

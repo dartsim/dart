@@ -2344,6 +2344,11 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         gradBarrier,
         adaptive.minStiffnessScale,
         maxBarrierStiffness);
+    if (std::isfinite(options.barrier.stiffness)
+        && options.barrier.stiffness > barrierOptions.stiffness) {
+      barrierOptions.stiffness
+          = std::min(options.barrier.stiffness, maxBarrierStiffness);
+    }
     prevMinSquaredDistance = minActiveSquaredDistance(unitBarrierAssembly);
   }
   result.stats.barrierStiffness = barrierOptions.stiffness;
@@ -2456,6 +2461,18 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           ++result.stats.lineSearchLimitedSteps;
         }
         if (step.lineSearchBlocked) {
+          if (adaptive.enabled && iteration < options.maxIterations
+              && barrierOptions.stiffness < maxBarrierStiffness) {
+            const double updatedStiffness
+                = std::min(maxBarrierStiffness, 2.0 * barrierOptions.stiffness);
+            if (updatedStiffness > barrierOptions.stiffness
+                && std::isfinite(updatedStiffness)) {
+              barrierOptions.stiffness = updatedStiffness;
+              result.stats.barrierStiffness = updatedStiffness;
+              ++result.stats.barrierStiffnessIncreases;
+              continue;
+            }
+          }
           result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
           result.failed = true;
           return result;
