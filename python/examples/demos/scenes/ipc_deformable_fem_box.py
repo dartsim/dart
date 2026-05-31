@@ -13,10 +13,13 @@ DART-native FEM showcase -- not a faithful IPC paper-figure reproduction.
 
 from __future__ import annotations
 
+from collections import deque
+
+import numpy as np
 import dartpy.simulation_experimental as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _BOX_HALF = (0.16, 0.16, 0.1)
 _BOX_CENTER = (0.0, 0.0, _BOX_HALF[2])  # resting on the ground top (z = 0)
@@ -69,9 +72,49 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="fem_box", edges=edges)
 
+    box_clearance_history = deque(maxlen=120)
+    ground_clearance_history = deque(maxlen=120)
+    span_z_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("material: stable neo-Hookean FEM")
+        builder.text("contact: box obstacle + ground barrier")
+        if positions.size:
+            ground_top = _GROUND_CENTER[2] + _GROUND_HALF[2]
+            box_top = _BOX_CENTER[2] + _BOX_HALF[2]
+            over_box = (
+                (np.abs(positions[:, 0] - _BOX_CENTER[0]) <= _BOX_HALF[0])
+                & (np.abs(positions[:, 1] - _BOX_CENTER[1]) <= _BOX_HALF[1])
+            )
+            ground_clearance = float(np.min(positions[:, 2]) - ground_top)
+            box_clearance = (
+                float(np.min(positions[over_box, 2] - box_top))
+                if np.any(over_box)
+                else ground_clearance
+            )
+            span_z = float(np.max(positions[:, 2]) - np.min(positions[:, 2]))
+            box_clearance_history.append(box_clearance)
+            ground_clearance_history.append(ground_clearance)
+            span_z_history.append(span_z)
+            builder.text(f"box clearance: {box_clearance:.4f} m")
+            builder.text(f"ground clearance: {ground_clearance:.4f} m")
+            builder.text(f"vertical span: {span_z:.3f} m")
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if box_clearance_history:
+            builder.separator()
+            builder.plot_lines("Box clearance", list(box_clearance_history))
+            builder.plot_lines("Ground clearance", list(ground_clearance_history))
+            builder.plot_lines("Span z", list(span_z_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC FEM Box", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

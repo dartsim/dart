@@ -13,10 +13,13 @@ analytic ground barrier; no codimensional obstacles or friction).
 
 from __future__ import annotations
 
+from collections import deque
+
+import numpy as np
 import dartpy.simulation_experimental as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _GROUND_CENTER = (0.0, 0.0, -0.06)
 _GROUND_HALF = (1.2, 1.2, 0.06)  # top face at z = 0.0
@@ -57,9 +60,40 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="fem_drop", edges=edges)
 
+    clearance_history = deque(maxlen=120)
+    center_height_history = deque(maxlen=120)
+    span_z_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("material: stable neo-Hookean FEM")
+        builder.text("contact: ground barrier")
+        if positions.size:
+            ground_top = _GROUND_CENTER[2] + _GROUND_HALF[2]
+            clearance = float(np.min(positions[:, 2]) - ground_top)
+            center_height = float(np.mean(positions[:, 2]))
+            span_z = float(np.max(positions[:, 2]) - np.min(positions[:, 2]))
+            clearance_history.append(clearance)
+            center_height_history.append(center_height)
+            span_z_history.append(span_z)
+            builder.text(f"ground clearance: {clearance:.4f} m")
+            builder.text(f"cube center height: {center_height:.3f} m")
+            builder.text(f"vertical span: {span_z:.3f} m")
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if clearance_history:
+            builder.separator()
+            builder.plot_lines("Ground clearance", list(clearance_history))
+            builder.plot_lines("Cube center height", list(center_height_history))
+            builder.plot_lines("Span z", list(span_z_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC FEM Drop", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

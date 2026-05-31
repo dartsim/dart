@@ -74,6 +74,11 @@ navigation, and a path for scene-specific controls.
   `ipc_deformable_pt_particles`, and `ipc_deformable_scripted_dirichlet`,
   exposing sag/drop/clearance/sweep metrics alongside shared IPC solver
   diagnostics.
+- Add FEM diagnostics panels to `ipc_deformable_fem_bar`,
+  `ipc_deformable_fem_twist`, `ipc_deformable_fcr_twist`,
+  `ipc_deformable_fem_drop`, `ipc_deformable_fem_box`, and
+  `ipc_deformable_fem_msh`, exposing tip drop, twist span, clearance, and
+  mean-speed metrics alongside shared IPC solver diagnostics.
 - Move Python demo line-segment visual updates to snake_case dartpy APIs so
   panel tests and demo captures stay free of camelCase deprecation warnings.
 - Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape
@@ -86,8 +91,8 @@ navigation, and a path for scene-specific controls.
 
 ## Remaining work
 
-- Add per-example controls for more high-value differentiable and IPC
-  deformable scenes beyond the first drone/FEM/friction showcase slice.
+- Audit the remaining Python demo catalog for any high-value scenes that still
+  need custom panels or controls.
 - Add a recorded-frame playback surface once demos have a recording contract.
 - Add full viewer mouse-event injection coverage for force-drag if the Filament
   test harness grows synthetic pointer input.

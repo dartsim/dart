@@ -101,6 +101,11 @@
   have imported-asset/scripted-boundary panels with sag, tip-drop, ground
   clearance, fall distance, out-of-plane span, and shared IPC solver
   diagnostics.
+- `ipc_deformable_fem_bar`, `ipc_deformable_fem_twist`,
+  `ipc_deformable_fcr_twist`, `ipc_deformable_fem_drop`,
+  `ipc_deformable_fem_box`, and `ipc_deformable_fem_msh` now have FEM
+  diagnostics panels with tip drop, twist span, obstacle/ground clearance,
+  free-end height, mean node speed, and shared IPC solver diagnostics.
 - Python demo line-segment visuals now use snake_case dartpy APIs in the sx
   deformable bridge, IPC deformable bridge, and polyhedron scene so warnings-as
   errors panel tests stay clean.
@@ -209,6 +214,12 @@ pixi run py-demo-capture -- --scene ipc_deformable_obj_cloth --show-ui --frames 
 pixi run py-demo-capture -- --scene ipc_deformable_seg_strand --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_seg_strand_panel
 pixi run py-demo-capture -- --scene ipc_deformable_pt_particles --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_pt_particles_panel
 pixi run py-demo-capture -- --scene ipc_deformable_scripted_dirichlet --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_scripted_panel
+pixi run py-demo-capture -- --scene ipc_deformable_fem_bar --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_bar_panel
+pixi run py-demo-capture -- --scene ipc_deformable_fem_twist --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_twist_panel
+pixi run py-demo-capture -- --scene ipc_deformable_fcr_twist --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fcr_twist_panel
+pixi run py-demo-capture -- --scene ipc_deformable_fem_drop --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_drop_panel
+pixi run py-demo-capture -- --scene ipc_deformable_fem_box --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_box_panel
+pixi run py-demo-capture -- --scene ipc_deformable_fem_msh --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_fem_msh_panel
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_sidebar_grouping
 ```
 
@@ -231,6 +242,7 @@ pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_cg_sol
 pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/examples/demos/_ipc_deformable_bridge.py python/examples/demos/scenes/polyhedron_visual.py python/examples/demos/scenes/vbd_cloth.py python/examples/demos/scenes/vbd_net.py python/examples/demos/scenes/vbd_beam.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/diff_throw_to_target.py python/examples/demos/scenes/diff_cartpole_trajopt.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_obj_cloth.py python/examples/demos/scenes/ipc_deformable_seg_strand.py python/examples/demos/scenes/ipc_deformable_pt_particles.py python/examples/demos/scenes/ipc_deformable_scripted_dirichlet.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_fem_bar.py python/examples/demos/scenes/ipc_deformable_fem_twist.py python/examples/demos/scenes/ipc_deformable_fcr_twist.py python/examples/demos/scenes/ipc_deformable_fem_drop.py python/examples/demos/scenes/ipc_deformable_fem_box.py python/examples/demos/scenes/ipc_deformable_fem_msh.py python/tests/unit/test_py_demo_panels.py
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
@@ -246,9 +258,8 @@ pixi run lint
 
 ## Next
 
-1. Add custom panels to additional high-value IPC deformable scenes beyond the
-   current FEM, friction, capsule-rod, trampoline, drape, net, and CG showcase
-   set.
+1. Audit the remaining Python demo catalog for any high-value scenes that still
+   need custom panels or controls.
 2. Add full viewer-input coverage for mouse force-drag once tests can inject
    pointer drags into the Filament viewer loop.
 3. Add recorded-frame playback only after the recording/playback data contract

@@ -22,7 +22,13 @@ from examples.demos.scenes import (
     ipc_deformable_cg_solver,
     ipc_deformable_drape,
     ipc_deformable_fem_buckle,
+    ipc_deformable_fcr_twist,
+    ipc_deformable_fem_bar,
+    ipc_deformable_fem_box,
+    ipc_deformable_fem_drop,
+    ipc_deformable_fem_msh,
     ipc_deformable_fem_sphere,
+    ipc_deformable_fem_twist,
     ipc_deformable_friction_slide,
     ipc_deformable_net,
     ipc_deformable_obj_cloth,
@@ -337,6 +343,29 @@ def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:
             "IPC Scripted Banner",
             "plot:Out-of-plane span:",
         ),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert any(event.startswith(expected_plot) for event in builder.events)
+        assert any(
+            event.startswith("text:solver: deformable IPC")
+            for event in builder.events
+        )
+
+
+def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (ipc_deformable_fem_bar, "IPC FEM Bar", "plot:Tip drop:"),
+        (ipc_deformable_fem_twist, "IPC FEM Twist", "plot:Span y:"),
+        (ipc_deformable_fcr_twist, "IPC FCR Twist", "plot:Span y:"),
+        (ipc_deformable_fem_drop, "IPC FEM Drop", "plot:Ground clearance:"),
+        (ipc_deformable_fem_box, "IPC FEM Box", "plot:Box clearance:"),
+        (ipc_deformable_fem_msh, "IPC FEM MSH", "plot:Tip drop:"),
     ):
         setup = scene_module.build()
         builder = _FakePanelBuilder()
