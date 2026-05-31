@@ -120,7 +120,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_variational_chain",
     title="Variational Chain (sx)",
-    category="Experimental",
+    category="Variational Integrators (sx)",
     summary="A passive chain swings without numerical damping (symplectic VI).",
     build=build,
 )

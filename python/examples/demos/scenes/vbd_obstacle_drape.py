@@ -190,7 +190,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="vbd_obstacle_drape",
     title="VBD Cloth over Sphere (sx)",
-    category="Experimental",
+    category="Vertex Block Descent (sx)",
     summary="A VBD cloth drapes over a static sphere obstacle without sinking through it.",
     build=build,
 )

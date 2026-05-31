@@ -150,7 +150,10 @@ navigation, and a path for scene-specific controls.
   by default with headless/capture modes, not a headless-only scene registry.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
-  current filtered/total scene count.
+  current filtered/total scene count. Experimental-world examples now use
+  solver/domain categories (`Experimental Rigid Body (sx)`, `Rigid IPC (sx)`,
+  `Variational Integrators (sx)`, and `Vertex Block Descent (sx)`) instead of a
+  single catch-all `Experimental` bucket.
 - Audit the remaining Python demo catalog after the custom-panel pass. The
   remaining no-panel scenes are starter/static visualization, basic rigid-body,
   basic collision/constraint, soft-body, and legacy asset examples; keep those

@@ -134,7 +134,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="vbd_tilted_strand",
     title="VBD Tilted Strand (sx)",
-    category="Experimental",
+    category="Vertex Block Descent (sx)",
     summary=(
         "The TinyVBD reference stress scene (stiff 20-vertex strand, 1:1000 "
         "mass ratio), solved by VBD."

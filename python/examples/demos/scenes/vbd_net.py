@@ -137,7 +137,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="vbd_net",
     title="VBD Net (sx)",
-    category="Experimental",
+    category="Vertex Block Descent (sx)",
     summary="A spring net pinned at its top corners, solved by VBD.",
     build=build,
 )

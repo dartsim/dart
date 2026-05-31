@@ -141,7 +141,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="vbd_cloth",
     title="VBD Cloth (sx)",
-    category="Experimental",
+    category="Vertex Block Descent (sx)",
     summary="A contact-free hanging cloth solved by Vertex Block Descent.",
     build=build,
 )

@@ -83,7 +83,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_contact",
     title="Contact (sx)",
-    category="Experimental",
+    category="Experimental Rigid Body (sx)",
     summary="A sphere-footed leg drops and rests on static ground.",
     build=build,
 )

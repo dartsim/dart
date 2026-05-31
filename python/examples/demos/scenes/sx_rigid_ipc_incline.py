@@ -114,7 +114,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_rigid_ipc_incline",
     title="Rigid IPC Inclined Slide (sx)",
-    category="Experimental",
+    category="Rigid IPC (sx)",
     summary="A box slides down a tilted ramp under friction via the rigid IPC barrier solver.",
     build=build,
 )

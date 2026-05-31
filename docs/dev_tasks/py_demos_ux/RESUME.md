@@ -183,6 +183,10 @@
 - The `Demos` navigator now groups categories by first appearance across the
   entire catalog rather than assuming each category is contiguous, and it shows
   the current filtered/total scene count beside the search field.
+  Experimental-world examples now use solver/domain categories
+  (`Experimental Rigid Body (sx)`, `Rigid IPC (sx)`,
+  `Variational Integrators (sx)`, and `Vertex Block Descent (sx)`) instead of a
+  single catch-all `Experimental` bucket.
 - `legged_balance`, `arm_push_box`, `cartpole_gym_env`, `cartpole_mpc`, and
   `sensor_descriptors` now have Control & Modern panels with controller state,
   command metrics, sensor-surface status, and live plots.
@@ -215,6 +219,17 @@ pixi run py-demo-capture -- --scene sx_articulated --frames 2 --width 1280 --hei
 ```
 
 The command produced a nonblank docked UI screenshot.
+
+Category split visual proof:
+
+```bash
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 4 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_categories_split
+```
+
+The viewed screenshot `/tmp/dart_py_demo_categories_split/sx_rigid_ipc_slide.png`
+showed solver/domain buckets in the `Demos` navigator, with
+`Experimental Rigid Body (sx)` and `Rigid IPC (sx)` separate and the active
+Rigid IPC category expanded.
 
 Scene-panel visual proof:
 

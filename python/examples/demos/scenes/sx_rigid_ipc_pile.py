@@ -110,7 +110,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_rigid_ipc_pile",
     title="Rigid IPC Box Pile (sx)",
-    category="Experimental",
+    category="Rigid IPC (sx)",
     summary="Three boxes drop and settle into a pile via the rigid IPC barrier solver.",
     build=build,
 )

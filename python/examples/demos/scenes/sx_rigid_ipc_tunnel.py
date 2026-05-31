@@ -94,7 +94,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_rigid_ipc_tunnel",
     title="Rigid IPC No-Tunneling (sx)",
-    category="Experimental",
+    category="Rigid IPC (sx)",
     summary=(
         "A fast box is stopped by a thin wall via the rigid IPC continuous "
         "collision detection (no tunneling)."

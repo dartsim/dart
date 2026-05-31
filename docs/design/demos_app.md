@@ -56,8 +56,10 @@ dart::gui::ApplicationOptions dart::examples::demos::make<Name>Scene();
 Scenes are declared in `examples/demos/scenes.hpp` and registered — with a
 stable `id`, display `title`, `category`, and one-line `summary` — in
 `examples/demos/registry.cpp`. The registry vector order defines display order;
-categories appear in first-appearance order. Adding an example is: one scene
-file, one header declaration, one registry entry, one CMake source line.
+categories appear in first-appearance order. Experimental-world Python scenes
+should use solver/domain categories rather than a catch-all bucket so the
+navigator scales as the catalog grows. Adding an example is: one scene file,
+one header declaration, one registry entry, one CMake source line.
 
 The factory is lazy (built when the scene is first selected), so launch stays
 fast and an asset/remote-load failure affects only that scene. The host

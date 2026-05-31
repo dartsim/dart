@@ -90,7 +90,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_rigid_ipc",
     title="Rigid IPC Contact (sx)",
-    category="Experimental",
+    category="Rigid IPC (sx)",
     summary="A free box settles on static ground via the rigid IPC barrier solver.",
     build=build,
 )

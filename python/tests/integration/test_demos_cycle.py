@@ -501,6 +501,49 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     assert not any(s.startswith("ipc_deformable_") for s in experimental)
 
 
+def test_experimental_world_scenes_use_solver_focused_categories() -> None:
+    scenes = make_demo_scenes()
+    by_id = {scene.id: scene for scene in scenes}
+
+    expected = {
+        "Experimental Rigid Body (sx)": {
+            "sx_articulated",
+            "sx_floating_base",
+            "sx_contact",
+            "experimental_rigid_body_gui",
+        },
+        "Rigid IPC (sx)": {
+            "sx_rigid_ipc",
+            "sx_rigid_ipc_slide",
+            "sx_rigid_ipc_incline",
+            "sx_rigid_ipc_pile",
+            "sx_rigid_ipc_tunnel",
+        },
+        "Variational Integrators (sx)": {
+            "sx_variational_chain",
+            "sx_variational_tumbler",
+        },
+        "Vertex Block Descent (sx)": {
+            "vbd_cloth",
+            "vbd_net",
+            "vbd_beam",
+            "vbd_tilted_strand",
+            "vbd_obstacle_drape",
+            "vbd_self_fold",
+        },
+    }
+
+    for category, scene_ids in expected.items():
+        for scene_id in scene_ids:
+            assert by_id[scene_id].category == category
+
+    old_experimental = [scene.id for scene in scenes if scene.category == "Experimental"]
+    assert not any(
+        scene_id.startswith(("sx_", "vbd_")) or scene_id == "experimental_rigid_body_gui"
+        for scene_id in old_experimental
+    )
+
+
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     """`--screenshot` writes a real PPM via the dartpy.gui Filament viewer
     (PLAN-103 Phase 2 replacement for the old JSON state stub)."""

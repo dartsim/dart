@@ -155,7 +155,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="vbd_beam",
     title="VBD Beam (sx)",
-    category="Experimental",
+    category="Vertex Block Descent (sx)",
     summary="A tetrahedral cantilever beam sagging under gravity, solved by VBD.",
     build=build,
 )

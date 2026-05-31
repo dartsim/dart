@@ -119,7 +119,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_variational_tumbler",
     title="Variational Tumbler (sx)",
-    category="Experimental",
+    category="Variational Integrators (sx)",
     summary="A torque-free floating body tumbles without energy/momentum drift.",
     build=build,
 )

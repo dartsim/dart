@@ -82,7 +82,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_floating_base",
     title="Floating Base (sx)",
-    category="Experimental",
+    category="Experimental Rigid Body (sx)",
     summary="A free-floating body drifts and spins under SE(3) integration.",
     build=build,
 )

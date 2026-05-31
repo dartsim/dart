@@ -143,7 +143,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="experimental_rigid_body_gui",
     title="Experimental Rigid Body (sx)",
-    category="Experimental",
+    category="Experimental Rigid Body (sx)",
     summary="Four spheres + a box dropping under the experimental world.",
     build=build,
 )

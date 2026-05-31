@@ -193,7 +193,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="vbd_self_fold",
     title="VBD Surface Self-Contact (sx)",
-    category="Experimental",
+    category="Vertex Block Descent (sx)",
     summary="One body's free top cloth layer settles on its pinned bottom layer "
     "without passing through it, via VBD surface self-contact.",
     build=build,
