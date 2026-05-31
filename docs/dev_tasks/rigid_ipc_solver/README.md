@@ -239,6 +239,9 @@
         down-slope sliding for both the 3D friction fixture row and its paper
         alias. The at-threshold `mu=0.5` rows remain planned until the solver
         has matching stick evidence.
+  - [x] Add exact upstream high-friction incline coverage for the 3D friction
+        fixture row with `mu=1.0`, preserving intersection-free rest/stick
+        behavior while keeping the at-threshold `mu=0.5` row open.
   - [ ] Extend friction into broader corpus coverage and production convergence
         criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
@@ -288,6 +291,10 @@
         and the Fig. 18 paper alias) as implemented after exact
         `RigidIpcPaperExperiments` coverage landed. The `mu=0.5` threshold rows
         remain planned.
+  - [x] Mark the audited high-friction high-school-physics fixture row
+        (`fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=1.json`)
+        as implemented after exact `RigidIpcPaperExperiments` stick coverage
+        landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -375,8 +382,9 @@ DART-owned implementation.
   CCD, and hash-grid rows remain planned until similarly matched.
   The below-threshold Fig. 18 high-school-physics friction fixture row
   (`mu=0.49`) and its paper alias are now marked implemented through exact
-  `RigidIpcPaperExperiments` coverage; the `mu=0.5` threshold rows remain
-  planned because they still need matching DART stick evidence.
+  `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is
+  marked implemented through exact stick coverage; the `mu=0.5` threshold rows
+  remain planned because they still need matching DART stick evidence.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under

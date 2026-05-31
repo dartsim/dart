@@ -1,5 +1,31 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: high-friction incline fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added exact DART-owned coverage for the audited high-friction incline row:
+  `mu=1.0` against `tan(theta)=0.5` remains intersection-free and settles
+  without sustained down-slope slide in
+  `RigidIpcPaperExperiments.FrictionThresholdHighFixtureRowSticks`.
+- Marked
+  `fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=1.json`
+  implemented in the generated manifest.
+- Kept the `mu=0.5` at-threshold rows planned. They still need matching DART
+  stick evidence before retirement.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.FrictionThresholdHighFixtureRowSticks`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: below-threshold friction fixture row
 
 Delivered a bounded Phase 4/6 friction-manifest slice:

@@ -279,6 +279,21 @@ TEST(RigidIpcPaperExperiments, FrictionThresholdBelowFixtureRowSlides)
   EXPECT_GT(below.downSlopeSpeed, 0.03);
 }
 
+// 3D friction fixture row: the upstream high-school physics corpus also keeps a
+// high-friction mu = 1.0 scene. With tan(theta) = 0.5, that row should settle
+// without a sustained down-slope slide.
+TEST(RigidIpcPaperExperiments, FrictionThresholdHighFixtureRowSticks)
+{
+  const double theta = std::atan(0.5);
+
+  const InclineRun above
+      = runInclinedFrictionBlock(theta, /*mu=*/1.0, /*steps=*/200);
+  EXPECT_FALSE(above.everFailed);
+  EXPECT_GT(above.minCenterZ, 0.1 - 5e-3);
+  EXPECT_LT(std::abs(above.downSlopeDisplacement), 5e-3);
+  EXPECT_LT(std::abs(above.downSlopeSpeed), 0.05);
+}
+
 // Fig. 7 ("Spolling coin"): a coin spinning on a frictional surface is braked
 // by friction. We use a thin triangulated disk resting flat on the ground, spun
 // about its symmetry (z) axis. The contact patch friction must dissipate the

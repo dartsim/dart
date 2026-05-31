@@ -54,12 +54,50 @@ IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS = frozenset(
     f"tests/data/large-rb-hashgrid/large-rb-hashgrid-{index:03d}.json"
     for index in range(2)
 )
-IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS = frozenset(
-    {
-        "fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json",
-        "fixtures/paper-figures/18-high-school-physics-friction-test-mu=0.49.json",
-    }
-)
+IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS = {
+    "fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json": {
+        "test": "FrictionThresholdBelowFixtureRowSlides",
+        "expected_invariant": (
+            "DART covers the audited below-threshold high-school physics "
+            "friction row: with tan(theta)=0.5 and mu=0.49, the block remains "
+            "intersection-free and continues sliding down-slope."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned Fig. 18 paper experiment coverage for the "
+            "3D friction fixture and paper alias. The at-threshold mu=0.5 row "
+            "and broader friction corpus remain planned until they have "
+            "matching DART evidence."
+        ),
+    },
+    "fixtures/paper-figures/18-high-school-physics-friction-test-mu=0.49.json": {
+        "test": "FrictionThresholdBelowFixtureRowSlides",
+        "expected_invariant": (
+            "DART covers the audited below-threshold high-school physics "
+            "friction row: with tan(theta)=0.5 and mu=0.49, the block remains "
+            "intersection-free and continues sliding down-slope."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned Fig. 18 paper experiment coverage for the "
+            "3D friction fixture and paper alias. The at-threshold mu=0.5 row "
+            "and broader friction corpus remain planned until they have "
+            "matching DART evidence."
+        ),
+    },
+    "fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=1.json": {
+        "test": "FrictionThresholdHighFixtureRowSticks",
+        "expected_invariant": (
+            "DART covers the audited high-friction high-school physics row: "
+            "with tan(theta)=0.5 and mu=1.0, the block remains "
+            "intersection-free and settles without sustained down-slope slide."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned Fig. 18 paper experiment coverage for the "
+            "3D high-friction fixture row. The at-threshold mu=0.5 row and "
+            "broader friction corpus remain planned until they have matching "
+            "DART evidence."
+        ),
+    },
+}
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {
         "artifact": (
@@ -426,28 +464,20 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
             "evidence."
         )
     if source_kind == "fixture" and path in IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS:
+        implemented = IMPLEMENTED_FRICTION_THRESHOLD_FIXTURE_ROWS[path]
         status = "implemented"
+        test_name = implemented["test"]
         artifact = (
-            "test_rigid_ipc_paper_experiments::"
-            "RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides"
+            f"test_rigid_ipc_paper_experiments::"
+            f"RigidIpcPaperExperiments.{test_name}"
         )
         command = (
             "pixi run bash -lc 'build/default/cpp/Release/bin/"
             "test_rigid_ipc_paper_experiments --gtest_color=no "
-            "--gtest_filter="
-            "RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides'"
+            f"--gtest_filter=RigidIpcPaperExperiments.{test_name}'"
         )
-        expected_invariant = (
-            "DART covers the audited below-threshold high-school physics "
-            "friction row: with tan(theta)=0.5 and mu=0.49, the block remains "
-            "intersection-free and continues sliding down-slope."
-        )
-        notes_or_gap = (
-            "Covered by DART-owned Fig. 18 paper experiment coverage for the "
-            "3D friction fixture and paper alias. The at-threshold mu=0.5 row "
-            "and broader friction corpus remain planned until they have "
-            "matching DART evidence."
-        )
+        expected_invariant = implemented["expected_invariant"]
+        notes_or_gap = implemented["notes_or_gap"]
     elif source_kind == "test-data" and path in IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS:
         status = "implemented"
         artifact = (
