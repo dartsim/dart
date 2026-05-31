@@ -39,6 +39,9 @@ navigation, and a path for scene-specific controls.
   workspace after panels have been rearranged.
 - Keep frame-output capture controlled by the shared lifecycle state so the
   toolbar state matches whether frame writing is active.
+- Add a recorded-frame playback surface to the `Simulation` panel, with
+  first, previous, play, next, and last controls over the recorded PPM
+  sequence and a visible selected-frame artifact path.
 - Accept hyphenated scene aliases such as `sx-rigid-ipc-slide` in the Python
   runner validation path.
 - Add scene panels to `diff_drone_liftoff` and
@@ -101,7 +104,6 @@ navigation, and a path for scene-specific controls.
 
 - Audit the remaining Python demo catalog for any high-value scenes that still
   need custom panels or controls.
-- Add a recorded-frame playback surface once demos have a recording contract.
 - Add full viewer mouse-event injection coverage for force-drag if the Filament
   test harness grows synthetic pointer input.
 - Decide whether dock layout persistence is needed after the default layout

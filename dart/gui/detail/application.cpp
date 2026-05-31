@@ -72,6 +72,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -87,6 +88,7 @@
 
 namespace {
 
+using dart::gui::advanceRecordedFramePlayback;
 using dart::gui::elapsedMs;
 using dart::gui::OrbitCameraController;
 using dart::gui::printProfile;
@@ -96,8 +98,11 @@ using dart::gui::requestSceneReplay;
 using dart::gui::requestSceneSwitch;
 using dart::gui::requestSingleStep;
 using dart::gui::RunOptions;
+using dart::gui::setRecordedFramePlaybackIndex;
+using dart::gui::stepRecordedFramePlayback;
 using dart::gui::toggleFrameOutputCapture;
 using dart::gui::togglePaused;
+using dart::gui::toggleRecordedFramePlayback;
 using dart::gui::ViewerLifecycleState;
 using dart::gui::detail::ApplicationInputState;
 using dart::gui::detail::ApplicationWindow;
@@ -272,6 +277,34 @@ std::string defaultDemoFrameOutputDirectory(std::string_view sceneId)
   return (root / "dart_demos_frames" / sanitizePathComponent(sceneId)).string();
 }
 
+std::vector<std::filesystem::path> recordedFramePaths(
+    const std::string& outputDirectory)
+{
+  std::vector<std::filesystem::path> paths;
+  if (outputDirectory.empty()) {
+    return paths;
+  }
+
+  std::error_code error;
+  if (!std::filesystem::is_directory(outputDirectory, error)) {
+    return paths;
+  }
+
+  for (const auto& entry :
+       std::filesystem::directory_iterator(outputDirectory, error)) {
+    if (error || !entry.is_regular_file(error)) {
+      continue;
+    }
+    const auto path = entry.path();
+    const std::string filename = path.filename().string();
+    if (path.extension() == ".ppm" && filename.starts_with("frame_")) {
+      paths.push_back(path);
+    }
+  }
+  std::sort(paths.begin(), paths.end());
+  return paths;
+}
+
 std::string formatFixed(double value, int precision)
 {
   std::ostringstream stream;
@@ -291,7 +324,7 @@ dart::gui::Panel makeDemoSimulationPanel(
   dart::gui::Panel panel;
   panel.title = "Simulation";
   panel.dockSide = dart::gui::DockSide::Top;
-  panel.initialSize = std::array<double, 2>{760.0, 72.0};
+  panel.initialSize = std::array<double, 2>{760.0, 104.0};
   panel.autoResize = false;
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,
@@ -350,6 +383,59 @@ dart::gui::Panel makeDemoSimulationPanel(
       builder.sameLine();
       builder.text("recording frames");
       builder.itemTooltip(lifecycle->frameOutputDirectory);
+    }
+
+    const auto recordedFrames
+        = recordedFramePaths(lifecycle->frameOutputDirectory);
+    const int recordedFrameCount
+        = recordedFrames.size()
+                  > static_cast<std::size_t>(std::numeric_limits<int>::max())
+              ? std::numeric_limits<int>::max()
+              : static_cast<int>(recordedFrames.size());
+    advanceRecordedFramePlayback(*lifecycle, recordedFrameCount);
+    if (!lifecycle->frameOutputDirectory.empty() || recordedFrameCount > 0) {
+      builder.separator();
+      builder.text(
+          std::string("frame playback: ") + std::to_string(recordedFrameCount)
+          + " recorded frame" + (recordedFrameCount == 1 ? "" : "s"));
+      builder.itemTooltip(lifecycle->frameOutputDirectory);
+
+      if (recordedFrameCount > 0) {
+        if (builder.button("|<")) {
+          setRecordedFramePlaybackIndex(*lifecycle, recordedFrameCount, 0);
+        }
+        builder.sameLine();
+        if (builder.button("<")) {
+          stepRecordedFramePlayback(*lifecycle, recordedFrameCount, -1);
+        }
+        builder.sameLine();
+        if (builder.button(
+                lifecycle->recordedFramePlaybackPlaying ? "Pause Playback"
+                                                        : "Play Frames")) {
+          toggleRecordedFramePlayback(*lifecycle, recordedFrameCount);
+        }
+        builder.sameLine();
+        if (builder.button(">")) {
+          stepRecordedFramePlayback(*lifecycle, recordedFrameCount, 1);
+        }
+        builder.sameLine();
+        if (builder.button(">|")) {
+          setRecordedFramePlaybackIndex(
+              *lifecycle, recordedFrameCount, recordedFrameCount - 1);
+        }
+        const int selectedIndex = std::clamp(
+            lifecycle->recordedFramePlaybackIndex, 0, recordedFrameCount - 1);
+        setRecordedFramePlaybackIndex(
+            *lifecycle, recordedFrameCount, selectedIndex);
+        const auto& selectedPath
+            = recordedFrames[static_cast<std::size_t>(selectedIndex)];
+        builder.sameLine();
+        builder.text(
+            std::to_string(selectedIndex + 1) + "/"
+            + std::to_string(recordedFrameCount) + " "
+            + selectedPath.filename().string());
+        builder.itemTooltip(selectedPath.string());
+      }
     }
   };
   return panel;

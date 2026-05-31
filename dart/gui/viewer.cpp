@@ -127,6 +127,62 @@ void toggleFrameOutputCapture(
   setFrameOutputCapture(state, std::move(outputDirectory), enable);
 }
 
+void setRecordedFramePlaybackIndex(
+    ViewerLifecycleState& state, int frameCount, int frameIndex)
+{
+  if (frameCount <= 0) {
+    state.recordedFramePlaybackIndex = 0;
+    state.recordedFramePlaybackPlaying = false;
+    return;
+  }
+
+  state.recordedFramePlaybackIndex = std::clamp(frameIndex, 0, frameCount - 1);
+}
+
+void stepRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount, int delta)
+{
+  setRecordedFramePlaybackIndex(
+      state, frameCount, state.recordedFramePlaybackIndex + delta);
+}
+
+void toggleRecordedFramePlayback(ViewerLifecycleState& state, int frameCount)
+{
+  if (frameCount <= 0) {
+    state.recordedFramePlaybackPlaying = false;
+    state.recordedFramePlaybackIndex = 0;
+    return;
+  }
+
+  setRecordedFramePlaybackIndex(
+      state, frameCount, state.recordedFramePlaybackIndex);
+  state.recordedFramePlaybackPlaying = !state.recordedFramePlaybackPlaying;
+}
+
+void advanceRecordedFramePlayback(ViewerLifecycleState& state, int frameCount)
+{
+  if (!state.recordedFramePlaybackPlaying) {
+    setRecordedFramePlaybackIndex(
+        state, frameCount, state.recordedFramePlaybackIndex);
+    return;
+  }
+
+  if (frameCount <= 0) {
+    state.recordedFramePlaybackPlaying = false;
+    state.recordedFramePlaybackIndex = 0;
+    return;
+  }
+
+  if (state.recordedFramePlaybackIndex + 1 >= frameCount) {
+    state.recordedFramePlaybackPlaying = false;
+    setRecordedFramePlaybackIndex(state, frameCount, frameCount - 1);
+    return;
+  }
+
+  setRecordedFramePlaybackIndex(
+      state, frameCount, state.recordedFramePlaybackIndex + 1);
+}
+
 bool shouldCaptureFrameOutput(
     const RunOptions& options, const ViewerLifecycleState& state)
 {

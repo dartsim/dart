@@ -86,11 +86,13 @@ struct ViewerLifecycleState
 {
   int renderedFrames = 0;
   int skippedFrames = 0;
+  int recordedFramePlaybackIndex = 0;
   std::string frameOutputDirectory;
   bool paused = false;
   bool stepOnce = false;
   bool screenshotRequested = false;
   bool frameOutputEnabled = false;
+  bool recordedFramePlaybackPlaying = false;
   bool exitRequested = false;
   bool dockLayoutResetRequested = false;
   /// Set by the demos sidebar to ask the application loop to swap the active
@@ -215,6 +217,18 @@ DART_GUI_API void setFrameOutputCapture(
 
 DART_GUI_API void toggleFrameOutputCapture(
     ViewerLifecycleState& state, std::string outputDirectory);
+
+DART_GUI_API void setRecordedFramePlaybackIndex(
+    ViewerLifecycleState& state, int frameCount, int frameIndex);
+
+DART_GUI_API void stepRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount, int delta);
+
+DART_GUI_API void toggleRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount);
+
+DART_GUI_API void advanceRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount);
 
 DART_GUI_API bool shouldCaptureFrameOutput(
     const RunOptions& options, const ViewerLifecycleState& state);

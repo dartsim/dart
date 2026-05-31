@@ -59,7 +59,10 @@ pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 \
 The docked workspace has a top `Simulation` toolbar, a searchable `Demos`
 navigator, scene-specific panels on the right, and a bottom DART diagnostics
 panel. Use `Replay` to rebuild the active scene from the beginning and
-`Reset Layout` to restore the default docks after rearranging panels.
+`Reset Layout` to restore the default docks after rearranging panels. When
+frame recording is active, the `Simulation` panel also exposes a frame playback
+cursor over the recorded PPM sequence with first/previous/play/next/last
+controls and the selected frame path.
 
 Capture a short frame sequence and request MP4 encoding when `ffmpeg` is
 available:

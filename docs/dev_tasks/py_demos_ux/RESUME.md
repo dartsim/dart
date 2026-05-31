@@ -47,6 +47,9 @@
   so stale ImGui state cannot leave panels floating over the viewport.
 - Frame-output recording is controlled by the viewer lifecycle state, so the
   toolbar `Stop Record` state now matches whether frames continue writing.
+- Recorded-frame playback now lives in the `Simulation` panel when frame output
+  is active. It tracks the recorded PPM sequence; offers first, previous, play,
+  next, and last controls; and surfaces the selected frame artifact path.
 - Python scene validation accepts hyphenated aliases such as
   `sx-rigid-ipc-slide`.
 - sx force-drag now resolves picked SimpleFrames by `renderable_id` first,
@@ -175,6 +178,18 @@ The screenshot at
 viewed and showed the top `Simulation` toolbar with `Reset Layout` between
 `Replay` and `Stop Record`.
 
+Recording playback proof:
+
+```bash
+pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 6 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_recording_playback_panel
+```
+
+The screenshot at
+`/tmp/dart_py_demo_capture_recording_playback_panel/sx_articulated.png` was
+viewed and showed the `Simulation` panel's frame-playback row with
+first, previous, play, next, and last controls and the selected PPM frame
+filename.
+
 Additional rigid/deformable panel proof:
 
 ```bash
@@ -276,5 +291,6 @@ pixi run lint
    need custom panels or controls.
 2. Add full viewer-input coverage for mouse force-drag once tests can inject
    pointer drags into the Filament viewer loop.
-3. Add recorded-frame playback only after the recording/playback data contract
-   exists.
+3. Add image thumbnail playback only if the UI renderer grows a texture-backed
+   panel image primitive; the current playback surface controls and identifies
+   recorded PPM frames from inside the workspace.

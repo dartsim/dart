@@ -308,10 +308,19 @@ void buildDefaultDockLayout(
   bool useBottom = true;
   bool useLeft = false;
   bool useRight = false;
+  float topFraction = 0.07f;
   for (const auto& panel : panels) {
     switch (panel.dockSide) {
       case DockSide::Top:
         useTop = true;
+        if (panel.initialSize.has_value()) {
+          const float viewportHeight = ImGui::GetMainViewport()->Size.y;
+          if (viewportHeight > 0.0f) {
+            topFraction = std::max(
+                topFraction,
+                static_cast<float>((*panel.initialSize)[1]) / viewportHeight);
+          }
+        }
         break;
       case DockSide::Bottom:
         useBottom = true;
@@ -338,6 +347,7 @@ void buildDefaultDockLayout(
       static_cast<int>(ImGuiDockNodeFlags_DockSpace)
           | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
   ImGui::DockBuilderSetNodeSize(dockId, ImGui::GetMainViewport()->Size);
+  topFraction = std::clamp(topFraction, 0.07f, 0.18f);
 
   ImGuiID center = dockId;
   ImGuiID top = 0;
@@ -346,7 +356,7 @@ void buildDefaultDockLayout(
   ImGuiID right = 0;
   if (useTop) {
     top = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Up, 0.07f, nullptr, &center);
+        center, ImGuiDir_Up, topFraction, nullptr, &center);
   }
   if (useBottom) {
     bottom = ImGui::DockBuilderSplitNode(

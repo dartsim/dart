@@ -961,6 +961,15 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
   EXPECT_NE(
       applicationSource.find("toggleFrameOutputCapture"), std::string::npos);
   EXPECT_NE(
+      applicationSource.find(
+          "recordedFramePaths(lifecycle->frameOutputDirectory)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(
+          "advanceRecordedFramePlayback(*lifecycle, recordedFrameCount)"),
+      std::string::npos);
+  EXPECT_NE(applicationSource.find("\"Play Frames\""), std::string::npos);
+  EXPECT_NE(
       applicationSource.find("requestSceneSwitch(*lifecycle, active->id)"),
       std::string::npos);
   EXPECT_NE(
@@ -5293,6 +5302,23 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_FALSE(sequenceState.frameOutputEnabled);
   EXPECT_FALSE(
       dart::gui::shouldCaptureFrameOutput(sequenceOutput, sequenceState));
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 0);
+  EXPECT_FALSE(sequenceState.recordedFramePlaybackPlaying);
+  dart::gui::toggleRecordedFramePlayback(sequenceState, 0);
+  EXPECT_FALSE(sequenceState.recordedFramePlaybackPlaying);
+  dart::gui::toggleRecordedFramePlayback(sequenceState, 3);
+  EXPECT_TRUE(sequenceState.recordedFramePlaybackPlaying);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 0);
+  dart::gui::advanceRecordedFramePlayback(sequenceState, 3);
+  EXPECT_TRUE(sequenceState.recordedFramePlaybackPlaying);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 1);
+  dart::gui::stepRecordedFramePlayback(sequenceState, 3, 10);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 2);
+  dart::gui::advanceRecordedFramePlayback(sequenceState, 3);
+  EXPECT_FALSE(sequenceState.recordedFramePlaybackPlaying);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 2);
+  dart::gui::setRecordedFramePlaybackIndex(sequenceState, 3, -4);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 0);
   EXPECT_EQ(
       std::filesystem::path(dart::gui::makeFrameOutputPath(sequenceOutput, 7))
           .filename()
