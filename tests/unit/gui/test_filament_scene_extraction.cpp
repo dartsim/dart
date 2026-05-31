@@ -1156,7 +1156,7 @@ TEST(FilamentSceneExtraction, ForceDragRoutesExternalRenderablesThroughCallback)
       descriptor.worldTransform.translation()));
   EXPECT_TRUE(events.front().force.isApprox(Eigen::Vector3d(60.0, 0.0, 0.0)));
   EXPECT_NE(
-      selection.interactionStatus().find("force drag: sx_box"),
+      selection.interactionStatus().find("external force: sx_box"),
       std::string::npos);
   EXPECT_NE(selection.interactionStatus().find("60.0 N"), std::string::npos);
 
@@ -1235,7 +1235,7 @@ TEST(FilamentSceneExtraction, ForceDragAppliesBodyNodeForceAtPickedShapePoint)
   EXPECT_NEAR(externalForce[4], 0.0, 1e-10);
   EXPECT_NEAR(externalForce[5], 0.0, 1e-10);
   EXPECT_NE(
-      selection.interactionStatus().find("force drag: offset_box_visual"),
+      selection.interactionStatus().find("external force: offset_box_visual"),
       std::string::npos);
   EXPECT_FALSE(selection.forceDragDebugLines().empty());
 }
@@ -1295,7 +1295,7 @@ TEST(FilamentSceneExtraction, ScriptedForceDragTargetsRenderableAndCancels)
   EXPECT_TRUE(events.back().applicationPoint.isApprox(startPoint, 1e-12));
   EXPECT_GT(events.back().force.norm(), 1.0);
   EXPECT_NE(
-      selection.interactionStatus().find("force drag: script_shape"),
+      selection.interactionStatus().find("external force: script_shape"),
       std::string::npos);
   EXPECT_FALSE(selection.forceDragDebugLines().empty());
 

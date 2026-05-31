@@ -18,7 +18,7 @@ navigation, and a path for scene-specific controls.
 - Expose Python `ScenePanel` callbacks through the existing renderer-neutral
   `PanelBuilder`/`PanelContext` abstraction.
 - Add a first sx scene panel to `sx_rigid_ipc_slide` with solver metrics,
-  friction control, speed plotting, and force-drag controls.
+  friction control, speed plotting, and external-force controls.
 - Add scene panels to `sx_rigid_ipc_incline` and `sx_variational_chain` so the
   panel path covers both rigid IPC and variational-integrator examples.
 - Add scene panels to `sx_rigid_ipc_pile` and `sx_rigid_ipc_tunnel`, plus
@@ -27,9 +27,9 @@ navigation, and a path for scene-specific controls.
   `sx_articulated`, `sx_floating_base`, `sx_contact`,
   `experimental_rigid_body_gui`, `sx_rigid_ipc`, and
   `sx_variational_tumbler`.
-- Route sx bridge force-drag by `renderable_id` first, keep final-frame-name
-  fallback, and support rigid-body force + torque without persistent force
-  accumulation.
+- Route sx bridge external-force picks by `renderable_id` first, keep
+  final-frame-name fallback, and support rigid-body force + torque without
+  persistent force accumulation.
 - Make scene panels stable docked panels by default, widen the right dock, and
   rebuild the default layout before dockspace submission so ImGui places the
   panels into real dock nodes instead of floating overlays.
@@ -63,7 +63,7 @@ navigation, and a path for scene-specific controls.
   records whether the viewer observed the target demo or restored the previous
   active demo.
 - Add a scripted `py-demo-capture --force-drag-target` path that drives the
-  same force-drag controller path in headless captures, writes
+  same external-force controller path in headless captures, writes
   `manifest.json`/`events.jsonl`, records start/update/release events, and
   cancels active drags during scene teardown so stale interaction state does
   not leak across demo switches.
@@ -127,13 +127,15 @@ navigation, and a path for scene-specific controls.
   runner escape hatch.
 - Use a plane collision floor in `arm_push_box` so the contact-rich panel
   capture stays free of LCP fallback spam while preserving the visible floor.
-- Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape
-  point instead of the body origin when a visual shape has a local offset, and
-  add direct controller regression coverage for both BodyNode and external
-  SimpleFrame-style force-drag paths.
-- Show active force-drag feedback in the viewer: the DART status panel now
-  names the dragged target and force magnitude, and the viewport renders a
-  spring/force debug line while the drag is active.
+- Fix legacy BodyNode external-force dragging to apply the mouse spring at the
+  picked shape point instead of the body origin when a visual shape has a local
+  offset, and add direct controller regression coverage for both BodyNode and
+  external SimpleFrame-style force paths.
+- Show active external-force feedback in the viewer: the DART status panel now
+  names the dragged target and force magnitude, the sx scene panel distinguishes
+  idle, disabled, static/unmapped, and applying states, and the viewport renders
+  a spring/force debug line while the drag is active. Malformed or non-finite
+  Python force events clear the active drag instead of reapplying stale force.
 - Make panel controls more readable in narrow right-docked scene panels by
   rendering slider and plot labels above their controls instead of consuming
   horizontal plot/slider space, and shrink the bottom diagnostics dock so the

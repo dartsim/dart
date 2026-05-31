@@ -13,29 +13,30 @@
 - `pixi run py-demo-capture` captures real Filament PPM output, converts to PNG,
   rejects blank/noop captures, and can request MP4 encoding when `ffmpeg` is
   available.
-- Python force-drag events include `renderable_id`.
+- Python external-force drag events include `renderable_id`.
 - Python demo scenes can attach custom `ScenePanel` callbacks. The C++ binding
   renders those callbacks through DART's `PanelBuilder`/`PanelContext`
   abstraction and the demos host docks scene panels on the right.
 - `sx_rigid_ipc_slide` has the first scene-specific panel: rigid IPC metadata,
-  live friction slider, speed metric/plot, and generic sx bridge force-drag
+  live friction slider, speed metric/plot, and generic sx bridge external-force
   controls.
 - `sx_rigid_ipc_incline` now has a scene panel with rigid IPC metadata, live
   friction slider, down-slope speed metric/plot, and generic sx bridge
-  force-drag controls.
+  external-force controls.
 - `sx_rigid_ipc_pile` now has a scene panel with rigid IPC metadata, live
-  friction slider, max-speed/height plots, and generic sx bridge force-drag
+  friction slider, max-speed/height plots, and generic sx bridge external-force
   controls.
 - `sx_rigid_ipc_tunnel` now has a scene panel with rigid IPC metadata,
-  no-tunneling clearance and velocity plots, and generic sx bridge force-drag
+  no-tunneling clearance and velocity plots, and generic sx bridge external-force
   controls.
 - `sx_variational_chain` now has a scene panel with variational-integrator
-  metadata, tip-height metric/plot, and generic sx bridge force-drag controls.
+  metadata, tip-height metric/plot, and generic sx bridge external-force
+  controls.
 - `sx_articulated`, `sx_floating_base`, `sx_contact`,
   `experimental_rigid_body_gui`, `sx_rigid_ipc`, and
   `sx_variational_tumbler` now have custom scene panels. The tumbler panel
   includes invariant-drift diagnostics, and the rigid-body GUI scene now routes
-  force-drag through `SxRenderBridge`.
+  external-force dragging through `SxRenderBridge`.
 - `ipc_deformable_friction_slide` now has an IPC deformable diagnostics panel
   backed by shared `IpcDeformableBridge.build_diagnostics_panel`.
 - `Simulation` has a `Replay` action that rebuilds the active demo scene and
@@ -76,18 +77,21 @@
   events for stuck-switch debugging.
 - Python scene validation accepts hyphenated aliases such as
   `sx-rigid-ipc-slide`.
-- sx force-drag now resolves picked SimpleFrames by `renderable_id` first,
-  falls back to the final SimpleFrame name, skips static targets, applies
-  torque-aware rigid-body forces, and restores rigid force/torque buffers after
-  the sx step.
-- C++ force-drag no longer pauses the simulation loop, so Python one-shot force
-  handlers can actually be consumed on the next step.
-- C++ force-drag now records BodyNode-backed grab offsets in the BodyNode frame
-  rather than the shape-frame descriptor, so offset visuals receive the mouse
-  spring at the picked point and produce the expected torque.
-- Active force-drag now has visible feedback: the DART status panel shows the
-  dragged target and current force magnitude, and the viewport renders a spring
-  line plus force arrow while the drag is active.
+- sx external-force dragging now resolves picked SimpleFrames by
+  `renderable_id` first, falls back to the final SimpleFrame name, skips static
+  targets, applies torque-aware rigid-body forces, and restores rigid
+  force/torque buffers after the sx step.
+- C++ external-force dragging no longer pauses the simulation loop, so Python
+  one-shot force handlers can actually be consumed on the next step.
+- C++ external-force dragging now records BodyNode-backed grab offsets in the
+  BodyNode frame rather than the shape-frame descriptor, so offset visuals
+  receive the mouse spring at the picked point and produce the expected torque.
+- Active external-force dragging now has visible feedback: the DART status panel
+  shows the dragged target and current force magnitude, the sx scene panel shows
+  idle/disabled/static/unmapped/applying states, and the viewport renders a
+  spring line plus force arrow while the drag is active. Malformed or
+  non-finite Python force events clear the active drag instead of reapplying a
+  stale force.
 - `py-demo-capture --force-drag-target <renderable>` now drives the same
   force-drag controller path after a bounded frame count, records
   `force_drag_started`, `force_drag_updated`, and `force_drag_released` viewer
@@ -359,21 +363,23 @@ The event log recorded `requested_demo_switch`, `observed_target_demo`, and
 `/tmp/dart_py_demo_capture_scripted_switch/sx_rigid_ipc_slide_to_sx_rigid_ipc_incline.png`
 showed `Rigid IPC Inclined Slide (sx)` active in the docked workspace.
 
-Scripted force-drag proof:
+Scripted external-force proof:
 
 ```bash
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_force_external_state_final
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pointer_final
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-pixel 465,388 --force-drag-delta-pixels 170,-40 --force-drag-frame 2 --force-drag-frames 8 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pixel_final
 ```
 
-The event log recorded `force_drag_started`, eight
-`force_drag_updated` events, and `force_drag_released`; the viewed mid-drag
-frame
-`/tmp/dart_py_demo_capture_force_drag/png_frames/frame_000006.png` showed
-`ipc_slide_box_visual` selected with active external-force status and force
-magnitude in the docked workspace. The updated pointer-path proof produced the
-same event sequence from viewport-coordinate picking, and the viewed frame
+The final event log recorded `force_drag_started`, eight `force_drag_updated`
+events with `external force: ...` status, and `force_drag_released` with
+scripted external-force completion; the viewed mid-drag frame
+`/tmp/dart_py_demo_force_external_state_final/png_frames/frame_000006.png`
+showed `status: applying`, target, nonzero magnitude, the bottom
+`external force` status, and the viewport spring/force overlay. The updated
+pointer-path proof produced the same event sequence from viewport-coordinate
+picking, and the viewed frame
 `/tmp/dart_py_demo_capture_force_drag_pointer_final/png_frames/frame_000006.png`
 showed the selected target, spring/force overlay, and force magnitude in the
 docked workspace. The pixel-path proof recorded `start_pixel` and

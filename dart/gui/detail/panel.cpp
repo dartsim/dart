@@ -445,8 +445,8 @@ bool renderBuiltInStatusPanel(
     changed
         |= ImGui::Checkbox("Normals", &contactDebugOptions.drawContactNormals);
     ImGui::SameLine();
-    changed
-        |= ImGui::Checkbox("Forces", &contactDebugOptions.drawContactForces);
+    changed |= ImGui::Checkbox(
+        "Contact forces", &contactDebugOptions.drawContactForces);
     return changed;
   };
 

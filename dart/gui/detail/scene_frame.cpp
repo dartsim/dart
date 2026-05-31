@@ -278,8 +278,8 @@ void SceneFrameUpdater::update(
             mScriptedForceDrag,
             "force_drag_target_missing",
             currentFrame,
-            "scripted force-drag target was not found or cannot receive "
-            "force-drag events");
+            "scripted external-force target was not found or cannot receive "
+            "force events");
       }
     }
 
@@ -312,8 +312,8 @@ void SceneFrameUpdater::update(
             "force_drag_target_unreachable",
             currentFrame,
             mScriptedForceDrag->usePointer
-                ? "scripted force-drag pixel path cannot update"
-                : "scripted force-drag target moved outside the active "
+                ? "scripted external-force pixel path cannot update"
+                : "scripted external-force target moved outside the active "
                   "viewport");
       } else {
         appendScriptedForceDragEvent(
@@ -329,7 +329,7 @@ void SceneFrameUpdater::update(
               mScriptedForceDrag,
               "force_drag_released",
               currentFrame,
-              "scripted force-drag completed");
+              "scripted external-force drag completed");
         }
       }
     }

@@ -572,7 +572,7 @@ std::string SelectionController::interactionStatus() const
   }
 
   std::ostringstream stream;
-  stream << "force drag: "
+  stream << "external force: "
          << (mActiveForceDrag->renderableName.empty()
                  ? "selected body"
                  : mActiveForceDrag->renderableName);

@@ -106,16 +106,17 @@ class SxRenderBridge:
         # (deformable_body, [(node_index, SimpleFrame)]) pinned-node markers.
         self._pins: list[tuple[Any, list[tuple[int, dart.SimpleFrame]]]] = []
         # SimpleFrame name / renderable id -> sx object, so the viewer's
-        # force-drag can resolve the picked renderable back to the sx body/link
-        # that owns the physics.
+        # external-force drag can resolve the picked renderable back to the sx
+        # body/link that owns the physics.
         self._by_name: dict[str, Any] = {}
         self._by_renderable_id: dict[int, Any] = {}
-        # Active mouse force-drag, if any: (sx_object, force, point). Re-applied
-        # before each sx step because Link.apply_force is one-shot.
+        # Active mouse external force, if any: (sx_object, force, point).
+        # Re-applied before each sx step because Link.apply_force is one-shot.
         self._drag: tuple[Any, np.ndarray, np.ndarray] | None = None
         self.force_drag_enabled = True
         self.force_drag_scale = 1.0
         self._last_drag_target = "none"
+        self._last_drag_status = "idle"
         self._last_drag_magnitude = 0.0
         self._force_history: deque[float] = deque(maxlen=120)
 
@@ -258,18 +259,28 @@ class SxRenderBridge:
                 return sx_object
         return self._by_name.get(event.get("renderable_name", ""))
 
-    def _is_force_target(self, sx_object: Any | None) -> bool:
-        if sx_object is None or not hasattr(sx_object, "apply_force"):
-            return False
+    def _force_target_rejection(self, sx_object: Any | None) -> str | None:
+        if sx_object is None:
+            return "no mapped target"
+        if not hasattr(sx_object, "apply_force"):
+            return "target has no force input"
         try:
             if bool(getattr(sx_object, "is_static", False)):
-                return False
+                return "static target"
         except Exception:  # noqa: BLE001
-            return False
-        return True
+            return "target state unavailable"
+        return None
+
+    def _event_vector(self, event: dict[str, Any], key: str) -> np.ndarray:
+        if key not in event:
+            raise ValueError(f"missing {key}")
+        vector = np.asarray(event[key], dtype=float).reshape(-1)
+        if vector.shape != (3,) or not np.all(np.isfinite(vector)):
+            raise ValueError(f"invalid {key}")
+        return vector
 
     def force_drag(self, event: dict[str, Any]) -> None:
-        """Viewer mouse force-drag handler (see ``SceneSetup.force_drag``).
+        """Viewer mouse external-force handler (see ``SceneSetup.force_drag``).
 
         On an active event, resolve the picked frame name to its sx object and
         store the world-frame force + application point; on an inactive event,
@@ -279,26 +290,39 @@ class SxRenderBridge:
 
         if not event.get("active", False):
             self._drag = None
+            self._last_drag_status = "idle"
             self._last_drag_magnitude = 0.0
             return
         if not self.force_drag_enabled:
             self._drag = None
+            self._last_drag_status = "disabled"
             self._last_drag_target = "disabled"
             self._last_drag_magnitude = 0.0
             return
         sx_object = self._resolve_drag_target(event)
-        if not self._is_force_target(sx_object):
+        rejection = self._force_target_rejection(sx_object)
+        if rejection is not None:
             self._drag = None
-            self._last_drag_target = "none"
+            self._last_drag_status = rejection
+            self._last_drag_target = str(
+                getattr(sx_object, "name", event.get("renderable_name", "none"))
+            )
             self._last_drag_magnitude = 0.0
             return
-        force = (
-            np.asarray(event["force"], dtype=float).reshape(3)
-            * float(self.force_drag_scale)
-        )
-        point = np.asarray(event["application_point"], dtype=float).reshape(3)
+        try:
+            force = self._event_vector(event, "force") * float(self.force_drag_scale)
+            point = self._event_vector(event, "application_point")
+        except (TypeError, ValueError):
+            self._drag = None
+            self._last_drag_status = "invalid event"
+            self._last_drag_target = str(
+                getattr(sx_object, "name", event.get("renderable_name", "none"))
+            )
+            self._last_drag_magnitude = 0.0
+            return
         self._drag = (sx_object, force, point)
         self._last_drag_target = str(getattr(sx_object, "name", "target"))
+        self._last_drag_status = "applying"
         self._last_drag_magnitude = float(np.linalg.norm(force))
         self._force_history.append(self._last_drag_magnitude)
 
@@ -352,26 +376,30 @@ class SxRenderBridge:
         """Render generic sx bridge controls into a DART ``PanelBuilder``."""
 
         builder.text("External force")
-        builder.text("Left-drag a dynamic body in the viewport.")
-        changed, enabled = builder.checkbox("Enable force drag", self.force_drag_enabled)
+        builder.text("Drag a dynamic body in the viewport to apply force.")
+        changed, enabled = builder.checkbox(
+            "Enable external force", self.force_drag_enabled
+        )
         if changed:
             self.force_drag_enabled = bool(enabled)
             if not self.force_drag_enabled:
                 self._drag = None
+                self._last_drag_status = "disabled"
         changed, scale = builder.slider(
             "Force scale", float(self.force_drag_scale), 0.1, 5.0
         )
         if changed:
             self.force_drag_scale = float(scale)
+        builder.text(f"status: {self._last_drag_status}")
         builder.text(f"target: {self._last_drag_target}")
-        builder.text(f"force: {self._last_drag_magnitude:.2f} N")
+        builder.text(f"magnitude: {self._last_drag_magnitude:.2f} N")
         if self._force_history:
             builder.plot_lines("Force magnitude", list(self._force_history))
 
     def pre_step(self) -> None:
         """Advance sx physics by one step, then sync render frames.
 
-        If a mouse force-drag is active, (re)apply its one-shot force just
+        If a mouse external-force drag is active, (re)apply its one-shot force just
         before the step so the spring is consumed by this step.
         """
 

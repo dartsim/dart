@@ -100,6 +100,12 @@ including optional ImGui panels via `--show-ui`, and writes screenshots, frame
 sequences, and MP4s for visual debugging. It rejects blank/noop captures so
 layout, camera, lighting, and material changes have inspectable artifacts.
 
+External-force interactions are a user-facing scene state, not just an input
+callback. The common sx bridge panel shows whether force application is idle,
+disabled, rejected for a static/unmapped target, or actively applying force; it
+also exposes target and magnitude so a single headless `--show-ui` capture can
+prove what the viewport spring/arrow is doing.
+
 Runtime demo switches are transactional. If a requested scene throws while
 building, misses the startup budget, cannot create render state, or fails its
 first frame, the host restores the previous active scene and leaves the reason

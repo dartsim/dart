@@ -227,7 +227,8 @@ def test_high_value_sx_scenes_expose_custom_panels() -> None:
         setup.panels[0].build(builder, object())
 
         assert any(event.startswith("plot:") for event in builder.events)
-        assert "checkbox:Enable force drag" in builder.events
+        assert "text:External force" in builder.events
+        assert "checkbox:Enable external force" in builder.events
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
@@ -569,9 +570,85 @@ def test_sx_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -> N
     bridge.pre_step()
 
     assert sx_world.steps == 1
+    assert bridge._last_drag_status == "applying"
     assert len(target.applied_forces) == 1
     assert np.allclose(target.applied_forces[0], [2.0, 0.0, 0.0])
     assert np.allclose(target.applied_torques[0], [0.0, 0.0, -2.0])
     assert np.allclose(target.force, [0.0, 0.0, 0.0])
     assert np.allclose(target.torque, [0.0, 0.0, 0.0])
     assert other.applied_forces == []
+
+    bridge.force_drag(
+        {
+            "active": True,
+            "renderable_id": target_id,
+            "renderable_name": "repeated_visual",
+            "force": np.array([np.nan, 0.0, 0.0]),
+            "application_point": np.array([0.0, 1.0, 0.0]),
+        }
+    )
+    bridge.pre_step()
+
+    assert sx_world.steps == 2
+    assert bridge._last_drag_status == "invalid event"
+    assert bridge._last_drag_magnitude == 0.0
+    assert len(target.applied_forces) == 1
+
+
+@pytest.mark.skipif(
+    not hasattr(dart, "gui") or not hasattr(dart.gui, "extract_renderables"),
+    reason="GUI descriptor extraction is not available in this build",
+)
+def test_sx_bridge_external_force_panel_reports_disabled_and_static_targets() -> None:
+    sx_world = _FakeWorld()
+    static_target = _FakeRigidBody()
+    static_target.name = "ground"
+    static_target.is_static = True
+
+    bridge = SxRenderBridge(sx_world, name="external_force_state_test")
+    bridge.add_rigid_body_visual(
+        static_target,
+        dart.BoxShape(np.array([0.1, 0.1, 0.1])),
+        (0.5, 0.5, 0.5),
+        name="static_visual",
+    )
+    static_id = next(
+        int(renderable.id)
+        for renderable in dart.gui.extract_renderables(bridge.render_world)
+        if renderable.shape_frame_name == "static_visual"
+    )
+
+    bridge.force_drag_enabled = False
+    bridge.force_drag(
+        {
+            "active": True,
+            "renderable_id": static_id,
+            "renderable_name": "static_visual",
+            "force": np.array([2.0, 0.0, 0.0]),
+            "application_point": np.array([0.0, 1.0, 0.0]),
+        }
+    )
+    disabled_builder = _FakePanelBuilder()
+    bridge.build_control_panel(disabled_builder, object())
+
+    assert "text:status: disabled" in disabled_builder.events
+    assert "text:target: disabled" in disabled_builder.events
+    assert static_target.applied_forces == []
+
+    bridge.force_drag_enabled = True
+    bridge.force_drag(
+        {
+            "active": True,
+            "renderable_id": static_id,
+            "renderable_name": "static_visual",
+            "force": np.array([2.0, 0.0, 0.0]),
+            "application_point": np.array([0.0, 1.0, 0.0]),
+        }
+    )
+    static_builder = _FakePanelBuilder()
+    bridge.build_control_panel(static_builder, object())
+
+    assert "text:status: static target" in static_builder.events
+    assert "text:target: ground" in static_builder.events
+    assert "text:magnitude: 0.00 N" in static_builder.events
+    assert static_target.applied_forces == []
