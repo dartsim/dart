@@ -53,10 +53,26 @@ normal-pushing, and a real-time kinematic demo (a box-on-box turntable measured
 `RigidIpcKinematicTurntableCarriesRestingBox` regression rather than shipped as a
 demo). The `KinematicBodyTag` is runtime-only (not serialized).
 
+DENSE-CONTACT ROBUSTNESS — improved (unfroze the minimal friction arch, Fig. 11).
+Dense resting contacts used to settle a few steps then freeze: the conservative
+curved ACCD line search exhausted its iteration budget on a couple of tight pairs
+(`Indeterminate`), which the line search treated as a zero step ->
+`LineSearchBlocked` every step. Fix (`rigid_ipc_ccd.cpp` + `rigid_ipc_barrier.cpp`):
+`curvedAccdAdvance` now reports the conservatively-reached `timeOfImpact` on the
+`Indeterminate` exit (a proven lower bound on the true TOI), and the line search
+uses it as a positive limiting step instead of blocking -- intersection-free
+preserved, blocking only on zero proven progress. The line-search CCD budget was
+raised 64 -> 256. Result: the 3-voussoir `MinimalFrictionArchStandsInEquilibrium`
+test (Fig. 11) now holds, the two-box stack converges faster, and the updated
+`LineSearchUsesProvenSafeTimeOnIterationExhaustion` asserts the new safe contract.
+Larger arches now stall on a genuine hard face-face contact (not indeterminacy) --
+the remaining dense-contact gate (see benchmarks.md).
+
 Still out of scope: articulated paper scenes (lock box, mechanisms, bolt,
-punching press, wrecking-ball/anchor chains, card house) need joints; many-body
-scenes (arch 101 blocks, 3D packing, 560-box wrecking ball) are gated on the perf
-gap (~3 orders of magnitude per step).
+punching press, wrecking-ball/anchor chains, card house) need joints; the larger
+many-body scenes (full arch, 3D packing, 560-box wrecking ball) are gated on the
+remaining hard-contact resolution above plus the ~3-orders-of-magnitude per-step
+perf gap.
 
 ## Last Session Summary
 
