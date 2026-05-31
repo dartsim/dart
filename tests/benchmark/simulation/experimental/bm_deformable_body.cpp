@@ -180,7 +180,9 @@ sx::DeformableBodyOptions makeTetraMeshOptions(int tetrahedronCount)
 // FEM elasticity (no spring edges). Used to benchmark the FEM assembly + sparse
 // projected-Newton solve cost as the element count grows.
 sx::DeformableBodyOptions makeFemBarOptions(
-    int cellsX, bool useFixedCorotational = false)
+    int cellsX,
+    bool useFixedCorotational = false,
+    bool useIterativeSolver = false)
 {
   cellsX = std::max(cellsX, 1);
   const int nx = cellsX + 1;
@@ -197,6 +199,7 @@ sx::DeformableBodyOptions makeFemBarOptions(
   options.material.poissonRatio = 0.3;
   options.material.useFiniteElementElasticity = true;
   options.material.useFixedCorotationalElasticity = useFixedCorotational;
+  options.material.useIterativeLinearSolver = useIterativeSolver;
 
   for (int k = 0; k < nz; ++k) {
     for (int j = 0; j < ny; ++j) {
@@ -230,6 +233,73 @@ sx::DeformableBodyOptions makeFemBarOptions(
 
   for (int k = 0; k < nz; ++k) {
     for (int j = 0; j < ny; ++j) {
+      options.fixedNodes.push_back(nodeIndex(0, j, k));
+    }
+  }
+  return options;
+}
+
+//==============================================================================
+// A solid cellsPerSide^3 cube of FEM tetrahedra (each hexahedral cell split
+// into six tets), pinned at its x == 0 face. Unlike the thin makeFemBarOptions
+// beam (2x2 cross-section), this is a chunky 3D mesh, so the projected-Newton
+// Hessian has a wide bandwidth: the sparse Cholesky direct solve suffers
+// super-linear fill-in here while a preconditioned conjugate gradient stays
+// near O(nnz), which is the regime the iterative solver is built for. Used to
+// benchmark the direct-vs-iterative crossover as the element count grows.
+sx::DeformableBodyOptions makeFemCubeOptions(
+    int cellsPerSide, bool useIterativeSolver)
+{
+  const int cells = std::max(cellsPerSide, 1);
+  const int n = cells + 1;
+  constexpr double h = 0.04;
+  const auto nodeIndex = [&](int i, int j, int k) {
+    return static_cast<std::size_t>(i + n * (j + n * k));
+  };
+
+  sx::DeformableBodyOptions options;
+  options.material.density = 1.0e3;
+  options.material.youngsModulus = 2.0e5;
+  options.material.poissonRatio = 0.3;
+  options.material.useFiniteElementElasticity = true;
+  options.material.useIterativeLinearSolver = useIterativeSolver;
+
+  for (int k = 0; k < n; ++k) {
+    for (int j = 0; j < n; ++j) {
+      for (int i = 0; i < n; ++i) {
+        options.positions.push_back(Eigen::Vector3d(i * h, j * h, 1.0 + k * h));
+      }
+    }
+  }
+
+  static constexpr int kCubeTets[6][4]
+      = {{0, 1, 3, 7},
+         {0, 3, 2, 7},
+         {0, 2, 6, 7},
+         {0, 6, 4, 7},
+         {0, 4, 5, 7},
+         {0, 5, 1, 7}};
+  for (int ck = 0; ck < cells; ++ck) {
+    for (int cj = 0; cj < cells; ++cj) {
+      for (int ci = 0; ci < cells; ++ci) {
+        std::array<std::size_t, 8> corner{};
+        for (int b = 0; b < 8; ++b) {
+          corner[static_cast<std::size_t>(b)] = nodeIndex(
+              ci + (b & 1), cj + ((b >> 1) & 1), ck + ((b >> 2) & 1));
+        }
+        for (const auto& tet : kCubeTets) {
+          options.tetrahedra.push_back(
+              {corner[static_cast<std::size_t>(tet[0])],
+               corner[static_cast<std::size_t>(tet[1])],
+               corner[static_cast<std::size_t>(tet[2])],
+               corner[static_cast<std::size_t>(tet[3])]});
+        }
+      }
+    }
+  }
+
+  for (int k = 0; k < n; ++k) {
+    for (int j = 0; j < n; ++j) {
       options.fixedNodes.push_back(nodeIndex(0, j, k));
     }
   }
@@ -927,10 +997,14 @@ void BM_DeformableTetraMeshStep(benchmark::State& state)
 //==============================================================================
 struct DeformableFemBarWorld
 {
-  explicit DeformableFemBarWorld(int cellsX, bool useFixedCorotational = false)
+  explicit DeformableFemBarWorld(
+      int cellsX,
+      bool useFixedCorotational = false,
+      bool useIterativeSolver = false)
   {
     body = world.addDeformableBody(
-        "fem_bar", makeFemBarOptions(cellsX, useFixedCorotational));
+        "fem_bar",
+        makeFemBarOptions(cellsX, useFixedCorotational, useIterativeSolver));
     nodeCount = body.getNodeCount();
     tetrahedronCount = body.getTetrahedronCount();
     for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -1007,6 +1081,111 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
       = totalNewtonIterations / static_cast<double>(state.iterations());
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
+// The same stable neo-Hookean beam stepped through the iterative (conjugate-
+// gradient) projected-Newton linear solve instead of the sparse Cholesky
+// direct solve. Run at the same cell counts as BM_DeformableFemBarStep so the
+// per-step wall-clock and Newton-iteration counts can be compared directly:
+// CG never factorizes, so its memory stays near O(nnz) and its per-step cost
+// grows more gently than the direct solve's fill-in as the mesh chunks up --
+// the scaling axis of the IPC paper's Fig. 23 / Table 1. (On the thin bar
+// here, the direct solve's bandwidth is small, so CG's asymptotic advantage
+// only shows on larger, chunkier meshes; this benchmark measures the CG path's
+// cost and convergence so that scaling can be tracked.)
+void BM_DeformableCgBarStep(benchmark::State& state)
+{
+  const auto cellsX = static_cast<int>(state.range(0));
+  DeformableFemBarWorld fixture(
+      cellsX, /*useFixedCorotational=*/false, /*useIterativeSolver=*/true);
+
+  double totalNewtonIterations = 0.0;
+  for (auto _ : state) {
+    fixture.world.step();
+    totalNewtonIterations += static_cast<double>(
+        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
+  state.counters["newton_iters_per_step"]
+      = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
+struct DeformableFemCubeWorld
+{
+  DeformableFemCubeWorld(int cellsPerSide, bool useIterativeSolver)
+  {
+    body = world.addDeformableBody(
+        "fem_cube", makeFemCubeOptions(cellsPerSide, useIterativeSolver));
+    nodeCount = body.getNodeCount();
+    tetrahedronCount = body.getTetrahedronCount();
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      totalMass += body.getMass(i);
+    }
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(1.0 / 240.0);
+    world.enterSimulationMode();
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::size_t nodeCount = 0;
+  std::size_t tetrahedronCount = 0;
+  double totalMass = 0.0;
+};
+
+//==============================================================================
+// Steps a chunky cellsPerSide^3 FEM cube and records the per-step cost and
+// Newton-iteration count. The cube is run with both the sparse Cholesky direct
+// solve (BM_DeformableCube3dDirectStep) and the incomplete-Cholesky
+// preconditioned conjugate-gradient iterative solve (BM_DeformableCube3dCgStep)
+// at matching cell counts, so the direct-vs-iterative crossover is measurable:
+// the direct solve's 3D fill-in makes its per-step time climb super-linearly
+// with the element count, while the iterative solve stays near O(nnz) and
+// overtakes it by a few thousand nodes (the IPC paper's Fig. 23 / Table 1
+// per-step-scaling axis, on the chunky mesh where it bites -- the thin
+// BM_DeformableFemBarStep beam has too small a bandwidth to show it).
+void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
+{
+  const auto cellsPerSide = static_cast<int>(state.range(0));
+  DeformableFemCubeWorld fixture(cellsPerSide, useIterativeSolver);
+
+  double totalNewtonIterations = 0.0;
+  for (auto _ : state) {
+    fixture.world.step();
+    totalNewtonIterations += static_cast<double>(
+        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
+  state.counters["newton_iters_per_step"]
+      = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+void BM_DeformableCube3dDirectStep(benchmark::State& state)
+{
+  BM_DeformableCube3dStep(state, /*useIterativeSolver=*/false);
+}
+
+void BM_DeformableCube3dCgStep(benchmark::State& state)
+{
+  BM_DeformableCube3dStep(state, /*useIterativeSolver=*/true);
 }
 
 //==============================================================================
@@ -1476,8 +1655,14 @@ BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
 
-BENCHMARK(BM_DeformableFemBarStep)->Arg(2)->Arg(8)->Arg(24);
+BENCHMARK(BM_DeformableFemBarStep)->Arg(2)->Arg(8)->Arg(24)->Arg(48);
 BENCHMARK(BM_DeformableFcrBarStep)->Arg(2)->Arg(8)->Arg(24);
+BENCHMARK(BM_DeformableCgBarStep)->Arg(2)->Arg(8)->Arg(24)->Arg(48);
+// Chunky 3D cube, direct vs iterative at matching cell counts: the direct
+// solve's per-step time climbs super-linearly with the 3D fill-in while the
+// iterative solve stays near O(nnz) and overtakes it by a few thousand nodes.
+BENCHMARK(BM_DeformableCube3dDirectStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
+BENCHMARK(BM_DeformableCube3dCgStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
 
 // The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
 // dense-solve cap, so they exercise the sparse projected-Newton path; compare

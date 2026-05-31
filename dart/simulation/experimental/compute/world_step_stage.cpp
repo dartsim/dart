@@ -62,6 +62,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
+#include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseCholesky>
 #include <Eigen/SparseCore>
 #include <entt/entt.hpp>
@@ -1366,12 +1367,15 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
 
   const auto& registry = world.getRegistry();
+  // Barrier-only obstacles keep their contact barrier but are excluded from the
+  // CCD limiter, so a deformable can slide tangentially against them (and be
+  // decelerated by friction) instead of having its whole step over-limited.
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
-      comps::Transform>();
+      comps::Transform>(entt::exclude<comps::DeformableObstacleNoCcdTag>);
 
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
@@ -2651,6 +2655,139 @@ void computeStaticGroundNormalForces(
     // surface normal only shapes friction's tangent plane below.
     normalForce[i] = -derivative;
     normalDirection[i] = contact->normal;
+  }
+}
+
+//==============================================================================
+// Merges the capsule obstacle barrier's per-node radial normal force and
+// direction into the friction normal-force arrays (populated first by
+// computeStaticGroundNormalForces). The dominant (largest-force) contact per
+// node wins, so a node resting on a capsule rod gets the rod's radial normal
+// for its friction tangent plane. The capsule obstacle is barrier-only (no
+// surface CCD), so tangential sliding is unconstrained and friction is
+// effective.
+void addCapsuleObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<CapsuleObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = capsuleObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || distance >= activationDistance
+          || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = normal;
+      }
+    }
+  }
+}
+
+//==============================================================================
+// Merges the sphere obstacle barrier's per-node radial normal force/direction
+// into the friction normal-force arrays (dominant contact per node wins). Used
+// for friction against barrier-only sphere obstacles.
+void addSphereObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<SphereObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      const Eigen::Vector3d offset = positions[i] - obstacle.center;
+      const double centerDistance = offset.norm();
+      const double distance = centerDistance - obstacle.radius;
+      if (distance <= 0.0 || distance >= activationDistance
+          || centerDistance <= 0.0 || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = offset / centerDistance;
+      }
+    }
+  }
+}
+
+//==============================================================================
+// Merges the box obstacle barrier's per-node surface normal force/direction
+// into the friction normal-force arrays (dominant contact per node wins). Used
+// for friction against barrier-only box obstacles.
+void addBoxObstacleNormalForces(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<BoxObstacleBarrier>& obstacles,
+    std::vector<double>& normalForce,
+    std::vector<Eigen::Vector3d>& normalDirection)
+{
+  if (obstacles.empty()) {
+    return;
+  }
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  const double barrierScale = kDefaultBarrierStiffness;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] != 0u) {
+      continue;
+    }
+    for (const auto& obstacle : obstacles) {
+      Eigen::Vector3d normal;
+      const double distance
+          = boxObstacleSurfaceDistance(positions[i], obstacle, normal);
+      if (distance <= 0.0 || distance >= activationDistance
+          || !std::isfinite(distance)) {
+        continue;
+      }
+      const double distanceOffset = distance - activationDistance;
+      const double normalizedDistance = distance / activationDistance;
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      const double force = -derivative;
+      if (force > normalForce[i]) {
+        normalForce[i] = force;
+        normalDirection[i] = normal;
+      }
+    }
   }
 }
 
@@ -4028,15 +4165,22 @@ bool computeProjectedNewtonDirection(
     std::vector<Eigen::Vector3d>& direction,
     DeformableContactSolverScratch& solverCache,
     DeformableSolverStats& stats,
-    double barrierStiffness = kDefaultBarrierStiffness)
+    double barrierStiffness = kDefaultBarrierStiffness,
+    bool useIterativeSolver = false)
 {
   const std::size_t nodeCount = positions.size();
-  // Sparse Cholesky scales to large meshes; the cap is a safety bound against
-  // pathological fill-in (a matrix-free CG / GPU solve is a later slice).
-  constexpr std::size_t kMaxSparseNodes = 20000;
-  if (nodeCount == 0 || nodeCount > kMaxSparseNodes) {
+  // The sparse direct (Cholesky) solve is fastest for small/medium meshes but
+  // its fill-in grows super-linearly, so it is capped. Above the direct cap (or
+  // when iterative solving is opted in) a matrix-light conjugate-gradient solve
+  // is used instead: it never factorizes, so it scales to far larger meshes at
+  // the cost of iterations. The hard cap is a runaway bound only.
+  constexpr std::size_t kMaxDirectNodes = 20000;
+  constexpr std::size_t kMaxIterativeNodes = 1000000;
+  if (nodeCount == 0 || nodeCount > kMaxIterativeNodes) {
     return false;
   }
+  const bool solveIteratively
+      = useIterativeSolver || nodeCount > kMaxDirectNodes;
 
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
   const double invDt2 = 1.0 / (timeStep * timeStep);
@@ -4497,65 +4641,109 @@ bool computeProjectedNewtonDirection(
   hessian.setFromTriplets(triplets.begin(), triplets.end());
   hessian.makeCompressed();
 
-  // Reuse the fill-reducing symbolic factorization when the sparsity pattern is
-  // unchanged from the last analyzed matrix (same column/row index arrays); the
-  // expensive ordering then runs once and only the numeric factorization
-  // repeats. This is behavior-preserving (analyzePattern + factorize gives the
-  // same result as compute()); any structural mismatch re-analyzes, so it is
-  // safe by construction.
-  auto& ldlt = solverCache.newtonSolver;
-  const auto cols = hessian.cols();
-  const auto nnz = hessian.nonZeros();
-  const int* outer = hessian.outerIndexPtr();
-  const int* inner = hessian.innerIndexPtr();
-  bool patternMatches
-      = solverCache.newtonPatternValid
-        && static_cast<Eigen::Index>(solverCache.newtonPatternOuter.size())
-               == cols + 1
-        && static_cast<Eigen::Index>(solverCache.newtonPatternInner.size())
-               == nnz;
-  if (patternMatches) {
-    for (Eigen::Index i = 0; i <= cols && patternMatches; ++i) {
-      patternMatches = solverCache.newtonPatternOuter[i] == outer[i];
+  Eigen::VectorXd solution;
+  if (solveIteratively) {
+    // Iterative path: an incomplete-Cholesky preconditioned conjugate-gradient
+    // solve. The inertia term (m/dt^2 on every free DOF) plus the PSD-projected
+    // spring/barrier blocks make the Hessian symmetric positive definite, so CG
+    // is guaranteed to converge; it only ever factorizes *incompletely* (a
+    // sparse approximate Cholesky that drops fill), so time and memory stay
+    // near O(nnz) and the solve scales to meshes well past the direct cap. The
+    // incomplete-Cholesky preconditioner is far stronger than a diagonal
+    // (Jacobi) one on the ill-conditioned Hessians that stiff barrier contact
+    // produces -- it collapses the CG iteration count there, so the iterative
+    // path converges within the cap (and thus matches the direct solve) on
+    // contact scenes where plain Jacobi-CG would stall and fall back. Reading
+    // only the lower triangle matches the direct solver's symmetric assumption.
+    // A non-converged or non-finite solve (including an incomplete-Cholesky
+    // breakdown that Eigen's diagonal shifting cannot repair) falls back to
+    // mass-scaled steepest descent below, exactly as the direct path does on an
+    // indefinite factorization.
+    Eigen::ConjugateGradient<
+        Eigen::SparseMatrix<double>,
+        Eigen::Lower,
+        Eigen::IncompleteCholesky<double>>
+        cg;
+    cg.setTolerance(1e-8);
+    cg.setMaxIterations(static_cast<Eigen::Index>(2) * dim);
+    cg.compute(hessian);
+    if (cg.info() != Eigen::Success) {
+      solverCache.newtonPatternValid = false;
+      return false;
     }
-    for (Eigen::Index i = 0; i < nnz && patternMatches; ++i) {
-      patternMatches = solverCache.newtonPatternInner[i] == inner[i];
+    solution = cg.solve(rhs);
+    if (cg.info() != Eigen::Success || !solution.allFinite()) {
+      solverCache.newtonPatternValid = false;
+      return false;
     }
-  }
-
-  if (patternMatches) {
-    ldlt.factorize(hessian);
-    ++stats.projectedNewtonNumericFactorizations;
+    ++stats.projectedNewtonIterativeSolves;
+    // The cached direct-solver symbolic pattern was not refreshed this step, so
+    // invalidate it: a later step that drops back to the direct path must
+    // re-analyze rather than trust a stale ordering.
+    solverCache.newtonPatternValid = false;
   } else {
-    ldlt.analyzePattern(hessian);
-    ldlt.factorize(hessian);
-    solverCache.newtonPatternOuter.assign(outer, outer + cols + 1);
-    solverCache.newtonPatternInner.assign(inner, inner + nnz);
-    solverCache.newtonPatternValid = true;
-    ++stats.projectedNewtonSymbolicFactorizations;
-    ++stats.projectedNewtonNumericFactorizations;
-  }
+    // Reuse the fill-reducing symbolic factorization when the sparsity pattern
+    // is unchanged from the last analyzed matrix (same column/row index
+    // arrays); the expensive ordering then runs once and only the numeric
+    // factorization repeats. This is behavior-preserving (analyzePattern +
+    // factorize gives the same result as compute()); any structural mismatch
+    // re-analyzes, so it is safe by construction.
+    auto& ldlt = solverCache.newtonSolver;
+    const auto cols = hessian.cols();
+    const auto nnz = hessian.nonZeros();
+    const int* outer = hessian.outerIndexPtr();
+    const int* inner = hessian.innerIndexPtr();
+    bool patternMatches
+        = solverCache.newtonPatternValid
+          && static_cast<Eigen::Index>(solverCache.newtonPatternOuter.size())
+                 == cols + 1
+          && static_cast<Eigen::Index>(solverCache.newtonPatternInner.size())
+                 == nnz;
+    if (patternMatches) {
+      for (Eigen::Index i = 0; i <= cols && patternMatches; ++i) {
+        patternMatches = solverCache.newtonPatternOuter[i] == outer[i];
+      }
+      for (Eigen::Index i = 0; i < nnz && patternMatches; ++i) {
+        patternMatches = solverCache.newtonPatternInner[i] == inner[i];
+      }
+    }
 
-  // The inertia term (m/dt^2 on every free DOF, with positive node masses
-  // enforced at construction) keeps the Hessian positive definite once the
-  // spring/barrier blocks are PSD-projected, so no diagonal regularization is
-  // needed (it would perturb the otherwise-exact solve). SimplicialLDLT's
-  // info() only flags a structural failure / exact-zero pivot, so the
-  // strictly-positive-D check is the actual positive-definiteness test (a
-  // negative pivot would otherwise factorize silently). This has the same
-  // intent as the dense LDLT isPositive() guard the rest of the module uses;
-  // the two verdicts can only differ for near-singular matrices, which the
-  // m/dt^2 inertia floor precludes here. Either failure falls back to steepest
-  // descent below.
-  if (ldlt.info() != Eigen::Success || (ldlt.vectorD().array() <= 0.0).any()) {
-    // Force a fresh analysis next time after a failed/indefinite factorization.
-    solverCache.newtonPatternValid = false;
-    return false;
-  }
-  const Eigen::VectorXd solution = ldlt.solve(rhs);
-  if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
-    solverCache.newtonPatternValid = false;
-    return false;
+    if (patternMatches) {
+      ldlt.factorize(hessian);
+      ++stats.projectedNewtonNumericFactorizations;
+    } else {
+      ldlt.analyzePattern(hessian);
+      ldlt.factorize(hessian);
+      solverCache.newtonPatternOuter.assign(outer, outer + cols + 1);
+      solverCache.newtonPatternInner.assign(inner, inner + nnz);
+      solverCache.newtonPatternValid = true;
+      ++stats.projectedNewtonSymbolicFactorizations;
+      ++stats.projectedNewtonNumericFactorizations;
+    }
+
+    // The inertia term (m/dt^2 on every free DOF, with positive node masses
+    // enforced at construction) keeps the Hessian positive definite once the
+    // spring/barrier blocks are PSD-projected, so no diagonal regularization is
+    // needed (it would perturb the otherwise-exact solve). SimplicialLDLT's
+    // info() only flags a structural failure / exact-zero pivot, so the
+    // strictly-positive-D check is the actual positive-definiteness test (a
+    // negative pivot would otherwise factorize silently). This has the same
+    // intent as the dense LDLT isPositive() guard the rest of the module uses;
+    // the two verdicts can only differ for near-singular matrices, which the
+    // m/dt^2 inertia floor precludes here. Either failure falls back to
+    // steepest descent below.
+    if (ldlt.info() != Eigen::Success
+        || (ldlt.vectorD().array() <= 0.0).any()) {
+      // Force a fresh analysis next time after a failed/indefinite
+      // factorization.
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
+    solution = ldlt.solve(rhs);
+    if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
   }
 
   direction.resize(nodeCount);
@@ -4640,6 +4828,12 @@ void advanceDeformableBody(
     barrierStiffness = adaptiveBarrierStiffness(
         maxNodalMass, timeStep, staticGroundBarrierActivationDistance());
   }
+
+  // Opt this body into the iterative (conjugate-gradient) Newton linear solve.
+  // Large meshes above the direct-solve node cap always take the iterative path
+  // regardless of this flag; the flag forces it for any size so callers can
+  // trade direct-solve speed for the factorization-free memory profile.
+  const bool useIterativeSolver = material.useIterativeLinearSolver;
 
   stats.nodeCount += nodeCount;
   stats.edgeCount += model.edges.size();
@@ -4778,11 +4972,31 @@ void advanceDeformableBody(
       // line search), opposing each contacting node's tangential displacement
       // over the step. With mu == 0 or no ground contact this is a no-op.
       GroundFrictionInputs groundFriction;
-      if (frictionCoefficient > 0.0 && !barriers.empty()) {
+      if (frictionCoefficient > 0.0
+          && (!barriers.empty() || !sphereObstacles.empty()
+              || !boxObstacles.empty() || !capsuleObstacles.empty())) {
         computeStaticGroundNormalForces(
             scratch.next,
             scratch.activeFixed,
             barriers,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addSphereObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            sphereObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addBoxObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            boxObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addCapsuleObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            capsuleObstacles,
             groundFrictionNormalForce,
             groundFrictionNormalDirection);
         groundFriction.coefficient = frictionCoefficient;
@@ -4997,7 +5211,8 @@ void advanceDeformableBody(
           scratch.direction,
           contactScratch,
           stats,
-          barrierStiffness);
+          barrierStiffness,
+          useIterativeSolver);
       if (newtonDirection) {
         ++stats.projectedNewtonSteps;
       } else {
@@ -5053,11 +5268,31 @@ void advanceDeformableBody(
         terminalBarrier.stiffness = selfContactBarrierStiffness();
       }
       GroundFrictionInputs terminalGroundFriction;
-      if (frictionCoefficient > 0.0 && !barriers.empty()) {
+      if (frictionCoefficient > 0.0
+          && (!barriers.empty() || !sphereObstacles.empty()
+              || !boxObstacles.empty() || !capsuleObstacles.empty())) {
         computeStaticGroundNormalForces(
             scratch.next,
             scratch.activeFixed,
             barriers,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addSphereObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            sphereObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addBoxObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            boxObstacles,
+            groundFrictionNormalForce,
+            groundFrictionNormalDirection);
+        addCapsuleObstacleNormalForces(
+            scratch.next,
+            scratch.activeFixed,
+            capsuleObstacles,
             groundFrictionNormalForce,
             groundFrictionNormalDirection);
         terminalGroundFriction.coefficient = frictionCoefficient;

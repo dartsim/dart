@@ -246,6 +246,7 @@ private:
     io::writePOD(output, component.useFiniteElementElasticity);
     io::writePOD(output, component.useFixedCorotationalElasticity);
     io::writePOD(output, component.useAdaptiveBarrierStiffness);
+    io::writePOD(output, component.useIterativeLinearSolver);
   }
 
   void loadComponent(
@@ -258,6 +259,7 @@ private:
     io::readPOD(input, component.useFiniteElementElasticity);
     io::readPOD(input, component.useFixedCorotationalElasticity);
     io::readPOD(input, component.useAdaptiveBarrierStiffness);
+    io::readPOD(input, component.useIterativeLinearSolver);
   }
 };
 

@@ -11,8 +11,6 @@ from .scenes.add_delete_skels import SCENE as ADD_DELETE_SKELS
 from .scenes.arm_push_box import SCENE as ARM_PUSH_BOX
 from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.biped_stand import SCENE as BIPED_STAND
-from .scenes.g1_simbicon import SCENE as G1_SIMBICON
-from .scenes.simbicon_duo import SCENE as SIMBICON_DUO
 from .scenes.box_stacking import SCENE as BOX_STACKING
 from .scenes.boxes import SCENE as BOXES
 from .scenes.capsule_ground_contact import SCENE as CAPSULE_GROUND_CONTACT
@@ -27,11 +25,14 @@ from .scenes.drag_and_drop import SCENE as DRAG_AND_DROP
 from .scenes.empty import SCENE as EMPTY
 from .scenes.experimental_rigid_body_gui import SCENE as EXPERIMENTAL_RIGID_BODY_GUI
 from .scenes.free_joint_cases import SCENE as FREE_JOINT_CASES
+from .scenes.g1_simbicon import SCENE as G1_SIMBICON
 from .scenes.hardcoded_design import SCENE as HARDCODED_DESIGN
 from .scenes.heightmap import SCENE as HEIGHTMAP
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.hybrid_dynamics import SCENE as HYBRID_DYNAMICS
 from .scenes.ipc_deformable_capsule_rod import SCENE as IPC_DEFORMABLE_CAPSULE_ROD
+from .scenes.ipc_deformable_cg_contact import SCENE as IPC_DEFORMABLE_CG_CONTACT
+from .scenes.ipc_deformable_cg_solver import SCENE as IPC_DEFORMABLE_CG_SOLVER
 from .scenes.ipc_deformable_drape import SCENE as IPC_DEFORMABLE_DRAPE
 from .scenes.ipc_deformable_fcr_twist import SCENE as IPC_DEFORMABLE_FCR_TWIST
 from .scenes.ipc_deformable_fem_bar import SCENE as IPC_DEFORMABLE_FEM_BAR
@@ -44,7 +45,9 @@ from .scenes.ipc_deformable_fem_twist import SCENE as IPC_DEFORMABLE_FEM_TWIST
 from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
 from .scenes.ipc_deformable_net import SCENE as IPC_DEFORMABLE_NET
 from .scenes.ipc_deformable_obj_cloth import SCENE as IPC_DEFORMABLE_OBJ_CLOTH
+from .scenes.ipc_deformable_plate_friction import SCENE as IPC_DEFORMABLE_PLATE_FRICTION
 from .scenes.ipc_deformable_pt_particles import SCENE as IPC_DEFORMABLE_PT_PARTICLES
+from .scenes.ipc_deformable_rod_friction import SCENE as IPC_DEFORMABLE_ROD_FRICTION
 from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SCRIPTED
 from .scenes.ipc_deformable_seg_strand import SCENE as IPC_DEFORMABLE_SEG_STRAND
 from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
@@ -63,6 +66,7 @@ from .scenes.rigid_loop import SCENE as RIGID_LOOP
 from .scenes.rigid_shapes import SCENE as RIGID_SHAPES
 from .scenes.sensor_descriptors import SCENE as SENSOR_DESCRIPTORS
 from .scenes.shapes import SCENE as SHAPES
+from .scenes.simbicon_duo import SCENE as SIMBICON_DUO
 from .scenes.simple_frames import SCENE as SIMPLE_FRAMES
 from .scenes.soft_bodies import SCENE as SOFT_BODIES
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
@@ -181,9 +185,13 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_FEM_BOX,
         IPC_DEFORMABLE_FEM_BUCKLE,
         IPC_DEFORMABLE_FEM_MSH,
+        IPC_DEFORMABLE_CG_SOLVER,
+        IPC_DEFORMABLE_CG_CONTACT,
         IPC_DEFORMABLE_OBJ_CLOTH,
         IPC_DEFORMABLE_CAPSULE_ROD,
         IPC_DEFORMABLE_SEG_STRAND,
         IPC_DEFORMABLE_PT_PARTICLES,
+        IPC_DEFORMABLE_ROD_FRICTION,
+        IPC_DEFORMABLE_PLATE_FRICTION,
         IPC_DEFORMABLE_SCRIPTED,
     ]
