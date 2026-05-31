@@ -800,6 +800,46 @@ TEST(VbdWorldSolver, VbdBoxObstacleRepelsInitiallyEmbeddedNode)
 }
 
 //==============================================================================
+// VBD self-contact uses the same surface-node point mask as the default solver:
+// volumetric nodes that are not referenced by the surface mesh must not receive
+// point-triangle barrier forces from their own shell.
+TEST(VbdWorldSolver, VbdSelfContactIgnoresInteriorTetNodes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  const Eigen::Vector3d interiorStart(0.25, 0.25, 0.005);
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0),
+         interiorStart};
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2, 3};
+  options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{0, 2, 3}};
+  auto body = world.addDeformableBody("tet_with_interior_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 20;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  const Eigen::Vector3d interiorEnd = body.getPosition(4);
+  EXPECT_NEAR((interiorEnd - interiorStart).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
 // Option A: the World VBD path resists surface self-collision. A body's free
 // top triangle falls toward its own pinned bottom triangle; the IPC point-
 // triangle / edge-edge barrier (entered per-vertex during the colored sweeps)

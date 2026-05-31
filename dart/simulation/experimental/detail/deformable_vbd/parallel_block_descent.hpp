@@ -220,6 +220,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
       = options.rayleighDamping > 0.0 && stepStartPositions != nullptr;
 
   const auto assemble = [&](std::uint32_t vertex) {
+    const SelfContactAdjacency* blockSelfContact
+        = useRayleigh ? nullptr : selfContact;
     VertexBlock block = detail::assembleDeformableVertexBlock(
         vertex,
         positions,
@@ -236,7 +238,7 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         timeStep,
         options.useFemTetKernel,
         options.useFixedCorotationalTets,
-        selfContact);
+        blockSelfContact);
     if (useRayleigh) {
       Eigen::Matrix3d elasticHessian = block.hessian;
       elasticHessian.diagonal().array() -= masses[vertex] * invDt2;
@@ -246,6 +248,9 @@ inline BlockDescentStats parallelBlockDescentDeformable(
           positions[vertex] - (*stepStartPositions)[vertex],
           options.rayleighDamping,
           timeStep);
+      if (selfContact != nullptr) {
+        addSelfContactTerms(block, vertex, *selfContact, positions);
+      }
     }
     if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
       const ContactPlane& plane = (*contactPlanes)[vertex];

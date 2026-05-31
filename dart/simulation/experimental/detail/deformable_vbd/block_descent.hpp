@@ -706,6 +706,8 @@ inline BlockDescentStats blockDescentDeformable(
       = options.rayleighDamping > 0.0 && stepStartPositions != nullptr;
 
   const auto assemble = [&](std::uint32_t vertex) {
+    const SelfContactAdjacency* blockSelfContact
+        = useRayleigh ? nullptr : selfContact;
     VertexBlock block = detail::assembleDeformableVertexBlock(
         vertex,
         positions,
@@ -722,10 +724,12 @@ inline BlockDescentStats blockDescentDeformable(
         timeStep,
         options.useFemTetKernel,
         options.useFixedCorotationalTets,
-        selfContact);
+        blockSelfContact);
     if (useRayleigh) {
       // The elastic Hessian is the full block Hessian minus the (m/h^2) I
-      // inertia term that addInertiaTerm placed on the diagonal.
+      // inertia term that addInertiaTerm placed on the diagonal. Contact
+      // barriers are not elastic material stiffness, so add them after the
+      // Rayleigh term.
       Eigen::Matrix3d elasticHessian = block.hessian;
       elasticHessian.diagonal().array() -= masses[vertex] * invDt2;
       addRayleighDamping(
@@ -734,6 +738,9 @@ inline BlockDescentStats blockDescentDeformable(
           positions[vertex] - (*stepStartPositions)[vertex],
           options.rayleighDamping,
           timeStep);
+      if (selfContact != nullptr) {
+        addSelfContactTerms(block, vertex, *selfContact, positions);
+      }
     }
     if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
       const ContactPlane& plane = (*contactPlanes)[vertex];

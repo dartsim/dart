@@ -483,6 +483,84 @@ TEST(VbdCombinedDescent, RayleighDampingIsStableAndChangesResult)
 }
 
 //==============================================================================
+// Contact barriers are inequality constraints, not elastic material stiffness:
+// stiffness-proportional Rayleigh damping must ignore self-contact Hessians.
+TEST(VbdCombinedDescent, RayleighDampingIgnoresSelfContactBarrierStiffness)
+{
+  namespace dc = dart::simulation::experimental::detail::deformable_contact;
+  namespace sim = dart::simulation::experimental;
+
+  const std::vector<Vec3> start
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const std::vector<double> masses(start.size(), 1.0);
+  const std::vector<std::uint8_t> fixed = {0u, 1u, 1u, 1u};
+  const std::vector<Vec3> inertialTargets = start;
+  const std::vector<vbd::SpringElement> springs;
+  const std::vector<vbd::TetMeshElement> tets;
+  const vbd::SpringAdjacency springAdjacency
+      = vbd::SpringAdjacency::build(start.size(), springs);
+  const vbd::TetAdjacency tetAdjacency
+      = vbd::TetAdjacency::build(start.size(), tets);
+  const vbd::VertexColoring coloring
+      = vbd::colorDeformable(start.size(), springs, tets);
+
+  dc::ContactCandidateSet candidates;
+  candidates.pointTriangleCandidates.push_back(
+      {/*point=*/0, /*triangle=*/0, 0.0});
+  const std::vector<sim::DeformableSurfaceTriangle> triangles = {{1, 2, 3}};
+  const vbd::SelfContactAdjacency selfContact
+      = vbd::SelfContactAdjacency::build(
+          start.size(),
+          candidates,
+          triangles,
+          /*squaredActivationDistance=*/4e-4,
+          /*stiffness=*/1e5);
+  ASSERT_TRUE(selfContact.active());
+
+  const std::vector<Vec3> stepStart
+      = {start[0] - Vec3(0.0, 0.0, 0.003), start[1], start[2], start[3]};
+
+  const auto solve = [&](double rayleigh) {
+    std::vector<Vec3> positions = start;
+    vbd::BlockDescentOptions options;
+    options.iterations = 4;
+    options.rayleighDamping = rayleigh;
+    vbd::blockDescentDeformable(
+        positions,
+        masses,
+        fixed,
+        inertialTargets,
+        springs,
+        /*springStiffness=*/0.0,
+        springAdjacency,
+        tets,
+        /*mu=*/0.0,
+        /*lambda=*/0.0,
+        tetAdjacency,
+        /*timeStep=*/0.01,
+        coloring,
+        options,
+        &stepStart,
+        nullptr,
+        0.0,
+        &selfContact);
+    return positions;
+  };
+
+  const std::vector<Vec3> undamped = solve(0.0);
+  const std::vector<Vec3> damped = solve(0.5);
+
+  EXPECT_GT((undamped[0] - start[0]).norm(), 1e-8);
+  ASSERT_EQ(damped.size(), undamped.size());
+  for (std::size_t i = 0; i < damped.size(); ++i) {
+    EXPECT_NEAR((damped[i] - undamped[i]).norm(), 0.0, 1e-12) << "node " << i;
+  }
+}
+
+//==============================================================================
 // Option B: with useFemTetKernel set, the VBD tetrahedral term is routed
 // through the shared deformable_elasticity FEM kernels, so a VBD body honors
 // the body's hyperelastic material. The per-vertex block force must equal the

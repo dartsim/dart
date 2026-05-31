@@ -3910,6 +3910,7 @@ void runVbdDeformableSolve(
     const std::vector<SphereObstacleBarrier>& sphereObstacles,
     const std::vector<BoxObstacleBarrier>& boxObstacles,
     const std::vector<DeformableSurfaceTriangle>& surfaceTriangles,
+    std::span<const std::uint8_t> surfaceContactPointMask,
     double frictionCoeff,
     const comps::DeformableVbdConfig& config,
     DeformableSolverStats& stats)
@@ -4094,6 +4095,8 @@ void runVbdDeformableSolve(
         surfaceTriangles,
         candidateOptions,
         vbdScratch.selfContactCandidates);
+    filterSurfaceContactPointCandidates(
+        vbdScratch.selfContactCandidates, surfaceContactPointMask);
     vbdScratch.selfContactAdjacency = dvbd::SelfContactAdjacency::build(
         nodeCount,
         vbdScratch.selfContactCandidates,
@@ -4856,6 +4859,7 @@ void advanceDeformableBody(
         sphereObstacles,
         boxObstacles,
         contactScratch.surfaceTriangles,
+        contactScratch.surfaceContactPointMask,
         frictionCoefficient,
         *vbdConfig,
         stats);
