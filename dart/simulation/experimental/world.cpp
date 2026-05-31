@@ -135,6 +135,10 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
   diagnostics.lineSearchTrials = stats.lineSearchTrials;
   diagnostics.projectedNewtonSteps = stats.projectedNewtonSteps;
   diagnostics.projectedNewtonFallbacks = stats.projectedNewtonFallbacks;
+  diagnostics.projectedNewtonHessianNonZeros
+      = stats.projectedNewtonHessianNonZeros;
+  diagnostics.projectedNewtonHessianStorageBytes
+      = stats.projectedNewtonHessianStorageBytes;
   diagnostics.projectedNewtonIterativeSolves
       = stats.projectedNewtonIterativeSolves;
   diagnostics.projectedNewtonIterativeIterations

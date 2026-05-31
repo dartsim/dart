@@ -1643,6 +1643,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "projected_newton_fallbacks",
           &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
       .def_ro(
+          "projected_newton_hessian_nonzeros",
+          &sim::DeformableSolverDiagnostics::projectedNewtonHessianNonZeros)
+      .def_ro(
+          "projected_newton_hessian_storage_bytes",
+          &sim::DeformableSolverDiagnostics::projectedNewtonHessianStorageBytes)
+      .def_ro(
           "projected_newton_iterative_solves",
           &sim::DeformableSolverDiagnostics::projectedNewtonIterativeSolves)
       .def_ro(

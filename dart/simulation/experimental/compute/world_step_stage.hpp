@@ -129,6 +129,13 @@ struct DeformableSolverStats
   // repeats; symbolic < numeric indicates the analysis was amortized.
   std::size_t projectedNewtonSymbolicFactorizations = 0;
   std::size_t projectedNewtonNumericFactorizations = 0;
+  // Maximum compressed sparse Hessian footprint assembled for a
+  // projected-Newton linear solve in this step. These are matrix-storage
+  // diagnostics (not full process peak memory): nonzeros counts Eigen's
+  // compressed sparse entries, and storage bytes estimates the value, inner
+  // index, and outer pointer arrays for that matrix.
+  std::size_t projectedNewtonHessianNonZeros = 0;
+  std::size_t projectedNewtonHessianStorageBytes = 0;
   // Iterative (conjugate-gradient) linear solves. Counts Newton iterations that
   // took the matrix-light CG path instead of the sparse Cholesky factorization
   // -- either because the mesh exceeds the direct-solve node cap or because the

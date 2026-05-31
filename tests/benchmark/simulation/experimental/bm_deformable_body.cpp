@@ -1032,10 +1032,17 @@ void BM_DeformableFemBarStep(benchmark::State& state)
   DeformableFemBarWorld fixture(cellsX);
 
   double totalNewtonIterations = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1048,6 +1055,9 @@ void BM_DeformableFemBarStep(benchmark::State& state)
   // paper's Table 1 reports, alongside the wall-clock per-step time.
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1063,10 +1073,17 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
   DeformableFemBarWorld fixture(cellsX, /*useFixedCorotational=*/true);
 
   double totalNewtonIterations = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1079,6 +1096,9 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
   // material's convergence can be compared to neo-Hookean at equal resolution.
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1103,6 +1123,8 @@ void BM_DeformableCgBarStep(benchmark::State& state)
   double totalNewtonIterations = 0.0;
   double totalCgIterations = 0.0;
   double maxCgError = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
     const auto& diagnostics
@@ -1112,6 +1134,10 @@ void BM_DeformableCgBarStep(benchmark::State& state)
         += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
     maxCgError
         = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1125,6 +1151,9 @@ void BM_DeformableCgBarStep(benchmark::State& state)
   state.counters["cg_iters_per_step"]
       = totalCgIterations / static_cast<double>(state.iterations());
   state.counters["cg_max_error"] = maxCgError;
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1172,6 +1201,8 @@ void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
   double totalNewtonIterations = 0.0;
   double totalCgIterations = 0.0;
   double maxCgError = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
     const auto& diagnostics
@@ -1181,6 +1212,10 @@ void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
         += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
     maxCgError
         = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1194,6 +1229,9 @@ void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
   state.counters["cg_iters_per_step"]
       = totalCgIterations / static_cast<double>(state.iterations());
   state.counters["cg_max_error"] = maxCgError;
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }

@@ -90,6 +90,11 @@ struct DeformableSolverDiagnostics
   /// used when the Newton direction was not a descent direction.
   std::size_t projectedNewtonSteps = 0;
   std::size_t projectedNewtonFallbacks = 0;
+  /// Maximum compressed sparse Hessian matrix footprint assembled by the
+  /// projected-Newton solve in this step. This is an Eigen matrix-storage
+  /// estimate (values + sparse indices), not a full process peak-memory value.
+  std::size_t projectedNewtonHessianNonZeros = 0;
+  std::size_t projectedNewtonHessianStorageBytes = 0;
   /// Newton iterations whose linear solve took the iterative
   /// (incomplete-Cholesky preconditioned conjugate-gradient) path instead of
   /// the sparse Cholesky factorization -- either because the mesh exceeds the

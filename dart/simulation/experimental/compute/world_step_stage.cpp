@@ -4930,6 +4930,16 @@ bool computeProjectedNewtonDirection(
   Eigen::SparseMatrix<double> hessian(dim, dim);
   hessian.setFromTriplets(triplets.begin(), triplets.end());
   hessian.makeCompressed();
+  const auto hessianNonZeros = static_cast<std::size_t>(hessian.nonZeros());
+  const auto hessianCols = static_cast<std::size_t>(hessian.cols());
+  using SparseStorageIndex = Eigen::SparseMatrix<double>::StorageIndex;
+  const std::size_t hessianStorageBytes
+      = hessianNonZeros * (sizeof(double) + sizeof(SparseStorageIndex))
+        + (hessianCols + 1u) * sizeof(SparseStorageIndex);
+  stats.projectedNewtonHessianNonZeros
+      = std::max(stats.projectedNewtonHessianNonZeros, hessianNonZeros);
+  stats.projectedNewtonHessianStorageBytes
+      = std::max(stats.projectedNewtonHessianStorageBytes, hessianStorageBytes);
 
   Eigen::VectorXd solution;
   if (solveIteratively) {

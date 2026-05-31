@@ -844,6 +844,8 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_EQ(before.bodyCount, 0u);
   EXPECT_EQ(before.nodeCount, 0u);
   EXPECT_EQ(before.solverIterations, 0u);
+  EXPECT_EQ(before.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_EQ(before.projectedNewtonHessianStorageBytes, 0u);
 
   world.step(5);
 
@@ -853,6 +855,8 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_GE(after.solverIterations, 1u);
   EXPECT_GE(after.objectiveEvaluations, 1u);
   EXPECT_GE(after.projectedNewtonSteps + after.projectedNewtonFallbacks, 1u);
+  EXPECT_GT(after.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_GT(after.projectedNewtonHessianStorageBytes, 0u);
   // No contacts for a single free-hanging tetrahedron.
   EXPECT_EQ(after.selfContactBarrierActiveContacts, 0u);
   EXPECT_EQ(after.convergedActiveContactCount, 0u);
@@ -872,6 +876,8 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
   {
     std::size_t solves = 0;
     std::size_t iterations = 0;
+    std::size_t hessianNonZeros = 0;
+    std::size_t hessianStorageBytes = 0;
     double maxError = 0.0;
   };
 
@@ -889,6 +895,11 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
       const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
       total.solves += diagnostics.projectedNewtonIterativeSolves;
       total.iterations += diagnostics.projectedNewtonIterativeIterations;
+      total.hessianNonZeros = std::max(
+          total.hessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+      total.hessianStorageBytes = std::max(
+          total.hessianStorageBytes,
+          diagnostics.projectedNewtonHessianStorageBytes);
       total.maxError = std::max(
           total.maxError, diagnostics.projectedNewtonIterativeMaxError);
     }
@@ -901,10 +912,14 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
   // The default direct solve never takes the iterative path...
   EXPECT_EQ(direct.solves, 0u);
   EXPECT_EQ(direct.iterations, 0u);
+  EXPECT_GT(direct.hessianNonZeros, 0u);
+  EXPECT_GT(direct.hessianStorageBytes, 0u);
   EXPECT_EQ(direct.maxError, 0.0);
   // ...while the opt-in iterative solve surfaces through the public diagnostics
-  // with CG effort and a finite residual estimate.
+  // with CG effort, sparse-Hessian footprint, and a finite residual estimate.
   EXPECT_GT(iterative.solves, 0u);
+  EXPECT_GT(iterative.hessianNonZeros, 0u);
+  EXPECT_GT(iterative.hessianStorageBytes, 0u);
   EXPECT_TRUE(std::isfinite(iterative.maxError));
   EXPECT_GE(iterative.maxError, 0.0);
 }

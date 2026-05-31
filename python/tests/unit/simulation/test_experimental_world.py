@@ -2582,6 +2582,8 @@ def test_experimental_world_exposes_deformable_solver_diagnostics():
     assert before.body_count == 0
     assert before.node_count == 0
     assert before.solver_iterations == 0
+    assert before.projected_newton_hessian_nonzeros == 0
+    assert before.projected_newton_hessian_storage_bytes == 0
 
     world.step(5)
 
@@ -2592,6 +2594,8 @@ def test_experimental_world_exposes_deformable_solver_diagnostics():
     assert after.solver_iterations >= 1
     assert after.objective_evaluations >= 1
     assert after.projected_newton_steps + after.projected_newton_fallbacks >= 1
+    assert after.projected_newton_hessian_nonzeros > 0
+    assert after.projected_newton_hessian_storage_bytes > 0
     # This body uses the default direct (sparse Cholesky) solve, so the iterative
     # (conjugate-gradient) path is never taken.
     assert after.projected_newton_iterative_solves == 0
@@ -2631,6 +2635,8 @@ def test_experimental_world_iterative_solver_diagnostic():
     # caller can observe which linear-solve path the projected-Newton step took.
     total_iterative_solves = 0
     total_iterative_iterations = 0
+    max_hessian_nonzeros = 0
+    max_hessian_storage_bytes = 0
     max_iterative_error = 0.0
     for _ in range(8):
         world.step()
@@ -2639,12 +2645,21 @@ def test_experimental_world_iterative_solver_diagnostic():
         total_iterative_iterations += (
             diagnostics.projected_newton_iterative_iterations
         )
+        max_hessian_nonzeros = max(
+            max_hessian_nonzeros, diagnostics.projected_newton_hessian_nonzeros
+        )
+        max_hessian_storage_bytes = max(
+            max_hessian_storage_bytes,
+            diagnostics.projected_newton_hessian_storage_bytes,
+        )
         max_iterative_error = max(
             max_iterative_error,
             diagnostics.projected_newton_iterative_max_error,
         )
     assert total_iterative_solves > 0
     assert total_iterative_iterations >= 0
+    assert max_hessian_nonzeros > 0
+    assert max_hessian_storage_bytes > 0
     assert math.isfinite(max_iterative_error)
     assert max_iterative_error >= 0.0
 

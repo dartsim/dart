@@ -75,8 +75,9 @@ M1–M6 + M5 are all complete; **M7 (scale + performance) is the only remaining
 milestone.** Four increments landed (iterative CG solve #2810;
 incomplete-Cholesky preconditioner #2811; chunky-3D scaling benchmark #2812;
 public iterative-solve diagnostic #2813). The current branch is a small
-profiling follow-up that adds CG iterations and residual estimates. The
-remaining M7 work, roughly in increasing-risk order:
+profiling follow-up that adds CG iterations, residual estimates, and assembled
+sparse-Hessian footprint counters. The remaining M7 work, roughly in
+increasing-risk order:
 
 1. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
    (triplets → `SparseMatrix`) before the CG solve; a matrix-free Hessian-vector
@@ -264,13 +265,17 @@ remote refs still exist and should not be deleted without explicit approval.
 
 This branch is behavior-preserving M7 profiling work. It extends the public
 deformable solver diagnostics beyond `projectedNewtonIterativeSolves` with
-`projectedNewtonIterativeIterations` and `projectedNewtonIterativeMaxError`
-(dartpy:
+`projectedNewtonIterativeIterations`, `projectedNewtonIterativeMaxError`,
+`projectedNewtonHessianNonZeros`, and
+`projectedNewtonHessianStorageBytes` (dartpy:
 `projected_newton_iterative_iterations` /
-`projected_newton_iterative_max_error`) so CG-backed Newton steps report solve
-effort and residual estimates, not just path selection. The FEM-bar and chunky
-3D cube CG benchmarks emit matching `cg_iters_per_step` and `cg_max_error`
-counters toward the Fig. 23 / Table 1 profiling surface.
+`projected_newton_iterative_max_error` /
+`projected_newton_hessian_nonzeros` /
+`projected_newton_hessian_storage_bytes`) so CG-backed Newton steps report solve
+effort, residual estimates, and the assembled sparse-matrix footprint, not just
+path selection. The FEM-bar and chunky 3D cube benchmarks emit matching
+`cg_iters_per_step`, `cg_max_error`, `hessian_nonzeros`, and
+`hessian_storage_bytes` counters toward the Fig. 23 / Table 1 profiling surface.
 
 Prior branch `feature/ipc-gpu-psd-perf-gate` - stacked on
 `feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
