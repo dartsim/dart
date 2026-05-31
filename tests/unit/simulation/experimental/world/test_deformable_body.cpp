@@ -2648,6 +2648,61 @@ TEST(DeformableBody, SerializationLoadsLegacyV8Material)
 }
 
 //==============================================================================
+TEST(DeformableBody, SerializationLoadsLegacyV9MaterialWithoutMatrixFreeFlag)
+{
+  sx::World world1;
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  options.material.youngsModulus = 2500.0;
+  options.material.poissonRatio = 0.25;
+  options.material.frictionCoefficient = 0.5;
+  options.material.useFiniteElementElasticity = true;
+  options.material.useFixedCorotationalElasticity = true;
+  options.material.useAdaptiveBarrierStiffness = true;
+  options.material.useIterativeLinearSolver = true;
+  options.material.useMatrixFreeLinearSolver = true;
+  world1.addDeformableBody("legacy_v9_material", options);
+
+  std::stringstream currentStream;
+  world1.saveBinary(currentStream);
+  std::string legacyBytes = currentStream.str();
+
+  const std::uint32_t legacyVersion = 9u;
+  ASSERT_GE(legacyBytes.size(), 2u * sizeof(std::uint32_t));
+  std::memcpy(
+      legacyBytes.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+
+  const std::string materialTypeName(comps::DeformableMaterial::getTypeName());
+  const auto materialTypeOffset = legacyBytes.find(materialTypeName);
+  ASSERT_NE(materialTypeOffset, std::string::npos);
+
+  const auto materialDataOffset = materialTypeOffset + materialTypeName.size();
+  const auto matrixFreeFlagOffset
+      = materialDataOffset + 4u * sizeof(double) + 4u * sizeof(bool);
+  ASSERT_LT(matrixFreeFlagOffset, legacyBytes.size());
+  legacyBytes.erase(matrixFreeFlagOffset, sizeof(bool));
+
+  std::stringstream legacyStream(legacyBytes);
+  sx::World world2;
+  ASSERT_NO_THROW(world2.loadBinary(legacyStream));
+
+  auto body = world2.getDeformableBody("legacy_v9_material");
+  ASSERT_TRUE(body.has_value());
+  const auto material = body->getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 2500.0);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.25);
+  EXPECT_DOUBLE_EQ(material.frictionCoefficient, 0.5);
+  EXPECT_TRUE(material.useFiniteElementElasticity);
+  EXPECT_TRUE(material.useFixedCorotationalElasticity);
+  EXPECT_TRUE(material.useAdaptiveBarrierStiffness);
+  EXPECT_TRUE(material.useIterativeLinearSolver);
+  EXPECT_FALSE(material.useMatrixFreeLinearSolver);
+}
+
+//==============================================================================
 // A deformable node advancing toward a box that is itself moving toward the
 // node is conservatively limited so it does not enter the box's predicted
 // end-of-step pose. The custom pipeline runs only the deformable stage; the

@@ -269,7 +269,7 @@ private:
     io::readPOD(input, component.useFixedCorotationalElasticity);
     io::readPOD(input, component.useAdaptiveBarrierStiffness);
     io::readPOD(input, component.useIterativeLinearSolver);
-    if (formatVersion >= 9u) {
+    if (formatVersion >= 10u) {
       io::readPOD(input, component.useMatrixFreeLinearSolver);
     } else {
       component.useMatrixFreeLinearSolver = false;

@@ -704,6 +704,28 @@
     (matching legacy DART and easing model loading). Verified by an offset-COM
     pendulum matching the parallel-axis mass matrix, gravity torque, and
     acceleration.
+  - Added an experimental C++ `simulation::experimental::io::addSkeleton`
+    bridge that translates already-parsed legacy `dynamics::Skeleton` trees into
+    experimental multibodies for the Weld/Revolute/Prismatic/Screw/Universal/
+    Ball/Planar/Free tree-joint families, preserving names, root anchors, joint
+    transforms/state/limits/passive properties, mass, inertia, and local COM
+    offsets, plus one centered collidable Box/Sphere/Capsule/Cylinder/Mesh
+    collision shape per link when that legacy geometry maps exactly to the
+    experimental `CollisionShape` facade. URI-loading overloads now accept
+    explicit `dart::io::ReadOptions`, including dartpy `ReadOptions` bindings
+    for format selection, SDF default root-joint selection, and URDF package
+    directories.
+    The dartpy `CollisionShape` facade now exposes the cylinder and mesh types,
+    constructors, mesh vertices, and triangle indices. The bridge is exposed to
+    dartpy as `dartpy.simulation_experimental.add_skeleton()` with
+    `SkeletonLoadOptions` for both already-parsed Skeleton objects and URI
+    strings that use the default `dart::io::readSkeleton()` reader
+    configuration. C++ `addWorld` and dartpy `add_world()` now compose the same
+    importer over every Skeleton in an already-parsed or URI-loaded legacy
+    World. Parser-specific options, remaining legacy-only joint families,
+    offset/multiple/visual shape import, diagnostics, and richer load-result
+    ergonomics remain future model-loading
+    work.
   - Added experimental generalized-coordinate dynamics accessors on `Multibody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,
