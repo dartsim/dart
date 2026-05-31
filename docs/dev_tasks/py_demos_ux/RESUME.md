@@ -50,6 +50,11 @@
 - Recorded-frame playback now lives in the `Simulation` panel when frame output
   is active. It tracks the recorded PPM sequence; offers first, previous, play,
   next, and last controls; and surfaces the selected frame artifact path.
+- User-requested demo switches now keep a pending fallback to the previous
+  active demo. If the requested demo throws during factory startup, cannot
+  create render state, fails its first frame, or returns after the startup
+  budget, the host restores the previous demo instead of leaving the workspace
+  stuck on the broken target.
 - Python scene validation accepts hyphenated aliases such as
   `sx-rigid-ipc-slide`.
 - sx force-drag now resolves picked SimpleFrames by `renderable_id` first,

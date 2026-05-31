@@ -163,6 +163,11 @@ using dart::gui::detail::updateFrameViewport;
 // extraction, render, and teardown without making the smoke test slow.
 constexpr int kCycleFramesPerScene = 4;
 
+// User-requested demo switches are treated as candidate activations. If the
+// candidate returns but still exceeds this startup budget, the host restores
+// the previous demo instead of leaving the workspace on a slow/broken scene.
+constexpr double kDemoSceneStartupTimeoutMs = 5000.0;
+
 bool hasSceneOption(int argc, char* argv[]);
 
 bool isTruthyEnvironmentVariable(const char* name)
@@ -680,18 +685,53 @@ int runGuiBackendApplicationImpl(
   int activeIndex = initialDemoIndex;
   bool keepRunning = true;
   std::size_t finalContacts = 0;
+  std::optional<int> pendingDemoFallbackIndex;
 
   // Outer scene loop. For the single-scene path this runs exactly once; for the
   // demos host it rebuilds the scene-bound state when a switch is requested,
   // while the window, engine, materials, lights, and ImGui overlay persist.
   while (keepRunning) {
+    const auto sceneStartupStart = ProfileAccumulator::Clock::now();
+    const dart::gui::DemoSceneEntry* candidateDemoEntry = nullptr;
+    auto restorePendingDemoFallback = [&](std::string_view reason) -> bool {
+      if (demoCatalog == nullptr || candidateDemoEntry == nullptr
+          || !pendingDemoFallbackIndex.has_value()) {
+        return false;
+      }
+
+      const int fallbackIndex = *pendingDemoFallbackIndex;
+      if (fallbackIndex < 0
+          || fallbackIndex >= static_cast<int>(demoCatalog->size())
+          || fallbackIndex == activeIndex) {
+        pendingDemoFallbackIndex.reset();
+        return false;
+      }
+
+      const auto& fallbackEntry
+          = (*demoCatalog)[static_cast<std::size_t>(fallbackIndex)];
+      std::cerr << "demo scene '" << candidateDemoEntry->id
+                << "' failed to start (" << reason
+                << "); restoring previous demo '" << fallbackEntry.id << "'\n";
+      activeIndex = fallbackIndex;
+      pendingDemoFallbackIndex.reset();
+      lifecycle.sceneSwitchRequested = false;
+      lifecycle.requestedScene.clear();
+      return true;
+    };
+
     if (demoCatalog != nullptr) {
       const auto& demoEntry
           = (*demoCatalog)[static_cast<std::size_t>(activeIndex)];
+      candidateDemoEntry = &demoEntry;
+
       dart::gui::ApplicationOptions sceneOptions;
       try {
         sceneOptions = demoEntry.factory();
       } catch (const std::exception& error) {
+        if (restorePendingDemoFallback(
+                std::string("factory threw: ") + error.what())) {
+          continue;
+        }
         // Soft-fail: a scene that cannot build (e.g. a missing asset) must not
         // crash the host. Show an empty world so the sidebar stays usable.
         std::cerr << "demo scene '" << demoEntry.id
@@ -700,6 +740,10 @@ int runGuiBackendApplicationImpl(
       }
       if (sceneOptions.world == nullptr) {
         sceneOptions.world = dart::simulation::World::create("(empty)");
+      }
+      if (elapsedMs(sceneStartupStart) > kDemoSceneStartupTimeoutMs
+          && restorePendingDemoFallback("factory startup exceeded budget")) {
+        continue;
       }
       applySceneOptions(
           appOptions, sceneOptions, renderOutputModeExplicit, renderOutputMode);
@@ -744,15 +788,29 @@ int runGuiBackendApplicationImpl(
             applicationOptions.allowEmptyScene,
             std::cerr);
     if (!maybeInitialSceneState) {
+      if (demoCatalog != nullptr
+          && restorePendingDemoFallback("render state creation failed")) {
+        continue;
+      }
       frameCaptureSucceeded = false;
       keepRunning = false;
       break;
     }
     InitialSceneState sceneState = std::move(*maybeInitialSceneState);
+    std::optional<Renderable> selectionDebugOverlay;
+    if (demoCatalog != nullptr
+        && elapsedMs(sceneStartupStart) > kDemoSceneStartupTimeoutMs
+        && restorePendingDemoFallback("startup exceeded budget")) {
+      destroySceneRenderables(
+          *engine,
+          *scene,
+          sceneState.sceneRenderables,
+          sceneState.debugOverlays,
+          selectionDebugOverlay);
+      continue;
+    }
     auto& sceneRenderables = sceneState.sceneRenderables;
     auto& debugOverlays = sceneState.debugOverlays;
-
-    std::optional<Renderable> selectionDebugOverlay;
 
     SceneFrameUpdater sceneFrameUpdater(
         window,
@@ -924,6 +982,9 @@ int runGuiBackendApplicationImpl(
         sceneFrameFailed = true;
         break;
       }
+      if (demoCatalog != nullptr && !frameRenderResult.continueLoop) {
+        pendingDemoFallbackIndex.reset();
+      }
       if (frameRenderResult.continueLoop) {
         continue;
       }
@@ -944,18 +1005,30 @@ int runGuiBackendApplicationImpl(
         selectionDebugOverlay);
 
     if (sceneFrameFailed) {
+      if (demoCatalog != nullptr
+          && restorePendingDemoFallback("first frame failed")) {
+        continue;
+      }
       frameCaptureSucceeded = false;
       keepRunning = false;
     } else if (demoCatalog != nullptr && lifecycle.sceneSwitchRequested) {
-      activeIndex
+      const int requestedIndex
           = demoSceneIndex(*demoCatalog, lifecycle.requestedScene, activeIndex);
+      if (requestedIndex != activeIndex) {
+        pendingDemoFallbackIndex = activeIndex;
+      } else {
+        pendingDemoFallbackIndex.reset();
+      }
+      activeIndex = requestedIndex;
     } else if (demoCatalog != nullptr && cycleScenes && cycleAdvance) {
+      pendingDemoFallbackIndex.reset();
       if (activeIndex + 1 < static_cast<int>(demoCatalog->size())) {
         ++activeIndex;
       } else {
         keepRunning = false;
       }
     } else {
+      pendingDemoFallbackIndex.reset();
       keepRunning = false;
     }
   }

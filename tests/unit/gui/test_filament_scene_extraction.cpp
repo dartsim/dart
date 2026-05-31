@@ -973,6 +973,12 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       applicationSource.find("requestSceneSwitch(*lifecycle, active->id)"),
       std::string::npos);
   EXPECT_NE(
+      applicationSource.find("pendingDemoFallbackIndex"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("kDemoSceneStartupTimeoutMs"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("restoring previous demo"), std::string::npos);
+  EXPECT_NE(
       applicationSource.find("requestSceneReplay(*lifecycle, active->id)"),
       std::string::npos);
   EXPECT_NE(

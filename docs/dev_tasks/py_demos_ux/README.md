@@ -42,6 +42,10 @@ navigation, and a path for scene-specific controls.
 - Add a recorded-frame playback surface to the `Simulation` panel, with
   first, previous, play, next, and last controls over the recorded PPM
   sequence and a visible selected-frame artifact path.
+- Make user-requested demo switches transactional: if a requested demo throws
+  during factory startup, cannot create render state, fails its first frame, or
+  returns after the startup budget, restore the previous active demo instead of
+  leaving the workspace stuck on the broken target.
 - Accept hyphenated scene aliases such as `sx-rigid-ipc-slide` in the Python
   runner validation path.
 - Add scene panels to `diff_drone_liftoff` and
