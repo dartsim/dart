@@ -4606,14 +4606,16 @@ void runVbdDeformableSolve(
       = config.useAvbdSelfContactNormalRows && selfContact != nullptr;
   const bool useAvbdSelfContactFrictionRows
       = useAvbdSelfContactRows && frictionCoeff > 0.0;
+  const bool hasUnsupportedAvbdFrictionSource
+      = frictionCoeff > 0.0
+        && ((contactPlanes != nullptr && !useAvbdFrictionRows)
+            || (selfContact != nullptr && !useAvbdSelfContactFrictionRows));
   const bool canUseAvbdMassSpringRows
       = wantsAvbdRows
         && (!config.useAvbdContactNormalRows || contactPlanes != nullptr)
         && (!config.useAvbdAttachmentRows || hasFixedNodes)
         && (!config.useAvbdFiniteStiffnessRows || !vbdScratch.springs.empty())
-        && vbdScratch.tets.empty()
-        && (frictionCoeff <= 0.0 || useAvbdFrictionRows
-            || useAvbdSelfContactFrictionRows)
+        && vbdScratch.tets.empty() && !hasUnsupportedAvbdFrictionSource
         && (selfContact == nullptr || useAvbdSelfContactRows)
         && config.workerThreads <= 1 && !options.useChebyshev
         && options.rayleighDamping <= 0.0;

@@ -541,13 +541,57 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsHardenTetrahedralMaterial)
 }
 
 //==============================================================================
+// A material friction coefficient is inert when no static-contact or
+// self-contact source is active. It should not force finite-stiffness-only AVBD
+// mass-spring scenes back to the legacy VBD path.
+TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsIgnoreUnusedFrictionCoefficient)
+{
+  const auto baseConfig = [] {
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 8;
+    cfg.useAvbdFiniteStiffnessRows = true;
+    cfg.avbdFiniteStiffnessStart = 20.0;
+    cfg.avbdBeta = 2000.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 500.0;
+    return cfg;
+  };
+  const auto run = [](sx::DeformableBodyOptions options,
+                      sx::comps::DeformableVbdConfig cfg) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    world.addDeformableBody("body", options);
+    enableVbdConfig(world, cfg);
+
+    compute::DeformableDynamicsStage stage;
+    stepOnce(world, stage);
+    return stage.getLastStats();
+  };
+
+  {
+    auto options = makeChainOptions(8, 0.5);
+    options.material.frictionCoefficient = 0.4;
+    const auto stats = run(options, baseConfig());
+    EXPECT_EQ(stats.vbdBodyCount, 1u);
+    EXPECT_GT(stats.vbdAvbdFiniteStiffnessRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdSelfContactNormalRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+  }
+}
+
+//==============================================================================
 // The current finite-stiffness AVBD World slices are intentionally narrow. The
 // mass-spring row path supports static contact/friction rows and explicit
 // self-contact row opt-ins, while the pure tet material row path can coexist
 // with the existing lagged VBD self-contact penalty. Mixed spring-plus-tet
-// topology, finite-stiffness-only friction scenes, Chebyshev, Rayleigh damping,
-// parallel execution, and unsupported requested row families must keep using
-// the existing VBD path and report no AVBD rows.
+// topology, Chebyshev, Rayleigh damping, parallel execution, and unsupported
+// requested row families must keep using the existing VBD path and report no
+// AVBD rows.
 TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
 {
   const auto baseConfig = [] {
@@ -576,12 +620,6 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
 
   {
     const auto stats = run(makeTetSpringOptions(1.0e5), baseConfig());
-    expectNoAvbdRows(stats);
-  }
-  {
-    auto options = makeChainOptions(8, 0.5);
-    options.material.frictionCoefficient = 0.4;
-    const auto stats = run(options, baseConfig());
     expectNoAvbdRows(stats);
   }
   {

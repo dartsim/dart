@@ -66,6 +66,10 @@ Paper audit:
     `vbdAvbdFiniteStiffnessTetRows` diagnostic counter, coexistence with the
     existing lagged VBD self-contact penalty, and regression coverage in
     `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial`.
+    Contact-free finite-stiffness mass-spring scenes now stay on the AVBD row
+    path when the material has a friction coefficient but no active contact or
+    self-contact friction source, with coverage in
+    `VbdWorldSolver.AvbdFiniteStiffnessRowsIgnoreUnusedFrictionCoefficient`.
   - The supported World mass-spring envelope now routes contact-normal,
     attachment, and finite-stiffness spring rows through one combined serial
     AVBD row solve, with regression coverage in
@@ -114,10 +118,9 @@ Paper audit:
     `VbdWorldSolver.AvbdContactAndSelfContactFrictionRowsCombine`.
   - Fallback coverage now guards the unsupported World envelopes:
     mixed spring-plus-tet topology, mass-spring self-contact without the
-    self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
-    Rayleigh damping, parallel settings, and unsupported requested row families
-    all keep using the existing VBD path without reporting partial AVBD row
-    counters.
+    self-contact AVBD flag, Chebyshev, Rayleigh damping, parallel settings, and
+    unsupported requested row families all keep using the existing VBD path
+    without reporting partial AVBD row counters.
   - Still missing full contact-manifold friction persistence, broader
     self-contact friction envelopes, full row-family generation, parallel
     dual/stiffness updates, and GPU parity.

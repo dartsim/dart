@@ -120,8 +120,11 @@ The first AVBD implementation slices add:
   `VbdFiniteStiffness.*` tests plus a narrow internal World VBD integration
   path for supported serial, frictionless pure-tet scenes, separate tet-row
   diagnostics, coexistence with the existing lagged VBD self-contact penalty,
-  and `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial`
-  coverage; and
+  `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial` coverage,
+  and
+  `VbdWorldSolver.AvbdFiniteStiffnessRowsIgnoreUnusedFrictionCoefficient`
+  coverage for contact-free finite-stiffness mass-spring scenes whose material
+  friction coefficient has no active contact or self-contact source; and
 - a combined serial mass-spring AVBD row solve for those contact-normal,
   attachment, and finite-stiffness spring rows, with
   `VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness`
@@ -160,10 +163,9 @@ The first AVBD implementation slices add:
   coverage for combined static-contact and self-contact friction row
   coexistence in one supported solve; broader envelopes are still missing; and
 - explicit World fallback coverage so unsupported mixed spring-plus-tet,
-  mass-spring self-contact without the self-contact AVBD flag,
-  finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
-  and unsupported-row requests keep using the existing VBD path without
-  reporting partial AVBD row counters.
+  mass-spring self-contact without the self-contact AVBD flag, Chebyshev,
+  Rayleigh-damped, parallel, and unsupported-row requests keep using the
+  existing VBD path without reporting partial AVBD row counters.
 
 Those are foundation pieces only. They are not a full World AVBD solver, not a
 full hard-contact/friction solver, and not CPU/GPU parity.
