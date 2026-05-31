@@ -1,5 +1,28 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: reusable rigid IPC fixture stage policy
+
+Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:
+
+- Added `applyRigidIpcFixtureStageOptions(...)` in the internal rigid IPC
+  fixture module. The helper applies parsed `dHat`, lagged-friction iteration
+  count, `epsv`/static-friction speed, and absolute velocity-convergence
+  tolerance to `RigidIpcContactStageOptions` while preserving caller-provided
+  options when fixture metadata is missing, invalid, or only relative.
+- Reused that helper in the runtime fixture replay solver-settings regression
+  instead of open-coding the metadata mapping in the test.
+- Added direct helper coverage proving exact fixture metadata is applied and
+  invalid/relative metadata leaves existing stage policy unchanged.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixture.AppliesFixtureMetadataToStageOptions:RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: rigid IPC fixture kinematic replay
 
 Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:

@@ -406,6 +406,49 @@ tol 1
   EXPECT_EQ(prescribedBody.mode, expio::RigidIpcBodyMode::Kinematic);
 }
 
+TEST(RigidIpcFixture, AppliesFixtureMetadataToStageOptions)
+{
+  expio::RigidIpcFixture fixture = loadComparisonScript(R"script(
+time 1 0.01
+shapes input 1
+mesh.obj 0 0 0 0 0 0 1 1 1
+dHat 0.02
+epsv 0.0003
+useAbsParameters
+fricIterAmt 4
+tol 1
+0.05
+)script");
+
+  sx::compute::RigidIpcContactStageOptions options;
+  options.maxIterations = 7u;
+  expio::applyRigidIpcFixtureStageOptions(fixture, options);
+
+  EXPECT_EQ(options.maxIterations, 7u);
+  EXPECT_DOUBLE_EQ(options.activationDistance, 0.02);
+  EXPECT_DOUBLE_EQ(options.staticFrictionSpeedBound, 0.0003);
+  EXPECT_EQ(options.frictionIterations, 4u);
+  EXPECT_DOUBLE_EQ(options.frictionConvergenceTolerance, 0.05);
+
+  fixture.barrierActivationDistance = -1.0;
+  fixture.staticFrictionSpeedBound = -1.0;
+  fixture.frictionIterations = -1;
+  fixture.velocityConvergenceTolerance = 0.25;
+  fixture.velocityConvergenceToleranceIsAbsolute = false;
+
+  sx::compute::RigidIpcContactStageOptions guardedOptions;
+  guardedOptions.activationDistance = 0.03;
+  guardedOptions.staticFrictionSpeedBound = 0.0007;
+  guardedOptions.frictionIterations = 3u;
+  guardedOptions.frictionConvergenceTolerance = 0.125;
+  expio::applyRigidIpcFixtureStageOptions(fixture, guardedOptions);
+
+  EXPECT_DOUBLE_EQ(guardedOptions.activationDistance, 0.03);
+  EXPECT_DOUBLE_EQ(guardedOptions.staticFrictionSpeedBound, 0.0007);
+  EXPECT_EQ(guardedOptions.frictionIterations, 3u);
+  EXPECT_DOUBLE_EQ(guardedOptions.frictionConvergenceTolerance, 0.125);
+}
+
 TEST(RigidIpcFixture, ParsesFrictionAndScalarFixedDofs)
 {
   const expio::RigidIpcFixture fixture = loadFixture(R"json(
@@ -976,13 +1019,10 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
     }
 
     sx::compute::RigidIpcContactStageOptions stageOptions;
-    stageOptions.activationDistance = *fixture.barrierActivationDistance;
-    stageOptions.frictionIterations
-        = static_cast<std::size_t>(*fixture.frictionIterations);
-    stageOptions.staticFrictionSpeedBound = *fixture.staticFrictionSpeedBound;
-    stageOptions.frictionConvergenceTolerance
-        = *fixture.velocityConvergenceTolerance;
+    stageOptions.maxIterations = 4u;
+    expio::applyRigidIpcFixtureStageOptions(fixture, stageOptions);
     sx::compute::RigidIpcContactStage ipcStage(stageOptions);
+    EXPECT_EQ(ipcStage.getMaxIterations(), 4u);
     EXPECT_DOUBLE_EQ(ipcStage.getActivationDistance(), activationDistance);
     EXPECT_EQ(
         ipcStage.getFrictionIterations(),

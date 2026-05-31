@@ -37,8 +37,10 @@
     - [x] Add the first explicit stage-policy bridge for parsed solver
           metadata: `RigidIpcContactStageOptions` can carry fixture/comparison
           `dHat`, `epsv`/static-friction speed, velocity tolerance, and
-          lagged-friction iteration settings into the opt-in runtime stage, with
-          a fixture replay regression for those settings.
+          lagged-friction iteration settings into the opt-in runtime stage.
+          The reusable internal `applyRigidIpcFixtureStageOptions(...)` bridge
+          applies only metadata with an exact runtime-stage meaning, and fixture
+          replay regressions cover those settings.
     - [x] Bridge parsed kinematic fixture bodies into runtime kinematic bodies.
           Fixture replay now calls `RigidBody::setKinematic(true)` for
           `type = kinematic` / prescribed-motion rows, and a replay regression
@@ -220,6 +222,9 @@
   - [x] Add the first explicit opt-in stage options for max iterations, barrier
         activation distance, lagged-friction iterations, static-friction speed,
         and friction convergence tolerance without exposing a solver registry.
+  - [x] Add an internal fixture-to-stage-options bridge for replay drivers so
+        parsed solver metadata has one owned path into the opt-in IPC stage
+        without creating a public registry.
   - [x] Bridge fixture-level kinematic body policy into the runtime body tags
         consumed by the opt-in IPC stage, preserving parsed prescribed-motion
         intent without adding a public solver registry.

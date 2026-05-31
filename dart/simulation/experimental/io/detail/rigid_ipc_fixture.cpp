@@ -33,6 +33,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/experimental/io/detail/rigid_ipc_fixture.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -2718,6 +2719,34 @@ RigidIpcFixture loadRigidIpcComparisonScript(
   RigidIpcFixture fixture = loadRigidIpcComparisonScript(input, options);
   fixture.sourceDirectory = path.parent_path();
   return fixture;
+}
+
+void applyRigidIpcFixtureStageOptions(
+    const RigidIpcFixture& fixture,
+    compute::RigidIpcContactStageOptions& options)
+{
+  if (fixture.barrierActivationDistance.has_value()
+      && std::isfinite(*fixture.barrierActivationDistance)
+      && *fixture.barrierActivationDistance > 0.0) {
+    options.activationDistance = *fixture.barrierActivationDistance;
+  }
+  if (fixture.frictionIterations.has_value()
+      && *fixture.frictionIterations >= 0) {
+    options.frictionIterations
+        = static_cast<std::size_t>(*fixture.frictionIterations);
+  }
+  if (fixture.staticFrictionSpeedBound.has_value()
+      && std::isfinite(*fixture.staticFrictionSpeedBound)
+      && *fixture.staticFrictionSpeedBound >= 0.0) {
+    options.staticFrictionSpeedBound = *fixture.staticFrictionSpeedBound;
+  }
+  if (fixture.velocityConvergenceTolerance.has_value()
+      && fixture.velocityConvergenceToleranceIsAbsolute.value_or(false)
+      && std::isfinite(*fixture.velocityConvergenceTolerance)
+      && *fixture.velocityConvergenceTolerance >= 0.0) {
+    options.frictionConvergenceTolerance
+        = *fixture.velocityConvergenceTolerance;
+  }
 }
 
 RigidIpcReplayState populateRigidIpcReplayWorld(

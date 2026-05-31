@@ -51,6 +51,10 @@ namespace dart::simulation::experimental {
 class World;
 } // namespace dart::simulation::experimental
 
+namespace dart::simulation::experimental::compute {
+struct RigidIpcContactStageOptions;
+} // namespace dart::simulation::experimental::compute
+
 namespace dart::simulation::experimental::io::detail {
 
 /// Diagnostic severity emitted while reading a reference rigid-contact fixture.
@@ -237,6 +241,16 @@ DART_EXPERIMENTAL_API RigidIpcFixture loadRigidIpcComparisonScript(
 DART_EXPERIMENTAL_API RigidIpcFixture loadRigidIpcComparisonScript(
     const std::filesystem::path& path,
     const RigidIpcFixtureLoadOptions& options = {});
+
+/// Apply fixture-level solver metadata to an opt-in rigid IPC contact stage
+/// options object.
+///
+/// This internal bridge preserves any caller-provided option when the fixture
+/// omits that field or records metadata that does not have an exact runtime
+/// stage meaning.
+DART_EXPERIMENTAL_API void applyRigidIpcFixtureStageOptions(
+    const RigidIpcFixture& fixture,
+    compute::RigidIpcContactStageOptions& options);
 
 /// Populate an experimental World with the currently supported fixture state.
 ///
