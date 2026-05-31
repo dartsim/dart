@@ -1099,6 +1099,24 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     a dartpy regression (a strip shoved along a rod slides far frictionless but is
     held back under friction, staying on the rod) and a `Deformable Friction on
 Capsule Rod (IPC)` py-demos scene.
+  - Strengthened the experimental deformable iterative solve's preconditioner
+    from diagonal (Jacobi) to **incomplete-Cholesky** (PLAN-081 M7). Stiff
+    barrier contact makes the projected-Newton Hessian ill-conditioned, where a
+    diagonal preconditioner leaves the conjugate gradient stalling against its
+    iteration cap and falling back to steepest descent; the incomplete-Cholesky
+    preconditioner (a sparse approximate factorization that drops fill, so the
+    solve still never fully factorizes and stays near O(nnz)) collapses the CG
+    iteration count so the iterative path carries stiff contact within the cap.
+    On a settling stiff FEM contact scene this cuts the iterative solver's
+    fallbacks below the direct solver's and reduces Newton iterations per step,
+    while remaining byte-compatible at the API level (still opt-in via
+    `useIterativeLinearSolver`). An incomplete-Cholesky breakdown that Eigen's
+    diagonal shifting cannot repair falls back to steepest descent, exactly as
+    the direct path does on an indefinite factorization. Adds a regression in
+    which a stiff FEM cube settles on a ground barrier through the iterative path
+    (never factorizing) with accepted CG steps dominating fallbacks and the same
+    equilibrium as the direct solver, plus a `cg_contact` py-demo of a stiff FEM
+    cube settling on a barrier via the incomplete-Cholesky CG solve.
   - Added an opt-in **iterative (conjugate-gradient) linear solve** for the
     experimental deformable projected-Newton step (PLAN-081 M7). When a body
     sets `DeformableMaterialProperties.useIterativeLinearSolver` (dartpy
