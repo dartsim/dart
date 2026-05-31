@@ -1,6 +1,6 @@
 # Resume: IPC Deformable Solver
 
-## Current State (2026-05-30) — PLAN-081 M1–M6 COMPLETE; M7 iterative-CG increment landing
+## Current State (2026-05-31) — PLAN-081 M1–M6 COMPLETE; M7 CG diagnostics in progress
 
 This session drove the experimental deformable solver from "mass-spring scaffold"
 to broad IPC paper-parity (Li et al. 2020). All work shipped as one-PR-per-slice
@@ -33,8 +33,8 @@ AI attribution). Net status by milestone:
   while tangential sliding + friction survive (the CCD limiter no longer scales the
   whole step). The "right" CCD fix (limit only the normal approach, keep fast-motion
   CCD safety) remains a documented higher-risk follow-up, cf. #2732.
-- **M7 scale + performance — four increments landed** (#2810/#2811/#2812 + the
-  public iterative-solve diagnostic). (1) Opt-in **iterative
+- **M7 scale + performance — four increments landed** (#2810/#2811/#2812/#2813)
+  and a CG diagnostic follow-up in progress. (1) Opt-in **iterative
   conjugate-gradient projected-Newton linear solve**
   (`DeformableMaterialProperties.useIterativeLinearSolver`, #2810): reuses the
   sparse SPD Hessian assembly but solves with CG instead of `SimplicialLDLT`, so it
@@ -48,10 +48,14 @@ AI attribution). Net status by milestone:
   **Chunky-3D scaling benchmark** (this PR): `BM_DeformableCube3d{Direct,Cg}Step`
   on a solid N^3 cube (wide Hessian bandwidth) makes the crossover measurable --
   direct 3D fill-in climbs super-linearly while IC-CG stays ~O(nnz); measured ~5x
-  faster CG at ~4k nodes (11.3 vs 2.3 s/step). A CUDA backend exists for PSD
-  projection + VBD (another track, #2781); on-device GPU assembly/solve, a truly
-  matrix-free Hessian-vector CG, an AMG preconditioner for the largest systems,
-  and the 688K-node Fig-22 run + Table-1 reference comparison remain.
+  faster CG at ~4k nodes (11.3 vs 2.3 s/step). (4) Public iterative-solve
+  diagnostics (#2813) expose whether a step used the CG path. The current
+  branch extends that profiling surface with CG iteration and residual counters
+  so benchmarks can distinguish path selection from solve effort. A CUDA backend
+  exists for PSD projection + VBD (another track, #2781); on-device GPU
+  assembly/solve, a truly matrix-free Hessian-vector CG, an AMG preconditioner
+  for the largest systems, and the 688K-node Fig-22 run + Table-1 reference
+  comparison remain.
 
 Session PR train (all merged to `main`): #2787 FEM keystone, #2788 FEM twist,
 #2789 FEM+ground, #2790 sphere barrier Hessian, #2791 box barrier, #2792/#2793
@@ -61,16 +65,18 @@ benchmark Newton-iters, #2800 `.obj` importer, #2802 `.seg`/`.pt` importers, #28
 capsule obstacle, #2805 adaptive stiffness, #2809 barrier-only obstacle (M5 done),
 #2810 iterative-CG solve (M7 increment 1), #2811 incomplete-Cholesky
 preconditioner (M7 increment 2), #2812 chunky-3D scaling benchmark (M7 increment
-3), and the public iterative-solve diagnostic (this PR, M7 increment 4). The IPC
+3), and #2813 public iterative-solve diagnostic (M7 increment 4). The IPC
 Deformable (sx) py-demos category
 now has ~21 scenes (latest: `ipc_deformable_cg_solver`, `ipc_deformable_cg_contact`).
 
 ### M7 Next (resume here)
 
 M1–M6 + M5 are all complete; **M7 (scale + performance) is the only remaining
-milestone.** Three increments landed (iterative CG solve #2810; incomplete-Cholesky
-preconditioner #2811; chunky-3D scaling benchmark, this PR). The remaining M7 work,
-roughly in increasing-risk order:
+milestone.** Four increments landed (iterative CG solve #2810;
+incomplete-Cholesky preconditioner #2811; chunky-3D scaling benchmark #2812;
+public iterative-solve diagnostic #2813). The current branch is a small
+profiling follow-up that adds CG iterations and residual estimates. The
+remaining M7 work, roughly in increasing-risk order:
 
 1. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
    (triplets → `SparseMatrix`) before the CG solve; a matrix-free Hessian-vector
@@ -250,32 +256,21 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-contact-distance-diagnostic` - SINGLE PR off main (the #2738-#2760
-stacked train is fully MERGED to main; per the standing directive all future IPC
-work is one PR, not a stacked train). Adds a CONTACT CLOSEST-APPROACH DIAGNOSTIC
-to DeformableSolverStats: `minActiveContactDistance` (smallest point-triangle /
-edge-edge distance among the active self-contact barrier set at the converged
-iterate -- the IPC intersection-free "minimum distance" statistic, Fig 23 /
-Table 1) + `convergedActiveContactCount` (that active set's size at termination,
-a single-iteration snapshot distinct from the cumulative
-`selfContactBarrierActiveContacts`). New free fn
-`accumulateContactDistanceDiagnostics` recomputes each barrier candidate's
-squared distance at scratch.next, counts those < d_hat^2, tracks the min;
-called once after the outer loop next to `accumulateFrictionDiagnostics`,
-reusing `contactScratch.barrierCandidates` (terminal-rebuilt when capped,
-last-in-loop when converged-early -- same staleness friction accepts).
-Cross-body fold: sum counts, min of mins (gated on the running count so the
-first contacting body seeds the min, robust to a 0.0 distance). BEHAVIOR-
-PRESERVING (diagnostic only). Regressions SelfContactBarrierReportsConverged
-ContactDistance (positive approach < d_hat=2e-2, count <= cumulative) +
-...NoConvergedContactDistanceFarApart (both 0). Bench counters
-converged_active_contacts / min_active_contact_distance on
-BM_DeformableSelfContactBarrierStage (smoke: count 15/120/480 vs cumulative
-255/2.04k/8.16k, min dist 0.0168 < 0.02 d_hat). 6/6 self-contact tests pass.
-NEXT (user directive 2026-05-29): now #2762 made py-demos the first-class
-viewer, MIGRATE all IPC examples/experimentals (paper figures) into the
-consolidated py-demos standalone in proper categories, scalably -- then continue
-the remaining Phase 2/3 items.
+`feature/ipc-deformable-cg-iteration-diagnostics` - SINGLE PR off current
+`main` after #2810/#2811/#2812/#2813 were all squash-merged. The four older
+`feature/ipc-deformable-*` branch commits are patch-equivalent to current
+`main` (`git cherry -v main <branch>` reports `-` for each), but their local and
+remote refs still exist and should not be deleted without explicit approval.
+
+This branch is behavior-preserving M7 profiling work. It extends the public
+deformable solver diagnostics beyond `projectedNewtonIterativeSolves` with
+`projectedNewtonIterativeIterations` and `projectedNewtonIterativeMaxError`
+(dartpy:
+`projected_newton_iterative_iterations` /
+`projected_newton_iterative_max_error`) so CG-backed Newton steps report solve
+effort and residual estimates, not just path selection. The FEM-bar and chunky
+3D cube CG benchmarks emit matching `cg_iters_per_step` and `cg_max_error`
+counters toward the Fig. 23 / Table 1 profiling surface.
 
 Prior branch `feature/ipc-gpu-psd-perf-gate` - stacked on
 `feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +

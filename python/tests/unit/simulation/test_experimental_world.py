@@ -2595,6 +2595,8 @@ def test_experimental_world_exposes_deformable_solver_diagnostics():
     # This body uses the default direct (sparse Cholesky) solve, so the iterative
     # (conjugate-gradient) path is never taken.
     assert after.projected_newton_iterative_solves == 0
+    assert after.projected_newton_iterative_iterations == 0
+    assert after.projected_newton_iterative_max_error == 0.0
     # No contacts in this free-hanging single tet.
     assert after.self_contact_barrier_active_contacts == 0
     assert after.converged_active_contact_count == 0
@@ -2628,12 +2630,23 @@ def test_experimental_world_iterative_solver_diagnostic():
     # The iterative-solve count surfaces through the public diagnostics, so a
     # caller can observe which linear-solve path the projected-Newton step took.
     total_iterative_solves = 0
+    total_iterative_iterations = 0
+    max_iterative_error = 0.0
     for _ in range(8):
         world.step()
-        total_iterative_solves += (
-            world.last_deformable_solver_diagnostics.projected_newton_iterative_solves
+        diagnostics = world.last_deformable_solver_diagnostics
+        total_iterative_solves += diagnostics.projected_newton_iterative_solves
+        total_iterative_iterations += (
+            diagnostics.projected_newton_iterative_iterations
+        )
+        max_iterative_error = max(
+            max_iterative_error,
+            diagnostics.projected_newton_iterative_max_error,
         )
     assert total_iterative_solves > 0
+    assert total_iterative_iterations >= 0
+    assert math.isfinite(max_iterative_error)
+    assert max_iterative_error >= 0.0
 
 
 def test_experimental_deformable_body_boundary_conditions_python_api():

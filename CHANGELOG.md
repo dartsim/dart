@@ -1109,6 +1109,17 @@ Capsule Rod (IPC)` py-demos scene.
     which solve path a body uses (zero means every solve was direct). Adds C++
     and Python regressions that the default direct solve reports zero while an
     opt-in iterative body reports a nonzero count.
+  - Extended the public deformable iterative-solve diagnostics with CG effort
+    and residual counters (PLAN-081 M7). `DeformableSolverDiagnostics` (dartpy
+    `last_deformable_solver_diagnostics`) now also carries
+    `projectedNewtonIterativeIterations` /
+    `projected_newton_iterative_iterations` and
+    `projectedNewtonIterativeMaxError` /
+    `projected_newton_iterative_max_error`, so benchmark and tuning code can
+    distinguish "CG path was used" from "CG converged cheaply" without changing
+    solver trajectories. The FEM-bar and chunky 3D cube CG benchmarks now emit
+    `cg_iters_per_step` and `cg_max_error` counters toward the PLAN-081
+    Fig. 23 / Table 1 profiling surface.
   - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
     experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
     and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra

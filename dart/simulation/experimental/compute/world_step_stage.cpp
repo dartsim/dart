@@ -4967,6 +4967,12 @@ bool computeProjectedNewtonDirection(
       return false;
     }
     ++stats.projectedNewtonIterativeSolves;
+    stats.projectedNewtonIterativeIterations
+        += static_cast<std::size_t>(std::max<Eigen::Index>(0, cg.iterations()));
+    if (std::isfinite(cg.error())) {
+      stats.projectedNewtonIterativeMaxError
+          = std::max(stats.projectedNewtonIterativeMaxError, cg.error());
+    }
     // The cached direct-solver symbolic pattern was not refreshed this step, so
     // invalidate it: a later step that drops back to the direct path must
     // re-analyze rather than trust a stale ordering.

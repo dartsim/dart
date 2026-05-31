@@ -97,6 +97,11 @@ struct DeformableSolverDiagnostics
   /// ``DeformableMaterialProperties.useIterativeLinearSolver``. Zero means
   /// every solve used the direct factorization.
   std::size_t projectedNewtonIterativeSolves = 0;
+  /// Total conjugate-gradient iterations consumed by those iterative linear
+  /// solves, and the largest Eigen-reported relative residual estimate among
+  /// them. Both are zero when every solve used the direct factorization.
+  std::size_t projectedNewtonIterativeIterations = 0;
+  double projectedNewtonIterativeMaxError = 0.0;
   /// Self-contact barrier active contacts summed over every solver iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
   /// Coulomb friction energy dissipated at the converged iterate.

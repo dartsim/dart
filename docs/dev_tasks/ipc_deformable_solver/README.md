@@ -334,27 +334,24 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with non-box/deforming/moving rigid surface contact
-   candidates, broader solver-wired CCD coverage, and stronger spatial
-   acceleration for larger meshes. The current primitive kernels, candidate
-   sets, analytic
-   Hessians, clamped-log barrier kernels, tangent stencils, motion-aware swept
-   candidate culling, reusable candidate-output and sweep-item buffers,
-   per-body surface-contact CCD limiter, inter-body surface CCD limiter,
-   static-ground-barrier CCD limiter, and static box surface CCD limiter are
-   internal scaffolding only and are not yet full IPC contact.
-2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
-   scenes: broader scene asset loading, BE/NM state, output diagnostics
-   compatibility decisions, and more contact-free mesh replays. The
-   mesh/material-state and scene/boundary sub-slices are scaffolding only and
-   still use the existing point-mass/spring stepping path.
-3. Use the scene corpus manifest to select the first tutorial and paper-facing
-   scenes, then replace planned artifacts with implemented DART commands as
-   each scene lands.
-4. Add focused unit tests and benchmarks for each landed slice before promoting
-   scene-level examples.
-5. For every GUI-facing scene, attach long-horizon headless Filament evidence
-   to the PR rather than committing transient screenshots or videos.
+1. Continue PLAN-081 M7 scale/performance work from the merged
+   `feature/ipc-deformable-*` PR train (#2810-#2813). The immediate local
+   continuation is the CG-iteration diagnostic slice: report successful
+   iterative linear-solve iterations and residual estimates through the public
+   deformable solver diagnostics and the M7 CG benchmarks.
+2. Next high-impact implementation slice: truly matrix-free CG, replacing the
+   current triplets -> `SparseMatrix` assembly for the iterative path with
+   per-element Hessian-vector products and scatter. This is the memory step
+   needed before Fig. 22-scale meshes.
+3. Follow-on performance slices: AMG / multigrid preconditioning for the
+   largest systems, on-device GPU assembly + solve beyond the existing PSD
+   projection backend, and the Fig. 22 / Table 1 reference-comparison runs.
+4. Build the profiling-grade Fig. 23 statistics surface as the solver scales:
+   per-scene avg/max contacts, Newton iterations, CG iterations/residuals,
+   peak memory, seconds per step, and reference CPU comparison.
+5. Use the scene corpus manifest to select paper-facing scenes only when their
+   prerequisite kernels are present, and attach long-horizon headless Filament
+   evidence for every GUI-facing scene rather than committing transient media.
 
 ## Verification
 

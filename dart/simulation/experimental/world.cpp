@@ -137,6 +137,10 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
   diagnostics.projectedNewtonFallbacks = stats.projectedNewtonFallbacks;
   diagnostics.projectedNewtonIterativeSolves
       = stats.projectedNewtonIterativeSolves;
+  diagnostics.projectedNewtonIterativeIterations
+      = stats.projectedNewtonIterativeIterations;
+  diagnostics.projectedNewtonIterativeMaxError
+      = stats.projectedNewtonIterativeMaxError;
   diagnostics.selfContactBarrierActiveContacts
       = stats.selfContactBarrierActiveContacts;
   diagnostics.frictionDissipation = stats.frictionDissipation;

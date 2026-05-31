@@ -41,12 +41,15 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <numbers>
 #include <sstream>
 #include <string>
 #include <string_view>
+
+#include <cmath>
 
 namespace sx = dart::simulation::experimental;
 namespace compute = dart::simulation::experimental::compute;
@@ -859,12 +862,20 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
 // The public solver diagnostics expose which linear-solve path each Newton
 // iteration took: the default direct (sparse Cholesky) solve never reports an
 // iterative solve, while a body opting in to the iterative
-// (incomplete-Cholesky-preconditioned CG) solve surfaces a nonzero count. This
-// is the public-API mirror of the internal projectedNewtonIterativeSolves stat,
-// so Python callers can observe and tune the solver path.
+// (incomplete-Cholesky-preconditioned CG) solve surfaces a nonzero solve count,
+// CG iteration count, and finite residual estimate. These are the public-API
+// mirrors of the internal iterative-solver stats, so Python callers can observe
+// and tune the solver path.
 TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
 {
-  const auto totalIterativeSolves = [](bool iterative) {
+  struct IterativeDiagnostics
+  {
+    std::size_t solves = 0;
+    std::size_t iterations = 0;
+    double maxError = 0.0;
+  };
+
+  const auto run = [](bool iterative) {
     sx::World world;
     world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
     world.setTimeStep(0.01);
@@ -872,20 +883,30 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
     options.material.useIterativeLinearSolver = iterative;
     world.addDeformableBody("fem", options);
 
-    std::size_t total = 0;
+    IterativeDiagnostics total;
     for (int i = 0; i < 8; ++i) {
       world.step(1);
-      total += world.getLastDeformableSolverDiagnostics()
-                   .projectedNewtonIterativeSolves;
+      const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+      total.solves += diagnostics.projectedNewtonIterativeSolves;
+      total.iterations += diagnostics.projectedNewtonIterativeIterations;
+      total.maxError = std::max(
+          total.maxError, diagnostics.projectedNewtonIterativeMaxError);
     }
     return total;
   };
 
+  const auto direct = run(false);
+  const auto iterative = run(true);
+
   // The default direct solve never takes the iterative path...
-  EXPECT_EQ(totalIterativeSolves(false), 0u);
-  // ...while the opt-in iterative solve surfaces through the public
-  // diagnostics.
-  EXPECT_GT(totalIterativeSolves(true), 0u);
+  EXPECT_EQ(direct.solves, 0u);
+  EXPECT_EQ(direct.iterations, 0u);
+  EXPECT_EQ(direct.maxError, 0.0);
+  // ...while the opt-in iterative solve surfaces through the public diagnostics
+  // with CG effort and a finite residual estimate.
+  EXPECT_GT(iterative.solves, 0u);
+  EXPECT_TRUE(std::isfinite(iterative.maxError));
+  EXPECT_GE(iterative.maxError, 0.0);
 }
 
 //==============================================================================
@@ -3763,10 +3784,12 @@ TEST(DeformableBody, IterativeSolverMatchesDirectOnChunky3dMesh)
     pipeline.addStage(stage);
 
     std::size_t cgSolves = 0;
+    std::size_t cgIterations = 0;
     std::size_t numericFactorizations = 0;
     for (int i = 0; i < 80; ++i) {
       world.step(executor, pipeline);
       cgSolves += stage.getLastStats().projectedNewtonIterativeSolves;
+      cgIterations += stage.getLastStats().projectedNewtonIterativeIterations;
       numericFactorizations
           += stage.getLastStats().projectedNewtonNumericFactorizations;
     }
@@ -3774,16 +3797,19 @@ TEST(DeformableBody, IterativeSolverMatchesDirectOnChunky3dMesh)
     for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
       positions.push_back(body.getPosition(i));
     }
-    return std::make_tuple(positions, cgSolves, numericFactorizations);
+    return std::make_tuple(
+        positions, cgSolves, cgIterations, numericFactorizations);
   };
 
-  const auto [directPos, directCg, directFact] = runCube(false);
-  const auto [iterPos, iterCg, iterFact] = runCube(true);
+  const auto [directPos, directCg, directCgIters, directFact] = runCube(false);
+  const auto [iterPos, iterCg, iterCgIters, iterFact] = runCube(true);
 
   // Mutually exclusive solve paths, as on the smaller meshes.
   EXPECT_EQ(directCg, 0u);
+  EXPECT_EQ(directCgIters, 0u);
   EXPECT_GT(directFact, 0u);
   EXPECT_GT(iterCg, 0u);
+  EXPECT_GT(iterCgIters, 0u);
   EXPECT_EQ(iterFact, 0u);
 
   // Same sagged equilibrium on the wide-bandwidth 3D mesh.

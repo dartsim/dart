@@ -136,6 +136,13 @@ struct DeformableSolverStats
   // factorizes, so it scales to far larger meshes; a nonzero value here with
   // zero numeric factorizations means the whole solve ran iteratively.
   std::size_t projectedNewtonIterativeSolves = 0;
+  // Total conjugate-gradient iterations consumed by successful iterative
+  // projected-Newton linear solves. This is the solve-effort axis for the M7
+  // scaling benchmarks; zero when every Newton step used the direct solver.
+  std::size_t projectedNewtonIterativeIterations = 0;
+  // Maximum Eigen-reported relative residual estimate across successful
+  // iterative projected-Newton linear solves in this step.
+  double projectedNewtonIterativeMaxError = 0.0;
   // Convergence diagnostic: the largest L2 gradient norm at solve termination
   // across the step's deformable bodies (the projected-Newton residual). Near
   // the gradient tolerance means the solve converged; a large value means a

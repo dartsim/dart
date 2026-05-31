@@ -1646,6 +1646,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "projected_newton_iterative_solves",
           &sim::DeformableSolverDiagnostics::projectedNewtonIterativeSolves)
       .def_ro(
+          "projected_newton_iterative_iterations",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeIterations)
+      .def_ro(
+          "projected_newton_iterative_max_error",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeMaxError)
+      .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
       .def_ro(

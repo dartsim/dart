@@ -256,6 +256,13 @@ added. Guarded by a regression that the chunky 3D cube sags to the same
 equilibrium under both solvers. This is the first concrete, measured rung of the
 Fig-23 / Table-1 per-step-scaling axis.
 
+**Diagnostic follow-up in progress:** the iterative solver's public diagnostics
+are being extended beyond the CG solve count with total CG iterations and the
+maximum Eigen-reported residual estimate for successful iterative Newton linear
+solves. The FEM-bar and chunky 3D cube CG benchmarks report the same
+`cg_iters_per_step` and `cg_max_error` counters, giving the M7 profiling surface
+an honest solve-effort axis before matrix-free assembly, AMG, or GPU solve work.
+
 Remaining M7 work: a truly matrix-free Hessian-vector CG (skip the sparse
 assembly entirely), an AMG / multigrid preconditioner for the largest systems,
 on-device GPU assembly + solve beyond the current PSD offload, the 688K-node

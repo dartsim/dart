@@ -1101,10 +1101,17 @@ void BM_DeformableCgBarStep(benchmark::State& state)
       cellsX, /*useFixedCorotational=*/false, /*useIterativeSolver=*/true);
 
   double totalNewtonIterations = 0.0;
+  double totalCgIterations = 0.0;
+  double maxCgError = 0.0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    totalCgIterations
+        += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
+    maxCgError
+        = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1115,6 +1122,9 @@ void BM_DeformableCgBarStep(benchmark::State& state)
   state.counters["contact_constraints"] = 0.0;
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["cg_iters_per_step"]
+      = totalCgIterations / static_cast<double>(state.iterations());
+  state.counters["cg_max_error"] = maxCgError;
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1160,10 +1170,17 @@ void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
   DeformableFemCubeWorld fixture(cellsPerSide, useIterativeSolver);
 
   double totalNewtonIterations = 0.0;
+  double totalCgIterations = 0.0;
+  double maxCgError = 0.0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    totalCgIterations
+        += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
+    maxCgError
+        = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1174,6 +1191,9 @@ void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
   state.counters["contact_constraints"] = 0.0;
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["cg_iters_per_step"]
+      = totalCgIterations / static_cast<double>(state.iterations());
+  state.counters["cg_max_error"] = maxCgError;
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
