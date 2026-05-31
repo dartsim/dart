@@ -670,6 +670,19 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       inputSource.find("isSceneMouseInputCapturedByUi"), std::string::npos);
   EXPECT_NE(inputSource.find("io.WantCaptureMouse"), std::string::npos);
   EXPECT_NE(
+      inputSource.find("ImGuiBackendFlags_HasMouseCursors"), std::string::npos);
+  EXPECT_NE(
+      inputSource.find("createStandardCursor(GLFW_HRESIZE_CURSOR)"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("createStandardCursor(GLFW_VRESIZE_CURSOR)"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("glfwSetCursor(window, cursor)"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("updateImGuiMouseCursor(window, imguiIo)"),
+      std::string::npos);
+  EXPECT_NE(
       frameViewportSource.find(
           "isSceneMouseInputCapturedByUi(showUi, imguiIo)"),
       std::string::npos);
@@ -5653,6 +5666,9 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_NE(
       nativeWindowSource.find("glfwGetWindowContentScale"), std::string::npos);
   EXPECT_NE(nativeWindowSource.find("glfwSetWindowSize"), std::string::npos);
+  EXPECT_NE(
+      nativeWindowSource.find("destroyImGuiMouseCursors(mWindow)"),
+      std::string::npos);
   EXPECT_NE(
       nativeWindowSource.find("guiScale.effectiveScale"), std::string::npos);
   EXPECT_NE(

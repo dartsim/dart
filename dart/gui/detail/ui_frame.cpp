@@ -583,6 +583,7 @@ void updateFrameUi(
     drawPerfHud(perfHud, profile, backendName);
   }
   ImGui::Render();
+  updateImGuiMouseCursor(window, imguiIo);
   updateImGuiOverlay(
       engine,
       imguiOverlay,
