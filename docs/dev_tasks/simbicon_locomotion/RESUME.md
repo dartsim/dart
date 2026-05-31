@@ -16,11 +16,11 @@ up; this folder captures the diagnosis so the lateral-balance work can resume.
 
 ## Immediate Next Step
 
-Reproduce the duo failure and characterize it: run the long-horizon trace
-harness in `01-diagnosis.md` for `g1` and `atlas` (≥3000 steps), then for the
-duo, and confirm whether the lateral topple is per-robot or an interaction in
-the shared world. Do **not** trust a short headless render — it looks upright
-well before the topple.
+Reproduce the duo failure and characterize it: run the long-horizon
+single-robot harness in `01-diagnosis.md` for `g1` and `atlas` (≥3000 steps),
+then run the `simbicon_duo_trace.py` harness from the same file. Confirm whether
+the lateral topple is per-robot or an interaction in the shared world. Do
+**not** trust a short headless render — it looks upright well before the topple.
 
 ## Context That Would Be Lost
 
@@ -48,6 +48,8 @@ pixi run build
 # Verify current behavior with the fall-step harness (see 01-diagnosis.md):
 #   PYTHONPATH="build/default/cpp/Release/python:python" \
 #     pixi run python /tmp/simbicon_param_sweep.py g1 height_kp 2 3000
+#   PYTHONPATH="build/default/cpp/Release/python:python" \
+#     pixi run python /tmp/simbicon_duo_trace.py 3000
 git status && git log -3 --oneline
 ```
 

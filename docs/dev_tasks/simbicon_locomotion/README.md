@@ -43,10 +43,10 @@ indefinitely under the shared SIMBICON controller — including together in the
 
 ## Immediate Next Steps
 
-1. Reproduce the duo failure with the long-horizon trace harness
-   (`01-diagnosis.md` has the exact script) and determine whether the two robots
-   fail independently or interact (collision/contact coupling in the shared
-   world).
+1. Reproduce the duo failure with the long-horizon trace harnesses
+   (`01-diagnosis.md` has exact single-robot and duo scripts) and determine
+   whether the two robots fail independently or interact (collision/contact
+   coupling in the shared world).
 2. Attack lateral balance structurally rather than by gain tuning — candidate
    approaches are enumerated in `01-diagnosis.md` ("Restart / next-attempt
    options").

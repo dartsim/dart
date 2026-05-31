@@ -130,6 +130,75 @@ for v in VALUES:
     run(v)
 ```
 
+Duo fall trace — `simbicon_duo_trace.py [steps]` (instantiates the same shared
+Atlas + G1 world as `simbicon_duo`, with Atlas at `x=-0.8` and G1 at `x=0.8`):
+
+```python
+import sys
+import numpy as np
+
+sys.path.insert(0, "python")
+sys.path.insert(0, "build/default/cpp/Release/python")
+
+from examples.demos.scenes._simbicon_robots import (
+    build_simbicon_setup, load_atlas_skeleton, load_g1_skeleton,
+    make_atlas_config, make_g1_config,
+)
+
+STEPS = int(sys.argv[1]) if len(sys.argv) > 1 else 3000
+world, controllers, pre_step = build_simbicon_setup([
+    (load_atlas_skeleton, make_atlas_config(), -0.8),
+    (load_g1_skeleton, make_g1_config(), 0.8),
+])
+
+def pelvis_xyz(ctl):
+    return np.asarray(ctl._pelvis.get_world_transform().matrix())[:3, 3]
+
+starts = {ctl.cfg.name: pelvis_xyz(ctl).copy() for ctl in controllers}
+fell = {ctl.cfg.name: None for ctl in controllers}
+
+for i in range(STEPS):
+    pre_step()
+    world.step()
+    if i % 100 == 0:
+        parts = []
+        for ctl in controllers:
+            pos = pelvis_xyz(ctl)
+            _d_sag, _v_sag, d_cor, v_cor = ctl._balance_d_v()
+            parts.append(
+                f"{ctl.cfg.name}: z={pos[2]:+.3f} dx={pos[0]-starts[ctl.cfg.name][0]:+.3f} "
+                f"d_cor={d_cor:+.3f} v_cor={v_cor:+.3f}"
+            )
+        print(f"step {i}: " + " | ".join(parts), flush=True)
+    for ctl in controllers:
+        if fell[ctl.cfg.name] is not None:
+            continue
+        pos = pelvis_xyz(ctl)
+        if not np.isfinite(pos[2]) or pos[2] < ctl.cfg.min_pelvis_height:
+            fell[ctl.cfg.name] = i
+            print(
+                f"{ctl.cfg.name} FELL@{i}: dx={pos[0]-starts[ctl.cfg.name][0]:+.3f} "
+                f"z={pos[2]:+.3f}",
+                flush=True,
+            )
+    if all(step is not None for step in fell.values()):
+        break
+
+for ctl in controllers:
+    if fell[ctl.cfg.name] is None:
+        pos = pelvis_xyz(ctl)
+        print(
+            f"{ctl.cfg.name} SURVIVED({STEPS}): "
+            f"dx={pos[0]-starts[ctl.cfg.name][0]:+.3f} z={pos[2]:+.3f}",
+            flush=True,
+        )
+```
+
+Use the duo trace after the single-robot `atlas`/`g1` runs. If the duo diverges
+earlier than the matching single-robot runs, repeat it with larger offsets
+(e.g., `-2.0` / `2.0`) to separate controller instability from shared-world
+contact/solver coupling.
+
 Failure trace — `simbicon_trace.py <atlas|g1> [steps] [torso_kd]` (prints
 state/lean/COM-offset/velocity/heights every 100 steps until it falls). Same
 imports/preamble as above; per step, sample `ctl._pelvis_angle(sagittal=...)`,
