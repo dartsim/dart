@@ -1,14 +1,15 @@
 # DART Python Examples
 
 Per PLAN-103, Python is DART's primary, growing example surface. The consolidated
-home is the headless `dart-demos` Python app: one runner, one registry, many
-scenes — see [`demos/README.md`](demos/README.md). C++ `dart-demos`
+home is the `dart-demos` Python app: one runner, one registry, many scenes
+hosted by the shared Filament viewer — see [`demos/README.md`](demos/README.md).
+C++ `dart-demos`
 (PLAN-102) is frozen.
 
 ## Layout
 
-- [`demos/`](demos/) — the headless scene-registry runner (`dart-demos`
-  Python) and its scene modules; this is where new example content lands.
+- [`demos/`](demos/) — the scene-registry runner (`dart-demos` Python) and its
+  scene modules; this is where new example content lands.
 - A notebook gallery for Colab (PLAN-012) will live in `python/tutorials/` and
   import the scene modules from `demos/` (single source).
 
@@ -19,13 +20,14 @@ pixi run py-demos                                # run the first scene
 pixi run py-demos -- --scene sx_articulated      # select a scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle every scene and exit
 pixi run py-demos -- --list                      # print the catalog
+pixi run py-demo-capture -- --scene sx_articulated --show-ui --video
 ```
 
 Without pixi, from the repo root:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:python \
-    python -m examples.demos --scene hello_world --frames 5
+    .pixi/envs/default/bin/python -m examples.demos --scene hello_world --frames 5
 ```
 
 ## Add a scene
@@ -36,6 +38,9 @@ are required.
 
 ## GUI and interactive viewer
 
-`dartpy` exposes only headless GUI utilities (`dartpy.gui` — renderable
-descriptors). There is no interactive viewer binding by design (PLAN-103); use
-the C++ `dartsim` editor (PLAN-101) for interactive scene authoring.
+`dartpy.gui.run_demos` opens the same Filament multi-scene viewer used by C++
+`dart-demos`. Scene modules can attach custom `ScenePanel` callbacks for
+per-example controls and diagnostics; the runner renders them through DART's
+renderer-neutral `PanelBuilder`. Use `--headless` for deterministic
+screenshot/frame capture and the C++ `dartsim` editor (PLAN-101) for scene
+authoring.

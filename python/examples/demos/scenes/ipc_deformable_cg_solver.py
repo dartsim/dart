@@ -16,10 +16,13 @@ DART-native FEM/scale showcase -- not a faithful IPC paper-figure reproduction
 
 from __future__ import annotations
 
+from collections import deque
+
 import dartpy.simulation_experimental as sx
+import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
 def build() -> SceneSetup:
@@ -50,9 +53,52 @@ def build() -> SceneSetup:
     bridge = IpcDeformableBridge(world, name="ipc_deformable_cg_solver")
     bridge.add_deformable_visual(body, name="fem_cg_bar", edges=edges)
 
+    initial_positions = np.asarray(
+        [body.node_position(i) for i in range(int(body.node_count))], dtype=float
+    )
+    initial_tip_nodes = (
+        initial_positions[:, 0] >= np.max(initial_positions[:, 0]) - 1e-9
+    )
+    initial_tip_height = float(
+        np.mean(initial_positions[initial_tip_nodes, 2])
+    )
+    tip_drop_history = deque(maxlen=120)
+    span_z_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("linear solve: iterative CG")
+        builder.text("scenario: large FEM cantilever")
+        if positions.size:
+            tip_nodes = positions[:, 0] >= np.max(positions[:, 0]) - 1e-9
+            tip_height = float(np.mean(positions[tip_nodes, 2]))
+            tip_drop = initial_tip_height - tip_height
+            span = np.max(positions, axis=0) - np.min(positions, axis=0)
+            tip_drop_history.append(tip_drop)
+            span_z_history.append(float(span[2]))
+            builder.text(f"tip drop: {tip_drop:.4f} m")
+            builder.text(
+                f"span xyz: {span[0]:.3f} x {span[1]:.3f} x {span[2]:.3f} m"
+            )
+        diagnostics = world.last_deformable_solver_diagnostics
+        builder.text(
+            f"solver iters: {diagnostics.solver_iterations} | "
+            f"line search: {diagnostics.line_search_trials}"
+        )
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if tip_drop_history:
+            builder.separator()
+            builder.plot_lines("Tip drop", list(tip_drop_history))
+            builder.plot_lines("Span z", list(span_z_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC FEM CG Solver", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

@@ -157,7 +157,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_loop_closure",
     title="Loop Closure (sx)",
-    category="Experimental",
+    category="Variational Integrators (sx)",
     summary="A holonomic distance loop holds under the VI while the arm swings.",
     build=build,
 )

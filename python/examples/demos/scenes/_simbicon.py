@@ -307,6 +307,22 @@ class SimbiconController:
         z = self._pelvis_world_z()
         return self.cfg.min_pelvis_height <= z <= self.cfg.max_pelvis_height
 
+    def diagnostics(self) -> dict[str, float | int | bool | str]:
+        """Return live controller state for demo UI panels."""
+        d_sag, v_sag, d_cor, v_cor = self._balance_d_v()
+        return {
+            "name": self.cfg.name,
+            "state": self._state,
+            "state_time": self._state_time,
+            "swing": "right" if self._swing_is_right() else "left",
+            "pelvis_height": self._pelvis_world_z(),
+            "balance_sagittal": d_sag,
+            "balance_sagittal_velocity": v_sag,
+            "balance_coronal": d_cor,
+            "balance_coronal_velocity": v_cor,
+            "control_enabled": self._allowing_control(),
+        }
+
     def pre_step(self) -> None:
         dt = self.world.get_time_step()
         self._maybe_advance_state(dt)

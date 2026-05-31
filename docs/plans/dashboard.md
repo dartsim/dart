@@ -527,3 +527,26 @@ its own line so status updates remain git-history friendly.
   smoothness/accuracy contract, finite-difference gradient agreement, one
   reproduced Dojo example packet, benchmark/profiling JSON, and proof that no
   Dojo.jl dependency or solver/cache/backend type leaks into the public surface.
+
+### PLAN-120: Inverse Kinematics And Motion Synthesis
+
+- Owner doc:
+  [`120-inverse-kinematics-and-motion.md`](120-inverse-kinematics-and-motion.md)
+- Status: Proposed
+- Horizon: Later
+- Dimension: Algorithm extensibility
+- Next step: Run the Phase 0 design inventory before implementation: map
+  classic DART `InverseKinematics`/`WholeBodyIK`/`CompositeIK`/`IKFast` behavior
+  to experimental `World` concepts; define the shared IK benchmark scene set;
+  draft `docs/design/inverse_kinematics_motion.md`; and decide which pose,
+  motion-level, and `auto` selection APIs can wait on existing experimental
+  state-space, kinematics-only, rollout, collision-query, and model-loading
+  seams.
+- Gate: PLAN-120 is not implementation-ready until the design inventory proves
+  manifold-correct state-space operations for mixed joint spaces, carries
+  forward or intentionally retires each DART 6 whole-body IK feature, ranks
+  Jacobian/analytical/optimization/heuristic/statistical/learned proposal
+  families against shared scenes, defines long-horizon motion IK evidence that
+  prevents per-frame discontinuities, singularity stalls, and local-minimum
+  traps from being hidden, and specifies deterministic diagnostics for the
+  `auto` policy.

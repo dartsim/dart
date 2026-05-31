@@ -53,7 +53,7 @@ def _make_terrain() -> "dart.SimpleFrame":
     y_stride = _Y_RES - 1 if _Y_RES > 1 else 1
     shape.set_scale(np.array([_X_SIZE / x_stride, _Y_SIZE / y_stride, 1.0]))
 
-    frame = dart.SimpleFrame(dart.Frame.World(), "heightmap_terrain")
+    frame = dart.SimpleFrame(dart.Frame.world(), "heightmap_terrain")
     frame.set_shape(shape)
     visual = frame.create_visual_aspect()
     visual.set_rgba(np.array([0.24, 0.58, 0.88, 1.0]))

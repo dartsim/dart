@@ -53,6 +53,7 @@ bool renderBuiltInStatusPanel(
     double simulationTime,
     std::size_t contactCount,
     const std::string& selectedLabel,
+    const std::string& interactionStatus,
     bool showIkHint,
     bool& orbitLight,
     DebugDrawOptions& staticDebugOptions,

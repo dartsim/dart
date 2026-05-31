@@ -10,13 +10,14 @@ window before the user starts dragging it.
 
 from __future__ import annotations
 
+from collections import deque
 import math
 
 import numpy as np
 
 import dartpy as dart
 
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _ROBOT_URI = "dart://sample/urdf/KR5/KR5 sixx R650.urdf"
 _GROUND_URI = "dart://sample/urdf/KR5/ground.urdf"
@@ -67,7 +68,11 @@ def _load_ground(urdf: "dart.io.UrdfParser") -> "dart.Skeleton":
     return ground
 
 
-def _make_pre_step(setup: "SceneSetup") -> "callable":
+def _make_pre_step(
+    setup: "SceneSetup",
+    offset: np.ndarray,
+    state: dict[str, float],
+) -> "callable":
     world = setup.world
     robot = world.get_skeleton(_ROBOT_NAME)
     end_effector = robot.get_body_node(robot.get_num_body_nodes() - 1)
@@ -76,11 +81,6 @@ def _make_pre_step(setup: "SceneSetup") -> "callable":
     kp = np.eye(3) * 50.0
     num_dependent = end_effector.get_num_dependent_gen_coords()
     kd = np.eye(num_dependent) * 5.0
-    # mOffset = R(ee_world).T @ (0.05, 0, 0). At t=0, R is the rotation of the
-    # end-effector's initial world transform.
-    ee_world = np.asarray(end_effector.get_world_transform().matrix())
-    raw_offset = np.array([0.05, 0.0, 0.0])
-    offset = ee_world[:3, :3].T @ raw_offset
     reg = 0.0025 * np.eye(3)
 
     def pre_step() -> None:
@@ -103,6 +103,8 @@ def _make_pre_step(setup: "SceneSetup") -> "callable":
             + cg
             + kd @ jac_inv @ (kp @ pos_err)
         )
+        state["target_error"] = float(np.linalg.norm(pos_err))
+        state["force_norm"] = float(np.linalg.norm(forces))
         robot.set_forces(forces)
 
     return pre_step
@@ -119,17 +121,46 @@ def build() -> SceneSetup:
     robot = _load_robot(urdf)
     end_effector = robot.get_body_node(robot.get_num_body_nodes() - 1)
     ee_world = np.asarray(end_effector.get_world_transform().matrix())
+    raw_offset = np.array([0.05, 0.0, 0.0])
+    ee_offset = ee_world[:3, :3].T @ raw_offset
     target_transform = ee_world.copy()
-    target_transform[:3, 3] = ee_world[:3, 3] + np.array([0.05, 0.0, 0.0])
+    target_transform[:3, 3] = ee_world[:3, 3] + raw_offset
     target = dart.SimpleFrame(
         dart.Frame.world(), _TARGET_FRAME_NAME, target_transform)
     world.add_simple_frame(target)
 
     world.add_skeleton(robot)
 
+    state = {"target_error": 0.0, "force_norm": 0.0}
+    target_error_history = deque(maxlen=120)
+    force_norm_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        target_world = np.asarray(target.get_world_transform().matrix())
+        ee_now = np.asarray(end_effector.get_world_transform().matrix())
+        ee_position = ee_now[:3, :3] @ ee_offset + ee_now[:3, 3]
+        pos_err = target_world[:3, 3] - ee_position
+        error_norm = float(np.linalg.norm(pos_err))
+        target_error_history.append(error_norm)
+        force_norm_history.append(float(state["force_norm"]))
+        builder.text("controller: operational-space PD")
+        builder.text("target offset: 0.050 m")
+        builder.text(f"tracking error: {error_norm:.4f} m")
+        builder.text(f"force norm: {state['force_norm']:.3f} N")
+        builder.text(
+            f"end effector: {ee_position[0]:.3f}, {ee_position[1]:.3f}, "
+            f"{ee_position[2]:.3f} m"
+        )
+        builder.separator()
+        builder.plot_lines("Tracking error", list(target_error_history))
+        builder.plot_lines("Force norm", list(force_norm_history))
+
     setup = SceneSetup(
-        world=world, info={"golden_skeletons": [_ROBOT_NAME]})
-    setup.pre_step = _make_pre_step(setup)
+        world=world,
+        panels=[ScenePanel("Operational Space", build_panel)],
+        info={"golden_skeletons": [_ROBOT_NAME]},
+    )
+    setup.pre_step = _make_pre_step(setup, ee_offset, state)
     return setup
 
 

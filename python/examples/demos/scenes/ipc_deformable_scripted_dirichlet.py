@@ -14,6 +14,8 @@ reproduction.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy.simulation_experimental as sx
@@ -23,7 +25,7 @@ from .._ipc_deformable_bridge import (
     build_grid_options,
     grid_index,
 )
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _COLUMNS = 11
 _ROWS = 7
@@ -76,9 +78,52 @@ def build() -> SceneSetup:
     bridge = IpcDeformableBridge(world, name="ipc_deformable_scripted")
     bridge.add_deformable_visual(body, name="deformable_banner")
 
+    bottom_row = [grid_index(_COLUMNS, col, _ROWS - 1) for col in range(_COLUMNS)]
+    span_y_history = deque(maxlen=120)
+    sag_history = deque(maxlen=120)
+    speed_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        phase = "driving" if float(world.time) <= scripted.end_time else "released"
+        builder.text(f"scripted phase: {phase}")
+        builder.text(f"driven top-edge nodes: {len(interior_top)}")
+        builder.text(f"pinned corners: {len(corners)}")
+        if positions.size:
+            pin_height = float(np.mean(positions[corners, 2]))
+            bottom_height = float(np.mean(positions[bottom_row, 2]))
+            sag = pin_height - bottom_height
+            span_y = float(np.max(positions[:, 1]) - np.min(positions[:, 1]))
+            mean_speed = (
+                float(np.mean(np.linalg.norm(velocities, axis=1)))
+                if velocities.size
+                else 0.0
+            )
+            span_y_history.append(span_y)
+            sag_history.append(sag)
+            speed_history.append(mean_speed)
+            builder.text(f"banner sag: {sag:.3f} m")
+            builder.text(f"out-of-plane span: {span_y:.3f} m")
+            builder.text(f"mean node speed: {mean_speed:.3f} m/s")
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if span_y_history:
+            builder.separator()
+            builder.plot_lines("Out-of-plane span", list(span_y_history))
+            builder.plot_lines("Banner sag", list(sag_history))
+            builder.plot_lines("Mean speed", list(speed_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC Scripted Banner", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

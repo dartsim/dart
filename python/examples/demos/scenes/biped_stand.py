@@ -12,11 +12,13 @@ the scene exists to showcase.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 from ._z_up import reorient_to_z_up
 
 _WORLD_URI = "dart://sample/skel/fullbody1.skel"
@@ -66,6 +68,10 @@ def build() -> SceneSetup:
         kp[i, i] = 400.0
         kd[i, i] = 40.0
     desired = np.array(biped.get_positions(), dtype=float)
+    state = {"torque_norm": 0.0}
+    pose_error_history = deque(maxlen=120)
+    torque_history = deque(maxlen=120)
+    com_z_history = deque(maxlen=120)
 
     def pre_step() -> None:
         dt = world.get_time_step()
@@ -81,9 +87,35 @@ def build() -> SceneSetup:
         acceleration = inv_mass @ (-cg + proportional + derivative)
         torques = proportional + derivative - kd @ acceleration * dt
         torques[:6] = 0.0
+        state["torque_norm"] = float(np.linalg.norm(torques))
         biped.set_forces(torques)
 
-    return SceneSetup(world=world, pre_step=pre_step, info={})
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(biped.get_positions(), dtype=float)
+        velocities = np.asarray(biped.get_velocities(), dtype=float)
+        pose_error = float(np.linalg.norm(positions[6:] - desired[6:]))
+        mean_speed = float(np.mean(np.abs(velocities[6:]))) if dofs > 6 else 0.0
+        com = np.asarray(biped.get_com(), dtype=float)
+        pose_error_history.append(pose_error)
+        torque_history.append(float(state["torque_norm"]))
+        com_z_history.append(float(com[2]))
+        builder.text("controller: stable PD")
+        builder.text("root: passive floating base")
+        builder.text(f"pose error: {pose_error:.4f} rad")
+        builder.text(f"mean joint speed: {mean_speed:.4f} rad/s")
+        builder.text(f"torque norm: {state['torque_norm']:.3f} N m")
+        builder.text(f"COM height: {com[2]:.3f} m")
+        builder.separator()
+        builder.plot_lines("Pose error", list(pose_error_history))
+        builder.plot_lines("Torque norm", list(torque_history))
+        builder.plot_lines("COM height", list(com_z_history))
+
+    return SceneSetup(
+        world=world,
+        pre_step=pre_step,
+        panels=[ScenePanel("Biped Stand", build_panel)],
+        info={"controller": "stable_pd"},
+    )
 
 
 SCENE = PythonDemoScene(

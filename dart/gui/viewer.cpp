@@ -64,10 +64,11 @@ std::string makeFrameOutputPath(
 std::string activeFrameOutputDirectory(
     const RunOptions& options, const ViewerLifecycleState& state)
 {
+  (void)options;
   if (state.frameOutputEnabled && !state.frameOutputDirectory.empty()) {
     return state.frameOutputDirectory;
   }
-  return options.frameOutputDirectory;
+  return {};
 }
 
 } // namespace
@@ -126,11 +127,67 @@ void toggleFrameOutputCapture(
   setFrameOutputCapture(state, std::move(outputDirectory), enable);
 }
 
+void setRecordedFramePlaybackIndex(
+    ViewerLifecycleState& state, int frameCount, int frameIndex)
+{
+  if (frameCount <= 0) {
+    state.recordedFramePlaybackIndex = 0;
+    state.recordedFramePlaybackPlaying = false;
+    return;
+  }
+
+  state.recordedFramePlaybackIndex = std::clamp(frameIndex, 0, frameCount - 1);
+}
+
+void stepRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount, int delta)
+{
+  setRecordedFramePlaybackIndex(
+      state, frameCount, state.recordedFramePlaybackIndex + delta);
+}
+
+void toggleRecordedFramePlayback(ViewerLifecycleState& state, int frameCount)
+{
+  if (frameCount <= 0) {
+    state.recordedFramePlaybackPlaying = false;
+    state.recordedFramePlaybackIndex = 0;
+    return;
+  }
+
+  setRecordedFramePlaybackIndex(
+      state, frameCount, state.recordedFramePlaybackIndex);
+  state.recordedFramePlaybackPlaying = !state.recordedFramePlaybackPlaying;
+}
+
+void advanceRecordedFramePlayback(ViewerLifecycleState& state, int frameCount)
+{
+  if (!state.recordedFramePlaybackPlaying) {
+    setRecordedFramePlaybackIndex(
+        state, frameCount, state.recordedFramePlaybackIndex);
+    return;
+  }
+
+  if (frameCount <= 0) {
+    state.recordedFramePlaybackPlaying = false;
+    state.recordedFramePlaybackIndex = 0;
+    return;
+  }
+
+  if (state.recordedFramePlaybackIndex + 1 >= frameCount) {
+    state.recordedFramePlaybackPlaying = false;
+    setRecordedFramePlaybackIndex(state, frameCount, frameCount - 1);
+    return;
+  }
+
+  setRecordedFramePlaybackIndex(
+      state, frameCount, state.recordedFramePlaybackIndex + 1);
+}
+
 bool shouldCaptureFrameOutput(
     const RunOptions& options, const ViewerLifecycleState& state)
 {
-  return shouldCaptureFrameOutput(options)
-         || (state.frameOutputEnabled && !state.frameOutputDirectory.empty());
+  (void)options;
+  return state.frameOutputEnabled && !state.frameOutputDirectory.empty();
 }
 
 std::string makeFrameOutputPath(
@@ -169,6 +226,28 @@ void requestSceneSwitch(ViewerLifecycleState& state, std::string sceneId)
 {
   state.requestedScene = std::move(sceneId);
   state.sceneSwitchRequested = true;
+  state.sceneActivationPendingScene = state.requestedScene;
+  state.sceneActivationStatus
+      = "Starting demo '" + state.requestedScene + "'...";
+}
+
+void requestSceneReplay(ViewerLifecycleState& state, std::string sceneId)
+{
+  requestSceneSwitch(state, std::move(sceneId));
+  state.paused = false;
+  state.stepOnce = false;
+}
+
+void requestDockLayoutReset(ViewerLifecycleState& state)
+{
+  state.dockLayoutResetRequested = true;
+}
+
+bool consumeDockLayoutResetRequest(ViewerLifecycleState& state)
+{
+  const bool requested = state.dockLayoutResetRequested;
+  state.dockLayoutResetRequested = false;
+  return requested;
 }
 
 bool shouldAdvanceSimulation(const ViewerLifecycleState& state)
