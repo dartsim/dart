@@ -90,6 +90,11 @@ struct DeformableSolverDiagnostics
   /// used when the Newton direction was not a descent direction.
   std::size_t projectedNewtonSteps = 0;
   std::size_t projectedNewtonFallbacks = 0;
+  /// Maximum compressed sparse Hessian matrix footprint assembled by the
+  /// projected-Newton solve in this step. This is an Eigen matrix-storage
+  /// estimate (values + sparse indices), not a full process peak-memory value.
+  std::size_t projectedNewtonHessianNonZeros = 0;
+  std::size_t projectedNewtonHessianStorageBytes = 0;
   /// Newton iterations whose linear solve took the iterative
   /// (incomplete-Cholesky preconditioned conjugate-gradient) path instead of
   /// the sparse Cholesky factorization -- either because the mesh exceeds the
@@ -97,6 +102,15 @@ struct DeformableSolverDiagnostics
   /// ``DeformableMaterialProperties.useIterativeLinearSolver``. Zero means
   /// every solve used the direct factorization.
   std::size_t projectedNewtonIterativeSolves = 0;
+  /// Iterative solves that used matrix-free Hessian-vector products instead of
+  /// an assembled sparse Hessian. This is a subset of
+  /// ``projectedNewtonIterativeSolves``.
+  std::size_t projectedNewtonMatrixFreeSolves = 0;
+  /// Total conjugate-gradient iterations consumed by those iterative linear
+  /// solves, and the largest Eigen-reported relative residual estimate among
+  /// them. Both are zero when every solve used the direct factorization.
+  std::size_t projectedNewtonIterativeIterations = 0;
+  double projectedNewtonIterativeMaxError = 0.0;
   /// Self-contact barrier active contacts summed over every solver iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
   /// Coulomb friction energy dissipated at the converged iterate.

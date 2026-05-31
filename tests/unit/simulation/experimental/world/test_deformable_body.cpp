@@ -33,14 +33,17 @@
 #include <dart/simulation/experimental/body/deformable_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/io/binary_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <dart/collision/native/narrow_phase/primitive_ccd.hpp>
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <numbers>
@@ -48,7 +51,11 @@
 #include <string>
 #include <string_view>
 
+#include <cmath>
+#include <cstring>
+
 namespace sx = dart::simulation::experimental;
+namespace comps = dart::simulation::experimental::comps;
 namespace compute = dart::simulation::experimental::compute;
 namespace nc = dart::collision::native;
 
@@ -841,6 +848,9 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_EQ(before.bodyCount, 0u);
   EXPECT_EQ(before.nodeCount, 0u);
   EXPECT_EQ(before.solverIterations, 0u);
+  EXPECT_EQ(before.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_EQ(before.projectedNewtonHessianStorageBytes, 0u);
+  EXPECT_EQ(before.projectedNewtonMatrixFreeSolves, 0u);
 
   world.step(5);
 
@@ -850,21 +860,66 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_GE(after.solverIterations, 1u);
   EXPECT_GE(after.objectiveEvaluations, 1u);
   EXPECT_GE(after.projectedNewtonSteps + after.projectedNewtonFallbacks, 1u);
+  EXPECT_GT(after.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_GT(after.projectedNewtonHessianStorageBytes, 0u);
   // No contacts for a single free-hanging tetrahedron.
   EXPECT_EQ(after.selfContactBarrierActiveContacts, 0u);
   EXPECT_EQ(after.convergedActiveContactCount, 0u);
 }
 
 //==============================================================================
+// The isolated third node contributes only its three inertial diagonal entries
+// to the sparse projected-Newton Hessian; the spring-connected pair contributes
+// a full 6x6 block that drives the solve.
+TEST(DeformableBody, SparseInertiaAssemblyOmitsExplicitZeroEntries)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY()};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+  options.masses = {1.0, 2.0, 3.0};
+  options.edges = {sx::DeformableEdge{0, 1}};
+  world.addDeformableBody("spring_with_isolated_node", options);
+
+  world.step(1);
+
+  const auto& after = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(after.bodyCount, 1u);
+  EXPECT_EQ(after.nodeCount, 3u);
+  EXPECT_EQ(after.projectedNewtonHessianNonZeros, 39u);
+  EXPECT_GT(after.projectedNewtonHessianStorageBytes, 0u);
+}
+
+//==============================================================================
 // The public solver diagnostics expose which linear-solve path each Newton
 // iteration took: the default direct (sparse Cholesky) solve never reports an
 // iterative solve, while a body opting in to the iterative
-// (incomplete-Cholesky-preconditioned CG) solve surfaces a nonzero count. This
-// is the public-API mirror of the internal projectedNewtonIterativeSolves stat,
-// so Python callers can observe and tune the solver path.
+// (incomplete-Cholesky-preconditioned CG) solve surfaces a nonzero solve count,
+// CG iteration count, and finite residual estimate. These are the public-API
+// mirrors of the internal iterative-solver stats, so Python callers can observe
+// and tune the solver path.
 TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
 {
-  const auto totalIterativeSolves = [](bool iterative) {
+  struct IterativeDiagnostics
+  {
+    std::size_t solves = 0;
+    std::size_t matrixFreeSolves = 0;
+    std::size_t iterations = 0;
+    std::size_t hessianNonZeros = 0;
+    std::size_t hessianStorageBytes = 0;
+    double maxError = 0.0;
+  };
+
+  const auto run = [](bool iterative) {
     sx::World world;
     world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
     world.setTimeStep(0.01);
@@ -872,20 +927,42 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
     options.material.useIterativeLinearSolver = iterative;
     world.addDeformableBody("fem", options);
 
-    std::size_t total = 0;
+    IterativeDiagnostics total;
     for (int i = 0; i < 8; ++i) {
       world.step(1);
-      total += world.getLastDeformableSolverDiagnostics()
-                   .projectedNewtonIterativeSolves;
+      const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+      total.solves += diagnostics.projectedNewtonIterativeSolves;
+      total.matrixFreeSolves += diagnostics.projectedNewtonMatrixFreeSolves;
+      total.iterations += diagnostics.projectedNewtonIterativeIterations;
+      total.hessianNonZeros = std::max(
+          total.hessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+      total.hessianStorageBytes = std::max(
+          total.hessianStorageBytes,
+          diagnostics.projectedNewtonHessianStorageBytes);
+      total.maxError = std::max(
+          total.maxError, diagnostics.projectedNewtonIterativeMaxError);
     }
     return total;
   };
 
+  const auto direct = run(false);
+  const auto iterative = run(true);
+
   // The default direct solve never takes the iterative path...
-  EXPECT_EQ(totalIterativeSolves(false), 0u);
-  // ...while the opt-in iterative solve surfaces through the public
-  // diagnostics.
-  EXPECT_GT(totalIterativeSolves(true), 0u);
+  EXPECT_EQ(direct.solves, 0u);
+  EXPECT_EQ(direct.matrixFreeSolves, 0u);
+  EXPECT_EQ(direct.iterations, 0u);
+  EXPECT_GT(direct.hessianNonZeros, 0u);
+  EXPECT_GT(direct.hessianStorageBytes, 0u);
+  EXPECT_EQ(direct.maxError, 0.0);
+  // ...while the opt-in iterative solve surfaces through the public diagnostics
+  // with CG effort, sparse-Hessian footprint, and a finite residual estimate.
+  EXPECT_GT(iterative.solves, 0u);
+  EXPECT_EQ(iterative.matrixFreeSolves, 0u);
+  EXPECT_GT(iterative.hessianNonZeros, 0u);
+  EXPECT_GT(iterative.hessianStorageBytes, 0u);
+  EXPECT_TRUE(std::isfinite(iterative.maxError));
+  EXPECT_GE(iterative.maxError, 0.0);
 }
 
 //==============================================================================
@@ -2516,6 +2593,116 @@ TEST(DeformableBody, SerializationPreservesMeshTopologyAndMaterial)
 }
 
 //==============================================================================
+TEST(DeformableBody, SerializationLoadsLegacyV8Material)
+{
+  sx::World world1;
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  options.material.youngsModulus = 2500.0;
+  options.material.poissonRatio = 0.25;
+  options.material.frictionCoefficient = 0.5;
+  options.material.useFiniteElementElasticity = true;
+  options.material.useFixedCorotationalElasticity = true;
+  options.material.useAdaptiveBarrierStiffness = true;
+  options.material.useIterativeLinearSolver = true;
+  options.material.useMatrixFreeLinearSolver = true;
+  world1.addDeformableBody("legacy_v8_material", options);
+
+  std::stringstream currentStream;
+  world1.saveBinary(currentStream);
+  std::string legacyBytes = currentStream.str();
+
+  const std::uint32_t legacyVersion = 8u;
+  ASSERT_GE(legacyBytes.size(), 2u * sizeof(std::uint32_t));
+  std::memcpy(
+      legacyBytes.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+
+  const std::string materialTypeName(comps::DeformableMaterial::getTypeName());
+  const auto materialTypeOffset = legacyBytes.find(materialTypeName);
+  ASSERT_NE(materialTypeOffset, std::string::npos);
+
+  const auto materialDataOffset = materialTypeOffset + materialTypeName.size();
+  const auto matrixFreeFlagOffset
+      = materialDataOffset + 4u * sizeof(double) + 4u * sizeof(bool);
+  ASSERT_LT(matrixFreeFlagOffset, legacyBytes.size());
+  legacyBytes.erase(matrixFreeFlagOffset, sizeof(bool));
+
+  std::stringstream legacyStream(legacyBytes);
+  sx::World world2;
+  ASSERT_NO_THROW(world2.loadBinary(legacyStream));
+
+  auto body = world2.getDeformableBody("legacy_v8_material");
+  ASSERT_TRUE(body.has_value());
+  const auto material = body->getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 2500.0);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.25);
+  EXPECT_DOUBLE_EQ(material.frictionCoefficient, 0.5);
+  EXPECT_TRUE(material.useFiniteElementElasticity);
+  EXPECT_TRUE(material.useFixedCorotationalElasticity);
+  EXPECT_TRUE(material.useAdaptiveBarrierStiffness);
+  EXPECT_TRUE(material.useIterativeLinearSolver);
+  EXPECT_FALSE(material.useMatrixFreeLinearSolver);
+}
+
+//==============================================================================
+TEST(DeformableBody, SerializationLoadsLegacyV9MaterialWithoutMatrixFreeFlag)
+{
+  sx::World world1;
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  options.material.youngsModulus = 2500.0;
+  options.material.poissonRatio = 0.25;
+  options.material.frictionCoefficient = 0.5;
+  options.material.useFiniteElementElasticity = true;
+  options.material.useFixedCorotationalElasticity = true;
+  options.material.useAdaptiveBarrierStiffness = true;
+  options.material.useIterativeLinearSolver = true;
+  options.material.useMatrixFreeLinearSolver = true;
+  world1.addDeformableBody("legacy_v9_material", options);
+
+  std::stringstream currentStream;
+  world1.saveBinary(currentStream);
+  std::string legacyBytes = currentStream.str();
+
+  const std::uint32_t legacyVersion = 9u;
+  ASSERT_GE(legacyBytes.size(), 2u * sizeof(std::uint32_t));
+  std::memcpy(
+      legacyBytes.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+
+  const std::string materialTypeName(comps::DeformableMaterial::getTypeName());
+  const auto materialTypeOffset = legacyBytes.find(materialTypeName);
+  ASSERT_NE(materialTypeOffset, std::string::npos);
+
+  const auto materialDataOffset = materialTypeOffset + materialTypeName.size();
+  const auto matrixFreeFlagOffset
+      = materialDataOffset + 4u * sizeof(double) + 4u * sizeof(bool);
+  ASSERT_LT(matrixFreeFlagOffset, legacyBytes.size());
+  legacyBytes.erase(matrixFreeFlagOffset, sizeof(bool));
+
+  std::stringstream legacyStream(legacyBytes);
+  sx::World world2;
+  ASSERT_NO_THROW(world2.loadBinary(legacyStream));
+
+  auto body = world2.getDeformableBody("legacy_v9_material");
+  ASSERT_TRUE(body.has_value());
+  const auto material = body->getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 2500.0);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.25);
+  EXPECT_DOUBLE_EQ(material.frictionCoefficient, 0.5);
+  EXPECT_TRUE(material.useFiniteElementElasticity);
+  EXPECT_TRUE(material.useFixedCorotationalElasticity);
+  EXPECT_TRUE(material.useAdaptiveBarrierStiffness);
+  EXPECT_TRUE(material.useIterativeLinearSolver);
+  EXPECT_FALSE(material.useMatrixFreeLinearSolver);
+}
+
+//==============================================================================
 // A deformable node advancing toward a box that is itself moving toward the
 // node is conservatively limited so it does not enter the box's predicted
 // end-of-step pose. The custom pipeline runs only the deformable stage; the
@@ -3603,6 +3790,179 @@ TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
 }
 
 //==============================================================================
+// The matrix-free projected-Newton path evaluates Hessian-vector products from
+// local blocks instead of first assembling an Eigen SparseMatrix. It is kept as
+// an explicit opt-in so the existing sparse direct and sparse IC-CG paths
+// remain unchanged, but on a contact-free FEM cube it should produce the same
+// settled configuration while reporting zero sparse Hessian footprint.
+TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseDirectSolve)
+{
+  struct CubeRun
+  {
+    std::vector<Eigen::Vector3d> positions;
+    std::size_t cgSolves = 0;
+    std::size_t matrixFreeSolves = 0;
+    std::size_t numericFactorizations = 0;
+    std::size_t hessianNonZeros = 0;
+  };
+
+  const auto runCube = [](bool matrixFree) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.4), 1.5e5);
+    options.fixedNodes = {0, 1, 2, 3};
+    options.material.useMatrixFreeLinearSolver = matrixFree;
+    auto body = world.addDeformableBody("fem_cube", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    CubeRun run;
+    for (int i = 0; i < 80; ++i) {
+      world.step(executor, pipeline);
+      const auto& stats = stage.getLastStats();
+      run.cgSolves += stats.projectedNewtonIterativeSolves;
+      run.matrixFreeSolves += stats.projectedNewtonMatrixFreeSolves;
+      run.numericFactorizations += stats.projectedNewtonNumericFactorizations;
+      run.hessianNonZeros
+          = std::max(run.hessianNonZeros, stats.projectedNewtonHessianNonZeros);
+    }
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      run.positions.push_back(body.getPosition(i));
+    }
+    return run;
+  };
+
+  const CubeRun direct = runCube(false);
+  const CubeRun matrixFree = runCube(true);
+
+  EXPECT_EQ(direct.cgSolves, 0u);
+  EXPECT_EQ(direct.matrixFreeSolves, 0u);
+  EXPECT_GT(direct.numericFactorizations, 0u);
+  EXPECT_GT(direct.hessianNonZeros, 0u);
+
+  EXPECT_GT(matrixFree.cgSolves, 0u);
+  EXPECT_EQ(matrixFree.cgSolves, matrixFree.matrixFreeSolves);
+  EXPECT_EQ(matrixFree.numericFactorizations, 0u);
+  EXPECT_EQ(matrixFree.hessianNonZeros, 0u);
+
+  ASSERT_EQ(direct.positions.size(), matrixFree.positions.size());
+  for (std::size_t i = 0; i < direct.positions.size(); ++i) {
+    ASSERT_TRUE(matrixFree.positions[i].allFinite());
+    expectVectorNear(matrixFree.positions[i], direct.positions[i], 1e-4);
+  }
+}
+
+//==============================================================================
+// Ground contact adds a stiff barrier block to the projected-Newton Hessian.
+// This compares all three solve paths on the same contacting FEM cube: sparse
+// direct, sparse IC-CG, and matrix-free CG. The matrix-free path must stay on
+// Hessian-vector products (zero sparse footprint) while reaching the same
+// contact equilibrium as the assembled sparse solvers.
+TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseSolversOnGroundContact)
+{
+  enum class SolveMode
+  {
+    Direct,
+    SparseCg,
+    MatrixFreeCg,
+  };
+
+  struct CubeRun
+  {
+    std::vector<Eigen::Vector3d> positions;
+    std::size_t cgSolves = 0;
+    std::size_t matrixFreeSolves = 0;
+    std::size_t numericFactorizations = 0;
+    std::size_t hessianNonZeros = 0;
+    std::size_t hessianStorageBytes = 0;
+    double minZ = std::numeric_limits<double>::infinity();
+  };
+
+  const auto runCube = [](SolveMode mode) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+    ground.setDeformableGroundBarrier(true); // top face at z = 0
+
+    auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.5e5);
+    options.material.useIterativeLinearSolver = mode == SolveMode::SparseCg;
+    options.material.useMatrixFreeLinearSolver
+        = mode == SolveMode::MatrixFreeCg;
+    auto body = world.addDeformableBody("fem_cube", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    CubeRun run;
+    for (int i = 0; i < 200; ++i) {
+      world.step(executor, pipeline);
+      const auto& stats = stage.getLastStats();
+      run.cgSolves += stats.projectedNewtonIterativeSolves;
+      run.matrixFreeSolves += stats.projectedNewtonMatrixFreeSolves;
+      run.numericFactorizations += stats.projectedNewtonNumericFactorizations;
+      run.hessianNonZeros
+          = std::max(run.hessianNonZeros, stats.projectedNewtonHessianNonZeros);
+      run.hessianStorageBytes = std::max(
+          run.hessianStorageBytes, stats.projectedNewtonHessianStorageBytes);
+    }
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      run.positions.push_back(body.getPosition(i));
+      run.minZ = std::min(run.minZ, body.getPosition(i).z());
+    }
+    return run;
+  };
+
+  const CubeRun direct = runCube(SolveMode::Direct);
+  const CubeRun sparseCg = runCube(SolveMode::SparseCg);
+  const CubeRun matrixFree = runCube(SolveMode::MatrixFreeCg);
+
+  EXPECT_EQ(direct.cgSolves, 0u);
+  EXPECT_EQ(direct.matrixFreeSolves, 0u);
+  EXPECT_GT(direct.numericFactorizations, 0u);
+  EXPECT_GT(direct.hessianNonZeros, 0u);
+  EXPECT_GT(direct.hessianStorageBytes, 0u);
+
+  EXPECT_GT(sparseCg.cgSolves, 0u);
+  EXPECT_EQ(sparseCg.matrixFreeSolves, 0u);
+  EXPECT_EQ(sparseCg.numericFactorizations, 0u);
+  EXPECT_GT(sparseCg.hessianNonZeros, 0u);
+  EXPECT_GT(sparseCg.hessianStorageBytes, 0u);
+
+  EXPECT_GT(matrixFree.cgSolves, 0u);
+  EXPECT_EQ(matrixFree.cgSolves, matrixFree.matrixFreeSolves);
+  EXPECT_EQ(matrixFree.numericFactorizations, 0u);
+  EXPECT_EQ(matrixFree.hessianNonZeros, 0u);
+  EXPECT_EQ(matrixFree.hessianStorageBytes, 0u);
+
+  EXPECT_GE(direct.minZ, -1e-3);
+  EXPECT_GE(sparseCg.minZ, -1e-3);
+  EXPECT_GE(matrixFree.minZ, -1e-3);
+
+  ASSERT_EQ(direct.positions.size(), sparseCg.positions.size());
+  ASSERT_EQ(direct.positions.size(), matrixFree.positions.size());
+  for (std::size_t i = 0; i < direct.positions.size(); ++i) {
+    ASSERT_TRUE(sparseCg.positions[i].allFinite());
+    ASSERT_TRUE(matrixFree.positions[i].allFinite());
+    expectVectorNear(sparseCg.positions[i], direct.positions[i], 1e-4);
+    expectVectorNear(matrixFree.positions[i], direct.positions[i], 1e-4);
+  }
+}
+
+//==============================================================================
 // Stiff barrier contact produces an ill-conditioned Hessian; a weak diagonal
 // (Jacobi) CG preconditioner stalls there and forces the iterative solver to
 // fall back to steepest descent. The incomplete-Cholesky preconditioner
@@ -3763,10 +4123,12 @@ TEST(DeformableBody, IterativeSolverMatchesDirectOnChunky3dMesh)
     pipeline.addStage(stage);
 
     std::size_t cgSolves = 0;
+    std::size_t cgIterations = 0;
     std::size_t numericFactorizations = 0;
     for (int i = 0; i < 80; ++i) {
       world.step(executor, pipeline);
       cgSolves += stage.getLastStats().projectedNewtonIterativeSolves;
+      cgIterations += stage.getLastStats().projectedNewtonIterativeIterations;
       numericFactorizations
           += stage.getLastStats().projectedNewtonNumericFactorizations;
     }
@@ -3774,16 +4136,19 @@ TEST(DeformableBody, IterativeSolverMatchesDirectOnChunky3dMesh)
     for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
       positions.push_back(body.getPosition(i));
     }
-    return std::make_tuple(positions, cgSolves, numericFactorizations);
+    return std::make_tuple(
+        positions, cgSolves, cgIterations, numericFactorizations);
   };
 
-  const auto [directPos, directCg, directFact] = runCube(false);
-  const auto [iterPos, iterCg, iterFact] = runCube(true);
+  const auto [directPos, directCg, directCgIters, directFact] = runCube(false);
+  const auto [iterPos, iterCg, iterCgIters, iterFact] = runCube(true);
 
   // Mutually exclusive solve paths, as on the smaller meshes.
   EXPECT_EQ(directCg, 0u);
+  EXPECT_EQ(directCgIters, 0u);
   EXPECT_GT(directFact, 0u);
   EXPECT_GT(iterCg, 0u);
+  EXPECT_GT(iterCgIters, 0u);
   EXPECT_EQ(iterFact, 0u);
 
   // Same sagged equilibrium on the wide-bandwidth 3D mesh.

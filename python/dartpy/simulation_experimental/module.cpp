@@ -1717,8 +1717,23 @@ void defSimulationExperimentalModule(nb::module_& m)
           "projected_newton_fallbacks",
           &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
       .def_ro(
+          "projected_newton_hessian_nonzeros",
+          &sim::DeformableSolverDiagnostics::projectedNewtonHessianNonZeros)
+      .def_ro(
+          "projected_newton_hessian_storage_bytes",
+          &sim::DeformableSolverDiagnostics::projectedNewtonHessianStorageBytes)
+      .def_ro(
           "projected_newton_iterative_solves",
           &sim::DeformableSolverDiagnostics::projectedNewtonIterativeSolves)
+      .def_ro(
+          "projected_newton_matrix_free_solves",
+          &sim::DeformableSolverDiagnostics::projectedNewtonMatrixFreeSolves)
+      .def_ro(
+          "projected_newton_iterative_iterations",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeIterations)
+      .def_ro(
+          "projected_newton_iterative_max_error",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeMaxError)
       .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
@@ -1753,7 +1768,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::useAdaptiveBarrierStiffness)
       .def_rw(
           "use_iterative_linear_solver",
-          &sim::DeformableMaterialProperties::useIterativeLinearSolver);
+          &sim::DeformableMaterialProperties::useIterativeLinearSolver)
+      .def_rw(
+          "use_matrix_free_linear_solver",
+          &sim::DeformableMaterialProperties::useMatrixFreeLinearSolver);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(
