@@ -10,18 +10,20 @@ driver, scalar hard point-attachment row stamping, a standalone mass-spring AVBD
 attachment driver, scalar finite-stiffness spring rows, and narrow opt-in World
 VBD paths for active static half-space contact-normal rows, pinned/scripted hard
 attachment rows, and progressive finite-stiffness spring rows in supported
-serial, frictionless mass-spring scenes. Supported contact-normal, attachment,
-and finite-stiffness spring requests now run together through one combined
-serial mass-spring AVBD row solve. The next slice also wires finite-stiffness
-tetrahedral material rows into supported serial, frictionless pure-tet World
-scenes, using a dimensionless material scale, strain-norm row error, separate
-tet-row diagnostics, and coexistence with the existing lagged VBD self-contact
-penalty. A bounded friction-tangent row primitive now participates in the
-serial mass-spring AVBD row driver for kernel tests, but World friction row
-generation is still intentionally fallback-only. Unsupported mixed
-spring-plus-tet, mass-spring self-contact, frictional World, Chebyshev,
-Rayleigh-damped, parallel, and unsupported-row requests have explicit fallback
-coverage that keeps them on the existing VBD path.
+serial mass-spring scenes. Supported contact-normal, friction-tangent,
+attachment, and finite-stiffness spring requests now run together through one
+combined serial mass-spring AVBD row solve. The implementation also wires
+finite-stiffness tetrahedral material rows into supported serial, frictionless
+pure-tet World scenes, using a dimensionless material scale, strain-norm row
+error, separate tet-row diagnostics, and coexistence with the existing lagged
+VBD self-contact penalty. A bounded friction-tangent row primitive now
+participates in the serial mass-spring AVBD row driver, and supported
+static-contact mass-spring World scenes generate two tangent rows per active
+contact-normal row.
+Unsupported mixed spring-plus-tet, mass-spring self-contact,
+finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
+and unsupported-row requests have explicit fallback coverage that keeps them on
+the existing VBD path.
 
 ## Current Branch
 
@@ -53,10 +55,10 @@ if that proves too coupled.
   internal World opt-ins for static contact-normal rows, hard point-attachment
   rows, and finite-stiffness spring rows, including a combined serial
   mass-spring row solve for those three families. Pure-tet World scenes can now
-  use the tet-material finite-stiffness row path, and the internal mass-spring
-  row driver has a bounded friction-tangent primitive. This does not imply
-  World friction row generation, hard-contact/friction completeness, AVBD
-  self-contact row support, rigid/soft coupling, or GPU parity.
+  use the tet-material finite-stiffness row path, and supported static-contact
+  mass-spring World scenes generate bounded friction-tangent rows. This does
+  not imply hard-contact/friction completeness, static/dynamic friction
+  switching, AVBD self-contact row support, rigid/soft coupling, or GPU parity.
 
 ## How to Resume
 

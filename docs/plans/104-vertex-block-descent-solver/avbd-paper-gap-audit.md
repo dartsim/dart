@@ -103,17 +103,16 @@ The first AVBD implementation slices add:
   `blockDescentMassSpringAvbdAttachments`, with focused `VbdAttachment.*`
   tests; and
 - a narrow internal World VBD integration path for active static half-space
-  contact-normal rows in supported serial, frictionless mass-spring scenes,
+  contact-normal rows in supported serial mass-spring static-contact scenes,
   keyed by body/entity, vertex, and static obstacle feature IDs, with
   `VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact` coverage; and
 - a narrow internal World VBD integration path for pinned or scripted hard
-  point-attachment rows in supported serial, frictionless mass-spring scenes,
-  keyed by body/entity, vertex, and axis, with per-step internal row counters
-  and `VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode` coverage; and
+  point-attachment rows in supported serial mass-spring scenes, keyed by
+  body/entity, vertex, and axis, with per-step internal row counters and
+  `VbdWorldSolver.AvbdAttachmentRowsHoldPinnedNode` coverage; and
 - a narrow internal World VBD integration path for progressive finite-stiffness
-  spring rows in supported serial, contact-free, frictionless mass-spring
-  scenes, keyed by body/entity and spring index, with focused
-  `VbdFiniteStiffness.*` tests and
+  spring rows in supported serial mass-spring scenes, keyed by body/entity and
+  spring index, with focused `VbdFiniteStiffness.*` tests and
   `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain` coverage; and
 - a finite-stiffness tetrahedral material row slice:
   `AvbdTetMaterialFiniteStiffnessRow`, strain-norm row error, scaled Lamé
@@ -131,11 +130,14 @@ The first AVBD implementation slices add:
   `AvbdHalfSpaceFrictionRow`, `avbdFrictionTangentBounds`,
   `addAvbdHalfSpaceFrictionTangent`, and
   `updateAvbdHalfSpaceFrictionTangentRow`, with optional participation in the
-  serial mass-spring AVBD row driver and focused `VbdContact.Avbd*` coverage;
-  World-level friction row generation, static/dynamic switching, and full
-  friction-cone persistence are still missing; and
+  serial mass-spring AVBD row driver, supported World generation for static
+  ground contact, focused `VbdContact.Avbd*` coverage, and
+  `VbdWorldSolver.AvbdContactNormalRowsIncludeFrictionTangentRows` /
+  `VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody` coverage;
+  static/dynamic switching and full friction-cone persistence are still
+  missing; and
 - explicit World fallback coverage so unsupported mixed spring-plus-tet,
-  mass-spring self-contact, frictional World scenes, Chebyshev,
+  mass-spring self-contact, finite-stiffness-only friction scenes, Chebyshev,
   Rayleigh-damped, parallel, and unsupported-row requests keep using the
   existing VBD path without reporting partial AVBD row counters.
 
@@ -150,7 +152,7 @@ full hard-contact/friction solver, and not CPU/GPU parity.
 | Constraint row inventory and storage for contacts, joints, attachments, friction, motors, fracture | Deterministic scalar row inventory started; active static contact-normal, hard-attachment, finite-spring World rows wired; bounded friction-tangent primitive started                                                   | A1            |
 | CPU AVBD primal/dual loop over DART VBD vertices and rigid bodies                                  | Narrow serial mass-spring contact-normal, hard-attachment, finite-spring, and optional friction-tangent rows now combine; pure-tet finite-material rows wired; unsupported envelopes fall back; rigid/full rows missing | A2-A4         |
 | 6-DOF rigid block assembly with quaternion/tangent angular updates                                 | Missing in VBD path; DART has separate multibody foundations                                                                                                                                                            | A3            |
-| Inequality/contact/friction row bounds with static/dynamic friction switching                      | Contact-normal lower-bound slice and bounded friction-tangent primitive started; static/dynamic switching and World friction generation missing                                                                         | A4            |
+| Inequality/contact/friction row bounds with static/dynamic friction switching                      | Contact-normal lower-bound slice and bounded friction-tangent World generation started for supported static mass-spring contact; static/dynamic switching and full cone persistence missing                             | A4            |
 | Joint, attachment, motor, fracture, and breakable hard constraints                                 | Scalar hard point-attachment kernel and narrow World attachment wiring started; joints, motors, and fracture missing                                                                                                    | A5            |
 | Unified rigid/soft interactions and cloth/articulated-body coupling                                | Missing                                                                                                                                                                                                                 | A6            |
 | Collision candidate generation, contact persistence, and row warm-start mapping                    | Static half-space row keys started; manifolds, dynamic contacts, and broad row generation missing                                                                                                                       | A7            |
