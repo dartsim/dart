@@ -97,15 +97,17 @@ forces to the circular Coulomb cone. Static box obstacle row keys now include
 face/edge/corner feature IDs so rows warm-start across small same-feature
 penetrations but reset when contact moves to another box manifold. Persisting
 static half-space friction rows also project their decayed tangential dual into
-the current tangent basis when smooth obstacle normals change.
+the current tangent basis when smooth obstacle normals change, and persisting
+self-contact friction rows project their generalized tangential dual into the
+current 12D tangent stencil.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
-completeness beyond static half-space rows, self-contact/dynamic contact-frame
-persistence, dynamic/rigid contact manifold IDs, rigid/soft coupling, GPU
-parity, demos, and benchmark packets remain open.
+completeness beyond current static half-space and lagged self-contact rows,
+dynamic/rigid contact manifold IDs, rigid/soft coupling, GPU parity, demos, and
+benchmark packets remain open.
 
 ## Relationship To PLAN-081
 
