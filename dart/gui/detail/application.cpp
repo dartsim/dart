@@ -1030,9 +1030,7 @@ int runGuiBackendApplicationImpl(
       }
       if (demoCatalog != nullptr) {
         lifecycle.sceneActivationPendingScene.clear();
-        if (!pendingDemoFallbackIndex.has_value()) {
-          lifecycle.sceneActivationStatus.clear();
-        } else if (lifecycle.sceneActivationStatus.starts_with("Starting ")) {
+        if (lifecycle.sceneActivationStatus.starts_with("Starting ")) {
           lifecycle.sceneActivationStatus.clear();
         }
       }
