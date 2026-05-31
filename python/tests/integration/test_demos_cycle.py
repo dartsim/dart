@@ -291,6 +291,13 @@ def test_ipc_deformable_rod_friction_decelerates_sliding_strip() -> None:
     slides measurably less with friction than without, while staying on the rod.
     """
 
+    _require_simulation_experimental_symbols(
+        "CollisionShape",
+        "DeformableBodyOptions",
+        "DeformableEdge",
+        "World",
+    )
+
     import numpy as np
 
     from examples.demos.scenes import ipc_deformable_rod_friction as scene
