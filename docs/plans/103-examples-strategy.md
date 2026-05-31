@@ -254,9 +254,12 @@ now" recorded in the checklist above. Verified via `pixi run py-demos --
 - **Interactive viewer.** `pixi run py-demos` delegates to `dartpy.gui.run_demos`
   (bindings in `python/dartpy/gui/viewer.cpp`), opening the same Filament + ImGui
   multi-scene viewer as `pixi run demos` with the Python catalog; `--screenshot`
-  writes a real PPM. Python `step`/`pre_step` controllers run under the headless
-  runner used by golden tests; the interactive viewer does not forward them yet
-  (a future `preStep` binding pass).
+  writes a real PPM. Python `pre_step` controllers, sx force-drag callbacks, and
+  scene-specific `ScenePanel` diagnostics now run inside the interactive viewer.
+  The default workspace docks `Simulation`, `Demos`, scene panels, and DART
+  diagnostics; `py-demo-capture --show-ui` records the same docked workspace for
+  visual debugging. This remains an examples workspace, not a Python-side scene
+  authoring API.
 - **Bindings added to unblock ports.** `python/dartpy/dynamics/shape.cpp`:
   `Capsule`/`Cylinder`/`Ellipsoid`/`Cone`/`Pyramid`/`LineSegment`/`Plane` shapes;
   `skeleton.cpp`: `getVelocities`/`setVelocities`/`getForces`/`getMassMatrix`/

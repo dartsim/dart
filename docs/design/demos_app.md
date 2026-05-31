@@ -31,13 +31,13 @@ touched several places. The proliferation did not scale.
 
 Per PLAN-103, Python is DART's primary, growing example surface; this C++
 `dart-demos` app is **frozen** (maintained, not grown). New example content is
-authored Python-first (a headless `dartpy` scene-registry runner plus a Colab
-notebook gallery), and only a small golden subset is mirrored in C++ and kept
-honest by a thin parity smoke. `dart-demos` is retired only later, when the
-Python surface covers the breadth and the `dartsim` editor (PLAN-101) can open
-curated example scenes interactively; the retire-later checklist lives in
-PLAN-103. Renderer regression coverage is independent (see below), so a future
-retirement loses no renderer coverage.
+authored Python-first (`pixi run py-demos`, the headless runner, capture
+helpers, and the Colab notebook gallery), and only a small golden subset is
+mirrored in C++ and kept honest by a thin parity smoke. `dart-demos` is retired
+only later, when the Python surface covers the breadth and the `dartsim` editor
+(PLAN-101) can open curated example scenes interactively; the retire-later
+checklist lives in PLAN-103. Renderer regression coverage is independent (see
+below), so a future retirement loses no renderer coverage.
 
 ## Architecture
 
@@ -84,6 +84,22 @@ CLI: `--scene <id>` selects the initial scene; `--cycle-scenes` advances through
 every scene for a few frames and exits (the headless smoke,
 `EXAMPLE_dart_demos_cycle_headless_smoke`).
 
+### Python `py-demos` workspace
+
+`pixi run py-demos` uses the same `dart::gui::runDemos` host through
+`dartpy.gui.run_demos`, so Python examples can run as an interactive multi-scene
+workspace rather than only a headless smoke runner. The workspace docks a top
+`Simulation` toolbar, a searchable/category-grouped `Demos` navigator, optional
+scene-specific panels on the right, and DART diagnostics at the bottom. Python
+scenes return `SceneSetup` objects with optional `pre_step`, `force_drag`, and
+`ScenePanel` callbacks; those callbacks render through the renderer-neutral
+`PanelBuilder`/`PanelContext` abstraction rather than direct ImGui calls.
+
+`pixi run py-demo-capture` drives the same Filament render path headlessly,
+including optional ImGui panels via `--show-ui`, and writes screenshots, frame
+sequences, and MP4s for visual debugging. It rejects blank/noop captures so
+layout, camera, lighting, and material changes have inspectable artifacts.
+
 ### Build layout
 
 `examples/demos/` builds the `dart-demos` executable via the shared
@@ -126,7 +142,8 @@ the renderer.
 - Not a scene editor (authoring/undo/redo/project I/O on the experimental World
   is `dartsim`'s role; see `dartsim_gui_simulator.md`).
 - No renderer/backend changes; demos builds on `dart::gui`.
-- No dockable workspace yet; a fixed system-ImGui sidebar is sufficient for v1.
+- No Python-side scene authoring API; `py-demos` is an examples workspace for
+  playback, controls, diagnostics, and capture, not an editor.
 - `examples/demos` builds the scenes straight into the `dart-demos` executable.
   Splitting them into a `demos_scenes` library is a future option, only needed if
   something other than the app (e.g. a test) must link the scene registry.
