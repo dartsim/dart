@@ -73,9 +73,12 @@ struct ScriptedForceDrag
   int durationFrames = 1;
   std::string target;
   Eigen::Vector3d targetOffset = Eigen::Vector3d::Zero();
+  Eigen::Vector2d startCursor = Eigen::Vector2d::Zero();
+  Eigen::Vector2d cursorDelta = Eigen::Vector2d::Zero();
   std::string eventLogPath;
   Eigen::Vector3d startPoint = Eigen::Vector3d::Zero();
   int elapsedFrames = 0;
+  bool usePointer = false;
   bool started = false;
   bool completed = false;
 };

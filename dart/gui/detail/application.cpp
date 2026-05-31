@@ -417,6 +417,34 @@ std::optional<Eigen::Vector3d> parseVector3(
   return values;
 }
 
+std::optional<Eigen::Vector2d> parseVector2(
+    std::string_view text, std::ostream& errors)
+{
+  Eigen::Vector2d values = Eigen::Vector2d::Zero();
+  std::size_t begin = 0;
+  for (int i = 0; i < 2; ++i) {
+    const std::size_t end = i < 1 ? text.find(',', begin) : text.size();
+    if (end == std::string_view::npos || end == begin) {
+      errors << "expected vector as <x>,<y>\n";
+      return std::nullopt;
+    }
+    const std::string component(text.substr(begin, end - begin));
+    char* parsedEnd = nullptr;
+    values[i] = std::strtod(component.c_str(), &parsedEnd);
+    if (parsedEnd == component.c_str() || *parsedEnd != '\0'
+        || !std::isfinite(values[i])) {
+      errors << "expected finite vector component in '" << text << "'\n";
+      return std::nullopt;
+    }
+    begin = end + 1;
+  }
+  if (begin < text.size() + 1) {
+    errors << "expected vector as <x>,<y>\n";
+    return std::nullopt;
+  }
+  return values;
+}
+
 std::optional<ScriptedForceDrag> parseScriptedForceDrag(
     std::string_view spec, std::ostream& errors)
 {
@@ -469,6 +497,69 @@ std::optional<ScriptedForceDrag> parseScriptedForceDrag(
   forceDrag.target = std::string(spec.substr(first + 1, second - first - 1));
   forceDrag.targetOffset = *offset;
   forceDrag.durationFrames = *durationFrames;
+  return forceDrag;
+}
+
+std::optional<ScriptedForceDrag> parseScriptedPointerForceDrag(
+    std::string_view spec, std::ostream& errors)
+{
+  const std::size_t first = spec.find(':');
+  const std::size_t second = first == std::string_view::npos
+                                 ? std::string_view::npos
+                                 : spec.find(':', first + 1);
+  const std::size_t third = second == std::string_view::npos
+                                ? std::string_view::npos
+                                : spec.find(':', second + 1);
+  if (first == std::string_view::npos || second == std::string_view::npos
+      || third == std::string_view::npos || first == 0 || second == first + 1
+      || third == second + 1 || third + 1 >= spec.size()) {
+    errors << "--scripted-pointer-force-drag expects "
+              "<after-frames>:<x>,<y>:<dx>,<dy>:<duration-frames>\n";
+    return std::nullopt;
+  }
+
+  const auto parsePositiveInt =
+      [&errors](
+          std::string_view text, std::string_view field) -> std::optional<int> {
+    const std::string value(text);
+    char* end = nullptr;
+    const long parsed = std::strtol(value.c_str(), &end, 10);
+    if (end == value.c_str() || *end != '\0' || parsed < 1
+        || parsed > std::numeric_limits<int>::max()) {
+      errors << field << " must be a positive integer\n";
+      return std::nullopt;
+    }
+    return static_cast<int>(parsed);
+  };
+
+  auto afterFrames = parsePositiveInt(spec.substr(0, first), "after-frames");
+  if (!afterFrames.has_value()) {
+    return std::nullopt;
+  }
+  auto startCursor
+      = parseVector2(spec.substr(first + 1, second - first - 1), errors);
+  if (!startCursor.has_value()) {
+    return std::nullopt;
+  }
+  auto cursorDelta
+      = parseVector2(spec.substr(second + 1, third - second - 1), errors);
+  if (!cursorDelta.has_value()) {
+    return std::nullopt;
+  }
+  auto durationFrames
+      = parsePositiveInt(spec.substr(third + 1), "duration-frames");
+  if (!durationFrames.has_value()) {
+    return std::nullopt;
+  }
+
+  ScriptedForceDrag forceDrag;
+  forceDrag.afterFrames = *afterFrames;
+  forceDrag.target
+      = "pixel:" + std::string(spec.substr(first + 1, second - first - 1));
+  forceDrag.startCursor = *startCursor;
+  forceDrag.cursorDelta = *cursorDelta;
+  forceDrag.durationFrames = *durationFrames;
+  forceDrag.usePointer = true;
   return forceDrag;
 }
 
@@ -1461,7 +1552,32 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
         std::cerr << "runDemos: --scripted-force-drag requires an argument\n";
         return 1;
       }
+      if (scriptedForceDrag.has_value()) {
+        std::cerr << "runDemos: only one scripted force-drag mode is allowed\n";
+        return 1;
+      }
       auto parsed = parseScriptedForceDrag(argv[i + 1], std::cerr);
+      if (!parsed.has_value()) {
+        return 1;
+      }
+      if (!scriptedEventLogPath.empty()) {
+        parsed->eventLogPath = scriptedEventLogPath;
+      }
+      scriptedForceDrag = std::move(parsed);
+      ++i;
+      continue;
+    }
+    if (arg == "--scripted-pointer-force-drag") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr
+            << "runDemos: --scripted-pointer-force-drag requires an argument\n";
+        return 1;
+      }
+      if (scriptedForceDrag.has_value()) {
+        std::cerr << "runDemos: only one scripted force-drag mode is allowed\n";
+        return 1;
+      }
+      auto parsed = parseScriptedPointerForceDrag(argv[i + 1], std::cerr);
       if (!parsed.has_value()) {
         return 1;
       }
@@ -1519,7 +1635,8 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
   if (!scriptedEventLogPath.empty() && !scriptedDemoSwitch.has_value()
       && !scriptedForceDrag.has_value()) {
     std::cerr << "runDemos: --scripted-demo-event-log requires "
-                 "--scripted-demo-switch or --scripted-force-drag\n";
+                 "--scripted-demo-switch, --scripted-force-drag, or "
+                 "--scripted-pointer-force-drag\n";
     return 1;
   }
   if (scriptedDemoSwitch.has_value() && cycleScenes) {

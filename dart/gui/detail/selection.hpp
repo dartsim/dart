@@ -121,6 +121,20 @@ public:
       const std::vector<dart::gui::RenderableDescriptor>& descriptors,
       const Eigen::Vector3d& targetPoint);
 
+  bool beginScriptedForceDragAtPointer(
+      const FrameViewport& viewport,
+      DartScene& scene,
+      const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      const Eigen::Vector2d& cursor,
+      Eigen::Vector3d& startPoint,
+      dart::gui::ViewerLifecycleState& lifecycle);
+
+  bool updateScriptedForceDragAtPointer(
+      const FrameViewport& viewport,
+      DartScene& scene,
+      const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      const Eigen::Vector2d& cursor);
+
   void cancelActiveDrag(DartScene& scene);
 
 private:

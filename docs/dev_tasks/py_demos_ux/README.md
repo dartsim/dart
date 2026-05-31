@@ -141,8 +141,9 @@ navigation, and a path for scene-specific controls.
 
 ## Remaining work
 
-- Add full coordinate-level viewer mouse-event injection coverage for
-  force-drag if the Filament test harness grows synthetic pointer input.
+- Add full OS/GLFW mouse-event injection coverage only if the Filament test
+  harness grows synthetic pointer input beyond the current framebuffer-pixel
+  force-drag capture path.
 - Consider process- or worker-isolated demo construction if a future demo
   factory can block indefinitely before returning to the C++ viewer loop.
 - Decide whether dock layout persistence is needed after the default layout

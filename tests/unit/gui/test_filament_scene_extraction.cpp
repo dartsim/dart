@@ -1081,11 +1081,15 @@ TEST(FilamentSceneExtraction, DemoWorkspaceSupportsScriptedSwitchCaptureEvents)
       applicationSource.find("\"restored_previous_demo\""), std::string::npos);
   EXPECT_NE(
       applicationSource.find("\"--scripted-force-drag\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-pointer-force-drag\""),
+      std::string::npos);
   EXPECT_NE(sceneFrameSource.find("\"force_drag_started\""), std::string::npos);
   EXPECT_NE(captureSource.find("\"--switch-scene\""), std::string::npos);
   EXPECT_NE(
       captureSource.find("\"--scripted-demo-switch\""), std::string::npos);
   EXPECT_NE(captureSource.find("\"--force-drag-target\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"--force-drag-pixel\""), std::string::npos);
   EXPECT_NE(captureSource.find("\"events.jsonl\""), std::string::npos);
   EXPECT_NE(captureSource.find("\"manifest.json\""), std::string::npos);
 }
@@ -1286,6 +1290,24 @@ TEST(FilamentSceneExtraction, ScriptedForceDragTargetsRenderableAndCancels)
   ASSERT_TRUE(selection.beginScriptedForceDrag(
       viewport, scene, descriptors, "id:91", startPoint, lifecycle));
   selection.cancelActiveDrag(scene);
+  const std::size_t eventsBeforePointerDrag = events.size();
+  ASSERT_TRUE(selection.beginScriptedForceDragAtPointer(
+      viewport,
+      scene,
+      descriptors,
+      Eigen::Vector2d(320.0, 240.0),
+      startPoint,
+      lifecycle));
+  EXPECT_TRUE(startPoint.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(selection.updateScriptedForceDragAtPointer(
+      viewport, scene, descriptors, Eigen::Vector2d(380.0, 200.0)));
+  ASSERT_EQ(events.size(), eventsBeforePointerDrag + 1u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "script_shape");
+  EXPECT_TRUE(events.back().active);
+  selection.cancelActiveDrag(scene);
+  ASSERT_EQ(events.size(), eventsBeforePointerDrag + 2u);
+  EXPECT_FALSE(events.back().active);
   EXPECT_FALSE(selection.beginScriptedForceDrag(
       viewport, scene, descriptors, "missing_target", startPoint, lifecycle));
 }

@@ -85,6 +85,10 @@ def _capture_stem(args: argparse.Namespace) -> str:
     force_drag_target = getattr(args, "force_drag_target", "")
     if force_drag_target:
         return f"{_safe_stem(args.scene)}_force_{_safe_stem(force_drag_target)}"
+    force_drag_pixel = getattr(args, "force_drag_pixel", None)
+    if force_drag_pixel is not None:
+        x, y = force_drag_pixel
+        return f"{_safe_stem(args.scene)}_force_pixel_{x:g}_{y:g}"
     return _safe_stem(args.scene)
 
 
@@ -101,7 +105,24 @@ def _parse_vector3(text: str) -> tuple[float, float, float]:
     return vector
 
 
+def _parse_vector2(text: str) -> tuple[float, float]:
+    parts = text.split(",")
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError("expected <x>,<y>")
+    try:
+        vector = (float(parts[0]), float(parts[1]))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("expected finite numeric vector") from exc
+    if not all(math.isfinite(component) for component in vector):
+        raise argparse.ArgumentTypeError("expected finite numeric vector")
+    return vector
+
+
 def _format_vector3(value: tuple[float, float, float]) -> str:
+    return ",".join(f"{component:g}" for component in value)
+
+
+def _format_vector2(value: tuple[float, float]) -> str:
     return ",".join(f"{component:g}" for component in value)
 
 
@@ -177,6 +198,22 @@ def build_demo_args(
                     f"{getattr(args, 'force_drag_frame', 2)}:"
                     f"{force_drag_target}:"
                     f"{_format_vector3(getattr(args, 'force_drag_delta'))}:"
+                    f"{getattr(args, 'force_drag_frames', 8)}"
+                ),
+            ]
+        )
+        event_log = getattr(args, "event_log", None)
+        if event_log is not None and "--scripted-demo-event-log" not in demo_args:
+            demo_args.extend(["--scripted-demo-event-log", str(event_log)])
+    force_drag_pixel = getattr(args, "force_drag_pixel", None)
+    if force_drag_pixel is not None:
+        demo_args.extend(
+            [
+                "--scripted-pointer-force-drag",
+                (
+                    f"{getattr(args, 'force_drag_frame', 2)}:"
+                    f"{_format_vector2(force_drag_pixel)}:"
+                    f"{_format_vector2(getattr(args, 'force_drag_delta_pixels'))}:"
                     f"{getattr(args, 'force_drag_frames', 8)}"
                 ),
             ]
@@ -274,6 +311,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=(0.8, 0.0, 0.2),
         help="World-space target offset for scripted force drag as <x>,<y>,<z>.",
     )
+    parser.add_argument(
+        "--force-drag-pixel",
+        type=_parse_vector2,
+        help="Framebuffer pixel <x>,<y> where scripted force drag starts.",
+    )
+    parser.add_argument(
+        "--force-drag-delta-pixels",
+        type=_parse_vector2,
+        default=(180.0, -60.0),
+        help="Framebuffer pixel drag delta as <dx>,<dy>.",
+    )
     return parser.parse_args(argv)
 
 
@@ -287,13 +335,18 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--switch-frame must be positive")
     if args.switch_scene and args.frames <= args.switch_frame:
         raise SystemExit("--frames must be greater than --switch-frame")
-    if args.switch_scene and args.force_drag_target:
-        raise SystemExit("--switch-scene and --force-drag-target cannot be combined")
+    has_force_drag = bool(args.force_drag_target) or args.force_drag_pixel is not None
+    if args.switch_scene and has_force_drag:
+        raise SystemExit("--switch-scene and force-drag capture cannot be combined")
+    if args.force_drag_target and args.force_drag_pixel is not None:
+        raise SystemExit(
+            "--force-drag-target and --force-drag-pixel cannot be combined"
+        )
     if args.force_drag_frame < 1:
         raise SystemExit("--force-drag-frame must be positive")
     if args.force_drag_frames < 1:
         raise SystemExit("--force-drag-frames must be positive")
-    if args.force_drag_target and args.frames <= (
+    if has_force_drag and args.frames <= (
         args.force_drag_frame + args.force_drag_frames
     ):
         raise SystemExit(
@@ -316,7 +369,7 @@ def main(argv: list[str] | None = None) -> int:
         if path.exists():
             path.unlink()
 
-    needs_event_log = bool(args.switch_scene or args.force_drag_target)
+    needs_event_log = bool(args.switch_scene or has_force_drag)
     if needs_event_log:
         args.event_log = events
     start_time = time.monotonic()
@@ -336,7 +389,16 @@ def main(argv: list[str] | None = None) -> int:
                     "target": args.force_drag_target,
                 }
                 if args.force_drag_target
-                else None
+                else (
+                    {
+                        "delta_pixels": list(args.force_drag_delta_pixels),
+                        "duration_frames": args.force_drag_frames,
+                        "pixel": list(args.force_drag_pixel),
+                        "start_frame": args.force_drag_frame,
+                    }
+                    if args.force_drag_pixel is not None
+                    else None
+                )
             ),
             "artifacts": {
                 "events": str(events) if needs_event_log else None,

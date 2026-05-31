@@ -1053,6 +1053,43 @@ bool SelectionController::updateScriptedForceDragToTarget(
       viewport, scene, descriptors, cursor->x(), cursor->y());
 }
 
+bool SelectionController::beginScriptedForceDragAtPointer(
+    const FrameViewport& viewport,
+    DartScene& scene,
+    const std::vector<RenderableDescriptor>& descriptors,
+    const Eigen::Vector2d& cursor,
+    Eigen::Vector3d& startPoint,
+    ViewerLifecycleState& lifecycle)
+{
+  if (!cursor.allFinite()) {
+    return false;
+  }
+
+  return beginForceDragAtPointer(
+      viewport,
+      scene,
+      descriptors,
+      cursor.x(),
+      cursor.y(),
+      std::nullopt,
+      startPoint,
+      lifecycle);
+}
+
+bool SelectionController::updateScriptedForceDragAtPointer(
+    const FrameViewport& viewport,
+    DartScene& scene,
+    const std::vector<RenderableDescriptor>& descriptors,
+    const Eigen::Vector2d& cursor)
+{
+  if (!cursor.allFinite()) {
+    return false;
+  }
+
+  return updateForceDragAtPointer(
+      viewport, scene, descriptors, cursor.x(), cursor.y());
+}
+
 void SelectionController::cancelActiveDrag(DartScene& scene)
 {
   endForceDrag(scene);

@@ -89,6 +89,11 @@
   user drags. If the scripted target moves outside the active pane, the
   gesture cancels and logs `force_drag_target_unreachable` instead of leaving
   stale drag state active.
+- `py-demo-capture --force-drag-pixel <x>,<y>` now drives a literal
+  framebuffer-pixel force drag with `--force-drag-delta-pixels <dx>,<dy>`.
+  This records `start_pixel` and `delta_pixels` in `events.jsonl` and
+  `manifest.json`, so visual tests can reproduce a specific viewport click and
+  drag without depending on a renderable name.
 - Slider and plot labels now render above the control in scene panels, using
   hidden ImGui ids for the actual widgets, so narrow right-docked panels do not
   clip labels or waste horizontal plot/slider space. The bottom diagnostics
@@ -326,6 +331,7 @@ Scripted force-drag proof:
 ```bash
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pointer_final
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-pixel 465,388 --force-drag-delta-pixels 170,-40 --force-drag-frame 2 --force-drag-frames 8 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pixel_final
 ```
 
 The event log recorded `force_drag_started`, eight
@@ -337,7 +343,11 @@ magnitude in the docked workspace. The updated pointer-path proof produced the
 same event sequence from viewport-coordinate picking, and the viewed frame
 `/tmp/dart_py_demo_capture_force_drag_pointer_final/png_frames/frame_000006.png`
 showed the selected target, spring/force overlay, and force magnitude in the
-docked workspace.
+docked workspace. The pixel-path proof recorded `start_pixel` and
+`delta_pixels` in the event log, and the viewed frame
+`/tmp/dart_py_demo_capture_force_drag_pixel_final/png_frames/frame_000006.png`
+showed the selected target, spring/force overlay, and force magnitude after a
+literal framebuffer-pixel drag.
 
 Focused checks:
 
@@ -369,6 +379,9 @@ pixi run build-py-dev-docking
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pointer_final
+pixi run python -m py_compile scripts/capture_py_demo.py python/tests/unit/test_capture_py_demo.py
+pixi run pytest python/tests/unit/test_capture_py_demo.py -q
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-pixel 465,388 --force-drag-delta-pixels 170,-40 --force-drag-frame 2 --force-drag-frames 8 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag_pixel_final
 pixi run test-unit gui
 pixi run lint
 ```

@@ -158,12 +158,20 @@ void appendScriptedForceDragEvent(
     return;
   }
 
-  const Eigen::Vector3d& offset = scriptedForceDrag->targetOffset;
   out << "{\"source\":\"viewer\",\"event\":\"" << jsonEscape(event)
       << "\",\"frame\":" << frame << ",\"target\":\""
-      << jsonEscape(scriptedForceDrag->target) << "\",\"offset\":["
-      << offset.x() << ',' << offset.y() << ',' << offset.z()
-      << "],\"status\":\"" << jsonEscape(status) << "\"}\n";
+      << jsonEscape(scriptedForceDrag->target) << '"';
+  if (scriptedForceDrag->usePointer) {
+    const Eigen::Vector2d& start = scriptedForceDrag->startCursor;
+    const Eigen::Vector2d& delta = scriptedForceDrag->cursorDelta;
+    out << ",\"start_pixel\":[" << start.x() << ',' << start.y()
+        << "],\"delta_pixels\":[" << delta.x() << ',' << delta.y() << ']';
+  } else {
+    const Eigen::Vector3d& offset = scriptedForceDrag->targetOffset;
+    out << ",\"offset\":[" << offset.x() << ',' << offset.y() << ','
+        << offset.z() << ']';
+  }
+  out << ",\"status\":\"" << jsonEscape(status) << "\"}\n";
 }
 
 } // namespace
@@ -241,13 +249,23 @@ void SceneFrameUpdater::update(
     const int currentFrame = mLifecycle.renderedFrames;
     if (!mScriptedForceDrag->started
         && currentFrame >= mScriptedForceDrag->afterFrames) {
-      if (mSelectionController.beginScriptedForceDrag(
-              viewport,
-              mDartScene,
-              descriptors,
-              mScriptedForceDrag->target,
-              mScriptedForceDrag->startPoint,
-              mLifecycle)) {
+      const bool started
+          = mScriptedForceDrag->usePointer
+                ? mSelectionController.beginScriptedForceDragAtPointer(
+                      viewport,
+                      mDartScene,
+                      descriptors,
+                      mScriptedForceDrag->startCursor,
+                      mScriptedForceDrag->startPoint,
+                      mLifecycle)
+                : mSelectionController.beginScriptedForceDrag(
+                      viewport,
+                      mDartScene,
+                      descriptors,
+                      mScriptedForceDrag->target,
+                      mScriptedForceDrag->startPoint,
+                      mLifecycle);
+      if (started) {
         mScriptedForceDrag->started = true;
         appendScriptedForceDragEvent(
             mScriptedForceDrag,
@@ -270,18 +288,33 @@ void SceneFrameUpdater::update(
       const double alpha
           = static_cast<double>(mScriptedForceDrag->elapsedFrames + 1)
             / static_cast<double>(duration);
-      const Eigen::Vector3d targetPoint
-          = mScriptedForceDrag->startPoint
-            + mScriptedForceDrag->targetOffset * std::min(1.0, alpha);
-      if (!mSelectionController.updateScriptedForceDragToTarget(
-              viewport, mDartScene, descriptors, targetPoint)) {
+      const bool updated
+          = mScriptedForceDrag->usePointer
+                ? mSelectionController.updateScriptedForceDragAtPointer(
+                      viewport,
+                      mDartScene,
+                      descriptors,
+                      mScriptedForceDrag->startCursor
+                          + mScriptedForceDrag->cursorDelta
+                                * std::min(1.0, alpha))
+                : mSelectionController.updateScriptedForceDragToTarget(
+                      viewport,
+                      mDartScene,
+                      descriptors,
+                      mScriptedForceDrag->startPoint
+                          + mScriptedForceDrag->targetOffset
+                                * std::min(1.0, alpha));
+      if (!updated) {
         mSelectionController.cancelActiveDrag(mDartScene);
         mScriptedForceDrag->completed = true;
         appendScriptedForceDragEvent(
             mScriptedForceDrag,
             "force_drag_target_unreachable",
             currentFrame,
-            "scripted force-drag target moved outside the active viewport");
+            mScriptedForceDrag->usePointer
+                ? "scripted force-drag pixel path cannot update"
+                : "scripted force-drag target moved outside the active "
+                  "viewport");
       } else {
         appendScriptedForceDragEvent(
             mScriptedForceDrag,
