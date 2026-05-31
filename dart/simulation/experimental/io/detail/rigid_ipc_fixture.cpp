@@ -33,6 +33,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/experimental/io/detail/rigid_ipc_fixture.hpp>
@@ -3142,6 +3143,31 @@ RigidIpcReplayState populateRigidIpcReplayWorld(
     }
 
     state.bodies.push_back(std::move(bodyState));
+  }
+
+  return state;
+}
+
+RigidIpcReplayState populateAndStepRigidIpcReplayWorld(
+    World& world,
+    const RigidIpcFixture& fixture,
+    const RigidIpcReplayOptions& replayOptions,
+    compute::RigidIpcContactStageOptions stageOptions,
+    compute::RigidIpcSolverStats* stats)
+{
+  RigidIpcReplayState state
+      = populateRigidIpcReplayWorld(world, fixture, replayOptions);
+
+  applyRigidIpcFixtureStageOptions(fixture, stageOptions);
+
+  compute::SequentialExecutor executor;
+  compute::RigidIpcContactStage ipcStage(stageOptions);
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  if (stats != nullptr) {
+    *stats = ipcStage.getLastStats();
   }
 
   return state;

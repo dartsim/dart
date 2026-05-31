@@ -1,5 +1,33 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: reusable one-step fixture runtime replay
+
+Delivered a bounded fixture/runtime helper slice for Phases 1 and 5:
+
+- Added `populateAndStepRigidIpcReplayWorld(...)` in the internal rigid IPC
+  fixture module. The helper populates an experimental `World`, applies parsed
+  fixture solver metadata to the supplied `RigidIpcContactStageOptions`, runs
+  exactly one opt-in `RigidIpcContactStage` step, and can return the resulting
+  `RigidIpcSolverStats`.
+- Added runtime coverage proving the helper applies fixture-owned barrier and
+  lagged-friction policy over caller defaults: a replay scene whose caller
+  supplies an inactive narrow band becomes active through parsed `dHat`, while
+  parsed zero friction iterations suppress active friction rows.
+- Closed Phase 1/1b in the dev-task checklist. The broader rigid IPC task
+  remains open on CCD corpus parity, dense-contact robustness/convergence,
+  broader friction coverage, persisted scene policy, mixed coupling, and
+  manifest-row completion.
+
+Validation in this slice:
+
+- `pixi run lint`
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayHelperAppliesStagePolicy'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: legacy VTK fixture mesh replay
 
 Delivered a bounded fixture-import slice for Phase 1:

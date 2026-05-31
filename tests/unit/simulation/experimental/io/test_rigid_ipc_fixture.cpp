@@ -1167,6 +1167,61 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
   EXPECT_DOUBLE_EQ(invalidStage.getFrictionConvergenceTolerance(), 0.0);
 }
 
+TEST(RigidIpcFixtureReplay, RuntimeReplayHelperAppliesStagePolicy)
+{
+  constexpr double initialHeight = 0.005;
+  const expio::RigidIpcFixture fixture = loadFixture(R"json(
+{
+  "scene_type": "distance_barrier_rb_problem",
+  "timestep": 0.05,
+  "distance_barrier_constraint": {
+    "initial_barrier_activation_distance": 0.01
+  },
+  "friction_constraints": {
+    "iterations": 0,
+    "static_friction_speed_bound": 0.001
+  },
+  "rigid_body_problem": {
+    "coefficient_friction": 1.0,
+    "gravity": [0.0, 0.0, 0.0],
+    "rigid_bodies": [{
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "is_dof_fixed": true
+    }, {
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "position": [0.0, 0.0, 0.005],
+      "linear_velocity": [1.0, 0.0, 0.0]
+    }]
+  }
+}
+)json");
+
+  sx::World world;
+  sx::compute::RigidIpcContactStageOptions stageOptions;
+  stageOptions.activationDistance = 0.001;
+  stageOptions.frictionIterations = 3u;
+
+  sx::compute::RigidIpcSolverStats stats;
+  const expio::RigidIpcReplayState state
+      = expio::populateAndStepRigidIpcReplayWorld(
+          world, fixture, {}, stageOptions, &stats);
+
+  ASSERT_EQ(state.bodies.size(), 2u);
+  EXPECT_TRUE(state.bodies[0].collisionMeshLoaded);
+  EXPECT_TRUE(state.bodies[1].collisionMeshLoaded);
+  EXPECT_TRUE(stats.converged);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(stats.frictionIterations, 0u);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.05);
+  EXPECT_EQ(world.getFrame(), 1u);
+
+  const auto dynamicBody = world.getRigidBody(state.bodies[1].bodyName);
+  ASSERT_TRUE(dynamicBody.has_value());
+  EXPECT_GT(dynamicBody->getTranslation().x(), 0.0);
+  EXPECT_GT(dynamicBody->getTranslation().z(), initialHeight);
+}
+
 TEST(RigidIpcFixtureReplay, ReplaysComparisonScriptMshScene)
 {
   const std::filesystem::path assetRoot

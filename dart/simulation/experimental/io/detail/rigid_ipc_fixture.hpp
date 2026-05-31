@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Core>
@@ -50,10 +51,6 @@ struct CcdPrimitiveResult;
 namespace dart::simulation::experimental {
 class World;
 } // namespace dart::simulation::experimental
-
-namespace dart::simulation::experimental::compute {
-struct RigidIpcContactStageOptions;
-} // namespace dart::simulation::experimental::compute
 
 namespace dart::simulation::experimental::io::detail {
 
@@ -254,16 +251,31 @@ DART_EXPERIMENTAL_API void applyRigidIpcFixtureStageOptions(
 
 /// Populate an experimental World with the currently supported fixture state.
 ///
-/// Supported OBJ, OFF, STL, and rigid-ipc MSH mesh paths plus polygonal inline
-/// geometry are loaded as native-backed mesh collision shapes. Unsupported or
-/// missing mesh assets are preserved in the returned replay state with a status
-/// message.
-/// This replay path still does not enable a rigid IPC solver.
+/// Supported OBJ, OFF, STL, legacy VTK, and rigid-ipc MSH mesh paths plus
+/// polygonal inline geometry are loaded as native-backed mesh collision shapes.
+/// Unsupported or missing mesh assets are preserved in the returned replay
+/// state with a status message. This replay path still does not enable a rigid
+/// IPC solver.
 [[nodiscard]] DART_EXPERIMENTAL_API RigidIpcReplayState
 populateRigidIpcReplayWorld(
     World& world,
     const RigidIpcFixture& fixture,
     const RigidIpcReplayOptions& options = {});
+
+/// Populate an experimental World from a fixture and run exactly one opt-in
+/// rigid IPC contact-stage step.
+///
+/// This internal helper demonstrates the owned runtime replay path for manifest
+/// drivers: fixture population remains separate from solver selection, parsed
+/// fixture metadata is applied to the supplied stage options, and the default
+/// World step pipeline is left unchanged.
+[[nodiscard]] DART_EXPERIMENTAL_API RigidIpcReplayState
+populateAndStepRigidIpcReplayWorld(
+    World& world,
+    const RigidIpcFixture& fixture,
+    const RigidIpcReplayOptions& replayOptions = {},
+    compute::RigidIpcContactStageOptions stageOptions = {},
+    compute::RigidIpcSolverStats* stats = nullptr);
 
 DART_EXPERIMENTAL_API RigidIpcCcdCase loadRigidIpcCcdCase(
     std::istream& input, const RigidIpcFixtureLoadOptions& options = {});

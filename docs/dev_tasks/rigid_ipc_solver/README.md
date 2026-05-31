@@ -4,11 +4,11 @@
 
 - [x] Phase 0: establish the upstream rigid-ipc fixture, test, benchmark, and
       comparison manifest with validation tooling.
-- [ ] Phase 1: fixture/import surface for rigid meshes, fixed DOFs, kinematic
+- [x] Phase 1: fixture/import surface for rigid meshes, fixed DOFs, kinematic
       controls, forces, gravity, friction, restitution, and diagnostics.
   - [x] Phase 1a: internal JSON fixture reader for the first mesh-path subset
         with explicit unsupported-field diagnostics.
-  - [ ] Phase 1b: turn loaded fixture records into DART-native replay state
+  - [x] Phase 1b: turn loaded fixture records into DART-native replay state
         with mesh resolution, fixture-row ownership, and runtime examples.
     - [x] First internal replay path populates an experimental `World` with
           fixture timestep, gravity, rigid body poses, velocities, loads,
@@ -53,9 +53,10 @@
     - [x] Cover the remaining audited upstream mesh extension beyond
           OBJ/OFF/MSH/STL/inline polygons: legacy `.vtk` unstructured-grid
           surface meshes now replay as native-backed mesh collision shapes.
-    - [ ] Add a reusable runtime fixture example that demonstrates the owned
-          load, replay, stage-policy, and opt-in IPC stepping path without
-          promoting the internal fixture importer as a public solver registry.
+    - [x] Add a reusable internal one-step runtime fixture helper that
+          demonstrates the owned load, replay, stage-policy, and opt-in IPC
+          stepping path without promoting the internal fixture importer as a
+          public solver registry.
 - [ ] Phase 2: rigid curved-trajectory CCD and minimum-separation tests.
   - [x] Phase 2a: internal direct CCD test-data reader for upstream edge-edge
         and face-vertex rows.
@@ -235,6 +236,9 @@
   - [x] Bridge fixture-level kinematic body policy into the runtime body tags
         consumed by the opt-in IPC stage, preserving parsed prescribed-motion
         intent without adding a public solver registry.
+  - [x] Add a reusable internal one-step fixture replay helper for manifest
+        drivers that need to populate a replay world, apply parsed stage policy,
+        execute one opt-in IPC stage step, and collect solver diagnostics.
   - [ ] Continue toward persisted scene policy, diagnostics, examples, and
         mixed rigid/deformable coupling.
 - [ ] Phase 6: complete the manifest rows as DART-native tests, examples,

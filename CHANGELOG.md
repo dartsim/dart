@@ -948,6 +948,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added an internal rigid IPC fixture-to-stage-options bridge so replay
     drivers can consistently apply parsed barrier, friction, and absolute
     convergence-tolerance metadata to the opt-in runtime IPC stage.
+  - Added an internal one-step rigid IPC fixture runtime replay helper that
+    populates an experimental `World`, applies parsed fixture stage policy, runs
+    one opt-in IPC contact-stage step, and can return solver diagnostics for
+    manifest drivers.
   - Extended rigid IPC fixture mesh replay to legacy VTK unstructured-grid
     surface meshes, covering the remaining mesh extension present in the
     audited upstream rigid-ipc corpus while preserving native mesh collision
