@@ -671,6 +671,7 @@ TEST(SkeletonLoader, RejectsUnsupportedEulerJoint)
   sx::World world;
   EXPECT_THROW(
       sx::io::addSkeleton(world, *skeleton), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
 }
 
 TEST(SkeletonLoader, RejectsMultipleCollidableCollisionShapes)
@@ -691,6 +692,7 @@ TEST(SkeletonLoader, RejectsMultipleCollidableCollisionShapes)
   sx::World world;
   EXPECT_THROW(
       sx::io::addSkeleton(world, *skeleton), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
 }
 
 TEST(SkeletonLoader, RejectsOffsetCollisionShape)
@@ -710,6 +712,7 @@ TEST(SkeletonLoader, RejectsOffsetCollisionShape)
   sx::World world;
   EXPECT_THROW(
       sx::io::addSkeleton(world, *skeleton), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
 }
 
 TEST(SkeletonLoader, RejectsUnsupportedCollisionShape)
@@ -728,6 +731,7 @@ TEST(SkeletonLoader, RejectsUnsupportedCollisionShape)
   sx::World world;
   EXPECT_THROW(
       sx::io::addSkeleton(world, *skeleton), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
 }
 
 TEST(SkeletonLoader, RejectsNonExpMapCoordinateCharts)
@@ -745,6 +749,7 @@ TEST(SkeletonLoader, RejectsNonExpMapCoordinateCharts)
     sx::World world;
     EXPECT_THROW(
         sx::io::addSkeleton(world, *skeleton), sx::InvalidArgumentException);
+    EXPECT_EQ(world.getMultibodyCount(), 0u);
   }
 
   {
@@ -760,6 +765,7 @@ TEST(SkeletonLoader, RejectsNonExpMapCoordinateCharts)
     sx::World world;
     EXPECT_THROW(
         sx::io::addSkeleton(world, *skeleton), sx::InvalidArgumentException);
+    EXPECT_EQ(world.getMultibodyCount(), 0u);
   }
 }
 

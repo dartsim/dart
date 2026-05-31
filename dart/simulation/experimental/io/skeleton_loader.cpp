@@ -198,6 +198,9 @@ void validateJointLoadSupported(const dynamics::Joint& joint)
       "Cannot translate legacy mimic actuator on Joint '{}' into an "
       "experimental Joint yet",
       joint.getName());
+
+  validateCoordinateChart(joint);
+  (void)mapJointType(joint);
 }
 
 ActuatorType mapActuatorType(const dynamics::Joint& joint)
@@ -224,6 +227,110 @@ ActuatorType mapActuatorType(const dynamics::Joint& joint)
   return ActuatorType::Force;
 }
 
+std::vector<const dynamics::ShapeNode*> getCollidableShapeNodes(
+    const dynamics::BodyNode& source)
+{
+  std::vector<const dynamics::ShapeNode*> shapeNodes;
+  source.eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](const dynamics::ShapeNode* shapeNode) {
+        const dynamics::CollisionAspect* collisionAspect
+            = shapeNode->getCollisionAspect();
+        if (collisionAspect != nullptr && collisionAspect->isCollidable()) {
+          shapeNodes.push_back(shapeNode);
+        }
+      });
+  return shapeNodes;
+}
+
+void validateMeshCollisionShape(
+    const std::shared_ptr<math::TriMesh<double>>& mesh,
+    const Eigen::Vector3d& scale,
+    const dynamics::BodyNode& bodyNode)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !mesh,
+      InvalidArgumentException,
+      "Cannot translate null mesh collision shape on BodyNode '{}'",
+      bodyNode.getName());
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !scale.allFinite(),
+      InvalidArgumentException,
+      "Cannot translate mesh collision shape with non-finite scale on "
+      "BodyNode '{}'",
+      bodyNode.getName());
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      mesh->getVertices().empty() || mesh->getTriangles().empty(),
+      InvalidArgumentException,
+      "Cannot translate empty mesh collision shape on BodyNode '{}'",
+      bodyNode.getName());
+}
+
+void validateCollisionShapeType(
+    const dynamics::Shape& shape, const dynamics::BodyNode& bodyNode)
+{
+  if (dynamic_cast<const dynamics::BoxShape*>(&shape) != nullptr
+      || dynamic_cast<const dynamics::SphereShape*>(&shape) != nullptr
+      || dynamic_cast<const dynamics::CapsuleShape*>(&shape) != nullptr
+      || dynamic_cast<const dynamics::CylinderShape*>(&shape) != nullptr) {
+    return;
+  }
+
+  if (const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(&shape)) {
+    validateMeshCollisionShape(mesh->getTriMesh(), mesh->getScale(), bodyNode);
+    return;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException,
+      "Cannot translate legacy collision shape type '{}' on BodyNode '{}' into "
+      "an experimental CollisionShape yet",
+      shape.getType(),
+      bodyNode.getName());
+}
+
+const dynamics::ShapeNode* getValidatedCollisionShapeNode(
+    const dynamics::BodyNode& source)
+{
+  if (!source.isCollidable()) {
+    return nullptr;
+  }
+
+  const std::vector<const dynamics::ShapeNode*> shapeNodes
+      = getCollidableShapeNodes(source);
+
+  if (shapeNodes.empty()) {
+    return nullptr;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      shapeNodes.size() > 1u,
+      InvalidArgumentException,
+      "Cannot translate BodyNode '{}' with multiple collidable collision "
+      "shapes into an experimental Link yet",
+      source.getName());
+
+  const dynamics::ShapeNode& shapeNode = *shapeNodes.front();
+  const auto shape = shapeNode.getShape();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      shape == nullptr,
+      InvalidArgumentException,
+      "Cannot translate null collision shape on BodyNode '{}'",
+      source.getName());
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !shapeNode.getRelativeTransform().matrix().isApprox(
+          identity.matrix(), 1e-12),
+      InvalidArgumentException,
+      "Cannot translate non-identity collision shape offset on BodyNode '{}' "
+      "into an experimental Link yet",
+      source.getName());
+
+  validateCollisionShapeType(*shape, source);
+  return &shapeNode;
+}
+
 void validateSkeletonLoadSupported(const dynamics::Skeleton& skeleton)
 {
   for (std::size_t i = 0; i < skeleton.getNumJoints(); ++i) {
@@ -235,6 +342,17 @@ void validateSkeletonLoadSupported(const dynamics::Skeleton& skeleton)
         skeleton.getName(),
         i);
     validateJointLoadSupported(*joint);
+  }
+
+  for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
+    const dynamics::BodyNode* bodyNode = skeleton.getBodyNode(i);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        bodyNode == nullptr,
+        InvalidArgumentException,
+        "Cannot translate legacy Skeleton '{}' because body index {} is null",
+        skeleton.getName(),
+        i);
+    (void)getValidatedCollisionShapeNode(*bodyNode);
   }
 }
 
@@ -313,25 +431,10 @@ CollisionShape makeMeshCollisionShape(
     const Eigen::Vector3d& scale,
     const dynamics::BodyNode& bodyNode)
 {
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !mesh,
-      InvalidArgumentException,
-      "Cannot translate null mesh collision shape on BodyNode '{}'",
-      bodyNode.getName());
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !scale.allFinite(),
-      InvalidArgumentException,
-      "Cannot translate mesh collision shape with non-finite scale on "
-      "BodyNode '{}'",
-      bodyNode.getName());
+  validateMeshCollisionShape(mesh, scale, bodyNode);
 
   const auto& sourceVertices = mesh->getVertices();
   const auto& sourceTriangles = mesh->getTriangles();
-  DART_EXPERIMENTAL_THROW_T_IF(
-      sourceVertices.empty() || sourceTriangles.empty(),
-      InvalidArgumentException,
-      "Cannot translate empty mesh collision shape on BodyNode '{}'",
-      bodyNode.getName());
 
   std::vector<Eigen::Vector3d> vertices;
   vertices.reserve(sourceVertices.size());
@@ -353,47 +456,12 @@ CollisionShape makeMeshCollisionShape(
 
 void copyCollisionShape(const dynamics::BodyNode& source, Link& target)
 {
-  if (!source.isCollidable()) {
+  const dynamics::ShapeNode* shapeNode = getValidatedCollisionShapeNode(source);
+  if (shapeNode == nullptr) {
     return;
   }
 
-  std::vector<const dynamics::ShapeNode*> shapeNodes;
-  source.eachShapeNodeWith<dynamics::CollisionAspect>(
-      [&](const dynamics::ShapeNode* shapeNode) {
-        const dynamics::CollisionAspect* collisionAspect
-            = shapeNode->getCollisionAspect();
-        if (collisionAspect != nullptr && collisionAspect->isCollidable()) {
-          shapeNodes.push_back(shapeNode);
-        }
-      });
-
-  if (shapeNodes.empty()) {
-    return;
-  }
-
-  DART_EXPERIMENTAL_THROW_T_IF(
-      shapeNodes.size() > 1u,
-      InvalidArgumentException,
-      "Cannot translate BodyNode '{}' with multiple collidable collision "
-      "shapes into an experimental Link yet",
-      source.getName());
-
-  const dynamics::ShapeNode& shapeNode = *shapeNodes.front();
-  const auto shape = shapeNode.getShape();
-  DART_EXPERIMENTAL_THROW_T_IF(
-      shape == nullptr,
-      InvalidArgumentException,
-      "Cannot translate null collision shape on BodyNode '{}'",
-      source.getName());
-
-  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !shapeNode.getRelativeTransform().matrix().isApprox(
-          identity.matrix(), 1e-12),
-      InvalidArgumentException,
-      "Cannot translate non-identity collision shape offset on BodyNode '{}' "
-      "into an experimental Link yet",
-      source.getName());
+  const auto shape = shapeNode->getShape();
 
   if (const auto* box = dynamic_cast<const dynamics::BoxShape*>(shape.get())) {
     target.setCollisionShape(CollisionShape::makeBox(0.5 * box->getSize()));
