@@ -168,18 +168,29 @@ starting, active-set reuse) follow from here.
   budget was also raised (64 -> 256) so tight pairs reach a larger safe bound
   before falling back. All 51 barrier + 17 rigid-IPC world tests stay green.
 
-- **[OPEN] Larger arches reach a hard face-face contact the line search still
-  stalls on.** With the indeterminacy fix, 5+ block arches no longer freeze on
-  indeterminacy (`indet=0`) but instead hit a genuine `Hit` at/near TOI 0 (a real
-  face-face contact at zero gap) once the wedges seat into tight compression, and
-  the line search correctly blocks to avoid penetration. This (not per-step cost)
-  is what still gates the larger multi-body paper scenes -- arch (Fig. 11, full),
-  3D packing (Fig. 14), wrecking ball (Fig. 8). Remaining levers: rigorous
-  interval CCD; resting-contact handling that lets a body stay at a barrier gap
-  instead of reaching exact contact; per-contact / warm-started active sets;
-  contact ordering. Reproduce with voussoir wedge meshes
-  (`CollisionShape::makeMesh`); the 3-block case is shipped as a test, larger
-  ones are the next target.
+- **[OPEN] Larger arches: one interface reaches EXACT contact and the barrier
+  never stiffens to hold the gap.** With the indeterminacy fix, a 5-block arch
+  settles for 3 steps then sticks (isolated with per-step `RigidIpcSolverStats`):
+  step 4+ is `LineSearchBlocked` with `lsZero=1`, `indet=0` -- exactly ONE
+  primitive pair reaches `distance <= 0` (a `Hit` at TOI 0), so the line search
+  correctly blocks to avoid penetration. The telling stat: `barrierStiffness`
+  stays at its initial ~1.1e4 with `barrierStiffnessIncreases=0` -- the adaptive
+  kappa NEVER increases, so the soft barrier lets that interface creep to exact
+  contact, and then it deadlocks (at-contact -> blocked -> no applied step -> no
+  kappa update -> still at contact). So the gate is NOT the line search itself
+  (it is doing the right thing) -- it is core IPC resting-contact robustness in
+  dense compression: the barrier must hold every interface at a positive gap.
+  Two coupled fixes, both touching core numerics (high regression risk across ALL
+  scenes -- verify the full suite + every anti-tunneling/stack/kinematic test):
+  (1) a positive minimum-separation CCD/barrier ("dHat min separation") so
+  interfaces are held a small distance apart and the line search never sees an
+  exact-contact `Hit`; and/or (2) make the adaptive kappa actually increase when
+  a closest pair keeps approaching across steps in a dense system (it does not
+  fire here -- investigate `updateRigidIpcBarrierStiffness` and whether a blocked
+  solve should bump kappa for the next step). This still gates the larger
+  multi-body paper scenes -- arch (Fig. 11, full), 3D packing (Fig. 14), wrecking
+  ball (Fig. 8). The 3-block arch is shipped as a test; reproduce the 5-block with
+  voussoir wedge meshes (`CollisionShape::makeMesh`).
 
 ## Optimization roadmap (CPU and GPU)
 
