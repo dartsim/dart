@@ -41,6 +41,37 @@ def _gui_run_demos_available() -> bool:
     return hasattr(dart, "gui") and hasattr(dart.gui, "run_demos")
 
 
+def _read_ppm(path: pathlib.Path) -> tuple[int, int, bytes]:
+    data = path.read_bytes()
+    parts = data.split(b"\n", 3)
+    assert len(parts) == 4
+    assert parts[0] == b"P6"
+    width, height = (int(part) for part in parts[1].split())
+    assert parts[2] == b"255"
+    return width, height, parts[3][: width * height * 3]
+
+
+def _mean_luminance(
+    pixels: bytes,
+    width: int,
+    x0: int,
+    x1: int,
+    y0: int,
+    y1: int,
+) -> float:
+    total = 0.0
+    count = 0
+    for y in range(y0, y1):
+        row = y * width * 3
+        for x in range(x0, x1):
+            offset = row + x * 3
+            red, green, blue = pixels[offset : offset + 3]
+            total += 0.2126 * red + 0.7152 * green + 0.0722 * blue
+            count += 1
+    assert count > 0
+    return total / count
+
+
 def _simulation_experimental_has(*names: str) -> bool:
     try:
         import dartpy.simulation_experimental as sx
@@ -504,6 +535,81 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
         # PPM "P6" header + non-empty pixel payload (>1KB) for any valid frame.
         assert data.startswith(b"P6"), f"not a PPM: {data[:8]!r}"
         assert len(data) > 1024, f"PPM too small: {len(data)} bytes"
+
+
+def test_show_ui_uses_docked_workspace_regions(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, ScenePanel, SceneSetup
+
+    if not getattr(dart.gui, "is_docking_available", lambda: False)():
+        pytest.skip("GUI build does not include ImGui docking support")
+
+    monkeypatch.setenv("LIBGL_ALWAYS_SOFTWARE", "1")
+    monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+
+    def build_scene() -> SceneSetup:
+        world = dart.World("docked_smoke")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        panel = ScenePanel(
+            "Controls",
+            lambda builder, _context: builder.text("dock smoke"),
+        )
+        return SceneSetup(world=world, panels=[panel])
+
+    out = tmp_path / "docked.ppm"
+    rc = run(
+        [
+            "--scene",
+            "docked_smoke",
+            "--frames",
+            "4",
+            "--headless",
+            "--show-ui",
+            "--width",
+            "640",
+            "--height",
+            "360",
+            "--screenshot",
+            str(out),
+        ],
+        [
+            PythonDemoScene(
+                id="docked_smoke",
+                title="Docked Smoke",
+                category="Test",
+                summary="Exercises the docked workspace.",
+                build=build_scene,
+            )
+        ],
+    )
+
+    assert rc == 0
+    width, height, pixels = _read_ppm(out)
+    assert (width, height) == (640, 360)
+
+    top = _mean_luminance(pixels, width, 0, width, 0, 70)
+    left = _mean_luminance(pixels, width, 0, 155, 80, 320)
+    right = _mean_luminance(pixels, width, 470, width, 80, 320)
+    bottom = _mean_luminance(pixels, width, 0, width, 320, height)
+    center = _mean_luminance(pixels, width, 180, 460, 100, 300)
+
+    assert top < 70.0
+    assert left < 80.0
+    assert right < 80.0
+    assert bottom < 70.0
+    assert center > 90.0
+    assert center > left + 35.0
+    assert center > right + 35.0
 
 
 def test_scripted_demo_switch_restores_previous_scene_on_factory_error(

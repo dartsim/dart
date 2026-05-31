@@ -61,6 +61,11 @@ private:
 
 void defGuiViewer(nb::module_& m)
 {
+  m.def(
+      "is_docking_available",
+      &dart::gui::isDockingAvailable,
+      "Return whether the GUI build includes Dear ImGui docking support.");
+
   // Run the interactive viewer (Filament + ImGui) against a single world.
   // Argv flags propagate to the C++ runtime: --scene, --cycle-scenes,
   // --frames, --headless, --screenshot <path>, --width, --height, --backend.

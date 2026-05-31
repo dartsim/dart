@@ -33,6 +33,9 @@ navigation, and a path for scene-specific controls.
 - Make scene panels stable docked panels by default, widen the right dock, and
   rebuild the default layout before dockspace submission so ImGui places the
   panels into real dock nodes instead of floating overlays.
+- Add an executable docking smoke that renders a tiny `py-demos --show-ui`
+  scene in a docking-capable build and checks the top, left, right, and bottom
+  dock regions reserve space around a bright central viewport.
 - Add a toolbar `Replay` action that rebuilds the active demo scene and resumes
   from the beginning.
 - Add a toolbar `Reset Layout` action that restores the default docked
@@ -138,6 +141,8 @@ navigation, and a path for scene-specific controls.
   workspace rebuilds a deterministic default dock layout on startup and uses
   `Reset Layout` as the explicit recovery path, rather than trusting stale
   saved panel positions across runs.
+- Reconcile PLAN-103 with the current state: Python demos are now interactive
+  by default with headless/capture modes, not a headless-only scene registry.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
   current filtered/total scene count.

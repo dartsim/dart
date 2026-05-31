@@ -46,6 +46,10 @@
   dock is wider, and the default layout is rebuilt deterministically on startup
   before dockspace submission so ImGui places panels into real dock nodes
   instead of floating overlays.
+- `dartpy.gui.is_docking_available()` exposes docking capability to tests, and
+  an integration smoke now renders `py-demos --show-ui` in a docking-capable
+  build and checks top/left/right/bottom dock regions around the central
+  viewport.
 - Frame-output recording is controlled by the viewer lifecycle state, so the
   toolbar `Stop Record` state now matches whether frames continue writing.
 - Recorded-frame playback now lives in the `Simulation` panel when frame output
@@ -111,6 +115,10 @@
   of truth. Startup rebuilds the deterministic default layout, and
   `Reset Layout` is the explicit recovery path after rearrangement, so stale
   `imgui.ini` state cannot hide controls on the next run.
+- PLAN-103 now describes the current Python demos surface as interactive by
+  default with headless/capture modes, updates the landed scene count to 79, and
+  keeps `dartpy.gui.run_demos` scoped as a constrained examples host rather than
+  a general Python-side scene authoring API.
 - `UNIT_gui_FilamentSceneExtraction` now has direct controller coverage for
   external SimpleFrame-style force-drag callback routing and BodyNode
   shape-offset application points.
@@ -395,6 +403,7 @@ ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_Fil
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_follows_demo_startup_budget_by_default python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_can_use_python_specific_override python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_disable_requires_python_specific_override -q
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_show_ui_uses_docked_workspace_regions -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_scripted_demo_switch_restores_previous_scene_on_startup_timeout -q
