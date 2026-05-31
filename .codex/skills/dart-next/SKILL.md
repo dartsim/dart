@@ -146,9 +146,11 @@ resolution, ready-for-review transition, CI rerun, merge, or branch deletion.
 
 After a PR exists and explicit approval covers PR management, use
 `$dart-manage-pr` or `/dart-manage-pr` for CI, review, and cleanup. For the
-first Codex review on a draft PR, wait for the automatic review signal before
-considering a manual `@codex review`, and request that manual review only after
-explicit approval.
+first Codex review on a draft PR, prefer a top-level `@codex review` after
+explicit approval for PR comments; it can run while the PR remains draft. Once
+Codex is clean and local `pixi run test-all` passes on the current head, the
+draft is ready to mark ready for human review after approval, while merge still
+waits for required hosted checks.
 
 ## Output
 
