@@ -32,13 +32,28 @@
 - Research references: [`../readthedocs/papers.md`](../readthedocs/papers.md)
   (`chen-2024-vbd`, `tinyvbd`, `gaia`).
 - VBD paper/reference gap audit:
-  [`../dev_tasks/vbd_deformable_solver/vbd-paper-gap-audit.md`](../dev_tasks/vbd_deformable_solver/vbd-paper-gap-audit.md)
+  [`104-vertex-block-descent-solver/vbd-paper-gap-audit.md`](104-vertex-block-descent-solver/vbd-paper-gap-audit.md)
   owns the method scope, the component-by-component gap, the elastic-energy
   targets, and the reference performance numbers to beat.
-- Implementation tracking:
-  [`../dev_tasks/vbd_deformable_solver/`](../dev_tasks/vbd_deformable_solver/)
-  owns the multi-session slice status and resume prompt; promote durable output
-  and delete the folder in the completing PR.
+
+## Current Implementation Evidence
+
+The temporary `docs/dev_tasks/vbd_deformable_solver/` tracker was retired after
+the post-merge self-collision follow-up slice because the durable method audit
+and remaining work now live here. PR #2781 landed the DART-owned VBD CPU+CUDA
+solver path: per-vertex block kernels, graph coloring, colored Gauss-Seidel
+block descent, Stable Neo-Hookean tetrahedra, Chebyshev/Rayleigh acceleration,
+World solver selection, static ground contact + Coulomb friction, CPU baseline
+benchmarks, CUDA mass-spring/tetrahedral rollouts, and the first GUI showcases.
+PR #2801 extends that landed path so the World VBD solver honors shared FEM
+tetrahedral material kernels, handles static sphere/box obstacle barriers,
+adds lagged VT/EE surface self-collision penalties, and provides the TinyVBD
+tilted-strand plus contact showcase py-demos.
+
+Remaining durable work is deliberately narrower than the retired task tracker:
+self-contact tangential friction, committed benchmark/profiling JSON, paper
+tetrahedral scene reproduction, Phase 8 SoA plus Gaia CPU comparison, and
+same-GPU RTX-4090 Table 1 reproduction.
 
 ## Relationship To PLAN-081
 

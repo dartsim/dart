@@ -505,7 +505,7 @@ Related public resources:
 
 - **Type:** paper · **Topic:** integration/deformable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
 - **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
-  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/vbd_deformable_solver/vbd-paper-gap-audit.md).
+  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/vbd-paper-gap-audit.md).
 - **Notes:** Block coordinate descent on the variational implicit-Euler
   objective for elastodynamics: each vertex is a 3-DOF block updated with one
   regularized Newton step using a positive-definite local 3x3 Hessian, with
