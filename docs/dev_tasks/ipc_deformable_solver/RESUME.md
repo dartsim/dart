@@ -33,7 +33,7 @@ AI attribution). Net status by milestone:
   while tangential sliding + friction survive (the CCD limiter no longer scales the
   whole step). The "right" CCD fix (limit only the normal approach, keep fast-motion
   CCD safety) remains a documented higher-risk follow-up, cf. #2732.
-- **M7 scale + performance — two increments landed.** (1) Opt-in **iterative
+- **M7 scale + performance — three increments landed.** (1) Opt-in **iterative
   conjugate-gradient projected-Newton linear solve**
   (`DeformableMaterialProperties.useIterativeLinearSolver`, #2810): reuses the
   sparse SPD Hessian assembly but solves with CG instead of `SimplicialLDLT`, so it
@@ -41,13 +41,16 @@ AI attribution). Net status by milestone:
   above the direct node cap (20k) take CG automatically (ceiling raised to 1M
   nodes) instead of degrading to gradient descent; non-convergence falls back to
   steepest descent like the direct path. (2) **Incomplete-Cholesky preconditioner**
-  (this PR): upgraded from diagonal (Jacobi); on stiff barrier contact it collapses
+  (#2811): upgraded from diagonal (Jacobi); on stiff barrier contact it collapses
   the CG iteration count so the iterative path carries the solve within the cap
-  (fallbacks drop below the direct solver's, fewer Newton iters/step). A CUDA
-  backend exists for PSD projection + VBD (another track, #2781); on-device GPU
-  assembly/solve, a truly matrix-free Hessian-vector CG, an AMG preconditioner for
-  the largest systems, and the 688K-node Fig-22 run + Table-1 reference comparison
-  remain.
+  (fallbacks drop below the direct solver's, fewer Newton iters/step). (3)
+  **Chunky-3D scaling benchmark** (this PR): `BM_DeformableCube3d{Direct,Cg}Step`
+  on a solid N^3 cube (wide Hessian bandwidth) makes the crossover measurable --
+  direct 3D fill-in climbs super-linearly while IC-CG stays ~O(nnz); measured ~5x
+  faster CG at ~4k nodes (11.3 vs 2.3 s/step). A CUDA backend exists for PSD
+  projection + VBD (another track, #2781); on-device GPU assembly/solve, a truly
+  matrix-free Hessian-vector CG, an AMG preconditioner for the largest systems,
+  and the 688K-node Fig-22 run + Table-1 reference comparison remain.
 
 Session PR train (all merged to `main`): #2787 FEM keystone, #2788 FEM twist,
 #2789 FEM+ground, #2790 sphere barrier Hessian, #2791 box barrier, #2792/#2793
@@ -55,15 +58,17 @@ GMSH 2.x/4.x, #2794 FCR material, #2795 FCR benchmark+SVD-dedup, #2796 exact FCR
 Hessian, #2797 solver diagnostics, #2798 FEM self-contact showcase, #2799
 benchmark Newton-iters, #2800 `.obj` importer, #2802 `.seg`/`.pt` importers, #2804
 capsule obstacle, #2805 adaptive stiffness, #2809 barrier-only obstacle (M5 done),
-#2810 iterative-CG solve (M7 increment 1), and the incomplete-Cholesky
-preconditioner (this PR, M7 increment 2). The IPC Deformable (sx) py-demos category
+#2810 iterative-CG solve (M7 increment 1), #2811 incomplete-Cholesky
+preconditioner (M7 increment 2), and the chunky-3D scaling benchmark (this PR, M7
+increment 3). The IPC Deformable (sx) py-demos category
 now has ~21 scenes (latest: `ipc_deformable_cg_solver`, `ipc_deformable_cg_contact`).
 
 ### M7 Next (resume here)
 
 M1–M6 + M5 are all complete; **M7 (scale + performance) is the only remaining
-milestone.** Two increments landed (iterative CG solve #2810; incomplete-Cholesky
-preconditioner, this PR). The remaining M7 work, roughly in increasing-risk order:
+milestone.** Three increments landed (iterative CG solve #2810; incomplete-Cholesky
+preconditioner #2811; chunky-3D scaling benchmark, this PR). The remaining M7 work,
+roughly in increasing-risk order:
 
 1. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
    (triplets → `SparseMatrix`) before the CG solve; a matrix-free Hessian-vector
@@ -79,9 +84,10 @@ preconditioner, this PR). The remaining M7 work, roughly in increasing-risk orde
 4. **Profiling-grade benchmark + reference comparison.** Emit Fig-23-shaped
    per-scene statistics (avg/max contacts/step, Newton iters/step, peak memory,
    s/step) and the Table-1 CPU comparison vs the IPC reference. The
-   `BM_DeformableCgBarStep` / `BM_DeformableFemBarStep` benchmarks (both now to
-   `cellsX=48`) are the seed; a chunky 3D mesh (not the thin bar) is needed to make
-   CG's fill-in advantage visible at benchmark-tractable sizes.
+   `BM_DeformableCube3d{Direct,Cg}Step` chunky-3D benchmarks (this PR) already
+   make the direct-vs-iterative crossover measurable; what remains is peak-memory
+   tracking, the avg/max contacts-per-step axis on contact scenes, and the
+   side-by-side comparison against the published IPC reference numbers.
 
 ### Conventions / gotchas (verified this session)
 

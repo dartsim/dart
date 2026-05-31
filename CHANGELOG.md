@@ -1099,6 +1099,22 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     a dartpy regression (a strip shoved along a rod slides far frictionless but is
     held back under friction, staying on the rod) and a `Deformable Friction on
 Capsule Rod (IPC)` py-demos scene.
+  - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
+    experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
+    and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra
+    (pinned at one face) through the sparse Cholesky direct solve and the
+    incomplete-Cholesky-preconditioned conjugate gradient at matching cell
+    counts. Unlike the thin `BM_DeformableFemBarStep` beam (2x2 cross-section,
+    too small a bandwidth), the solid cube has a wide Hessian bandwidth, so the
+    direct solve's 3D fill-in makes its per-step time climb super-linearly while
+    the iterative solve stays near O(nnz): the iterative path overtakes the
+    direct solve by a few thousand nodes (on the development machine the per-step
+    cost crosses over near ~1k nodes and the iterative solve runs several times
+    faster by ~1.3k nodes). This is the per-step-scaling axis of the IPC paper's
+    Fig. 23 / Table 1 on the mesh shape where the iterative solver bites. Adds a
+    regression that a chunky 3D cube sags to the same equilibrium under both
+    solvers (mutually exclusive solve paths -- the iterative run never
+    factorizes), guarding the benchmark fixture.
   - Strengthened the experimental deformable iterative solve's preconditioner
     from diagonal (Jacobi) to **incomplete-Cholesky** (PLAN-081 M7). Stiff
     barrier contact makes the projected-Newton Hessian ill-conditioned, where a

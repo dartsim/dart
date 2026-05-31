@@ -3655,6 +3655,111 @@ TEST(DeformableBody, IterativeSolverConvergesOnStiffGroundContact)
   }
 }
 
+//==============================================================================
+// A chunky 3D FEM cube (solid N^3 cells, wide Hessian bandwidth) is exactly the
+// regime the iterative solver targets: the sparse Cholesky direct solve suffers
+// super-linear 3D fill-in there while the conjugate gradient stays near O(nnz).
+// This pins such a cube at its x == 0 face, lets it sag under gravity, and
+// confirms the iterative solver reaches the same equilibrium as the direct
+// solve on the wide-bandwidth mesh (the correctness guarantee behind the
+// BM_DeformableCube3d* scaling benchmarks), through the CG path (no
+// factorization).
+TEST(DeformableBody, IterativeSolverMatchesDirectOnChunky3dMesh)
+{
+  constexpr int kCells = 3; // 4^3 = 64 nodes, a solid 3D block
+  constexpr double h = 0.1;
+  const int n = kCells + 1;
+  const auto nodeIndex = [&](int i, int j, int k) {
+    return static_cast<std::size_t>(i + n * (j + n * k));
+  };
+  static constexpr int kCubeTets[6][4]
+      = {{0, 1, 3, 7},
+         {0, 3, 2, 7},
+         {0, 2, 6, 7},
+         {0, 6, 4, 7},
+         {0, 4, 5, 7},
+         {0, 5, 1, 7}};
+
+  const auto runCube = [&](bool iterative) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.005);
+
+    sx::DeformableBodyOptions options;
+    options.material.youngsModulus = 2.0e5;
+    options.material.poissonRatio = 0.3;
+    options.material.useFiniteElementElasticity = true;
+    options.material.useIterativeLinearSolver = iterative;
+    for (int k = 0; k < n; ++k) {
+      for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+          options.positions.emplace_back(i * h, j * h, 0.5 + k * h);
+        }
+      }
+    }
+    for (int ck = 0; ck < kCells; ++ck) {
+      for (int cj = 0; cj < kCells; ++cj) {
+        for (int ci = 0; ci < kCells; ++ci) {
+          std::array<std::size_t, 8> corner{};
+          for (int b = 0; b < 8; ++b) {
+            corner[static_cast<std::size_t>(b)] = nodeIndex(
+                ci + (b & 1), cj + ((b >> 1) & 1), ck + ((b >> 2) & 1));
+          }
+          for (const auto& tet : kCubeTets) {
+            options.tetrahedra.push_back(
+                sx::DeformableTetrahedron{
+                    corner[static_cast<std::size_t>(tet[0])],
+                    corner[static_cast<std::size_t>(tet[1])],
+                    corner[static_cast<std::size_t>(tet[2])],
+                    corner[static_cast<std::size_t>(tet[3])]});
+          }
+        }
+      }
+    }
+    for (int k = 0; k < n; ++k) {
+      for (int j = 0; j < n; ++j) {
+        options.fixedNodes.push_back(nodeIndex(0, j, k));
+      }
+    }
+
+    auto body = world.addDeformableBody("chunky_cube", options);
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    std::size_t cgSolves = 0;
+    std::size_t numericFactorizations = 0;
+    for (int i = 0; i < 80; ++i) {
+      world.step(executor, pipeline);
+      cgSolves += stage.getLastStats().projectedNewtonIterativeSolves;
+      numericFactorizations
+          += stage.getLastStats().projectedNewtonNumericFactorizations;
+    }
+    std::vector<Eigen::Vector3d> positions;
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      positions.push_back(body.getPosition(i));
+    }
+    return std::make_tuple(positions, cgSolves, numericFactorizations);
+  };
+
+  const auto [directPos, directCg, directFact] = runCube(false);
+  const auto [iterPos, iterCg, iterFact] = runCube(true);
+
+  // Mutually exclusive solve paths, as on the smaller meshes.
+  EXPECT_EQ(directCg, 0u);
+  EXPECT_GT(directFact, 0u);
+  EXPECT_GT(iterCg, 0u);
+  EXPECT_EQ(iterFact, 0u);
+
+  // Same sagged equilibrium on the wide-bandwidth 3D mesh.
+  ASSERT_EQ(directPos.size(), iterPos.size());
+  for (std::size_t i = 0; i < directPos.size(); ++i) {
+    ASSERT_TRUE(iterPos[i].allFinite());
+    expectVectorNear(iterPos[i], directPos[i], 1e-4);
+  }
+}
+
 namespace {
 struct GroundSlideResult
 {
