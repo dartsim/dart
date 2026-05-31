@@ -3589,6 +3589,54 @@ bool applyStaticRigidSurfaceCcdLimit(
 }
 
 //==============================================================================
+// Apply the static rigid-surface CCD limiter to a fully assembled candidate
+// displacement, such as the World VBD path's post-solve iterate. This reuses
+// the default solver's step-bound machinery without coupling VBD to line-search
+// gradients.
+bool applyStaticRigidSurfaceCcdCandidateLimit(
+    std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    comps::DeformableSolverScratch& scratch)
+{
+  if (rigidSurfaceSnapshots.empty()) {
+    return true;
+  }
+
+  const std::size_t nodeCount = current.size();
+  scratch.direction.resize(nodeCount);
+  scratch.gradient.assign(nodeCount, Eigen::Vector3d::Zero());
+  scratch.candidate = scratch.next;
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    scratch.direction[i] = scratch.candidate[i] - current[i];
+  }
+
+  double step = 1.0;
+  double directionalDerivative = 0.0;
+  const bool accepted = applyStaticRigidSurfaceCcdLimit(
+      rigidSurfaceSnapshots,
+      current,
+      scratch.direction,
+      scratch.gradient,
+      fixed,
+      contactScratch,
+      stats,
+      step,
+      scratch.candidate,
+      directionalDerivative);
+
+  if (accepted) {
+    scratch.next = scratch.candidate;
+    return true;
+  }
+
+  scratch.next = current;
+  return false;
+}
+
+//==============================================================================
 // Conservative CCD limiter against MOVING rigid box obstacles. The snapshots
 // are static poses sampled along the obstacle's predicted swept motion, so this
 // reuses exactly the static-obstacle step-bound path; only the stat family
@@ -4823,14 +4871,15 @@ void advanceDeformableBody(
   // contactStiffness > 0. Static rigid-surface CCD obstacles are always sphere
   // or box bodies (collectStaticRigidSurfaceCcdObstacles skips other shapes),
   // i.e. exactly the obstacles VBD handles via those barriers, so they no
-  // longer force the body onto the default solver; VBD still cannot honor
-  // *moving* rigid-surface CCD. Surface triangles no longer disqualify VBD:
-  // runVbdDeformableSolve builds a lagged VT/EE self-contact candidate set and
-  // adds the normal barrier blocks during the colored sweeps. A body with
-  // static contacts but no VBD contact stiffness falls back to the default
-  // solver so it still rests on / collides with them. The default-solver fast
-  // path below keeps the stricter surface check so non-VBD bodies still get
-  // self-contact.
+  // longer force the body onto the default solver; after the VBD solve, the
+  // shared static rigid-surface CCD limiter still clips fast crossings before
+  // write-back. VBD still cannot honor *moving* rigid-surface CCD. Surface
+  // triangles no longer disqualify VBD: runVbdDeformableSolve builds a lagged
+  // VT/EE self-contact candidate set and adds the normal barrier blocks during
+  // the colored sweeps. A body with static contacts but no VBD contact
+  // stiffness falls back to the default solver so it still rests on / collides
+  // with them. The default-solver fast path below keeps the stricter surface
+  // check so non-VBD bodies still get self-contact.
   const bool movingRigidSurfaceFree = movingRigidSurfaceSnapshots.empty();
   const bool anyStaticContact = !barriers.empty() || !sphereObstacles.empty()
                                 || !boxObstacles.empty()
@@ -4863,6 +4912,13 @@ void advanceDeformableBody(
         frictionCoefficient,
         *vbdConfig,
         stats);
+    applyStaticRigidSurfaceCcdCandidateLimit(
+        rigidSurfaceSnapshots,
+        state.positions,
+        scratch.activeFixed,
+        contactScratch,
+        stats,
+        scratch);
   } else if (
       model.edges.empty() && contactFree && femElasticityPtr == nullptr) {
     for (std::size_t i = 0; i < nodeCount; ++i) {

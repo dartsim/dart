@@ -800,6 +800,46 @@ TEST(VbdWorldSolver, VbdBoxObstacleRepelsInitiallyEmbeddedNode)
 }
 
 //==============================================================================
+// The VBD static-obstacle barrier is lagged at the warm-start position, so fast
+// nodes still need the shared static rigid-surface CCD limiter to prevent a
+// one-step crossing that starts and ends outside the narrow contact band.
+TEST(VbdWorldSolver, VbdStaticRigidSurfaceCcdLimitsFastCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  auto box = world.addRigidBody("static_box", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d(20.0, 0.0, 0.0)};
+  options.masses = {1.0};
+  auto body = world.addDeformableBody("fast_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 10;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+  EXPECT_LT(body.getPosition(0).x(), -0.05);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+}
+
+//==============================================================================
 // VBD self-contact uses the same surface-node point mask as the default solver:
 // volumetric nodes that are not referenced by the surface mesh must not receive
 // point-triangle barrier forces from their own shell.
