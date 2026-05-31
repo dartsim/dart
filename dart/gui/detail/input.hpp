@@ -54,6 +54,7 @@ struct ApplicationInputState
   bool wasStepPressed = false;
   bool wasPerfHudKeyPressed = false;
   std::vector<bool> customActionWasPressed;
+  std::vector<bool> customActionSuppressUntilReleased;
 };
 
 void attachOrbitCameraController(

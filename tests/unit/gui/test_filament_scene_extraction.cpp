@@ -690,6 +690,13 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       inputSource.find("!uiCapturesKeyboard && isSpacePressed"),
       std::string::npos);
   EXPECT_NE(
+      inputSource.find(
+          "updateKeyboardActionCaptureState(window, scene, state)"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("customActionSuppressUntilReleased"), std::string::npos);
+  EXPECT_NE(inputSource.find("!suppressUntilReleased"), std::string::npos);
+  EXPECT_NE(
       inputSource.find("ImGuiBackendFlags_HasMouseCursors"), std::string::npos);
   EXPECT_NE(
       inputSource.find("createStandardCursor(GLFW_HRESIZE_CURSOR)"),

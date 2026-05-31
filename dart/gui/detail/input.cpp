@@ -447,6 +447,52 @@ bool isShortcutDown(GLFWwindow* window, const KeyboardShortcut& shortcut)
   return true;
 }
 
+void resizeKeyboardActionStateIfNeeded(
+    const DartScene& scene, ApplicationInputState& state)
+{
+  if (state.customActionWasPressed.size() != scene.keyboardActions.size()
+      || state.customActionSuppressUntilReleased.size()
+             != scene.keyboardActions.size()) {
+    state.customActionWasPressed.assign(scene.keyboardActions.size(), false);
+    state.customActionSuppressUntilReleased.assign(
+        scene.keyboardActions.size(), false);
+  }
+}
+
+void updateKeyboardActionCaptureState(
+    GLFWwindow* window, const DartScene& scene, ApplicationInputState& state)
+{
+  resizeKeyboardActionStateIfNeeded(scene, state);
+
+  for (std::size_t i = 0; i < scene.keyboardActions.size(); ++i) {
+    const bool isPressed
+        = isShortcutDown(window, scene.keyboardActions[i].shortcut);
+    state.customActionWasPressed[i] = isPressed;
+    if (isPressed) {
+      state.customActionSuppressUntilReleased[i] = true;
+    } else {
+      state.customActionSuppressUntilReleased[i] = false;
+    }
+  }
+}
+
+KeyboardActionContext makeKeyboardActionContext(
+    dart::gui::ViewerLifecycleState& lifecycle,
+    dart::gui::RenderSettings& renderSettings,
+    OrbitCameraController& cameraController,
+    const OrbitCamera& homeCamera)
+{
+  KeyboardActionContext context;
+  context.lifecycle = &lifecycle;
+  context.renderSettings = &renderSettings;
+  context.resetCamera = [&cameraController, homeCamera]() {
+    cameraController.camera = homeCamera;
+    resetOrbitCameraTracking(cameraController);
+  };
+
+  return context;
+}
+
 void dispatchKeyboardActions(
     GLFWwindow* window,
     DartScene& scene,
@@ -455,28 +501,27 @@ void dispatchKeyboardActions(
     const OrbitCamera& homeCamera,
     ApplicationInputState& state)
 {
-  if (state.customActionWasPressed.size() != scene.keyboardActions.size()) {
-    state.customActionWasPressed.assign(scene.keyboardActions.size(), false);
-  }
+  resizeKeyboardActionStateIfNeeded(scene, state);
 
-  KeyboardActionContext context;
-  context.lifecycle = &lifecycle;
-  context.renderSettings = &scene.renderSettings;
-  context.resetCamera = [&cameraController, homeCamera]() {
-    cameraController.camera = homeCamera;
-    resetOrbitCameraTracking(cameraController);
-  };
+  KeyboardActionContext context = makeKeyboardActionContext(
+      lifecycle, scene.renderSettings, cameraController, homeCamera);
 
   for (std::size_t i = 0; i < scene.keyboardActions.size(); ++i) {
     const auto& action = scene.keyboardActions[i];
     const bool isPressed = isShortcutDown(window, action.shortcut);
     const bool wasPressed = state.customActionWasPressed[i];
+    const bool suppressUntilReleased
+        = state.customActionSuppressUntilReleased[i];
     const bool shouldTrigger
-        = action.trigger == KeyboardActionTrigger::Release
-              ? (!isPressed && wasPressed)
-              : (isPressed && (action.repeat || !wasPressed));
+        = !suppressUntilReleased
+          && (action.trigger == KeyboardActionTrigger::Release
+                  ? (!isPressed && wasPressed)
+                  : (isPressed && (action.repeat || !wasPressed)));
     if (shouldTrigger && action.callback) {
       action.callback(context);
+    }
+    if (!isPressed) {
+      state.customActionSuppressUntilReleased[i] = false;
     }
     state.customActionWasPressed[i] = isPressed;
   }
@@ -557,7 +602,7 @@ void pollApplicationInput(
     dispatchKeyboardActions(
         window, scene, lifecycle, cameraController, homeCamera, state);
   } else {
-    state.customActionWasPressed.assign(scene.keyboardActions.size(), false);
+    updateKeyboardActionCaptureState(window, scene, state);
   }
 }
 
