@@ -1,5 +1,30 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: torque rotation fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned no-contact runtime coverage for
+  `fixtures/3D/unit-tests/rotation/torque-test.json`: a disk-like free body
+  with zero gravity and applied torque remains finite, does not translate, and
+  gains angular velocity about the torque axis in
+  `RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. The Dzhanibekov wing-nut row remains planned until it has
+  geometry-specific runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: scaled-sphere and ellipsoid rotation rows
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

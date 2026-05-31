@@ -249,6 +249,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/rotation/torque-test.json": {
+        "test": "TorqueFixtureRowAcceleratesFreeBody",
+        "expected_invariant": (
+            "DART covers the audited 3D torque rotation row: a free disk-like "
+            "body with zero gravity and applied torque remains finite, does "
+            "not translate, and gains angular velocity about the torque axis."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact torque runtime coverage for the "
+            "3D rotation fixture mechanism. The Dzhanibekov wing-nut row "
+            "remains planned until it has matching geometry-specific DART "
+            "runtime evidence."
+        ),
+    },
 }
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {

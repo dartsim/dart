@@ -8461,16 +8461,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D torque rotation row: a free disk-like body with zero gravity and applied torque remains finite, does not translate, and gains angular velocity about the torque axis.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::torque_test",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody",
       "required_assets_or_importer": [
         "meshes/gears/gear.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::torque_test",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody'",
+      "notes_or_gap": "Covered by DART-owned no-contact torque runtime coverage for the 3D rotation fixture mechanism. The Dzhanibekov wing-nut row remains planned until it has matching geometry-specific DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/spinning-cube-over-plane.json",

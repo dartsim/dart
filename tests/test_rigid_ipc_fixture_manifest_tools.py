@@ -396,6 +396,26 @@ def test_rigid_ipc_manifest_marks_ellipsoid_rotation_rows_implemented(tmp_path):
         assert "3D rotation fixture mechanism" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_torque_rotation_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path / "fixtures" / "3D" / "unit-tests" / "rotation" / "torque-test.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/unit-tests/rotation/torque-test.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "TorqueFixtureRowAcceleratesFreeBody" in row["dart_artifact"]
+    assert "gains angular velocity" in row["expected_invariant"]
+    assert "Dzhanibekov wing-nut row remains planned" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_below_threshold_paper_alias_implemented(
     tmp_path,
 ):

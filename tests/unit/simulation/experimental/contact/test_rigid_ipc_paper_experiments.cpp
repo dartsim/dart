@@ -711,6 +711,38 @@ TEST(
   expectFreeEllipsoidAdvancesWithoutContact(Eigen::Vector3d(0.0, 0.0, 180.0));
 }
 
+TEST(RigidIpcPaperExperiments, TorqueFixtureRowAcceleratesFreeBody)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 1.0;
+  bodyOptions.position = Eigen::Vector3d::Zero();
+  bodyOptions.orientation
+      = Eigen::AngleAxisd(std::numbers::pi / 2.0, Eigen::Vector3d::UnitX());
+  bodyOptions.inertia = Eigen::Vector3d(1.0, 1.0, 1.0).asDiagonal();
+  auto body = world.addRigidBody("torqued_gear", bodyOptions);
+  body.setCollisionShape(makeDiskMesh(/*radius=*/0.5, /*halfHeight=*/0.1, 24));
+  body.setTorque(Eigen::Vector3d(0.0, 90.0, 0.0));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_TRUE(body.getTranslation().isApprox(Eigen::Vector3d::Zero(), 1e-12));
+  EXPECT_TRUE(body.getAngularVelocity().allFinite());
+  EXPECT_GT(body.getAngularVelocity().y(), 0.1);
+  EXPECT_TRUE(body.getRotation().allFinite());
+}
+
 // Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its
 // edge (rotated 45 degrees about x) lands in a degenerate edge-on-face contact.
 // The solver must handle the degenerate configuration robustly: it settles to

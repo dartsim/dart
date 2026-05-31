@@ -199,7 +199,8 @@
   - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
         through the opt-in runtime stage. Free rotating cube and scaled-sphere /
         ellipsoid rows advance orientation under zero gravity, stay finite, and
-        do not translate.
+        do not translate. A no-contact torque row gains angular velocity about
+        the applied torque axis without translating.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.
@@ -350,6 +351,9 @@
         `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-intermediate.json`,
         and `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-minor.json`) as
         implemented after no-contact ellipsoid runtime coverage landed.
+  - [x] Mark the audited 3D torque rotation unit-test fixture row
+        (`fixtures/3D/unit-tests/rotation/torque-test.json`) as implemented
+        after no-contact torque runtime coverage landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -450,8 +454,10 @@ DART-owned implementation.
   implemented through high-speed cube-vs-wall runtime coverage that reports a
   conservative CCD line-search hit without penetration. The rotating-cube and
   scaled-sphere/ellipsoid unit-test fixture rows are marked implemented through
-  no-contact orientation integration coverage. The `mu=0.5` threshold rows
-  remain planned because they still need matching DART stick evidence.
+  no-contact orientation integration coverage. The torque rotation fixture row
+  is marked implemented through no-contact applied-torque coverage. The `mu=0.5`
+  threshold rows remain planned because they still need matching DART stick
+  evidence.
   The rigid-body hash-grid source row is marked implemented through the
   DART-owned large hash-grid benchmark; the generic hash-grid source row remains
   planned until DART has brute-force-vs-culled broad-phase parity coverage.
