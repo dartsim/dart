@@ -488,6 +488,11 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     scenes = make_demo_scenes()
     target = scenes[0]
     out = tmp_path / "snap.ppm"
+    # Display-less "noop" backend, like test_runner_cycle_returns_zero: the
+    # standard pytest CI jobs have no X display, and the real GL backend would
+    # call XOpenDisplay, fail, and exit the process mid-test. noop still runs the
+    # full screenshot path and writes a correctly-sized PPM, so the format checks
+    # below hold; real rendered pixels are covered by the xvfb rendering CI job.
     rc = run(
         [
             "--scene",
@@ -495,6 +500,8 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
             "--frames",
             "1",
             "--headless",
+            "--backend",
+            "noop",
             "--width",
             "160",
             "--height",
