@@ -97,10 +97,21 @@ scenes return `SceneSetup` objects with optional `pre_step`, `force_drag`, and
 `ScenePanel` callbacks; those callbacks render through the renderer-neutral
 `PanelBuilder`/`PanelContext` abstraction rather than direct ImGui calls.
 
+The Python catalog is broad enough that navigation needs domain focus, not only
+search. When an sx/experimental scene is active, the `Demos` navigator starts in
+`Experimental focus`, showing simulation-experimental and solver-focused
+categories while keeping the full legacy DART API catalog one checkbox away.
+Users can also replace a queued sidebar switch by clicking a different target
+before the candidate starts, so the UI does not trap the user on a stale pending
+row while the transactional activation path decides what to load.
+
 `pixi run py-demo-capture` drives the same Filament render path headlessly,
 including optional ImGui panels via `--show-ui`, and writes screenshots, frame
 sequences, and MP4s for visual debugging. It rejects blank/noop captures so
-layout, camera, lighting, and material changes have inspectable artifacts.
+layout, camera, lighting, and material changes have inspectable artifacts. With
+`--show-ui`, capture also checks that the docked ImGui workspace is present and
+drops warm-up frame-output images captured before the UI becomes visible, so
+recorded PNG sequences and MP4s start from a useful workspace frame.
 
 External-force interactions are a user-facing scene state, not just an input
 callback. The common sx bridge panel shows whether force application is idle,

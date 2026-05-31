@@ -258,8 +258,12 @@ now" recorded in the checklist above. Verified via `pixi run py-demos --
   writes a real PPM. Python `pre_step` controllers, sx force-drag callbacks, and
   scene-specific `ScenePanel` diagnostics now run inside the interactive viewer.
   The default workspace docks `Simulation`, `Demos`, scene panels, and DART
-  diagnostics; `py-demo-capture --show-ui` records the same docked workspace for
-  visual debugging. This remains an examples workspace, not a Python-side scene
+  diagnostics. The navigator is searchable, category-grouped, experimental-focus
+  aware for sx/solver scenes, and transactional scene switches roll back or can
+  be retargeted instead of leaving the workspace stuck on a broken candidate.
+  `py-demo-capture --show-ui` records the same docked workspace for visual
+  debugging, filters UI warm-up frames, and can emit screenshots, PNG sequences,
+  and MP4s. This remains an examples workspace, not a Python-side scene
   authoring API.
 - **Bindings added to unblock ports.** `python/dartpy/dynamics/shape.cpp`:
   `Capsule`/`Cylinder`/`Ellipsoid`/`Cone`/`Pyramid`/`LineSegment`/`Plane` shapes;
