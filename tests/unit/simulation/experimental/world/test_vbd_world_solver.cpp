@@ -224,6 +224,32 @@ sx::DeformableBodyOptions makeSelfFoldingBody()
   return options;
 }
 
+// Two same-body surface triangles where the top triangle would move completely
+// through the pinned bottom triangle in one step if VBD did not reuse the
+// self-surface CCD limiter after its block solve.
+sx::DeformableBodyOptions makeSelfCrossingTriangleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(-0.2, -0.2, 1.0),
+         Eigen::Vector3d(0.2, -0.2, 1.0),
+         Eigen::Vector3d(0.0, 0.2, 1.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0),
+         Eigen::Vector3d(0.0, 0.0, -20.0),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {{0, 1, 2}, {3, 4, 5}};
+  return options;
+}
+
 } // namespace
 
 //==============================================================================
@@ -903,6 +929,35 @@ TEST(VbdWorldSolver, VbdInterBodySurfaceCcdLimitsFastCrossing)
   EXPECT_GT(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
   EXPECT_GT(moving.getPosition(3).z(), 0.0);
   EXPECT_LT(moving.getPosition(3).z(), 1.0);
+}
+
+//==============================================================================
+// VBD self-contact barriers are lagged, so fast same-body surface crossings
+// still need the shared self-surface CCD limiter before write-back.
+TEST(VbdWorldSolver, VbdSelfSurfaceCcdLimitsFastCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "self_crossing", makeSelfCrossingTriangleOptions());
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 10;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.surfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.surfaceContactCcdLimitedSteps, 0u);
+  for (std::size_t node = 3; node < 6; ++node) {
+    EXPECT_GT(body.getPosition(node).z(), -1e-9) << "node " << node;
+    EXPECT_LT(body.getPosition(node).z(), 1.0) << "node " << node;
+  }
 }
 
 //==============================================================================

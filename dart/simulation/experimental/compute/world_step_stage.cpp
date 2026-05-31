@@ -3542,6 +3542,51 @@ bool applyInterBodySurfaceContactCcdLimit(
 }
 
 //==============================================================================
+// Apply the self-surface CCD limiter to a fully assembled candidate
+// displacement. VBD uses this after its block solve so fast same-body surface
+// crossings keep the same no-tunneling limit as the default line-search path.
+bool applySurfaceContactCcdCandidateLimit(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<std::uint8_t>& fixed,
+    DeformableContactSolverScratch& contactScratch,
+    DeformableSolverStats& stats,
+    comps::DeformableSolverScratch& scratch)
+{
+  if (contactScratch.surfaceTriangles.empty()) {
+    return true;
+  }
+
+  const std::size_t nodeCount = current.size();
+  scratch.direction.resize(nodeCount);
+  scratch.gradient.assign(nodeCount, Eigen::Vector3d::Zero());
+  scratch.candidate = scratch.next;
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    scratch.direction[i] = scratch.candidate[i] - current[i];
+  }
+
+  double step = 1.0;
+  double directionalDerivative = 0.0;
+  const bool accepted = applySurfaceContactCcdLimit(
+      current,
+      scratch.direction,
+      scratch.gradient,
+      fixed,
+      contactScratch,
+      stats,
+      step,
+      scratch.candidate,
+      directionalDerivative);
+
+  if (accepted) {
+    scratch.next = scratch.candidate;
+    return true;
+  }
+
+  scratch.next = current;
+  return false;
+}
+
+//==============================================================================
 // Apply the inter-body deformable-surface CCD limiter to a fully assembled
 // candidate displacement. VBD uses this after its block solve so opt-in
 // surface bodies keep the same no-tunneling limit the default line-search path
@@ -4019,8 +4064,9 @@ struct DeformableVbdScratch
   // under this vertex".
   std::vector<dvbd::ContactPlane> contactPlanes;
   // Self-contact candidate set + per-vertex incident lists, rebuilt each step
-  // (lagged) from the body's surface triangles at the warm-start position.
+  // (lagged) from the body's swept start-to-warm-start surface motion.
   dc::ContactCandidateSet selfContactCandidates;
+  dc::detail::ContactCandidateSweepScratch selfContactSweepScratch;
   dvbd::SelfContactAdjacency selfContactAdjacency;
   std::size_t cachedNodeCount = 0;
   std::size_t cachedEdgeCount = 0;
@@ -4216,12 +4262,14 @@ void runVbdDeformableSolve(
   options.useFemTetKernel = true;
   options.useFixedCorotationalTets = useFixedCorotationalTets;
   // Build the lagged self-contact candidate set + per-vertex incident lists
-  // from the body's surface triangles at the warm-start position. The IPC
+  // from the body's swept start-to-warm-start surface motion. The IPC
   // clamped-log point-triangle / edge-edge barrier then enters each free
   // vertex's block during the colored sweeps, so a VBD surface resists folding
   // onto itself. Self-contact uses its own IPC barrier stiffness, independent
   // of the static ground/obstacle penalty stiffness; convex bodies that do not
-  // fold produce no candidates and pay nothing.
+  // fold produce no candidates and pay nothing. The post-solve self CCD limit
+  // below remains the no-tunneling backstop for contacts that cross and land
+  // outside the barrier band.
   const dvbd::SelfContactAdjacency* selfContact = nullptr;
   if (surfaceTriangles.size() >= 2) {
     const double dHat = selfContactBarrierActivationDistance();
@@ -4235,11 +4283,13 @@ void runVbdDeformableSolve(
     candidateOptions.exactDistanceFilter = true;
     candidateOptions.excludeIncidentPointTriangles = true;
     candidateOptions.excludeAdjacentEdges = true;
-    dc::buildContactCandidatesSweep(
+    dc::buildMotionAwareContactCandidatesSweep(
+        state.positions,
         scratch.next,
         surfaceTriangles,
         candidateOptions,
-        vbdScratch.selfContactCandidates);
+        vbdScratch.selfContactCandidates,
+        vbdScratch.selfContactSweepScratch);
     filterSurfaceContactPointCandidates(
         vbdScratch.selfContactCandidates, surfaceContactPointMask);
     vbdScratch.selfContactAdjacency = dvbd::SelfContactAdjacency::build(
@@ -4969,10 +5019,10 @@ void advanceDeformableBody(
   // or box bodies (collectStaticRigidSurfaceCcdObstacles skips other shapes),
   // i.e. exactly the obstacles VBD handles via those barriers, so they no
   // longer force the body onto the default solver; after the VBD solve, the
-  // shared static rigid-surface CCD limiter still clips fast crossings before
-  // write-back. The VBD candidate is also clipped by the shared inter-body
-  // deformable-surface CCD limiter. VBD still cannot honor *moving*
-  // rigid-surface CCD. Surface triangles no longer disqualify VBD:
+  // shared self-surface and static rigid-surface CCD limiters still clip fast
+  // crossings before write-back. The VBD candidate is also clipped by the
+  // shared inter-body deformable-surface CCD limiter. VBD still cannot honor
+  // *moving* rigid-surface CCD. Surface triangles no longer disqualify VBD:
   // runVbdDeformableSolve builds a lagged VT/EE self-contact candidate set and
   // adds the normal barrier blocks during the colored sweeps. A body with
   // static contacts but no VBD contact stiffness falls back to the default
@@ -5011,6 +5061,8 @@ void advanceDeformableBody(
         frictionCoefficient,
         *vbdConfig,
         stats);
+    applySurfaceContactCcdCandidateLimit(
+        state.positions, scratch.activeFixed, contactScratch, stats, scratch);
     applyInterBodySurfaceContactCcdCandidateLimit(
         entity,
         surfaceSnapshots,
