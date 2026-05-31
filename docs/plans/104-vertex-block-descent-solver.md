@@ -84,13 +84,17 @@ finite-stiffness families in one serial AVBD row solve. The supported
 frictionless pure-tetrahedral World envelope now carries finite-stiffness
 material rows with a dimensionless Lamé multiplier and separate tet-row
 diagnostics, while still using the existing lagged VBD self-contact penalty.
+The supported mass-spring friction tangent pairs now use the lagged tangential
+dual to switch between static sticking and dynamic sliding and project paired
+forces to the circular Coulomb cone.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
-counters. Those slices are still foundation work; static/dynamic friction
-switching, hard-contact/friction completeness, self-contact friction, rigid/soft
-coupling, GPU parity, demos, and benchmark packets remain open.
+counters. Those slices are still foundation work; hard-contact/friction
+completeness, full contact-manifold friction persistence, self-contact
+friction, rigid/soft coupling, GPU parity, demos, and benchmark packets remain
+open.
 
 ## Relationship To PLAN-081
 

@@ -1910,8 +1910,10 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     combinations, supported serial mass-spring self-contact normal rows, and
     supported pure-tet finite-material rows with diagnostics and explicit
     fallback coverage, including bounded friction tangents for supported
-    static-contact mass-spring scenes. Full AVBD contact/friction,
-    static/dynamic friction switching, self-contact friction, rigid/soft
+    static-contact mass-spring scenes. The supported mass-spring friction
+    tangent pairs now use the previous tangential dual to switch between static
+    sticking and dynamic sliding and project pair forces to the circular
+    Coulomb cone. Full AVBD contact/friction, self-contact friction, rigid/soft
     coupling, GPU parity, demos, and benchmark parity remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.

@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <limits>
 
+#include <cmath>
 #include <cstdint>
 
 namespace dart::simulation::experimental::detail::deformable_vbd {
@@ -93,6 +94,7 @@ struct AvbdHalfSpaceFrictionOptions
   double alpha = 0.0;
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
+  double staticFrictionTolerance = 1e-12;
 };
 
 //==============================================================================
@@ -115,6 +117,24 @@ inline AvbdScalarRowBounds avbdFrictionTangentBounds(double forceLimit)
 }
 
 //==============================================================================
+inline double avbdFrictionTangentForceLimit(const AvbdHalfSpaceFrictionRow& row)
+{
+  const double lowerLimit = row.bounds.lower < 0.0 ? -row.bounds.lower : 0.0;
+  const double upperLimit = row.bounds.upper > 0.0 ? row.bounds.upper : 0.0;
+  return std::max(0.0, std::min(lowerLimit, upperLimit));
+}
+
+//==============================================================================
+inline double avbdFrictionTangentPairForceLimit(
+    const AvbdHalfSpaceFrictionRow& first,
+    const AvbdHalfSpaceFrictionRow& second)
+{
+  return std::min(
+      avbdFrictionTangentForceLimit(first),
+      avbdFrictionTangentForceLimit(second));
+}
+
+//==============================================================================
 inline double avbdHalfSpaceContactConstraintValue(
     const Eigen::Vector3d& position, const ContactPlane& plane)
 {
@@ -128,6 +148,93 @@ inline double avbdHalfSpaceFrictionConstraintValue(
     const Eigen::Vector3d& axis)
 {
   return axis.dot(stepStartPosition - position);
+}
+
+//==============================================================================
+inline Eigen::Vector2d avbdHalfSpaceFrictionConstraintValues(
+    const Eigen::Vector3d& position,
+    const AvbdHalfSpaceFrictionRow& first,
+    const AvbdHalfSpaceFrictionRow& second,
+    double alpha)
+{
+  return Eigen::Vector2d(
+      regularizeAvbdConstraintValue(
+          avbdHalfSpaceFrictionConstraintValue(
+              position, first.stepStartPosition, first.axis),
+          first.previousConstraintValue,
+          alpha),
+      regularizeAvbdConstraintValue(
+          avbdHalfSpaceFrictionConstraintValue(
+              position, second.stepStartPosition, second.axis),
+          second.previousConstraintValue,
+          alpha));
+}
+
+//==============================================================================
+inline bool avbdFrictionPreviousDualInsideCone(
+    const AvbdHalfSpaceFrictionRow& first,
+    const AvbdHalfSpaceFrictionRow& second,
+    double staticFrictionTolerance = 1e-12)
+{
+  const double limit = avbdFrictionTangentPairForceLimit(first, second);
+  if (!std::isfinite(limit)) {
+    return true;
+  }
+
+  const double tolerance = std::max(0.0, staticFrictionTolerance);
+  const double previousNorm
+      = std::hypot(first.state.lambda, second.state.lambda);
+  return previousNorm < std::max(0.0, limit - tolerance);
+}
+
+//==============================================================================
+inline Eigen::Vector2d avbdHalfSpaceFrictionTangentPairForce(
+    const Eigen::Vector3d& position,
+    const AvbdHalfSpaceFrictionRow& first,
+    const AvbdHalfSpaceFrictionRow& second,
+    const AvbdHalfSpaceFrictionOptions& options,
+    bool* clamped = nullptr)
+{
+  if (clamped != nullptr) {
+    *clamped = false;
+  }
+
+  const double limit = avbdFrictionTangentPairForceLimit(first, second);
+  if (limit <= 0.0) {
+    if (clamped != nullptr) {
+      *clamped = true;
+    }
+    return Eigen::Vector2d::Zero();
+  }
+
+  const Eigen::Vector2d constraintValues
+      = avbdHalfSpaceFrictionConstraintValues(
+          position, first, second, options.alpha);
+  const bool staticMode = avbdFrictionPreviousDualInsideCone(
+      first, second, options.staticFrictionTolerance);
+  if (!staticMode && std::isfinite(limit)) {
+    const double tangentError = constraintValues.norm();
+    if (tangentError > std::max(1e-12, options.staticFrictionTolerance)) {
+      if (clamped != nullptr) {
+        *clamped = true;
+      }
+      return (limit / tangentError) * constraintValues;
+    }
+  }
+
+  Eigen::Vector2d force(
+      first.state.stiffness * constraintValues.x() + first.state.lambda,
+      second.state.stiffness * constraintValues.y() + second.state.lambda);
+  if (std::isfinite(limit)) {
+    const double norm = force.norm();
+    if (norm > limit && norm > 0.0) {
+      if (clamped != nullptr) {
+        *clamped = true;
+      }
+      force *= limit / norm;
+    }
+  }
+  return force;
 }
 
 //==============================================================================
@@ -225,6 +332,29 @@ inline double addAvbdHalfSpaceFrictionTangent(
 }
 
 //==============================================================================
+/// Stamp the two tangent rows for one contact as one Coulomb-cone pair. If the
+/// previous tangential dual lies inside the cone, the pair acts as static
+/// friction and constrains tangential displacement toward zero. Once the lagged
+/// dual reaches the cone edge, the pair switches to dynamic friction and keeps
+/// the force on the circular Coulomb bound opposite the current slip.
+inline Eigen::Vector2d addAvbdHalfSpaceFrictionTangentPair(
+    VertexBlock& block,
+    const Eigen::Vector3d& position,
+    const AvbdHalfSpaceFrictionRow& first,
+    const AvbdHalfSpaceFrictionRow& second,
+    const AvbdHalfSpaceFrictionOptions& options)
+{
+  const Eigen::Vector2d force
+      = avbdHalfSpaceFrictionTangentPairForce(position, first, second, options);
+  block.force.noalias() += force.x() * first.axis + force.y() * second.axis;
+  block.hessian.noalias()
+      += first.state.stiffness * (first.axis * first.axis.transpose());
+  block.hessian.noalias()
+      += second.state.stiffness * (second.axis * second.axis.transpose());
+  return force;
+}
+
+//==============================================================================
 inline AvbdScalarRowState updateAvbdHalfSpaceFrictionTangentRow(
     AvbdScalarRowState state,
     const Eigen::Vector3d& position,
@@ -238,6 +368,32 @@ inline AvbdScalarRowState updateAvbdHalfSpaceFrictionTangentRow(
       options.alpha);
   return updateAvbdHardConstraintRow(
       state, constraintValue, options.beta, row.bounds, options.maxStiffness);
+}
+
+//==============================================================================
+inline void updateAvbdHalfSpaceFrictionTangentPair(
+    AvbdHalfSpaceFrictionRow& first,
+    AvbdHalfSpaceFrictionRow& second,
+    const Eigen::Vector3d& position,
+    const AvbdHalfSpaceFrictionOptions& options)
+{
+  bool clamped = false;
+  const Eigen::Vector2d force = avbdHalfSpaceFrictionTangentPairForce(
+      position, first, second, options, &clamped);
+  const Eigen::Vector2d constraintValues
+      = avbdHalfSpaceFrictionConstraintValues(
+          position, first, second, options.alpha);
+
+  first.state.lambda = force.x();
+  second.state.lambda = force.y();
+  if (!clamped) {
+    first.state.stiffness = std::min(
+        options.maxStiffness,
+        first.state.stiffness + options.beta * std::abs(constraintValues.x()));
+    second.state.stiffness = std::min(
+        options.maxStiffness,
+        second.state.stiffness + options.beta * std::abs(constraintValues.y()));
+  }
 }
 
 //==============================================================================
