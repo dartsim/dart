@@ -10,6 +10,21 @@
   - Experimental `step()` is only basic free-body integration with no gravity,
     no articulated dynamics, no contacts, no constraint solver
     (`dart/simulation/experimental/compute/world_step_stage.cpp`).
+  - `simulation::experimental::io::addSkeleton` starts the model-loading lane
+    by translating already-parsed legacy `dynamics::Skeleton` trees into
+    experimental multibodies for the tree-joint families that already map to
+    the experimental multibody facade, by importing all Skeletons from a legacy
+    `simulation::World`, and by loading URI strings through
+    `dart::io::readSkeleton()`/`readWorld()` with optional `ReadOptions`. It now
+    preserves one centered collidable Box/Sphere/Capsule/Cylinder/Mesh collision
+    shape per link when the legacy shape maps exactly to the experimental
+    `CollisionShape` facade, with property-transfer, higher-DOF joint,
+    collision-shape, Skeleton/World URI-loading, multi-skeleton import, and
+    dartpy `simulation_experimental.add_skeleton()` / `add_world()` coverage.
+  - Remaining DART 7 promotion gaps are articulated dynamics, collision/contact
+    solving, joint-limit/mimic/loop-closure constraints, richer model-loading
+    diagnostics and load-result ergonomics, source-offset/multiple/visual shape
+    import, and serialization/replay evidence.
   - Legacy DART 6 dynamics baseline: `dart/dynamics/`, `dart/constraint/`,
     `dart/simulation/world.cpp`.
   - Reusable foundations: boxed-LCP library `dart/math/lcp/` (PLAN-020), native
@@ -65,4 +80,4 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 - A phase completes, splits, or is reprioritized.
 - The native-collision bridge or boxed-LCP contract changes shape.
 - Parity evidence reveals a needed design change in the architecture doc.
-- A maintainer reprioritizes against other DART 7 clean-break work.
+- A maintainer reprioritizes against DART 7 clean-break release work.

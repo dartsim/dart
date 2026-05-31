@@ -82,6 +82,7 @@ add_library(
   io/gmsh_tet_mesh.cpp
   io/obj_triangle_mesh.cpp
   io/serializer.cpp
+  io/skeleton_loader.cpp
   multibody/joint.cpp
   multibody/link.cpp
   multibody/multibody.cpp
@@ -112,7 +113,7 @@ target_compile_features(${target_name} PUBLIC cxx_std_20)
 target_link_libraries(
   ${target_name}
   PUBLIC dart Eigen3::Eigen EnTT::EnTT spdlog::spdlog
-  PRIVATE ${PROJECT_NAME}-collision-native
+  PRIVATE ${PROJECT_NAME}-collision-native ${PROJECT_NAME}-io
 )
 
 if(TARGET Taskflow::Taskflow)
@@ -195,7 +196,7 @@ endif()
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart io)
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT Taskflow)
 
 install(

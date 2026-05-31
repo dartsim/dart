@@ -1718,6 +1718,7 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         break;
       }
       case CollisionShapeType::Capsule:
+      case CollisionShapeType::Cylinder:
       case CollisionShapeType::Mesh:
         break;
     }
@@ -5936,6 +5937,10 @@ bool copyCollisionShapeToRigidIpcSurface(
     case CollisionShapeType::Capsule:
       // Capsule rigid-IPC surfaces are not supported yet; deformable-vs-capsule
       // contact uses the analytic capsule obstacle barrier.
+      return false;
+    case CollisionShapeType::Cylinder:
+      // Cylinder rigid-IPC surfaces are not supported yet; triangulate before
+      // enabling this path so the barrier mesh has explicit surface vertices.
       return false;
   }
 

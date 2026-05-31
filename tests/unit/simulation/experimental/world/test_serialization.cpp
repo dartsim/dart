@@ -456,6 +456,11 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
 
+  auto cylinder = world1.addRigidBody("cylinder");
+  cylinder.setCollisionShape(
+      sx::CollisionShape::makeCylinder(
+          /*radius=*/0.2, /*halfHeight=*/0.7));
+
   auto mesh = world1.addRigidBody("mesh");
   mesh.setCollisionShape(
       sx::CollisionShape::makeMesh(
@@ -492,6 +497,16 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   ASSERT_TRUE(ballShape.has_value());
   EXPECT_EQ(ballShape->type, sx::CollisionShapeType::Sphere);
   EXPECT_DOUBLE_EQ(ballShape->radius, 0.3);
+
+  auto cylinderRestored = world2.getRigidBody("cylinder");
+  ASSERT_TRUE(cylinderRestored.has_value());
+
+  auto cylinderShape = cylinderRestored->getCollisionShape();
+  ASSERT_TRUE(cylinderShape.has_value());
+  EXPECT_EQ(cylinderShape->type, sx::CollisionShapeType::Cylinder);
+  EXPECT_DOUBLE_EQ(cylinderShape->radius, 0.2);
+  EXPECT_TRUE(
+      cylinderShape->halfExtents.isApprox(Eigen::Vector3d(0.2, 0.2, 0.7)));
 
   auto meshRestored = world2.getRigidBody("mesh");
   ASSERT_TRUE(meshRestored.has_value());

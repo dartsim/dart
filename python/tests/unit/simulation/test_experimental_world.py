@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import importlib
 import math
 import os
@@ -239,6 +240,10 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "LoopClosureRuntimePolicy",
         "LoopClosureResidual",
         "LoopClosureResidualCoordinates",
+        "SkeletonLoadOptions",
+        "ModelFormat",
+        "RootJointType",
+        "ReadOptions",
         "StateSpace",
         "StateVariable",
     )
@@ -246,6 +251,13 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         assert hasattr(sx, symbol), symbol
         assert f'"{symbol}"' in stub
         assert f"class {symbol}" in stub
+
+    assert hasattr(sx, "add_skeleton")
+    assert '"add_skeleton"' in stub
+    assert "def add_skeleton(" in stub
+    assert hasattr(sx, "add_world")
+    assert '"add_world"' in stub
+    assert "def add_world(" in stub
 
     for member in (
         "runtime_policy",
@@ -593,6 +605,203 @@ def test_link_local_transform_includes_joint_motion():
         [0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
         abs=1e-12,
     )
+
+
+def test_experimental_add_skeleton_imports_legacy_revolute_tree():
+    sx = _simulation_experimental()
+
+    skeleton = dart.Skeleton("py_loader")
+    properties = dart.RevoluteJointProperties()
+    properties.mAxis = np.asarray([0.0, 1.0, 0.0], dtype=float)
+    joint, body = skeleton.create_revolute_joint_and_body_node_pair(
+        None, properties
+    )
+    joint.set_name("hinge")
+    joint.set_position(0, 0.2)
+    joint.set_velocity(0, -0.3)
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_anchor_"
+
+    world = sx.World()
+    multibody = sx.add_skeleton(world, skeleton, options)
+
+    assert multibody.name == "py_loader"
+    assert multibody.num_links == 2
+    assert multibody.num_joints == 1
+    assert multibody.num_dofs == 1
+    assert multibody.get_link(f"py_anchor_{body.get_name()}") is not None
+
+    loaded_link = multibody.get_link(body.get_name())
+    assert loaded_link is not None
+    loaded_joint = loaded_link.parent_joint
+    assert loaded_joint.name == "hinge"
+    assert loaded_joint.type == sx.JointType.REVOLUTE
+    assert loaded_joint.axis.tolist() == pytest.approx([0.0, 1.0, 0.0])
+    assert loaded_joint.position.tolist() == pytest.approx([0.2])
+    assert loaded_joint.velocity.tolist() == pytest.approx([-0.3])
+
+
+def test_experimental_add_skeleton_loads_uri():
+    sx = _simulation_experimental()
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_uri_anchor_"
+
+    world = sx.World()
+    multibody = sx.add_skeleton(
+        world, "dart://sample/skel/test/single_pendulum.skel", options
+    )
+
+    assert multibody.name == "single_pendulum"
+    assert multibody.num_links == 2
+    assert multibody.num_joints == 1
+    assert multibody.num_dofs == 1
+    assert multibody.get_link("py_uri_anchor_link 1") is not None
+
+    loaded_link = multibody.get_link("link 1")
+    assert loaded_link is not None
+    loaded_joint = loaded_link.parent_joint
+    assert loaded_joint.name == "joint 1"
+    assert loaded_joint.type == sx.JointType.REVOLUTE
+    assert loaded_joint.axis.tolist() == pytest.approx([0.0, 0.0, 1.0])
+    assert loaded_link.has_collision_shape
+    assert loaded_link.collision_shape.type == sx.CollisionShapeType.BOX
+    assert loaded_link.collision_shape.half_extents.tolist() == pytest.approx(
+        [0.05, 0.1, 0.15]
+    )
+
+
+def test_experimental_add_skeleton_uri_accepts_read_options():
+    sx = _simulation_experimental()
+
+    read_options = sx.ReadOptions()
+    assert read_options.format == sx.ModelFormat.AUTO
+    assert read_options.sdf_default_root_joint_type == sx.RootJointType.FLOATING
+    read_options.format = sx.ModelFormat.SKEL
+    read_options.sdf_default_root_joint_type = sx.RootJointType.FIXED
+    read_options.add_package_directory("unused", "/tmp")
+
+    load_options = sx.SkeletonLoadOptions()
+    load_options.root_anchor_prefix = "py_read_options_anchor_"
+
+    world = sx.World()
+    multibody = sx.add_skeleton(
+        world,
+        "dart://sample/skel/test/single_pendulum.skel",
+        read_options,
+        load_options,
+    )
+
+    assert multibody.name == "single_pendulum"
+    assert multibody.get_link("py_read_options_anchor_link 1") is not None
+
+    wrong_format = sx.ReadOptions()
+    wrong_format.format = sx.ModelFormat.SDF
+    with pytest.raises(Exception, match="Failed to read Skeleton"):
+        sx.add_skeleton(
+            sx.World(),
+            "dart://sample/skel/test/single_pendulum.skel",
+            wrong_format,
+        )
+
+
+def test_experimental_add_world_imports_legacy_world():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_legacy_world")
+    skeleton = dart.Skeleton("py_world_loader")
+    properties = dart.RevoluteJointProperties()
+    properties.mAxis = np.asarray([0.0, 1.0, 0.0], dtype=float)
+    joint, body = skeleton.create_revolute_joint_and_body_node_pair(
+        None, properties
+    )
+    joint.set_name("hinge")
+    joint.set_position(0, 0.25)
+    legacy_world.add_skeleton(skeleton)
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_world_anchor_"
+
+    world = sx.World()
+    multibodies = sx.add_world(world, legacy_world, options)
+
+    assert len(multibodies) == 1
+    assert world.num_multibodies == 1
+    assert multibodies[0].name == "py_world_loader"
+    assert multibodies[0].get_link(f"py_world_anchor_{body.get_name()}") is not None
+
+    loaded_link = multibodies[0].get_link(body.get_name())
+    assert loaded_link is not None
+    loaded_joint = loaded_link.parent_joint
+    assert loaded_joint.name == "hinge"
+    assert loaded_joint.position.tolist() == pytest.approx([0.25])
+
+
+def test_experimental_add_world_loads_uri():
+    sx = _simulation_experimental()
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_world_uri_anchor_"
+
+    world = sx.World()
+    multibodies = sx.add_world(
+        world, "dart://sample/skel/test/single_pendulum.skel", options
+    )
+
+    assert len(multibodies) == 1
+    assert world.num_multibodies == 1
+    assert multibodies[0].name == "single_pendulum"
+    assert multibodies[0].get_link("py_world_uri_anchor_link 1") is not None
+
+
+def test_experimental_add_world_uri_accepts_read_options():
+    sx = _simulation_experimental()
+
+    read_options = sx.ReadOptions()
+    read_options.format = sx.ModelFormat.SKEL
+
+    load_options = sx.SkeletonLoadOptions()
+    load_options.root_anchor_prefix = "py_world_read_options_anchor_"
+
+    world = sx.World()
+    multibodies = sx.add_world(
+        world,
+        "dart://sample/skel/test/single_pendulum.skel",
+        read_options,
+        load_options,
+    )
+
+    assert len(multibodies) == 1
+    assert multibodies[0].name == "single_pendulum"
+    assert (
+        multibodies[0].get_link("py_world_read_options_anchor_link 1")
+        is not None
+    )
+
+    wrong_format = sx.ReadOptions()
+    wrong_format.format = sx.ModelFormat.SDF
+    with pytest.raises(Exception, match="Failed to read World"):
+        sx.add_world(
+            sx.World(),
+            "dart://sample/skel/test/single_pendulum.skel",
+            wrong_format,
+        )
+
+
+def test_experimental_add_world_results_keep_world_alive():
+    sx = _simulation_experimental()
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_world_lifetime_anchor_"
+
+    multibodies = sx.add_world(
+        sx.World(), "dart://sample/skel/test/single_pendulum.skel", options
+    )
+    gc.collect()
+
+    assert multibodies[0].name == "single_pendulum"
+    assert multibodies[0].get_link("py_world_lifetime_anchor_link 1") is not None
 
 
 def test_experimental_loop_closure_topology_api():
@@ -2008,6 +2217,56 @@ def test_experimental_collision_query():
 
     body_b.transform = _translation_transform(10.0, 0.0, 0.0)
     assert len(world.collide()) == 0
+
+
+def test_experimental_mesh_collision_shape_public_surface():
+    sx = _simulation_experimental()
+
+    shape = sx.CollisionShape.mesh(
+        vertices=[
+            (0.0, 0.0, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+        ],
+        triangles=[(0, 1, 2)],
+    )
+
+    assert shape.type == sx.CollisionShapeType.MESH
+    np.testing.assert_allclose(
+        [vertex.tolist() for vertex in shape.vertices],
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ],
+    )
+    assert [triangle.tolist() for triangle in shape.triangles] == [[0, 1, 2]]
+
+    world = sx.World()
+    body = world.add_rigid_body("mesh")
+    body.set_collision_shape(shape)
+    assert body.collision_shape.type == sx.CollisionShapeType.MESH
+
+
+def test_experimental_cylinder_collision_shape_public_surface_and_query():
+    sx = _simulation_experimental()
+
+    shape = sx.CollisionShape.cylinder(radius=0.25, half_height=0.75)
+    assert shape.type == sx.CollisionShapeType.CYLINDER
+    assert shape.radius == pytest.approx(0.25)
+    assert shape.half_extents.tolist() == pytest.approx([0.25, 0.25, 0.75])
+
+    world = sx.World()
+    cylinder = world.add_rigid_body("cylinder")
+    cylinder.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.4, 0.0, 0.0))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    for contact in contacts:
+        names = {contact.body_a.name, contact.body_b.name}
+        assert names == {"cylinder", "sphere"}
 
 
 def test_experimental_collision_query_includes_links():
