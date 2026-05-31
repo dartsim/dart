@@ -14,22 +14,22 @@ serial, frictionless mass-spring scenes. Unsupported tetrahedral, frictional,
 self-contact, Chebyshev, Rayleigh-damped, and parallel requests now have
 explicit fallback coverage that keeps them on the existing VBD path. Supported
 contact-normal, attachment, and finite-stiffness spring requests now run
-together through one combined serial mass-spring AVBD row solve.
+together through one combined serial mass-spring AVBD row solve. The next slice
+also started standalone finite-stiffness tetrahedral material rows with a
+dimensionless material scale, strain-norm row error, and a tet-only block
+descent driver/test, but this is not World-wired yet.
 
 ## Current Branch
 
-`main` - local uncommitted AVBD planning, AI workflow guidance, scalar-row,
-row-inventory, contact-normal kernel, and first World contact-normal
-wiring/test changes, plus first hard attachment kernel/driver and World
-wiring/test changes, plus first finite-stiffness spring row kernel/driver and
-World wiring/test changes, plus AVBD World fallback guard/test changes, plus
-the combined mass-spring AVBD row driver and World wiring/test changes.
+`feature/avbd-plan104-foundation` - checkpoint commits based on current
+`origin/main`, plus local uncommitted standalone finite-stiffness tetrahedral
+material row work.
 
 ## Immediate Next Step
 
-Extend finite-stiffness row coverage from springs to tetrahedral/material rows,
-then add the next bounded row family, starting with contact/friction bounds or
-self-contact rows in the same combined-row solve.
+Wire finite-stiffness tetrahedral material rows into the supported World VBD
+envelope, then add the next bounded row family, starting with contact/friction
+bounds or self-contact rows in the same combined-row solve.
 
 ## Context That Would Be Lost
 
@@ -46,9 +46,10 @@ self-contact rows in the same combined-row solve.
   attachment kernel, one CPU finite-stiffness spring kernel, and narrow
   internal World opt-ins for static contact-normal rows, hard point-attachment
   rows, and finite-stiffness spring rows, including a combined serial
-  mass-spring row solve for those three families. It is not a scene-level AVBD
-  solver and does not imply hard-contact/friction completeness,
-  tetrahedral support, self-contact support, rigid/soft coupling, or GPU parity.
+  mass-spring row solve for those three families. A standalone tet-material
+  finite-stiffness row driver now exists, but it is not yet a scene-level AVBD
+  solver and does not imply World tetrahedral row coverage, hard-contact/friction
+  completeness, self-contact support, rigid/soft coupling, or GPU parity.
 
 ## How to Resume
 

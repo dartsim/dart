@@ -75,14 +75,15 @@ regularization, warm starting, hard-row clamping, dual updates, and
 finite-stiffness ramping. Follow-on local slices add deterministic scalar-row
 keys/inventory for warm-started `lambda`/`k` state, standalone CPU
 half-space contact-normal, hard point-attachment, and finite-stiffness spring
-row drivers, plus a combined serial mass-spring AVBD row driver that carries
-those three families in one World solve for the supported frictionless
-mass-spring envelope. Explicit fallback coverage keeps unsupported
-tetrahedral, frictional, self-contact, Chebyshev, Rayleigh-damped, parallel,
-and unsupported-row requests on the existing VBD path without partial AVBD row
+row drivers, plus a standalone finite-stiffness tetrahedral material row
+driver. The supported frictionless mass-spring World envelope carries the
+contact-normal, attachment, and spring finite-stiffness families in one serial
+AVBD row solve. Explicit fallback coverage keeps unsupported tetrahedral,
+frictional, self-contact, Chebyshev, Rayleigh-damped, parallel, and
+unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
-completeness, tetrahedra, self-contact, rigid/soft coupling, GPU parity, demos,
-and benchmark packets remain open.
+completeness, World-wired tetrahedral rows, self-contact, rigid/soft coupling,
+GPU parity, demos, and benchmark packets remain open.
 
 ## Relationship To PLAN-081
 

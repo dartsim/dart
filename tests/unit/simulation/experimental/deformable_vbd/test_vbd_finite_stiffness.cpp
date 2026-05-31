@@ -35,6 +35,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <vector>
 
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
@@ -49,6 +50,17 @@ vbd::AvbdSpringFiniteStiffnessRow makeSpringRow(
 {
   vbd::AvbdSpringFiniteStiffnessRow row;
   row.spring = 0;
+  row.state.stiffness = stiffness;
+  row.materialStiffness = materialStiffness;
+  return row;
+}
+
+//==============================================================================
+vbd::AvbdTetMaterialFiniteStiffnessRow makeTetRow(
+    double stiffness, double materialStiffness)
+{
+  vbd::AvbdTetMaterialFiniteStiffnessRow row;
+  row.tet = 0;
   row.state.stiffness = stiffness;
   row.materialStiffness = materialStiffness;
   return row;
@@ -81,6 +93,22 @@ TEST(VbdFiniteStiffness, SpringConstraintValueIsStretch)
 }
 
 //==============================================================================
+TEST(VbdFiniteStiffness, TetMaterialConstraintValueIsStrainNorm)
+{
+  const std::array<Vec3, 4> rest
+      = {Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0),
+         Vec3(0.0, 0.0, 1.0)};
+  const vbd::TetRestShape restShape = vbd::makeTetRestShape(rest);
+  EXPECT_DOUBLE_EQ(vbd::avbdTetMaterialConstraintValue(restShape, rest), 0.0);
+
+  std::array<Vec3, 4> deformed = rest;
+  deformed[3].z() = 1.25;
+  EXPECT_GT(vbd::avbdTetMaterialConstraintValue(restShape, deformed), 0.0);
+}
+
+//==============================================================================
 TEST(VbdFiniteStiffness, RowUpdateRampsAndCapsAtMaterialStiffness)
 {
   vbd::AvbdSpringFiniteStiffnessRow row = makeSpringRow(5.0, 20.0);
@@ -96,6 +124,25 @@ TEST(VbdFiniteStiffness, RowUpdateRampsAndCapsAtMaterialStiffness)
   updated
       = vbd::updateAvbdSpringFiniteStiffnessRow(row.state, 0.25, row, options);
   EXPECT_DOUBLE_EQ(updated.stiffness, 20.0);
+}
+
+//==============================================================================
+TEST(VbdFiniteStiffness, TetMaterialRowUpdateRampsAndCapsAtUnitScale)
+{
+  vbd::AvbdTetMaterialFiniteStiffnessRow row = makeTetRow(0.1, 1.0);
+  vbd::AvbdTetMaterialFiniteStiffnessOptions options;
+  options.beta = 2.0;
+
+  vbd::AvbdScalarRowState updated
+      = vbd::updateAvbdTetMaterialFiniteStiffnessRow(
+          row.state, 0.25, row, options);
+  EXPECT_DOUBLE_EQ(updated.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(updated.stiffness, 0.6);
+
+  row.state.stiffness = 0.9;
+  updated = vbd::updateAvbdTetMaterialFiniteStiffnessRow(
+      row.state, 0.25, row, options);
+  EXPECT_DOUBLE_EQ(updated.stiffness, 1.0);
 }
 
 //==============================================================================
@@ -155,6 +202,64 @@ TEST(VbdFiniteStiffness, BlockDescentRowsUpdateEffectiveSpringStiffness)
   EXPECT_EQ(stats.iterations, 4u);
   EXPECT_LT(positions[1].x(), 1.4);
   EXPECT_GT(rows[0].state.stiffness, 2.0);
+  EXPECT_LE(rows[0].state.stiffness, rows[0].materialStiffness);
+  EXPECT_DOUBLE_EQ(rows[0].state.lambda, 0.0);
+}
+
+//==============================================================================
+TEST(VbdFiniteStiffness, BlockDescentRowsUpdateEffectiveTetMaterialStiffness)
+{
+  std::vector<Vec3> positions
+      = {Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0),
+         Vec3(0.0, 0.0, 1.3)};
+  const std::vector<Vec3> restPositions
+      = {Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0),
+         Vec3(0.0, 0.0, 1.0)};
+  const std::vector<double> masses(positions.size(), 1.0);
+  const std::vector<std::uint8_t> fixed = {1u, 1u, 1u, 0u};
+  const std::vector<Vec3> inertialTargets = positions;
+  const std::array<std::uint32_t, 4> vertices = {0, 1, 2, 3};
+  const std::vector<vbd::TetMeshElement> tets
+      = {{vertices,
+          vbd::makeTetRestShape(
+              {restPositions[0],
+               restPositions[1],
+               restPositions[2],
+               restPositions[3]})}};
+  const auto coloring = vbd::colorTetMesh(positions.size(), tets);
+  const auto adjacency = vbd::TetAdjacency::build(positions.size(), tets);
+
+  std::vector<vbd::AvbdTetMaterialFiniteStiffnessRow> rows
+      = {makeTetRow(0.05, 1.0)};
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 4;
+  vbd::AvbdTetMaterialFiniteStiffnessOptions avbdOptions;
+  avbdOptions.beta = 1.5;
+
+  const vbd::BlockDescentStats stats
+      = vbd::blockDescentTetMeshAvbdFiniteStiffness(
+          positions,
+          masses,
+          fixed,
+          inertialTargets,
+          tets,
+          800.0,
+          1200.0,
+          0.1,
+          rows,
+          coloring,
+          adjacency,
+          options,
+          avbdOptions);
+
+  EXPECT_EQ(stats.iterations, 4u);
+  EXPECT_LT(positions[3].z(), 1.3);
+  EXPECT_GT(rows[0].state.stiffness, 0.05);
   EXPECT_LE(rows[0].state.stiffness, rows[0].materialStiffness);
   EXPECT_DOUBLE_EQ(rows[0].state.lambda, 0.0);
 }

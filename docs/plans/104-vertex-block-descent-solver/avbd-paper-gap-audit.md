@@ -115,6 +115,10 @@ The first AVBD implementation slices add:
   scenes, keyed by body/entity and spring index, with focused
   `VbdFiniteStiffness.*` tests and
   `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain` coverage; and
+- a standalone finite-stiffness tetrahedral material row slice:
+  `AvbdTetMaterialFiniteStiffnessRow`, strain-norm row error, scaled Lamé
+  material stamping, and `blockDescentTetMeshAvbdFiniteStiffness`, with focused
+  `VbdFiniteStiffness.*` tests, but not yet World-wired; and
 - a combined serial mass-spring AVBD row solve for those contact-normal,
   attachment, and finite-stiffness spring rows, with
   `VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness`
@@ -139,7 +143,7 @@ full hard-contact/friction solver, and not CPU/GPU parity.
 | Joint, attachment, motor, fracture, and breakable hard constraints                                 | Scalar hard point-attachment kernel and narrow World attachment wiring started; joints, motors, and fracture missing                                          | A5            |
 | Unified rigid/soft interactions and cloth/articulated-body coupling                                | Missing                                                                                                                                                       | A6            |
 | Collision candidate generation, contact persistence, and row warm-start mapping                    | Static half-space row keys started; manifolds, dynamic contacts, and broad row generation missing                                                             | A7            |
-| Hessian approximation for hard constraints and stiffness-rescaling friction                        | Finite-stiffness spring ramp started; hard-constraint quasi-Newton Hessian and friction stiffness rescaling missing                                           | A8            |
+| Hessian approximation for hard constraints and stiffness-rescaling friction                        | Finite-stiffness spring and standalone tet-material ramps started; hard-constraint quasi-Newton Hessian and friction stiffness rescaling missing              | A8            |
 | CPU parallel color sweeps plus deterministic dual update pass                                      | Serial contact-normal dual pass started; parallel dual/update scheduling missing                                                                              | A9            |
 | CUDA/GPU AVBD backend for all row families and scene corpus                                        | VBD CUDA mass-spring/tet rollout only                                                                                                                         | G1-G5         |
 | DART-owned reproductions of 2D/3D demos and paper/video scenes                                     | Missing beyond existing VBD demos                                                                                                                             | D1-D6         |

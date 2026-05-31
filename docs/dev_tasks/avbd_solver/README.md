@@ -48,6 +48,12 @@ Paper audit:
     `blockDescentMassSpringAvbdFiniteStiffness`, with focused
     `VbdFiniteStiffness.*` tests for stretch sign, ramp/cap behavior,
     finite-row warm starting, and driver updates.
+  - First finite-stiffness tetrahedral material row slice started:
+    `AvbdTetMaterialFiniteStiffnessRow`,
+    `avbdTetMaterialConstraintValue`, and
+    `blockDescentTetMeshAvbdFiniteStiffness`, with focused
+    `VbdFiniteStiffness.*` tests for strain-norm row error, unit-scale
+    ramp/cap behavior, and standalone tet-material driver updates.
   - Narrow World wiring also started behind internal
     `DeformableVbdConfig::useAvbdFiniteStiffnessRows` for progressive spring
     stiffness rows in supported serial, contact-free, frictionless mass-spring
@@ -61,9 +67,9 @@ Paper audit:
     bodies, friction, self-contact, Chebyshev, Rayleigh damping, parallel
     settings, and unsupported requested row families all keep using the
     existing VBD path without reporting partial AVBD row counters.
-  - Still missing finite-stiffness tetrahedral rows, self-contact, friction,
-    full row-family generation, parallel dual/stiffness updates, and GPU
-    parity.
+  - Still missing World wiring for finite-stiffness tetrahedral rows,
+    self-contact, friction, full row-family generation, parallel
+    dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
@@ -103,7 +109,7 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Extend finite-stiffness row coverage from springs to tetrahedral/material
-   rows, then broaden diagnostics as each new row family becomes World-wired.
+1. Wire finite-stiffness tetrahedral material rows into the supported World VBD
+   envelope, then broaden diagnostics for tet-row counters and fallback cases.
 2. Add the next bounded AVBD row family, starting with contact/friction bounds
    or self-contact rows in the same combined-row solve.

@@ -32,13 +32,16 @@
 #pragma once
 
 #include <dart/simulation/experimental/detail/deformable_vbd/avbd_constraint.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/neo_hookean.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 
 #include <Eigen/Core>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 
+#include <cmath>
 #include <cstdint>
 
 namespace dart::simulation::experimental::detail::deformable_vbd {
@@ -54,11 +57,29 @@ struct AvbdSpringFiniteStiffnessRow
   double materialStiffness = std::numeric_limits<double>::infinity();
 };
 
+/// One scalar AVBD finite-stiffness row for a tetrahedral material element.
+/// The row's current stiffness is a dimensionless multiplier on the body's
+/// Lamé parameters, ramping from a soft start toward 1.0 as strain error is
+/// observed. It carries no dual variable.
+struct AvbdTetMaterialFiniteStiffnessRow
+{
+  std::uint32_t tet = 0;
+  AvbdScalarRowState state;
+  double materialStiffness = 1.0;
+};
+
 /// Per-sweep AVBD finite-stiffness update parameters.
 struct AvbdSpringFiniteStiffnessOptions
 {
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
+/// Per-sweep AVBD tetrahedral material finite-stiffness update parameters.
+struct AvbdTetMaterialFiniteStiffnessOptions
+{
+  double beta = 1.0;
+  double maxStiffness = 1.0;
 };
 
 //==============================================================================
@@ -70,6 +91,28 @@ inline double avbdSpringConstraintValue(
     return 0.0;
   }
   return length - restLength;
+}
+
+//==============================================================================
+inline double avbdTetMaterialConstraintValue(
+    const TetRestShape& rest, const std::array<Eigen::Vector3d, 4>& positions)
+{
+  if (!(rest.restVolume > 0.0)) {
+    return 0.0;
+  }
+
+  const Eigen::Matrix3d F
+      = deformationGradient(rest.restShapeInverse, positions);
+  const double strain = (F - Eigen::Matrix3d::Identity()).norm();
+  return std::isfinite(strain) ? strain : 0.0;
+}
+
+//==============================================================================
+inline LameParameters avbdScaledTetMaterial(
+    double mu, double lambda, const AvbdTetMaterialFiniteStiffnessRow& row)
+{
+  const double scale = std::max(0.0, row.state.stiffness);
+  return {scale * mu, scale * lambda};
 }
 
 //==============================================================================
@@ -91,6 +134,22 @@ inline AvbdScalarRowState updateAvbdSpringFiniteStiffnessRow(
     double constraintValue,
     const AvbdSpringFiniteStiffnessRow& row,
     const AvbdSpringFiniteStiffnessOptions& options)
+{
+  state.lambda = 0.0;
+  state.stiffness = updateAvbdFiniteStiffness(
+      state.stiffness,
+      constraintValue,
+      options.beta,
+      std::min(row.materialStiffness, options.maxStiffness));
+  return state;
+}
+
+//==============================================================================
+inline AvbdScalarRowState updateAvbdTetMaterialFiniteStiffnessRow(
+    AvbdScalarRowState state,
+    double constraintValue,
+    const AvbdTetMaterialFiniteStiffnessRow& row,
+    const AvbdTetMaterialFiniteStiffnessOptions& options)
 {
   state.lambda = 0.0;
   state.stiffness = updateAvbdFiniteStiffness(
