@@ -1622,6 +1622,9 @@ void defSimulationExperimentalModule(nb::module_& m)
           "projected_newton_fallbacks",
           &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
       .def_ro(
+          "projected_newton_iterative_solves",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeSolves)
+      .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
       .def_ro(

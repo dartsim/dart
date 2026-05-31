@@ -90,6 +90,13 @@ struct DeformableSolverDiagnostics
   /// used when the Newton direction was not a descent direction.
   std::size_t projectedNewtonSteps = 0;
   std::size_t projectedNewtonFallbacks = 0;
+  /// Newton iterations whose linear solve took the iterative
+  /// (incomplete-Cholesky preconditioned conjugate-gradient) path instead of
+  /// the sparse Cholesky factorization -- either because the mesh exceeds the
+  /// direct-solve node cap or because the body opted in via
+  /// ``DeformableMaterialProperties.useIterativeLinearSolver``. Zero means
+  /// every solve used the direct factorization.
+  std::size_t projectedNewtonIterativeSolves = 0;
   /// Self-contact barrier active contacts summed over every solver iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
   /// Coulomb friction energy dissipated at the converged iterate.
