@@ -9,13 +9,14 @@ controller without interactive input.
 
 from __future__ import annotations
 
+from collections import deque
 import math
 
 import numpy as np
 
 import dartpy as dart
 
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 from ._z_up import reorient_to_z_up
 
 _WORLD_URI = "dart://sample/skel/vehicle.skel"
@@ -39,6 +40,9 @@ def build() -> SceneSetup:
         raise RuntimeError("vehicle world is missing car_skeleton")
 
     state = {"steering_angle": 0.0, "wheel_velocity": -_WHEEL_SPEED}
+    steering_history = deque(maxlen=120)
+    wheel_speed_history = deque(maxlen=120)
+    car_x_history = deque(maxlen=120)
 
     def pre_step() -> None:
         if car.get_num_dofs() < 12:
@@ -64,7 +68,29 @@ def build() -> SceneSetup:
 
         car.set_forces(forces)
 
-    return SceneSetup(world=world, pre_step=pre_step, info={})
+    def build_panel(builder: object, context: object) -> None:
+        velocities = np.asarray(car.get_velocities(), dtype=float)
+        wheel_speed = float(velocities[7]) if velocities.shape[0] > 7 else 0.0
+        com = np.asarray(car.get_com(), dtype=float)
+        steering_history.append(float(state["steering_angle"]))
+        wheel_speed_history.append(wheel_speed)
+        car_x_history.append(float(com[0]))
+        builder.text("controller: PD steering + wheel speed")
+        builder.text(f"target steering: {state['steering_angle']:.3f} rad")
+        builder.text(f"target wheel speed: {state['wheel_velocity']:.3f} rad/s")
+        builder.text(f"rear wheel speed: {wheel_speed:.3f} rad/s")
+        builder.text(f"COM: {com[0]:.3f}, {com[1]:.3f}, {com[2]:.3f} m")
+        builder.separator()
+        builder.plot_lines("Steering angle", list(steering_history))
+        builder.plot_lines("Wheel speed", list(wheel_speed_history))
+        builder.plot_lines("Car x", list(car_x_history))
+
+    return SceneSetup(
+        world=world,
+        pre_step=pre_step,
+        panels=[ScenePanel("Vehicle", build_panel)],
+        info={"controller": "pd_vehicle"},
+    )
 
 
 SCENE = PythonDemoScene(

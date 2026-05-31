@@ -2280,6 +2280,30 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Added a robot-agnostic Python SIMBICON controller to `pixi run py-demos` with new `atlas_simbicon`, `g1_simbicon`, and `simbicon_duo` scenes. A single config-driven controller (`scenes/_simbicon.py`) implements the SIMBICON FSM, world-frame torso/swing-hip control, and the `theta_d = theta_d0 + c_d*d + c_v*v` balance feedback, parameterized per robot (`scenes/_simbicon_robots.py`); both the bundled Atlas v5 and the (locally cached) Unitree G1 balance/step under it, including together in one world. Uses the paper's hip-midpoint COM proxy (dartpy exposes no `getCOM`), a foot-height contact proxy, and Stable PD so stiff gains stay stable on G1's light, low-inertia joints.
   - Improved the Python SIMBICON balance robustness with two evidence-driven control fixes. State traces showed both robots fail the same way: the stance leg creeps into a slightly deeper crouch each cycle so the pelvis gradually sinks until it drops out of the control window. (1) Added stance-leg height regulation (`height_kp`) that extends the stance knee back toward the standing pelvis height captured at spawn, and (2) completed the world-frame torso control as a true PD by wiring in the previously-unused `torso_kd` damping term (derived from the pelvis angular velocity). With `height_kp=2.0`, Atlas balances and steps in place for 3000+ steps (it toppled around step 2800 before) and G1's time-to-fall nearly doubles (1170 → 2204 steps). A residual lateral (coronal) instability still topples both over longer horizons; sweeping the coronal feedback gain and a per-side sign flip did not improve it, so the deeper lateral foot-placement work is left as a documented limit rather than masked.
   - Made `dart::gui::runDemos`/`--scene` accept both hyphenated and snake_case scene ids (`atlas-simbicon` and `atlas_simbicon`) and print the available scenes on an unknown id instead of silently starting the first scene, which makes headless screenshot capture reliable.
+  - Hardened `pixi run py-demos` runtime scene switching: Python scene
+    builders and startup `pre_step` callbacks now share the demo startup
+    watchdog, and switched demos that throw, fail render-state creation, or
+    return their first frame over budget restore the previous active demo
+    instead of leaving the workspace stuck on the requested scene. Pending
+    sidebar switches can also be retargeted by clicking a different demo before
+    the candidate starts.
+  - Tightened Python demo visual debugging: the docked `Simulation` panel now
+    uses compact transport controls for simulation and recorded-frame playback,
+    and `py-demo-capture --show-ui` rejects captures without the docked ImGui
+    workspace while dropping warm-up frames before the UI is visible.
+  - Made sx Python demo external-force panels target-aware: they now list
+    mapped dynamic drag targets before a drag starts while continuing to report
+    disabled, static, unmapped, invalid, and applying states.
+  - Added an `Experimental focus` toggle to the Python demos navigator. When
+    the active scene is an sx/experimental demo, the sidebar opens focused on
+    simulation-experimental categories while still allowing users to browse the
+    full legacy DART API catalog by unchecking the toggle.
+  - Kept docked Python demo panes resizable across runtime demo switches by
+    storing dock-layout initialization in the viewer lifecycle and clearing
+    no-resize flags from the default dock nodes.
+  - Updated the GLFW-backed ImGui input bridge so docked Python demo pane
+    edges show the appropriate resize cursors while preserving resizable pane
+    behavior.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

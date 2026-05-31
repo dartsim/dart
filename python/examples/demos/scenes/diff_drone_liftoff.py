@@ -43,7 +43,7 @@ import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Mirror the C++ test physics. Iterations/lr match optimizeDrone(..., 400, 4.0).
 _TIME_STEP = 1e-2
@@ -105,6 +105,13 @@ def _rollout_heights(trajectory: Any) -> list[float]:
 
     states = np.asarray(trajectory.states)
     return [float(states[i, _Z_STATE_ROW]) for i in range(states.shape[0])]
+
+
+def _sample_plot_values(values: list[float], limit: int = 120) -> list[float]:
+    if len(values) <= limit:
+        return [float(value) for value in values]
+    indices = np.linspace(0, len(values) - 1, limit, dtype=int)
+    return [float(values[int(index)]) for index in indices]
 
 
 def _optimize_drone(diff: Any, mode: Any) -> dict[str, Any]:
@@ -269,17 +276,51 @@ def build() -> SceneSetup:
     )
 
     playhead = {"i": 0}
+    playback = {"stride": 1}
+    height_plot = _sample_plot_values([float(value) for value in aware_heights])
 
     def pre_step() -> None:
         if not aware_heights:
             return
         z = aware_heights[playhead["i"]]
         drone_frame.set_transform(_translation((0.0, 0.0, z)))
-        playhead["i"] = (playhead["i"] + 1) % len(aware_heights)
+        stride = max(1, int(playback["stride"]))
+        playhead["i"] = (playhead["i"] + stride) % len(aware_heights)
+
+    def build_panel(builder: object, context: object) -> None:
+        del context
+        current_index = playhead["i"] if aware_heights else 0
+        current_z = float(aware_heights[current_index]) if aware_heights else _REST_Z
+        builder.text("mode: complementarity-aware replay")
+        builder.text(f"optimized: {'yes' if optimized else 'fallback'}")
+        builder.text(
+            f"frame: {current_index + 1}/{len(aware_heights)} | z={current_z:.3f} m"
+        )
+        builder.text(f"target z: {_TARGET_Z:.3f} m")
+        changed, stride_value = builder.slider(
+            "Playback stride", float(playback["stride"]), 1.0, 8.0
+        )
+        if changed:
+            playback["stride"] = max(1, int(round(stride_value)))
+        if builder.button("Reset replay"):
+            playhead["i"] = 0
+            drone_frame.set_transform(_translation((0.0, 0.0, aware_heights[0])))
+        builder.separator()
+        builder.text(
+            f"ANALYTIC: thrust={float(naive.get('thrust', 0.0)):.2f} N | "
+            f"final z={naive_z:.3f} m | loss={float(naive.get('loss', 0.0)):.4f}"
+        )
+        builder.text(
+            f"AWARE: thrust={float(aware.get('thrust', 0.0)):.2f} N | "
+            f"final z={float(aware.get('final_z', _REST_Z)):.3f} m | "
+            f"loss={float(aware.get('loss', 0.0)):.4f}"
+        )
+        builder.plot_lines("Aware height", height_plot)
 
     return SceneSetup(
         world=render_world,
         pre_step=pre_step,
+        panels=[ScenePanel("Diff Drone Lift-Off", build_panel)],
         info={
             "optimized": optimized,
             "steps": len(aware_heights),

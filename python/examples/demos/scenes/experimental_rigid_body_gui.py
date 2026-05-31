@@ -10,13 +10,15 @@ frame.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
 def _visual_for(shape_kind: str, *, radius: float = 0.0, half_extents=None) -> "dart.Shape":
@@ -40,6 +42,7 @@ def build() -> SceneSetup:
     ground = world.add_rigid_body("ground", ground_opts)
     ground.set_collision_shape(sx.CollisionShape.box(np.array([1.5, 1.5, 0.04])))
     ground.friction = 0.85
+    dynamic_bodies = []
     bridge.add_rigid_body_visual(
         ground,
         _visual_for("box", half_extents=np.array([1.5, 1.5, 0.04])),
@@ -59,6 +62,7 @@ def build() -> SceneSetup:
         body.set_collision_shape(sx.CollisionShape.sphere(radius))
         body.restitution = 0.15
         body.friction = 0.85
+        dynamic_bodies.append(body)
         bridge.add_rigid_body_visual(
             body,
             _visual_for("sphere", radius=radius),
@@ -74,6 +78,7 @@ def build() -> SceneSetup:
     box.set_collision_shape(sx.CollisionShape.box(np.array([0.1, 0.12, 0.08])))
     box.restitution = 0.15
     box.friction = 0.85
+    dynamic_bodies.append(box)
     bridge.add_rigid_body_visual(
         box,
         _visual_for("box", half_extents=np.array([0.1, 0.12, 0.08])),
@@ -84,9 +89,53 @@ def build() -> SceneSetup:
     world.enter_simulation_mode()
     bridge.sync()
 
+    speed_history: deque[float] = deque(maxlen=120)
+    min_height_history: deque[float] = deque(maxlen=120)
+    energy_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        speeds = [
+            float(np.linalg.norm(np.asarray(body.linear_velocity, dtype=float)))
+            for body in dynamic_bodies
+        ]
+        heights = [
+            float(np.asarray(body.translation, dtype=float)[2])
+            for body in dynamic_bodies
+        ]
+        energy = sum(float(body.kinetic_energy) for body in dynamic_bodies)
+        max_speed = max(speeds) if speeds else 0.0
+        min_height = min(heights) if heights else 0.0
+        speed_history.append(max_speed)
+        min_height_history.append(min_height)
+        energy_history.append(energy)
+
+        builder.text("solver: experimental rigid bodies")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"dynamic bodies: {len(dynamic_bodies)}")
+        builder.text(f"max speed: {max_speed:.3f} m/s")
+        builder.text(f"kinetic energy: {energy:.3f} J")
+        changed, friction = builder.slider("Friction", float(ground.friction), 0.0, 1.0)
+        if changed:
+            ground.friction = float(friction)
+            for body in dynamic_bodies:
+                body.friction = float(friction)
+        changed, restitution = builder.slider(
+            "Restitution", float(dynamic_bodies[0].restitution), 0.0, 0.8
+        )
+        if changed:
+            for body in dynamic_bodies:
+                body.restitution = float(restitution)
+        builder.plot_lines("Max speed", list(speed_history))
+        builder.plot_lines("Min height", list(min_height_history))
+        builder.plot_lines("Energy", list(energy_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel("Rigid Bodies sx", build_panel)],
         info={"sx_world": world},
     )
 
@@ -94,7 +143,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="experimental_rigid_body_gui",
     title="Experimental Rigid Body (sx)",
-    category="Experimental",
+    category="Experimental Rigid Body (sx)",
     summary="Four spheres + a box dropping under the experimental world.",
     build=build,
 )

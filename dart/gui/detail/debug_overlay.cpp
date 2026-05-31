@@ -178,9 +178,15 @@ void refreshSelectionDebugLineOverlay(
     ::filament::Material& material,
     const std::vector<RenderableDescriptor>& descriptors,
     RenderableId selectedRenderableId,
+    const std::vector<dart::gui::DebugLineDescriptor>& forceDragLines,
     std::optional<Renderable>& overlay)
 {
+  std::vector<dart::gui::DebugLineDescriptor> lines = forceDragLines;
   if (selectedRenderableId == 0) {
+    if (!lines.empty()) {
+      refreshDebugLineOverlay(engine, scene, material, lines, overlay);
+      return;
+    }
     clearDebugLineOverlay(engine, scene, overlay);
     return;
   }
@@ -193,16 +199,17 @@ void refreshSelectionDebugLineOverlay(
       });
   if (selectedDescriptor == descriptors.end()
       || !selectedDescriptor->material.visible) {
+    if (!lines.empty()) {
+      refreshDebugLineOverlay(engine, scene, material, lines, overlay);
+      return;
+    }
     clearDebugLineOverlay(engine, scene, overlay);
     return;
   }
 
-  refreshDebugLineOverlay(
-      engine,
-      scene,
-      material,
-      makeSelectionDebugLines(*selectedDescriptor),
-      overlay);
+  const auto selectionLines = makeSelectionDebugLines(*selectedDescriptor);
+  lines.insert(lines.end(), selectionLines.begin(), selectionLines.end());
+  refreshDebugLineOverlay(engine, scene, material, lines, overlay);
 }
 
 } // namespace dart::gui::detail

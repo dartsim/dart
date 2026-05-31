@@ -10,11 +10,13 @@ and Skeleton.getConstraintForces bindings.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 from ._z_up import reorient_to_z_up
 
 
@@ -55,6 +57,22 @@ def build() -> SceneSetup:
     desired = np.array(biped.get_positions(), dtype=float)
 
     prev_offset = [0.0]
+    state = {"sagittal_offset": 0.0, "torque_norm": 0.0}
+    pose_error_history = deque(maxlen=120)
+    sagittal_offset_history = deque(maxlen=120)
+    torque_history = deque(maxlen=120)
+
+    def sagittal_offset() -> float:
+        com = np.asarray(biped.get_com(), dtype=float)
+        heel_transform = heel_left.get_transform()
+        heel_tf = np.asarray(
+            heel_transform.matrix()
+            if hasattr(heel_transform, "matrix")
+            else heel_transform,
+            dtype=float,
+        )
+        cop = heel_tf[:3, :3] @ np.array([0.05, 0.0, 0.0]) + heel_tf[:3, 3]
+        return float(com[0] - cop[0])
 
     def pre_step() -> None:
         dt = world.get_time_step()
@@ -70,29 +88,46 @@ def build() -> SceneSetup:
         acceleration = inv_mass @ (-cg + proportional + derivative + constraint_forces)
         torques = proportional + derivative - kd @ acceleration * dt
 
-        com = np.asarray(biped.get_com(), dtype=float)
-        heel_transform = heel_left.get_transform()
-        heel_tf = np.asarray(
-            heel_transform.matrix() if hasattr(heel_transform, "matrix") else heel_transform,
-            dtype=float,
-        )
-        cop = heel_tf[:3, :3] @ np.array([0.05, 0.0, 0.0]) + heel_tf[:3, 3]
-        sagittal_offset = com[0] - cop[0]
-        if torques.size > 26 and (com[0] - cop[0]) < 0.1:
+        offset = sagittal_offset()
+        if torques.size > 26 and offset < 0.1:
             ankle_hip_gain = 20.0
             back_gain = 10.0
             derivative_gain = 100.0
-            correction = derivative_gain * (prev_offset[0] - sagittal_offset)
-            torques[17] += -ankle_hip_gain * sagittal_offset + correction
-            torques[25] += -back_gain * sagittal_offset + correction
-            torques[19] += -ankle_hip_gain * sagittal_offset + correction
-            torques[26] += -back_gain * sagittal_offset + correction
-            prev_offset[0] = sagittal_offset
+            correction = derivative_gain * (prev_offset[0] - offset)
+            torques[17] += -ankle_hip_gain * offset + correction
+            torques[25] += -back_gain * offset + correction
+            torques[19] += -ankle_hip_gain * offset + correction
+            torques[26] += -back_gain * offset + correction
+            prev_offset[0] = offset
 
         torques[:6] = 0.0
+        state["sagittal_offset"] = offset
+        state["torque_norm"] = float(np.linalg.norm(torques))
         biped.set_forces(torques)
 
-    return SceneSetup(world=world, pre_step=pre_step, info={})
+    def build_panel(builder: object, context: object) -> None:
+        positions_now = np.asarray(biped.get_positions(), dtype=float)
+        constraint_forces = np.asarray(biped.get_constraint_forces(), dtype=float)
+        pose_error = float(np.linalg.norm(positions_now[6:] - desired[6:]))
+        pose_error_history.append(pose_error)
+        sagittal_offset_history.append(float(state["sagittal_offset"]))
+        torque_history.append(float(state["torque_norm"]))
+        builder.text("controller: SPD + sagittal correction")
+        builder.text(f"pose error: {pose_error:.4f} rad")
+        builder.text(f"sagittal COM-COP offset: {state['sagittal_offset']:.4f} m")
+        builder.text(f"torque norm: {state['torque_norm']:.3f} N m")
+        builder.text(f"constraint force norm: {np.linalg.norm(constraint_forces):.3f} N")
+        builder.separator()
+        builder.plot_lines("Pose error", list(pose_error_history))
+        builder.plot_lines("Sagittal offset", list(sagittal_offset_history))
+        builder.plot_lines("Torque norm", list(torque_history))
+
+    return SceneSetup(
+        world=world,
+        pre_step=pre_step,
+        panels=[ScenePanel("Joint Constraints", build_panel)],
+        info={"controller": "stable_pd_sagittal_correction"},
+    )
 
 
 SCENE = PythonDemoScene(

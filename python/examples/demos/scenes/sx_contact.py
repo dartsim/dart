@@ -6,13 +6,15 @@ ground in a parallel dart.simulation.World.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
 def build() -> SceneSetup:
@@ -45,10 +47,35 @@ def build() -> SceneSetup:
         (0.7, 0.7, 0.7), name="ground_visual")
     bridge.sync()
 
+    height_history: deque[float] = deque(maxlen=120)
+    slider_speed_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        joint = leg.parent_joint
+        height = float(np.asarray(leg.translation, dtype=float)[2])
+        velocity = np.asarray(joint.velocity, dtype=float)
+        slider_speed = float(abs(velocity[0])) if velocity.size else 0.0
+        height_history.append(height)
+        slider_speed_history.append(slider_speed)
+
+        builder.text("solver: contact sx world")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"time step: {world.time_step:.4f} s")
+        builder.text(f"foot height: {height:.3f} m")
+        builder.text(f"slider speed: {slider_speed:.3f} m/s")
+        changed, friction = builder.slider("Ground friction", float(ground.friction), 0.0, 1.0)
+        if changed:
+            ground.friction = float(friction)
+        builder.plot_lines("Foot height", list(height_history))
+        builder.plot_lines("Slider speed", list(slider_speed_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
         force_drag=bridge.force_drag,
+        panels=[ScenePanel("Contact sx", build_panel)],
         info={"sx_world": world, "dofs": robot.num_dofs},
     )
 
@@ -56,7 +83,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_contact",
     title="Contact (sx)",
-    category="Experimental",
+    category="Experimental Rigid Body (sx)",
     summary="A sphere-footed leg drops and rests on static ground.",
     build=build,
 )

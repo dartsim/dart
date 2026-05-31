@@ -14,13 +14,15 @@ DART-native showcase -- not a faithful IPC paper-figure reproduction.
 
 from __future__ import annotations
 
+from collections import deque
 import math
 from pathlib import Path
 
 import dartpy.simulation_experimental as sx
+import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_cloth_from_obj
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _CLOTH_PATH = Path(__file__).resolve().parent.parent / "assets" / "cloth_grid.obj"
 _ROD_RADIUS = 0.1
@@ -28,6 +30,19 @@ _ROD_HALF_HEIGHT = 0.45
 _ROD_CENTER = (0.0, 0.0, 0.25)
 # Lay the capsule axis (body z) along world y, via a -90 deg rotation about x.
 _ROD_ORIENTATION = (math.cos(-math.pi / 4), math.sin(-math.pi / 4), 0.0, 0.0)
+_ROD_AXIS = np.array([0.0, 1.0, 0.0])
+
+
+def _capsule_clearance(position: np.ndarray) -> float:
+    """Signed distance from a point to the static world-y capsule rod."""
+
+    center = np.asarray(_ROD_CENTER, dtype=float)
+    offset = position - center
+    axial = float(
+        np.clip(np.dot(offset, _ROD_AXIS), -_ROD_HALF_HEIGHT, _ROD_HALF_HEIGHT)
+    )
+    closest = center + axial * _ROD_AXIS
+    return float(np.linalg.norm(position - closest) - _ROD_RADIUS)
 
 
 def build() -> SceneSetup:
@@ -63,9 +78,51 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="capsule_cloth", edges=edges)
 
+    clearance_history = deque(maxlen=120)
+    sag_history = deque(maxlen=120)
+    balance_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("obstacle: capsule rod radial barrier")
+        builder.text(f"rod radius: {_ROD_RADIUS:.3f} m")
+        if positions.size:
+            clearances = np.asarray(
+                [_capsule_clearance(position) for position in positions], dtype=float
+            )
+            min_clearance = float(np.min(clearances))
+            min_z = float(np.min(positions[:, 2]))
+            left = positions[positions[:, 0] < _ROD_CENTER[0]]
+            right = positions[positions[:, 0] >= _ROD_CENTER[0]]
+            left_mean_z = float(np.mean(left[:, 2])) if left.size else min_z
+            right_mean_z = float(np.mean(right[:, 2])) if right.size else min_z
+            balance = left_mean_z - right_mean_z
+            clearance_history.append(min_clearance)
+            sag_history.append(min_z)
+            balance_history.append(balance)
+            builder.text(f"rod clearance: {min_clearance:.4f} m")
+            builder.text(f"lowest cloth z: {min_z:.3f} m")
+            builder.text(f"left/right mean-z delta: {balance:.3f} m")
+        diagnostics = world.last_deformable_solver_diagnostics
+        builder.text(
+            f"solver iters: {diagnostics.solver_iterations} | "
+            f"contacts: {diagnostics.converged_active_contact_count}"
+        )
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if clearance_history:
+            builder.separator()
+            builder.plot_lines("Rod clearance", list(clearance_history))
+            builder.plot_lines("Lowest cloth z", list(sag_history))
+            builder.plot_lines("Left-right balance", list(balance_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC Capsule Rod", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

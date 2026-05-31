@@ -34,6 +34,7 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
+#include <dart/gui/detail/application.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
 #include <dart/gui/detail/gui_scale.hpp>
 #include <dart/gui/detail/input.hpp>
@@ -43,6 +44,10 @@
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
+
+#define private public
+#include <dart/gui/detail/selection.hpp>
+#undef private
 
 #include <dart/simulation/world.hpp>
 
@@ -665,6 +670,19 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       inputSource.find("isSceneMouseInputCapturedByUi"), std::string::npos);
   EXPECT_NE(inputSource.find("io.WantCaptureMouse"), std::string::npos);
   EXPECT_NE(
+      inputSource.find("ImGuiBackendFlags_HasMouseCursors"), std::string::npos);
+  EXPECT_NE(
+      inputSource.find("createStandardCursor(GLFW_HRESIZE_CURSOR)"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("createStandardCursor(GLFW_VRESIZE_CURSOR)"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("glfwSetCursor(window, cursor)"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("updateImGuiMouseCursor(window, imguiIo)"),
+      std::string::npos);
+  EXPECT_NE(
       frameViewportSource.find(
           "isSceneMouseInputCapturedByUi(showUi, imguiIo)"),
       std::string::npos);
@@ -863,6 +881,553 @@ TEST(FilamentSceneExtraction, DockingPanelFallbackRequiresDockingSupport)
           "const double defaultAlpha = dockingActive ? 1.0 : 0.72"),
       std::string::npos);
   EXPECT_NE(panelSource.find("if (!dockingActive)"), std::string::npos);
+  EXPECT_NE(panelSource.find("\"Debug overlays\""), std::string::npos);
+  EXPECT_NE(panelSource.find("\"Viewer help\""), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DockLayoutBuildsBeforeDockspaceSubmission)
+{
+  const auto uiFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "ui_frame.cpp");
+
+  const auto dockIdPos = uiFrameSource.find("ImHashStr(\"DARTMainDockSpace\")");
+  const auto buildLayoutPos
+      = uiFrameSource.find("buildDefaultDockLayout(dockId, panels)");
+  const auto submitDockspacePos
+      = uiFrameSource.find("ImGui::DockSpaceOverViewport(");
+  EXPECT_NE(dockIdPos, std::string::npos);
+  EXPECT_NE(buildLayoutPos, std::string::npos);
+  EXPECT_NE(submitDockspacePos, std::string::npos);
+  EXPECT_LT(buildLayoutPos, submitDockspacePos);
+  EXPECT_NE(
+      uiFrameSource.find("DockBuilderDockWindow(panel.title.c_str(), target)"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DemoCatalogSearchMatchesSceneMetadata)
+{
+  const auto factory = [] {
+    return dart::gui::ApplicationOptions{};
+  };
+  const dart::gui::DemoSceneEntry scene{
+      "ipc_deformable_fem_buckle",
+      "IPC FEM Buckle",
+      "IPC Deformable (sx)",
+      "Self-contact buckling demo",
+      factory};
+
+  EXPECT_EQ(dart::gui::detail::normalizedDemoSearchText("  FEM  "), "  fem  ");
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("FEM")));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("deformable")));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("SELF-CONTACT")));
+  EXPECT_TRUE(dart::gui::detail::demoSceneMatchesSearch(scene, ""));
+  EXPECT_TRUE(dart::gui::detail::demoSceneMatchesExperimentalFocus(scene));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneVisibleInNavigator(
+          scene, dart::gui::detail::normalizedDemoSearchText("FEM"), true));
+  EXPECT_FALSE(
+      dart::gui::detail::demoSceneMatchesSearch(
+          scene, dart::gui::detail::normalizedDemoSearchText("cartpole")));
+
+  const dart::gui::DemoSceneEntry legacyScene{
+      "boxes", "Boxes", "Rigid Body", "stacked boxes", factory};
+  EXPECT_FALSE(
+      dart::gui::detail::demoSceneMatchesExperimentalFocus(legacyScene));
+  EXPECT_TRUE(
+      dart::gui::detail::demoSceneVisibleInNavigator(
+          legacyScene,
+          dart::gui::detail::normalizedDemoSearchText("boxes"),
+          false));
+  EXPECT_FALSE(
+      dart::gui::detail::demoSceneVisibleInNavigator(
+          legacyScene,
+          dart::gui::detail::normalizedDemoSearchText("boxes"),
+          true));
+}
+
+TEST(FilamentSceneExtraction, DemoCatalogGroupsNonContiguousCategories)
+{
+  const auto factory = [] {
+    return dart::gui::ApplicationOptions{};
+  };
+  const std::vector<dart::gui::DemoSceneEntry> scenes{
+      {"hello_world", "Hello World", "Getting Started", "intro", factory},
+      {"sx_contact", "Contact sx", "Experimental", "contact", factory},
+      {"boxes", "Boxes", "Rigid Body", "rigid", factory},
+      {"empty", "Empty", "Getting Started", "empty", factory},
+      {"sx_articulated", "Articulated sx", "Experimental", "joints", factory},
+  };
+
+  const auto groups = dart::gui::detail::groupDemoScenesByCategory(scenes);
+
+  ASSERT_EQ(groups.size(), 3u);
+  EXPECT_EQ(groups[0].category, "Getting Started");
+  ASSERT_EQ(groups[0].sceneIndices.size(), 2u);
+  EXPECT_EQ(groups[0].sceneIndices[0], 0u);
+  EXPECT_EQ(groups[0].sceneIndices[1], 3u);
+  EXPECT_EQ(groups[1].category, "Experimental");
+  ASSERT_EQ(groups[1].sceneIndices.size(), 2u);
+  EXPECT_EQ(groups[1].sceneIndices[0], 1u);
+  EXPECT_EQ(groups[1].sceneIndices[1], 4u);
+  EXPECT_EQ(groups[2].category, "Rigid Body");
+  ASSERT_EQ(groups[2].sceneIndices.size(), 1u);
+  EXPECT_EQ(groups[2].sceneIndices[0], 2u);
+}
+
+TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
+{
+  const auto applicationSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
+  const auto uiFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "ui_frame.cpp");
+  const auto panelSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
+  const auto runnerSource = readSourceFile(
+      std::filesystem::path("python") / "examples" / "demos" / "runner.py");
+  const auto viewerBindingSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "gui" / "viewer.cpp");
+  const auto panelBindingSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "gui" / "panel.cpp");
+  const auto panelBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "gui" / "panel.hpp");
+  const auto triMeshBindingSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "math" / "tri_mesh.cpp");
+  const auto endEffectorBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "dynamics"
+      / "end_effector.hpp");
+  const auto hierarchicalIkBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "dynamics"
+      / "hierarchical_ik.hpp");
+  const auto jacobianNodeBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "dynamics"
+      / "jacobian_node.hpp");
+  const auto selectionSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
+
+  EXPECT_NE(
+      applicationSource.find("makeDemoSimulationPanel"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("panel.title = \"Simulation\""),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("panel.dockSide = dart::gui::DockSide::Top"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("builder.textInput(\"##demo_search\", search)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("groupDemoScenesByCategory"), std::string::npos);
+  EXPECT_NE(applicationSource.find("Experimental focus"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("demoSidebarExperimentalFocus"),
+      std::string::npos);
+  EXPECT_NE(applicationSource.find("visibleSceneCount"), std::string::npos);
+  EXPECT_EQ(applicationSource.find("categoryEnd"), std::string::npos);
+  EXPECT_NE(applicationSource.find("categoryHasActive"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("toggleFrameOutputCapture"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(
+          "recordedFramePaths(lifecycle->frameOutputDirectory)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(
+          "advanceRecordedFramePlayback(*lifecycle, recordedFrameCount)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(">##play_recorded_frames"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestSceneSwitch(*lifecycle, active->id)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("pendingDemoFallbackIndex"), std::string::npos);
+  EXPECT_EQ(
+      applicationSource.find("&& !lifecycle->sceneSwitchRequested"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("sceneActivationPendingScene != entry.id"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("kDemoSceneStartupTimeoutMs"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("restoring previous demo"), std::string::npos);
+  EXPECT_NE(applicationSource.find("sceneActivationStatus"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("Restored previous demo"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS"),
+      std::string::npos);
+  EXPECT_NE(
+      viewerBindingSource.find("py-demos factory error"), std::string::npos);
+  EXPECT_NE(viewerBindingSource.find("throw;"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestSceneReplay(*lifecycle, active->id)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestDockLayoutReset(*lifecycle)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("consumeDockLayoutResetRequest(lifecycle)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("buildDefaultDockLayout(dockId, panels)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("lifecycle.dockLayoutInitialized"), std::string::npos);
+  EXPECT_EQ(
+      uiFrameSource.find("dartScene.dockLayoutInitialized"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("clearDockNodeResizeLocks(dockId)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("ImGuiDockNodeFlags_NoResizeX"), std::string::npos);
+  EXPECT_EQ(
+      uiFrameSource.find("node == nullptr || node->IsLeafNode()"),
+      std::string::npos);
+  EXPECT_NE(runnerSource.find("dock_side: str = \"right\""), std::string::npos);
+  EXPECT_NE(runnerSource.find("auto_resize: bool = False"), std::string::npos);
+  EXPECT_NE(
+      panelSource.find("panel.autoResize && !dockingActive"),
+      std::string::npos);
+  EXPECT_EQ(
+      applicationSource.find(
+          "scenePanel.dockSide = dart::gui::DockSide::Right"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("center, ImGuiDir_Down, 0.12f"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("center, ImGuiDir_Left, 0.24f"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("center, ImGuiDir_Right, 0.34f"), std::string::npos);
+  EXPECT_NE(
+      viewerBindingSource.find("makeGuiPanelFromPython(panel)"),
+      std::string::npos);
+  EXPECT_NE(
+      panelBindingHeaderSource.find("#include <dart/gui/fwd.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      panelBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
+  EXPECT_EQ(
+      panelBindingHeaderSource.find("#include <dart/gui/panel.hpp>"),
+      std::string::npos);
+  const auto bindingHeaderInclude
+      = panelBindingSource.find("#include \"gui/panel.hpp\"");
+  const auto dartPanelInclude
+      = panelBindingSource.find("#include <dart/gui/panel.hpp>");
+  EXPECT_NE(bindingHeaderInclude, std::string::npos);
+  EXPECT_NE(dartPanelInclude, std::string::npos);
+  EXPECT_LT(bindingHeaderInclude, dartPanelInclude);
+  const auto triMeshNanobindInclude
+      = triMeshBindingSource.find("#include <nanobind/nanobind.h>");
+  const auto triMeshDartInclude
+      = triMeshBindingSource.find("#include \"dart/math/tri_mesh.hpp\"");
+  EXPECT_NE(triMeshNanobindInclude, std::string::npos);
+  EXPECT_NE(triMeshDartInclude, std::string::npos);
+  EXPECT_LT(triMeshNanobindInclude, triMeshDartInclude);
+  EXPECT_NE(
+      endEffectorBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
+  EXPECT_NE(
+      hierarchicalIkBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
+  EXPECT_NE(
+      jacobianNodeBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
+  EXPECT_EQ(
+      selectionSource.find(
+          "mSelectedDragMode = DragMode::Force;\n"
+          "  mSelectionBoundsVisible = false;\n"
+          "  lifecycle.paused = true;"),
+      std::string::npos);
+  EXPECT_EQ(
+      selectionSource.find(
+          "if (mSelectedDragMode == DragMode::Force) {\n"
+          "      const PickRay ray = makePanePickRay(inputPane, cursorX, "
+          "cursorY);\n"
+          "      updateForceDrag(scene, descriptors, ray);\n"
+          "      lifecycle.paused = true;"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, PanelControlsUseDockFriendlyLabels)
+{
+  const auto panelSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
+
+  EXPECT_NE(panelSource.find("visiblePanelLabel"), std::string::npos);
+  EXPECT_NE(
+      panelSource.find("ImGui::TextUnformatted(displayLabel.c_str())"),
+      std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::SliderScalar("), std::string::npos);
+  EXPECT_NE(panelSource.find("\"##value\""), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::PlotLines("), std::string::npos);
+  EXPECT_NE(panelSource.find("\"##lines\""), std::string::npos);
+  EXPECT_NE(
+      panelSource.find(
+          "ImGui::SetNextItemWidth(-std::numeric_limits<float>::min())"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DemoWorkspaceSupportsScriptedSwitchCaptureEvents)
+{
+  const auto applicationSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
+  const auto sceneFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "scene_frame.cpp");
+  const auto captureSource
+      = readSourceFile(std::filesystem::path("scripts") / "capture_py_demo.py");
+
+  EXPECT_NE(applicationSource.find("ScriptedDemoSwitch"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-demo-switch\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-demo-event-log\""),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestSceneSwitch(lifecycle"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"observed_target_demo\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"restored_previous_demo\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-force-drag\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-pointer-force-drag\""),
+      std::string::npos);
+  EXPECT_NE(sceneFrameSource.find("\"force_drag_started\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"--switch-scene\""), std::string::npos);
+  EXPECT_NE(
+      captureSource.find("\"--scripted-demo-switch\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"--force-drag-target\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"--force-drag-pixel\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"events.jsonl\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"manifest.json\""), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, ForceDragRoutesExternalRenderablesThroughCallback)
+{
+  dart::gui::detail::SelectionController selection;
+  dart::gui::detail::DartScene scene;
+  std::vector<dart::gui::ForceDragEvent> events;
+  scene.onForceDrag = [&](const dart::gui::ForceDragEvent& event) {
+    events.push_back(event);
+  };
+
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.id = 42;
+  descriptor.shapeFrameName = "sx_box";
+  descriptor.worldTransform = Eigen::Isometry3d::Identity();
+  descriptor.worldTransform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  dart::gui::PickRay pressRay;
+  pressRay.origin = Eigen::Vector3d(1.0, 2.0, 1.0);
+  pressRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+
+  dart::gui::ViewerLifecycleState lifecycle;
+  lifecycle.paused = false;
+  ASSERT_TRUE(selection.beginForceDrag(
+      scene,
+      descriptor,
+      pressRay,
+      descriptor.worldTransform.translation(),
+      lifecycle));
+  EXPECT_FALSE(lifecycle.paused);
+
+  std::vector<dart::gui::RenderableDescriptor> descriptors{descriptor};
+  dart::gui::PickRay dragRay;
+  dragRay.origin = Eigen::Vector3d(2.0, 2.0, 1.0);
+  dragRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+  selection.updateForceDrag(scene, descriptors, dragRay);
+
+  ASSERT_EQ(events.size(), 1u);
+  EXPECT_EQ(events.front().renderableId, descriptor.id);
+  EXPECT_EQ(events.front().renderableName, "sx_box");
+  EXPECT_TRUE(events.front().active);
+  EXPECT_TRUE(events.front().applicationPoint.isApprox(
+      descriptor.worldTransform.translation()));
+  EXPECT_TRUE(events.front().force.isApprox(Eigen::Vector3d(60.0, 0.0, 0.0)));
+  EXPECT_NE(
+      selection.interactionStatus().find("external force: sx_box"),
+      std::string::npos);
+  EXPECT_NE(selection.interactionStatus().find("60.0 N"), std::string::npos);
+
+  const auto debugLines = selection.forceDragDebugLines();
+  ASSERT_GE(debugLines.size(), 4u);
+  EXPECT_TRUE(
+      std::any_of(debugLines.begin(), debugLines.end(), [](const auto& line) {
+        return line.label == "force_drag.spring"
+               && line.from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0))
+               && line.to.isApprox(Eigen::Vector3d(2.0, 2.0, 3.0));
+      }));
+  EXPECT_TRUE(
+      std::any_of(debugLines.begin(), debugLines.end(), [](const auto& line) {
+        return line.label == "force_drag.force"
+               && line.from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0))
+               && line.to.x() > line.from.x();
+      }));
+
+  selection.endForceDrag(scene);
+  ASSERT_EQ(events.size(), 2u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "sx_box");
+  EXPECT_FALSE(events.back().active);
+  EXPECT_TRUE(selection.forceDragDebugLines().empty());
+}
+
+TEST(FilamentSceneExtraction, ForceDragAppliesBodyNodeForceAtPickedShapePoint)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  auto* shapeNode
+      = body->createShapeNodeWith<VisualAspect>(shape, "offset_box_visual");
+
+  Eigen::Isometry3d shapeTransform = Eigen::Isometry3d::Identity();
+  shapeTransform.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
+  shapeNode->setRelativeTransform(shapeTransform);
+
+  world->addSkeleton(skeleton);
+  std::vector<dart::gui::RenderableDescriptor> descriptors
+      = dart::gui::extractRenderables(*world);
+  ASSERT_EQ(descriptors.size(), 1u);
+
+  dart::gui::detail::SelectionController selection;
+  dart::gui::detail::DartScene scene;
+  scene.world = world;
+  scene.onForceDrag = [](const dart::gui::ForceDragEvent&) {
+    ADD_FAILURE() << "BodyNode-backed force drag should not call onForceDrag";
+  };
+
+  dart::gui::PickRay pressRay;
+  pressRay.origin = Eigen::Vector3d(0.0, 0.5, -2.0);
+  pressRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+  const Eigen::Vector3d pickedPoint
+      = descriptors.front().worldTransform.translation();
+
+  dart::gui::ViewerLifecycleState lifecycle;
+  lifecycle.paused = false;
+  ASSERT_TRUE(selection.beginForceDrag(
+      scene, descriptors.front(), pressRay, pickedPoint, lifecycle));
+  EXPECT_FALSE(lifecycle.paused);
+
+  body->clearExternalForces();
+
+  dart::gui::PickRay dragRay;
+  dragRay.origin = Eigen::Vector3d(1.0, 0.5, -2.0);
+  dragRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+  selection.updateForceDrag(scene, descriptors, dragRay);
+
+  const Eigen::Vector6d externalForce = body->getExternalForceLocal();
+  EXPECT_NEAR(externalForce[0], 0.0, 1e-10);
+  EXPECT_NEAR(externalForce[1], 0.0, 1e-10);
+  EXPECT_NEAR(externalForce[2], -30.0, 1e-10);
+  EXPECT_NEAR(externalForce[3], 60.0, 1e-10);
+  EXPECT_NEAR(externalForce[4], 0.0, 1e-10);
+  EXPECT_NEAR(externalForce[5], 0.0, 1e-10);
+  EXPECT_NE(
+      selection.interactionStatus().find("external force: offset_box_visual"),
+      std::string::npos);
+  EXPECT_FALSE(selection.forceDragDebugLines().empty());
+}
+
+TEST(FilamentSceneExtraction, ScriptedForceDragTargetsRenderableAndCancels)
+{
+  dart::gui::detail::SelectionController selection;
+  dart::gui::detail::DartScene scene;
+  std::vector<dart::gui::ForceDragEvent> events;
+  scene.onForceDrag = [&](const dart::gui::ForceDragEvent& event) {
+    events.push_back(event);
+  };
+
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.id = 91;
+  descriptor.shapeFrameName = "script_shape";
+  descriptor.shapeNodeName = "script_node";
+  descriptor.bodyName = "script_body";
+  descriptor.geometry.kind = dart::gui::ShapeKind::Box;
+  descriptor.geometry.hasLocalBounds = true;
+  descriptor.geometry.localBoundsMin = Eigen::Vector3d::Constant(-0.5);
+  descriptor.geometry.localBoundsMax = Eigen::Vector3d::Constant(0.5);
+  descriptor.geometry.shapeType = "BoxShape";
+  descriptor.worldTransform = Eigen::Isometry3d::Identity();
+  std::vector<dart::gui::RenderableDescriptor> descriptors{descriptor};
+
+  dart::gui::detail::FrameViewport viewport;
+  viewport.width = 640;
+  viewport.height = 480;
+  viewport.paneCount = 1u;
+  viewport.panes[0].x = 0;
+  viewport.panes[0].y = 0;
+  viewport.panes[0].width = 640;
+  viewport.panes[0].height = 480;
+  viewport.panes[0].active = true;
+  viewport.panes[0].camera.target = Eigen::Vector3d::Zero();
+  viewport.panes[0].camera.yaw = 0.0;
+  viewport.panes[0].camera.pitch = 0.0;
+  viewport.panes[0].camera.distance = 4.0;
+
+  dart::gui::ViewerLifecycleState lifecycle;
+  Eigen::Vector3d startPoint = Eigen::Vector3d::Zero();
+  ASSERT_TRUE(selection.beginScriptedForceDrag(
+      viewport, scene, descriptors, "script_shape", startPoint, lifecycle));
+  EXPECT_TRUE(startPoint.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
+
+  EXPECT_TRUE(selection.updateScriptedForceDragToTarget(
+      viewport,
+      scene,
+      descriptors,
+      startPoint + Eigen::Vector3d(0.0, 0.35, 0.25)));
+
+  ASSERT_EQ(events.size(), 1u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "script_shape");
+  EXPECT_TRUE(events.back().active);
+  EXPECT_TRUE(events.back().applicationPoint.isApprox(startPoint, 1e-12));
+  EXPECT_GT(events.back().force.norm(), 1.0);
+  EXPECT_NE(
+      selection.interactionStatus().find("external force: script_shape"),
+      std::string::npos);
+  EXPECT_FALSE(selection.forceDragDebugLines().empty());
+
+  selection.cancelActiveDrag(scene);
+  ASSERT_EQ(events.size(), 2u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "script_shape");
+  EXPECT_FALSE(events.back().active);
+  EXPECT_TRUE(selection.forceDragDebugLines().empty());
+
+  ASSERT_TRUE(selection.beginScriptedForceDrag(
+      viewport, scene, descriptors, "id:91", startPoint, lifecycle));
+  selection.cancelActiveDrag(scene);
+  const std::size_t eventsBeforePointerDrag = events.size();
+  ASSERT_TRUE(selection.beginScriptedForceDragAtPointer(
+      viewport,
+      scene,
+      descriptors,
+      Eigen::Vector2d(320.0, 240.0),
+      startPoint,
+      lifecycle));
+  EXPECT_TRUE(startPoint.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(selection.updateScriptedForceDragAtPointer(
+      viewport, scene, descriptors, Eigen::Vector2d(380.0, 200.0)));
+  ASSERT_EQ(events.size(), eventsBeforePointerDrag + 1u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "script_shape");
+  EXPECT_TRUE(events.back().active);
+  selection.cancelActiveDrag(scene);
+  ASSERT_EQ(events.size(), eventsBeforePointerDrag + 2u);
+  EXPECT_FALSE(events.back().active);
+  EXPECT_FALSE(selection.beginScriptedForceDrag(
+      viewport, scene, descriptors, "missing_target", startPoint, lifecycle));
 }
 
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
@@ -5009,6 +5574,36 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_FALSE(state.exitRequested);
   dart::gui::requestExit(state);
   EXPECT_TRUE(state.exitRequested);
+  state.paused = true;
+  state.stepOnce = true;
+  dart::gui::requestSceneSwitch(state, "other_demo");
+  EXPECT_TRUE(state.sceneSwitchRequested);
+  EXPECT_EQ(state.requestedScene, "other_demo");
+  EXPECT_EQ(state.sceneActivationPendingScene, "other_demo");
+  EXPECT_NE(
+      state.sceneActivationStatus.find("Starting demo 'other_demo'"),
+      std::string::npos);
+  dart::gui::requestSceneSwitch(state, "third_demo");
+  EXPECT_TRUE(state.sceneSwitchRequested);
+  EXPECT_EQ(state.requestedScene, "third_demo");
+  EXPECT_EQ(state.sceneActivationPendingScene, "third_demo");
+  EXPECT_NE(
+      state.sceneActivationStatus.find("Starting demo 'third_demo'"),
+      std::string::npos);
+  dart::gui::requestSceneReplay(state, "demo_scene");
+  EXPECT_TRUE(state.sceneSwitchRequested);
+  EXPECT_EQ(state.requestedScene, "demo_scene");
+  EXPECT_EQ(state.sceneActivationPendingScene, "demo_scene");
+  EXPECT_NE(
+      state.sceneActivationStatus.find("Starting demo 'demo_scene'"),
+      std::string::npos);
+  EXPECT_FALSE(state.paused);
+  EXPECT_FALSE(state.stepOnce);
+  EXPECT_FALSE(dart::gui::consumeDockLayoutResetRequest(state));
+  dart::gui::requestDockLayoutReset(state);
+  EXPECT_TRUE(state.dockLayoutResetRequested);
+  EXPECT_TRUE(dart::gui::consumeDockLayoutResetRequest(state));
+  EXPECT_FALSE(state.dockLayoutResetRequested);
 
   dart::gui::RunOptions windowOnly;
   windowOnly.guiScale = 10.0;
@@ -5021,6 +5616,33 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   dart::gui::normalizeRunOptions(sequenceOutput);
   EXPECT_EQ(sequenceOutput.maxFrames, 1);
   EXPECT_TRUE(dart::gui::shouldCaptureFrameOutput(sequenceOutput));
+  dart::gui::ViewerLifecycleState sequenceState;
+  sequenceState.frameOutputDirectory = sequenceOutput.frameOutputDirectory;
+  sequenceState.frameOutputEnabled
+      = !sequenceOutput.frameOutputDirectory.empty();
+  EXPECT_TRUE(
+      dart::gui::shouldCaptureFrameOutput(sequenceOutput, sequenceState));
+  dart::gui::toggleFrameOutputCapture(sequenceState, "frames");
+  EXPECT_FALSE(sequenceState.frameOutputEnabled);
+  EXPECT_FALSE(
+      dart::gui::shouldCaptureFrameOutput(sequenceOutput, sequenceState));
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 0);
+  EXPECT_FALSE(sequenceState.recordedFramePlaybackPlaying);
+  dart::gui::toggleRecordedFramePlayback(sequenceState, 0);
+  EXPECT_FALSE(sequenceState.recordedFramePlaybackPlaying);
+  dart::gui::toggleRecordedFramePlayback(sequenceState, 3);
+  EXPECT_TRUE(sequenceState.recordedFramePlaybackPlaying);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 0);
+  dart::gui::advanceRecordedFramePlayback(sequenceState, 3);
+  EXPECT_TRUE(sequenceState.recordedFramePlaybackPlaying);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 1);
+  dart::gui::stepRecordedFramePlayback(sequenceState, 3, 10);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 2);
+  dart::gui::advanceRecordedFramePlayback(sequenceState, 3);
+  EXPECT_FALSE(sequenceState.recordedFramePlaybackPlaying);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 2);
+  dart::gui::setRecordedFramePlaybackIndex(sequenceState, 3, -4);
+  EXPECT_EQ(sequenceState.recordedFramePlaybackIndex, 0);
   EXPECT_EQ(
       std::filesystem::path(dart::gui::makeFrameOutputPath(sequenceOutput, 7))
           .filename()
@@ -5044,6 +5666,9 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_NE(
       nativeWindowSource.find("glfwGetWindowContentScale"), std::string::npos);
   EXPECT_NE(nativeWindowSource.find("glfwSetWindowSize"), std::string::npos);
+  EXPECT_NE(
+      nativeWindowSource.find("destroyImGuiMouseCursors(mWindow)"),
+      std::string::npos);
   EXPECT_NE(
       nativeWindowSource.find("guiScale.effectiveScale"), std::string::npos);
   EXPECT_NE(
