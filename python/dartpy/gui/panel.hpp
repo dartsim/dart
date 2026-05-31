@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dart/gui/panel.hpp>
+#include <dart/gui/fwd.hpp>
 
 #include <nanobind/nanobind.h>
 

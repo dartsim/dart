@@ -2298,6 +2298,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     the active scene is an sx/experimental demo, the sidebar opens focused on
     simulation-experimental categories while still allowing users to browse the
     full legacy DART API catalog by unchecking the toggle.
+  - Kept docked Python demo panes resizable across runtime demo switches by
+    storing dock-layout initialization in the viewer lifecycle and clearing
+    no-resize flags from the default dock nodes.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

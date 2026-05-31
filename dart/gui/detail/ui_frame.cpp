@@ -291,6 +291,29 @@ void renderViewportPaneLabels(const FrameViewport& viewport, double guiScale)
 }
 
 #ifdef IMGUI_HAS_DOCK
+void clearDockNodeResizeLocks(ImGuiID dockId)
+{
+  ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
+  if (node == nullptr) {
+    return;
+  }
+
+  constexpr ImGuiDockNodeFlags kNoResizeFlags
+      = static_cast<int>(ImGuiDockNodeFlags_NoResize)
+        | static_cast<int>(ImGuiDockNodeFlags_NoResizeX)
+        | static_cast<int>(ImGuiDockNodeFlags_NoResizeY);
+  node->SharedFlags &= ~kNoResizeFlags;
+  node->LocalFlags &= ~kNoResizeFlags;
+  node->LocalFlagsInWindows &= ~kNoResizeFlags;
+  node->UpdateMergedFlags();
+
+  for (ImGuiDockNode* child : node->ChildNodes) {
+    if (child != nullptr) {
+      clearDockNodeResizeLocks(child->ID);
+    }
+  }
+}
+
 // Builds a default IDE-style dock layout: top/bottom bars span full width and
 // left/right columns fill the remaining middle, leaving a transparent central
 // node for the 3D viewport. Each panel docks into the region named by its
@@ -406,6 +429,7 @@ void buildDefaultDockLayout(
     ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, left);
   }
 
+  clearDockNodeResizeLocks(dockId);
   ImGui::DockBuilderFinish(dockId);
 }
 #endif // IMGUI_HAS_DOCK
@@ -444,8 +468,8 @@ void updateFrameUi(
     const ImGuiID dockId = ImHashStr("DARTMainDockSpace");
     const bool resetDockLayout
         = dart::gui::consumeDockLayoutResetRequest(lifecycle);
-    if (resetDockLayout || !dartScene.dockLayoutInitialized) {
-      dartScene.dockLayoutInitialized = true;
+    if (resetDockLayout || !lifecycle.dockLayoutInitialized) {
+      lifecycle.dockLayoutInitialized = true;
       // Apply the default layout deterministically on startup. The py-demos
       // workspace is an examples browser first; a stale imgui.ini layout should
       // not make its first frame look broken or obscure the viewport.

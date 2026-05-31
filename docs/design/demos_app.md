@@ -138,6 +138,11 @@ explicit recovery action after interactive rearrangement. This keeps stale
 scene-specific controls change. The layout builder runs before dockspace
 submission so ImGui applies the initial `Demos`, `Simulation`, scene-panel, and
 diagnostics placements as docked windows on the first rendered frames.
+Dock layout initialization is viewer-lifetime state, not per-scene state, so a
+user-resized splitter survives runtime demo switches until `Reset Layout` is
+pressed. The default dock builder also clears ImGui no-resize flags from its
+nodes so top, left, right, and bottom dock regions expose normal draggable
+splitters.
 
 ### Build layout
 

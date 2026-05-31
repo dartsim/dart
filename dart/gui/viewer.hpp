@@ -95,6 +95,10 @@ struct ViewerLifecycleState
   bool recordedFramePlaybackPlaying = false;
   bool exitRequested = false;
   bool dockLayoutResetRequested = false;
+  /// True after the default dock layout has been applied for the current
+  /// viewer lifetime. Kept outside per-scene state so user-resized dock splits
+  /// survive demo switches until Reset Layout is requested.
+  bool dockLayoutInitialized = false;
   /// Set by the demos sidebar to ask the application loop to swap the active
   /// scene to `requestedScene` without recreating the window.
   bool sceneSwitchRequested = false;

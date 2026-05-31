@@ -979,6 +979,10 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       std::filesystem::path("python") / "examples" / "demos" / "runner.py");
   const auto viewerBindingSource = readSourceFile(
       std::filesystem::path("python") / "dartpy" / "gui" / "viewer.cpp");
+  const auto panelBindingSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "gui" / "panel.cpp");
+  const auto panelBindingHeaderSource = readSourceFile(
+      std::filesystem::path("python") / "dartpy" / "gui" / "panel.hpp");
   const auto selectionSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
 
@@ -1050,6 +1054,15 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
   EXPECT_NE(
       uiFrameSource.find("buildDefaultDockLayout(dockId, panels)"),
       std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("lifecycle.dockLayoutInitialized"), std::string::npos);
+  EXPECT_EQ(
+      uiFrameSource.find("dartScene.dockLayoutInitialized"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("clearDockNodeResizeLocks(dockId)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("ImGuiDockNodeFlags_NoResizeX"), std::string::npos);
   EXPECT_EQ(
       uiFrameSource.find("node == nullptr || node->IsLeafNode()"),
       std::string::npos);
@@ -1071,6 +1084,22 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
   EXPECT_NE(
       viewerBindingSource.find("makeGuiPanelFromPython(panel)"),
       std::string::npos);
+  EXPECT_NE(
+      panelBindingHeaderSource.find("#include <dart/gui/fwd.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      panelBindingHeaderSource.find("#include <nanobind/nanobind.h>"),
+      std::string::npos);
+  EXPECT_EQ(
+      panelBindingHeaderSource.find("#include <dart/gui/panel.hpp>"),
+      std::string::npos);
+  const auto bindingHeaderInclude
+      = panelBindingSource.find("#include \"gui/panel.hpp\"");
+  const auto dartPanelInclude
+      = panelBindingSource.find("#include <dart/gui/panel.hpp>");
+  EXPECT_NE(bindingHeaderInclude, std::string::npos);
+  EXPECT_NE(dartPanelInclude, std::string::npos);
+  EXPECT_LT(bindingHeaderInclude, dartPanelInclude);
   EXPECT_EQ(
       selectionSource.find(
           "mSelectedDragMode = DragMode::Force;\n"
