@@ -44,6 +44,26 @@ design.
   IPC, VBD, differentiable simulation, and GPU work remain opt-in roadmap
   features unless a promoted public API depends on them.
 
+### DART 7 Implementation Order
+
+1. **Policy alignment**: update the release roadmap, plan dashboard,
+   north-star, API-boundary, CI, release-management, README, and changelog docs
+   so DART 7 is the clean break and DART 6.16 is the compatibility line.
+2. **Gazebo lane split**: keep required gz-physics validation on
+   `release-6.16`; keep main's gz-physics workflow as a manual migration
+   canary. Coordinate branch-protection changes with maintainers before relying
+   on that demotion.
+3. **DART 6.16 support packet**: audit fixes on main against `release-6.16` and
+   backport only compatibility-critical patches needed for the old API/Gazebo
+   line.
+4. **Parity implementation**: prioritize experimental-world model loading,
+   rigid dynamics, contacts/constraints, serialization, and the parity suite
+   ahead of additional research solver breadth.
+5. **Promotion and removal**: port in-repo examples, tutorials, tests,
+   benchmarks, and Python stubs to the promoted API; then remove the classic
+   `World`, DART 6 C++ API shims, legacy dartpy compatibility modules, and
+   gz-only compatibility surfaces from main.
+
 ### DART 7 Checkable Gates
 
 | Gate                         | Required evidence                                                                                                                    | Local or CI command                                                                                                                                             |
