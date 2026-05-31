@@ -13,7 +13,9 @@ from examples.demos.runner import (
     _make_world_factory,
 )
 from examples.demos.scenes import (
+    diff_drone_liftoff,
     experimental_rigid_body_gui,
+    ipc_deformable_fem_buckle,
     ipc_deformable_friction_slide,
     sx_articulated,
     sx_contact,
@@ -120,6 +122,10 @@ class _FakePanelBuilder:
         self.events.append(f"checkbox:{label}")
         return False, value
 
+    def button(self, label: str) -> bool:
+        self.events.append(f"button:{label}")
+        return False
+
     def plot_lines(self, label: str, values: list[float]) -> None:
         self.events.append(f"plot:{label}:{len(values)}")
 
@@ -161,6 +167,34 @@ def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
     setup.panels[0].build(builder, object())
 
     assert any(event.startswith("plot:Min z:") for event in builder.events)
+    assert any(
+        event.startswith("text:solver: deformable IPC") for event in builder.events
+    )
+
+
+def test_diff_drone_scene_exposes_replay_panel() -> None:
+    setup = diff_drone_liftoff.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["Diff Drone Lift-Off"]
+
+    setup.panels[0].build(builder, object())
+
+    assert "slider:Playback stride:1.0:8.0" in builder.events
+    assert "button:Reset replay" in builder.events
+    assert any(event.startswith("plot:Aware height:") for event in builder.events)
+
+
+def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:
+    setup = ipc_deformable_fem_buckle.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["IPC FEM Buckle"]
+
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith("text:compression:") for event in builder.events)
+    assert any(event.startswith("plot:Span x:") for event in builder.events)
     assert any(
         event.startswith("text:solver: deformable IPC") for event in builder.events
     )

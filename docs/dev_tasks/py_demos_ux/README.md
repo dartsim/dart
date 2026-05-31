@@ -41,11 +41,15 @@ navigation, and a path for scene-specific controls.
   toolbar state matches whether frame writing is active.
 - Accept hyphenated scene aliases such as `sx-rigid-ipc-slide` in the Python
   runner validation path.
+- Add scene panels to `diff_drone_liftoff` and
+  `ipc_deformable_fem_buckle`, including replay/optimization summaries for the
+  differentiable drone and compression/span/solver diagnostics for the FEM
+  buckle scene.
 
 ## Remaining work
 
 - Add per-example controls for more high-value differentiable and IPC
-  deformable scenes.
+  deformable scenes beyond the first drone/FEM buckle slice.
 - Add a recorded-frame playback surface once demos have a recording contract.
 - Add direct pointer/input-driven force-drag interaction coverage if the viewer
   test harness grows mouse-event injection.

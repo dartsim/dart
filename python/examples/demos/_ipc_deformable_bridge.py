@@ -625,6 +625,21 @@ class IpcDeformableBridge:
         builder.text(f"world time: {self._sx_world.time:.3f} s")
         builder.text(f"time step: {self._sx_world.time_step:.4f} s")
         builder.text(f"nodes: {node_count} | fixed: {self._fixed_node_count()}")
+        diagnostics = getattr(
+            self._sx_world, "last_deformable_solver_diagnostics", None
+        )
+        if diagnostics is not None:
+            builder.text(
+                f"iters: {diagnostics.solver_iterations} | "
+                f"line search: {diagnostics.line_search_trials}"
+            )
+            builder.text(
+                f"self contacts: {diagnostics.self_contact_barrier_active_contacts} | "
+                f"converged: {diagnostics.converged_active_contact_count}"
+            )
+            min_distance = float(diagnostics.min_active_contact_distance)
+            if np.isfinite(min_distance):
+                builder.text(f"min active distance: {min_distance:.5f} m")
         if positions:
             stacked = np.vstack(positions)
             minimum = np.min(stacked, axis=0)

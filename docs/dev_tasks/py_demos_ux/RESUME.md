@@ -55,6 +55,15 @@
   the sx step.
 - C++ force-drag no longer pauses the simulation loop, so Python one-shot force
   handlers can actually be consumed on the next step.
+- `diff_drone_liftoff` now has a replay/optimization panel with target height,
+  current frame height, playback stride, reset replay, analytic-vs-aware
+  optimization summaries, and the aware height plot.
+- `ipc_deformable_fem_buckle` now has a compression diagnostics panel with
+  drive progress, span history plots, solver iterations, self-contact counts,
+  and the shared IPC deformable diagnostics.
+- Shared IPC deformable diagnostics now include solver iteration, line-search,
+  self-contact, converged-contact, and minimum active-distance metrics when the
+  sx world exposes `last_deformable_solver_diagnostics`.
 
 ## Validation
 
@@ -131,12 +140,24 @@ was viewed and showed the `Rigid Bodies sx` panel docked in a reserved right
 column, with the 3D viewport unobscured, toolbar status unwrapped, and
 frame-recording state displayed as `recording frames`.
 
+Differentiable and FEM panel proof:
+
+```bash
+pixi run py-demo-capture -- --scene diff_drone_liftoff --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_diff_drone_panel
+pixi run py-demo-capture -- --scene ipc_deformable_fem_buckle --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_fem_buckle_panel
+```
+
+Both commands produced nonblank docked UI screenshots, PPM/PNG frame
+sequences, and MP4s. Pixel checks over the final PPM frames showed nonblank
+viewport, toolbar, and right-panel regions for both captures.
+
 Focused checks:
 
 ```bash
 pixi run python -m py_compile scripts/capture_py_demo.py python/tests/unit/test_capture_py_demo.py
 pixi run python -m py_compile python/examples/demos/runner.py python/examples/demos/_sx_bridge.py python/examples/demos/scenes/sx_rigid_ipc_slide.py python/examples/demos/scenes/sx_rigid_ipc_incline.py python/examples/demos/scenes/sx_variational_chain.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/_ipc_deformable_bridge.py python/examples/demos/scenes/sx_rigid_ipc_pile.py python/examples/demos/scenes/sx_rigid_ipc_tunnel.py python/examples/demos/scenes/ipc_deformable_friction_slide.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/scenes/diff_drone_liftoff.py python/examples/demos/scenes/ipc_deformable_fem_buckle.py python/examples/demos/_ipc_deformable_bridge.py python/tests/unit/test_py_demo_panels.py
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
@@ -149,9 +170,8 @@ pixi run lint
 
 ## Next
 
-1. Add custom panels to the highest-value differentiable and IPC deformable
-   scenes, starting with `diff_drone_liftoff` and
-   `ipc_deformable_fem_buckle`.
+1. Add custom panels to additional high-value differentiable and IPC deformable
+   scenes, with `ipc_deformable_fem_sphere` as the next deformable candidate.
 2. Add direct viewer-input coverage for mouse force-drag once tests can inject
    pointer drags into the Filament viewer loop.
 3. Add recorded-frame playback only after the recording/playback data contract
