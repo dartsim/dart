@@ -1070,6 +1070,18 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added **mesh-vs-obstacle friction** against the capsule rod obstacle
+    (PLAN-081 M5). A node in contact with a static capsule obstacle now feeds the
+    capsule barrier's radial normal force and direction into the existing lagged
+    smoothed Coulomb friction term (the dominant per-node contact -- ground or
+    capsule -- wins), so a deformable sliding along a rod is decelerated by
+    friction proportional to `frictionCoefficient`. Because the capsule obstacle
+    is barrier-only (no over-limiting surface CCD), the tangential slide is
+    unconstrained and the friction force is effective -- unblocking obstacle
+    friction that the sphere/box surface-CCD obstacles still mask. Adds a C++ and
+    a dartpy regression (a strip shoved along a rod slides far frictionless but is
+    held back under friction, staying on the rod) and a `Deformable Friction on
+Capsule Rod (IPC)` py-demos scene.
   - Added opt-in **adaptive barrier stiffness** (kappa) to the experimental
     deformable solver (PLAN-081 M6). When a body sets
     `DeformableMaterialProperties.useAdaptiveBarrierStiffness` (dartpy
