@@ -94,6 +94,36 @@ TEST(VbdContact, PenaltyForceMatchesFiniteDifferenceWhenPenetrating)
 }
 
 //==============================================================================
+TEST(VbdContact, AvbdNormalForceMatchesPenaltyForPenetratingActiveRow)
+{
+  vbd::ContactPlane plane;
+  plane.normal = Vec3(0.0, 1.0, 0.0);
+  plane.offset = 0.0;
+  plane.stiffness = 1.0e4;
+  const Vec3 position(0.3, -0.2, 0.1);
+
+  vbd::VertexBlock penalty;
+  vbd::addHalfSpacePenaltyContact(penalty, position, plane);
+
+  vbd::AvbdScalarRowState row;
+  row.stiffness = plane.stiffness;
+  row.lambda = 0.0;
+
+  vbd::VertexBlock avbd;
+  const double forceMagnitude = vbd::addAvbdHalfSpaceContactNormal(
+      avbd,
+      position,
+      plane,
+      row,
+      /*previousConstraintValue=*/0.0,
+      /*alpha=*/0.0);
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 2000.0);
+  EXPECT_NEAR((avbd.force - penalty.force).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((avbd.hessian - penalty.hessian).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
 TEST(VbdContact, InactiveAbovePlaneAndHessianIsPsd)
 {
   vbd::ContactPlane plane;
@@ -161,6 +191,56 @@ TEST(VbdContact, ParticleRestsOnGround)
   EXPECT_GT(positions[0].y(), -0.01);
   EXPECT_LT(positions[0].y(), 0.05);
   EXPECT_LT(std::abs(velocity[0].y()), 0.05);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdGroundContactUpdatesDualStateDuringSolve)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, -0.1, 0.0)};
+  std::vector<double> masses = {1.0};
+  std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(1, springs);
+  const auto adjacency = vbd::SpringAdjacency::build(1, springs);
+  const std::vector<Vec3> inertialTargets = positions;
+
+  vbd::ContactPlane ground;
+  ground.normal = Vec3(0.0, 1.0, 0.0);
+  ground.offset = 0.0;
+
+  vbd::AvbdHalfSpaceContactRow contact;
+  contact.vertex = 0;
+  contact.plane = ground;
+  contact.state.stiffness = 50.0;
+  contact.state.lambda = 0.0;
+  contact.previousConstraintValue = 0.0;
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts = {contact};
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 4;
+  vbd::AvbdHalfSpaceContactOptions avbdOptions;
+  avbdOptions.alpha = 0.0;
+  avbdOptions.beta = 100.0;
+
+  const vbd::BlockDescentStats stats = vbd::blockDescentMassSpringAvbdGround(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      0.0,
+      0.1,
+      contacts,
+      coloring,
+      adjacency,
+      options,
+      avbdOptions);
+
+  EXPECT_EQ(stats.iterations, 4u);
+  EXPECT_GT(positions[0].y(), -0.1);
+  EXPECT_LT(positions[0].y(), 0.0);
+  EXPECT_GT(contacts[0].state.lambda, 0.0);
+  EXPECT_GT(contacts[0].state.stiffness, 50.0);
 }
 
 //==============================================================================
