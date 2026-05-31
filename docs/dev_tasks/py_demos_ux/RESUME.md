@@ -68,6 +68,10 @@
   override. A pure-Python factory stall raises a startup failure, allowing the
   existing transactional switch path to restore the previous demo instead of
   leaving tests stuck.
+- Python demo `pre_step` callbacks now run under the same watchdog during
+  startup. A candidate scene that stalls or spends the first frame over the
+  startup budget restores the previous active demo, leaving the rollback reason
+  in the Simulation/Demos panels and scripted switch event log.
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.

@@ -48,12 +48,15 @@ navigation, and a path for scene-specific controls.
 - Make user-requested demo switches transactional: if a requested demo throws
   during factory startup, cannot create render state, fails its first frame, or
   returns after the startup budget, restore the previous active demo instead of
-  leaving the workspace stuck on the broken target. Python demo factories also
-  run under the same startup budget by default, with
+  leaving the workspace stuck on the broken target. The same first-frame guard
+  now includes slow Python `pre_step` callbacks, so a clicked demo that stalls
+  during its first simulation update rolls back to the previous demo once the
+  startup budget is hit. Python demo factories also run under the same startup
+  budget by default, with
   `DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS` available as a Python-specific
   override, so pure-Python stalls surface as startup failures that can be
   restored through the same path. Integration coverage pins throwing, slow,
-  stalled, and no-render-state switch targets.
+  stalled, slow-first-frame, and no-render-state switch targets.
 - Surface demo activation state in the docked UI: rows mark a requested demo as
   starting, the Simulation/Demos panels show startup or fallback status, and
   Python factory exceptions now reach the C++ transactional restore path instead
@@ -166,8 +169,9 @@ navigation, and a path for scene-specific controls.
   harness grows synthetic pointer input beyond the current framebuffer-pixel
   force-drag capture path.
 - Consider process- or worker-isolated demo construction only if a future
-  native/C++ factory can block indefinitely before returning to the C++ viewer
-  loop; pure-Python stalls now fail through the shared startup-budget watchdog.
+  native/C++ factory or simulation step can block indefinitely before returning
+  to the C++ viewer loop; pure-Python factories and `pre_step` callbacks now
+  fail through the shared startup-budget watchdog.
 
 ## Completion notes
 

@@ -176,7 +176,7 @@ def _scene_build_timeout_ms() -> float | None:
 
 
 @contextlib.contextmanager
-def _bounded_scene_build(scene_id: str):
+def _bounded_scene_callback(scene_id: str, callback_name: str):
     timeout_ms = _scene_build_timeout_ms()
     if (
         timeout_ms is None
@@ -195,7 +195,7 @@ def _bounded_scene_build(scene_id: str):
 
     def _handle_timeout(_signum: int, _frame: object) -> None:
         raise TimeoutError(
-            f"Python demo scene '{scene_id}' build exceeded "
+            f"Python demo scene '{scene_id}' {callback_name} exceeded "
             f"{timeout_ms:g} ms"
         )
 
@@ -214,6 +214,12 @@ def _bounded_scene_build(scene_id: str):
                 max(1.0e-6, previous_delay - elapsed),
                 previous_interval,
             )
+
+
+@contextlib.contextmanager
+def _bounded_scene_build(scene_id: str):
+    with _bounded_scene_callback(scene_id, "build"):
+        yield
 
 
 def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
@@ -236,12 +242,21 @@ def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
     def factory() -> Any:
         with _bounded_scene_build(scene.id):
             setup = scene.build()
+        pre_step = setup.pre_step
+        if pre_step is not None:
+            original_pre_step = pre_step
+
+            def bounded_pre_step() -> None:
+                with _bounded_scene_callback(scene.id, "pre_step"):
+                    original_pre_step()
+
+            pre_step = bounded_pre_step
         if setup.panels:
-            return (setup.world, setup.pre_step, setup.force_drag, setup.panels)
+            return (setup.world, pre_step, setup.force_drag, setup.panels)
         if setup.force_drag is not None:
-            return (setup.world, setup.pre_step, setup.force_drag)
-        if setup.pre_step is not None:
-            return (setup.world, setup.pre_step)
+            return (setup.world, pre_step, setup.force_drag)
+        if pre_step is not None:
+            return (setup.world, pre_step)
         return setup.world
 
     return factory

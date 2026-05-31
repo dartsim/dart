@@ -174,6 +174,7 @@ void defGuiViewer(nb::module_& m)
                   (*pre_step_holder)();
                 } catch (const std::exception& e) {
                   fprintf(stderr, "py-demos pre_step error: %s\n", e.what());
+                  throw;
                 }
               };
             }

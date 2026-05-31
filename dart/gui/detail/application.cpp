@@ -1146,6 +1146,8 @@ int runGuiBackendApplicationImpl(
         scriptedForceDrag ? &*scriptedForceDrag : nullptr);
 
     bool sceneFrameFailed = false;
+    bool restoredPendingDemoDuringFrame = false;
+    std::string sceneFrameFailureReason = "first frame failed";
     bool cycleAdvance = false;
     int framesThisScene = 0;
 
@@ -1222,7 +1224,7 @@ int runGuiBackendApplicationImpl(
 
       const bool uiCapturesMouse
           = isSceneMouseInputCapturedByUi(appOptions.showUi, imguiIo);
-      {
+      try {
         DART_PROFILE_SCOPED_N("GUI scene update");
         sceneFrameUpdater.update(
             viewport,
@@ -1230,6 +1232,23 @@ int runGuiBackendApplicationImpl(
             uiCapturesMouse,
             orbitLight,
             appOptions.orbitLightPeriodSeconds);
+      } catch (const std::exception& error) {
+        sceneFrameFailureReason
+            = std::string("frame update threw: ") + error.what();
+        std::cerr << "demo scene '"
+                  << (candidateDemoEntry == nullptr ? std::string()
+                                                    : candidateDemoEntry->id)
+                  << "' frame update failed: " << error.what() << "\n";
+        sceneFrameFailed = true;
+        break;
+      } catch (...) {
+        sceneFrameFailureReason = "frame update threw an unknown exception";
+        std::cerr << "demo scene '"
+                  << (candidateDemoEntry == nullptr ? std::string()
+                                                    : candidateDemoEntry->id)
+                  << "' frame update failed with an unknown exception\n";
+        sceneFrameFailed = true;
+        break;
       }
 
       if (appOptions.showUi) {
@@ -1298,6 +1317,14 @@ int runGuiBackendApplicationImpl(
         sceneFrameFailed = true;
         break;
       }
+      if (demoCatalog != nullptr && framesThisScene == 0
+          && pendingDemoFallbackIndex.has_value()
+          && elapsedMs(sceneStartupStart) > demoSceneStartupTimeoutMs
+          && restorePendingDemoFallback(
+              "first frame exceeded startup budget")) {
+        restoredPendingDemoDuringFrame = true;
+        break;
+      }
       if (demoCatalog != nullptr) {
         lifecycle.sceneActivationPendingScene.clear();
         if (lifecycle.sceneActivationStatus.starts_with("Starting ")) {
@@ -1354,9 +1381,11 @@ int runGuiBackendApplicationImpl(
         debugOverlays,
         selectionDebugOverlay);
 
-    if (sceneFrameFailed) {
+    if (restoredPendingDemoDuringFrame) {
+      continue;
+    } else if (sceneFrameFailed) {
       if (demoCatalog != nullptr
-          && restorePendingDemoFallback("first frame failed")) {
+          && restorePendingDemoFallback(sceneFrameFailureReason)) {
         continue;
       }
       frameCaptureSucceeded = false;

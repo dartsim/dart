@@ -114,6 +114,11 @@ first frame, the host restores the previous active scene and leaves the reason
 visible in the `Simulation` and `Demos` panels. Python scene builders are
 bounded by the same `DART_DEMO_SCENE_STARTUP_TIMEOUT_MS` budget by default, with
 `DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS` available as a Python-specific override.
+Python `pre_step` callbacks are also bounded during candidate startup, and the
+host rolls back a switched demo whose first frame returns over budget. A native
+scene that never returns from construction or simulation would still need
+process isolation; this guard is for failures that return or Python callbacks
+that can be interrupted by the watchdog.
 
 The Python workspace rebuilds a deterministic dock layout on startup instead of
 trusting any saved panel layout from a previous run. `Reset Layout` is the
