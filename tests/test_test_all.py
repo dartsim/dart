@@ -88,6 +88,37 @@ def test_configured_feature_enabled_without_disable(monkeypatch):
     )
 
 
+def test_python_tests_run_when_pytest_target_exists_with_env_override_off(monkeypatch):
+    module = load_test_all_module()
+    commands = []
+
+    monkeypatch.setenv("DART_BUILD_DARTPY_OVERRIDE", "OFF")
+    monkeypatch.setattr(module, "_cmake_option_enabled", lambda option: True)
+    monkeypatch.setattr(module, "get_build_dir", lambda build_type: Path("/tmp/build"))
+    monkeypatch.setattr(
+        module,
+        "cmake_target_exists",
+        lambda build_dir, build_type, target: target == "pytest",
+    )
+    monkeypatch.setattr(
+        module,
+        "pixi_command",
+        lambda task, *args: " ".join((task, *args)),
+    )
+
+    def record_command(command, description):
+        commands.append((command, description))
+        return True, ""
+
+    monkeypatch.setattr(module, "run_command", record_command)
+
+    assert module.run_python_tests()
+    assert commands == [
+        ("build-py-dev ON Release", "Build dartpy bindings (Release)"),
+        ("test-py ON Release", "Python tests (Release)"),
+    ]
+
+
 def test_cuda_tests_run_after_python_and_docs(monkeypatch):
     module = load_test_all_module()
     order = []

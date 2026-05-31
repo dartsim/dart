@@ -554,12 +554,15 @@ def run_python_tests() -> bool:
         print_warning("Skipping python tests because DART_BUILD_DARTPY is OFF in build")
         return True
 
-    if not _env_flag_enabled("DART_BUILD_DARTPY_OVERRIDE", PIXI_DEFAULT_DARTPY):
-        print_warning("Skipping python tests because DART_BUILD_DARTPY_OVERRIDE is OFF")
-        return True
-
     build_dir = get_build_dir(build_type)
     if not cmake_target_exists(build_dir, build_type, "pytest"):
+        if not _env_flag_enabled("DART_BUILD_DARTPY_OVERRIDE", PIXI_DEFAULT_DARTPY):
+            print_warning(
+                "Skipping python tests because DART_BUILD_DARTPY_OVERRIDE is OFF "
+                "and target 'pytest' was not generated"
+            )
+            return True
+
         print_warning("Skipping python tests because target 'pytest' was not generated")
         return True
 
@@ -573,7 +576,8 @@ def run_python_tests() -> bool:
 
     # Check if Python bindings are enabled
     result, _ = run_command(
-        pixi_command("test-py", build_type), f"Python tests ({build_type})"
+        pixi_command("test-py", PIXI_DEFAULT_DARTPY, build_type),
+        f"Python tests ({build_type})",
     )
 
     return result
