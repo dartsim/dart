@@ -69,6 +69,11 @@ navigation, and a path for scene-specific controls.
 - Add direct GUI regression coverage for demo-sidebar search matching and
   first-appearance category grouping, replacing fragile source-only checks for
   the tree/list navigation behavior.
+- Add imported-asset and scripted-boundary diagnostics panels to
+  `ipc_deformable_obj_cloth`, `ipc_deformable_seg_strand`,
+  `ipc_deformable_pt_particles`, and `ipc_deformable_scripted_dirichlet`,
+  exposing sag/drop/clearance/sweep metrics alongside shared IPC solver
+  diagnostics.
 - Move Python demo line-segment visual updates to snake_case dartpy APIs so
   panel tests and demo captures stay free of camelCase deprecation warnings.
 - Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape

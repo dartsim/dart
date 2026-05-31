@@ -25,8 +25,12 @@ from examples.demos.scenes import (
     ipc_deformable_fem_sphere,
     ipc_deformable_friction_slide,
     ipc_deformable_net,
+    ipc_deformable_obj_cloth,
     ipc_deformable_plate_friction,
+    ipc_deformable_pt_particles,
     ipc_deformable_rod_friction,
+    ipc_deformable_scripted_dirichlet,
+    ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
     sx_articulated,
     sx_contact,
@@ -321,6 +325,31 @@ def test_vbd_showcase_scenes_expose_solver_panels() -> None:
 
         assert any(event.startswith(expected_plot) for event in builder.events)
         assert any(event.startswith("text:solver iters:") for event in builder.events)
+
+
+def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (ipc_deformable_obj_cloth, "IPC OBJ Cloth", "plot:Cloth sag:"),
+        (ipc_deformable_seg_strand, "IPC SEG Strand", "plot:Tip drop:"),
+        (ipc_deformable_pt_particles, "IPC PT Particles", "plot:Ground clearance:"),
+        (
+            ipc_deformable_scripted_dirichlet,
+            "IPC Scripted Banner",
+            "plot:Out-of-plane span:",
+        ),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert any(event.startswith(expected_plot) for event in builder.events)
+        assert any(
+            event.startswith("text:solver: deformable IPC")
+            for event in builder.events
+        )
 
 
 @pytest.mark.skipif(

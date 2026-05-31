@@ -96,6 +96,11 @@
 - Demo-sidebar search matching and first-appearance category grouping now have
   direct GUI regression tests, so the tree/list navigation behavior is pinned
   by behavior rather than source-string checks alone.
+- `ipc_deformable_obj_cloth`, `ipc_deformable_seg_strand`,
+  `ipc_deformable_pt_particles`, and `ipc_deformable_scripted_dirichlet` now
+  have imported-asset/scripted-boundary panels with sag, tip-drop, ground
+  clearance, fall distance, out-of-plane span, and shared IPC solver
+  diagnostics.
 - Python demo line-segment visuals now use snake_case dartpy APIs in the sx
   deformable bridge, IPC deformable bridge, and polyhedron scene so warnings-as
   errors panel tests stay clean.
@@ -200,6 +205,10 @@ pixi run py-demo-capture -- --scene vbd_net --show-ui --frames 12 --width 1280 -
 pixi run py-demo-capture -- --scene vbd_beam --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_beam_panel
 pixi run py-demo-capture -- --scene diff_throw_to_target --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_diff_throw_panel
 pixi run py-demo-capture -- --scene diff_cartpole_trajopt --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_diff_cartpole_panel
+pixi run py-demo-capture -- --scene ipc_deformable_obj_cloth --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_obj_cloth_panel
+pixi run py-demo-capture -- --scene ipc_deformable_seg_strand --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_seg_strand_panel
+pixi run py-demo-capture -- --scene ipc_deformable_pt_particles --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_pt_particles_panel
+pixi run py-demo-capture -- --scene ipc_deformable_scripted_dirichlet --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_ipc_scripted_panel
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_sidebar_grouping
 ```
 
@@ -221,6 +230,7 @@ pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_drape.
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_cg_solver.py python/examples/demos/scenes/ipc_deformable_cg_contact.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/examples/demos/_ipc_deformable_bridge.py python/examples/demos/scenes/polyhedron_visual.py python/examples/demos/scenes/vbd_cloth.py python/examples/demos/scenes/vbd_net.py python/examples/demos/scenes/vbd_beam.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/diff_throw_to_target.py python/examples/demos/scenes/diff_cartpole_trajopt.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_obj_cloth.py python/examples/demos/scenes/ipc_deformable_seg_strand.py python/examples/demos/scenes/ipc_deformable_pt_particles.py python/examples/demos/scenes/ipc_deformable_scripted_dirichlet.py python/tests/unit/test_py_demo_panels.py
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
