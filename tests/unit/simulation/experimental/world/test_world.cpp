@@ -3466,6 +3466,53 @@ TEST(World, RigidBodyContactFrictionDeceleratesSlidingBody)
   EXPECT_GT(slider.getTranslation().x(), 0.0);
 }
 
+// Test that a coupled stack settles: two spheres stacked on a static ground
+// generate two contacts (ground-sphere1 and sphere1-sphere2) that share the
+// middle sphere, so the contact-space inverse-mass matrix is a non-singular
+// 2x2 with a non-zero off-diagonal. The coupled boxed-LCP solve makes the
+// bottom contact carry both spheres' weight in one solve, so the lower sphere
+// does not sink under the load of the upper one.
+TEST(World, RigidBodyContactCoupledStackRests)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  // Static ground box with its top face at z = 0.
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+  // Lower sphere dropped just above its resting height (center z = 0.5).
+  sx::RigidBodyOptions lowerOptions;
+  lowerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.55);
+  auto lower = world.addRigidBody("lower", lowerOptions);
+  lower.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  // Upper sphere stacked directly above (resting center z = 1.5), perfectly
+  // aligned so the contact normals are vertical and the stack stays upright.
+  sx::RigidBodyOptions upperOptions;
+  upperOptions.position = Eigen::Vector3d(0.0, 0.0, 1.6);
+  auto upper = world.addRigidBody("upper", upperOptions);
+  upper.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(1000);
+
+  // Both spheres should settle near their stacked resting heights without the
+  // lower one sinking into the ground, and essentially stop moving.
+  EXPECT_NEAR(lower.getTranslation().z(), 0.5, 2e-2);
+  EXPECT_NEAR(upper.getTranslation().z(), 1.5, 4e-2);
+  EXPECT_LT(std::abs(lower.getLinearVelocity().z()), 0.1);
+  EXPECT_LT(std::abs(upper.getLinearVelocity().z()), 0.1);
+  EXPECT_TRUE(
+      ground.getTranslation().isApprox(Eigen::Vector3d(0.0, 0.0, -0.5)));
+}
+
 // Test that rigid-body integration keeps the integrated world pose
 // authoritative when a body has been reparented through the inherited frame
 // API.

@@ -629,6 +629,19 @@
     behavior; the change threads through the forward dynamics, forward
     kinematics, and the variational integrator (the motion subspace is
     unaffected).
+  - Replaced the experimental rigid-body contact stage's per-contact
+    sequential normal impulses with a coupled boxed-LCP solve over all
+    rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the
+    contact-space inverse-mass (Delassus) operator and drives each contact's
+    normal approach velocity to its restitution target in one consistent
+    solve, so coupled contacts (a stack, where the lower contact must carry
+    the weight above it) resolve together rather than through a single
+    Gauss-Seidel sweep. A single isolated contact reduces to the previous
+    closed-form impulse exactly, and a rank-deficient contact set (a box
+    resting flat on a plane) falls back to an uncoupled diagonal projection;
+    the proven friction pass and positional correction are unchanged. Verified
+    by the existing drop/rest/bounce/friction tests and a new coupled
+    two-sphere-stack rest test.
   - Added an experimental model-loading bridge that builds a `Multibody` from a
     legacy `dynamics::Skeleton`: C++ `io::buildMultibodyFromSkeleton(world,
 skeleton, options)` and dartpy `build_multibody_from_skeleton` /
