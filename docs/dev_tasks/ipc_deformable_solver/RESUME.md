@@ -264,7 +264,7 @@ candidate culling, barrier assembly, projected Newton, or friction.
 `feature/ipc-deformable-matrix-free-cg` - published as PR #2821 against `main`.
 The hosted PR head is still `fc9f11a153a`, while the local branch has the
 addressed Codex review fix, local handoff updates, and a clean merge of current
-`origin/main` (`cb6218a950c`). Push only after explicit approval, then resolve
+`origin/main` (`5b3faf623b3`). Push only after explicit approval, then resolve
 the addressed Codex thread and request a fresh Codex review if approved. If time
 passes before the push, fetch `origin/main` again and merge it into the branch
 before pushing.
