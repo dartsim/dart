@@ -218,7 +218,10 @@ struct DeformableVbdConfig
   /// Internal AVBD slice flag: use progressive finite-stiffness rows for
   /// deformable springs in the supported CPU mass-spring envelope.
   bool useAvbdFiniteStiffnessRows = false;
-  /// Starting stiffness for AVBD finite-stiffness deformable rows.
+  /// Starting stiffness for AVBD finite-stiffness deformable rows. Spring rows
+  /// use this in material stiffness units; tetrahedral material rows use it as
+  /// a dimensionless multiplier on the Lamé parameters and cap at 1.0 unless
+  /// avbdMaxStiffness is lower.
   double avbdFiniteStiffnessStart = 1.0;
   /// AVBD alpha regularization for pre-existing contact error.
   double avbdAlpha = 0.99;

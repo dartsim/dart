@@ -48,14 +48,15 @@ namespace dart::simulation::experimental::detail::deformable_vbd {
 
 /// Broad semantic role of one persistent AVBD scalar row. The role is part of
 /// the row key so finite-stiffness spring, contact-normal, friction,
-/// attachment, joint, motor, and fracture rows for the same bodies/features
-/// never alias each other.
+/// attachment, finite-stiffness tetrahedral material, joint, motor, and
+/// fracture rows for the same bodies/features never alias each other.
 enum class AvbdScalarRowRole : std::uint8_t
 {
   Generic = 0,
   Attachment,
   ContactNormal,
   DeformableSpring,
+  DeformableTet,
   FrictionTangent,
   JointLinear,
   JointAngular,

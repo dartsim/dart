@@ -133,6 +133,7 @@ void expectNoAvbdRows(const compute::DeformableSolverStats& stats)
   EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
   EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
 }
 
 // Add a static box ground barrier whose top face is at z = 0.
@@ -473,10 +474,64 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsHardenSpringChain)
 }
 
 //==============================================================================
-// The first finite-stiffness AVBD World slice is intentionally narrow: it only
-// runs in a serial, contact-free, frictionless mass-spring body without
-// acceleration, Rayleigh damping, tetrahedra, or self-contact. Unsupported
-// envelopes must keep using the existing VBD path and report no AVBD rows.
+// The tetrahedral material finite-stiffness World slice uses dimensionless
+// per-tet rows that ramp from a soft material scale toward the full Lamé
+// parameters. Compared against a permanently soft tet, the AVBD tet-material
+// body should settle closer to its rest apex height while reporting the active
+// tet row.
+TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsHardenTetrahedralMaterial)
+{
+  const auto apexZ = [](double youngsModulus, bool useFiniteRows) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    world.addDeformableBody("tet", makeTetOptions(youngsModulus));
+
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 50;
+    cfg.useAvbdFiniteStiffnessRows = useFiniteRows;
+    cfg.avbdFiniteStiffnessStart = 0.02;
+    cfg.avbdBeta = 30.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 1.0;
+    enableVbdConfig(world, cfg);
+
+    compute::DeformableDynamicsStage stage;
+    for (int step = 0; step < 160; ++step) {
+      stepOnce(world, stage);
+      const auto& stats = stage.getLastStats();
+      EXPECT_EQ(stats.vbdBodyCount, 1u);
+      EXPECT_EQ(
+          stats.vbdAvbdFiniteStiffnessRows,
+          useFiniteRows ? static_cast<std::size_t>(1) : 0u);
+      EXPECT_EQ(
+          stats.vbdAvbdFiniteStiffnessTetRows,
+          useFiniteRows ? static_cast<std::size_t>(1) : 0u);
+      EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+      EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+    }
+
+    const auto body = world.getDeformableBody("tet");
+    if (!body.has_value()) {
+      ADD_FAILURE() << "missing tet body";
+      return -1e9;
+    }
+    return body->getPosition(3).z();
+  };
+
+  const double softApex = apexZ(1.0e4, false);
+  const double finiteApex = apexZ(1.0e6, true);
+  EXPECT_GT(finiteApex, softApex + 1e-4);
+}
+
+//==============================================================================
+// The current finite-stiffness AVBD World slices are intentionally narrow. The
+// mass-spring row path is contact-free and self-contact-free, while the pure
+// tet material row path can coexist with the existing lagged VBD self-contact
+// penalty. Mixed spring-plus-tet topology, friction, Chebyshev, Rayleigh
+// damping, parallel execution, and unsupported requested row families must keep
+// using the existing VBD path and report no AVBD rows.
 TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
 {
   const auto baseConfig = [] {
@@ -601,6 +656,7 @@ TEST(VbdWorldSolver, AvbdRowsCombineContactAttachmentAndFiniteStiffness)
   EXPECT_GT(stats.vbdAvbdContactNormalRows, 0u);
   EXPECT_EQ(stats.vbdAvbdAttachmentRows, 3u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 12u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
 
   const auto body = world.getDeformableBody("patch");
   ASSERT_TRUE(body.has_value());

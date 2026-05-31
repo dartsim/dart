@@ -823,7 +823,8 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     const VertexColoring& coloring,
     const TetAdjacency& adjacency,
     const BlockDescentOptions& options,
-    const AvbdTetMaterialFiniteStiffnessOptions& avbdOptions)
+    const AvbdTetMaterialFiniteStiffnessOptions& avbdOptions,
+    const SelfContactAdjacency* selfContact = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
@@ -872,6 +873,9 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
             effectiveMu,
             effectiveLambda);
       }
+    }
+    if (selfContact != nullptr) {
+      addSelfContactTerms(block, vertex, *selfContact, positions);
     }
     return block;
   };
