@@ -16,9 +16,11 @@ from examples.demos.scenes import (
     diff_drone_liftoff,
     experimental_rigid_body_gui,
     ipc_deformable_capsule_rod,
+    ipc_deformable_drape,
     ipc_deformable_fem_buckle,
     ipc_deformable_fem_sphere,
     ipc_deformable_friction_slide,
+    ipc_deformable_net,
     ipc_deformable_plate_friction,
     ipc_deformable_rod_friction,
     ipc_deformable_trampoline,
@@ -246,6 +248,8 @@ def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_capsule_rod, "IPC Capsule Rod", "plot:Rod clearance:"),
         (ipc_deformable_trampoline, "IPC Trampoline", "plot:Center height:"),
+        (ipc_deformable_drape, "IPC Drape", "plot:Ground clearance:"),
+        (ipc_deformable_net, "IPC Net", "plot:Net sag:"),
     ):
         setup = scene_module.build()
         builder = _FakePanelBuilder()

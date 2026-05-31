@@ -72,6 +72,10 @@
   diagnostics.
 - `ipc_deformable_trampoline` now has a trampoline panel with center height,
   sag, vertical speed, and shared IPC deformable diagnostics.
+- `ipc_deformable_drape` now has a step-drape panel with ground clearance, step
+  clearance, step/off-step height delta, and shared IPC deformable diagnostics.
+- `ipc_deformable_net` now has a net panel with sag, lateral sway/speed, and
+  shared IPC deformable diagnostics.
 - Shared IPC deformable diagnostics now include solver iteration, line-search,
   self-contact, converged-contact, and minimum active-distance metrics when the
   sx world exposes `last_deformable_solver_diagnostics`.
@@ -164,6 +168,8 @@ pixi run py-demo-capture -- --scene ipc_deformable_plate_friction --show-ui --fr
 pixi run py-demo-capture -- --scene ipc_deformable_rod_friction --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_rod_friction_panel
 pixi run py-demo-capture -- --scene ipc_deformable_capsule_rod --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_capsule_rod_panel
 pixi run py-demo-capture -- --scene ipc_deformable_trampoline --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_trampoline_panel
+pixi run py-demo-capture -- --scene ipc_deformable_drape --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_drape_panel
+pixi run py-demo-capture -- --scene ipc_deformable_net --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_net_panel
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_sidebar_grouping
 ```
 
@@ -181,6 +187,7 @@ pixi run python -m py_compile python/examples/demos/scenes/diff_drone_liftoff.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_fem_sphere.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_plate_friction.py python/examples/demos/scenes/ipc_deformable_rod_friction.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_capsule_rod.py python/examples/demos/scenes/ipc_deformable_trampoline.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_drape.py python/examples/demos/scenes/ipc_deformable_net.py python/tests/unit/test_py_demo_panels.py
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
@@ -194,7 +201,7 @@ pixi run lint
 ## Next
 
 1. Add custom panels to additional high-value IPC deformable scenes beyond the
-   current FEM, friction, capsule-rod, and trampoline showcase set.
+   current FEM, friction, capsule-rod, trampoline, drape, and net showcase set.
 2. Add direct viewer-input coverage for mouse force-drag once tests can inject
    pointer drags into the Filament viewer loop.
 3. Add recorded-frame playback only after the recording/playback data contract

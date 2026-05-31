@@ -54,6 +54,9 @@ navigation, and a path for scene-specific controls.
 - Add shape-specific diagnostics panels to `ipc_deformable_capsule_rod` and
   `ipc_deformable_trampoline`, exposing rod clearance/drape balance and
   center-height/sag/speed plots alongside shared IPC deformable diagnostics.
+- Add shape-specific diagnostics panels to `ipc_deformable_drape` and
+  `ipc_deformable_net`, exposing ground/step clearance, step drop, net sag, and
+  lateral-sway plots alongside shared IPC deformable diagnostics.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
   current filtered/total scene count.
