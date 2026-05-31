@@ -155,6 +155,7 @@ The first AVBD implementation slices add:
   positions with supported World generation in serial mass-spring self-contact
   scenes and focused `VbdCombinedDescent.AvbdSelfContactFriction*` plus
   `VbdWorldSolver.AvbdSelfContactNormalRowsIncludeFrictionTangentRows`
+  and `VbdWorldSolver.AvbdSelfContactFrictionRowsReduceTangentialMotion`
   coverage; broader envelopes are still missing; and
 - explicit World fallback coverage so unsupported mixed spring-plus-tet,
   mass-spring self-contact without the self-contact AVBD flag,
