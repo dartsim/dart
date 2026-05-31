@@ -166,6 +166,7 @@ Surveyed May 2026 for the "best user-friendly API" comparison the goal requires.
 | **Newton 1.2** (Warp)              | Warp reverse-mode tape, kernel adjoints     | **yes** (`requires_grad=True` + `wp.Tape`) | immutable `Model`+`State`+`Control`+`Contacts` (GPU) | per-solver; not all kernels have adjoints                       | validates DART's exact structure + opt-in; reverse-only is a limitation DART beats    |
 | **Genesis 0.4** (Taichi/Quadrants) | source-transform AD                         | **yes** (`SimOptions(requires_grad=True)`) | substep-indexed fields; `gs.tensor`                  | rigid-body diff still unstable                                  | scene-level opt-in _flag_ (not a separate solver class) is the right ergonomic        |
 | **MJX** (JAX)                      | JAX autodiff; classic FD `mjd_transitionFD` | inherent / FD-in-`autograd.Function`       | immutable `mjx.Data`                                 | soft; stiff-contact gradient oscillation                        | FD-in-`autograd.Function` is the correctness _checker_ pattern; A/B Jacobian naming   |
+| **Dojo** (Julia)                   | implicit gradients through relaxed NCP/IPM  | central-path smoothness/accuracy knob      | maximal-coordinate rigid bodies                      | hard NCP with nonlinear friction cones                          | evaluate as a possible second solver family; do not replace the active boxed-LCP path |
 
 Decisions taken (rationale in the design doc §Design Decisions):
 
@@ -179,6 +180,10 @@ Decisions taken (rationale in the design doc §Design Decisions):
   lowest-friction Python UX without a core tensor dependency; JAX/dlpack later.
 - **Explicit Jacobians + efficient VJP** to serve both optimal-control and
   learning users and to beat reverse-only tape engines.
+- **Dojo-style solver separated from the active path**: the maximal-coordinate
+  variational hard-contact NCP/IPM method is promising enough to audit, but it
+  needs separate model/state, solver-residual, and central-path contracts before
+  DART can expose it as a second opt-in solver family.
 
 ## 7. Gradient Correctness: Limits And Mitigations
 
@@ -244,6 +249,8 @@ source of truth once these land):
   naming_and_variables, parallel_simulation); issue #1180.
 - MuJoCo/MJX: mujoco.readthedocs.io (mjx, mjwarp, `mjd_transitionFD`);
   github.com/EladSharony/DiffMjStep; MJX NaN issues #1349, #2237.
+- Dojo: arXiv:2203.00806; sites.google.com/view/dojo-sim/home;
+  github.com/dojo-sim/Dojo.jl; PLAN-110 Dojo gap audit.
 - Contact-gradient correctness: arXiv:2207.05060; arXiv:2305.00092 (TOI-velocity);
   arXiv:2506.14186 (hard-contacts-soft-gradients / CFD); arXiv:2409.07107 (explicit
   contact-mode differentiation); DiffTaichi arXiv:1910.00935.

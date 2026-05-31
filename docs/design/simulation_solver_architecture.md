@@ -231,6 +231,45 @@ documented fallback behavior or an unsupported-capability error when the build
 lacks the implementation. Solver registries, plugin loaders, and accelerator
 resource handles are not part of this contract and require their own design.
 
+## Where Differentiable Solver Families Fit
+
+Differentiability is a solver capability of the experimental `World`, not a
+separate user-facing engine. The multi-solver architecture therefore has two
+levels:
+
+- **Domain selection** answers which physical model owns an entity. Rigid and
+  articulated rigid entities still belong to the rigid-body domain; deformables
+  still belong to the deformable domain; cross-domain interaction is still a
+  coupler concern.
+- **Method selection** answers which solver family advances that domain. The
+  current differentiable work adds a solver-internal reverse pass to the
+  generalized-coordinate boxed-LCP rigid-body path. A Dojo-style method would be
+  another rigid-body solver family: maximal-coordinate or constrained-coordinate
+  state, variational integration, hard-contact NCP/SOC friction, a primal-dual
+  interior-point forward solve, and an implicit-gradient reverse pass.
+
+That placement gives DART a clean relation between the existing and proposed
+paths:
+
+| Path                                      | Domain              | Forward method                                  | Gradient method                                | Relationship                                                                  |
+| ----------------------------------------- | ------------------- | ----------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| Existing rigid-body default               | Rigid / articulated | Semi-implicit dynamics + existing contact path  | none                                           | easy path and compatibility baseline                                          |
+| PLAN-110 boxed-LCP/Nimble-style path      | Rigid / articulated | Generalized-coordinate boxed LCP contact solve  | active-set LCP implicit differentiation        | first opt-in differentiable rigid solver; default remains off                 |
+| Planned Dojo-style evaluation             | Rigid / articulated | Variational maximal/constrained coordinate NCP  | IPM/KKT implicit differentiation               | possible second opt-in rigid solver family after an internal spike            |
+| PLAN-081/PLAN-104 deformable solver paths | Deformable          | IPC/VBD-family deformable methods               | deferred per-solver/coupler differentiation    | separate domain; later coupled to rigid solvers through pairwise couplers     |
+| PLAN-082 variational-integrator work      | Rigid / articulated | Variational integration for articulated systems | not sufficient by itself for contact gradients | shared integration rationale; Dojo adds contact/NCP/IPM and differentiability |
+
+The public API should not expose a `DojoWorld`, `DojoSolver`, solver registry, or
+Dojo.jl dependency. If promoted, users would opt in through DART-owned
+domain-scoped options that request capabilities such as variational integration,
+hard-contact NCP, interior-point contact solve, and analytic differentiability.
+The `World` maps those policies to an internal solver or reports an
+unsupported-capability error. Internally, the Dojo-style solver would plug into
+the same lifecycle as every other solver: finalize model data, allocate
+solver-owned state/cache, emit prepare/pre-couple/post-couple compute nodes, and
+publish only DART-owned state/control/contact/derivative value objects through
+the facade.
+
 ## Compute-Graph Integration
 
 Solvers and couplers express their work as compute-graph nodes with explicit

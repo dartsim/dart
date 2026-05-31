@@ -31,6 +31,8 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/export.hpp>
+
 #include <Eigen/Core>
 
 #include <array>
@@ -68,18 +70,20 @@ struct PointSet
 /// from the current vertex list. ``vn`` / ``vt`` / comments and other keywords
 /// are ignored. Throws ``InvalidArgumentException`` on a malformed or
 /// out-of-range index, or when no vertices or segments are found.
-SegmentMesh loadSegLineMesh(std::istream& input);
+DART_EXPERIMENTAL_API SegmentMesh loadSegLineMesh(std::istream& input);
 
 /// Same as ``loadSegLineMesh``, reading from a file path.
-SegmentMesh loadSegLineMeshFile(const std::filesystem::path& path);
+DART_EXPERIMENTAL_API SegmentMesh
+loadSegLineMeshFile(const std::filesystem::path& path);
 
 /// Parse a ``.pt`` point set from a stream. Each non-empty, non-comment line is
 /// three whitespace-separated coordinates (an optional leading ``v`` keyword is
 /// accepted, so a Wavefront vertex list also loads). Throws
 /// ``InvalidArgumentException`` on a malformed line or an empty set.
-PointSet loadPointSet(std::istream& input);
+DART_EXPERIMENTAL_API PointSet loadPointSet(std::istream& input);
 
 /// Same as ``loadPointSet``, reading from a file path.
-PointSet loadPointSetFile(const std::filesystem::path& path);
+DART_EXPERIMENTAL_API PointSet
+loadPointSetFile(const std::filesystem::path& path);
 
 } // namespace dart::simulation::experimental::io
