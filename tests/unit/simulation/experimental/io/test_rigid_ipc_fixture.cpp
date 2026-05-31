@@ -841,6 +841,130 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCarriesFrictionIntoRigidIpcStage)
   EXPECT_LT(frictional.velocityX, frictionless.velocityX);
 }
 
+TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
+{
+  constexpr double initialHeight = 0.005;
+  constexpr double tangentialSpeed = 1.0;
+
+  struct SolverSettingOutcome
+  {
+    sx::compute::RigidIpcSolverStats stats;
+    double x = 0.0;
+    double z = 0.0;
+  };
+
+  const auto runSlide
+      = [=](const double activationDistance,
+            const int frictionIterations) -> SolverSettingOutcome {
+    std::ostringstream source;
+    source << R"json(
+{
+  "scene_type": "distance_barrier_rb_problem",
+  "timestep": 0.05,
+  "distance_barrier_constraint": {
+    "initial_barrier_activation_distance": )json"
+           << activationDistance << R"json(
+  },
+  "friction_constraints": {
+    "iterations": )json"
+           << frictionIterations << R"json(
+  },
+  "rigid_body_problem": {
+    "coefficient_friction": 1.0,
+    "gravity": [0.0, 0.0, 0.0],
+    "rigid_bodies": [{
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "is_dof_fixed": true
+    }, {
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "position": [0.0, 0.0, )json"
+           << initialHeight << R"json(],
+      "linear_velocity": [)json"
+           << tangentialSpeed << R"json(, 0.0, 0.0]
+    }]
+  }
+}
+)json";
+
+    const std::string fixtureSource = source.str();
+    const expio::RigidIpcFixture fixture = loadFixture(fixtureSource);
+    if (fixture.hasErrors()) {
+      ADD_FAILURE() << "fixture failed to parse";
+      return {};
+    }
+    if (!fixture.barrierActivationDistance.has_value()) {
+      ADD_FAILURE() << "missing parsed activation distance";
+      return {};
+    }
+    if (!fixture.frictionIterations.has_value()
+        || *fixture.frictionIterations < 0) {
+      ADD_FAILURE() << "missing parsed non-negative friction iterations";
+      return {};
+    }
+
+    sx::World world;
+    const expio::RigidIpcReplayState state
+        = expio::populateRigidIpcReplayWorld(world, fixture);
+    if (state.bodies.size() != 2u) {
+      ADD_FAILURE() << "expected two replay bodies";
+      return {};
+    }
+
+    sx::compute::RigidIpcContactStageOptions stageOptions;
+    stageOptions.activationDistance = *fixture.barrierActivationDistance;
+    stageOptions.frictionIterations
+        = static_cast<std::size_t>(*fixture.frictionIterations);
+    sx::compute::RigidIpcContactStage ipcStage(stageOptions);
+    EXPECT_DOUBLE_EQ(ipcStage.getActivationDistance(), activationDistance);
+    EXPECT_EQ(
+        ipcStage.getFrictionIterations(),
+        static_cast<std::size_t>(frictionIterations));
+    const sx::compute::RigidIpcContactStageOptions appliedOptions
+        = ipcStage.getOptions();
+    EXPECT_DOUBLE_EQ(appliedOptions.activationDistance, activationDistance);
+    EXPECT_EQ(
+        appliedOptions.frictionIterations,
+        static_cast<std::size_t>(frictionIterations));
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    world.step(executor, pipeline);
+
+    const auto body = world.getRigidBody(state.bodies[1].bodyName);
+    if (!body.has_value()) {
+      ADD_FAILURE() << "missing dynamic replay body";
+      return {};
+    }
+
+    return SolverSettingOutcome{
+        ipcStage.getLastStats(),
+        body->getTranslation().x(),
+        body->getTranslation().z()};
+  };
+
+  const SolverSettingOutcome inactiveNarrowBand = runSlide(0.001, 1);
+  const SolverSettingOutcome activeFrictionDisabled = runSlide(0.01, 0);
+
+  EXPECT_TRUE(inactiveNarrowBand.stats.converged);
+  EXPECT_EQ(inactiveNarrowBand.stats.activeConstraints, 0u);
+  EXPECT_EQ(inactiveNarrowBand.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(inactiveNarrowBand.stats.frictionIterations, 0u);
+  EXPECT_GT(inactiveNarrowBand.x, 0.0);
+  EXPECT_NEAR(inactiveNarrowBand.z, initialHeight, 1e-12);
+
+  EXPECT_TRUE(activeFrictionDisabled.stats.converged);
+  EXPECT_GT(activeFrictionDisabled.stats.activeConstraints, 0u);
+  EXPECT_EQ(activeFrictionDisabled.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(activeFrictionDisabled.stats.frictionIterations, 0u);
+  EXPECT_GT(activeFrictionDisabled.z, initialHeight);
+
+  sx::compute::RigidIpcContactStageOptions invalidOptions;
+  invalidOptions.activationDistance = -1.0;
+  const sx::compute::RigidIpcContactStage invalidStage(invalidOptions);
+  EXPECT_DOUBLE_EQ(invalidStage.getActivationDistance(), 1e-2);
+}
+
 TEST(RigidIpcFixtureReplay, ReplaysComparisonScriptMshScene)
 {
   const std::filesystem::path assetRoot

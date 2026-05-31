@@ -1,5 +1,32 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: rigid IPC stage options for fixture solver metadata
+
+Delivered a bounded stage-policy slice for Phases 1, 4, and 5:
+
+- Added `RigidIpcContactStageOptions` with max projected-Newton iterations,
+  barrier activation distance (`dHat`), and lagged-friction iteration count.
+  The existing max-iteration constructor remains supported, while the options
+  constructor keeps the stage policy explicit for callers that load solver
+  metadata from fixtures or comparison scripts.
+- Routed the options into the opt-in runtime IPC stage so `dHat` controls the
+  barrier active band and zero friction iterations disable lagged friction rows
+  without disabling barrier contact.
+- Added a fixture replay regression that parses `distance_barrier_constraint`
+  and `friction_constraints` metadata, applies it to `RigidIpcContactStage`,
+  and verifies narrow-band contact stays inactive while zero friction iterations
+  suppress runtime friction rows on an otherwise active contact.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter=World.RigidIpcContactStage*'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: fixture replay rigid IPC friction coverage
 
 Delivered a bounded fixture/runtime bridge slice for Phases 1 and 4:

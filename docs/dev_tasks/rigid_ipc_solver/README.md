@@ -34,6 +34,10 @@
     - [x] Add the first opt-in IPC runtime replay regression that steps a
           fixture-populated `World` through `RigidIpcContactStage` and proves
           replayed friction metadata affects lagged rigid IPC contact behavior.
+    - [x] Add the first explicit stage-policy bridge for parsed solver
+          metadata: `RigidIpcContactStageOptions` can carry fixture/comparison
+          `dHat` and lagged-friction iteration settings into the opt-in runtime
+          stage, with a fixture replay regression for both settings.
     - [ ] Add a reusable runtime fixture example and cover remaining comparison
           script commands and mesh formats beyond OBJ/OFF/MSH/STL/inline
           polygons.
@@ -190,12 +194,22 @@
         regression uses identical inline polygon scenes with zero and positive
         fixture friction, then verifies the frictional IPC step brakes
         tangential slide and reports active friction passes.
+  - [x] Phase 4f: make the opt-in runtime stage's lagged-friction pass count
+        configurable. `RigidIpcContactStageOptions::frictionIterations` carries
+        parsed fixture/comparison metadata into the projected-Newton solve, and
+        zero iterations disable runtime friction rows while preserving barrier
+        contact behavior.
   - [ ] Extend friction into broader corpus coverage and production convergence
         criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
       experimental `World` without exposing solver registries.
 - [ ] Phase 5b: extend solver selection toward persisted scene policy,
       diagnostics, examples, and mixed rigid/deformable coupling.
+  - [x] Add the first explicit opt-in stage options for max iterations, barrier
+        activation distance, and lagged-friction iterations without exposing a
+        solver registry.
+  - [ ] Continue toward persisted scene policy, diagnostics, examples, and
+        mixed rigid/deformable coupling.
 - [ ] Phase 6: complete the manifest rows as DART-native tests, examples,
       benchmarks, comparison packets, CPU/GPU evidence, and headless Filament
       visuals.

@@ -88,6 +88,26 @@ namespace sxdetail = dart::simulation::experimental::detail;
 
 namespace {
 
+constexpr double kDefaultRigidIpcContactStageActivationDistance = 1e-2;
+
+[[nodiscard]] RigidIpcContactStageOptions
+makeRigidIpcContactStageOptionsForMaxIterations(const std::size_t maxIterations)
+{
+  RigidIpcContactStageOptions options;
+  options.maxIterations = maxIterations;
+  return options;
+}
+
+[[nodiscard]] RigidIpcContactStageOptions sanitizeRigidIpcContactStageOptions(
+    RigidIpcContactStageOptions options)
+{
+  if (!std::isfinite(options.activationDistance)
+      || options.activationDistance <= 0.0) {
+    options.activationDistance = kDefaultRigidIpcContactStageActivationDistance;
+  }
+  return options;
+}
+
 //==============================================================================
 Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
 {
@@ -6532,7 +6552,14 @@ std::size_t RigidBodyContactStage::getIterations() const noexcept
 
 //==============================================================================
 RigidIpcContactStage::RigidIpcContactStage(const std::size_t maxIterations)
-  : m_maxIterations(maxIterations)
+  : RigidIpcContactStage(
+        makeRigidIpcContactStageOptionsForMaxIterations(maxIterations))
+{
+}
+
+//==============================================================================
+RigidIpcContactStage::RigidIpcContactStage(RigidIpcContactStageOptions options)
+  : m_options(sanitizeRigidIpcContactStageOptions(options))
 {
 }
 
@@ -6626,9 +6653,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       = massCount > 0u ? massSum / static_cast<double>(massCount) : 1.0;
 
   sxdetail::RigidIpcProjectedNewtonSolveOptions options;
-  constexpr double activationDistance = 1e-2;
   options.barrier.squaredActivationDistance
-      = activationDistance * activationDistance;
+      = m_options.activationDistance * m_options.activationDistance;
   options.barrier.stiffness = 1.0;
   // The conservative line search runs a curved ACCD per candidate primitive
   // pair. If the ACCD exhausts its iteration budget on a tight, slowly
@@ -6649,7 +6675,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.friction.staticFrictionDisplacement
       = std::max(0.0, 1e-3 * world.getTimeStep());
   options.dynamicsTerms = std::move(dynamicsTerms);
-  options.maxIterations = m_maxIterations;
+  options.maxIterations = m_options.maxIterations;
+  options.frictionIterations = m_options.frictionIterations;
   // The apply policy below writes back a not-fully-converged result when it
   // made progress, relying on every accepted Newton step having passed the
   // conservative line-search feasibility check. That guarantee only holds with
@@ -6741,7 +6768,25 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
 //==============================================================================
 std::size_t RigidIpcContactStage::getMaxIterations() const noexcept
 {
-  return m_maxIterations;
+  return m_options.maxIterations;
+}
+
+//==============================================================================
+double RigidIpcContactStage::getActivationDistance() const noexcept
+{
+  return m_options.activationDistance;
+}
+
+//==============================================================================
+std::size_t RigidIpcContactStage::getFrictionIterations() const noexcept
+{
+  return m_options.frictionIterations;
+}
+
+//==============================================================================
+RigidIpcContactStageOptions RigidIpcContactStage::getOptions() const noexcept
+{
+  return m_options;
 }
 
 //==============================================================================
