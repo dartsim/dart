@@ -952,6 +952,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     populates an experimental `World`, applies parsed fixture stage policy, runs
     one opt-in IPC contact-stage step, and can return solver diagnostics for
     manifest drivers.
+  - Hardened the internal rigid IPC interval-root CCD evaluator so accepted root
+    boxes that start at `t=0` no longer report a zero-time hit when the input
+    row starts separated, matching the first audited kinematic CCD rows' guard.
   - Extended rigid IPC fixture mesh replay to legacy VTK unstructured-grid
     surface meshes, covering the remaining mesh extension present in the
     audited upstream rigid-ipc corpus while preserving native mesh collision

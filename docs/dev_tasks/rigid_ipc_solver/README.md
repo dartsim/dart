@@ -79,6 +79,8 @@
           queries with the audited reference TOI tolerance.
     - [x] Evaluate the first audited root direct-CCD rows as full-step misses,
           matching the current DART distance query for those rows.
+    - [x] Add first audited kinematic CCD row regressions that preserve the
+          upstream guard against zero-time hits when the row starts separated.
     - [ ] Match those rows with the audited reference's interval-root rigid CCD
           semantics across the corpus.
 - [ ] Phase 3: rigid barrier objective, line search, projected Newton, sparse
@@ -319,9 +321,10 @@ DART-owned implementation.
   face-vertex expected-TOI rows, and the first parameter-box subdivision queries
   find those expected contacts within the reference TOI tolerance. The direct
   CCD row evaluator now routes those first rows through the subdivision queries,
-  and the manifest generator now marks those four rows implemented. Corpus-scale
-  evaluator parity remains open until rigorous interval arithmetic and reference
-  corpus semantics land.
+  does not surface zero-time hits for the first audited kinematic rows when they
+  start separated, and the manifest generator now marks the four root rows
+  implemented. Corpus-scale evaluator parity remains open until rigorous
+  interval arithmetic and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
   `dart/simulation/experimental/detail/rigid_ipc_ccd.*`. It is an internal
   DART-owned ACCD query for 3D face-vertex, edge-edge, and point-edge cases over

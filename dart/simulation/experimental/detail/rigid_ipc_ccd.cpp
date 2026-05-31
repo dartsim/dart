@@ -168,12 +168,19 @@ template <typename ResidualFn>
       intervalMidpoint(box[1]), intervalMidpoint(box[2]), tolerance);
 }
 
+[[nodiscard]] double residualToleranceForOption(
+    const collision::native::CcdOption& option)
+{
+  return std::max({option.tolerance, option.minSeparation, kEpsilon});
+}
+
 template <typename ResidualFn, typename DomainFn, typename AcceptFn>
 bool parameterBoxSubdivisionCcd(
     const int dimension,
     const ParameterBox& initialBox,
     const std::array<double, 3>& tolerances,
     const collision::native::CcdOption& option,
+    const bool initiallyTouching,
     const ResidualFn& residual,
     const DomainFn& domainIsValid,
     const AcceptFn& acceptBox,
@@ -181,8 +188,7 @@ bool parameterBoxSubdivisionCcd(
 {
   result.clear();
 
-  const double residualTolerance
-      = std::max({option.tolerance, option.minSeparation, kEpsilon});
+  const double residualTolerance = residualToleranceForOption(option);
   const int maxIterations
       = std::max(kIntervalRootMaxIterations, option.maxIterations);
   std::vector<ParameterBox> boxes;
@@ -237,6 +243,12 @@ bool parameterBoxSubdivisionCcd(
 
   result.hit = true;
   result.timeOfImpact = std::clamp(earliestRoot[0].lower, 0.0, 1.0);
+  if (result.timeOfImpact == 0.0 && !initiallyTouching) {
+    // A terminal root box can start at t=0 while enclosing a positive root.
+    // Preserve true initial contacts, but do not surface a zero-time hit for a
+    // separated start state.
+    result.timeOfImpact = std::nextafter(0.0, 1.0);
+  }
   return true;
 }
 
@@ -625,11 +637,18 @@ bool rigidIpcPointEdgeIntervalCcd(
                .norm()
            <= tolerance;
   };
+  const bool initiallyTouching
+      = distancePointSegment(
+            transformRigidIpcPoint(point, pointPoseStart),
+            transformRigidIpcPoint(edgeA, edgePoseStart),
+            transformRigidIpcPoint(edgeB, edgePoseStart))
+        <= residualToleranceForOption(option);
   return parameterBoxSubdivisionCcd(
       2,
       initialBox,
       tolerances,
       option,
+      initiallyTouching,
       residual,
       defaultParameterDomainIsValid,
       acceptBox,
@@ -679,11 +698,19 @@ bool rigidIpcEdgeEdgeIntervalCcd(
                .norm()
            <= tolerance;
   };
+  const bool initiallyTouching
+      = distanceSegmentSegment(
+            transformRigidIpcPoint(edgeA0, edgeAPoseStart),
+            transformRigidIpcPoint(edgeA1, edgeAPoseStart),
+            transformRigidIpcPoint(edgeB0, edgeBPoseStart),
+            transformRigidIpcPoint(edgeB1, edgeBPoseStart))
+        <= residualToleranceForOption(option);
   return parameterBoxSubdivisionCcd(
       3,
       initialBox,
       tolerances,
       option,
+      initiallyTouching,
       residual,
       defaultParameterDomainIsValid,
       acceptBox,
@@ -733,11 +760,19 @@ bool rigidIpcPointTriangleIntervalCcd(
                       .norm()
                   <= tolerance;
   };
+  const bool initiallyTouching
+      = distancePointTriangle(
+            transformRigidIpcPoint(point, pointPoseStart),
+            transformRigidIpcPoint(triangleA, trianglePoseStart),
+            transformRigidIpcPoint(triangleB, trianglePoseStart),
+            transformRigidIpcPoint(triangleC, trianglePoseStart))
+        <= residualToleranceForOption(option);
   return parameterBoxSubdivisionCcd(
       3,
       initialBox,
       tolerances,
       option,
+      initiallyTouching,
       residual,
       faceVertexParameterDomainIsValid,
       acceptBox,

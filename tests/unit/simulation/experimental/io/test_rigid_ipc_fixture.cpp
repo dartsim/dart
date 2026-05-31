@@ -2180,6 +2180,47 @@ TEST(RigidIpcCcdCase, EvaluatesAuditedUpstreamRootCcdRowsAsMisses)
       2u);
 }
 
+TEST(RigidIpcCcdCase, EvaluatesAuditedKinematicRowsWithoutZeroTimeHits)
+{
+  struct CcdRow
+  {
+    std::string_view path;
+    std::string_view source;
+  };
+
+  // clang-format off
+  const auto rows = std::to_array<CcdRow>({
+      CcdRow{
+          "tests/data/kinematic/ccd-test-000.json",
+          R"json({"edge0":{"pose_t0":{"position":[0.06645567526560373,-1.7117800373895864,0.23612110416527277],"rotation":[-0.004142222049721008,-0.0003305093180525144,1.513657457007691]},"pose_t1":{"position":[0.06464293009609998,-1.7124144938538095,0.23577611771346524],"rotation":[-0.005541911644287225,-0.0017852096358039146,1.514953719459307]},"vertex0":[1.1852423663342049,0.07029444633957141,-0.07495858873600351],"vertex1":[1.168928700047883,0.08498176251828493,-0.07495073019079]},"edge1":{"pose_t0":{"position":[0.0001096836373135734,0.042263388999492495,-0.050729001672085425],"rotation":[0.0,0.0,-2.948064743119094]},"pose_t1":{"position":[0.0001096836373135734,0.042263388999492495,-0.050729001672085425],"rotation":[0.0,0.0,-2.953094536060126]},"vertex0":[0.04989031636268643,0.5711346212544138,0.36072900167208544],"vertex1":[0.04989031636268643,0.5711346212544138,0.2007290016720854]},"type":"ee"})json"},
+      CcdRow{
+          "tests/data/kinematic/ccd-test-001.json",
+          R"json({"edge0":{"pose_t0":{"position":[0.06645567526560373,-1.7117800373895864,0.23612110416527277],"rotation":[-0.004142222049721008,-0.0003305093180525144,1.513657457007691]},"pose_t1":{"position":[-188.8666200203556,191.02295227278836,-0.2736538437914776],"rotation":[17.96891289460509,0.3388921386394125,225.05593383393384]},"vertex0":[1.1852423663342049,0.07029444633957141,-0.07495858873600351],"vertex1":[1.168928700047883,0.08498176251828493,-0.07495073019079]},"edge1":{"pose_t0":{"position":[0.0001096836373135734,0.042263388999492495,-0.050729001672085425],"rotation":[0.0,0.0,-2.948064743119094]},"pose_t1":{"position":[0.0001096836373135734,0.042263388999492495,-0.050729001672085425],"rotation":[0.0,0.0,-32682.6730068579]},"vertex0":[0.04989031636268643,0.5711346212544138,0.36072900167208544],"vertex1":[0.04989031636268643,0.5711346212544138,0.2007290016720854]},"type":"ee"})json"},
+      CcdRow{
+          "tests/data/kinematic/ccd-test-002.json",
+          R"json({"edge0":{"pose_t0":{"position":[0.06645567526560373,-1.7117800373895864,0.23612110416527277],"rotation":[-0.004142222049721008,-0.0003305093180525144,1.513657457007691]},"pose_t1":{"position":[0.04287524019931291,-1.7208290967550464,0.23764450180774682],"rotation":[-0.005253472356882234,0.000967751788754904,1.5286111347063949]},"vertex0":[1.1852423663342049,0.07029444633957141,-0.07495858873600351],"vertex1":[1.168928700047883,0.08498176251828493,-0.07495073019079]},"edge1":{"pose_t0":{"position":[0.0001096836373135734,0.042263388999492495,-0.050729001672085425],"rotation":[0.0,0.0,-2.948064743119094]},"pose_t1":{"position":[0.0001096836373135734,0.042263388999492495,-0.050729001672085425],"rotation":[0.0,0.0,-3.010895206994393]},"vertex0":[0.04989031636268643,0.5711346212544138,0.2007290016720854],"vertex1":[0.04989031636268643,0.5711346212544138,0.36072900167208544]},"type":"ee"})json"},
+  });
+  // clang-format on
+
+  dart::collision::native::CcdOption option
+      = dart::collision::native::CcdOption::precise();
+  for (const CcdRow& row : rows) {
+    SCOPED_TRACE(row.path);
+    const expio::RigidIpcCcdCase ccdCase = expectLoadedCcdCase(
+        row.source, expio::RigidIpcCcdCaseType::EdgeEdge, 2u, 2u);
+    dart::collision::native::CcdPrimitiveResult result;
+    const bool hit = expio::evaluateRigidIpcCcdCase(ccdCase, option, result);
+
+    if (hit) {
+      EXPECT_TRUE(result.isHit());
+      EXPECT_GT(result.timeOfImpact, 0.0);
+      EXPECT_LE(result.timeOfImpact, 1.0);
+    } else {
+      EXPECT_FALSE(result.isHit());
+    }
+  }
+}
+
 TEST(RigidIpcCcdCase, FaceVertexRotationalTrajectoryUsesCurvedCcd)
 {
   const Eigen::Vector3d triangleA(-2.0, -2.0, 0.0);

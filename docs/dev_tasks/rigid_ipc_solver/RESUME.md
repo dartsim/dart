@@ -1,5 +1,32 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: kinematic CCD rows avoid zero-time hits
+
+Delivered a bounded Phase 2c CCD parity slice:
+
+- Fixed the internal interval-root CCD result reporting so a terminal root box
+  whose lower time edge is `0` only reports `t=0` when the primitives are
+  actually touching at the start pose. Separated starts now receive a positive
+  conservative lower bound instead of a zero-time hit.
+- Added first audited kinematic upstream row coverage for
+  `tests/data/kinematic/ccd-test-000..002.json`, proving the current DART
+  evaluator preserves the upstream guard against zero-time hits for separated
+  rows.
+- Kept Phase 2c open: this does not yet claim rigorous interval arithmetic or
+  full corpus reference semantics.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no'`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: implemented manifest status for first root CCD rows
 
 Delivered a bounded Phase 6 manifest slice:
