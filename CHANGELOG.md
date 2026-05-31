@@ -1099,6 +1099,16 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     a dartpy regression (a strip shoved along a rod slides far frictionless but is
     held back under friction, staying on the rod) and a `Deformable Friction on
 Capsule Rod (IPC)` py-demos scene.
+  - Exposed the iterative-solve count through the public deformable solver
+    diagnostics (PLAN-081 M7). `DeformableSolverDiagnostics` (dartpy
+    `last_deformable_solver_diagnostics`) now carries
+    `projectedNewtonIterativeSolves` / `projected_newton_iterative_solves`, the
+    public mirror of the internal stat: it counts the Newton iterations whose
+    linear solve took the iterative (incomplete-Cholesky-preconditioned CG) path
+    instead of the sparse Cholesky factorization, so callers can observe and tune
+    which solve path a body uses (zero means every solve was direct). Adds C++
+    and Python regressions that the default direct solve reports zero while an
+    opt-in iterative body reports a nonzero count.
   - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
     experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
     and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra
