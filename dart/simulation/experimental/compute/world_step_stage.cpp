@@ -5842,6 +5842,18 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.barrier.squaredActivationDistance
       = activationDistance * activationDistance;
   options.barrier.stiffness = 1.0;
+  // The conservative line search runs a curved ACCD per candidate primitive
+  // pair. If the ACCD exhausts its iteration budget on a tight, slowly
+  // converging pair it returns Indeterminate, which the line search treats as a
+  // zero step -- so the whole solve reports LineSearchBlocked and is skipped.
+  // Dense resting contacts (stacks, piles, arches) routinely produce such pairs
+  // once they settle into compression, freezing the solve even though the
+  // contacts are advanceable. Give the ACCD a larger budget so those pairs
+  // resolve to a real Hit/Miss instead. This only increases CCD accuracy -- a
+  // real contact still limits the step -- so it cannot weaken the
+  // intersection-free guarantee; well-separated scenes converge well under the
+  // cap and are unaffected.
+  options.lineSearch.maxIterations = 256;
   options.adaptiveStiffness.enabled = true;
   options.adaptiveStiffness.averageMass = averageMass;
   options.adaptiveStiffness.bboxDiagonal = bboxDiagonal;

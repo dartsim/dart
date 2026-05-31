@@ -1401,7 +1401,16 @@ TEST(RigidIpcBarrier, LineSearchRejectsInitialSeparationViolation)
 }
 
 //==============================================================================
-TEST(RigidIpcBarrier, LineSearchTreatsIterationExhaustionAsUnsafe)
+// When the conservative CCD exhausts its iteration budget on a pair (here
+// forced with maxIterations = 1), it cannot prove a definitive hit/miss -- but
+// every advance it took was a provably contact-free sub-step, so the time it
+// reached is a valid lower bound on the true time of impact. The line search
+// uses that as a conservative POSITIVE step bound (limiting, not blocking) so
+// the solve can still advance, while staying strictly before the true crossing.
+// Here the point sweeps from z = 0.5 through the triangle at z = 0 (true TOI =
+// 0.5), so the reported bound must be positive and < 0.5 -- intersection-free,
+// not frozen.
+TEST(RigidIpcBarrier, LineSearchUsesProvenSafeTimeOnIterationExhaustion)
 {
   expdetail::RigidIpcBarrierSurface pointStart;
   pointStart.vertices.push_back(Eigen::Vector3d(0.25, 0.25, 0.0));
@@ -1423,11 +1432,14 @@ TEST(RigidIpcBarrier, LineSearchTreatsIterationExhaustionAsUnsafe)
   const auto result
       = expdetail::computeRigidIpcLineSearchStepBound(start, end, options);
 
+  EXPECT_GT(result.stats.indeterminate, 0u); // the ACCD did exhaust its budget
   EXPECT_TRUE(result.limited);
-  EXPECT_TRUE(result.indeterminate);
-  EXPECT_FALSE(result.allowsPositiveStep());
-  EXPECT_EQ(result.stepBound, 0.0);
-  EXPECT_GT(result.stats.indeterminate, 0u);
+  // A provably-safe positive bound, not a frozen zero step.
+  EXPECT_TRUE(result.allowsPositiveStep());
+  EXPECT_FALSE(result.indeterminate);
+  EXPECT_GT(result.stepBound, 0.0);
+  // Strictly before the true crossing at t = 0.5 (intersection-free guarantee).
+  EXPECT_LT(result.stepBound, 0.5);
 }
 
 //==============================================================================

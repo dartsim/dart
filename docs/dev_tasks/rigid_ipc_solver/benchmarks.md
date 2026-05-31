@@ -140,42 +140,46 @@ starting, active-set reuse) follow from here.
     re-try the LDLT fast path without first confirming the active Hessians are
     usually PSD.
 
-## Open robustness findings (gate the many-body paper scenes)
+## Robustness findings on dense simultaneous contacts (the many-body gate)
 
-- **Dense simultaneous-contact scenes do not solve yet (every step is
-  line-search-blocked).** A first attempt at the paper's friction arch (Fig. 11)
-  -- wedge voussoirs over a ground box, starting within the barrier activation
-  band -- the projected-Newton solve `failed` on EVERY step AFTER the first few,
-  freezing the arch (a failed solve is skipped, so "the keystone did not drop"
-  was an artifact of nothing being applied, not equilibrium).
+- **[RESOLVED, partial] CCD-indeterminacy froze dense resting contacts.** A
+  friction-arch attempt (Fig. 11; wedge voussoirs over a ground box) settled for
+  2-3 steps then stuck in persistent `LineSearchBlocked` (`failed=1`, `lsZero=0`,
+  adaptive `kappa` healthy ~1.1e4 -- so not a gap-0 setup artifact and not a
+  factorization failure). Isolated with per-step `RigidIpcSolverStats`: the
+  conservative curved ACCD line search exhausted its iteration budget on a couple
+  of tight, slowly-converging pairs and returned `Indeterminate`, which the line
+  search treated as a zero step -> the whole solve reported blocked and was
+  skipped, freezing the scene. More ACCD iterations did NOT help (the pairs stay
+  indeterminate -- asymptotic creep), so it was not mere budget starvation.
 
-  Failure mode isolated (3/5/7-block arches, `RigidIpcSolverStats` per step): the
-  solve CONVERGES and applies for the first 2-3 steps (the blocks settle), then
-  transitions to persistent `LineSearchBlocked` (`failed=1`, `lsLimited~3`,
-  `lsZero=0`, `applied=0`) once the blocks reach tight compression. Crucially
-  `lsZero=0` and the adaptive `kappa` stays healthy (~1.1e4), so it is NOT an
-  initial-separation/gap-0 setup artifact and NOT a factorization failure -- it
-  is the conservative curved-CCD line search unable to find a feasible non-zero
-  step among many tight simultaneous contacts (the active-constraint count is
-  large -- ~310 for 3 blocks up to ~914 for 7 -- because the big wedge geometry
-  puts many vertex/triangle pairs inside the 1 cm activation band). This is the
-  SAME robustness gate as the open "rigorous interval-arithmetic CCD" item: the
-  line search likely hits CCD indeterminacy (iteration-budget exhaustion) on a
-  tight pair and conservatively returns a zero step. Fix levers, in order: (1) a
-  line search that returns the largest provably-feasible step instead of blocking
-  on indeterminacy; (2) rigorous interval CCD so tight pairs resolve instead of
-  exhausting; (3) per-contact / warm-started active sets. The arch is closer to
-  working than "frozen" suggests -- it settles for a few steps before the line
-  search stalls -- so this is a tractable robustness target, not a rewrite. The single global
-  projected-Newton solve with one scene-level adaptive kappa does not yet handle
-  many tight simultaneous contacts. This (not just per-step cost) is what gates
-  the multi-body paper scenes -- arch (Fig. 11), 3D packing (Fig. 14), wrecking
-  ball (Fig. 8). Likely levers: per-contact / warm-started active sets, a line
-  search that can find a feasible non-zero step from a dense initial contact set
-  (e.g. a feasible-start projection / initial separation handling), and contact
-  ordering. The experiment was NOT kept as a test -- a passing-but-frozen scene
-  is misleading -- so reproduce it (voussoir wedge meshes via
-  `CollisionShape::makeMesh`) before working the fix.
+  Fix (landed, fix-lever #1): every conservative ACCD advance is a provably
+  contact-free sub-step, so the time it reached before exhausting is a valid
+  LOWER BOUND on the true time of impact. `curvedAccdAdvance` now reports that
+  `timeOfImpact` on the `Indeterminate` exit, and the line search
+  (`recordLineSearchCandidate`) uses it as a conservative POSITIVE step bound
+  (limiting, like a hit) instead of a frozen zero step -- blocking only if zero
+  safe progress was proven. This keeps the intersection-free guarantee (the bound
+  is a proven lower bound on the TOI, strictly before any crossing -- covered by
+  `LineSearchUsesProvenSafeTimeOnIterationExhaustion`) while letting dense resting
+  contacts advance. Result: the minimal 3-voussoir friction arch now stands in
+  equilibrium (`MinimalFrictionArchStandsInEquilibrium`, Fig. 11), and the
+  two-box stack converges faster (fewer frozen retries). The line-search CCD
+  budget was also raised (64 -> 256) so tight pairs reach a larger safe bound
+  before falling back. All 51 barrier + 17 rigid-IPC world tests stay green.
+
+- **[OPEN] Larger arches reach a hard face-face contact the line search still
+  stalls on.** With the indeterminacy fix, 5+ block arches no longer freeze on
+  indeterminacy (`indet=0`) but instead hit a genuine `Hit` at/near TOI 0 (a real
+  face-face contact at zero gap) once the wedges seat into tight compression, and
+  the line search correctly blocks to avoid penetration. This (not per-step cost)
+  is what still gates the larger multi-body paper scenes -- arch (Fig. 11, full),
+  3D packing (Fig. 14), wrecking ball (Fig. 8). Remaining levers: rigorous
+  interval CCD; resting-contact handling that lets a body stay at a barrier gap
+  instead of reaching exact contact; per-contact / warm-started active sets;
+  contact ordering. Reproduce with voussoir wedge meshes
+  (`CollisionShape::makeMesh`); the 3-block case is shipped as a test, larger
+  ones are the next target.
 
 ## Optimization roadmap (CPU and GPU)
 

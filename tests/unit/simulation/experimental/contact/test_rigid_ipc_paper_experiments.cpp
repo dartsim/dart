@@ -39,7 +39,9 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
+#include <string>
 #include <vector>
 
 #include <cmath>
@@ -91,6 +93,54 @@ sx::CollisionShape makeDiskMesh(double radius, double halfHeight, int segments)
 
   return sx::CollisionShape::makeMesh(
       std::move(vertices), std::move(triangles));
+}
+
+// Build one arch voussoir (wedge block) spanning the angular range
+// [theta0, theta1] in the world x-z plane, between inner radius rIn and outer
+// radius rOut, with half-width halfW along y. Writes the world centroid (the
+// body position) into `center` and returns the body-frame collision mesh.
+sx::CollisionShape makeVoussoirMesh(
+    double theta0,
+    double theta1,
+    double rIn,
+    double rOut,
+    double halfW,
+    Eigen::Vector3d& center)
+{
+  std::array<Eigen::Vector3d, 8> world;
+  int k = 0;
+  for (double theta : {theta0, theta1}) {
+    for (double r : {rIn, rOut}) {
+      for (double y : {-halfW, halfW}) {
+        world[static_cast<std::size_t>(k++)]
+            = Eigen::Vector3d(r * std::cos(theta), y, r * std::sin(theta));
+      }
+    }
+  }
+  center = Eigen::Vector3d::Zero();
+  for (const auto& v : world) {
+    center += v;
+  }
+  center /= 8.0;
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(8);
+  for (const auto& v : world) {
+    vertices.push_back(v - center);
+  }
+  const std::vector<Eigen::Vector3i> triangles
+      = {{0, 1, 3},
+         {0, 3, 2},
+         {4, 6, 7},
+         {4, 7, 5},
+         {0, 4, 5},
+         {0, 5, 1},
+         {2, 3, 7},
+         {2, 7, 6},
+         {0, 2, 6},
+         {0, 6, 4},
+         {1, 5, 7},
+         {1, 7, 3}};
+  return sx::CollisionShape::makeMesh(std::move(vertices), triangles);
 }
 
 struct InclineRun
@@ -391,4 +441,80 @@ TEST(RigidIpcPaperExperiments, DegenerateVertexDropStaysIntersectionFree)
   EXPECT_LT(box.getLinearVelocity().norm(), 0.5); // came to rest
   EXPECT_TRUE(box.getTranslation().allFinite());
   EXPECT_TRUE(box.getLinearVelocity().allFinite());
+}
+
+// Fig. 11 (Arch), minimal form: a three-voussoir semicircular arch stands in
+// equilibrium under gravity, held by friction at the wedge interfaces and the
+// ground (no abutments). The keystone (top wedge) is wedged between the two
+// springers; friction resists the outward thrust at the ground. The keystone
+// must not collapse and nothing may penetrate the ground.
+//
+// This is the minimal arch the current solver supports: larger arches reach a
+// hard face-face contact the conservative line search still stalls on (the
+// dense-contact robustness gate tracked in benchmarks.md). It exercises the
+// proven-safe-time line-search bound that lets dense resting contacts advance
+// instead of freezing.
+TEST(RigidIpcPaperExperiments, MinimalFrictionArchStandsInEquilibrium)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  constexpr int kBlocks = 3; // odd: the middle wedge is the keystone
+  constexpr double rIn = 1.0;
+  constexpr double rOut = 1.3;
+  constexpr double halfW = 0.15;
+  constexpr double lift = 0.02; // start just above the ground
+  const double dTheta = std::numbers::pi / kBlocks;
+  constexpr double angularGap = 4e-3;
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5 + lift);
+  auto ground = world.addRigidBody("arch_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({3.0, 1.0, 0.5}));
+  ground.setFriction(1.0);
+
+  std::vector<sx::RigidBody> voussoirs;
+  std::vector<std::vector<Eigen::Vector3d>> localVertices;
+  for (int i = 0; i < kBlocks; ++i) {
+    const double t0 = i * dTheta + 0.5 * angularGap;
+    const double t1 = (i + 1) * dTheta - 0.5 * angularGap;
+    Eigen::Vector3d center;
+    auto shape = makeVoussoirMesh(t0, t1, rIn, rOut, halfW, center);
+    localVertices.push_back(shape.vertices); // body-frame wedge vertices
+    sx::RigidBodyOptions options;
+    options.mass = 1.0;
+    options.position = center + Eigen::Vector3d(0.0, 0.0, lift);
+    auto v = world.addRigidBody(
+        std::string("arch_voussoir_") + std::to_string(i), options);
+    v.setCollisionShape(shape);
+    v.setFriction(1.0);
+    voussoirs.push_back(v);
+  }
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double keystoneStartZ = voussoirs[kBlocks / 2].getTranslation().z();
+  double minVoussoirZ = lift;
+  for (int s = 0; s < 80; ++s) {
+    world.step(executor, pipeline);
+    for (std::size_t i = 0; i < voussoirs.size(); ++i) {
+      const Eigen::Matrix3d R = voussoirs[i].getRotation();
+      const Eigen::Vector3d t = voussoirs[i].getTranslation();
+      for (const Eigen::Vector3d& localVertex : localVertices[i]) {
+        minVoussoirZ = std::min(minVoussoirZ, (t + R * localVertex).z());
+      }
+    }
+  }
+  const double keystoneEndZ = voussoirs[kBlocks / 2].getTranslation().z();
+
+  // The arch holds: the keystone barely settles (does not collapse).
+  EXPECT_GT(keystoneEndZ, keystoneStartZ - 0.05);
+  EXPECT_TRUE(voussoirs[kBlocks / 2].getTranslation().allFinite());
+  // Nothing fell through the ground (top at z = lift) beyond the barrier band.
+  EXPECT_GT(minVoussoirZ, lift - 5e-3);
 }

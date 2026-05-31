@@ -447,6 +447,14 @@ bool curvedAccdAdvance(
     distance = distAt(time);
   }
 
+  // The budget is exhausted without proving a hit or a clean miss, but every
+  // conservative advance above was a provably contact-free sub-step, so `time`
+  // is a valid lower bound on the true time of impact: the primitives are
+  // guaranteed separated over [0, time]. Report it so callers can take a
+  // bounded (positive) safe step instead of a fully blocked zero step -- the
+  // result is still flagged Indeterminate, so callers that require a definitive
+  // hit/miss are unaffected.
+  result.timeOfImpact = std::clamp(time, 0.0, 1.0);
   result.status = collision::native::CcdPrimitiveStatus::Indeterminate;
   return false;
 }

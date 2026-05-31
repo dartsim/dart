@@ -910,13 +910,34 @@ void recordLineSearchCandidate(
   if (candidate.status
       == collision::native::CcdPrimitiveStatus::Indeterminate) {
     ++aggregate.stats.indeterminate;
-    aggregate.indeterminate = true;
-    aggregate.limited = true;
-    aggregate.stepBound = 0.0;
-    aggregate.limitingPrimitive = primitive;
-    aggregate.bodyA = bodyA;
-    aggregate.bodyB = bodyB;
-    aggregate.vertices = vertices;
+    // The ACCD could not prove a definitive hit/miss within its budget, but
+    // each conservative advance it took was a provably contact-free sub-step,
+    // so it did prove the pair separated over [0, timeOfImpact]. Use that as a
+    // conservative, provably-safe positive step bound (limiting like a hit)
+    // rather than freezing the entire solve with a zero step. This keeps the
+    // intersection-free guarantee (the bound is a proven lower bound on the
+    // true TOI) while letting dense resting contacts -- where a couple of tight
+    // pairs never fully resolve -- still advance. Only if no safe progress was
+    // proven (timeOfImpact == 0) do we fall back to the blocking zero step.
+    const double safeTime = std::clamp(candidate.timeOfImpact, 0.0, 1.0);
+    if (safeTime <= 0.0) {
+      aggregate.indeterminate = true;
+      aggregate.limited = true;
+      aggregate.stepBound = 0.0;
+      aggregate.limitingPrimitive = primitive;
+      aggregate.bodyA = bodyA;
+      aggregate.bodyB = bodyB;
+      aggregate.vertices = vertices;
+      return;
+    }
+    if (!aggregate.limited || safeTime < aggregate.stepBound) {
+      aggregate.limited = true;
+      aggregate.stepBound = safeTime;
+      aggregate.limitingPrimitive = primitive;
+      aggregate.bodyA = bodyA;
+      aggregate.bodyB = bodyB;
+      aggregate.vertices = vertices;
+    }
     return;
   }
 
