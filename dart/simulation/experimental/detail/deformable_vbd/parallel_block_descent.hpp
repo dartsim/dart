@@ -168,7 +168,9 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
 /// over-relaxation and residual early termination are NOT applied on the
 /// multithreaded path (they need cross-thread reductions / a global
 /// extrapolation); `threadCount <= 1` falls back to the full-featured serial
-/// blockDescentDeformable, which does honor them.
+/// blockDescentDeformable, which does honor them. Active self-contact also
+/// falls back to the serial driver because the lagged VT/EE contact stencils
+/// are not part of the cached spring/tet coloring.
 inline BlockDescentStats parallelBlockDescentDeformable(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -187,9 +189,10 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     unsigned int threadCount,
     const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
     const std::vector<ContactPlane>* contactPlanes = nullptr,
-    double contactFriction = 0.0)
+    double contactFriction = 0.0,
+    const SelfContactAdjacency* selfContact = nullptr)
 {
-  if (threadCount <= 1) {
+  if (threadCount <= 1 || (selfContact != nullptr && selfContact->active())) {
     return blockDescentDeformable(
         positions,
         masses,
@@ -207,7 +210,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         options,
         stepStartPositions,
         contactPlanes,
-        contactFriction);
+        contactFriction,
+        selfContact);
   }
 
   const std::size_t vertexCount = positions.size();
@@ -216,6 +220,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
       = options.rayleighDamping > 0.0 && stepStartPositions != nullptr;
 
   const auto assemble = [&](std::uint32_t vertex) {
+    const SelfContactAdjacency* blockSelfContact
+        = useRayleigh ? nullptr : selfContact;
     VertexBlock block = detail::assembleDeformableVertexBlock(
         vertex,
         positions,
@@ -229,7 +235,10 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         tetAdjacency,
         mu,
         lambda,
-        timeStep);
+        timeStep,
+        options.useFemTetKernel,
+        options.useFixedCorotationalTets,
+        blockSelfContact);
     if (useRayleigh) {
       Eigen::Matrix3d elasticHessian = block.hessian;
       elasticHessian.diagonal().array() -= masses[vertex] * invDt2;
@@ -239,6 +248,9 @@ inline BlockDescentStats parallelBlockDescentDeformable(
           positions[vertex] - (*stepStartPositions)[vertex],
           options.rayleighDamping,
           timeStep);
+      if (selfContact != nullptr) {
+        addSelfContactTerms(block, vertex, *selfContact, positions);
+      }
     }
     if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
       const ContactPlane& plane = (*contactPlanes)[vertex];

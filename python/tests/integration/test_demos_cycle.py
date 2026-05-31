@@ -53,6 +53,21 @@ def _deformable_bindings_available() -> bool:
     return hasattr(sx, "DeformableBodyOptions")
 
 
+def _require_sx_attrs(*names: str) -> None:
+    """Skip when a reduced build omits experimental deformable APIs."""
+
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception:  # pragma: no cover - reduced build without the submodule
+        pytest.skip("dartpy.simulation_experimental unavailable")
+    missing = [name for name in names if not hasattr(sx, name)]
+    if missing:
+        pytest.skip(
+            "experimental deformable API unavailable in this build: "
+            + ", ".join(missing)
+        )
+
+
 def test_registry_has_scenes() -> None:
     scenes = make_demo_scenes()
     assert len(scenes) >= 1
@@ -142,6 +157,8 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     solve staying finite. Verified through the solver-diagnostics snapshot.
     """
 
+    _require_sx_attrs("DeformableTetrahedron", "DeformableDirichletBoundaryCondition")
+
     import dartpy.simulation_experimental as sx
     import numpy as np
     from examples.demos._ipc_deformable_bridge import build_fem_compression_bar
@@ -191,6 +208,8 @@ def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
     pinned edge, the solve stays finite, and nothing falls through the ground.
     """
 
+    _require_sx_attrs("load_obj_triangle_mesh")
+
     # The importer round-trips the bundled mesh into a usable surface.
     import dartpy.simulation_experimental as sx
     import numpy as np
@@ -224,6 +243,8 @@ def test_ipc_deformable_cloth_drapes_over_capsule_rod_without_penetrating() -> N
     outside the rod surface -- the codimensional-obstacle analogue of the
     sphere/box settle tests, verified by the analytic point-to-segment distance.
     """
+
+    _require_sx_attrs("load_obj_triangle_mesh")
 
     import numpy as np
 
@@ -345,6 +366,8 @@ def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
     pinned node), and a `.pt` particle cloud must fall under gravity and stack on
     the ground barrier without tunneling through it -- both staying finite.
     """
+
+    _require_sx_attrs("load_seg_line_mesh", "load_point_set")
 
     import numpy as np
     from examples.demos.scenes.ipc_deformable_pt_particles import (
