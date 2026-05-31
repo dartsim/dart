@@ -532,12 +532,12 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsHardenTetrahedralMaterial)
 
 //==============================================================================
 // The current finite-stiffness AVBD World slices are intentionally narrow. The
-// mass-spring row path supports static contact/friction rows but remains
-// self-contact-free, while the pure tet material row path can coexist with the
-// existing lagged VBD self-contact penalty. Mixed spring-plus-tet topology,
-// finite-stiffness-only friction scenes, Chebyshev, Rayleigh damping, parallel
-// execution, and unsupported requested row families must keep using the
-// existing VBD path and report no AVBD rows.
+// mass-spring row path supports static contact/friction rows and explicit
+// self-contact row opt-ins, while the pure tet material row path can coexist
+// with the existing lagged VBD self-contact penalty. Mixed spring-plus-tet
+// topology, finite-stiffness-only friction scenes, Chebyshev, Rayleigh damping,
+// parallel execution, and unsupported requested row families must keep using
+// the existing VBD path and report no AVBD rows.
 TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
 {
   const auto baseConfig = [] {
@@ -641,6 +641,43 @@ TEST(VbdWorldSolver, AvbdSelfContactNormalRowsPushSupportedSurfaceApart)
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
   EXPECT_GT(topMinZ(), before + 1e-4);
+}
+
+//==============================================================================
+// Supported serial mass-spring self-contact now generates matching AVBD
+// tangent friction rows from the same lagged point-triangle / edge-edge
+// primitives when the deformable material carries Coulomb friction.
+TEST(VbdWorldSolver, AvbdSelfContactNormalRowsIncludeFrictionTangentRows)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  sx::DeformableBodyOptions options = makeNearSelfContactSpringBody();
+  options.material.frictionCoefficient = 0.8;
+  world.addDeformableBody("fold", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 8;
+  cfg.useAvbdSelfContactNormalRows = true;
+  cfg.avbdAlpha = 0.0;
+  cfg.avbdGamma = 1.0;
+  cfg.avbdMaxStiffness = 1.0e6;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_GT(stats.vbdAvbdSelfContactNormalRows, 0u);
+  EXPECT_EQ(
+      stats.vbdAvbdFrictionTangentRows,
+      2u * stats.vbdAvbdSelfContactNormalRows);
+  EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
 }
 
 //==============================================================================
