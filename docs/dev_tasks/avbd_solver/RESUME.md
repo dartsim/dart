@@ -19,7 +19,9 @@ error, separate tet-row diagnostics, and coexistence with the existing lagged
 VBD self-contact penalty. A bounded friction-tangent row primitive now
 participates in the serial mass-spring AVBD row driver, and supported
 static-contact mass-spring World scenes generate two tangent rows per active
-contact-normal row.
+contact-normal row. A local self-contact normal row kernel now covers
+point-triangle and edge-edge primitive directions, AVBD hard-row stamping, and
+dual/stiffness updates, but it is not wired into World row generation yet.
 Unsupported mixed spring-plus-tet, mass-spring self-contact,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests have explicit fallback coverage that keeps them on
@@ -31,15 +33,15 @@ the existing VBD path.
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
-tangent rows.
+tangent rows and a local self-contact normal row kernel.
 
 ## Immediate Next Step
 
-Start AVBD self-contact normal rows as the next bounded row family. Keep the
-slice narrow: define the self-contact scalar row state and local block stamping
-first, then wire World generation only after the kernel tests prove the row
-matches the existing lagged VBD barrier direction and preserves unsupported
-fallback envelopes.
+Wire AVBD self-contact normal rows into row generation/inventory as the next
+bounded slice. Keep the supported envelope narrow, share one scalar row state
+per primitive, stamp each incident local vertex from that row, and preserve the
+current unsupported mass-spring self-contact fallback until World coverage proves
+the new path.
 
 ## Context That Would Be Lost
 
@@ -57,10 +59,11 @@ fallback envelopes.
   internal World opt-ins for static contact-normal rows, hard point-attachment
   rows, and finite-stiffness spring rows, including a combined serial
   mass-spring row solve for those three families. Pure-tet World scenes can now
-  use the tet-material finite-stiffness row path, and supported static-contact
-  mass-spring World scenes generate bounded friction-tangent rows. This does
-  not imply hard-contact/friction completeness, static/dynamic friction
-  switching, AVBD self-contact row support, rigid/soft coupling, or GPU parity.
+  use the tet-material finite-stiffness row path, supported static-contact
+  mass-spring World scenes generate bounded friction-tangent rows, and the local
+  self-contact normal kernel is tested. This does not imply hard-contact/friction
+  completeness, static/dynamic friction switching, World AVBD self-contact row
+  support, rigid/soft coupling, or GPU parity.
 
 ## How to Resume
 
@@ -68,6 +71,7 @@ fallback envelopes.
 git status --short --branch
 pixi run build-simulation-experimental-tests
 build/default/cpp/Release/bin/test_avbd_constraint
+build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_filter='VbdCombinedDescent.AvbdSelfContact*'
 build/default/cpp/Release/bin/test_vbd_attachment
 build/default/cpp/Release/bin/test_vbd_finite_stiffness
 build/default/cpp/Release/bin/test_vbd_contact --gtest_filter='VbdContact.Avbd*'

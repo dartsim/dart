@@ -35,13 +35,17 @@
 #include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <array>
+#include <limits>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 
@@ -122,6 +126,168 @@ struct SelfContactAdjacency
     return adjacency;
   }
 };
+
+/// One active AVBD self-contact normal row for a point-triangle or edge-edge
+/// primitive pair. The row stores one scalar state for the full primitive; VBD
+/// block assembly passes `localVertex` to stamp the matching 3x1 sub-block for
+/// whichever stencil vertex is being solved.
+struct AvbdSelfContactNormalRow
+{
+  std::array<std::uint32_t, 4> nodes{0, 0, 0, 0};
+  bool isEdgeEdge = false;
+  AvbdScalarRowState state;
+  double squaredActivationDistance = 0.0;
+  double previousConstraintValue = 0.0;
+  AvbdScalarRowBounds bounds{0.0, std::numeric_limits<double>::infinity()};
+};
+
+/// Per-sweep AVBD self-contact normal update parameters.
+struct AvbdSelfContactNormalOptions
+{
+  double alpha = 0.0;
+  double beta = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
+//==============================================================================
+inline contact::PrimitiveBarrierResult evaluateAvbdSelfContactPrimitive(
+    const AvbdSelfContactNormalRow& row,
+    const std::vector<Eigen::Vector3d>& positions)
+{
+  if (!(row.squaredActivationDistance > 0.0)) {
+    return {};
+  }
+
+  const auto validNode = [&](std::uint32_t node) {
+    return node < positions.size();
+  };
+  const auto& n = row.nodes;
+  if (!validNode(n[0]) || !validNode(n[1]) || !validNode(n[2])
+      || !validNode(n[3])) {
+    return {};
+  }
+
+  constexpr double kUnitBarrierStiffness = 1.0;
+  return row.isEdgeEdge ? contact::edgeEdgeBarrier(
+                              positions[n[0]],
+                              positions[n[1]],
+                              positions[n[2]],
+                              positions[n[3]],
+                              row.squaredActivationDistance,
+                              kUnitBarrierStiffness)
+                        : contact::pointTriangleBarrier(
+                              positions[n[0]],
+                              positions[n[1]],
+                              positions[n[2]],
+                              positions[n[3]],
+                              row.squaredActivationDistance,
+                              kUnitBarrierStiffness);
+}
+
+//==============================================================================
+inline double avbdSelfContactNormalConstraintValue(
+    const contact::PrimitiveBarrierResult& primitive)
+{
+  if (!primitive.active || !(primitive.squaredActivationDistance > 0.0)
+      || !std::isfinite(primitive.safeSquaredDistance)
+      || !std::isfinite(primitive.squaredActivationDistance)) {
+    return 0.0;
+  }
+
+  const double activationDistance
+      = std::sqrt(primitive.squaredActivationDistance);
+  const double safeDistance
+      = std::sqrt(std::max(0.0, primitive.safeSquaredDistance));
+  if (!std::isfinite(activationDistance) || !std::isfinite(safeDistance)) {
+    return 0.0;
+  }
+  return activationDistance - safeDistance;
+}
+
+//==============================================================================
+inline double avbdSelfContactNormalConstraintValue(
+    const AvbdSelfContactNormalRow& row,
+    const std::vector<Eigen::Vector3d>& positions)
+{
+  return avbdSelfContactNormalConstraintValue(
+      evaluateAvbdSelfContactPrimitive(row, positions));
+}
+
+//==============================================================================
+inline Eigen::Vector3d avbdSelfContactLocalNormal(
+    const contact::PrimitiveBarrierResult& primitive, std::uint8_t localVertex)
+{
+  if (!primitive.active || localVertex >= 4u) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  Eigen::Vector3d normal
+      = -primitive.gradient.segment<3>(3 * static_cast<int>(localVertex));
+  const double normalNorm = normal.norm();
+  if (!(normalNorm > 0.0) || !std::isfinite(normalNorm)) {
+    return Eigen::Vector3d::Zero();
+  }
+  normal /= normalNorm;
+  return normal;
+}
+
+//==============================================================================
+/// Stamp one active AVBD self-contact normal row into a VBD vertex block. The
+/// scalar constraint is the activation-band depth `d_hat - d`, and the normal
+/// axis is taken from the IPC barrier force direction for this local primitive
+/// vertex. The row keeps a rank-1 positive-semidefinite Hessian block while the
+/// primitive is active, matching the other hard AVBD normal rows.
+inline double addAvbdSelfContactNormal(
+    VertexBlock& block,
+    const std::vector<Eigen::Vector3d>& positions,
+    const AvbdSelfContactNormalRow& row,
+    std::uint8_t localVertex,
+    double alpha)
+{
+  const contact::PrimitiveBarrierResult primitive
+      = evaluateAvbdSelfContactPrimitive(row, positions);
+  if (!primitive.active) {
+    return 0.0;
+  }
+
+  const Eigen::Vector3d normal
+      = avbdSelfContactLocalNormal(primitive, localVertex);
+  if (normal.squaredNorm() == 0.0) {
+    return 0.0;
+  }
+
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdSelfContactNormalConstraintValue(primitive),
+      row.previousConstraintValue,
+      alpha);
+  const double forceMagnitude
+      = computeAvbdHardConstraintForce(row.state, constraintValue, row.bounds);
+  block.force.noalias() += forceMagnitude * normal;
+  block.hessian.noalias()
+      += row.state.stiffness * (normal * normal.transpose());
+  return forceMagnitude;
+}
+
+//==============================================================================
+inline AvbdScalarRowState updateAvbdSelfContactNormalRow(
+    AvbdScalarRowState state,
+    const std::vector<Eigen::Vector3d>& positions,
+    const AvbdSelfContactNormalRow& row,
+    const AvbdSelfContactNormalOptions& options)
+{
+  const contact::PrimitiveBarrierResult primitive
+      = evaluateAvbdSelfContactPrimitive(row, positions);
+  if (!primitive.active) {
+    return state;
+  }
+
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdSelfContactNormalConstraintValue(primitive),
+      row.previousConstraintValue,
+      options.alpha);
+  return updateAvbdHardConstraintRow(
+      state, constraintValue, options.beta, row.bounds, options.maxStiffness);
+}
 
 /// Add the IPC clamped-log self-contact barrier force and 3x3 Hessian block for
 /// one vertex's incident constraints to its VertexBlock. The other stencil
