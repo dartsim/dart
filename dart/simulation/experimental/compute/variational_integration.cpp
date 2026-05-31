@@ -642,9 +642,16 @@ Eigen::VectorXd applyExactNewtonStep(
     if (link.dof > 0) {
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto dof = static_cast<Eigen::Index>(link.dof);
+      // Eliminated joint equation: D_i dq_i = uForce_i - S_i^T Pi_i
+      // parentTwist. The parent-twist coupling is the motion-side row S_i^T
+      // Pi_i
+      // (= motionProjector_i^T, matching the backward sweep's elimination), not
+      // the force-side S_i^T Pi_i^T. They coincide only for a symmetric
+      // articulated operator; for finite-rotation / high-average-twist links
+      // Pi_i is non-symmetric and the force-side row solves the wrong system.
       const Eigen::VectorXd jointDelta
           = dInverse[i]
-            * (uForce[i] - forceProjector[i].transpose() * parentTwist);
+            * (uForce[i] - motionProjector[i].transpose() * parentTwist);
       dq.segment(seg, dof) = jointDelta;
       twist[i] = parentTwist + link.subspace * jointDelta;
     } else {
