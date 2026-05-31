@@ -4308,6 +4308,9 @@ struct DeformableVbdScratch
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdFrictionDescriptors;
   dvbd::AvbdScalarRowInventory avbdFrictionInventory;
   std::vector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactDescriptors;
+  dvbd::AvbdScalarRowInventory avbdSelfContactInventory;
+  std::vector<dvbd::AvbdSelfContactNormalRow> avbdSelfContactRows;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdAttachmentDescriptors;
   dvbd::AvbdScalarRowInventory avbdAttachmentInventory;
   std::vector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
@@ -4332,6 +4335,8 @@ struct DeformableVbdScratch
 inline constexpr std::uint64_t kAvbdStaticGroundObjectId = 1;
 inline constexpr std::uint64_t kAvbdStaticSphereObjectId = 2;
 inline constexpr std::uint64_t kAvbdStaticBoxObjectId = 3;
+inline constexpr std::uint32_t kAvbdSelfContactPointTriangleRow = 0;
+inline constexpr std::uint32_t kAvbdSelfContactEdgeEdgeRow = 1;
 
 //==============================================================================
 /// Solve one implicit-Euler step for a deformable body with the
@@ -4588,12 +4593,14 @@ void runVbdDeformableSolve(
       break;
     }
   }
-  const bool wantsAvbdRows = config.useAvbdContactNormalRows
-                             || config.useAvbdAttachmentRows
-                             || config.useAvbdFiniteStiffnessRows;
+  const bool wantsAvbdRows
+      = config.useAvbdContactNormalRows || config.useAvbdSelfContactNormalRows
+        || config.useAvbdAttachmentRows || config.useAvbdFiniteStiffnessRows;
   const bool useAvbdFrictionRows = config.useAvbdContactNormalRows
                                    && contactPlanes != nullptr
                                    && frictionCoeff > 0.0;
+  const bool useAvbdSelfContactRows
+      = config.useAvbdSelfContactNormalRows && selfContact != nullptr;
   const bool canUseAvbdMassSpringRows
       = wantsAvbdRows
         && (!config.useAvbdContactNormalRows || contactPlanes != nullptr)
@@ -4601,8 +4608,9 @@ void runVbdDeformableSolve(
         && (!config.useAvbdFiniteStiffnessRows || !vbdScratch.springs.empty())
         && vbdScratch.tets.empty()
         && (frictionCoeff <= 0.0 || useAvbdFrictionRows)
-        && selfContact == nullptr && config.workerThreads <= 1
-        && !options.useChebyshev && options.rayleighDamping <= 0.0;
+        && (selfContact == nullptr || useAvbdSelfContactRows)
+        && config.workerThreads <= 1 && !options.useChebyshev
+        && options.rayleighDamping <= 0.0;
   const bool canUseAvbdTetMaterialRows
       = config.useAvbdFiniteStiffnessRows && !config.useAvbdContactNormalRows
         && !config.useAvbdAttachmentRows && contactPlanes == nullptr
@@ -4616,6 +4624,46 @@ void runVbdDeformableSolve(
     vbdScratch.avbdTetDescriptors.clear();
     vbdScratch.avbdTetRows.clear();
     vbdScratch.avbdTetInventory.records().clear();
+
+    vbdScratch.avbdSelfContactDescriptors.clear();
+    if (useAvbdSelfContactRows) {
+      vbdScratch.avbdSelfContactDescriptors.reserve(
+          vbdScratch.selfContactCandidates.pointTriangleCandidates.size()
+          + vbdScratch.selfContactCandidates.edgeEdgeCandidates.size());
+      for (const dc::PointTriangleCandidate& candidate :
+           vbdScratch.selfContactCandidates.pointTriangleCandidates) {
+        dvbd::AvbdScalarRowDescriptor descriptor;
+        descriptor.key.role = dvbd::AvbdScalarRowRole::SelfContactNormal;
+        descriptor.key.objectA = bodyId;
+        descriptor.key.objectB = bodyId;
+        descriptor.key.featureA = static_cast<std::uint64_t>(candidate.point);
+        descriptor.key.featureB
+            = static_cast<std::uint64_t>(candidate.triangle);
+        descriptor.key.row = kAvbdSelfContactPointTriangleRow;
+        descriptor.key.axis = 0;
+        descriptor.kind = dvbd::AvbdScalarRowKind::HardConstraint;
+        descriptor.bounds = dvbd::avbdContactNormalBounds();
+        descriptor.startStiffness = selfContactBarrierStiffness();
+        descriptor.maxStiffness = config.avbdMaxStiffness;
+        vbdScratch.avbdSelfContactDescriptors.push_back(descriptor);
+      }
+      for (const dc::EdgeEdgeCandidate& candidate :
+           vbdScratch.selfContactCandidates.edgeEdgeCandidates) {
+        dvbd::AvbdScalarRowDescriptor descriptor;
+        descriptor.key.role = dvbd::AvbdScalarRowRole::SelfContactNormal;
+        descriptor.key.objectA = bodyId;
+        descriptor.key.objectB = bodyId;
+        descriptor.key.featureA = static_cast<std::uint64_t>(candidate.edgeA);
+        descriptor.key.featureB = static_cast<std::uint64_t>(candidate.edgeB);
+        descriptor.key.row = kAvbdSelfContactEdgeEdgeRow;
+        descriptor.key.axis = 0;
+        descriptor.kind = dvbd::AvbdScalarRowKind::HardConstraint;
+        descriptor.bounds = dvbd::avbdContactNormalBounds();
+        descriptor.startStiffness = selfContactBarrierStiffness();
+        descriptor.maxStiffness = config.avbdMaxStiffness;
+        vbdScratch.avbdSelfContactDescriptors.push_back(descriptor);
+      }
+    }
 
     vbdScratch.avbdContactDescriptors.clear();
     if (config.useAvbdContactNormalRows && contactPlanes != nullptr) {
@@ -4670,10 +4718,56 @@ void runVbdDeformableSolve(
     warmStartOptions.alpha = config.avbdAlpha;
     warmStartOptions.gamma = config.avbdGamma;
     warmStartOptions.maxStiffness = config.avbdMaxStiffness;
+    vbdScratch.avbdSelfContactInventory.syncActiveRows(
+        vbdScratch.avbdSelfContactDescriptors, warmStartOptions);
     vbdScratch.avbdContactInventory.syncActiveRows(
         vbdScratch.avbdContactDescriptors, warmStartOptions);
     vbdScratch.avbdAttachmentInventory.syncActiveRows(
         vbdScratch.avbdAttachmentDescriptors, warmStartOptions);
+
+    vbdScratch.avbdSelfContactRows.clear();
+    vbdScratch.avbdSelfContactRows.reserve(
+        vbdScratch.avbdSelfContactInventory.size());
+    for (const dvbd::AvbdScalarRowRecord& record :
+         vbdScratch.avbdSelfContactInventory.records()) {
+      dvbd::AvbdSelfContactNormalRow row;
+      row.state = record.state;
+      row.squaredActivationDistance
+          = vbdScratch.selfContactAdjacency.squaredActivationDistance;
+      row.bounds = record.descriptor.bounds;
+      if (record.descriptor.key.row == kAvbdSelfContactPointTriangleRow) {
+        const auto point
+            = static_cast<std::size_t>(record.descriptor.key.featureA);
+        const auto triangleIndex
+            = static_cast<std::size_t>(record.descriptor.key.featureB);
+        const DeformableSurfaceTriangle& triangle
+            = surfaceTriangles[triangleIndex];
+        row.nodes
+            = {static_cast<std::uint32_t>(point),
+               static_cast<std::uint32_t>(triangle.nodeA),
+               static_cast<std::uint32_t>(triangle.nodeB),
+               static_cast<std::uint32_t>(triangle.nodeC)};
+        row.isEdgeEdge = false;
+      } else {
+        const auto edgeAIndex
+            = static_cast<std::size_t>(record.descriptor.key.featureA);
+        const auto edgeBIndex
+            = static_cast<std::size_t>(record.descriptor.key.featureB);
+        const dc::SurfaceEdge& edgeA
+            = vbdScratch.selfContactCandidates.surfaceEdges[edgeAIndex];
+        const dc::SurfaceEdge& edgeB
+            = vbdScratch.selfContactCandidates.surfaceEdges[edgeBIndex];
+        row.nodes
+            = {static_cast<std::uint32_t>(edgeA.nodeA),
+               static_cast<std::uint32_t>(edgeA.nodeB),
+               static_cast<std::uint32_t>(edgeB.nodeA),
+               static_cast<std::uint32_t>(edgeB.nodeB)};
+        row.isEdgeEdge = true;
+      }
+      row.previousConstraintValue
+          = dvbd::avbdSelfContactNormalConstraintValue(row, state.positions);
+      vbdScratch.avbdSelfContactRows.push_back(row);
+    }
 
     vbdScratch.avbdContactRows.clear();
     vbdScratch.avbdContactRows.reserve(vbdScratch.avbdContactInventory.size());
@@ -4818,6 +4912,10 @@ void runVbdDeformableSolve(
     frictionOptions.alpha = config.avbdAlpha;
     frictionOptions.beta = config.avbdBeta;
     frictionOptions.maxStiffness = config.avbdMaxStiffness;
+    dvbd::AvbdSelfContactNormalOptions selfContactOptions;
+    selfContactOptions.alpha = config.avbdAlpha;
+    selfContactOptions.beta = config.avbdBeta;
+    selfContactOptions.maxStiffness = config.avbdMaxStiffness;
     result = dvbd::blockDescentMassSpringAvbdRows(
         scratch.next,
         state.masses,
@@ -4836,7 +4934,10 @@ void runVbdDeformableSolve(
         attachmentOptions,
         springOptions,
         &vbdScratch.avbdFrictionRows,
-        &frictionOptions);
+        &frictionOptions,
+        &vbdScratch.avbdSelfContactRows,
+        useAvbdSelfContactRows ? selfContact : nullptr,
+        &selfContactOptions);
 
     for (std::size_t i = 0; i < vbdScratch.avbdContactRows.size(); ++i) {
       vbdScratch.avbdContactInventory[i].state
@@ -4854,7 +4955,12 @@ void runVbdDeformableSolve(
       vbdScratch.avbdFrictionInventory[i].state
           = vbdScratch.avbdFrictionRows[i].state;
     }
+    for (std::size_t i = 0; i < vbdScratch.avbdSelfContactRows.size(); ++i) {
+      vbdScratch.avbdSelfContactInventory[i].state
+          = vbdScratch.avbdSelfContactRows[i].state;
+    }
     stats.vbdAvbdContactNormalRows += vbdScratch.avbdContactRows.size();
+    stats.vbdAvbdSelfContactNormalRows += vbdScratch.avbdSelfContactRows.size();
     stats.vbdAvbdFrictionTangentRows += vbdScratch.avbdFrictionRows.size();
     stats.vbdAvbdAttachmentRows += vbdScratch.avbdAttachmentRows.size();
     stats.vbdAvbdFiniteStiffnessRows += vbdScratch.avbdSpringRows.size();
@@ -4867,6 +4973,9 @@ void runVbdDeformableSolve(
     vbdScratch.avbdFrictionDescriptors.clear();
     vbdScratch.avbdFrictionRows.clear();
     vbdScratch.avbdFrictionInventory.records().clear();
+    vbdScratch.avbdSelfContactDescriptors.clear();
+    vbdScratch.avbdSelfContactRows.clear();
+    vbdScratch.avbdSelfContactInventory.records().clear();
     vbdScratch.avbdAttachmentDescriptors.clear();
     vbdScratch.avbdAttachmentRows.clear();
     vbdScratch.avbdAttachmentInventory.records().clear();

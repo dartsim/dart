@@ -131,6 +131,7 @@ void expectNoAvbdRows(const compute::DeformableSolverStats& stats)
 {
   EXPECT_EQ(stats.vbdBodyCount, 1u);
   EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdSelfContactNormalRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
@@ -595,6 +596,51 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
     const auto stats = run(makeChainOptions(8, 0.5), cfg);
     expectNoAvbdRows(stats);
   }
+}
+
+//==============================================================================
+// A supported serial mass-spring self-contact solve can now use AVBD hard
+// normal rows for lagged point-triangle / edge-edge candidates. The row counter
+// proves World generated the AVBD self-contact rows instead of falling back to
+// the existing VBD penalty-only self-contact path.
+TEST(VbdWorldSolver, AvbdSelfContactNormalRowsPushSupportedSurfaceApart)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  world.addDeformableBody("fold", makeNearSelfContactSpringBody());
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 8;
+  cfg.useAvbdSelfContactNormalRows = true;
+  cfg.avbdAlpha = 0.0;
+  cfg.avbdGamma = 1.0;
+  cfg.avbdMaxStiffness = 1.0e6;
+  enableVbdConfig(world, cfg);
+
+  const auto topMinZ = [&]() {
+    const auto body = world.getDeformableBody("fold");
+    double minimum = 1e9;
+    for (std::size_t i = 3; i < 6; ++i) {
+      minimum = std::min(minimum, body->getPosition(i).z());
+    }
+    return minimum;
+  };
+
+  const double before = topMinZ();
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_GT(stats.vbdAvbdSelfContactNormalRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFrictionTangentRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
+  EXPECT_GT(topMinZ(), before + 1e-4);
 }
 
 //==============================================================================

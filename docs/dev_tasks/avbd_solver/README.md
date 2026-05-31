@@ -80,22 +80,28 @@ Paper audit:
     two bounded tangent rows per active AVBD contact normal, with
     `VbdWorldSolver.AvbdContactNormalRowsIncludeFrictionTangentRows` and
     `VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody` coverage.
-  - First self-contact normal row kernel slice started:
+  - First self-contact normal row World slice started:
     `AvbdSelfContactNormalRow`, `avbdSelfContactNormalConstraintValue`,
     `addAvbdSelfContactNormal`, and `updateAvbdSelfContactNormalRow`. The
     kernel uses the IPC point-triangle / edge-edge barrier only to recover the
     local repulsion direction, then stamps an AVBD hard normal row with focused
     `VbdCombinedDescent.AvbdSelfContact*` coverage for direction, dual/stiffness
-    updates, edge-edge rows, and inactive-band no-ops. This is not wired into
-    World row generation yet.
+    updates, edge-edge rows, and inactive-band no-ops. Supported serial
+    mass-spring self-contact scenes can opt in through
+    `DeformableVbdConfig::useAvbdSelfContactNormalRows`; World generation keeps
+    one scalar row per point-triangle / edge-edge primitive, stamps each
+    incident local vertex through the lagged adjacency, reports
+    `vbdAvbdSelfContactNormalRows`, and has regression coverage in
+    `VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart`.
   - Fallback coverage now guards the unsupported World envelopes:
-    mixed spring-plus-tet topology, mass-spring self-contact,
-    finite-stiffness-only friction scenes, Chebyshev, Rayleigh damping,
-    parallel settings, and unsupported requested row families all keep using
-    the existing VBD path without reporting partial AVBD row counters.
+    mixed spring-plus-tet topology, mass-spring self-contact without the
+    self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
+    Rayleigh damping, parallel settings, and unsupported requested row families
+    all keep using the existing VBD path without reporting partial AVBD row
+    counters.
   - Still missing static/dynamic friction switching, full friction-cone
-    persistence, World self-contact row generation/wiring, full row-family
-    generation, parallel dual/stiffness updates, and GPU parity.
+    persistence, self-contact friction, full row-family generation, parallel
+    dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
@@ -135,10 +141,11 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Wire the AVBD self-contact normal row into row generation/inventory only for
-   a narrow supported envelope after preserving the current unsupported
-   mass-spring self-contact fallback behavior. Keep row state shared per
-   primitive and stamp each incident local vertex from the same scalar row.
+1. Start the next bounded AVBD contact/friction slice: static/dynamic friction
+   switching, fuller friction-cone persistence, or self-contact friction are the
+   preferred next row-family gaps now that static contact/friction,
+   attachments, finite-stiffness rows, and self-contact normals have narrow
+   World paths.
 2. In parallel planning, keep static/dynamic friction switching, full friction
    cones, rigid/articulated rows, GPU parity, demos, and benchmark packets as
    open AVBD parity gates rather than completion claims.
