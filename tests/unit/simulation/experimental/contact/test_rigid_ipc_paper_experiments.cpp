@@ -154,6 +154,61 @@ sx::CollisionShape makeEllipsoidMesh(
       std::move(vertices), std::move(triangles));
 }
 
+void appendBoxMesh(
+    std::vector<Eigen::Vector3d>& vertices,
+    std::vector<Eigen::Vector3i>& triangles,
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& halfExtents)
+{
+  const int base = static_cast<int>(vertices.size());
+  for (double dx : {-halfExtents.x(), halfExtents.x()}) {
+    for (double dy : {-halfExtents.y(), halfExtents.y()}) {
+      for (double dz : {-halfExtents.z(), halfExtents.z()}) {
+        vertices.push_back(center + Eigen::Vector3d(dx, dy, dz));
+      }
+    }
+  }
+
+  const std::vector<Eigen::Vector3i> boxTriangles = {
+      {0, 2, 3},
+      {0, 3, 1},
+      {4, 5, 7},
+      {4, 7, 6},
+      {0, 1, 5},
+      {0, 5, 4},
+      {2, 6, 7},
+      {2, 7, 3},
+      {0, 4, 6},
+      {0, 6, 2},
+      {1, 3, 7},
+      {1, 7, 5},
+  };
+  for (const Eigen::Vector3i& t : boxTriangles) {
+    triangles.emplace_back(base + t.x(), base + t.y(), base + t.z());
+  }
+}
+
+sx::CollisionShape makeWingNutLikeMesh()
+{
+  std::vector<Eigen::Vector3d> vertices;
+  std::vector<Eigen::Vector3i> triangles;
+  vertices.reserve(24);
+  triangles.reserve(36);
+
+  appendBoxMesh(
+      vertices, triangles, Eigen::Vector3d::Zero(), {0.18, 0.18, 0.12});
+  appendBoxMesh(
+      vertices,
+      triangles,
+      Eigen::Vector3d(-0.65, 0.0, 0.0),
+      {0.47, 0.14, 0.06});
+  appendBoxMesh(
+      vertices, triangles, Eigen::Vector3d(0.65, 0.0, 0.0), {0.47, 0.14, 0.06});
+
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 // Build one arch voussoir (wedge block) spanning the angular range
 // [theta0, theta1] in the world x-z plane, between inner and outer radii, with
 // half-width halfW along y. Writes the world centroid (the body position) into
@@ -800,6 +855,41 @@ TEST(RigidIpcPaperExperiments, TorqueFixtureRowAcceleratesFreeBody)
   EXPECT_TRUE(body.getAngularVelocity().allFinite());
   EXPECT_GT(body.getAngularVelocity().y(), 0.1);
   EXPECT_TRUE(body.getRotation().allFinite());
+}
+
+TEST(RigidIpcPaperExperiments, DzhanibekovWingNutFixtureRowAdvancesSafely)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  constexpr double deg = std::numbers::pi / 180.0;
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 1.0;
+  bodyOptions.position = Eigen::Vector3d::Zero();
+  bodyOptions.orientation
+      = Eigen::AngleAxisd(-3.0 * deg, Eigen::Vector3d::UnitX());
+  bodyOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 180.0);
+  bodyOptions.inertia = Eigen::Vector3d(1.0, 4.0, 6.0).asDiagonal();
+  auto body = world.addRigidBody("dzhanibekov_wing_nut", bodyOptions);
+  body.setCollisionShape(makeWingNutLikeMesh());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const Eigen::Matrix3d startRotation = body.getRotation();
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    EXPECT_FALSE(ipcStage.getLastStats().failed) << "step " << s;
+  }
+
+  EXPECT_TRUE(ipcStage.getLastStats().resultApplied);
+  EXPECT_NEAR(body.getTranslation().norm(), 0.0, 1e-12);
+  EXPECT_TRUE(body.getRotation().allFinite());
+  EXPECT_TRUE(body.getAngularVelocity().allFinite());
+  EXPECT_GT((body.getRotation() - startRotation).norm(), 1e-3);
 }
 
 // Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its

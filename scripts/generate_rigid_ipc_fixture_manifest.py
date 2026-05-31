@@ -216,8 +216,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         ),
         "notes_or_gap": (
             "Covered by DART-owned no-contact scaled-sphere runtime coverage "
-            "for the 3D rotation fixture mechanism. Dzhanibekov and torque "
-            "rotation rows remain planned until they have matching DART "
+            "for the 3D rotation fixture mechanism. Contacting 3D unit-test "
+            "fixture rows remain planned until they have matching DART "
             "runtime evidence."
         ),
     },
@@ -230,8 +230,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         ),
         "notes_or_gap": (
             "Covered by DART-owned no-contact major-axis ellipsoid runtime "
-            "coverage for the 3D rotation fixture mechanism. Dzhanibekov and "
-            "torque rotation rows remain planned until they have matching "
+            "coverage for the 3D rotation fixture mechanism. Contacting 3D "
+            "unit-test fixture rows remain planned until they have matching "
             "DART runtime evidence."
         ),
     },
@@ -245,7 +245,7 @@ IMPLEMENTED_FIXTURE_ROWS = {
         "notes_or_gap": (
             "Covered by DART-owned no-contact intermediate-axis ellipsoid "
             "runtime coverage for the 3D rotation fixture mechanism. "
-            "Dzhanibekov and torque rotation rows remain planned until they "
+            "Contacting 3D unit-test fixture rows remain planned until they "
             "have matching DART runtime evidence."
         ),
     },
@@ -258,8 +258,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         ),
         "notes_or_gap": (
             "Covered by DART-owned no-contact minor-axis ellipsoid runtime "
-            "coverage for the 3D rotation fixture mechanism. Dzhanibekov and "
-            "torque rotation rows remain planned until they have matching "
+            "coverage for the 3D rotation fixture mechanism. Contacting 3D "
+            "unit-test fixture rows remain planned until they have matching "
             "DART runtime evidence."
         ),
     },
@@ -272,8 +272,23 @@ IMPLEMENTED_FIXTURE_ROWS = {
         ),
         "notes_or_gap": (
             "Covered by DART-owned no-contact torque runtime coverage for the "
-            "3D rotation fixture mechanism. The Dzhanibekov wing-nut row "
-            "remains planned until it has matching geometry-specific DART "
+            "3D rotation fixture mechanism. Contacting 3D unit-test fixture "
+            "rows remain planned until they have matching DART runtime "
+            "evidence."
+        ),
+    },
+    "fixtures/3D/unit-tests/rotation/dzhanibekov.json": {
+        "test": "DzhanibekovWingNutFixtureRowAdvancesSafely",
+        "expected_invariant": (
+            "DART covers the audited 3D Dzhanibekov wing-nut row: a "
+            "wing-nut-like rigid mesh with zero gravity, an initial tilt, and "
+            "high angular velocity advances safely without contact, stays "
+            "finite, and does not translate."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact wing-nut runtime coverage for "
+            "the 3D rotation fixture mechanism. Contacting 3D unit-test "
+            "fixture rows remain planned until they have matching DART "
             "runtime evidence."
         ),
     },

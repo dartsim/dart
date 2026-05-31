@@ -435,7 +435,29 @@ def test_rigid_ipc_manifest_marks_torque_rotation_row_implemented(tmp_path):
     assert row["status"] == "implemented"
     assert "TorqueFixtureRowAcceleratesFreeBody" in row["dart_artifact"]
     assert "gains angular velocity" in row["expected_invariant"]
-    assert "Dzhanibekov wing-nut row remains planned" in row["notes_or_gap"]
+    assert "Contacting 3D unit-test fixture rows" in row["notes_or_gap"]
+
+
+def test_rigid_ipc_manifest_marks_dzhanibekov_rotation_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path / "fixtures" / "3D" / "unit-tests" / "rotation" / "dzhanibekov.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/unit-tests/rotation/dzhanibekov.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "DzhanibekovWingNutFixtureRowAdvancesSafely" in row["dart_artifact"]
+    assert "wing-nut-like rigid mesh" in row["expected_invariant"]
+    assert "wing-nut runtime coverage" in row["notes_or_gap"]
 
 
 def test_rigid_ipc_manifest_marks_below_threshold_paper_alias_implemented(

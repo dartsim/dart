@@ -200,8 +200,10 @@
         through the opt-in runtime stage. Free rotating cube and scaled-sphere /
         ellipsoid rows advance orientation under zero gravity, stay finite, and
         do not translate. A no-contact spinning cube over a near plane preserves
-        clearance while rotating. A no-contact torque row gains angular velocity
-        about the applied torque axis without translating.
+        clearance while rotating. A no-contact Dzhanibekov wing-nut-like row
+        advances safely from an initially tilted high-angular-velocity state. A
+        no-contact torque row gains angular velocity about the applied torque
+        axis without translating.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.
@@ -358,6 +360,9 @@
   - [x] Mark the audited 3D torque rotation unit-test fixture row
         (`fixtures/3D/unit-tests/rotation/torque-test.json`) as implemented
         after no-contact torque runtime coverage landed.
+  - [x] Mark the audited 3D Dzhanibekov rotation unit-test fixture row
+        (`fixtures/3D/unit-tests/rotation/dzhanibekov.json`) as implemented
+        after no-contact wing-nut runtime coverage landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 

@@ -1,5 +1,30 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: Dzhanibekov wing-nut fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned no-contact runtime coverage for
+  `fixtures/3D/unit-tests/rotation/dzhanibekov.json`: a wing-nut-like rigid
+  mesh with zero gravity, an initial tilt, and high angular velocity remains
+  finite, does not translate, and advances orientation in
+  `RigidIpcPaperExperiments.DzhanibekovWingNutFixtureRowAdvancesSafely`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. Contacting edge/vertex unit-test rows remain planned until they
+  have matching DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.DzhanibekovWingNutFixtureRowAdvancesSafely`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: spinning-cube-over-plane fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:
