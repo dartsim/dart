@@ -704,3 +704,136 @@ TEST(VbdCombinedDescent, SelfContactBlockMatchesBarrier)
   // The repulsion pushes the point up, away from the triangle below it.
   EXPECT_GT(pointBlock.force.z(), 0.0);
 }
+
+//==============================================================================
+// The AVBD self-contact normal row uses the IPC barrier only to recover the
+// primitive's local repulsion direction. The scalar row then applies AVBD's
+// hard-contact bounded force and a rank-1 positive-semidefinite block Hessian.
+TEST(VbdCombinedDescent, AvbdSelfContactNormalRowUsesBarrierDirection)
+{
+  namespace dc = dart::simulation::experimental::detail::deformable_contact;
+
+  const std::vector<Vec3> positions
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const double dHat = 0.02;
+
+  vbd::AvbdSelfContactNormalRow row;
+  row.nodes = {0, 1, 2, 3};
+  row.state.stiffness = 200.0;
+  row.squaredActivationDistance = dHat * dHat;
+
+  const dc::PrimitiveBarrierResult primitive = dc::pointTriangleBarrier(
+      positions[0], positions[1], positions[2], positions[3], dHat * dHat, 1.0);
+  ASSERT_TRUE(primitive.active);
+  const Vec3 expectedDirection
+      = (-primitive.gradient.segment<3>(0)).normalized();
+  const double constraintValue
+      = vbd::avbdSelfContactNormalConstraintValue(row, positions);
+  ASSERT_GT(constraintValue, 0.0);
+
+  vbd::VertexBlock block;
+  const double forceMagnitude = vbd::addAvbdSelfContactNormal(
+      block, positions, row, /*localVertex=*/0, /*alpha=*/0.0);
+
+  EXPECT_NEAR(forceMagnitude, row.state.stiffness * constraintValue, 1e-12);
+  EXPECT_NEAR(block.force.normalized().dot(expectedDirection), 1.0, 1e-12);
+  EXPECT_GT(block.force.z(), 0.0);
+  EXPECT_NEAR(
+      (block.hessian
+       - row.state.stiffness
+             * (expectedDirection * expectedDirection.transpose()))
+          .norm(),
+      0.0,
+      1e-12);
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdSelfContactNormalRowUpdatesDualState)
+{
+  const std::vector<Vec3> positions
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+
+  vbd::AvbdSelfContactNormalRow row;
+  row.nodes = {0, 1, 2, 3};
+  row.state.stiffness = 10.0;
+  row.state.lambda = 0.0;
+  row.squaredActivationDistance = 4e-4;
+
+  vbd::AvbdSelfContactNormalOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  const double constraintValue
+      = vbd::avbdSelfContactNormalConstraintValue(row, positions);
+  ASSERT_GT(constraintValue, 0.0);
+  const vbd::AvbdScalarRowState updated
+      = vbd::updateAvbdSelfContactNormalRow(row.state, positions, row, options);
+
+  EXPECT_NEAR(updated.lambda, row.state.stiffness * constraintValue, 1e-12);
+  EXPECT_NEAR(
+      updated.stiffness,
+      row.state.stiffness + options.beta * constraintValue,
+      1e-12);
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdSelfContactEdgeEdgeRowUsesBarrierDirection)
+{
+  namespace dc = dart::simulation::experimental::detail::deformable_contact;
+
+  const std::vector<Vec3> positions
+      = {Vec3(-0.5, 0.0, 0.01),
+         Vec3(0.5, 0.0, 0.01),
+         Vec3(0.0, -0.5, 0.0),
+         Vec3(0.0, 0.5, 0.0)};
+  const double dHat = 0.02;
+
+  vbd::AvbdSelfContactNormalRow row;
+  row.nodes = {0, 1, 2, 3};
+  row.isEdgeEdge = true;
+  row.state.stiffness = 300.0;
+  row.squaredActivationDistance = dHat * dHat;
+
+  const dc::PrimitiveBarrierResult primitive = dc::edgeEdgeBarrier(
+      positions[0], positions[1], positions[2], positions[3], dHat * dHat, 1.0);
+  ASSERT_TRUE(primitive.active);
+  const Vec3 expectedDirection
+      = (-primitive.gradient.segment<3>(0)).normalized();
+
+  vbd::VertexBlock block;
+  const double forceMagnitude = vbd::addAvbdSelfContactNormal(
+      block, positions, row, /*localVertex=*/0, /*alpha=*/0.0);
+
+  EXPECT_GT(forceMagnitude, 0.0);
+  EXPECT_NEAR(block.force.normalized().dot(expectedDirection), 1.0, 1e-12);
+  EXPECT_GT(block.force.z(), 0.0);
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdSelfContactNormalRowNoopsOutsideActivationBand)
+{
+  const std::vector<Vec3> positions
+      = {Vec3(0.3, 0.3, 0.05),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+
+  vbd::AvbdSelfContactNormalRow row;
+  row.nodes = {0, 1, 2, 3};
+  row.state.stiffness = 200.0;
+  row.squaredActivationDistance = 4e-4;
+
+  vbd::VertexBlock block;
+  const double forceMagnitude = vbd::addAvbdSelfContactNormal(
+      block, positions, row, /*localVertex=*/0, /*alpha=*/0.0);
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 0.0);
+  EXPECT_DOUBLE_EQ(block.force.norm(), 0.0);
+  EXPECT_DOUBLE_EQ(block.hessian.norm(), 0.0);
+}

@@ -76,18 +76,22 @@ finite-stiffness ramping. Follow-on local slices add deterministic scalar-row
 keys/inventory for warm-started `lambda`/`k` state, standalone CPU
 half-space contact-normal, hard point-attachment, and finite-stiffness spring
 row drivers, plus a standalone finite-stiffness tetrahedral material row
-driver. The supported mass-spring World envelope carries contact-normal,
-friction-tangent, attachment, and spring finite-stiffness families in one serial
-AVBD row solve. The supported frictionless pure-tetrahedral World envelope now
-carries finite-stiffness material rows with a dimensionless Lamé multiplier and
-separate tet-row diagnostics, while still using the existing lagged VBD
-self-contact penalty rather than AVBD self-contact rows. Explicit fallback
-coverage keeps unsupported mixed spring-plus-tet, mass-spring self-contact,
+driver, a bounded half-space friction-tangent row primitive, and a local
+self-contact normal row kernel for point-triangle / edge-edge primitive
+directions and AVBD hard-row stamping. The supported mass-spring World envelope
+carries contact-normal, friction-tangent, attachment, and spring
+finite-stiffness families in one serial AVBD row solve. The supported
+frictionless pure-tetrahedral World envelope now carries finite-stiffness
+material rows with a dimensionless Lamé multiplier and separate tet-row
+diagnostics, while still using the existing lagged VBD self-contact penalty
+rather than World-generated AVBD self-contact rows. Explicit fallback coverage
+keeps unsupported mixed spring-plus-tet, mass-spring self-contact,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; static/dynamic friction
-switching, hard-contact/friction completeness, AVBD self-contact rows,
-rigid/soft coupling, GPU parity, demos, and benchmark packets remain open.
+switching, hard-contact/friction completeness, World AVBD self-contact row
+generation, rigid/soft coupling, GPU parity, demos, and benchmark packets remain
+open.
 
 ## Relationship To PLAN-081
 

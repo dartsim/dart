@@ -164,6 +164,8 @@ TEST(AvbdConstraint, RowInventoryKeepsDescriptorOrderAndSeparatesAxes)
 {
   vbd::AvbdScalarRowDescriptor normal
       = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 9, 0);
+  vbd::AvbdScalarRowDescriptor selfContact
+      = makeRow(vbd::AvbdScalarRowRole::SelfContactNormal, 9, 0);
   vbd::AvbdScalarRowDescriptor tangent
       = makeRow(vbd::AvbdScalarRowRole::FrictionTangent, 9, 0);
   vbd::AvbdScalarRowDescriptor secondTangent
@@ -171,13 +173,15 @@ TEST(AvbdConstraint, RowInventoryKeepsDescriptorOrderAndSeparatesAxes)
 
   vbd::AvbdScalarRowInventory inventory;
   const std::vector<vbd::AvbdScalarRowDescriptor> descriptors
-      = {secondTangent, normal, tangent};
+      = {secondTangent, normal, selfContact, tangent};
   inventory.syncActiveRows(descriptors, {});
 
   ASSERT_EQ(inventory.size(), descriptors.size());
   EXPECT_EQ(inventory[0].descriptor.key, secondTangent.key);
   EXPECT_EQ(inventory[1].descriptor.key, normal.key);
-  EXPECT_EQ(inventory[2].descriptor.key, tangent.key);
+  EXPECT_EQ(inventory[2].descriptor.key, selfContact.key);
+  EXPECT_EQ(inventory[3].descriptor.key, tangent.key);
+  EXPECT_FALSE(normal.key == selfContact.key);
   EXPECT_FALSE(normal.key == tangent.key);
   EXPECT_FALSE(tangent.key == secondTangent.key);
 }
