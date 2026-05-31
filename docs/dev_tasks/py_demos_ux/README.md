@@ -95,6 +95,9 @@ navigation, and a path for scene-specific controls.
 - Add Control & Modern panels to `legged_balance`, `arm_push_box`,
   `cartpole_gym_env`, `cartpole_mpc`, and `sensor_descriptors`, exposing
   controller state, command signals, sensor-surface status, and live plots.
+- Add legacy Control & IK panels to `operational_space_control`,
+  `hybrid_dynamics`, `biped_stand`, and `vehicle`, exposing controller state,
+  tracking/pose/command metrics, and live plots.
 - Move the Control & Modern whole-step controllers that need the interactive
   viewer to `pre_step`, keeping `SceneSetup.step` documented as a headless
   runner escape hatch.

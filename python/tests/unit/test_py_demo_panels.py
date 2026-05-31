@@ -18,8 +18,10 @@ from examples.demos.scenes import (
     diff_throw_to_target,
     experimental_rigid_body_gui,
     arm_push_box,
+    biped_stand,
     cartpole_gym_env,
     cartpole_mpc,
+    hybrid_dynamics,
     ipc_deformable_capsule_rod,
     ipc_deformable_cg_contact,
     ipc_deformable_cg_solver,
@@ -42,6 +44,7 @@ from examples.demos.scenes import (
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
     legged_balance,
+    operational_space_control,
     sensor_descriptors,
     sx_articulated,
     sx_contact,
@@ -58,6 +61,7 @@ from examples.demos.scenes import (
     vbd_obstacle_drape,
     vbd_self_fold,
     vbd_tilted_strand,
+    vehicle,
 )
 
 
@@ -411,6 +415,28 @@ def test_control_modern_scenes_expose_interactive_panels() -> None:
         if scene_module is not sensor_descriptors:
             assert setup.pre_step is not None
             assert setup.step is None
+
+
+def test_legacy_control_scenes_expose_controller_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (
+            operational_space_control,
+            "Operational Space",
+            "plot:Tracking error:",
+        ),
+        (hybrid_dynamics, "Hybrid Dynamics", "plot:Arm command:"),
+        (biped_stand, "Biped Stand", "plot:Pose error:"),
+        (vehicle, "Vehicle", "plot:Steering angle:"),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert setup.pre_step is not None
+        assert any(event.startswith(expected_plot) for event in builder.events)
 
 
 @pytest.mark.skipif(
