@@ -400,6 +400,7 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
         "ipc_deformable_fem_buckle",
         "ipc_deformable_fem_msh",
         "ipc_deformable_cg_solver",
+        "ipc_deformable_cg_contact",
         "ipc_deformable_obj_cloth",
         "ipc_deformable_capsule_rod",
         "ipc_deformable_rod_friction",

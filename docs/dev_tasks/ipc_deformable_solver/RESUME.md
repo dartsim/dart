@@ -33,17 +33,21 @@ AI attribution). Net status by milestone:
   while tangential sliding + friction survive (the CCD limiter no longer scales the
   whole step). The "right" CCD fix (limit only the normal approach, keep fast-motion
   CCD safety) remains a documented higher-risk follow-up, cf. #2732.
-- **M7 scale + performance — first increment landing.** Opt-in **iterative
-  (Jacobi-preconditioned conjugate-gradient) projected-Newton linear solve**
-  (`DeformableMaterialProperties.useIterativeLinearSolver`): reuses the sparse SPD
-  Hessian assembly but solves with CG instead of `SimplicialLDLT`, so it never
-  factorizes (memory ~O(nnz), gentler scaling than direct fill-in). Meshes above
-  the direct node cap (20k) take CG automatically (ceiling raised to 1M nodes)
-  instead of degrading to gradient descent; non-convergence falls back to steepest
-  descent like the direct path. A CUDA backend exists for PSD projection + VBD
-  (another track, #2781); on-device GPU assembly/solve, a truly matrix-free
-  Hessian-vector CG, a stronger preconditioner (IC/AMG) for stiff barrier Hessians,
-  and the 688K-node Fig-22 run + Table-1 reference comparison remain.
+- **M7 scale + performance — two increments landed.** (1) Opt-in **iterative
+  conjugate-gradient projected-Newton linear solve**
+  (`DeformableMaterialProperties.useIterativeLinearSolver`, #2810): reuses the
+  sparse SPD Hessian assembly but solves with CG instead of `SimplicialLDLT`, so it
+  never factorizes (memory ~O(nnz), gentler scaling than direct fill-in). Meshes
+  above the direct node cap (20k) take CG automatically (ceiling raised to 1M
+  nodes) instead of degrading to gradient descent; non-convergence falls back to
+  steepest descent like the direct path. (2) **Incomplete-Cholesky preconditioner**
+  (this PR): upgraded from diagonal (Jacobi); on stiff barrier contact it collapses
+  the CG iteration count so the iterative path carries the solve within the cap
+  (fallbacks drop below the direct solver's, fewer Newton iters/step). A CUDA
+  backend exists for PSD projection + VBD (another track, #2781); on-device GPU
+  assembly/solve, a truly matrix-free Hessian-vector CG, an AMG preconditioner for
+  the largest systems, and the 688K-node Fig-22 run + Table-1 reference comparison
+  remain.
 
 Session PR train (all merged to `main`): #2787 FEM keystone, #2788 FEM twist,
 #2789 FEM+ground, #2790 sphere barrier Hessian, #2791 box barrier, #2792/#2793
@@ -51,27 +55,24 @@ GMSH 2.x/4.x, #2794 FCR material, #2795 FCR benchmark+SVD-dedup, #2796 exact FCR
 Hessian, #2797 solver diagnostics, #2798 FEM self-contact showcase, #2799
 benchmark Newton-iters, #2800 `.obj` importer, #2802 `.seg`/`.pt` importers, #2804
 capsule obstacle, #2805 adaptive stiffness, #2809 barrier-only obstacle (M5 done),
-and the iterative-CG solve (this PR, M7 increment). The IPC Deformable (sx)
-py-demos category now has ~20 scenes (latest: `ipc_deformable_cg_solver`).
+#2810 iterative-CG solve (M7 increment 1), and the incomplete-Cholesky
+preconditioner (this PR, M7 increment 2). The IPC Deformable (sx) py-demos category
+now has ~21 scenes (latest: `ipc_deformable_cg_solver`, `ipc_deformable_cg_contact`).
 
 ### M7 Next (resume here)
 
 M1–M6 + M5 are all complete; **M7 (scale + performance) is the only remaining
-milestone.** The opt-in iterative CG solve (this PR) is its first increment. The
-remaining M7 work, roughly in increasing-risk order:
+milestone.** Two increments landed (iterative CG solve #2810; incomplete-Cholesky
+preconditioner, this PR). The remaining M7 work, roughly in increasing-risk order:
 
-1. **Stronger preconditioner.** The current CG uses a Jacobi (diagonal)
-   preconditioner; stiff barrier-contact Hessians are ill-conditioned and can hit
-   the CG iteration cap → fall back to steepest descent (the direct solver falls
-   back at a similar rate on the same transients, so CG is not _worse_, but a
-   poorer convergence ceiling). An incomplete-Cholesky / AMG preconditioner would
-   let CG converge on stiff contact without falling back. CG params live in
-   `computeProjectedNewtonDirection` in `compute/world_step_stage.cpp`
-   (tolerance `1e-8`, `maxIterations = 2*dim`, `Eigen::Lower`).
-2. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
+1. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
    (triplets → `SparseMatrix`) before the CG solve; a matrix-free Hessian-vector
    product (per-element block × vector, scattered) would drop the assembly memory
-   for very large meshes (Fig 22, 688K nodes).
+   for very large meshes (Fig 22, 688K nodes). CG params live in
+   `computeProjectedNewtonDirection` in `compute/world_step_stage.cpp` (tolerance
+   `1e-8`, `maxIterations = 2*dim`, `Eigen::Lower`, `Eigen::IncompleteCholesky`).
+2. **AMG / multigrid preconditioner** for the largest systems (beyond what
+   incomplete-Cholesky handles).
 3. **GPU assembly + solve.** Extend the existing CUDA PSD-projection backend
    (#2781) to the full deformable assembly + a GPU CG, beyond the current PSD
    offload.

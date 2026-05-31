@@ -3568,6 +3568,93 @@ TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
   }
 }
 
+//==============================================================================
+// Stiff barrier contact produces an ill-conditioned Hessian; a weak diagonal
+// (Jacobi) CG preconditioner stalls there and forces the iterative solver to
+// fall back to steepest descent. The incomplete-Cholesky preconditioner
+// collapses the CG iteration count so the iterative path carries the solve.
+// This drops a stiff FEM cube onto a ground barrier with the iterative solver
+// and checks it settles intersection-free through the CG path (never
+// factorizing), that accepted CG steps dominate the fallbacks (the
+// preconditioner is strong enough that CG -- not steepest descent -- does the
+// work), and that it reaches the same equilibrium as the direct solver on the
+// identical stiff scene.
+TEST(DeformableBody, IterativeSolverConvergesOnStiffGroundContact)
+{
+  struct StiffRun
+  {
+    std::vector<Eigen::Vector3d> positions;
+    std::size_t cgSolves = 0;
+    std::size_t numericFactorizations = 0;
+    std::size_t fallbacks = 0;
+    double minZ = std::numeric_limits<double>::infinity();
+  };
+
+  const auto runStiffCube = [](bool iterative) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+    ground.setDeformableGroundBarrier(true); // top face at z = 0
+
+    // A stiffer cube (E = 1e6) than the soft-contact equivalence test, so the
+    // contact Hessian is ill-conditioned enough to exercise the preconditioner.
+    auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.0e6);
+    options.material.useIterativeLinearSolver = iterative;
+    auto body = world.addDeformableBody("stiff_cube", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    StiffRun run;
+    for (int i = 0; i < 250; ++i) {
+      world.step(executor, pipeline);
+      const auto& stats = stage.getLastStats();
+      run.cgSolves += stats.projectedNewtonIterativeSolves;
+      run.numericFactorizations += stats.projectedNewtonNumericFactorizations;
+      run.fallbacks += stats.projectedNewtonFallbacks;
+    }
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      run.positions.push_back(body.getPosition(i));
+      run.minZ = std::min(run.minZ, body.getPosition(i).z());
+    }
+    return run;
+  };
+
+  const StiffRun direct = runStiffCube(false);
+  const StiffRun iterative = runStiffCube(true);
+
+  // The iterative run took the CG path and never factorized.
+  EXPECT_GT(iterative.cgSolves, 0u);
+  EXPECT_EQ(iterative.numericFactorizations, 0u);
+
+  // Both settle intersection-free above the ground top (z = 0).
+  EXPECT_GE(direct.minZ, -1e-3);
+  EXPECT_GE(iterative.minZ, -1e-3);
+
+  // The incomplete-Cholesky CG carries the solve on this stiff contact:
+  // accepted CG steps strictly dominate the fallbacks. A diagonal
+  // preconditioner would stall on the ill-conditioned contact Hessian and let
+  // fallbacks pile up.
+  EXPECT_GT(iterative.cgSolves, iterative.fallbacks);
+
+  // Same physics: the iterative solver reaches the same stiff-contact
+  // equilibrium as the direct solver.
+  ASSERT_EQ(direct.positions.size(), iterative.positions.size());
+  for (std::size_t i = 0; i < direct.positions.size(); ++i) {
+    ASSERT_TRUE(iterative.positions[i].allFinite());
+    expectVectorNear(iterative.positions[i], direct.positions[i], 2e-3);
+  }
+}
+
 namespace {
 struct GroundSlideResult
 {
