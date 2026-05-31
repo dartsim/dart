@@ -33,6 +33,8 @@
 #include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/experimental/io/detail/rigid_ipc_fixture.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -58,6 +60,7 @@
 
 namespace {
 
+namespace sx = dart::simulation::experimental;
 namespace expio = dart::simulation::experimental::io::detail;
 namespace expdetail = dart::simulation::experimental::detail;
 
@@ -735,6 +738,107 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayUsesDefaultRigidBodyStep)
   EXPECT_TRUE(body->getTranslation().isApprox(expectedPosition));
   EXPECT_DOUBLE_EQ(world.getTime(), dt);
   EXPECT_EQ(world.getFrame(), 1u);
+}
+
+TEST(RigidIpcFixtureReplay, RuntimeReplayCarriesFrictionIntoRigidIpcStage)
+{
+  struct SlideOutcome
+  {
+    sx::compute::RigidIpcSolverStats stats;
+    double x = 0.0;
+    double z = 0.0;
+    double velocityX = 0.0;
+  };
+
+  const auto runSlide = [](const double friction) -> SlideOutcome {
+    constexpr double initialHeight = 0.005;
+    constexpr double tangentialSpeed = 1.0;
+
+    std::ostringstream source;
+    source << R"json(
+{
+  "scene_type": "distance_barrier_rb_problem",
+  "timestep": 0.05,
+  "rigid_body_problem": {
+    "coefficient_friction": )json"
+           << friction << R"json(,
+    "gravity": [0.0, 0.0, 0.0],
+    "rigid_bodies": [{
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "is_dof_fixed": true
+    }, {
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "position": [0.0, 0.0, )json"
+           << initialHeight << R"json(],
+      "linear_velocity": [)json"
+           << tangentialSpeed << R"json(, 0.0, 0.0]
+    }]
+  }
+}
+)json";
+
+    const std::string fixtureSource = source.str();
+    const expio::RigidIpcFixture fixture = loadFixture(fixtureSource);
+    if (fixture.hasErrors()) {
+      ADD_FAILURE() << "fixture failed to parse";
+      return {};
+    }
+
+    sx::World world;
+    const expio::RigidIpcReplayState state
+        = expio::populateRigidIpcReplayWorld(world, fixture);
+    if (state.bodies.size() != 2u) {
+      ADD_FAILURE() << "expected two replay bodies";
+      return {};
+    }
+    for (const expio::RigidIpcReplayBodyState& bodyState : state.bodies) {
+      EXPECT_TRUE(bodyState.collisionMeshLoaded);
+      EXPECT_EQ(bodyState.collisionMeshTriangleCount, 1u);
+      const auto body = world.getRigidBody(bodyState.bodyName);
+      if (!body.has_value()) {
+        ADD_FAILURE() << "missing replay body " << bodyState.bodyName;
+        return {};
+      }
+      EXPECT_DOUBLE_EQ(body->getFriction(), friction);
+    }
+
+    const auto body = world.getRigidBody(state.bodies[1].bodyName);
+    if (!body.has_value()) {
+      ADD_FAILURE() << "missing dynamic replay body";
+      return {};
+    }
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidIpcContactStage ipcStage;
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    world.step(executor, pipeline);
+
+    return SlideOutcome{
+        ipcStage.getLastStats(),
+        body->getTranslation().x(),
+        body->getTranslation().z(),
+        body->getLinearVelocity().x()};
+  };
+
+  const SlideOutcome frictionless = runSlide(0.0);
+  const SlideOutcome frictional = runSlide(1.0);
+
+  EXPECT_TRUE(frictionless.stats.converged);
+  EXPECT_TRUE(frictional.stats.converged);
+  EXPECT_GT(frictionless.z, 0.005);
+  EXPECT_GT(frictional.z, 0.005);
+
+  EXPECT_EQ(frictionless.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(frictionless.stats.frictionIterations, 0u);
+  EXPECT_GT(frictional.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(frictional.stats.frictionIterations, 1u);
+
+  EXPECT_GT(frictionless.x, 0.0);
+  EXPECT_GT(frictional.x, 0.0);
+  EXPECT_LT(frictional.x, frictionless.x);
+  EXPECT_GT(frictional.velocityX, 0.0);
+  EXPECT_LT(frictional.velocityX, frictionless.velocityX);
 }
 
 TEST(RigidIpcFixtureReplay, ReplaysComparisonScriptMshScene)

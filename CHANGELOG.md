@@ -929,6 +929,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added a runtime regression proving lagged rigid IPC friction observably
     brakes a tangential slide at an activated mesh contact relative to the
     frictionless solve, and reports active friction constraints/passes.
+  - Added a rigid IPC fixture replay regression proving parsed fixture friction
+    metadata carries into the opt-in runtime IPC stage: identical replayed
+    inline-polygon scenes now differentiate frictionless and frictional slide
+    while reporting active friction diagnostics.
   - Added the first rigid IPC performance benchmark (`bm_rigid_ipc_solver`)
     covering the per-primitive reduced barrier kernels, scene-level assembly,
     the projected-Newton solve, and the conservative CCD line search, with a

@@ -31,7 +31,10 @@
           experimental `World` through the existing rigid-body integration
           pipeline, proving fixture replay remains a population bridge and does
           not select an IPC solver.
-    - [ ] Add a runtime fixture example and cover remaining comparison
+    - [x] Add the first opt-in IPC runtime replay regression that steps a
+          fixture-populated `World` through `RigidIpcContactStage` and proves
+          replayed friction metadata affects lagged rigid IPC contact behavior.
+    - [ ] Add a reusable runtime fixture example and cover remaining comparison
           script commands and mesh formats beyond OBJ/OFF/MSH/STL/inline
           polygons.
 - [ ] Phase 2: rigid curved-trajectory CCD and minimum-separation tests.
@@ -182,8 +185,13 @@
         through the opt-in stage. A differential `World` regression brakes a
         tangential slide at an activated mesh contact relative to the
         frictionless solve, and reports active friction constraints/passes.
-  - [ ] Extend friction into broader runtime fixture behavior, corpus coverage,
-        and production convergence criteria.
+  - [x] Phase 4e: prove replayed fixture friction metadata participates in
+        opt-in rigid IPC runtime behavior. A differential fixture-replay
+        regression uses identical inline polygon scenes with zero and positive
+        fixture friction, then verifies the frictional IPC step brakes
+        tangential slide and reports active friction passes.
+  - [ ] Extend friction into broader corpus coverage and production convergence
+        criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
       experimental `World` without exposing solver registries.
 - [ ] Phase 5b: extend solver selection toward persisted scene policy,

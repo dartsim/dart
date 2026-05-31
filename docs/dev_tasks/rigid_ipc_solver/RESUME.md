@@ -1,5 +1,29 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: fixture replay rigid IPC friction coverage
+
+Delivered a bounded fixture/runtime bridge slice for Phases 1 and 4:
+
+- Added a fixture replay regression that parses two equivalent inline-polygon
+  scenes with zero vs positive `coefficient_friction`, populates experimental
+  `World` instances through `populateRigidIpcReplayWorld(...)`, and steps them
+  with the opt-in `RigidIpcContactStage`.
+- The regression verifies replayed friction metadata remains attached to the
+  created bodies, the frictionless scene reports no active friction constraints,
+  and the frictional scene reports active friction passes while braking
+  tangential slide without reversing it.
+- Updated the rigid IPC dev-task checklist and changelog to record this as
+  fixture replay IPC runtime coverage. The broader rigid IPC task remains open.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCarriesFrictionIntoRigidIpcStage'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: current-main merge + sufficient-decrease line search
 
 Branch `feature/rigid-ipc-paper-parity` was reconciled with current
