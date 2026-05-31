@@ -72,7 +72,11 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      applied via Link::applyForce; serialized, round-trips to zero)
 //   6: World differentiable flag serialized after the deformable-body counter
 //   7: CollisionShape mesh vertices and triangle indices serialized
-constexpr std::uint32_t kBinaryFormatVersion = 7;
+//   8: VariationalContact (variational-integrator ground-contact config, incl.
+//      the augmented-Lagrangian dual-update cadence) and its
+//      VariationalContactDualState (per-point duals + cadence counter)
+//      registered as serializable components
+constexpr std::uint32_t kBinaryFormatVersion = 8;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

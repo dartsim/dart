@@ -83,6 +83,19 @@ inline constexpr double kPi = 3.14159265358979323846;
 }
 
 //==============================================================================
+/// Right-trivialized inverse `dexp^{-1}_{V,right}` (6x6) of the exponential
+/// map: the matrix `L` with `d/ds log(T exp(s xi))|_0 = L xi` for `T = exp(V)`.
+/// By the Barfoot-Furgale identity this is the left-Jacobian inverse evaluated
+/// at
+/// `-V`. The exact recursive-Jacobian Newton step uses it to linearize the
+/// average velocity `Vbar = log(dT)/dt` with respect to a body-frame
+/// perturbation of the relative transform `dT`.
+[[nodiscard]] inline Matrix6 dexpInvMatrixRight(const Vector6& v)
+{
+  return ::dart::math::SE3<double>::RightJacobianInverse(v);
+}
+
+//==============================================================================
 /// SE(3) exponential map exp(xi) for a twist xi = [angular; linear].
 [[nodiscard]] inline Eigen::Isometry3d se3Exp(const Vector6& xi)
 {

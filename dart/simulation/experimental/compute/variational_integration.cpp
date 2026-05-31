@@ -17,7 +17,10 @@
 #include "dart/simulation/experimental/comps/link.hpp"
 #include "dart/simulation/experimental/comps/loop_closure.hpp"
 #include "dart/simulation/experimental/comps/multibody.hpp"
+#include "dart/simulation/experimental/comps/variational_contact.hpp"
+#include "dart/simulation/experimental/comps/variational_contact_dual_state.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
+#include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -27,6 +30,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -38,23 +42,20 @@ namespace dart::simulation::experimental::compute {
 namespace {
 
 namespace dm = detail::variational;
-using dm::Matrix6;
-using dm::Vector6;
-using Subspace = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-// NOTE: skew/adjoint/spatialInertia and the joint relative-transform/subspace
-// helpers below duplicate the Phase-A1 subset of
-// compute/multibody_dynamics.cpp. They are kept local to avoid refactoring that
-// working, tested translation unit mid-implementation; a follow-up should hoist
-// the shared spatial-algebra and kinematic-tree machinery into an internal
-// header used by both stages.
-
-Eigen::Matrix3d skew(const Eigen::Vector3d& v)
-{
-  Eigen::Matrix3d m;
-  m << 0.0, -v.z(), v.y(), v.z(), 0.0, -v.x(), -v.y(), v.x(), 0.0;
-  return m;
-}
+// The shared 6D spatial-algebra primitives (skew/adjoint/spatialInertia) and
+// the Vector6/Matrix6/Subspace aliases live in
+// detail/multibody_spatial_algebra.hpp, shared with
+// compute/multibody_dynamics.cpp. The VI-specific discrete-mechanics kernels
+// (dexpInv et al.) stay in detail/variational/discrete_mechanics_math.hpp (the
+// `dm` alias above). The joint relative-transform/subspace and retract helpers
+// below are VI-specific (Phase-A1 joint subset) and stay local.
+using detail::adjoint;
+using detail::Matrix6;
+using detail::skew;
+using detail::spatialInertia;
+using detail::Subspace;
+using detail::Vector6;
 
 // SO(3) exponential / logarithm on rotation vectors (axis * angle).
 Eigen::Matrix3d rotationExp3(const Eigen::Vector3d& v)
@@ -70,30 +71,6 @@ Eigen::Vector3d rotationLog3(const Eigen::Matrix3d& rotation)
 {
   const Eigen::AngleAxisd angleAxis(rotation);
   return angleAxis.angle() * angleAxis.axis();
-}
-
-// Spatial motion adjoint Ad_T for the [angular; linear] convention.
-Matrix6 adjoint(const Eigen::Isometry3d& transform)
-{
-  const Eigen::Matrix3d rotation = transform.linear();
-  const Eigen::Vector3d translation = transform.translation();
-  Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = rotation;
-  result.bottomLeftCorner<3, 3>() = skew(translation) * rotation;
-  result.bottomRightCorner<3, 3>() = rotation;
-  return result;
-}
-
-// Spatial inertia about the link frame origin, [angular; linear] convention.
-Matrix6 spatialInertia(const comps::MassProperties& mass)
-{
-  const Eigen::Matrix3d comCross = skew(mass.localCenterOfMass);
-  Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = mass.inertia - mass.mass * comCross * comCross;
-  result.topRightCorner<3, 3>() = mass.mass * comCross;
-  result.bottomLeftCorner<3, 3>() = -mass.mass * comCross;
-  result.bottomRightCorner<3, 3>() = mass.mass * Eigen::Matrix3d::Identity();
-  return result;
 }
 
 // Relative transform produced by a joint at the given generalized position
@@ -242,6 +219,8 @@ struct VarLink
   std::vector<int> children;
   // Per-residual-evaluation scratch.
   Eigen::Isometry3d deltaTransform = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d nextRelative
+      = Eigen::Isometry3d::Identity(); // T_{lambda(i),i} at q^{k+1}
   Vector6 averageVelocity = Vector6::Zero();
   Vector6 momentum = Vector6::Zero();
 };
@@ -399,12 +378,11 @@ Eigen::VectorXd computeResidual(
     const Eigen::VectorXd seg = nextPosition.segment(
         static_cast<Eigen::Index>(link.dofOffset),
         static_cast<Eigen::Index>(link.dof));
-    const Eigen::Isometry3d nextRelative
-        = jointMotionTransform(joint, seg) * link.offset;
+    link.nextRelative = jointMotionTransform(joint, seg) * link.offset;
     link.deltaTransform
         = link.currentRelative.inverse()
           * tree.links[static_cast<std::size_t>(link.parent)].deltaTransform
-          * nextRelative;
+          * link.nextRelative;
     link.averageVelocity = dm::se3Log(link.deltaTransform) / timeStep;
   }
 
@@ -520,6 +498,167 @@ Eigen::VectorXd applyArticulatedInverseMass(
     }
   }
   return qddot;
+}
+
+// O(n) exact recursive-Jacobian (Newton) step: solve J(q^k+1) * dq = b for the
+// forced discrete Euler-Lagrange Jacobian J = d(residual)/d(q^{k+1}), via a
+// non-symmetric articulated-body recursion (a backward articulated-operator
+// sweep then a forward delta-twist sweep, the exact analog of
+// `applyArticulatedInverseMass`). `b` is the residual; the returned dq is the
+// Newton increment to *subtract* from the current iterate.
+//
+// Why this is exact and O(n): with the residual built by `computeResidual`, the
+// only dependence on q^{k+1} flows through the per-link average velocity
+// `Vbar_i = log(dT_i)/dt`; the force-transport operators (Ad of the q^k
+// relative transforms), the previous-step momentum-transport term, and the
+// gravity wrench are all constants w.r.t. q^{k+1}. Linearizing about the
+// current iterate:
+//   forward (motion):  xi_i = Ad(nextRel_i^{-1}) xi_parent + S_i dq_i,
+//                      dVbar_i = (1/dt) Jr_i xi_i,   Jr_i = dexp^{-1}_right(dt
+//                      Vbar_i)
+//   backward (force):  dP_i  = D_i dVbar_i + sum_c Ad(relK_c^{-1})^T dP_c,
+//   joint residual:    df_a  = S_a^T dP_a,
+// where `xi_i` is the body-frame perturbation of the relative transform dT_i,
+// `nextRel_i` is the relative transform at q^{k+1} (the motion transport, NOT
+// the q^k relative), `relK_c` is the q^k relative (the constant force
+// transport), and `D_i = dmu_i/dVbar_i` is the exact sensitivity of the
+// discrete-momentum map `mu(V) = dexpInvTranspose(dt V, G V)`. Defining the
+// per-link effective operator K_i = (1/dt) D_i Jr_i (maps a body-frame motion
+// perturbation to a body-frame force), the linear map dq -> df is articulated
+// exactly like the mass matrix, with G_i replaced by the (generally
+// non-symmetric) K_i and the motion/force transports kept distinct. The
+// articulated factorization below therefore solves it in O(n) without any dense
+// factorization, and reduces to `applyArticulatedInverseMass` (up to the dt
+// scaling) in the small-step limit Jr_i -> I, D_i -> G_i (dt Vbar -> 0).
+// Keeping D_i exact (rather than its leading dexp^{-1}(dt Vbar)^T G term)
+// matters on stiff mid-rollout configurations: with the leading-term-only D the
+// full Newton step overshoots there and the damped iteration stalls, whereas
+// the exact D makes alpha = 1 accepted with quadratic convergence regardless of
+// chain length.
+//
+// Scope: Euclidean joints (revolute/prismatic, single-DOF here). The motion
+// subspace S_i is the link-frame joint subspace (a 6-vector for A1 joints).
+Eigen::VectorXd applyExactNewtonStep(
+    const VarTree& tree, const Eigen::VectorXd& b, double timeStep)
+{
+  const std::size_t n = tree.links.size();
+  std::vector<Matrix6> articulated(n, Matrix6::Zero());
+  std::vector<Vector6> bias(n, Vector6::Zero());
+  std::vector<Matrix6> motionToChild(n, Matrix6::Identity()); // A_i (motion)
+  std::vector<Eigen::MatrixXd> forceProjector(
+      n); // U_i = Pi_i S_i      (6 x dof)
+  std::vector<Eigen::MatrixXd> motionProjector(
+      n); // M_i = Pi_i^T S_i (so M_i^T = S_i^T Pi_i)            (6 x dof)
+  std::vector<Eigen::MatrixXd> dInverse(n); // (S_i^T Pi_i S_i)^{-1}
+  std::vector<Eigen::VectorXd> uForce(n);   // b_i - S_i^T bias_i  (dof)
+
+  // Per-link effective operator K_i = (1/dt) D_i Jr_i, where
+  //   D_i = dmu_i/dVbar_i is the *exact* sensitivity of the discrete momentum
+  //         mu(V) = dexpInvTranspose(dt V, G V) (so the full step is a true
+  //         Newton step, not just the leading dexpInv^T G term -- the dropped
+  //         second-order curvature is what made the undamped step overshoot and
+  //         stall on stiff mid-rollout configurations), and
+  //   Jr_i  = dexp^{-1}_right(dt Vbar_i) is the velocity sensitivity.
+  // D_i is formed by a 6-column central difference of the exact momentum map --
+  // an O(1)-per-link analytic-operator derivative consistent with the
+  // residual's own `dexpInvTranspose`, so the whole sweep stays O(n).
+  for (std::size_t i = 0; i < n; ++i) {
+    const VarLink& link = tree.links[i];
+    const Vector6 velocity = link.averageVelocity;
+    const Matrix6& g = link.inertia;
+    Matrix6 momentumSensitivity;
+    constexpr double eps = 1e-7;
+    for (int c = 0; c < 6; ++c) {
+      Vector6 plus = velocity;
+      Vector6 minus = velocity;
+      plus[c] += eps;
+      minus[c] -= eps;
+      momentumSensitivity.col(c)
+          = (dm::dexpInvTranspose(timeStep * plus, g * plus)
+             - dm::dexpInvTranspose(timeStep * minus, g * minus))
+            / (2.0 * eps);
+    }
+    const Matrix6 velocitySensitivity
+        = dm::dexpInvMatrixRight(timeStep * velocity);
+    articulated[i]
+        = (1.0 / timeStep) * momentumSensitivity * velocitySensitivity;
+  }
+
+  // Backward sweep: accumulate the articulated operator and bias toward the
+  // root (non-symmetric rank-1 elimination: the force-side projector is
+  // forceProjector_i = Pi_i S_i and the motion-side row is S_i^T Pi_i, so the
+  // update subtracts (Pi_i S_i) D^{-1} (S_i^T Pi_i); for a symmetric Pi_i this
+  // is the usual U D^{-1} U^T).
+  for (std::size_t reverse = 0; reverse < n; ++reverse) {
+    const std::size_t i = n - 1 - reverse;
+    const VarLink& link = tree.links[i];
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      forceProjector[i] = articulated[i] * link.subspace; // 6 x dof
+      motionProjector[i]
+          = articulated[i].transpose() * link.subspace; // 6 x dof
+      const Eigen::MatrixXd d = link.subspace.transpose() * forceProjector[i];
+      dInverse[i] = d.inverse();
+      uForce[i] = b.segment(seg, dof) - link.subspace.transpose() * bias[i];
+    }
+    if (link.parent >= 0) {
+      Matrix6 ia = articulated[i];
+      Vector6 pa = bias[i];
+      if (link.dof > 0) {
+        // Non-symmetric rank-1 elimination: force-side projector Pi_i S_i times
+        // the motion-side row S_i^T Pi_i (= motionProjector_i^T). For the
+        // symmetric mass-matrix limit (D_i -> G_i) this reduces to the standard
+        // U D^{-1} U^T of `applyArticulatedInverseMass`.
+        ia.noalias() -= forceProjector[i] * dInverse[i]
+                        * (motionProjector[i].transpose());
+        pa.noalias() += forceProjector[i] * (dInverse[i] * uForce[i]);
+      }
+      // Distinct transports: motion parent->child uses the q^{k+1} relative;
+      // force child->parent uses the q^k relative (the constant force transport
+      // of the residual's backward sweep).
+      motionToChild[i] = adjoint(link.nextRelative.inverse());
+      const Matrix6 forceToParent
+          = adjoint(link.currentRelative.inverse()).transpose();
+      const auto p = static_cast<std::size_t>(link.parent);
+      articulated[p].noalias() += forceToParent * ia * motionToChild[i];
+      bias[p].noalias() += forceToParent * pa;
+    }
+  }
+
+  // Forward sweep: propagate the body-frame delta-twist xi and read the joint
+  // increments dq.
+  Eigen::VectorXd dq
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  std::vector<Vector6> twist(n, Vector6::Zero());
+  for (std::size_t i = 0; i < n; ++i) {
+    const VarLink& link = tree.links[i];
+    if (link.parent < 0) {
+      twist[i].setZero();
+      continue;
+    }
+    const Vector6 parentTwist
+        = motionToChild[i] * twist[static_cast<std::size_t>(link.parent)];
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      // Eliminated joint equation: D_i dq_i = uForce_i - S_i^T Pi_i
+      // parentTwist. The parent-twist coupling is the motion-side row S_i^T
+      // Pi_i
+      // (= motionProjector_i^T, matching the backward sweep's elimination), not
+      // the force-side S_i^T Pi_i^T. They coincide only for a symmetric
+      // articulated operator; for finite-rotation / high-average-twist links
+      // Pi_i is non-symmetric and the force-side row solves the wrong system.
+      const Eigen::VectorXd jointDelta
+          = dInverse[i]
+            * (uForce[i] - motionProjector[i].transpose() * parentTwist);
+      dq.segment(seg, dof) = jointDelta;
+      twist[i] = parentTwist + link.subspace * jointDelta;
+    } else {
+      twist[i] = parentTwist;
+    }
+  }
+  return dq;
 }
 
 // Body-frame spatial Jacobian of every link (6 x dofCount, [angular; linear] in
@@ -656,7 +795,437 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
   return {g, jac};
 }
 
+// EXPERIMENTAL SPIKE (contact-roadmap gate 2): evaluate the in-loop contact
+// hook at the trial configuration `nextPosition` and return the per-DOF
+// generalized contact force `Q_c` to fold into the residual (`residual -= dt *
+// Q_c`). Builds the trial-config per-link world transforms (a forward
+// kinematics sweep over nextPosition: worldTrial_i = worldTrial_parent *
+// relTrial_i) and body Jacobians, packs them into a VariationalContactContext,
+// and calls the hook. Returns an empty vector when no hook is set, so the
+// no-contact path does no work and stays numerically identical.
+Eigen::VectorXd evaluateContactForce(
+    const entt::registry& registry,
+    const VarTree& tree,
+    const Eigen::VectorXd& nextPosition,
+    double timeStep,
+    const Eigen::VectorXd& previousVelocity,
+    const VariationalContactHook& contactHook)
+{
+  if (!contactHook) {
+    return {};
+  }
+  // q^k (step-start) per-link world transforms + body Jacobians, for lagged
+  // contact laws (friction): `tree` is the un-advanced q^k tree.
+  std::vector<Eigen::Isometry3d> previousWorldTransforms(tree.links.size());
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    previousWorldTransforms[i] = tree.links[i].worldTransform;
+  }
+  const std::vector<Eigen::MatrixXd> previousJacobians = bodyJacobians(tree);
+  // Trial-configuration kinematics: a VarTree copy whose relative/world
+  // transforms are advanced to q^{k+1} (the q^k tree is left untouched).
+  VarTree trial = tree;
+  for (std::size_t i = 0; i < trial.links.size(); ++i) {
+    VarLink& link = trial.links[i];
+    if (link.parent < 0) {
+      continue; // root keeps its fixed world transform from buildVarTree.
+    }
+    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const Eigen::VectorXd seg = nextPosition.segment(
+        static_cast<Eigen::Index>(link.dofOffset),
+        static_cast<Eigen::Index>(link.dof));
+    link.currentRelative = jointMotionTransform(joint, seg) * link.offset;
+    link.worldTransform
+        = trial.links[static_cast<std::size_t>(link.parent)].worldTransform
+          * link.currentRelative;
+  }
+  std::vector<Eigen::Isometry3d> worldTransforms(trial.links.size());
+  for (std::size_t i = 0; i < trial.links.size(); ++i) {
+    worldTransforms[i] = trial.links[i].worldTransform;
+  }
+  const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(trial);
+  const VariationalContactContext context{
+      worldTransforms,
+      jacobians,
+      trial.dofCount,
+      previousWorldTransforms,
+      previousJacobians,
+      previousVelocity,
+      timeStep};
+  Eigen::VectorXd contactForce = contactHook(context);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contactForce.size() != static_cast<Eigen::Index>(trial.dofCount),
+      InvalidOperationException,
+      "Variational contact hook returned a generalized force of the wrong "
+      "dimension");
+  return contactForce;
+}
+
 } // namespace
+
+//==============================================================================
+Eigen::VectorXd variationalContactPointForce(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce)
+{
+  // World-frame translational point Jacobian J(p) = R_i (J_linear - [p]
+  // J_angular) of the body-fixed point, then the generalized force J(p)^T F.
+  const Eigen::Matrix3d rotation
+      = context.linkWorldTransforms[linkIndex].linear();
+  const Eigen::MatrixXd& jacobian = context.linkBodyJacobians[linkIndex];
+  const Eigen::MatrixXd angular = jacobian.topRows<3>();
+  const Eigen::MatrixXd linear = jacobian.bottomRows<3>();
+  const Eigen::MatrixXd worldPointJacobian
+      = rotation * (linear - detail::skew(localPoint) * angular);
+  return worldPointJacobian.transpose() * worldForce;
+}
+
+//==============================================================================
+VariationalContactHook makeVariationalGroundContactHook(
+    VariationalGroundContact contact)
+{
+  const double normalNorm = contact.planeNormal.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      normalNorm < 1e-12,
+      InvalidOperationException,
+      "VariationalGroundContact plane normal must be non-zero");
+  contact.planeNormal /= normalNorm;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.stiffness < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact stiffness must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction coefficient must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient > 0.0
+          && contact.frictionRegularization <= 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction regularization must be positive when "
+      "friction is enabled");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.dampingCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact damping coefficient must be non-negative");
+
+  // Compliant (penalty) ground contact: for each body-fixed point penetrating
+  // the half-space at the trial configuration, the one-sided quadratic
+  // potential E = 1/2 k max(0,-d)^2 contributes the normal force k(-d) n,
+  // mapped to a generalized force by the trial-config point Jacobian. Folded
+  // into the forced-DEL residual on the forcing side like gravity/applied
+  // force.
+  return [contact = std::move(contact)](
+             const VariationalContactContext& context) -> Eigen::VectorXd {
+    Eigen::VectorXd generalizedForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    if (contact.stiffness == 0.0) {
+      return generalizedForce;
+    }
+    for (const VariationalContactPoint& point : contact.points) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          point.linkIndex >= context.linkWorldTransforms.size(),
+          InvalidOperationException,
+          "VariationalGroundContact contact point references an out-of-range "
+          "link index");
+      const Eigen::Vector3d worldPoint
+          = context.linkWorldTransforms[point.linkIndex] * point.localPoint;
+      const double signedDistance
+          = contact.planeNormal.dot(worldPoint - contact.planePoint);
+      if (signedDistance < 0.0) {
+        // Lagged (q^k) contact-point world velocity J_world(p) v = R (J_lin -
+        // [p] J_ang) v, shared by the Kelvin-Voigt normal damping and the C1
+        // friction below. Both are taken from q^k, so the per-point force stays
+        // constant across the step's RIQN iterates -- smooth for the root-find.
+        Eigen::Vector3d pointVelocity = Eigen::Vector3d::Zero();
+        const bool useVelocity = (contact.dampingCoefficient > 0.0
+                                  || contact.frictionCoefficient > 0.0)
+                                 && context.timeStep > 0.0;
+        if (useVelocity) {
+          const Eigen::Matrix3d previousRotation
+              = context.previousLinkWorldTransforms[point.linkIndex].linear();
+          const Eigen::MatrixXd& previousJacobian
+              = context.previousLinkBodyJacobians[point.linkIndex];
+          pointVelocity = previousRotation
+                          * (previousJacobian.bottomRows<3>()
+                             - detail::skew(point.localPoint)
+                                   * previousJacobian.topRows<3>())
+                          * context.previousVelocity;
+        }
+        // C2 compliant normal force with Kelvin-Voigt damping:
+        // max(0, k(-d) - c (v . n)) n. The max(0, .) keeps the contact
+        // non-adhesive when the point separates faster than the penalty pushes.
+        const double normalMagnitude = std::max(
+            0.0,
+            contact.stiffness * (-signedDistance)
+                - contact.dampingCoefficient
+                      * pointVelocity.dot(contact.planeNormal));
+        if (normalMagnitude <= 0.0) {
+          continue;
+        }
+        Eigen::Vector3d contactForce = normalMagnitude * contact.planeNormal;
+        // C1 lagged friction: a regularized Coulomb force opposing the contact
+        // point's lagged (q^k) sliding velocity, bounded by mu times the
+        // *lagged* normal magnitude k(-d^k) (not the trial normal), so the
+        // friction force is constant across the step's RIQN iterates --
+        // converging like the frictionless case while saturating at mu*|Fn|.
+        if (contact.frictionCoefficient > 0.0 && context.timeStep > 0.0) {
+          const Eigen::Vector3d previousPoint
+              = context.previousLinkWorldTransforms[point.linkIndex]
+                * point.localPoint;
+          const double previousDistance
+              = contact.planeNormal.dot(previousPoint - contact.planePoint);
+          if (previousDistance < 0.0) {
+            const double laggedNormal = contact.stiffness * (-previousDistance);
+            const Eigen::Vector3d tangentVelocity
+                = pointVelocity
+                  - contact.planeNormal.dot(pointVelocity)
+                        * contact.planeNormal;
+            const double epsilon = contact.frictionRegularization;
+            contactForce
+                -= contact.frictionCoefficient * laggedNormal * tangentVelocity
+                   / std::sqrt(
+                       tangentVelocity.squaredNorm() + epsilon * epsilon);
+          }
+        }
+        generalizedForce += variationalContactPointForce(
+            context, point.linkIndex, point.localPoint, contactForce);
+      }
+    }
+    return generalizedForce;
+  };
+}
+
+namespace {
+
+// Validate + normalize a ground-contact config (shared by the AL solver).
+void normalizeGroundContact(VariationalGroundContact& contact)
+{
+  const double normalNorm = contact.planeNormal.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      normalNorm < 1e-12,
+      InvalidOperationException,
+      "VariationalGroundContact plane normal must be non-zero");
+  contact.planeNormal /= normalNorm;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.stiffness < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact stiffness must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction coefficient must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.frictionCoefficient > 0.0
+          && contact.frictionRegularization <= 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact friction regularization must be positive when "
+      "friction is enabled");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.dampingCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact damping coefficient must be non-negative");
+}
+
+// Per-contact-point generalized force at the trial config: the augmented-
+// Lagrangian normal force max(0, dual + k(-d)) plus C1 lagged regularized-
+// Coulomb friction bounded by that normal magnitude (the friction direction is
+// taken at q^k, so it stays smooth across the RIQN iterates). `dual = 0`
+// recovers the C2 compliant penalty. Empty result when inactive (force <= 0).
+Eigen::VectorXd groundContactPointForce(
+    const VariationalContactContext& context,
+    const VariationalGroundContact& contact,
+    const VariationalContactPoint& point,
+    double dual)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      point.linkIndex >= context.linkWorldTransforms.size(),
+      InvalidOperationException,
+      "VariationalGroundContact contact point references an out-of-range link "
+      "index");
+  const Eigen::Vector3d worldPoint
+      = context.linkWorldTransforms[point.linkIndex] * point.localPoint;
+  const double signedDistance
+      = contact.planeNormal.dot(worldPoint - contact.planePoint);
+  double rawNormal = dual + contact.stiffness * (-signedDistance);
+  // Lagged q^k contact-point world velocity J_world(p) v, shared by the
+  // Kelvin-Voigt normal damping and the Coulomb friction (both lagged, so the
+  // per-point force stays constant across the step's RIQN iterates).
+  Eigen::Vector3d tangentVelocity = Eigen::Vector3d::Zero();
+  const bool useVelocity
+      = (contact.dampingCoefficient > 0.0 || contact.frictionCoefficient > 0.0)
+        && context.timeStep > 0.0;
+  if (useVelocity) {
+    const Eigen::Matrix3d previousRotation
+        = context.previousLinkWorldTransforms[point.linkIndex].linear();
+    const Eigen::MatrixXd& previousJacobian
+        = context.previousLinkBodyJacobians[point.linkIndex];
+    const Eigen::Vector3d pointVelocity
+        = previousRotation
+          * (previousJacobian.bottomRows<3>()
+             - detail::skew(point.localPoint) * previousJacobian.topRows<3>())
+          * context.previousVelocity;
+    // Kelvin-Voigt normal damping: resist the approach velocity (the max(0,...)
+    // below keeps the total force non-pulling).
+    rawNormal
+        -= contact.dampingCoefficient * pointVelocity.dot(contact.planeNormal);
+    tangentVelocity
+        = pointVelocity
+          - contact.planeNormal.dot(pointVelocity) * contact.planeNormal;
+  }
+  const double normalMagnitude = std::max(0.0, rawNormal);
+  if (normalMagnitude <= 0.0) {
+    return {};
+  }
+  Eigen::Vector3d contactForce = normalMagnitude * contact.planeNormal;
+  if (contact.frictionCoefficient > 0.0 && context.timeStep > 0.0) {
+    const double epsilon = contact.frictionRegularization;
+    contactForce
+        -= contact.frictionCoefficient * normalMagnitude * tangentVelocity
+           / std::sqrt(tangentVelocity.squaredNorm() + epsilon * epsilon);
+  }
+  return variationalContactPointForce(
+      context, point.linkIndex, point.localPoint, contactForce);
+}
+
+} // namespace
+
+//==============================================================================
+VariationalGroundContactSolver::VariationalGroundContactSolver(
+    VariationalGroundContact contact)
+  : mContact(std::move(contact))
+{
+  normalizeGroundContact(mContact);
+  mDuals.assign(mContact.points.size(), 0.0);
+}
+
+//==============================================================================
+VariationalContactHook VariationalGroundContactSolver::hook() const
+{
+  return [this](const VariationalContactContext& context) -> Eigen::VectorXd {
+    Eigen::VectorXd generalizedForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    for (std::size_t i = 0; i < mContact.points.size(); ++i) {
+      const Eigen::VectorXd pointForce = groundContactPointForce(
+          context, mContact, mContact.points[i], mDuals[i]);
+      if (pointForce.size() != 0) {
+        generalizedForce += pointForce;
+      }
+    }
+    return generalizedForce;
+  };
+}
+
+//==============================================================================
+void VariationalGroundContactSolver::setDuals(std::vector<double> duals)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      duals.size() != mContact.points.size(),
+      InvalidOperationException,
+      "VariationalGroundContactSolver::setDuals size must match the contact "
+      "point count");
+  mDuals = std::move(duals);
+}
+
+//==============================================================================
+void VariationalGroundContactSolver::updateDuals(
+    const std::vector<Eigen::Isometry3d>& linkWorldTransforms)
+{
+  for (std::size_t i = 0; i < mContact.points.size(); ++i) {
+    const VariationalContactPoint& point = mContact.points[i];
+    DART_EXPERIMENTAL_THROW_T_IF(
+        point.linkIndex >= linkWorldTransforms.size(),
+        InvalidOperationException,
+        "VariationalGroundContactSolver::updateDuals link index out of range");
+    const Eigen::Vector3d worldPoint
+        = linkWorldTransforms[point.linkIndex] * point.localPoint;
+    const double signedDistance
+        = mContact.planeNormal.dot(worldPoint - mContact.planePoint);
+    // Dual ascent: lambda <- max(0, lambda + k(-d)) (= the converged AL force).
+    mDuals[i]
+        = std::max(0.0, mDuals[i] + mContact.stiffness * (-signedDistance));
+  }
+}
+
+//==============================================================================
+VariationalContactHook makeVariationalLinkSphereContactHook(
+    double stiffness,
+    double dampingCoefficient,
+    std::vector<VariationalSphereContactPair> pairs)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      stiffness < 0.0,
+      InvalidOperationException,
+      "Link-sphere contact stiffness must be non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      dampingCoefficient < 0.0,
+      InvalidOperationException,
+      "Link-sphere contact damping coefficient must be non-negative");
+
+  // Compliant sphere-sphere contact between links: for each overlapping pair at
+  // the trial configuration, an equal-and-opposite penalty force k*penetration
+  // (with lagged Kelvin-Voigt damping along the center line) pushes the two
+  // link spheres apart, mapped to a generalized force via both links' point
+  // Jacobians.
+  return [stiffness, dampingCoefficient, pairs = std::move(pairs)](
+             const VariationalContactContext& context) -> Eigen::VectorXd {
+    Eigen::VectorXd generalizedForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    if (stiffness == 0.0) {
+      return generalizedForce;
+    }
+    const std::size_t linkCount = context.linkWorldTransforms.size();
+    for (const VariationalSphereContactPair& pair : pairs) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          pair.linkA >= linkCount || pair.linkB >= linkCount,
+          InvalidOperationException,
+          "Link-sphere contact pair references an out-of-range link index");
+      const Eigen::Vector3d worldCenterA
+          = context.linkWorldTransforms[pair.linkA] * pair.centerA;
+      const Eigen::Vector3d worldCenterB
+          = context.linkWorldTransforms[pair.linkB] * pair.centerB;
+      const Eigen::Vector3d delta = worldCenterB - worldCenterA;
+      const double distance = delta.norm();
+      if (distance < 1e-12) {
+        continue; // coincident centers: undefined normal, skip.
+      }
+      const Eigen::Vector3d normal = delta / distance; // unit, from A to B.
+      const double penetration = (pair.radiusA + pair.radiusB) - distance;
+      if (penetration <= 0.0) {
+        continue; // separated.
+      }
+      double forceMagnitude = stiffness * penetration;
+      if (dampingCoefficient > 0.0 && context.timeStep > 0.0) {
+        // Lagged q^k center velocities J_world(c) v, for Kelvin-Voigt damping
+        // along the center line (constant across the step's RIQN iterates).
+        const Eigen::MatrixXd& jacobianA
+            = context.previousLinkBodyJacobians[pair.linkA];
+        const Eigen::Vector3d velocityA
+            = context.previousLinkWorldTransforms[pair.linkA].linear()
+              * (jacobianA.bottomRows<3>()
+                 - detail::skew(pair.centerA) * jacobianA.topRows<3>())
+              * context.previousVelocity;
+        const Eigen::MatrixXd& jacobianB
+            = context.previousLinkBodyJacobians[pair.linkB];
+        const Eigen::Vector3d velocityB
+            = context.previousLinkWorldTransforms[pair.linkB].linear()
+              * (jacobianB.bottomRows<3>()
+                 - detail::skew(pair.centerB) * jacobianB.topRows<3>())
+              * context.previousVelocity;
+        const double approachRate = (velocityB - velocityA).dot(normal);
+        forceMagnitude
+            = std::max(0.0, forceMagnitude - dampingCoefficient * approachRate);
+      }
+      // Equal and opposite: push A along -n, B along +n.
+      generalizedForce += variationalContactPointForce(
+          context, pair.linkA, pair.centerA, -forceMagnitude * normal);
+      generalizedForce += variationalContactPointForce(
+          context, pair.linkB, pair.centerB, forceMagnitude * normal);
+    }
+    return generalizedForce;
+  };
+}
 
 //==============================================================================
 VariationalSolveReport integrateMultibodyVariational(
@@ -667,7 +1236,9 @@ VariationalSolveReport integrateMultibodyVariational(
     MultibodyVariationalState& state,
     int maxIterations,
     double tolerance,
-    const std::vector<VariationalLoopConstraint>& constraints)
+    const std::vector<VariationalLoopConstraint>& constraints,
+    std::size_t andersonDepth,
+    const VariationalContactHook& contactHook)
 {
   VariationalSolveReport report;
   if (structure.links.empty()) {
@@ -730,20 +1301,34 @@ VariationalSolveReport integrateMultibodyVariational(
         = jointRetract(joint, position.segment(seg, n), tangent);
   }
 
-  // The RIQN quasi-Newton step is dt * M(q^k)^{-1} * residual via the O(n)
-  // articulated-body inverse-mass apply (linear-time; no dense factorization),
-  // retracted per joint so spherical/floating coordinates stay on their
-  // SO(3)/SE(3) manifolds.
+  // Root-find policy. Two linear-time preconditioners are available:
   //
-  // The fixed dt*M^{-1} preconditioner is an approximate (not exact) inverse
-  // Jacobian, so the plain iteration's convergence *rate* degrades for long
-  // chains (iteration counts blow up well beyond a few dozen links). When the
-  // generalized coordinates form a vector space -- i.e. every movable joint is
-  // Euclidean (revolute/prismatic) -- we accelerate the fixed-point iteration
-  // with depth-1 Anderson (a/k/a Anderson(1)/Aitken) mixing, which restores
-  // fast convergence on long chains at negligible cost. Spherical/floating
-  // coordinates live on a manifold where linear iterate mixing is invalid, so
-  // they fall back to the plain step (behaviorally identical to before).
+  //  - Exact recursive-Jacobian Newton (`applyExactNewtonStep`): solves
+  //    J(q^k+1) dq = residual for the *exact* forced-DEL Jacobian J =
+  //    d(residual)/d(q^{k+1}) by a non-symmetric articulated-body recursion.
+  //    Its convergence rate is configuration-/length-independent (a few
+  //    iterations regardless of chain length), so long/stiff chains converge
+  //    well within the iteration budget. Requires Euclidean generalized
+  //    coordinates (the delta-twist / momentum-sensitivity linearization and
+  //    the additive joint update are vector-space operations).
+  //
+  //  - Fixed quasi-Newton step dt * M(q^k)^{-1} * residual via the O(n)
+  //    articulated inverse-mass apply, retracted per joint so
+  //    spherical/floating coordinates stay on their SO(3)/SE(3) manifolds. This
+  //    is only an approximate inverse Jacobian -- it is well conditioned enough
+  //    to converge in a few iterations, but on a long/stiff manifold chain it
+  //    reaches a per-step residual plateau and cannot drive the residual below
+  //    a length-dependent floor -- but it is manifold-correct, which the exact
+  //    step is not yet. It is accelerated by tangent-space Anderson mixing (see
+  //    the Anderson history below), which pushes through that plateau so the
+  //    manifold path converges to tolerances the plain step cannot reach.
+  //
+  // Policy: use the exact Newton step whenever every movable joint is Euclidean
+  // (revolute/prismatic) -- that is exactly where the long-chain convergence
+  // problem lives, and the exact step is strictly more accurate there, so short
+  // chains converge identically (the converged DEL root is preconditioner-
+  // independent). Spherical/floating coordinates keep the manifold-correct
+  // quasi-Newton step, now Anderson-accelerated in the tangent space.
   bool euclideanCoordinates = true;
   for (const auto& link : tree.links) {
     if (link.dof == 0) {
@@ -757,15 +1342,94 @@ VariationalSolveReport integrateMultibodyVariational(
     }
   }
 
-  // Depth-m Anderson history (type-II). The fixed-point residual is the RIQN
-  // step itself: r_k = step_k = dt M^{-1} f(q^k). We keep the last m
-  // differences of the steps (F columns) and of the iterates (X columns), and
-  // at each iteration solve gamma = argmin ||step_k - F gamma|| (small n x m
-  // least squares) for the accelerated increment step_k + (X - F) gamma. m = 1
-  // recovers Aitken/secant acceleration.
-  constexpr std::size_t kAndersonDepth = 5;
+  // Retract `base` by `-scale * increment` per joint (the Newton update,
+  // damped by `scale`), so spherical/floating coordinates stay on their
+  // manifolds. Shared by the line search and the accepted update.
+  const auto retractStep = [&](const Eigen::VectorXd& base,
+                               const Eigen::VectorXd& increment,
+                               double scale) {
+    Eigen::VectorXd result = base;
+    for (const auto& link : tree.links) {
+      if (link.dof == 0) {
+        continue;
+      }
+      const auto& joint = registry.get<comps::Joint>(link.joint);
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto n = static_cast<Eigen::Index>(link.dof);
+      result.segment(seg, n) = jointRetract(
+          joint, base.segment(seg, n), -scale * increment.segment(seg, n));
+    }
+    return result;
+  };
+
+  // The tangent displacement from iterate `from` to iterate `to`, stacked per
+  // joint: tau_a = jointLogDifference(to_a, from_a) so jointRetract(from_a,
+  // tau_a) == to_a. This is the manifold-correct "to - from" the tangent-space
+  // Anderson history mixes (a spherical/floating joint's raw coordinate
+  // difference is not a tangent vector; its per-joint log is).
+  const auto perJointLogDifference
+      = [&](const Eigen::VectorXd& to, const Eigen::VectorXd& from) {
+          Eigen::VectorXd tangent
+              = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+          for (const auto& link : tree.links) {
+            if (link.dof == 0) {
+              continue;
+            }
+            const auto& joint = registry.get<comps::Joint>(link.joint);
+            const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+            const auto n = static_cast<Eigen::Index>(link.dof);
+            tangent.segment(seg, n) = jointLogDifference(
+                joint, to.segment(seg, n), from.segment(seg, n));
+          }
+          return tangent;
+        };
+
+  // Tangent-space Anderson (type-II) acceleration of the manifold quasi-Newton
+  // fixed point. The fixed-point map is q^{k+1} = retract(q^k, -step^k) with
+  // the tangent update step^k = dt M(q^k)^{-1} f(q^k); the fixed-point residual
+  // in tangent coordinates at the current iterate is exactly step^k (zero at a
+  // fixed point). We keep the last m differences of the tangent updates (F
+  // columns) and of the iterates' tangent displacements (X columns, the
+  // per-joint logs of q^k relative to q^{k-1}), and at each iteration solve
+  // gamma = argmin ||step^k - F gamma|| (a small dofCount x m least squares)
+  // for the accelerated increment step^k + (X - F) gamma, retracted with
+  // jointRetract. Mixing validity: near convergence the consecutive iterates --
+  // and thus the base points of every per-joint tangent vector -- are close, so
+  // treating the stacked per-joint tangents as one Euclidean vector (no
+  // parallel transport) introduces only higher-order error that vanishes as
+  // step -> 0; this matched the test without transport (the globalization below
+  // also caps any early-iterate excursion). m = 1 recovers Aitken/secant
+  // acceleration; the Euclidean exact-Newton path never enters this branch.
   std::vector<Eigen::VectorXd> stepDeltas;
-  std::vector<Eigen::VectorXd> positionDeltas;
+  std::vector<Eigen::VectorXd> iterateDeltas;
+  Eigen::VectorXd previousStep;     // tangent update at q^{k-1}
+  Eigen::VectorXd previousPosition; // q^{k-1}
+
+  // EXPERIMENTAL SPIKE (contact-roadmap gate 2): evaluate the forced-DEL
+  // residual at a trial configuration, folding the in-loop contact hook's
+  // generalized force `Q_c(trial)` onto the same forcing side as the applied
+  // force (`residual -= dt * Q_c`). Re-evaluating the hook here is what couples
+  // the contact potential's curvature into every RIQN iterate and every
+  // line-search trial. With no hook `evaluateContactForce` returns an empty
+  // vector and the call reduces to the plain `computeResidual(appliedForce)`,
+  // so the no-contact path is numerically identical and does no extra work.
+  const auto residualAt = [&](const Eigen::VectorXd& trialPosition) {
+    const Eigen::VectorXd contactForce = evaluateContactForce(
+        registry, tree, trialPosition, timeStep, velocity, contactHook);
+    if (contactForce.size() == 0) {
+      return computeResidual(
+          registry,
+          tree,
+          trialPosition,
+          state,
+          gravity,
+          timeStep,
+          appliedForce);
+    }
+    const Eigen::VectorXd forcing = appliedForce + contactForce;
+    return computeResidual(
+        registry, tree, trialPosition, state, gravity, timeStep, forcing);
+  };
 
   // `tolerance` is a per-coordinate accuracy; the convergence test is on the
   // L2 norm of the (dofCount-dimensional) residual, so scale by sqrt(dofCount)
@@ -774,54 +1438,118 @@ VariationalSolveReport integrateMultibodyVariational(
   // system and the hardest steps of long chains stall just above it.
   const double normTolerance
       = tolerance * std::sqrt(static_cast<double>(tree.dofCount));
-  Eigen::VectorXd previousStep;     // dt M^{-1} f(q^{k-1})
-  Eigen::VectorXd previousPosition; // q^{k-1}
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
-    const Eigen::VectorXd residual = computeResidual(
-        registry, tree, nextPosition, state, gravity, timeStep, appliedForce);
+    const Eigen::VectorXd residual = residualAt(nextPosition);
     report.iterations = static_cast<std::size_t>(iteration) + 1;
     report.residualNorm = residual.norm();
-    if (report.residualNorm <= normTolerance) {
+    const double residualNorm = report.residualNorm;
+    if (residualNorm <= normTolerance) {
       report.converged = true;
       break;
     }
 
+    // The exact Newton step already solves J dq = residual, so it is applied
+    // directly; the quasi-Newton step uses dt * M^{-1} * residual. Both yield
+    // an increment to *subtract* from the current iterate. `computeResidual`
+    // populated the per-link average velocity and q^{k+1} relative transforms
+    // the exact step needs.
     const Eigen::VectorXd step
-        = applyArticulatedInverseMass(tree, timeStep * residual);
-    Eigen::VectorXd increment = step; // plain RIQN update (subtracted below)
-    if (euclideanCoordinates && iteration > 0) {
+        = euclideanCoordinates
+              ? applyExactNewtonStep(tree, residual, timeStep)
+              : applyArticulatedInverseMass(tree, timeStep * residual);
+
+    // Manifold tangent-space Anderson mixing (spherical/floating path only).
+    // Accumulate the step/iterate-displacement history and form the accelerated
+    // increment; the Euclidean exact-Newton path keeps `step` unchanged. The
+    // least squares is Tikhonov-regularized (a small ridge relative to the
+    // column scale) because the step-difference columns become nearly linearly
+    // dependent as the iterates settle, and an unregularized type-II solve then
+    // produces a wild gamma that throws the increment far off -- the
+    // regularizer (plus the opportunistic accept/safeguard below) keeps the
+    // acceleration stable on long stiff manifold chains.
+    Eigen::VectorXd andersonIncrement;
+    bool haveAnderson = false;
+    if (!euclideanCoordinates && andersonDepth > 0 && iteration > 0) {
       stepDeltas.push_back(step - previousStep);
-      positionDeltas.push_back(nextPosition - previousPosition);
-      if (stepDeltas.size() > kAndersonDepth) {
+      iterateDeltas.push_back(
+          perJointLogDifference(nextPosition, previousPosition));
+      if (stepDeltas.size() > andersonDepth) {
         stepDeltas.erase(stepDeltas.begin());
-        positionDeltas.erase(positionDeltas.begin());
+        iterateDeltas.erase(iterateDeltas.begin());
       }
       const auto m = static_cast<Eigen::Index>(stepDeltas.size());
       Eigen::MatrixXd stepMatrix(step.size(), m);
-      Eigen::MatrixXd positionMatrix(step.size(), m);
+      Eigen::MatrixXd iterateMatrix(step.size(), m);
       for (Eigen::Index c = 0; c < m; ++c) {
         stepMatrix.col(c) = stepDeltas[static_cast<std::size_t>(c)];
-        positionMatrix.col(c) = positionDeltas[static_cast<std::size_t>(c)];
+        iterateMatrix.col(c) = iterateDeltas[static_cast<std::size_t>(c)];
       }
+      // Solve (F^T F + lambda I) gamma = F^T step (normal equations with a
+      // ridge scaled by the column magnitudes) for the type-II mixing
+      // coefficients.
+      const Eigen::MatrixXd ftf = stepMatrix.transpose() * stepMatrix;
+      const double ridge
+          = 1e-12 * (ftf.trace() / static_cast<double>(m) + 1e-30);
+      const Eigen::MatrixXd regularized
+          = ftf + ridge * Eigen::MatrixXd::Identity(m, m);
       const Eigen::VectorXd gamma
-          = stepMatrix.colPivHouseholderQr().solve(step);
+          = regularized.ldlt().solve(stepMatrix.transpose() * step);
       if (gamma.allFinite()) {
-        increment = step + (positionMatrix - stepMatrix) * gamma;
+        andersonIncrement = step + (iterateMatrix - stepMatrix) * gamma;
+        haveAnderson = andersonIncrement.allFinite();
       }
     }
-
     previousStep = step;
     previousPosition = nextPosition;
-    for (const auto& link : tree.links) {
-      if (link.dof == 0) {
+
+    // Globalization differs by preconditioner because the two steps have
+    // different convergence structure.
+    //
+    // Euclidean exact-Newton path: a damped-Newton backtracking line search.
+    // The exact step has fast *local* convergence but an undamped full step can
+    // overshoot when an iterate wanders far from the root (the hardest
+    // mid-rollout steps of a long/stiff chain reach such states); try the full
+    // step first and backtrack by halving until it reduces the residual. Near
+    // the root the full step is always accepted (alpha = 1), preserving the
+    // quadratic rate; each trial residual is O(n), so a handful of backtracks
+    // keeps the step linear-time.
+    //
+    // Manifold quasi-Newton path: the *undamped* full step. The fixed-point
+    // iteration q <- retract(q, -dt M^{-1} f) is contractive but NOT monotone
+    // in the residual norm (an intermediate iterate can transiently raise ||f||
+    // while still converging), so a residual-decrease line search would
+    // wrongly reject legitimate full steps and strangle the iteration to a
+    // standstill. Anderson is layered on top as an opportunistic accelerator:
+    // accept its full step when it strictly reduces the residual (a guaranteed
+    // improvement over the plain iterate this iteration), otherwise take the
+    // plain full step. The opportunistic accept never lets a poor Anderson
+    // direction make progress worse than the plain fixed point.
+    if (euclideanCoordinates) {
+      double alpha = 1.0;
+      Eigen::VectorXd trialPosition = retractStep(nextPosition, step, alpha);
+      double trialNorm = residualAt(trialPosition).norm();
+      constexpr int kMaxBacktracks = 20;
+      for (int backtrack = 0;
+           backtrack < kMaxBacktracks && !(trialNorm < residualNorm);
+           ++backtrack) {
+        alpha *= 0.5;
+        trialPosition = retractStep(nextPosition, step, alpha);
+        trialNorm = residualAt(trialPosition).norm();
+      }
+      nextPosition = std::move(trialPosition);
+      continue;
+    }
+
+    if (haveAnderson) {
+      Eigen::VectorXd andersonPosition
+          = retractStep(nextPosition, andersonIncrement, 1.0);
+      const double andersonNorm = residualAt(andersonPosition).norm();
+      if (andersonNorm < residualNorm) {
+        nextPosition = std::move(andersonPosition);
         continue;
       }
-      const auto& joint = registry.get<comps::Joint>(link.joint);
-      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
-      const auto n = static_cast<Eigen::Index>(link.dof);
-      nextPosition.segment(seg, n) = jointRetract(
-          joint, nextPosition.segment(seg, n), -increment.segment(seg, n));
     }
+    nextPosition = retractStep(nextPosition, step, 1.0);
   }
 
   // Non-convergence is a hard error, not a silent best-effort step: the caller
@@ -887,9 +1615,11 @@ VariationalSolveReport integrateMultibodyVariational(
   }
 
   // Refresh the per-link scratch at the accepted configuration so the history
-  // shift uses dT and momentum consistent with nextPosition.
-  const Eigen::VectorXd finalResidual = computeResidual(
-      registry, tree, nextPosition, state, gravity, timeStep, appliedForce);
+  // shift uses dT and momentum consistent with nextPosition. `residualAt` folds
+  // in the contact force (if any) so the reported residual reflects the actual
+  // forced-DEL root; the forward (dT/average-velocity) sweep is independent of
+  // the forcing, so the history shift is unaffected by the hook.
+  const Eigen::VectorXd finalResidual = residualAt(nextPosition);
   report.residualNorm = finalResidual.norm();
 
   // Write back joint position/velocity/acceleration (Euclidean, Phase A1).
@@ -1118,8 +1848,82 @@ void MultibodyVariationalIntegrationStage::execute(
         constraints.push_back(binding.constraint);
       }
     }
+    // Build the opt-in contact hook from the multibody's contact config
+    // (PLAN-082 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
+    // penalty); cadence > 0 => the stateful C3 augmented-Lagrangian rung, whose
+    // duals persist in VariationalContactDualState and advance on an outer-loop
+    // cadence after the step. Absent => contact-free.
+    const auto* contactConfig
+        = registry.try_get<comps::VariationalContact>(entity);
+    std::optional<VariationalGroundContactSolver> alSolver;
+    std::size_t dualUpdateCadence = 0;
+    VariationalContactHook contactHook;
+    if (contactConfig != nullptr) {
+      VariationalGroundContact contact;
+      contact.planeNormal = contactConfig->planeNormal;
+      contact.planePoint = contactConfig->planePoint;
+      contact.stiffness = contactConfig->stiffness;
+      contact.frictionCoefficient = contactConfig->frictionCoefficient;
+      contact.frictionRegularization = contactConfig->frictionRegularization;
+      contact.dampingCoefficient = contactConfig->dampingCoefficient;
+      const std::size_t pointCount = contactConfig->pointLinkIndices.size();
+      contact.points.reserve(pointCount);
+      for (std::size_t i = 0; i < pointCount; ++i) {
+        contact.points.push_back(
+            {contactConfig->pointLinkIndices[i],
+             contactConfig->pointLocalPositions[i]});
+      }
+      if (contact.stiffness > 0.0 && !contact.points.empty()) {
+        if (contactConfig->dualUpdateCadence > 0) {
+          // C3: a stateful AL solver seeded from the persisted (warm-started)
+          // duals. The solver must outlive the integrate call -- its hook reads
+          // the live duals by reference -- so it is held in `alSolver` here.
+          dualUpdateCadence = contactConfig->dualUpdateCadence;
+          auto& dualState
+              = registry.get_or_emplace<comps::VariationalContactDualState>(
+                  entity);
+          if (dualState.duals.size() != contact.points.size()) {
+            dualState.duals.assign(contact.points.size(), 0.0);
+            dualState.stepsSinceDualUpdate = 0;
+          }
+          alSolver.emplace(contact);
+          alSolver->setDuals(dualState.duals);
+          contactHook = alSolver->hook();
+        } else {
+          contactHook = makeVariationalGroundContactHook(contact);
+        }
+      }
+    }
     integrateMultibodyVariational(
-        registry, structure, gravity, timeStep, state, 100, 1e-10, constraints);
+        registry,
+        structure,
+        gravity,
+        timeStep,
+        state,
+        100,
+        1e-10,
+        constraints,
+        5,
+        contactHook);
+
+    // C3 outer loop: after the converged step, advance the AL duals on the
+    // configured cadence from the post-step per-link world transforms (a fresh
+    // VarTree reads the converged joint positions), then persist them for the
+    // next step and for save/load.
+    if (alSolver.has_value()) {
+      auto& dualState
+          = registry.get<comps::VariationalContactDualState>(entity);
+      if (++dualState.stepsSinceDualUpdate >= dualUpdateCadence) {
+        dualState.stepsSinceDualUpdate = 0;
+        const VarTree postTree = buildVarTree(registry, structure);
+        std::vector<Eigen::Isometry3d> postTransforms(postTree.links.size());
+        for (std::size_t i = 0; i < postTree.links.size(); ++i) {
+          postTransforms[i] = postTree.links[i].worldTransform;
+        }
+        alSolver->updateDuals(postTransforms);
+        dualState.duals = alSolver->duals();
+      }
+    }
 
     // External forces are one-shot per step (like legacy
     // BodyNode::addExtForce): clear them after they have been consumed by this

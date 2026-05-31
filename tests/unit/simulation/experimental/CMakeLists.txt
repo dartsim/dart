@@ -67,6 +67,17 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
   dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
 
+  # test_variational_integration runs a long linear-time variational-integrator
+  # convergence sweep. It is comfortably fast in Release, but under coverage
+  # (gcov) instrumentation it -- like its integration-test siblings test_world
+  # and test_deformable_body (~1000-1600s) -- exceeds the default 1500s ctest
+  # timeout and fails the Coverage (Debug) job. Give it the same headroom as
+  # UNIT_simulation_World (TIMEOUT 3600); the guard keeps this a no-op in build
+  # configurations where the test is not registered.
+  if(TEST test_variational_integration)
+    set_tests_properties(test_variational_integration PROPERTIES TIMEOUT 3600)
+  endif()
+
   # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only
   # the always-compiled WorldOptions core, so it runs in both build configs. The
   # FD-vs-analytic Jacobian test exercises the detail-only differentiable code
