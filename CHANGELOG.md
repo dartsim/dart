@@ -1099,6 +1099,27 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     a dartpy regression (a strip shoved along a rod slides far frictionless but is
     held back under friction, staying on the rod) and a `Deformable Friction on
 Capsule Rod (IPC)` py-demos scene.
+  - Added an opt-in **iterative (conjugate-gradient) linear solve** for the
+    experimental deformable projected-Newton step (PLAN-081 M7). When a body
+    sets `DeformableMaterialProperties.useIterativeLinearSolver` (dartpy
+    `use_iterative_linear_solver`), each Newton iteration solves its
+    symmetric-positive-definite Hessian with a Jacobi-preconditioned conjugate
+    gradient instead of the sparse Cholesky (SimplicialLDLT) factorization. CG
+    never factorizes, so its memory stays near O(nnz) and its per-step cost
+    grows more gently than direct fill-in as the mesh chunks up -- the scaling
+    axis of the IPC paper's Fig. 23 / Table 1. The same inertia floor plus
+    PSD-projected element blocks that keep the direct solve well-posed guarantee
+    CG convergence; a non-converged or non-finite solve falls back to mass-scaled
+    steepest descent, exactly as the direct path does on an indefinite
+    factorization. Meshes above the direct-solve node cap now take the iterative
+    path automatically (raising the effective solver ceiling from 20k to 1M
+    nodes) instead of degrading to gradient descent. Off (the default) is
+    byte-identical -- existing scenes keep the direct solve. Adds a regression in
+    which a dropped FEM cube settles to the same configuration under both solvers
+    while taking mutually exclusive solve paths (the iterative run never
+    factorizes), a `cg_solver` py-demo of a large CG-driven cantilever, and a
+    `BM_DeformableCgBarStep` benchmark mirroring the direct FEM-bar benchmark for
+    per-step scaling comparison.
   - Added opt-in **adaptive barrier stiffness** (kappa) to the experimental
     deformable solver (PLAN-081 M6). When a body sets
     `DeformableMaterialProperties.useAdaptiveBarrierStiffness` (dartpy

@@ -3493,6 +3493,81 @@ TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
   EXPECT_TRUE(body.getPosition(kNodeCount - 1).allFinite());
 }
 
+//==============================================================================
+// The iterative (conjugate-gradient) projected-Newton linear solve is a
+// matrix-light alternative to the sparse Cholesky factorization: it never
+// factorizes, so its memory stays near O(nnz) and it scales to far larger
+// meshes. On a small mesh it must reach the same equilibrium as the direct
+// solve. This drops an identical FEM cube onto a ground barrier with each
+// solver and checks (a) the runs took mutually exclusive solve paths -- the
+// direct run only factorized, the iterative run only ran CG and never
+// factorized -- and (b) they settle to the same configuration.
+TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
+{
+  struct CubeRun
+  {
+    std::vector<Eigen::Vector3d> positions;
+    std::size_t cgSolves = 0;
+    std::size_t numericFactorizations = 0;
+    std::size_t symbolicFactorizations = 0;
+  };
+
+  const auto runCube = [](bool iterative) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+    ground.setDeformableGroundBarrier(true); // top face at z = 0
+
+    auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.5e5);
+    options.material.useIterativeLinearSolver = iterative;
+    auto body = world.addDeformableBody("fem_cube", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    CubeRun run;
+    for (int i = 0; i < 200; ++i) {
+      world.step(executor, pipeline);
+      const auto& stats = stage.getLastStats();
+      run.cgSolves += stats.projectedNewtonIterativeSolves;
+      run.numericFactorizations += stats.projectedNewtonNumericFactorizations;
+      run.symbolicFactorizations += stats.projectedNewtonSymbolicFactorizations;
+    }
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      run.positions.push_back(body.getPosition(i));
+    }
+    return run;
+  };
+
+  const CubeRun direct = runCube(false);
+  const CubeRun iterative = runCube(true);
+
+  // The direct run factorized and never took the CG path; the iterative run is
+  // its mirror image -- all CG, no factorization (neither numeric nor
+  // symbolic).
+  EXPECT_EQ(direct.cgSolves, 0u);
+  EXPECT_GT(direct.numericFactorizations, 0u);
+  EXPECT_GT(iterative.cgSolves, 0u);
+  EXPECT_EQ(iterative.numericFactorizations, 0u);
+  EXPECT_EQ(iterative.symbolicFactorizations, 0u);
+
+  // Same physics: both solvers settle the cube to the same configuration.
+  ASSERT_EQ(direct.positions.size(), iterative.positions.size());
+  for (std::size_t i = 0; i < direct.positions.size(); ++i) {
+    ASSERT_TRUE(iterative.positions[i].allFinite());
+    expectVectorNear(iterative.positions[i], direct.positions[i], 1e-4);
+  }
+}
+
 namespace {
 struct GroundSlideResult
 {
