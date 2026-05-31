@@ -356,6 +356,41 @@ void validateSkeletonLoadSupported(const dynamics::Skeleton& skeleton)
   }
 }
 
+void validateWorldLoadSupported(
+    const World& targetWorld, const ::dart::simulation::World& sourceWorld)
+{
+  std::unordered_set<std::string> sourceNames;
+  for (std::size_t i = 0; i < sourceWorld.getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = sourceWorld.getSkeleton(i);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !skeleton,
+        InvalidArgumentException,
+        "Source World returned a null Skeleton at index {}",
+        i);
+    validateSkeletonLoadSupported(*skeleton);
+
+    const std::string& skeletonName = skeleton->getName();
+    if (skeletonName.empty()) {
+      continue;
+    }
+
+    DART_EXPERIMENTAL_THROW_T_IF(
+        targetWorld.hasMultibody(skeletonName),
+        InvalidArgumentException,
+        "Cannot translate legacy Skeleton '{}' because the target World "
+        "already contains a Multibody with that name",
+        skeletonName);
+
+    const bool inserted = sourceNames.insert(skeletonName).second;
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !inserted,
+        InvalidArgumentException,
+        "Cannot translate legacy World because multiple source Skeletons are "
+        "named '{}'",
+        skeletonName);
+  }
+}
+
 Eigen::VectorXd perDofVector(
     const dynamics::Joint& joint,
     const std::function<double(std::size_t)>& getter)
@@ -631,16 +666,13 @@ std::vector<Multibody> addWorld(
     const ::dart::simulation::World& sourceWorld,
     const SkeletonLoadOptions& options)
 {
+  validateWorldLoadSupported(world, sourceWorld);
+
   std::vector<Multibody> multibodies;
   multibodies.reserve(sourceWorld.getNumSkeletons());
 
   for (std::size_t i = 0; i < sourceWorld.getNumSkeletons(); ++i) {
     const dynamics::SkeletonPtr skeleton = sourceWorld.getSkeleton(i);
-    DART_EXPERIMENTAL_THROW_T_IF(
-        !skeleton,
-        InvalidArgumentException,
-        "Source World returned a null Skeleton at index {}",
-        i);
     multibodies.push_back(addSkeleton(world, *skeleton, options));
   }
 

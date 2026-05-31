@@ -539,6 +539,42 @@ TEST(SkeletonLoader, TranslatesEverySkeletonFromLegacyWorld)
   expectSphereCollisionShape(*bob, 0.35);
 }
 
+TEST(SkeletonLoader, RejectsUnsupportedWorldBeforeCreatingMultibodies)
+{
+  auto validSkeleton = createSupportedTreeSkeleton();
+
+  auto unsupportedSkeleton = dynamics::Skeleton::create("unsupported_world");
+  [[maybe_unused]] auto pair
+      = unsupportedSkeleton->createJointAndBodyNodePair<dynamics::EulerJoint>(
+          nullptr,
+          dynamics::EulerJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("unsupported_body"));
+
+  auto legacyWorld = dart::simulation::World::create("legacy_world");
+  legacyWorld->addSkeleton(validSkeleton);
+  legacyWorld->addSkeleton(unsupportedSkeleton);
+
+  sx::World world;
+  EXPECT_THROW(
+      sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
+}
+
+TEST(SkeletonLoader, RejectsWorldNameConflictBeforeCreatingMultibodies)
+{
+  auto legacyWorld = dart::simulation::World::create("legacy_world");
+  legacyWorld->addSkeleton(createSupportedTreeSkeleton());
+  legacyWorld->addSkeleton(createPendulumSkeleton());
+
+  sx::World world;
+  world.addMultibody("loaded_pendulum");
+
+  EXPECT_THROW(
+      sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 1u);
+  EXPECT_FALSE(world.getMultibody("loader_tree").has_value());
+}
+
 TEST(SkeletonLoader, LoadsWorldFromUri)
 {
   sx::World world;

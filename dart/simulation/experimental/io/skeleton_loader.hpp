@@ -132,9 +132,8 @@ DART_EXPERIMENTAL_API Multibody addSkeleton(
 /// Add translated copies of every Skeleton in `sourceWorld` to `world` and
 /// return the created experimental multibodies in source-world order.
 ///
-/// Throws `InvalidArgumentException` when any source Skeleton cannot be
-/// translated by `addSkeleton`. Translation is not transactional: multibodies
-/// added before a later failure remain in `world`.
+/// Throws `InvalidArgumentException` before mutating `world` when any source
+/// Skeleton cannot be translated by `addSkeleton`.
 DART_EXPERIMENTAL_API std::vector<Multibody> addWorld(
     World& world,
     const ::dart::simulation::World& sourceWorld,
