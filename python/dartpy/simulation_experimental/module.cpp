@@ -1370,6 +1370,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::RigidBody::isDeformableSurfaceCcdObstacle,
           &sim::RigidBody::setDeformableSurfaceCcdObstacle)
       .def_prop_rw(
+          "is_deformable_obstacle_barrier_only",
+          &sim::RigidBody::isDeformableObstacleBarrierOnly,
+          &sim::RigidBody::setDeformableObstacleBarrierOnly)
+      .def_prop_rw(
           "is_deformable_ground_barrier",
           &sim::RigidBody::isDeformableGroundBarrier,
           &sim::RigidBody::setDeformableGroundBarrier)
@@ -1639,6 +1643,9 @@ void defSimulationExperimentalModule(nb::module_& m)
           "projected_newton_fallbacks",
           &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
       .def_ro(
+          "projected_newton_iterative_solves",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeSolves)
+      .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
       .def_ro(
@@ -1669,7 +1676,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::useFixedCorotationalElasticity)
       .def_rw(
           "use_adaptive_barrier_stiffness",
-          &sim::DeformableMaterialProperties::useAdaptiveBarrierStiffness);
+          &sim::DeformableMaterialProperties::useAdaptiveBarrierStiffness)
+      .def_rw(
+          "use_iterative_linear_solver",
+          &sim::DeformableMaterialProperties::useIterativeLinearSolver);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(

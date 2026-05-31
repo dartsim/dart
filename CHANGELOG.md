@@ -1070,6 +1070,23 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `FemCubeSettlesOnBoxObstacleWithoutPenetrating` regressions and a
     `Deformable FEM over Box (IPC)` py-demos scene (a FEM slab draping over a box
     obstacle).
+  - Added an opt-in **barrier-only obstacle** mode that completes mesh-vs-obstacle
+    friction for sphere and box obstacles (PLAN-081 M5). `RigidBody`'s new
+    `setDeformableObstacleBarrierOnly` (dartpy
+    `is_deformable_obstacle_barrier_only`) excludes a deformable obstacle from the
+    surface-CCD line-search limiter while keeping its clamped-log contact barrier:
+    the CCD otherwise scales the _whole_ step (normal + tangential) to prevent
+    penetration, which masks tangential sliding and so obstacle friction; the
+    barrier alone prevents penetration for the quasi-static contact this targets.
+    With the CCD excluded, the sphere/box obstacle barrier normal forces feed the
+    lagged Coulomb friction term (`addSphereObstacleNormalForces` /
+    `addBoxObstacleNormalForces`, dominant per-node contact wins), so a deformable
+    sliding across a barrier-only plate is decelerated by friction. Existing
+    CCD-obstacle scenes are unchanged (the mode is opt-in; the CCD obstacle set is
+    `entt::exclude`-filtered). Adds a C++ and a dartpy regression (a strip shoved
+    across a barrier-only box plate slides far frictionless but is held back under
+    friction, staying on the face) and a `Deformable Friction on Box Plate (IPC)`
+    py-demos scene.
   - Added **mesh-vs-obstacle friction** against the capsule rod obstacle
     (PLAN-081 M5). A node in contact with a static capsule obstacle now feeds the
     capsule barrier's radial normal force and direction into the existing lagged
@@ -1082,6 +1099,71 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     a dartpy regression (a strip shoved along a rod slides far frictionless but is
     held back under friction, staying on the rod) and a `Deformable Friction on
 Capsule Rod (IPC)` py-demos scene.
+  - Exposed the iterative-solve count through the public deformable solver
+    diagnostics (PLAN-081 M7). `DeformableSolverDiagnostics` (dartpy
+    `last_deformable_solver_diagnostics`) now carries
+    `projectedNewtonIterativeSolves` / `projected_newton_iterative_solves`, the
+    public mirror of the internal stat: it counts the Newton iterations whose
+    linear solve took the iterative (incomplete-Cholesky-preconditioned CG) path
+    instead of the sparse Cholesky factorization, so callers can observe and tune
+    which solve path a body uses (zero means every solve was direct). Adds C++
+    and Python regressions that the default direct solve reports zero while an
+    opt-in iterative body reports a nonzero count.
+  - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
+    experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
+    and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra
+    (pinned at one face) through the sparse Cholesky direct solve and the
+    incomplete-Cholesky-preconditioned conjugate gradient at matching cell
+    counts. Unlike the thin `BM_DeformableFemBarStep` beam (2x2 cross-section,
+    too small a bandwidth), the solid cube has a wide Hessian bandwidth, so the
+    direct solve's 3D fill-in makes its per-step time climb super-linearly while
+    the iterative solve stays near O(nnz): the iterative path overtakes the
+    direct solve by a few thousand nodes (on the development machine the per-step
+    cost crosses over near ~1k nodes and the iterative solve runs several times
+    faster by ~1.3k nodes). This is the per-step-scaling axis of the IPC paper's
+    Fig. 23 / Table 1 on the mesh shape where the iterative solver bites. Adds a
+    regression that a chunky 3D cube sags to the same equilibrium under both
+    solvers (mutually exclusive solve paths -- the iterative run never
+    factorizes), guarding the benchmark fixture.
+  - Strengthened the experimental deformable iterative solve's preconditioner
+    from diagonal (Jacobi) to **incomplete-Cholesky** (PLAN-081 M7). Stiff
+    barrier contact makes the projected-Newton Hessian ill-conditioned, where a
+    diagonal preconditioner leaves the conjugate gradient stalling against its
+    iteration cap and falling back to steepest descent; the incomplete-Cholesky
+    preconditioner (a sparse approximate factorization that drops fill, so the
+    solve still never fully factorizes and stays near O(nnz)) collapses the CG
+    iteration count so the iterative path carries stiff contact within the cap.
+    On a settling stiff FEM contact scene this cuts the iterative solver's
+    fallbacks below the direct solver's and reduces Newton iterations per step,
+    while remaining byte-compatible at the API level (still opt-in via
+    `useIterativeLinearSolver`). An incomplete-Cholesky breakdown that Eigen's
+    diagonal shifting cannot repair falls back to steepest descent, exactly as
+    the direct path does on an indefinite factorization. Adds a regression in
+    which a stiff FEM cube settles on a ground barrier through the iterative path
+    (never factorizing) with accepted CG steps dominating fallbacks and the same
+    equilibrium as the direct solver, plus a `cg_contact` py-demo of a stiff FEM
+    cube settling on a barrier via the incomplete-Cholesky CG solve.
+  - Added an opt-in **iterative (conjugate-gradient) linear solve** for the
+    experimental deformable projected-Newton step (PLAN-081 M7). When a body
+    sets `DeformableMaterialProperties.useIterativeLinearSolver` (dartpy
+    `use_iterative_linear_solver`), each Newton iteration solves its
+    symmetric-positive-definite Hessian with a Jacobi-preconditioned conjugate
+    gradient instead of the sparse Cholesky (SimplicialLDLT) factorization. CG
+    never factorizes, so its memory stays near O(nnz) and its per-step cost
+    grows more gently than direct fill-in as the mesh chunks up -- the scaling
+    axis of the IPC paper's Fig. 23 / Table 1. The same inertia floor plus
+    PSD-projected element blocks that keep the direct solve well-posed guarantee
+    CG convergence; a non-converged or non-finite solve falls back to mass-scaled
+    steepest descent, exactly as the direct path does on an indefinite
+    factorization. Meshes above the direct-solve node cap now take the iterative
+    path automatically (raising the effective solver ceiling from 20k to 1M
+    nodes) instead of degrading to gradient descent. Off (the default) is
+    byte-identical -- existing scenes keep the direct solve. Adds a regression in
+    which a dropped FEM cube settles to the same configuration under both solvers
+    while taking mutually exclusive solve paths (the iterative run never
+    factorizes), a `cg_solver` py-demo of a large CG-driven cantilever, and a
+    `BM_DeformableCgBarStep` benchmark mirroring the direct FEM-bar benchmark for
+    per-step scaling comparison.
   - Added opt-in **adaptive barrier stiffness** (kappa) to the experimental
     deformable solver (PLAN-081 M6). When a body sets
     `DeformableMaterialProperties.useAdaptiveBarrierStiffness` (dartpy

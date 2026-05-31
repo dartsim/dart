@@ -169,13 +169,22 @@ deformable sliding along a rod decelerates with `frictionCoefficient`. This work
 because the capsule obstacle is barrier-only (no over-limiting surface CCD), so
 the tangential slide is unconstrained — directly demonstrating mesh-vs-obstacle
 friction (toward Fig 8 / Fig 20 roller themes). Ships C++ + dartpy regressions and
-a `Deformable Friction on Capsule Rod (IPC)` showcase. **Remaining M5 (the real
-blocker):** sphere/box obstacle friction is still masked by the surface-CCD
-limiter, which scales the _whole_ step vector (normal + tangential) to prevent
-gravity-driven penetration, killing the tangential slide. The fix is to make the
-surface CCD limit only the _normal_ approach component (not the whole step) so
-the barrier handles non-penetration and friction can act tangentially — a
-focused, higher-risk change to the CCD contracts (cf. #2732).
+a `Deformable Friction on Capsule Rod (IPC)` showcase.
+
+**Sphere/box obstacle friction has also LANDED**, via an opt-in **barrier-only
+obstacle** mode (`RigidBody::setDeformableObstacleBarrierOnly`, dartpy
+`is_deformable_obstacle_barrier_only`): the obstacle keeps its clamped-log barrier
+but is `entt::exclude`-d from the surface-CCD collect, so the deformable slides
+tangentially (the barrier alone prevents penetration for the quasi-static contact)
+and the sphere/box obstacle normal forces feed the lagged Coulomb friction term. A
+strip shoved across a barrier-only box plate is decelerated by friction
+(`Deformable Friction on Box Plate (IPC)` showcase + C++/dartpy regressions);
+existing CCD-obstacle scenes are unchanged. **Remaining M5 (lower priority):** the
+"right" fix that keeps the conservative CCD _and_ allows tangential sliding —
+making the surface CCD limit only the _normal_ approach component (not the whole
+step) — so friction works without giving up the fast-motion CCD safety net. That
+is a focused, higher-risk change to the CCD contracts (cf. #2732); the barrier-only
+mode is the safe, shipped path for quasi-static obstacle-friction scenes.
 
 ### M6 — Adaptive barrier stiffness (κ homotopy) — LANDED
 
@@ -194,7 +203,7 @@ mass-independently) than with fixed κ. Remaining M6 follow-up: in-Newton κ
 homotopy (increase κ mid-solve if the min distance drops), and applying the
 adaptive κ to the self-contact barrier (which today carries its own stiffness).
 
-### M7 — Scale + performance (CPU then GPU) until beating the reference
+### M7 — Scale + performance (CPU then GPU) until beating the reference — iterative CG solve LANDED
 
 Matrix-free / AMGCL-class iterative linear solve for very large systems (Fig
 22, 688K nodes), on-device GPU assembly + solve beyond the current PSD offload,
@@ -203,6 +212,55 @@ and a profiling-grade benchmark harness that emits Fig-23-shaped statistics
 per scene. Acceptance: match or undercut IPC's per-step CPU time at equal
 accuracy on shared scenes (Table 1, Fig 23), then report GPU acceleration as
 net-new.
+
+**First increment landed:** an opt-in iterative conjugate-gradient
+projected-Newton linear solve
+(`DeformableMaterialProperties.useIterativeLinearSolver` / dartpy
+`use_iterative_linear_solver`). It reuses the existing sparse SPD Hessian
+assembly but solves with CG instead of `SimplicialLDLT`, so it never factorizes
+— memory stays near O(nnz) and per-step cost grows more gently than direct
+fill-in as the mesh chunks up. The inertia floor + PSD-projected element blocks
+guarantee convergence; a non-converged/non-finite solve falls back to
+steepest descent exactly as the direct path does on an indefinite
+factorization. Meshes above the direct-solve node cap (20k) now take the
+iterative path automatically (effective ceiling raised to 1M nodes) instead of
+degrading to gradient descent. Verified by a regression in which a dropped FEM
+cube settles identically under both solvers while taking mutually exclusive
+solve paths (CG run never factorizes), with a `cg_solver` py-demo and a
+`BM_DeformableCgBarStep` benchmark mirroring the direct FEM-bar benchmark for
+per-step scaling comparison.
+
+**Second increment landed:** the CG preconditioner was strengthened from
+diagonal (Jacobi) to **incomplete-Cholesky**. Stiff barrier contact makes the
+Hessian ill-conditioned, where Jacobi-CG stalls against its iteration cap and
+falls back to steepest descent; the incomplete-Cholesky preconditioner (a sparse
+approximate factorization that drops fill, so the solve still stays near O(nnz))
+collapses the CG iteration count so the iterative path carries stiff contact
+within the cap. On a settling stiff FEM contact scene this cuts the iterative
+solver's fallbacks below the direct solver's and reduces Newton iterations per
+step. Verified by a regression in which a stiff (E = 1e6) FEM cube settles on a
+ground barrier through the iterative path with accepted CG steps dominating
+fallbacks and the same equilibrium as the direct solve, plus a `cg_contact`
+py-demo.
+
+**Third increment landed:** a chunky 3D FEM-cube direct-vs-iterative scaling
+benchmark (`BM_DeformableCube3dDirectStep` / `BM_DeformableCube3dCgStep`) that
+makes the crossover measurable on the mesh shape where it bites. On a solid N^3
+cube the direct solve's 3D fill-in makes its per-step time climb super-linearly
+while the incomplete-Cholesky CG stays near O(nnz); on the development machine
+the per-step cost crosses over near ~1k nodes and the iterative solve runs ~5x
+faster by ~4k nodes (measured: 11.3 s/step direct vs 2.3 s/step iterative at
+4096 nodes). The thin `BM_DeformableFemBarStep` beam (2x2 cross-section) cannot
+show this -- its bandwidth is too small -- which is why the chunky fixture was
+added. Guarded by a regression that the chunky 3D cube sags to the same
+equilibrium under both solvers. This is the first concrete, measured rung of the
+Fig-23 / Table-1 per-step-scaling axis.
+
+Remaining M7 work: a truly matrix-free Hessian-vector CG (skip the sparse
+assembly entirely), an AMG / multigrid preconditioner for the largest systems,
+on-device GPU assembly + solve beyond the current PSD offload, the 688K-node
+Fig-22 scale run, and the profiling-grade per-scene Fig-23 statistics harness
+with the Table-1 CPU comparison against the reference.
 
 ## Honest status
 
