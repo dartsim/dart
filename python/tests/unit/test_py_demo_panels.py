@@ -16,6 +16,8 @@ from examples.demos.scenes import (
     diff_drone_liftoff,
     experimental_rigid_body_gui,
     ipc_deformable_capsule_rod,
+    ipc_deformable_cg_contact,
+    ipc_deformable_cg_solver,
     ipc_deformable_drape,
     ipc_deformable_fem_buckle,
     ipc_deformable_fem_sphere,
@@ -263,6 +265,23 @@ def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
             event.startswith("text:solver: deformable IPC")
             for event in builder.events
         )
+
+
+def test_ipc_cg_showcase_scenes_expose_solver_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (ipc_deformable_cg_solver, "IPC FEM CG Solver", "plot:Tip drop:"),
+        (ipc_deformable_cg_contact, "IPC FEM CG Contact", "plot:Ground clearance:"),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert "text:solver: deformable IPC" in builder.events
+        assert any(event.startswith("text:linear solve:") for event in builder.events)
+        assert any(event.startswith(expected_plot) for event in builder.events)
 
 
 @pytest.mark.skipif(
