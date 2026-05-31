@@ -868,6 +868,38 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
 }
 
 //==============================================================================
+// The isolated third node contributes only its three inertial diagonal entries
+// to the sparse projected-Newton Hessian; the spring-connected pair contributes
+// a full 6x6 block that drives the solve.
+TEST(DeformableBody, SparseInertiaAssemblyOmitsExplicitZeroEntries)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY()};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+  options.masses = {1.0, 2.0, 3.0};
+  options.edges = {sx::DeformableEdge{0, 1}};
+  world.addDeformableBody("spring_with_isolated_node", options);
+
+  world.step(1);
+
+  const auto& after = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(after.bodyCount, 1u);
+  EXPECT_EQ(after.nodeCount, 3u);
+  EXPECT_EQ(after.projectedNewtonHessianNonZeros, 39u);
+  EXPECT_GT(after.projectedNewtonHessianStorageBytes, 0u);
+}
+
+//==============================================================================
 // The public solver diagnostics expose which linear-solve path each Newton
 // iteration took: the default direct (sparse Cholesky) solve never reports an
 // iterative solve, while a body opting in to the iterative

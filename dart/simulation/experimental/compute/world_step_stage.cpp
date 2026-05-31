@@ -4673,27 +4673,25 @@ bool computeProjectedNewtonDirection(
       }
     }
   };
-  const auto addDiagonalBlock3
-      = [&](std::size_t node, const Eigen::Matrix3d& block) {
-          if (solveMatrixFree) {
-            matrixFreeHessian.addBlock3(node, node, block);
-            return;
-          }
-          for (int r = 0; r < 3; ++r) {
-            for (int c = 0; c < 3; ++c) {
-              triplets.emplace_back(
-                  static_cast<Eigen::Index>(3 * node + r),
-                  static_cast<Eigen::Index>(3 * node + c),
-                  block(r, c));
-            }
-          }
-        };
+  const auto addDiagonalBlock3 = [&](std::size_t node, double diagonal) {
+    if (solveMatrixFree) {
+      matrixFreeHessian.addBlock3(
+          node, node, diagonal * Eigen::Matrix3d::Identity());
+      return;
+    }
+    for (int r = 0; r < 3; ++r) {
+      triplets.emplace_back(
+          static_cast<Eigen::Index>(3 * node + r),
+          static_cast<Eigen::Index>(3 * node + r),
+          diagonal);
+    }
+  };
 
   // Inertia: block diagonal, positive definite for free nodes. Fixed DOFs get
   // a unit diagonal so the global matrix stays positive definite.
   for (std::size_t i = 0; i < nodeCount; ++i) {
     const double diagonal = isFree(i) ? state.masses[i] * invDt2 : 1.0;
-    addDiagonalBlock3(i, diagonal * Eigen::Matrix3d::Identity());
+    addDiagonalBlock3(i, diagonal);
   }
 
   // Spring stretch Hessian per edge, PSD-projected over its 6x6 block. The
