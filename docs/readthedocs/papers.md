@@ -710,7 +710,8 @@ Related public resources:
 
 Quentin Le Lidec, Wilson Jallet, Louis Montaut, Ivan Laptev, Cordelia Schmid,
 and Justin Carpentier. "Contact Models in Robotics: a Comparative Analysis."
-arXiv:2304.06372v3, 2024.
+_IEEE Transactions on Robotics_, 40, 3716-3733, 2024. DOI:
+[10.1109/TRO.2024.3434208](https://doi.org/10.1109/TRO.2024.3434208).
 
 Related public resources:
 
@@ -718,6 +719,7 @@ Related public resources:
   [di.ens.fr/willow/projects/contact_models_in_robotics](https://www.di.ens.fr/willow/projects/contact_models_in_robotics/)
 - Paper PDF:
   [lelidec2024contacts.pdf](https://simple-robotics.github.io/publications/contact-models/static/paper/lelidec2024contacts.pdf)
+- arXiv: [2304.06372](https://arxiv.org/abs/2304.06372)
 
 - **Type:** paper · **Topic:** contact/survey · **Status:** referenced · **Priority:** medium · **Verdict:** reference
 - **Where used:**
