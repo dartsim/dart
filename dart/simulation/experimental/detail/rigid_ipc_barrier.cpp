@@ -1072,6 +1072,16 @@ void applyRigidIpcNewtonDelta(
   }
 }
 
+void scaleRigidIpcNewtonStep(
+    RigidIpcProjectedNewtonStep& step, const double scale)
+{
+  assert(scale >= 0.0);
+  step.delta *= scale;
+  step.stats.stepScale *= scale;
+  step.stats.stepNorm *= scale;
+  step.stats.gradientDotStep *= scale;
+}
+
 void recordSolveAssemblyStats(
     RigidIpcProjectedNewtonSolveResult& result, const bool initial)
 {
@@ -2458,7 +2468,104 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         }
       }
 
-      applyRigidIpcNewtonDelta(result.surfaces, result.assembly, step.delta);
+      bool acceptedCandidate = false;
+      if (newtonOptions.useSufficientDecreaseLineSearch) {
+        const double currentValue = result.assembly.value;
+        const double directionalDerivative = step.stats.gradientDotStep;
+        if (!std::isfinite(currentValue)
+            || !std::isfinite(directionalDerivative)
+            || !(directionalDerivative < 0.0)) {
+          result.status
+              = RigidIpcProjectedNewtonSolveStatus::FactorizationFailed;
+          result.failed = true;
+          return result;
+        }
+
+        double sufficientDecreaseFactor
+            = newtonOptions.sufficientDecreaseFactor;
+        if (!std::isfinite(sufficientDecreaseFactor)) {
+          sufficientDecreaseFactor = 1e-4;
+        }
+        sufficientDecreaseFactor = std::clamp(
+            sufficientDecreaseFactor, 0.0, std::nextafter(1.0, 0.0));
+
+        double backtrackingScale = newtonOptions.backtrackingScale;
+        if (!(std::isfinite(backtrackingScale) && backtrackingScale > 0.0
+              && backtrackingScale < 1.0)) {
+          backtrackingScale = 0.5;
+        }
+
+        double trialScale = 1.0;
+        std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
+        std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
+        bool hasDecreasingCandidate = false;
+        double bestDecreasingValue = currentValue;
+        double bestDecreasingScale = 1.0;
+        for (std::size_t backtrack = 0;
+             backtrack <= newtonOptions.maxBacktrackingIterations;
+             ++backtrack) {
+          std::vector<RigidIpcBarrierSurface> candidateSurfaces
+              = result.surfaces;
+          applyRigidIpcNewtonDelta(
+              candidateSurfaces, result.assembly, trialScale * step.delta);
+          const RigidIpcBarrierAssembly candidateAssembly
+              = assembleRigidIpcObjectiveSystem(
+                  candidateSurfaces,
+                  laggedSurfaces,
+                  options.dynamicsTerms,
+                  barrierOptions,
+                  frictionOptions);
+          ++result.stats.sufficientDecreaseChecks;
+
+          const double sufficientDecreaseValue
+              = currentValue
+                + sufficientDecreaseFactor * trialScale * directionalDerivative;
+          if (std::isfinite(candidateAssembly.value)
+              && candidateAssembly.value < bestDecreasingValue) {
+            bestDecreasingValue = candidateAssembly.value;
+            bestDecreasingScale = trialScale;
+            bestDecreasingSurfaces = candidateSurfaces;
+            hasDecreasingCandidate = true;
+          }
+          if (std::isfinite(candidateAssembly.value)
+              && candidateAssembly.value <= sufficientDecreaseValue) {
+            acceptedSurfaces = std::move(candidateSurfaces);
+            acceptedCandidate = true;
+            break;
+          }
+
+          if (backtrack == newtonOptions.maxBacktrackingIterations) {
+            break;
+          }
+          trialScale *= backtrackingScale;
+          ++result.stats.sufficientDecreaseBacktracks;
+        }
+
+        if (!acceptedCandidate) {
+          if (hasDecreasingCandidate) {
+            // Lagged friction and active-set changes can make Armijo too strict
+            // for the finite budget even when a feasible candidate lowers the
+            // assembled objective. Keep that progress instead of reporting an
+            // unsafe line-search failure; CCD blocking is handled above.
+            acceptedSurfaces = std::move(bestDecreasingSurfaces);
+            trialScale = bestDecreasingScale;
+            acceptedCandidate = true;
+          } else {
+            result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
+            return result;
+          }
+        }
+
+        if (trialScale < 1.0) {
+          scaleRigidIpcNewtonStep(step, trialScale);
+          result.lastStep = step;
+        }
+        result.surfaces = std::move(acceptedSurfaces);
+      }
+
+      if (!acceptedCandidate) {
+        applyRigidIpcNewtonDelta(result.surfaces, result.assembly, step.delta);
+      }
       ++result.stats.acceptedSteps;
       ++result.stats.iterations;
       result.stats.lastStepNorm = step.stats.stepNorm;

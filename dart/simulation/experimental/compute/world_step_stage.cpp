@@ -6722,9 +6722,10 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // gradient tolerance) is a valid, penetration-free forward step that the next
   // substep re-solves from -- like the reference IPC, which advances with the
   // optimizer's feasible iterate rather than discarding a non-converged step.
-  // (Unlike the reference this iterate is not Armijo energy-minimized; the
-  // sufficient-decrease guarantee is a documented follow-up.) A solve that made
-  // no progress at all (e.g. a zero iteration budget) is still skipped.
+  // The internal solve applies sufficient-decrease backtracking when the
+  // assembled objective admits it, and otherwise stops at the last feasible
+  // decreasing iterate. A solve that made no progress at all (e.g. a zero
+  // iteration budget) is still skipped.
   if (!result.converged && !result.madeProgress()) {
     m_lastStats.nonConvergedResultSkipped = true;
     return;

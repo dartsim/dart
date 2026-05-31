@@ -1,5 +1,40 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: current-main merge + sufficient-decrease line search
+
+Branch `feature/rigid-ipc-paper-parity` was reconciled with current
+`origin/main` by local merge commit `46e4af0f5a3`
+(`Merge origin/main into rigid IPC paper parity`). The merge conflict was limited
+to the Python experimental binding/stub surface and preserved both newer
+`CollisionShapeType.CAPSULE` / `CollisionShape.capsule(...)` and this branch's
+`CollisionShapeType.MESH` / `CollisionShape.mesh(...)`. No push or PR mutation
+has been made from this session.
+
+Delivered a bounded solver-quality slice for Phase 3:
+
+- Added sufficient-decrease backtracking to
+  `solveRigidIpcProjectedNewtonBarrierSystem(...)`. The solve now evaluates the
+  assembled objective for feasible Newton candidates after conservative CCD
+  scaling and backtracks with an Armijo-style criterion before mutating copied
+  poses.
+- Added aggregate internal diagnostics for sufficient-decrease objective checks
+  and backtracks.
+- Made the policy safe for lagged-friction/active-set cases: if the finite
+  Armijo budget misses strict sufficient decrease but found a finite
+  objective-decreasing candidate, the solve accepts that best decreasing
+  candidate; if no candidate decreases the objective, the bounded solve stops as
+  non-converged rather than reporting an unsafe CCD line-search failure.
+- Added focused regressions for both the strict Armijo backtracking path and the
+  finite-budget decreasing-candidate fallback.
+
+Validation in this session:
+
+- `pixi run lint`
+- `pixi run build-simulation-experimental-tests`
+- `pixi run build-py`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no'`
+
 ## Session 2026-05-30: paper-parity examples + Filament rendering fidelity
 
 Branch `feature/rigid-ipc-paper-parity` off `main` (the rigid IPC manifest work
