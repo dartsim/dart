@@ -70,6 +70,9 @@
 - Shared IPC deformable diagnostics now include solver iteration, line-search,
   self-contact, converged-contact, and minimum active-distance metrics when the
   sx world exposes `last_deformable_solver_diagnostics`.
+- The `Demos` navigator now groups categories by first appearance across the
+  entire catalog rather than assuming each category is contiguous, and it shows
+  the current filtered/total scene count beside the search field.
 
 ## Validation
 
@@ -154,6 +157,7 @@ pixi run py-demo-capture -- --scene ipc_deformable_fem_buckle --show-ui --frames
 pixi run py-demo-capture -- --scene ipc_deformable_fem_sphere --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_fem_sphere_panel
 pixi run py-demo-capture -- --scene ipc_deformable_plate_friction --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_plate_friction_panel
 pixi run py-demo-capture -- --scene ipc_deformable_rod_friction --show-ui --frames 20 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_rod_friction_panel
+pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_sidebar_grouping
 ```
 
 All commands produced nonblank docked UI screenshots, PPM/PNG frame sequences,

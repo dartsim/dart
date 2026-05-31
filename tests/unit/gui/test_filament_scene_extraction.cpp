@@ -891,6 +891,10 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
   EXPECT_NE(
       applicationSource.find("builder.textInput(\"##demo_search\", search)"),
       std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("groupDemoScenesByCategory"), std::string::npos);
+  EXPECT_NE(applicationSource.find("visibleSceneCount"), std::string::npos);
+  EXPECT_EQ(applicationSource.find("categoryEnd"), std::string::npos);
   EXPECT_NE(applicationSource.find("categoryHasActive"), std::string::npos);
   EXPECT_NE(
       applicationSource.find("toggleFrameOutputCapture"), std::string::npos);

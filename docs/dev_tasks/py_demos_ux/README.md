@@ -51,6 +51,9 @@ navigation, and a path for scene-specific controls.
 - Add speed/clearance panels to `ipc_deformable_plate_friction` and
   `ipc_deformable_rod_friction` so the barrier-only friction demos expose live
   tangential-speed, clearance, friction-dissipation, and solver diagnostics.
+- Make the `Demos` navigator group categories by first appearance across the
+  whole catalog instead of relying on contiguous scene ordering, and show the
+  current filtered/total scene count.
 
 ## Remaining work
 

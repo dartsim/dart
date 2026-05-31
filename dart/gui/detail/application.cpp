@@ -66,6 +66,7 @@
 
 #include <utils/Log.h>
 
+#include <algorithm>
 #include <array>
 #include <exception>
 #include <filesystem>
@@ -306,6 +307,31 @@ bool demoSceneMatchesSearch(
          || containsSearchText(scene.summary, searchText);
 }
 
+struct DemoCategoryGroup
+{
+  std::string category;
+  std::vector<std::size_t> sceneIndices;
+};
+
+std::vector<DemoCategoryGroup> groupDemoScenesByCategory(
+    const std::vector<dart::gui::DemoSceneEntry>& scenes)
+{
+  std::vector<DemoCategoryGroup> groups;
+  for (std::size_t i = 0; i < scenes.size(); ++i) {
+    const auto& scene = scenes[i];
+    auto group = std::find_if(
+        groups.begin(), groups.end(), [&scene](const DemoCategoryGroup& entry) {
+          return entry.category == scene.category;
+        });
+    if (group == groups.end()) {
+      groups.push_back({scene.category, {i}});
+      continue;
+    }
+    group->sceneIndices.push_back(i);
+  }
+  return groups;
+}
+
 std::string& demoSidebarSearch()
 {
   static std::string search;
@@ -414,47 +440,51 @@ dart::gui::Panel makeDemoSidebarPanel(
         search.clear();
       }
     }
+    const std::string normalizedSearch = normalizedSearchText(search);
+    std::size_t visibleSceneCount = 0;
+    for (const auto& scene : scenes) {
+      if (demoSceneMatchesSearch(scene, normalizedSearch)) {
+        ++visibleSceneCount;
+      }
+    }
+    builder.text(
+        "Showing " + std::to_string(visibleSceneCount) + "/"
+        + std::to_string(scenes.size()) + " demos");
     builder.separator();
 
-    // Tree-style catalog: each category is a collapsible header, scenes
-    // within are indented list rows (selectable text instead of buttons).
-    const std::string normalizedSearch = normalizedSearchText(search);
+    // Tree-style catalog: categories are grouped by first appearance even if
+    // the scene list later interleaves categories. Scenes within each category
+    // are indented list rows (selectable text instead of buttons).
     bool anyVisible = false;
-    for (std::size_t categoryStart = 0; categoryStart < scenes.size();) {
-      const std::string_view category = scenes[categoryStart].category;
-      std::size_t categoryEnd = categoryStart + 1;
-      while (categoryEnd < scenes.size()
-             && scenes[categoryEnd].category == category) {
-        ++categoryEnd;
-      }
-
+    const std::vector<DemoCategoryGroup> categoryGroups
+        = groupDemoScenesByCategory(scenes);
+    for (const auto& group : categoryGroups) {
       std::size_t visibleCount = 0;
       bool categoryHasActive = false;
-      for (std::size_t i = categoryStart; i < categoryEnd; ++i) {
+      for (const std::size_t i : group.sceneIndices) {
         if (demoSceneMatchesSearch(scenes[i], normalizedSearch)) {
           ++visibleCount;
         }
         categoryHasActive
             = categoryHasActive || static_cast<int>(i) == activeIndex;
       }
-      const std::size_t totalCount = categoryEnd - categoryStart;
+      const std::size_t totalCount = group.sceneIndices.size();
       if (visibleCount == 0u) {
-        categoryStart = categoryEnd;
         continue;
       }
 
       anyVisible = true;
-      std::string header = std::string(category) + " (";
+      std::string header = group.category + " (";
       if (!normalizedSearch.empty()) {
         header += std::to_string(visibleCount) + "/";
       }
       header += std::to_string(totalCount) + ")##demo_category_"
-                + sanitizePathComponent(category);
+                + sanitizePathComponent(group.category);
       const bool defaultOpen = !normalizedSearch.empty() || categoryHasActive;
       const bool categoryOpen = builder.collapsingHeader(header, defaultOpen);
       if (categoryOpen) {
         builder.indent();
-        for (std::size_t i = categoryStart; i < categoryEnd; ++i) {
+        for (const std::size_t i : group.sceneIndices) {
           const auto& entry = scenes[i];
           if (!demoSceneMatchesSearch(entry, normalizedSearch)) {
             continue;
@@ -470,7 +500,6 @@ dart::gui::Panel makeDemoSidebarPanel(
         }
         builder.unindent();
       }
-      categoryStart = categoryEnd;
     }
     if (!anyVisible) {
       builder.text("No demos match the current search.");
