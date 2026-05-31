@@ -78,6 +78,13 @@ namespace {
   #define DART_GUI_DETAIL_HAS_GLFW_EXTENDED_CURSORS 0
 #endif
 
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 2)
+  #define DART_GUI_DETAIL_HAS_GLFW_KEY_NAMES 1
+#else
+  #define DART_GUI_DETAIL_HAS_GLFW_KEY_NAMES 0
+#endif
+
 #if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
 struct ImGuiMouseCursorState
 {
@@ -224,6 +231,7 @@ ImGuiKey imguiKeyForTranslatedPrintableGlfwKey(int key, int scancode)
     return ImGuiKey_None;
   }
 
+#if DART_GUI_DETAIL_HAS_GLFW_KEY_NAMES
   // GLFW key tokens are US-position codes; key names follow the active layout.
   const char* keyName = glfwGetKeyName(key, scancode);
   if (keyName == nullptr || keyName[0] == '\0' || keyName[1] != '\0') {
@@ -231,6 +239,10 @@ ImGuiKey imguiKeyForTranslatedPrintableGlfwKey(int key, int scancode)
   }
 
   return imguiKeyForPrintableCharacter(keyName[0]);
+#else
+  static_cast<void>(scancode);
+  return ImGuiKey_None;
+#endif
 }
 
 ImGuiKey imguiKeyForGlfwKey(int key, int scancode)

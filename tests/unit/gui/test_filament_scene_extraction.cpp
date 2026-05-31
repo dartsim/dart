@@ -684,7 +684,11 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       inputSource.find("io.SetKeyEventNativeData(imguiKey, key"),
       std::string::npos);
   EXPECT_NE(
+      inputSource.find("DART_GUI_DETAIL_HAS_GLFW_KEY_NAMES"),
+      std::string::npos);
+  EXPECT_NE(
       inputSource.find("glfwGetKeyName(key, scancode)"), std::string::npos);
+  EXPECT_NE(inputSource.find("static_cast<void>(scancode)"), std::string::npos);
   EXPECT_NE(
       inputSource.find("imguiKeyForGlfwKey(key, scancode)"), std::string::npos);
   EXPECT_NE(
