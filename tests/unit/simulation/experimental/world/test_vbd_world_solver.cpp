@@ -262,6 +262,16 @@ sx::DeformableBodyOptions makeNearSelfContactSpringBody()
   return options;
 }
 
+sx::DeformableBodyOptions makeNearSelfContactSlidingSpringBody(double velocityX)
+{
+  sx::DeformableBodyOptions options = makeNearSelfContactSpringBody();
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  for (std::size_t i = 3; i < 6; ++i) {
+    options.velocities[i] = Eigen::Vector3d(velocityX, 0.0, 0.0);
+  }
+  return options;
+}
+
 // Two same-body surface triangles where the top triangle would move completely
 // through the pinned bottom triangle in one step if VBD did not reuse the
 // self-surface CCD limiter after its block solve.
@@ -678,6 +688,78 @@ TEST(VbdWorldSolver, AvbdSelfContactNormalRowsIncludeFrictionTangentRows)
   EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
   EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
+}
+
+//==============================================================================
+// World-generated AVBD self-contact friction rows must affect motion, not only
+// row accounting: a near-contact upper triangle sliding over a pinned lower
+// triangle should move less tangentially when material friction is positive.
+TEST(VbdWorldSolver, AvbdSelfContactFrictionRowsReduceTangentialMotion)
+{
+  struct Result
+  {
+    double travelledX = 0.0;
+    std::size_t maxSelfContactNormalRows = 0;
+    std::size_t maxFrictionRows = 0;
+  };
+
+  const auto run = [](double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.01);
+    sx::DeformableBodyOptions options
+        = makeNearSelfContactSlidingSpringBody(/*velocityX=*/0.5);
+    options.material.frictionCoefficient = friction;
+    world.addDeformableBody("fold", options);
+
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 20;
+    cfg.useAvbdSelfContactNormalRows = true;
+    cfg.avbdAlpha = 0.0;
+    cfg.avbdBeta = 2000.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 1.0e6;
+    enableVbdConfig(world, cfg);
+
+    const auto topCentroidX = [&]() {
+      const auto body = world.getDeformableBody("fold");
+      double sum = 0.0;
+      for (std::size_t i = 3; i < 6; ++i) {
+        sum += body->getPosition(i).x();
+      }
+      return sum / 3.0;
+    };
+
+    const double startX = topCentroidX();
+    Result result;
+    compute::DeformableDynamicsStage stage;
+    for (int step = 0; step < 80; ++step) {
+      stepOnce(world, stage);
+      const auto& stats = stage.getLastStats();
+      EXPECT_EQ(stats.vbdBodyCount, 1u);
+      result.maxSelfContactNormalRows = std::max(
+          result.maxSelfContactNormalRows, stats.vbdAvbdSelfContactNormalRows);
+      result.maxFrictionRows
+          = std::max(result.maxFrictionRows, stats.vbdAvbdFrictionTangentRows);
+      if (stats.vbdAvbdSelfContactNormalRows > 0u) {
+        EXPECT_EQ(
+            stats.vbdAvbdFrictionTangentRows,
+            friction > 0.0 ? 2u * stats.vbdAvbdSelfContactNormalRows : 0u);
+      }
+    }
+    result.travelledX = topCentroidX() - startX;
+    return result;
+  };
+
+  const Result frictionless = run(0.0);
+  const Result frictional = run(1.0);
+  EXPECT_GT(frictionless.maxSelfContactNormalRows, 0u);
+  EXPECT_GT(frictional.maxSelfContactNormalRows, 0u);
+  EXPECT_EQ(frictionless.maxFrictionRows, 0u);
+  EXPECT_GT(frictional.maxFrictionRows, 0u);
+  EXPECT_GT(frictionless.travelledX, 0.05);
+  EXPECT_LT(frictional.travelledX, 0.75 * frictionless.travelledX);
 }
 
 //==============================================================================

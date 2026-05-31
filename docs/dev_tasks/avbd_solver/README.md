@@ -106,9 +106,10 @@ Paper audit:
     World generation for serial mass-spring self-contact scenes, and has
     focused `VbdCombinedDescent.AvbdSelfContactFriction*` plus
     `VbdWorldSolver.AvbdSelfContactNormalRowsIncludeFrictionTangentRows`
+    and `VbdWorldSolver.AvbdSelfContactFrictionRowsReduceTangentialMotion`
     coverage for tangent direction, static/dynamic pair switching,
-    circular-cone projection, tangential-motion resistance, and World row
-    generation.
+    circular-cone projection, tangential-motion resistance, World row
+    generation, and World-level tangential slip reduction.
   - Fallback coverage now guards the unsupported World envelopes:
     mixed spring-plus-tet topology, mass-spring self-contact without the
     self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,

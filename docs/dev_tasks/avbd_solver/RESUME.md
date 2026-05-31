@@ -29,7 +29,8 @@ Self-contact friction tangent rows now reuse lagged point-triangle / edge-edge
 tangent stencils in the combined mass-spring row driver, with supported World
 generation for serial mass-spring self-contact scenes and focused coverage for
 tangent direction, static/dynamic pair switching, circular-cone projection,
-tangential-motion resistance, and World row generation.
+tangential-motion resistance, World row generation, and World-level tangential
+slip reduction.
 Unsupported mixed spring-plus-tet, mass-spring self-contact without the
 self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
 Rayleigh-damped, parallel, and unsupported-row requests have explicit fallback
