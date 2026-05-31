@@ -13,6 +13,7 @@ from examples.demos.runner import (
     _make_world_factory,
 )
 from examples.demos.scenes import (
+    atlas_simbicon,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
     diff_throw_to_target,
@@ -43,6 +44,7 @@ from examples.demos.scenes import (
     ipc_deformable_scripted_dirichlet,
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
+    joint_constraints,
     legged_balance,
     operational_space_control,
     sensor_descriptors,
@@ -426,7 +428,9 @@ def test_legacy_control_scenes_expose_controller_panels() -> None:
         ),
         (hybrid_dynamics, "Hybrid Dynamics", "plot:Arm command:"),
         (biped_stand, "Biped Stand", "plot:Pose error:"),
+        (joint_constraints, "Joint Constraints", "plot:Sagittal offset:"),
         (vehicle, "Vehicle", "plot:Steering angle:"),
+        (atlas_simbicon, "Atlas SIMBICON", "plot:atlas z:"),
     ):
         setup = scene_module.build()
         builder = _FakePanelBuilder()

@@ -132,6 +132,9 @@
 - `operational_space_control`, `hybrid_dynamics`, `biped_stand`, and
   `vehicle` now have legacy Control & IK panels with tracking error, command
   signals, pose error, wheel/steering state, and live plots.
+- `joint_constraints`, `atlas_simbicon`, `g1_simbicon`, and `simbicon_duo`
+  now have legacy locomotion panels with SPD sagittal-correction diagnostics
+  and SIMBICON gait-state, pelvis-height, and balance-feedback plots.
 - `arm_push_box`, `cartpole_gym_env`, and `cartpole_mpc` now use
   `SceneSetup.pre_step` for interactive-viewer control. `SceneSetup.step` is
   documented as a headless whole-step escape hatch.
@@ -264,6 +267,8 @@ pixi run py-demo-capture -- --scene cartpole_mpc --show-ui --frames 12 --width 1
 pixi run py-demo-capture -- --scene sensor_descriptors --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_sensor_descriptors_panel
 pixi run py-demo-capture -- --scene operational_space_control --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_operational_space_panel
 pixi run py-demo-capture -- --scene vehicle --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vehicle_panel
+pixi run py-demo-capture -- --scene joint_constraints --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_joint_constraints_panel
+pixi run py-demo-capture -- --scene atlas_simbicon --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_atlas_simbicon_panel
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_sidebar_grouping
 ```
 
@@ -289,6 +294,7 @@ pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_obj_cl
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_fem_bar.py python/examples/demos/scenes/ipc_deformable_fem_twist.py python/examples/demos/scenes/ipc_deformable_fcr_twist.py python/examples/demos/scenes/ipc_deformable_fem_drop.py python/examples/demos/scenes/ipc_deformable_fem_box.py python/examples/demos/scenes/ipc_deformable_fem_msh.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/runner.py python/examples/demos/scenes/legged_balance.py python/examples/demos/scenes/arm_push_box.py python/examples/demos/scenes/cartpole_gym_env.py python/examples/demos/scenes/cartpole_mpc.py python/examples/demos/scenes/sensor_descriptors.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/operational_space_control.py python/examples/demos/scenes/hybrid_dynamics.py python/examples/demos/scenes/biped_stand.py python/examples/demos/scenes/vehicle.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/scenes/joint_constraints.py python/examples/demos/scenes/_simbicon.py python/examples/demos/scenes/_simbicon_robots.py python/examples/demos/scenes/atlas_simbicon.py python/examples/demos/scenes/g1_simbicon.py python/examples/demos/scenes/simbicon_duo.py python/tests/unit/test_py_demo_panels.py
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
