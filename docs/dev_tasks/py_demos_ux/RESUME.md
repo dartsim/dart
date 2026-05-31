@@ -76,6 +76,12 @@
 - Active force-drag now has visible feedback: the DART status panel shows the
   dragged target and current force magnitude, and the viewport renders a spring
   line plus force arrow while the drag is active.
+- `py-demo-capture --force-drag-target <renderable>` now drives the same
+  force-drag controller path after a bounded frame count, records
+  `force_drag_started`, `force_drag_updated`, and `force_drag_released` viewer
+  events, and writes the scripted gesture into `manifest.json`. Scene teardown
+  explicitly cancels active drags before renderables are destroyed so stale
+  drag state cannot leak into a subsequent demo.
 - Slider and plot labels now render above the control in scene panels, using
   hidden ImGui ids for the actual widgets, so narrow right-docked panels do not
   clip labels or waste horizontal plot/slider space. The bottom diagnostics
@@ -308,6 +314,19 @@ The event log recorded `requested_demo_switch`, `observed_target_demo`, and
 `/tmp/dart_py_demo_capture_scripted_switch/sx_rigid_ipc_slide_to_sx_rigid_ipc_incline.png`
 showed `Rigid IPC Inclined Slide (sx)` active in the docked workspace.
 
+Scripted force-drag proof:
+
+```bash
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_force_drag
+```
+
+The event log recorded `force_drag_started`, eight
+`force_drag_updated` events, and `force_drag_released`; the viewed mid-drag
+frame
+`/tmp/dart_py_demo_capture_force_drag/png_frames/frame_000006.png` showed
+`ipc_slide_box_visual` selected with active external-force status and force
+magnitude in the docked workspace.
+
 Focused checks:
 
 ```bash
@@ -342,8 +361,8 @@ pixi run lint
 
 ## Next
 
-1. Add full viewer-input coverage for mouse force-drag once tests can inject
-   pointer drags into the Filament viewer loop.
+1. Add coordinate-level viewer-input coverage for mouse force-drag once tests
+   can inject pointer drags into the Filament viewer loop.
 2. Consider process- or worker-isolated demo construction if a future demo
    factory can block indefinitely before returning to the C++ viewer loop.
 3. Add image thumbnail playback only if the UI renderer grows a texture-backed

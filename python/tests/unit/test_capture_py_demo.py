@@ -76,3 +76,31 @@ def test_visual_capture_forwards_scripted_demo_switch(
     assert "2:sx_rigid_ipc_incline" in demo_args
     assert "--scripted-demo-event-log" in demo_args
     assert str(tmp_path / "events.jsonl") in demo_args
+
+
+def test_visual_capture_forwards_scripted_force_drag(
+    tmp_path: pathlib.Path,
+) -> None:
+    args = argparse.Namespace(
+        backend="opengl",
+        allow_noop=False,
+        scene="sx_rigid_ipc_slide",
+        frames=12,
+        width=640,
+        height=360,
+        show_ui=True,
+        force_drag_target="ipc_slide_box_visual",
+        force_drag_frame=2,
+        force_drag_frames=5,
+        force_drag_delta=(0.8, 0.0, 0.2),
+        event_log=tmp_path / "events.jsonl",
+    )
+
+    demo_args = capture_py_demo.build_demo_args(
+        args, tmp_path / "capture.ppm", tmp_path / "frames"
+    )
+
+    assert "--scripted-force-drag" in demo_args
+    assert "2:ipc_slide_box_visual:0.8,0,0.2:5" in demo_args
+    assert "--scripted-demo-event-log" in demo_args
+    assert str(tmp_path / "events.jsonl") in demo_args

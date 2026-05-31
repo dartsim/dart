@@ -37,7 +37,11 @@
 #include <dart/gui/profile.hpp>
 #include <dart/gui/renderable.hpp>
 
+#include <Eigen/Core>
+
 #include <optional>
+#include <string>
+#include <string_view>
 
 struct GLFWwindow;
 
@@ -63,6 +67,19 @@ struct SceneLights;
 class SelectionController;
 class SimulationStepper;
 
+struct ScriptedForceDrag
+{
+  int afterFrames = 0;
+  int durationFrames = 1;
+  std::string target;
+  Eigen::Vector3d targetOffset = Eigen::Vector3d::Zero();
+  std::string eventLogPath;
+  Eigen::Vector3d startPoint = Eigen::Vector3d::Zero();
+  int elapsedFrames = 0;
+  bool started = false;
+  bool completed = false;
+};
+
 class SceneFrameUpdater
 {
 public:
@@ -81,7 +98,8 @@ public:
       SimulationStepper& simulationStepper,
       SceneLights& lights,
       dart::gui::ProfileAccumulator::Clock::time_point orbitStartClock,
-      dart::gui::ProfileAccumulator& profile);
+      dart::gui::ProfileAccumulator& profile,
+      ScriptedForceDrag* scriptedForceDrag = nullptr);
 
   void update(
       const FrameViewport& viewport,
@@ -89,6 +107,8 @@ public:
       bool uiCapturesMouse,
       bool orbitLight,
       double orbitLightPeriodSeconds);
+
+  void releaseScriptedForceDragIfActive(std::string_view status);
 
 private:
   GLFWwindow* mWindow = nullptr;
@@ -107,6 +127,7 @@ private:
   dart::gui::ProfileAccumulator::Clock::time_point mOrbitStartClock;
   dart::gui::ProfileAccumulator& mProfile;
   dart::gui::RenderableExtractor mExtractor;
+  ScriptedForceDrag* mScriptedForceDrag = nullptr;
 };
 
 } // namespace dart::gui::detail

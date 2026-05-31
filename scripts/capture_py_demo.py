@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import pathlib
 import shutil
@@ -81,7 +82,27 @@ def _capture_stem(args: argparse.Namespace) -> str:
     switch_scene = getattr(args, "switch_scene", "")
     if switch_scene:
         return f"{_safe_stem(args.scene)}_to_{_safe_stem(switch_scene)}"
+    force_drag_target = getattr(args, "force_drag_target", "")
+    if force_drag_target:
+        return f"{_safe_stem(args.scene)}_force_{_safe_stem(force_drag_target)}"
     return _safe_stem(args.scene)
+
+
+def _parse_vector3(text: str) -> tuple[float, float, float]:
+    parts = text.split(",")
+    if len(parts) != 3:
+        raise argparse.ArgumentTypeError("expected <x>,<y>,<z>")
+    try:
+        vector = (float(parts[0]), float(parts[1]), float(parts[2]))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("expected finite numeric vector") from exc
+    if not all(math.isfinite(component) for component in vector):
+        raise argparse.ArgumentTypeError("expected finite numeric vector")
+    return vector
+
+
+def _format_vector3(value: tuple[float, float, float]) -> str:
+    return ",".join(f"{component:g}" for component in value)
 
 
 def _write_json(path: pathlib.Path, payload: dict[str, object]) -> None:
@@ -146,6 +167,22 @@ def build_demo_args(
         )
         event_log = getattr(args, "event_log", None)
         if event_log is not None:
+            demo_args.extend(["--scripted-demo-event-log", str(event_log)])
+    force_drag_target = getattr(args, "force_drag_target", "")
+    if force_drag_target:
+        demo_args.extend(
+            [
+                "--scripted-force-drag",
+                (
+                    f"{getattr(args, 'force_drag_frame', 2)}:"
+                    f"{force_drag_target}:"
+                    f"{_format_vector3(getattr(args, 'force_drag_delta'))}:"
+                    f"{getattr(args, 'force_drag_frames', 8)}"
+                ),
+            ]
+        )
+        event_log = getattr(args, "event_log", None)
+        if event_log is not None and "--scripted-demo-event-log" not in demo_args:
             demo_args.extend(["--scripted-demo-event-log", str(event_log)])
     return demo_args
 
@@ -214,6 +251,29 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=2,
         help="Rendered frame count after which --switch-scene is requested.",
     )
+    parser.add_argument(
+        "--force-drag-target",
+        default="",
+        help="Renderable name or id:<number> to scripted-force-drag in capture.",
+    )
+    parser.add_argument(
+        "--force-drag-frame",
+        type=int,
+        default=2,
+        help="Rendered frame count after which --force-drag-target starts.",
+    )
+    parser.add_argument(
+        "--force-drag-frames",
+        type=int,
+        default=8,
+        help="Number of frames to keep the scripted force drag active.",
+    )
+    parser.add_argument(
+        "--force-drag-delta",
+        type=_parse_vector3,
+        default=(0.8, 0.0, 0.2),
+        help="World-space target offset for scripted force drag as <x>,<y>,<z>.",
+    )
     return parser.parse_args(argv)
 
 
@@ -227,6 +287,18 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--switch-frame must be positive")
     if args.switch_scene and args.frames <= args.switch_frame:
         raise SystemExit("--frames must be greater than --switch-frame")
+    if args.switch_scene and args.force_drag_target:
+        raise SystemExit("--switch-scene and --force-drag-target cannot be combined")
+    if args.force_drag_frame < 1:
+        raise SystemExit("--force-drag-frame must be positive")
+    if args.force_drag_frames < 1:
+        raise SystemExit("--force-drag-frames must be positive")
+    if args.force_drag_target and args.frames <= (
+        args.force_drag_frame + args.force_drag_frames
+    ):
+        raise SystemExit(
+            "--frames must be greater than --force-drag-frame + --force-drag-frames"
+        )
 
     output_dir = args.output_dir or _default_output_dir(args.scene)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -244,7 +316,8 @@ def main(argv: list[str] | None = None) -> int:
         if path.exists():
             path.unlink()
 
-    if args.switch_scene:
+    needs_event_log = bool(args.switch_scene or args.force_drag_target)
+    if needs_event_log:
         args.event_log = events
     start_time = time.monotonic()
     demo_args = build_demo_args(args, screenshot_ppm, frames_dir)
@@ -255,15 +328,25 @@ def main(argv: list[str] | None = None) -> int:
             "scene": args.scene,
             "switch_scene": args.switch_scene or None,
             "switch_frame": args.switch_frame if args.switch_scene else None,
+            "force_drag": (
+                {
+                    "delta": list(args.force_drag_delta),
+                    "duration_frames": args.force_drag_frames,
+                    "start_frame": args.force_drag_frame,
+                    "target": args.force_drag_target,
+                }
+                if args.force_drag_target
+                else None
+            ),
             "artifacts": {
-                "events": str(events) if args.switch_scene else None,
+                "events": str(events) if needs_event_log else None,
                 "frames": str(png_frames_dir),
                 "screenshot": str(screenshot_png),
             },
         },
     )
     rc = _run_demo(demo_args)
-    if args.switch_scene:
+    if needs_event_log:
         _append_event(events, start_time, "capture_run_finished", return_code=rc)
     if rc != 0:
         return rc
@@ -283,7 +366,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"screenshot: {screenshot_png}")
     if converted_frames:
         print(f"frames: {png_frames_dir} ({converted_frames} PNG files)")
-    if args.switch_scene:
+    if needs_event_log:
         _append_event(
             events,
             start_time,

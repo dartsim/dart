@@ -52,6 +52,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <string_view>
 
 namespace dart::gui::detail {
 namespace {
@@ -112,6 +114,58 @@ void notifyRenderableSelectionChanged(
   }
 }
 
+std::string jsonEscape(std::string_view value)
+{
+  std::string out;
+  out.reserve(value.size() + 2);
+  for (const char ch : value) {
+    switch (ch) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '"':
+        out += "\\\"";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        out.push_back(ch);
+        break;
+    }
+  }
+  return out;
+}
+
+void appendScriptedForceDragEvent(
+    const ScriptedForceDrag* scriptedForceDrag,
+    std::string_view event,
+    int frame,
+    std::string_view status)
+{
+  if (scriptedForceDrag == nullptr || scriptedForceDrag->eventLogPath.empty()) {
+    return;
+  }
+
+  std::ofstream out(scriptedForceDrag->eventLogPath, std::ios::app);
+  if (!out) {
+    return;
+  }
+
+  const Eigen::Vector3d& offset = scriptedForceDrag->targetOffset;
+  out << "{\"source\":\"viewer\",\"event\":\"" << jsonEscape(event)
+      << "\",\"frame\":" << frame << ",\"target\":\""
+      << jsonEscape(scriptedForceDrag->target) << "\",\"offset\":["
+      << offset.x() << ',' << offset.y() << ',' << offset.z()
+      << "],\"status\":\"" << jsonEscape(status) << "\"}\n";
+}
+
 } // namespace
 
 SceneFrameUpdater::SceneFrameUpdater(
@@ -129,7 +183,8 @@ SceneFrameUpdater::SceneFrameUpdater(
     SimulationStepper& simulationStepper,
     SceneLights& lights,
     dart::gui::ProfileAccumulator::Clock::time_point orbitStartClock,
-    dart::gui::ProfileAccumulator& profile)
+    dart::gui::ProfileAccumulator& profile,
+    ScriptedForceDrag* scriptedForceDrag)
   : mWindow(window),
     mEngine(engine),
     mScene(scene),
@@ -144,7 +199,8 @@ SceneFrameUpdater::SceneFrameUpdater(
     mSimulationStepper(simulationStepper),
     mLights(lights),
     mOrbitStartClock(orbitStartClock),
-    mProfile(profile)
+    mProfile(profile),
+    mScriptedForceDrag(scriptedForceDrag)
 {
 }
 
@@ -180,6 +236,61 @@ void SceneFrameUpdater::update(
   syncExternalRenderableSelection(
       mSelectionController, mDartScene, descriptors);
   mProfile.extractionMs += dart::gui::elapsedMs(phaseStart);
+
+  if (mScriptedForceDrag != nullptr && !mScriptedForceDrag->completed) {
+    const int currentFrame = mLifecycle.renderedFrames;
+    if (!mScriptedForceDrag->started
+        && currentFrame >= mScriptedForceDrag->afterFrames) {
+      if (mSelectionController.beginScriptedForceDrag(
+              mDartScene,
+              descriptors,
+              mScriptedForceDrag->target,
+              mScriptedForceDrag->startPoint,
+              mLifecycle)) {
+        mScriptedForceDrag->started = true;
+        appendScriptedForceDragEvent(
+            mScriptedForceDrag,
+            "force_drag_started",
+            currentFrame,
+            mSelectionController.interactionStatus());
+      } else {
+        mScriptedForceDrag->completed = true;
+        appendScriptedForceDragEvent(
+            mScriptedForceDrag,
+            "force_drag_target_missing",
+            currentFrame,
+            "scripted force-drag target was not found or cannot receive "
+            "force-drag events");
+      }
+    }
+
+    if (mScriptedForceDrag->started && !mScriptedForceDrag->completed) {
+      const int duration = std::max(1, mScriptedForceDrag->durationFrames);
+      const double alpha
+          = static_cast<double>(mScriptedForceDrag->elapsedFrames + 1)
+            / static_cast<double>(duration);
+      const Eigen::Vector3d targetPoint
+          = mScriptedForceDrag->startPoint
+            + mScriptedForceDrag->targetOffset * std::min(1.0, alpha);
+      mSelectionController.updateScriptedForceDragToTarget(
+          mDartScene, descriptors, targetPoint);
+      appendScriptedForceDragEvent(
+          mScriptedForceDrag,
+          "force_drag_updated",
+          currentFrame,
+          mSelectionController.interactionStatus());
+      ++mScriptedForceDrag->elapsedFrames;
+      if (mScriptedForceDrag->elapsedFrames >= duration) {
+        mSelectionController.cancelActiveDrag(mDartScene);
+        mScriptedForceDrag->completed = true;
+        appendScriptedForceDragEvent(
+            mScriptedForceDrag,
+            "force_drag_released",
+            currentFrame,
+            "scripted force-drag completed");
+      }
+    }
+  }
 
   const ViewportPaneFrame& activePane = activeViewportPane(viewport);
 
@@ -262,6 +373,23 @@ void SceneFrameUpdater::update(
       mSelectionController.forceDragDebugLines(),
       mSelectionDebugOverlay);
   mProfile.selectionDebugMs += dart::gui::elapsedMs(phaseStart);
+}
+
+void SceneFrameUpdater::releaseScriptedForceDragIfActive(
+    std::string_view status)
+{
+  if (mScriptedForceDrag == nullptr || !mScriptedForceDrag->started
+      || mScriptedForceDrag->completed) {
+    return;
+  }
+
+  mSelectionController.cancelActiveDrag(mDartScene);
+  mScriptedForceDrag->completed = true;
+  appendScriptedForceDragEvent(
+      mScriptedForceDrag,
+      "force_drag_released",
+      mLifecycle.renderedFrames,
+      status);
 }
 
 } // namespace dart::gui::detail

@@ -1061,6 +1061,8 @@ TEST(FilamentSceneExtraction, DemoWorkspaceSupportsScriptedSwitchCaptureEvents)
 {
   const auto applicationSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
+  const auto sceneFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "scene_frame.cpp");
   const auto captureSource
       = readSourceFile(std::filesystem::path("scripts") / "capture_py_demo.py");
 
@@ -1077,9 +1079,13 @@ TEST(FilamentSceneExtraction, DemoWorkspaceSupportsScriptedSwitchCaptureEvents)
       applicationSource.find("\"observed_target_demo\""), std::string::npos);
   EXPECT_NE(
       applicationSource.find("\"restored_previous_demo\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-force-drag\""), std::string::npos);
+  EXPECT_NE(sceneFrameSource.find("\"force_drag_started\""), std::string::npos);
   EXPECT_NE(captureSource.find("\"--switch-scene\""), std::string::npos);
   EXPECT_NE(
       captureSource.find("\"--scripted-demo-switch\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"--force-drag-target\""), std::string::npos);
   EXPECT_NE(captureSource.find("\"events.jsonl\""), std::string::npos);
   EXPECT_NE(captureSource.find("\"manifest.json\""), std::string::npos);
 }
@@ -1209,6 +1215,59 @@ TEST(FilamentSceneExtraction, ForceDragAppliesBodyNodeForceAtPickedShapePoint)
       selection.interactionStatus().find("force drag: offset_box_visual"),
       std::string::npos);
   EXPECT_FALSE(selection.forceDragDebugLines().empty());
+}
+
+TEST(FilamentSceneExtraction, ScriptedForceDragTargetsRenderableAndCancels)
+{
+  dart::gui::detail::SelectionController selection;
+  dart::gui::detail::DartScene scene;
+  std::vector<dart::gui::ForceDragEvent> events;
+  scene.onForceDrag = [&](const dart::gui::ForceDragEvent& event) {
+    events.push_back(event);
+  };
+
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.id = 91;
+  descriptor.shapeFrameName = "script_shape";
+  descriptor.shapeNodeName = "script_node";
+  descriptor.bodyName = "script_body";
+  descriptor.worldTransform = Eigen::Isometry3d::Identity();
+  descriptor.worldTransform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  std::vector<dart::gui::RenderableDescriptor> descriptors{descriptor};
+
+  dart::gui::ViewerLifecycleState lifecycle;
+  Eigen::Vector3d startPoint = Eigen::Vector3d::Zero();
+  ASSERT_TRUE(selection.beginScriptedForceDrag(
+      scene, descriptors, "script_shape", startPoint, lifecycle));
+  EXPECT_TRUE(
+      startPoint.isApprox(descriptor.worldTransform.translation(), 1e-12));
+
+  selection.updateScriptedForceDragToTarget(
+      scene, descriptors, startPoint + Eigen::Vector3d(0.5, 0.0, 0.25));
+
+  ASSERT_EQ(events.size(), 1u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "script_shape");
+  EXPECT_TRUE(events.back().active);
+  EXPECT_TRUE(events.back().applicationPoint.isApprox(startPoint, 1e-12));
+  EXPECT_GT(events.back().force.norm(), 1.0);
+  EXPECT_NE(
+      selection.interactionStatus().find("force drag: script_shape"),
+      std::string::npos);
+  EXPECT_FALSE(selection.forceDragDebugLines().empty());
+
+  selection.cancelActiveDrag(scene);
+  ASSERT_EQ(events.size(), 2u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "script_shape");
+  EXPECT_FALSE(events.back().active);
+  EXPECT_TRUE(selection.forceDragDebugLines().empty());
+
+  ASSERT_TRUE(selection.beginScriptedForceDrag(
+      scene, descriptors, "id:91", startPoint, lifecycle));
+  selection.cancelActiveDrag(scene);
+  EXPECT_FALSE(selection.beginScriptedForceDrag(
+      scene, descriptors, "missing_target", startPoint, lifecycle));
 }
 
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)

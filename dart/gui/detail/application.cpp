@@ -152,6 +152,7 @@ using dart::gui::detail::runOffscreenParitySelfCheck;
 using dart::gui::detail::SceneFrameUpdater;
 using dart::gui::detail::SceneLights;
 using dart::gui::detail::ScreenshotCapture;
+using dart::gui::detail::ScriptedForceDrag;
 using dart::gui::detail::SelectionController;
 using dart::gui::detail::shouldContinueApplicationLoop;
 using dart::gui::detail::SimulationStepper;
@@ -386,6 +387,89 @@ std::optional<ScriptedDemoSwitch> parseScriptedDemoSwitch(
   scriptedSwitch.afterFrames = static_cast<int>(parsedFrame);
   scriptedSwitch.sceneId = std::string(spec.substr(separator + 1));
   return scriptedSwitch;
+}
+
+std::optional<Eigen::Vector3d> parseVector3(
+    std::string_view text, std::ostream& errors)
+{
+  Eigen::Vector3d values = Eigen::Vector3d::Zero();
+  std::size_t begin = 0;
+  for (int i = 0; i < 3; ++i) {
+    const std::size_t end = i < 2 ? text.find(',', begin) : text.size();
+    if (end == std::string_view::npos || end == begin) {
+      errors << "expected vector as <x>,<y>,<z>\n";
+      return std::nullopt;
+    }
+    const std::string component(text.substr(begin, end - begin));
+    char* parsedEnd = nullptr;
+    values[i] = std::strtod(component.c_str(), &parsedEnd);
+    if (parsedEnd == component.c_str() || *parsedEnd != '\0'
+        || !std::isfinite(values[i])) {
+      errors << "expected finite vector component in '" << text << "'\n";
+      return std::nullopt;
+    }
+    begin = end + 1;
+  }
+  if (begin < text.size() + 1) {
+    errors << "expected vector as <x>,<y>,<z>\n";
+    return std::nullopt;
+  }
+  return values;
+}
+
+std::optional<ScriptedForceDrag> parseScriptedForceDrag(
+    std::string_view spec, std::ostream& errors)
+{
+  const std::size_t first = spec.find(':');
+  const std::size_t second = first == std::string_view::npos
+                                 ? std::string_view::npos
+                                 : spec.find(':', first + 1);
+  const std::size_t third = second == std::string_view::npos
+                                ? std::string_view::npos
+                                : spec.find(':', second + 1);
+  if (first == std::string_view::npos || second == std::string_view::npos
+      || third == std::string_view::npos || first == 0 || second == first + 1
+      || third == second + 1 || third + 1 >= spec.size()) {
+    errors << "--scripted-force-drag expects "
+              "<after-frames>:<target>:<dx>,<dy>,<dz>:<duration-frames>\n";
+    return std::nullopt;
+  }
+
+  const auto parsePositiveInt =
+      [&errors](
+          std::string_view text, std::string_view field) -> std::optional<int> {
+    const std::string value(text);
+    char* end = nullptr;
+    const long parsed = std::strtol(value.c_str(), &end, 10);
+    if (end == value.c_str() || *end != '\0' || parsed < 1
+        || parsed > std::numeric_limits<int>::max()) {
+      errors << field << " must be a positive integer\n";
+      return std::nullopt;
+    }
+    return static_cast<int>(parsed);
+  };
+
+  auto afterFrames = parsePositiveInt(spec.substr(0, first), "after-frames");
+  if (!afterFrames.has_value()) {
+    return std::nullopt;
+  }
+  auto offset
+      = parseVector3(spec.substr(second + 1, third - second - 1), errors);
+  if (!offset.has_value()) {
+    return std::nullopt;
+  }
+  auto durationFrames
+      = parsePositiveInt(spec.substr(third + 1), "duration-frames");
+  if (!durationFrames.has_value()) {
+    return std::nullopt;
+  }
+
+  ScriptedForceDrag forceDrag;
+  forceDrag.afterFrames = *afterFrames;
+  forceDrag.target = std::string(spec.substr(first + 1, second - first - 1));
+  forceDrag.targetOffset = *offset;
+  forceDrag.durationFrames = *durationFrames;
+  return forceDrag;
 }
 
 std::vector<std::filesystem::path> recordedFramePaths(
@@ -678,7 +762,8 @@ int runGuiBackendApplicationImpl(
     const std::vector<dart::gui::DemoSceneEntry>* demoCatalog,
     int initialDemoIndex,
     bool cycleScenes,
-    std::optional<ScriptedDemoSwitch> scriptedDemoSwitch = std::nullopt)
+    std::optional<ScriptedDemoSwitch> scriptedDemoSwitch = std::nullopt,
+    std::optional<ScriptedForceDrag> scriptedForceDrag = std::nullopt)
 {
   AppOptions appOptions
       = parseOptions(argc, argv, applicationOptions.runDefaults);
@@ -966,7 +1051,8 @@ int runGuiBackendApplicationImpl(
         simulationStepper,
         lights,
         orbitStartClock,
-        profile);
+        profile,
+        scriptedForceDrag ? &*scriptedForceDrag : nullptr);
 
     bool sceneFrameFailed = false;
     bool cycleAdvance = false;
@@ -1167,6 +1253,9 @@ int runGuiBackendApplicationImpl(
     }
 
     finalContacts = dartScene.world->getLastCollisionResult().getNumContacts();
+    sceneFrameUpdater.releaseScriptedForceDragIfActive(
+        "scripted force-drag released during scene teardown");
+    selectionController.cancelActiveDrag(dartScene);
     destroySceneRenderables(
         *engine,
         *scene,
@@ -1337,6 +1426,8 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
   }
   bool cycleScenes = false;
   std::optional<ScriptedDemoSwitch> scriptedDemoSwitch;
+  std::optional<ScriptedForceDrag> scriptedForceDrag;
+  std::string scriptedEventLogPath;
 
   std::vector<char*> filteredArguments;
   filteredArguments.reserve(static_cast<std::size_t>(argc));
@@ -1358,11 +1449,26 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
       if (!parsed.has_value()) {
         return 1;
       }
-      if (scriptedDemoSwitch.has_value()
-          && !scriptedDemoSwitch->eventLogPath.empty()) {
-        parsed->eventLogPath = scriptedDemoSwitch->eventLogPath;
+      if (!scriptedEventLogPath.empty()) {
+        parsed->eventLogPath = scriptedEventLogPath;
       }
       scriptedDemoSwitch = std::move(parsed);
+      ++i;
+      continue;
+    }
+    if (arg == "--scripted-force-drag") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr << "runDemos: --scripted-force-drag requires an argument\n";
+        return 1;
+      }
+      auto parsed = parseScriptedForceDrag(argv[i + 1], std::cerr);
+      if (!parsed.has_value()) {
+        return 1;
+      }
+      if (!scriptedEventLogPath.empty()) {
+        parsed->eventLogPath = scriptedEventLogPath;
+      }
+      scriptedForceDrag = std::move(parsed);
       ++i;
       continue;
     }
@@ -1372,10 +1478,13 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
             << "runDemos: --scripted-demo-event-log requires an argument\n";
         return 1;
       }
-      if (!scriptedDemoSwitch.has_value()) {
-        scriptedDemoSwitch = ScriptedDemoSwitch{};
+      scriptedEventLogPath = argv[i + 1];
+      if (scriptedDemoSwitch.has_value()) {
+        scriptedDemoSwitch->eventLogPath = scriptedEventLogPath;
       }
-      scriptedDemoSwitch->eventLogPath = argv[i + 1];
+      if (scriptedForceDrag.has_value()) {
+        scriptedForceDrag->eventLogPath = scriptedEventLogPath;
+      }
       ++i;
       continue;
     }
@@ -1407,9 +1516,10 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     }
   }
 
-  if (scriptedDemoSwitch.has_value() && scriptedDemoSwitch->sceneId.empty()) {
+  if (!scriptedEventLogPath.empty() && !scriptedDemoSwitch.has_value()
+      && !scriptedForceDrag.has_value()) {
     std::cerr << "runDemos: --scripted-demo-event-log requires "
-                 "--scripted-demo-switch\n";
+                 "--scripted-demo-switch or --scripted-force-drag\n";
     return 1;
   }
   if (scriptedDemoSwitch.has_value() && cycleScenes) {
@@ -1417,7 +1527,7 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
                  "--cycle-scenes\n";
     return 1;
   }
-  if (scriptedDemoSwitch.has_value()) {
+  if (scriptedDemoSwitch.has_value() && !scriptedDemoSwitch->sceneId.empty()) {
     const int scriptedIndex
         = ::demoSceneIndex(scenes, scriptedDemoSwitch->sceneId, -1);
     if (scriptedIndex < 0) {
@@ -1445,6 +1555,21 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
       }
     }
   }
+  if (scriptedForceDrag.has_value()
+      && !scriptedForceDrag->eventLogPath.empty()) {
+    std::error_code error;
+    const auto path = std::filesystem::path(scriptedForceDrag->eventLogPath);
+    const auto parent = path.parent_path();
+    if (!parent.empty()) {
+      std::filesystem::create_directories(parent, error);
+    }
+    std::ofstream eventLog(path);
+    if (!eventLog) {
+      std::cerr << "runDemos: failed to create scripted force-drag event log '"
+                << scriptedForceDrag->eventLogPath << "'\n";
+      return 1;
+    }
+  }
 
   return runGuiBackendApplicationImpl(
       static_cast<int>(filteredArguments.size()),
@@ -1453,7 +1578,8 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
       &scenes,
       index,
       cycleScenes,
-      std::move(scriptedDemoSwitch));
+      std::move(scriptedDemoSwitch),
+      std::move(scriptedForceDrag));
 }
 
 } // namespace dart::gui

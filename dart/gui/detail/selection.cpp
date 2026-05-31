@@ -53,6 +53,7 @@
 #include <utility>
 
 #include <cmath>
+#include <cstdlib>
 
 namespace dart::gui::detail {
 
@@ -91,6 +92,34 @@ const RenderableDescriptor* findRenderableDescriptor(
       [id](const RenderableDescriptor& candidate) {
         return candidate.id == id;
       });
+  return descriptor == descriptors.end() ? nullptr : &*descriptor;
+}
+
+const RenderableDescriptor* findRenderableDescriptorByTarget(
+    const std::vector<RenderableDescriptor>& descriptors,
+    std::string_view target)
+{
+  if (target.empty()) {
+    return nullptr;
+  }
+
+  if (target.starts_with("id:")) {
+    const std::string idText(target.substr(3));
+    char* end = nullptr;
+    const unsigned long long parsed = std::strtoull(idText.c_str(), &end, 10);
+    if (end != idText.c_str() && *end == '\0') {
+      return findRenderableDescriptor(
+          descriptors, static_cast<RenderableId>(parsed));
+    }
+  }
+
+  const auto matches = [target](const RenderableDescriptor& candidate) {
+    return candidate.shapeFrameName == target
+           || candidate.shapeNodeName == target || candidate.bodyName == target
+           || candidate.skeletonName == target;
+  };
+  const auto descriptor
+      = std::find_if(descriptors.begin(), descriptors.end(), matches);
   return descriptor == descriptors.end() ? nullptr : &*descriptor;
 }
 
@@ -867,6 +896,57 @@ void SelectionController::endForceDrag(DartScene& scene)
     scene.onForceDrag(event);
   }
   mActiveForceDrag.reset();
+}
+
+bool SelectionController::beginScriptedForceDrag(
+    DartScene& scene,
+    const std::vector<RenderableDescriptor>& descriptors,
+    std::string_view target,
+    Eigen::Vector3d& startPoint,
+    ViewerLifecycleState& lifecycle)
+{
+  const RenderableDescriptor* descriptor
+      = findRenderableDescriptorByTarget(descriptors, target);
+  if (descriptor == nullptr) {
+    return false;
+  }
+
+  startPoint = descriptor->worldTransform.translation();
+  const PickRay ray{
+      startPoint - Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitX()};
+  if (!beginForceDrag(scene, *descriptor, ray, startPoint, lifecycle)) {
+    return false;
+  }
+
+  mSelectedRenderableId = descriptor->id;
+  mSelectedPoint = startPoint;
+  mSelectedNormal.reset();
+  mSelectedLabel = selectionLabelForRenderable(scene, *descriptor);
+  return true;
+}
+
+void SelectionController::updateScriptedForceDragToTarget(
+    DartScene& scene,
+    const std::vector<RenderableDescriptor>& descriptors,
+    const Eigen::Vector3d& targetPoint)
+{
+  const PickRay ray{
+      targetPoint - Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitX()};
+  updateForceDrag(scene, descriptors, ray);
+}
+
+void SelectionController::cancelActiveDrag(DartScene& scene)
+{
+  endForceDrag(scene);
+  mLeftMouseStartedDrag = false;
+  mSelectedDragMode = DragMode::Translate;
+  mActiveGizmoIndex = 0u;
+  mHoveredGizmoHandle.reset();
+  mActiveGizmoHandle.reset();
+  mActiveBodyNodeDrag.reset();
+  mActivePointerPaneIndex.reset();
+  mLeftMouseStartedOnPanel = false;
+  mWasLeftMousePressed = false;
 }
 
 void SelectionController::applyKeyboardNudge(

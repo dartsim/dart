@@ -54,6 +54,11 @@ navigation, and a path for scene-specific controls.
   switch after a bounded frame count, writes `manifest.json`/`events.jsonl`, and
   records whether the viewer observed the target demo or restored the previous
   active demo.
+- Add a scripted `py-demo-capture --force-drag-target` path that drives the
+  same force-drag controller path in headless captures, writes
+  `manifest.json`/`events.jsonl`, records start/update/release events, and
+  cancels active drags during scene teardown so stale interaction state does
+  not leak across demo switches.
 - Accept hyphenated scene aliases such as `sx-rigid-ipc-slide` in the Python
   runner validation path.
 - Add scene panels to `diff_drone_liftoff` and
@@ -136,8 +141,8 @@ navigation, and a path for scene-specific controls.
 
 ## Remaining work
 
-- Add full viewer mouse-event injection coverage for force-drag if the Filament
-  test harness grows synthetic pointer input.
+- Add full coordinate-level viewer mouse-event injection coverage for
+  force-drag if the Filament test harness grows synthetic pointer input.
 - Consider process- or worker-isolated demo construction if a future demo
   factory can block indefinitely before returning to the C++ viewer loop.
 - Decide whether dock layout persistence is needed after the default layout

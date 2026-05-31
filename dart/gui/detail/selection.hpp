@@ -46,6 +46,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cstddef>
@@ -105,6 +106,20 @@ public:
       DartScene& scene,
       std::vector<dart::gui::RenderableDescriptor>& descriptors,
       dart::gui::ViewerLifecycleState& lifecycle);
+
+  bool beginScriptedForceDrag(
+      DartScene& scene,
+      const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      std::string_view target,
+      Eigen::Vector3d& startPoint,
+      dart::gui::ViewerLifecycleState& lifecycle);
+
+  void updateScriptedForceDragToTarget(
+      DartScene& scene,
+      const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      const Eigen::Vector3d& targetPoint);
+
+  void cancelActiveDrag(DartScene& scene);
 
 private:
   enum class DragMode
