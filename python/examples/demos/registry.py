@@ -43,6 +43,7 @@ from .scenes.ipc_deformable_fem_twist import SCENE as IPC_DEFORMABLE_FEM_TWIST
 from .scenes.ipc_deformable_friction_slide import SCENE as IPC_DEFORMABLE_FRICTION_SLIDE
 from .scenes.ipc_deformable_net import SCENE as IPC_DEFORMABLE_NET
 from .scenes.ipc_deformable_obj_cloth import SCENE as IPC_DEFORMABLE_OBJ_CLOTH
+from .scenes.ipc_deformable_plate_friction import SCENE as IPC_DEFORMABLE_PLATE_FRICTION
 from .scenes.ipc_deformable_pt_particles import SCENE as IPC_DEFORMABLE_PT_PARTICLES
 from .scenes.ipc_deformable_rod_friction import SCENE as IPC_DEFORMABLE_ROD_FRICTION
 from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SCRIPTED
@@ -187,5 +188,6 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         IPC_DEFORMABLE_SEG_STRAND,
         IPC_DEFORMABLE_PT_PARTICLES,
         IPC_DEFORMABLE_ROD_FRICTION,
+        IPC_DEFORMABLE_PLATE_FRICTION,
         IPC_DEFORMABLE_SCRIPTED,
     ]
