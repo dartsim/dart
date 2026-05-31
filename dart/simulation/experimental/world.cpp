@@ -194,6 +194,54 @@ void validateLoopClosureDynamicsPolicySupport(
 }
 
 //==============================================================================
+struct WorldStepPipelineStages
+{
+  compute::RigidBodyVelocityStage rigidBodyVelocity;
+  compute::RigidBodyContactStage rigidBodyContact;
+  compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::MultibodyVariationalIntegrationStage multibodyVariational;
+  compute::DeformableDynamicsStage deformableDynamics;
+  compute::KinematicsStage kinematics;
+  compute::WorldStepPipeline pipeline;
+
+  compute::WorldStepPipeline& buildDefault(bool variationalSelected)
+  {
+    appendDynamicsStages(selectMultibodyStage(variationalSelected));
+    pipeline.addStage(kinematics);
+    return pipeline;
+  }
+
+  compute::WorldStepPipeline& buildWithFinalStage(
+      compute::WorldStepStage& finalStage)
+  {
+    appendDynamicsStages(multibodyDynamics);
+    pipeline.addStage(finalStage);
+    return pipeline;
+  }
+
+private:
+  compute::WorldStepStage& selectMultibodyStage(bool variationalSelected)
+  {
+    return variationalSelected
+               ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+               : static_cast<compute::WorldStepStage&>(multibodyDynamics);
+  }
+
+  void appendDynamicsStages(compute::WorldStepStage& multibodyStage)
+  {
+    // Integrate rigid-body positions after the multibody stage so two-sided
+    // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
+    // the multibody solve) take effect in the same step's pose update.
+    pipeline.addStage(rigidBodyVelocity)
+        .addStage(rigidBodyContact)
+        .addStage(multibodyStage)
+        .addStage(deformableDynamics)
+        .addStage(rigidBodyPosition);
+  }
+};
+
+//==============================================================================
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
 {
   if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
@@ -1591,74 +1639,32 @@ MultibodyOptions World::getMultibodyOptions() const
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::MultibodyVariationalIntegrationStage multibodyVariational;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::KinematicsStage kinematics;
-  compute::WorldStepStage& multibodyStage
-      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
-            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-  compute::WorldStepPipeline pipeline;
-  // Integrate rigid-body positions after the multibody stage so two-sided
-  // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
-  // the multibody solve) take effect in the same step's pose update.
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyStage)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(kinematics);
-  step(executor, pipeline);
+  WorldStepPipelineStages stages;
+  step(
+      executor,
+      stages.buildDefault(
+          m_multibodyIntegrationMethod
+          == MultibodyIntegrationMethod::Variational));
 }
 
 //==============================================================================
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::MultibodyVariationalIntegrationStage multibodyVariational;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::KinematicsStage kinematics;
-  compute::WorldStepStage& multibodyStage
-      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
-            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-  compute::WorldStepPipeline pipeline;
-  // Integrate rigid-body positions after the multibody stage so two-sided
-  // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
-  // the multibody solve) take effect in the same step's pose update.
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyStage)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(kinematics);
-  step(count, executor, pipeline);
+  WorldStepPipelineStages stages;
+  step(
+      count,
+      executor,
+      stages.buildDefault(
+          m_multibodyIntegrationMethod
+          == MultibodyIntegrationMethod::Variational));
 }
 
 //==============================================================================
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepStage& stage)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(stage);
-  step(executor, pipeline);
+  WorldStepPipelineStages stages;
+  step(executor, stages.buildWithFinalStage(stage));
 }
 
 //==============================================================================
@@ -1667,19 +1673,8 @@ void World::step(
     compute::ComputeExecutor& executor,
     compute::WorldStepStage& stage)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(stage);
-  step(count, executor, pipeline);
+  WorldStepPipelineStages stages;
+  step(count, executor, stages.buildWithFinalStage(stage));
 }
 
 //==============================================================================

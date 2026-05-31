@@ -334,7 +334,7 @@ MultibodyPosition`, then Deformable, Kinematics. The hard part is splitting
   still in their own stage; (3+4, **merged** — do not bisect the link-contact
   set across two solvers) unify rigid + link-static + link-dynamic-rigid into
   `UnifiedConstraintStage`; (5) link-vs-link + new routing.
-- **(DONE locally, uncommitted) Slice 1 — multibody position integration
+- **(DONE locally, commit `d7f3a17c98f`) Slice 1 — multibody position integration
   helper.** Added `compute/multibody_constraint.{hpp,cpp}` with
   `integrateMultibodyPositions(registry, structure, nextVelocity, timeStep)`,
   wired `simulateMultibody` to call it after velocity limits, and added
@@ -346,6 +346,14 @@ dart-simulation-experimental test_multibody_constraint test_world
 test_skeleton_to_multibody`, focused CTest over the new/adjacent tests, and
   full `ctest --test-dir build/default/cpp/Release --output-on-failure -L
 simulation-experimental` (40/40).
+- **(DONE locally) Slice 0 — `World::step` pipeline builder factor.** Factored
+  the four default/custom-stage pipeline builders in `world.cpp` through one
+  stack-owned `WorldStepPipelineStages` helper. This preserves the current
+  order, including the default overloads' variational multibody branch and the
+  custom-stage overloads' existing semi-implicit multibody stage. Verified with
+  focused build + `test_world`, full `ctest --test-dir
+build/default/cpp/Release --output-on-failure -L simulation-experimental`
+  (40/40), and `pixi run lint`.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
