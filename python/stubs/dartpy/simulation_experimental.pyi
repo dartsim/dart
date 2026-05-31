@@ -37,18 +37,24 @@ __all__: list[str] = [
     "LoopClosureResidualCoordinates",
     "LoopClosureRuntimePolicy",
     "LoopClosureSpec",
+    "ModelFormat",
     "Multibody",
     "MultibodyOptions",
     "PhysicalParameter",
+    "ReadOptions",
     "RigidBody",
     "RigidBodyOptions",
     "RigidBodySolver",
+    "RootJointType",
+    "SkeletonLoadOptions",
     "StateSpace",
     "StateVariable",
     "StepDerivatives",
     "StepGradient",
     "World",
     "WorldSyncStage",
+    "add_skeleton",
+    "add_world",
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
@@ -148,7 +154,11 @@ class CollisionShapeType(enum.Enum):
 
     BOX = 1
 
+    MESH = 2
+
     CAPSULE = 3
+
+    CYLINDER = 4
 
 class CollisionShape:
     @staticmethod
@@ -160,6 +170,12 @@ class CollisionShape:
     @staticmethod
     def capsule(radius: float, half_height: float) -> CollisionShape: ...
 
+    @staticmethod
+    def cylinder(radius: float, half_height: float) -> CollisionShape: ...
+
+    @staticmethod
+    def mesh(vertices: object, triangles: object) -> CollisionShape: ...
+
     @property
     def type(self) -> CollisionShapeType: ...
 
@@ -168,6 +184,12 @@ class CollisionShape:
 
     @property
     def half_extents(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def vertices(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @property
+    def triangles(self) -> list[Annotated[NDArray[numpy.int32], dict(shape=(3), order='C')]]: ...
 
 class ClosureKinematicsPolicy(enum.Enum):
     RESIDUAL_ONLY = 0
@@ -1330,6 +1352,50 @@ class DeformableBody:
     @property
     def material_properties(self) -> DeformableMaterialProperties: ...
 
+class SkeletonLoadOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def root_anchor_prefix(self) -> str: ...
+
+    @root_anchor_prefix.setter
+    def root_anchor_prefix(self, arg: str, /) -> None: ...
+
+class ModelFormat(enum.Enum):
+    AUTO = 0
+
+    SKEL = 1
+
+    SDF = 2
+
+    URDF = 3
+
+    MJCF = 4
+
+class RootJointType(enum.Enum):
+    FLOATING = 0
+
+    FIXED = 1
+
+class ReadOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def format(self) -> ModelFormat: ...
+
+    @format.setter
+    def format(self, arg: ModelFormat, /) -> None: ...
+
+    @property
+    def sdf_default_root_joint_type(self) -> RootJointType: ...
+
+    @sdf_default_root_joint_type.setter
+    def sdf_default_root_joint_type(self, arg: RootJointType, /) -> None: ...
+
+    def add_package_directory(
+        self, package_name: str, package_directory: str
+    ) -> None: ...
+
 class DeformableSceneLoadOptions:
     def __init__(self) -> None: ...
 
@@ -1443,6 +1509,20 @@ class DeformableSceneDiagnostics:
 
     @property
     def max_z(self) -> float: ...
+
+@overload
+def add_skeleton(world: World, skeleton: object, options: SkeletonLoadOptions = ...) -> Multibody: ...
+@overload
+def add_skeleton(world: World, uri: str, options: SkeletonLoadOptions = ...) -> Multibody: ...
+@overload
+def add_skeleton(world: World, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> Multibody: ...
+
+@overload
+def add_world(world: World, source_world: object, options: SkeletonLoadOptions = ...) -> list[Multibody]: ...
+@overload
+def add_world(world: World, uri: str, options: SkeletonLoadOptions = ...) -> list[Multibody]: ...
+@overload
+def add_world(world: World, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> list[Multibody]: ...
 
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 
