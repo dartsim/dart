@@ -661,6 +661,7 @@ pixi run build-coverage  # Build with coverage
 pixi run test            # Run C++ tests
 pixi run test-py         # Run Python tests
 pixi run test-all        # Run all tests
+pixi run -e cuda test-all # Run CUDA-enabled full validation on Linux CUDA hosts
 ```
 
 #### Linting Tasks

@@ -90,8 +90,9 @@ activity signal or submitted review, do not post a duplicate trigger.
 8. Monitor CI: `gh pr checks $1`
 9. Check for new review, repeat until no actionable comments remain
 10. For draft PRs, mark ready after explicit approval once Codex is clean and
-    local `pixi run test-all` passes on the current head; merge still waits for
-    required hosted checks unless a maintainer explicitly approves a policy
-    bypass
+    local validation passes on the current head: default `pixi run test-all`,
+    plus `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA
+    runtime; merge still waits for required hosted checks unless a maintainer
+    explicitly approves a policy bypass
 
 Full iterative loop: `docs/onboarding/ai-tools.md` § "Autonomous Review-Fix-Monitor Loop"

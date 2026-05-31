@@ -11,11 +11,12 @@ This script runs all available tests locally:
 - Documentation build
 
 Usage:
-    python scripts/test_all.py [--skip-build] [--skip-tests] [--skip-lint] [--skip-docs]
+    python scripts/test_all.py [--skip-build] [--skip-tests] [--skip-lint] [--skip-docs] [--skip-cuda]
 """
 
 import argparse
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -92,13 +93,57 @@ def _cmake_option_enabled(option: str) -> Optional[bool]:
     return None
 
 
+def _configured_feature_enabled(
+    override_name: str, cmake_option: str, default: str = "ON"
+) -> bool:
+    """Return false when an env override or CMake cache disables a build surface."""
+    if not _env_flag_enabled(override_name, default):
+        return False
+
+    cmake_flag = _cmake_option_enabled(cmake_option)
+    if cmake_flag is False:
+        return False
+
+    return True
+
+
 def pixi_command(task: str, *args: str) -> str:
     pixi_exe = _resolve_pixi_path()
     if pixi_exe is None:
-        return f"pixi run {task} {' '.join(args)}".strip()
+        pixi_exe = "pixi"
 
-    joined_args = f" {' '.join(args)}" if args else ""
-    return f"{pixi_exe} run {task}{joined_args}"
+    command = [pixi_exe, "run"]
+    pixi_environment = os.environ.get("PIXI_ENVIRONMENT_NAME")
+    if pixi_environment and pixi_environment != "default":
+        command.extend(["-e", pixi_environment])
+    command.append(task)
+    command.extend(args)
+    return shlex.join(command)
+
+
+def _cuda_environment_active() -> bool:
+    """Return true when this test-all run is already in CUDA validation mode."""
+    return os.environ.get("PIXI_ENVIRONMENT_NAME") == "cuda" or _env_flag_enabled(
+        "DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE", "OFF"
+    )
+
+
+def _cuda_runtime_detected() -> bool:
+    """Best-effort host probe for a usable NVIDIA CUDA runtime."""
+    if os.environ.get("CUDA_VISIBLE_DEVICES") in {"", "-1", "none", "None"}:
+        return False
+
+    nvidia_smi = which("nvidia-smi")
+    if nvidia_smi:
+        result = subprocess.run(
+            [nvidia_smi, "-L"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        return result.returncode == 0
+
+    return Path("/proc/driver/nvidia/gpus").is_dir() and Path("/dev/nvidiactl").exists()
 
 
 class Colors:
@@ -399,12 +444,19 @@ def run_build_tests(skip_debug: bool = False) -> bool:
         )
         success = success and result
 
-        # Build all examples (compile-only)
-        result, _ = run_command(
-            pixi_command("build-examples", PIXI_DEFAULT_DARTPY, "Release"),
-            "Build examples (Release)",
-        )
-        success = success and result
+        # Build all examples (compile-only) when the active config generated them.
+        if _configured_feature_enabled(
+            "DART_BUILD_EXAMPLES_OVERRIDE", "DART_BUILD_EXAMPLES"
+        ):
+            result, _ = run_command(
+                pixi_command("build-examples", PIXI_DEFAULT_DARTPY, "Release"),
+                "Build examples (Release)",
+            )
+            success = success and result
+        else:
+            print_warning(
+                "Skipping example build because DART_BUILD_EXAMPLES is OFF in build"
+            )
 
     if not skip_debug:
         # Build Debug (for better error messages)
@@ -451,6 +503,43 @@ def run_simulation_experimental_tests() -> bool:
     result, _ = run_command(
         pixi_command("test-simulation-experimental", PIXI_DEFAULT_DARTPY),
         "simulation-experimental C++ tests",
+    )
+    return result
+
+
+def run_cuda_tests() -> bool:
+    """Run CUDA runtime tests and benchmark smoke when a CUDA GPU is available."""
+    print_header("CUDA TESTS")
+
+    if not _cuda_environment_active():
+        if _cuda_runtime_detected():
+            print_warning(
+                "CUDA runtime detected; run `pixi run -e cuda test-all` for CUDA validation"
+            )
+        else:
+            print_warning(
+                "Skipping CUDA tests because the cuda Pixi environment is not active"
+            )
+        return True
+
+    if not _cuda_runtime_detected():
+        print_warning(
+            "Skipping CUDA runtime tests because no NVIDIA CUDA runtime was detected"
+        )
+        return True
+
+    cmake_flag = _cmake_option_enabled("DART_ENABLE_EXPERIMENTAL_CUDA")
+    if cmake_flag is False:
+        print_error(
+            "DART_ENABLE_EXPERIMENTAL_CUDA is OFF in the active build; "
+            "rerun from the cuda Pixi environment"
+        )
+        return False
+
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    result, _ = run_command(
+        pixi_command("test-cuda", build_type),
+        "CUDA C++ tests and benchmark smoke",
     )
     return result
 
@@ -557,6 +646,11 @@ def main():
         help="Skip simulation-experimental C++ tests",
     )
     parser.add_argument(
+        "--skip-cuda",
+        action="store_true",
+        help="Skip CUDA runtime tests when running in the cuda Pixi environment",
+    )
+    parser.add_argument(
         "--skip-debug",
         action="store_true",
         help="Skip Debug build (only build Release)",
@@ -620,6 +714,17 @@ def main():
         run_step("Simulation-Experimental Tests", run_simulation_experimental_tests)
     else:
         print_warning("Skipping simulation-experimental tests")
+
+    if not args.skip_cuda:
+        if _cuda_environment_active():
+            run_step("CUDA Tests", run_cuda_tests)
+        elif _cuda_runtime_detected():
+            print_warning(
+                "CUDA runtime detected; run `pixi run -e cuda test-all` "
+                "after the default validation"
+            )
+    else:
+        print_warning("Skipping CUDA tests")
 
     # Run Python tests
     if not args.skip_python:

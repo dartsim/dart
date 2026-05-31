@@ -184,7 +184,9 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 **Before submitting PRs:**
 
-1. Suggested (Unverified): Run `pixi run test-all` - comprehensive test suite
+1. Suggested (Unverified): Run `pixi run test-all` - comprehensive default
+   test suite. On Linux hosts with a visible NVIDIA CUDA runtime, also run
+   `pixi run -e cuda test-all`.
 2. Fix any failures before pushing
 3. **Important**: If GitHub CI fails but `test-all` passed locally, update `test-all` to catch that failure
 

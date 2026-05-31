@@ -6,7 +6,8 @@
 - Working on collision? See [Collision Detection Layer](#2-collision-detection-layer-dartcollision)
 - Adding constraints? Check [Constraint Layer](#4-constraint-layer-dartconstraint)
 - Understanding simulation loop? Read [Complete Simulation Pipeline](#complete-simulation-pipeline)
-- Key command: `pixi run test-all`
+- Key command: `pixi run test-all`; on Linux CUDA hosts also run
+  `pixi run -e cuda test-all`
 
 ## Overview
 
