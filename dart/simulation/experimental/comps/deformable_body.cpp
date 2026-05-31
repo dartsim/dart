@@ -253,6 +253,14 @@ private:
   void loadComponent(
       std::istream& input, DeformableMaterial& component) const override
   {
+    loadComponent(input, component, io::kBinaryFormatVersion);
+  }
+
+  void loadComponent(
+      std::istream& input,
+      DeformableMaterial& component,
+      std::uint32_t formatVersion) const override
+  {
     io::readPOD(input, component.density);
     io::readPOD(input, component.youngsModulus);
     io::readPOD(input, component.poissonRatio);
@@ -261,7 +269,11 @@ private:
     io::readPOD(input, component.useFixedCorotationalElasticity);
     io::readPOD(input, component.useAdaptiveBarrierStiffness);
     io::readPOD(input, component.useIterativeLinearSolver);
-    io::readPOD(input, component.useMatrixFreeLinearSolver);
+    if (formatVersion >= 9u) {
+      io::readPOD(input, component.useMatrixFreeLinearSolver);
+    } else {
+      component.useMatrixFreeLinearSolver = false;
+    }
   }
 };
 

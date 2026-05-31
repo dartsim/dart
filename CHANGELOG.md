@@ -1137,7 +1137,10 @@ Capsule Rod (IPC)` py-demos scene.
     `matrix_free_solves_per_step` and zero sparse-Hessian footprint counters.
     Adds C++ and dartpy ground-contact regressions showing matrix-free CG reaches
     the same contact equilibrium as the direct sparse solve, while the C++ FEM
-    cube regression also compares sparse IC-CG against both paths.
+    cube regression also compares sparse IC-CG against both paths. The
+    simulation-experimental binary format is bumped so legacy v8 deformable
+    materials load with the new matrix-free flag defaulted off instead of
+    consuming the following byte.
   - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
     experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
     and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra

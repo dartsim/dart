@@ -33,8 +33,10 @@
 #include <dart/simulation/experimental/body/deformable_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/io/binary_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <dart/collision/native/narrow_phase/primitive_ccd.hpp>
@@ -50,8 +52,10 @@
 #include <string_view>
 
 #include <cmath>
+#include <cstring>
 
 namespace sx = dart::simulation::experimental;
+namespace comps = dart::simulation::experimental::comps;
 namespace compute = dart::simulation::experimental::compute;
 namespace nc = dart::collision::native;
 
@@ -2554,6 +2558,61 @@ TEST(DeformableBody, SerializationPreservesMeshTopologyAndMaterial)
   world2.setTimeStep(0.05);
   world2.step();
   EXPECT_LT(body2->getPosition(3).z(), 1.0 + 0.05 * 0.5);
+}
+
+//==============================================================================
+TEST(DeformableBody, SerializationLoadsLegacyV8Material)
+{
+  sx::World world1;
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  options.material.youngsModulus = 2500.0;
+  options.material.poissonRatio = 0.25;
+  options.material.frictionCoefficient = 0.5;
+  options.material.useFiniteElementElasticity = true;
+  options.material.useFixedCorotationalElasticity = true;
+  options.material.useAdaptiveBarrierStiffness = true;
+  options.material.useIterativeLinearSolver = true;
+  options.material.useMatrixFreeLinearSolver = true;
+  world1.addDeformableBody("legacy_v8_material", options);
+
+  std::stringstream currentStream;
+  world1.saveBinary(currentStream);
+  std::string legacyBytes = currentStream.str();
+
+  const std::uint32_t legacyVersion = 8u;
+  ASSERT_GE(legacyBytes.size(), 2u * sizeof(std::uint32_t));
+  std::memcpy(
+      legacyBytes.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+
+  const std::string materialTypeName(comps::DeformableMaterial::getTypeName());
+  const auto materialTypeOffset = legacyBytes.find(materialTypeName);
+  ASSERT_NE(materialTypeOffset, std::string::npos);
+
+  const auto materialDataOffset = materialTypeOffset + materialTypeName.size();
+  const auto matrixFreeFlagOffset
+      = materialDataOffset + 4u * sizeof(double) + 4u * sizeof(bool);
+  ASSERT_LT(matrixFreeFlagOffset, legacyBytes.size());
+  legacyBytes.erase(matrixFreeFlagOffset, sizeof(bool));
+
+  std::stringstream legacyStream(legacyBytes);
+  sx::World world2;
+  ASSERT_NO_THROW(world2.loadBinary(legacyStream));
+
+  auto body = world2.getDeformableBody("legacy_v8_material");
+  ASSERT_TRUE(body.has_value());
+  const auto material = body->getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 2500.0);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.25);
+  EXPECT_DOUBLE_EQ(material.frictionCoefficient, 0.5);
+  EXPECT_TRUE(material.useFiniteElementElasticity);
+  EXPECT_TRUE(material.useFixedCorotationalElasticity);
+  EXPECT_TRUE(material.useAdaptiveBarrierStiffness);
+  EXPECT_TRUE(material.useIterativeLinearSolver);
+  EXPECT_FALSE(material.useMatrixFreeLinearSolver);
 }
 
 //==============================================================================

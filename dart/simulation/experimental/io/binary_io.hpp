@@ -76,7 +76,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      the augmented-Lagrangian dual-update cadence) and its
 //      VariationalContactDualState (per-point duals + cadence counter)
 //      registered as serializable components
-constexpr std::uint32_t kBinaryFormatVersion = 8;
+//   9: DeformableMaterial gained `useMatrixFreeLinearSolver`
+constexpr std::uint32_t kBinaryFormatVersion = 9;
 
 //==============================================================================
 // Low-level Binary I/O for POD types
