@@ -57,6 +57,7 @@ set(DARTPY_PYTEST_FOUND ${DARTPY_PYTEST_FOUND} PARENT_SCOPE)
 set(dartpy_test_utils util.py)
 
 file(GLOB_RECURSE dartpy_test_files "test_*.py")
+set(dartpy_pytest_runner run_pytest_with_optional_xvfb.py)
 
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)
@@ -64,13 +65,14 @@ if(DARTPY_PYTEST_FOUND)
     pytest
     COMMAND
       ${CMAKE_COMMAND} -E echo
-      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [sources]"
+      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${dartpy_pytest_runner} [sources]"
     COMMAND
       ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}"
-      DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}" "${Python3_EXECUTABLE}" -m
-      pytest ${dartpy_test_files} -v
+      DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}" "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/${dartpy_pytest_runner}" ${dartpy_test_files}
+      -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES ${dartpy_test_files} ${dartpy_test_utils}
+    SOURCES ${dartpy_test_files} ${dartpy_test_utils} ${dartpy_pytest_runner}
     DEPENDS dartpy
   )
 else()

@@ -114,6 +114,39 @@ if(TARGET dart-demos)
       UNIT_gui_DemosGoldenParity
       PROPERTIES LABELS "unit;gui;demos"
     )
+    if(NOT APPLE)
+      if(WIN32)
+        set(_demos_golden_lib_path_var "PATH")
+        set(_demos_golden_runtime_paths)
+        if(DEFINED ENV{CONDA_PREFIX})
+          list(
+            APPEND _demos_golden_runtime_paths
+            "$ENV{CONDA_PREFIX}/Library/bin"
+            "$ENV{CONDA_PREFIX}/bin"
+          )
+        endif()
+      else()
+        set(_demos_golden_lib_path_var "LD_LIBRARY_PATH")
+        set(_demos_golden_runtime_paths)
+        if(DEFINED ENV{CONDA_PREFIX})
+          list(APPEND _demos_golden_runtime_paths "$ENV{CONDA_PREFIX}/lib")
+        endif()
+      endif()
+      list(APPEND _demos_golden_runtime_paths "$<TARGET_FILE_DIR:dart>")
+      set(_demos_golden_env_mods)
+      foreach(_demos_golden_runtime_path IN LISTS _demos_golden_runtime_paths)
+        if(_demos_golden_runtime_path)
+          list(
+            APPEND _demos_golden_env_mods
+            "${_demos_golden_lib_path_var}=path_list_prepend:${_demos_golden_runtime_path}"
+          )
+        endif()
+      endforeach()
+      set_tests_properties(
+        UNIT_gui_DemosGoldenParity
+        PROPERTIES ENVIRONMENT_MODIFICATION "${_demos_golden_env_mods}"
+      )
+    endif()
     # The aggregate `tests` target (tests/CMakeLists.txt) is finalized before
     # examples/ is added, so it cannot pick up this example-tree test through the
     # DART_unit_TESTS global property. Attach it explicitly so `pixi run

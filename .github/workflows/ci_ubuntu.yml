@@ -61,8 +61,8 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 2
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
+          version: 3
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
@@ -103,8 +103,8 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 2
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
+          version: 3
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
@@ -159,8 +159,8 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 2
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
+          version: 3
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
@@ -333,8 +333,8 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 2
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
+          version: 3
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache

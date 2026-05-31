@@ -85,18 +85,7 @@ def test_registry_has_scenes() -> None:
 def test_runner_cycle_returns_zero() -> None:
     if not _gui_run_demos_available():
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
-    # Render with the display-less "noop" backend. This is a runner cycle
-    # smoke: it asserts every scene builds and steps a few frames without the
-    # host crashing (it never inspects pixels), so it must not depend on an X
-    # display or a GPU -- the standard pytest CI jobs provide neither (only the
-    # dedicated xvfb-backed "Headless Rendering Tests" job does). Without this
-    # the OpenGL backend calls XOpenDisplay, fails ("Failed to open X display"),
-    # and exits the process mid-test. Real headless rendering stays covered by
-    # test_runner_screenshot_writes_ppm and the xvfb rendering CI job.
-    rc = run(
-        ["--cycle-scenes", "--frames", "2", "--headless", "--backend", "noop"],
-        make_demo_scenes(),
-    )
+    rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
     assert rc == 0
 
 
@@ -488,11 +477,6 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     scenes = make_demo_scenes()
     target = scenes[0]
     out = tmp_path / "snap.ppm"
-    # Display-less "noop" backend, like test_runner_cycle_returns_zero: the
-    # standard pytest CI jobs have no X display, and the real GL backend would
-    # call XOpenDisplay, fail, and exit the process mid-test. noop still runs the
-    # full screenshot path and writes a correctly-sized PPM, so the format checks
-    # below hold; real rendered pixels are covered by the xvfb rendering CI job.
     rc = run(
         [
             "--scene",
@@ -500,8 +484,6 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
             "--frames",
             "1",
             "--headless",
-            "--backend",
-            "noop",
             "--width",
             "160",
             "--height",
