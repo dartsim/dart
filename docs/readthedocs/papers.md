@@ -183,27 +183,36 @@ Springer, 2006.
 
 ## Algorithms & Methods (Papers)
 
-| ID                             | Reference                                                                                                                  | Topic                              | Status      | Priority | Verdict   |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ----------- | -------- | --------- |
-| `featherstone-1983`            | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics                           | planned     | high     | adopt     |
-| `liu-jain-mbs`                 | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics                           | implemented | —        | adopt     |
-| `tan-lcp`                      | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact                            | implemented | —        | adopt     |
-| `stewart-trinkle-1996`         | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact                            | referenced  | medium   | baseline  |
-| `baraff-1996`                  | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics                           | referenced  | low      | reference |
-| `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration                        | referenced  | medium   | evaluate  |
-| `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
-| `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
-| `rigid-ipc-2021`               | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
-| `werling-2021`                 | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
-| `howell-2022-dojo`             | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
-| `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
-| `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration                        | referenced  | medium   | reference |
-| `chen-2024-vbd`                | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
-| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
-| `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
-| `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration                        | referenced  | high     | baseline  |
-| `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration                        | referenced  | high     | evaluate  |
-| `kobilarov-crane-desbrun-2009` | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration                        | referenced  | medium   | reference |
+| ID                              | Reference                                                                                                                  | Topic                              | Status      | Priority | Verdict   |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ----------- | -------- | --------- |
+| `featherstone-1983`             | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics                           | planned     | high     | adopt     |
+| `liu-jain-mbs`                  | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics                           | implemented | —        | adopt     |
+| `tan-lcp`                       | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact                            | implemented | —        | adopt     |
+| `stewart-trinkle-1996`          | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact                            | referenced  | medium   | baseline  |
+| `baraff-1996`                   | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics                           | referenced  | low      | reference |
+| `macklin-xpbd-2016`             | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration                        | referenced  | medium   | evaluate  |
+| `gjk-1988`                      | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
+| `ipc-2020`                      | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
+| `rigid-ipc-2021`                | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
+| `werling-2021`                  | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
+| `howell-2022-dojo`              | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
+| `lee-vi-2016`                   | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
+| `marsden-west-2001`             | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration                        | referenced  | medium   | reference |
+| `chen-2024-vbd`                 | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
+| `vbd-2024`                      | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
+| `avbd-2025`                     | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
+| `nakamura-1987-task-priority`   | Nakamura, Hanafusa & Yoshikawa, "Task-Priority Based Redundancy Control of Robot Manipulators" (1987)                      | kinematics                         | planned     | medium   | adopt     |
+| `buss-kim-2005-sdls`            | Buss & Kim, "Selectively Damped Least Squares for Inverse Kinematics" (2005)                                               | kinematics                         | planned     | medium   | evaluate  |
+| `aristidou-lasenby-2011-fabrik` | Aristidou & Lasenby, "FABRIK: A fast, iterative solver for the Inverse Kinematics problem" (2011)                          | kinematics                         | planned     | medium   | evaluate  |
+| `beeson-ames-2015-tracik`       | Beeson & Ames, "TRAC-IK: An open-source library for improved solving of generic inverse kinematics" (2015)                 | kinematics                         | planned     | medium   | baseline  |
+| `starke-2020-bioik`             | Starke, _Bio IK: A Memetic Evolutionary Algorithm for Generic Multi-Objective Inverse Kinematics_ (2020)                   | kinematics                         | planned     | medium   | evaluate  |
+| `rakita-2018-relaxedik`         | Rakita, Mutlu & Gleicher, "RelaxedIK: Real-time Synthesis of Accurate and Feasible Robot Arm Motion" (2018)                | kinematics                         | planned     | high     | baseline  |
+| `zucker-2013-chomp`             | Zucker et al., "CHOMP: Covariant Hamiltonian Optimization for Motion Planning" (2013)                                      | motion-planning                    | referenced  | medium   | baseline  |
+| `mukadam-2018-gpmp2`            | Mukadam et al., "Continuous-time Gaussian process motion planning via probabilistic inference" (2018)                      | motion-planning                    | referenced  | medium   | evaluate  |
+| `ames-2022-ikflow`              | Ames, Morgan & Konidaris, "IKFlow: Generating Diverse Inverse Kinematics Solutions" (2022)                                 | kinematics                         | deferred    | medium   | evaluate  |
+| `johnson-murphey-2009`          | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration                        | referenced  | high     | baseline  |
+| `leyendecker-2008`              | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration                        | referenced  | high     | evaluate  |
+| `kobilarov-crane-desbrun-2009`  | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration                        | referenced  | medium   | reference |
 
 ### `featherstone-1983`
 
@@ -593,6 +602,123 @@ Giles, et al. "Augmented Vertex Block Descent." _ACM Transactions on Graphics_
   normal-force clamp. Identified as the best structural fit for adding hard,
   drift-free non-penetration and a friction cone to the variational integrator
   without a global PSD solve (PLAN-082 contact rung C3). Not a commitment.
+
+### `nakamura-1987-task-priority`
+
+Nakamura, Y., Hanafusa, H., & Yoshikawa, T. "Task-Priority Based Redundancy
+Control of Robot Manipulators." _International Journal of Robotics Research_,
+6(2), 1987. DOI:
+[10.1177/027836498700600201](https://doi.org/10.1177/027836498700600201).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** adopt
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Grounds whole-body and task-priority IK: higher-priority task
+  residuals constrain lower-priority objectives through redundancy/null spaces.
+  Classic DART already has related `HierarchicalIK`, `CompositeIK`, and
+  `WholeBodyIK` APIs; the experimental world needs a DART-owned task model
+  before carrying them forward.
+
+### `buss-kim-2005-sdls`
+
+Buss, S. R., & Kim, J.-S. "Selectively Damped Least Squares for Inverse
+Kinematics." _Journal of Graphics Tools_, 10(3), 2005. DOI:
+[10.1080/2151237X.2005.10129202](https://doi.org/10.1080/2151237X.2005.10129202).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate singularity-robust extension to classic DART's Jacobian
+  DLS baseline. Evaluate against DART's manifold state-space contract and
+  near-singular benchmark scenes before adopting.
+
+### `aristidou-lasenby-2011-fabrik`
+
+Aristidou, A., & Lasenby, J. "FABRIK: A fast, iterative solver for the Inverse
+Kinematics problem." _Graphical Models_, 73(5), 2011. DOI:
+[10.1016/j.gmod.2011.05.003](https://doi.org/10.1016/j.gmod.2011.05.003).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate fast heuristic or seed generator for simple chains and
+  animation-style tasks. Must be benchmarked honestly for joint limits,
+  orientation objectives, trees, whole-body targets, and closed chains before
+  any broad support claim.
+
+### `beeson-ames-2015-tracik`
+
+Beeson, P., & Ames, B. "TRAC-IK: An open-source library for improved solving of
+generic inverse kinematics." _IEEE-RAS International Conference on Humanoid
+Robots_, 2015. DOI:
+[10.1109/HUMANOIDS.2015.7363472](https://doi.org/10.1109/HUMANOIDS.2015.7363472).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** baseline
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Baseline for generic constrained IK with joint limits and
+  optimization-based fallback behavior. DART should not expose a TRAC-IK-named
+  public solver; use method-family names and compare against the behavior.
+
+### `starke-2020-bioik`
+
+Starke, S. _Bio IK: A Memetic Evolutionary Algorithm for Generic Multi-Objective
+Inverse Kinematics._ Dissertation, University of Hamburg, 2020.
+<https://ediss.sub.uni-hamburg.de/handle/ediss/8703>
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate evolutionary/local-search family for multi-objective,
+  multi-effector, whole-body IK and seed generation. Evaluate as a bounded
+  fallback or pre-trial method, not as a replacement for checked local solvers.
+
+### `rakita-2018-relaxedik`
+
+Rakita, D., Mutlu, B., & Gleicher, M. "RelaxedIK: Real-time Synthesis of
+Accurate and Feasible Robot Arm Motion." _Robotics: Science and Systems XIV_, 2018. DOI:
+[10.15607/RSS.2018.XIV.043](https://doi.org/10.15607/RSS.2018.XIV.043).
+
+- **Type:** paper · **Topic:** kinematics/motion-planning · **Status:** planned · **Priority:** high · **Verdict:** baseline
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Baseline for treating IK as real-time motion synthesis with
+  competing objectives such as pose accuracy, continuity, collision avoidance,
+  and singularity avoidance. This is the closest published fit for the
+  "not just per-frame IK" requirement.
+
+### `zucker-2013-chomp`
+
+Zucker, M., Ratliff, N., Dragan, A., Pivtoraiko, M., Klingensmith, M., Dellin,
+C., Bagnell, J. A., & Srinivasa, S. "CHOMP: Covariant Hamiltonian Optimization
+for Motion Planning." _International Journal of Robotics Research_, 32(9), 2013.
+<https://publications.ri.cmu.edu/chomp-covariant-hamiltonian-optimization-for-motion-planning>
+
+- **Type:** paper · **Topic:** motion-planning · **Status:** referenced · **Priority:** medium · **Verdict:** baseline
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Baseline trajectory-optimization framing for smoothness,
+  obstacle/collision cost, and local-minimum mitigation over a whole motion
+  rather than independent pose IK frames.
+
+### `mukadam-2018-gpmp2`
+
+Mukadam, M., Dong, J., Yan, X., Dellaert, F., & Boots, B. "Continuous-time
+Gaussian process motion planning via probabilistic inference." _International
+Journal of Robotics Research_, 37(11), 2018. arXiv:
+[1707.07383](https://arxiv.org/abs/1707.07383).
+
+- **Type:** paper · **Topic:** motion-planning/statistics · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate statistical trajectory prior for smooth continuous-time
+  IK/motion solves. Evaluate after DART owns explicit state-space, collision
+  query, and rollout APIs.
+
+### `ames-2022-ikflow`
+
+Ames, B., Morgan, J., & Konidaris, G. "IKFlow: Generating Diverse Inverse
+Kinematics Solutions." _IEEE Robotics and Automation Letters_, 7(3), 2022.
+arXiv: [2111.08933](https://arxiv.org/abs/2111.08933).
+
+- **Type:** paper · **Topic:** kinematics/learning · **Status:** deferred · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Learned diverse-solution generator to evaluate as a proposal
+  distribution for classical refinement, not as an unchecked correctness source
+  or default solver. Requires datasets, model-version diagnostics, deterministic
+  fallback, and cross-robot generalization evidence.
 
 ### `johnson-murphey-2009`
 
