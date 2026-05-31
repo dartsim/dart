@@ -100,10 +100,20 @@ including optional ImGui panels via `--show-ui`, and writes screenshots, frame
 sequences, and MP4s for visual debugging. It rejects blank/noop captures so
 layout, camera, lighting, and material changes have inspectable artifacts.
 
-The Python workspace uses a deterministic dock layout on startup instead of
-persisting panel locations across runs. `Reset Layout` is the explicit recovery
-action after interactive rearrangement. This keeps stale `imgui.ini` state from
-obscuring the viewport or hiding panels when scene-specific controls change.
+Runtime demo switches are transactional. If a requested scene throws while
+building, misses the startup budget, cannot create render state, or fails its
+first frame, the host restores the previous active scene and leaves the reason
+visible in the `Simulation` and `Demos` panels. Python scene builders are
+bounded by the same `DART_DEMO_SCENE_STARTUP_TIMEOUT_MS` budget by default, with
+`DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS` available as a Python-specific override.
+
+The Python workspace rebuilds a deterministic dock layout on startup instead of
+trusting any saved panel layout from a previous run. `Reset Layout` is the
+explicit recovery action after interactive rearrangement. This keeps stale
+`imgui.ini` state from obscuring the viewport or hiding panels when
+scene-specific controls change. The layout builder runs before dockspace
+submission so ImGui applies the initial `Demos`, `Simulation`, scene-panel, and
+diagnostics placements as docked windows on the first rendered frames.
 
 ### Build layout
 

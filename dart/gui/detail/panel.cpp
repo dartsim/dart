@@ -411,14 +411,16 @@ bool renderBuiltInStatusPanel(
     }
     ImGui::PopTextWrapPos();
   }
-  if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
-    togglePaused(lifecycle);
+  if (!dockingActive) {
+    if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
+      togglePaused(lifecycle);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Step")) {
+      requestSingleStep(lifecycle);
+    }
+    ImGui::SameLine();
   }
-  ImGui::SameLine();
-  if (ImGui::Button("Step")) {
-    requestSingleStep(lifecycle);
-  }
-  ImGui::SameLine();
   ImGui::Checkbox("Orbit light", &orbitLight);
 
   bool debugOptionsChanged = false;
@@ -524,10 +526,14 @@ void renderApplicationPanels(
       ImGui::SetNextWindowSize({320.0f * scale, 0.0f}, ImGuiCond_FirstUseEver);
     }
 
-    // The default dock builder owns startup placement; the Reset Layout action
-    // is the explicit recovery path. Do not let stale imgui.ini panel state
-    // override the deterministic demos workspace or floating overlay defaults.
-    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoSavedSettings;
+    // The default dock builder owns startup placement when docking is active;
+    // those builder assignments flow through ImGui's window settings before
+    // the first Begin(). Floating overlays stay unsaved so they remain
+    // deterministic outside a dockspace.
+    ImGuiWindowFlags windowFlags = 0;
+    if (!dockingActive) {
+      windowFlags |= ImGuiWindowFlags_NoSavedSettings;
+    }
     if (panel.autoResize && !dockingActive) {
       windowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
     }

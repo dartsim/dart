@@ -6,11 +6,13 @@ import pytest
 import dartpy as dart
 from examples.demos._sx_bridge import SxRenderBridge
 from examples.demos.runner import (
+    DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
     ScenePanel,
     SceneSetup,
     _validate_scene,
     _make_world_factory,
+    _scene_build_timeout_ms,
 )
 from examples.demos.scenes import (
     atlas_simbicon,
@@ -102,6 +104,35 @@ def test_validate_scene_accepts_hyphenated_scene_id_alias() -> None:
     )
 
     _validate_scene("sx-rigid-ipc-slide", [scene])
+
+
+def test_scene_build_timeout_follows_demo_startup_budget_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", raising=False)
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "37")
+
+    assert _scene_build_timeout_ms() == 37.0
+
+
+def test_scene_build_timeout_can_use_python_specific_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "37")
+    monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "11")
+
+    assert _scene_build_timeout_ms() == 11.0
+
+
+def test_scene_build_timeout_disable_requires_python_specific_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", raising=False)
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "0")
+    assert _scene_build_timeout_ms() == DEFAULT_SCENE_BUILD_TIMEOUT_MS
+
+    monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "0")
+    assert _scene_build_timeout_ms() is None
 
 
 class _FakeWorld:

@@ -35,6 +35,7 @@ from typing import Any, Callable, Iterable
 CYCLE_FRAMES_PER_SCENE = 4
 SINGLE_SCENE_DEFAULT_FRAMES = 60
 SCENE_BUILD_TIMEOUT_ENV = "DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS"
+DEMO_SCENE_STARTUP_TIMEOUT_ENV = "DART_DEMO_SCENE_STARTUP_TIMEOUT_MS"
 DEFAULT_SCENE_BUILD_TIMEOUT_MS = 5000.0
 
 
@@ -157,6 +158,9 @@ def _validate_scene(scene_id: str | None, scenes: list[PythonDemoScene]) -> None
 
 def _scene_build_timeout_ms() -> float | None:
     value = os.environ.get(SCENE_BUILD_TIMEOUT_ENV)
+    python_specific_override = value is not None and value != ""
+    if value is None or value == "":
+        value = os.environ.get(DEMO_SCENE_STARTUP_TIMEOUT_ENV)
     if value is None or value == "":
         return DEFAULT_SCENE_BUILD_TIMEOUT_MS
 
@@ -165,7 +169,9 @@ def _scene_build_timeout_ms() -> float | None:
     except ValueError:
         return DEFAULT_SCENE_BUILD_TIMEOUT_MS
     if timeout_ms <= 0.0:
-        return None
+        if python_specific_override:
+            return None
+        return DEFAULT_SCENE_BUILD_TIMEOUT_MS
     return timeout_ms
 
 

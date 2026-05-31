@@ -360,7 +360,7 @@ void buildDefaultDockLayout(
   }
   if (useBottom) {
     bottom = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Down, 0.15f, nullptr, &center);
+        center, ImGuiDir_Down, 0.12f, nullptr, &center);
   }
   if (useLeft) {
     left = ImGui::DockBuilderSplitNode(
@@ -441,8 +441,7 @@ void updateFrameUi(
   ImGui::NewFrame();
 #ifdef IMGUI_HAS_DOCK
   if (dartScene.dockingEnabled) {
-    const ImGuiID dockId = ImGui::DockSpaceOverViewport(
-        0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    const ImGuiID dockId = ImHashStr("DARTMainDockSpace");
     const bool resetDockLayout
         = dart::gui::consumeDockLayoutResetRequest(lifecycle);
     if (resetDockLayout || !dartScene.dockLayoutInitialized) {
@@ -452,6 +451,10 @@ void updateFrameUi(
       // not make its first frame look broken or obscure the viewport.
       buildDefaultDockLayout(dockId, panels);
     }
+    ImGui::DockSpaceOverViewport(
+        dockId,
+        ImGui::GetMainViewport(),
+        ImGuiDockNodeFlags_PassthruCentralNode);
   }
 #else
   dart::gui::consumeDockLayoutResetRequest(lifecycle);

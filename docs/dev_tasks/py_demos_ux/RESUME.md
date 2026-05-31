@@ -44,7 +44,8 @@
   workspace after panel rearrangement.
 - Scene panels default to fixed-size right-docked panels, the default right
   dock is wider, and the default layout is rebuilt deterministically on startup
-  so stale ImGui state cannot leave panels floating over the viewport.
+  before dockspace submission so ImGui places panels into real dock nodes
+  instead of floating overlays.
 - Frame-output recording is controlled by the viewer lifecycle state, so the
   toolbar `Stop Record` state now matches whether frames continue writing.
 - Recorded-frame playback now lives in the `Simulation` panel when frame output
@@ -56,10 +57,12 @@
   budget, the host restores the previous demo instead of leaving the workspace
   stuck on the broken target. Integration coverage now pins both throwing and
   slow-returning target factories.
-- Python demo factories now run under a configurable build watchdog
-  (`DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS`, default 5000 ms). A pure-Python
-  factory stall raises a startup failure, allowing the existing transactional
-  switch path to restore the previous demo instead of leaving tests stuck.
+- Python demo factories now run under the shared demo startup budget by default
+  (`DART_DEMO_SCENE_STARTUP_TIMEOUT_MS`, default 5000 ms), with
+  `DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS` available as a Python-specific
+  override. A pure-Python factory stall raises a startup failure, allowing the
+  existing transactional switch path to restore the previous demo instead of
+  leaving tests stuck.
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.
@@ -104,11 +107,10 @@
   dock is also smaller in the default layout to preserve more viewport area,
   and the docked `DART` panel puts live scene diagnostics before collapsible
   debug/help details.
-- Dock layout persistence is intentionally not part of the Python demos
-  workspace. Startup rebuilds the deterministic default layout, `Reset Layout`
-  is the explicit recovery path after rearrangement, and panel windows use
-  `NoSavedSettings` so stale `imgui.ini` state cannot hide controls on the next
-  run.
+- The Python demos workspace does not trust persisted dock layout as its source
+  of truth. Startup rebuilds the deterministic default layout, and
+  `Reset Layout` is the explicit recovery path after rearrangement, so stale
+  `imgui.ini` state cannot hide controls on the next run.
 - `UNIT_gui_FilamentSceneExtraction` now has direct controller coverage for
   external SimpleFrame-style force-drag callback routing and BodyNode
   shape-offset application points.
@@ -234,6 +236,7 @@ Reset-layout toolbar proof:
 ```bash
 pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 4 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_reset_layout_control
 env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 4 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_no_persist_layout
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 8 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demos_true_docking_final
 ```
 
 The screenshot at
@@ -242,7 +245,13 @@ viewed and showed the top `Simulation` toolbar with `Reset Layout` between
 `Replay` and `Stop Record`. The no-persistence proof screenshot at
 `/tmp/dart_py_demo_capture_no_persist_layout/sx_rigid_ipc_slide.png` was
 viewed and showed the deterministic docked workspace still places the Demos,
-Simulation, scene panel, and DART diagnostics without overlap.
+Simulation, scene panel, and DART diagnostics without overlap. The true-docking
+proof screenshot at
+`/tmp/dart_py_demos_true_docking_final/sx_rigid_ipc_slide.png` was viewed and showed
+the panels attached to dock nodes with the viewport constrained between them,
+rather than floating over the rendered scene. The top `Simulation` panel fits
+recording playback without a first-run scrollbar, and the docked bottom `DART`
+panel no longer duplicates the main pause/step controls.
 
 Recording playback proof:
 
@@ -385,6 +394,7 @@ cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtractio
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_follows_demo_startup_budget_by_default python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_can_use_python_specific_override python/tests/unit/test_py_demo_panels.py::test_scene_build_timeout_disable_requires_python_specific_override -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_scripted_demo_switch_restores_previous_scene_on_startup_timeout -q
@@ -404,7 +414,8 @@ pixi run lint
 
 1. Consider process- or worker-isolated demo construction only if a future
    native/C++ factory can block indefinitely before returning to the C++ viewer
-   loop; pure-Python stalls now fail through the watchdog.
+   loop; pure-Python stalls now fail through the shared startup-budget
+   watchdog.
 2. Add image thumbnail playback only if the UI renderer grows a texture-backed
    panel image primitive; the current playback surface controls and identifies
    recorded PPM frames from inside the workspace.

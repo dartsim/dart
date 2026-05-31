@@ -610,7 +610,7 @@ dart::gui::Panel makeDemoSimulationPanel(
   dart::gui::Panel panel;
   panel.title = "Simulation";
   panel.dockSide = dart::gui::DockSide::Top;
-  panel.initialSize = std::array<double, 2>{760.0, 104.0};
+  panel.initialSize = std::array<double, 2>{760.0, 128.0};
   panel.autoResize = false;
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,

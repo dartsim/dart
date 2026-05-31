@@ -872,6 +872,25 @@ TEST(FilamentSceneExtraction, DockingPanelFallbackRequiresDockingSupport)
   EXPECT_NE(panelSource.find("\"Viewer help\""), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DockLayoutBuildsBeforeDockspaceSubmission)
+{
+  const auto uiFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "ui_frame.cpp");
+
+  const auto dockIdPos = uiFrameSource.find("ImHashStr(\"DARTMainDockSpace\")");
+  const auto buildLayoutPos
+      = uiFrameSource.find("buildDefaultDockLayout(dockId, panels)");
+  const auto submitDockspacePos
+      = uiFrameSource.find("ImGui::DockSpaceOverViewport(");
+  EXPECT_NE(dockIdPos, std::string::npos);
+  EXPECT_NE(buildLayoutPos, std::string::npos);
+  EXPECT_NE(submitDockspacePos, std::string::npos);
+  EXPECT_LT(buildLayoutPos, submitDockspacePos);
+  EXPECT_NE(
+      uiFrameSource.find("DockBuilderDockWindow(panel.title.c_str(), target)"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, DemoCatalogSearchMatchesSceneMetadata)
 {
   const auto factory = [] {
@@ -1014,7 +1033,7 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
           "scenePanel.dockSide = dart::gui::DockSide::Right"),
       std::string::npos);
   EXPECT_NE(
-      uiFrameSource.find("center, ImGuiDir_Down, 0.15f"), std::string::npos);
+      uiFrameSource.find("center, ImGuiDir_Down, 0.12f"), std::string::npos);
   EXPECT_NE(
       uiFrameSource.find("center, ImGuiDir_Left, 0.24f"), std::string::npos);
   EXPECT_NE(
@@ -1055,8 +1074,6 @@ TEST(FilamentSceneExtraction, PanelControlsUseDockFriendlyLabels)
       panelSource.find(
           "ImGui::SetNextItemWidth(-std::numeric_limits<float>::min())"),
       std::string::npos);
-  EXPECT_NE(
-      panelSource.find("ImGuiWindowFlags_NoSavedSettings"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, DemoWorkspaceSupportsScriptedSwitchCaptureEvents)

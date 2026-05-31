@@ -685,7 +685,8 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
-    monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "10")
+    monkeypatch.delenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", raising=False)
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "10")
     events = tmp_path / "events.jsonl"
     screenshot = tmp_path / "snap.ppm"
     started = time.monotonic()
