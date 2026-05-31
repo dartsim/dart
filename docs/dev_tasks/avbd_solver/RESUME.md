@@ -16,7 +16,10 @@ combined serial mass-spring AVBD row solve. The implementation also wires
 finite-stiffness tetrahedral material rows into supported serial, frictionless
 pure-tet World scenes, using a dimensionless material scale, strain-norm row
 error, separate tet-row diagnostics, and coexistence with the existing lagged
-VBD self-contact penalty. A bounded friction-tangent row primitive now
+VBD self-contact penalty. Contact-free finite-stiffness mass-spring scenes with
+an inert material friction coefficient now stay on the AVBD row path instead of
+falling back when there is no active contact or self-contact friction source. A
+bounded friction-tangent row primitive now
 participates in the serial mass-spring AVBD row driver, and supported
 static-contact mass-spring World scenes generate two tangent rows per active
 contact-normal row. Adjacent tangent-row pairs now use the lagged tangential
@@ -34,9 +37,9 @@ slip reduction. Static-contact and self-contact friction rows also have a
 combined-row coexistence regression so both row families can participate in the
 same supported AVBD mass-spring solve.
 Unsupported mixed spring-plus-tet, mass-spring self-contact without the
-self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
-Rayleigh-damped, parallel, and unsupported-row requests have explicit fallback
-coverage that keeps them on the existing VBD path.
+self-contact AVBD flag, Chebyshev, Rayleigh-damped, parallel, and
+unsupported-row requests have explicit fallback coverage that keeps them on the
+existing VBD path.
 
 ## Current Branch
 
