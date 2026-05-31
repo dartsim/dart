@@ -42,6 +42,7 @@
 
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/joint.hpp>
@@ -49,13 +50,18 @@
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
+#include <dart/dynamics/shape.hpp>
+#include <dart/dynamics/shape_frame.hpp>
+#include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <Eigen/Geometry>
 
 #include <numbers>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -255,6 +261,43 @@ void copyJointProperties(const dynamics::Joint& legacy, Joint& experimental)
   experimental.setEffortLimits(lower, upper);
 }
 
+/// The first origin-coincident sphere or box collision shape of a body (a shape
+/// node with a collision aspect), as an experimental CollisionShape. Returns
+/// nullopt when the body has no representable collision shape. The experimental
+/// CollisionShape has no pose offset, so shapes whose relative transform is not
+/// identity, other shape types (mesh/capsule/cylinder/plane), and additional
+/// shapes per body are skipped.
+std::optional<CollisionShape> translateCollisionShape(
+    const dynamics::BodyNode& body)
+{
+  std::optional<CollisionShape> result;
+  body.eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&result](const dynamics::ShapeNode* shapeNode) {
+        if (result.has_value() || shapeNode == nullptr) {
+          return;
+        }
+        if (!shapeNode->getRelativeTransform().isApprox(
+                Eigen::Isometry3d::Identity(), kAnchorTolerance)) {
+          return; // a shape offset from the body origin cannot be represented
+        }
+        const auto shape = shapeNode->getShape();
+        if (!shape) {
+          return;
+        }
+        const auto type = shape->getType();
+        if (type == dynamics::SphereShape::getStaticType()) {
+          result = CollisionShape::makeSphere(
+              static_cast<const dynamics::SphereShape&>(*shape).getRadius());
+        } else if (type == dynamics::BoxShape::getStaticType()) {
+          // Legacy box size is the full extent; the facade uses half extents.
+          result = CollisionShape::makeBox(
+              static_cast<const dynamics::BoxShape&>(*shape).getSize() / 2.0);
+        }
+        // mesh/capsule/cylinder/plane are not yet translated.
+      });
+  return result;
+}
+
 /// A fully-resolved plan for one experimental link, computed from the skeleton
 /// alone (no World mutation). Resolving every link up front lets the conversion
 /// reject an unrepresentable skeleton before anything is added to the World, so
@@ -273,6 +316,7 @@ struct LinkPlan
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
   Eigen::VectorXd position; // copied generalized state; empty when not copied
   Eigen::VectorXd velocity;
+  std::optional<CollisionShape> collisionShape;
 };
 
 } // namespace
@@ -360,6 +404,9 @@ Multibody buildMultibodyFromSkeleton(
       plan.position = std::move(position);
       plan.velocity = std::move(velocity);
     }
+    if (options.loadCollisionShapes) {
+      plan.collisionShape = translateCollisionShape(*body);
+    }
 
     plans.push_back(std::move(plan));
   }
@@ -398,6 +445,9 @@ Multibody buildMultibodyFromSkeleton(
         && (plan.spec.type == JointType::Revolute
             || plan.spec.type == JointType::Prismatic)) {
       copyJointProperties(*plan.joint, parentJoint);
+    }
+    if (plan.collisionShape.has_value()) {
+      link.setCollisionShape(*plan.collisionShape);
     }
 
     linkOf.emplace(plan.body, link);

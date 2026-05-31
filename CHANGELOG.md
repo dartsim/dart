@@ -644,9 +644,11 @@ skeleton, options)` and dartpy `build_multibody_from_skeleton` /
     Combined with `dart::io` URDF/SDF parsing this loads a model file into the
     experimental World, and `io::buildMultibodiesFromWorld` (dartpy
     `build_multibodies_from_world`) loads every skeleton of a legacy
-    `simulation::World` as its own multibody (a whole scene). Collision shapes
-    and rotated parent-side offsets on ball/free/planar joints are not yet
-    translated and raise a descriptive error.
+    `simulation::World` as its own multibody (a whole scene). Origin-coincident
+    sphere/box collision shapes are carried onto the links (gated by
+    `loadCollisionShapes`). Offset/other collision shapes and rotated
+    parent-side offsets on ball/free/planar joints are not yet translated (the
+    former is skipped; the latter raises a descriptive error).
   - Added experimental articulated-body forward dynamics for fixed-base
     multibodies: `World::step()` now integrates revolute and prismatic joint
     accelerations from joint efforts, gravity, and Coriolis/centrifugal terms

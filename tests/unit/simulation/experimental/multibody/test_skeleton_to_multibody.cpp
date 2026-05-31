@@ -39,12 +39,14 @@
 
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -53,6 +55,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -581,6 +584,74 @@ TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
   EXPECT_TRUE(world.getMultibody("slider").has_value());
   EXPECT_EQ(multibodies[0].getDOFCount(), 2u);
   EXPECT_EQ(multibodies[1].getDOFCount(), 1u);
+}
+
+//==============================================================================
+// An origin-coincident box collision shape is translated onto the link, with
+// its full extent halved. An offset shape is skipped (no pose offset on the
+// experimental CollisionShape).
+TEST(SkeletonToMultibody, TranslatesCollisionShapes)
+{
+  auto skeleton = dd::Skeleton::create("collision");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  joint->setName("hinge");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+
+  auto boxShape
+      = std::make_shared<dd::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
+  auto* shapeNode = body->createShapeNode(boxShape);
+  shapeNode->createCollisionAspect();
+
+  sx::World world;
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  const auto link = multibody.getLink("body");
+  ASSERT_TRUE(link.has_value());
+  ASSERT_TRUE(link->hasCollisionShape());
+  const auto shape = link->getCollisionShape();
+  ASSERT_TRUE(shape.has_value());
+  EXPECT_EQ(shape->type, sx::CollisionShapeType::Box);
+  EXPECT_LE(
+      (shape->halfExtents - Eigen::Vector3d(0.1, 0.15, 0.2))
+          .cwiseAbs()
+          .maxCoeff(),
+      1e-12);
+
+  // load_collision_shapes = false skips translation.
+  sx::World plain;
+  sx::io::SkeletonToMultibodyOptions options;
+  options.loadCollisionShapes = false;
+  sx::Multibody bare
+      = sx::io::buildMultibodyFromSkeleton(plain, *skeleton, options);
+  const auto bareLink = bare.getLink("body");
+  ASSERT_TRUE(bareLink.has_value());
+  EXPECT_FALSE(bareLink->hasCollisionShape());
+
+  // An offset collision shape is skipped (the facade has no shape pose offset).
+  auto offsetSkeleton = dd::Skeleton::create("offset_collision");
+  auto [offsetJoint, offsetBody]
+      = offsetSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  offsetJoint->setName("hinge");
+  offsetJoint->setAxis(Eigen::Vector3d::UnitZ());
+  offsetBody->setName("body");
+  offsetBody->setMass(1.0);
+  offsetBody->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+  auto* offsetShapeNode = offsetBody->createShapeNode(
+      std::make_shared<dd::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+  offsetShapeNode->createCollisionAspect();
+  offsetShapeNode->setRelativeTransform(translation(0.1, 0.0, -0.2));
+
+  sx::World offsetWorld;
+  sx::Multibody offsetMultibody
+      = sx::io::buildMultibodyFromSkeleton(offsetWorld, *offsetSkeleton);
+  const auto offsetLink = offsetMultibody.getLink("body");
+  ASSERT_TRUE(offsetLink.has_value());
+  EXPECT_FALSE(offsetLink->hasCollisionShape());
 }
 
 //==============================================================================

@@ -238,20 +238,29 @@ skeleton. C++ + dartpy tests. (A file-based one-call loader can wrap
 `dart::io::readWorld` + this, but would pull `dart-io` into the experimental
 lib's link, so it is left to the caller for now.)
 
-**Resume here, in order (remaining Subsystem B + Subsystem A):**
+**(DONE, restricted) Collision shapes.** The loader translates the first
+**origin-coincident** sphere/box collision shape of each body (a shape node with
+a collision aspect) onto the link, gated by `loadCollisionShapes`. C++ +
+verified. **Offset shapes are skipped** because the experimental `CollisionShape`
+has no pose-offset field — and adding an `Eigen::Isometry3d` to it breaks its
+Boost.PFR auto-serialization ("type must be aggregate initializable"; `Vector3d`
+has a registered serializer, `Isometry3d` does not). To support offset shapes,
+first give the serialization an `Isometry3d` strategy (or a PFR-friendly
+representation) for `CollisionShape`, then add the offset field and pose shapes
+by `worldTransform * shape.transform` in `World::collide()`. Mesh/capsule/
+cylinder/plane shapes also remain (Phase 2 shape backlog).
 
-1. **Collision shapes.** Translate `BodyNode` shape nodes (with a
-   `CollisionAspect`) to `Link::setCollisionShape` for sphere/box. Blocked on the
-   experimental `CollisionShape` having **no pose-offset field**: a shape offset
-   from the body origin (common) cannot be represented. Either add an offset to
-   `CollisionShape` (a small experimental-API change) or restrict to
-   origin-coincident shapes. Decide the API shape first.
-2. **Subsystem A — coupled boxed-LCP.** The remaining headline gap. Reorder the
-   `World::step` pipeline to (1) all velocity integration, (2) one unified
-   contact/constraint solve over all bodies via `dart/math/lcp`, (3) all position
-   integration. Multi-session; touches the core step loop and every passing test
-   — do it as its own slice with the suite as the guardrail, revert if it
-   destabilizes (as the first universal-joint attempt was).
+**Resume here — Subsystem A (the remaining headline gap):**
+
+**Subsystem A — coupled boxed-LCP.** Reorder the `World::step` pipeline to
+(1) all velocity integration, (2) one unified contact/constraint solve over all
+bodies via `dart/math/lcp`, (3) all position integration. Multi-session; touches
+the core step loop and every passing test — do it as its own slice with the
+suite as the guardrail, revert if it destabilizes (as the first universal-joint
+attempt was). A safe first increment that avoids the pipeline reorder: wire the
+boxed-LCP (`dart/math/lcp`) into the existing `RigidBodyContactStage` (replace
+its sequential-impulse loop with a coupled LCP solve over the rigid-rigid
+contacts), verified against the existing drop/rest/bounce/friction tests.
 
 ## Immediate Next Step
 
@@ -367,8 +376,10 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     pre-joint offset (`transformToParent`) rather than massless intermediate
     links: a parent with sibling joints at different offsets, and offset/rotated
     roots, load directly. See the committed sections above.
-  - **Remaining for Subsystem B (see "Resume here, in order" above):** collision
-    shapes (needs a `CollisionShape` pose-offset field).
+  - **(DONE, restricted) Collision shapes.** Origin-coincident sphere/box shapes
+    are translated; offset shapes need a `CollisionShape` pose-offset field +
+    serialization story (see "Resume here" above). Subsystem B model loading is
+    otherwise complete.
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),

@@ -1721,7 +1721,10 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_rw("copy_state", &sim::io::SkeletonToMultibodyOptions::copyState)
       .def_rw(
           "copy_joint_properties",
-          &sim::io::SkeletonToMultibodyOptions::copyJointProperties);
+          &sim::io::SkeletonToMultibodyOptions::copyJointProperties)
+      .def_rw(
+          "load_collision_shapes",
+          &sim::io::SkeletonToMultibodyOptions::loadCollisionShapes);
 
   m.def(
       "build_multibody_from_skeleton",
