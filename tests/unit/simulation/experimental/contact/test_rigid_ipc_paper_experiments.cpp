@@ -330,3 +330,65 @@ TEST(RigidIpcPaperExperiments, DegenerateEdgeDropSettlesWithoutPenetration)
   EXPECT_TRUE(box.getTranslation().allFinite());
   EXPECT_TRUE(box.getLinearVelocity().allFinite());
 }
+
+// Figs. 16/17 (unit tests / Erleben degenerate cases), point-contact variant: a
+// cube released with its body diagonal pointing straight down lands on a single
+// vertex -- the most degenerate box-on-ground contact. The barrier and CCD keep
+// it intersection-free as it tips off the unstable point onto a face and
+// settles, with no failed solve or divergence.
+TEST(RigidIpcPaperExperiments, DegenerateVertexDropStaysIntersectionFree)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("vertex_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({5.0, 5.0, 0.5}));
+  ground.setFriction(0.6);
+
+  constexpr double half = 0.25;
+  // Rotate the cube so its (+,+,+) body diagonal points to -z: the corner is
+  // the lowest feature, a distance half*sqrt(3) below the center.
+  const Eigen::Quaterniond tilt = Eigen::Quaterniond::FromTwoVectors(
+      Eigen::Vector3d(1.0, 1.0, 1.0).normalized(),
+      Eigen::Vector3d(0.0, 0.0, -1.0));
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position
+      = Eigen::Vector3d(0.0, 0.0, half * std::numbers::sqrt3 + 0.03);
+  boxOptions.orientation = tilt;
+  auto box = world.addRigidBody("vertex_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({half, half, half}));
+  box.setFriction(0.6);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBottomZ = 0.0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    EXPECT_FALSE(ipcStage.getLastStats().failed) << "step " << s;
+    const Eigen::Matrix3d R = box.getRotation();
+    double lowest = box.getTranslation().z();
+    for (double dx : {-half, half}) {
+      for (double dy : {-half, half}) {
+        for (double dz : {-half, half}) {
+          const Eigen::Vector3d v
+              = box.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+          lowest = std::min(lowest, v.z());
+        }
+      }
+    }
+    minBottomZ = std::min(minBottomZ, lowest);
+  }
+
+  EXPECT_GT(minBottomZ, -5e-3);                   // never penetrated the ground
+  EXPECT_LT(box.getLinearVelocity().norm(), 0.5); // came to rest
+  EXPECT_TRUE(box.getTranslation().allFinite());
+  EXPECT_TRUE(box.getLinearVelocity().allFinite());
+}
