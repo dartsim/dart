@@ -16767,14 +16767,14 @@
       "topic": "rigid barrier or CCD algorithm unit test",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART unit test covers the same barrier, hash-grid, or rigid time-of-impact responsibility with derivative or conservative bounds where applicable.",
+      "expected_invariant": "DART barrier tests preserve the upstream C2 clamped-log barrier scalar, primitive finite-difference derivatives, and rigid reduced-coordinate derivative mappings.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_algorithm::test_barriers",
+      "status": "implemented",
+      "dart_artifact": "test_barrier_kernel::IpcBarrierKernel.*; test_rigid_ipc_barrier::RigidIpcBarrier.*",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_algorithm::test_barriers",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_barrier_kernel --gtest_color=no && build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no --gtest_filter=\"RigidIpcBarrier.*:RigidIpcCcdGeometry.*\"'",
+      "notes_or_gap": "Covered by DART barrier-kernel and rigid reduced-coordinate barrier regressions; broader runtime convergence remains tracked by Phases 3 and 4."
     },
     {
       "upstream_path": "tests/ccd/collision_generator.cpp",
@@ -16875,14 +16875,14 @@
       "topic": "rigid barrier or CCD algorithm unit test",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART unit test covers the same barrier, hash-grid, or rigid time-of-impact responsibility with derivative or conservative bounds where applicable.",
+      "expected_invariant": "DART rigid CCD tests cover edge-vertex, edge-edge, face-vertex, rotational trajectory, minimum-separation, kinematic no-zero-time, and audited conservative-TOI corpus behavior.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_algorithm::test_rigid_body_time_of_impact",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.*",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_algorithm::test_rigid_body_time_of_impact",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=\"RigidIpcCcdCase.*\"'",
+      "notes_or_gap": "Covered by DART rigid CCD parser, residual, interval-subdivision, rotational-trajectory, kinematic, and conservative-TOI corpus regressions; rigorous interval arithmetic remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/ccd/test_time_of_impact.cpp",

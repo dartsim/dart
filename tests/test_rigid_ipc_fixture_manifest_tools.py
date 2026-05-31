@@ -133,6 +133,30 @@ def test_rigid_ipc_manifest_marks_first_wrecking_ball_ccd_rows_implemented(
     assert "truncated interval" in row["expected_invariant"]
 
 
+def test_rigid_ipc_manifest_marks_barrier_source_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+
+    row = module.row_for_path(
+        "tests/barrier/test_barriers.cpp", "test-source", tmp_path
+    )
+
+    assert row["status"] == "implemented"
+    assert "IpcBarrierKernel" in row["dart_artifact"]
+    assert "finite-difference derivatives" in row["expected_invariant"]
+
+
+def test_rigid_ipc_manifest_marks_rigid_toi_source_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+
+    row = module.row_for_path(
+        "tests/ccd/test_rigid_body_time_of_impact.cpp", "test-source", tmp_path
+    )
+
+    assert row["status"] == "implemented"
+    assert "RigidIpcCcdCase" in row["dart_artifact"]
+    assert "rotational trajectory" in row["expected_invariant"]
+
+
 def test_rigid_ipc_manifest_leaves_synthetic_wrecking_ball_ccd_rows_planned(
     tmp_path,
 ):

@@ -54,6 +54,50 @@ IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS = frozenset(
     f"tests/data/large-rb-hashgrid/large-rb-hashgrid-{index:03d}.json"
     for index in range(2)
 )
+IMPLEMENTED_TEST_SOURCE_ROWS = {
+    "tests/barrier/test_barriers.cpp": {
+        "artifact": (
+            "test_barrier_kernel::IpcBarrierKernel.*; "
+            "test_rigid_ipc_barrier::RigidIpcBarrier.*"
+        ),
+        "command": (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_barrier_kernel --gtest_color=no && "
+            "build/default/cpp/Release/bin/test_rigid_ipc_barrier "
+            "--gtest_color=no --gtest_filter="
+            '"RigidIpcBarrier.*:RigidIpcCcdGeometry.*"\''
+        ),
+        "expected_invariant": (
+            "DART barrier tests preserve the upstream C2 clamped-log barrier "
+            "scalar, primitive finite-difference derivatives, and rigid "
+            "reduced-coordinate derivative mappings."
+        ),
+        "notes_or_gap": (
+            "Covered by DART barrier-kernel and rigid reduced-coordinate "
+            "barrier regressions; broader runtime convergence remains tracked "
+            "by Phases 3 and 4."
+        ),
+    },
+    "tests/ccd/test_rigid_body_time_of_impact.cpp": {
+        "artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.*",
+        "command": (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_fixture --gtest_color=no "
+            '--gtest_filter="RigidIpcCcdCase.*"\''
+        ),
+        "expected_invariant": (
+            "DART rigid CCD tests cover edge-vertex, edge-edge, face-vertex, "
+            "rotational trajectory, minimum-separation, kinematic no-zero-time, "
+            "and audited conservative-TOI corpus behavior."
+        ),
+        "notes_or_gap": (
+            "Covered by DART rigid CCD parser, residual, interval-subdivision, "
+            "rotational-trajectory, kinematic, and conservative-TOI corpus "
+            "regressions; rigorous interval arithmetic remains tracked by "
+            "Phase 2c."
+        ),
+    },
+}
 
 
 def is_large_rb_hashgrid_data(path: str) -> bool:
@@ -465,6 +509,13 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
             "regressions for the audited wrecking-ball direct-CCD corpus; "
             "corpus-scale interval-root parity remains tracked by Phase 2c."
         )
+    elif source_kind == "test-source" and path in IMPLEMENTED_TEST_SOURCE_ROWS:
+        status = "implemented"
+        implemented = IMPLEMENTED_TEST_SOURCE_ROWS[path]
+        artifact = implemented["artifact"]
+        command = implemented["command"]
+        expected_invariant = implemented["expected_invariant"]
+        notes_or_gap = implemented["notes_or_gap"]
 
     return {
         "upstream_path": path,

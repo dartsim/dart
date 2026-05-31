@@ -1,5 +1,34 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: barrier and rigid TOI source rows
+
+Delivered a bounded Phase 6 algorithm-source audit slice:
+
+- Marked the upstream barrier derivative source row
+  `tests/barrier/test_barriers.cpp` as `implemented` in the generated manifest.
+  The owning DART coverage is `IpcBarrierKernel.*` plus
+  `RigidIpcBarrier.*`/`RigidIpcCcdGeometry.*`.
+- Marked the upstream rigid-body time-of-impact source row
+  `tests/ccd/test_rigid_body_time_of_impact.cpp` as `implemented` in the
+  generated manifest. The owning DART coverage is `RigidIpcCcdCase.*`, including
+  parser, residual, interval-subdivision, rotational-trajectory, kinematic, and
+  conservative-TOI corpus regressions.
+- Kept the remaining six `test-source` rows planned: collision-generator helper
+  files, generic edge-vertex/generic TOI tests, generic hash-grid tests, and
+  rigid-body hash-grid source coverage still need tighter DART matches before
+  retirement.
+
+Validation in this slice:
+
+- `./build/default/cpp/Release/bin/test_barrier_kernel --gtest_color=no`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no --gtest_filter='RigidIpcBarrier.*:RigidIpcCcdGeometry.*'`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter='RigidIpcCcdCase.*'`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: large hash-grid benchmark evidence
 
 Delivered a bounded Phase 6 benchmark-evidence slice:

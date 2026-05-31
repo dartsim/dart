@@ -272,6 +272,11 @@
         benchmark computes conservative swept scene bounds from compact audited
         per-body records, verifies those bounds contain the upstream exact scene
         bounds, and emits profile counters.
+  - [x] Mark the audited upstream barrier derivative source row
+        (`tests/barrier/test_barriers.cpp`) and rigid-body time-of-impact source
+        row (`tests/ccd/test_rigid_body_time_of_impact.cpp`) as implemented
+        after matching DART barrier-kernel, reduced rigid-barrier, and
+        `RigidIpcCcdCase` regressions were verified.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -353,6 +358,10 @@ DART-owned implementation.
   cases; the manifest now marks them implemented through a DART-owned benchmark
   that computes conservative swept scene bounds from compact per-body records
   and verifies those bounds contain the upstream exact scene bounds.
+  The upstream barrier derivative and rigid-body TOI source rows are also marked
+  implemented through DART's barrier-kernel/reduced-rigid-barrier and
+  `RigidIpcCcdCase` regression suites. Other algorithm-source helper, generic
+  CCD, and hash-grid rows remain planned until similarly matched.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
