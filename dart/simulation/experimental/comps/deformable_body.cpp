@@ -247,10 +247,19 @@ private:
     io::writePOD(output, component.useFixedCorotationalElasticity);
     io::writePOD(output, component.useAdaptiveBarrierStiffness);
     io::writePOD(output, component.useIterativeLinearSolver);
+    io::writePOD(output, component.useMatrixFreeLinearSolver);
   }
 
   void loadComponent(
       std::istream& input, DeformableMaterial& component) const override
+  {
+    loadComponent(input, component, io::kBinaryFormatVersion);
+  }
+
+  void loadComponent(
+      std::istream& input,
+      DeformableMaterial& component,
+      std::uint32_t formatVersion) const override
   {
     io::readPOD(input, component.density);
     io::readPOD(input, component.youngsModulus);
@@ -260,6 +269,11 @@ private:
     io::readPOD(input, component.useFixedCorotationalElasticity);
     io::readPOD(input, component.useAdaptiveBarrierStiffness);
     io::readPOD(input, component.useIterativeLinearSolver);
+    if (formatVersion >= 10u) {
+      io::readPOD(input, component.useMatrixFreeLinearSolver);
+    } else {
+      component.useMatrixFreeLinearSolver = false;
+    }
   }
 };
 

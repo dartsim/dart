@@ -78,7 +78,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      registered as serializable components
 //   9: Link gained a separate parent-to-joint transform before the legacy
 //      joint-to-link transform for preserving imported joint origins
-constexpr std::uint32_t kBinaryFormatVersion = 9;
+//   10: DeformableMaterial gained `useMatrixFreeLinearSolver`
+constexpr std::uint32_t kBinaryFormatVersion = 10;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

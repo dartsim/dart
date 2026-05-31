@@ -2841,6 +2841,9 @@ def test_experimental_world_exposes_deformable_solver_diagnostics():
     assert before.body_count == 0
     assert before.node_count == 0
     assert before.solver_iterations == 0
+    assert before.projected_newton_hessian_nonzeros == 0
+    assert before.projected_newton_hessian_storage_bytes == 0
+    assert before.projected_newton_matrix_free_solves == 0
 
     world.step(5)
 
@@ -2851,9 +2854,14 @@ def test_experimental_world_exposes_deformable_solver_diagnostics():
     assert after.solver_iterations >= 1
     assert after.objective_evaluations >= 1
     assert after.projected_newton_steps + after.projected_newton_fallbacks >= 1
+    assert after.projected_newton_hessian_nonzeros > 0
+    assert after.projected_newton_hessian_storage_bytes > 0
     # This body uses the default direct (sparse Cholesky) solve, so the iterative
     # (conjugate-gradient) path is never taken.
     assert after.projected_newton_iterative_solves == 0
+    assert after.projected_newton_matrix_free_solves == 0
+    assert after.projected_newton_iterative_iterations == 0
+    assert after.projected_newton_iterative_max_error == 0.0
     # No contacts in this free-hanging single tet.
     assert after.self_contact_barrier_active_contacts == 0
     assert after.converged_active_contact_count == 0
@@ -2887,12 +2895,148 @@ def test_experimental_world_iterative_solver_diagnostic():
     # The iterative-solve count surfaces through the public diagnostics, so a
     # caller can observe which linear-solve path the projected-Newton step took.
     total_iterative_solves = 0
+    total_iterative_iterations = 0
+    max_hessian_nonzeros = 0
+    max_hessian_storage_bytes = 0
+    max_iterative_error = 0.0
     for _ in range(8):
         world.step()
-        total_iterative_solves += (
-            world.last_deformable_solver_diagnostics.projected_newton_iterative_solves
+        diagnostics = world.last_deformable_solver_diagnostics
+        total_iterative_solves += diagnostics.projected_newton_iterative_solves
+        total_iterative_iterations += (
+            diagnostics.projected_newton_iterative_iterations
+        )
+        max_hessian_nonzeros = max(
+            max_hessian_nonzeros, diagnostics.projected_newton_hessian_nonzeros
+        )
+        max_hessian_storage_bytes = max(
+            max_hessian_storage_bytes,
+            diagnostics.projected_newton_hessian_storage_bytes,
+        )
+        max_iterative_error = max(
+            max_iterative_error,
+            diagnostics.projected_newton_iterative_max_error,
         )
     assert total_iterative_solves > 0
+    assert total_iterative_iterations >= 0
+    assert max_hessian_nonzeros > 0
+    assert max_hessian_storage_bytes > 0
+    assert math.isfinite(max_iterative_error)
+    assert max_iterative_error >= 0.0
+
+
+def test_experimental_world_matrix_free_solver_diagnostic():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+    world.gravity = [0.0, 0.0, -9.81]
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.material.youngs_modulus = 1.0e4
+    options.material.use_finite_element_elasticity = True
+    options.material.use_matrix_free_linear_solver = True
+    options.fixed_nodes = [0]
+    world.add_deformable_body("tet", options)
+
+    total_iterative_solves = 0
+    total_matrix_free_solves = 0
+    total_iterative_iterations = 0
+    max_hessian_nonzeros = 0
+    max_hessian_storage_bytes = 0
+    max_iterative_error = 0.0
+    for _ in range(8):
+        world.step()
+        diagnostics = world.last_deformable_solver_diagnostics
+        total_iterative_solves += diagnostics.projected_newton_iterative_solves
+        total_matrix_free_solves += (
+            diagnostics.projected_newton_matrix_free_solves
+        )
+        total_iterative_iterations += (
+            diagnostics.projected_newton_iterative_iterations
+        )
+        max_hessian_nonzeros = max(
+            max_hessian_nonzeros, diagnostics.projected_newton_hessian_nonzeros
+        )
+        max_hessian_storage_bytes = max(
+            max_hessian_storage_bytes,
+            diagnostics.projected_newton_hessian_storage_bytes,
+        )
+        max_iterative_error = max(
+            max_iterative_error,
+            diagnostics.projected_newton_iterative_max_error,
+        )
+
+    assert total_matrix_free_solves > 0
+    assert total_iterative_solves == total_matrix_free_solves
+    assert total_iterative_iterations >= 0
+    assert max_hessian_nonzeros == 0
+    assert max_hessian_storage_bytes == 0
+    assert math.isfinite(max_iterative_error)
+    assert max_iterative_error >= 0.0
+
+
+def test_experimental_world_matrix_free_solver_matches_direct_ground_contact():
+    sx = _simulation_experimental()
+
+    def settle(matrix_free: bool):
+        world = sx.World(time_step=0.01)
+        world.gravity = [0.0, 0.0, -0.5]
+        ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+        ground.is_static = True
+        ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
+        ground.is_deformable_ground_barrier = True
+
+        options = sx.DeformableBodyOptions()
+        options.positions = [np.array([0.0, 0.0, 0.015])]
+        options.masses = [40.0]
+        options.material.use_matrix_free_linear_solver = matrix_free
+        body = world.add_deformable_body("node", options)
+
+        total_iterative_solves = 0
+        total_matrix_free_solves = 0
+        max_hessian_nonzeros = 0
+        for _ in range(600):
+            world.step()
+            diagnostics = world.last_deformable_solver_diagnostics
+            total_iterative_solves += (
+                diagnostics.projected_newton_iterative_solves
+            )
+            total_matrix_free_solves += (
+                diagnostics.projected_newton_matrix_free_solves
+            )
+            max_hessian_nonzeros = max(
+                max_hessian_nonzeros,
+                diagnostics.projected_newton_hessian_nonzeros,
+            )
+        return (
+            float(body.node_position(0)[2]),
+            total_iterative_solves,
+            total_matrix_free_solves,
+            max_hessian_nonzeros,
+        )
+
+    direct_z, direct_solves, direct_matrix_free, direct_hessian_nonzeros = (
+        settle(False)
+    )
+    matrix_z, matrix_solves, matrix_free_solves, matrix_hessian_nonzeros = (
+        settle(True)
+    )
+
+    assert direct_solves == 0
+    assert direct_matrix_free == 0
+    assert direct_hessian_nonzeros > 0
+
+    assert matrix_solves > 0
+    assert matrix_solves == matrix_free_solves
+    assert matrix_hessian_nonzeros == 0
+    assert 0.0 < matrix_z < 2e-2
+    assert matrix_z == pytest.approx(direct_z, abs=1e-9)
 
 
 def test_experimental_deformable_body_boundary_conditions_python_api():
