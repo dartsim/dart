@@ -8,11 +8,11 @@ Proposal. This document owns durable API-shape rationale for
 
 The current operating state for the experimental world split remains in
 [`docs/plans/dashboard.md`](../plans/dashboard.md) under PLAN-050. This design
-does not promote the experimental module into stable `dartpy` during DART 7
-and does not change DART 7 compatibility policy.
+keeps the experimental module out of stable `dartpy` until DART 7 clean-break
+parity gates pass.
 
-DART 8 is the promotion target. The experimental C++ and Python simulation APIs
-shall become the official simulation APIs for DART 8 and dartpy 8 once their
+DART 7 is the promotion target. The experimental C++ and Python simulation APIs
+shall become the official simulation APIs for DART 7 and dartpy 7 once their
 parity gates are satisfied. The legacy DART 6 C++ simulation API and legacy
 dartpy 6 API surface are removed rather than carried beside the new API.
 
@@ -103,7 +103,7 @@ keyword arguments, and value-object fields use `snake_case`; enum members use
 `PascalCase`, as normal Python types do.
 
 DART 7 may keep legacy naming compatibility in legacy modules, but
-`dartpy.simulation_experimental` is the staging surface for dartpy 8. It should
+`dartpy.simulation_experimental` is the staging surface for dartpy 7. It should
 not bind C++ `camelCase` aliases into the experimental module. Examples,
 stubs, tests, and docs should teach only the Pythonic names.
 
@@ -115,9 +115,10 @@ a public wrapper instead of binding through the internal surface.
 
 ### Stable Facade, Replaceable Internals
 
-DART 7 treats this module as experimental. DART 8 should promote a stable
-facade: public Python names, documented behavior, stubs, tests, and migration
-notes become the compatibility contract.
+DART 7 treats this module as experimental while parity gates are being closed.
+Clean-break promotion should establish a stable facade: public Python names,
+documented behavior, stubs, tests, and migration notes become the compatibility
+contract.
 
 That stable facade should leave DART free to change implementation details:
 
@@ -211,7 +212,7 @@ The best long-term shape is a hybrid:
   want predictable work placement;
 - stale or unchecked reads are opt-in advanced behavior, not the default.
 
-This preserves the usability of lazy evaluation without committing DART 8 to
+This preserves the usability of lazy evaluation without committing DART 7 to
 the DART 6 dirty-flag implementation. Internally, DART may use dirty flags,
 generation counters, dependency graphs, staged cache owners, or backend-specific
 batch updates. The public API should expose freshness guarantees and stage
@@ -281,7 +282,7 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   loop-closure, and rigid-body state through Python properties. Lookup and
   topology-changing operations remain methods, but parallel getter/setter-style
   aliases for those data properties are intentionally not part of the staging
-  surface for dartpy 8.
+  surface for dartpy 7.
 - `StateSpace` is exposed as a storage-independent metadata value object in
   dartpy, with Pythonic variable names, dimensions, bounds, finalization state,
   and optional lookup by variable name. World-state extraction, write-back,
@@ -344,11 +345,11 @@ The experimental module is conditionally available when
 compatibility layer and is not promoted onto top-level `dartpy`.
 
 The matching C++ surface remains opt-in under
-`dart::simulation::experimental` for DART 7. In DART 8, the promoted API should
-move into the official stable simulation namespace while the DART 6-era C++
-simulation surface is removed.
+`dart::simulation::experimental` while parity gates are being closed. For the
+DART 7 clean break, the promoted API should move into the official stable
+simulation namespace while the DART 6-era C++ simulation surface is removed.
 
-The intended DART 8 public symbols are:
+The intended promoted public symbols are:
 
 ```text
 dartpy.simulation_experimental
@@ -436,19 +437,19 @@ world.clear()
 
 `step(n=...)` is the Python common path for repeated stepping. The
 implementation may call the C++ step loop internally and should release the GIL
-when no Python callback is involved. DART 7 exposes `n`; DART 8 promotion
-should decide whether `count` or `steps` is clearer before freezing the
-official signature.
+when no Python callback is involved. DART 7 exposes `n`; clean-break promotion
+should decide whether `count` or `steps` is clearer before freezing the official
+signature.
 
 Topology mutation remains design-mode only. Stepping and kinematics updates
 operate in simulation mode. Positive-count stepping may enter simulation mode
 after validation; zero-count stepping is a no-op. Python and C++ should share
-the same DART 8 lifecycle semantics so users do not learn different rules by
+the same DART 7 lifecycle semantics so users do not learn different rules by
 language.
 
 The current DART 7 C++ and Python common step paths both auto-enter simulation
 mode for positive-count stepping, while explicit kinematics synchronization
-still requires simulation mode. The official DART 8 API should define the same
+still requires simulation mode. The official DART 7 API should define the same
 validation, auto-finalization, zero-count, and topology-mutation rules in both
 languages.
 
@@ -689,7 +690,7 @@ Getter-style C++ methods may exist underneath, but the experimental Python
 binding should expose native `snake_case` methods only for real operations and
 lookups, and should expose data-like state through properties. Runtime
 camelCase compatibility and parallel data getter/setter aliases belong to
-legacy modules, not to the DART 7 experimental staging surface for dartpy 8.
+legacy modules, not to the DART 7 experimental staging surface for dartpy 7.
 
 ## Collections And Lookup
 
@@ -765,8 +766,8 @@ offsets, name lookup, count queries, validation, serialization, direct runtime
 participation properties, and a Pythonic `LoopClosureRuntimePolicy` value
 object for batch assignment. `closure.compute_residual()` returns explicit
 closed-chain residual diagnostics without exposing solver rows. Constrained
-kinematic projection and dynamic solving remain DART 8 target concepts to stage
-behind the experimental module before promotion. Active projection or solve
+kinematic projection and dynamic solving remain clean-break target concepts to
+stage behind the experimental module before promotion. Active projection or solve
 policies are rejected at runtime until compatible stages exist, while disabled
 closures may retain future-intent policy metadata.
 
@@ -1242,7 +1243,7 @@ as DART policy.
 - Kinematics-only execution belongs on the same `World` because planning,
   playback, collision checks, rendering, and sensors need the same topology,
   names, frames, and shape metadata as full physics.
-- The public facade stays stable after DART 8 promotion so DART can improve
+- The public facade stays stable after DART 7 promotion so DART can improve
   algorithms, solvers, multi-physics stages, and compute backends without
   forcing user code to track implementation changes.
 - Paths and source names are metadata for files, diagnostics, and rendering;
@@ -1264,20 +1265,20 @@ still marked experimental, but growth should follow these promotion rules:
 3. Update committed stubs with every public binding addition.
 4. Run API-boundary checks when bindings reach into new C++ headers.
 5. Document unsupported cases and future promotion conditions.
-6. Promote for DART 8 and dartpy 8 only after parity gates show that the
+6. Promote for DART 7 and dartpy 7 only after parity gates show that the
    experimental world can replace the classic world for the supported
    workflow.
 
-DART 8 and dartpy 8 make this surface official and remove the legacy DART 6
-C++ and dartpy 6 APIs from the stable path. The promoted API should preserve
+DART 7 and dartpy 7 make this surface official and remove the legacy DART 6
+C++ and dartpy APIs from the stable path. The promoted API should preserve
 the design invariants in this document: small common path, first-class objects,
 Pythonic properties, explicit advanced state, and no ECS leakage.
 
 ## Quick Reference
 
 In these snippets, `sx` is shorthand for the simulation API module. During
-DART 7 that module is `dartpy.simulation_experimental`; during DART 8 it is the
-official dartpy 8 simulation path chosen during promotion.
+parity work that module is `dartpy.simulation_experimental`; after DART 7
+promotion it is the official dartpy 7 simulation path chosen during promotion.
 
 DART 7 experimental design target for the common path:
 
@@ -1307,7 +1308,7 @@ forearm = arm.add_link(
 world.sync(sx.WorldSyncStage.KINEMATICS)
 ```
 
-DART 8 target after owner APIs exist:
+DART 7 promoted target after owner APIs exist:
 
 ```python
 space = sx.state.StateSpace()
@@ -1320,7 +1321,8 @@ control = world.get_control(space)
 trajectory = sx.state.rollout(world.model(), state, control, steps=200)
 ```
 
-The DART 8 target example is intentionally separated from the DART 7 examples.
+The promoted target example is intentionally separated from the current DART 7
+experimental examples.
 It records the design direction for state/control/rollout APIs without
 pretending those symbols are already supported by the experimental bindings.
 
