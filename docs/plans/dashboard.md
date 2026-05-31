@@ -182,7 +182,10 @@ its own line so status updates remain git-history friendly.
   runtime fixture behavior, production convergence criteria, production-ready
   default activation criteria, mixed-domain coupling, rigorous interval
   arithmetic, direct CCD evaluator parity, remaining comparison script
-  commands, and full fixture/test/benchmark/visual parity.
+  commands, and full fixture/test/benchmark/visual parity. Keep the
+  simultaneous-impact intake as a PLAN-082 sidecar until solver-neutral scenes
+  prove a restitution/order-uncertainty gap not already covered by rigid IPC or
+  AVBD-style finite-time contact.
 - Gate: Full rigid IPC progress is not complete until the implementation covers
   every manifest row with DART-owned tests, examples, benchmarks, comparison
   packets, CPU/GPU evidence where applicable, and headless Filament visual
@@ -190,7 +193,9 @@ its own line so status updates remain git-history friendly.
   audited upstream checkout, public APIs remain backend-neutral and free of
   solver registries/ECS storage, and every promoted runtime slice passes
   `pixi run lint`, `pixi run build`, focused C++ tests, and
-  `check-api-boundaries`.
+  `check-api-boundaries`. A simultaneous-impact operator additionally requires
+  the sidecar literature matrix, corpus evidence, IPC/AVBD comparison, and
+  public-boundary review before promotion.
 
 ### PLAN-104: Vertex Block Descent Solver
 
