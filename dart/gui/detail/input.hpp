@@ -50,10 +50,12 @@ class SelectionController;
 
 struct ApplicationInputState
 {
+  bool wasEscapePressed = false;
   bool wasSpacePressed = false;
   bool wasStepPressed = false;
   bool wasPerfHudKeyPressed = false;
   std::vector<bool> customActionWasPressed;
+  std::vector<bool> customActionSuppressUntilReleased;
 };
 
 void attachOrbitCameraController(

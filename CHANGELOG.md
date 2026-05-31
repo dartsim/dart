@@ -2358,6 +2358,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Updated the GLFW-backed ImGui input bridge so docked Python demo pane
     edges show the appropriate resize cursors while preserving resizable pane
     behavior.
+  - Forwarded GLFW keyboard and character input into the ImGui bridge so the
+    docked Python demos sidebar search box accepts typed text while app-level
+    shortcuts yield to focused text fields.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))
