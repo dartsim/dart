@@ -25,7 +25,7 @@ committed:
   windowed grounding — verified by before/after headless screenshots of the
   rigid IPC scenes. MSAA + volumetric fog stay windowed-only.
 - **Python mesh `CollisionShape` binding**: `CollisionShape.mesh(vertices,
-  triangles)` + `CollisionShapeType.MESH` (closing the Python gap vs C++
+triangles)` + `CollisionShapeType.MESH` (closing the Python gap vs C++
   `makeMesh`); unit-tested through the rigid IPC path; stub regenerated.
 - **New py-demo** `sx_rigid_ipc_edge_drop` (Figs. 16/17 degenerate drop),
   verified real-time (~24 ms/step, ~42 fps physics-only) and in the demos-cycle
@@ -152,12 +152,22 @@ active-friction diagnostics from the opt-in runtime stage.
 
 ## Current Branch
 
-`feature/rigid-ipc-manifest` - local branch, pushed to
-`origin/feature/rigid-ipc-manifest`, currently `0 behind` / `67 ahead` of
-`origin/main` after merging the latest `origin/main` three times (the parallel
-deformable IPC effort PLAN-081, PR #2762 py-demos, and the Eigen 5 / pixi
-upgrade #2765/#2768). Push is authorized (sole maintainer, no PR-review gating).
-This session added, on top of the earlier uncommitted work (now the checkpoint
+CURRENT (2026-05-30): `feature/rigid-ipc-paper-parity`, branched off `main`,
+pushed to `origin/feature/rigid-ipc-paper-parity`. All earlier rigid IPC manifest
+
+- solver work is now merged to `main` (PR #2777). This branch's commits (all
+  pushed): rigid IPC paper-parity experiment suite; Filament rendering fidelity;
+  Python mesh `CollisionShape` binding + `sx_rigid_ipc_edge_drop` demo; kinematic
+  (prescribed-motion) rigid-body support + turntable/conveyor regressions; Python
+  `is_kinematic` binding; dev-task doc updates. See the dated session summary at the
+  top of this file for details. Push is authorized (sole maintainer, no PR-review
+  gating).
+
+HISTORICAL (pre-merge `feature/rigid-ipc-manifest`): pushed to
+`origin/feature/rigid-ipc-manifest`, was `0 behind` / `67 ahead` of `origin/main`
+after merging the latest `origin/main` three times (PLAN-081 deformable IPC, PR
+#2762 py-demos, Eigen 5 / pixi upgrade #2765/#2768) before being merged via #2777.
+That session added, on top of the earlier uncommitted work (now the checkpoint
 commit "Add opt-in experimental rigid IPC contact stage with lagged friction"):
 
 - Phase 4d runtime friction-behavior regression.
@@ -419,14 +429,25 @@ remain open fallback slices.
 
 ```bash
 cd /home/js/dev/dartsim/dart/task_6
-git checkout feature/rigid-ipc-manifest
-git status && git log -3 --oneline
+# Latest work is on this branch (off main); main has everything through #2777.
+git checkout feature/rigid-ipc-paper-parity   # or: git checkout main
+git status && git log -8 --oneline
 pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc
 pixi run build-simulation-experimental-tests
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_barrier$'
-pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_continuous_collision_step|test_deformable_body)$'
+pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_paper_experiments$'
+pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_world$'   # incl. RigidIpcKinematic* regressions
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_fixture$'
 pixi run test-simulation-experimental
+# Rendering / demos (needs a full `pixi run build` first to relink dartpy):
+pixi run build
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py -q
 ```
 
-Then continue from the README's "Immediate Next Steps".
+Next high-value slices (none started): (1) robust normal-push for kinematic
+obstacles (the documented limitation); (2) the IPC performance climb (the
+~3-orders-of-magnitude per-step gap gates the many-body paper scenes -- arch,
+3D packing, wrecking ball -- and a real-time turntable/conveyor demo); (3)
+articulated paper scenes (lock box, mechanisms, bolt, punching press, chains)
+need a joint/articulation path the free-body rigid IPC stage does not have.
+Otherwise continue from the README's "Immediate Next Steps".
