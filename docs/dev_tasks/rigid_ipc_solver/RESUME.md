@@ -44,9 +44,11 @@ motion is tangential/co-moving (drag); a kinematic body prescribed to move
 normally INTO a dynamic body faster than the barrier can push it aside is not
 guaranteed intersection-free (prescribed motion cannot be slowed by contact) — the
 free box's inertial anchor overwhelms the barrier and the obstacle passes through.
-Robust normal-pushing, a Python `set_kinematic` binding, and a turntable py-demo
-(gated on the disk-contact perf cost) are follow-ups. The `KinematicBodyTag` is
-runtime-only (not serialized).
+The Python `RigidBody.is_kinematic` binding is landed (tested). Follow-ups: robust
+normal-pushing, and a real-time kinematic demo (a box-on-box turntable measured
+~100-190 ms/step as the rider's contact set grows, so it is covered by the C++
+`RigidIpcKinematicTurntableCarriesRestingBox` regression rather than shipped as a
+demo). The `KinematicBodyTag` is runtime-only (not serialized).
 
 Still out of scope: articulated paper scenes (lock box, mechanisms, bolt,
 punching press, wrecking-ball/anchor chains, card house) need joints; many-body
