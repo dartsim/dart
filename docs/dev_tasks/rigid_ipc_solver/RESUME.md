@@ -19,11 +19,14 @@ committed:
   - Figs. 16/17 Erleben degenerate edge-on-face drop settles without
     penetration/divergence.
 - **Filament rendering fidelity** (`dart/gui/detail/render_environment.cpp`):
-  GTAO (bent normals, HIGH) + bloom + screen-space contact shadows + FXAA now
-  apply in BOTH headless and windowed (was windowed-only), 4 shadow cascades,
-  3072 headless shadow map, temporal dithering. Headless captures now match the
-  windowed grounding — verified by before/after headless screenshots of the
-  rigid IPC scenes. MSAA + volumetric fog stay windowed-only.
+  WINDOWED (real-GPU) views gain GTAO (bent normals, HIGH) + bloom +
+  screen-space contact shadows + 4x MSAA + a 4096/4-cascade shadow atlas. Both
+  modes gain cheap shader-space FXAA + temporal dithering. NOTE: an adversarial
+  review flagged that enabling the GPU-heavy screen-space passes in HEADLESS
+  risked the CI software rasterizer (llvmpipe); they were reverted to
+  windowed-only, and headless keeps the original light shadow cost (2048 / 3
+  cascades) plus FXAA + dithering. Verified by before/after headless captures and
+  the headless demos-cycle smoke.
 - **Python mesh `CollisionShape` binding**: `CollisionShape.mesh(vertices,
 triangles)` + `CollisionShapeType.MESH` (closing the Python gap vs C++
   `makeMesh`); unit-tested through the rigid IPC path; stub regenerated.
