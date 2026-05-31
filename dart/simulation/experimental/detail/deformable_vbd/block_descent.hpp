@@ -324,6 +324,26 @@ inline const AvbdSpringFiniteStiffnessRow* findAvbdSpringFiniteStiffnessRow(
 }
 
 //==============================================================================
+/// Find the finite-stiffness material row for `tetIndex`. Rows generated from a
+/// tetrahedral mesh are normally stored in tet order, but tests and future row
+/// generation can pass sparse or reordered arrays.
+inline const AvbdTetMaterialFiniteStiffnessRow*
+findAvbdTetMaterialFiniteStiffnessRow(
+    const std::vector<AvbdTetMaterialFiniteStiffnessRow>& rows,
+    std::uint32_t tetIndex)
+{
+  if (tetIndex < rows.size() && rows[tetIndex].tet == tetIndex) {
+    return &rows[tetIndex];
+  }
+
+  const auto it
+      = std::find_if(rows.begin(), rows.end(), [tetIndex](const auto& row) {
+          return row.tet == tetIndex;
+        });
+  return it == rows.end() ? nullptr : &(*it);
+}
+
+//==============================================================================
 /// Mass-spring block descent with AVBD finite-stiffness spring rows. Each
 /// spring uses its row's current effective stiffness during the primal sweep,
 /// then the row stiffness is increased toward the material stiffness after the
@@ -780,6 +800,127 @@ inline BlockDescentStats blockDescentTetMesh(
         options.useFemTetKernel,
         options.useFixedCorotationalTets);
     residualNormSquared += block.force.squaredNorm();
+  }
+  stats.finalResidualNormSquared = residualNormSquared;
+  return stats;
+}
+
+//==============================================================================
+/// Tetrahedral block descent with AVBD finite-stiffness material rows. Each
+/// tet uses its row's current effective stiffness as a scale on the body Lamé
+/// parameters during the primal sweep, then the scale ramps toward 1.0 from the
+/// observed deformation-gradient error after each sweep.
+inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<double>& masses,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<TetMeshElement>& tets,
+    double mu,
+    double lambda,
+    double timeStep,
+    std::vector<AvbdTetMaterialFiniteStiffnessRow>& tetRows,
+    const VertexColoring& coloring,
+    const TetAdjacency& adjacency,
+    const BlockDescentOptions& options,
+    const AvbdTetMaterialFiniteStiffnessOptions& avbdOptions)
+{
+  BlockDescentStats stats;
+  const std::size_t vertexCount = positions.size();
+  const auto assemble = [&](std::uint32_t vertex) {
+    VertexBlock block;
+    addInertiaTerm(
+        block,
+        masses[vertex],
+        timeStep,
+        positions[vertex],
+        inertialTargets[vertex]);
+    for (const auto& [tetIndex, localVertex] : adjacency.incidentTets[vertex]) {
+      const TetMeshElement& tet = tets[tetIndex];
+      const std::array<Eigen::Vector3d, 4> tetPositions
+          = {positions[tet.vertices[0]],
+             positions[tet.vertices[1]],
+             positions[tet.vertices[2]],
+             positions[tet.vertices[3]]};
+      double effectiveMu = mu;
+      double effectiveLambda = lambda;
+      const AvbdTetMaterialFiniteStiffnessRow* row
+          = findAvbdTetMaterialFiniteStiffnessRow(tetRows, tetIndex);
+      if (row != nullptr) {
+        const LameParameters scaled = avbdScaledTetMaterial(mu, lambda, *row);
+        effectiveMu = scaled.mu;
+        effectiveLambda = scaled.lambda;
+      }
+      if (!(effectiveMu > 0.0) || !(effectiveLambda > 0.0)) {
+        continue;
+      }
+      if (options.useFemTetKernel) {
+        detail::addFemTetTerm(
+            block,
+            localVertex,
+            tet.rest,
+            tetPositions,
+            effectiveMu,
+            effectiveLambda,
+            options.useFixedCorotationalTets);
+      } else {
+        addNeoHookeanTetTerm(
+            block,
+            localVertex,
+            tet.rest,
+            tetPositions,
+            effectiveMu,
+            effectiveLambda);
+      }
+    }
+    return block;
+  };
+
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    for (const auto& group : coloring.groups) {
+      for (const std::uint32_t vertex : group) {
+        if (vertex >= vertexCount || fixed[vertex] != 0u) {
+          continue;
+        }
+        const VertexBlock block = assemble(vertex);
+        positions[vertex] += solveVertexBlock(block, options.regularization);
+        ++stats.vertexUpdates;
+      }
+    }
+
+    for (AvbdTetMaterialFiniteStiffnessRow& row : tetRows) {
+      if (row.tet >= tets.size()) {
+        continue;
+      }
+      const TetMeshElement& tet = tets[row.tet];
+      const std::array<std::uint32_t, 4>& vertices = tet.vertices;
+      if (vertices[0] >= vertexCount || vertices[1] >= vertexCount
+          || vertices[2] >= vertexCount || vertices[3] >= vertexCount) {
+        continue;
+      }
+      if (fixed[vertices[0]] != 0u && fixed[vertices[1]] != 0u
+          && fixed[vertices[2]] != 0u && fixed[vertices[3]] != 0u) {
+        continue;
+      }
+      const std::array<Eigen::Vector3d, 4> tetPositions
+          = {positions[vertices[0]],
+             positions[vertices[1]],
+             positions[vertices[2]],
+             positions[vertices[3]]};
+      const double constraintValue
+          = avbdTetMaterialConstraintValue(tet.rest, tetPositions);
+      row.state = updateAvbdTetMaterialFiniteStiffnessRow(
+          row.state, constraintValue, row, avbdOptions);
+    }
+  }
+
+  double residualNormSquared = 0.0;
+  for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
+    if (fixed[vertex] != 0u) {
+      continue;
+    }
+    residualNormSquared += assemble(vertex).force.squaredNorm();
   }
   stats.finalResidualNormSquared = residualNormSquared;
   return stats;
