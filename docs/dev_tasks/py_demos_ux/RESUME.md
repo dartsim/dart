@@ -140,6 +140,11 @@
   documented as a headless whole-step escape hatch.
 - `arm_push_box` now uses a plane collision floor plus a visual floor, avoiding
   LCP fallback warnings during panel capture while preserving the visible scene.
+- The remaining no-panel catalog entries were audited after the custom-panel
+  pass. They are starter/static visualization, basic rigid-body, basic
+  collision/constraint, soft-body, and legacy asset examples, so they stay
+  lightweight until they gain scene-specific controls or metrics worth
+  surfacing.
 
 ## Validation
 
@@ -310,10 +315,8 @@ pixi run lint
 
 ## Next
 
-1. Audit the remaining Python demo catalog for any high-value scenes that still
-   need custom panels or controls.
-2. Add full viewer-input coverage for mouse force-drag once tests can inject
+1. Add full viewer-input coverage for mouse force-drag once tests can inject
    pointer drags into the Filament viewer loop.
-3. Add image thumbnail playback only if the UI renderer grows a texture-backed
+2. Add image thumbnail playback only if the UI renderer grows a texture-backed
    panel image primitive; the current playback surface controls and identifies
    recorded PPM frames from inside the workspace.

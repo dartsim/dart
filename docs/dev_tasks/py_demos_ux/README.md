@@ -111,11 +111,14 @@ navigation, and a path for scene-specific controls.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
   current filtered/total scene count.
+- Audit the remaining Python demo catalog after the custom-panel pass. The
+  remaining no-panel scenes are starter/static visualization, basic rigid-body,
+  basic collision/constraint, soft-body, and legacy asset examples; keep those
+  lightweight until they gain scene-specific controls or metrics worth
+  surfacing.
 
 ## Remaining work
 
-- Audit the remaining Python demo catalog for any high-value scenes that still
-  need custom panels or controls.
 - Add full viewer mouse-event injection coverage for force-drag if the Filament
   test harness grows synthetic pointer input.
 - Decide whether dock layout persistence is needed after the default layout
