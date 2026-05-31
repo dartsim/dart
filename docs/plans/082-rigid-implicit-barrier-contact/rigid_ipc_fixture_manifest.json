@@ -8671,17 +8671,17 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D tunneling row: a rotated cube with a large time-step velocity toward a fixed wall remains intersection-free and reports a conservative CCD line-search hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::tunneling",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.HighSpeedCubeDoesNotTunnelThroughWall",
       "required_assets_or_importer": [
         "meshes/cube.obj",
         "meshes/plane.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::tunneling",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.HighSpeedCubeDoesNotTunnelThroughWall'",
+      "notes_or_gap": "Covered by DART-owned high-speed cube-vs-wall runtime coverage for the 3D unit-test fixture mechanism. Broader 3D unit-test fixture rows remain planned until they have matching DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/vertex-face.json",

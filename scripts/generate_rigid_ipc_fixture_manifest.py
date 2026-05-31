@@ -54,7 +54,7 @@ IMPLEMENTED_LARGE_HASHGRID_DATA_ROWS = frozenset(
     f"tests/data/large-rb-hashgrid/large-rb-hashgrid-{index:03d}.json"
     for index in range(2)
 )
-IMPLEMENTED_FRICTION_FIXTURE_ROWS = {
+IMPLEMENTED_FIXTURE_ROWS = {
     "fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json": {
         "test": "FrictionThresholdBelowFixtureRowSlides",
         "expected_invariant": (
@@ -163,6 +163,20 @@ IMPLEMENTED_FRICTION_FIXTURE_ROWS = {
             "3D low-friction turntable fixture mechanism. The mu=0.0 "
             "turntable row plus paper visual aliases remain planned until "
             "they have matching no-friction and headless visual evidence."
+        ),
+    },
+    "fixtures/3D/unit-tests/tunneling.json": {
+        "test": "HighSpeedCubeDoesNotTunnelThroughWall",
+        "expected_invariant": (
+            "DART covers the audited 3D tunneling row: a rotated cube with a "
+            "large time-step velocity toward a fixed wall remains "
+            "intersection-free and reports a conservative CCD line-search hit."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned high-speed cube-vs-wall runtime coverage "
+            "for the 3D unit-test fixture mechanism. Broader 3D unit-test "
+            "fixture rows remain planned until they have matching DART "
+            "runtime evidence."
         ),
     },
 }
@@ -553,8 +567,8 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
             "has matching broad-phase bounds coverage and benchmark profile "
             "evidence."
         )
-    if source_kind == "fixture" and path in IMPLEMENTED_FRICTION_FIXTURE_ROWS:
-        implemented = IMPLEMENTED_FRICTION_FIXTURE_ROWS[path]
+    if source_kind == "fixture" and path in IMPLEMENTED_FIXTURE_ROWS:
+        implemented = IMPLEMENTED_FIXTURE_ROWS[path]
         status = "implemented"
         test_name = implemented["test"]
         artifact = (

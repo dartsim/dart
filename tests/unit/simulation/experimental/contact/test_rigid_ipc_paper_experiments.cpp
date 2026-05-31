@@ -40,6 +40,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
 #include <numbers>
 #include <string>
 #include <vector>
@@ -507,6 +508,60 @@ TEST(RigidIpcPaperExperiments, TurntableLowFrictionFixtureRowCarriesRider)
   EXPECT_GT(run.maxY, 0.05);
   EXPECT_GT(run.finalYVelocity, 0.0);
   EXPECT_LE(run.failCount, 3);
+}
+
+TEST(RigidIpcPaperExperiments, HighSpeedCubeDoesNotTunnelThroughWall)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  constexpr double wallHalfThickness = 0.05;
+  sx::RigidBodyOptions wallOptions;
+  wallOptions.isStatic = true;
+  wallOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto wall = world.addRigidBody("tunneling_wall", wallOptions);
+  wall.setCollisionShape(
+      sx::CollisionShape::makeBox({wallHalfThickness, 5.0, 5.0}));
+
+  constexpr double cubeHalfExtent = 0.5;
+  constexpr double deg = std::numbers::pi / 180.0;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d(-5.0, 0.0, 0.0);
+  cubeOptions.linearVelocity = Eigen::Vector3d(1000.0, 0.0, 0.0);
+  cubeOptions.orientation
+      = Eigen::AngleAxisd(32.0 * deg, Eigen::Vector3d::UnitX())
+        * Eigen::AngleAxisd(247.0 * deg, Eigen::Vector3d::UnitY())
+        * Eigen::AngleAxisd(53.0 * deg, Eigen::Vector3d::UnitZ());
+  auto cube = world.addRigidBody("tunneling_cube", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  world.step(executor, pipeline);
+
+  const Eigen::Matrix3d R = cube.getRotation();
+  double maxCubeX = -std::numeric_limits<double>::infinity();
+  for (double dx : {-cubeHalfExtent, cubeHalfExtent}) {
+    for (double dy : {-cubeHalfExtent, cubeHalfExtent}) {
+      for (double dz : {-cubeHalfExtent, cubeHalfExtent}) {
+        const Eigen::Vector3d v
+            = cube.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+        maxCubeX = std::max(maxCubeX, v.x());
+      }
+    }
+  }
+
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_LT(cube.getTranslation().x(), 0.0);
+  EXPECT_LE(maxCubeX, -wallHalfThickness + 1e-3);
+  EXPECT_GT(ipcStage.getLastStats().lineSearchHits, 0u);
 }
 
 // Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its

@@ -192,6 +192,10 @@
         zero-progress resting-contact plateau writes back the unchanged safe pose
         instead of surfacing as a persistent failed solve. Covered by the
         five-voussoir Fig. 11 arch regression.
+  - [x] Phase 3u: add the first audited high-speed tunneling fixture coverage
+        through the opt-in runtime stage. A rotated cube with a large time-step
+        velocity toward a fixed wall remains intersection-free, and the stage
+        reports a conservative CCD line-search hit.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.
@@ -330,6 +334,9 @@
         `fixtures/3D/friction/turntable/turntable-mu=1.0.json`) as implemented
         after exact rotating-cylinder friction coverage landed. The `mu=0` row
         and Fig. 13 paper visual aliases remain planned.
+  - [x] Mark the audited 3D tunneling unit-test fixture row
+        (`fixtures/3D/unit-tests/tunneling.json`) as implemented after
+        high-speed cube-vs-wall conservative line-search coverage landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
 
@@ -426,8 +433,10 @@ DART-owned implementation.
   headless visual evidence. The low/moderate/high-friction `mu=0.1`, `mu=0.5`,
   and `mu=1.0` turntable fixture rows are marked implemented through
   rotating-cylinder drag coverage, while the `mu=0` row and Fig. 13 visual
-  aliases remain planned. The `mu=0.5` threshold rows remain planned because
-  they still need matching DART stick evidence.
+  aliases remain planned. The 3D tunneling unit-test fixture row is marked
+  implemented through high-speed cube-vs-wall runtime coverage that reports a
+  conservative CCD line-search hit without penetration. The `mu=0.5` threshold
+  rows remain planned because they still need matching DART stick evidence.
   The rigid-body hash-grid source row is marked implemented through the
   DART-owned large hash-grid benchmark; the generic hash-grid source row remains
   planned until DART has brute-force-vs-culled broad-phase parity coverage.
@@ -510,7 +519,7 @@ DART-owned implementation.
    Default stepping, opt-in IPC friction replay, fixture-driven stage policy,
    and kinematic fixture replay are covered, but a public-facing example remains
    open until the importer surface is no longer internal-only.
-5. Keep selecting P0 rows from `fixtures/3D/unit-tests/tunneling.json`, direct
+5. Keep selecting P0 rows from remaining 3D unit-test fixtures, direct
    `tests/data/ccd-test-*` files, and one simple paper figure fixture.
 6. Keep the default `World::step()` behavior unchanged until a tested
    DART-owned method policy can select the implicit-barrier path without

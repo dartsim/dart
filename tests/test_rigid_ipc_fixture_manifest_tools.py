@@ -324,6 +324,24 @@ def test_rigid_ipc_manifest_marks_low_friction_turntable_row_implemented(
     assert "mu=0.0" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_tunneling_unit_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = tmp_path / "fixtures" / "3D" / "unit-tests" / "tunneling.json"
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/unit-tests/tunneling.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "HighSpeedCubeDoesNotTunnelThroughWall" in row["dart_artifact"]
+    assert "line-search hit" in row["expected_invariant"]
+    assert "3D unit-test fixture mechanism" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_below_threshold_paper_alias_implemented(
     tmp_path,
 ):
