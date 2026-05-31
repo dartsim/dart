@@ -49,7 +49,9 @@ pixi run py-demo-capture -- --scene sx_articulated --frames 2 \
 ```
 
 The helper writes a PPM, converts it to PNG, rejects blank captures, and prints
-the artifact paths. Capture the docked ImGui workspace:
+the artifact paths. With `--show-ui`, it also rejects screenshots that do not
+show the docked workspace and drops early warm-up frames before ImGui is visible
+from the converted frame sequence. Capture the docked ImGui workspace:
 
 ```bash
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 \

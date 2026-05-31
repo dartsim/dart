@@ -37,6 +37,113 @@ def ppm_has_nonzero_pixels(path: pathlib.Path) -> bool:
     return any(channel != 0 for channel in pixels)
 
 
+def _mean_luminance(
+    pixels: bytes,
+    width: int,
+    x0: int,
+    x1: int,
+    y0: int,
+    y1: int,
+) -> float:
+    total = 0.0
+    count = 0
+    for y in range(y0, y1):
+        row = y * width * 3
+        for x in range(x0, x1):
+            offset = row + x * 3
+            red, green, blue = pixels[offset : offset + 3]
+            total += 0.2126 * red + 0.7152 * green + 0.0722 * blue
+            count += 1
+    if count == 0:
+        return 0.0
+    return total / count
+
+
+def _scaled_bounds(
+    width: int,
+    height: int,
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+) -> tuple[int, int, int, int]:
+    return (
+        max(0, min(width, int(width * x0))),
+        max(0, min(width, int(width * x1))),
+        max(0, min(height, int(height * y0))),
+        max(0, min(height, int(height * y1))),
+    )
+
+
+def ppm_has_docked_workspace_regions(path: pathlib.Path) -> bool:
+    width, height, pixels = read_ppm(path)
+    if width < 32 or height < 32:
+        return False
+
+    def region(x0: float, x1: float, y0: float, y1: float) -> float:
+        ix0, ix1, iy0, iy1 = _scaled_bounds(width, height, x0, x1, y0, y1)
+        return _mean_luminance(pixels, width, ix0, ix1, iy0, iy1)
+
+    top = region(0.0, 1.0, 0.0, 0.16)
+    left = region(0.0, 0.24, 0.25, 0.88)
+    right = region(0.73, 1.0, 0.25, 0.88)
+    bottom = region(0.0, 1.0, 0.89, 1.0)
+    center = region(0.28, 0.70, 0.28, 0.80)
+
+    return (
+        top < 95.0
+        and left < 105.0
+        and right < 105.0
+        and bottom < 95.0
+        and center > 85.0
+        and center > left + 25.0
+        and center > right + 25.0
+    )
+
+
+def _prepare_frame_sequence(
+    frames: pathlib.Path, require_docked_ui: bool
+) -> tuple[list[pathlib.Path], int]:
+    frame_paths = sorted(frames.glob("frame_*.ppm"))
+    if not require_docked_ui or not frame_paths:
+        return frame_paths, 0
+
+    first_ready = next(
+        (
+            index
+            for index, frame in enumerate(frame_paths)
+            if ppm_has_docked_workspace_regions(frame)
+        ),
+        None,
+    )
+    if first_ready is None:
+        raise SystemExit(
+            f"{frames} does not contain a frame with the docked ImGui workspace"
+        )
+
+    ready_frames = frame_paths[first_ready:]
+    missing_ui = [
+        frame for frame in ready_frames if not ppm_has_docked_workspace_regions(frame)
+    ]
+    if missing_ui:
+        raise SystemExit(
+            f"{missing_ui[0]} lost the docked ImGui workspace after it became visible"
+        )
+
+    if first_ready == 0:
+        return frame_paths, 0
+
+    filtered = frames.parent / f"{frames.name}_ui_ready"
+    if filtered.exists():
+        shutil.rmtree(filtered)
+    filtered.mkdir(parents=True)
+    for index, frame in enumerate(ready_frames, start=1):
+        shutil.copy2(frame, filtered / f"frame_{index:06d}.ppm")
+    shutil.rmtree(frames)
+    filtered.rename(frames)
+    return sorted(frames.glob("frame_*.ppm")), first_ready
+
+
 def _png_chunk(kind: bytes, payload: bytes) -> bytes:
     checksum = zlib.crc32(kind + payload) & 0xFFFFFFFF
     return (
@@ -374,39 +481,39 @@ def main(argv: list[str] | None = None) -> int:
         args.event_log = events
     start_time = time.monotonic()
     demo_args = build_demo_args(args, screenshot_ppm, frames_dir)
-    _write_json(
-        manifest,
-        {
-            "schema_version": 1,
-            "scene": args.scene,
-            "switch_scene": args.switch_scene or None,
-            "switch_frame": args.switch_frame if args.switch_scene else None,
-            "force_drag": (
+    manifest_payload: dict[str, object] = {
+        "schema_version": 1,
+        "scene": args.scene,
+        "switch_scene": args.switch_scene or None,
+        "switch_frame": args.switch_frame if args.switch_scene else None,
+        "force_drag": (
+            {
+                "delta": list(args.force_drag_delta),
+                "duration_frames": args.force_drag_frames,
+                "start_frame": args.force_drag_frame,
+                "target": args.force_drag_target,
+            }
+            if args.force_drag_target
+            else (
                 {
-                    "delta": list(args.force_drag_delta),
+                    "delta_pixels": list(args.force_drag_delta_pixels),
                     "duration_frames": args.force_drag_frames,
+                    "pixel": list(args.force_drag_pixel),
                     "start_frame": args.force_drag_frame,
-                    "target": args.force_drag_target,
                 }
-                if args.force_drag_target
-                else (
-                    {
-                        "delta_pixels": list(args.force_drag_delta_pixels),
-                        "duration_frames": args.force_drag_frames,
-                        "pixel": list(args.force_drag_pixel),
-                        "start_frame": args.force_drag_frame,
-                    }
-                    if args.force_drag_pixel is not None
-                    else None
-                )
-            ),
-            "artifacts": {
-                "events": str(events) if needs_event_log else None,
-                "frames": str(png_frames_dir),
-                "screenshot": str(screenshot_png),
-            },
+                if args.force_drag_pixel is not None
+                else None
+            )
+        ),
+        "artifacts": {
+            "events": str(events) if needs_event_log else None,
+            "frames": str(png_frames_dir),
+            "screenshot": str(screenshot_png),
         },
-    )
+        "show_ui": args.show_ui,
+        "ui_ready": None,
+    }
+    _write_json(manifest, manifest_payload)
     rc = _run_demo(demo_args)
     if needs_event_log:
         _append_event(events, start_time, "capture_run_finished", return_code=rc)
@@ -416,14 +523,25 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"demo did not write {screenshot_ppm}")
     if not ppm_has_nonzero_pixels(screenshot_ppm):
         raise SystemExit(f"{screenshot_ppm} contains only zero-valued pixels")
+    require_docked_ui = args.show_ui and not args.allow_noop
+    if require_docked_ui and not ppm_has_docked_workspace_regions(screenshot_ppm):
+        raise SystemExit(f"{screenshot_ppm} does not show the docked ImGui workspace")
 
     convert_ppm_to_png(screenshot_ppm, screenshot_png)
+    frame_paths, dropped_warmup_frames = _prepare_frame_sequence(
+        frames_dir, require_docked_ui
+    )
     converted_frames = 0
-    for ppm in sorted(frames_dir.glob("frame_*.ppm")):
+    for ppm in frame_paths:
         if not ppm_has_nonzero_pixels(ppm):
             raise SystemExit(f"{ppm} contains only zero-valued pixels")
         convert_ppm_to_png(ppm, png_frames_dir / f"{ppm.stem}.png")
         converted_frames += 1
+    manifest_payload["ui_ready"] = {
+        "dropped_warmup_frames": dropped_warmup_frames,
+        "required": require_docked_ui,
+    }
+    _write_json(manifest, manifest_payload)
 
     print(f"screenshot: {screenshot_png}")
     if converted_frames:

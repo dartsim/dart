@@ -989,7 +989,8 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       applicationSource.find(
           "advanceRecordedFramePlayback(*lifecycle, recordedFrameCount)"),
       std::string::npos);
-  EXPECT_NE(applicationSource.find("\"Play Frames\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(">##play_recorded_frames"), std::string::npos);
   EXPECT_NE(
       applicationSource.find("requestSceneSwitch(*lifecycle, active->id)"),
       std::string::npos);

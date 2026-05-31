@@ -72,6 +72,16 @@
   startup. A candidate scene that stalls or spends the first frame over the
   startup budget restores the previous active demo, leaving the rollback reason
   in the Simulation/Demos panels and scripted switch event log.
+- The docked `Simulation` panel now uses compact transport-style controls for
+  start/pause, single-step, recording, and recorded-frame playback. Recorded
+  frame playback stays visible when recording/captured frames exist, but no
+  longer adds an extra label row above the viewport.
+- `py-demo-capture --show-ui` now verifies that the final screenshot contains
+  the docked ImGui workspace and filters early frame-output warm-up frames
+  before the UI is visible, so generated PNG sequences and MP4s begin from a
+  useful UI-ready frame. Integration coverage runs a real scripted sx
+  force-drag capture and checks manifest, event-log, frame, and UI-region
+  artifacts.
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.
@@ -447,6 +457,29 @@ env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pi
 pixi run test-unit gui
 pixi run lint
 ```
+
+Latest UI-ready capture checkpoint:
+
+```bash
+pixi run python -m py_compile scripts/capture_py_demo.py python/tests/unit/test_capture_py_demo.py python/tests/integration/test_demos_cycle.py
+pixi run pytest python/tests/unit/test_capture_py_demo.py -q
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 240s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --force-drag-target ipc_slide_box_visual --force-drag-frame 2 --force-drag-frames 8 --force-drag-delta 0.8,0,0.2 --show-ui --frames 14 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_ui_ready_force_drag
+BUILD_TYPE=Release-docking PYTHONPATH=build/default/cpp/Release-docking/python:python env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run pytest python/tests/integration/test_demos_cycle.py::test_show_ui_uses_docked_workspace_regions python/tests/integration/test_demos_cycle.py::test_py_demo_capture_records_ui_force_drag_artifacts -q
+cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
+ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_gui_FilamentSceneExtraction
+pixi run lint
+git diff --check
+```
+
+The checkpoint capture wrote
+`/tmp/dart_py_demo_ui_ready_force_drag/sx_rigid_ipc_slide_force_ipc_slide_box_visual.png`,
+`/tmp/dart_py_demo_ui_ready_force_drag/png_frames`, and
+`/tmp/dart_py_demo_ui_ready_force_drag/sx_rigid_ipc_slide_force_ipc_slide_box_visual.mp4`.
+`manifest.json` recorded `dropped_warmup_frames: 1`, and the event log recorded
+force start/update/release plus `artifacts_written`. The viewed final frame
+shows the compact Simulation toolbar and UI-ready first retained frame; the
+viewed mid-drag frame shows `status: applying`, nonzero force magnitude, and the
+viewport force overlay.
 
 ## Next
 

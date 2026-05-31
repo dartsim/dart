@@ -6,7 +6,6 @@ import pathlib
 
 import pytest
 
-
 _ROOT = pathlib.Path(__file__).resolve().parents[3]
 _SPEC = importlib.util.spec_from_file_location(
     "capture_py_demo", _ROOT / "scripts" / "capture_py_demo.py"
@@ -17,8 +16,33 @@ capture_py_demo = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(capture_py_demo)
 
 
-def _write_ppm(path: pathlib.Path, pixels: bytes) -> None:
-    path.write_bytes(b"P6\n2 1\n255\n" + pixels)
+def _write_ppm(
+    path: pathlib.Path, pixels: bytes, width: int = 2, height: int = 1
+) -> None:
+    path.write_bytes(f"P6\n{width} {height}\n255\n".encode() + pixels)
+
+
+def _workspace_pixels(width: int = 320, height: int = 240) -> bytes:
+    pixels = bytearray([150] * width * height * 3)
+
+    def fill(x0: int, x1: int, y0: int, y1: int, value: int) -> None:
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                offset = (y * width + x) * 3
+                pixels[offset : offset + 3] = bytes([value, value, value])
+
+    fill(0, width, 0, int(height * 0.18), 25)
+    fill(0, int(width * 0.24), int(height * 0.22), int(height * 0.90), 45)
+    fill(int(width * 0.73), width, int(height * 0.22), int(height * 0.90), 45)
+    fill(0, width, int(height * 0.89), height, 25)
+    fill(
+        int(width * 0.30),
+        int(width * 0.68),
+        int(height * 0.30),
+        int(height * 0.78),
+        170,
+    )
+    return bytes(pixels)
 
 
 def test_ppm_to_png_conversion_and_blank_guard(tmp_path: pathlib.Path) -> None:
@@ -33,6 +57,51 @@ def test_ppm_to_png_conversion_and_blank_guard(tmp_path: pathlib.Path) -> None:
     blank = tmp_path / "blank.ppm"
     _write_ppm(blank, bytes(6))
     assert not capture_py_demo.ppm_has_nonzero_pixels(blank)
+
+
+def test_show_ui_detector_rejects_scene_only_frames(
+    tmp_path: pathlib.Path,
+) -> None:
+    no_ui = tmp_path / "no_ui.ppm"
+    workspace = tmp_path / "workspace.ppm"
+    width, height = 320, 240
+    _write_ppm(no_ui, bytes([150] * width * height * 3), width, height)
+    _write_ppm(workspace, _workspace_pixels(width, height), width, height)
+
+    assert not capture_py_demo.ppm_has_docked_workspace_regions(no_ui)
+    assert capture_py_demo.ppm_has_docked_workspace_regions(workspace)
+
+
+def test_show_ui_frame_sequence_drops_warmup_frames(
+    tmp_path: pathlib.Path,
+) -> None:
+    frames = tmp_path / "frames"
+    frames.mkdir()
+    width, height = 320, 240
+    _write_ppm(
+        frames / "frame_000001.ppm",
+        bytes([150] * width * height * 3),
+        width,
+        height,
+    )
+    _write_ppm(
+        frames / "frame_000002.ppm", _workspace_pixels(width, height), width, height
+    )
+    _write_ppm(
+        frames / "frame_000003.ppm", _workspace_pixels(width, height), width, height
+    )
+
+    ready_frames, dropped = capture_py_demo._prepare_frame_sequence(frames, True)
+
+    assert dropped == 1
+    assert [frame.name for frame in ready_frames] == [
+        "frame_000001.ppm",
+        "frame_000002.ppm",
+    ]
+    assert all(
+        capture_py_demo.ppm_has_docked_workspace_regions(frame)
+        for frame in ready_frames
+    )
 
 
 def test_visual_capture_rejects_noop_backend(tmp_path: pathlib.Path) -> None:

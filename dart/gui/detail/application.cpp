@@ -598,6 +598,16 @@ std::string formatFixed(double value, int precision)
   return stream.str();
 }
 
+bool toolbarButton(
+    dart::gui::PanelBuilder& builder,
+    std::string_view label,
+    std::string_view tooltip)
+{
+  const bool clicked = builder.button(label);
+  builder.itemTooltip(tooltip);
+  return clicked;
+}
+
 std::string& demoSidebarSearch()
 {
   static std::string search;
@@ -610,7 +620,7 @@ dart::gui::Panel makeDemoSimulationPanel(
   dart::gui::Panel panel;
   panel.title = "Simulation";
   panel.dockSide = dart::gui::DockSide::Top;
-  panel.initialSize = std::array<double, 2>{760.0, 128.0};
+  panel.initialSize = std::array<double, 2>{760.0, 108.0};
   panel.autoResize = false;
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,
@@ -626,27 +636,37 @@ dart::gui::Panel makeDemoSimulationPanel(
       active = &scenes[static_cast<std::size_t>(activeIndex)];
     }
 
-    if (builder.button(lifecycle->paused ? "Start" : "Pause")) {
+    if (toolbarButton(
+            builder,
+            lifecycle->paused ? ">##start_simulation" : "||##pause_simulation",
+            lifecycle->paused ? "Start simulation." : "Pause simulation.")) {
       togglePaused(*lifecycle);
     }
     builder.sameLine();
-    if (builder.button("Step")) {
+    if (toolbarButton(
+            builder, ">|##step_simulation", "Advance one simulation step.")) {
       requestSingleStep(*lifecycle);
     }
     builder.sameLine();
-    if (builder.button("Reset") && active != nullptr) {
+    if (toolbarButton(builder, "Reset", "Rebuild the active demo scene.")
+        && active != nullptr) {
       requestSceneSwitch(*lifecycle, active->id);
     }
     builder.sameLine();
-    if (builder.button("Replay") && active != nullptr) {
+    if (toolbarButton(
+            builder,
+            "Replay",
+            "Restart and run the active demo from the beginning.")
+        && active != nullptr) {
       requestSceneReplay(*lifecycle, active->id);
     }
-    builder.itemTooltip("Restart and run the active demo from the beginning.");
     builder.sameLine();
-    if (builder.button("Reset Layout")) {
+    if (toolbarButton(
+            builder,
+            "Layout",
+            "Restore the default docked workspace layout.")) {
       requestDockLayoutReset(*lifecycle);
     }
-    builder.itemTooltip("Restore the default docked workspace layout.");
     builder.sameLine();
     const bool recordingFrames = lifecycle->frameOutputEnabled
                                  && !lifecycle->frameOutputDirectory.empty();
@@ -660,7 +680,11 @@ dart::gui::Panel makeDemoSimulationPanel(
       status += " | " + active->title;
     }
 
-    if (builder.button(recordingFrames ? "Stop Record" : "Record Frames")) {
+    if (toolbarButton(
+            builder,
+            recordingFrames ? "Stop##record_frames" : "Rec##record_frames",
+            recordingFrames ? "Stop recording frame images."
+                            : "Record frame images for playback.")) {
       toggleFrameOutputCapture(*lifecycle, recordDirectory);
     }
     builder.sameLine();
@@ -684,31 +708,41 @@ dart::gui::Panel makeDemoSimulationPanel(
     advanceRecordedFramePlayback(*lifecycle, recordedFrameCount);
     if (!lifecycle->frameOutputDirectory.empty() || recordedFrameCount > 0) {
       builder.separator();
-      builder.text(
-          std::string("frame playback: ") + std::to_string(recordedFrameCount)
-          + " recorded frame" + (recordedFrameCount == 1 ? "" : "s"));
+      builder.text(std::string("frames ") + std::to_string(recordedFrameCount));
       builder.itemTooltip(lifecycle->frameOutputDirectory);
 
       if (recordedFrameCount > 0) {
-        if (builder.button("|<")) {
+        builder.sameLine();
+        if (toolbarButton(
+                builder, "|<##first_recorded_frame", "First recorded frame.")) {
           setRecordedFramePlaybackIndex(*lifecycle, recordedFrameCount, 0);
         }
         builder.sameLine();
-        if (builder.button("<")) {
+        if (toolbarButton(
+                builder,
+                "<##previous_recorded_frame",
+                "Previous recorded frame.")) {
           stepRecordedFramePlayback(*lifecycle, recordedFrameCount, -1);
         }
         builder.sameLine();
-        if (builder.button(
-                lifecycle->recordedFramePlaybackPlaying ? "Pause Playback"
-                                                        : "Play Frames")) {
+        if (toolbarButton(
+                builder,
+                lifecycle->recordedFramePlaybackPlaying
+                    ? "||##pause_recorded_frames"
+                    : ">##play_recorded_frames",
+                lifecycle->recordedFramePlaybackPlaying
+                    ? "Pause recorded-frame playback."
+                    : "Play recorded frames.")) {
           toggleRecordedFramePlayback(*lifecycle, recordedFrameCount);
         }
         builder.sameLine();
-        if (builder.button(">")) {
+        if (toolbarButton(
+                builder, ">##next_recorded_frame", "Next recorded frame.")) {
           stepRecordedFramePlayback(*lifecycle, recordedFrameCount, 1);
         }
         builder.sameLine();
-        if (builder.button(">|")) {
+        if (toolbarButton(
+                builder, ">|##last_recorded_frame", "Last recorded frame.")) {
           setRecordedFramePlaybackIndex(
               *lifecycle, recordedFrameCount, recordedFrameCount - 1);
         }

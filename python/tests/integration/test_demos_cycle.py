@@ -9,6 +9,7 @@ guarantee is that the runner itself stays healthy.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import pathlib
 import signal
@@ -23,6 +24,18 @@ if str(_PYTHON_DIR) not in sys.path:
 import pytest
 
 from examples.demos import make_demo_scenes, run  # noqa: E402
+
+
+def _capture_py_demo_module():
+    root = pathlib.Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location(
+        "capture_py_demo", root / "scripts" / "capture_py_demo.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _gui_run_demos_available() -> bool:
@@ -87,9 +100,7 @@ def _require_simulation_experimental_symbols(*names: str):
         pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
-        formatted = ", ".join(
-            f"simulation_experimental.{name}" for name in missing
-        )
+        formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
         pytest.skip(f"{formatted} unavailable in this build")
     return sx
 
@@ -537,9 +548,12 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         for scene_id in scene_ids:
             assert by_id[scene_id].category == category
 
-    old_experimental = [scene.id for scene in scenes if scene.category == "Experimental"]
+    old_experimental = [
+        scene.id for scene in scenes if scene.category == "Experimental"
+    ]
     assert not any(
-        scene_id.startswith(("sx_", "vbd_")) or scene_id == "experimental_rigid_body_gui"
+        scene_id.startswith(("sx_", "vbd_"))
+        or scene_id == "experimental_rigid_body_gui"
         for scene_id in old_experimental
     )
 
@@ -653,6 +667,72 @@ def test_show_ui_uses_docked_workspace_regions(
     assert center > 90.0
     assert center > left + 35.0
     assert center > right + 35.0
+
+
+def test_py_demo_capture_records_ui_force_drag_artifacts(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+
+    if not getattr(dart.gui, "is_docking_available", lambda: False)():
+        pytest.skip("GUI build does not include ImGui docking support")
+    _require_simulation_experimental_symbols(
+        "World", "RigidBodySolver", "CollisionShape"
+    )
+
+    monkeypatch.setenv("LIBGL_ALWAYS_SOFTWARE", "1")
+    monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+    capture_py_demo = _capture_py_demo_module()
+    output = tmp_path / "capture"
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "sx_rigid_ipc_slide",
+            "--force-drag-target",
+            "ipc_slide_box_visual",
+            "--force-drag-frame",
+            "2",
+            "--force-drag-frames",
+            "5",
+            "--show-ui",
+            "--frames",
+            "10",
+            "--width",
+            "640",
+            "--height",
+            "360",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["ui_ready"]["required"] is True
+    assert manifest["ui_ready"]["dropped_warmup_frames"] >= 0
+    assert pathlib.Path(manifest["artifacts"]["screenshot"]).is_file()
+    png_frames = sorted((output / "png_frames").glob("frame_*.png"))
+    assert png_frames
+    ppm_frames = sorted((output / "frames").glob("frame_*.ppm"))
+    assert [frame.name for frame in ppm_frames] == [
+        f"frame_{index:06d}.ppm" for index in range(1, len(ppm_frames) + 1)
+    ]
+    assert capture_py_demo.ppm_has_docked_workspace_regions(ppm_frames[0])
+
+    events = [
+        json.loads(line)
+        for line in (output / "events.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    event_names = [event["event"] for event in events]
+    assert "force_drag_started" in event_names
+    assert "force_drag_updated" in event_names
+    assert "force_drag_released" in event_names
+    assert event_names[-1] == "artifacts_written"
 
 
 def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
