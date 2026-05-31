@@ -30,7 +30,7 @@
   [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
   [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
 - Research references: [`../readthedocs/papers.md`](../readthedocs/papers.md)
-  (`chen-2024-vbd`, `tinyvbd`, `gaia`, `ogc-2025`).
+  (`chen-2024-vbd`, `tinyvbd`, `gaia`, `ogc-2025`, `avbd-2025`).
 - VBD paper/reference gap audit:
   [`104-vertex-block-descent-solver/vbd-paper-gap-audit.md`](104-vertex-block-descent-solver/vbd-paper-gap-audit.md)
   owns the method scope, the component-by-component gap, the elastic-energy
@@ -39,6 +39,10 @@
   [`104-vertex-block-descent-solver/ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md)
   owns the Offset Geometric Contact research and implementation sequence for
   codimensional VBD contact.
+- AVBD paper/reference gap audit:
+  [`104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](104-vertex-block-descent-solver/avbd-paper-gap-audit.md)
+  owns the augmented-Lagrangian hard-constraint extension, demo corpus,
+  CPU/GPU parity target, and paper/reference performance numbers to beat.
 
 ## Current Implementation Evidence
 
@@ -59,6 +63,26 @@ self-contact tangential friction, committed benchmark/profiling JSON, paper
 tetrahedral scene reproduction, OGC source/code audit plus CPU proof-of-contact,
 Phase 8 SoA plus Gaia CPU comparison, and same-GPU RTX-4090 Table 1
 reproduction.
+
+Maintainer direction now extends this same solver-family plan to Augmented VBD
+(`avbd-2025`). AVBD is not a replacement for the VBD foundation above; it is
+the hard-constraint, friction, rigid/articulated, finite-stiffness-ramp, and
+CPU/GPU performance continuation of the VBD path. The active multi-session
+implementation tracker is
+[`../dev_tasks/avbd_solver/`](../dev_tasks/avbd_solver/). The first local
+implementation slice adds a tested internal scalar-row utility for AVBD
+regularization, warm starting, hard-row clamping, dual updates, and
+finite-stiffness ramping. Follow-on local slices add deterministic scalar-row
+keys/inventory for warm-started `lambda`/`k` state, standalone CPU
+half-space contact-normal, hard point-attachment, and finite-stiffness spring
+row drivers, plus a combined serial mass-spring AVBD row driver that carries
+those three families in one World solve for the supported frictionless
+mass-spring envelope. Explicit fallback coverage keeps unsupported
+tetrahedral, frictional, self-contact, Chebyshev, Rayleigh-damped, parallel,
+and unsupported-row requests on the existing VBD path without partial AVBD row
+counters. Those slices are still foundation work; hard-contact/friction
+completeness, tetrahedra, self-contact, rigid/soft coupling, GPU parity, demos,
+and benchmark packets remain open.
 
 ## Relationship To PLAN-081
 
@@ -110,6 +134,34 @@ internal/explicit-opt-in decision, not a leaked solver registry.
     force/Hessian integration, reduced paper-scene corpus, CPU benchmark packets,
     then private GPU evidence. Keep OGC names internal until those gates pass.
 
+## AVBD Workstreams
+
+1. **Scalar row foundation** — Internal `detail/deformable_vbd` utilities for
+   augmented-Lagrangian scalar rows: `C(x) - alpha C(x_t)`, warm-started
+   `lambda`/`k`, bounded hard-row force magnitudes, dual write-back, and finite
+   stiffness ramping.
+2. **Row inventory + storage** — Hard equality, bounded inequality, finite
+   stiffness, contact normal, friction tangent, joint, motor, fracture, and
+   attachment rows with persistent IDs for warm starting.
+3. **CPU deformable AVBD** — Extend the existing VBD deformable path so hard
+   attachments, finite-stiffness ramped springs/tets, self-contact, and static
+   obstacle contact use AVBD rows rather than pure penalty terms.
+4. **CPU rigid/articulated AVBD** — Add 6-DOF rigid blocks, tangent angular
+   updates, rigid contact manifolds, ball/revolute/limited joints, motors,
+   breakage, and high mass-ratio articulated chains.
+5. **Unified soft/rigid coupling** — Solve cloth/deformables, rigid bodies,
+   articulated chains, collision constraints, joints, and attachments in one
+   AVBD loop.
+6. **GPU parity** — Port every row family, candidate-generation path, color
+   update, dual/stiffness update, and benchmark scene through the private CUDA
+   compute boundary.
+7. **Paper/demo corpus** — Reproduce the 2D and 3D online demo scenes, all paper
+   figures, the parameter sweeps, and the video/headline scenes in tests,
+   benchmark JSON, `py-demos`, and visual evidence.
+8. **Performance leadership** — Optimize CPU and GPU until DART beats the
+   reference demo repositories and the published paper numbers on every claimed
+   case, with hardware and command packets recorded.
+
 ## Acceptance Criteria
 
 VBD-parity progress is not complete until the implementation:
@@ -133,3 +185,19 @@ VBD-parity progress is not complete until the implementation:
 - verifies long-horizon headless Filament captures for GUI examples; and
 - keeps `pixi run lint`, `pixi run build`, focused C++ tests, and
   `check-api-boundaries` green for every slice.
+
+AVBD parity additionally requires:
+
+- every algorithm and feature in `avbd-2025`, the project page, videos, and the
+  `avbd-demo2d`/`avbd-demo3d` sources to be implemented, including hard
+  constraints, bounded inequalities, friction cones, finite-stiffness ramping,
+  warm-started dual/stiffness state, alpha regularization, quasi-Newton Hessian
+  approximation, 6-DOF rigid bodies, joints, motors, breakable constraints,
+  contact persistence, and soft/rigid coupling;
+- both CPU and GPU implementations for the solver and all paper/demo benchmark
+  families;
+- all source demo scenes, paper figures, parameter sweeps, website demos, and
+  video/headline scenes represented by DART tests, benchmark packets, py-demos,
+  or documented visual evidence; and
+- benchmark/profiling JSON proving DART beats the reference demo repositories
+  and the paper's published CPU/GPU numbers before any AVBD-complete claim.
