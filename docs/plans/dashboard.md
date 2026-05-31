@@ -127,9 +127,11 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Land Phase 0.1 (World gravity in the rigid-body integration stage)
-  on the experimental World, then articulated-body forward dynamics; track
-  slice-level work in `docs/dev_tasks/rigid_body_dynamics_solver/`.
+- Next step: Prioritize the DART 7 release gates for the experimental World:
+  model loading beyond the basic legacy bridge, parity scenes, open-chain
+  dynamics, contacts/constraints, and serialization evidence; track slice-level
+  work in
+  `docs/dev_tasks/rigid_body_dynamics_solver/`.
 - Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.

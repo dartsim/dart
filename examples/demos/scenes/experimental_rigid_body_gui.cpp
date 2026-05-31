@@ -21,6 +21,7 @@
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
@@ -63,6 +64,9 @@ std::shared_ptr<dynamics::Shape> makeVisualShape(
       // halfExtents.z() is the axial half-height; the cylinder length is twice
       // that (the spherical caps add `radius` at each end).
       return std::make_shared<dynamics::CapsuleShape>(
+          shape.radius, 2.0 * shape.halfExtents.z());
+    case sx::CollisionShapeType::Cylinder:
+      return std::make_shared<dynamics::CylinderShape>(
           shape.radius, 2.0 * shape.halfExtents.z());
     case sx::CollisionShapeType::Mesh: {
       auto mesh = std::make_shared<math::TriMesh<double>>();

@@ -935,9 +935,23 @@ DART owns those subsystems.
 
 ### Loading And Source Geometry
 
-Direct model loading into the experimental world is deferred until C++ owns the
-format-specific import contract. The eventual shape should preserve these
-rules:
+C++ now owns the first parsed-Skeleton bridge for the tree-joint families that
+map to the experimental multibody facade (Weld, Revolute, Prismatic, Screw,
+Universal, Ball, Planar, and Free), and dartpy exposes the same already-parsed
+bridge as `sx.add_skeleton(world, skeleton, options=...)` with
+`SkeletonLoadOptions`. The same Python function now accepts URI strings through
+the C++ `dart::io::readSkeleton()` reader path, while
+`sx.add_world(world, source_world_or_uri, options=...)` applies the same importer
+to every Skeleton in an already-parsed or URI-loaded legacy World. URI-loading
+overloads accept `sx.ReadOptions` for explicit format selection, SDF default
+root-joint selection, and URDF package directories. The bridge also imports one
+centered collidable Box/Sphere/Capsule/Cylinder/Mesh collision shape per link
+when the legacy shape maps exactly to the experimental `CollisionShape` facade;
+multiple
+collision shapes, source offsets, visual geometry, and material data remain
+deferred rather than approximated. Resource retriever bindings,
+unsupported-feature diagnostics, and the richer load-result shape remain
+deferred. The eventual shape should preserve these rules:
 
 - file loading returns first-class public objects or a structured load result;
 - imported names and source paths are metadata, not the primary control API;
