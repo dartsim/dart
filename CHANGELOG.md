@@ -1800,6 +1800,8 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Reject invalid `World::setTimeStep()` values (NaN, infinity, zero, and negative) at the API boundary to prevent invalid timesteps from reaching constraint solvers. ([#2533](https://github.com/dartsim/dart/pull/2533), [#2531](https://github.com/dartsim/dart/issues/2531), [#2532](https://github.com/dartsim/dart/pull/2532))
   - Fixed `BodyNodePool` alignment handling for over-aligned body nodes so AVX-512 builds no longer fail when Eigen raises `BodyNode` alignment to 64 bytes. ([#2537](https://github.com/dartsim/dart/pull/2537), [#2535](https://github.com/dartsim/dart/issues/2535))
   - Fixed simulation-experimental Debug logging source context so builds without `DART_EXPERIMENTAL_SOURCE_DIR` still report the source file name.
+  - Fixed Windows DLL exports for experimental GMSH, OBJ, SEG, and point-set
+    mesh importer APIs so C++ callers can link them from shared builds.
   - Fixed intermittent SEGFAULT in TranslationalJoint2D on macOS ARM64 (Release mode) caused by missing `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` on `TranslationalJoint2DUniqueProperties` which contains `Eigen::Matrix<double, 3, 2>`. NEON vectorized instructions require 16-byte alignment that was not guaranteed without this macro.
   - Fixed `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and `UniversalJoint::copy(const UniversalJoint*)` performing self-copy instead of copying from the argument.
   - Fixed weak inverse-kinematics pointer lifetime tracking and `SharedLibraryIkFast` forward-kinematics symbol loading.

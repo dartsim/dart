@@ -38,6 +38,28 @@ def _gui_run_demos_available() -> bool:
     return hasattr(dart, "gui") and hasattr(dart.gui, "run_demos")
 
 
+def _simulation_experimental_has(*names: str) -> bool:
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception:  # pragma: no cover - reduced build without the submodule
+        return False
+    return all(hasattr(sx, name) for name in names)
+
+
+def _require_simulation_experimental_symbols(*names: str):
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception as exc:  # pragma: no cover - reduced build without submodule
+        pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
+    missing = [name for name in names if not hasattr(sx, name)]
+    if missing:
+        formatted = ", ".join(
+            f"simulation_experimental.{name}" for name in missing
+        )
+        pytest.skip(f"{formatted} unavailable in this build")
+    return sx
+
+
 def _deformable_bindings_available() -> bool:
     """True when the experimental deformable bindings are compiled in.
 
@@ -46,11 +68,7 @@ def _deformable_bindings_available() -> bool:
     solver-free grid-builder check skips there rather than erroring.
     """
 
-    try:
-        import dartpy.simulation_experimental as sx
-    except Exception:  # pragma: no cover - reduced build without the submodule
-        return False
-    return hasattr(sx, "DeformableBodyOptions")
+    return _simulation_experimental_has("DeformableBodyOptions")
 
 
 def test_registry_has_scenes() -> None:
@@ -142,7 +160,12 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     solve staying finite. Verified through the solver-diagnostics snapshot.
     """
 
-    import dartpy.simulation_experimental as sx
+    sx = _require_simulation_experimental_symbols(
+        "DeformableBodyOptions",
+        "DeformableDirichletBoundaryCondition",
+        "DeformableTetrahedron",
+        "World",
+    )
     import numpy as np
     from examples.demos._ipc_deformable_bridge import build_fem_compression_bar
 
@@ -192,7 +215,7 @@ def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
     """
 
     # The importer round-trips the bundled mesh into a usable surface.
-    import dartpy.simulation_experimental as sx
+    sx = _require_simulation_experimental_symbols("load_obj_triangle_mesh", "World")
     import numpy as np
     from examples.demos.scenes.ipc_deformable_obj_cloth import _CLOTH_PATH, build
 
@@ -224,6 +247,8 @@ def test_ipc_deformable_cloth_drapes_over_capsule_rod_without_penetrating() -> N
     outside the rod surface -- the codimensional-obstacle analogue of the
     sphere/box settle tests, verified by the analytic point-to-segment distance.
     """
+
+    _require_simulation_experimental_symbols("load_obj_triangle_mesh", "World")
 
     import numpy as np
 
@@ -266,6 +291,12 @@ def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
     pinned node), and a `.pt` particle cloud must fall under gravity and stack on
     the ground barrier without tunneling through it -- both staying finite.
     """
+
+    _require_simulation_experimental_symbols(
+        "load_point_set",
+        "load_seg_line_mesh",
+        "World",
+    )
 
     import numpy as np
     from examples.demos.scenes.ipc_deformable_pt_particles import (
