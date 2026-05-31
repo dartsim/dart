@@ -840,6 +840,94 @@ TEST(RigidIpcPaperExperiments, LargeMassRatioFixtureRowStaysSeparated)
   EXPECT_TRUE(largeCube.getLinearVelocity().allFinite());
 }
 
+TEST(RigidIpcPaperExperiments, FiveCubesFixtureRowStacksWithoutPenetration)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions planeOptions;
+  planeOptions.isStatic = true;
+  planeOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto plane = world.addRigidBody("five_cubes_plane", planeOptions);
+  plane.setCollisionShape(sx::CollisionShape::makeBox({8.0, 8.0, 0.5}));
+
+  constexpr double cubeHalfExtent = 0.5;
+  constexpr double initialGap = 0.1;
+  std::vector<sx::RigidBody> cubes;
+  cubes.reserve(5);
+  for (int i = 0; i < 5; ++i) {
+    sx::RigidBodyOptions cubeOptions;
+    cubeOptions.mass = 1.0;
+    cubeOptions.position = Eigen::Vector3d(
+        0.0,
+        0.0,
+        cubeHalfExtent + initialGap
+            + (2.0 * cubeHalfExtent + initialGap) * static_cast<double>(i));
+    auto cube = world.addRigidBody(
+        std::string("five_cubes_") + std::to_string(i), cubeOptions);
+    cube.setCollisionShape(
+        sx::CollisionShape::makeBox(
+            {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+    cubes.push_back(cube);
+  }
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  auto zBounds = [](const sx::RigidBody& cube) {
+    const Eigen::Matrix3d R = cube.getRotation();
+    double minZ = std::numeric_limits<double>::infinity();
+    double maxZ = -std::numeric_limits<double>::infinity();
+    for (double dx : {-cubeHalfExtent, cubeHalfExtent}) {
+      for (double dy : {-cubeHalfExtent, cubeHalfExtent}) {
+        for (double dz : {-cubeHalfExtent, cubeHalfExtent}) {
+          const Eigen::Vector3d v
+              = cube.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+          minZ = std::min(minZ, v.z());
+          maxZ = std::max(maxZ, v.z());
+        }
+      }
+    }
+    return std::array<double, 2>{minZ, maxZ};
+  };
+
+  double minPlaneClearance = std::numeric_limits<double>::infinity();
+  std::array<double, 4> minCubeClearances;
+  minCubeClearances.fill(std::numeric_limits<double>::infinity());
+  bool sawActiveContact = false;
+  for (int s = 0; s < 40; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    std::vector<std::array<double, 2>> bounds;
+    bounds.reserve(cubes.size());
+    for (const auto& cube : cubes) {
+      bounds.push_back(zBounds(cube));
+      minPlaneClearance = std::min(minPlaneClearance, bounds.back()[0]);
+    }
+    for (std::size_t i = 1; i < bounds.size(); ++i) {
+      minCubeClearances[i - 1]
+          = std::min(minCubeClearances[i - 1], bounds[i][0] - bounds[i - 1][1]);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_GT(minPlaneClearance, -5e-3);
+  for (const double clearance : minCubeClearances) {
+    EXPECT_GT(clearance, -5e-3);
+    EXPECT_LT(clearance, 0.05);
+  }
+  for (const auto& cube : cubes) {
+    EXPECT_TRUE(cube.getTranslation().allFinite());
+    EXPECT_TRUE(cube.getLinearVelocity().allFinite());
+  }
+}
+
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
 {
   sx::World world;

@@ -203,6 +203,10 @@
         stage. A large heavy cube closes into a small cube resting above a fixed
         mesh plane while both contacts preserve nonnegative clearance and finite
         state.
+  - [x] Add audited five-cubes fixture coverage through the opt-in runtime
+        stage. Five aligned cubes fall under gravity onto a fixed support,
+        activate stacked rigid IPC contacts, stay finite, and preserve
+        nonnegative support and cube-cube clearance.
   - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
         through the opt-in runtime stage. Free rotating cube and scaled-sphere /
         ellipsoid rows advance orientation under zero gravity, stay finite, and
@@ -360,6 +364,10 @@
         (`fixtures/3D/unit-tests/large-mass-ratio.json`) and its non-visual
         Fig. 16 paper-unit alias as implemented after large-cube/small-cube
         runtime clearance coverage landed.
+  - [x] Mark the audited 3D five-cubes unit-test fixture row
+        (`fixtures/3D/unit-tests/5-cubes.json`) and its non-visual Fig. 16
+        paper-unit alias as implemented after stacked-box runtime clearance
+        coverage landed.
   - [x] Mark the audited 3D rotating-cube unit-test fixture row
         (`fixtures/3D/unit-tests/rotation/rotating-cube.json`) as implemented
         after no-contact rotating-cube runtime coverage landed.
@@ -478,8 +486,10 @@ DART-owned implementation.
   implemented through high-speed cube-vs-wall runtime coverage that reports a
   conservative CCD line-search hit without penetration. The rotating-cube and
   scaled-sphere/ellipsoid unit-test fixture rows are marked implemented through
-  no-contact orientation integration coverage. The torque rotation fixture row
-  is marked implemented through no-contact applied-torque coverage. The `mu=0.5`
+  no-contact orientation integration coverage. The five-cubes unit-test fixture
+  row and its non-visual Fig. 16 paper-unit alias are marked implemented
+  through stacked-box runtime clearance coverage. The torque rotation fixture
+  row is marked implemented through no-contact applied-torque coverage. The `mu=0.5`
   threshold rows remain planned because they still need matching DART stick
   evidence.
   The rigid-body hash-grid source row is marked implemented through the

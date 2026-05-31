@@ -1,5 +1,32 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: five-cubes fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/5-cubes.json`: five aligned cubes fall under gravity
+  onto a fixed support, activate stacked rigid IPC contacts, stay finite, and
+  preserve nonnegative support and cube-cube clearance in
+  `RigidIpcPaperExperiments.FiveCubesFixtureRowStacksWithoutPenetration`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Edge-feature and
+  tessellated stress rows remain planned until they have matching DART runtime
+  evidence. A stricter exploratory variant using a two-triangle support did not
+  satisfy clearance, so that evidence was not used.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.FiveCubesFixtureRowStacksWithoutPenetration`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: large-mass-ratio fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

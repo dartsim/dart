@@ -193,6 +193,36 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "until they have matching topology-specific DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/5-cubes.json": {
+        "test": "FiveCubesFixtureRowStacksWithoutPenetration",
+        "expected_invariant": (
+            "DART covers the audited 3D five-cubes row: five aligned cubes "
+            "fall under gravity onto a fixed support, activate stacked rigid "
+            "IPC contacts, stay finite, and preserve nonnegative support and "
+            "cube-cube clearance."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned stacked-box runtime coverage for the 3D "
+            "unit-test fixture mechanism and its non-visual Fig. 16 "
+            "paper-unit alias. Edge-feature and tessellated stress rows "
+            "remain planned until they have matching DART runtime evidence."
+        ),
+    },
+    "fixtures/paper-figures/16-unit-tests/5-cubes.json": {
+        "test": "FiveCubesFixtureRowStacksWithoutPenetration",
+        "expected_invariant": (
+            "DART covers the non-visual Fig. 16 five-cubes unit-test alias: "
+            "five aligned cubes fall under gravity onto a fixed support, "
+            "activate stacked rigid IPC contacts, stay finite, and preserve "
+            "nonnegative support and cube-cube clearance."
+        ),
+        "notes_or_gap": (
+            "This paper-unit row aliases the audited 3D five-cubes unit-test "
+            "fixture, so it is retired by the same DART-owned runtime "
+            "coverage. Visual paper-figure rows still require example and "
+            "headless visual evidence before retirement."
+        ),
+    },
     "fixtures/3D/unit-tests/large-mass-ratio.json": {
         "test": "LargeMassRatioFixtureRowStaysSeparated",
         "expected_invariant": (
