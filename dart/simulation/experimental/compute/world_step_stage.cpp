@@ -4643,17 +4643,27 @@ bool computeProjectedNewtonDirection(
 
   Eigen::VectorXd solution;
   if (solveIteratively) {
-    // Iterative path: a Jacobi (diagonal) preconditioned conjugate-gradient
+    // Iterative path: an incomplete-Cholesky preconditioned conjugate-gradient
     // solve. The inertia term (m/dt^2 on every free DOF) plus the PSD-projected
     // spring/barrier blocks make the Hessian symmetric positive definite, so CG
-    // is guaranteed to converge; it never factorizes, so time and memory stay
-    // near O(nnz) per iteration and the solve scales to meshes well past the
-    // direct cap. Reading only the lower triangle matches the direct solver's
-    // symmetric assumption. A non-converged or non-finite solve falls back to
-    // mass-scaled steepest descent below (conservative: a partial CG iterate is
-    // still a descent direction, but the exact-solve contract prefers the
-    // robust fallback).
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower> cg;
+    // is guaranteed to converge; it only ever factorizes *incompletely* (a
+    // sparse approximate Cholesky that drops fill), so time and memory stay
+    // near O(nnz) and the solve scales to meshes well past the direct cap. The
+    // incomplete-Cholesky preconditioner is far stronger than a diagonal
+    // (Jacobi) one on the ill-conditioned Hessians that stiff barrier contact
+    // produces -- it collapses the CG iteration count there, so the iterative
+    // path converges within the cap (and thus matches the direct solve) on
+    // contact scenes where plain Jacobi-CG would stall and fall back. Reading
+    // only the lower triangle matches the direct solver's symmetric assumption.
+    // A non-converged or non-finite solve (including an incomplete-Cholesky
+    // breakdown that Eigen's diagonal shifting cannot repair) falls back to
+    // mass-scaled steepest descent below, exactly as the direct path does on an
+    // indefinite factorization.
+    Eigen::ConjugateGradient<
+        Eigen::SparseMatrix<double>,
+        Eigen::Lower,
+        Eigen::IncompleteCholesky<double>>
+        cg;
     cg.setTolerance(1e-8);
     cg.setMaxIterations(static_cast<Eigen::Index>(2) * dim);
     cg.compute(hessian);
