@@ -45,7 +45,9 @@ navigation, and a path for scene-specific controls.
 - Make user-requested demo switches transactional: if a requested demo throws
   during factory startup, cannot create render state, fails its first frame, or
   returns after the startup budget, restore the previous active demo instead of
-  leaving the workspace stuck on the broken target.
+  leaving the workspace stuck on the broken target. Python demo factories also
+  run under a build watchdog so pure-Python stalls surface as startup failures
+  that can be restored through the same path.
 - Surface demo activation state in the docked UI: rows mark a requested demo as
   starting, the Simulation/Demos panels show startup or fallback status, and
   Python factory exceptions now reach the C++ transactional restore path instead

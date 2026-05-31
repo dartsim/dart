@@ -22,13 +22,20 @@ whole-step escape hatch for legacy parity tests; interactive demos should use
 from __future__ import annotations
 
 import argparse
+import contextlib
+import os
+import signal
 import sys
+import threading
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable
 
 # Frames-per-scene defaults match the C++ host so cycle behavior is identical.
 CYCLE_FRAMES_PER_SCENE = 4
 SINGLE_SCENE_DEFAULT_FRAMES = 60
+SCENE_BUILD_TIMEOUT_ENV = "DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS"
+DEFAULT_SCENE_BUILD_TIMEOUT_MS = 5000.0
 
 
 @dataclass
@@ -148,6 +155,61 @@ def _validate_scene(scene_id: str | None, scenes: list[PythonDemoScene]) -> None
         )
 
 
+def _scene_build_timeout_ms() -> float | None:
+    value = os.environ.get(SCENE_BUILD_TIMEOUT_ENV)
+    if value is None or value == "":
+        return DEFAULT_SCENE_BUILD_TIMEOUT_MS
+
+    try:
+        timeout_ms = float(value)
+    except ValueError:
+        return DEFAULT_SCENE_BUILD_TIMEOUT_MS
+    if timeout_ms <= 0.0:
+        return None
+    return timeout_ms
+
+
+@contextlib.contextmanager
+def _bounded_scene_build(scene_id: str):
+    timeout_ms = _scene_build_timeout_ms()
+    if (
+        timeout_ms is None
+        or threading.current_thread() is not threading.main_thread()
+        or not hasattr(signal, "SIGALRM")
+        or not hasattr(signal, "ITIMER_REAL")
+        or not hasattr(signal, "getitimer")
+        or not hasattr(signal, "setitimer")
+    ):
+        yield
+        return
+
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    previous_timer = signal.getitimer(signal.ITIMER_REAL)
+    start = time.monotonic()
+
+    def _handle_timeout(_signum: int, _frame: object) -> None:
+        raise TimeoutError(
+            f"Python demo scene '{scene_id}' build exceeded "
+            f"{timeout_ms:g} ms"
+        )
+
+    signal.signal(signal.SIGALRM, _handle_timeout)
+    signal.setitimer(signal.ITIMER_REAL, timeout_ms / 1000.0)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, previous_handler)
+        previous_delay, previous_interval = previous_timer
+        if previous_delay > 0.0:
+            elapsed = time.monotonic() - start
+            signal.setitimer(
+                signal.ITIMER_REAL,
+                max(1.0e-6, previous_delay - elapsed),
+                previous_interval,
+            )
+
+
 def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
@@ -166,7 +228,8 @@ def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
     """
 
     def factory() -> Any:
-        setup = scene.build()
+        with _bounded_scene_build(scene.id):
+            setup = scene.build()
         if setup.panels:
             return (setup.world, setup.pre_step, setup.force_drag, setup.panels)
         if setup.force_drag is not None:

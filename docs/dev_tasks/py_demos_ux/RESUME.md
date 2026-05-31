@@ -56,6 +56,10 @@
   budget, the host restores the previous demo instead of leaving the workspace
   stuck on the broken target. Integration coverage now pins both throwing and
   slow-returning target factories.
+- Python demo factories now run under a configurable build watchdog
+  (`DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS`, default 5000 ms). A pure-Python
+  factory stall raises a startup failure, allowing the existing transactional
+  switch path to restore the previous demo instead of leaving tests stuck.
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.
@@ -375,6 +379,7 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest pytho
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_scripted_demo_switch_restores_previous_scene_on_startup_timeout -q
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls -q
 pixi run build-py-dev-docking
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
@@ -388,8 +393,9 @@ pixi run lint
 
 ## Next
 
-1. Consider process- or worker-isolated demo construction if a future demo
-   factory can block indefinitely before returning to the C++ viewer loop.
+1. Consider process- or worker-isolated demo construction only if a future
+   native/C++ factory can block indefinitely before returning to the C++ viewer
+   loop; pure-Python stalls now fail through the watchdog.
 2. Add image thumbnail playback only if the UI renderer grows a texture-backed
    panel image primitive; the current playback surface controls and identifies
    recorded PPM frames from inside the workspace.

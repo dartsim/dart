@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import signal
 import sys
 import time
 
@@ -647,6 +648,93 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
     assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
     assert (
         "factory startup exceeded budget"
+        in events_by_name["restored_previous_demo"]["status"]
+    )
+    assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
+
+
+def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if (
+        not hasattr(signal, "SIGALRM")
+        or not hasattr(signal, "ITIMER_REAL")
+        or not hasattr(signal, "getitimer")
+        or not hasattr(signal, "setitimer")
+    ):
+        pytest.skip("SIGALRM scene build watchdog unavailable")
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, SceneSetup
+
+    def build_good() -> SceneSetup:
+        world = dart.World("good")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        return SceneSetup(world=world)
+
+    def build_stalled() -> SceneSetup:
+        time.sleep(60.0)
+        world = dart.World("stalled")
+        world.set_time_step(0.001)
+        return SceneSetup(world=world)
+
+    monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "10")
+    events = tmp_path / "events.jsonl"
+    screenshot = tmp_path / "snap.ppm"
+    started = time.monotonic()
+    rc = run(
+        [
+            "--scene",
+            "good",
+            "--headless",
+            "--frames",
+            "5",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(screenshot),
+            "--scripted-demo-switch",
+            "2:stalled",
+            "--scripted-demo-event-log",
+            str(events),
+        ],
+        [
+            PythonDemoScene(
+                id="good",
+                title="Good",
+                category="Test",
+                summary="Builds successfully.",
+                build=build_good,
+            ),
+            PythonDemoScene(
+                id="stalled",
+                title="Stalled",
+                category="Test",
+                summary="Does not return without a watchdog.",
+                build=build_stalled,
+            ),
+        ],
+    )
+    elapsed = time.monotonic() - started
+
+    assert rc == 0
+    assert elapsed < 5.0
+    payloads = [json.loads(line) for line in events.read_text().splitlines()]
+    events_by_name = {payload["event"]: payload for payload in payloads}
+    assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
+    assert events_by_name["requested_demo_switch"]["target_scene"] == "stalled"
+    assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
+    assert (
+        "Python demo scene 'stalled' build exceeded"
         in events_by_name["restored_previous_demo"]["status"]
     )
     assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
