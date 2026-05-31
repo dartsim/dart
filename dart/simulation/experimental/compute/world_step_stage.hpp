@@ -129,6 +129,13 @@ struct DeformableSolverStats
   // repeats; symbolic < numeric indicates the analysis was amortized.
   std::size_t projectedNewtonSymbolicFactorizations = 0;
   std::size_t projectedNewtonNumericFactorizations = 0;
+  // Iterative (conjugate-gradient) linear solves. Counts Newton iterations that
+  // took the matrix-light CG path instead of the sparse Cholesky factorization
+  // -- either because the mesh exceeds the direct-solve node cap or because the
+  // body opted in via DeformableMaterial.useIterativeLinearSolver. CG never
+  // factorizes, so it scales to far larger meshes; a nonzero value here with
+  // zero numeric factorizations means the whole solve ran iteratively.
+  std::size_t projectedNewtonIterativeSolves = 0;
   // Convergence diagnostic: the largest L2 gradient norm at solve termination
   // across the step's deformable bodies (the projected-Newton residual). Near
   // the gradient tolerance means the solve converged; a large value means a
