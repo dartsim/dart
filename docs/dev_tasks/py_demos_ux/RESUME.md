@@ -54,7 +54,8 @@
   active demo. If the requested demo throws during factory startup, cannot
   create render state, fails its first frame, or returns after the startup
   budget, the host restores the previous demo instead of leaving the workspace
-  stuck on the broken target.
+  stuck on the broken target. Integration coverage now pins both throwing and
+  slow-returning target factories.
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.
@@ -352,6 +353,7 @@ pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_scripted_demo_switch_restores_previous_scene_on_startup_timeout -q
 pixi run build-py-dev-docking
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
