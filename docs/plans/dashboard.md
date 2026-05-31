@@ -326,7 +326,9 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Release transition
-- Next step: Drive the clean-break parity sprint from the DART 7 gate table:
+- Next step: Follow the DART 7 implementation order in the release roadmap:
+  finish policy alignment and Gazebo lane split, publish the DART 6.16 support
+  packet, then drive the clean-break parity sprint from the gate table:
   world-centric model loading, rigid-body dynamics parity,
   contact/constraint parity, serialization/replay, public API promotion, and
   DART 6.16 support policy. Keep research-solver breadth out of the DART 7

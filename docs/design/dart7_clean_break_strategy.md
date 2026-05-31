@@ -1,7 +1,11 @@
 # DART 7 Clean-Break Strategy
 
-Status: accepted planning direction for maintainer review; implementation is
-gated by the release checklist below.
+Status: accepted release-topology direction.
+
+This document records durable topology and rationale. The mutable DART 7
+release gates and active implementation order are owned by
+[`docs/onboarding/release-roadmap.md`](../onboarding/release-roadmap.md) and
+PLAN-040 in [`docs/plans/dashboard.md`](../plans/dashboard.md#plan-040-dart-7-release-hardening).
 
 ## Decision
 
@@ -47,67 +51,11 @@ API depends on them.
   fixes, and gz-required compatibility fixes. Do not backport normal DART 7
   features by default.
 - **DART 7.0**: clean-break release from main. Promotes the new simulation API
-  only after the parity gates in this document pass. Removes DART 6 public API
-  shims, legacy dartpy modules, classic `World`, and gz-only compatibility
-  surfaces from the DART 7 public contract.
+  only after the parity gates in the release roadmap pass. Removes DART 6
+  public API shims, legacy dartpy modules, classic `World`, and gz-only
+  compatibility surfaces from the DART 7 public contract.
 - **DART 8**: future post-DART-7 major release. It is not the active cleanup
   target for the DART 6 to DART 7 transition.
-
-## DART 7 Release Gates
-
-DART 7 must not ship until these gates have direct evidence:
-
-1. **Experimental-world model loading**: URDF, SDF, MJCF, and SKEL load through
-   a world-centric API into the new simulation stack with tests for tree
-   topology, DOF count, transforms, mass/inertia, center of mass, collision
-   geometry, and Python entry points.
-2. **Rigid-body dynamics parity**: shared scenes match the classic DART 6 path
-   within documented tolerances for gravity, open-chain articulated dynamics,
-   state integration, energy or trajectory drift, and control inputs.
-3. **Contacts and constraints parity**: contact response, friction, joint
-   limits, motors, mimic/coupler behavior, and loop closures have focused tests
-   and migration examples for supported workflows.
-4. **Serialization and replay parity**: world topology, state, model assets, and
-   record/replay round-trip with bounded error for reproducible research and
-   the standalone `dartsim` workflow.
-5. **Stable public API promotion**: promoted C++ and Python APIs hide ECS
-   storage, component types, solver registries, backend details, and
-   implementation escape hatches. Doxygen/user docs, stubs, migration snippets,
-   and `check-api-boundaries` evidence are present.
-6. **World-parity suite**: a dedicated suite loads reference scenes, steps the
-   classic and new paths while both exist, and asserts published tolerances.
-   The suite becomes the release proof for deleting the classic path.
-7. **Release packaging**: version metadata, changelog, CMake package exports,
-   wheels, README quick starts, package smoke checks, and artifact checks agree
-   on the DART 7 clean-break contract. DART 7 packages must not accidentally
-   satisfy DART 6/gz-physics package ranges.
-8. **DART 6.16 support policy**: the maintained Gazebo branch/version matrix,
-   backport scope, and sunset date or sunset trigger are published before DART 7
-   deletes the legacy surface from main.
-
-Sensors and rendering parity are not DART 7 release blockers unless a promoted
-public API depends on them. They remain post-release follow-up work behind their
-own documented gates.
-
-## Implementation Sequence
-
-1. **Policy alignment**: update release roadmap, plan dashboard, north-star,
-   API-boundary, CI, release-management, README, and changelog docs so DART 7 is
-   the clean break and DART 6.16 is the compatibility line.
-2. **Gazebo lane split**: keep required gz-physics validation on
-   `release-6.16`; keep main's gz-physics workflow as a manual migration
-   canary. Coordinate any branch-protection changes with maintainers before
-   relying on the demotion.
-3. **DART 6.16 support packet**: audit fixes on main against `release-6.16` and
-   backport only compatibility-critical patches needed for the old API/Gazebo
-   line.
-4. **Parity implementation**: prioritize experimental-world model loading,
-   rigid dynamics, contacts/constraints, serialization, and the parity suite
-   ahead of additional research solver breadth.
-5. **Promotion and removal**: port in-repo examples, tutorials, tests,
-   benchmarks, and Python stubs to the promoted API; then remove the classic
-   `World`, DART 6 C++ API shims, legacy dartpy compatibility modules, and
-   gz-only compatibility surfaces from main.
 
 ## Compatibility-Shim Policy
 
