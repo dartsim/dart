@@ -256,6 +256,62 @@ HorizontalSlideRun runHorizontalSlidingCube(double mu, int steps)
   return run;
 }
 
+struct TurntableRun
+{
+  double maxY = 0.0;
+  double finalYVelocity = 0.0;
+  double minCenterZ = 0.0;
+  int failCount = 0;
+};
+
+// Reproduce the 3D turntable fixture mechanism: a cube starts on a rotating
+// cylinder, and high friction lets the kinematic surface motion carry it
+// counter-clockwise.
+TurntableRun runKinematicTurntableRider(double mu, int steps)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.005);
+
+  constexpr double tableHalfHeight = 0.08;
+  sx::RigidBodyOptions tableOptions;
+  tableOptions.position = Eigen::Vector3d(0.0, 0.0, -tableHalfHeight);
+  tableOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 1.0);
+  auto table = world.addRigidBody("turntable", tableOptions);
+  table.setCollisionShape(
+      makeDiskMesh(/*radius=*/0.6, tableHalfHeight, /*segments=*/24));
+  table.setKinematic(true);
+  table.setFriction(mu);
+
+  constexpr double cubeHalfExtent = 0.1;
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.3, 0.0, cubeHalfExtent + 1e-3);
+  auto box = world.addRigidBody("rider", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+  box.setFriction(mu);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  TurntableRun run;
+  run.minCenterZ = box.getTranslation().z();
+  for (int s = 0; s < steps; ++s) {
+    world.step(executor, pipeline);
+    if (ipcStage.getLastStats().failed) {
+      ++run.failCount;
+    }
+    run.minCenterZ = std::min(run.minCenterZ, box.getTranslation().z());
+    run.maxY = std::max(run.maxY, box.getTranslation().y());
+  }
+  run.finalYVelocity = box.getLinearVelocity().y();
+  return run;
+}
+
 } // namespace
 
 // Fig. 18: with a low coefficient (mu = 0.2 well below tan(theta) = 0.5) the
@@ -418,6 +474,17 @@ TEST(RigidIpcPaperExperiments, SpinningCoinIsBrakedByFrictionWithoutPenetration)
   const double finalSpin = std::abs(coin.getAngularVelocity().z());
   EXPECT_LT(finalSpin, initialSpin)
       << "friction should brake the spin (init " << initialSpin << ")";
+}
+
+TEST(RigidIpcPaperExperiments, TurntableHighFrictionFixtureRowCarriesRider)
+{
+  const TurntableRun run
+      = runKinematicTurntableRider(/*mu=*/1.0, /*steps=*/120);
+
+  EXPECT_GT(run.minCenterZ, 0.1 - 5e-3);
+  EXPECT_GT(run.maxY, 0.05);
+  EXPECT_GT(run.finalYVelocity, 0.0);
+  EXPECT_LE(run.failCount, 3);
 }
 
 // Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its

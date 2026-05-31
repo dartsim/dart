@@ -123,6 +123,20 @@ IMPLEMENTED_FRICTION_FIXTURE_ROWS = {
             "planned until it has matching example and headless visual evidence."
         ),
     },
+    "fixtures/3D/friction/turntable/turntable-mu=1.0.json": {
+        "test": "TurntableHighFrictionFixtureRowCarriesRider",
+        "expected_invariant": (
+            "DART covers the audited 3D high-friction turntable row: a cube "
+            "on a rotating kinematic cylinder remains intersection-free while "
+            "mu=1.0 contact friction carries it tangentially."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned Fig. 13 paper experiment coverage for the "
+            "3D high-friction turntable fixture mechanism. Lower-friction "
+            "turntable rows and paper visual aliases remain planned until they "
+            "have matching coefficient-sweep and headless visual evidence."
+        ),
+    },
 }
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {
