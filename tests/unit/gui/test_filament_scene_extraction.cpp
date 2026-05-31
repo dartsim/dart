@@ -1057,6 +1057,33 @@ TEST(FilamentSceneExtraction, PanelControlsUseDockFriendlyLabels)
       std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DemoWorkspaceSupportsScriptedSwitchCaptureEvents)
+{
+  const auto applicationSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
+  const auto captureSource
+      = readSourceFile(std::filesystem::path("scripts") / "capture_py_demo.py");
+
+  EXPECT_NE(applicationSource.find("ScriptedDemoSwitch"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-demo-switch\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"--scripted-demo-event-log\""),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("requestSceneSwitch(lifecycle"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"observed_target_demo\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"restored_previous_demo\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"--switch-scene\""), std::string::npos);
+  EXPECT_NE(
+      captureSource.find("\"--scripted-demo-switch\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"events.jsonl\""), std::string::npos);
+  EXPECT_NE(captureSource.find("\"manifest.json\""), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, ForceDragRoutesExternalRenderablesThroughCallback)
 {
   dart::gui::detail::SelectionController selection;

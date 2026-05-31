@@ -58,6 +58,10 @@
 - Demo activation is visible in the docked UI: starting rows are marked,
   Simulation/Demos panels show startup or restored-previous-demo status, and
   Python factory exceptions now flow into the C++ transactional restore path.
+- `py-demo-capture --switch-scene <id>` now drives the same demo-switch
+  lifecycle after a bounded frame count, writes `manifest.json` and
+  `events.jsonl`, and records target-demo observation or previous-demo restore
+  events for stuck-switch debugging.
 - Python scene validation accepts hyphenated aliases such as
   `sx-rigid-ipc-slide`.
 - sx force-drag now resolves picked SimpleFrames by `renderable_id` first,
@@ -293,6 +297,17 @@ All commands produced nonblank docked UI screenshots, PPM/PNG frame sequences,
 and MP4s. Pixel checks over the final PPM frames showed nonblank viewport,
 toolbar, and right-panel regions for each capture.
 
+Scripted demo-switch proof:
+
+```bash
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --switch-frame 2 --switch-scene sx_rigid_ipc_incline --show-ui --frames 10 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_scripted_switch
+```
+
+The event log recorded `requested_demo_switch`, `observed_target_demo`, and
+`script_completed`; the final screenshot
+`/tmp/dart_py_demo_capture_scripted_switch/sx_rigid_ipc_slide_to_sx_rigid_ipc_incline.png`
+showed `Rigid IPC Inclined Slide (sx)` active in the docked workspace.
+
 Focused checks:
 
 ```bash
@@ -329,6 +344,8 @@ pixi run lint
 
 1. Add full viewer-input coverage for mouse force-drag once tests can inject
    pointer drags into the Filament viewer loop.
-2. Add image thumbnail playback only if the UI renderer grows a texture-backed
+2. Consider process- or worker-isolated demo construction if a future demo
+   factory can block indefinitely before returning to the C++ viewer loop.
+3. Add image thumbnail playback only if the UI renderer grows a texture-backed
    panel image primitive; the current playback surface controls and identifies
    recorded PPM frames from inside the workspace.

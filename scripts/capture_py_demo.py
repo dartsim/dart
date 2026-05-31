@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import pathlib
 import shutil
@@ -11,6 +12,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
 import zlib
 
 
@@ -70,6 +72,35 @@ def _default_output_dir(scene: str) -> pathlib.Path:
     return pathlib.Path(tempfile.gettempdir()) / "dart_py_demo_capture" / safe
 
 
+def _safe_stem(value: str) -> str:
+    safe = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in value)
+    return safe or "scene"
+
+
+def _capture_stem(args: argparse.Namespace) -> str:
+    switch_scene = getattr(args, "switch_scene", "")
+    if switch_scene:
+        return f"{_safe_stem(args.scene)}_to_{_safe_stem(switch_scene)}"
+    return _safe_stem(args.scene)
+
+
+def _write_json(path: pathlib.Path, payload: dict[str, object]) -> None:
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+def _append_event(
+    path: pathlib.Path, start_time: float, event: str, **fields: object
+) -> None:
+    payload: dict[str, object] = {
+        "event": event,
+        "source": "capture",
+        "t_ms": round((time.monotonic() - start_time) * 1000.0, 3),
+    }
+    payload.update(fields)
+    with path.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(payload, sort_keys=True) + "\n")
+
+
 def _ffmpeg_path() -> str | None:
     found = shutil.which("ffmpeg")
     if found is not None:
@@ -105,6 +136,17 @@ def build_demo_args(
         demo_args.append("--show-ui")
     if args.backend:
         demo_args.extend(["--backend", args.backend])
+    switch_scene = getattr(args, "switch_scene", "")
+    if switch_scene:
+        demo_args.extend(
+            [
+                "--scripted-demo-switch",
+                f"{getattr(args, 'switch_frame', 2)}:{switch_scene}",
+            ]
+        )
+        event_log = getattr(args, "event_log", None)
+        if event_log is not None:
+            demo_args.extend(["--scripted-demo-event-log", str(event_log)])
     return demo_args
 
 
@@ -161,6 +203,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--video", action="store_true")
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--output-dir", type=pathlib.Path)
+    parser.add_argument(
+        "--switch-scene",
+        default="",
+        help="Request a demo switch during capture and record switch events.",
+    )
+    parser.add_argument(
+        "--switch-frame",
+        type=int,
+        default=2,
+        help="Rendered frame count after which --switch-scene is requested.",
+    )
     return parser.parse_args(argv)
 
 
@@ -170,22 +223,48 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--frames must be positive")
     if args.width < 1 or args.height < 1:
         raise SystemExit("--width and --height must be positive")
+    if args.switch_frame < 1:
+        raise SystemExit("--switch-frame must be positive")
+    if args.switch_scene and args.frames <= args.switch_frame:
+        raise SystemExit("--frames must be greater than --switch-frame")
 
     output_dir = args.output_dir or _default_output_dir(args.scene)
     output_dir.mkdir(parents=True, exist_ok=True)
-    screenshot_ppm = output_dir / f"{args.scene}.ppm"
-    screenshot_png = output_dir / f"{args.scene}.png"
+    capture_stem = _capture_stem(args)
+    screenshot_ppm = output_dir / f"{capture_stem}.ppm"
+    screenshot_png = output_dir / f"{capture_stem}.png"
     frames_dir = output_dir / "frames"
     png_frames_dir = output_dir / "png_frames"
+    manifest = output_dir / "manifest.json"
+    events = output_dir / "events.jsonl"
     for path in (frames_dir, png_frames_dir):
         if path.exists():
             shutil.rmtree(path)
-    for path in (screenshot_ppm, screenshot_png):
+    for path in (screenshot_ppm, screenshot_png, manifest, events):
         if path.exists():
             path.unlink()
 
+    if args.switch_scene:
+        args.event_log = events
+    start_time = time.monotonic()
     demo_args = build_demo_args(args, screenshot_ppm, frames_dir)
+    _write_json(
+        manifest,
+        {
+            "schema_version": 1,
+            "scene": args.scene,
+            "switch_scene": args.switch_scene or None,
+            "switch_frame": args.switch_frame if args.switch_scene else None,
+            "artifacts": {
+                "events": str(events) if args.switch_scene else None,
+                "frames": str(png_frames_dir),
+                "screenshot": str(screenshot_png),
+            },
+        },
+    )
     rc = _run_demo(demo_args)
+    if args.switch_scene:
+        _append_event(events, start_time, "capture_run_finished", return_code=rc)
     if rc != 0:
         return rc
     if not screenshot_ppm.is_file():
@@ -204,8 +283,18 @@ def main(argv: list[str] | None = None) -> int:
     print(f"screenshot: {screenshot_png}")
     if converted_frames:
         print(f"frames: {png_frames_dir} ({converted_frames} PNG files)")
+    if args.switch_scene:
+        _append_event(
+            events,
+            start_time,
+            "artifacts_written",
+            converted_frames=converted_frames,
+            screenshot=str(screenshot_png),
+        )
+        print(f"events: {events}")
+    print(f"manifest: {manifest}")
     if args.video:
-        video = output_dir / f"{args.scene}.mp4"
+        video = output_dir / f"{capture_stem}.mp4"
         if _encode_video(frames_dir, video, args.fps):
             print(f"video: {video}")
         else:

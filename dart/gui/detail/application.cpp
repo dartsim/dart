@@ -70,6 +70,7 @@
 #include <array>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -169,6 +170,15 @@ constexpr int kCycleFramesPerScene = 4;
 constexpr double kDemoSceneStartupTimeoutMs = 5000.0;
 
 bool hasSceneOption(int argc, char* argv[]);
+
+struct ScriptedDemoSwitch
+{
+  int afterFrames = 0;
+  std::string sceneId;
+  std::filesystem::path eventLogPath;
+  bool requested = false;
+  bool observed = false;
+};
 
 bool isTruthyEnvironmentVariable(const char* name)
 {
@@ -300,6 +310,82 @@ double resolveDemoSceneStartupTimeoutMs()
 std::string demoSceneDisplayName(const dart::gui::DemoSceneEntry& scene)
 {
   return scene.title.empty() ? scene.id : scene.title;
+}
+
+std::string jsonEscape(std::string_view value)
+{
+  std::string out;
+  out.reserve(value.size() + 2);
+  for (const char ch : value) {
+    switch (ch) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '"':
+        out += "\\\"";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        out.push_back(ch);
+        break;
+    }
+  }
+  return out;
+}
+
+void appendDemoEvent(
+    const ScriptedDemoSwitch* scriptedSwitch,
+    std::string_view event,
+    std::string_view activeScene,
+    std::string_view status,
+    int frame)
+{
+  if (scriptedSwitch == nullptr || scriptedSwitch->eventLogPath.empty()) {
+    return;
+  }
+
+  std::ofstream out(scriptedSwitch->eventLogPath, std::ios::app);
+  if (!out) {
+    return;
+  }
+  out << "{\"source\":\"viewer\",\"event\":\"" << jsonEscape(event)
+      << "\",\"frame\":" << frame << ",\"active_scene\":\""
+      << jsonEscape(activeScene) << "\",\"target_scene\":\""
+      << jsonEscape(scriptedSwitch->sceneId) << "\",\"status\":\""
+      << jsonEscape(status) << "\"}\n";
+}
+
+std::optional<ScriptedDemoSwitch> parseScriptedDemoSwitch(
+    std::string_view spec, std::ostream& errors)
+{
+  const std::size_t separator = spec.find(':');
+  if (separator == std::string_view::npos || separator == 0
+      || separator + 1 >= spec.size()) {
+    errors << "--scripted-demo-switch expects <after-frames>:<scene-id>\n";
+    return std::nullopt;
+  }
+
+  const std::string frameText(spec.substr(0, separator));
+  char* end = nullptr;
+  const long parsedFrame = std::strtol(frameText.c_str(), &end, 10);
+  if (end == frameText.c_str() || *end != '\0' || parsedFrame < 1
+      || parsedFrame > std::numeric_limits<int>::max()) {
+    errors << "--scripted-demo-switch frame must be a positive integer\n";
+    return std::nullopt;
+  }
+
+  ScriptedDemoSwitch scriptedSwitch;
+  scriptedSwitch.afterFrames = static_cast<int>(parsedFrame);
+  scriptedSwitch.sceneId = std::string(spec.substr(separator + 1));
+  return scriptedSwitch;
 }
 
 std::vector<std::filesystem::path> recordedFramePaths(
@@ -591,7 +677,8 @@ int runGuiBackendApplicationImpl(
     const dart::gui::ApplicationOptions& applicationOptions,
     const std::vector<dart::gui::DemoSceneEntry>* demoCatalog,
     int initialDemoIndex,
-    bool cycleScenes)
+    bool cycleScenes,
+    std::optional<ScriptedDemoSwitch> scriptedDemoSwitch = std::nullopt)
 {
   AppOptions appOptions
       = parseOptions(argc, argv, applicationOptions.runDefaults);
@@ -753,6 +840,12 @@ int runGuiBackendApplicationImpl(
           = "Restored previous demo '" + demoSceneDisplayName(fallbackEntry)
             + "' after '" + demoSceneDisplayName(*candidateDemoEntry)
             + "' failed: " + std::string(reason);
+      appendDemoEvent(
+          scriptedDemoSwitch ? &*scriptedDemoSwitch : nullptr,
+          "restored_previous_demo",
+          fallbackEntry.id,
+          lifecycle.sceneActivationStatus,
+          -1);
       lifecycle.sceneActivationPendingScene.clear();
       activeIndex = fallbackIndex;
       pendingDemoFallbackIndex.reset();
@@ -1033,6 +1126,18 @@ int runGuiBackendApplicationImpl(
         if (lifecycle.sceneActivationStatus.starts_with("Starting ")) {
           lifecycle.sceneActivationStatus.clear();
         }
+        if (scriptedDemoSwitch.has_value() && scriptedDemoSwitch->requested
+            && !scriptedDemoSwitch->observed
+            && (*demoCatalog)[static_cast<std::size_t>(activeIndex)].id
+                   == scriptedDemoSwitch->sceneId) {
+          scriptedDemoSwitch->observed = true;
+          appendDemoEvent(
+              &*scriptedDemoSwitch,
+              "observed_target_demo",
+              scriptedDemoSwitch->sceneId,
+              lifecycle.sceneActivationStatus,
+              framesThisScene);
+        }
       }
       if (demoCatalog != nullptr && !frameRenderResult.continueLoop) {
         pendingDemoFallbackIndex.reset();
@@ -1043,7 +1148,20 @@ int runGuiBackendApplicationImpl(
       if (frameRenderResult.stopLoop) {
         break;
       }
-      if (cycleScenes && ++framesThisScene >= kCycleFramesPerScene) {
+      ++framesThisScene;
+      if (demoCatalog != nullptr && scriptedDemoSwitch.has_value()
+          && !scriptedDemoSwitch->requested
+          && framesThisScene >= scriptedDemoSwitch->afterFrames) {
+        scriptedDemoSwitch->requested = true;
+        appendDemoEvent(
+            &*scriptedDemoSwitch,
+            "requested_demo_switch",
+            (*demoCatalog)[static_cast<std::size_t>(activeIndex)].id,
+            "scripted switch requested",
+            framesThisScene);
+        requestSceneSwitch(lifecycle, scriptedDemoSwitch->sceneId);
+      }
+      if (cycleScenes && framesThisScene >= kCycleFramesPerScene) {
         cycleAdvance = true;
       }
     }
@@ -1083,6 +1201,21 @@ int runGuiBackendApplicationImpl(
       pendingDemoFallbackIndex.reset();
       keepRunning = false;
     }
+  }
+
+  if (scriptedDemoSwitch.has_value() && demoCatalog != nullptr) {
+    std::string activeScene;
+    if (activeIndex >= 0
+        && activeIndex < static_cast<int>(demoCatalog->size())) {
+      activeScene = (*demoCatalog)[static_cast<std::size_t>(activeIndex)].id;
+    }
+    appendDemoEvent(
+        &*scriptedDemoSwitch,
+        scriptedDemoSwitch->observed ? "script_completed"
+                                     : "script_finished_without_target",
+        activeScene,
+        lifecycle.sceneActivationStatus,
+        -1);
   }
 
   const bool screenshotSucceeded = finalizeScreenshotCapture(
@@ -1203,6 +1336,7 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     initialId = env;
   }
   bool cycleScenes = false;
+  std::optional<ScriptedDemoSwitch> scriptedDemoSwitch;
 
   std::vector<char*> filteredArguments;
   filteredArguments.reserve(static_cast<std::size_t>(argc));
@@ -1213,6 +1347,36 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     const std::string_view arg = argv[i] == nullptr ? "" : argv[i];
     if (arg == "--cycle-scenes") {
       cycleScenes = true;
+      continue;
+    }
+    if (arg == "--scripted-demo-switch") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr << "runDemos: --scripted-demo-switch requires an argument\n";
+        return 1;
+      }
+      auto parsed = parseScriptedDemoSwitch(argv[i + 1], std::cerr);
+      if (!parsed.has_value()) {
+        return 1;
+      }
+      if (scriptedDemoSwitch.has_value()
+          && !scriptedDemoSwitch->eventLogPath.empty()) {
+        parsed->eventLogPath = scriptedDemoSwitch->eventLogPath;
+      }
+      scriptedDemoSwitch = std::move(parsed);
+      ++i;
+      continue;
+    }
+    if (arg == "--scripted-demo-event-log") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr
+            << "runDemos: --scripted-demo-event-log requires an argument\n";
+        return 1;
+      }
+      if (!scriptedDemoSwitch.has_value()) {
+        scriptedDemoSwitch = ScriptedDemoSwitch{};
+      }
+      scriptedDemoSwitch->eventLogPath = argv[i + 1];
+      ++i;
       continue;
     }
     if (arg == "--scene") {
@@ -1243,13 +1407,53 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     }
   }
 
+  if (scriptedDemoSwitch.has_value() && scriptedDemoSwitch->sceneId.empty()) {
+    std::cerr << "runDemos: --scripted-demo-event-log requires "
+                 "--scripted-demo-switch\n";
+    return 1;
+  }
+  if (scriptedDemoSwitch.has_value() && cycleScenes) {
+    std::cerr << "runDemos: --scripted-demo-switch cannot be combined with "
+                 "--cycle-scenes\n";
+    return 1;
+  }
+  if (scriptedDemoSwitch.has_value()) {
+    const int scriptedIndex
+        = ::demoSceneIndex(scenes, scriptedDemoSwitch->sceneId, -1);
+    if (scriptedIndex < 0) {
+      std::cerr << "runDemos: unknown scripted demo target '"
+                << scriptedDemoSwitch->sceneId << "'. Available scenes:";
+      for (const auto& scene : scenes) {
+        std::cerr << ' ' << scene.id;
+      }
+      std::cerr << '\n';
+      return 1;
+    }
+    scriptedDemoSwitch->sceneId
+        = scenes[static_cast<std::size_t>(scriptedIndex)].id;
+    if (!scriptedDemoSwitch->eventLogPath.empty()) {
+      std::error_code error;
+      const auto parent = scriptedDemoSwitch->eventLogPath.parent_path();
+      if (!parent.empty()) {
+        std::filesystem::create_directories(parent, error);
+      }
+      std::ofstream eventLog(scriptedDemoSwitch->eventLogPath);
+      if (!eventLog) {
+        std::cerr << "runDemos: failed to create scripted demo event log '"
+                  << scriptedDemoSwitch->eventLogPath.string() << "'\n";
+        return 1;
+      }
+    }
+  }
+
   return runGuiBackendApplicationImpl(
       static_cast<int>(filteredArguments.size()),
       filteredArguments.data(),
       ApplicationOptions{},
       &scenes,
       index,
-      cycleScenes);
+      cycleScenes,
+      std::move(scriptedDemoSwitch));
 }
 
 } // namespace dart::gui

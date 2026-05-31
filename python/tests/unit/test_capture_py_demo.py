@@ -50,3 +50,29 @@ def test_visual_capture_rejects_noop_backend(tmp_path: pathlib.Path) -> None:
         capture_py_demo.build_demo_args(
             args, tmp_path / "capture.ppm", tmp_path / "frames"
         )
+
+
+def test_visual_capture_forwards_scripted_demo_switch(
+    tmp_path: pathlib.Path,
+) -> None:
+    args = argparse.Namespace(
+        backend="opengl",
+        allow_noop=False,
+        scene="sx_rigid_ipc_slide",
+        frames=6,
+        width=640,
+        height=360,
+        show_ui=True,
+        switch_scene="sx_rigid_ipc_incline",
+        switch_frame=2,
+        event_log=tmp_path / "events.jsonl",
+    )
+
+    demo_args = capture_py_demo.build_demo_args(
+        args, tmp_path / "capture.ppm", tmp_path / "frames"
+    )
+
+    assert "--scripted-demo-switch" in demo_args
+    assert "2:sx_rigid_ipc_incline" in demo_args
+    assert "--scripted-demo-event-log" in demo_args
+    assert str(tmp_path / "events.jsonl") in demo_args
