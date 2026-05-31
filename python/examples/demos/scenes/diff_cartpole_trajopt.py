@@ -32,7 +32,7 @@ import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Small system / short horizon / few iters so the headless cycle smoke is fast.
 _TIME_STEP = 1e-2
@@ -109,6 +109,13 @@ def _read_state(cartpole: Any) -> np.ndarray:
         q.extend(np.asarray(joint.position, dtype=float).reshape(-1).tolist())
         qdot.extend(np.asarray(joint.velocity, dtype=float).reshape(-1).tolist())
     return np.asarray(q + qdot, dtype=float)
+
+
+def _sample_plot_values(values: list[float], limit: int = 120) -> list[float]:
+    if len(values) <= limit:
+        return [float(value) for value in values]
+    indices = np.linspace(0, len(values) - 1, limit, dtype=int)
+    return [float(values[int(index)]) for index in indices]
 
 
 def _rollout_cartpole(
@@ -356,6 +363,18 @@ def build() -> SceneSetup:
     )
 
     playhead = {"i": 0}
+    playback = {"stride": 1}
+    controls = np.asarray(result.get("controls", np.zeros(_STEPS)), dtype=float)
+    cart_positions = [float(state[_CART_DOF]) for state in states]
+    target_errors = [float(position - _TARGET) for position in cart_positions]
+    pole_angles = [float(state[1]) for state in states]
+    force_plot = _sample_plot_values([float(value) for value in controls])
+    cart_plot = _sample_plot_values(cart_positions)
+    error_plot = _sample_plot_values(target_errors)
+    pole_plot = _sample_plot_values(pole_angles)
+    final_cart_x = cart_positions[-1] if cart_positions else 0.0
+    final_error = final_cart_x - _TARGET
+    peak_force = float(np.max(np.abs(controls))) if controls.size else 0.0
 
     def pre_step() -> None:
         if not states:
@@ -365,16 +384,73 @@ def build() -> SceneSetup:
         pole_theta = float(state[1])
         cart_frame.set_transform(_cart_transform(cart_x))
         pole_frame.set_transform(_pole_transform(cart_x, pole_theta))
-        playhead["i"] = (playhead["i"] + 1) % len(states)
+        stride = max(1, int(playback["stride"]))
+        playhead["i"] = (playhead["i"] + stride) % len(states)
+
+    def build_panel(builder: object, context: object) -> None:
+        del context
+        current_index = playhead["i"] if states else 0
+        current_state = (
+            np.asarray(states[current_index], dtype=float)
+            if states
+            else np.zeros(_STATE_SIZE, dtype=float)
+        )
+        current_force = (
+            float(controls[min(current_index, controls.shape[0] - 1)])
+            if controls.size
+            else 0.0
+        )
+
+        builder.text("mode: cart-force replay")
+        builder.text(f"optimized: {'yes' if result['optimized'] else 'fallback'}")
+        builder.text(
+            f"frame: {current_index + 1}/{len(states)} | "
+            f"cart x={float(current_state[_CART_DOF]):.3f} m"
+        )
+        builder.text(
+            f"target x: {_TARGET:.3f} m | final error={final_error:.3f} m"
+        )
+        builder.text(
+            f"pole angle: {float(current_state[1]):.3f} rad | "
+            f"cart force={current_force:.3f} N"
+        )
+        builder.text(f"peak force: {peak_force:.3f} N")
+        if result["optimized"]:
+            builder.text(
+                f"iters: {int(result.get('iters', 0))} | "
+                f"loss={float(result.get('loss', 0.0)):.2e}"
+            )
+        else:
+            builder.text(note)
+        changed, stride_value = builder.slider(
+            "Playback stride", float(playback["stride"]), 1.0, 8.0
+        )
+        if changed:
+            playback["stride"] = max(1, int(round(stride_value)))
+        if builder.button("Reset replay") and states:
+            playhead["i"] = 0
+            first_state = states[0]
+            cart_frame.set_transform(_cart_transform(float(first_state[_CART_DOF])))
+            pole_frame.set_transform(
+                _pole_transform(float(first_state[_CART_DOF]), float(first_state[1]))
+            )
+        if cart_plot:
+            builder.separator()
+            builder.plot_lines("Cart x", cart_plot)
+            builder.plot_lines("Target error", error_plot)
+            builder.plot_lines("Pole angle", pole_plot)
+            builder.plot_lines("Cart force", force_plot)
 
     return SceneSetup(
         world=render_world,
         pre_step=pre_step,
+        panels=[ScenePanel("Diff Cartpole TrajOpt", build_panel)],
         info={
             "optimized": result["optimized"],
             "steps": len(states),
             "note": note,
             "target": _TARGET,
+            "final_error": final_error,
         },
     )
 

@@ -90,6 +90,9 @@
 - `vbd_cloth`, `vbd_net`, and `vbd_beam` now have VBD diagnostics panels with
   sag, sway/span, free-end height, mean node speed, and solver iteration
   metrics.
+- `diff_throw_to_target` and `diff_cartpole_trajopt` now have replay panels
+  with playback stride/reset controls, target-error plots, trajectory traces,
+  and optimized velocity/force summaries.
 - Python demo line-segment visuals now use snake_case dartpy APIs in the sx
   deformable bridge, IPC deformable bridge, and polyhedron scene so warnings-as
   errors panel tests stay clean.
@@ -192,6 +195,8 @@ pixi run py-demo-capture -- --scene ipc_deformable_cg_contact --show-ui --frames
 pixi run py-demo-capture -- --scene vbd_cloth --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_cloth_panel
 pixi run py-demo-capture -- --scene vbd_net --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_net_panel
 pixi run py-demo-capture -- --scene vbd_beam --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_vbd_beam_panel
+pixi run py-demo-capture -- --scene diff_throw_to_target --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_diff_throw_panel
+pixi run py-demo-capture -- --scene diff_cartpole_trajopt --show-ui --frames 12 --width 1280 --height 720 --video --output-dir /tmp/dart_py_demo_capture_diff_cartpole_panel
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_sidebar_grouping
 ```
 
@@ -212,6 +217,7 @@ pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_capsul
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_drape.py python/examples/demos/scenes/ipc_deformable_net.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/scenes/ipc_deformable_cg_solver.py python/examples/demos/scenes/ipc_deformable_cg_contact.py python/tests/unit/test_py_demo_panels.py
 pixi run python -m py_compile python/examples/demos/_sx_bridge.py python/examples/demos/_ipc_deformable_bridge.py python/examples/demos/scenes/polyhedron_visual.py python/examples/demos/scenes/vbd_cloth.py python/examples/demos/scenes/vbd_net.py python/examples/demos/scenes/vbd_beam.py python/tests/unit/test_py_demo_panels.py
+pixi run python -m py_compile python/examples/demos/scenes/diff_throw_to_target.py python/examples/demos/scenes/diff_cartpole_trajopt.py python/tests/unit/test_py_demo_panels.py
 pixi run pytest python/tests/unit/test_capture_py_demo.py -q
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest python/tests/unit/test_py_demo_panels.py -q
 PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_runner_cycle_returns_zero -q

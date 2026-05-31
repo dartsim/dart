@@ -13,7 +13,9 @@ from examples.demos.runner import (
     _make_world_factory,
 )
 from examples.demos.scenes import (
+    diff_cartpole_trajopt,
     diff_drone_liftoff,
+    diff_throw_to_target,
     experimental_rigid_body_gui,
     ipc_deformable_capsule_rod,
     ipc_deformable_cg_contact,
@@ -195,6 +197,23 @@ def test_diff_drone_scene_exposes_replay_panel() -> None:
     assert "slider:Playback stride:1.0:8.0" in builder.events
     assert "button:Reset replay" in builder.events
     assert any(event.startswith("plot:Aware height:") for event in builder.events)
+
+
+def test_diff_trajectory_scenes_expose_replay_panels() -> None:
+    for scene_module, expected_title, expected_plot in (
+        (diff_throw_to_target, "Diff Throw Target", "plot:Target distance:"),
+        (diff_cartpole_trajopt, "Diff Cartpole TrajOpt", "plot:Cart x:"),
+    ):
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [expected_title]
+
+        setup.panels[0].build(builder, object())
+
+        assert "slider:Playback stride:1.0:8.0" in builder.events
+        assert "button:Reset replay" in builder.events
+        assert any(event.startswith(expected_plot) for event in builder.events)
 
 
 def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:

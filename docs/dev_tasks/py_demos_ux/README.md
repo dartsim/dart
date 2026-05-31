@@ -63,6 +63,9 @@ navigation, and a path for scene-specific controls.
 - Add VBD diagnostics panels to `vbd_cloth`, `vbd_net`, and `vbd_beam`,
   exposing sag, sway/span, free-end height, node speed, and solver iteration
   metrics for the contact-free deformable VBD showcases.
+- Add replay and optimization panels to `diff_throw_to_target` and
+  `diff_cartpole_trajopt`, exposing target error, trajectory/height traces,
+  optimized decision variables, and playback stride/reset controls.
 - Move Python demo line-segment visual updates to snake_case dartpy APIs so
   panel tests and demo captures stay free of camelCase deprecation warnings.
 - Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape
