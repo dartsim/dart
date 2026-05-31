@@ -164,6 +164,92 @@ sx::DeformableBodyOptions makeFallingPatchOptions(double z0, double velocityX)
   return options;
 }
 
+// A free point on a deformable body moving toward another body's triangle
+// surface. The body's own triangle is fixed far above the crossing point; the
+// unreferenced point still participates in inter-body CCD for surface-only
+// bodies.
+sx::DeformableBodyOptions makeInterBodyMovingPointOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 3.0),
+         Eigen::Vector3d(1.0, -1.0, 3.0),
+         Eigen::Vector3d(0.0, 1.0, 3.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+sx::DeformableBodyOptions makeInterBodyTriangleObstacleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+// Two horizontal triangles in a single deformable body: a wide triangle pinned
+// in the z = 0 plane and a smaller free triangle just above it (held rigid by
+// edge springs). Under gravity the top triangle falls toward the bottom; with
+// self-contact the two surfaces of the same body must not interpenetrate.
+sx::DeformableBodyOptions makeSelfFoldingBody()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),   // 0 bottom (pinned)
+         Eigen::Vector3d(0.5, -0.5, 0.0),    // 1
+         Eigen::Vector3d(0.0, 0.6, 0.0),     // 2
+         Eigen::Vector3d(-0.2, -0.15, 0.12), // 3 top (free)
+         Eigen::Vector3d(0.2, -0.15, 0.12),  // 4
+         Eigen::Vector3d(0.0, 0.2, 0.12)};   // 5
+  options.masses = {1.0, 1.0, 1.0, 0.1, 0.1, 0.1};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {{0, 1, 2}, {3, 4, 5}};
+  options.edges = {{3, 4, -1.0}, {4, 5, -1.0}, {5, 3, -1.0}};
+  options.edgeStiffness = 500.0;
+  options.damping = 1.0;
+  return options;
+}
+
+// Two same-body surface triangles where the top triangle would move completely
+// through the pinned bottom triangle in one step if VBD did not reuse the
+// self-surface CCD limiter after its block solve.
+sx::DeformableBodyOptions makeSelfCrossingTriangleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(-0.2, -0.2, 1.0),
+         Eigen::Vector3d(0.2, -0.2, 1.0),
+         Eigen::Vector3d(0.0, 0.2, 1.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0),
+         Eigen::Vector3d(0.0, 0.0, -20.0),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {{0, 1, 2}, {3, 4, 5}};
+  return options;
+}
+
 } // namespace
 
 //==============================================================================
@@ -343,6 +429,45 @@ TEST(VbdWorldSolver, StifferTetrahedralBodyDeformsLess)
   EXPECT_LT(stiffApex, 1.0);
   // ... but the stiffer body compresses measurably less.
   EXPECT_GT(stiffApex, softApex + 1e-4);
+}
+
+//==============================================================================
+// The fixed-corotational material selector is meaningful only when
+// finite-element elasticity is explicitly enabled. With FEM opt-in off, VBD
+// must ignore the FCR flag just like the default solver/material contract does.
+TEST(VbdWorldSolver, FixedCorotationalFlagRequiresFemOptIn)
+{
+  const auto runWithFixedCorotationalFlag = [](bool fixedCorotational) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    sx::DeformableBodyOptions options = makeTetOptions(1.0e4);
+    options.material.useFiniteElementElasticity = false;
+    options.material.useFixedCorotationalElasticity = fixedCorotational;
+    world.addDeformableBody("tet", options);
+    enableVbd(world, 80);
+
+    compute::DeformableDynamicsStage stage;
+    for (int step = 0; step < 40; ++step) {
+      stepOnce(world, stage);
+    }
+
+    const auto body = world.getDeformableBody("tet");
+    std::vector<Eigen::Vector3d> positions;
+    positions.reserve(body->getNodeCount());
+    for (std::size_t node = 0; node < body->getNodeCount(); ++node) {
+      positions.push_back(body->getPosition(node));
+    }
+    return positions;
+  };
+
+  const auto disabled = runWithFixedCorotationalFlag(false);
+  const auto ignored = runWithFixedCorotationalFlag(true);
+  ASSERT_EQ(disabled.size(), ignored.size());
+  for (std::size_t node = 0; node < disabled.size(); ++node) {
+    EXPECT_NEAR((disabled[node] - ignored[node]).norm(), 0.0, 1e-12)
+        << "node " << node;
+  }
 }
 
 //==============================================================================
@@ -611,4 +736,392 @@ TEST(VbdWorldSolver, PublicConfigureGroundContactRests)
   }
   EXPECT_GT(minZ, -0.05);
   EXPECT_LT(minZ, 0.05);
+}
+
+//==============================================================================
+// Option C: with contactStiffness > 0 a VBD body keeps running on the VBD path
+// when a static sphere obstacle is present (any obstacle previously forced the
+// body off the VBD path onto the default solver) and settles on the obstacle
+// surface without penetrating it.
+TEST(VbdWorldSolver, VbdBodyRestsOnSphereObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  const Eigen::Vector3d sphereCenter(0.1, 0.1, -0.3);
+  const double sphereRadius = 0.5; // top of the sphere at z = 0.2
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  sphereOptions.position = sphereCenter;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  // A free spring patch released just above the top of the sphere.
+  world.addDeformableBody("patch", makeFallingPatchOptions(0.28, 0.0));
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 50;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  const auto minSurfaceDistance = [&]() {
+    const auto body = world.getDeformableBody("patch");
+    double minimum = 1e9;
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      minimum = std::min(
+          minimum, (body->getPosition(i) - sphereCenter).norm() - sphereRadius);
+    }
+    return minimum;
+  };
+  ASSERT_GT(minSurfaceDistance(), 0.02);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 400; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("patch");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      ASSERT_TRUE(body->getPosition(i).allFinite()) << "blew up at " << step;
+    }
+  }
+
+  // The VBD path (not the default solver) handled the body despite the
+  // obstacle.
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  // The patch fell well below its release height onto the sphere ...
+  const auto body = world.getDeformableBody("patch");
+  double minZ = 1e9;
+  for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+    minZ = std::min(minZ, body->getPosition(i).z());
+  }
+  EXPECT_LT(minZ, 0.26);
+  // ... and no node sinks through the sphere surface (soft-penalty tolerance).
+  EXPECT_GT(minSurfaceDistance(), -3.0e-2);
+}
+
+//==============================================================================
+// A VBD node exactly at a static sphere obstacle center has no radial direction
+// to normalize, so it still gets a deterministic upward contact plane instead
+// of being skipped as unconstrained.
+TEST(VbdWorldSolver, VbdSphereObstacleRepelsCenterEmbeddedNode)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const double sphereRadius = 0.5;
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.isStatic = true;
+  auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero()};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  options.masses = {0.1};
+  auto body = world.addDeformableBody("embedded_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 30;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  const auto position = body.getPosition(0);
+  EXPECT_TRUE(position.allFinite());
+  EXPECT_NEAR(position.x(), 0.0, 1e-12);
+  EXPECT_NEAR(position.y(), 0.0, 1e-12);
+  EXPECT_GT(position.z(), 0.0);
+}
+
+//==============================================================================
+// Option C: the same holds for a static box obstacle -- VBD keeps the patch on
+// the box's top face without penetrating it.
+TEST(VbdWorldSolver, VbdBodyRestsOnBoxObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  const Eigen::Vector3d boxCenter(0.1, 0.1, 0.0);
+  const Eigen::Vector3d boxHalf(0.3, 0.3, 0.3); // top face at z = 0.3
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  boxOptions.position = boxCenter;
+  auto box = world.addRigidBody("obstacle_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  world.addDeformableBody("patch", makeFallingPatchOptions(0.38, 0.0));
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 50;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  const auto minBoxSurfaceDistance = [&]() {
+    const auto body = world.getDeformableBody("patch");
+    double minimum = 1e9;
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      const Eigen::Vector3d local = body->getPosition(i) - boxCenter;
+      const Eigen::Vector3d signedOffset = local.cwiseAbs() - boxHalf;
+      const Eigen::Vector3d outside
+          = signedOffset.cwiseMax(Eigen::Vector3d::Zero());
+      const double distance = outside.squaredNorm() > 0.0
+                                  ? outside.norm()
+                                  : signedOffset.maxCoeff();
+      minimum = std::min(minimum, distance);
+    }
+    return minimum;
+  };
+  ASSERT_GT(minBoxSurfaceDistance(), 0.02);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 400; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("patch");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      ASSERT_TRUE(body->getPosition(i).allFinite()) << "blew up at " << step;
+    }
+  }
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  // The patch fell onto the box top face (z = 0.3) ...
+  const auto body = world.getDeformableBody("patch");
+  double minZ = 1e9;
+  for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+    minZ = std::min(minZ, body->getPosition(i).z());
+  }
+  EXPECT_LT(minZ, 0.36);
+  // ... without sinking through it (soft-penalty tolerance).
+  EXPECT_GT(minBoxSurfaceDistance(), -3.0e-2);
+}
+
+//==============================================================================
+// A VBD body that starts inside a static box obstacle still gets a lagged
+// half-space plane from the nearest exit face, so the first solve moves it out
+// instead of leaving it embedded until an outside-only barrier can arm.
+TEST(VbdWorldSolver, VbdBoxObstacleRepelsInitiallyEmbeddedNode)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const Eigen::Vector3d boxHalf(0.5, 0.5, 0.5);
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  auto box = world.addRigidBody("obstacle_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.45, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d::Zero()};
+  options.masses = {0.1};
+  auto body = world.addDeformableBody("embedded_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 30;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  const auto position = body.getPosition(0);
+  EXPECT_TRUE(position.allFinite());
+  EXPECT_GT(position.x(), 0.49);
+  EXPECT_NEAR(position.y(), 0.0, 1e-12);
+  EXPECT_NEAR(position.z(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// The VBD static-obstacle barrier is lagged at the warm-start position, so fast
+// nodes still need the shared static rigid-surface CCD limiter to prevent a
+// one-step crossing that starts and ends outside the narrow contact band.
+TEST(VbdWorldSolver, VbdStaticRigidSurfaceCcdLimitsFastCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.isStatic = true;
+  auto box = world.addRigidBody("static_box", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
+  box.setDeformableSurfaceCcdObstacle(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d(20.0, 0.0, 0.0)};
+  options.masses = {1.0};
+  auto body = world.addDeformableBody("fast_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 10;
+  cfg.contactStiffness = 1.0e4;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+  EXPECT_LT(body.getPosition(0).x(), -0.05);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+}
+
+//==============================================================================
+// VBD bodies with surface topology still need the shared inter-body CCD limiter
+// after the block solve; otherwise two deformable surfaces can pass through
+// each other in one large step.
+TEST(VbdWorldSolver, VbdInterBodySurfaceCcdLimitsFastCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto moving
+      = world.addDeformableBody("moving", makeInterBodyMovingPointOptions());
+  world.addDeformableBody("obstacle", makeInterBodyTriangleObstacleOptions());
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 10;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 2u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+  EXPECT_GT(moving.getPosition(3).z(), 0.0);
+  EXPECT_LT(moving.getPosition(3).z(), 1.0);
+}
+
+//==============================================================================
+// VBD self-contact barriers are lagged, so fast same-body surface crossings
+// still need the shared self-surface CCD limiter before write-back.
+TEST(VbdWorldSolver, VbdSelfSurfaceCcdLimitsFastCrossing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "self_crossing", makeSelfCrossingTriangleOptions());
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 10;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.surfaceContactCcdHits, 0u);
+  EXPECT_GT(stats.surfaceContactCcdLimitedSteps, 0u);
+  for (std::size_t node = 3; node < 6; ++node) {
+    EXPECT_GT(body.getPosition(node).z(), -1e-9) << "node " << node;
+    EXPECT_LT(body.getPosition(node).z(), 1.0) << "node " << node;
+  }
+}
+
+//==============================================================================
+// VBD self-contact uses the same surface-node point mask as the default solver:
+// volumetric nodes that are not referenced by the surface mesh must not receive
+// point-triangle barrier forces from their own shell.
+TEST(VbdWorldSolver, VbdSelfContactIgnoresInteriorTetNodes)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  const Eigen::Vector3d interiorStart(0.25, 0.25, 0.005);
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0),
+         interiorStart};
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.masses.assign(options.positions.size(), 1.0);
+  options.fixedNodes = {0, 1, 2, 3};
+  options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{0, 2, 3}};
+  auto body = world.addDeformableBody("tet_with_interior_node", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 20;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  const Eigen::Vector3d interiorEnd = body.getPosition(4);
+  EXPECT_NEAR((interiorEnd - interiorStart).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// Option A: the World VBD path resists surface self-collision. A body's free
+// top triangle falls toward its own pinned bottom triangle; the IPC point-
+// triangle / edge-edge barrier (entered per-vertex during the colored sweeps)
+// keeps the surfaces from interpenetrating.
+TEST(VbdWorldSolver, VbdSelfContactPreventsInterpenetration)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+  world.addDeformableBody("fold", makeSelfFoldingBody());
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 60;
+  enableVbdConfig(world, cfg);
+
+  const auto topMinZ = [&]() {
+    const auto body = world.getDeformableBody("fold");
+    double minimum = 1e9;
+    for (std::size_t i = 3; i < 6; ++i) {
+      minimum = std::min(minimum, body->getPosition(i).z());
+    }
+    return minimum;
+  };
+  ASSERT_GT(topMinZ(), 0.05);
+
+  compute::DeformableDynamicsStage stage;
+  for (int step = 0; step < 500; ++step) {
+    stepOnce(world, stage);
+    const auto body = world.getDeformableBody("fold");
+    ASSERT_TRUE(body.has_value());
+    for (std::size_t i = 0; i < body->getNodeCount(); ++i) {
+      ASSERT_TRUE(body->getPosition(i).allFinite()) << "blew up at " << step;
+    }
+  }
+
+  EXPECT_EQ(stage.getLastStats().vbdBodyCount, 1u);
+  // The top triangle fell toward the bottom ...
+  EXPECT_LT(topMinZ(), 0.10);
+  // ... but self-contact kept it from passing through the bottom surface (z=0).
+  EXPECT_GT(topMinZ(), -0.02);
 }
