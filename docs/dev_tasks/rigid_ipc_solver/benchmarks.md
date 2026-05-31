@@ -140,6 +140,27 @@ starting, active-set reuse) follow from here.
     re-try the LDLT fast path without first confirming the active Hessians are
     usually PSD.
 
+## Open robustness findings (gate the many-body paper scenes)
+
+- **Dense simultaneous-contact scenes do not solve yet (every step is
+  line-search-blocked).** A first attempt at the paper's friction arch (Fig. 11)
+  -- 7 wedge voussoirs + 2 static abutments + ground, all starting within the
+  barrier activation band -- had the projected-Newton solve report `failed` (the
+  conservative line search blocks the candidate step from the dense initial
+  contact set) on EVERY step. Because a failed solve is skipped (the safe,
+  no-penetration path), the arch stayed frozen at its initial pose instead of
+  settling into equilibrium: the keystone "not dropping" was an artifact of
+  nothing being applied, not real equilibrium. The single global
+  projected-Newton solve with one scene-level adaptive kappa does not yet handle
+  many tight simultaneous contacts. This (not just per-step cost) is what gates
+  the multi-body paper scenes -- arch (Fig. 11), 3D packing (Fig. 14), wrecking
+  ball (Fig. 8). Likely levers: per-contact / warm-started active sets, a line
+  search that can find a feasible non-zero step from a dense initial contact set
+  (e.g. a feasible-start projection / initial separation handling), and contact
+  ordering. The experiment was NOT kept as a test -- a passing-but-frozen scene
+  is misleading -- so reproduce it (voussoir wedge meshes via
+  `CollisionShape::makeMesh`) before working the fix.
+
 ## Optimization roadmap (CPU and GPU)
 
 The maintainer directive is to beat the incumbent, the reference, and the paper,
