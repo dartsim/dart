@@ -1,5 +1,32 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: moderate-friction turntable fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added DART-owned coverage for
+  `fixtures/3D/friction/turntable/turntable-mu=0.5.json`: a cube resting on a
+  rotating kinematic cylinder remains intersection-free while `mu=0.5` contact
+  friction carries it tangentially in
+  `RigidIpcPaperExperiments.TurntableModerateFrictionFixtureRowCarriesRider`.
+- Marked that upstream 3D friction fixture row implemented in the generated
+  manifest.
+- Kept `mu=0.0`, `mu=0.1`, and the Fig. 13 paper visual aliases planned until
+  they have matching coefficient-specific evidence and headless visual/example
+  coverage.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TurntableModerateFrictionFixtureRowCarriesRider`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: high-friction turntable fixture row
 
 Delivered a bounded Phase 4/6 friction-manifest slice:

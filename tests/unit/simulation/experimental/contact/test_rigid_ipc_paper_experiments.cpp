@@ -487,6 +487,17 @@ TEST(RigidIpcPaperExperiments, TurntableHighFrictionFixtureRowCarriesRider)
   EXPECT_LE(run.failCount, 3);
 }
 
+TEST(RigidIpcPaperExperiments, TurntableModerateFrictionFixtureRowCarriesRider)
+{
+  const TurntableRun run
+      = runKinematicTurntableRider(/*mu=*/0.5, /*steps=*/120);
+
+  EXPECT_GT(run.minCenterZ, 0.1 - 5e-3);
+  EXPECT_GT(run.maxY, 0.05);
+  EXPECT_GT(run.finalYVelocity, 0.0);
+  EXPECT_LE(run.failCount, 3);
+}
+
 // Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its
 // edge (rotated 45 degrees about x) lands in a degenerate edge-on-face contact.
 // The solver must handle the degenerate configuration robustly: it settles to

@@ -137,6 +137,21 @@ IMPLEMENTED_FRICTION_FIXTURE_ROWS = {
             "have matching coefficient-sweep and headless visual evidence."
         ),
     },
+    "fixtures/3D/friction/turntable/turntable-mu=0.5.json": {
+        "test": "TurntableModerateFrictionFixtureRowCarriesRider",
+        "expected_invariant": (
+            "DART covers the audited 3D moderate-friction turntable row: a "
+            "cube on a rotating kinematic cylinder remains intersection-free "
+            "while mu=0.5 contact friction carries it tangentially."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned Fig. 13 paper experiment coverage for the "
+            "3D moderate-friction turntable fixture mechanism. The mu=0.0 and "
+            "mu=0.1 turntable rows plus paper visual aliases remain planned "
+            "until they have matching coefficient-sweep and headless visual "
+            "evidence."
+        ),
+    },
 }
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {
