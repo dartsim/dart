@@ -3712,6 +3712,111 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseDirectSolve)
 }
 
 //==============================================================================
+// Ground contact adds a stiff barrier block to the projected-Newton Hessian.
+// This compares all three solve paths on the same contacting FEM cube: sparse
+// direct, sparse IC-CG, and matrix-free CG. The matrix-free path must stay on
+// Hessian-vector products (zero sparse footprint) while reaching the same
+// contact equilibrium as the assembled sparse solvers.
+TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseSolversOnGroundContact)
+{
+  enum class SolveMode
+  {
+    Direct,
+    SparseCg,
+    MatrixFreeCg,
+  };
+
+  struct CubeRun
+  {
+    std::vector<Eigen::Vector3d> positions;
+    std::size_t cgSolves = 0;
+    std::size_t matrixFreeSolves = 0;
+    std::size_t numericFactorizations = 0;
+    std::size_t hessianNonZeros = 0;
+    std::size_t hessianStorageBytes = 0;
+    double minZ = std::numeric_limits<double>::infinity();
+  };
+
+  const auto runCube = [](SolveMode mode) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+    ground.setDeformableGroundBarrier(true); // top face at z = 0
+
+    auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.5e5);
+    options.material.useIterativeLinearSolver = mode == SolveMode::SparseCg;
+    options.material.useMatrixFreeLinearSolver
+        = mode == SolveMode::MatrixFreeCg;
+    auto body = world.addDeformableBody("fem_cube", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    CubeRun run;
+    for (int i = 0; i < 200; ++i) {
+      world.step(executor, pipeline);
+      const auto& stats = stage.getLastStats();
+      run.cgSolves += stats.projectedNewtonIterativeSolves;
+      run.matrixFreeSolves += stats.projectedNewtonMatrixFreeSolves;
+      run.numericFactorizations += stats.projectedNewtonNumericFactorizations;
+      run.hessianNonZeros
+          = std::max(run.hessianNonZeros, stats.projectedNewtonHessianNonZeros);
+      run.hessianStorageBytes = std::max(
+          run.hessianStorageBytes, stats.projectedNewtonHessianStorageBytes);
+    }
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      run.positions.push_back(body.getPosition(i));
+      run.minZ = std::min(run.minZ, body.getPosition(i).z());
+    }
+    return run;
+  };
+
+  const CubeRun direct = runCube(SolveMode::Direct);
+  const CubeRun sparseCg = runCube(SolveMode::SparseCg);
+  const CubeRun matrixFree = runCube(SolveMode::MatrixFreeCg);
+
+  EXPECT_EQ(direct.cgSolves, 0u);
+  EXPECT_EQ(direct.matrixFreeSolves, 0u);
+  EXPECT_GT(direct.numericFactorizations, 0u);
+  EXPECT_GT(direct.hessianNonZeros, 0u);
+  EXPECT_GT(direct.hessianStorageBytes, 0u);
+
+  EXPECT_GT(sparseCg.cgSolves, 0u);
+  EXPECT_EQ(sparseCg.matrixFreeSolves, 0u);
+  EXPECT_EQ(sparseCg.numericFactorizations, 0u);
+  EXPECT_GT(sparseCg.hessianNonZeros, 0u);
+  EXPECT_GT(sparseCg.hessianStorageBytes, 0u);
+
+  EXPECT_GT(matrixFree.cgSolves, 0u);
+  EXPECT_EQ(matrixFree.cgSolves, matrixFree.matrixFreeSolves);
+  EXPECT_EQ(matrixFree.numericFactorizations, 0u);
+  EXPECT_EQ(matrixFree.hessianNonZeros, 0u);
+  EXPECT_EQ(matrixFree.hessianStorageBytes, 0u);
+
+  EXPECT_GE(direct.minZ, -1e-3);
+  EXPECT_GE(sparseCg.minZ, -1e-3);
+  EXPECT_GE(matrixFree.minZ, -1e-3);
+
+  ASSERT_EQ(direct.positions.size(), sparseCg.positions.size());
+  ASSERT_EQ(direct.positions.size(), matrixFree.positions.size());
+  for (std::size_t i = 0; i < direct.positions.size(); ++i) {
+    ASSERT_TRUE(sparseCg.positions[i].allFinite());
+    ASSERT_TRUE(matrixFree.positions[i].allFinite());
+    expectVectorNear(sparseCg.positions[i], direct.positions[i], 1e-4);
+    expectVectorNear(matrixFree.positions[i], direct.positions[i], 1e-4);
+  }
+}
+
+//==============================================================================
 // Stiff barrier contact produces an ill-conditioned Hessian; a weak diagonal
 // (Jacobi) CG preconditioner stalls there and forces the iterative solver to
 // fall back to steepest descent. The incomplete-Cholesky preconditioner

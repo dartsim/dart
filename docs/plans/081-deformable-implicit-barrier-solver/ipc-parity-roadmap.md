@@ -267,9 +267,11 @@ The FEM-bar and chunky 3D cube benchmarks report the same `cg_iters_per_step`,
 `useMatrixFreeLinearSolver` path applies local Hessian blocks directly with a
 block-Jacobi preconditioner and reports `projectedNewtonMatrixFreeSolves`.
 Benchmark rows expose `matrix_free_solves_per_step` plus zero sparse-Hessian
-footprint counters. Remaining hardening: larger/contacting meshes, comparison
-against sparse IC-CG, and deciding when matrix-free CG becomes the automatic
-very-large-mesh path.
+footprint counters. It is now covered by ground-contact parity regressions: C++
+compares direct sparse, sparse IC-CG, and matrix-free CG on the same contacting
+FEM cube, while dartpy compares direct and matrix-free contact settling.
+Remaining hardening: larger contact-heavy meshes and deciding when matrix-free
+CG becomes the automatic very-large-mesh path.
 
 Remaining M7 work: AMG / multigrid preconditioning for the largest systems,
 on-device GPU assembly + solve beyond the current PSD offload, the 688K-node

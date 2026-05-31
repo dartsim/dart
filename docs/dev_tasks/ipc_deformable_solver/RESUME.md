@@ -1,6 +1,6 @@
 # Resume: IPC Deformable Solver
 
-## Current State (2026-05-31) — PLAN-081 M1–M6 COMPLETE; M7 CG diagnostics in progress
+## Current State (2026-05-31) — PLAN-081 M1–M6 COMPLETE; M7 matrix-free CG in progress
 
 This session drove the experimental deformable solver from "mass-spring scaffold"
 to broad IPC paper-parity (Li et al. 2020). All work shipped as one-PR-per-slice
@@ -50,12 +50,13 @@ AI attribution). Net status by milestone:
   direct 3D fill-in climbs super-linearly while IC-CG stays ~O(nnz); measured ~5x
   faster CG at ~4k nodes (11.3 vs 2.3 s/step). (4) Public iterative-solve
   diagnostics (#2813) expose whether a step used the CG path. The current
-  branch extends that profiling surface with CG iteration and residual counters
-  so benchmarks can distinguish path selection from solve effort. A CUDA backend
-  exists for PSD projection + VBD (another track, #2781); on-device GPU
-  assembly/solve, a truly matrix-free Hessian-vector CG, an AMG preconditioner
-  for the largest systems, and the 688K-node Fig-22 run + Table-1 reference
-  comparison remain.
+  branch extends that profiling surface with CG iteration/residual counters and
+  an explicit matrix-free CG path with contact parity regressions against the
+  direct sparse solve and sparse IC-CG. A CUDA backend exists for PSD projection
+  and VBD (another track, #2781); automatic matrix-free selection for large
+  meshes, an AMG preconditioner for the largest systems, on-device GPU
+  assembly/solve, and the 688K-node Fig-22 run + Table-1 reference comparison
+  remain.
 
 Session PR train (all merged to `main`): #2787 FEM keystone, #2788 FEM twist,
 #2789 FEM+ground, #2790 sphere barrier Hessian, #2791 box barrier, #2792/#2793
@@ -83,8 +84,10 @@ The remaining M7 work, roughly in increasing-risk order:
 1. **Matrix-free CG hardening.** The explicit
    `useMatrixFreeLinearSolver` path now skips sparse Hessian assembly and reports
    zero sparse-Hessian footprint, but it uses block-Jacobi rather than the sparse
-   incomplete-Cholesky preconditioner. Harden it on larger/contacting meshes,
-   compare it against sparse IC-CG, then decide when it can become the automatic
+   incomplete-Cholesky preconditioner. C++ ground-contact coverage now compares a
+   contacting FEM cube across direct sparse, sparse IC-CG, and matrix-free CG;
+   dartpy coverage compares direct and matrix-free contact settling. Next, harden
+   it on larger contact-heavy meshes and decide when it can become the automatic
    path for very large meshes (Fig 22, 688K nodes).
 2. **AMG / multigrid preconditioner** for the largest systems (beyond what
    incomplete-Cholesky handles).
@@ -284,7 +287,11 @@ The current matrix-free slice adds explicit
 `use_matrix_free_linear_solver`, reports
 `projectedNewtonMatrixFreeSolves` /
 `projected_newton_matrix_free_solves`, and adds benchmark rows with
-`matrix_free_solves_per_step` plus zero sparse-Hessian footprint counters.
+`matrix_free_solves_per_step` plus zero sparse-Hessian footprint counters. It is
+covered on static-ground contact by a C++ FEM cube regression that matches
+direct sparse, sparse IC-CG, and matrix-free CG equilibria while proving the
+matrix-free path keeps zero sparse-Hessian footprint, plus a dartpy single-node
+ground-contact regression that matches the direct solve.
 
 Prior branch `feature/ipc-gpu-psd-perf-gate` - stacked on
 `feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +

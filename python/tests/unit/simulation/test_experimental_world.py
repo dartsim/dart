@@ -2722,6 +2722,64 @@ def test_experimental_world_matrix_free_solver_diagnostic():
     assert max_iterative_error >= 0.0
 
 
+def test_experimental_world_matrix_free_solver_matches_direct_ground_contact():
+    sx = _simulation_experimental()
+
+    def settle(matrix_free: bool):
+        world = sx.World(time_step=0.01)
+        world.gravity = [0.0, 0.0, -0.5]
+        ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+        ground.is_static = True
+        ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
+        ground.is_deformable_ground_barrier = True
+
+        options = sx.DeformableBodyOptions()
+        options.positions = [np.array([0.0, 0.0, 0.015])]
+        options.masses = [40.0]
+        options.material.use_matrix_free_linear_solver = matrix_free
+        body = world.add_deformable_body("node", options)
+
+        total_iterative_solves = 0
+        total_matrix_free_solves = 0
+        max_hessian_nonzeros = 0
+        for _ in range(600):
+            world.step()
+            diagnostics = world.last_deformable_solver_diagnostics
+            total_iterative_solves += (
+                diagnostics.projected_newton_iterative_solves
+            )
+            total_matrix_free_solves += (
+                diagnostics.projected_newton_matrix_free_solves
+            )
+            max_hessian_nonzeros = max(
+                max_hessian_nonzeros,
+                diagnostics.projected_newton_hessian_nonzeros,
+            )
+        return (
+            float(body.node_position(0)[2]),
+            total_iterative_solves,
+            total_matrix_free_solves,
+            max_hessian_nonzeros,
+        )
+
+    direct_z, direct_solves, direct_matrix_free, direct_hessian_nonzeros = (
+        settle(False)
+    )
+    matrix_z, matrix_solves, matrix_free_solves, matrix_hessian_nonzeros = (
+        settle(True)
+    )
+
+    assert direct_solves == 0
+    assert direct_matrix_free == 0
+    assert direct_hessian_nonzeros > 0
+
+    assert matrix_solves > 0
+    assert matrix_solves == matrix_free_solves
+    assert matrix_hessian_nonzeros == 0
+    assert 0.0 < matrix_z < 2e-2
+    assert matrix_z == pytest.approx(direct_z, abs=1e-9)
+
+
 def test_experimental_deformable_body_boundary_conditions_python_api():
     sx = _simulation_experimental()
     world = sx.World(time_step=0.1)

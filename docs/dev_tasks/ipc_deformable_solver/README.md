@@ -197,8 +197,9 @@
         Hessian, and codimensional obstacles are later increments.
   - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
         host<->device copies remain; keeping the assembly/solve on-device is a
-        follow-up), matrix-free CG for very large meshes, adaptive barrier
-        stiffness, barrier forces for rigid BOX and codimensional obstacles (the
+        follow-up), automatic large-mesh selection for the explicit matrix-free
+        CG path, adaptive barrier stiffness, barrier forces for rigid BOX and
+        codimensional obstacles (the
         sphere obstacle barrier is covered) plus their projected-Newton Hessian,
         and complementarity/solver-stat diagnostics. Known approximation: the
         contact active set is rebuilt once per outer iteration and held fixed
@@ -342,8 +343,10 @@ DART-owned implementation.
 2. Continue the matrix-free CG slice: the explicit
    `useMatrixFreeLinearSolver` path now bypasses triplets -> `SparseMatrix`
    assembly with local Hessian-vector products and block-Jacobi preconditioning.
-   Next, harden it on larger/contacting meshes, compare against sparse IC-CG,
-   and decide when it can become the automatic path for Fig. 22-scale meshes.
+   It is now covered on ground contact by C++ direct/sparse-IC-CG/matrix-free
+   parity and dartpy direct/matrix-free regressions. Next, harden it on larger
+   contact-heavy meshes and decide when it can become the automatic path for
+   Fig. 22-scale meshes.
 3. Follow-on performance slices: AMG / multigrid preconditioning for the
    largest systems, on-device GPU assembly + solve beyond the existing PSD
    projection backend, and the Fig. 22 / Table 1 reference-comparison runs.
