@@ -149,6 +149,11 @@ its own line so status updates remain git-history friendly.
   mesh/material state, scene loading, BE/Newmark integration, PT/EE distance
   derivatives, conservative CCD line search, projected Newton, friction,
   diagnostics, and the complete upstream example/test/benchmark/visual corpus.
+  Track Shortest Path to Boundary as a separate self-intersection recovery
+  sidecar in
+  [`081-deformable-implicit-barrier-solver/spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md):
+  first source/code audit, then a standalone tetrahedral query and DCD recovery
+  spike before any solver or public API claim.
 - Gate: Full IPC-parity progress is not complete until the implementation
   distinguishes the first point-mass/static-ground slice from full IPC, keeps
   IPC naming backend-neutral, proves mesh contact, barrier, distance, CCD,
@@ -157,7 +162,11 @@ its own line so status updates remain git-history friendly.
   records benchmark/profiling JSON for kernels/solver/scenes/scaling, verifies
   long-horizon headless Filament captures for GUI examples, and keeps
   `pixi run lint`, `pixi run build`, focused C++ tests, and
-  `check-api-boundaries` green.
+  `check-api-boundaries` green. SPB additionally needs the sidecar source/code
+  matrix, tetrahedral traversal and feasible-region tests, vertex-tet and
+  edge-tet DCD candidate tests, pre-intersected recovery evidence, limitation
+  coverage, CCD/DCD comparison packets, and no public SPB/reference-project,
+  Embree, MeshFrame2, CuMatrix, solver, ECS, or backend-type leak.
 
 ### PLAN-082: Rigid Implicit-Barrier Contact Solver
 
@@ -217,9 +226,12 @@ its own line so status updates remain git-history friendly.
   adding the TinyVBD tilted-strand plus contact showcase py-demos; it also
   retires the temporary `docs/dev_tasks/vbd_deformable_solver/` tracker by
   promoting the gap audit into this plan. Remaining work, in order:
-  self-contact tangential friction, committed benchmark/profiling JSON for the
-  new scenes, paper tetrahedral scene reproduction, Phase 8b SoA + Gaia-CPU
-  comparison, and Phase 9 RTX-4090 same-GPU Table 1 reproduction.
+  self-contact tangential friction, OGC source/code audit and CPU
+  proof-of-contact from
+  [`104-vertex-block-descent-solver/ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md),
+  committed benchmark/profiling JSON for the new scenes, paper tetrahedral scene
+  reproduction, Phase 8b SoA + Gaia-CPU comparison, and Phase 9 RTX-4090
+  same-GPU Table 1 reproduction.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
@@ -229,7 +241,11 @@ its own line so status updates remain git-history friendly.
   JSON that beats the reference and/or paper numbers before any parity claim,
   verifies headless Filament captures for GUI examples, and keeps
   `pixi run lint`, `pixi run build`, focused C++ tests, and
-  `check-api-boundaries` green.
+  `check-api-boundaries` green. OGC additionally needs the sidecar source/code
+  matrix, vertex-facet and edge-edge contact tests, conservative-bound and
+  truncation tests, force/Hessian finite-difference evidence, limitation
+  coverage, IPC/VBD comparison packets, and no public OGC/Gaia/Newton/Warp or
+  backend-type leak.
 
 ### PLAN-082: Linear-Time Variational Integrator
 

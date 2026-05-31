@@ -194,6 +194,7 @@ Springer, 2006.
 | `gjk-1988`                         | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
 | `ipc-2020`                         | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
 | `rigid-ipc-2021`                   | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
+| `chen-2023-spb`                    | Chen, Diaz & Yuksel, "Shortest Path to Boundary for Self-Intersecting Meshes" (2023)                                       | contact/collision                  | planned     | high     | evaluate  |
 | `werling-2021`                     | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
 | `howell-2022-dojo`                 | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
 | `lee-vi-2016`                      | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
@@ -206,7 +207,7 @@ Springer, 2006.
 | `vouga-2017-all-well`              | Vouga et al., "All's Well That Ends Well: Guaranteed Resolution of Simultaneous Rigid Body Impact" (2017)                  | contact/impact                     | referenced  | medium   | evaluate  |
 | `halm-posa-2024-set-valued-impact` | Halm & Posa, "Set-valued rigid-body dynamics for simultaneous, inelastic, frictional impacts" (2024)                       | contact/impact                     | referenced  | medium   | evaluate  |
 | `lelidec-2024-contact-models`      | Le Lidec et al., "Contact Models in Robotics: a Comparative Analysis" (2024)                                               | contact/survey                     | referenced  | medium   | reference |
-| `ogc-2025`                         | Chen et al., "Offset Geometric Contact" (2025)                                                                             | contact/collision                  | referenced  | medium   | evaluate  |
+| `ogc-2025`                         | Chen et al., "Offset Geometric Contact" (2025)                                                                             | contact/collision                  | planned     | high     | evaluate  |
 | `nakamura-1987-task-priority`      | Nakamura, Hanafusa & Yoshikawa, "Task-Priority Based Redundancy Control of Robot Manipulators" (1987)                      | kinematics                         | planned     | medium   | adopt     |
 | `buss-kim-2005-sdls`               | Buss & Kim, "Selectively Damped Least Squares for Inverse Kinematics" (2005)                                               | kinematics                         | planned     | medium   | evaluate  |
 | `aristidou-lasenby-2011-fabrik`    | Aristidou & Lasenby, "FABRIK: A fast, iterative solver for the Inverse Kinematics problem" (2011)                          | kinematics                         | planned     | medium   | evaluate  |
@@ -729,6 +730,34 @@ Related public resources:
   physical/computational criteria. Use it to keep the PLAN-082 comparison matrix
   honest, not as a direct implementation target.
 
+### `chen-2023-spb`
+
+He Chen, Elie Diaz, and Cem Yuksel. "Shortest Path to Boundary for
+Self-Intersecting Meshes." _ACM Transactions on Graphics_, 42(4), 2023. DOI:
+[10.1145/3592136](https://doi.org/10.1145/3592136).
+
+Related public resources:
+
+- Project page:
+  [graphics.cs.utah.edu/research/projects/shortest-path-to-boundary](https://graphics.cs.utah.edu/research/projects/shortest-path-to-boundary/)
+- arXiv: [2305.09778](https://arxiv.org/abs/2305.09778)
+- Supplemental:
+  [sig23_shortest_path-supplemental.pdf](https://graphics.cs.utah.edu/research/projects/shortest-path-to-boundary/sig23_shortest_path-supplemental.pdf)
+- Code:
+  [AnkaChan/Shortest-Path-to-Boundary-for-Self-Intersecting-Meshes](https://github.com/AnkaChan/Shortest-Path-to-Boundary-for-Self-Intersecting-Meshes)
+- Paper video:
+  [youtube.com/watch?v=qRBHY9ntwbU](https://www.youtube.com/watch?v=qRBHY9ntwbU)
+
+- **Type:** paper · **Topic:** contact/collision · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-081 SPB gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/081-deformable-implicit-barrier-solver/spb-gap-audit.md).
+- **Notes:** Volumetric self-intersection recovery method for tetrahedral
+  deformables: DCD finds preexisting intersections, SPB finds a valid shortest
+  path from an internal point to the boundary, and CCD remains necessary for new
+  crossings. It is not a codimensional cloth/strand method and should remain an
+  internal recovery sidecar until DART has query tests, recovery constraints,
+  hybrid CCD/DCD evidence, benchmark packets, and visual captures.
+
 ### `ogc-2025`
 
 Anka He Chen, Jerry Hsu, Ziheng Liu, Miles Macklin, Yin Yang, and Cem Yuksel.
@@ -740,16 +769,23 @@ Related public resources:
   [graphics.cs.utah.edu/research/projects/ogc](https://graphics.cs.utah.edu/research/projects/ogc/)
 - Paper PDF:
   [Offset_Geometric_Contact-SIGGRAPH2025.pdf](https://graphics.cs.utah.edu/research/projects/ogc/Offset_Geometric_Contact-SIGGRAPH2025.pdf)
+- Code (Gaia):
+  [github.com/AnkaChan/Gaia](https://github.com/AnkaChan/Gaia)
+- Code (Newton):
+  [newton/\_src/solvers/vbd](https://github.com/newton-physics/newton/tree/main/newton/_src/solvers/vbd)
+- Paper video:
+  [youtube.com/watch?v=xxyniqSLJik](https://www.youtube.com/watch?v=xxyniqSLJik)
 
-- **Type:** paper · **Topic:** contact/collision · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Type:** paper · **Topic:** contact/collision · **Status:** planned · **Priority:** high · **Verdict:** evaluate
 - **Where used:**
+  [`PLAN-104 OGC gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/ogc-gap-audit.md),
   [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
 - **Notes:** Newer finite-time contact alternative for codimensional objects:
   offset geometry, local displacement bounds, and GPU-friendly local operations
   that avoid expensive CCD in its target setting. It is not a rigid-impact
-  operator, but it is relevant when deciding whether IPC-style barriers or AVBD
-  already supersede older simultaneous-contact goals for deformable and
-  codimensional scenes.
+  operator. Its implementation path is now tracked under PLAN-104 as a VBD
+  contact sidecar with required source/code audit, CPU proof-of-contact,
+  IPC/VBD comparison packets, and public-boundary review before promotion.
 
 ### `nakamura-1987-task-priority`
 
