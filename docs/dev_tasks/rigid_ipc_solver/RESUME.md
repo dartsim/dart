@@ -1,5 +1,29 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: rotating-cube fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned coverage for
+  `fixtures/3D/unit-tests/rotation/rotating-cube.json`: a free cube with zero
+  gravity and angular velocity advances orientation through the opt-in rigid IPC
+  runtime stage, stays finite, and does not translate in
+  `RigidIpcPaperExperiments.RotatingCubeFixtureRowAdvancesWithoutContact`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RotatingCubeFixtureRowAdvancesWithoutContact`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: high-speed tunneling fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

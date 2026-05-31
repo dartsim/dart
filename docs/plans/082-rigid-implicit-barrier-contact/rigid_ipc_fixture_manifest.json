@@ -8361,16 +8361,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D rotating-cube row: a free cube with zero gravity and angular velocity advances without contact, stays finite, and does not translate.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::rotating_cube",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.RotatingCubeFixtureRowAdvancesWithoutContact",
       "required_assets_or_importer": [
         "meshes/cube.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::rotating_cube",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RotatingCubeFixtureRowAdvancesWithoutContact'",
+      "notes_or_gap": "Covered by DART-owned no-contact rotating-cube runtime coverage for the 3D unit-test fixture mechanism. Other rotation fixture rows remain planned until they have matching DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/rotation/rotating-ellipsoid-intermediate.json",

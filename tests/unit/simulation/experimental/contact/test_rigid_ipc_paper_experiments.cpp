@@ -564,6 +564,36 @@ TEST(RigidIpcPaperExperiments, HighSpeedCubeDoesNotTunnelThroughWall)
   EXPECT_GT(ipcStage.getLastStats().lineSearchHits, 0u);
 }
 
+TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d::Zero();
+  cubeOptions.angularVelocity = Eigen::Vector3d(0.1, 180.0, 0.0);
+  auto cube = world.addRigidBody("rotating_cube", cubeOptions);
+  cube.setCollisionShape(sx::CollisionShape::makeBox({0.5, 0.5, 0.5}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const Eigen::Matrix3d startRotation = cube.getRotation();
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_NEAR(cube.getTranslation().norm(), 0.0, 1e-12);
+  EXPECT_TRUE(cube.getRotation().allFinite());
+  EXPECT_TRUE(cube.getAngularVelocity().allFinite());
+  EXPECT_GT((cube.getRotation() - startRotation).norm(), 1e-3);
+}
+
 // Figs. 16/17 (unit tests / Erleben degenerate cases): a box dropped onto its
 // edge (rotated 45 degrees about x) lands in a degenerate edge-on-face contact.
 // The solver must handle the degenerate configuration robustly: it settles to

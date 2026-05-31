@@ -179,6 +179,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/rotation/rotating-cube.json": {
+        "test": "RotatingCubeFixtureRowAdvancesWithoutContact",
+        "expected_invariant": (
+            "DART covers the audited 3D rotating-cube row: a free cube with "
+            "zero gravity and angular velocity advances without contact, stays "
+            "finite, and does not translate."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned no-contact rotating-cube runtime coverage "
+            "for the 3D unit-test fixture mechanism. Other rotation fixture "
+            "rows remain planned until they have matching DART runtime "
+            "evidence."
+        ),
+    },
 }
 IMPLEMENTED_TEST_SOURCE_ROWS = {
     "tests/barrier/test_barriers.cpp": {

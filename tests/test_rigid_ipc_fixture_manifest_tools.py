@@ -342,6 +342,26 @@ def test_rigid_ipc_manifest_marks_tunneling_unit_row_implemented(tmp_path):
     assert "3D unit-test fixture mechanism" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_rotating_cube_unit_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path / "fixtures" / "3D" / "unit-tests" / "rotation" / "rotating-cube.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/unit-tests/rotation/rotating-cube.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "RotatingCubeFixtureRowAdvancesWithoutContact" in row["dart_artifact"]
+    assert "does not translate" in row["expected_invariant"]
+    assert "rotating-cube runtime coverage" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_below_threshold_paper_alias_implemented(
     tmp_path,
 ):
