@@ -684,7 +684,14 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       inputSource.find("io.SetKeyEventNativeData(imguiKey, key"),
       std::string::npos);
   EXPECT_NE(
+      inputSource.find("glfwGetKeyName(key, scancode)"), std::string::npos);
+  EXPECT_NE(
+      inputSource.find("imguiKeyForGlfwKey(key, scancode)"), std::string::npos);
+  EXPECT_NE(
       inputSource.find("ImGui::GetIO().WantCaptureKeyboard"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("isEscapePressed && !state.wasEscapePressed"),
       std::string::npos);
   EXPECT_NE(
       inputSource.find("!uiCapturesKeyboard && isSpacePressed"),

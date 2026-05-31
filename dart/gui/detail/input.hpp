@@ -50,6 +50,7 @@ class SelectionController;
 
 struct ApplicationInputState
 {
+  bool wasEscapePressed = false;
   bool wasSpacePressed = false;
   bool wasStepPressed = false;
   bool wasPerfHudKeyPressed = false;

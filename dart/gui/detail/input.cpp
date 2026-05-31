@@ -166,8 +166,81 @@ void updateImGuiKeyModifiers(GLFWwindow* window, ImGuiIO& io)
           || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS);
 }
 
-ImGuiKey imguiKeyForGlfwKey(int key)
+ImGuiKey imguiKeyForPrintableCharacter(char character)
 {
+  const unsigned char unsignedCharacter = static_cast<unsigned char>(character);
+  const int lowerCharacter = std::tolower(unsignedCharacter);
+  if (lowerCharacter >= 'a' && lowerCharacter <= 'z') {
+    return static_cast<ImGuiKey>(
+        ImGuiKey_A + (lowerCharacter - static_cast<int>('a')));
+  }
+
+  if (unsignedCharacter >= static_cast<unsigned char>('0')
+      && unsignedCharacter <= static_cast<unsigned char>('9')) {
+    return static_cast<ImGuiKey>(
+        ImGuiKey_0 + (unsignedCharacter - static_cast<unsigned char>('0')));
+  }
+
+  switch (character) {
+    case ' ':
+      return ImGuiKey_Space;
+    case '\'':
+      return ImGuiKey_Apostrophe;
+    case ',':
+      return ImGuiKey_Comma;
+    case '-':
+      return ImGuiKey_Minus;
+    case '.':
+      return ImGuiKey_Period;
+    case '/':
+      return ImGuiKey_Slash;
+    case ';':
+      return ImGuiKey_Semicolon;
+    case '=':
+      return ImGuiKey_Equal;
+    case '[':
+      return ImGuiKey_LeftBracket;
+    case '\\':
+      return ImGuiKey_Backslash;
+    case ']':
+      return ImGuiKey_RightBracket;
+    case '`':
+      return ImGuiKey_GraveAccent;
+    default:
+      return ImGuiKey_None;
+  }
+}
+
+bool isLayoutTranslatedGlfwKey(int key)
+{
+  return key == GLFW_KEY_SPACE
+         || (key >= GLFW_KEY_APOSTROPHE && key <= GLFW_KEY_GRAVE_ACCENT)
+         || key == GLFW_KEY_WORLD_1 || key == GLFW_KEY_WORLD_2;
+}
+
+ImGuiKey imguiKeyForTranslatedPrintableGlfwKey(int key, int scancode)
+{
+  if (!isLayoutTranslatedGlfwKey(key)) {
+    return ImGuiKey_None;
+  }
+
+  // GLFW key tokens are US-position codes; key names follow the active layout.
+  const char* keyName = glfwGetKeyName(key, scancode);
+  if (keyName == nullptr || keyName[0] == '\0' || keyName[1] != '\0') {
+    return ImGuiKey_None;
+  }
+
+  return imguiKeyForPrintableCharacter(keyName[0]);
+}
+
+ImGuiKey imguiKeyForGlfwKey(int key, int scancode)
+{
+  const ImGuiKey translatedKey
+      = imguiKeyForTranslatedPrintableGlfwKey(key, scancode);
+  if (translatedKey != ImGuiKey_None) {
+    return translatedKey;
+  }
+
   switch (key) {
     case GLFW_KEY_TAB:
       return ImGuiKey_Tab;
@@ -315,7 +388,7 @@ void handleKey(
   ImGuiIO& io = ImGui::GetIO();
   updateImGuiKeyModifiers(window, io);
 
-  const ImGuiKey imguiKey = imguiKeyForGlfwKey(key);
+  const ImGuiKey imguiKey = imguiKeyForGlfwKey(key, scancode);
   if (imguiKey == ImGuiKey_None) {
     return;
   }
@@ -564,10 +637,12 @@ void pollApplicationInput(
   glfwPollEvents();
   const bool uiCapturesKeyboard = ImGui::GetCurrentContext() != nullptr
                                   && ImGui::GetIO().WantCaptureKeyboard;
-  if (!uiCapturesKeyboard
-      && glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+  const bool isEscapePressed
+      = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+  if (!uiCapturesKeyboard && isEscapePressed && !state.wasEscapePressed) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
+  state.wasEscapePressed = isEscapePressed;
 
   const bool isSpacePressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
   if (!uiCapturesKeyboard && isSpacePressed && !state.wasSpacePressed) {
