@@ -2592,6 +2592,9 @@ def test_experimental_world_exposes_deformable_solver_diagnostics():
     assert after.solver_iterations >= 1
     assert after.objective_evaluations >= 1
     assert after.projected_newton_steps + after.projected_newton_fallbacks >= 1
+    # This body uses the default direct (sparse Cholesky) solve, so the iterative
+    # (conjugate-gradient) path is never taken.
+    assert after.projected_newton_iterative_solves == 0
     # No contacts in this free-hanging single tet.
     assert after.self_contact_barrier_active_contacts == 0
     assert after.converged_active_contact_count == 0
@@ -2599,6 +2602,38 @@ def test_experimental_world_exposes_deformable_solver_diagnostics():
     # The snapshot is read-only.
     with pytest.raises((AttributeError, TypeError)):
         after.node_count = 99
+
+
+def test_experimental_world_iterative_solver_diagnostic():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+    world.gravity = [0.0, 0.0, -9.81]
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.material.youngs_modulus = 1.0e4
+    options.material.use_finite_element_elasticity = True
+    # Opt in to the iterative (incomplete-Cholesky-preconditioned CG) linear
+    # solve instead of the sparse Cholesky factorization.
+    options.material.use_iterative_linear_solver = True
+    options.fixed_nodes = [0]
+    world.add_deformable_body("tet", options)
+
+    # The iterative-solve count surfaces through the public diagnostics, so a
+    # caller can observe which linear-solve path the projected-Newton step took.
+    total_iterative_solves = 0
+    for _ in range(8):
+        world.step()
+        total_iterative_solves += (
+            world.last_deformable_solver_diagnostics.projected_newton_iterative_solves
+        )
+    assert total_iterative_solves > 0
 
 
 def test_experimental_deformable_body_boundary_conditions_python_api():
