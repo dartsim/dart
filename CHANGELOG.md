@@ -2,12 +2,13 @@
 
 ## DART 6
 
-### [DART 6.16.8 (TBD)](https://github.com/dartsim/dart/milestone/93?closed=1)
+### [DART 6.16.8 (2026-05-31)](https://github.com/dartsim/dart/milestone/93?closed=1)
 
 * GUI
 
   * Fix SEGV in ImFontAtlas::AddFontFromMemoryCompressedTTF when null pointer is passed as compressed font data: [#2516](https://github.com/dartsim/dart/issues/2516)
   * Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window: [#2668](https://github.com/dartsim/dart/issues/2668)
+  * Use modern ImGui modifier key names in the OSG ImGui handler for newer ImGui builds. ([#2526](https://github.com/dartsim/dart/pull/2526))
 
 * Constraint
 
@@ -38,6 +39,8 @@
 * Tooling and Docs
 
   * Improve FreeBSD VM CI startup resilience with a release image URL, fallback image downloads, a longer SSH readiness window, fresh VM container startup, KVM group propagation, retry handling, and startup diagnostics. ([#2532](https://github.com/dartsim/dart/pull/2532))
+  * Remove duplicate `.gitignore` entries. ([#2735](https://github.com/dartsim/dart/pull/2735))
+  * Update Pixi lockfiles for current conda-forge package builds. ([#2766](https://github.com/dartsim/dart/pull/2766), [#2780](https://github.com/dartsim/dart/pull/2780))
 
 ### [DART 6.16.7 (2026-02-10)](https://github.com/dartsim/dart/milestone/92?closed=1)
 
