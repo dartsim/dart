@@ -628,11 +628,16 @@ bool SelectionController::beginForceDrag(
                             ? descriptor.bodyName
                             : descriptor.shapeFrameName;
   drag.bodyNode = bodyNode;
-  // Record the grab offset in the body's local frame so the application point
-  // tracks the body as it rotates, yielding torque for off-center grabs.
-  const Eigen::Isometry3d& bodyTransform = descriptor.worldTransform;
-  drag.savedLocalOffset = bodyTransform.linear().transpose()
-                          * (hitPointWorld - bodyTransform.translation());
+  // Record the grab offset in the owner body's local frame so the application
+  // point tracks the body as it rotates, yielding torque for off-center grabs.
+  // Shape-node descriptors may be offset from the body origin, so legacy
+  // BodyNode renderables must use the BodyNode transform instead of the
+  // descriptor's shape-frame transform.
+  const Eigen::Isometry3d ownerTransform = bodyNode != nullptr
+                                               ? bodyNode->getWorldTransform()
+                                               : descriptor.worldTransform;
+  drag.savedLocalOffset = ownerTransform.linear().transpose()
+                          * (hitPointWorld - ownerTransform.translation());
   drag.rayDepth = unitDirection.dot(hitPointWorld - cursorRay.origin);
 
   mActiveForceDrag = std::move(drag);

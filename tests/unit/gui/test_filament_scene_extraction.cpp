@@ -44,6 +44,10 @@
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
 
+#define private public
+#include <dart/gui/detail/selection.hpp>
+#undef private
+
 #include <dart/simulation/world.hpp>
 
 #include <dart/collision/collision_group.hpp>
@@ -948,6 +952,109 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
           "      updateForceDrag(scene, descriptors, ray);\n"
           "      lifecycle.paused = true;"),
       std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, ForceDragRoutesExternalRenderablesThroughCallback)
+{
+  dart::gui::detail::SelectionController selection;
+  dart::gui::detail::DartScene scene;
+  std::vector<dart::gui::ForceDragEvent> events;
+  scene.onForceDrag = [&](const dart::gui::ForceDragEvent& event) {
+    events.push_back(event);
+  };
+
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.id = 42;
+  descriptor.shapeFrameName = "sx_box";
+  descriptor.worldTransform = Eigen::Isometry3d::Identity();
+  descriptor.worldTransform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  dart::gui::PickRay pressRay;
+  pressRay.origin = Eigen::Vector3d(1.0, 2.0, 1.0);
+  pressRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+
+  dart::gui::ViewerLifecycleState lifecycle;
+  lifecycle.paused = false;
+  ASSERT_TRUE(selection.beginForceDrag(
+      scene,
+      descriptor,
+      pressRay,
+      descriptor.worldTransform.translation(),
+      lifecycle));
+  EXPECT_FALSE(lifecycle.paused);
+
+  std::vector<dart::gui::RenderableDescriptor> descriptors{descriptor};
+  dart::gui::PickRay dragRay;
+  dragRay.origin = Eigen::Vector3d(2.0, 2.0, 1.0);
+  dragRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+  selection.updateForceDrag(scene, descriptors, dragRay);
+
+  ASSERT_EQ(events.size(), 1u);
+  EXPECT_EQ(events.front().renderableId, descriptor.id);
+  EXPECT_EQ(events.front().renderableName, "sx_box");
+  EXPECT_TRUE(events.front().active);
+  EXPECT_TRUE(events.front().applicationPoint.isApprox(
+      descriptor.worldTransform.translation()));
+  EXPECT_TRUE(events.front().force.isApprox(Eigen::Vector3d(60.0, 0.0, 0.0)));
+
+  selection.endForceDrag(scene);
+  ASSERT_EQ(events.size(), 2u);
+  EXPECT_EQ(events.back().renderableId, descriptor.id);
+  EXPECT_EQ(events.back().renderableName, "sx_box");
+  EXPECT_FALSE(events.back().active);
+}
+
+TEST(FilamentSceneExtraction, ForceDragAppliesBodyNodeForceAtPickedShapePoint)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  auto* shapeNode
+      = body->createShapeNodeWith<VisualAspect>(shape, "offset_box_visual");
+
+  Eigen::Isometry3d shapeTransform = Eigen::Isometry3d::Identity();
+  shapeTransform.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
+  shapeNode->setRelativeTransform(shapeTransform);
+
+  world->addSkeleton(skeleton);
+  std::vector<dart::gui::RenderableDescriptor> descriptors
+      = dart::gui::extractRenderables(*world);
+  ASSERT_EQ(descriptors.size(), 1u);
+
+  dart::gui::detail::SelectionController selection;
+  dart::gui::detail::DartScene scene;
+  scene.world = world;
+  scene.onForceDrag = [](const dart::gui::ForceDragEvent&) {
+    ADD_FAILURE() << "BodyNode-backed force drag should not call onForceDrag";
+  };
+
+  dart::gui::PickRay pressRay;
+  pressRay.origin = Eigen::Vector3d(0.0, 0.5, -2.0);
+  pressRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+  const Eigen::Vector3d pickedPoint
+      = descriptors.front().worldTransform.translation();
+
+  dart::gui::ViewerLifecycleState lifecycle;
+  lifecycle.paused = false;
+  ASSERT_TRUE(selection.beginForceDrag(
+      scene, descriptors.front(), pressRay, pickedPoint, lifecycle));
+  EXPECT_FALSE(lifecycle.paused);
+
+  body->clearExternalForces();
+
+  dart::gui::PickRay dragRay;
+  dragRay.origin = Eigen::Vector3d(1.0, 0.5, -2.0);
+  dragRay.direction = Eigen::Vector3d(0.0, 0.0, 1.0);
+  selection.updateForceDrag(scene, descriptors, dragRay);
+
+  const Eigen::Vector6d externalForce = body->getExternalForceLocal();
+  EXPECT_NEAR(externalForce[0], 0.0, 1e-10);
+  EXPECT_NEAR(externalForce[1], 0.0, 1e-10);
+  EXPECT_NEAR(externalForce[2], -30.0, 1e-10);
+  EXPECT_NEAR(externalForce[3], 60.0, 1e-10);
+  EXPECT_NEAR(externalForce[4], 0.0, 1e-10);
+  EXPECT_NEAR(externalForce[5], 0.0, 1e-10);
 }
 
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)

@@ -55,6 +55,12 @@
   the sx step.
 - C++ force-drag no longer pauses the simulation loop, so Python one-shot force
   handlers can actually be consumed on the next step.
+- C++ force-drag now records BodyNode-backed grab offsets in the BodyNode frame
+  rather than the shape-frame descriptor, so offset visuals receive the mouse
+  spring at the picked point and produce the expected torque.
+- `UNIT_gui_FilamentSceneExtraction` now has direct controller coverage for
+  external SimpleFrame-style force-drag callback routing and BodyNode
+  shape-offset application points.
 - `diff_drone_liftoff` now has a replay/optimization panel with target height,
   current frame height, playback stride, reset replay, analytic-vs-aware
   optimization summaries, and the aware height plot.
@@ -203,6 +209,7 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run pytest pytho
 pixi run build-py-dev-docking
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_gui_FilamentSceneExtraction$'
+pixi run test-unit gui
 pixi run lint
 ```
 
@@ -211,7 +218,7 @@ pixi run lint
 1. Add custom panels to additional high-value IPC deformable scenes beyond the
    current FEM, friction, capsule-rod, trampoline, drape, net, and CG showcase
    set.
-2. Add direct viewer-input coverage for mouse force-drag once tests can inject
+2. Add full viewer-input coverage for mouse force-drag once tests can inject
    pointer drags into the Filament viewer loop.
 3. Add recorded-frame playback only after the recording/playback data contract
    exists.

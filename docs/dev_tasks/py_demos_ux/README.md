@@ -60,6 +60,10 @@ navigation, and a path for scene-specific controls.
 - Add CG-solver diagnostics panels to `ipc_deformable_cg_solver` and
   `ipc_deformable_cg_contact`, exposing cantilever tip drop, FEM-cube ground
   clearance, solver path labels, and shared IPC deformable diagnostics.
+- Fix legacy BodyNode force-drag to apply the mouse spring at the picked shape
+  point instead of the body origin when a visual shape has a local offset, and
+  add direct controller regression coverage for both BodyNode and external
+  SimpleFrame-style force-drag paths.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
   current filtered/total scene count.
@@ -69,8 +73,8 @@ navigation, and a path for scene-specific controls.
 - Add per-example controls for more high-value differentiable and IPC
   deformable scenes beyond the first drone/FEM/friction showcase slice.
 - Add a recorded-frame playback surface once demos have a recording contract.
-- Add direct pointer/input-driven force-drag interaction coverage if the viewer
-  test harness grows mouse-event injection.
+- Add full viewer mouse-event injection coverage for force-drag if the Filament
+  test harness grows synthetic pointer input.
 - Decide whether dock layout persistence is needed after the default layout
   settles.
 
