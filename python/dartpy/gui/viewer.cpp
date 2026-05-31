@@ -153,10 +153,11 @@ void defGuiViewer(nb::module_& m)
                   "py-demos factory error for scene '%s': %s\n",
                   scene_id.c_str(),
                   e.what());
+              throw;
             }
-            // Always hand the viewer a valid (possibly empty) world so
-            // downstream null-pointer checks don't crash the host. The
-            // sidebar still lets the user pick another scene.
+            // If the factory returns None/null without throwing, still hand
+            // the viewer a valid world so downstream null-pointer checks do
+            // not crash the host.
             if (options.world == nullptr) {
               options.world
                   = dart::simulation::World::create(scene_id + "_placeholder");

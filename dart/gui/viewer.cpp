@@ -226,6 +226,9 @@ void requestSceneSwitch(ViewerLifecycleState& state, std::string sceneId)
 {
   state.requestedScene = std::move(sceneId);
   state.sceneSwitchRequested = true;
+  state.sceneActivationPendingScene = state.requestedScene;
+  state.sceneActivationStatus
+      = "Starting demo '" + state.requestedScene + "'...";
 }
 
 void requestSceneReplay(ViewerLifecycleState& state, std::string sceneId)

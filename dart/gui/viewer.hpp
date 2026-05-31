@@ -99,6 +99,10 @@ struct ViewerLifecycleState
   /// scene to `requestedScene` without recreating the window.
   bool sceneSwitchRequested = false;
   std::string requestedScene;
+  /// Human-readable status for the demos host while a scene switch is pending
+  /// or after a candidate scene fails and the host restores the previous one.
+  std::string sceneActivationStatus;
+  std::string sceneActivationPendingScene;
 };
 
 struct OrbitCamera

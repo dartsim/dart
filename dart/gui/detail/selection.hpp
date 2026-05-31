@@ -33,6 +33,7 @@
 #ifndef DART_GUI_DETAIL_SELECTION_HPP_
 #define DART_GUI_DETAIL_SELECTION_HPP_
 
+#include <dart/gui/debug.hpp>
 #include <dart/gui/fwd.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/renderable.hpp>
@@ -80,6 +81,8 @@ public:
   const std::optional<Eigen::Vector3d>& selectedNormal() const;
   std::optional<dart::gui::GizmoHandleHit> highlightedGizmoHandle() const;
   dart::gui::RenderableId selectionDebugRenderableId() const;
+  std::vector<dart::gui::DebugLineDescriptor> forceDragDebugLines() const;
+  std::string interactionStatus() const;
   bool isDraggingSelection() const;
 
   void select(dart::gui::RenderableId renderableId, std::string label);
@@ -141,6 +144,10 @@ private:
     dart::dynamics::BodyNode* bodyNode = nullptr;
     Eigen::Vector3d savedLocalOffset = Eigen::Vector3d::Zero();
     double rayDepth = 0.0;
+    Eigen::Vector3d applicationPoint = Eigen::Vector3d::Zero();
+    Eigen::Vector3d targetPoint = Eigen::Vector3d::Zero();
+    Eigen::Vector3d force = Eigen::Vector3d::Zero();
+    bool hasUpdate = false;
   };
 
   bool beginBodyNodeDrag(

@@ -46,6 +46,10 @@ navigation, and a path for scene-specific controls.
   during factory startup, cannot create render state, fails its first frame, or
   returns after the startup budget, restore the previous active demo instead of
   leaving the workspace stuck on the broken target.
+- Surface demo activation state in the docked UI: rows mark a requested demo as
+  starting, the Simulation/Demos panels show startup or fallback status, and
+  Python factory exceptions now reach the C++ transactional restore path instead
+  of silently becoming placeholder scenes.
 - Accept hyphenated scene aliases such as `sx-rigid-ipc-slide` in the Python
   runner validation path.
 - Add scene panels to `diff_drone_liftoff` and
@@ -108,6 +112,9 @@ navigation, and a path for scene-specific controls.
   point instead of the body origin when a visual shape has a local offset, and
   add direct controller regression coverage for both BodyNode and external
   SimpleFrame-style force-drag paths.
+- Show active force-drag feedback in the viewer: the DART status panel now
+  names the dragged target and force magnitude, and the viewport renders a
+  spring/force debug line while the drag is active.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
   current filtered/total scene count.

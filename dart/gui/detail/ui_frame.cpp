@@ -518,6 +518,7 @@ void updateFrameUi(
       panelContext.simulationTime,
       panelContext.contactCount,
       panelContext.selectedLabel,
+      selectionController.interactionStatus(),
       !dartScene.ikHandles.empty(),
       orbitLight,
       debugOverlays.staticOptions,

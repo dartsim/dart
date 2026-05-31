@@ -259,6 +259,7 @@ void SceneFrameUpdater::update(
       mMaterials.debugColor,
       descriptors,
       mSelectionController.selectionDebugRenderableId(),
+      mSelectionController.forceDragDebugLines(),
       mSelectionDebugOverlay);
   mProfile.selectionDebugMs += dart::gui::elapsedMs(phaseStart);
 }

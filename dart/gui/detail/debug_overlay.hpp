@@ -105,6 +105,7 @@ void refreshSelectionDebugLineOverlay(
     ::filament::Material& material,
     const std::vector<dart::gui::RenderableDescriptor>& descriptors,
     dart::gui::RenderableId selectedRenderableId,
+    const std::vector<dart::gui::DebugLineDescriptor>& forceDragLines,
     std::optional<Renderable>& overlay);
 
 } // namespace dart::gui::detail

@@ -48,6 +48,8 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 #include <utility>
 
 #include <cmath>
@@ -56,6 +58,7 @@ namespace dart::gui::detail {
 
 using dart::gui::computeAxisDragTranslation;
 using dart::gui::computePlaneDragTranslation;
+using dart::gui::DebugLineDescriptor;
 using dart::gui::extractRenderables;
 using dart::gui::intersectPlane;
 using dart::gui::makeOrbitCameraBasis;
@@ -394,6 +397,28 @@ bool translateIkHandleTargetAndApplyIk(
   return solveIkHandle(handle);
 }
 
+namespace {
+
+constexpr double kForceDragVisualScale = 0.006;
+constexpr double kForceDragVisualMinLength = 0.05;
+constexpr double kForceDragVisualMaxLength = 0.55;
+
+void appendForceDragLine(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const Eigen::Vector4d& color,
+    std::string label);
+
+void appendForceDragArrow(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const Eigen::Vector4d& color,
+    const std::string& label);
+
+} // namespace
+
 RenderableId SelectionController::selectedRenderableId() const
 {
   return mSelectedRenderableId;
@@ -427,6 +452,64 @@ SelectionController::highlightedGizmoHandle() const
 RenderableId SelectionController::selectionDebugRenderableId() const
 {
   return mSelectionBoundsVisible ? mSelectedRenderableId : 0;
+}
+
+std::vector<DebugLineDescriptor> SelectionController::forceDragDebugLines()
+    const
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (!mActiveForceDrag || !mActiveForceDrag->hasUpdate) {
+    return lines;
+  }
+
+  const Eigen::Vector3d appPoint = mActiveForceDrag->applicationPoint;
+  const Eigen::Vector3d target = mActiveForceDrag->targetPoint;
+  const Eigen::Vector3d force = mActiveForceDrag->force;
+  if (!appPoint.allFinite() || !target.allFinite() || !force.allFinite()) {
+    return lines;
+  }
+
+  lines.reserve(4u);
+  appendForceDragLine(
+      lines,
+      appPoint,
+      target,
+      Eigen::Vector4d(0.25, 0.85, 1.0, 1.0),
+      "force_drag.spring");
+
+  const double forceNorm = force.norm();
+  if (forceNorm > 1e-9) {
+    const double length = std::clamp(
+        forceNorm * kForceDragVisualScale,
+        kForceDragVisualMinLength,
+        kForceDragVisualMaxLength);
+    appendForceDragArrow(
+        lines,
+        appPoint,
+        appPoint + force.normalized() * length,
+        Eigen::Vector4d(1.0, 0.38, 0.72, 1.0),
+        "force_drag.force");
+  }
+
+  return lines;
+}
+
+std::string SelectionController::interactionStatus() const
+{
+  if (!mActiveForceDrag) {
+    return {};
+  }
+
+  std::ostringstream stream;
+  stream << "force drag: "
+         << (mActiveForceDrag->renderableName.empty()
+                 ? "selected body"
+                 : mActiveForceDrag->renderableName);
+  if (mActiveForceDrag->hasUpdate && mActiveForceDrag->force.allFinite()) {
+    stream << " | " << std::fixed << std::setprecision(1)
+           << mActiveForceDrag->force.norm() << " N";
+  }
+  return stream.str();
 }
 
 bool SelectionController::isDraggingSelection() const
@@ -600,6 +683,51 @@ Eigen::Vector3d forceDragTargetPoint(
   return ray.origin + unitDirection * rayDepth;
 }
 
+void appendForceDragLine(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const Eigen::Vector4d& color,
+    std::string label)
+{
+  DebugLineDescriptor line;
+  line.from = from;
+  line.to = to;
+  line.rgba = color;
+  line.thickness = 3.0;
+  line.label = std::move(label);
+  lines.push_back(std::move(line));
+}
+
+void appendForceDragArrow(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  appendForceDragLine(lines, from, to, color, label);
+
+  const Eigen::Vector3d vector = to - from;
+  const double length = vector.norm();
+  if (!std::isfinite(length) || length <= 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d direction = vector / length;
+  const Eigen::Vector3d seed = std::abs(direction.z()) < 0.9
+                                   ? Eigen::Vector3d::UnitZ()
+                                   : Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d side = direction.cross(seed).normalized();
+  const double headLength = length * 0.25;
+  const double headWidth = headLength * 0.45;
+  const Eigen::Vector3d base = to - direction * headLength;
+  appendForceDragLine(
+      lines, to, base + side * headWidth, color, label + ".head");
+  appendForceDragLine(
+      lines, to, base - side * headWidth, color, label + ".head");
+}
+
 } // namespace
 
 bool SelectionController::beginForceDrag(
@@ -639,6 +767,8 @@ bool SelectionController::beginForceDrag(
   drag.savedLocalOffset = ownerTransform.linear().transpose()
                           * (hitPointWorld - ownerTransform.translation());
   drag.rayDepth = unitDirection.dot(hitPointWorld - cursorRay.origin);
+  drag.applicationPoint = hitPointWorld;
+  drag.targetPoint = hitPointWorld;
 
   mActiveForceDrag = std::move(drag);
   mLeftMouseStartedDrag = true;
@@ -678,6 +808,10 @@ void SelectionController::updateForceDrag(
     if (!force.allFinite()) {
       return;
     }
+    mActiveForceDrag->applicationPoint = appPoint;
+    mActiveForceDrag->targetPoint = target;
+    mActiveForceDrag->force = force;
+    mActiveForceDrag->hasUpdate = true;
     bodyNode->addExtForce(
         force, appPoint, /*isForceLocal=*/false, /*isOffsetLocal=*/false);
     return;
@@ -703,6 +837,10 @@ void SelectionController::updateForceDrag(
   if (!force.allFinite()) {
     return;
   }
+  mActiveForceDrag->applicationPoint = appPoint;
+  mActiveForceDrag->targetPoint = target;
+  mActiveForceDrag->force = force;
+  mActiveForceDrag->hasUpdate = true;
 
   dart::gui::ForceDragEvent event;
   event.renderableId = mActiveForceDrag->renderableId;

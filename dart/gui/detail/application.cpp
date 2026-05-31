@@ -282,6 +282,26 @@ std::string defaultDemoFrameOutputDirectory(std::string_view sceneId)
   return (root / "dart_demos_frames" / sanitizePathComponent(sceneId)).string();
 }
 
+double resolveDemoSceneStartupTimeoutMs()
+{
+  const char* value = std::getenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS");
+  if (value == nullptr || std::string_view(value).empty()) {
+    return kDemoSceneStartupTimeoutMs;
+  }
+
+  char* end = nullptr;
+  const double parsed = std::strtod(value, &end);
+  if (end == value || !std::isfinite(parsed) || parsed <= 0.0) {
+    return kDemoSceneStartupTimeoutMs;
+  }
+  return parsed;
+}
+
+std::string demoSceneDisplayName(const dart::gui::DemoSceneEntry& scene)
+{
+  return scene.title.empty() ? scene.id : scene.title;
+}
+
 std::vector<std::filesystem::path> recordedFramePaths(
     const std::string& outputDirectory)
 {
@@ -389,6 +409,9 @@ dart::gui::Panel makeDemoSimulationPanel(
       builder.text("recording frames");
       builder.itemTooltip(lifecycle->frameOutputDirectory);
     }
+    if (!lifecycle->sceneActivationStatus.empty()) {
+      builder.text(lifecycle->sceneActivationStatus);
+    }
 
     const auto recordedFrames
         = recordedFramePaths(lifecycle->frameOutputDirectory);
@@ -460,12 +483,17 @@ dart::gui::Panel makeDemoSidebarPanel(
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
+    dart::gui::ViewerLifecycleState* lifecycle = context.lifecycle;
     if (activeIndex >= 0 && activeIndex < static_cast<int>(scenes.size())) {
       const auto& active = scenes[static_cast<std::size_t>(activeIndex)];
       builder.text("Current: " + active.title);
       if (!active.summary.empty()) {
         builder.text(active.summary);
       }
+    }
+    if (lifecycle != nullptr && !lifecycle->sceneActivationStatus.empty()) {
+      builder.separator();
+      builder.text(lifecycle->sceneActivationStatus);
     }
     builder.separator();
 
@@ -531,12 +559,20 @@ dart::gui::Panel makeDemoSidebarPanel(
             continue;
           }
           const bool isActive = static_cast<int>(i) == activeIndex;
-          const std::string label = entry.title + "##demo_" + entry.id;
-          const bool clicked = builder.selectable(label, isActive);
+          const bool isPending
+              = lifecycle != nullptr
+                && lifecycle->sceneActivationPendingScene == entry.id;
+          std::string label = entry.title;
+          if (isPending) {
+            label += " (starting)";
+          }
+          label += "##demo_" + entry.id;
+          const bool clicked = builder.selectable(label, isActive || isPending);
           // Explain what each scene demonstrates when the row is hovered.
           builder.itemTooltip(entry.summary);
-          if (clicked && !isActive && context.lifecycle != nullptr) {
-            requestSceneSwitch(*context.lifecycle, entry.id);
+          if (clicked && !isActive && lifecycle != nullptr
+              && !lifecycle->sceneSwitchRequested) {
+            requestSceneSwitch(*lifecycle, entry.id);
           }
         }
         builder.unindent();
@@ -681,6 +717,7 @@ int runGuiBackendApplicationImpl(
   bool frameCaptureSucceeded = true;
   SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
+  const double demoSceneStartupTimeoutMs = resolveDemoSceneStartupTimeoutMs();
 
   int activeIndex = initialDemoIndex;
   bool keepRunning = true;
@@ -712,6 +749,11 @@ int runGuiBackendApplicationImpl(
       std::cerr << "demo scene '" << candidateDemoEntry->id
                 << "' failed to start (" << reason
                 << "); restoring previous demo '" << fallbackEntry.id << "'\n";
+      lifecycle.sceneActivationStatus
+          = "Restored previous demo '" + demoSceneDisplayName(fallbackEntry)
+            + "' after '" + demoSceneDisplayName(*candidateDemoEntry)
+            + "' failed: " + std::string(reason);
+      lifecycle.sceneActivationPendingScene.clear();
       activeIndex = fallbackIndex;
       pendingDemoFallbackIndex.reset();
       lifecycle.sceneSwitchRequested = false;
@@ -734,6 +776,10 @@ int runGuiBackendApplicationImpl(
         }
         // Soft-fail: a scene that cannot build (e.g. a missing asset) must not
         // crash the host. Show an empty world so the sidebar stays usable.
+        lifecycle.sceneActivationStatus = "Failed to start demo '"
+                                          + demoSceneDisplayName(demoEntry)
+                                          + "': " + error.what();
+        lifecycle.sceneActivationPendingScene.clear();
         std::cerr << "demo scene '" << demoEntry.id
                   << "' failed to load: " << error.what() << "\n";
         sceneOptions = dart::gui::ApplicationOptions{};
@@ -741,7 +787,7 @@ int runGuiBackendApplicationImpl(
       if (sceneOptions.world == nullptr) {
         sceneOptions.world = dart::simulation::World::create("(empty)");
       }
-      if (elapsedMs(sceneStartupStart) > kDemoSceneStartupTimeoutMs
+      if (elapsedMs(sceneStartupStart) > demoSceneStartupTimeoutMs
           && restorePendingDemoFallback("factory startup exceeded budget")) {
         continue;
       }
@@ -799,7 +845,7 @@ int runGuiBackendApplicationImpl(
     InitialSceneState sceneState = std::move(*maybeInitialSceneState);
     std::optional<Renderable> selectionDebugOverlay;
     if (demoCatalog != nullptr
-        && elapsedMs(sceneStartupStart) > kDemoSceneStartupTimeoutMs
+        && elapsedMs(sceneStartupStart) > demoSceneStartupTimeoutMs
         && restorePendingDemoFallback("startup exceeded budget")) {
       destroySceneRenderables(
           *engine,
@@ -981,6 +1027,14 @@ int runGuiBackendApplicationImpl(
       if (frameRenderResult.failed) {
         sceneFrameFailed = true;
         break;
+      }
+      if (demoCatalog != nullptr) {
+        lifecycle.sceneActivationPendingScene.clear();
+        if (!pendingDemoFallbackIndex.has_value()) {
+          lifecycle.sceneActivationStatus.clear();
+        } else if (lifecycle.sceneActivationStatus.starts_with("Starting ")) {
+          lifecycle.sceneActivationStatus.clear();
+        }
       }
       if (demoCatalog != nullptr && !frameRenderResult.continueLoop) {
         pendingDemoFallbackIndex.reset();

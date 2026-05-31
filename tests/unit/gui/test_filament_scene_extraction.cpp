@@ -978,6 +978,15 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       applicationSource.find("kDemoSceneStartupTimeoutMs"), std::string::npos);
   EXPECT_NE(
       applicationSource.find("restoring previous demo"), std::string::npos);
+  EXPECT_NE(applicationSource.find("sceneActivationStatus"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("Restored previous demo"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS"),
+      std::string::npos);
+  EXPECT_NE(
+      viewerBindingSource.find("py-demos factory error"), std::string::npos);
+  EXPECT_NE(viewerBindingSource.find("throw;"), std::string::npos);
   EXPECT_NE(
       applicationSource.find("requestSceneReplay(*lifecycle, active->id)"),
       std::string::npos);
@@ -1069,12 +1078,32 @@ TEST(FilamentSceneExtraction, ForceDragRoutesExternalRenderablesThroughCallback)
   EXPECT_TRUE(events.front().applicationPoint.isApprox(
       descriptor.worldTransform.translation()));
   EXPECT_TRUE(events.front().force.isApprox(Eigen::Vector3d(60.0, 0.0, 0.0)));
+  EXPECT_NE(
+      selection.interactionStatus().find("force drag: sx_box"),
+      std::string::npos);
+  EXPECT_NE(selection.interactionStatus().find("60.0 N"), std::string::npos);
+
+  const auto debugLines = selection.forceDragDebugLines();
+  ASSERT_GE(debugLines.size(), 4u);
+  EXPECT_TRUE(
+      std::any_of(debugLines.begin(), debugLines.end(), [](const auto& line) {
+        return line.label == "force_drag.spring"
+               && line.from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0))
+               && line.to.isApprox(Eigen::Vector3d(2.0, 2.0, 3.0));
+      }));
+  EXPECT_TRUE(
+      std::any_of(debugLines.begin(), debugLines.end(), [](const auto& line) {
+        return line.label == "force_drag.force"
+               && line.from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0))
+               && line.to.x() > line.from.x();
+      }));
 
   selection.endForceDrag(scene);
   ASSERT_EQ(events.size(), 2u);
   EXPECT_EQ(events.back().renderableId, descriptor.id);
   EXPECT_EQ(events.back().renderableName, "sx_box");
   EXPECT_FALSE(events.back().active);
+  EXPECT_TRUE(selection.forceDragDebugLines().empty());
 }
 
 TEST(FilamentSceneExtraction, ForceDragAppliesBodyNodeForceAtPickedShapePoint)
@@ -1128,6 +1157,10 @@ TEST(FilamentSceneExtraction, ForceDragAppliesBodyNodeForceAtPickedShapePoint)
   EXPECT_NEAR(externalForce[3], 60.0, 1e-10);
   EXPECT_NEAR(externalForce[4], 0.0, 1e-10);
   EXPECT_NEAR(externalForce[5], 0.0, 1e-10);
+  EXPECT_NE(
+      selection.interactionStatus().find("force drag: offset_box_visual"),
+      std::string::npos);
+  EXPECT_FALSE(selection.forceDragDebugLines().empty());
 }
 
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
@@ -5276,9 +5309,20 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_TRUE(state.exitRequested);
   state.paused = true;
   state.stepOnce = true;
+  dart::gui::requestSceneSwitch(state, "other_demo");
+  EXPECT_TRUE(state.sceneSwitchRequested);
+  EXPECT_EQ(state.requestedScene, "other_demo");
+  EXPECT_EQ(state.sceneActivationPendingScene, "other_demo");
+  EXPECT_NE(
+      state.sceneActivationStatus.find("Starting demo 'other_demo'"),
+      std::string::npos);
   dart::gui::requestSceneReplay(state, "demo_scene");
   EXPECT_TRUE(state.sceneSwitchRequested);
   EXPECT_EQ(state.requestedScene, "demo_scene");
+  EXPECT_EQ(state.sceneActivationPendingScene, "demo_scene");
+  EXPECT_NE(
+      state.sceneActivationStatus.find("Starting demo 'demo_scene'"),
+      std::string::npos);
   EXPECT_FALSE(state.paused);
   EXPECT_FALSE(state.stepOnce);
   EXPECT_FALSE(dart::gui::consumeDockLayoutResetRequest(state));

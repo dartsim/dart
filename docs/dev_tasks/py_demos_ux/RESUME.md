@@ -55,6 +55,9 @@
   create render state, fails its first frame, or returns after the startup
   budget, the host restores the previous demo instead of leaving the workspace
   stuck on the broken target.
+- Demo activation is visible in the docked UI: starting rows are marked,
+  Simulation/Demos panels show startup or restored-previous-demo status, and
+  Python factory exceptions now flow into the C++ transactional restore path.
 - Python scene validation accepts hyphenated aliases such as
   `sx-rigid-ipc-slide`.
 - sx force-drag now resolves picked SimpleFrames by `renderable_id` first,
@@ -66,6 +69,9 @@
 - C++ force-drag now records BodyNode-backed grab offsets in the BodyNode frame
   rather than the shape-frame descriptor, so offset visuals receive the mouse
   spring at the picked point and produce the expected torque.
+- Active force-drag now has visible feedback: the DART status panel shows the
+  dragged target and current force magnitude, and the viewport renders a spring
+  line plus force arrow while the drag is active.
 - `UNIT_gui_FilamentSceneExtraction` now has direct controller coverage for
   external SimpleFrame-style force-drag callback routing and BodyNode
   shape-offset application points.

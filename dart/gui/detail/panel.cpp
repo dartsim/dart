@@ -315,6 +315,7 @@ bool renderBuiltInStatusPanel(
     double simulationTime,
     std::size_t contactCount,
     const std::string& selectedLabel,
+    const std::string& interactionStatus,
     bool showIkHint,
     bool& orbitLight,
     DebugDrawOptions& staticDebugOptions,
@@ -344,8 +345,9 @@ bool renderBuiltInStatusPanel(
   ImGui::TextWrapped(
       "DART scene viewer: inspect renderables, shadows, and debug overlays.");
   ImGui::TextWrapped(
-      "Mouse: left-drag empty space to orbit; left-drag supported bodies to "
-      "apply external force; right/middle pan, wheel zoom, click select.");
+      "Mouse: left-drag empty space to orbit; left-drag a dynamic body or sx "
+      "renderable to apply external force with a visible spring line; "
+      "right/middle pan, wheel zoom, click select.");
   ImGui::TextWrapped(
       "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
       "Esc exit.");
@@ -361,6 +363,9 @@ bool renderBuiltInStatusPanel(
   ImGui::PushTextWrapPos(
       ImGui::GetCursorPosX() + 300.0f * static_cast<float>(guiScale));
   ImGui::Text("selected: %s", selectedLabel.c_str());
+  if (!interactionStatus.empty()) {
+    ImGui::Text("%s", interactionStatus.c_str());
+  }
   ImGui::PopTextWrapPos();
   if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
     togglePaused(lifecycle);
