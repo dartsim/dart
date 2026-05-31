@@ -9819,14 +9819,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_000",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_000",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-001.json",
@@ -9837,14 +9837,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_001",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_001",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-002.json",
@@ -9855,14 +9855,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_002",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_002",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-003.json",
@@ -9873,14 +9873,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_003",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_003",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-004.json",
@@ -9891,14 +9891,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_004",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_004",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-005.json",
@@ -9909,14 +9909,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_005",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_005",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-006.json",
@@ -9927,14 +9927,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_006",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_006",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-007.json",
@@ -9945,14 +9945,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_007",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_007",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-008.json",
@@ -9963,14 +9963,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_008",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_008",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-009.json",
@@ -9981,14 +9981,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_009",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_009",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-010.json",
@@ -9999,14 +9999,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_010",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_010",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-011.json",
@@ -10017,14 +10017,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited wrecking-ball direct-CCD row and, when a time of impact is reported, replays the truncated interval through that conservative bound without another hit.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_011",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_011",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'",
+      "notes_or_gap": "Covered by hermetic DART load and conservative-TOI evaluator regressions for the first audited wrecking-ball direct-CCD rows; remaining wrecking-ball rows and corpus-scale interval-root parity remain tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/wrecking-ball/ccd-test-012.json",

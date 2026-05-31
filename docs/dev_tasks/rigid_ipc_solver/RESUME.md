@@ -9,6 +9,12 @@ Delivered a bounded Phase 6 manifest slice:
   `tests/data/kinematic/ccd-test-012.json`.
 - Updated the rigid IPC fixture manifest generator so all audited kinematic
   direct-CCD rows are emitted as `implemented`.
+- Added the first audited wrecking-ball direct-CCD conservative-TOI regression
+  for `tests/data/wrecking-ball/ccd-test-000..011.json`: if DART reports a TOI,
+  replaying only through that bound does not report another hit.
+- Updated the rigid IPC fixture manifest generator so those first 12
+  wrecking-ball rows are emitted as `implemented`, while later wrecking-ball
+  rows remain planned until they have matching DART evidence.
 - Kept Phase 6 open: the remaining manifest corpus and broader CCD data rows
   still need matching DART tests, examples, benchmarks, or evidence before row
   retirement.
@@ -19,6 +25,10 @@ Validation in this slice:
 - `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
 - `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
 - `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_fixture && ./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively --gtest_break_on_failure`
+- `pixi run lint`
+- `pixi run build`
+- `git diff --check`
 
 No push or PR mutation has been made from this slice.
 
