@@ -5052,7 +5052,8 @@ void advanceDeformableBody(
         timeStep,
         material.youngsModulus,
         material.poissonRatio,
-        material.useFixedCorotationalElasticity,
+        material.useFiniteElementElasticity
+            && material.useFixedCorotationalElasticity,
         barriers,
         sphereObstacles,
         boxObstacles,

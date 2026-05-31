@@ -432,6 +432,45 @@ TEST(VbdWorldSolver, StifferTetrahedralBodyDeformsLess)
 }
 
 //==============================================================================
+// The fixed-corotational material selector is meaningful only when
+// finite-element elasticity is explicitly enabled. With FEM opt-in off, VBD
+// must ignore the FCR flag just like the default solver/material contract does.
+TEST(VbdWorldSolver, FixedCorotationalFlagRequiresFemOptIn)
+{
+  const auto runWithFixedCorotationalFlag = [](bool fixedCorotational) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    sx::DeformableBodyOptions options = makeTetOptions(1.0e4);
+    options.material.useFiniteElementElasticity = false;
+    options.material.useFixedCorotationalElasticity = fixedCorotational;
+    world.addDeformableBody("tet", options);
+    enableVbd(world, 80);
+
+    compute::DeformableDynamicsStage stage;
+    for (int step = 0; step < 40; ++step) {
+      stepOnce(world, stage);
+    }
+
+    const auto body = world.getDeformableBody("tet");
+    std::vector<Eigen::Vector3d> positions;
+    positions.reserve(body->getNodeCount());
+    for (std::size_t node = 0; node < body->getNodeCount(); ++node) {
+      positions.push_back(body->getPosition(node));
+    }
+    return positions;
+  };
+
+  const auto disabled = runWithFixedCorotationalFlag(false);
+  const auto ignored = runWithFixedCorotationalFlag(true);
+  ASSERT_EQ(disabled.size(), ignored.size());
+  for (std::size_t node = 0; node < disabled.size(); ++node) {
+    EXPECT_NEAR((disabled[node] - ignored[node]).norm(), 0.0, 1e-12)
+        << "node " << node;
+  }
+}
+
+//==============================================================================
 // Chebyshev over-relaxation and Rayleigh damping flow from the config through
 // the World VBD path; the body stays stable and the accelerated solve agrees
 // with the unaccelerated one (Chebyshev preserves the fixed point).
