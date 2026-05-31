@@ -257,10 +257,38 @@ cylinder/plane shapes also remain (Phase 2 shape backlog).
 bodies via `dart/math/lcp`, (3) all position integration. Multi-session; touches
 the core step loop and every passing test — do it as its own slice with the
 suite as the guardrail, revert if it destabilizes (as the first universal-joint
-attempt was). A safe first increment that avoids the pipeline reorder: wire the
-boxed-LCP (`dart/math/lcp`) into the existing `RigidBodyContactStage` (replace
-its sequential-impulse loop with a coupled LCP solve over the rigid-rigid
-contacts), verified against the existing drop/rest/bounce/friction tests.
+attempt was).
+
+**(DONE) Safe first increment — coupled normal boxed-LCP in
+`RigidBodyContactStage`** (commit `1d2340f1006`). The stage's per-contact
+sequential normal impulses are replaced by a coupled boxed-LCP solve over all
+rigid-rigid contacts: it assembles the contact-space inverse-mass (Delassus)
+operator `A` (diagonal = the old `effectiveMass`; off-diagonal = coupling
+through a body shared by two contacts, summed over each contact's two signed
+ends) and solves `A lambda = b` with `b[i] = restitutionTarget_i - approach_i`,
+`0 <= lambda`, under the solvers' `w = A lambda - b` convention, via the
+`dart/math/lcp` Dantzig solver. A single isolated contact is a 1x1 system equal
+to the previous closed form, so the 1e-9 elastic-swap guardrail is intact; a
+rank-deficient set (the near-coplanar contacts of a box resting flat on a
+plane) drives a non-positive pivot, so `earlyTermination` turns that into a
+clean failure (no console warning) and the solve falls back to an uncoupled
+diagonal projection. The friction pass (now a separate Gauss-Seidel sweep
+bounded by the solved normal impulse) and the positional correction are
+unchanged. Code: `world_step_stage.cpp` `RigidBodyContactStage::execute`.
+Verified by the drop/rest/bounce/friction guardrails plus a new coupled
+two-sphere-stack rest test (`RigidBodyContactCoupledStackRests`, non-singular
+2x2 off-diagonal coupling); full experimental suite 39/39, lint clean.
+
+**Next (remaining Subsystem A), in suggested order:**
+1. **Friction inside the LCP via `findex`** — replace the post-solve Coulomb
+   Gauss-Seidel sweep with tangent rows whose bounds reference the normal row
+   (`findex`, ODE convention) so normal+friction solve jointly. Guardrail: the
+   friction-decelerates and stack tests; watch the 1e-9 swap.
+2. **The full pipeline reorder** — velocity-integrate everything, then ONE
+   unified boxed-LCP/PGS over rigid-rigid AND multibody-link contacts (and
+   joint-limit/motor rows) together, then position-integrate. This subsumes the
+   separate `RigidBodyContactStage` and `simulateMultibody` contact passes.
+3. **Link-vs-link two-sided contacts** and **islands** for scaling.
 
 ## Immediate Next Step
 
@@ -280,11 +308,13 @@ architectural prerequisite, detailed below.
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
 What works today: rigid-body-vs-rigid-body and rigid-body-vs-static contacts
-(`RigidBodyContactStage`, sequential impulse + friction + restitution +
-positional correction); link-vs-static-rigid-body one-sided articulated contact
-(inside `simulateMultibody`). **Missing:** link-vs-dynamic-rigid-body and
-link-vs-link (two-sided) contacts, and a coupled simultaneous boxed-LCP/PGS
-solve over all contacts at once.
+(`RigidBodyContactStage` — a coupled normal boxed-LCP over all rigid-rigid
+contacts, then a sequential-impulse friction sweep + restitution + positional
+correction); link-vs-static-rigid-body and link-vs-dynamic-rigid-body one-sided
+articulated contact (inside `simulateMultibody`). **Missing:** link-vs-link
+(two-sided) contacts, friction inside the LCP, and a single unified
+boxed-LCP/PGS solve over rigid-rigid AND link contacts at once (the pipeline
+reorder).
 
 - **Pipeline ordering (partly addressed):** the default `World::step` pipeline is
   now `RigidBodyVelocityStage` → `RigidBodyContactStage` →
