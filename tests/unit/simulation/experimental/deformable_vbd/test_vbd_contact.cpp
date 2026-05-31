@@ -124,6 +124,61 @@ TEST(VbdContact, AvbdNormalForceMatchesPenaltyForPenetratingActiveRow)
 }
 
 //==============================================================================
+TEST(VbdContact, AvbdFrictionTangentForceIsCoulombBounded)
+{
+  const Vec3 stepStart(0.0, -0.1, 0.0);
+  const Vec3 position(0.2, -0.1, 0.0);
+
+  vbd::AvbdHalfSpaceFrictionRow row;
+  row.vertex = 0;
+  row.stepStartPosition = stepStart;
+  row.axis = Vec3::UnitX();
+  row.state.stiffness = 100.0;
+  row.state.lambda = 0.0;
+  row.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::VertexBlock block;
+  const double forceMagnitude = vbd::addAvbdHalfSpaceFrictionTangent(
+      block, position, row, /*alpha=*/0.0);
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, -5.0);
+  EXPECT_NEAR(block.force.x(), -5.0, 1e-12);
+  EXPECT_NEAR(block.force.y(), 0.0, 1e-12);
+  EXPECT_NEAR(block.force.z(), 0.0, 1e-12);
+  EXPECT_NEAR(block.hessian(0, 0), 100.0, 1e-12);
+  EXPECT_NEAR(block.hessian(1, 1), 0.0, 1e-12);
+  EXPECT_NEAR(block.hessian(2, 2), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentUpdatesDualStateWithinBounds)
+{
+  vbd::AvbdHalfSpaceFrictionRow row;
+  row.vertex = 0;
+  row.stepStartPosition = Vec3::Zero();
+  row.axis = Vec3::UnitX();
+  row.state.stiffness = 10.0;
+  row.state.lambda = 0.0;
+  row.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  const vbd::AvbdScalarRowState unclamped
+      = vbd::updateAvbdHalfSpaceFrictionTangentRow(
+          row.state, Vec3(0.1, 0.0, 0.0), row, options);
+  EXPECT_NEAR(unclamped.lambda, -1.0, 1e-12);
+  EXPECT_GT(unclamped.stiffness, row.state.stiffness);
+
+  const vbd::AvbdScalarRowState clamped
+      = vbd::updateAvbdHalfSpaceFrictionTangentRow(
+          row.state, Vec3(1.0, 0.0, 0.0), row, options);
+  EXPECT_NEAR(clamped.lambda, -5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(clamped.stiffness, row.state.stiffness);
+}
+
+//==============================================================================
 TEST(VbdContact, InactiveAbovePlaneAndHessianIsPsd)
 {
   vbd::ContactPlane plane;
@@ -241,6 +296,65 @@ TEST(VbdContact, AvbdGroundContactUpdatesDualStateDuringSolve)
   EXPECT_LT(positions[0].y(), 0.0);
   EXPECT_GT(contacts[0].state.lambda, 0.0);
   EXPECT_GT(contacts[0].state.stiffness, 50.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentRowsReduceTangentialMotionDuringSolve)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, -0.1, 0.0)};
+  std::vector<double> masses = {1.0};
+  std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<Vec3> inertialTargets = {Vec3(1.0, -0.1, 0.0)};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(1, springs);
+  const auto adjacency = vbd::SpringAdjacency::build(1, springs);
+
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
+  std::vector<vbd::AvbdPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+  std::vector<vbd::AvbdHalfSpaceFrictionRow> frictionRows;
+  frictionRows.emplace_back();
+  frictionRows[0].vertex = 0;
+  frictionRows[0].stepStartPosition = positions[0];
+  frictionRows[0].axis = Vec3::UnitX();
+  frictionRows[0].state.stiffness = 200.0;
+  frictionRows[0].state.lambda = 0.0;
+  frictionRows[0].bounds = vbd::avbdFrictionTangentBounds(100.0);
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 4;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+  vbd::AvbdHalfSpaceFrictionOptions frictionOptions;
+  frictionOptions.alpha = 0.0;
+  frictionOptions.beta = 1.0;
+
+  const vbd::BlockDescentStats stats = vbd::blockDescentMassSpringAvbdRows(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      0.0,
+      0.1,
+      contacts,
+      attachments,
+      springRows,
+      coloring,
+      adjacency,
+      options,
+      contactOptions,
+      attachmentOptions,
+      springOptions,
+      &frictionRows,
+      &frictionOptions);
+
+  EXPECT_EQ(stats.iterations, 4u);
+  EXPECT_GT(positions[0].x(), 0.05);
+  EXPECT_LT(positions[0].x(), 0.6);
+  EXPECT_LT(frictionRows[0].state.lambda, 0.0);
+  EXPECT_GT(frictionRows[0].state.stiffness, 200.0);
 }
 
 //==============================================================================

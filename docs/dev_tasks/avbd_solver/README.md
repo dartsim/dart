@@ -69,13 +69,22 @@ Paper audit:
     attachment, and finite-stiffness spring rows through one combined serial
     AVBD row solve, with regression coverage in
     `VbdWorldSolver.AvbdRowsCombineContactAttachmentAndFiniteStiffness`.
+  - First bounded friction-tangent row slice started:
+    `AvbdHalfSpaceFrictionRow`, `avbdFrictionTangentBounds`,
+    `addAvbdHalfSpaceFrictionTangent`, and
+    `updateAvbdHalfSpaceFrictionTangentRow`, with optional participation in
+    `blockDescentMassSpringAvbdRows` and focused `VbdContact.Avbd*` coverage
+    for Coulomb clamping, dual/stiffness updates, and tangential-motion
+    resistance. World-level friction row generation is still intentionally
+    fallback-only.
   - Fallback coverage now guards the unsupported World envelopes:
     mixed spring-plus-tet topology, mass-spring self-contact, friction,
     Chebyshev, Rayleigh damping, parallel settings, and unsupported requested
     row families all keep using the existing VBD path without reporting partial
     AVBD row counters.
-  - Still missing AVBD self-contact rows, friction, full row-family generation,
-    parallel dual/stiffness updates, and GPU parity.
+  - Still missing World friction row generation, static/dynamic friction
+    switching, AVBD self-contact rows, full row-family generation, parallel
+    dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
@@ -115,7 +124,7 @@ numbers.
 
 ## Immediate Next Steps
 
-1. Add the next bounded AVBD row family, starting with contact/friction bounds
-   or self-contact rows in the same combined-row solve.
-2. Broaden the supported World envelopes toward mixed spring/tet bodies and
-   parallel dual/stiffness updates once the next row-family tests exist.
+1. Wire the bounded friction-tangent rows into supported World mass-spring
+   contact scenes with diagnostics and fallback coverage.
+2. Add the next bounded AVBD row family, starting with self-contact rows or the
+   remaining static/dynamic friction switching logic.

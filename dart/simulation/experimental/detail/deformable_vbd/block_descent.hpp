@@ -447,8 +447,9 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// integration honest: contact-normal hard rows, scalar hard attachments, and
 /// finite-stiffness spring rows all contribute to the same primal vertex block,
 /// then each row family updates its persistent dual/stiffness state after every
-/// sweep. Broader row families, friction cones, tetrahedral rows, and parallel
-/// dual scheduling remain later slices.
+/// sweep. The optional friction-tangent rows provide the first bounded row
+/// family in the same serial driver; World-level row generation, tetrahedral
+/// rows, full friction cones, and parallel dual scheduling remain later slices.
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -465,7 +466,9 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     const BlockDescentOptions& options,
     const AvbdHalfSpaceContactOptions& contactOptions,
     const AvbdPointAttachmentOptions& attachmentOptions,
-    const AvbdSpringFiniteStiffnessOptions& springOptions)
+    const AvbdSpringFiniteStiffnessOptions& springOptions,
+    std::vector<AvbdHalfSpaceFrictionRow>* frictionRows = nullptr,
+    const AvbdHalfSpaceFrictionOptions* frictionOptions = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
@@ -518,6 +521,14 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
             block, positions[vertex], row, attachmentOptions.alpha);
       }
     }
+    if (frictionRows != nullptr && frictionOptions != nullptr) {
+      for (const AvbdHalfSpaceFrictionRow& row : *frictionRows) {
+        if (row.vertex == vertex) {
+          addAvbdHalfSpaceFrictionTangent(
+              block, positions[vertex], row, frictionOptions->alpha);
+        }
+      }
+    }
     return block;
   };
 
@@ -568,6 +579,15 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
           positions[spring.a], positions[spring.b], spring.restLength);
       row.state = updateAvbdSpringFiniteStiffnessRow(
           row.state, constraintValue, row, springOptions);
+    }
+    if (frictionRows != nullptr && frictionOptions != nullptr) {
+      for (AvbdHalfSpaceFrictionRow& row : *frictionRows) {
+        if (row.vertex >= vertexCount || fixed[row.vertex] != 0u) {
+          continue;
+        }
+        row.state = updateAvbdHalfSpaceFrictionTangentRow(
+            row.state, positions[row.vertex], row, *frictionOptions);
+      }
     }
   }
 
