@@ -1,5 +1,30 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: rigid IPC fixture kinematic replay
+
+Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:
+
+- Changed `populateRigidIpcReplayWorld(...)` so fixture bodies parsed as
+  `RigidIpcBodyMode::Kinematic` become runtime kinematic bodies via
+  `RigidBody::setKinematic(true)` instead of staying static. Fully fixed-DOF
+  rows still populate as static unless the fixture explicitly marks the body
+  kinematic.
+- Updated replay coverage to assert parsed kinematic fixture bodies are
+  runtime-kinematic, not static.
+- Added a runtime replay regression that loads an inline-polygon kinematic
+  fixture body, steps a `RigidIpcContactStage`, and verifies the stage advances
+  both prescribed linear and angular motion even when no dynamic bodies are
+  present.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.PopulatesWorldWithFixtureStateAndMetadata:RigidIpcFixtureReplay.RuntimeReplayAdvancesParsedKinematicBody'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: rigid IPC runtime friction tolerances
 
 Delivered another bounded stage-policy slice for Phases 1, 4, and 5:

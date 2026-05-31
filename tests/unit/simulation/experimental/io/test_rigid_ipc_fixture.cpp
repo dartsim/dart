@@ -632,7 +632,8 @@ f 3 1 4
 
   const auto body1 = world.getRigidBody("rigid_ipc_body_001");
   ASSERT_TRUE(body1.has_value());
-  EXPECT_TRUE(body1->isStatic());
+  EXPECT_FALSE(body1->isStatic());
+  EXPECT_TRUE(body1->isKinematic());
   EXPECT_TRUE(body1->getAngularVelocity().isApprox(
       Eigen::Vector3d(0.5 * std::numbers::pi, 0.0, 0.0)));
   EXPECT_EQ(state.bodies[1].mode, expio::RigidIpcBodyMode::Kinematic);
@@ -738,6 +739,51 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayUsesDefaultRigidBodyStep)
   EXPECT_TRUE(body->getTranslation().isApprox(expectedPosition));
   EXPECT_DOUBLE_EQ(world.getTime(), dt);
   EXPECT_EQ(world.getFrame(), 1u);
+}
+
+TEST(RigidIpcFixtureReplay, RuntimeReplayAdvancesParsedKinematicBody)
+{
+  const expio::RigidIpcFixture fixture = loadFixture(R"json(
+{
+  "scene_type": "distance_barrier_rb_problem",
+  "timestep": 0.1,
+  "rigid_body_problem": {
+    "gravity": [0.0, 0.0, 0.0],
+    "rigid_bodies": [{
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "type": "kinematic",
+      "linear_velocity": [2.0, 0.0, 0.0],
+      "angular_velocity": [0.0, 0.0, 90.0]
+    }]
+  }
+}
+)json");
+
+  sx::World world;
+  const expio::RigidIpcReplayState state
+      = expio::populateRigidIpcReplayWorld(world, fixture);
+
+  ASSERT_EQ(state.bodies.size(), 1u);
+  EXPECT_TRUE(state.bodies[0].collisionMeshLoaded);
+  EXPECT_EQ(state.bodies[0].mode, expio::RigidIpcBodyMode::Kinematic);
+
+  const auto body = world.getRigidBody(state.bodies[0].bodyName);
+  ASSERT_TRUE(body.has_value());
+  EXPECT_FALSE(body->isStatic());
+  EXPECT_TRUE(body->isKinematic());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(body->getTranslation().isApprox(Eigen::Vector3d(0.2, 0.0, 0.0)));
+  EXPECT_TRUE(body->getTransform().linear().isApprox(
+      Eigen::AngleAxisd(0.05 * std::numbers::pi, Eigen::Vector3d::UnitZ())
+          .toRotationMatrix()));
+  EXPECT_EQ(ipcStage.getLastStats().bodyCount, 1u);
+  EXPECT_EQ(ipcStage.getLastStats().dynamicBodyCount, 0u);
 }
 
 TEST(RigidIpcFixtureReplay, RuntimeReplayCarriesFrictionIntoRigidIpcStage)

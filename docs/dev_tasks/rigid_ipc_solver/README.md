@@ -39,6 +39,11 @@
           `dHat`, `epsv`/static-friction speed, velocity tolerance, and
           lagged-friction iteration settings into the opt-in runtime stage, with
           a fixture replay regression for those settings.
+    - [x] Bridge parsed kinematic fixture bodies into runtime kinematic bodies.
+          Fixture replay now calls `RigidBody::setKinematic(true)` for
+          `type = kinematic` / prescribed-motion rows, and a replay regression
+          proves `RigidIpcContactStage` advances the parsed linear and angular
+          velocity instead of holding the body static.
     - [ ] Add a reusable runtime fixture example and cover remaining comparison
           script commands and mesh formats beyond OBJ/OFF/MSH/STL/inline
           polygons.
@@ -215,6 +220,9 @@
   - [x] Add the first explicit opt-in stage options for max iterations, barrier
         activation distance, lagged-friction iterations, static-friction speed,
         and friction convergence tolerance without exposing a solver registry.
+  - [x] Bridge fixture-level kinematic body policy into the runtime body tags
+        consumed by the opt-in IPC stage, preserving parsed prescribed-motion
+        intent without adding a public solver registry.
   - [ ] Continue toward persisted scene policy, diagnostics, examples, and
         mixed rigid/deformable coupling.
 - [ ] Phase 6: complete the manifest rows as DART-native tests, examples,
@@ -365,10 +373,10 @@ DART-owned implementation.
    coverage, rigorous interval arithmetic, and accepted tolerances against the
    audited reference.
 4. Extend Phase 1 from mesh and inline replay into fuller fixture coverage:
-   fixture-row runtime examples and remaining comparison script commands. The
-   first default `World::step()` runtime replay regression is covered, but a
-   public-facing example remains open until the importer surface is no longer
-   internal-only.
+   fixture-row runtime examples and remaining comparison script commands.
+   Default stepping, opt-in IPC friction replay, fixture-driven stage policy,
+   and kinematic fixture replay are covered, but a public-facing example remains
+   open until the importer surface is no longer internal-only.
 5. Keep selecting P0 rows from `fixtures/3D/unit-tests/tunneling.json`, direct
    `tests/data/ccd-test-*` files, and one simple paper figure fixture.
 6. Keep the default `World::step()` behavior unchanged until a tested

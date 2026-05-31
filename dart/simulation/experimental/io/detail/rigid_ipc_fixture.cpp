@@ -2743,10 +2743,13 @@ RigidIpcReplayState populateRigidIpcReplayWorld(
     bodyOptions.position = source.position;
     bodyOptions.linearVelocity = source.linearVelocity;
     bodyOptions.angularVelocity = degreesToRadians(source.angularVelocity);
-    bodyOptions.isStatic = source.mode != RigidIpcBodyMode::Dynamic
-                           || allFixed(source.fixedDofs);
+    bodyOptions.isStatic
+        = source.mode == RigidIpcBodyMode::Static || allFixed(source.fixedDofs);
 
     RigidBody body = world.addRigidBody(bodyName, bodyOptions);
+    if (source.mode == RigidIpcBodyMode::Kinematic) {
+      body.setKinematic(true);
+    }
     body.setForce(source.force);
     body.setTorque(source.torque);
     if (std::isfinite(fixture.coefficientFriction)
