@@ -48,7 +48,7 @@ IMPLEMENTED_KINEMATIC_CCD_DATA_ROWS = frozenset(
     f"tests/data/kinematic/ccd-test-{index:03d}.json" for index in range(13)
 )
 IMPLEMENTED_WRECKING_BALL_CCD_DATA_ROWS = frozenset(
-    f"tests/data/wrecking-ball/ccd-test-{index:03d}.json" for index in range(12)
+    f"tests/data/wrecking-ball/ccd-test-{index:03d}.json" for index in range(386)
 )
 
 
@@ -391,13 +391,13 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
         status = "implemented"
         artifact = (
             "test_rigid_ipc_fixture::"
-            "RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively"
+            "RigidIpcCcdCase.EvaluatesAuditedWreckingBallCorpusConservatively"
         )
         command = (
             "pixi run bash -lc 'build/default/cpp/Release/bin/"
             "test_rigid_ipc_fixture --gtest_color=no "
             "--gtest_filter="
-            "RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively'"
+            "RigidIpcCcdCase.EvaluatesAuditedWreckingBallCorpusConservatively'"
         )
         expected_invariant = (
             "DART loads the audited wrecking-ball direct-CCD row and, when a "
@@ -406,9 +406,8 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
         )
         notes_or_gap = (
             "Covered by hermetic DART load and conservative-TOI evaluator "
-            "regressions for the first audited wrecking-ball direct-CCD rows; "
-            "remaining wrecking-ball rows and corpus-scale interval-root parity "
-            "remain tracked by Phase 2c."
+            "regressions for the audited wrecking-ball direct-CCD corpus; "
+            "corpus-scale interval-root parity remains tracked by Phase 2c."
         )
 
     return {

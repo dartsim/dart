@@ -93,20 +93,20 @@ def test_rigid_ipc_manifest_marks_first_wrecking_ball_ccd_rows_implemented(
     )
 
     assert row["status"] == "implemented"
-    assert "EvaluatesFirstAuditedWreckingBallRowsConservatively" in row["dart_artifact"]
+    assert "EvaluatesAuditedWreckingBallCorpusConservatively" in row["dart_artifact"]
     assert "truncated interval" in row["expected_invariant"]
 
 
-def test_rigid_ipc_manifest_leaves_remaining_wrecking_ball_ccd_rows_planned(
+def test_rigid_ipc_manifest_leaves_synthetic_wrecking_ball_ccd_rows_planned(
     tmp_path,
 ):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
-    data_path = tmp_path / "tests" / "data" / "wrecking-ball" / "ccd-test-012.json"
+    data_path = tmp_path / "tests" / "data" / "wrecking-ball" / "ccd-test-386.json"
     data_path.parent.mkdir(parents=True)
     data_path.write_text('{"type":"ee"}')
 
     row = module.row_for_path(
-        "tests/data/wrecking-ball/ccd-test-012.json", "test-data", tmp_path
+        "tests/data/wrecking-ball/ccd-test-386.json", "test-data", tmp_path
     )
 
     assert row["status"] == "planned"

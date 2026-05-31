@@ -81,9 +81,9 @@
           matching the current DART distance query for those rows.
     - [x] Add audited kinematic CCD row regressions that preserve the
           upstream guard against zero-time hits when the row starts separated.
-    - [x] Add first audited wrecking-ball CCD row regressions that mirror the
-          upstream conservative-TOI check: if DART reports a TOI, replaying only
-          through that bound does not report another hit.
+    - [x] Add tracked wrecking-ball CCD row regressions that mirror the upstream
+          conservative-TOI check: if DART reports a TOI, replaying only through
+          that bound does not report another hit.
     - [ ] Match those rows with the audited reference's interval-root rigid CCD
           semantics across the corpus.
 - [ ] Phase 3: rigid barrier objective, line search, projected Newton, sparse
@@ -262,8 +262,8 @@
   - [x] Mark the audited kinematic direct-CCD rows
         (`tests/data/kinematic/ccd-test-000..012.json`) as implemented in the
         generated manifest after their zero-time-hit guard regression landed.
-  - [x] Mark the first audited wrecking-ball direct-CCD rows
-        (`tests/data/wrecking-ball/ccd-test-000..011.json`) as implemented in
+  - [x] Mark the tracked wrecking-ball direct-CCD rows
+        (`tests/data/wrecking-ball/ccd-test-000..385.json`) as implemented in
         the generated manifest after their conservative-TOI regression landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
@@ -339,9 +339,9 @@ DART-owned implementation.
   CCD row evaluator now routes those first rows through the subdivision queries,
   does not surface zero-time hits for the audited kinematic rows when they start
   separated, and the manifest generator now marks the four root rows plus all
-  audited kinematic rows implemented. The first audited wrecking-ball rows now
-  preserve the upstream conservative-TOI check: when DART reports a hit, a
-  replay truncated at that reported bound does not report another hit.
+  audited kinematic rows implemented. The tracked wrecking-ball direct-CCD
+  corpus now preserves the upstream conservative-TOI check: when DART reports a
+  hit, a replay truncated at that reported bound does not report another hit.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under

@@ -958,8 +958,8 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     The generated rigid IPC fixture manifest now marks
     `tests/data/kinematic/ccd-test-000..012.json` as implemented by that
     regression.
-  - Added first audited wrecking-ball direct-CCD coverage for
-    `tests/data/wrecking-ball/ccd-test-000..011.json`, preserving the upstream
+  - Added tracked wrecking-ball direct-CCD coverage for
+    `tests/data/wrecking-ball/ccd-test-000..385.json`, preserving the upstream
     conservative-TOI check that a replay truncated at DART's reported impact
     bound does not report another hit. The generated rigid IPC fixture manifest
     now marks those rows as implemented by that regression.

@@ -2313,6 +2313,87 @@ TEST(RigidIpcCcdCase, EvaluatesFirstAuditedWreckingBallRowsConservatively)
   }
 }
 
+TEST(RigidIpcCcdCase, EvaluatesAuditedWreckingBallCorpusConservatively)
+{
+  const std::filesystem::path corpusPath
+      = (std::filesystem::path(__FILE__).parent_path() / ".." / ".." / ".."
+         / ".." / "fixtures" / "rigid_ipc" / "wrecking_ball_ccd.tsv")
+            .lexically_normal();
+  std::ifstream corpus(corpusPath);
+  ASSERT_TRUE(corpus.is_open()) << corpusPath;
+
+  dart::collision::native::CcdOption option
+      = dart::collision::native::CcdOption::precise();
+  const auto interpolatePoseRecord = [](const expio::RigidIpcPoseRecord& start,
+                                        const expio::RigidIpcPoseRecord& end,
+                                        const double t) {
+    expio::RigidIpcPoseRecord interpolated;
+    interpolated.position
+        = start.position + (end.position - start.position) * t;
+    interpolated.rotation
+        = start.rotation + (end.rotation - start.rotation) * t;
+    return interpolated;
+  };
+
+  std::size_t rowCount = 0;
+  std::string line;
+  while (std::getline(corpus, line)) {
+    if (line.empty()) {
+      continue;
+    }
+
+    const std::size_t separator = line.find('\t');
+    ASSERT_NE(separator, std::string::npos) << line;
+    const std::string path = line.substr(0, separator);
+    const std::string source = line.substr(separator + 1);
+
+    SCOPED_TRACE(path);
+    expio::RigidIpcCcdCase ccdCase = loadCcdCase(source);
+    ASSERT_FALSE(ccdCase.hasErrors());
+    ASSERT_TRUE(ccdCase.diagnostics.empty());
+    switch (ccdCase.type) {
+      case expio::RigidIpcCcdCaseType::EdgeVertex:
+        ASSERT_EQ(ccdCase.bodyA.vertices.size(), 2u);
+        ASSERT_EQ(ccdCase.bodyB.vertices.size(), 1u);
+        break;
+      case expio::RigidIpcCcdCaseType::EdgeEdge:
+        ASSERT_EQ(ccdCase.bodyA.vertices.size(), 2u);
+        ASSERT_EQ(ccdCase.bodyB.vertices.size(), 2u);
+        break;
+      case expio::RigidIpcCcdCaseType::FaceVertex:
+        ASSERT_EQ(ccdCase.bodyA.vertices.size(), 3u);
+        ASSERT_EQ(ccdCase.bodyB.vertices.size(), 1u);
+        break;
+    }
+
+    dart::collision::native::CcdPrimitiveResult result;
+    const bool hit = expio::evaluateRigidIpcCcdCase(ccdCase, option, result);
+    if (!hit) {
+      EXPECT_FALSE(result.isHit());
+      ++rowCount;
+      continue;
+    }
+
+    EXPECT_TRUE(result.isHit());
+    EXPECT_EQ(result.status, dart::collision::native::CcdPrimitiveStatus::Hit);
+    EXPECT_GE(result.timeOfImpact, 0.0);
+    EXPECT_LE(result.timeOfImpact, 1.0);
+
+    ccdCase.bodyA.poseT1 = interpolatePoseRecord(
+        ccdCase.bodyA.poseT0, ccdCase.bodyA.poseT1, result.timeOfImpact);
+    ccdCase.bodyB.poseT1 = interpolatePoseRecord(
+        ccdCase.bodyB.poseT0, ccdCase.bodyB.poseT1, result.timeOfImpact);
+
+    dart::collision::native::CcdPrimitiveResult truncatedResult;
+    EXPECT_FALSE(
+        expio::evaluateRigidIpcCcdCase(ccdCase, option, truncatedResult));
+    EXPECT_FALSE(truncatedResult.isHit());
+    ++rowCount;
+  }
+
+  EXPECT_EQ(rowCount, 386u);
+}
+
 TEST(RigidIpcCcdCase, EvaluatesAuditedKinematicRowsWithoutZeroTimeHits)
 {
   struct CcdRow
