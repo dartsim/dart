@@ -132,6 +132,10 @@ navigation, and a path for scene-specific controls.
   default workspace leaves more room for the 3D viewport. In docked mode, the
   built-in `DART` panel now shows scene/time/selection diagnostics first and
   keeps verbose viewer help/debug toggles in collapsible sections.
+- Capture the dock-layout decision in the durable demos-app design: the
+  workspace rebuilds a deterministic default dock layout on startup and uses
+  `Reset Layout` as the explicit recovery path, rather than persisting panel
+  positions across runs.
 - Make the `Demos` navigator group categories by first appearance across the
   whole catalog instead of relying on contiguous scene ordering, and show the
   current filtered/total scene count.
@@ -146,10 +150,9 @@ navigation, and a path for scene-specific controls.
 - Add full OS/GLFW mouse-event injection coverage only if the Filament test
   harness grows synthetic pointer input beyond the current framebuffer-pixel
   force-drag capture path.
-- Consider process- or worker-isolated demo construction if a future demo
-  factory can block indefinitely before returning to the C++ viewer loop.
-- Decide whether dock layout persistence is needed after the default layout
-  settles.
+- Consider process- or worker-isolated demo construction only if a future
+  native/C++ factory can block indefinitely before returning to the C++ viewer
+  loop; pure-Python stalls now fail through the watchdog.
 
 ## Completion notes
 

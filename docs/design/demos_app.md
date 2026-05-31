@@ -100,6 +100,11 @@ including optional ImGui panels via `--show-ui`, and writes screenshots, frame
 sequences, and MP4s for visual debugging. It rejects blank/noop captures so
 layout, camera, lighting, and material changes have inspectable artifacts.
 
+The Python workspace uses a deterministic dock layout on startup instead of
+persisting panel locations across runs. `Reset Layout` is the explicit recovery
+action after interactive rearrangement. This keeps stale `imgui.ini` state from
+obscuring the viewport or hiding panels when scene-specific controls change.
+
 ### Build layout
 
 `examples/demos/` builds the `dart-demos` executable via the shared

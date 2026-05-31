@@ -1055,6 +1055,8 @@ TEST(FilamentSceneExtraction, PanelControlsUseDockFriendlyLabels)
       panelSource.find(
           "ImGui::SetNextItemWidth(-std::numeric_limits<float>::min())"),
       std::string::npos);
+  EXPECT_NE(
+      panelSource.find("ImGuiWindowFlags_NoSavedSettings"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, DemoWorkspaceSupportsScriptedSwitchCaptureEvents)

@@ -524,13 +524,10 @@ void renderApplicationPanels(
       ImGui::SetNextWindowSize({320.0f * scale, 0.0f}, ImGuiCond_FirstUseEver);
     }
 
-    // When docking is enabled, allow ImGui to persist each panel's dock state
-    // (position/size/dock node) in imgui.ini; otherwise keep floating overlays
-    // deterministic by not saving their settings.
-    ImGuiWindowFlags windowFlags = 0;
-    if (!dockingActive) {
-      windowFlags |= ImGuiWindowFlags_NoSavedSettings;
-    }
+    // The default dock builder owns startup placement; the Reset Layout action
+    // is the explicit recovery path. Do not let stale imgui.ini panel state
+    // override the deterministic demos workspace or floating overlay defaults.
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoSavedSettings;
     if (panel.autoResize && !dockingActive) {
       windowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
     }

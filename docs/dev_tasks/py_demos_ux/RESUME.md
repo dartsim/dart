@@ -104,6 +104,11 @@
   dock is also smaller in the default layout to preserve more viewport area,
   and the docked `DART` panel puts live scene diagnostics before collapsible
   debug/help details.
+- Dock layout persistence is intentionally not part of the Python demos
+  workspace. Startup rebuilds the deterministic default layout, `Reset Layout`
+  is the explicit recovery path after rearrangement, and panel windows use
+  `NoSavedSettings` so stale `imgui.ini` state cannot hide controls on the next
+  run.
 - `UNIT_gui_FilamentSceneExtraction` now has direct controller coverage for
   external SimpleFrame-style force-drag callback routing and BodyNode
   shape-offset application points.
@@ -228,12 +233,16 @@ Reset-layout toolbar proof:
 
 ```bash
 pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 4 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_reset_layout_control
+env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe timeout 180s pixi run py-demo-capture -- --scene sx_rigid_ipc_slide --show-ui --frames 4 --width 1280 --height 720 --output-dir /tmp/dart_py_demo_capture_no_persist_layout
 ```
 
 The screenshot at
 `/tmp/dart_py_demo_capture_reset_layout_control/sx_rigid_ipc_slide.png` was
 viewed and showed the top `Simulation` toolbar with `Reset Layout` between
-`Replay` and `Stop Record`.
+`Replay` and `Stop Record`. The no-persistence proof screenshot at
+`/tmp/dart_py_demo_capture_no_persist_layout/sx_rigid_ipc_slide.png` was
+viewed and showed the deterministic docked workspace still places the Demos,
+Simulation, scene panel, and DART diagnostics without overlap.
 
 Recording playback proof:
 
