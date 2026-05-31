@@ -243,6 +243,19 @@ ground barrier through the iterative path with accepted CG steps dominating
 fallbacks and the same equilibrium as the direct solve, plus a `cg_contact`
 py-demo.
 
+**Third increment landed:** a chunky 3D FEM-cube direct-vs-iterative scaling
+benchmark (`BM_DeformableCube3dDirectStep` / `BM_DeformableCube3dCgStep`) that
+makes the crossover measurable on the mesh shape where it bites. On a solid N^3
+cube the direct solve's 3D fill-in makes its per-step time climb super-linearly
+while the incomplete-Cholesky CG stays near O(nnz); on the development machine
+the per-step cost crosses over near ~1k nodes and the iterative solve runs ~5x
+faster by ~4k nodes (measured: 11.3 s/step direct vs 2.3 s/step iterative at
+4096 nodes). The thin `BM_DeformableFemBarStep` beam (2x2 cross-section) cannot
+show this -- its bandwidth is too small -- which is why the chunky fixture was
+added. Guarded by a regression that the chunky 3D cube sags to the same
+equilibrium under both solvers. This is the first concrete, measured rung of the
+Fig-23 / Table-1 per-step-scaling axis.
+
 Remaining M7 work: a truly matrix-free Hessian-vector CG (skip the sparse
 assembly entirely), an AMG / multigrid preconditioner for the largest systems,
 on-device GPU assembly + solve beyond the current PSD offload, the 688K-node
