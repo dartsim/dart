@@ -69,8 +69,15 @@ they should not own priority, timeline, or active implementation state.
 | [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)                                                               | Durable native-collision feature/performance dashboard          |
 | [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)                                                   | Durable row-level native-collision coverage matrix sidecar      |
 | [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)                                             | Generated native-collision benchmark evidence manifest          |
+| [`081-deformable-implicit-barrier-solver.md`](081-deformable-implicit-barrier-solver.md)                                               | PLAN-081 deformable IPC scope, slices, and acceptance evidence  |
+| [`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md)       | PLAN-081 IPC paper/repository parity checklist                  |
+| [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md)     | PLAN-081 PD-IPC GPU source audit and implementation sequence    |
+| [`081-deformable-implicit-barrier-solver/spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md)                   | PLAN-081 SPB source audit and self-intersection recovery plan   |
 | [`082-rigid-implicit-barrier-contact.md`](082-rigid-implicit-barrier-contact.md)                                                       | PLAN-082 rigid IPC scope, manifest, and acceptance criteria     |
 | [`082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md`](082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md) | PLAN-082 simultaneous-impact intake and go/no-go sidecar        |
+| [`104-vertex-block-descent-solver.md`](104-vertex-block-descent-solver.md)                                                             | PLAN-104 VBD solver scope, remaining corpus/performance work    |
+| [`104-vertex-block-descent-solver/vbd-paper-gap-audit.md`](104-vertex-block-descent-solver/vbd-paper-gap-audit.md)                     | PLAN-104 VBD paper/reference gap audit                          |
+| [`104-vertex-block-descent-solver/ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md)                                 | PLAN-104 OGC source audit and implementation sequence           |
 | [`110-differentiable-simulation.md`](110-differentiable-simulation.md)                                                                 | PLAN-110 differentiable simulation scope, audits, and gates     |
 | [`101-dartsim-gui-simulator.md`](101-dartsim-gui-simulator.md)                                                                         | PLAN-101 dartsim GUI simulator scope, phases, and acceptance    |
 | [`120-inverse-kinematics-and-motion.md`](120-inverse-kinematics-and-motion.md)                                                         | PLAN-120 IK solver portfolio, whole-body parity, and motion IK  |
