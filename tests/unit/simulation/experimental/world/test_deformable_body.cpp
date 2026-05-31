@@ -43,6 +43,7 @@
 
 #include <array>
 #include <limits>
+#include <numbers>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -1194,7 +1195,7 @@ TEST(DeformableBody, CapsuleObstacleFrictionDeceleratesSlidingNode)
     sx::RigidBodyOptions rodOptions;
     rodOptions.isStatic = true;
     rodOptions.orientation = Eigen::Quaterniond(
-        Eigen::AngleAxisd(-M_PI / 2.0, Eigen::Vector3d::UnitX()));
+        Eigen::AngleAxisd(-std::numbers::pi / 2.0, Eigen::Vector3d::UnitX()));
     auto rod = world.addRigidBody("rod", rodOptions);
     constexpr double radius = 0.2;
     // The rod is long enough that the frictionless node stays on the
