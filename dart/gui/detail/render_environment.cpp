@@ -140,43 +140,42 @@ void configureViewQuality(::filament::View& view, bool headless)
   renderQuality.hdrColorBuffer = ::filament::QualityLevel::HIGH;
   view.setRenderQuality(renderQuality);
 
-  // Ground-truth ambient occlusion (GTAO). This darkens the creases where
-  // bodies meet the ground and each other, which is exactly what grounds the
-  // contact-rich rigid IPC scenes visually. Applied in BOTH windowed and
-  // headless so the headless paper-style captures get the same grounding
-  // (these captures are the figure-quality visuals for PLAN-082). GTAO is a
-  // screen-space post-process, so it stays deterministic and adds no
-  // multisample render target on the headless software path.
-  ::filament::AmbientOcclusionOptions ambientOcclusionOptions;
-  ambientOcclusionOptions.enabled = true;
-  ambientOcclusionOptions.aoType
-      = ::filament::AmbientOcclusionOptions::AmbientOcclusionType::GTAO;
-  ambientOcclusionOptions.radius = 0.32f;
-  ambientOcclusionOptions.intensity = 0.62f;
-  ambientOcclusionOptions.power = 1.15f;
-  ambientOcclusionOptions.quality = ::filament::QualityLevel::HIGH;
-  ambientOcclusionOptions.lowPassFilter = ::filament::QualityLevel::HIGH;
-  ambientOcclusionOptions.upsampling = ::filament::QualityLevel::HIGH;
-  ambientOcclusionOptions.bentNormals = true;
-  view.setAmbientOcclusionOptions(ambientOcclusionOptions);
-
-  // Subtle physically-based bloom on bright specular highlights gives metallic
-  // and glossy bodies energy without washing the scene out.
-  ::filament::BloomOptions bloomOptions;
-  bloomOptions.enabled = true;
-  bloomOptions.strength = 0.08f;
-  view.setBloomOptions(bloomOptions);
-
-  // 4x MSAA is a hardware multisample target, kept to the windowed path where a
-  // GPU backend is guaranteed. FXAA (a cheap shader-space pass) runs in both
-  // modes so the headless captures are still anti-aliased without needing a
-  // multisample resolve on the software rasterizer.
+  // The heavy screen-space passes -- ground-truth ambient occlusion (GTAO),
+  // bloom, and 4x MSAA -- are kept to the WINDOWED path, where a real GPU
+  // backend is guaranteed. The headless path renders on the CI software
+  // rasterizer (llvmpipe), where these multi-sample/multi-pass effects can be
+  // prohibitively slow or unsupported, so headless stays light. Headless still
+  // gets the cheap, shader-space improvements below (FXAA + temporal
+  // dithering), which need no GPU multisample target.
   if (!headless) {
+    // GTAO darkens the creases where bodies meet the ground and each other,
+    // which is exactly what grounds the contact-rich rigid IPC scenes visually.
+    ::filament::AmbientOcclusionOptions ambientOcclusionOptions;
+    ambientOcclusionOptions.enabled = true;
+    ambientOcclusionOptions.aoType
+        = ::filament::AmbientOcclusionOptions::AmbientOcclusionType::GTAO;
+    ambientOcclusionOptions.radius = 0.32f;
+    ambientOcclusionOptions.intensity = 0.62f;
+    ambientOcclusionOptions.power = 1.15f;
+    ambientOcclusionOptions.quality = ::filament::QualityLevel::HIGH;
+    ambientOcclusionOptions.lowPassFilter = ::filament::QualityLevel::HIGH;
+    ambientOcclusionOptions.upsampling = ::filament::QualityLevel::HIGH;
+    ambientOcclusionOptions.bentNormals = true;
+    view.setAmbientOcclusionOptions(ambientOcclusionOptions);
+
+    // Subtle physically-based bloom on bright specular highlights gives
+    // metallic and glossy bodies energy without washing the scene out.
+    ::filament::BloomOptions bloomOptions;
+    bloomOptions.enabled = true;
+    bloomOptions.strength = 0.08f;
+    view.setBloomOptions(bloomOptions);
+
     ::filament::MultiSampleAntiAliasingOptions multiSampleAntiAliasingOptions;
     multiSampleAntiAliasingOptions.enabled = true;
     multiSampleAntiAliasingOptions.sampleCount = 4;
     view.setMultiSampleAntiAliasingOptions(multiSampleAntiAliasingOptions);
   }
+
   view.setAntiAliasing(::filament::AntiAliasing::FXAA);
   // Temporal dithering breaks up 8-bit banding in the smooth background and
   // soft shadow gradients (was NONE, which left visible banding).
@@ -191,10 +190,10 @@ void configureMainView(
   view.setColorGrading(colorGrading);
   applyRenderSettings(view, dart::gui::RenderSettings{});
   view.setShadowType(::filament::ShadowType::PCF);
-  // Shared quality (HDR, GTAO, bloom, FXAA, dithering) runs in both modes so
-  // the headless captures match the windowed fidelity; MSAA and the volumetric
-  // fog stay windowed-only (fog can flatten distant contrast, MSAA needs a GPU
-  // multisample target).
+  // configureViewQuality applies HDR + FXAA + temporal dithering in both modes,
+  // and the GPU-heavy passes (GTAO, bloom, MSAA) only when windowed. The
+  // volumetric fog is windowed-only too (it can flatten distant contrast on the
+  // headless contrast smoke).
   configureViewQuality(view, headless);
   if (!headless) {
     configureNeutralViewportAtmosphere(view);
@@ -277,8 +276,12 @@ SceneLights createSceneLights(
       utils::EntityManager::get().create()};
 
   ::filament::LightManager::ShadowOptions shadowOptions;
-  shadowOptions.mapSize = headless ? 3072u : 4096u;
-  shadowOptions.shadowCascades = 4;
+  // Keep the headless shadow atlas at the original light cost (2048 / 3
+  // cascades): headless renders on the CI software rasterizer, where a larger
+  // atlas and an extra cascade are pure overhead. Windowed (real GPU) gets the
+  // sharper 4096 / 4-cascade shadows.
+  shadowOptions.mapSize = headless ? 2048u : 4096u;
+  shadowOptions.shadowCascades = headless ? 3 : 4;
   shadowOptions.cascadeSplitPositions[0] = 0.10f;
   shadowOptions.cascadeSplitPositions[1] = 0.30f;
   shadowOptions.cascadeSplitPositions[2] = 0.62f;
@@ -287,8 +290,10 @@ SceneLights createSceneLights(
   // Screen-space contact shadows tighten the contact between resting/stacked
   // bodies and the surfaces they sit on -- the soft cascade shadow alone leaves
   // a small gap at the contact, which reads as "floating". This adds the short,
-  // sharp contact occlusion that visually seats a body on the ground.
-  shadowOptions.screenSpaceContactShadows = true;
+  // sharp contact occlusion that visually seats a body on the ground. It is an
+  // extra screen-space ray-march pass, so keep it to the windowed (GPU) path
+  // and off the headless software rasterizer.
+  shadowOptions.screenSpaceContactShadows = !headless;
   shadowOptions.stepCount = 12;
   shadowOptions.maxShadowDistance = 0.5f;
 
