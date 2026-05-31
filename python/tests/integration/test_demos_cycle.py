@@ -287,6 +287,8 @@ def test_ipc_deformable_rod_friction_decelerates_sliding_strip() -> None:
     slides measurably less with friction than without, while staying on the rod.
     """
 
+    _require_sx_attrs("DeformableBodyOptions")
+
     import numpy as np
 
     from examples.demos.scenes import ipc_deformable_rod_friction as scene
@@ -326,6 +328,8 @@ def test_ipc_deformable_barrier_only_box_friction_decelerates_strip() -> None:
     far frictionless but is held back under friction, staying above the top face --
     the CCD-free path to box/sphere obstacle friction.
     """
+
+    _require_sx_attrs("DeformableBodyOptions")
 
     import numpy as np
 
