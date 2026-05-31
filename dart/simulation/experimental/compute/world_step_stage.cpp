@@ -853,6 +853,144 @@ struct DeformableContactSolverScratch
 };
 
 //==============================================================================
+struct ProjectedNewtonMatrixFreeHessian
+{
+  struct Block3
+  {
+    std::size_t rowNode = 0;
+    std::size_t colNode = 0;
+    Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
+  };
+
+  explicit ProjectedNewtonMatrixFreeHessian(std::size_t nodes)
+    : nodeCount(nodes), diagonalBlocks(nodes, Eigen::Matrix3d::Zero())
+  {
+  }
+
+  void addBlock3(
+      std::size_t rowNode, std::size_t colNode, const Eigen::Matrix3d& block)
+  {
+    blocks.push_back({rowNode, colNode, block});
+    if (rowNode == colNode) {
+      diagonalBlocks[rowNode] += block;
+    }
+  }
+
+  [[nodiscard]] Eigen::VectorXd multiply(const Eigen::VectorXd& x) const
+  {
+    Eigen::VectorXd y
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(3 * nodeCount));
+    for (const auto& entry : blocks) {
+      y.segment<3>(static_cast<Eigen::Index>(3 * entry.rowNode))
+          += entry.block
+             * x.segment<3>(static_cast<Eigen::Index>(3 * entry.colNode));
+    }
+    return y;
+  }
+
+  [[nodiscard]] bool factorBlockJacobi()
+  {
+    inverseDiagonalBlocks.assign(nodeCount, Eigen::Matrix3d::Zero());
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      Eigen::LLT<Eigen::Matrix3d> llt(diagonalBlocks[i]);
+      if (llt.info() != Eigen::Success) {
+        return false;
+      }
+      inverseDiagonalBlocks[i] = llt.solve(Eigen::Matrix3d::Identity()).eval();
+      if (!inverseDiagonalBlocks[i].allFinite()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  [[nodiscard]] Eigen::VectorXd applyPreconditioner(
+      const Eigen::VectorXd& residual) const
+  {
+    Eigen::VectorXd z
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(3 * nodeCount));
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      z.segment<3>(static_cast<Eigen::Index>(3 * i))
+          = inverseDiagonalBlocks[i]
+            * residual.segment<3>(static_cast<Eigen::Index>(3 * i));
+    }
+    return z;
+  }
+
+  std::size_t nodeCount = 0;
+  std::vector<Block3> blocks;
+  std::vector<Eigen::Matrix3d> diagonalBlocks;
+  std::vector<Eigen::Matrix3d> inverseDiagonalBlocks;
+};
+
+//==============================================================================
+bool solveMatrixFreeConjugateGradient(
+    ProjectedNewtonMatrixFreeHessian& hessian,
+    const Eigen::VectorXd& rhs,
+    Eigen::VectorXd& solution,
+    std::size_t& iterations,
+    double& relativeResidual)
+{
+  constexpr double kTolerance = 1e-8;
+  const Eigen::Index maxIterations = 2 * rhs.size();
+  solution = Eigen::VectorXd::Zero(rhs.size());
+  iterations = 0;
+  relativeResidual = 0.0;
+
+  if (!hessian.factorBlockJacobi()) {
+    return false;
+  }
+
+  const double rhsNorm = rhs.norm();
+  if (rhsNorm == 0.0) {
+    return true;
+  }
+
+  Eigen::VectorXd residual = rhs;
+  Eigen::VectorXd z = hessian.applyPreconditioner(residual);
+  Eigen::VectorXd direction = z;
+  double rz = residual.dot(z);
+  if (!std::isfinite(rz) || rz <= 0.0 || !direction.allFinite()) {
+    return false;
+  }
+
+  for (Eigen::Index iter = 0; iter < maxIterations; ++iter) {
+    const Eigen::VectorXd hessianDirection = hessian.multiply(direction);
+    const double curvature = direction.dot(hessianDirection);
+    if (!std::isfinite(curvature) || curvature <= 0.0) {
+      return false;
+    }
+
+    const double alpha = rz / curvature;
+    solution += alpha * direction;
+    residual -= alpha * hessianDirection;
+    if (!solution.allFinite() || !residual.allFinite()) {
+      return false;
+    }
+
+    relativeResidual = residual.norm() / rhsNorm;
+    iterations = static_cast<std::size_t>(iter + 1);
+    if (relativeResidual <= kTolerance) {
+      return true;
+    }
+
+    z = hessian.applyPreconditioner(residual);
+    const double nextRz = residual.dot(z);
+    if (!std::isfinite(nextRz) || nextRz <= 0.0 || !z.allFinite()) {
+      return false;
+    }
+    const double beta = nextRz / rz;
+    direction = z + beta * direction;
+    if (!direction.allFinite()) {
+      return false;
+    }
+    rz = nextRz;
+  }
+
+  return false;
+}
+
+//==============================================================================
 struct SurfaceContactSnapshot
 {
   entt::entity entity = entt::null;
@@ -4457,21 +4595,24 @@ bool computeProjectedNewtonDirection(
     DeformableContactSolverScratch& solverCache,
     DeformableSolverStats& stats,
     double barrierStiffness = kDefaultBarrierStiffness,
-    bool useIterativeSolver = false)
+    bool useIterativeSolver = false,
+    bool useMatrixFreeSolver = false)
 {
   const std::size_t nodeCount = positions.size();
   // The sparse direct (Cholesky) solve is fastest for small/medium meshes but
   // its fill-in grows super-linearly, so it is capped. Above the direct cap (or
-  // when iterative solving is opted in) a matrix-light conjugate-gradient solve
-  // is used instead: it never factorizes, so it scales to far larger meshes at
-  // the cost of iterations. The hard cap is a runaway bound only.
+  // when iterative solving is opted in) a sparse IC-CG solve is used instead.
+  // The explicit matrix-free opt-in goes one step further and bypasses sparse
+  // Hessian assembly, using local block Hessian-vector products. The hard cap
+  // is a runaway bound only.
   constexpr std::size_t kMaxDirectNodes = 20000;
   constexpr std::size_t kMaxIterativeNodes = 1000000;
   if (nodeCount == 0 || nodeCount > kMaxIterativeNodes) {
     return false;
   }
-  const bool solveIteratively
-      = useIterativeSolver || nodeCount > kMaxDirectNodes;
+  const bool solveIteratively = useIterativeSolver || useMatrixFreeSolver
+                                || nodeCount > kMaxDirectNodes;
+  const bool solveMatrixFree = useMatrixFreeSolver;
 
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
   const double invDt2 = 1.0 / (timeStep * timeStep);
@@ -4503,7 +4644,13 @@ bool computeProjectedNewtonDirection(
               + contactBarrier->candidates->edgeEdgeCandidates.size());
   }
   std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(tripletEstimate);
+  ProjectedNewtonMatrixFreeHessian matrixFreeHessian(
+      solveMatrixFree ? nodeCount : 0);
+  if (!solveMatrixFree) {
+    triplets.reserve(tripletEstimate);
+  } else {
+    matrixFreeHessian.blocks.reserve(tripletEstimate / 9u);
+  }
 
   const auto isFree = [&](std::size_t node) {
     return fixed[node] == 0u;
@@ -4512,6 +4659,10 @@ bool computeProjectedNewtonDirection(
                              std::size_t nodeCol,
                              const Eigen::Matrix3d& block) {
     if (!isFree(nodeRow) || !isFree(nodeCol)) {
+      return;
+    }
+    if (solveMatrixFree) {
+      matrixFreeHessian.addBlock3(nodeRow, nodeCol, block);
       return;
     }
     for (int r = 0; r < 3; ++r) {
@@ -4523,17 +4674,25 @@ bool computeProjectedNewtonDirection(
       }
     }
   };
+  const auto addDiagonalBlock3 = [&](std::size_t node, double diagonal) {
+    if (solveMatrixFree) {
+      matrixFreeHessian.addBlock3(
+          node, node, diagonal * Eigen::Matrix3d::Identity());
+      return;
+    }
+    for (int r = 0; r < 3; ++r) {
+      triplets.emplace_back(
+          static_cast<Eigen::Index>(3 * node + r),
+          static_cast<Eigen::Index>(3 * node + r),
+          diagonal);
+    }
+  };
 
   // Inertia: block diagonal, positive definite for free nodes. Fixed DOFs get
   // a unit diagonal so the global matrix stays positive definite.
   for (std::size_t i = 0; i < nodeCount; ++i) {
     const double diagonal = isFree(i) ? state.masses[i] * invDt2 : 1.0;
-    for (int k = 0; k < 3; ++k) {
-      triplets.emplace_back(
-          static_cast<Eigen::Index>(3 * i + k),
-          static_cast<Eigen::Index>(3 * i + k),
-          diagonal);
-    }
+    addDiagonalBlock3(i, diagonal);
   }
 
   // Spring stretch Hessian per edge, PSD-projected over its 6x6 block. The
@@ -4717,10 +4876,9 @@ bool computeProjectedNewtonDirection(
       const double second
           = -barrierScale
             * (2.0 * logRatio + 4.0 * offset / d - (offset * offset) / (d * d));
-      triplets.emplace_back(
-          static_cast<Eigen::Index>(3 * i + 2),
-          static_cast<Eigen::Index>(3 * i + 2),
-          std::max(0.0, second));
+      Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
+      block(2, 2) = std::max(0.0, second);
+      addBlock3(i, i, block);
     }
   }
 
@@ -4928,12 +5086,42 @@ bool computeProjectedNewtonDirection(
     }
   }
 
-  Eigen::SparseMatrix<double> hessian(dim, dim);
-  hessian.setFromTriplets(triplets.begin(), triplets.end());
-  hessian.makeCompressed();
+  Eigen::SparseMatrix<double> hessian;
+  if (!solveMatrixFree) {
+    hessian.resize(dim, dim);
+    hessian.setFromTriplets(triplets.begin(), triplets.end());
+    hessian.makeCompressed();
+    const auto hessianNonZeros = static_cast<std::size_t>(hessian.nonZeros());
+    const auto hessianCols = static_cast<std::size_t>(hessian.cols());
+    using SparseStorageIndex = Eigen::SparseMatrix<double>::StorageIndex;
+    const std::size_t hessianStorageBytes
+        = hessianNonZeros * (sizeof(double) + sizeof(SparseStorageIndex))
+          + (hessianCols + 1u) * sizeof(SparseStorageIndex);
+    stats.projectedNewtonHessianNonZeros
+        = std::max(stats.projectedNewtonHessianNonZeros, hessianNonZeros);
+    stats.projectedNewtonHessianStorageBytes = std::max(
+        stats.projectedNewtonHessianStorageBytes, hessianStorageBytes);
+  }
 
   Eigen::VectorXd solution;
-  if (solveIteratively) {
+  if (solveMatrixFree) {
+    std::size_t cgIterations = 0;
+    double cgError = 0.0;
+    if (!solveMatrixFreeConjugateGradient(
+            matrixFreeHessian, rhs, solution, cgIterations, cgError)
+        || !solution.allFinite()) {
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
+    ++stats.projectedNewtonIterativeSolves;
+    ++stats.projectedNewtonMatrixFreeSolves;
+    stats.projectedNewtonIterativeIterations += cgIterations;
+    if (std::isfinite(cgError)) {
+      stats.projectedNewtonIterativeMaxError
+          = std::max(stats.projectedNewtonIterativeMaxError, cgError);
+    }
+    solverCache.newtonPatternValid = false;
+  } else if (solveIteratively) {
     // Iterative path: an incomplete-Cholesky preconditioned conjugate-gradient
     // solve. The inertia term (m/dt^2 on every free DOF) plus the PSD-projected
     // spring/barrier blocks make the Hessian symmetric positive definite, so CG
@@ -4968,6 +5156,12 @@ bool computeProjectedNewtonDirection(
       return false;
     }
     ++stats.projectedNewtonIterativeSolves;
+    stats.projectedNewtonIterativeIterations
+        += static_cast<std::size_t>(std::max<Eigen::Index>(0, cg.iterations()));
+    if (std::isfinite(cg.error())) {
+      stats.projectedNewtonIterativeMaxError
+          = std::max(stats.projectedNewtonIterativeMaxError, cg.error());
+    }
     // The cached direct-solver symbolic pattern was not refreshed this step, so
     // invalidate it: a later step that drops back to the direct path must
     // re-analyze rather than trust a stale ordering.
@@ -5125,6 +5319,7 @@ void advanceDeformableBody(
   // regardless of this flag; the flag forces it for any size so callers can
   // trade direct-solve speed for the factorization-free memory profile.
   const bool useIterativeSolver = material.useIterativeLinearSolver;
+  const bool useMatrixFreeSolver = material.useMatrixFreeLinearSolver;
 
   stats.nodeCount += nodeCount;
   stats.edgeCount += model.edges.size();
@@ -5534,7 +5729,8 @@ void advanceDeformableBody(
           contactScratch,
           stats,
           barrierStiffness,
-          useIterativeSolver);
+          useIterativeSolver,
+          useMatrixFreeSolver);
       if (newtonDirection) {
         ++stats.projectedNewtonSteps;
       } else {

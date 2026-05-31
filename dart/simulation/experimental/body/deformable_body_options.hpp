@@ -115,6 +115,12 @@ struct DeformableMaterialProperties
   /// Cholesky direct solve, which is faster for small/medium meshes. Meshes
   /// above the direct-solve node cap always use CG regardless of this flag.
   bool useIterativeLinearSolver = false;
+
+  /// Opt in to the matrix-free conjugate-gradient projected-Newton linear
+  /// solve. This bypasses sparse Hessian assembly and factorization for the
+  /// iterative solve, using Hessian-vector products over the assembled local
+  /// blocks. Off (the default) keeps the existing direct / sparse IC-CG paths.
+  bool useMatrixFreeLinearSolver = false;
 };
 
 /// Scripted Dirichlet boundary condition over deformable nodes.

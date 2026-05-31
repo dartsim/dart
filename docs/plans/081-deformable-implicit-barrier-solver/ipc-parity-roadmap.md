@@ -256,8 +256,24 @@ added. Guarded by a regression that the chunky 3D cube sags to the same
 equilibrium under both solvers. This is the first concrete, measured rung of the
 Fig-23 / Table-1 per-step-scaling axis.
 
-Remaining M7 work: a truly matrix-free Hessian-vector CG (skip the sparse
-assembly entirely), an AMG / multigrid preconditioner for the largest systems,
+**Diagnostic follow-up in progress:** the iterative solver's public diagnostics
+now extend beyond the CG solve count with total CG iterations, the maximum
+Eigen-reported residual estimate for successful iterative Newton linear solves,
+and the assembled compressed sparse Hessian's nonzero count and storage estimate.
+The FEM-bar and chunky 3D cube benchmarks report the same `cg_iters_per_step`,
+`cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters.
+
+**Matrix-free follow-up in progress:** an explicit
+`useMatrixFreeLinearSolver` path applies local Hessian blocks directly with a
+block-Jacobi preconditioner and reports `projectedNewtonMatrixFreeSolves`.
+Benchmark rows expose `matrix_free_solves_per_step` plus zero sparse-Hessian
+footprint counters. It is now covered by ground-contact parity regressions: C++
+compares direct sparse, sparse IC-CG, and matrix-free CG on the same contacting
+FEM cube, while dartpy compares direct and matrix-free contact settling.
+Remaining hardening: larger contact-heavy meshes and deciding when matrix-free
+CG becomes the automatic very-large-mesh path.
+
+Remaining M7 work: AMG / multigrid preconditioning for the largest systems,
 on-device GPU assembly + solve beyond the current PSD offload, the 688K-node
 Fig-22 scale run, and the profiling-grade per-scene Fig-23 statistics harness
 with the Table-1 CPU comparison against the reference.

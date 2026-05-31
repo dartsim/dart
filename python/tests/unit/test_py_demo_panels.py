@@ -72,6 +72,18 @@ from examples.demos.scenes import (
 )
 
 
+def _require_simulation_experimental_symbols(*names: str):
+    try:
+        import dartpy.simulation_experimental as sx
+    except Exception as exc:  # pragma: no cover - reduced build without submodule
+        pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
+    missing = [name for name in names if not hasattr(sx, name)]
+    if missing:
+        formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
+        pytest.skip(f"{formatted} unavailable in this build")
+    return sx
+
+
 def test_make_world_factory_returns_panels_tuple() -> None:
     panel = ScenePanel("Controls", lambda builder, context: None)
     floating_panel = ScenePanel(
@@ -206,6 +218,8 @@ class _FakePanelBuilder:
 
 
 def test_high_value_sx_scenes_expose_custom_panels() -> None:
+    _require_simulation_experimental_symbols("World")
+
     for scene_module, expected_title in (
         (sx_articulated, "Articulated sx"),
         (sx_floating_base, "Floating Base sx"),
@@ -233,6 +247,10 @@ def test_high_value_sx_scenes_expose_custom_panels() -> None:
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions", "DeformableEdge", "World"
+    )
+
     setup = ipc_deformable_friction_slide.build()
     builder = _FakePanelBuilder()
 
@@ -247,6 +265,8 @@ def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
 
 
 def test_diff_drone_scene_exposes_replay_panel() -> None:
+    _require_simulation_experimental_symbols("World")
+
     setup = diff_drone_liftoff.build()
     builder = _FakePanelBuilder()
 
@@ -260,6 +280,8 @@ def test_diff_drone_scene_exposes_replay_panel() -> None:
 
 
 def test_diff_trajectory_scenes_expose_replay_panels() -> None:
+    _require_simulation_experimental_symbols("World")
+
     for scene_module, expected_title, expected_plot in (
         (diff_throw_to_target, "Diff Throw Target", "plot:Target distance:"),
         (diff_cartpole_trajopt, "Diff Cartpole TrajOpt", "plot:Cart x:"),
@@ -277,6 +299,10 @@ def test_diff_trajectory_scenes_expose_replay_panels() -> None:
 
 
 def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions", "DeformableTetrahedron", "World"
+    )
+
     setup = ipc_deformable_fem_buckle.build()
     builder = _FakePanelBuilder()
 
@@ -292,6 +318,10 @@ def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:
 
 
 def test_ipc_fem_sphere_scene_exposes_clearance_panel() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions", "DeformableTetrahedron", "World"
+    )
+
     setup = ipc_deformable_fem_sphere.build()
     builder = _FakePanelBuilder()
 
@@ -307,6 +337,10 @@ def test_ipc_fem_sphere_scene_exposes_clearance_panel() -> None:
 
 
 def test_ipc_friction_obstacle_scenes_expose_speed_panels() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions", "DeformableEdge", "World"
+    )
+
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_plate_friction, "IPC Plate Friction", "plot:X speed:"),
         (ipc_deformable_rod_friction, "IPC Rod Friction", "plot:Rod-axis speed:"),
@@ -328,6 +362,10 @@ def test_ipc_friction_obstacle_scenes_expose_speed_panels() -> None:
 
 
 def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions", "DeformableEdge", "World"
+    )
+
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_capsule_rod, "IPC Capsule Rod", "plot:Rod clearance:"),
         (ipc_deformable_trampoline, "IPC Trampoline", "plot:Center height:"),
@@ -348,6 +386,10 @@ def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
 
 
 def test_ipc_cg_showcase_scenes_expose_solver_panels() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions", "DeformableTetrahedron", "World"
+    )
+
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_cg_solver, "IPC FEM CG Solver", "plot:Tip drop:"),
         (ipc_deformable_cg_contact, "IPC FEM CG Contact", "plot:Ground clearance:"),
@@ -365,6 +407,10 @@ def test_ipc_cg_showcase_scenes_expose_solver_panels() -> None:
 
 
 def test_vbd_showcase_scenes_expose_solver_panels() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions", "DeformableSolverOptions", "World"
+    )
+
     for scene_module, expected_title, expected_plot in (
         (vbd_cloth, "VBD Cloth", "plot:Cloth sag:"),
         (vbd_net, "VBD Net", "plot:Net sag:"),
@@ -385,6 +431,16 @@ def test_vbd_showcase_scenes_expose_solver_panels() -> None:
 
 
 def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions",
+        "DeformableDirichletBoundaryCondition",
+        "DeformableEdge",
+        "World",
+        "load_obj_triangle_mesh",
+        "load_point_set",
+        "load_seg_line_mesh",
+    )
+
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_obj_cloth, "IPC OBJ Cloth", "plot:Cloth sag:"),
         (ipc_deformable_seg_strand, "IPC SEG Strand", "plot:Tip drop:"),
@@ -409,6 +465,13 @@ def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:
 
 
 def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
+    _require_simulation_experimental_symbols(
+        "DeformableBodyOptions",
+        "DeformableTetrahedron",
+        "World",
+        "load_gmsh_tet_mesh",
+    )
+
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_fem_bar, "IPC FEM Bar", "plot:Tip drop:"),
         (ipc_deformable_fem_twist, "IPC FEM Twist", "plot:Span y:"),
