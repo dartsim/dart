@@ -134,6 +134,11 @@ struct DeformableMaterial
   // Cholesky direct solve (faster for small/medium meshes). Large meshes above
   // the direct-solve node cap always use CG regardless of this flag.
   bool useIterativeLinearSolver = false;
+  // Opt in to the matrix-free CG path. This implies an iterative solve but
+  // bypasses sparse Hessian assembly, using block Hessian-vector products and a
+  // block-Jacobi preconditioner. Off by default keeps the existing sparse
+  // Cholesky / sparse IC-CG behavior unchanged.
+  bool useMatrixFreeLinearSolver = false;
 };
 
 /// Time-ranged scripted Dirichlet boundary region for deformable nodes.

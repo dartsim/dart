@@ -1131,6 +1131,38 @@ Capsule Rod (IPC)` py-demos scene.
     which solve path a body uses (zero means every solve was direct). Adds C++
     and Python regressions that the default direct solve reports zero while an
     opt-in iterative body reports a nonzero count.
+  - Extended the public deformable projected-Newton diagnostics with CG effort,
+    residual, and sparse-Hessian footprint counters (PLAN-081 M7).
+    `DeformableSolverDiagnostics` (dartpy
+    `last_deformable_solver_diagnostics`) now also carries
+    `projectedNewtonIterativeIterations` /
+    `projected_newton_iterative_iterations`,
+    `projectedNewtonIterativeMaxError` /
+    `projected_newton_iterative_max_error`,
+    `projectedNewtonHessianNonZeros` /
+    `projected_newton_hessian_nonzeros`, and
+    `projectedNewtonHessianStorageBytes` /
+    `projected_newton_hessian_storage_bytes`, so benchmark and tuning code can
+    distinguish "CG path was used" from "CG converged cheaply" and can track the
+    assembled sparse matrix footprint that future matrix-free CG must remove.
+    The FEM-bar and chunky 3D cube benchmarks now emit `cg_iters_per_step`,
+    `cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters
+    toward the PLAN-081 Fig. 23 / Table 1 profiling surface.
+  - Added an explicit matrix-free deformable projected-Newton CG path
+    (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
+    (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`
+    Hessian assembly and applies local Hessian blocks directly with a
+    block-Jacobi preconditioner. The default direct and sparse IC-CG paths are
+    unchanged. `DeformableSolverDiagnostics` now reports
+    `projectedNewtonMatrixFreeSolves` /
+    `projected_newton_matrix_free_solves`; matrix-free benchmark rows emit
+    `matrix_free_solves_per_step` and zero sparse-Hessian footprint counters.
+    Adds C++ and dartpy ground-contact regressions showing matrix-free CG reaches
+    the same contact equilibrium as the direct sparse solve, while the C++ FEM
+    cube regression also compares sparse IC-CG against both paths. The
+    simulation-experimental binary format is bumped so legacy v8 deformable
+    materials load with the new matrix-free flag defaulted off instead of
+    consuming the following byte.
   - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
     experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
     and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra
