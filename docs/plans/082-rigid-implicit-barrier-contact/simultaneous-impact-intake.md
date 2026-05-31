@@ -48,7 +48,9 @@ Additional current references for this intake:
 - `avbd-2025`: augmented-Lagrangian contact/constraint handling in the VBD
   family.
 - `ogc-2025`: offset geometric contact, a newer codimensional finite-time
-  contact alternative to survey before adding more IPC-specific machinery.
+  contact alternative now tracked for implementation planning under
+  [`PLAN-104 OGC gap audit`](../104-vertex-block-descent-solver/ogc-gap-audit.md)
+  before it is used as evidence against more IPC-specific machinery.
 
 Detailed citations live in [`../../readthedocs/papers.md`](../../readthedocs/papers.md).
 
@@ -59,7 +61,7 @@ Detailed citations live in [`../../readthedocs/papers.md`](../../readthedocs/pap
 | Instantaneous impact operators | `smith-2012-rosi`, `zhang-2015-qce`, `vouga-2017-all-well`, `halm-posa-2024-set-valued-impact` | Post-impact velocity/impulse selection when several rigid contacts occur at the same instant.     | Evaluate as a rigid-impact benchmark and possible restitution backstop; do not start with public API or broad implementation.   |
 | Finite-time hard contact       | `ipc-2020`, `rigid-ipc-2021`                                                                   | Persistent non-penetrating contact, friction, CCD line search, barriers, and optimization solves. | Active path for robust geometry and stacking; likely supersedes many "simultaneous contact" stability goals without impact map. |
 | Block/augmented contact        | `chen-2024-vbd`, `avbd-2025`                                                                   | Fast implicit-Euler minimization with local blocks, augmented forces, constraints, stacking.      | Existing PLAN-104/VI-contact-roadmap evidence; compare before adding a separate instantaneous-impact solver.                    |
-| Geometry-contact alternatives  | `ogc-2025`                                                                                     | Penetration-free codimensional contact using offset geometry and local displacement bounds.       | Survey for deformable/codimensional performance tradeoffs; not a rigid-impact replacement.                                      |
+| Geometry-contact alternatives  | `ogc-2025`                                                                                     | Penetration-free codimensional contact using offset geometry and local displacement bounds.       | Implement/evaluate under PLAN-104 first; not a rigid-impact replacement.                                                        |
 
 ## Initial Verdict
 
