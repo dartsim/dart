@@ -2432,6 +2432,14 @@ TEST(VariationalGroundContact, RejectsDegenerateConfig)
   frictionNoEps.frictionCoefficient = 0.5;
   frictionNoEps.frictionRegularization = 0.0; // invalid with friction enabled.
   EXPECT_ANY_THROW((void)sxc::makeVariationalGroundContactHook(frictionNoEps));
+
+  // Negative damping would inject energy on the cadence-0 path; reject it the
+  // same way the AL solver's normalizeGroundContact does.
+  sxc::VariationalGroundContact negativeDamping;
+  negativeDamping.stiffness = 1.0;
+  negativeDamping.dampingCoefficient = -1.0;
+  EXPECT_ANY_THROW(
+      (void)sxc::makeVariationalGroundContactHook(negativeDamping));
 }
 
 // PLAN-082 Phase C rung C1 -- lagged regularized-Coulomb friction. A block

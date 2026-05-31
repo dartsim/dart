@@ -898,6 +898,10 @@ VariationalContactHook makeVariationalGroundContactHook(
       InvalidOperationException,
       "VariationalGroundContact friction regularization must be positive when "
       "friction is enabled");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      contact.dampingCoefficient < 0.0,
+      InvalidOperationException,
+      "VariationalGroundContact damping coefficient must be non-negative");
 
   // Compliant (penalty) ground contact: for each body-fixed point penetrating
   // the half-space at the trial configuration, the one-sided quadratic
