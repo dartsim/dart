@@ -9477,14 +9477,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited root direct-CCD row and reports the current full-step miss outcome without parser or topology diagnostics.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_000",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_000",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited root direct-CCD rows; corpus-scale interval-root parity remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/ccd-test-001.json",
@@ -9495,14 +9495,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited root direct-CCD row and reports the current full-step miss outcome without parser or topology diagnostics.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_001",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_001",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited root direct-CCD rows; corpus-scale interval-root parity remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/ccd-test-002.json",
@@ -9513,14 +9513,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited root direct-CCD row and reports the current full-step miss outcome without parser or topology diagnostics.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_002",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_002",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited root direct-CCD rows; corpus-scale interval-root parity remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/ccd-test-003.json",
@@ -9531,14 +9531,14 @@
       "topic": "rigid CCD data regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART CCD test reports a conservative time of impact and nonnegative post-step separation.",
+      "expected_invariant": "DART loads the audited root direct-CCD row and reports the current full-step miss outcome without parser or topology diagnostics.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_data::ccd_test_003",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_data::ccd_test_003",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses'",
+      "notes_or_gap": "Covered by hermetic DART load and evaluator regressions for the first audited root direct-CCD rows; corpus-scale interval-root parity remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/data/kinematic/ccd-test-000.json",

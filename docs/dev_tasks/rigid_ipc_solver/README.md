@@ -244,6 +244,11 @@
 - [ ] Phase 6: complete the manifest rows as DART-native tests, examples,
       benchmarks, comparison packets, CPU/GPU evidence, and headless Filament
       visuals.
+  - [x] Mark the first audited root direct-CCD data rows
+        (`tests/data/ccd-test-000..003.json`) as implemented in the generated
+        manifest after their hermetic DART load/evaluator regressions landed.
+  - [ ] Continue retiring planned rows only when DART has matching tests,
+        examples, benchmarks, comparison packets, and evidence.
 
 ## Goal
 
@@ -314,8 +319,9 @@ DART-owned implementation.
   face-vertex expected-TOI rows, and the first parameter-box subdivision queries
   find those expected contacts within the reference TOI tolerance. The direct
   CCD row evaluator now routes those first rows through the subdivision queries,
-  while corpus-scale evaluator parity remains open until rigorous interval
-  arithmetic and reference corpus semantics land.
+  and the manifest generator now marks those four rows implemented. Corpus-scale
+  evaluator parity remains open until rigorous interval arithmetic and reference
+  corpus semantics land.
 - The first curved-trajectory CCD code lives under
   `dart/simulation/experimental/detail/rigid_ipc_ccd.*`. It is an internal
   DART-owned ACCD query for 3D face-vertex, edge-edge, and point-edge cases over

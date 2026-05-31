@@ -1,5 +1,28 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-05-31: implemented manifest status for first root CCD rows
+
+Delivered a bounded Phase 6 manifest slice:
+
+- Updated the rigid IPC fixture manifest generator so
+  `tests/data/ccd-test-000..003.json` are emitted as `implemented` rows with the
+  owning DART regression and command recorded in the row metadata.
+- Added generator unit coverage that proves those audited root rows are promoted
+  while uncovered CCD rows remain planned.
+- Kept Phase 6 open: every remaining planned manifest row still needs matching
+  DART tests, examples, benchmarks, comparison packets, and evidence before it
+  can be retired.
+
+Validation in this slice:
+
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-05-31: reusable one-step fixture runtime replay
 
 Delivered a bounded fixture/runtime helper slice for Phases 1 and 5:

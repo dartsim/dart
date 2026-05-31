@@ -41,6 +41,9 @@ BENCHMARK_PATHS = [
 ]
 TEST_SOURCE_ROOTS = ["tests/barrier", "tests/ccd"]
 COMPARISON_ROOTS = ["comparisons"]
+IMPLEMENTED_ROOT_CCD_DATA_ROWS = frozenset(
+    f"tests/data/ccd-test-{index:03d}.json" for index in range(4)
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -329,23 +332,48 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
         except json.JSONDecodeError:
             payload = {}
 
+    status = "planned"
+    expected_invariant = row["expected_invariant"]
+    notes_or_gap = (
+        "Classified from upstream rigid-ipc path; retire this planned row "
+        "only after DART has matching code, tests, benchmarks, and evidence."
+    )
+    if source_kind == "test-data" and path in IMPLEMENTED_ROOT_CCD_DATA_ROWS:
+        status = "implemented"
+        artifact = (
+            "test_rigid_ipc_fixture::"
+            "RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses"
+        )
+        command = (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_fixture --gtest_color=no "
+            "--gtest_filter="
+            "RigidIpcCcdCase.EvaluatesAuditedUpstreamRootCcdRowsAsMisses'"
+        )
+        expected_invariant = (
+            "DART loads the audited root direct-CCD row and reports the current "
+            "full-step miss outcome without parser or topology diagnostics."
+        )
+        notes_or_gap = (
+            "Covered by hermetic DART load and evaluator regressions for the "
+            "first audited root direct-CCD rows; corpus-scale interval-root "
+            "parity remains tracked by Phase 2c."
+        )
+
     return {
         "upstream_path": path,
         "upstream_commit": UPSTREAM_COMMIT,
         "source_kind": source_kind,
         "alias_of": alias_target(upstream_dir / path, upstream_dir),
         **row,
-        "status": "planned",
+        "status": status,
         "dart_artifact": artifact,
         "required_assets_or_importer": collect_assets(payload, upstream_dir),
-        "expected_invariant": row["expected_invariant"],
+        "expected_invariant": expected_invariant,
         "dart_command_or_ctest_or_benchmark": command,
         "visual_evidence_requirement": row["visual_evidence_requirement"],
         "benchmark_profile_artifact": row["benchmark_profile_artifact"],
-        "notes_or_gap": (
-            "Classified from upstream rigid-ipc path; retire this planned row "
-            "only after DART has matching code, tests, benchmarks, and evidence."
-        ),
+        "notes_or_gap": notes_or_gap,
     }
 
 

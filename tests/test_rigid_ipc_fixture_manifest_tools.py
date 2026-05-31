@@ -38,6 +38,33 @@ def test_rigid_ipc_classifier_marks_ccd_data_as_tests():
     assert "time of impact" in row["expected_invariant"]
 
 
+def test_rigid_ipc_manifest_marks_audited_root_ccd_rows_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = tmp_path / "tests" / "data" / "ccd-test-000.json"
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"type":"ee"}')
+
+    row = module.row_for_path("tests/data/ccd-test-000.json", "test-data", tmp_path)
+
+    assert row["status"] == "implemented"
+    assert "EvaluatesAuditedUpstreamRootCcdRowsAsMisses" in row["dart_artifact"]
+    assert "full-step miss outcome" in row["expected_invariant"]
+    assert "corpus-scale interval-root parity remains tracked" in row["notes_or_gap"]
+
+
+def test_rigid_ipc_manifest_leaves_uncovered_ccd_rows_planned(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = tmp_path / "tests" / "data" / "kinematic" / "ccd-test-000.json"
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"type":"ee"}')
+
+    row = module.row_for_path(
+        "tests/data/kinematic/ccd-test-000.json", "test-data", tmp_path
+    )
+
+    assert row["status"] == "planned"
+
+
 def test_rigid_ipc_asset_normalization_prefers_mesh_root(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
     (tmp_path / "meshes").mkdir()
