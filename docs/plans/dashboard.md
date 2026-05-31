@@ -271,10 +271,11 @@ its own line so status updates remain git-history friendly.
   and pairwise circular-cone projection, including supported World generation
   for self-contact friction rows. Static box obstacle row keys now distinguish
   faces, edges, and corners so same-feature rows warm-start while box-manifold
-  changes reset normal/friction state. It is not a scene-level parity claim. The
-  next local slice is tangent dual projection across changing smooth contact
-  frames, dynamic/rigid contact manifold IDs, or the first rigid/articulated
-  AVBD block foundation.
+  changes reset normal/friction state; persisting static half-space friction
+  rows also project their decayed dual into the current tangent basis when smooth
+  obstacle normals change. It is not a scene-level parity claim. The next local
+  slice is self-contact tangent-frame persistence, dynamic/rigid contact
+  manifold IDs, or the first rigid/articulated AVBD block foundation.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

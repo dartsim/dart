@@ -286,6 +286,17 @@ TEST(VbdContact, AvbdBoxContactFeatureCodeSeparatesBoxManifolds)
 }
 
 //==============================================================================
+TEST(VbdContact, AvbdFrictionDualProjectionPreservesWorldImpulse)
+{
+  const Eigen::Vector2d projected = vbd::projectAvbdFrictionDualToTangentPair(
+      3.0, 4.0, Vec3::UnitX(), Vec3::UnitY(), Vec3::UnitY(), -Vec3::UnitX());
+
+  EXPECT_NEAR(projected.x(), 4.0, 1e-12);
+  EXPECT_NEAR(projected.y(), -3.0, 1e-12);
+  EXPECT_NEAR(projected.norm(), 5.0, 1e-12);
+}
+
+//==============================================================================
 TEST(VbdContact, InactiveAbovePlaneAndHessianIsPsd)
 {
   vbd::ContactPlane plane;

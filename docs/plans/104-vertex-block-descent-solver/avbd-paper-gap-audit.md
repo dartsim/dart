@@ -108,7 +108,9 @@ The first AVBD implementation slices add:
   obstacle feature IDs distinguish faces, edges, and corners so normal/friction
   rows reset across box-manifold changes while warm-starting small same-feature
   penetrations, with `VbdContact.AvbdBoxContactFeatureCodeSeparatesBoxManifolds`
-  coverage plus
+  coverage. Persisting static half-space friction rows project their decayed
+  dual into the current tangent basis when smooth obstacle normals change, with
+  `VbdContact.AvbdFrictionDualProjectionPreservesWorldImpulse` coverage plus
   `VbdWorldSolver.AvbdContactNormalRowsHardenGroundContact` coverage; and
 - a narrow internal World VBD integration path for pinned or scripted hard
   point-attachment rows in supported serial mass-spring scenes, keyed by
@@ -143,9 +145,9 @@ The first AVBD implementation slices add:
   `VbdWorldSolver.AvbdFrictionTangentRowsDecelerateSlidingBody` coverage;
   adjacent tangent-row pairs now use the lagged tangential dual for
   static/dynamic switching and project pair forces to the circular Coulomb cone,
-  with `VbdContact.AvbdFrictionTangentPair*` coverage; tangent dual projection
-  across changing smooth contact frames and dynamic/rigid contact manifold
-  persistence are still missing; and
+  with `VbdContact.AvbdFrictionTangentPair*` coverage; self-contact
+  tangent-frame persistence and dynamic/rigid contact manifold persistence are
+  still missing; and
 - a self-contact normal row slice:
   `AvbdSelfContactNormalRow`, `avbdSelfContactNormalConstraintValue`,
   `addAvbdSelfContactNormal`, and `updateAvbdSelfContactNormalRow`, using the
@@ -193,7 +195,7 @@ full hard-contact/friction solver, and not CPU/GPU parity.
 | Inequality/contact/friction row bounds with static/dynamic friction switching                      | Contact-normal lower-bound slice and bounded friction-tangent World generation started for supported static mass-spring contact; adjacent tangent pairs have static/dynamic switching and pairwise cone projection; full contact-manifold cone persistence missing                                  | A4            |
 | Joint, attachment, motor, fracture, and breakable hard constraints                                 | Scalar hard point-attachment kernel and narrow World attachment wiring started; joints, motors, and fracture missing                                                                                                                                                                                | A5            |
 | Unified rigid/soft interactions and cloth/articulated-body coupling                                | Missing                                                                                                                                                                                                                                                                                             | A6            |
-| Collision candidate generation, contact persistence, and row warm-start mapping                    | Static half-space row keys include static box face/edge/corner feature IDs, and lagged self-contact normal/friction candidate row keys started for mass-spring and pure-tet envelopes; smooth-frame tangent projection, dynamic contacts, rigid contacts, and broad row generation missing          | A7            |
+| Collision candidate generation, contact persistence, and row warm-start mapping                    | Static half-space row keys include static box face/edge/corner feature IDs and smooth-frame tangent projection, and lagged self-contact normal/friction candidate row keys started for mass-spring and pure-tet envelopes; dynamic contacts, rigid contacts, and broad row generation missing       | A7            |
 | Hessian approximation for hard constraints and stiffness-rescaling friction                        | Finite-stiffness spring and pure-tet material ramps started; hard-constraint quasi-Newton Hessian and friction stiffness rescaling missing                                                                                                                                                          | A8            |
 | CPU parallel color sweeps plus deterministic dual update pass                                      | Serial contact-normal dual pass started; parallel dual/update scheduling missing                                                                                                                                                                                                                    | A9            |
 | CUDA/GPU AVBD backend for all row families and scene corpus                                        | VBD CUDA mass-spring/tet rollout only                                                                                                                                                                                                                                                               | G1-G5         |

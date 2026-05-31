@@ -183,6 +183,21 @@ inline double avbdFrictionTangentPairForceLimit(
 }
 
 //==============================================================================
+inline Eigen::Vector2d projectAvbdFrictionDualToTangentPair(
+    double previousFirstLambda,
+    double previousSecondLambda,
+    const Eigen::Vector3d& previousFirstAxis,
+    const Eigen::Vector3d& previousSecondAxis,
+    const Eigen::Vector3d& currentFirstAxis,
+    const Eigen::Vector3d& currentSecondAxis)
+{
+  const Eigen::Vector3d worldDual = previousFirstLambda * previousFirstAxis
+                                    + previousSecondLambda * previousSecondAxis;
+  return Eigen::Vector2d(
+      worldDual.dot(currentFirstAxis), worldDual.dot(currentSecondAxis));
+}
+
+//==============================================================================
 inline double avbdHalfSpaceContactConstraintValue(
     const Eigen::Vector3d& position, const ContactPlane& plane)
 {
