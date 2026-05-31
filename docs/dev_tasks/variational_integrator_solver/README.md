@@ -32,13 +32,24 @@ and verified **today**; unchecked items are the [gaps below](#gaps-from-current-
 - [ ] **Contact & friction** — the deferred Phase C: compliant/penalty →
       augmented-Lagrangian bounded force → (optional) IPC barrier, all as forces
       in the forced DEL residual so symplectic structure + O(n) survive.
-      _(the largest remaining gap)_
-- [ ] **Scales to extreme chains (≥100 links)** — the exact recursive-Jacobian
-      preconditioner (paper Appendix) for systems that exceed the quasi-Newton
-      budget.
-- [ ] **Manifold-aware convergence acceleration** for spherical/floating chains.
-- [ ] **Graduation** from `experimental` to a supported solver (variable `Δt`,
-      GPU/batched execution are open stretch goals).
+      **C1/C2/C3 are all reachable from `World::step()`** via
+      `Multibody::setGroundContact`: lagged regularized-Coulomb friction +
+      compliant penalty by default, and the **C3** augmented-Lagrangian drift-free
+      rung opt-in via `dualUpdateCadence` (`0` = C2; `N>0` advances the duals
+      every `N` steps, persisted in `VariationalContactDualState`). A
+      **link-vs-link** sphere-sphere slice (`makeVariationalLinkSphereContactHook`)
+      landed; **arbitrary link geometry** (the rigid-IPC-stack adapter) remains
+      _(the largest remaining gap)_.
+- [x] **Scales to extreme chains** — the exact recursive-Jacobian preconditioner
+      (paper Appendix) lands ~3 iterations independent of length, verified to 128
+      links; supported bounds in [`supported-envelope.md`](supported-envelope.md).
+- [x] **Manifold-aware convergence acceleration** — tangent-space Anderson for
+      spherical/floating chains (Euclidean preconditioner + manifold Anderson).
+- [ ] **Graduation** from `experimental` to a supported solver — all
+      [graduation criteria](graduation-criteria.md) are now met/declared (ready
+      to propose); the `experimental → supported` flip needs the maintainer's
+      `PLAN-` entry + adversarial review. Variable `Δt`, GPU/batched execution are
+      explicit non-blockers (stretch).
 
 ## Current Status
 
@@ -118,14 +129,18 @@ SecularDrift` (10-link chain, 1e5 steps, bounded band + ~0 drift slope,
       finite-difference-verified (`ConstraintJacobianMatchesFiniteDifference`,
       `RigidConstraintJacobianMatchesFiniteDifference`); closures hold through
       `world.step()` (`LoopClosure{,Distance,Rigid}SolvedThroughWorldStep`).
-- [x] **Phase C — Contact & friction: go/no-go = NO-GO** (deferred). Recorded in
-      the plan sidecar; neither entry gate met (no contact-query-at-trial-config
-      redesign; no C2 spike).
+- [x] **Phase C — Contact & friction: C1-C3 landed** (compliant contact, lagged
+      friction, augmented Lagrangian). Progression in the plan sidecar: NO-GO
+      (2026-05-28) → gate-2 spike GO → **C1-C3 contact** (compliant +
+      regularized-Coulomb friction + AL drift-free contact with Kelvin-Voigt
+      damping; `makeVariationalGroundContactHook` /
+      `VariationalGroundContactSolver`, 2026-05-30). Link-vs-link contact (the
+      full gate-1 broad-phase workstream) remains.
 
 ## GUI Demos (visual verification)
 
-Two py-demos scenes exercise the VI through the viewer (e.g.
-`pixi run py-demos -- --scene sx_variational_chain`):
+Several py-demos scenes exercise the VI through the viewer (e.g.
+`pixi run py-demos -- --scene sx_variational_contact`):
 
 - **`sx_variational_chain`** — a 5-link passive revolute chain released from
   horizontal; the symplectic VI keeps it swinging with no secular energy loss
@@ -133,11 +148,14 @@ Two py-demos scenes exercise the VI through the viewer (e.g.
 - **`sx_variational_tumbler`** — a torque-free floating asymmetric body in zero
   gravity, tumbling without energy/momentum drift (the Phase B1 floating-base
   path).
+- **`sx_loop_closure`** — a planar arm with a DISTANCE loop closure held to
+  machine precision while it swings (Phase B2).
+- **`sx_variational_contact`** — a pendulum tip caught by compliant ground
+  contact + friction, configured through the World surface
+  (`Multibody.set_ground_contact`; Phase C rungs C1/C2).
 
-Both select the VI via `World.multibody_options`; the headless cycle smoke
-(`python/tests/integration/test_demos_cycle.py`) builds and steps them. More
-scenes (a loop-closure scene now that B2 is done; a contact scene once Phase C
-lands) are north-star surface.
+All select the VI via `World.multibody_options`; the headless cycle smoke
+(`python/tests/integration/test_demos_cycle.py`) builds and steps them.
 
 ## Original Phase-A1 Goal (achieved)
 
@@ -175,34 +193,61 @@ All committed PLAN-082 phases (A1, A2, B1, B2), every acceptance gate, the paper
 experiment replication
 ([`paper-experiment-replication.md`](paper-experiment-replication.md)), the
 scalable `MultibodyOptions` config, the zero-default-overhead guarantee, and the
-dartpy + GUI surface are complete and verified. The remaining gaps to the
-[north star](#north-star), in priority order:
+dartpy + GUI surface are complete and verified. The roadmap follow-ups also
+landed: the **exact recursive-Jacobian preconditioner** (~3 iters to 128 links),
+**manifold tangent-space Anderson**, internal spatial-algebra **dedup**
+(`detail/multibody_spatial_algebra.hpp`), the **loop-closure GUI scene**, and the
+**supported-envelope** + **performance** characterization docs. The remaining
+gaps to the [north star](#north-star), in priority order:
 
-1. **Phase C — contact & friction (recorded NO-GO; the largest gap).** The VI is
-   contact-free today. Unblocking needs a _contact-query-at-trial-configuration_
+1. **Phase C — contact & friction (the largest gap).** The VI is contact-free in
+   production today. Unblocking needs a _contact-query-at-trial-configuration_
    redesign (cheap distance/gradient at an arbitrary trial `qᵏ⁺¹` inside the RIQN
    loop; today `World::collide()` rebuilds the whole collision world once per
-   step with no such query). Then rungs C1→C4 — lagged friction → compliant
-   penalty → augmented-Lagrangian bounded force → optional IPC barrier — per the
+   step with no such query) — **scoped in gate 1** of the
    [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md).
-   Must start at the compliant/AL rungs, not the barrier (stiff barrier curvature
-   mis-scales RIQN's `Δt·M⁻¹` quasi-Newton rate). Two go/no-go gates guard entry;
-   both are currently unmet.
-2. **Extreme chains (≥100 links).** Anderson + `√n` tolerance bound iteration
-   counts to ~205 for 100 links within the default 100-iteration budget; beyond
-   that, implement the paper-Appendix **exact recursive-Jacobian preconditioner**.
-3. **Manifold-aware acceleration.** Anderson acceleration is **Euclidean-only**;
-   spherical/floating joints fall back to the plain RIQN step, so long _floating_
-   chains converge more slowly. A Lie-group-correct iterate mixing would close
-   this.
-4. **Internal dedup (tech debt).** The local spatial-algebra / kinematic-tree
-   helpers in `variational_integration.cpp` duplicate a subset of
-   `multibody_dynamics.cpp`; hoist into a shared internal header (coordinate with
-   PLAN-080, the natural owner of the shared O(n) impulse-ABI).
-5. **Productionization / graduation.** Variable time step, GPU/batched execution,
-   and promotion out of `experimental` are open; define graduation criteria when
-   contact lands.
-6. **More demo surface.** A loop-closure GUI scene now (Phase B2 is done) and a
-   contact scene once Phase C lands.
+   A compliant-contact robustness **spike cleared gate 2 (GO** for the
+   compliant/AL rungs, `k ≲ 1e4·mg` — see [`supported-envelope.md`](supported-envelope.md));
+   an opt-in in-loop `VariationalContactHook` exists (default-off byte-for-byte
+   identical). **C1-C3 contact have now landed** for the link-point-vs-analytic-
+   ground case — a real, configurable query (`makeVariationalGroundContactHook`:
+   analytic half-space + body-fixed points, VBD/XPBD quadratic penalty,
+   reduced-coordinate glue), **lagged regularized-Coulomb friction**, and
+   **augmented-Lagrangian** drift-free contact (`VariationalGroundContactSolver`:
+   per-contact dual + Kelvin-Voigt damping). Verified: rest at `mg/k`, a swinging
+   revolute tip held off the plane, a sliding block decelerated by friction, and
+   the AL slider centered at `d ≈ 0` (vs the penalty `−mg/k`). **Link-vs-link
+   contact has a first slice**: `makeVariationalLinkSphereContactHook` does
+   compliant **sphere-sphere self-contact** between links (verified — a link
+   sliding into a fixed base sphere is stopped, no pass-through). C1–C3 are all
+   reachable from `World::step()` (C3 opt-in via `dualUpdateCadence`). Remaining:
+   **arbitrary link geometry** — the rigid IPC stack's `primitive_distance.hpp`
+   already gives reusable analytic `(d, ∂d/∂q)` kernels, but the dominant missing
+   piece is **rigid/articulated candidate generation** (its `candidate_set.hpp` is
+   mesh-vertex specific) plus a warm-started per-step query — a ~2–3-week
+   PLAN-scale workstream coordinated with PLAN-081, not an in-task slice (see the
+   [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md)).
+   The **C4 IPC barrier** is intentionally **out of scope** — this task stops at
+   C3 (stiff barrier curvature mis-scales the `Δt·M⁻¹` quasi-Newton; it is the
+   _optional_ last rung).
+2. **Graduation to a supported solver.** The [graduation
+   checklist](graduation-criteria.md) is now **all met/declared** — including
+   Phase C contact (the contact criterion) and the API-freeze surface — so the VI
+   is **ready to propose for graduation**. The flip itself is **structural, not a
+   toggle**: `experimental` is encoded in the namespace / directory /
+   `DART_EXPERIMENTAL_API` macro / CMake gate, with no per-family stability flag,
+   and the VI shares the module with the `World` and every other solver — so
+   graduating means a maintainer-scale whole-module promotion or a VI extraction
+   refactor (see the graduation-mechanics section of
+   [`graduation-criteria.md`](graduation-criteria.md)), plus the `PLAN-` entry and
+   adversarial review. Variable time
+   step and GPU/batched execution stay explicit non-blockers (stretch).
+3. **Manifold preconditioner for very long _floating_ chains.** The exact
+   recursive-Jacobian preconditioner is Euclidean-only; spherical/floating chains
+   use the manifold Anderson (verified to 20 links). A Lie-group extension of the
+   preconditioner would scale floating chains the way the Euclidean one does.
+4. **Contact demo scene — landed.** `sx_variational_contact` (a VI pendulum tip
+   caught by the compliant ground plane) joins the chain / tumbler / loop-closure
+   scenes in the demos registry and the demos-cycle test.
 
 Code is the source of truth; keep this file lean and current.

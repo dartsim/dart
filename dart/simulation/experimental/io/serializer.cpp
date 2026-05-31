@@ -278,6 +278,12 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   // references, so no remap pass entry needed).
   registerComponentIfNeeded<compute::MultibodyVariationalState>(registry);
 
+  // The variational integrator's ground-contact config (link indices, not
+  // entity references, so likewise no remap pass entry needed) and its
+  // augmented-Lagrangian dual state (per-point duals + cadence counter).
+  registerComponentIfNeeded<comps::VariationalContact>(registry);
+  registerComponentIfNeeded<comps::VariationalContactDualState>(registry);
+
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 
   registerComponentIfNeeded<comps::Link>(registry);
