@@ -670,6 +670,26 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       inputSource.find("isSceneMouseInputCapturedByUi"), std::string::npos);
   EXPECT_NE(inputSource.find("io.WantCaptureMouse"), std::string::npos);
   EXPECT_NE(
+      inputSource.find("glfwSetCharCallback(window, handleChar)"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("AddInputCharacter(codepoint)"), std::string::npos);
+  EXPECT_NE(
+      inputSource.find("glfwSetKeyCallback(window, handleKey)"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("io.AddKeyEvent(imguiKey, pressed)"), std::string::npos);
+  EXPECT_NE(inputSource.find("action != GLFW_REPEAT"), std::string::npos);
+  EXPECT_NE(
+      inputSource.find("io.SetKeyEventNativeData(imguiKey, key"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("ImGui::GetIO().WantCaptureKeyboard"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("!uiCapturesKeyboard && isSpacePressed"),
+      std::string::npos);
+  EXPECT_NE(
       inputSource.find("ImGuiBackendFlags_HasMouseCursors"), std::string::npos);
   EXPECT_NE(
       inputSource.find("createStandardCursor(GLFW_HRESIZE_CURSOR)"),
