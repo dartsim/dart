@@ -1,16 +1,15 @@
 # Resume: Rigid IPC Solver
 
-## Session 2026-05-31: extended kinematic CCD manifest retirement
+## Session 2026-05-31: audited kinematic CCD manifest retirement
 
 Delivered a bounded Phase 6 manifest slice:
 
 - Extended the audited kinematic zero-time-hit regression from
   `tests/data/kinematic/ccd-test-000..002.json` through
-  `tests/data/kinematic/ccd-test-006.json`.
-- Updated the rigid IPC fixture manifest generator so those first seven
-  kinematic direct-CCD rows are emitted as `implemented`, while
-  `ccd-test-007.json` remains planned until it has matching DART evidence.
-- Kept Phase 6 open: the rest of the kinematic corpus and broader CCD data rows
+  `tests/data/kinematic/ccd-test-012.json`.
+- Updated the rigid IPC fixture manifest generator so all audited kinematic
+  direct-CCD rows are emitted as `implemented`.
+- Kept Phase 6 open: the remaining manifest corpus and broader CCD data rows
   still need matching DART tests, examples, benchmarks, or evidence before row
   retirement.
 

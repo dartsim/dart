@@ -45,7 +45,7 @@ IMPLEMENTED_ROOT_CCD_DATA_ROWS = frozenset(
     f"tests/data/ccd-test-{index:03d}.json" for index in range(4)
 )
 IMPLEMENTED_KINEMATIC_CCD_DATA_ROWS = frozenset(
-    f"tests/data/kinematic/ccd-test-{index:03d}.json" for index in range(7)
+    f"tests/data/kinematic/ccd-test-{index:03d}.json" for index in range(13)
 )
 
 
@@ -381,8 +381,8 @@ def row_for_path(path: str, source_kind: str, upstream_dir: Path) -> dict[str, A
         )
         notes_or_gap = (
             "Covered by hermetic DART load and evaluator regressions for the "
-            "first audited kinematic direct-CCD rows; remaining kinematic rows "
-            "and corpus-scale interval-root parity remain tracked by Phase 2c."
+            "audited kinematic direct-CCD rows; corpus-scale interval-root "
+            "parity remains tracked by Phase 2c."
         )
 
     return {

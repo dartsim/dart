@@ -54,12 +54,12 @@ def test_rigid_ipc_manifest_marks_audited_root_ccd_rows_implemented(tmp_path):
 
 def test_rigid_ipc_manifest_leaves_uncovered_ccd_rows_planned(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
-    data_path = tmp_path / "tests" / "data" / "kinematic" / "ccd-test-007.json"
+    data_path = tmp_path / "tests" / "data" / "kinematic" / "ccd-test-013.json"
     data_path.parent.mkdir(parents=True)
     data_path.write_text('{"type":"ee"}')
 
     row = module.row_for_path(
-        "tests/data/kinematic/ccd-test-007.json", "test-data", tmp_path
+        "tests/data/kinematic/ccd-test-013.json", "test-data", tmp_path
     )
 
     assert row["status"] == "planned"

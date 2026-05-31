@@ -79,7 +79,7 @@
           queries with the audited reference TOI tolerance.
     - [x] Evaluate the first audited root direct-CCD rows as full-step misses,
           matching the current DART distance query for those rows.
-    - [x] Add first audited kinematic CCD row regressions that preserve the
+    - [x] Add audited kinematic CCD row regressions that preserve the
           upstream guard against zero-time hits when the row starts separated.
     - [ ] Match those rows with the audited reference's interval-root rigid CCD
           semantics across the corpus.
@@ -256,8 +256,8 @@
   - [x] Mark the first audited root direct-CCD data rows
         (`tests/data/ccd-test-000..003.json`) as implemented in the generated
         manifest after their hermetic DART load/evaluator regressions landed.
-  - [x] Mark the first audited kinematic direct-CCD rows
-        (`tests/data/kinematic/ccd-test-000..006.json`) as implemented in the
+  - [x] Mark the audited kinematic direct-CCD rows
+        (`tests/data/kinematic/ccd-test-000..012.json`) as implemented in the
         generated manifest after their zero-time-hit guard regression landed.
   - [ ] Continue retiring planned rows only when DART has matching tests,
         examples, benchmarks, comparison packets, and evidence.
@@ -331,10 +331,10 @@ DART-owned implementation.
   face-vertex expected-TOI rows, and the first parameter-box subdivision queries
   find those expected contacts within the reference TOI tolerance. The direct
   CCD row evaluator now routes those first rows through the subdivision queries,
-  does not surface zero-time hits for the first audited kinematic rows when they
-  start separated, and the manifest generator now marks the four root rows plus
-  first three kinematic rows implemented. Corpus-scale evaluator parity remains
-  open until rigorous interval arithmetic and reference corpus semantics land.
+  does not surface zero-time hits for the audited kinematic rows when they start
+  separated, and the manifest generator now marks the four root rows plus all
+  audited kinematic rows implemented. Corpus-scale evaluator parity remains open
+  until rigorous interval arithmetic and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
   `dart/simulation/experimental/detail/rigid_ipc_ccd.*`. It is an internal
   DART-owned ACCD query for 3D face-vertex, edge-edge, and point-edge cases over

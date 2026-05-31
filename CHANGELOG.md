@@ -954,9 +954,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     manifest drivers.
   - Hardened the internal rigid IPC interval-root CCD evaluator so accepted root
     boxes that start at `t=0` no longer report a zero-time hit when the input
-    row starts separated, matching the first audited kinematic CCD rows' guard.
+    row starts separated, matching the audited kinematic CCD rows' guard.
     The generated rigid IPC fixture manifest now marks
-    `tests/data/kinematic/ccd-test-000..006.json` as implemented by that
+    `tests/data/kinematic/ccd-test-000..012.json` as implemented by that
     regression.
   - Extended rigid IPC fixture mesh replay to legacy VTK unstructured-grid
     surface meshes, covering the remaining mesh extension present in the

@@ -56,8 +56,8 @@
     The first expected-TOI evaluator regressions cover upstream-style
     edge-vertex, edge-edge, and face-vertex rows, while the first audited root
     rows (`tests/data/ccd-test-000..003.json`) now have hermetic
-    parser/topology and full-step miss regressions. The first audited kinematic
-    rows (`tests/data/kinematic/ccd-test-000..006.json`) are covered by the
+    parser/topology and full-step miss regressions. The audited kinematic
+    rows (`tests/data/kinematic/ccd-test-000..012.json`) are covered by the
     zero-time-hit guard regression. Internal residual helpers now cover the
     edge-vertex, edge-edge, and face-vertex parameter-space equations used by
     interval-root rigid CCD, and first parameter-box subdivision queries recover
