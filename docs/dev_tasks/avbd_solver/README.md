@@ -109,7 +109,9 @@ Paper audit:
     and `VbdWorldSolver.AvbdSelfContactFrictionRowsReduceTangentialMotion`
     coverage for tangent direction, static/dynamic pair switching,
     circular-cone projection, tangential-motion resistance, World row
-    generation, and World-level tangential slip reduction.
+    generation, and World-level tangential slip reduction. Static-contact and
+    self-contact friction rows also have combined-row coexistence coverage in
+    `VbdWorldSolver.AvbdContactAndSelfContactFrictionRowsCombine`.
   - Fallback coverage now guards the unsupported World envelopes:
     mixed spring-plus-tet topology, mass-spring self-contact without the
     self-contact AVBD flag, finite-stiffness-only friction scenes, Chebyshev,
@@ -162,8 +164,8 @@ numbers.
    friction persistence or broader self-contact friction envelopes are the
    preferred next row-family gaps now that static contact/friction, attachments,
    finite-stiffness rows, self-contact normals, pairwise static/dynamic friction
-   switching, and supported World self-contact friction rows have narrow CPU
-   paths.
+   switching, supported World self-contact friction rows, and combined
+   static/self-contact friction row coexistence have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

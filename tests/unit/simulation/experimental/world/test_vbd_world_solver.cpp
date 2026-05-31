@@ -763,6 +763,49 @@ TEST(VbdWorldSolver, AvbdSelfContactFrictionRowsReduceTangentialMotion)
 }
 
 //==============================================================================
+// Static contact and self-contact friction rows should coexist in the same
+// serial AVBD mass-spring solve. This protects the combined-row envelope from
+// accidentally treating friction as a single-source row family.
+TEST(VbdWorldSolver, AvbdContactAndSelfContactFrictionRowsCombine)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  addGroundBarrier(world);
+  sx::DeformableBodyOptions options = makeNearSelfContactSpringBody();
+  options.material.frictionCoefficient = 0.8;
+  world.addDeformableBody("fold", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 12;
+  cfg.contactStiffness = 100.0;
+  cfg.useAvbdContactNormalRows = true;
+  cfg.useAvbdSelfContactNormalRows = true;
+  cfg.avbdAlpha = 0.0;
+  cfg.avbdBeta = 2000.0;
+  cfg.avbdGamma = 1.0;
+  cfg.avbdMaxStiffness = 1.0e6;
+  enableVbdConfig(world, cfg);
+
+  compute::DeformableDynamicsStage stage;
+  stepOnce(world, stage);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_GT(stats.vbdAvbdSelfContactNormalRows, 0u);
+  EXPECT_EQ(
+      stats.vbdAvbdFrictionTangentRows,
+      2u
+          * (stats.vbdAvbdContactNormalRows
+             + stats.vbdAvbdSelfContactNormalRows));
+  EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  EXPECT_EQ(stats.vbdAvbdFiniteStiffnessTetRows, 0u);
+}
+
+//==============================================================================
 // A supported serial mass-spring ground-contact solve now keeps AVBD's friction
 // tangents in the same row inventory as the contact-normal rows. Each active
 // contact contributes two bounded tangent rows against a lagged Coulomb limit.

@@ -156,7 +156,9 @@ The first AVBD implementation slices add:
   scenes and focused `VbdCombinedDescent.AvbdSelfContactFriction*` plus
   `VbdWorldSolver.AvbdSelfContactNormalRowsIncludeFrictionTangentRows`
   and `VbdWorldSolver.AvbdSelfContactFrictionRowsReduceTangentialMotion`
-  coverage; broader envelopes are still missing; and
+  coverage, plus `VbdWorldSolver.AvbdContactAndSelfContactFrictionRowsCombine`
+  coverage for combined static-contact and self-contact friction row
+  coexistence in one supported solve; broader envelopes are still missing; and
 - explicit World fallback coverage so unsupported mixed spring-plus-tet,
   mass-spring self-contact without the self-contact AVBD flag,
   finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
