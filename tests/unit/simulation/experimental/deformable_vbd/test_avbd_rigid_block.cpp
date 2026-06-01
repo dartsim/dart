@@ -1552,7 +1552,6 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
       = vbd::runAvbdRigidWorldContactStep(
           registry,
           std::span<const sx::Contact>(),
-          joints,
           normalInventory,
           frictionInventory,
           jointLinearInventory,

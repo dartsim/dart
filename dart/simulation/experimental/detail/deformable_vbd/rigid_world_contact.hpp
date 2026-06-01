@@ -881,6 +881,32 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     std::span<const Contact> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
+    AvbdScalarRowInventory& jointLinearInventory,
+    AvbdScalarRowInventory& jointAngularInventory,
+    double timeStep,
+    const AvbdRigidWorldContactStepOptions& options = {})
+{
+  const std::vector<AvbdRigidWorldPointJointInput> joints
+      = extractAvbdRigidWorldPointJointInputs(registry);
+  return runAvbdRigidWorldContactStep(
+      registry,
+      contacts,
+      std::span<const AvbdRigidWorldPointJointInput>(
+          joints.data(), joints.size()),
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      timeStep,
+      options);
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
+    entt::registry& registry,
+    std::span<const Contact> contacts,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
