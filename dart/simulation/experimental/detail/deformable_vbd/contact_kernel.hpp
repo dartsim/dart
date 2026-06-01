@@ -260,6 +260,44 @@ inline AvbdScalarRowBounds avbdFrictionTangentBounds(double forceLimit)
 }
 
 //==============================================================================
+inline AvbdScalarRowDescriptor makeAvbdContactNormalRowDescriptor(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    double startStiffness,
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    std::uint32_t row = 0)
+{
+  AvbdScalarRowDescriptor descriptor;
+  descriptor.key = makeAvbdContactManifoldRowKey(
+      AvbdScalarRowRole::ContactNormal, first, second, row, /*axis=*/0);
+  descriptor.kind = AvbdScalarRowKind::HardConstraint;
+  descriptor.bounds = avbdContactNormalBounds();
+  descriptor.startStiffness = startStiffness;
+  descriptor.maxStiffness = maxStiffness;
+  return descriptor;
+}
+
+//==============================================================================
+inline AvbdScalarRowDescriptor makeAvbdContactFrictionRowDescriptor(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    std::uint8_t axis,
+    double forceLimit,
+    double startStiffness,
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    std::uint32_t row = 0)
+{
+  AvbdScalarRowDescriptor descriptor;
+  descriptor.key = makeAvbdContactManifoldRowKey(
+      AvbdScalarRowRole::FrictionTangent, first, second, row, axis);
+  descriptor.kind = AvbdScalarRowKind::HardConstraint;
+  descriptor.bounds = avbdFrictionTangentBounds(forceLimit);
+  descriptor.startStiffness = startStiffness;
+  descriptor.maxStiffness = maxStiffness;
+  return descriptor;
+}
+
+//==============================================================================
 inline double avbdFrictionTangentForceLimit(const AvbdHalfSpaceFrictionRow& row)
 {
   const double lowerLimit = row.bounds.lower < 0.0 ? -row.bounds.lower : 0.0;

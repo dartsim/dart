@@ -105,8 +105,9 @@ world-frame quaternion tangent updates, an inertia term, a 6x6 block solve, and
 a scalar rigid point-attachment row plus two-body point-pair row stamping with
 focused tests.
 Private dynamic/rigid contact identity helpers now pack contact feature
-kind/index IDs and canonicalize two-endpoint row keys, but they do not generate
-or solve dynamic/rigid contact rows yet.
+kind/index IDs, canonicalize two-endpoint row keys, and create normal/friction
+row descriptors, but they do not generate or solve dynamic/rigid contact rows
+yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

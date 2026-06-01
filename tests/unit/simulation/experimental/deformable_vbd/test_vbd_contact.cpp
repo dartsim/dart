@@ -345,6 +345,57 @@ TEST(VbdContact, AvbdContactManifoldRowKeyCanonicalizesBodyOrder)
 }
 
 //==============================================================================
+TEST(VbdContact, AvbdContactDescriptorsUseCanonicalKeysAndBounds)
+{
+  const vbd::AvbdContactEndpointId first{
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Edge, 4)};
+  const vbd::AvbdContactEndpointId second{
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
+
+  const vbd::AvbdScalarRowDescriptor normal
+      = vbd::makeAvbdContactNormalRowDescriptor(
+          first, second, /*startStiffness=*/80.0, /*maxStiffness=*/400.0);
+  const vbd::AvbdScalarRowDescriptor reverseNormal
+      = vbd::makeAvbdContactNormalRowDescriptor(
+          second, first, /*startStiffness=*/80.0, /*maxStiffness=*/400.0);
+  const vbd::AvbdScalarRowDescriptor firstTangent
+      = vbd::makeAvbdContactFrictionRowDescriptor(
+          first,
+          second,
+          /*axis=*/0,
+          /*forceLimit=*/6.0,
+          /*startStiffness=*/80.0,
+          /*maxStiffness=*/400.0);
+  const vbd::AvbdScalarRowDescriptor secondTangent
+      = vbd::makeAvbdContactFrictionRowDescriptor(
+          first,
+          second,
+          /*axis=*/1,
+          /*forceLimit=*/6.0,
+          /*startStiffness=*/80.0,
+          /*maxStiffness=*/400.0);
+
+  EXPECT_EQ(normal.key, reverseNormal.key);
+  EXPECT_EQ(normal.key.role, vbd::AvbdScalarRowRole::ContactNormal);
+  EXPECT_EQ(normal.key.objectA, second.object);
+  EXPECT_EQ(normal.key.featureA, second.feature);
+  EXPECT_EQ(normal.kind, vbd::AvbdScalarRowKind::HardConstraint);
+  EXPECT_DOUBLE_EQ(normal.bounds.lower, 0.0);
+  EXPECT_TRUE(std::isinf(normal.bounds.upper));
+  EXPECT_DOUBLE_EQ(normal.startStiffness, 80.0);
+  EXPECT_DOUBLE_EQ(normal.maxStiffness, 400.0);
+
+  EXPECT_EQ(firstTangent.key.role, vbd::AvbdScalarRowRole::FrictionTangent);
+  EXPECT_EQ(firstTangent.key.objectA, second.object);
+  EXPECT_EQ(firstTangent.key.axis, 0u);
+  EXPECT_EQ(secondTangent.key.axis, 1u);
+  EXPECT_DOUBLE_EQ(firstTangent.bounds.lower, -6.0);
+  EXPECT_DOUBLE_EQ(firstTangent.bounds.upper, 6.0);
+  EXPECT_NE(normal.key, firstTangent.key);
+  EXPECT_NE(firstTangent.key, secondTangent.key);
+}
+
+//==============================================================================
 TEST(VbdContact, AvbdFrictionDualProjectionPreservesWorldImpulse)
 {
   const Eigen::Vector2d projected = vbd::projectAvbdFrictionDualToTangentPair(
