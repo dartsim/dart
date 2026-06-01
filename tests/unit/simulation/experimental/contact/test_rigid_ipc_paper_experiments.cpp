@@ -251,6 +251,35 @@ sx::CollisionShape makeTetCornerMesh(double scale = 1.0)
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeErlebenCliffMesh()
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {-0.75, 0.75, -0.5},
+      {-0.5, 0.5, 0.5},
+      {-0.75, -0.75, -0.5},
+      {-0.5, -0.5, 0.5},
+      {0.75, 0.75, -0.5},
+      {0.5, 0.5, 0.5},
+      {0.75, -0.75, -0.5},
+      {0.5, -0.5, 0.5},
+  };
+  std::vector<Eigen::Vector3i> triangles
+      = {{1, 2, 0},
+         {3, 6, 2},
+         {7, 4, 6},
+         {5, 0, 4},
+         {6, 0, 2},
+         {3, 5, 7},
+         {1, 3, 2},
+         {3, 7, 6},
+         {7, 5, 4},
+         {5, 1, 0},
+         {6, 4, 0},
+         {3, 1, 5}};
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 // Build one arch voussoir (wedge block) spanning the angular range
 // [theta0, theta1] in the world x-z plane, between inner and outer radii, with
 // half-width halfW along y. Writes the world centroid (the body position) into
@@ -1254,6 +1283,53 @@ TEST(RigidIpcPaperExperiments, TetCornerFallsOnTwoTrianglePlaneFixtureRow)
   EXPECT_LT(tet.getTranslation().z(), startZ - 0.2);
   EXPECT_TRUE(tet.getTranslation().allFinite());
   EXPECT_TRUE(tet.getLinearVelocity().allFinite());
+}
+
+TEST(RigidIpcPaperExperiments, ErlebenCliffEdgesFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions cliffOptions;
+  cliffOptions.isStatic = true;
+  cliffOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto cliff = world.addRigidBody("erleben_cliff_edges", cliffOptions);
+  cliff.setCollisionShape(makeErlebenCliffMesh());
+
+  constexpr double cubeHalfExtent = 0.5;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d(0.0, 0.0, 0.05);
+  auto cube = world.addRigidBody("erleben_cliff_cube", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startZ = cube.getTranslation().z();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_LT(cube.getTranslation().z(), startZ - 0.02);
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_TRUE(cube.getLinearVelocity().allFinite());
 }
 
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)

@@ -179,6 +179,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/erleben/cliff-edges.json": {
+        "test": "ErlebenCliffEdgesFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited Erleben cliff-edges row: a cube falls "
+            "under gravity onto a fixed cliff-edge mesh, activates rigid IPC "
+            "contact, stays finite, and reports no meaningful native overlap "
+            "after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned cube-on-Erleben-cliff runtime coverage for "
+            "the 3D unit-test fixture mechanism. Other Erleben rows remain "
+            "planned until they have topology-specific DART runtime evidence."
+        ),
+    },
     "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json": {
         "test": "CubeSettlesOnTwoTrianglePlaneFixtureRow",
         "expected_invariant": (
