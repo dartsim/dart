@@ -226,6 +226,14 @@ void Link::setCollisionShape(const CollisionShape& shape)
           "Cylinder collision shape radius and height must be positive and "
           "finite");
       break;
+    case CollisionShapeType::Plane:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.normal.allFinite() || shape.normal.squaredNorm() <= 0.0
+              || !std::isfinite(shape.offset),
+          InvalidArgumentException,
+          "Plane collision shape normal must be finite and nonzero, and "
+          "offset must be finite");
+      break;
   }
   validateCollisionShapeTransform(shape);
 

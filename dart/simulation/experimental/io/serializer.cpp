@@ -150,6 +150,8 @@ void deserializeCollisionGeometryV5(
   readVector3d(input, geometry.shape.halfExtents);
   geometry.shape.height = 1.0;
   geometry.shape.localTransform = Eigen::Isometry3d::Identity();
+  geometry.shape.normal = Eigen::Vector3d::UnitZ();
+  geometry.shape.offset = 0.0;
 }
 
 void deserializeCollisionGeometryV6(
@@ -160,6 +162,20 @@ void deserializeCollisionGeometryV6(
   readVector3d(input, geometry.shape.halfExtents);
   geometry.shape.height = 1.0;
   readIsometry3d(input, geometry.shape.localTransform);
+  geometry.shape.normal = Eigen::Vector3d::UnitZ();
+  geometry.shape.offset = 0.0;
+}
+
+void deserializeCollisionGeometryV7OrV8(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  readPOD(input, geometry.shape.type);
+  readPOD(input, geometry.shape.radius);
+  readPOD(input, geometry.shape.height);
+  readVector3d(input, geometry.shape.halfExtents);
+  readIsometry3d(input, geometry.shape.localTransform);
+  geometry.shape.normal = Eigen::Vector3d::UnitZ();
+  geometry.shape.offset = 0.0;
 }
 
 void serializeCollisionGeometry(
@@ -170,6 +186,8 @@ void serializeCollisionGeometry(
   writePOD(output, geometry.shape.height);
   writeVector3d(output, geometry.shape.halfExtents);
   writeIsometry3d(output, geometry.shape.localTransform);
+  writeVector3d(output, geometry.shape.normal);
+  writePOD(output, geometry.shape.offset);
 }
 
 void deserializeCollisionGeometry(
@@ -180,6 +198,8 @@ void deserializeCollisionGeometry(
   readPOD(input, geometry.shape.height);
   readVector3d(input, geometry.shape.halfExtents);
   readIsometry3d(input, geometry.shape.localTransform);
+  readVector3d(input, geometry.shape.normal);
+  readPOD(input, geometry.shape.offset);
 }
 
 class CollisionGeometryComponentSerializer final
@@ -217,6 +237,10 @@ private:
     }
     if (formatVersion == 6u) {
       deserializeCollisionGeometryV6(input, component);
+      return;
+    }
+    if (formatVersion == 7u || formatVersion == 8u) {
+      deserializeCollisionGeometryV7OrV8(input, component);
       return;
     }
 

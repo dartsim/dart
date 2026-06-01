@@ -120,6 +120,8 @@ class CollisionShapeType(enum.Enum):
 
     CYLINDER = 3
 
+    PLANE = 4
+
 class CollisionShape:
     @staticmethod
     def sphere(
@@ -141,6 +143,11 @@ class CollisionShape:
         radius: float, height: float, local_transform: object | None = None
     ) -> CollisionShape: ...
 
+    @staticmethod
+    def plane(
+        normal: object, offset: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
+
     @property
     def type(self) -> CollisionShapeType: ...
 
@@ -152,6 +159,12 @@ class CollisionShape:
 
     @property
     def half_extents(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def normal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def offset(self) -> float: ...
 
     @property
     def local_transform(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4, 4), order='F')]: ...

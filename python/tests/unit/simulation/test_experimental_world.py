@@ -2102,6 +2102,26 @@ def test_experimental_collision_shape_cylinder():
     assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
 
 
+def test_experimental_collision_shape_plane():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    plane = world.add_rigid_body("plane")
+    shape = sx.CollisionShape.plane((0.0, 0.0, 1.0), 0.0)
+    plane.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.2))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    assert plane.collision_shape.type == sx.CollisionShapeType.PLANE
+    np.testing.assert_allclose(plane.collision_shape.normal, (0.0, 0.0, 1.0))
+    assert plane.collision_shape.offset == pytest.approx(0.0)
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
+
+
 def test_experimental_collision_query_includes_links():
     sx = _simulation_experimental()
 

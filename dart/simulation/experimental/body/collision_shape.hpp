@@ -46,6 +46,7 @@ enum class CollisionShapeType
   Box,
   Capsule,
   Cylinder,
+  Plane,
 };
 
 /// Public value object describing a body's collision geometry.
@@ -57,7 +58,8 @@ enum class CollisionShapeType
 /// body/link frame origin.
 ///
 /// Only the fields relevant to `type` are used. Prefer the named constructors
-/// (`makeSphere`, `makeBox`, `makeCapsule`, `makeCylinder`) for clarity.
+/// (`makeSphere`, `makeBox`, `makeCapsule`, `makeCylinder`, `makePlane`) for
+/// clarity.
 struct CollisionShape
 {
   /// Geometric family selecting which fields below are used.
@@ -76,6 +78,14 @@ struct CollisionShape
 
   /// Shape-frame pose expressed in the owning body/link frame.
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
+
+  /// Plane normal in the shape frame (used when type == Plane). Must be finite
+  /// and nonzero; the named constructor normalizes it.
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+
+  /// Plane offset along the shape-frame normal (used when type == Plane). Must
+  /// be finite.
+  double offset = 0.0;
 
   /// Create a sphere collision shape.
   [[nodiscard]] static CollisionShape makeSphere(double radius)
@@ -113,6 +123,17 @@ struct CollisionShape
     shape.type = CollisionShapeType::Cylinder;
     shape.radius = radius;
     shape.height = height;
+    return shape;
+  }
+
+  /// Create a plane collision shape.
+  [[nodiscard]] static CollisionShape makePlane(
+      const Eigen::Vector3d& normal, double offset)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Plane;
+    shape.normal = normal.normalized();
+    shape.offset = offset;
     return shape;
   }
 };

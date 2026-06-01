@@ -456,7 +456,8 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("SPHERE", sim::CollisionShapeType::Sphere)
       .value("BOX", sim::CollisionShapeType::Box)
       .value("CAPSULE", sim::CollisionShapeType::Capsule)
-      .value("CYLINDER", sim::CollisionShapeType::Cylinder);
+      .value("CYLINDER", sim::CollisionShapeType::Cylinder)
+      .value("PLANE", sim::CollisionShapeType::Plane);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
       .def_static(
@@ -508,6 +509,21 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("radius"),
           nb::arg("height"),
           nb::arg("local_transform") = nb::none())
+      .def_static(
+          "plane",
+          [](const nb::handle& normal,
+             double offset,
+             const nb::handle& localTransform) {
+            sim::CollisionShape shape
+                = sim::CollisionShape::makePlane(toVector3(normal), offset);
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
+          nb::arg("normal"),
+          nb::arg("offset"),
+          nb::arg("local_transform") = nb::none())
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
@@ -517,6 +533,10 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "half_extents",
           [](const sim::CollisionShape& self) { return self.halfExtents; })
+      .def_prop_ro(
+          "normal", [](const sim::CollisionShape& self) { return self.normal; })
+      .def_prop_ro(
+          "offset", [](const sim::CollisionShape& self) { return self.offset; })
       .def_prop_ro("local_transform", [](const sim::CollisionShape& self) {
         return self.localTransform.matrix();
       });

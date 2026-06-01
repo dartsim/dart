@@ -24,9 +24,9 @@ solver** under a multi-solver, multi-physics architecture.
       effort/acceleration, link mass/inertia, link offsets, and public dynamics
       accessors; verified vs analytical dynamics and DART-6 parity checks).
 - [ ] Phase 2: collision bridge (started: `CollisionShape` sphere/box/capsule/
-      cylinder on rigid bodies and links + `World::collide()` query bridging to
-      the native engine, returning `Contact` points; C++ + dartpy + tests.
-      Remaining: plane/mesh, self-collision/filtering, broad-phase pruning,
+      cylinder/plane on rigid bodies and links + `World::collide()` query
+      bridging to the native engine, returning `Contact` points; C++ + dartpy +
+      tests. Remaining: mesh, self-collision/filtering, broad-phase pruning,
       persistent collision world).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
       contact solver between free rigid bodies with accumulated normal impulses,
@@ -82,8 +82,8 @@ solvers, couplers, ECS storage, or execution backends.
 
 1. Keep the local `feature/experimental-model-loader` branch clean and validated
    while it carries the model-loading/contact follow-up commits ahead of origin.
-2. Continue remaining Phase 2 shape backlog from `RESUME.md`: plane/mesh
-   support and additional collision shapes per body.
+2. Continue remaining Phase 2 shape backlog from `RESUME.md`: mesh support and
+   additional collision shapes per body.
 3. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
 

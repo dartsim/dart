@@ -473,6 +473,13 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
       = Eigen::Vector3d(0.4, -0.2, 0.1);
   cylinder.setCollisionShape(cylinderCollisionShape);
 
+  auto plane = world1.addRigidBody("plane");
+  sx::CollisionShape planeCollisionShape
+      = sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.15);
+  planeCollisionShape.localTransform.translation()
+      = Eigen::Vector3d(-0.3, 0.2, 0.05);
+  plane.setCollisionShape(planeCollisionShape);
+
   std::stringstream ss;
   world1.saveBinary(ss);
 
@@ -523,6 +530,16 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   EXPECT_DOUBLE_EQ(cylinderShape->height, 0.9);
   EXPECT_TRUE(cylinderShape->localTransform.isApprox(
       cylinderCollisionShape.localTransform, 1e-12));
+
+  auto planeRestored = world2.getRigidBody("plane");
+  ASSERT_TRUE(planeRestored.has_value());
+  auto planeShape = planeRestored->getCollisionShape();
+  ASSERT_TRUE(planeShape.has_value());
+  EXPECT_EQ(planeShape->type, sx::CollisionShapeType::Plane);
+  EXPECT_TRUE(planeShape->normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_DOUBLE_EQ(planeShape->offset, 0.15);
+  EXPECT_TRUE(planeShape->localTransform.isApprox(
+      planeCollisionShape.localTransform, 1e-12));
 }
 
 TEST(Serialization, WithLoopClosures)

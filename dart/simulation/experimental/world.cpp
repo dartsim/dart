@@ -1758,6 +1758,10 @@ std::vector<Contact> World::collide()
         shape = std::make_unique<ncol::CylinderShape>(
             collisionShape.radius, collisionShape.height);
         break;
+      case CollisionShapeType::Plane:
+        shape = std::make_unique<ncol::PlaneShape>(
+            collisionShape.normal, collisionShape.offset);
+        break;
     }
     const Eigen::Isometry3d shapePose = pose * collisionShape.localTransform;
     entries.push_back(

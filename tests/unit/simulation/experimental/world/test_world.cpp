@@ -3036,6 +3036,27 @@ TEST(World, CollisionQuerySupportsCylinderShape)
   EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
 }
 
+// Test that plane shapes are bridged into the native collision query.
+TEST(World, CollisionQuerySupportsPlaneShape)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto plane = world.addRigidBody("plane");
+  plane.setCollisionShape(
+      sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.2);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
+}
+
 // Test that multibody links with collision shapes participate in collision
 // queries and are reported as CollisionBody links (not rigid bodies).
 TEST(World, CollisionQueryIncludesMultibodyLinks)

@@ -1651,6 +1651,8 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         break;
       case CollisionShapeType::Cylinder:
         break;
+      case CollisionShapeType::Plane:
+        break;
     }
   }
 

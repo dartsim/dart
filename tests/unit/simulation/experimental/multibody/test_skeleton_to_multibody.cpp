@@ -45,6 +45,7 @@
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/planar_joint.hpp>
+#include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
@@ -589,9 +590,9 @@ TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
 }
 
 //==============================================================================
-// Box, capsule, and cylinder collision shapes are translated onto links, with
-// full box extents halved and shape-node offsets preserved as CollisionShape
-// local transforms.
+// Box, capsule, cylinder, and plane collision shapes are translated onto links,
+// with full box extents halved and shape-node offsets preserved as
+// CollisionShape local transforms.
 TEST(SkeletonToMultibody, TranslatesCollisionShapes)
 {
   auto skeleton = dd::Skeleton::create("collision");
@@ -712,6 +713,30 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_DOUBLE_EQ(cylinderShape->height, 0.7);
   EXPECT_TRUE(cylinderShape->localTransform.isApprox(
       translation(0.25, -0.1, 0.15), 1e-12));
+
+  // A plane carries a normal and signed offset.
+  auto planeSkeleton = dd::Skeleton::create("plane_collision");
+  auto [planeJoint, planeBody]
+      = planeSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  planeJoint->setName("joint");
+  planeBody->setName("body");
+  auto* planeShapeNode = planeBody->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.2));
+  planeShapeNode->setRelativeTransform(translation(-0.15, 0.2, 0.05));
+
+  sx::World planeWorld;
+  auto planeMultibody
+      = sx::io::buildMultibodyFromSkeleton(planeWorld, *planeSkeleton);
+  const auto planeLink = planeMultibody.getLink("body");
+  ASSERT_TRUE(planeLink.has_value());
+  ASSERT_TRUE(planeLink->hasCollisionShape());
+  const auto planeShape = planeLink->getCollisionShape();
+  ASSERT_TRUE(planeShape.has_value());
+  EXPECT_EQ(planeShape->type, sx::CollisionShapeType::Plane);
+  EXPECT_TRUE(planeShape->normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_DOUBLE_EQ(planeShape->offset, 0.2);
+  EXPECT_TRUE(planeShape->localTransform.isApprox(
+      translation(-0.15, 0.2, 0.05), 1e-12));
 }
 
 //==============================================================================

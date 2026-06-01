@@ -49,6 +49,7 @@
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/planar_joint.hpp>
+#include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
@@ -263,12 +264,12 @@ void copyJointProperties(const dynamics::Joint& legacy, Joint& experimental)
   experimental.setEffortLimits(lower, upper);
 }
 
-/// The first sphere, box, capsule, or cylinder collision shape of a body (a
-/// shape node with a collision aspect), as an experimental CollisionShape. The
-/// shape node's relative transform becomes the CollisionShape local transform.
+/// The first sphere, box, capsule, cylinder, or plane collision shape of a body
+/// (a shape node with a collision aspect), as an experimental CollisionShape.
+/// The shape node's relative transform becomes the CollisionShape local
+/// transform.
 /// Returns nullopt when the body has no representable collision shape;
-/// unsupported shape types (mesh/plane) and additional shapes per body are
-/// skipped.
+/// unsupported mesh shape types and additional shapes per body are skipped.
 std::optional<CollisionShape> translateCollisionShape(
     const dynamics::BodyNode& body)
 {
@@ -300,11 +301,15 @@ std::optional<CollisionShape> translateCollisionShape(
               = static_cast<const dynamics::CylinderShape&>(*shape);
           result = CollisionShape::makeCylinder(
               cylinder.getRadius(), cylinder.getHeight());
+        } else if (type == dynamics::PlaneShape::getStaticType()) {
+          const auto& plane = static_cast<const dynamics::PlaneShape&>(*shape);
+          result
+              = CollisionShape::makePlane(plane.getNormal(), plane.getOffset());
         }
         if (result.has_value()) {
           result->localTransform = shapeNode->getRelativeTransform();
         }
-        // mesh/plane are not yet translated.
+        // Mesh-like shapes are not yet translated.
       });
   return result;
 }
