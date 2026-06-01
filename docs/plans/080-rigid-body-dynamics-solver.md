@@ -10,13 +10,18 @@
   - The rigid-body MVP shipped (PR #2705, merged 2026-05-25): `World::step()`
     runs gravity, articulated forward dynamics for all joint types (fixed,
     revolute, prismatic, screw, universal, planar, ball, free), a floating base,
-    sequential-impulse contacts, and a collision-query bridge
-    (`dart/simulation/experimental/compute/world_step_stage.cpp`,
-    `compute/multibody_dynamics.cpp`). A `dynamics::Skeleton` → `Multibody`
-    model-loading bridge has started
-    (`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`). The
-    remaining gaps are the coupled boxed-LCP/PGS contact solve and the rest of
-    model loading.
+    derived quantities, actuator/limit primitives, a collision-query bridge,
+    and the required dart-gui example. The active local follow-up line completes
+    the legacy `dynamics::Skeleton` / `simulation::World` → experimental
+    `Multibody` bridge for all joint types, branching and root offsets,
+    collision shape import, compound shapes, and joint properties
+    (`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`), then
+    upgrades `World::collide()` with body-type filtering, native broad-phase
+    pruning, and a persistent native collision-query world. The semi-implicit
+    default pipeline now resolves rigid-rigid and articulated link contacts in a
+    single unified boxed-LCP. The remaining gaps are solver scaling polish
+    (warm starting and friction-cone iteration) plus separate deferred actuator,
+    mimic/coupler, loop-closure, integrator, and COM-Jacobian slices.
   - Legacy DART 6 dynamics baseline: `dart/dynamics/`, `dart/constraint/`,
     `dart/simulation/world.cpp`.
   - Reusable foundations: boxed-LCP library `dart/math/lcp/` (PLAN-020), native
@@ -44,9 +49,10 @@ Sequenced; see the dev-task roadmap for slice-level detail.
    damping/springs, manifold-aware integration.
 3. **Collision bridge** — experimental collision geometry/material value
    objects and a World-owned bridge to the native collision engine producing
-   typed contact buffers.
+   typed contact buffers with broad-phase-pruned, filterable, cached queries.
 4. **Constraint & contact solver** — wire boxed-LCP into contact + joint-limit
-   solving with restitution/friction/ERP-CFM, islands, impulse update.
+   solving with restitution/friction/ERP-CFM, islands, impulse update, and
+   solver scaling polish.
 5. **Joint features & actuators** — actuator types, limits, Coulomb friction,
    mimic/coupler, armature.
 6. **Loop closures & improvements** — closure projection/solve, pluggable

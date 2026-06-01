@@ -127,17 +127,18 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25): gravity,
-  all joint types, floating base, sequential-impulse contacts, collision-query
-  bridge, derived quantities/actuators/limits, and the required dart-gui example.
-  Current frontier is model loading — a `dynamics::Skeleton` → experimental
-  `Multibody` bridge landed (`io::buildMultibodyFromSkeleton`, all joint types
-  — weld/revolute/prismatic/screw/universal/ball/free/planar — on a fixed base,
-  with DART-6 mass/Coriolis/gravity parity). Remaining: the coupled boxed-LCP/PGS
-  contact solve (the one item still needing the step-pipeline reordering) and the
-  rest of model loading (branching offsets, collision shapes, `readWorld`, joint
-  features). Slice-level work is tracked in
-  `docs/dev_tasks/rigid_body_dynamics_solver/` (`RESUME.md`).
+- Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25). The
+  active local line now carries the model-loading bridge from legacy
+  `dynamics::Skeleton` / `simulation::World` into experimental `Multibody`
+  objects, including all joint types, branching and root offsets, collision
+  shape import, compound shapes, joint properties, broad-phase-pruned collision
+  queries, and a persistent native collision-query world. The semi-implicit
+  default pipeline also now runs one unified boxed-LCP over rigid-rigid and
+  articulated link contacts. Continue the remaining Subsystem A polish in
+  `docs/dev_tasks/rigid_body_dynamics_solver/`: warm starting, friction-cone
+  iteration, and scaling work around the unified contact solve; keep remaining
+  actuator, mimic/coupler, loop-closure, integrator, and COM-Jacobian work as
+  separate deferred slices.
 - Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.
