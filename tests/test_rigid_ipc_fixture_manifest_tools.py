@@ -876,6 +876,49 @@ def test_rigid_ipc_manifest_marks_barrier_source_row_implemented(tmp_path):
     assert "finite-difference derivatives" in row["expected_invariant"]
 
 
+def test_rigid_ipc_manifest_marks_collision_generator_sources_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+
+    for path in (
+        "tests/ccd/collision_generator.cpp",
+        "tests/ccd/collision_generator.hpp",
+    ):
+        row = module.row_for_path(path, "test-source", tmp_path)
+
+        assert row["status"] == "implemented"
+        assert "GeneratedPointEdgeLinearImpactsMatchExpectedToi" in row["dart_artifact"]
+        assert "generator-style point-edge coverage" in row["notes_or_gap"]
+
+
+def test_rigid_ipc_manifest_marks_edge_vertex_ccd_source_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+
+    row = module.row_for_path(
+        "tests/ccd/test_edge_vertex_ccd.cpp", "test-source", tmp_path
+    )
+
+    assert row["status"] == "implemented"
+    assert "GeneratedPointEdgeLinearImpactsMatchExpectedToi" in row["dart_artifact"]
+    assert "flipped edge order" in row["expected_invariant"]
+
+
+def test_rigid_ipc_manifest_marks_generic_toi_source_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+
+    row = module.row_for_path(
+        "tests/ccd/test_time_of_impact.cpp", "test-source", tmp_path
+    )
+
+    assert row["status"] == "implemented"
+    assert "GeneratedPointEdgeLinearImpactsMatchExpectedToi" in row["dart_artifact"]
+    assert "EvaluatesUpstreamStyleRigidToiRows" in row["dart_artifact"]
+    assert "point-edge, edge-edge, and face-vertex" in row["expected_invariant"]
+
+
 def test_rigid_ipc_manifest_marks_rigid_toi_source_row_implemented(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
 

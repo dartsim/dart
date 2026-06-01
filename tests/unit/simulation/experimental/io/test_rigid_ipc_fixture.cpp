@@ -2088,6 +2088,116 @@ TEST(RigidIpcCcdCase, PointEdgeIntervalSubdivisionFindsExpectedToiRows)
   expectIntervalCcdTimeOfImpact(result, 0.5);
 }
 
+TEST(RigidIpcCcdCase, GeneratedPointEdgeLinearImpactsMatchExpectedToi)
+{
+  struct GeneratedImpact
+  {
+    std::string_view name;
+    Eigen::Vector3d edgeA;
+    Eigen::Vector3d edgeB;
+    Eigen::Vector3d edgeVelocity;
+    Eigen::Vector3d pointStart;
+    double timeOfImpact;
+    double alpha;
+  };
+
+  const auto impacts = std::to_array<GeneratedImpact>({
+      GeneratedImpact{
+          "static edge midpoint hit",
+          Eigen::Vector3d(-2.0, 0.0, 0.0),
+          Eigen::Vector3d(2.0, 0.0, 0.0),
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          0.5},
+      GeneratedImpact{
+          "translating edge interior hit",
+          Eigen::Vector3d(-2.0, 0.0, 0.0),
+          Eigen::Vector3d(2.0, 0.0, 0.0),
+          Eigen::Vector3d(0.5, 0.25, 0.0),
+          Eigen::Vector3d(-1.5, 1.0, 0.0),
+          0.4,
+          0.25},
+      GeneratedImpact{
+          "flipped edge interior hit",
+          Eigen::Vector3d(2.0, 0.0, 0.0),
+          Eigen::Vector3d(-2.0, 0.0, 0.0),
+          Eigen::Vector3d(-0.25, 0.1, 0.0),
+          Eigen::Vector3d(0.75, -1.0, 0.0),
+          0.5,
+          0.75},
+  });
+
+  dart::collision::native::CcdOption option
+      = dart::collision::native::CcdOption::precise();
+  const Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  const expdetail::RigidIpcPose edgePoseStart;
+  for (const GeneratedImpact& impact : impacts) {
+    SCOPED_TRACE(impact.name);
+    const expdetail::RigidIpcPose edgePoseEnd{
+        impact.edgeVelocity, Eigen::Vector3d::Zero()};
+    const Eigen::Vector3d edgeAAtToi = expdetail::transformRigidIpcPoint(
+        impact.edgeA, edgePoseStart, edgePoseEnd, impact.timeOfImpact);
+    const Eigen::Vector3d edgeBAtToi = expdetail::transformRigidIpcPoint(
+        impact.edgeB, edgePoseStart, edgePoseEnd, impact.timeOfImpact);
+    const Eigen::Vector3d impactPoint
+        = edgeAAtToi + impact.alpha * (edgeBAtToi - edgeAAtToi);
+    const Eigen::Vector3d pointVelocity
+        = (impactPoint - impact.pointStart) / impact.timeOfImpact;
+    const expdetail::RigidIpcPose pointPoseStart{
+        impact.pointStart, Eigen::Vector3d::Zero()};
+    const expdetail::RigidIpcPose pointPoseEnd{
+        impact.pointStart + pointVelocity, Eigen::Vector3d::Zero()};
+
+    expectResidualNearZero(
+        expdetail::rigidIpcPointEdgeResidual(
+            point,
+            pointPoseStart,
+            pointPoseEnd,
+            impact.edgeA,
+            impact.edgeB,
+            edgePoseStart,
+            edgePoseEnd,
+            impact.timeOfImpact,
+            impact.alpha));
+
+    dart::collision::native::CcdPrimitiveResult result;
+    EXPECT_TRUE(
+        expdetail::rigidIpcPointEdgeIntervalCcd(
+            point,
+            pointPoseStart,
+            pointPoseEnd,
+            impact.edgeA,
+            impact.edgeB,
+            edgePoseStart,
+            edgePoseEnd,
+            option,
+            result));
+    expectIntervalCcdTimeOfImpact(result, impact.timeOfImpact);
+  }
+
+  const expdetail::RigidIpcPose parallelPointPoseStart{
+      Eigen::Vector3d(0.0, 1.0, 0.0), Eigen::Vector3d::Zero()};
+  const expdetail::RigidIpcPose parallelPointPoseEnd{
+      Eigen::Vector3d(0.0, 2.0, 0.0), Eigen::Vector3d::Zero()};
+  const expdetail::RigidIpcPose parallelEdgePoseStart;
+  const expdetail::RigidIpcPose parallelEdgePoseEnd{
+      Eigen::Vector3d(0.0, 1.0, 0.0), Eigen::Vector3d::Zero()};
+  dart::collision::native::CcdPrimitiveResult missResult;
+  EXPECT_FALSE(
+      expdetail::rigidIpcPointEdgeIntervalCcd(
+          point,
+          parallelPointPoseStart,
+          parallelPointPoseEnd,
+          Eigen::Vector3d(1.0, -1.0, 0.0),
+          Eigen::Vector3d(1.0, 1.0, 0.0),
+          parallelEdgePoseStart,
+          parallelEdgePoseEnd,
+          option,
+          missResult));
+  EXPECT_FALSE(missResult.isHit());
+}
+
 TEST(RigidIpcCcdCase, EdgeEdgeIntervalSubdivisionFindsExpectedToiRow)
 {
   const Eigen::Vector3d edgeA0(-1.0, 0.0, 0.0);

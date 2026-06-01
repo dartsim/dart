@@ -745,6 +745,95 @@ IMPLEMENTED_TEST_SOURCE_ROWS = {
             "by Phases 3 and 4."
         ),
     },
+    "tests/ccd/collision_generator.cpp": {
+        "artifact": (
+            "test_rigid_ipc_fixture::"
+            "RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi"
+        ),
+        "command": (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_fixture --gtest_color=no --gtest_filter="
+            "RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi'"
+        ),
+        "expected_invariant": (
+            "DART synthesizes point-edge rigid CCD rows from expected "
+            "time-of-impact and edge-coordinate parameters, then verifies both "
+            "the residual equation and interval-subdivision query recover the "
+            "generated impact time while preserving a parallel miss row."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned deterministic generator-style point-edge "
+            "coverage rather than porting the upstream Catch2 random generator; "
+            "corpus-scale interval-root parity remains tracked by Phase 2c."
+        ),
+    },
+    "tests/ccd/collision_generator.hpp": {
+        "artifact": (
+            "test_rigid_ipc_fixture::"
+            "RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi"
+        ),
+        "command": (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_fixture --gtest_color=no --gtest_filter="
+            "RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi'"
+        ),
+        "expected_invariant": (
+            "DART synthesizes point-edge rigid CCD rows from expected "
+            "time-of-impact and edge-coordinate parameters, then verifies both "
+            "the residual equation and interval-subdivision query recover the "
+            "generated impact time while preserving a parallel miss row."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned deterministic generator-style point-edge "
+            "coverage rather than porting the upstream Catch2 random generator; "
+            "corpus-scale interval-root parity remains tracked by Phase 2c."
+        ),
+    },
+    "tests/ccd/test_edge_vertex_ccd.cpp": {
+        "artifact": (
+            "test_rigid_ipc_fixture::"
+            "RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi"
+        ),
+        "command": (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_fixture --gtest_color=no --gtest_filter="
+            "RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi'"
+        ),
+        "expected_invariant": (
+            "DART covers the audited edge-vertex CCD source row with generated "
+            "3D point-edge analogs: midpoint and interior impacts, flipped "
+            "edge order, a translating rigid edge, and a parallel miss."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned point-edge residual and interval-subdivision "
+            "regressions for the upstream edge-vertex responsibility; rigorous "
+            "interval arithmetic remains tracked by Phase 2c."
+        ),
+    },
+    "tests/ccd/test_time_of_impact.cpp": {
+        "artifact": (
+            "test_rigid_ipc_fixture::"
+            "RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi; "
+            "test_rigid_ipc_fixture::"
+            "RigidIpcCcdCase.EvaluatesUpstreamStyleRigidToiRows"
+        ),
+        "command": (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_rigid_ipc_fixture --gtest_color=no --gtest_filter="
+            '"RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi:'
+            "RigidIpcCcdCase.EvaluatesUpstreamStyleRigidToiRows\"'"
+        ),
+        "expected_invariant": (
+            "DART covers the audited generic TOI source row with generated "
+            "point-edge impacts plus upstream-style point-edge, edge-edge, and "
+            "face-vertex rigid TOI rows."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned rigid CCD load, residual, and "
+            "interval-subdivision regressions; corpus-scale interval-root "
+            "parity remains tracked by Phase 2c."
+        ),
+    },
     "tests/ccd/test_rigid_body_time_of_impact.cpp": {
         "artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.*",
         "command": (

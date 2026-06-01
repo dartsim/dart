@@ -77,6 +77,10 @@
           regressions.
     - [x] Route the first direct CCD evaluator rows through those subdivision
           queries with the audited reference TOI tolerance.
+    - [x] Add deterministic generated point-edge TOI regressions that synthesize
+          linear rigid CCD rows from expected time-of-impact and edge-coordinate
+          parameters, verify the residual equations, recover the interval-query
+          impact times, and preserve a parallel miss row.
     - [x] Evaluate the first audited root direct-CCD rows as full-step misses,
           matching the current DART distance query for those rows.
     - [x] Add audited kinematic CCD row regressions that preserve the
@@ -411,6 +415,13 @@
         row (`tests/ccd/test_rigid_body_time_of_impact.cpp`) as implemented
         after matching DART barrier-kernel, reduced rigid-barrier, and
         `RigidIpcCcdCase` regressions were verified.
+  - [x] Mark the audited collision-generator, edge-vertex CCD, and generic TOI
+        source rows (`tests/ccd/collision_generator.cpp`,
+        `tests/ccd/collision_generator.hpp`,
+        `tests/ccd/test_edge_vertex_ccd.cpp`, and
+        `tests/ccd/test_time_of_impact.cpp`) as implemented after deterministic
+        generated point-edge TOI coverage landed. The generic hash-grid source
+        row remains planned until it has matching DART-owned evidence.
   - [x] Mark the audited rigid-body hash-grid source row
         (`tests/ccd/test_rigid_body_hash_grid.cpp`) as implemented through
         DART-owned large hash-grid benchmark evidence. The generic hash-grid
@@ -620,8 +631,10 @@ DART-owned implementation.
   and verifies those bounds contain the upstream exact scene bounds.
   The upstream barrier derivative and rigid-body TOI source rows are also marked
   implemented through DART's barrier-kernel/reduced-rigid-barrier and
-  `RigidIpcCcdCase` regression suites. Other algorithm-source helper, generic
-  CCD, and hash-grid rows remain planned until similarly matched.
+  `RigidIpcCcdCase` regression suites. The collision-generator, edge-vertex
+  CCD, and generic TOI source rows are marked implemented through deterministic
+  generated point-edge TOI coverage plus upstream-style rigid TOI rows. The
+  generic hash-grid source row remains planned until similarly matched.
   The below-threshold Fig. 18 high-school-physics friction fixture row
   (`mu=0.49`) and its paper alias are now marked implemented through exact
   `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is

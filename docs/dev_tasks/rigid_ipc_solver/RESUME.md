@@ -1,5 +1,36 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: generated point-edge TOI source rows
+
+Delivered a bounded Phase 2/6 algorithm-manifest slice:
+
+- Added deterministic generated point-edge TOI coverage in
+  `RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi`: generated
+  midpoint/interior/flipped-edge impacts are synthesized from expected
+  time-of-impact and edge-coordinate parameters, verified against the residual
+  equations, and recovered by the interval-subdivision query; a parallel miss
+  row remains non-colliding.
+- Marked the audited collision-generator, edge-vertex CCD, and generic TOI
+  source rows implemented in the generated manifest:
+  `tests/ccd/collision_generator.cpp`,
+  `tests/ccd/collision_generator.hpp`,
+  `tests/ccd/test_edge_vertex_ccd.cpp`, and
+  `tests/ccd/test_time_of_impact.cpp`. The generic hash-grid source row remains
+  planned.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_fixture`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter="RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi:RigidIpcCcdCase.EvaluatesUpstreamStyleRigidToiRows"`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: card-tent fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

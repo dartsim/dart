@@ -16785,14 +16785,14 @@
       "topic": "rigid barrier or CCD algorithm unit test",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART unit test covers the same barrier, hash-grid, or rigid time-of-impact responsibility with derivative or conservative bounds where applicable.",
+      "expected_invariant": "DART synthesizes point-edge rigid CCD rows from expected time-of-impact and edge-coordinate parameters, then verifies both the residual equation and interval-subdivision query recover the generated impact time while preserving a parallel miss row.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_algorithm::collision_generator",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_algorithm::collision_generator",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi'",
+      "notes_or_gap": "Covered by DART-owned deterministic generator-style point-edge coverage rather than porting the upstream Catch2 random generator; corpus-scale interval-root parity remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/ccd/collision_generator.hpp",
@@ -16803,14 +16803,14 @@
       "topic": "rigid barrier or CCD algorithm unit test",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART unit test covers the same barrier, hash-grid, or rigid time-of-impact responsibility with derivative or conservative bounds where applicable.",
+      "expected_invariant": "DART synthesizes point-edge rigid CCD rows from expected time-of-impact and edge-coordinate parameters, then verifies both the residual equation and interval-subdivision query recover the generated impact time while preserving a parallel miss row.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_algorithm::collision_generator",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_algorithm::collision_generator",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi'",
+      "notes_or_gap": "Covered by DART-owned deterministic generator-style point-edge coverage rather than porting the upstream Catch2 random generator; corpus-scale interval-root parity remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/ccd/test_edge_vertex_ccd.cpp",
@@ -16821,14 +16821,14 @@
       "topic": "rigid barrier or CCD algorithm unit test",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART unit test covers the same barrier, hash-grid, or rigid time-of-impact responsibility with derivative or conservative bounds where applicable.",
+      "expected_invariant": "DART covers the audited edge-vertex CCD source row with generated 3D point-edge analogs: midpoint and interior impacts, flipped edge order, a translating rigid edge, and a parallel miss.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_algorithm::test_edge_vertex_ccd",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_algorithm::test_edge_vertex_ccd",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi'",
+      "notes_or_gap": "Covered by DART-owned point-edge residual and interval-subdivision regressions for the upstream edge-vertex responsibility; rigorous interval arithmetic remains tracked by Phase 2c."
     },
     {
       "upstream_path": "tests/ccd/test_hash_grid.cpp",
@@ -16893,14 +16893,14 @@
       "topic": "rigid barrier or CCD algorithm unit test",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART unit test covers the same barrier, hash-grid, or rigid time-of-impact responsibility with derivative or conservative bounds where applicable.",
+      "expected_invariant": "DART covers the audited generic TOI source row with generated point-edge impacts plus upstream-style point-edge, edge-edge, and face-vertex rigid TOI rows.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_algorithm::test_time_of_impact",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_fixture::RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi; test_rigid_ipc_fixture::RigidIpcCcdCase.EvaluatesUpstreamStyleRigidToiRows",
       "required_assets_or_importer": [],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_algorithm::test_time_of_impact",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=\"RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi:RigidIpcCcdCase.EvaluatesUpstreamStyleRigidToiRows\"'",
+      "notes_or_gap": "Covered by DART-owned rigid CCD load, residual, and interval-subdivision regressions; corpus-scale interval-root parity remains tracked by Phase 2c."
     }
   ]
 }
