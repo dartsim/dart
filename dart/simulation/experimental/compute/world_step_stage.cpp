@@ -6398,23 +6398,39 @@ void applyRigidIpcRuntimeResult(
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
 {
   auto& registry = world.getRegistry();
-  std::vector<entt::entity> dynamicEntities;
-  dynamicEntities.reserve(bodies.size());
+  std::vector<entt::entity> writebackEntities;
+  writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
-    if (body.surface.dynamic) {
-      dynamicEntities.push_back(body.entity);
+    if (body.surface.dynamic || body.kinematic) {
+      writebackEntities.push_back(body.entity);
     }
   }
 
   const auto orderedEntities
-      = orderRigidBodiesParentBeforeChild(registry, dynamicEntities);
+      = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
   for (const auto entity : orderedEntities) {
     const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
     if (bodyIndex >= bodies.size() || bodyIndex >= result.surfaces.size()) {
       continue;
     }
-    applyRigidIpcPoseToRuntimeBody(
-        world, bodies[bodyIndex], result.surfaces[bodyIndex].pose);
+    const auto& body = bodies[bodyIndex];
+    if (body.kinematic) {
+      applyKinematicRuntimeBody(world, body);
+    } else if (body.surface.dynamic) {
+      applyRigidIpcPoseToRuntimeBody(
+          world, body, result.surfaces[bodyIndex].pose);
+    }
+  }
+}
+
+//==============================================================================
+void applyRigidIpcKinematicRuntimeBodies(
+    World& world, const std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  for (const auto& body : bodies) {
+    if (body.kinematic) {
+      applyKinematicRuntimeBody(world, body);
+    }
   }
 }
 
@@ -6811,15 +6827,13 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
 
   const auto runtimeBodies = collectRigidIpcRuntimeBodies(world, m_lastStats);
 
-  // Kinematic obstacles advance under their prescribed velocity every step,
-  // whether or not any dynamic body is present to solve against.
-  for (const auto& body : runtimeBodies) {
-    if (body.kinematic) {
-      applyKinematicRuntimeBody(world, body);
-    }
+  if (runtimeBodies.empty()) {
+    return;
   }
-
-  if (runtimeBodies.empty() || m_lastStats.dynamicBodyCount == 0u) {
+  if (m_lastStats.dynamicBodyCount == 0u) {
+    // Kinematic-only scenes have no solve acceptance gate, so advance
+    // prescribed bodies directly.
+    applyRigidIpcKinematicRuntimeBodies(world, runtimeBodies);
     return;
   }
 
