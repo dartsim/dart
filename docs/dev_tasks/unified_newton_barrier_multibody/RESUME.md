@@ -16,9 +16,9 @@ packet.
 
 ## Current Branch
 
-`main` - local checkout with uncommitted PLAN-083 planning, Phase 1 primitive
-promotion changes, and Phase 2 ABD foundation changes. No commit or push has
-been made.
+`feature/unified-newton-barrier-abd` - current checkout is clean after the
+latest `origin/main` merge and the CodeQL timeout maintenance commit. Phase 1
+primitive promotion and Phase 2 ABD foundation changes are on this branch.
 
 ## Immediate Next Step
 
@@ -26,9 +26,17 @@ Continue Phase 2 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
 promote the first benchmark packet from smoke shape to a comparison manifest
 row now that affine barrier and friction primitive value/gradient/Hessian
-oracles are stable. Add a two-body affine contact micro-solve only if the
-manifest row needs a solved-state residual before Phase 3 shared
-projected-Newton work.
+oracles are stable. Use
+[`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
+to keep the Phase 2 packet, shared solver contracts, articulation rows,
+restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows
+sequenced without lowering the final completion target. Add a two-body affine
+contact micro-solve only if the manifest row needs a solved-state residual
+before Phase 3 shared projected-Newton work. Use the new
+[`../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md`](../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+sidecar when deciding whether a primitive/API/benchmark row belongs to
+deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC GPU, SPB recovery,
+VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
 
 ## Context That Would Be Lost
 
@@ -65,7 +73,7 @@ projected-Newton work.
   `pixi run test-simulation-experimental`, `pixi run check-api-boundaries`, and
   the four benchmark smokes listed in the dev-task README.
 - Phase 2 validation so far passed: `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental` (46/46), and
+  `pixi run test-simulation-experimental` (47/47 after the latest main merge), and
   `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`.
 
 ## How To Resume

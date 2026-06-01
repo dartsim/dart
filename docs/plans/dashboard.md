@@ -234,10 +234,14 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Continue Phase 2 in
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
-  promote the first ABD benchmark packet from smoke shape to a comparison
-  manifest row now that affine barrier and friction primitive derivative
-  oracles are stable. Generalize PSD projection and projected-Newton contracts
-  when the ABD slice creates a second-use contract.
+  use the PLAN-083
+  [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+  sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
+  SPB, and VBD/OGC-adjacent obligations in the right owners; promote the first
+  ABD benchmark packet from smoke shape to a comparison manifest row now that
+  affine barrier and friction primitive derivative oracles are stable.
+  Generalize PSD projection and projected-Newton contracts when the ABD slice
+  creates a second-use contract.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

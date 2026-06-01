@@ -33,7 +33,9 @@
         for point-point, point-edge, edge-edge, and point-triangle primitives.
 - [ ] Phase 3: generalize second-use PSD projection and projected-Newton
       contracts when ABD or another solver-family slice needs the shared
-      contract.
+      contract; use the PLAN-083 variant consolidation map to keep IPC-family
+      responsibilities in the right owner while promoting only proven
+      second-use contracts.
 - [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
       CPU/GPU evidence, and visual evidence rows.
 - [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
@@ -128,6 +130,10 @@ Phase 2 local evidence so far:
 
 - PLAN-083 owner:
   [`../../plans/083-unified-newton-barrier-multibody.md`](../../plans/083-unified-newton-barrier-multibody.md)
+- IPC-family variant consolidation:
+  [`../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md`](../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+- Implementation roadmap:
+  [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 - Primitive promotion slice:
   [`../../plans/083-unified-newton-barrier-multibody/primitive-promotion-slice.md`](../../plans/083-unified-newton-barrier-multibody/primitive-promotion-slice.md)
 - ABD first-slice design:

@@ -49,6 +49,10 @@
 - Research references: `ipc-2020`, `rigid-ipc-2021`, `lan-2022-abd`, and
   `chen-2022-unified-newton-barrier` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
+- IPC-family variant consolidation map:
+  [`083-unified-newton-barrier-multibody/ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+- Implementation roadmap:
+  [`083-unified-newton-barrier-multibody/implementation-roadmap.md`](083-unified-newton-barrier-multibody/implementation-roadmap.md)
 - Unified paper/deck manifest:
   [`083-unified-newton-barrier-multibody/paper-deck-manifest.md`](083-unified-newton-barrier-multibody/paper-deck-manifest.md)
 - Shared primitive audit:
@@ -64,8 +68,11 @@
 ## Consolidation Decisions
 
 1. **One DART method family, multiple variant owners.** PLAN-083 owns the
-   shared Newton-barrier multibody direction. PLAN-081 keeps deformable FEM/IPC
-   obligations. PLAN-082 keeps exact/reduced rigid IPC obligations. PLAN-080
+   shared Newton-barrier multibody direction and the
+   [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+   routing map. PLAN-081 keeps deformable FEM/IPC, codimensional IPC, PD-IPC
+   GPU, and SPB recovery obligations. PLAN-082 keeps exact/reduced rigid IPC
+   obligations. PLAN-104 keeps VBD/OGC-adjacent contact obligations. PLAN-080
    keeps the DART 6 parity rigid/articulated baseline. A future ABD slice must
    join this family; it does not erase the rigid IPC correctness oracle until it
    beats it on matched fixtures.
@@ -126,8 +133,10 @@
    unit test, benchmark table, comparison, and slide-deck performance row must
    map to a DART artifact, target category, command, and completion status.
 2. **Shared internal primitive layer** - Inventory duplicate IPC primitives in
-   deformable and rigid code, then promote stable second-use pieces to a shared
-   internal Newton-barrier module with focused tests and benchmark targets.
+   deformable, rigid, ABD, and adjacent IPC-family code, then promote stable
+   second-use pieces to a shared internal Newton-barrier module with focused
+   tests and benchmark targets. The consolidation map records which variant
+   owns each obligation until that second-use evidence exists.
 3. **ABD stiff-body track** - Add affine-body model/state representation,
    orthogonality energy, inertia/contact/friction chain rules, stiffness
    controls, and solver diagnostics. Compare against the rigid IPC oracle,

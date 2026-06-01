@@ -20,6 +20,8 @@ benchmark/profiling packets, and visual evidence matching the row.
   <https://games-1312234642.cos.ap-guangzhou.myqcloud.com/pdf/Games2022242%E6%9D%8E%E6%97%BB%E8%BE%B0.pdf>.
 - Related DART owners:
   [`../083-unified-newton-barrier-multibody.md`](../083-unified-newton-barrier-multibody.md),
+  [`ipc-variant-consolidation.md`](ipc-variant-consolidation.md),
+  [`implementation-roadmap.md`](implementation-roadmap.md),
   [`../081-deformable-implicit-barrier-solver.md`](../081-deformable-implicit-barrier-solver.md),
   [`../082-rigid-implicit-barrier-contact.md`](../082-rigid-implicit-barrier-contact.md),
   [`../080-rigid-body-dynamics-solver.md`](../080-rigid-body-dynamics-solver.md),
@@ -37,6 +39,11 @@ benchmark/profiling packets, and visual evidence matching the row.
 
 ## Cross-Plan Classification Policy
 
+- Use
+  [`ipc-variant-consolidation.md`](ipc-variant-consolidation.md)
+  to decide whether a row remains deformable IPC, rigid IPC, ABD, PD-IPC, SPB,
+  VBD/OGC-adjacent, or shared Newton-barrier infrastructure before changing
+  ownership or public API shape.
 - Rows that are pure deformable IPC obligations stay in PLAN-081 and link back
   here only when they share primitives with unified multibody work.
 - Rows that are exact/reduced rigid IPC obligations stay in PLAN-082 and are
