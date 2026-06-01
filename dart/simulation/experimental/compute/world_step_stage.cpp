@@ -4435,6 +4435,7 @@ void runVbdDeformableSolve(
   // unchanged; a vertex pressed into ground and an obstacle at once resolves to
   // the nearer constraint and recovers over steps.
   const std::vector<dvbd::ContactPlane>* contactPlanes = nullptr;
+  bool hasActiveContactPlanes = false;
   const bool anyStaticContact
       = !barriers.empty() || !sphereObstacles.empty() || !boxObstacles.empty();
   if (config.contactStiffness > 0.0 && anyStaticContact) {
@@ -4461,7 +4462,7 @@ void runVbdDeformableSolve(
       const auto groundTop = staticGroundTopAt(position, barriers);
       if (groundTop.has_value()) {
         const double gap = position.z() - *groundTop;
-        if (gap < bestGap) {
+        if (gap < band && gap < bestGap) {
           bestGap = gap;
           bestNormal = Eigen::Vector3d::UnitZ();
           bestOffset = *groundTop;
@@ -4531,6 +4532,7 @@ void runVbdDeformableSolve(
         plane.stiffness = config.contactStiffness;
         vbdScratch.contactObjectIds[i] = bestObjectId;
         vbdScratch.contactFeatureIds[i] = bestFeatureId;
+        hasActiveContactPlanes = true;
       }
     }
     contactPlanes = &vbdScratch.contactPlanes;
@@ -4603,13 +4605,13 @@ void runVbdDeformableSolve(
     }
   }
   const bool hasRequestedAvbdContactNormalRows
-      = config.useAvbdContactNormalRows && contactPlanes != nullptr;
+      = config.useAvbdContactNormalRows && hasActiveContactPlanes;
   const bool hasRequestedAvbdAttachmentRows
       = config.useAvbdAttachmentRows && hasFixedNodes;
   const bool hasRequestedAvbdFiniteStiffnessRows
       = config.useAvbdFiniteStiffnessRows && !vbdScratch.springs.empty();
   const bool useAvbdFrictionRows = config.useAvbdContactNormalRows
-                                   && contactPlanes != nullptr
+                                   && hasActiveContactPlanes
                                    && frictionCoeff > 0.0;
   const bool useAvbdSelfContactRows
       = config.useAvbdSelfContactNormalRows && selfContact != nullptr;
@@ -4621,7 +4623,7 @@ void runVbdDeformableSolve(
       = useAvbdSelfContactRows && frictionCoeff > 0.0;
   const bool hasUnsupportedAvbdFrictionSource
       = frictionCoeff > 0.0
-        && ((contactPlanes != nullptr && !useAvbdFrictionRows)
+        && ((hasActiveContactPlanes && !useAvbdFrictionRows)
             || (selfContact != nullptr && !useAvbdSelfContactFrictionRows));
   const bool canUseAvbdMassSpringRows
       = hasRequestedAvbdMassSpringRows && vbdScratch.tets.empty()
