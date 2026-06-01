@@ -4392,6 +4392,49 @@ TEST(World, RigidIpcKinematicBodyAdvancesAtPrescribedVelocity)
   EXPECT_NEAR(rotated.angle(), 0.2, 1e-6);
 }
 
+// Kinematic-only rigid IPC writeback must preserve frame hierarchy ordering so
+// child local transforms are computed against the parent's advanced pose.
+TEST(World, RigidIpcKinematicOnlyWritebackOrdersParentBeforeChild)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0);
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  parentOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto parent = world.addRigidBody("parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  parent.setKinematic(true);
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(20.0, 0.0, 0.0);
+  childOptions.linearVelocity = Eigen::Vector3d::Zero();
+  auto child = world.addRigidBody("child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  child.setKinematic(true);
+  child.setParentFrame(parent);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const Eigen::Vector3d expectedParentPosition(11.0, 0.0, 0.0);
+  const Eigen::Vector3d expectedChildPosition(20.0, 0.0, 0.0);
+  Eigen::Isometry3d expectedChildLocalTransform = Eigen::Isometry3d::Identity();
+  expectedChildLocalTransform.translation()
+      = expectedChildPosition - expectedParentPosition;
+
+  EXPECT_TRUE(parent.getTranslation().isApprox(expectedParentPosition, 1e-12));
+  EXPECT_TRUE(child.getTranslation().isApprox(expectedChildPosition, 1e-12));
+  EXPECT_TRUE(
+      child.getLocalTransform().isApprox(expectedChildLocalTransform, 1e-12));
+}
+
 // Fig. 13 mechanism (linear form): a kinematic conveyor floor moving in +x
 // drags a resting free box forward through lagged Coulomb friction. The moving
 // obstacle's surface motion must enter the friction term for this to happen.

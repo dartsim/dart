@@ -6427,10 +6427,23 @@ void applyRigidIpcRuntimeResult(
 void applyRigidIpcKinematicRuntimeBodies(
     World& world, const std::vector<RigidIpcRuntimeBody>& bodies)
 {
+  auto& registry = world.getRegistry();
+  std::vector<entt::entity> writebackEntities;
+  writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
     if (body.kinematic) {
-      applyKinematicRuntimeBody(world, body);
+      writebackEntities.push_back(body.entity);
     }
+  }
+
+  const auto orderedEntities
+      = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
+  for (const auto entity : orderedEntities) {
+    const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
+    if (bodyIndex >= bodies.size()) {
+      continue;
+    }
+    applyKinematicRuntimeBody(world, bodies[bodyIndex]);
   }
 }
 
