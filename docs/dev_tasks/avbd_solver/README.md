@@ -176,11 +176,12 @@ Paper audit:
     solves the private 6-DOF rigid rows, and projects the solved displacement
     back into the velocity consumed by the standard position stage. The private
     rigid contact snapshot now derives box face/edge/corner endpoint feature IDs
-    and scopes row ordinals per canonical endpoint pair for narrower warm-start
-    persistence. Private point-joint linear, angular, and combined row builders
-    now create the first rigid joint-row families for fixed-anchor translation
-    and orientation constraints through the existing rigid row driver, and seed
-    their step-start constraint values for AVBD alpha regularization.
+    plus cylinder side/cap/rim endpoint feature IDs and scopes row ordinals per
+    canonical endpoint pair for narrower warm-start persistence. Private
+    point-joint linear, angular, and combined row builders now create the first
+    rigid joint-row families for fixed-anchor translation and orientation
+    constraints through the existing rigid row driver, and seed their step-start
+    constraint values for AVBD alpha regularization.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, and
     not articulated joint support yet.
@@ -235,10 +236,10 @@ numbers.
    foundation, rigid point-pair friction-cone helper, private serial rigid row
    driver, private rigid contact-manifold row builder, private World-contact
    snapshot/solve/writeback helpers, combined private wrapper, first internal
-   `RigidAvbdContactConfig` contact-stage velocity-projection activation, and
-   box-feature/pair-scoped rigid contact row identity, and private rigid
-   point-joint linear/angular/combined row builders with step-start previous
-   constraint values have narrow CPU paths.
+   `RigidAvbdContactConfig` contact-stage velocity-projection activation,
+   box-feature/pair-scoped rigid contact row identity, cylinder side/cap/rim
+   endpoint features, and private rigid point-joint linear/angular/combined row
+   builders with step-start previous constraint values have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

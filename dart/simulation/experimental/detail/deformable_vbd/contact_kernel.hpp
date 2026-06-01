@@ -59,6 +59,9 @@ struct ContactPlane
 };
 
 inline constexpr std::uint64_t kAvbdBoxContactFeatureCodeCount = 27;
+inline constexpr std::uint64_t kAvbdCylinderContactFeatureCodeCount = 5;
+inline constexpr std::uint64_t kAvbdCylinderContactFeatureIdOffset
+    = kAvbdBoxContactFeatureCodeCount;
 inline constexpr std::uint8_t kAvbdContactFeatureKindShift = 56;
 inline constexpr std::uint64_t kAvbdContactFeatureIndexMask
     = (std::uint64_t{1} << kAvbdContactFeatureKindShift) - 1u;
@@ -231,6 +234,59 @@ inline AvbdContactFeatureKind avbdBoxContactFeatureKind(
     return AvbdContactFeatureKind::Vertex;
   }
   return AvbdContactFeatureKind::Body;
+}
+
+//==============================================================================
+/// Encode the closest z-axis cylinder surface feature for AVBD rigid contact
+/// row keys. Codes distinguish the side face, cap faces, and rim edges so warm
+/// starts persist across small same-feature motion but reset when contact moves
+/// between the barrel, caps, and rims.
+inline std::uint64_t avbdCylinderContactFeatureCode(
+    const Eigen::Vector3d& localPosition, double radius, double halfHeight)
+{
+  const double radialDistance
+      = std::hypot(localPosition.x(), localPosition.y());
+  const double absZ = std::abs(localPosition.z());
+  const bool outsideSide = radialDistance > radius;
+  const bool outsideCap = absZ > halfHeight;
+  const bool positiveZ = localPosition.z() >= 0.0;
+
+  if (outsideSide && outsideCap) {
+    return positiveZ ? 3u : 4u;
+  }
+  if (outsideCap) {
+    return positiveZ ? 1u : 2u;
+  }
+  if (outsideSide) {
+    return 0u;
+  }
+
+  const double sideMargin = radius - radialDistance;
+  const double capMargin = halfHeight - absZ;
+  if (capMargin < sideMargin) {
+    return positiveZ ? 1u : 2u;
+  }
+  return 0u;
+}
+
+//==============================================================================
+inline std::uint64_t packAvbdCylinderContactFeatureId(
+    std::uint64_t cylinderIndex, std::uint64_t featureCode)
+{
+  return kAvbdCylinderContactFeatureIdOffset
+         + cylinderIndex * kAvbdCylinderContactFeatureCodeCount
+         + (featureCode % kAvbdCylinderContactFeatureCodeCount);
+}
+
+//==============================================================================
+inline AvbdContactFeatureKind avbdCylinderContactFeatureKind(
+    std::uint64_t featureCode)
+{
+  const std::uint64_t code = featureCode % kAvbdCylinderContactFeatureCodeCount;
+  if (code == 3u || code == 4u) {
+    return AvbdContactFeatureKind::Edge;
+  }
+  return AvbdContactFeatureKind::Face;
 }
 
 /// One active AVBD half-space normal row for a deformable vertex. Row

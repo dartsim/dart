@@ -1303,6 +1303,66 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotPersistsFeatureScopedRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCylinderFeatureIds)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions cylinderOptions;
+  auto cylinder = world.addRigidBody("cylinder", cylinderOptions);
+  cylinder.setCollisionShape(
+      sx::CollisionShape::makeCylinder(/*radius=*/1.0, /*halfHeight=*/2.0));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Vec3(3.0, 0.0, 0.0);
+  auto sphereA = world.addRigidBody("sphere_a", sphereOptions);
+  sphereA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sphereOptions.position = Vec3(0.0, 0.0, 3.0);
+  auto sphereB = world.addRigidBody("sphere_b", sphereOptions);
+  sphereB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const sx::CollisionBody cylinderBody(cylinder.getEntity(), &world);
+  const sx::CollisionBody sphereBodyA(sphereA.getEntity(), &world);
+  const sx::CollisionBody sphereBodyB(sphereB.getEntity(), &world);
+  const std::vector<sx::Contact> contacts{
+      {cylinderBody, sphereBodyA, Vec3(1.1, 0.0, 0.0), Vec3::UnitX(), 0.1},
+      {cylinderBody, sphereBodyB, Vec3(0.0, 0.0, 2.1), Vec3::UnitZ(), 0.2},
+      {cylinderBody,
+       sphereBodyA,
+       Vec3(1.1, 0.0, 2.1),
+       Vec3(1.0, 0.0, 1.0).normalized(),
+       0.3}};
+
+  const vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+
+  ASSERT_EQ(snapshot.contacts.size(), contacts.size());
+  EXPECT_EQ(snapshot.contacts[0].row, 0u);
+  EXPECT_EQ(snapshot.contacts[1].row, 0u);
+  EXPECT_EQ(snapshot.contacts[2].row, 0u);
+
+  const std::uint64_t sideFeature = snapshot.contacts[0].endpointA.feature;
+  const std::uint64_t capFeature = snapshot.contacts[1].endpointA.feature;
+  const std::uint64_t rimFeature = snapshot.contacts[2].endpointA.feature;
+  EXPECT_NE(sideFeature, capFeature);
+  EXPECT_NE(sideFeature, rimFeature);
+  EXPECT_NE(capFeature, rimFeature);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(sideFeature),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(capFeature),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(rimFeature),
+      vbd::AvbdContactFeatureKind::Edge);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[0].endpointB.feature),
+      vbd::AvbdContactFeatureKind::Body);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
 {
   sx::World world;

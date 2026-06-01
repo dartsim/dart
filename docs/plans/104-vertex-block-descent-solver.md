@@ -118,10 +118,12 @@ wrapper in focused coverage, but the rigid contact stage does not activate
 those AVBD results yet.
 Private dynamic/rigid contact identity helpers now pack contact feature
 kind/index IDs, canonicalize two-endpoint row keys, and create normal/friction
-row descriptors. The private rigid row path also has point-joint linear,
-angular, and combined builders for fixed-anchor translation/orientation rows,
-with step-start previous values seeded for AVBD alpha regularization, but they
-do not solve World dynamic/rigid contact manifolds yet.
+row descriptors. Rigid snapshots now derive box face/edge/corner and cylinder
+side/cap/rim endpoint features for narrower private warm-start keys. The
+private rigid row path also has point-joint linear, angular, and combined
+builders for fixed-anchor translation/orientation rows, with step-start
+previous values seeded for AVBD alpha regularization, but they do not solve
+World dynamic/rigid contact manifolds yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

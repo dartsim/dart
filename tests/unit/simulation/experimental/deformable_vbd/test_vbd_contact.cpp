@@ -297,6 +297,49 @@ TEST(VbdContact, AvbdBoxContactFeatureCodeSeparatesBoxManifolds)
 }
 
 //==============================================================================
+TEST(VbdContact, AvbdCylinderContactFeatureCodeSeparatesManifolds)
+{
+  const double radius = 1.0;
+  const double halfHeight = 2.0;
+
+  const std::uint64_t side = vbd::avbdCylinderContactFeatureCode(
+      Vec3(1.2, 0.0, 0.0), radius, halfHeight);
+  const std::uint64_t sideInside = vbd::avbdCylinderContactFeatureCode(
+      Vec3(0.95, 0.0, 0.0), radius, halfHeight);
+  const std::uint64_t topCap = vbd::avbdCylinderContactFeatureCode(
+      Vec3(0.0, 0.0, 2.2), radius, halfHeight);
+  const std::uint64_t bottomCap = vbd::avbdCylinderContactFeatureCode(
+      Vec3(0.0, 0.0, -2.2), radius, halfHeight);
+  const std::uint64_t topRim = vbd::avbdCylinderContactFeatureCode(
+      Vec3(1.2, 0.0, 2.2), radius, halfHeight);
+  const std::uint64_t bottomRim = vbd::avbdCylinderContactFeatureCode(
+      Vec3(1.2, 0.0, -2.2), radius, halfHeight);
+
+  EXPECT_EQ(sideInside, side);
+  EXPECT_NE(topCap, side);
+  EXPECT_NE(bottomCap, topCap);
+  EXPECT_NE(topRim, topCap);
+  EXPECT_NE(bottomRim, topRim);
+
+  EXPECT_NE(
+      vbd::packAvbdCylinderContactFeatureId(0, side),
+      vbd::packAvbdBoxContactFeatureId(0, side));
+  EXPECT_NE(
+      vbd::packAvbdCylinderContactFeatureId(0, side),
+      vbd::packAvbdCylinderContactFeatureId(1, side));
+
+  EXPECT_EQ(
+      vbd::avbdCylinderContactFeatureKind(side),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdCylinderContactFeatureKind(topCap),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdCylinderContactFeatureKind(topRim),
+      vbd::AvbdContactFeatureKind::Edge);
+}
+
+//==============================================================================
 TEST(VbdContact, AvbdContactFeatureIdsRoundTripKindAndIndex)
 {
   const std::uint64_t vertex

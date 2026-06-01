@@ -239,9 +239,7 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
       packAvbdContactFeatureId(AvbdContactFeatureKind::Body, 0)};
 
   const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
-  if (geometry == nullptr || geometry->shape.type != CollisionShapeType::Box
-      || !geometry->shape.halfExtents.allFinite()
-      || (geometry->shape.halfExtents.array() <= 0.0).any()) {
+  if (geometry == nullptr) {
     return endpoint;
   }
 
@@ -251,11 +249,25 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     return endpoint;
   }
 
-  const std::uint64_t featureCode
-      = avbdBoxContactFeatureCode(localPoint, geometry->shape.halfExtents);
-  endpoint.feature = packAvbdContactFeatureId(
-      avbdBoxContactFeatureKind(featureCode),
-      packAvbdBoxContactFeatureId(/*boxIndex=*/0, featureCode));
+  if (geometry->shape.type == CollisionShapeType::Box
+      && geometry->shape.halfExtents.allFinite()
+      && (geometry->shape.halfExtents.array() > 0.0).all()) {
+    const std::uint64_t featureCode
+        = avbdBoxContactFeatureCode(localPoint, geometry->shape.halfExtents);
+    endpoint.feature = packAvbdContactFeatureId(
+        avbdBoxContactFeatureKind(featureCode),
+        packAvbdBoxContactFeatureId(/*boxIndex=*/0, featureCode));
+  } else if (
+      geometry->shape.type == CollisionShapeType::Cylinder
+      && std::isfinite(geometry->shape.radius) && geometry->shape.radius > 0.0
+      && geometry->shape.halfExtents.allFinite()
+      && geometry->shape.halfExtents.z() > 0.0) {
+    const std::uint64_t featureCode = avbdCylinderContactFeatureCode(
+        localPoint, geometry->shape.radius, geometry->shape.halfExtents.z());
+    endpoint.feature = packAvbdContactFeatureId(
+        avbdCylinderContactFeatureKind(featureCode),
+        packAvbdCylinderContactFeatureId(/*cylinderIndex=*/0, featureCode));
+  }
   return endpoint;
 }
 

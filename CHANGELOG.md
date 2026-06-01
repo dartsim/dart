@@ -591,6 +591,10 @@
     joint translation and orientation rows can share the rigid row driver; the
     builders seed step-start constraint values for AVBD alpha regularization.
     This is not articulated World joint wiring yet.
+  - Extended the private AVBD rigid contact feature identity path with cylinder
+    side/cap/rim endpoint features, so cylinder contacts warm-start across
+    same-feature motion but reset when they move between barrel, cap, and rim
+    manifolds.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
