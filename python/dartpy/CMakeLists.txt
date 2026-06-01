@@ -380,6 +380,16 @@ if(_dartpy_has_simulation_experimental)
   )
 endif()
 
+# Link the experimental CUDA sidecar so dartpy can install the GPU deformable
+# PSD backend (used by `pixi run -e cuda py-demos`). The target exists only when
+# DART_ENABLE_EXPERIMENTAL_CUDA is ON; the matching compile definition gates the
+# GPU bindings in simulation_experimental/module.cpp, which are safe no-ops
+# otherwise.
+if(TARGET dart-simulation-experimental-cuda)
+  target_link_libraries(dartpy PRIVATE dart-simulation-experimental-cuda)
+  target_compile_definitions(dartpy PRIVATE DART_ENABLE_EXPERIMENTAL_CUDA=1)
+endif()
+
 set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")
 if(NOT CMAKE_CONFIGURATION_TYPES)
   # Python imports the extension by the module init name, which is _dartpy.

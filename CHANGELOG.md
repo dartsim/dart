@@ -62,6 +62,17 @@
     breathable spacing. Centralized in `configureImGuiStyle` so every panel, the
     perf HUD, and the docked regions share one look; colors are scale-independent
     while metrics still scale with `--gui-scale`/DPI.
+  - Enabled GPU (CUDA) deformable solve in the Python demos: `pixi run -e cuda
+    py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
+    deformable projected-Newton PSD projection to the GPU by default. New dartpy
+    functions `simulation_experimental.is_cuda_available()`,
+    `set_gpu_deformable_solve(enable)`, and `is_gpu_deformable_solve_enabled()`
+    expose the process-wide toggle (safe no-ops on non-CUDA builds, so the
+    default environment is unchanged). The demo runner adds `--gpu`/`--no-gpu`
+    flags and a `DART_PY_DEMOS_GPU` env override (default `auto`: on when a CUDA
+    device is present), an in-viewer GPU toggle panel, and a startup status
+    line. The `config-py` build task forwards the experimental CUDA opt-in so
+    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
