@@ -30,11 +30,15 @@
   [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
   [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
 - Research references: [`../readthedocs/papers.md`](../readthedocs/papers.md)
-  (`chen-2024-vbd`, `tinyvbd`, `gaia`).
+  (`chen-2024-vbd`, `tinyvbd`, `gaia`, `ogc-2025`).
 - VBD paper/reference gap audit:
   [`104-vertex-block-descent-solver/vbd-paper-gap-audit.md`](104-vertex-block-descent-solver/vbd-paper-gap-audit.md)
   owns the method scope, the component-by-component gap, the elastic-energy
   targets, and the reference performance numbers to beat.
+- OGC paper/source gap audit:
+  [`104-vertex-block-descent-solver/ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md)
+  owns the Offset Geometric Contact research and implementation sequence for
+  codimensional VBD contact.
 
 ## Current Implementation Evidence
 
@@ -52,8 +56,9 @@ tilted-strand plus contact showcase py-demos.
 
 Remaining durable work is deliberately narrower than the retired task tracker:
 self-contact tangential friction, committed benchmark/profiling JSON, paper
-tetrahedral scene reproduction, Phase 8 SoA plus Gaia CPU comparison, and
-same-GPU RTX-4090 Table 1 reproduction.
+tetrahedral scene reproduction, OGC source/code audit plus CPU proof-of-contact,
+Phase 8 SoA plus Gaia CPU comparison, and same-GPU RTX-4090 Table 1
+reproduction.
 
 ## Relationship To PLAN-081
 
@@ -62,9 +67,12 @@ same experimental deformable ECS components and the same variational
 implicit-Euler objective. They differ in the inner solver: PLAN-081 pursues an
 implicit-barrier projected-Newton-style method; PLAN-104 pursues per-vertex
 block coordinate descent. VBD reuses the PLAN-081 `deformable_contact` kernels
-for contact/friction rather than duplicating them. The public deformable stage
-stays algorithm-neutral; which inner solver runs is an internal/explicit-opt-in
-decision, not a leaked solver registry.
+for contact/friction rather than duplicating them. OGC starts as a PLAN-104
+codimensional-contact sidecar because the paper's fast path is VBD plus local
+displacement bounds, but it must compare against PLAN-081 IPC-style barriers
+before any supersession claim. The public deformable stage stays
+algorithm-neutral; which inner solver or contact model runs is an
+internal/explicit-opt-in decision, not a leaked solver registry.
 
 ## Workstreams
 
@@ -95,6 +103,12 @@ decision, not a leaked solver registry.
    boundary; benchmarks versus the reference/paper GPU numbers.
 10. **Corpus + visual evidence** — DART-native examples, tests, benchmarks,
     profiling JSON, and headless Filament captures reproducing the paper scenes.
+11. **Offset Geometric Contact evaluation** — Follow
+    [`ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md):
+    source/code audit, internal vertex-facet and edge-edge OGC contact
+    construction, conservative per-vertex bounds and truncation, VBD
+    force/Hessian integration, reduced paper-scene corpus, CPU benchmark packets,
+    then private GPU evidence. Keep OGC names internal until those gates pass.
 
 ## Acceptance Criteria
 
@@ -109,6 +123,10 @@ VBD-parity progress is not complete until the implementation:
   reference implementations on matched scenes;
 - adds FEM hyperelasticity, acceleration, damping, contact, and friction with
   focused tests;
+- promotes OGC only after the sidecar proves contact construction,
+  conservative bounds, VBD force/Hessian agreement, penetration-free repeated
+  steps, documented limitations, benchmark/profiling JSON, and headless visual
+  evidence against the same corpus used for IPC/VBD comparison;
 - records benchmark/profiling JSON for kernels, the solver, and scenes on both
   CPU and GPU, and demonstrates beating the reference and/or paper numbers
   before any performance-parity claim;

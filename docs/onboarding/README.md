@@ -7,7 +7,8 @@
 - Contributing code? → [contributing.md](contributing.md) + [code-style.md](code-style.md)
 - Understanding core architecture? → [architecture.md](architecture.md)
 - Gazebo integration? → [build-system.md](build-system.md#gazebo-integration-feature)
-- Key command: `pixi run test-all` (lint + build + all tests)
+- Key command: `pixi run test-all` (lint + build + all default-environment
+  tests); on Linux CUDA hosts also run `pixi run -e cuda test-all`
 
 ## Documentation Principles
 
@@ -1013,6 +1014,8 @@ This section is intentionally brief and delegates to the focused onboarding docs
 Suggested (Unverified):
 
 - `pixi run test-all` (recommended by the PR template)
+- `pixi run -e cuda test-all` when a Linux host has a visible NVIDIA CUDA
+  runtime
 
 ---
 

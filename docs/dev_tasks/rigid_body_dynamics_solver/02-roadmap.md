@@ -80,8 +80,15 @@ Goal: DART 6-equivalent constrained stepping (stacking boxes, robot on ground).
   rejected at runtime).
 - Pluggable integrator and explicit substepping policy.
 - COM jacobians, body jacobians, full diagnostics.
-- Model loading bridge (URDF/SDF/MJCF) into the experimental world (deferred
-  capability in the public-facade doc).
+- Model loading bridge: parsed `dynamics::Skeleton` import for the
+  experimental tree-joint families (Weld/Revolute/Prismatic/Screw/Universal/
+  Ball/Planar/Free), legacy `simulation::World` import, and default URI-string
+  loading are in place in C++ and dartpy, including one centered collidable
+  Box/Sphere/Capsule/Cylinder/Mesh shape per link. Explicit read options are
+  available for format selection, SDF default root-joint selection, and URDF
+  package directories; remaining legacy-only joints, source-offset/multiple/
+  visual shape import, resource retriever bindings, diagnostics, and richer
+  load-result ergonomics remain.
 
 ## Multi-Solver / Multi-Physics Readiness (carried through every phase)
 

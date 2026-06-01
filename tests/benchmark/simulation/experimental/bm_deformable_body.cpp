@@ -182,7 +182,8 @@ sx::DeformableBodyOptions makeTetraMeshOptions(int tetrahedronCount)
 sx::DeformableBodyOptions makeFemBarOptions(
     int cellsX,
     bool useFixedCorotational = false,
-    bool useIterativeSolver = false)
+    bool useIterativeSolver = false,
+    bool useMatrixFreeSolver = false)
 {
   cellsX = std::max(cellsX, 1);
   const int nx = cellsX + 1;
@@ -200,6 +201,7 @@ sx::DeformableBodyOptions makeFemBarOptions(
   options.material.useFiniteElementElasticity = true;
   options.material.useFixedCorotationalElasticity = useFixedCorotational;
   options.material.useIterativeLinearSolver = useIterativeSolver;
+  options.material.useMatrixFreeLinearSolver = useMatrixFreeSolver;
 
   for (int k = 0; k < nz; ++k) {
     for (int j = 0; j < ny; ++j) {
@@ -248,7 +250,7 @@ sx::DeformableBodyOptions makeFemBarOptions(
 // near O(nnz), which is the regime the iterative solver is built for. Used to
 // benchmark the direct-vs-iterative crossover as the element count grows.
 sx::DeformableBodyOptions makeFemCubeOptions(
-    int cellsPerSide, bool useIterativeSolver)
+    int cellsPerSide, bool useIterativeSolver, bool useMatrixFreeSolver = false)
 {
   const int cells = std::max(cellsPerSide, 1);
   const int n = cells + 1;
@@ -263,6 +265,7 @@ sx::DeformableBodyOptions makeFemCubeOptions(
   options.material.poissonRatio = 0.3;
   options.material.useFiniteElementElasticity = true;
   options.material.useIterativeLinearSolver = useIterativeSolver;
+  options.material.useMatrixFreeLinearSolver = useMatrixFreeSolver;
 
   for (int k = 0; k < n; ++k) {
     for (int j = 0; j < n; ++j) {
@@ -1000,11 +1003,16 @@ struct DeformableFemBarWorld
   explicit DeformableFemBarWorld(
       int cellsX,
       bool useFixedCorotational = false,
-      bool useIterativeSolver = false)
+      bool useIterativeSolver = false,
+      bool useMatrixFreeSolver = false)
   {
     body = world.addDeformableBody(
         "fem_bar",
-        makeFemBarOptions(cellsX, useFixedCorotational, useIterativeSolver));
+        makeFemBarOptions(
+            cellsX,
+            useFixedCorotational,
+            useIterativeSolver,
+            useMatrixFreeSolver));
     nodeCount = body.getNodeCount();
     tetrahedronCount = body.getTetrahedronCount();
     for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -1032,10 +1040,17 @@ void BM_DeformableFemBarStep(benchmark::State& state)
   DeformableFemBarWorld fixture(cellsX);
 
   double totalNewtonIterations = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1048,6 +1063,9 @@ void BM_DeformableFemBarStep(benchmark::State& state)
   // paper's Table 1 reports, alongside the wall-clock per-step time.
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1063,10 +1081,17 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
   DeformableFemBarWorld fixture(cellsX, /*useFixedCorotational=*/true);
 
   double totalNewtonIterations = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1079,6 +1104,9 @@ void BM_DeformableFcrBarStep(benchmark::State& state)
   // material's convergence can be compared to neo-Hookean at equal resolution.
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1101,10 +1129,23 @@ void BM_DeformableCgBarStep(benchmark::State& state)
       cellsX, /*useFixedCorotational=*/false, /*useIterativeSolver=*/true);
 
   double totalNewtonIterations = 0.0;
+  double totalCgIterations = 0.0;
+  double maxCgError = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    totalCgIterations
+        += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
+    maxCgError
+        = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1115,6 +1156,70 @@ void BM_DeformableCgBarStep(benchmark::State& state)
   state.counters["contact_constraints"] = 0.0;
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["cg_iters_per_step"]
+      = totalCgIterations / static_cast<double>(state.iterations());
+  state.counters["cg_max_error"] = maxCgError;
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
+// The same FEM beam through the explicit matrix-free CG path. Unlike
+// BM_DeformableCgBarStep, this path does not assemble an Eigen SparseMatrix for
+// the Hessian; it applies local Hessian blocks directly and uses a block-Jacobi
+// preconditioner. This gives the M7 profiling surface a memory-removal axis
+// before the larger AMG/GPU solve work.
+void BM_DeformableMatrixFreeCgBarStep(benchmark::State& state)
+{
+  const auto cellsX = static_cast<int>(state.range(0));
+  DeformableFemBarWorld fixture(
+      cellsX,
+      /*useFixedCorotational=*/false,
+      /*useIterativeSolver=*/false,
+      /*useMatrixFreeSolver=*/true);
+
+  double totalNewtonIterations = 0.0;
+  double totalCgIterations = 0.0;
+  double totalMatrixFreeSolves = 0.0;
+  double maxCgError = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
+  for (auto _ : state) {
+    fixture.world.step();
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    totalCgIterations
+        += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
+    totalMatrixFreeSolves
+        += static_cast<double>(diagnostics.projectedNewtonMatrixFreeSolves);
+    maxCgError
+        = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
+  state.counters["newton_iters_per_step"]
+      = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["cg_iters_per_step"]
+      = totalCgIterations / static_cast<double>(state.iterations());
+  state.counters["matrix_free_solves_per_step"]
+      = totalMatrixFreeSolves / static_cast<double>(state.iterations());
+  state.counters["cg_max_error"] = maxCgError;
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
@@ -1122,10 +1227,15 @@ void BM_DeformableCgBarStep(benchmark::State& state)
 //==============================================================================
 struct DeformableFemCubeWorld
 {
-  DeformableFemCubeWorld(int cellsPerSide, bool useIterativeSolver)
+  DeformableFemCubeWorld(
+      int cellsPerSide,
+      bool useIterativeSolver,
+      bool useMatrixFreeSolver = false)
   {
     body = world.addDeformableBody(
-        "fem_cube", makeFemCubeOptions(cellsPerSide, useIterativeSolver));
+        "fem_cube",
+        makeFemCubeOptions(
+            cellsPerSide, useIterativeSolver, useMatrixFreeSolver));
     nodeCount = body.getNodeCount();
     tetrahedronCount = body.getTetrahedronCount();
     for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -1154,16 +1264,34 @@ struct DeformableFemCubeWorld
 // overtakes it by a few thousand nodes (the IPC paper's Fig. 23 / Table 1
 // per-step-scaling axis, on the chunky mesh where it bites -- the thin
 // BM_DeformableFemBarStep beam has too small a bandwidth to show it).
-void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
+void BM_DeformableCube3dStep(
+    benchmark::State& state, bool useIterativeSolver, bool useMatrixFreeSolver)
 {
   const auto cellsPerSide = static_cast<int>(state.range(0));
-  DeformableFemCubeWorld fixture(cellsPerSide, useIterativeSolver);
+  DeformableFemCubeWorld fixture(
+      cellsPerSide, useIterativeSolver, useMatrixFreeSolver);
 
   double totalNewtonIterations = 0.0;
+  double totalCgIterations = 0.0;
+  double totalMatrixFreeSolves = 0.0;
+  double maxCgError = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
   for (auto _ : state) {
     fixture.world.step();
-    totalNewtonIterations += static_cast<double>(
-        fixture.world.getLastDeformableSolverDiagnostics().solverIterations);
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    totalCgIterations
+        += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
+    totalMatrixFreeSolves
+        += static_cast<double>(diagnostics.projectedNewtonMatrixFreeSolves);
+    maxCgError
+        = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
     benchmark::DoNotOptimize(
         fixture.body.getPosition(fixture.nodeCount - 1u).z());
   }
@@ -1174,18 +1302,34 @@ void BM_DeformableCube3dStep(benchmark::State& state, bool useIterativeSolver)
   state.counters["contact_constraints"] = 0.0;
   state.counters["newton_iters_per_step"]
       = totalNewtonIterations / static_cast<double>(state.iterations());
+  state.counters["cg_iters_per_step"]
+      = totalCgIterations / static_cast<double>(state.iterations());
+  state.counters["matrix_free_solves_per_step"]
+      = totalMatrixFreeSolves / static_cast<double>(state.iterations());
+  state.counters["cg_max_error"] = maxCgError;
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * fixture.nodeCount));
 }
 
 void BM_DeformableCube3dDirectStep(benchmark::State& state)
 {
-  BM_DeformableCube3dStep(state, /*useIterativeSolver=*/false);
+  BM_DeformableCube3dStep(
+      state, /*useIterativeSolver=*/false, /*useMatrixFreeSolver=*/false);
 }
 
 void BM_DeformableCube3dCgStep(benchmark::State& state)
 {
-  BM_DeformableCube3dStep(state, /*useIterativeSolver=*/true);
+  BM_DeformableCube3dStep(
+      state, /*useIterativeSolver=*/true, /*useMatrixFreeSolver=*/false);
+}
+
+void BM_DeformableCube3dMatrixFreeCgStep(benchmark::State& state)
+{
+  BM_DeformableCube3dStep(
+      state, /*useIterativeSolver=*/false, /*useMatrixFreeSolver=*/true);
 }
 
 //==============================================================================
@@ -1658,11 +1802,14 @@ BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
 BENCHMARK(BM_DeformableFemBarStep)->Arg(2)->Arg(8)->Arg(24)->Arg(48);
 BENCHMARK(BM_DeformableFcrBarStep)->Arg(2)->Arg(8)->Arg(24);
 BENCHMARK(BM_DeformableCgBarStep)->Arg(2)->Arg(8)->Arg(24)->Arg(48);
+BENCHMARK(BM_DeformableMatrixFreeCgBarStep)->Arg(2)->Arg(8)->Arg(24);
 // Chunky 3D cube, direct vs iterative at matching cell counts: the direct
 // solve's per-step time climbs super-linearly with the 3D fill-in while the
-// iterative solve stays near O(nnz) and overtakes it by a few thousand nodes.
+// sparse IC-CG and explicit matrix-free CG rows expose the solve-effort and
+// sparse-Hessian footprint tradeoff.
 BENCHMARK(BM_DeformableCube3dDirectStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
 BENCHMARK(BM_DeformableCube3dCgStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
+BENCHMARK(BM_DeformableCube3dMatrixFreeCgStep)->Arg(4)->Arg(6)->Arg(8);
 
 // The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
 // dense-solve cap, so they exercise the sparse projected-Newton path; compare

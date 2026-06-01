@@ -47,8 +47,9 @@ enum class CollisionShapeType
   Sphere,
   Box,
   Mesh,
-  // Appended last so the serialized ordinals of the earlier types are stable.
   Capsule,
+  // Appended last so the serialized ordinals of the earlier types are stable.
+  Cylinder,
 };
 
 /// Public value object describing a body's collision geometry.
@@ -58,7 +59,8 @@ enum class CollisionShapeType
 /// is expressed in the owning body's frame, centered at the body frame origin.
 ///
 /// Only the fields relevant to `type` are used. Prefer the named constructors
-/// (`makeSphere`, `makeBox`, `makeMesh`) for clarity.
+/// (`makeSphere`, `makeBox`, `makeCapsule`, `makeCylinder`, `makeMesh`) for
+/// clarity.
 struct CollisionShape
 {
   /// Geometric family selecting which fields below are used.
@@ -68,9 +70,9 @@ struct CollisionShape
   double radius = 0.5;
 
   /// Box half extents along the body x/y/z axes (used when type == Box). Each
-  /// component must be positive. For a Capsule, `halfExtents.z()` doubles as
-  /// the axial half-height (the segment runs +/- that distance along the body z
-  /// axis, swept by `radius`); this reuse keeps the serialized layout stable.
+  /// component must be positive. For a Capsule or Cylinder, `halfExtents.z()`
+  /// doubles as the axial half-height along body z; this reuse keeps the
+  /// serialized layout stable.
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
 
   /// Mesh vertices in the body frame (used when type == Mesh).
@@ -119,6 +121,19 @@ struct CollisionShape
   {
     CollisionShape shape;
     shape.type = CollisionShapeType::Capsule;
+    shape.radius = radius;
+    shape.halfExtents = Eigen::Vector3d(radius, radius, halfHeight);
+    return shape;
+  }
+
+  /// Create a z-axis cylinder collision shape. Both radius and half-height must
+  /// be positive. The half-height is stored in `halfExtents.z()` (x/y are set
+  /// to `radius` so every component stays positive for the shared validators).
+  [[nodiscard]] static CollisionShape makeCylinder(
+      double radius, double halfHeight)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Cylinder;
     shape.radius = radius;
     shape.halfExtents = Eigen::Vector3d(radius, radius, halfHeight);
     return shape;

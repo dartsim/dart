@@ -197,8 +197,9 @@
         Hessian, and codimensional obstacles are later increments.
   - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
         host<->device copies remain; keeping the assembly/solve on-device is a
-        follow-up), matrix-free CG for very large meshes, adaptive barrier
-        stiffness, barrier forces for rigid BOX and codimensional obstacles (the
+        follow-up), automatic large-mesh selection for the explicit matrix-free
+        CG path, adaptive barrier stiffness, barrier forces for rigid BOX and
+        codimensional obstacles (the
         sphere obstacle barrier is covered) plus their projected-Newton Hessian,
         and complementarity/solver-stat diagnostics. Known approximation: the
         contact active set is rebuilt once per outer iteration and held fixed
@@ -339,27 +340,28 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with non-box/deforming/moving rigid surface contact
-   candidates, broader solver-wired CCD coverage, and stronger spatial
-   acceleration for larger meshes. The current primitive kernels, candidate
-   sets, analytic
-   Hessians, clamped-log barrier kernels, tangent stencils, motion-aware swept
-   candidate culling, reusable candidate-output and sweep-item buffers,
-   per-body surface-contact CCD limiter, inter-body surface CCD limiter,
-   static-ground-barrier CCD limiter, and static box surface CCD limiter are
-   internal scaffolding only and are not yet full IPC contact.
-2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
-   scenes: broader scene asset loading, BE/NM state, output diagnostics
-   compatibility decisions, and more contact-free mesh replays. The
-   mesh/material-state and scene/boundary sub-slices are scaffolding only and
-   still use the existing point-mass/spring stepping path.
-3. Use the scene corpus manifest to select the first tutorial and paper-facing
-   scenes, then replace planned artifacts with implemented DART commands as
-   each scene lands.
-4. Add focused unit tests and benchmarks for each landed slice before promoting
-   scene-level examples.
-5. For every GUI-facing scene, attach long-horizon headless Filament evidence
-   to the PR rather than committing transient screenshots or videos.
+1. Continue PLAN-081 M7 scale/performance work from the merged
+   `feature/ipc-deformable-*` PR train (#2810-#2813). The local diagnostics
+   continuation reports successful iterative linear-solve iterations, residual
+   estimates, and sparse-Hessian matrix footprint through the public deformable
+   solver diagnostics and the M7 direct/CG benchmarks.
+2. Continue the matrix-free CG slice: the explicit
+   `useMatrixFreeLinearSolver` path now bypasses triplets -> `SparseMatrix`
+   assembly with local Hessian-vector products and block-Jacobi preconditioning.
+   It is now covered on ground contact by C++ direct/sparse-IC-CG/matrix-free
+   parity and dartpy direct/matrix-free regressions. Next, harden it on larger
+   contact-heavy meshes and decide when it can become the automatic path for
+   Fig. 22-scale meshes.
+3. Follow-on performance slices: AMG / multigrid preconditioning for the
+   largest systems, on-device GPU assembly + solve beyond the existing PSD
+   projection backend, and the Fig. 22 / Table 1 reference-comparison runs.
+4. Build the profiling-grade Fig. 23 statistics surface as the solver scales:
+   per-scene avg/max contacts, Newton iterations, CG iterations/residuals,
+   assembled Hessian footprint, peak memory, seconds per step, and reference
+   CPU comparison.
+5. Use the scene corpus manifest to select paper-facing scenes only when their
+   prerequisite kernels are present, and attach long-horizon headless Filament
+   evidence for every GUI-facing scene rather than committing transient media.
 
 ## Verification
 

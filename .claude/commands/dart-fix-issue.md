@@ -18,7 +18,9 @@ Fix GitHub issue: $ARGUMENTS
    from `origin/main`.
 3. Fix with minimal changes + add regression test. For dual-PR bug fixes, fix
    `release-6.16` first, then cherry-pick or reapply to `main`.
-4. `pixi run lint`, then run the smallest relevant tests; use `pixi run test-all` before finalizing when feasible
+4. `pixi run lint`, then run the smallest relevant tests; use
+   `pixi run test-all` before finalizing when feasible, and also
+   `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA runtime
 5. Before PR creation, decide whether `CHANGELOG.md` needs an entry and fill
    `.github/PULL_REQUEST_TEMPLATE.md`.
 6. After explicit maintainer/user approval, `git push -u origin HEAD && gh pr create --base <target-branch> --milestone "<milestone>"`

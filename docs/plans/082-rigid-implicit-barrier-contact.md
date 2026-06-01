@@ -136,6 +136,8 @@
   owns the cross-variant IPC/ABD consolidation plan. PLAN-082 remains the rigid
   IPC variant owner and correctness oracle until an affine/stiff-body path beats
   it on matched fixtures.
+- Simultaneous-impact intake and go/no-go sidecar:
+  [`082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md`](082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md)
 - Research catalog:
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
 
@@ -179,6 +181,11 @@
    verification primitives. Rigid IPC remains the exact/reduced-coordinate
    reference path; ABD or other stiff-body variants must prove matched
    correctness and performance before replacing any rigid IPC responsibility.
+9. **Simultaneous-impact intake** - Keep the explicit event-level
+   simultaneous-impact papers as a benchmark/go-no-go sidecar rather than a new
+   solver commitment. Promote an impact operator only if solver-neutral DART
+   scenes show a gap not covered by sequential impulse, boxed LCP, rigid IPC, or
+   AVBD-style finite-time contact.
 
 ## Acceptance Criteria
 
@@ -205,6 +212,9 @@
 - Any shared primitive promoted by PLAN-083 has cross-variant tests proving
   rigid IPC behavior remains unchanged or that the new behavior is explicitly
   accepted against the audited fixture manifest.
+- Simultaneous-impact promotion requires the sidecar's literature matrix,
+  solver-neutral corpus, IPC/AVBD comparison, and public-boundary review before
+  any event-level operator becomes a PLAN-082 workstream.
 
 ## Revision Triggers
 
@@ -215,6 +225,9 @@
   CCD, Newton, friction, diagnostics, or benchmark infrastructure.
 - Hosted or local benchmark evidence shows the implicit-barrier path cannot be
   competitive without a different CPU/GPU data layout.
+- Solver-neutral simultaneous-impact scenes show restitution, ordering
+  uncertainty, energy, termination, or break-away gaps that rigid IPC and
+  AVBD-style finite-time contact do not cover.
 - A maintainer decides a manifest family should be manual, out of scope, or
   promoted earlier than this plan's sequencing.
 - PLAN-083 changes the shared Newton-barrier primitive contract or promotes ABD

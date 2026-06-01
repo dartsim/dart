@@ -196,6 +196,8 @@ Springer, 2006.
 | `rigid-ipc-2021`                   | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
 | `lan-2022-abd`                     | Lan et al., "Affine Body Dynamics" (2022)                                                                                  | contact/dynamics                   | planned     | high     | adopt     |
 | `chen-2022-unified-newton-barrier` | Chen et al., "A Unified Newton Barrier Method for Multibody Dynamics" (2022)                                               | contact/integration/multibody      | planned     | high     | adopt     |
+| `lan-2022-pdipc`                   | Lan et al., "Penetration-free Projective Dynamics on the GPU" (2022)                                                       | contact/integration/GPU            | planned     | high     | evaluate  |
+| `chen-2023-spb`                    | Chen, Diaz & Yuksel, "Shortest Path to Boundary for Self-Intersecting Meshes" (2023)                                       | contact/collision                  | planned     | high     | evaluate  |
 | `werling-2021`                     | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
 | `howell-2022-dojo`                 | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
 | `lee-vi-2016`                      | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
@@ -203,6 +205,12 @@ Springer, 2006.
 | `chen-2024-vbd`                    | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
 | `vbd-2024`                         | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
 | `avbd-2025`                        | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
+| `smith-2012-rosi`                  | Smith et al., "Reflections on Simultaneous Impact" (2012)                                                                  | contact/impact                     | referenced  | medium   | baseline  |
+| `zhang-2015-qce`                   | Zhang et al., "Quadratic Contact Energy Model for Multi-impact Simulation" (2015)                                          | contact/impact                     | referenced  | medium   | evaluate  |
+| `vouga-2017-all-well`              | Vouga et al., "All's Well That Ends Well: Guaranteed Resolution of Simultaneous Rigid Body Impact" (2017)                  | contact/impact                     | referenced  | medium   | evaluate  |
+| `halm-posa-2024-set-valued-impact` | Halm & Posa, "Set-valued rigid-body dynamics for simultaneous, inelastic, frictional impacts" (2024)                       | contact/impact                     | referenced  | medium   | evaluate  |
+| `lelidec-2024-contact-models`      | Le Lidec et al., "Contact Models in Robotics: a Comparative Analysis" (2024)                                               | contact/survey                     | referenced  | medium   | reference |
+| `ogc-2025`                         | Chen et al., "Offset Geometric Contact" (2025)                                                                             | contact/collision                  | planned     | high     | evaluate  |
 | `nakamura-1987-task-priority`      | Nakamura, Hanafusa & Yoshikawa, "Task-Priority Based Redundancy Control of Robot Manipulators" (1987)                      | kinematics                         | planned     | medium   | adopt     |
 | `buss-kim-2005-sdls`               | Buss & Kim, "Selectively Damped Least Squares for Inverse Kinematics" (2005)                                               | kinematics                         | planned     | medium   | evaluate  |
 | `aristidou-lasenby-2011-fabrik`    | Aristidou & Lasenby, "FABRIK: A fast, iterative solver for the Inverse Kinematics problem" (2011)                          | kinematics                         | planned     | medium   | evaluate  |
@@ -492,6 +500,42 @@ Related public resources:
   references, and paper-reported numbers. The paper and deck remain references
   and baselines, not runtime dependencies.
 
+### `lan-2022-pdipc`
+
+Lei Lan, Guanqun Ma, Yin Yang, Changxi Zheng, Minchen Li, and Chenfanfu Jiang.
+"Penetration-free Projective Dynamics on the GPU." _ACM Transactions on
+Graphics_, 41(4), Article 69, 2022. DOI:
+[10.1145/3528223.3530069](https://doi.org/10.1145/3528223.3530069).
+
+Related public resources:
+
+- Paper PDF:
+  [lan2022pdipc.pdf](https://www.math.ucla.edu/multiples/publication/lan2022pdipc.pdf)
+- GAMES webinar deck:
+  [Games2022240](https://games-1312234642.cos.ap-guangzhou.myqcloud.com/pdf/Games2022240%E8%93%9D%E7%A3%8A.pdf)
+- Summary page:
+  [Physics-Based Animation](https://www.physicsbasedanimation.com/2022/05/27/penetration-free-projective-dynamics-on-the-gpu/)
+- Paper video:
+  [youtube.com/watch?v=acEplzIIOEs](https://www.youtube.com/watch?v=acEplzIIOEs)
+- CCD reference implementation:
+  [Continuous-Collision-Detection/Fast-Approximate-Root-CCD](https://github.com/Continuous-Collision-Detection/Fast-Approximate-Root-CCD)
+- Robotics projective-dynamics reference:
+  [DragonZoom/projective-dynamics-for-robotics](https://github.com/DragonZoom/projective-dynamics-for-robotics)
+
+- **Type:** paper · **Topic:** contact/integration/GPU · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-081 PD-IPC GPU gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md).
+- **Notes:** Candidate GPU acceleration path for IPC-class deformable contact:
+  it combines projective dynamics, IPC barriers, two-level local/global
+  iteration, A-Jacobi, patch-based GPU collision culling, and
+  minimum-gradient-Newton CCD pruning for solids and shells. DART should treat
+  the fast CCD shortcut as an optimization to validate against conservative
+  native CCD, because the public non-author CCD implementation reports missed
+  point-triangle and edge-edge collisions. Keep the method internal and
+  backend-neutral until CPU reference tests, A-Jacobi convergence evidence,
+  conservative-CCD fallback policy, GPU packet benchmarks, and headless visual
+  evidence pass.
+
 ### `werling-2021`
 
 Werling, K., Omens, D., Lee, J., Exarchos, I., & Liu, C. K. "Fast and
@@ -680,17 +724,194 @@ Graphics_ (SIGGRAPH 2024). arXiv:2403.06321.
 
 ### `avbd-2025`
 
-Giles, et al. "Augmented Vertex Block Descent." _ACM Transactions on Graphics_
-(SIGGRAPH 2025).
+Chris Giles, Elie Diaz, and Cem Yuksel. "Augmented Vertex Block Descent."
+_ACM Transactions on Graphics_, 44(4), Article 90, 2025. DOI:
+[10.1145/3731195](https://doi.org/10.1145/3731195).
+
+Related public resources:
+
+- Project page:
+  [graphics.cs.utah.edu/research/projects/avbd](https://graphics.cs.utah.edu/research/projects/avbd/)
+- Paper PDF:
+  [Augmented_VBD-SIGGRAPH25.pdf](https://graphics.cs.utah.edu/research/projects/avbd/Augmented_VBD-SIGGRAPH25.pdf)
 
 - **Type:** paper · **Topic:** contact/integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
 - **Where used:** contact-extension survey in
-  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
+  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md)
+  and the
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
 - **Notes:** Augmented-Lagrangian extension of VBD with bounded constraint
   forces (`f = clamp(k·C+λ, fmin, fmax)`) and Coulomb friction via a lagged
   normal-force clamp. Identified as the best structural fit for adding hard,
   drift-free non-penetration and a friction cone to the variational integrator
   without a global PSD solve (PLAN-082 contact rung C3). Not a commitment.
+
+### `smith-2012-rosi`
+
+Breannan Smith, Danny M. Kaufman, Etienne Vouga, Rasmus Tamstorf, and Eitan
+Grinspun. "Reflections on Simultaneous Impact." _ACM Transactions on Graphics_,
+31(4), Article 106, 2012. DOI:
+[10.1145/2185520.2185602](https://doi.org/10.1145/2185520.2185602).
+
+Related public resources:
+
+- Project page: [cs.columbia.edu/cg/rosi](https://www.cs.columbia.edu/cg/rosi/)
+- Paper PDF: [rosi.pdf](https://www.cs.columbia.edu/cg/rosi/rosi.pdf)
+- Supplement:
+  [rosi_supp.pdf](https://www.cs.columbia.edu/cg/rosi/rosi_supp.pdf)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** baseline
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Baseline for event-level simultaneous impact: generalized
+  reflections, physical desiderata such as feasibility, symmetry, break-away,
+  kinetic-energy behavior, and a restitution model aimed at avoiding inelastic
+  collapse. DART should use it first as a benchmark/specification source, not as
+  a public solver identity.
+
+### `zhang-2015-qce`
+
+Tianxiang Zhang, Sheng Li, Dinesh Manocha, Guoping Wang, and Hanqiu Sun.
+"Quadratic Contact Energy Model for Multi-impact Simulation." _Computer Graphics
+Forum_, 34(7), 133-144, 2015. DOI:
+[10.1111/cgf.12752](https://doi.org/10.1111/cgf.12752).
+
+Related public resource:
+
+- Paper PDF:
+  [graphics.pku.edu.cn/docs/20220703165309179406.pdf](https://www.graphics.pku.edu.cn/docs/20220703165309179406.pdf)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Candidate multi-impact model that frames contact-point potential
+  energy with a closed-form quadratic contact energy, then combines it with LCP
+  handling for restitution and friction. Useful for a minimal internal baseline
+  if PLAN-082 proves that finite-time rigid IPC or AVBD-style contact leaves a
+  true restitution / wave-propagation gap.
+
+### `vouga-2017-all-well`
+
+Etienne Vouga, Breannan Smith, Danny M. Kaufman, Rasmus Tamstorf, and Eitan
+Grinspun. "All's Well That Ends Well: Guaranteed Resolution of Simultaneous
+Rigid Body Impact." _ACM Transactions on Graphics_, 36(4), Article 151, 2017.
+DOI: [10.1145/3072959.3073689](https://doi.org/10.1145/3072959.3073689).
+
+Related public resources:
+
+- Paper PDF:
+  [term-revised.pdf](https://www.cs.utexas.edu/~evouga/uploads/4/5/6/8/45689883/term-revised.pdf)
+- Project page:
+  [evouga/all's-well-that-ends-well](https://www.cs.utexas.edu/~evouga/allrsquos-well-that-ends-well-guaranteed-resolution-of-simultaneous-rigid-body-impact.html)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** The strongest termination-focused follow-up to generalized
+  reflections and pairwise impact schemes. It belongs in DART as a go/no-go
+  benchmark for finite termination, approximate energy behavior, drift, and
+  break-away before any event-level impact operator is promoted.
+
+### `halm-posa-2024-set-valued-impact`
+
+Mathew Halm and Michael Posa. "Set-valued rigid-body dynamics for simultaneous,
+inelastic, frictional impacts." _International Journal of Robotics Research_,
+43(10), 2024. DOI:
+[10.1177/02783649241236860](https://doi.org/10.1177/02783649241236860).
+
+Related public resources:
+
+- Journal page:
+  [journals.sagepub.com/doi/10.1177/02783649241236860](https://journals.sagepub.com/doi/10.1177/02783649241236860)
+- arXiv: [2103.15714](https://arxiv.org/abs/2103.15714)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Robotics-specific newer reference that argues simultaneous
+  frictional impacts should sometimes be represented as a set of plausible
+  outcomes instead of a single heuristic ordering. Evaluate as an uncertainty /
+  benchmark direction before exposing any set-valued public API.
+
+### `lelidec-2024-contact-models`
+
+Quentin Le Lidec, Wilson Jallet, Louis Montaut, Ivan Laptev, Cordelia Schmid,
+and Justin Carpentier. "Contact Models in Robotics: a Comparative Analysis."
+_IEEE Transactions on Robotics_, 40, 3716-3733, 2024. DOI:
+[10.1109/TRO.2024.3434208](https://doi.org/10.1109/TRO.2024.3434208).
+
+Related public resources:
+
+- Project page:
+  [di.ens.fr/willow/projects/contact_models_in_robotics](https://www.di.ens.fr/willow/projects/contact_models_in_robotics/)
+- Paper PDF:
+  [lelidec2024contacts.pdf](https://simple-robotics.github.io/publications/contact-models/static/paper/lelidec2024contacts.pdf)
+- arXiv: [2304.06372](https://arxiv.org/abs/2304.06372)
+
+- **Type:** paper · **Topic:** contact/survey · **Status:** referenced · **Priority:** medium · **Verdict:** reference
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Survey and benchmark framing for robotics contact models, including
+  Signorini/Coulomb/maximum-dissipation laws, simulator approximations, and
+  physical/computational criteria. Use it to keep the PLAN-082 comparison matrix
+  honest, not as a direct implementation target.
+
+### `chen-2023-spb`
+
+He Chen, Elie Diaz, and Cem Yuksel. "Shortest Path to Boundary for
+Self-Intersecting Meshes." _ACM Transactions on Graphics_, 42(4), 2023. DOI:
+[10.1145/3592136](https://doi.org/10.1145/3592136).
+
+Related public resources:
+
+- Project page:
+  [graphics.cs.utah.edu/research/projects/shortest-path-to-boundary](https://graphics.cs.utah.edu/research/projects/shortest-path-to-boundary/)
+- arXiv: [2305.09778](https://arxiv.org/abs/2305.09778)
+- Supplemental:
+  [sig23_shortest_path-supplemental.pdf](https://graphics.cs.utah.edu/research/projects/shortest-path-to-boundary/sig23_shortest_path-supplemental.pdf)
+- Code:
+  [AnkaChan/Shortest-Path-to-Boundary-for-Self-Intersecting-Meshes](https://github.com/AnkaChan/Shortest-Path-to-Boundary-for-Self-Intersecting-Meshes)
+- Paper video:
+  [youtube.com/watch?v=qRBHY9ntwbU](https://www.youtube.com/watch?v=qRBHY9ntwbU)
+
+- **Type:** paper · **Topic:** contact/collision · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-081 SPB gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/081-deformable-implicit-barrier-solver/spb-gap-audit.md).
+- **Notes:** Volumetric self-intersection recovery method for tetrahedral
+  deformables: DCD finds preexisting intersections, SPB finds a valid shortest
+  path from an internal point to the boundary, and CCD remains necessary for new
+  crossings. It is not a codimensional cloth/strand method and should remain an
+  internal recovery sidecar until DART has query tests, recovery constraints,
+  hybrid CCD/DCD evidence, benchmark packets, and visual captures.
+
+### `ogc-2025`
+
+Anka He Chen, Jerry Hsu, Ziheng Liu, Miles Macklin, Yin Yang, and Cem Yuksel.
+"Offset Geometric Contact." _ACM Transactions on Graphics_, 44(4), Article 160, 2025. DOI: [10.1145/3731205](https://doi.org/10.1145/3731205).
+
+Related public resources:
+
+- Project page:
+  [graphics.cs.utah.edu/research/projects/ogc](https://graphics.cs.utah.edu/research/projects/ogc/)
+- Paper PDF:
+  [Offset_Geometric_Contact-SIGGRAPH2025.pdf](https://graphics.cs.utah.edu/research/projects/ogc/Offset_Geometric_Contact-SIGGRAPH2025.pdf)
+- Code (Gaia):
+  [github.com/AnkaChan/Gaia](https://github.com/AnkaChan/Gaia)
+- Code (Newton):
+  [newton/\_src/solvers/vbd](https://github.com/newton-physics/newton/tree/main/newton/_src/solvers/vbd)
+- Paper video:
+  [youtube.com/watch?v=xxyniqSLJik](https://www.youtube.com/watch?v=xxyniqSLJik)
+
+- **Type:** paper · **Topic:** contact/collision · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-104 OGC gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/ogc-gap-audit.md),
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Newer finite-time contact alternative for codimensional objects:
+  offset geometry, local displacement bounds, and GPU-friendly local operations
+  that avoid expensive CCD in its target setting. It is not a rigid-impact
+  operator. Its implementation path is now tracked under PLAN-104 as a VBD
+  contact sidecar with required source/code audit, CPU proof-of-contact,
+  IPC/VBD comparison packets, and public-boundary review before promotion.
 
 ### `nakamura-1987-task-priority`
 
