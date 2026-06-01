@@ -1,5 +1,25 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: card-tent fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/friction/card-house/card-tent.json`: two inclined card bodies
+  stand on a fixed frictional support, activate rigid IPC contact, stay finite,
+  preserve upright height, and report no meaningful native overlap in
+  `RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction`.
+- Marked that upstream card-tent fixture row implemented in the generated
+  manifest. Larger card-house rows remain planned until they have matching DART
+  evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: 25-stone arch fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

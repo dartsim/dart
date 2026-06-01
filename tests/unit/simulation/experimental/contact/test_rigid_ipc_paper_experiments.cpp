@@ -884,6 +884,74 @@ TEST(RigidIpcPaperExperiments, RollingConeFixtureRowAdvancesWithContact)
   EXPECT_TRUE(cone.getAngularVelocity().allFinite());
 }
 
+TEST(RigidIpcPaperExperiments, CardTentFixtureRowStaysUprightWithFriction)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("card_tent_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({3.0, 1.0, 0.05}));
+  ground.setFriction(0.5);
+
+  constexpr double cardAngle = 65.0 * std::numbers::pi / 180.0;
+  constexpr double cardHalfLength = 1.25;
+  constexpr double cardHalfWidth = 0.625;
+  constexpr double cardHalfThickness = 0.01;
+  std::vector<sx::RigidBody> cards;
+  for (const auto& spec :
+       {std::pair<double, double>{-0.55, cardAngle},
+        std::pair<double, double>{0.55, -cardAngle}}) {
+    sx::RigidBodyOptions cardOptions;
+    cardOptions.mass = 1.0;
+    cardOptions.position = Eigen::Vector3d(spec.first, 0.0, 1.20830308488593);
+    cardOptions.orientation
+        = Eigen::AngleAxisd(spec.second, Eigen::Vector3d::UnitY());
+    auto card = world.addRigidBody(
+        std::string("card_tent_card_") + std::to_string(cards.size()),
+        cardOptions);
+    card.setCollisionShape(
+        sx::CollisionShape::makeBox(
+            {cardHalfLength, cardHalfWidth, cardHalfThickness}));
+    card.setFriction(0.5);
+    cards.push_back(card);
+  }
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double initialAverageZ
+      = 0.5 * (cards[0].getTranslation().z() + cards[1].getTranslation().z());
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 80; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  const double finalAverageZ
+      = 0.5 * (cards[0].getTranslation().z() + cards[1].getTranslation().z());
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_GT(finalAverageZ, initialAverageZ - 0.25);
+  for (const auto& card : cards) {
+    EXPECT_TRUE(card.getTranslation().allFinite());
+    EXPECT_TRUE(card.getLinearVelocity().allFinite());
+    EXPECT_TRUE(card.getAngularVelocity().allFinite());
+  }
+}
+
 // Fig. 7 ("Spolling coin"): a coin spinning on a frictional surface is braked
 // by friction. We use a thin triangulated disk resting flat on the ground, spun
 // about its symmetry (z) axis. The contact patch friction must dissipate the

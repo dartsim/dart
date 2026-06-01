@@ -5878,16 +5878,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D card-tent row: two inclined card bodies stand on a fixed frictional support, activate rigid IPC contact, stay finite, preserve upright height, and report no meaningful native overlap.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::card_tent",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction",
       "required_assets_or_importer": [
         "meshes/plane.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::card_tent",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction'",
+      "notes_or_gap": "Covered by DART-owned two-card tent runtime coverage for the upstream 3D friction fixture mechanism. Larger card-house rows remain planned until they have matching DART evidence."
     },
     {
       "upstream_path": "fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json",

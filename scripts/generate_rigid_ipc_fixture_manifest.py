@@ -139,6 +139,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "DART evidence."
         ),
     },
+    "fixtures/3D/friction/card-house/card-tent.json": {
+        "test": "CardTentFixtureRowStaysUprightWithFriction",
+        "expected_invariant": (
+            "DART covers the audited 3D card-tent row: two inclined card "
+            "bodies stand on a fixed frictional support, activate rigid IPC "
+            "contact, stay finite, preserve upright height, and report no "
+            "meaningful native overlap."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned two-card tent runtime coverage for the "
+            "upstream 3D friction fixture mechanism. Larger card-house rows "
+            "remain planned until they have matching DART evidence."
+        ),
+    },
     "fixtures/3D/friction/spolling-coin.json": {
         "test": "SpinningCoinIsBrakedByFrictionWithoutPenetration",
         "expected_invariant": (

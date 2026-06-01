@@ -197,6 +197,11 @@
         support, activates rigid IPC contact, stays finite, preserves support
         clearance, and keeps the keystone from collapsing. Larger arch rows and
         the Fig. 11 visual alias remain planned.
+  - [x] Add audited 3D card-tent fixture coverage through the opt-in runtime
+        stage. Two inclined card bodies stand on a fixed frictional support,
+        activate rigid IPC contact, stay finite, preserve upright height, and
+        report no meaningful native overlap. Larger card-house rows remain
+        planned.
   - [x] Phase 3u: add the first audited high-speed tunneling fixture coverage
         through the opt-in runtime stage. A rotated cube with a large time-step
         velocity toward a fixed wall remains intersection-free, and the stage
@@ -430,6 +435,10 @@
         (`fixtures/3D/friction/arch/arch-25-stones.json`) as implemented after
         DART-owned 25-voussoir runtime contact coverage landed. Larger arch
         rows and the Fig. 11 visual alias remain planned.
+  - [x] Mark the audited 3D card-tent fixture row
+        (`fixtures/3D/friction/card-house/card-tent.json`) as implemented after
+        DART-owned two-card tent runtime contact coverage landed. Larger
+        card-house rows remain planned.
   - [x] Mark the audited 3D spolling-coin friction fixture row
         (`fixtures/3D/friction/spolling-coin.json`) as implemented after exact
         spinning-disk friction coverage landed. The Fig. 7 paper visual alias
@@ -623,6 +632,8 @@ DART-owned implementation.
   The 25-stone arch fixture row is marked implemented through 25-voussoir
   frictional arch runtime coverage, while larger arch rows and the Fig. 11
   visual alias remain planned.
+  The 3D card-tent fixture row is marked implemented through two-card
+  frictional support coverage, while larger card-house rows remain planned.
   The 3D spolling-coin friction fixture row is marked implemented through Fig.
   7 spin-damping and intersection-free coverage, while its paper-figure visual
   alias remains planned until DART has matching example and headless visual
