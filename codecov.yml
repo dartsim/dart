@@ -26,9 +26,6 @@ coverage:
     # Test code (shouldn't count toward coverage)
     - "tests/**"
 
-    # Template implementation headers (coverage tracked via explicit instantiation in .cpp files)
-    - "**/*-impl.hpp"
-
     # GUI - requires display for testing
     # BACKLOG: Revisit when headless CI is feasible
     - "dart/gui/**"
@@ -36,10 +33,6 @@ coverage:
     # Generated/config files
     - "dart/config.hpp"
     - "**/*.in" # CMake template files
-
-    # Experimental APIs under heavy development
-    # BACKLOG: Test when APIs stabilize
-    - "dart/simulation/experimental/**"
 
     # Deprecated code scheduled for removal
     - "**/SmartPointer.hpp"
@@ -110,7 +103,6 @@ component_management:
       name: "Simulation"
       paths:
         - dart/simulation/**
-        - "!dart/simulation/experimental/**"
 
     - component_id: dart_io
       name: "I/O"
