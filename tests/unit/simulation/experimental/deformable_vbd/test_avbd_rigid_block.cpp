@@ -25,11 +25,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
+#include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
+#include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include <cmath>
@@ -39,11 +45,21 @@ namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 namespace {
 
 using Vec3 = Eigen::Vector3d;
+namespace sx = dart::simulation::experimental;
 
 //==============================================================================
 Eigen::Quaterniond rotationZ(double angle)
 {
   return Eigen::Quaterniond(Eigen::AngleAxisd(angle, Vec3::UnitZ()));
+}
+
+//==============================================================================
+std::size_t findEntityIndex(
+    const std::vector<entt::entity>& entities, entt::entity entity)
+{
+  const auto it = std::find(entities.begin(), entities.end(), entity);
+  EXPECT_NE(it, entities.end());
+  return static_cast<std::size_t>(std::distance(entities.begin(), it));
 }
 
 } // namespace
@@ -779,6 +795,140 @@ TEST(AvbdRigidBlock, RigidContactManifoldRowsDriveSeparation)
 
   EXPECT_EQ(stats.bodyUpdates, 1u);
   EXPECT_GT(states[1].position.x(), 0.4);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Vec3(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox(Vec3(2.0, 2.0, 0.25)));
+  ground.setFriction(0.25);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 2.0;
+  sphereOptions.position = Vec3(0.0, 0.0, 0.45);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setFriction(0.64);
+
+  const std::vector<sx::Contact> contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+
+  vbd::AvbdRigidWorldContactOptions options;
+  options.startStiffness = 90.0;
+  options.maxStiffness = 700.0;
+  const vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          world.getRegistry(), contacts, options);
+
+  ASSERT_EQ(snapshot.entities.size(), 2u);
+  ASSERT_EQ(snapshot.states.size(), snapshot.entities.size());
+  ASSERT_EQ(snapshot.masses.size(), snapshot.entities.size());
+  ASSERT_EQ(snapshot.bodyInertias.size(), snapshot.entities.size());
+  ASSERT_EQ(snapshot.fixed.size(), snapshot.entities.size());
+  ASSERT_EQ(snapshot.contacts.size(), contacts.size());
+
+  const std::size_t groundIndex
+      = findEntityIndex(snapshot.entities, ground.getEntity());
+  const std::size_t sphereIndex
+      = findEntityIndex(snapshot.entities, sphere.getEntity());
+  EXPECT_EQ(snapshot.fixed[groundIndex], 1u);
+  EXPECT_EQ(snapshot.fixed[sphereIndex], 0u);
+  EXPECT_DOUBLE_EQ(snapshot.masses[sphereIndex], 2.0);
+  EXPECT_NEAR(
+      (snapshot.states[sphereIndex].position - sphere.getTranslation()).norm(),
+      0.0,
+      1e-12);
+
+  for (std::size_t i = 0; i < snapshot.contacts.size(); ++i) {
+    const vbd::AvbdRigidContactManifoldPoint& manifoldPoint
+        = snapshot.contacts[i];
+    const sx::Contact& sourceContact = contacts[i];
+    const std::size_t bodyA
+        = findEntityIndex(snapshot.entities, sourceContact.bodyA.getEntity());
+    const std::size_t bodyB
+        = findEntityIndex(snapshot.entities, sourceContact.bodyB.getEntity());
+
+    EXPECT_EQ(manifoldPoint.bodyA, bodyA);
+    EXPECT_EQ(manifoldPoint.bodyB, bodyB);
+    EXPECT_EQ(
+        manifoldPoint.endpointA.object,
+        vbd::avbdRigidWorldContactObjectId(sourceContact.bodyA.getEntity()));
+    EXPECT_EQ(
+        manifoldPoint.endpointB.object,
+        vbd::avbdRigidWorldContactObjectId(sourceContact.bodyB.getEntity()));
+    EXPECT_EQ(
+        vbd::avbdContactFeatureKind(manifoldPoint.endpointA.feature),
+        vbd::AvbdContactFeatureKind::Body);
+    EXPECT_EQ(
+        vbd::avbdContactFeatureKind(manifoldPoint.endpointB.feature),
+        vbd::AvbdContactFeatureKind::Body);
+    EXPECT_NEAR((manifoldPoint.point - sourceContact.point).norm(), 0.0, 1e-12);
+    EXPECT_NEAR(
+        (manifoldPoint.normalFromAtoB - sourceContact.normal).norm(),
+        0.0,
+        1e-12);
+    EXPECT_DOUBLE_EQ(manifoldPoint.depth, sourceContact.depth);
+    EXPECT_NEAR(manifoldPoint.frictionCoefficient, 0.4, 1e-12);
+    EXPECT_DOUBLE_EQ(manifoldPoint.startStiffness, 90.0);
+    EXPECT_DOUBLE_EQ(manifoldPoint.maxStiffness, 700.0);
+    EXPECT_EQ(manifoldPoint.row, i);
+  }
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::buildAvbdRigidContactManifoldRows(
+      snapshot.states,
+      snapshot.contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows);
+
+  ASSERT_EQ(normalRows.size(), snapshot.contacts.size());
+  for (std::size_t i = 0; i < normalRows.size(); ++i) {
+    const auto& row = normalRows[i];
+    const Vec3 pointA = vbd::avbdRigidBodyWorldPoint(
+        snapshot.states[row.bodyA], row.row.localPointA);
+    const Vec3 pointB = vbd::avbdRigidBodyWorldPoint(
+        snapshot.states[row.bodyB], row.row.localPointB);
+    EXPECT_NEAR((pointA - snapshot.contacts[i].point).norm(), 0.0, 1e-12);
+    EXPECT_NEAR((pointB - snapshot.contacts[i].point).norm(), 0.0, 1e-12);
+  }
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotSkipsStaticPairs)
+{
+  sx::World world;
+
+  sx::RigidBodyOptions optionsA;
+  optionsA.isStatic = true;
+  auto bodyA = world.addRigidBody("static_a", optionsA);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.isStatic = true;
+  optionsB.position = Vec3(0.25, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("static_b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const std::vector<sx::Contact> contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+
+  const vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+
+  EXPECT_TRUE(snapshot.entities.empty());
+  EXPECT_TRUE(snapshot.contacts.empty());
 }
 
 //==============================================================================

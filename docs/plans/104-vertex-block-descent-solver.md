@@ -110,20 +110,22 @@ dynamic sliding while projecting the force to a circular Coulomb cone. A
 private serial rigid row driver now sweeps point attachments,
 contact-normal point pairs, and paired friction tangent rows. The first private
 rigid contact-manifold builder now maps active contact points with stable
-endpoint feature IDs into warm-started normal and paired tangent rows, but
-World-level collision-pipeline integration is not wired yet.
+endpoint feature IDs into warm-started normal and paired tangent rows. A private
+World-contact snapshot helper now maps rigid-body `World::collide()` contacts
+into those manifold-point inputs for focused row-builder coverage, but the
+rigid contact stage does not solve through AVBD yet.
 Private dynamic/rigid contact identity helpers now pack contact feature
 kind/index IDs, canonicalize two-endpoint row keys, and create normal/friction
-row descriptors, but they do not generate or solve World dynamic/rigid contact
-manifolds yet.
+row descriptors, but they do not solve World dynamic/rigid contact manifolds
+yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
 completeness beyond current static half-space and lagged self-contact rows,
-World dynamic/rigid contact integration, rigid/articulated joint rows,
-rigid/soft coupling, GPU parity, demos, and benchmark packets remain open.
+solver-stage dynamic/rigid AVBD contact integration, rigid/articulated joint
+rows, rigid/soft coupling, GPU parity, demos, and benchmark packets remain open.
 
 ## Relationship To PLAN-081
 

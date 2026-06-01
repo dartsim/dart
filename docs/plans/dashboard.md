@@ -283,10 +283,11 @@ its own line so status updates remain git-history friendly.
   contact-normal point pairs, and paired friction tangent rows, and a private
   rigid contact-manifold row builder for active contact points. Private
   dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
-  normal/friction row descriptor helpers have started, but no dynamic/rigid
-  contact manifolds are generated from the World collision pipeline yet. This
-  is not a scene-level parity claim. The next local slice is World wiring for
-  dynamic/rigid contact manifolds, rigid contact/joint rows, or
+  normal/friction row descriptor helpers have started, and a private
+  World-contact snapshot helper now translates rigid-body `World::collide()`
+  contacts into manifold-point inputs for the rigid row builder. This is not a
+  solver-stage activation or scene-level parity claim. The next local slice is
+  solver-stage rigid contact manifold use, rigid contact/joint rows, or
   rigid/articulated World integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
