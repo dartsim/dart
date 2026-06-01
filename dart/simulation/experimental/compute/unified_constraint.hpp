@@ -192,4 +192,33 @@ DART_EXPERIMENTAL_API void applyUnifiedConstraintImpulses(
     const Eigen::VectorXd& lambda,
     std::span<Eigen::VectorXd> multibodyVelocities);
 
+/// Resolve the unified constraints when the joint solve is rank-deficient.
+///
+/// Mirrors the rigid stage's recovery, generalized across both domains: solve a
+/// coupled NORMAL-only boxed-LCP (the normal-row sub-block, with the normal
+/// rows enumerated in ASCENDING global-row order so a multibody-free set
+/// reproduces the legacy `i*3` stride), falling back to a diagonal projection
+/// if even that fails; apply the normal impulses; then run `frictionIterations`
+/// of a sequential Coulomb friction sweep bounded by each contact's solved
+/// normal impulse, over rigid contacts then link contacts (ascending global
+/// order), reading live velocities each pass. Rigid friction samples and
+/// applies through `comps::Velocity`; link friction through `M_k^-1 J^T` plus
+/// the obstacle's `comps::Velocity`. `multibodyVelocities` is parallel to
+/// `problem.multibodyBlocks` and is updated in place.
+DART_EXPERIMENTAL_API void applyUnifiedConstraintFallback(
+    entt::registry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations);
+
+/// Solve and apply the unified constraints, falling back when the joint solve
+/// is rank-deficient. Returns true if the joint Dantzig solve succeeded (false
+/// if the fallback was used). This is the entry point the constraint stage
+/// calls.
+DART_EXPERIMENTAL_API bool resolveUnifiedConstraints(
+    entt::registry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations);
+
 } // namespace dart::simulation::experimental::compute

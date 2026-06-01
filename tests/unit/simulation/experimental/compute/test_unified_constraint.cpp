@@ -736,3 +736,201 @@ TEST(UnifiedConstraint, SolveAndApplyDeliversNewtonImpulseToObstacle)
   EXPECT_TRUE(obstacleVelocity.linear.isApprox(expectedLinear, 1e-12));
   EXPECT_TRUE(obstacleVelocity.angular.isApprox(expectedAngular, 1e-12));
 }
+
+//==============================================================================
+TEST(UnifiedConstraint, FallbackStopsHeadOnRigidContact)
+{
+  // The fallback path (normal-only LCP + friction sweep) resolves a simple
+  // head-on contact identically to the joint solve.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions leftOptions;
+  leftOptions.position = Eigen::Vector3d(-0.5, 0.0, 0.0);
+  leftOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto left = world.addRigidBody("left", leftOptions);
+
+  sx::RigidBodyOptions rightOptions;
+  rightOptions.position = Eigen::Vector3d(0.5, 0.0, 0.0);
+  rightOptions.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  auto right = world.addRigidBody("right", rightOptions);
+
+  std::vector<sx::Contact> contacts;
+  sx::Contact contact;
+  contact.bodyA = sx::CollisionBody(left.getEntity(), &world);
+  contact.bodyB = sx::CollisionBody(right.getEntity(), &world);
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitX();
+  contact.depth = 0.0;
+  contacts.push_back(contact);
+
+  const auto rigid = sx::compute::assembleRigidBodyContactProblem(
+      world.getRegistry(), contacts);
+  const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
+  const auto unified
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
+
+  std::vector<Eigen::VectorXd> noMultibodyVelocities;
+  sx::compute::applyUnifiedConstraintFallback(
+      world.getRegistry(),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      8);
+
+  auto& registry = world.getRegistry();
+  const double relativeNormal
+      = (registry.get<sx::comps::Velocity>(right.getEntity()).linear
+         - registry.get<sx::comps::Velocity>(left.getEntity()).linear)
+            .dot(Eigen::Vector3d::UnitX());
+  EXPECT_NEAR(relativeNormal, 0.0, 1e-9);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, FallbackFrictionOpposesSlidingWithoutReversing)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setFriction(0.4);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  boxOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, -1.0);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setFriction(0.4);
+
+  std::vector<sx::Contact> contacts;
+  sx::Contact contact;
+  contact.bodyA = sx::CollisionBody(ground.getEntity(), &world);
+  contact.bodyB = sx::CollisionBody(box.getEntity(), &world);
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.depth = 0.01;
+  contacts.push_back(contact);
+
+  const auto rigid = sx::compute::assembleRigidBodyContactProblem(
+      world.getRegistry(), contacts);
+  const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
+  const auto unified
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
+
+  std::vector<Eigen::VectorXd> noMultibodyVelocities;
+  sx::compute::applyUnifiedConstraintFallback(
+      world.getRegistry(),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      16);
+
+  const Eigen::Vector3d boxVelocity
+      = world.getRegistry().get<sx::comps::Velocity>(box.getEntity()).linear;
+  // The normal contact arrests the descent and friction opposes (but does not
+  // reverse) the tangential slide.
+  EXPECT_GE(boxVelocity.z(), -1e-9);
+  EXPECT_GT(boxVelocity.x(), 0.0); // still sliding in the same direction
+  EXPECT_LT(boxVelocity.x(), 2.0); // but decelerated by friction
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, ResolveUsesJointSolveWhenWellPosed)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions leftOptions;
+  leftOptions.position = Eigen::Vector3d(-0.5, 0.0, 0.0);
+  leftOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto left = world.addRigidBody("left", leftOptions);
+  sx::RigidBodyOptions rightOptions;
+  rightOptions.position = Eigen::Vector3d(0.5, 0.0, 0.0);
+  rightOptions.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  auto right = world.addRigidBody("right", rightOptions);
+
+  std::vector<sx::Contact> contacts;
+  sx::Contact contact;
+  contact.bodyA = sx::CollisionBody(left.getEntity(), &world);
+  contact.bodyB = sx::CollisionBody(right.getEntity(), &world);
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitX();
+  contact.depth = 0.0;
+  contacts.push_back(contact);
+
+  const auto rigid = sx::compute::assembleRigidBodyContactProblem(
+      world.getRegistry(), contacts);
+  const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
+  const auto unified
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
+
+  std::vector<Eigen::VectorXd> noMultibodyVelocities;
+  const bool jointSolved = sx::compute::resolveUnifiedConstraints(
+      world.getRegistry(),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      8);
+  EXPECT_TRUE(jointSolved); // a single contact is full-rank
+
+  auto& registry = world.getRegistry();
+  const double relativeNormal
+      = (registry.get<sx::comps::Velocity>(right.getEntity()).linear
+         - registry.get<sx::comps::Velocity>(left.getEntity()).linear)
+            .dot(Eigen::Vector3d::UnitX());
+  EXPECT_NEAR(relativeNormal, 0.0, 1e-9);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, FallbackResolvesCoplanarBoxOnPlane)
+{
+  // Four coplanar contacts of a box on a plane are the canonical rank-deficient
+  // set the fallback exists for. Exercising the fallback directly (the coupled
+  // normal-only LCP + diagonal-projection last resort + friction sweep) must
+  // still arrest the box's descent.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  boxOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -2.0);
+  auto box = world.addRigidBody("box", boxOptions);
+
+  std::vector<sx::Contact> contacts;
+  const double corners[4][2]
+      = {{0.5, 0.5}, {0.5, -0.5}, {-0.5, 0.5}, {-0.5, -0.5}};
+  for (const auto& corner : corners) {
+    sx::Contact contact;
+    contact.bodyA = sx::CollisionBody(ground.getEntity(), &world);
+    contact.bodyB = sx::CollisionBody(box.getEntity(), &world);
+    contact.point = Eigen::Vector3d(corner[0], corner[1], 0.0);
+    contact.normal = Eigen::Vector3d::UnitZ();
+    contact.depth = 0.01;
+    contacts.push_back(contact);
+  }
+
+  const auto rigid = sx::compute::assembleRigidBodyContactProblem(
+      world.getRegistry(), contacts);
+  ASSERT_EQ(rigid.constraints.size(), 4u);
+  const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
+  const auto unified
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
+
+  std::vector<Eigen::VectorXd> noMultibodyVelocities;
+  sx::compute::applyUnifiedConstraintFallback(
+      world.getRegistry(),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      8);
+
+  // The fallback arrests the box's descent and never injects upward velocity.
+  const double boxVerticalVelocity
+      = world.getRegistry()
+            .get<sx::comps::Velocity>(box.getEntity())
+            .linear.z();
+  EXPECT_NEAR(boxVerticalVelocity, 0.0, 1e-6);
+}

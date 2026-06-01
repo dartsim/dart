@@ -457,4 +457,217 @@ void applyUnifiedConstraintImpulses(
   }
 }
 
+//==============================================================================
+void applyUnifiedConstraintFallback(
+    entt::registry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations)
+{
+  constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
+  const Eigen::Index size = problem.rhs.size();
+  if (size == 0) {
+    return;
+  }
+
+  // 1. Coupled NORMAL-only boxed-LCP. Gather the normal rows in ASCENDING
+  // global-row order so a multibody-free set reproduces the legacy i*3 stride
+  // byte-for-byte. The normal-row sub-block already carries the rigid-rigid,
+  // within-multibody, and shared-obstacle normal coupling.
+  std::vector<Eigen::Index> normalRows;
+  normalRows.reserve(static_cast<std::size_t>(size));
+  for (Eigen::Index r = 0; r < size; ++r) {
+    if (problem.findex[r] < 0) {
+      normalRows.push_back(r);
+    }
+  }
+  const auto normalCount = static_cast<Eigen::Index>(normalRows.size());
+
+  Eigen::VectorXd normalLambda = Eigen::VectorXd::Zero(normalCount);
+  if (normalCount > 0) {
+    Eigen::MatrixXd normalA(normalCount, normalCount);
+    Eigen::VectorXd normalB(normalCount);
+    for (Eigen::Index a = 0; a < normalCount; ++a) {
+      normalB[a] = problem.rhs[normalRows[static_cast<std::size_t>(a)]];
+      for (Eigen::Index b = 0; b < normalCount; ++b) {
+        normalA(a, b) = problem.delassus(
+            normalRows[static_cast<std::size_t>(a)],
+            normalRows[static_cast<std::size_t>(b)]);
+      }
+    }
+    const math::LcpProblem normalProblem(
+        normalA,
+        normalB,
+        Eigen::VectorXd::Zero(normalCount),
+        Eigen::VectorXd::Constant(
+            normalCount, std::numeric_limits<double>::infinity()),
+        Eigen::VectorXi::Constant(normalCount, -1));
+    math::DantzigSolver solver;
+    math::LcpOptions options = solver.getDefaultOptions();
+    options.earlyTermination = true;
+    const auto result = solver.solve(normalProblem, normalLambda, options);
+    if (!result.succeeded() || normalLambda.size() != normalCount) {
+      // Last resort: an uncoupled diagonal projection (works for both kinds;
+      // the diagonal is positive for every active contact).
+      normalLambda.resize(normalCount);
+      for (Eigen::Index a = 0; a < normalCount; ++a) {
+        const double diagonal = normalA(a, a);
+        normalLambda[a]
+            = diagonal > 0.0 ? std::max(0.0, normalB[a] / diagonal) : 0.0;
+      }
+    }
+  }
+
+  // 2. Apply the solved normal impulses to both domains (friction rows zero).
+  Eigen::VectorXd lambda = Eigen::VectorXd::Zero(size);
+  for (Eigen::Index a = 0; a < normalCount; ++a) {
+    lambda[normalRows[static_cast<std::size_t>(a)]]
+        = std::max(0.0, normalLambda[a]);
+  }
+  applyUnifiedConstraintImpulses(
+      registry, problem, lambda, multibodyVelocities);
+
+  // 3. Sequential Coulomb friction sweep bounded by each contact's solved
+  // normal impulse, over rigid contacts then link contacts (ascending global
+  // order), reading live velocities each pass.
+  const auto rigidContactCount = problem.rigidConstraints.size();
+  std::vector<double> rigidTangent1(rigidContactCount, 0.0);
+  std::vector<double> rigidTangent2(rigidContactCount, 0.0);
+  std::vector<std::vector<double>> linkTangent1(problem.multibodyBlocks.size());
+  std::vector<std::vector<double>> linkTangent2(problem.multibodyBlocks.size());
+  for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+    linkTangent1[k].assign(problem.multibodyBlocks[k].rows.size(), 0.0);
+    linkTangent2[k].assign(problem.multibodyBlocks[k].rows.size(), 0.0);
+  }
+
+  const auto solveRigidTangent =
+      [&](const RigidBodyContactConstraint& constraint,
+          const Eigen::Vector3d& tangent,
+          double tangentMass,
+          double& accumulated,
+          double limit) {
+        if (tangentMass <= 0.0) {
+          return;
+        }
+        const auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+        const auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+        const Eigen::Vector3d relativeVelocity
+            = computeRigidBodyContactPointVelocity(
+                  velocityB, constraint.armB, constraint.staticB)
+              - computeRigidBodyContactPointVelocity(
+                  velocityA, constraint.armA, constraint.staticA);
+        const double tangentVelocity = relativeVelocity.dot(tangent);
+        const double newImpulse = std::clamp(
+            accumulated - tangentVelocity / tangentMass, -limit, limit);
+        const double delta = newImpulse - accumulated;
+        accumulated = newImpulse;
+        applyRigidBodyContactImpulse(registry, constraint, delta * tangent);
+      };
+
+  const auto solveLinkTangent = [&](const UnifiedMultibodyBlock& block,
+                                    const MultibodyLinkContactRow& row,
+                                    Eigen::VectorXd& velocity,
+                                    const Eigen::Vector3d& tangent,
+                                    const Eigen::VectorXd& tangentJacobian,
+                                    double tangentDenominator,
+                                    double& accumulated,
+                                    double limit) {
+    if (tangentDenominator <= 0.0) {
+      return;
+    }
+    double tangentVelocity = tangentJacobian.dot(velocity);
+    if (row.otherBody != entt::null) {
+      const auto& obstacleVelocity
+          = registry.get<comps::Velocity>(row.otherBody);
+      tangentVelocity -= (obstacleVelocity.linear
+                          + obstacleVelocity.angular.cross(row.otherArm))
+                             .dot(tangent);
+    }
+    const double newImpulse = std::clamp(
+        accumulated - tangentVelocity / tangentDenominator, -limit, limit);
+    const double delta = newImpulse - accumulated;
+    accumulated = newImpulse;
+    velocity += block.inverseMass * tangentJacobian * delta;
+    if (row.otherBody != entt::null) {
+      auto& obstacleVelocity = registry.get<comps::Velocity>(row.otherBody);
+      obstacleVelocity.linear -= delta * row.otherInvMass * tangent;
+      obstacleVelocity.angular
+          -= delta * row.otherInvInertia * row.otherArm.cross(tangent);
+    }
+  };
+
+  for (std::size_t iteration = 0; iteration < frictionIterations; ++iteration) {
+    for (std::size_t i = 0; i < rigidContactCount; ++i) {
+      const auto& constraint = problem.rigidConstraints[i];
+      const Eigen::Index normalRow = static_cast<Eigen::Index>(i) * kRows;
+      const double limit = constraint.friction * lambda[normalRow];
+      if (limit <= 0.0) {
+        continue;
+      }
+      solveRigidTangent(
+          constraint,
+          constraint.tangent1,
+          constraint.tangentMass1,
+          rigidTangent1[i],
+          limit);
+      solveRigidTangent(
+          constraint,
+          constraint.tangent2,
+          constraint.tangentMass2,
+          rigidTangent2[i],
+          limit);
+    }
+
+    for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+      const auto& block = problem.multibodyBlocks[k];
+      Eigen::VectorXd& velocity = multibodyVelocities[k];
+      for (std::size_t c = 0; c < block.rows.size(); ++c) {
+        const auto& row = block.rows[c];
+        const Eigen::Index normalRow
+            = block.blockBase + static_cast<Eigen::Index>(c) * kRows;
+        const double limit = row.friction * lambda[normalRow];
+        if (limit <= 0.0) {
+          continue;
+        }
+        solveLinkTangent(
+            block,
+            row,
+            velocity,
+            row.tangent1,
+            row.tangentJacobian1,
+            row.tangentDenominator1,
+            linkTangent1[k][c],
+            limit);
+        solveLinkTangent(
+            block,
+            row,
+            velocity,
+            row.tangent2,
+            row.tangentJacobian2,
+            row.tangentDenominator2,
+            linkTangent2[k][c],
+            limit);
+      }
+    }
+  }
+}
+
+//==============================================================================
+bool resolveUnifiedConstraints(
+    entt::registry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations)
+{
+  const auto solution = solveUnifiedConstraintProblem(problem);
+  if (solution.succeeded) {
+    applyUnifiedConstraintImpulses(
+        registry, problem, solution.lambda, multibodyVelocities);
+    return true;
+  }
+  applyUnifiedConstraintFallback(
+      registry, problem, multibodyVelocities, frictionIterations);
+  return false;
+}
+
 } // namespace dart::simulation::experimental::compute

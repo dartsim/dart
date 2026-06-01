@@ -478,7 +478,7 @@ invInertia)` is reconciled to the rigid path's canonical value (the rigid and
     `solver.getDefaultOptions(); earlyTermination = true;` — never
     default-constructed — returning `{lambda, succeeded}`) and
     `applyUnifiedConstraintImpulses(registry, problem, lambda,
-    multibodyVelocities)` which applies the solved global impulses to rigid
+multibodyVelocities)` which applies the solved global impulses to rigid
     bodies (`applyRigidBodyContactImpulse` verbatim) and to each multibody's
     staged generalized velocity (`M_k^-1 J^T lambda`), plus the
     equal-and-opposite Newton impulse to a dynamic obstacle; a body shared
@@ -490,10 +490,28 @@ invInertia)` is reconciled to the rigid path's canonical value (the rigid and
     exact equal-and-opposite Newton impulse delivered to a two-sided obstacle.
     Verified focused build + `test_unified_constraint` (9/9), full
     `ctest -L simulation-experimental` (43/43), `pixi run lint`.
-  - **Next: 3c-i.5** generalized rank-deficient fallback (ascending normal-row
-    gather + diagonal projection + sequential friction sweep spanning rigid and
-    link rows), then 3c-ii.1 the `UnifiedConstraintStage` class (dead,
-    unit-tested via direct `execute`), 3c-ii.2 the pipeline flip.
+  - **(DONE locally) Slice 3c-i.5 — generalized rank-deficient fallback.** Added
+    `applyUnifiedConstraintFallback` (coupled NORMAL-only boxed-LCP over the
+    `{findex<0}` rows gathered in ASCENDING global-row order — so a
+    multibody-free set reproduces the legacy `i*3` stride — with a
+    diagonal-projection last resort, then a sequential Coulomb friction sweep
+    bounded by each contact's solved normal impulse over rigid contacts then link
+    contacts, reading live velocities each pass: rigid friction via
+    `comps::Velocity`, link friction via `M_k^-1 J^T` + the obstacle's
+    `comps::Velocity`) and `resolveUnifiedConstraints` (joint solve → apply, else
+    fallback; returns whether the joint solve succeeded). No pipeline change.
+    Added tests: the fallback stops a head-on rigid contact identically to the
+    joint solve; the fallback's friction opposes a sliding box without reversing
+    it; `resolveUnifiedConstraints` takes the joint path on a full-rank contact;
+    and the fallback arrests a four-coplanar box-on-plane (the canonical
+    rank-deficient set, exercised directly since this configuration's joint solve
+    happens to succeed). Verified focused build + `test_unified_constraint`
+    (13/13), full `ctest -L simulation-experimental` (43/43), `pixi run lint`.
+  - **Next: 3c-ii.1** the `UnifiedConstraintStage` class (per-multibody context
+    hoist, recompute `M^-1` in-stage, snapshot invariant, `PendingMultibodyVelocity`
+    create-from-gather + write-back, rigid positional projection over a verbatim
+    constraints copy) — dead, unit-tested via direct `execute`; then 3c-ii.2 the
+    pipeline flip (the only behavior-changing slice).
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
