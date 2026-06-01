@@ -40,7 +40,7 @@
 #include <vector>
 
 namespace dart::common {
-class Uri;
+struct Uri;
 } // namespace dart::common
 
 namespace dart::dynamics {
