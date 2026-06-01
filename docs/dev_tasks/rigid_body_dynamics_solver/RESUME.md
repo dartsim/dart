@@ -1,5 +1,59 @@
 # Resume: Rigid-Body Dynamics Solver
 
+## B2 Gate — Rigid Open-Chain Dynamics Parity Harness (2026-06-01)
+
+Status of the DART 7 "Rigid dynamics parity" checkable gate (PLAN-080 B2):
+"Shared open-chain scenes match the classic DART 6 path within documented
+tolerances for gravity, integration, drift, and controls."
+
+The dedicated world-parity suite lives in
+`tests/unit/simulation/experimental/world/test_world_parity.cpp`. It builds the
+same scene in both `dart::simulation::World` (classic DART 6 path) and
+`dart::simulation::experimental::World`, steps both with matched dt, and asserts
+state agreement within named tolerance constants. It runs under the
+`simulation-experimental` ctest label, i.e. `pixi run
+test-simulation-experimental` (or focused `ctest -R test_world_parity`).
+
+This is the **start of the B2 evidence**, scoped to OPEN-CHAIN (no-contact)
+rigid dynamics, which does not depend on the unified contact/constraint solver
+(PR #2838). Per-scenario results on current `main`:
+
+| Gate facet  | Scenario (test case)                                              | Result | Tolerance |
+| ----------- | ---------------------------------------------------------------- | ------ | --------- |
+| Gravity     | Free rigid body free-fall (single + repeated step)               | PASS   | 1e-12     |
+| Gravity     | Two-link revolute chain under gravity (single + repeated)        | PASS   | 1e-10     |
+| Integration | Revolute pendulum (single + repeated short horizon)              | PASS   | 1e-10     |
+| Integration | Prismatic free-fall joint (single + repeated)                    | PASS   | 1e-10     |
+| Drift       | Revolute pendulum, 1e4 steps                                     | PASS   | 1e-9      |
+| Drift       | Double pendulum (chaotic), 1e4 steps                             | PASS   | 1e-9      |
+| Controls    | Single revolute, held torque (single + 200 steps)               | PASS   | 1e-9      |
+
+All open-chain scenarios reach parity on current `main` — the two code paths
+agree to **machine epsilon** (measured ~1e-14..1e-17 deltas; a development probe
+printed the per-run deltas and the tolerance comments record them). The
+tolerances are deliberately set a few orders of magnitude above the observed
+agreement so they survive floating-point reassociation across compilers without
+encoding a fake-loose pass; a real integrator/dynamics divergence (especially in
+the chaotic double pendulum) would blow far past them.
+
+**Not yet covered by this harness (deferred, not faked):**
+
+- **Contact/constraint parity (B3)** — the existing
+  `DynamicSphereRestsOnStaticGroundLikeClassicWorld` case exercises the current
+  per-stage contact solver, but the full contact/friction/joint-limit parity
+  suite belongs to the B3 gate and lands with the unified solver in PR #2838.
+- **Floating-base / multi-link free-fall as free bodies** — multi-body
+  free-fall parity here is covered via the articulated two-link chain under
+  gravity; a free-joint floating-base parity row is a natural follow-up.
+- **PD feedback control** — the controls facet uses a constant held torque
+  (deterministic, re-applied each step on both paths). A closed-loop PD
+  controller computing torque from state would exercise the same `setForce`
+  path and is a straightforward extension.
+
+The harness is designed to EXTEND, not replace: new scenarios add a
+classic/experimental runner pair plus a `TEST` using the existing comparison
+helpers and named tolerance constants.
+
 ## Last Session Summary
 
 Implemented and verified, in fully-tested slices, the rigid-body solver's
