@@ -11,6 +11,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import dartpy as dart
+import pytest
 from examples.demos.runner import (
     PythonDemoScene,
     SceneSetup,
@@ -151,6 +152,8 @@ def test_world_factory_without_gpu_panel_is_unchanged():
 
 def test_dartpy_gpu_bindings_are_safe_noops_without_cuda():
     sx = dart.simulation_experimental
+    if not hasattr(sx, "set_accelerated_deformable_solve"):
+        pytest.skip("simulation_experimental is disabled in this build")
     if sx.is_accelerated_deformable_solve_available():
         # On a CUDA-enabled build the behavior is covered by the cuda env demos.
         return
