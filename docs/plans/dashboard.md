@@ -294,9 +294,10 @@ its own line so status updates remain git-history friendly.
   unsupported envelopes fall back to the existing sequential-impulse path. The
   private rigid contact snapshot now derives box face/edge/corner endpoint
   feature IDs and scopes row ordinals per canonical endpoint pair for narrower
-  warm-start persistence, cylinder side/cap/rim endpoint features extend the
-  same private identity path beyond boxes, and the private rigid row path now
-  has point-joint linear, angular, and combined row builders for fixed-anchor
+  warm-start persistence, cylinder side/cap/rim and capsule
+  side/top-cap/bottom-cap endpoint features extend the same private identity
+  path beyond boxes, and the private rigid row path now has point-joint linear,
+  angular, and combined row builders for fixed-anchor
   translation and orientation constraints, with step-start previous values
   seeded for AVBD alpha regularization. Those private point-joint rows can now
   be appended to the World rigid snapshot/solve/apply wrapper and combined step

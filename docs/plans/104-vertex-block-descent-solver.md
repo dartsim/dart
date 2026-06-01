@@ -118,10 +118,11 @@ wrapper in focused coverage, but the rigid contact stage does not activate
 those AVBD results yet.
 Private dynamic/rigid contact identity helpers now pack contact feature
 kind/index IDs, canonicalize two-endpoint row keys, and create normal/friction
-row descriptors. Rigid snapshots now derive box face/edge/corner and cylinder
-side/cap/rim endpoint features for narrower private warm-start keys. The
-private rigid row path also has point-joint linear, angular, and combined
-builders for fixed-anchor translation/orientation rows, with step-start
+row descriptors. Rigid snapshots now derive box face/edge/corner, cylinder
+side/cap/rim, and capsule side/top-cap/bottom-cap endpoint features for
+narrower private warm-start keys. The private rigid row path also has
+point-joint linear, angular, and combined builders for fixed-anchor
+translation/orientation rows, with step-start
 previous values seeded for AVBD alpha regularization. Those private point-joint
 rows can now be appended to the World rigid snapshot/solve/apply wrapper and
 combined step helper from world-space point-joint inputs, and a private

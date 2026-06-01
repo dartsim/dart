@@ -1363,6 +1363,64 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCylinderFeatureIds)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCapsuleFeatureIds)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions capsuleOptions;
+  auto capsule = world.addRigidBody("capsule", capsuleOptions);
+  capsule.setCollisionShape(
+      sx::CollisionShape::makeCapsule(/*radius=*/1.0, /*halfHeight=*/2.0));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Vec3(3.0, 0.0, 0.0);
+  auto sphereA = world.addRigidBody("sphere_a", sphereOptions);
+  sphereA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sphereOptions.position = Vec3(0.0, 0.0, 3.0);
+  auto sphereB = world.addRigidBody("sphere_b", sphereOptions);
+  sphereB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sphereOptions.position = Vec3(0.0, 0.0, -3.0);
+  auto sphereC = world.addRigidBody("sphere_c", sphereOptions);
+  sphereC.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const sx::CollisionBody capsuleBody(capsule.getEntity(), &world);
+  const sx::CollisionBody sphereBodyA(sphereA.getEntity(), &world);
+  const sx::CollisionBody sphereBodyB(sphereB.getEntity(), &world);
+  const sx::CollisionBody sphereBodyC(sphereC.getEntity(), &world);
+  const std::vector<sx::Contact> contacts{
+      {capsuleBody, sphereBodyA, Vec3(1.1, 0.0, 0.0), Vec3::UnitX(), 0.1},
+      {capsuleBody, sphereBodyB, Vec3(0.0, 0.0, 2.1), Vec3::UnitZ(), 0.2},
+      {capsuleBody, sphereBodyC, Vec3(0.0, 0.0, -2.1), -Vec3::UnitZ(), 0.3}};
+
+  const vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+
+  ASSERT_EQ(snapshot.contacts.size(), contacts.size());
+  EXPECT_EQ(snapshot.contacts[0].row, 0u);
+  EXPECT_EQ(snapshot.contacts[1].row, 0u);
+  EXPECT_EQ(snapshot.contacts[2].row, 0u);
+
+  const std::uint64_t sideFeature = snapshot.contacts[0].endpointA.feature;
+  const std::uint64_t topFeature = snapshot.contacts[1].endpointA.feature;
+  const std::uint64_t bottomFeature = snapshot.contacts[2].endpointA.feature;
+  EXPECT_NE(sideFeature, topFeature);
+  EXPECT_NE(sideFeature, bottomFeature);
+  EXPECT_NE(topFeature, bottomFeature);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(sideFeature),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(topFeature),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(bottomFeature),
+      vbd::AvbdContactFeatureKind::Face);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
 {
   sx::World world;

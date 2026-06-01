@@ -300,6 +300,16 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     endpoint.feature = packAvbdContactFeatureId(
         avbdCylinderContactFeatureKind(featureCode),
         packAvbdCylinderContactFeatureId(/*cylinderIndex=*/0, featureCode));
+  } else if (
+      geometry->shape.type == CollisionShapeType::Capsule
+      && std::isfinite(geometry->shape.radius) && geometry->shape.radius > 0.0
+      && geometry->shape.halfExtents.allFinite()
+      && geometry->shape.halfExtents.z() > 0.0) {
+    const std::uint64_t featureCode = avbdCapsuleContactFeatureCode(
+        localPoint, geometry->shape.halfExtents.z());
+    endpoint.feature = packAvbdContactFeatureId(
+        avbdCapsuleContactFeatureKind(featureCode),
+        packAvbdCapsuleContactFeatureId(/*capsuleIndex=*/0, featureCode));
   }
   return endpoint;
 }

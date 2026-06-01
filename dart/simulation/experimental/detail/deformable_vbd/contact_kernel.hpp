@@ -60,8 +60,12 @@ struct ContactPlane
 
 inline constexpr std::uint64_t kAvbdBoxContactFeatureCodeCount = 27;
 inline constexpr std::uint64_t kAvbdCylinderContactFeatureCodeCount = 5;
+inline constexpr std::uint64_t kAvbdCapsuleContactFeatureCodeCount = 3;
 inline constexpr std::uint64_t kAvbdCylinderContactFeatureIdOffset
     = kAvbdBoxContactFeatureCodeCount;
+inline constexpr std::uint64_t kAvbdCapsuleContactFeatureIdOffset
+    = kAvbdCylinderContactFeatureIdOffset
+      + kAvbdCylinderContactFeatureCodeCount;
 inline constexpr std::uint8_t kAvbdContactFeatureKindShift = 56;
 inline constexpr std::uint64_t kAvbdContactFeatureIndexMask
     = (std::uint64_t{1} << kAvbdContactFeatureKindShift) - 1u;
@@ -286,6 +290,39 @@ inline AvbdContactFeatureKind avbdCylinderContactFeatureKind(
   if (code == 3u || code == 4u) {
     return AvbdContactFeatureKind::Edge;
   }
+  return AvbdContactFeatureKind::Face;
+}
+
+//==============================================================================
+/// Encode the closest z-axis capsule surface patch for AVBD rigid contact row
+/// keys. Codes distinguish the cylindrical side from the positive and negative
+/// spherical caps so warm starts persist on the same patch and reset when the
+/// contact moves across the capsule seam.
+inline std::uint64_t avbdCapsuleContactFeatureCode(
+    const Eigen::Vector3d& localPosition, double halfHeight)
+{
+  if (localPosition.z() > halfHeight) {
+    return 1u;
+  }
+  if (localPosition.z() < -halfHeight) {
+    return 2u;
+  }
+  return 0u;
+}
+
+//==============================================================================
+inline std::uint64_t packAvbdCapsuleContactFeatureId(
+    std::uint64_t capsuleIndex, std::uint64_t featureCode)
+{
+  return kAvbdCapsuleContactFeatureIdOffset
+         + capsuleIndex * kAvbdCapsuleContactFeatureCodeCount
+         + (featureCode % kAvbdCapsuleContactFeatureCodeCount);
+}
+
+//==============================================================================
+inline AvbdContactFeatureKind avbdCapsuleContactFeatureKind(
+    std::uint64_t /*featureCode*/)
+{
   return AvbdContactFeatureKind::Face;
 }
 

@@ -584,17 +584,19 @@
     point-pair rows as a velocity-level projection while unsupported envelopes
     fall back to the existing sequential-impulse path; no AVBD row storage or
     solver registry is exposed through the public facade. The private rigid
-    contact snapshot now also derives box face/edge/corner endpoint feature IDs
-    and scopes contact row ordinals per canonical endpoint pair so unrelated
-    contact manifolds do not perturb warm-start identity. Added private rigid
-    point-joint linear, angular, and combined AVBD row builders so fixed-anchor
-    joint translation and orientation rows can share the rigid row driver; the
-    builders seed step-start constraint values for AVBD alpha regularization.
-    This is not articulated World joint wiring yet.
+    contact snapshot now also derives box face/edge/corner and capsule
+    side/top-cap/bottom-cap endpoint feature IDs and scopes contact row ordinals
+    per canonical endpoint pair so unrelated contact manifolds do not perturb
+    warm-start identity. Added private rigid point-joint linear, angular, and
+    combined AVBD row builders so fixed-anchor joint translation and orientation
+    rows can share the rigid row driver; the builders seed step-start constraint
+    values for AVBD alpha regularization. This is not articulated World joint
+    wiring yet.
   - Extended the private AVBD rigid contact feature identity path with cylinder
     side/cap/rim endpoint features, so cylinder contacts warm-start across
     same-feature motion but reset when they move between barrel, cap, and rim
-    manifolds.
+    manifolds. Capsule side/top-cap/bottom-cap endpoint features provide the
+    same private warm-start partitioning for capsule contacts.
   - Added a private AVBD rigid World point-joint snapshot path that appends
     world-space point-joint inputs to the same rigid snapshot/solve/apply
     wrapper and combined step helper with persistent linear and angular joint
