@@ -364,15 +364,29 @@ its own line so status updates remain git-history friendly.
 - Dimension: Release transition
 - Next step: Follow the DART 7 implementation order in the release roadmap:
   finish policy alignment and Gazebo lane split, publish the DART 6.16 support
-  packet, then drive the clean-break parity sprint from the gate table:
-  world-centric model loading, rigid-body dynamics parity,
-  contact/constraint parity, serialization/replay, public API promotion, and
-  DART 6.16 support policy. Keep research-solver breadth out of the DART 7
-  release blocker set unless a promoted API depends on it.
+  packet, then treat PLAN-041 official simulation API promotion as the
+  release-critical path. Keep research-solver breadth out of the DART 7 release
+  blocker set unless a promoted API depends on it.
 - Gate: DART 7 is not release-ready until the clean-break gates in the release
   roadmap have direct evidence, package metadata no longer implies DART
   6/gz-physics compatibility, and DART 6.16 support scope plus sunset trigger
   are published.
+
+### PLAN-041: Official Simulation API Promotion
+
+- Owner doc:
+  [`041-official-simulation-api-promotion.md`](041-official-simulation-api-promotion.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Release transition
+- Next step: Land the reviewed promotion contract, then start the readiness
+  audit and package-facade work before any broad `experimental/` source-tree
+  move. The intended path is DART 7 official API promotion, not a DART 8 middle
+  step.
+- Gate: The planning PR passes the docs-only gates; implementation PRs must keep
+  API-boundary checks, C++/Python tests, package/export smokes, and CUDA/full
+  gates green according to the touched scope. The promoted public API must hide
+  ECS, component, solver-registry, backend, and implementation-folder details.
 
 ### PLAN-050: Experimental World Split
 

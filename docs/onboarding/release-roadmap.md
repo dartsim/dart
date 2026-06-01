@@ -56,13 +56,18 @@ design.
 3. **DART 6.16 support packet**: audit fixes on main against `release-6.16` and
    backport only compatibility-critical patches needed for the old API/Gazebo
    line.
-4. **Parity implementation**: prioritize experimental-world model loading,
-   rigid dynamics, contacts/constraints, serialization, and the parity suite
-   ahead of additional research solver breadth.
-5. **Promotion and removal**: port in-repo examples, tutorials, tests,
+4. **Official simulation API promotion**: make PLAN-041 the release-critical
+   path. Freeze the supported ECS-backed world subset, resolve the classic
+   `dart::simulation::World` collision, promote stable C++ and Python facades,
+   and keep parity gates attached to the promotion claim rather than deferring
+   the official API to DART 8.
+5. **Consumer migration and removal**: port in-repo examples, tutorials, tests,
    benchmarks, and Python stubs to the promoted API; then remove the classic
-   `World`, DART 6 C++ API shims, legacy dartpy compatibility modules, and
-   gz-only compatibility surfaces from main.
+   `World`, DART 6 C++ API shims, legacy dartpy compatibility modules,
+   experimental import paths, and gz-only compatibility surfaces from main.
+6. **Physical restructuring**: move `dart/` and `python/` files out of
+   experimental locations only after the official facade is green, keeping
+   mechanical moves isolated from semantic API changes.
 
 ### DART 7 Checkable Gates
 
