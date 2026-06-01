@@ -60,16 +60,17 @@ families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
 tangent rows, static box feature IDs, static half-space tangent dual projection,
 self-contact tangent dual projection, supported World self-contact
-normal/friction rows, and combined static/self-contact friction row coexistence
-coverage.
+normal/friction rows, combined static/self-contact friction row coexistence
+coverage, and the first private 6-DOF rigid block foundation.
 
 ## Immediate Next Step
 
-Continue the next bounded AVBD contact/friction slice: dynamic/rigid contact
-manifold IDs or the first rigid/articulated AVBD block foundation are the
-preferred row-family gaps. Keep the supported envelope narrow and preserve
-fallback coverage for topology mixes, damping/acceleration, parallel solves, and
-unsupported requested row combinations.
+Continue the next bounded AVBD contact/friction or rigid-block slice:
+dynamic/rigid contact manifold IDs, rigid contact/joint rows, or
+rigid/articulated World wiring are the preferred row-family gaps. Keep the
+supported envelope narrow and preserve fallback coverage for topology mixes,
+damping/acceleration, parallel solves, and unsupported requested row
+combinations.
 
 ## Context That Would Be Lost
 
@@ -98,8 +99,11 @@ unsupported requested row combinations.
   self-contact scenes generate AVBD self-contact normal rows and matching
   self-contact friction rows when material friction is positive. A combined
   static/self-contact friction regression now guards both row families in one
-  supported World solve. This does not imply hard-contact/friction completeness,
-  full contact-manifold friction persistence, dynamic/rigid contact manifolds,
+  supported World solve. The first private rigid foundation now has a 6-DOF
+  block accumulator, world-frame quaternion tangent update, inertia term, block
+  solve, and scalar rigid point-attachment row, but no World wiring. This does
+  not imply hard-contact/friction completeness, full contact-manifold friction
+  persistence, dynamic/rigid contact manifolds, rigid/articulated joints,
   rigid/soft coupling, or GPU parity.
 
 ## How to Resume
@@ -108,6 +112,7 @@ unsupported requested row combinations.
 git status --short --branch
 pixi run build-simulation-experimental-tests
 build/default/cpp/Release/bin/test_avbd_constraint
+build/default/cpp/Release/bin/test_avbd_rigid_block
 build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_filter='VbdCombinedDescent.AvbdSelfContact*'
 build/default/cpp/Release/bin/test_vbd_attachment
 build/default/cpp/Release/bin/test_vbd_finite_stiffness

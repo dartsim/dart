@@ -142,6 +142,13 @@ Paper audit:
     manifold IDs, full row-family generation, rigid/articulated blocks, parallel
     dual/stiffness updates, and GPU parity.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
+  - First internal 6-DOF rigid block foundation started:
+    `AvbdRigidBodyBlock`, quaternion tangent-step helpers,
+    `addAvbdRigidBodyInertiaTerm`, `solveAvbdRigidBodyBlock`,
+    `applyAvbdRigidBodyStep`, and a scalar rigid point-attachment row in
+    `dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp`,
+    with focused `AvbdRigidBlock.*` coverage. This is not World wiring, not
+    rigid contact manifolds, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
@@ -181,13 +188,14 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   dynamic/rigid contact manifold IDs or the first 6-DOF rigid/articulated AVBD
-   block foundation are the preferred next gaps now that static box feature IDs,
-   static half-space tangent dual projection, self-contact tangent dual
-   projection, static contact/friction, attachments, finite-stiffness rows,
-   self-contact normals, pairwise static/dynamic friction switching, supported
-   World self-contact friction rows, pure-tet self-contact friction rows, and
-   combined static/self-contact friction row coexistence have narrow CPU paths.
+   dynamic/rigid contact manifold IDs, rigid contact/joint rows, or
+   rigid/articulated World wiring are the preferred next gaps now that static
+   box feature IDs, static half-space tangent dual projection, self-contact
+   tangent dual projection, static contact/friction, attachments,
+   finite-stiffness rows, self-contact normals, pairwise static/dynamic friction
+   switching, supported World self-contact friction rows, pure-tet self-contact
+   friction rows, combined static/self-contact friction row coexistence, and the
+   first private 6-DOF rigid block foundation have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

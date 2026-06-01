@@ -100,14 +100,17 @@ static half-space friction rows also project their decayed tangential dual into
 the current tangent basis when smooth obstacle normals change, and persisting
 self-contact friction rows project their generalized tangential dual into the
 current 12D tangent stencil.
+The first private rigid-body foundation adds a 6-DOF block accumulator,
+world-frame quaternion tangent updates, an inertia term, a 6x6 block solve, and
+a scalar rigid point-attachment row with focused tests.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
 completeness beyond current static half-space and lagged self-contact rows,
-dynamic/rigid contact manifold IDs, rigid/soft coupling, GPU parity, demos, and
-benchmark packets remain open.
+dynamic/rigid contact manifold IDs, rigid/articulated joint rows, rigid/soft
+coupling, GPU parity, demos, and benchmark packets remain open.
 
 ## Relationship To PLAN-081
 
