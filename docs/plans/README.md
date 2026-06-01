@@ -69,6 +69,7 @@ they should not own priority, timeline, or active implementation state.
 | [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)                                                                 | Durable native-collision feature/performance dashboard                 |
 | [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)                                                     | Durable row-level native-collision coverage matrix sidecar             |
 | [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)                                               | Generated native-collision benchmark evidence manifest                 |
+| [`041-official-simulation-api-promotion.md`](041-official-simulation-api-promotion.md)                                                   | PLAN-041 official DART 7 simulation API promotion sequence             |
 | [`081-deformable-implicit-barrier-solver.md`](081-deformable-implicit-barrier-solver.md)                                                 | PLAN-081 deformable IPC scope, slices, and acceptance evidence         |
 | [`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md)         | PLAN-081 IPC paper/repository parity checklist                         |
 | [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md)       | PLAN-081 PD-IPC GPU source audit and implementation sequence           |
