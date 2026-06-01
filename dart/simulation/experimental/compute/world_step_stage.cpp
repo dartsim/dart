@@ -744,6 +744,14 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 // Positional correction (projection) for rigid-body normal contacts: removes
 // residual penetration beyond a small allowance without injecting velocity, so
 // resting stacks do not sink. Shared by the sequential-impulse and boxed-LCP
@@ -771,8 +779,10 @@ void resolveRigidBodyContactPositions(
       continue;
     }
 
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const bool staticA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool staticB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
     const double invMassA
         = staticA ? 0.0
                   : inverseMass(registry.get<comps::MassProperties>(entityA));
@@ -6586,8 +6596,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     const auto& massA = registry.get<comps::MassProperties>(entityA);
     const auto& massB = registry.get<comps::MassProperties>(entityB);
 
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const bool staticA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool staticB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
 
     NormalConstraint constraint;
     constraint.bodyA = entityA;
