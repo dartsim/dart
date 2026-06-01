@@ -57,6 +57,10 @@
 
 namespace dart::simulation::experimental {
 
+namespace io::detail {
+class SkeletonLoaderWorldAccess;
+} // namespace io::detail
+
 struct WorldOptions;
 
 /// Solver family used for free rigid-body dynamics in the default experimental
@@ -480,6 +484,7 @@ private:
   friend class Multibody;
   friend class RigidBody;
   friend class DeformableBody;
+  friend class io::detail::SkeletonLoaderWorldAccess;
 
   Frame resolveParentFrame(const Frame& parent) const;
   entt::entity createFrameEntity(
