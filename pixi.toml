@@ -729,10 +729,12 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
   DART_CUDA_HOST_CC_VALUE=${DART_CUDA_HOST_CC:-/usr/bin/cc}
   DART_CUDA_HOST_CXX_VALUE=${DART_CUDA_HOST_CXX:-/usr/bin/c++}
   # The conda libc++ (which Filament needs) lives in the conda lib dir. The
-  # system compiler does not search it by default, and the conda LDFLAGS -L is
-  # not reliably applied to every target, so add the conda lib dir as a raw
-  # per-link search path (CMAKE_CXX_STANDARD_LIBRARIES is appended to every C++
-  # link without dedup) so Filament's `-lc++` resolves.
+  # system compiler does not search it by default, and the conda LDFLAGS -L /
+  # -rpath are not reliably applied to every target, so add the conda lib dir as
+  # both a link-time search path (so Filaments -lc++ resolves) and a runtime
+  # rpath (so the conda GUI libraries such as libglfw load) via
+  # CMAKE_CXX_STANDARD_LIBRARIES, which is appended to every C++ link. Scoped to
+  # the cuda build, so the default environment is untouched.
   #
   # Use the system compiler as nvcc's host too (CMAKE_CUDA_HOST_COMPILER), so C,
   # C++, and the CUDA host pass all target the same host glibc (2.38). Otherwise
@@ -742,7 +744,7 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
   # removed in glibc 2.34) that the system-compiler final link cannot resolve.
   # CMAKE_CUDA_RUNTIME_LIBRARY=Shared links the shared libcudart (the default
   # Static runtime drags the same conda sysroot deps).
-  COMPILER_DEFS="-DCMAKE_C_COMPILER=${DART_CUDA_HOST_CC_VALUE} -DCMAKE_CXX_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_COMPILER=${CONDA_PREFIX}/bin/nvcc -DCMAKE_CUDA_HOST_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared -DCMAKE_CXX_STANDARD_LIBRARIES=-L${CONDA_PREFIX}/lib"
+  COMPILER_DEFS="-DCMAKE_C_COMPILER=${DART_CUDA_HOST_CC_VALUE} -DCMAKE_CXX_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_COMPILER=${CONDA_PREFIX}/bin/nvcc -DCMAKE_CUDA_HOST_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared -DCMAKE_CXX_STANDARD_LIBRARIES=-Wl,-L,${CONDA_PREFIX}/lib,-rpath,${CONDA_PREFIX}/lib"
   # nvcc still reports the conda CUDA toolkit's sysroot lib dirs as implicit link
   # dirs, so -lm/-lrt could resolve to the conda sysroot glibc linker scripts
   # (absolute /lib64 paths). Prepend the host multiarch lib dir so they resolve
@@ -843,7 +845,7 @@ py-demos = { cmd = [
   "examples.demos",
 ], depends-on = [
   "build-py-dev-docking",
-], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python", LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
 # Capture a Python demo through the real Filament viewer and convert the PPM
 # outputs to PNG (and MP4 with --video when ffmpeg is available).
@@ -852,7 +854,7 @@ py-demo-capture = { cmd = [
   "scripts/capture_py_demo.py",
 ], depends-on = [
   "build-py-dev-docking",
-], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python", LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
 py-ex-hello-world-gui = { depends-on = [
   { task = "py-ex", args = [
