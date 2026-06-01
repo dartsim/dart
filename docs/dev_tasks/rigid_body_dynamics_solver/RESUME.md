@@ -143,11 +143,13 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
   (`Servo`/`Acceleration`/`Locked`/`Mimic`) are defined but rejected by the
   forward dynamics. C++ + dartpy tests.
 - Phase 2 (partial) — collision query bridge: public `CollisionShape`
-  (sphere/box) attachable to rigid bodies, public `Contact`, and
+  (sphere/box/capsule) attachable to rigid bodies, public `Contact`, and
   `World::collide()` bridging to `dart/collision/native` via pairwise
   narrow-phase queries (returns contact point/normal/depth; the native normal is
-  negated so `Contact.normal` points bodyA→bodyB). C++ + dartpy + tests. New
-  files: `body/collision_shape.hpp`, `body/contact.hpp`,
+  negated so `Contact.normal` points bodyA→bodyB). Shape-node local transforms
+  are preserved by `CollisionShape::localTransform`, and capsules carry
+  cylindrical-section height. C++ + dartpy + tests. New files:
+  `body/collision_shape.hpp`, `body/contact.hpp`,
   `comps/collision_geometry.{hpp,cpp}`. The experimental lib now PRIVATE-links
   `dart-collision-native`.
 - Phase 3 (partial) — contact solver: `World::step()` resolves contacts between
@@ -187,21 +189,19 @@ Current work is on branch `feature/experimental-model-loader` in
 `dynamics::Skeleton` → experimental `Multibody` bridge
 (`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`).
 
-### Committed on the branch (each lint+build+test green; not yet pushed)
+### Local branch state
 
-1. `01dbec5c828` — the bridge: serial/tree skeletons, fixed base,
-   weld/revolute/prismatic, COM/inertia reframing onto each link's outgoing
-   joint, a synthetic identity world base, exception-safe plan→apply structure,
-   DART-6 mass/Coriolis/gravity parity.
-2. `67be363b204` — all joint types (screw `/2π` pitch, universal, ball, free
-   floating base with the `[rot;trans]`↔`[trans;rot]` + `R^T` velocity swap,
-   planar), per-type DART-6 parity.
-3. `090f5799a78` — revolute/prismatic joint properties (limits, damping, spring,
-   friction) via `copyJointProperties`.
+The branch is ahead of `origin/feature/experimental-model-loader` with local
+model-loading/contact follow-up commits. Current slices on the branch cover
+cross-multibody/link contacts, row-island unified constraints, preserved
+collision shape offsets, and capsule collision shape support. The worktree
+should be clean after the capsule slice is committed; verify with
+`git status -sb` before continuing or publishing.
 
-Tests: `bin/test_skeleton_to_multibody` (C++, 13) +
-`python/tests/unit/simulation/test_experimental_model_loader.py` (8); full
-experimental suite 38/38.
+Current validation for the model-loading/collision-shape line:
+`pixi run lint`, `pixi run build`, `pixi run build-simulation-experimental-tests`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (44/44), and `pixi run test-py` (400 passed).
 
 ### Committed: pre-joint offset on `JointSpec`
 
@@ -238,17 +238,16 @@ skeleton. C++ + dartpy tests. (A file-based one-call loader can wrap
 `dart::io::readWorld` + this, but would pull `dart-io` into the experimental
 lib's link, so it is left to the caller for now.)
 
-**(DONE, restricted) Collision shapes.** The loader translates the first
-**origin-coincident** sphere/box collision shape of each body (a shape node with
-a collision aspect) onto the link, gated by `loadCollisionShapes`. C++ +
-verified. **Offset shapes are skipped** because the experimental `CollisionShape`
-has no pose-offset field — and adding an `Eigen::Isometry3d` to it breaks its
-Boost.PFR auto-serialization ("type must be aggregate initializable"; `Vector3d`
-has a registered serializer, `Isometry3d` does not). To support offset shapes,
-first give the serialization an `Isometry3d` strategy (or a PFR-friendly
-representation) for `CollisionShape`, then add the offset field and pose shapes
-by `worldTransform * shape.transform` in `World::collide()`. Mesh/capsule/
-cylinder/plane shapes also remain (Phase 2 shape backlog).
+**(DONE) Collision shape offsets and capsule support.** The loader translates
+the first sphere, box, or capsule collision shape of each body (a shape node
+with a collision aspect) onto the link, gated by `loadCollisionShapes`.
+`CollisionShape::localTransform` preserves shape-node offsets, the binary format
+serializes that transform, and `World::collide()` poses native shapes as
+`worldTransform * shape.localTransform`. Capsules carry radius plus
+cylindrical-section height through C++, dartpy, serialization, and the native
+collision query. Deformable obstacle barriers still consume sphere/box only.
+Mesh/cylinder/plane shapes and additional shapes per body remain Phase 2 shape
+backlog.
 
 **Resume here — Subsystem A (the remaining headline gap):**
 
@@ -767,12 +766,13 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     pre-joint offset (`transformToParent`) rather than massless intermediate
     links: a parent with sibling joints at different offsets, and offset/rotated
     roots, load directly. See the committed sections above.
-  - **(DONE) Collision shapes.** Sphere/box collision shapes are translated with
-    their shape-node local transform preserved on `CollisionShape`; the native
-    collision query, deformable obstacle queries, binary serialization, and
-    dartpy bindings all use that local transform. Unsupported shape types
-    (mesh/capsule/cylinder/plane) and additional shapes per body are still
-    skipped. Subsystem B model loading is otherwise complete.
+  - **(DONE) Collision shapes.** Sphere/box/capsule collision shapes are
+    translated with their shape-node local transform preserved on
+    `CollisionShape`; the native collision query, binary serialization, and
+    dartpy bindings all use that local transform. Deformable obstacle queries
+    still consume sphere/box barriers only. Unsupported shape types
+    (mesh/cylinder/plane) and additional shapes per body are still skipped.
+    Subsystem B model loading is otherwise complete.
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),
@@ -815,9 +815,8 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 2:** capsule/cylinder/plane/mesh shapes, self-collision/filtering,
-  broad-phase pruning, a persistent collision world instead of rebuilding per
-  `collide()`.
+- **Phase 2:** cylinder/plane/mesh shapes, self-collision/filtering, broad-phase
+  pruning, a persistent collision world instead of rebuilding per `collide()`.
 - **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
   mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,

@@ -482,6 +482,14 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
           InvalidArgumentException,
           "Box collision shape half extents must be positive and finite");
       break;
+    case CollisionShapeType::Capsule:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.height) || shape.height <= 0.0,
+          InvalidArgumentException,
+          "Capsule collision shape radius and height must be positive and "
+          "finite");
+      break;
   }
   validateCollisionShapeTransform(shape);
 

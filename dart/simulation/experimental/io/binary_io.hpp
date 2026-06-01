@@ -72,7 +72,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      applied via Link::applyForce; serialized, round-trips to zero)
 //   6: CollisionShape gained a local transform for body/link-relative shape
 //      offsets
-constexpr std::uint32_t kBinaryFormatVersion = 6;
+//   7: CollisionShape gained a height field for capsule shapes
+constexpr std::uint32_t kBinaryFormatVersion = 7;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

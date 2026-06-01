@@ -148,7 +148,18 @@ void deserializeCollisionGeometryV5(
   readPOD(input, geometry.shape.type);
   readPOD(input, geometry.shape.radius);
   readVector3d(input, geometry.shape.halfExtents);
+  geometry.shape.height = 1.0;
   geometry.shape.localTransform = Eigen::Isometry3d::Identity();
+}
+
+void deserializeCollisionGeometryV6(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  readPOD(input, geometry.shape.type);
+  readPOD(input, geometry.shape.radius);
+  readVector3d(input, geometry.shape.halfExtents);
+  geometry.shape.height = 1.0;
+  readIsometry3d(input, geometry.shape.localTransform);
 }
 
 void serializeCollisionGeometry(
@@ -156,6 +167,7 @@ void serializeCollisionGeometry(
 {
   writePOD(output, geometry.shape.type);
   writePOD(output, geometry.shape.radius);
+  writePOD(output, geometry.shape.height);
   writeVector3d(output, geometry.shape.halfExtents);
   writeIsometry3d(output, geometry.shape.localTransform);
 }
@@ -165,6 +177,7 @@ void deserializeCollisionGeometry(
 {
   readPOD(input, geometry.shape.type);
   readPOD(input, geometry.shape.radius);
+  readPOD(input, geometry.shape.height);
   readVector3d(input, geometry.shape.halfExtents);
   readIsometry3d(input, geometry.shape.localTransform);
 }
@@ -200,6 +213,10 @@ private:
   {
     if (formatVersion <= 5u) {
       deserializeCollisionGeometryV5(input, component);
+      return;
+    }
+    if (formatVersion == 6u) {
+      deserializeCollisionGeometryV6(input, component);
       return;
     }
 

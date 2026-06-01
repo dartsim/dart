@@ -1647,6 +1647,8 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         barriers.push_back(barrier);
         break;
       }
+      case CollisionShapeType::Capsule:
+        break;
     }
   }
 

@@ -116,6 +116,8 @@ class CollisionShapeType(enum.Enum):
 
     BOX = 1
 
+    CAPSULE = 2
+
 class CollisionShape:
     @staticmethod
     def sphere(
@@ -127,11 +129,19 @@ class CollisionShape:
         half_extents: object, local_transform: object | None = None
     ) -> CollisionShape: ...
 
+    @staticmethod
+    def capsule(
+        radius: float, height: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
+
     @property
     def type(self) -> CollisionShapeType: ...
 
     @property
     def radius(self) -> float: ...
+
+    @property
+    def height(self) -> float: ...
 
     @property
     def half_extents(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...

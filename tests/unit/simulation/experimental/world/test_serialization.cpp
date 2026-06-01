@@ -459,6 +459,13 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
 
+  auto capsule = world1.addRigidBody("capsule");
+  sx::CollisionShape capsuleCollisionShape
+      = sx::CollisionShape::makeCapsule(0.2, 0.8);
+  capsuleCollisionShape.localTransform.translation()
+      = Eigen::Vector3d(-0.25, 0.5, -0.75);
+  capsule.setCollisionShape(capsuleCollisionShape);
+
   std::stringstream ss;
   world1.saveBinary(ss);
 
@@ -489,6 +496,16 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   ASSERT_TRUE(ballShape.has_value());
   EXPECT_EQ(ballShape->type, sx::CollisionShapeType::Sphere);
   EXPECT_DOUBLE_EQ(ballShape->radius, 0.3);
+
+  auto capsuleRestored = world2.getRigidBody("capsule");
+  ASSERT_TRUE(capsuleRestored.has_value());
+  auto capsuleShape = capsuleRestored->getCollisionShape();
+  ASSERT_TRUE(capsuleShape.has_value());
+  EXPECT_EQ(capsuleShape->type, sx::CollisionShapeType::Capsule);
+  EXPECT_DOUBLE_EQ(capsuleShape->radius, 0.2);
+  EXPECT_DOUBLE_EQ(capsuleShape->height, 0.8);
+  EXPECT_TRUE(capsuleShape->localTransform.isApprox(
+      capsuleCollisionShape.localTransform, 1e-12));
 }
 
 TEST(Serialization, WithLoopClosures)

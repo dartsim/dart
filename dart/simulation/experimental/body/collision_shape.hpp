@@ -44,6 +44,7 @@ enum class CollisionShapeType
 {
   Sphere,
   Box,
+  Capsule,
 };
 
 /// Public value object describing a body's collision geometry.
@@ -55,7 +56,7 @@ enum class CollisionShapeType
 /// body/link frame origin.
 ///
 /// Only the fields relevant to `type` are used. Prefer the named constructors
-/// (`makeSphere`, `makeBox`) for clarity.
+/// (`makeSphere`, `makeBox`, `makeCapsule`) for clarity.
 struct CollisionShape
 {
   /// Geometric family selecting which fields below are used.
@@ -67,6 +68,10 @@ struct CollisionShape
   /// Box half extents along the body x/y/z axes (used when type == Box). Each
   /// component must be positive.
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
+
+  /// Capsule cylindrical-section height along the local z axis (used when
+  /// type == Capsule). Must be positive.
+  double height = 1.0;
 
   /// Shape-frame pose expressed in the owning body/link frame.
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
@@ -87,6 +92,16 @@ struct CollisionShape
     CollisionShape shape;
     shape.type = CollisionShapeType::Box;
     shape.halfExtents = halfExtents;
+    return shape;
+  }
+
+  /// Create a capsule collision shape.
+  [[nodiscard]] static CollisionShape makeCapsule(double radius, double height)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Capsule;
+    shape.radius = radius;
+    shape.height = height;
     return shape;
   }
 };

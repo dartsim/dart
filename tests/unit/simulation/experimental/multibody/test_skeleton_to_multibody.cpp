@@ -40,6 +40,7 @@
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/planar_joint.hpp>
@@ -587,8 +588,9 @@ TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
 }
 
 //==============================================================================
-// A box collision shape is translated onto the link with its full extent halved
-// and its shape-node offset preserved as the CollisionShape local transform.
+// Box and capsule collision shapes are translated onto links, with full box
+// extents halved and shape-node offsets preserved as CollisionShape local
+// transforms.
 TEST(SkeletonToMultibody, TranslatesCollisionShapes)
 {
   auto skeleton = dd::Skeleton::create("collision");
@@ -658,6 +660,31 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_EQ(offsetShape->type, sx::CollisionShapeType::Box);
   EXPECT_TRUE(
       offsetShape->localTransform.isApprox(translation(0.1, 0.0, -0.2), 1e-12));
+
+  // A capsule preserves radius, cylindrical-section height, and offset.
+  auto capsuleSkeleton = dd::Skeleton::create("capsule_collision");
+  auto [capsuleJoint, capsuleBody]
+      = capsuleSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  capsuleJoint->setName("joint");
+  capsuleBody->setName("body");
+  auto* capsuleShapeNode
+      = capsuleBody->createShapeNodeWith<dd::CollisionAspect>(
+          std::make_shared<dd::CapsuleShape>(0.2, 0.8));
+  capsuleShapeNode->setRelativeTransform(translation(-0.1, 0.2, 0.3));
+
+  sx::World capsuleWorld;
+  auto capsuleMultibody
+      = sx::io::buildMultibodyFromSkeleton(capsuleWorld, *capsuleSkeleton);
+  const auto capsuleLink = capsuleMultibody.getLink("body");
+  ASSERT_TRUE(capsuleLink.has_value());
+  ASSERT_TRUE(capsuleLink->hasCollisionShape());
+  const auto capsuleShape = capsuleLink->getCollisionShape();
+  ASSERT_TRUE(capsuleShape.has_value());
+  EXPECT_EQ(capsuleShape->type, sx::CollisionShapeType::Capsule);
+  EXPECT_DOUBLE_EQ(capsuleShape->radius, 0.2);
+  EXPECT_DOUBLE_EQ(capsuleShape->height, 0.8);
+  EXPECT_TRUE(capsuleShape->localTransform.isApprox(
+      translation(-0.1, 0.2, 0.3), 1e-12));
 }
 
 //==============================================================================

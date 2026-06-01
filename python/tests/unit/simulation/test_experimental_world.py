@@ -2062,6 +2062,26 @@ def test_experimental_collision_shape_local_transform():
     assert contacts[0].depth == pytest.approx(0.2, abs=1e-6)
 
 
+def test_experimental_collision_shape_capsule():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    capsule = world.add_rigid_body("capsule")
+    shape = sx.CollisionShape.capsule(0.25, 1.0)
+    capsule.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.45, 0.0, 0.0))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    assert capsule.collision_shape.type == sx.CollisionShapeType.CAPSULE
+    assert capsule.collision_shape.radius == pytest.approx(0.25)
+    assert capsule.collision_shape.height == pytest.approx(1.0)
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
+
+
 def test_experimental_collision_query_includes_links():
     sx = _simulation_experimental()
 

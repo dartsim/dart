@@ -2996,6 +2996,26 @@ TEST(World, CollisionQueryUsesShapeLocalTransform)
   EXPECT_NEAR(contacts.front().depth, 0.2, 1e-6);
 }
 
+// Test that capsule shapes are bridged into the native collision query.
+TEST(World, CollisionQuerySupportsCapsuleShape)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto capsule = world.addRigidBody("capsule");
+  capsule.setCollisionShape(sx::CollisionShape::makeCapsule(0.25, 1.0));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
+}
+
 // Test that multibody links with collision shapes participate in collision
 // queries and are reported as CollisionBody links (not rigid bodies).
 TEST(World, CollisionQueryIncludesMultibodyLinks)

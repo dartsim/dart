@@ -670,11 +670,11 @@ skeleton, options)` and dartpy `build_multibody_from_skeleton` /
     Combined with `dart::io` URDF/SDF parsing this loads a model file into the
     experimental World, and `io::buildMultibodiesFromWorld` (dartpy
     `build_multibodies_from_world`) loads every skeleton of a legacy
-    `simulation::World` as its own multibody (a whole scene). Origin-coincident
-    sphere/box collision shapes are carried onto the links (gated by
-    `loadCollisionShapes`). Offset/other collision shapes and rotated
-    parent-side offsets on ball/free/planar joints are not yet translated (the
-    former is skipped; the latter raises a descriptive error).
+    `simulation::World` as its own multibody (a whole scene). Sphere, box, and
+    capsule collision shapes are carried onto the links with their shape-node
+    offsets preserved (gated by `loadCollisionShapes`). Other collision shape
+    types and rotated parent-side offsets on ball/free/planar joints are not yet
+    translated (the former is skipped; the latter raises a descriptive error).
   - Added experimental articulated-body forward dynamics for fixed-base
     multibodies: `World::step()` now integrates revolute and prismatic joint
     accelerations from joint efforts, gravity, and Coriolis/centrifugal terms
@@ -796,11 +796,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `getDampingCoefficient`/`setDampingCoefficient`; dartpy
     `joint.spring_stiffness`, `joint.rest_position`, `joint.damping_coefficient`).
   - Added experimental rigid-body collision queries: attach a `CollisionShape`
-    (sphere or box) to a rigid body and call `World::collide()` to get contact
-    points (position, world-frame normal, penetration depth) via the maintained
-    native collision engine. dartpy adds `CollisionShape`, `CollisionShapeType`,
-    `Contact`, `body.set_collision_shape`/`collision_shape`/`has_collision_shape`,
-    and `world.collide()`.
+    (sphere, box, or capsule) to a rigid body and call `World::collide()` to get
+    contact points (position, world-frame normal, penetration depth) via the
+    maintained native collision engine. dartpy adds `CollisionShape`,
+    `CollisionShapeType`, `Contact`,
+    `body.set_collision_shape`/`collision_shape`/`has_collision_shape`, and
+    `world.collide()`.
   - Generalized experimental collision queries to multibody links: links can now
     carry collision shapes (`Link::setCollisionShape`/`getCollisionShape`/
     `hasCollisionShape`, dartpy `link.set_collision_shape`/`collision_shape`/

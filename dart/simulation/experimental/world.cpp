@@ -1750,6 +1750,10 @@ std::vector<Contact> World::collide()
       case CollisionShapeType::Box:
         shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
         break;
+      case CollisionShapeType::Capsule:
+        shape = std::make_unique<ncol::CapsuleShape>(
+            collisionShape.radius, collisionShape.height);
+        break;
     }
     const Eigen::Isometry3d shapePose = pose * collisionShape.localTransform;
     entries.push_back(
