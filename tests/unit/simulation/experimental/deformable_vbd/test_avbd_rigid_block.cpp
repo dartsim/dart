@@ -1363,6 +1363,83 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCylinderFeatureIds)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  linkOptions.orientation = rotationZ(0.6);
+  auto link = world.addRigidBody("link", linkOptions);
+
+  vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          world.getRegistry(), std::span<const sx::Contact>());
+
+  std::vector<vbd::AvbdRigidWorldPointJointInput> joints(1);
+  joints[0].bodyA = base.getEntity();
+  joints[0].bodyB = link.getEntity();
+  joints[0].anchorA = Vec3::Zero();
+  joints[0].anchorB = Vec3::UnitX();
+  joints[0].targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  joints[0].startStiffness = 100.0;
+  joints[0].maxStiffness = 1000.0;
+  EXPECT_EQ(
+      vbd::appendAvbdRigidWorldPointJoints(
+          world.getRegistry(), joints, snapshot),
+      1u);
+  ASSERT_EQ(snapshot.joints.size(), 1u);
+
+  const std::size_t linkIndex
+      = findEntityIndex(snapshot.entities, link.getEntity());
+  const double initialLinkX = snapshot.states[linkIndex].position.x();
+
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 8;
+  solveOptions.descent.regularization = 1e-12;
+  solveOptions.row.beta = 1000.0;
+  solveOptions.row.maxStiffness = 1000.0;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+  const vbd::AvbdRigidWorldContactSolveResult solveResult
+      = vbd::solveAvbdRigidWorldContactSnapshot(
+          snapshot,
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          /*timeStep=*/1.0,
+          solveOptions);
+
+  EXPECT_EQ(solveResult.normalRows, 0u);
+  EXPECT_EQ(solveResult.frictionRows, 0u);
+  EXPECT_EQ(solveResult.jointLinearRows, 3u);
+  EXPECT_EQ(solveResult.jointAngularRows, 3u);
+  EXPECT_GT(solveResult.stats.bodyUpdates, 0u);
+  EXPECT_EQ(jointLinearInventory.size(), 3u);
+  EXPECT_EQ(jointAngularInventory.size(), 3u);
+  EXPECT_LT(snapshot.states[linkIndex].position.x(), 0.25 * initialLinkX);
+  const Vec3 error = vbd::avbdRigidBodyOrientationError(
+      snapshot.states[linkIndex].orientation, Eigen::Quaterniond::Identity());
+  EXPECT_LT(std::abs(error.z()), 0.05);
+
+  const vbd::AvbdRigidWorldContactApplyResult applyResult
+      = vbd::applyAvbdRigidWorldContactSnapshot(
+          world.getRegistry(), snapshot, /*timeStep=*/1.0);
+  EXPECT_EQ(applyResult.bodies, 1u);
+  EXPECT_NEAR(link.getTransform().translation().x(), 0.0, 0.25);
+  EXPECT_LT(std::abs(link.getAngularVelocity().z()), 0.65);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
 {
   sx::World world;

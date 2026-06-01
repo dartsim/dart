@@ -62,6 +62,17 @@ struct AvbdRigidWorldContactOptions
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
 
+struct AvbdRigidWorldPointJointInput
+{
+  entt::entity bodyA = entt::null;
+  entt::entity bodyB = entt::null;
+  Eigen::Vector3d anchorA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d anchorB = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  double startStiffness = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
 struct AvbdRigidWorldContactSnapshot
 {
   std::vector<entt::entity> entities;
@@ -71,6 +82,7 @@ struct AvbdRigidWorldContactSnapshot
   std::vector<Eigen::Matrix3d> bodyInertias;
   std::vector<std::uint8_t> fixed;
   std::vector<AvbdRigidContactManifoldPoint> contacts;
+  std::vector<AvbdRigidPointJoint> joints;
 };
 
 struct AvbdRigidWorldContactSolveOptions
@@ -86,6 +98,8 @@ struct AvbdRigidWorldContactSolveResult
   AvbdRigidBlockDescentStats stats;
   std::size_t normalRows = 0;
   std::size_t frictionRows = 0;
+  std::size_t jointLinearRows = 0;
+  std::size_t jointAngularRows = 0;
 };
 
 struct AvbdRigidWorldContactApplyResult
@@ -112,6 +126,15 @@ struct AvbdRigidWorldContactStepResult
 inline std::uint64_t avbdRigidWorldContactObjectId(entt::entity entity) noexcept
 {
   return static_cast<std::uint64_t>(entt::to_integral(entity)) + 1u;
+}
+
+//==============================================================================
+inline AvbdContactEndpointId avbdRigidWorldBodyEndpointId(
+    entt::entity entity) noexcept
+{
+  return AvbdContactEndpointId{
+      avbdRigidWorldContactObjectId(entity),
+      packAvbdContactFeatureId(AvbdContactFeatureKind::Body, 0)};
 }
 
 //==============================================================================
@@ -234,9 +257,7 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     entt::entity entity,
     const Eigen::Vector3d& point)
 {
-  AvbdContactEndpointId endpoint{
-      avbdRigidWorldContactObjectId(entity),
-      packAvbdContactFeatureId(AvbdContactFeatureKind::Body, 0)};
+  AvbdContactEndpointId endpoint = avbdRigidWorldBodyEndpointId(entity);
 
   const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
   if (geometry == nullptr) {
@@ -393,6 +414,73 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
 }
 
 //==============================================================================
+inline std::size_t appendAvbdRigidWorldPointJoints(
+    const entt::registry& registry,
+    std::span<const AvbdRigidWorldPointJointInput> inputs,
+    AvbdRigidWorldContactSnapshot& snapshot)
+{
+  std::map<
+      std::pair<AvbdContactEndpointId, AvbdContactEndpointId>,
+      std::uint32_t>
+      rowCounters;
+  for (const AvbdRigidPointJoint& joint : snapshot.joints) {
+    const auto rowKey
+        = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
+    std::uint32_t& nextRow = rowCounters[rowKey];
+    if (joint.row < std::numeric_limits<std::uint32_t>::max()) {
+      nextRow = std::max(nextRow, joint.row + 1u);
+    } else {
+      nextRow = std::numeric_limits<std::uint32_t>::max();
+    }
+  }
+
+  std::size_t appended = 0;
+  for (const AvbdRigidWorldPointJointInput& input : inputs) {
+    if (input.bodyA == entt::null || input.bodyB == entt::null
+        || input.bodyA == input.bodyB || !input.anchorA.allFinite()
+        || !input.anchorB.allFinite()) {
+      continue;
+    }
+
+    const std::uint32_t bodyA = detail::ensureAvbdRigidWorldBodyIndex(
+        registry, snapshot, input.bodyA);
+    const std::uint32_t bodyB = detail::ensureAvbdRigidWorldBodyIndex(
+        registry, snapshot, input.bodyB);
+    if (bodyA == std::numeric_limits<std::uint32_t>::max()
+        || bodyB == std::numeric_limits<std::uint32_t>::max()) {
+      continue;
+    }
+
+    AvbdRigidPointJoint joint;
+    joint.bodyA = bodyA;
+    joint.bodyB = bodyB;
+    joint.endpointA = avbdRigidWorldBodyEndpointId(input.bodyA);
+    joint.endpointB = avbdRigidWorldBodyEndpointId(input.bodyB);
+    joint.localPointA
+        = avbdRigidBodyLocalPoint(snapshot.states[bodyA], input.anchorA);
+    joint.localPointB
+        = avbdRigidBodyLocalPoint(snapshot.states[bodyB], input.anchorB);
+    joint.targetRelativeOrientation
+        = normalizeAvbdRigidOrientation(input.targetRelativeOrientation);
+    joint.startStiffness = std::max(0.0, input.startStiffness);
+    joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
+
+    const auto rowKey
+        = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
+    std::uint32_t& nextRow = rowCounters[rowKey];
+    joint.row = nextRow;
+    if (nextRow < std::numeric_limits<std::uint32_t>::max()) {
+      ++nextRow;
+    }
+
+    snapshot.joints.push_back(joint);
+    ++appended;
+  }
+
+  return appended;
+}
+
+//==============================================================================
 inline void predictAvbdRigidWorldContactInertialTargets(
     const entt::registry& registry,
     AvbdRigidWorldContactSnapshot& snapshot,
@@ -439,6 +527,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdRigidWorldContactSnapshot& snapshot,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
+    AvbdScalarRowInventory& jointLinearInventory,
+    AvbdScalarRowInventory& jointAngularInventory,
     double timeStep,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
@@ -460,8 +550,27 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   result.normalRows = normalRows.size();
   result.frictionRows = 2u * frictionRows.size();
 
+  std::vector<AvbdRigidBodyPointPairRow> jointLinearRows;
+  std::vector<AvbdRigidBodyAngularPairRow> jointAngularRows;
+  buildAvbdRigidPointJointConstraintRows(
+      snapshot.states,
+      snapshot.joints,
+      jointLinearInventory,
+      jointAngularInventory,
+      jointLinearRows,
+      jointAngularRows,
+      options.warmStart);
+  result.jointLinearRows = jointLinearRows.size();
+  result.jointAngularRows = jointAngularRows.size();
+
+  std::vector<AvbdRigidBodyPointPairRow> pointPairRows;
+  pointPairRows.reserve(normalRows.size() + jointLinearRows.size());
+  pointPairRows.insert(
+      pointPairRows.end(), normalRows.begin(), normalRows.end());
+  pointPairRows.insert(
+      pointPairRows.end(), jointLinearRows.begin(), jointLinearRows.end());
+
   std::vector<AvbdRigidBodyPointAttachmentRow> attachmentRows;
-  std::vector<AvbdRigidBodyAngularPairRow> angularRows;
   const std::vector<AvbdRigidBodyState> inertialTargets
       = snapshot.inertialTargets.size() == snapshot.states.size()
             ? snapshot.inertialTargets
@@ -474,8 +583,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       inertialTargets,
       timeStep,
       attachmentRows,
-      normalRows,
-      angularRows,
+      pointPairRows,
+      jointAngularRows,
       frictionRows,
       options.descent,
       options.row,
@@ -483,7 +592,19 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
 
   for (std::size_t i = 0; i < normalRows.size() && i < normalInventory.size();
        ++i) {
-    normalInventory[i].state = normalRows[i].row.state;
+    normalInventory[i].state = pointPairRows[i].row.state;
+  }
+  const std::size_t jointLinearOffset = normalRows.size();
+  for (std::size_t i = 0;
+       i < jointLinearRows.size() && i < jointLinearInventory.size();
+       ++i) {
+    jointLinearInventory[i].state
+        = pointPairRows[jointLinearOffset + i].row.state;
+  }
+  for (std::size_t i = 0;
+       i < jointAngularRows.size() && i < jointAngularInventory.size();
+       ++i) {
+    jointAngularInventory[i].state = jointAngularRows[i].row.state;
   }
   for (std::size_t i = 0; i < frictionRows.size(); ++i) {
     const std::size_t first = 2u * i;
@@ -496,6 +617,26 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   }
 
   return result;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
+    AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    double timeStep,
+    const AvbdRigidWorldContactSolveOptions& options = {})
+{
+  AvbdScalarRowInventory jointLinearInventory;
+  AvbdScalarRowInventory jointAngularInventory;
+  return solveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      timeStep,
+      options);
 }
 
 //==============================================================================

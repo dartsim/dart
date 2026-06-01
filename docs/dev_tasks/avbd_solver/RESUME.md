@@ -60,7 +60,9 @@ feature IDs and scopes row ordinals per canonical endpoint pair so unrelated
 manifolds do not perturb row identity. The private rigid block path also has
 point-joint linear, angular, and combined row builders for fixed-anchor
 translation and orientation constraints, with step-start previous constraint
-values seeded for AVBD alpha regularization.
+values seeded for AVBD alpha regularization. Those private point-joint rows can
+now be appended to the World rigid snapshot/solve/apply wrapper from
+world-space point-joint inputs; ECS joint extraction is still not wired.
 
 ## Current Branch
 
@@ -86,7 +88,8 @@ wrapper. The current branch additionally adds the first internal
 `RigidAvbdContactConfig` contact-stage activation for supported free rigid-body
 contacts as a velocity-level projection and box-feature/pair-scoped rigid
 contact row identity for the private snapshot path, plus private point-joint
-linear, angular, and combined row builders.
+linear, angular, and combined row builders with World snapshot append/solve/apply
+coverage for world-space point-joint inputs.
 
 ## Immediate Next Step
 
@@ -100,7 +103,8 @@ rigid row driver plus private rigid contact-manifold row builder and
 World-contact snapshot/solve/writeback helpers plus a combined private wrapper,
 first internal contact-stage activation, box-feature/pair-scoped row identity,
 private cylinder side/cap/rim endpoint features, and private point-joint
-linear/angular/combined rows with step-start previous constraint values exist.
+linear/angular/combined rows with step-start previous constraint values and
+private World snapshot append/solve/apply coverage exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -159,9 +163,10 @@ combinations.
   feature IDs and cylinder side/cap/rim endpoint features for rigid snapshots,
   scope row ordinals per canonical endpoint pair, and create
   normal/friction/joint-linear/joint-angular row descriptors, with private
-  point-joint rows now seeding step-start previous constraint values, but full
-  narrow-phase feature extraction and articulated World joint wiring are not
-  solved yet.
+  point-joint rows now seeding step-start previous constraint values and
+  participating in the private World snapshot/solve/apply wrapper from
+  world-space point-joint inputs, but full narrow-phase feature extraction and
+  articulated World joint wiring are not solved yet.
 
 ## How to Resume
 

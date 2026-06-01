@@ -595,6 +595,10 @@
     side/cap/rim endpoint features, so cylinder contacts warm-start across
     same-feature motion but reset when they move between barrel, cap, and rim
     manifolds.
+  - Added a private AVBD rigid World point-joint snapshot path that appends
+    world-space point-joint inputs to the same rigid snapshot/solve/apply
+    wrapper with persistent linear and angular joint row inventories. This is a
+    solver landing zone, not ECS joint extraction yet.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration

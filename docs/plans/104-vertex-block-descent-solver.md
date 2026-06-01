@@ -122,8 +122,10 @@ row descriptors. Rigid snapshots now derive box face/edge/corner and cylinder
 side/cap/rim endpoint features for narrower private warm-start keys. The
 private rigid row path also has point-joint linear, angular, and combined
 builders for fixed-anchor translation/orientation rows, with step-start
-previous values seeded for AVBD alpha regularization, but they do not solve
-World dynamic/rigid contact manifolds yet.
+previous values seeded for AVBD alpha regularization. Those private point-joint
+rows can now be appended to the World rigid snapshot/solve/apply wrapper from
+world-space point-joint inputs, but ECS joint extraction and articulated World
+joint wiring are not solved yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
