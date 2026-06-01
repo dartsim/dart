@@ -79,6 +79,12 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   # configurations where the test is not registered.
   if(TEST test_variational_integration)
     set_tests_properties(test_variational_integration PROPERTIES TIMEOUT 3600)
+    if(DART_CODECOV)
+      target_compile_definitions(
+        test_variational_integration
+        PRIVATE DART_CODECOV=1
+      )
+    endif()
   endif()
 
   # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only

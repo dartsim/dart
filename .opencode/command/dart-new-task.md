@@ -46,3 +46,13 @@ Read these files first:
 - **Bugfix**: Requires PRs to BOTH `release-6.16` AND `main`
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
+- **New solver/paper implementation**: Derive an evidence matrix from the
+  paper, project page, reference source, videos, and demos. Do not call the task
+  complete until DART implements all algorithms/features on required CPU and GPU
+  backends, ports all experiments/demos into tests/benchmarks/py-demos, records
+  benchmark JSON proving DART beats reference and paper numbers for every
+  claimed case, and performs any clean API/pipeline refactor needed for the
+  long-term DART 7/8 architecture. For multi-session work, keep the active
+  `docs/dev_tasks/<task>/README.md` and `RESUME.md` explicit about the latest
+  completed slice, the next missing paper-parity gap, and why focused green
+  tests are not a full solver/paper completion claim.

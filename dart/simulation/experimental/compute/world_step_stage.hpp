@@ -179,6 +179,12 @@ struct DeformableSolverStats
   std::size_t vbdBodyCount = 0;
   std::size_t vbdSweeps = 0;
   std::size_t vbdVertexUpdates = 0;
+  std::size_t vbdAvbdContactNormalRows = 0;
+  std::size_t vbdAvbdSelfContactNormalRows = 0;
+  std::size_t vbdAvbdFrictionTangentRows = 0;
+  std::size_t vbdAvbdAttachmentRows = 0;
+  std::size_t vbdAvbdFiniteStiffnessRows = 0;
+  std::size_t vbdAvbdFiniteStiffnessTetRows = 0;
   double vbdResidualNormSquared = 0.0;
   // Contact closest-approach diagnostic at the converged iterate, folded across
   // the step's deformable bodies. minActiveContactDistance is the smallest
