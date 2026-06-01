@@ -30,9 +30,10 @@ solver** under a multi-solver, multi-physics architecture.
       `World::collide()` query bridging to the native engine, returning
       `Contact` points; C++ + dartpy + tests. Filtering started with
       `CollisionQueryOptions::includeSameMultibodyLinkPairs` /
-      dartpy `include_same_multibody_link_pairs`; broad-phase pruning now uses
-      native collision candidate pairs. Remaining: broader collision filtering,
-      persistent collision world).
+      dartpy `include_same_multibody_link_pairs`; body-type filtering now
+      covers rigid-body, rigid-body/link, and link/link pairs; broad-phase
+      pruning now uses native collision candidate pairs. Remaining: persistent
+      collision world).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
       contact solver between free rigid bodies with accumulated normal impulses,
       restitution, two-tangent Coulomb friction, positional correction, and a
@@ -87,8 +88,8 @@ solvers, couplers, ECS storage, or execution backends.
 
 1. Keep the local `feature/experimental-model-loader` branch clean and validated
    while it carries the model-loading/contact follow-up commits ahead of origin.
-2. Continue remaining Phase 2 shape backlog from `RESUME.md`: filtering and
-   collision-world scaling.
+2. Continue remaining Phase 2 shape backlog from `RESUME.md`: collision-world
+   scaling.
 3. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
 

@@ -60,6 +60,17 @@ struct CollisionQueryOptions
   /// multibody. Enabled by default to preserve explicit self-contact queries
   /// and the articulated same-multibody contact solver path.
   bool includeSameMultibodyLinkPairs = true;
+
+  /// Include contacts between two rigid bodies.
+  bool includeRigidBodyPairs = true;
+
+  /// Include contacts between a rigid body and a multibody link.
+  bool includeRigidBodyLinkPairs = true;
+
+  /// Include contacts between two multibody links. If this is enabled,
+  /// `includeSameMultibodyLinkPairs` can still filter the same-multibody
+  /// subset.
+  bool includeLinkPairs = true;
 };
 
 class DART_EXPERIMENTAL_API World
@@ -218,6 +229,9 @@ public:
   [[nodiscard]] std::vector<Contact> collide();
 
   /// Run a collision query with explicit filtering options.
+  ///
+  /// Body-type switches can include or exclude rigid-body pairs,
+  /// rigid-body/link pairs, and link/link pairs independently.
   ///
   /// `includeSameMultibodyLinkPairs=false` filters link-vs-link contacts within
   /// the same multibody while preserving rigid-body pairs, link-vs-rigid-body

@@ -824,6 +824,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     an explicit `includeSameMultibodyLinkPairs` / dartpy
     `include_same_multibody_link_pairs` switch to filter same-multibody link
     self-collision pairs without changing the default query behavior.
+    Collision queries can also independently include or exclude rigid-body,
+    rigid-body/link, and link/link body-type pairs while keeping the default
+    all-pairs behavior.
   - `World::collide()` now uses the native collision broad phase to prune
     candidate pairs before narrow-phase contact generation while preserving the
     same `Contact` reporting semantics.

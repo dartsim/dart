@@ -2269,6 +2269,54 @@ def test_experimental_collision_query_can_filter_same_multibody_link_pairs():
     )
 
 
+def test_experimental_collision_query_can_filter_body_type_pairs():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    body_a = world.add_rigid_body("rigid_a")
+    body_a.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body_b = world.add_rigid_body("rigid_b", position=(0.4, 0.0, 0.0))
+    body_b.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert len(world.collide()) >= 1
+
+    options = sx.CollisionQueryOptions(include_rigid_body_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_rigid_body_pairs=False" in repr(options)
+
+    world = sx.World()
+    robot = world.add_multibody("robot")
+    link = robot.add_link("link")
+    link.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body = world.add_rigid_body("rigid", position=(0.4, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    world.enter_simulation_mode()
+    assert len(world.collide()) >= 1
+
+    options = sx.CollisionQueryOptions(include_rigid_body_link_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_rigid_body_link_pairs=False" in repr(options)
+
+    world = sx.World()
+    robot = world.add_multibody("robot")
+    base = robot.add_link("base")
+    base.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    child = robot.add_link(
+        "child",
+        parent=base,
+        joint=sx.JointSpec(name="child", type=sx.JointType.FIXED),
+    )
+    child.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    world.enter_simulation_mode()
+    assert len(world.collide()) >= 1
+
+    options = sx.CollisionQueryOptions(include_link_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_link_pairs=False" in repr(options)
+
+
 def test_experimental_contact_stops_approaching_bodies():
     sx = _simulation_experimental()
 

@@ -1743,6 +1743,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
   {
     entt::entity entity;
     entt::entity multibody;
+    bool isLink;
     ncol::CollisionObject object;
   };
   std::vector<ObjectEntry> entries;
@@ -1762,6 +1763,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 
   const auto addEntry = [&](entt::entity entity,
                             entt::entity multibody,
+                            bool isLink,
                             const CollisionShape& collisionShape,
                             const Eigen::Isometry3d& pose) {
     std::unique_ptr<ncol::Shape> shape;
@@ -1799,7 +1801,25 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
           objectId + 1, std::numeric_limits<std::size_t>::max());
     }
     entryByObjectId[objectId] = entryIndex;
-    entries.push_back({entity, multibody, object});
+    entries.push_back({entity, multibody, isLink, object});
+  };
+
+  const auto includesPair = [&](const ObjectEntry& a, const ObjectEntry& b) {
+    if (a.entity == b.entity) {
+      return false;
+    }
+
+    if (a.isLink && b.isLink) {
+      return options.includeLinkPairs
+             && (options.includeSameMultibodyLinkPairs
+                 || a.multibody == entt::null || a.multibody != b.multibody);
+    }
+
+    if (a.isLink || b.isLink) {
+      return options.includeRigidBodyLinkPairs;
+    }
+
+    return options.includeRigidBodyPairs;
   };
 
   // Rigid bodies pose their collision shapes from the rigid-body transform.
@@ -1815,7 +1835,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     pose.linear() = transform.orientation.normalized().toRotationMatrix();
     pose.translation() = transform.position;
     for (const auto& shape : geometry.shapes) {
-      addEntry(entity, entt::null, shape, pose);
+      addEntry(entity, entt::null, false, shape, pose);
     }
   }
 
@@ -1829,7 +1849,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     const Link link(entity, this);
     const entt::entity multibody = findMultibodyOwningLink(entity);
     for (const auto& shape : geometry.shapes) {
-      addEntry(entity, multibody, shape, link.getWorldTransform());
+      addEntry(entity, multibody, true, shape, link.getWorldTransform());
     }
   }
 
@@ -1849,12 +1869,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     if (i >= entries.size() || j >= entries.size()) {
       continue;
     }
-    if (entries[i].entity == entries[j].entity) {
-      continue;
-    }
-    if (!options.includeSameMultibodyLinkPairs
-        && entries[i].multibody != entt::null
-        && entries[i].multibody == entries[j].multibody) {
+    if (!includesPair(entries[i], entries[j])) {
       continue;
     }
 

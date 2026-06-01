@@ -275,6 +275,12 @@ same-entity compound-shape skipping, and same-multibody link filtering semantics
 are preserved. Covered by the existing collision-query suite plus a sparse
 far-body regression.
 
+**(DONE) Body-type filtering for `World::collide()`.** `CollisionQueryOptions`
+now includes explicit rigid-body, rigid-body/link, and link/link switches
+(dartpy: `include_rigid_body_pairs`, `include_rigid_body_link_pairs`,
+`include_link_pairs`) while preserving the existing same-multibody link subset
+filter and the default all-pairs behavior. Covered by C++ and dartpy tests.
+
 **Resume here — Subsystem A (the remaining headline gap):**
 
 **Subsystem A — coupled boxed-LCP.** Reorder the `World::step` pipeline to
@@ -845,8 +851,8 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 2:** self-collision/filtering, broad-phase pruning, a persistent
-  collision world instead of rebuilding per `collide()`.
+- **Phase 2:** a persistent collision world instead of rebuilding per
+  `collide()`.
 - **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
   mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,

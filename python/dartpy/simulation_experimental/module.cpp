@@ -1610,19 +1610,46 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def(
           "__init__",
           [](sim::CollisionQueryOptions* self,
-             bool includeSameMultibodyLinkPairs) {
-            new (self)
-                sim::CollisionQueryOptions{includeSameMultibodyLinkPairs};
+             bool includeSameMultibodyLinkPairs,
+             bool includeRigidBodyPairs,
+             bool includeRigidBodyLinkPairs,
+             bool includeLinkPairs) {
+            sim::CollisionQueryOptions options;
+            options.includeSameMultibodyLinkPairs
+                = includeSameMultibodyLinkPairs;
+            options.includeRigidBodyPairs = includeRigidBodyPairs;
+            options.includeRigidBodyLinkPairs = includeRigidBodyLinkPairs;
+            options.includeLinkPairs = includeLinkPairs;
+            new (self) sim::CollisionQueryOptions(options);
           },
-          nb::arg("include_same_multibody_link_pairs") = true)
+          nb::arg("include_same_multibody_link_pairs") = true,
+          nb::kw_only(),
+          nb::arg("include_rigid_body_pairs") = true,
+          nb::arg("include_rigid_body_link_pairs") = true,
+          nb::arg("include_link_pairs") = true)
       .def_rw(
           "include_same_multibody_link_pairs",
           &sim::CollisionQueryOptions::includeSameMultibodyLinkPairs)
+      .def_rw(
+          "include_rigid_body_pairs",
+          &sim::CollisionQueryOptions::includeRigidBodyPairs)
+      .def_rw(
+          "include_rigid_body_link_pairs",
+          &sim::CollisionQueryOptions::includeRigidBodyLinkPairs)
+      .def_rw(
+          "include_link_pairs", &sim::CollisionQueryOptions::includeLinkPairs)
       .def("__repr__", [](const sim::CollisionQueryOptions& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back(
             "include_same_multibody_link_pairs",
             repr_bool(self.includeSameMultibodyLinkPairs));
+        fields.emplace_back(
+            "include_rigid_body_pairs", repr_bool(self.includeRigidBodyPairs));
+        fields.emplace_back(
+            "include_rigid_body_link_pairs",
+            repr_bool(self.includeRigidBodyLinkPairs));
+        fields.emplace_back(
+            "include_link_pairs", repr_bool(self.includeLinkPairs));
         return format_repr("CollisionQueryOptions", fields);
       });
 

@@ -3297,6 +3297,71 @@ TEST(World, CollisionQueryCanFilterSameMultibodyLinkPairs)
   }
 }
 
+// Test that collision-query options can independently filter body-type pairs
+// while keeping all filters enabled by default.
+TEST(World, CollisionQueryCanFilterBodyTypePairs)
+{
+  namespace sx = dart::simulation::experimental;
+
+  {
+    sx::World world;
+
+    auto bodyA = world.addRigidBody("rigid_a");
+    bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions bodyBOptions;
+    bodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    auto bodyB = world.addRigidBody("rigid_b", bodyBOptions);
+    bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    ASSERT_FALSE(world.collide().empty());
+
+    sx::CollisionQueryOptions options;
+    options.includeRigidBodyPairs = false;
+    EXPECT_TRUE(world.collide(options).empty());
+  }
+
+  {
+    sx::World world;
+
+    auto robot = world.addMultibody("robot");
+    auto link = robot.addLink("link");
+    link.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    auto body = world.addRigidBody("rigid", bodyOptions);
+    body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.enterSimulationMode();
+    ASSERT_FALSE(world.collide().empty());
+
+    sx::CollisionQueryOptions options;
+    options.includeRigidBodyLinkPairs = false;
+    EXPECT_TRUE(world.collide(options).empty());
+  }
+
+  {
+    sx::World world;
+
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    base.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::JointSpec spec;
+    spec.name = "child";
+    auto child = robot.addLink("child", base, spec);
+    child.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.enterSimulationMode();
+    ASSERT_FALSE(world.collide().empty());
+
+    sx::CollisionQueryOptions options;
+    options.includeLinkPairs = false;
+    EXPECT_TRUE(world.collide(options).empty());
+  }
+}
+
 // Test that a multibody link with a collision shape rests on a static ground
 // via the articulated contact response (a fixed-base prismatic "leg" drops
 // under gravity and stops where its sphere meets the ground).
