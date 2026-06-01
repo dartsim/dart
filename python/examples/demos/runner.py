@@ -312,10 +312,10 @@ def _make_gpu_panel(sx: Any) -> ScenePanel:
     def build(builder: Any, _context: Any) -> None:
         builder.text("GPU compute (CUDA)")
         builder.separator()
-        enabled = bool(sx.is_gpu_deformable_solve_enabled())
+        enabled = bool(sx.is_accelerated_deformable_solve_enabled())
         changed, new_enabled = builder.checkbox("GPU deformable solve", enabled)
         if changed:
-            sx.set_gpu_deformable_solve(bool(new_enabled))
+            sx.set_accelerated_deformable_solve(bool(new_enabled))
         builder.text("Offloads the deformable projected-Newton")
         builder.text("PSD projection to the GPU (CUDA).")
         builder.text("Process-wide: affects every deformable scene.")
@@ -332,22 +332,22 @@ def _configure_gpu_compute(dart: Any, cli_pref: bool | None) -> ScenePanel | Non
     """
 
     sx = getattr(dart, "simulation_experimental", None)
-    if sx is None or not hasattr(sx, "set_gpu_deformable_solve"):
+    if sx is None or not hasattr(sx, "set_accelerated_deformable_solve"):
         return None
 
-    available = bool(sx.is_cuda_available())
+    available = bool(sx.is_accelerated_deformable_solve_available())
     preference = _gpu_preference(cli_pref)
     if preference == "off":
-        enabled = bool(sx.set_gpu_deformable_solve(False))
+        enabled = bool(sx.set_accelerated_deformable_solve(False))
     elif preference == "on":
-        enabled = bool(sx.set_gpu_deformable_solve(True))
+        enabled = bool(sx.set_accelerated_deformable_solve(True))
         if not enabled:
             print(
                 "py-demos: GPU requested but CUDA is unavailable; using CPU.",
                 file=sys.stderr,
             )
     else:  # auto
-        enabled = bool(sx.set_gpu_deformable_solve(available))
+        enabled = bool(sx.set_accelerated_deformable_solve(available))
 
     if available:
         print(

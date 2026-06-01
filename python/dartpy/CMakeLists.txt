@@ -380,14 +380,17 @@ if(_dartpy_has_simulation_experimental)
   )
 endif()
 
-# Link the experimental CUDA sidecar so dartpy can install the GPU deformable
-# PSD backend (used by `pixi run -e cuda py-demos`). The target exists only when
-# DART_ENABLE_EXPERIMENTAL_CUDA is ON; the matching compile definition gates the
-# GPU bindings in simulation_experimental/module.cpp, which are safe no-ops
-# otherwise.
+# Force-link the experimental CUDA sidecar (used by `pixi run -e cuda py-demos`)
+# so its static accelerator registrar runs at load and registers the GPU
+# deformable-solve backend with the backend-neutral core control. dartpy itself
+# never references CUDA symbols, so without whole-archive the registrar object
+# would be dropped. The target exists only when DART_ENABLE_EXPERIMENTAL_CUDA is
+# ON; pixi-provided CMake (>= 4.3) supports the WHOLE_ARCHIVE link feature.
 if(TARGET dart-simulation-experimental-cuda)
-  target_link_libraries(dartpy PRIVATE dart-simulation-experimental-cuda)
-  target_compile_definitions(dartpy PRIVATE DART_ENABLE_EXPERIMENTAL_CUDA=1)
+  target_link_libraries(
+    dartpy
+    PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,dart-simulation-experimental-cuda>"
+  )
 endif()
 
 set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")

@@ -49,16 +49,16 @@ class _FakeSx:
         self._enabled = enabled
         self.set_calls: list[bool] = []
 
-    def is_cuda_available(self) -> bool:
+    def is_accelerated_deformable_solve_available(self) -> bool:
         return self._available
 
-    def set_gpu_deformable_solve(self, enable: bool) -> bool:
+    def set_accelerated_deformable_solve(self, enable: bool) -> bool:
         self.set_calls.append(bool(enable))
         # Mirror the real binding: only enables when a device is available.
         self._enabled = bool(enable) and self._available
         return self._enabled
 
-    def is_gpu_deformable_solve_enabled(self) -> bool:
+    def is_accelerated_deformable_solve_enabled(self) -> bool:
         return self._enabled
 
 
@@ -103,7 +103,7 @@ def test_configure_gpu_compute_available_auto_enables(monkeypatch):
     sx = _FakeSx(available=True)
     panel = _configure_gpu_compute(SimpleNamespace(simulation_experimental=sx), None)
     assert panel is not None
-    assert sx.is_gpu_deformable_solve_enabled() is True
+    assert sx.is_accelerated_deformable_solve_enabled() is True
 
 
 def test_configure_gpu_compute_no_binding_returns_none():
@@ -151,8 +151,8 @@ def test_world_factory_without_gpu_panel_is_unchanged():
 
 def test_dartpy_gpu_bindings_are_safe_noops_without_cuda():
     sx = dart.simulation_experimental
-    if sx.is_cuda_available():
+    if sx.is_accelerated_deformable_solve_available():
         # On a CUDA-enabled build the behavior is covered by the cuda env demos.
         return
-    assert sx.set_gpu_deformable_solve(True) is False
-    assert sx.is_gpu_deformable_solve_enabled() is False
+    assert sx.set_accelerated_deformable_solve(True) is False
+    assert sx.is_accelerated_deformable_solve_enabled() is False

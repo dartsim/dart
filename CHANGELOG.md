@@ -64,11 +64,14 @@
     while metrics still scale with `--gui-scale`/DPI.
   - Enabled GPU (CUDA) deformable solve in the Python demos: `pixi run -e cuda
 py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
-    deformable projected-Newton PSD projection to the GPU by default. New dartpy
-    functions `simulation_experimental.is_cuda_available()`,
-    `set_gpu_deformable_solve(enable)`, and `is_gpu_deformable_solve_enabled()`
-    expose the process-wide toggle (safe no-ops on non-CUDA builds, so the
-    default environment is unchanged). The demo runner adds `--gpu`/`--no-gpu`
+    deformable projected-Newton PSD projection to the GPU by default. New
+    backend-neutral dartpy functions
+    `simulation_experimental.is_accelerated_deformable_solve_available()`,
+    `set_accelerated_deformable_solve(enabled)`, and
+    `is_accelerated_deformable_solve_enabled()` expose the process-wide toggle.
+    The CUDA sidecar registers itself with a backend-neutral core control, so the
+    public API never names a device technology and is a safe no-op on non-CUDA
+    builds, leaving the default environment unchanged. The demo runner adds `--gpu`/`--no-gpu`
     flags and a `DART_PY_DEMOS_GPU` env override (default `auto`: on when a CUDA
     device is present), an in-viewer GPU toggle panel, and a startup status
     line. The `config-py` build task forwards the experimental CUDA opt-in so

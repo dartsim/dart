@@ -102,65 +102,27 @@ namespace {
 
 namespace sim = dart::simulation::experimental;
 
-// GPU (CUDA) deformable-PSD control, exposed to Python as a process-wide
-// toggle.
-//
-// The interactive deformable solver PSD-projects its per-element Hessian blocks
-// through `compute::projectSymmetricBlocksToPsd`, which dispatches to an
-// installed backend (CPU by default). On CUDA-enabled builds the experimental
-// CUDA sidecar can install a GPU backend for that hotspot. These declarations
-// mirror `compute/cuda/deformable_psd_projection_cuda.cuh` (a build-tree-only
-// header) so this translation unit never includes a CUDA header; the symbols
-// resolve from the CUDA sidecar library that dartpy links only when
-// DART_ENABLE_EXPERIMENTAL_CUDA is defined. On non-CUDA builds the Python
-// functions are safe no-ops that report CUDA as unavailable.
-#ifdef DART_ENABLE_EXPERIMENTAL_CUDA
-} // namespace
-} // namespace dart::python_nb
-
-namespace dart::simulation::experimental::compute::cuda {
-// Resolved from the CUDA sidecar library (linked into dartpy only on CUDA
-// builds). Declared here to avoid pulling the build-tree-only `.cuh` header.
-bool isCudaRuntimeAvailable() noexcept;
-void installCudaDeformablePsdBackend();
-void restoreDefaultDeformablePsdBackend();
-} // namespace dart::simulation::experimental::compute::cuda
-
-namespace dart::python_nb {
-namespace {
-#endif
-
-bool gpuDeformableSolveAvailable()
+// Backend-neutral acceleration control for the deformable solve, exposed to
+// Python as a process-wide toggle. The interactive deformable solver
+// PSD-projects its per-element Hessian blocks through the core PSD backend; an
+// optional accelerator (registered by a device sidecar when one is compiled in,
+// e.g. the experimental CUDA build) can offload that hotspot. These thin
+// wrappers forward to the backend-neutral core control so the binding never
+// names a device technology; with no accelerator registered they are safe
+// no-ops that report acceleration as unavailable and stay on the CPU backend.
+bool acceleratedDeformableSolveAvailable()
 {
-#ifdef DART_ENABLE_EXPERIMENTAL_CUDA
-  return dart::simulation::experimental::compute::cuda::
-      isCudaRuntimeAvailable();
-#else
-  return false;
-#endif
+  return sim::compute::isDeformablePsdAccelerationAvailable();
 }
 
-bool setGpuDeformableSolve(bool enable)
+bool setAcceleratedDeformableSolve(bool enabled)
 {
-#ifdef DART_ENABLE_EXPERIMENTAL_CUDA
-  namespace compute = dart::simulation::experimental::compute;
-  if (enable && compute::cuda::isCudaRuntimeAvailable()) {
-    compute::cuda::installCudaDeformablePsdBackend();
-    return true;
-  }
-  compute::cuda::restoreDefaultDeformablePsdBackend();
-  return false;
-#else
-  (void)enable;
-  return false;
-#endif
+  return sim::compute::setDeformablePsdAccelerated(enabled);
 }
 
-bool gpuDeformableSolveEnabled()
+bool acceleratedDeformableSolveEnabled()
 {
-  namespace compute = dart::simulation::experimental::compute;
-  return compute::deformablePsdBlockProjector()
-         != &compute::projectSymmetricBlocksToPsdCpu;
+  return sim::compute::isDeformablePsdAccelerated();
 }
 
 Eigen::Quaterniond toQuaternionWxyz(const nb::handle& value)
@@ -2635,26 +2597,29 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("World", fields);
       });
 
-  // GPU (CUDA) deformable-solve control. Process-wide: the deformable
-  // projected-Newton PSD projection is the one interactive hotspot the
-  // experimental CUDA sidecar can offload. On builds without CUDA these are
-  // safe no-ops reporting GPU as unavailable.
+  // Backend-neutral acceleration control for the deformable solve.
+  // Process-wide: the deformable projected-Newton PSD projection is the one
+  // interactive hotspot an optional device sidecar can offload. With no
+  // accelerator registered these are safe no-ops reporting acceleration as
+  // unavailable.
   m.def(
-      "is_cuda_available",
-      &gpuDeformableSolveAvailable,
-      "Whether this build includes the experimental CUDA sidecar and a CUDA "
-      "device is currently available at runtime.");
+      "is_accelerated_deformable_solve_available",
+      &acceleratedDeformableSolveAvailable,
+      "Whether a deformable-solve accelerator (e.g. an experimental device "
+      "backend) is registered and reports an available device at runtime.");
   m.def(
-      "set_gpu_deformable_solve",
-      &setGpuDeformableSolve,
-      nb::arg("enable"),
-      "Enable or disable GPU (CUDA) deformable PSD projection, process-wide. "
-      "Returns the resulting enabled state (False when CUDA is unavailable, so "
-      "the call was a no-op).");
+      "set_accelerated_deformable_solve",
+      &setAcceleratedDeformableSolve,
+      nb::arg("enabled"),
+      "Enable or disable accelerated (device-offloaded) deformable PSD "
+      "projection, process-wide. Returns the resulting enabled state (False "
+      "when no accelerator is available, so the call is a safe no-op that "
+      "stays "
+      "on the CPU backend).");
   m.def(
-      "is_gpu_deformable_solve_enabled",
-      &gpuDeformableSolveEnabled,
-      "Whether a non-CPU (GPU) deformable PSD backend is currently installed.");
+      "is_accelerated_deformable_solve_enabled",
+      &acceleratedDeformableSolveEnabled,
+      "Whether the accelerated deformable PSD backend is currently installed.");
 }
 
 } // namespace dart::python_nb

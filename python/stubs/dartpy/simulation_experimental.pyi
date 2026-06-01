@@ -56,14 +56,14 @@ __all__: list[str] = [
     "add_skeleton",
     "add_world",
     "collect_deformable_scene_diagnostics",
-    "is_cuda_available",
-    "is_gpu_deformable_solve_enabled",
+    "is_accelerated_deformable_solve_available",
+    "is_accelerated_deformable_solve_enabled",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
     "load_obj_triangle_mesh",
     "load_point_set",
     "load_seg_line_mesh",
-    "set_gpu_deformable_solve",
+    "set_accelerated_deformable_solve",
 ]
 
 
@@ -1704,8 +1704,8 @@ class World:
 
     def __repr__(self) -> str: ...
 
-def is_cuda_available() -> bool: ...
+def is_accelerated_deformable_solve_available() -> bool: ...
 
-def set_gpu_deformable_solve(enable: bool) -> bool: ...
+def set_accelerated_deformable_solve(enable: bool) -> bool: ...
 
-def is_gpu_deformable_solve_enabled() -> bool: ...
+def is_accelerated_deformable_solve_enabled() -> bool: ...
