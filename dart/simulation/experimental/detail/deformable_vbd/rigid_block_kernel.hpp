@@ -39,6 +39,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <algorithm>
 #include <limits>
 
 #include <cmath>
@@ -147,6 +148,14 @@ struct AvbdRigidPointAttachmentOptions
   double alpha = 0.0;
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
+struct AvbdRigidPointPairFrictionOptions
+{
+  double alpha = 0.0;
+  double beta = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+  double staticFrictionTolerance = 1e-12;
 };
 
 //==============================================================================
@@ -303,6 +312,110 @@ inline double avbdRigidPointPairConstraintValue(
 }
 
 //==============================================================================
+inline Eigen::Vector2d avbdRigidPointPairConstraintValues(
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairRow& first,
+    const AvbdRigidPointPairRow& second,
+    double alpha)
+{
+  return Eigen::Vector2d(
+      regularizeAvbdConstraintValue(
+          avbdRigidPointPairConstraintValue(stateA, stateB, first),
+          first.previousConstraintValue,
+          alpha),
+      regularizeAvbdConstraintValue(
+          avbdRigidPointPairConstraintValue(stateA, stateB, second),
+          second.previousConstraintValue,
+          alpha));
+}
+
+//==============================================================================
+inline double avbdRigidPointPairFrictionForceLimit(
+    const AvbdRigidPointPairRow& row)
+{
+  const double lowerLimit = row.bounds.lower < 0.0 ? -row.bounds.lower : 0.0;
+  const double upperLimit = row.bounds.upper > 0.0 ? row.bounds.upper : 0.0;
+  return std::max(0.0, std::min(lowerLimit, upperLimit));
+}
+
+//==============================================================================
+inline double avbdRigidPointPairFrictionPairForceLimit(
+    const AvbdRigidPointPairRow& first, const AvbdRigidPointPairRow& second)
+{
+  return std::min(
+      avbdRigidPointPairFrictionForceLimit(first),
+      avbdRigidPointPairFrictionForceLimit(second));
+}
+
+//==============================================================================
+inline bool avbdRigidPointPairFrictionPreviousDualInsideCone(
+    const AvbdRigidPointPairRow& first,
+    const AvbdRigidPointPairRow& second,
+    double staticFrictionTolerance = 1e-12)
+{
+  const double limit = avbdRigidPointPairFrictionPairForceLimit(first, second);
+  if (!std::isfinite(limit)) {
+    return true;
+  }
+
+  const double tolerance = std::max(0.0, staticFrictionTolerance);
+  const double previousNorm
+      = std::hypot(first.state.lambda, second.state.lambda);
+  return previousNorm < std::max(0.0, limit - tolerance);
+}
+
+//==============================================================================
+inline Eigen::Vector2d avbdRigidPointPairFrictionTangentPairForce(
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairRow& first,
+    const AvbdRigidPointPairRow& second,
+    const AvbdRigidPointPairFrictionOptions& options,
+    bool* clamped = nullptr)
+{
+  if (clamped != nullptr) {
+    *clamped = false;
+  }
+
+  const double limit = avbdRigidPointPairFrictionPairForceLimit(first, second);
+  if (limit <= 0.0) {
+    if (clamped != nullptr) {
+      *clamped = true;
+    }
+    return Eigen::Vector2d::Zero();
+  }
+
+  const Eigen::Vector2d constraintValues = avbdRigidPointPairConstraintValues(
+      stateA, stateB, first, second, options.alpha);
+  const bool staticMode = avbdRigidPointPairFrictionPreviousDualInsideCone(
+      first, second, options.staticFrictionTolerance);
+  if (!staticMode && std::isfinite(limit)) {
+    const double tangentError = constraintValues.norm();
+    if (tangentError > std::max(1e-12, options.staticFrictionTolerance)) {
+      if (clamped != nullptr) {
+        *clamped = true;
+      }
+      return (limit / tangentError) * constraintValues;
+    }
+  }
+
+  Eigen::Vector2d force(
+      first.state.stiffness * constraintValues.x() + first.state.lambda,
+      second.state.stiffness * constraintValues.y() + second.state.lambda);
+  if (std::isfinite(limit)) {
+    const double norm = force.norm();
+    if (norm > limit && norm > 0.0) {
+      if (clamped != nullptr) {
+        *clamped = true;
+      }
+      force *= limit / norm;
+    }
+  }
+  return force;
+}
+
+//==============================================================================
 inline Vector6d avbdRigidPointPairDirectionA(
     const AvbdRigidBodyState& stateA, const AvbdRigidPointPairRow& row)
 {
@@ -377,6 +490,42 @@ inline double addAvbdRigidPointPair(
 }
 
 //==============================================================================
+inline Eigen::Vector2d addAvbdRigidPointPairFrictionTangentPair(
+    AvbdRigidBodyBlock& blockA,
+    AvbdRigidBodyBlock& blockB,
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairRow& first,
+    const AvbdRigidPointPairRow& second,
+    const AvbdRigidPointPairFrictionOptions& options)
+{
+  const Eigen::Vector2d force = avbdRigidPointPairFrictionTangentPairForce(
+      stateA, stateB, first, second, options);
+  const Vector6d firstDirectionA = avbdRigidPointPairDirectionA(stateA, first);
+  const Vector6d firstDirectionB = avbdRigidPointPairDirectionB(stateB, first);
+  const Vector6d secondDirectionA
+      = avbdRigidPointPairDirectionA(stateA, second);
+  const Vector6d secondDirectionB
+      = avbdRigidPointPairDirectionB(stateB, second);
+
+  blockA.force.noalias()
+      += force.x() * firstDirectionA + force.y() * secondDirectionA;
+  blockB.force.noalias()
+      += force.x() * firstDirectionB + force.y() * secondDirectionB;
+  blockA.hessian.noalias() += first.state.stiffness
+                              * (firstDirectionA * firstDirectionA.transpose());
+  blockA.hessian.noalias()
+      += second.state.stiffness
+         * (secondDirectionA * secondDirectionA.transpose());
+  blockB.hessian.noalias() += first.state.stiffness
+                              * (firstDirectionB * firstDirectionB.transpose());
+  blockB.hessian.noalias()
+      += second.state.stiffness
+         * (secondDirectionB * secondDirectionB.transpose());
+  return force;
+}
+
+//==============================================================================
 inline AvbdScalarRowState updateAvbdRigidPointAttachmentRow(
     AvbdScalarRowState state,
     const AvbdRigidBodyState& rigidState,
@@ -405,6 +554,32 @@ inline AvbdScalarRowState updateAvbdRigidPointPairRow(
       options.alpha);
   return updateAvbdHardConstraintRow(
       state, constraintValue, options.beta, row.bounds, options.maxStiffness);
+}
+
+//==============================================================================
+inline void updateAvbdRigidPointPairFrictionTangentPair(
+    AvbdRigidPointPairRow& first,
+    AvbdRigidPointPairRow& second,
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairFrictionOptions& options)
+{
+  bool clamped = false;
+  const Eigen::Vector2d force = avbdRigidPointPairFrictionTangentPairForce(
+      stateA, stateB, first, second, options, &clamped);
+  const Eigen::Vector2d constraintValues = avbdRigidPointPairConstraintValues(
+      stateA, stateB, first, second, options.alpha);
+
+  first.state.lambda = force.x();
+  second.state.lambda = force.y();
+  if (!clamped) {
+    first.state.stiffness = std::min(
+        options.maxStiffness,
+        first.state.stiffness + options.beta * std::abs(constraintValues.x()));
+    second.state.stiffness = std::min(
+        options.maxStiffness,
+        second.state.stiffness + options.beta * std::abs(constraintValues.y()));
+  }
 }
 
 //==============================================================================

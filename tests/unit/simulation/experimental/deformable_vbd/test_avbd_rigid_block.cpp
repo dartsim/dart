@@ -331,6 +331,124 @@ TEST(AvbdRigidBlock, ContactFrictionPointPairUsesLaggedRelativeOffset)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, ContactFrictionPointPairProjectsStaticForceToCone)
+{
+  vbd::AvbdRigidBodyState stateA;
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(1.0, 1.0, 0.0);
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 10.0;
+
+  vbd::AvbdRigidPointPairRow rowX = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitX(),
+      Vec3::Zero(),
+      /*forceLimit=*/5.0,
+      rowState);
+  vbd::AvbdRigidPointPairRow rowY = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      /*forceLimit=*/5.0,
+      rowState);
+
+  vbd::AvbdRigidPointPairFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_TRUE(
+      vbd::avbdRigidPointPairFrictionPreviousDualInsideCone(rowX, rowY));
+  bool clamped = false;
+  const Eigen::Vector2d force = vbd::avbdRigidPointPairFrictionTangentPairForce(
+      stateA, stateB, rowX, rowY, options, &clamped);
+
+  EXPECT_TRUE(clamped);
+  EXPECT_NEAR(force.norm(), 5.0, 1e-12);
+  EXPECT_NEAR(force.x(), force.y(), 1e-12);
+  EXPECT_GT(force.x(), 0.0);
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const Eigen::Vector2d stampedForce
+      = vbd::addAvbdRigidPointPairFrictionTangentPair(
+          blockA, blockB, stateA, stateB, rowX, rowY, options);
+
+  EXPECT_NEAR((stampedForce - force).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (blockA.force.head<3>() - Vec3(force.x(), force.y(), 0.0)).norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (blockB.force.head<3>() + Vec3(force.x(), force.y(), 0.0)).norm(),
+      0.0,
+      1e-12);
+  EXPECT_GE(
+      blockA.hessian.selfadjointView<Eigen::Lower>().eigenvalues().minCoeff(),
+      -1e-12);
+  EXPECT_GE(
+      blockB.hessian.selfadjointView<Eigen::Lower>().eigenvalues().minCoeff(),
+      -1e-12);
+
+  vbd::updateAvbdRigidPointPairFrictionTangentPair(
+      rowX, rowY, stateA, stateB, options);
+  EXPECT_NEAR(std::hypot(rowX.state.lambda, rowY.state.lambda), 5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, ContactFrictionPointPairSwitchesToDynamicSlipDirection)
+{
+  vbd::AvbdRigidBodyState stateA;
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(0.0, 2.0, 0.0);
+
+  vbd::AvbdScalarRowState rowStateX;
+  rowStateX.stiffness = 10.0;
+  rowStateX.lambda = 5.0;
+  vbd::AvbdRigidPointPairRow rowX = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitX(),
+      Vec3::Zero(),
+      /*forceLimit=*/5.0,
+      rowStateX);
+
+  vbd::AvbdScalarRowState rowStateY;
+  rowStateY.stiffness = 20.0;
+  vbd::AvbdRigidPointPairRow rowY = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      /*forceLimit=*/5.0,
+      rowStateY);
+
+  vbd::AvbdRigidPointPairFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_FALSE(
+      vbd::avbdRigidPointPairFrictionPreviousDualInsideCone(rowX, rowY));
+  const Eigen::Vector2d force = vbd::avbdRigidPointPairFrictionTangentPairForce(
+      stateA, stateB, rowX, rowY, options);
+  EXPECT_NEAR(force.x(), 0.0, 1e-12);
+  EXPECT_NEAR(force.y(), 5.0, 1e-12);
+
+  vbd::updateAvbdRigidPointPairFrictionTangentPair(
+      rowX, rowY, stateA, stateB, options);
+  EXPECT_NEAR(rowX.state.lambda, 0.0, 1e-12);
+  EXPECT_NEAR(rowY.state.lambda, 5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 20.0);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, SolveRejectsIndefiniteHessian)
 {
   vbd::AvbdRigidBodyBlock block;

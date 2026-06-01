@@ -105,8 +105,10 @@ world-frame quaternion tangent updates, an inertia term, a 6x6 block solve, and
 a scalar rigid point-attachment row plus two-body point-pair row stamping with
 focused tests. Point-pair rows now also carry a scalar offset and private
 constructors for rigid contact-normal rows and bounded contact-friction tangent
-rows, giving future dynamic/rigid contact manifold generation a narrow 6-DOF
-row target.
+rows, plus a paired friction helper that switches between static sticking and
+dynamic sliding while projecting the force to a circular Coulomb cone. Future
+dynamic/rigid contact manifold generation has a narrow 6-DOF row target, but
+the manifolds are not generated yet.
 Private dynamic/rigid contact identity helpers now pack contact feature
 kind/index IDs, canonicalize two-endpoint row keys, and create normal/friction
 row descriptors, but they do not generate or solve dynamic/rigid contact
