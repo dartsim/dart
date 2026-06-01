@@ -453,10 +453,28 @@ simulation-experimental` (42/42), and `pixi run lint`.
     `test_multibody_link_contact`, `test_rigid_body_constraint`,
     `test_multibody_constraint`, `test_world`, `test_skeleton_to_multibody`, full
     `ctest -L simulation-experimental` (43/43), and `pixi run lint`.
-  - **Next: 3c-i.3** shared-obstacle cross terms + single-source inertia
-    reconciliation (cases 2-obstacle/3/4, all nine direction pairs, symmetry +
-    finite-difference tests); then 3c-i.4 solver+apply (pinned `LcpOptions`),
-    3c-i.5 generalized fallback, 3c-ii.1 the `UnifiedConstraintStage` class
+  - **(DONE locally) Slice 3c-i.3 — shared-obstacle cross terms + single-source
+    inertia.** `assembleUnifiedConstraintProblem` now fills the coupling through
+    a dynamic rigid body shared between contacts, reusing one `sharedBodyEntry`
+    kernel that mirrors the rigid `delassusEntry` exactly: a link contact's own
+    obstacle self-term (the diagonal completes to the stored denominator),
+    link<->link coupling through a shared obstacle, and rigid<->link coupling
+    through a body that is both a rigid-contact participant and a link obstacle —
+    over ALL nine direction pairs (the rigid `unitOrthogonal` and link `cross`
+    tangent frames are misaligned, so tangential coupling is generally nonzero).
+    Cross terms are added only for pairs with at least one link row, so the
+    verbatim rigid-rigid block is untouched. A shared body's `(invMass,
+    invInertia)` is reconciled to the rigid path's canonical value (the rigid and
+    link assemblers normalize / handle LDLT failure differently). Still a pure
+    function; NO pipeline change. Added the `CouplesSharedDynamicObstacle`
+    test: an obstacle touched by both a rigid contact (on a static ground) and a
+    prismatic leg, asserting the 3x3 cross block equals the analytic shared-body
+    term over all nine direction pairs, global symmetry to 1e-12, the rigid block
+    unchanged, reconciliation equality, and the link diagonal completing to the
+    stored denominator. Verified focused build + `test_unified_constraint`
+    (5/5), full `ctest -L simulation-experimental` (43/43), `pixi run lint`.
+  - **Next: 3c-i.4** unified solver + impulse application (pinned `LcpOptions`),
+    then 3c-i.5 generalized fallback, 3c-ii.1 the `UnifiedConstraintStage` class
     (dead, unit-tested via direct `execute`), 3c-ii.2 the pipeline flip.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no

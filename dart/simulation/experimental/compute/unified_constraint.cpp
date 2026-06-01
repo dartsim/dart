@@ -32,8 +32,12 @@
 
 #include "dart/simulation/experimental/compute/unified_constraint.hpp"
 
+#include <Eigen/Geometry>
+
 #include <limits>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace dart::simulation::experimental::compute {
 
@@ -54,6 +58,67 @@ const Eigen::VectorXd& jacobianOf(
       return row.tangentJacobian2;
   }
   return row.normalJacobian;
+}
+
+//==============================================================================
+const Eigen::Vector3d& directionOfRigid(
+    const RigidBodyContactConstraint& constraint,
+    UnifiedContactDirection direction)
+{
+  switch (direction) {
+    case UnifiedContactDirection::Normal:
+      return constraint.normal;
+    case UnifiedContactDirection::Tangent1:
+      return constraint.tangent1;
+    case UnifiedContactDirection::Tangent2:
+      return constraint.tangent2;
+  }
+  return constraint.normal;
+}
+
+//==============================================================================
+const Eigen::Vector3d& directionOfLink(
+    const MultibodyLinkContactRow& row, UnifiedContactDirection direction)
+{
+  switch (direction) {
+    case UnifiedContactDirection::Normal:
+      return row.normal;
+    case UnifiedContactDirection::Tangent1:
+      return row.tangent1;
+    case UnifiedContactDirection::Tangent2:
+      return row.tangent2;
+  }
+  return row.normal;
+}
+
+//==============================================================================
+// One rigid body a row's impulse acts on: the body, the signed
+// relative-velocity convention (-1 for bodyA, +1 for bodyB; -1 for a link's
+// dynamic obstacle), and that body's world inverse mass/inertia and contact
+// arm.
+struct RigidEnd
+{
+  entt::entity entity = entt::null;
+  double sign = 0.0;
+  double invMass = 0.0;
+  Eigen::Matrix3d invInertia = Eigen::Matrix3d::Zero();
+  Eigen::Vector3d arm = Eigen::Vector3d::Zero();
+};
+
+//==============================================================================
+// The contribution to a Delassus entry from a single rigid body shared between
+// two rows. Mirrors the rigid `delassusEntry` kernel exactly (same operand
+// order), so a within-rigid pair would reproduce the verbatim rigid block.
+double sharedBodyEntry(
+    const RigidEnd& endI,
+    const Eigen::Vector3d& directionI,
+    const RigidEnd& endJ,
+    const Eigen::Vector3d& directionJ)
+{
+  return endI.sign * endJ.sign
+         * (endI.invMass * directionI.dot(directionJ)
+            + directionI.dot((endI.invInertia * endJ.arm.cross(directionJ))
+                                 .cross(endI.arm)));
 }
 
 } // namespace
@@ -182,6 +247,121 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
                       .dot(inverseMassJacobian);
           }
         }
+      }
+    }
+  }
+
+  // --- Single-source obstacle inertia. A dynamic rigid body shared between a
+  // rigid contact and a link obstacle must use ONE (invMass, invInertia)
+  // everywhere, or A is not a consistent Delassus of one operator. The rigid
+  // and link assemblers normalize the orientation and handle LDLT failure
+  // differently, so adopt the rigid path's value (canonical) for any shared
+  // body and overwrite the link rows' obstacle inertia. ---
+  std::unordered_map<entt::entity, std::pair<double, Eigen::Matrix3d>>
+      rigidInertia;
+  rigidInertia.reserve(problem.rigidConstraints.size() * 2);
+  for (const auto& constraint : problem.rigidConstraints) {
+    rigidInertia[constraint.bodyA]
+        = {constraint.invMassA, constraint.invInertiaA};
+    rigidInertia[constraint.bodyB]
+        = {constraint.invMassB, constraint.invInertiaB};
+  }
+  for (auto& block : problem.multibodyBlocks) {
+    for (auto& row : block.rows) {
+      if (row.otherBody == entt::null) {
+        continue;
+      }
+      const auto it = rigidInertia.find(row.otherBody);
+      if (it != rigidInertia.end()) {
+        row.otherInvMass = it->second.first;
+        row.otherInvInertia = it->second.second;
+      }
+    }
+  }
+
+  // --- Per-row direction and rigid-body ends. A rigid row touches its two
+  // contact bodies; a link row touches only its dynamic obstacle (its link side
+  // is the J^T M^-1 J coupling already filled above). ---
+  std::vector<Eigen::Vector3d> rowDirection(static_cast<std::size_t>(size));
+  std::vector<std::vector<RigidEnd>> rowEnds(static_cast<std::size_t>(size));
+  std::vector<char> rowIsLink(static_cast<std::size_t>(size), 0);
+  for (Eigen::Index r = 0; r < size; ++r) {
+    const auto& owner = problem.rowOwners[static_cast<std::size_t>(r)];
+    auto& ends = rowEnds[static_cast<std::size_t>(r)];
+    if (owner.domain == UnifiedContactDomain::Rigid) {
+      const auto& constraint = problem.rigidConstraints[owner.sourceIndex];
+      rowDirection[static_cast<std::size_t>(r)]
+          = directionOfRigid(constraint, owner.direction);
+      ends.push_back(
+          {constraint.bodyA,
+           -1.0,
+           constraint.invMassA,
+           constraint.invInertiaA,
+           constraint.armA});
+      ends.push_back(
+          {constraint.bodyB,
+           +1.0,
+           constraint.invMassB,
+           constraint.invInertiaB,
+           constraint.armB});
+    } else {
+      rowIsLink[static_cast<std::size_t>(r)] = 1;
+      const auto& block = problem.multibodyBlocks[static_cast<std::size_t>(
+          owner.multibodyIndex)];
+      const auto& row = block.rows[owner.sourceIndex];
+      rowDirection[static_cast<std::size_t>(r)]
+          = directionOfLink(row, owner.direction);
+      if (row.otherBody != entt::null) {
+        ends.push_back(
+            {row.otherBody,
+             -1.0,
+             row.otherInvMass,
+             row.otherInvInertia,
+             row.otherArm});
+      }
+    }
+  }
+
+  // --- Cross / shared-obstacle coupling. Add a shared-rigid-body term to
+  // A(i,j) for any pair where at least one row is a link row; rigid-rigid
+  // coupling is already in the verbatim rigid block. This fills, over ALL
+  // direction pairs: a link contact's own obstacle self-term (the diagonal
+  // completes to the stored denominator when the body is not also a rigid
+  // participant); link<->link coupling through a shared obstacle (same or
+  // different multibody); and rigid<->link coupling through a body that is both
+  // a rigid contact participant and a link obstacle. ---
+  for (Eigen::Index i = 0; i < size; ++i) {
+    const auto& endsI = rowEnds[static_cast<std::size_t>(i)];
+    if (endsI.empty()) {
+      continue;
+    }
+    const bool linkI = rowIsLink[static_cast<std::size_t>(i)] != 0;
+    const Eigen::Vector3d& directionI
+        = rowDirection[static_cast<std::size_t>(i)];
+    for (Eigen::Index j = 0; j < size; ++j) {
+      const auto& endsJ = rowEnds[static_cast<std::size_t>(j)];
+      if (endsJ.empty()) {
+        continue;
+      }
+      if (!linkI && rowIsLink[static_cast<std::size_t>(j)] == 0) {
+        continue; // rigid-rigid coupling already in the verbatim block
+      }
+      const Eigen::Vector3d& directionJ
+          = rowDirection[static_cast<std::size_t>(j)];
+      double addend = 0.0;
+      for (const auto& endI : endsI) {
+        if (endI.invMass == 0.0) {
+          continue; // static side contributes nothing
+        }
+        for (const auto& endJ : endsJ) {
+          if (endI.entity != endJ.entity) {
+            continue; // not the same shared body
+          }
+          addend += sharedBodyEntry(endI, directionI, endJ, directionJ);
+        }
+      }
+      if (addend != 0.0) {
+        problem.delassus(i, j) += addend;
       }
     }
   }

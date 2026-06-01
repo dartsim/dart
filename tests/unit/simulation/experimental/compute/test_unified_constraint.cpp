@@ -382,3 +382,124 @@ TEST(UnifiedConstraint, CompactsInactiveLinkRows)
   ASSERT_EQ(unified.delassus.rows(), 3);
   EXPECT_GT(unified.delassus(0, 0), 0.0);
 }
+
+//==============================================================================
+TEST(UnifiedConstraint, CouplesSharedDynamicObstacleAcrossDomains)
+{
+  // A dynamic rigid body R touches both a rigid contact (R on a static ground)
+  // and a link contact (a prismatic-Z leg pushing on R). The unified system
+  // must couple the rigid and link rows through R.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("robot");
+  auto baseLink = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto leg = robot.addLink("leg", baseLink, spec);
+  leg.setMass(1.0);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.mass = 1.0;
+  obstacleOptions.inertia = Eigen::Matrix3d::Identity();
+  obstacleOptions.position = Eigen::Vector3d(0.05, -0.1, 1.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+
+  // Rigid contact: ground (A, static) vs obstacle (B, dynamic) -> R = bodyB.
+  std::vector<sx::Contact> rigidContacts;
+  sx::Contact groundObstacle;
+  groundObstacle.bodyA = sx::CollisionBody(ground.getEntity(), &world);
+  groundObstacle.bodyB = sx::CollisionBody(obstacle.getEntity(), &world);
+  groundObstacle.point = Eigen::Vector3d(0.05, -0.1, -0.5);
+  groundObstacle.normal = Eigen::Vector3d::UnitZ();
+  groundObstacle.depth = 0.01;
+  rigidContacts.push_back(groundObstacle);
+  const auto rigid = sx::compute::assembleRigidBodyContactProblem(
+      world.getRegistry(), rigidContacts);
+  ASSERT_EQ(rigid.constraints.size(), 1u);
+  ASSERT_EQ(rigid.constraints[0].bodyB, obstacle.getEntity());
+
+  // Link contact: the prismatic leg pushes on the dynamic obstacle R.
+  sx::compute::LinkContact legObstacle;
+  legObstacle.link = leg.getEntity();
+  legObstacle.normal = Eigen::Vector3d::UnitZ();
+  legObstacle.point = Eigen::Vector3d(0.05, -0.1, 0.5);
+  legObstacle.depth = 0.0;
+  legObstacle.friction = 0.5;
+  legObstacle.otherBody = obstacle.getEntity();
+
+  Eigen::VectorXd nextVelocity(1);
+  nextVelocity << -0.4;
+  const std::vector<sx::compute::LinkContact> linkContacts{legObstacle};
+  auto& registry = world.getRegistry();
+  const auto& structure
+      = registry.get<sx::comps::MultibodyStructure>(robot.getEntity());
+  auto linkProblem = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structure, nextVelocity, 0.01, linkContacts);
+  ASSERT_EQ(linkProblem.rows.size(), 1u);
+  ASSERT_TRUE(linkProblem.rows[0].active);
+
+  std::vector<sx::compute::UnifiedMultibodyContact> multibodyContacts;
+  multibodyContacts.push_back({robot.getEntity(), linkProblem});
+  const auto unified
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, multibodyContacts);
+
+  // 3 rigid rows + 3 link rows.
+  ASSERT_EQ(unified.delassus.rows(), 6);
+  const auto& rigidConstraint = unified.rigidConstraints[0];
+  const auto& linkRow = unified.multibodyBlocks[0].rows[0];
+
+  // The assembled operator is symmetric (a consistent Delassus).
+  EXPECT_TRUE(unified.delassus.isApprox(unified.delassus.transpose(), 1e-12));
+
+  // The rigid-rigid block is untouched by the cross pass.
+  expectMatrixExactlyEqual(
+      unified.delassus.topLeftCorner(3, 3), rigid.delassus);
+
+  // Single-source reconciliation: R is well-conditioned, so the rigid and link
+  // inverse inertia agree and the reconciliation is a no-op of equal values.
+  EXPECT_DOUBLE_EQ(rigidConstraint.invMassB, 1.0);
+  EXPECT_DOUBLE_EQ(linkRow.otherInvMass, 1.0);
+  EXPECT_TRUE(
+      linkRow.otherInvInertia.isApprox(rigidConstraint.invInertiaB, 1e-12));
+
+  // The rigid<->link cross block equals the shared-body Delassus term for R
+  // over ALL nine direction pairs. R is bodyB of the rigid contact (sign +1)
+  // and the link's obstacle (sign -1).
+  const auto rigidDir = [&](int a) -> const Eigen::Vector3d& {
+    return a == 0
+               ? rigidConstraint.normal
+               : (a == 1 ? rigidConstraint.tangent1 : rigidConstraint.tangent2);
+  };
+  const auto linkDir = [&](int b) -> const Eigen::Vector3d& {
+    return b == 0 ? linkRow.normal
+                  : (b == 1 ? linkRow.tangent1 : linkRow.tangent2);
+  };
+  for (int a = 0; a < 3; ++a) {
+    for (int b = 0; b < 3; ++b) {
+      const Eigen::Vector3d& dirI = rigidDir(a);
+      const Eigen::Vector3d& dirJ = linkDir(b);
+      const double expected = (+1.0) * (-1.0)
+                              * (rigidConstraint.invMassB * dirI.dot(dirJ)
+                                 + dirI.dot((rigidConstraint.invInertiaB
+                                             * linkRow.otherArm.cross(dirJ))
+                                                .cross(rigidConstraint.armB)));
+      EXPECT_DOUBLE_EQ(unified.delassus(a, 3 + b), expected)
+          << "cross (rigid dir " << a << ", link dir " << b << ")";
+    }
+  }
+  // The normal-normal cross coupling is genuinely present.
+  EXPECT_NE(unified.delassus(0, 3), 0.0);
+
+  // The link normal diagonal now completes to the stored denominator (J M^-1 J
+  // plus the obstacle self-term), which the within-domain slice left short.
+  EXPECT_NEAR(unified.delassus(3, 3), linkRow.normalDenominator, 1e-12);
+  EXPECT_GT(linkRow.normalDenominator, 0.0);
+}

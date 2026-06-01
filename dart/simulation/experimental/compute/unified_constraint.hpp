@@ -136,18 +136,20 @@ struct UnifiedConstraintProblem
 /// input reproduces `assembleRigidBodyContactProblem` byte-for-byte), compacts
 /// each multibody's active link rows, lays out their three-row triples after
 /// the rigid block, and fills the full dense within-multibody Delassus coupling
-/// `J_i^T M_k^-1 J_j` (the diagonal reproduces the stored row denominators for
-/// a contact with no dynamic obstacle). The link rows' `lo/hi/findex` are
-/// computed against the COMPACTED global row indices, and their right-hand
-/// sides are the pre-solve targets carried on the rows.
+/// `J_i^T M_k^-1 J_j`. The link rows' `lo/hi/findex` are computed against the
+/// COMPACTED global row indices, and their right-hand sides are the pre-solve
+/// targets carried on the rows.
 ///
-/// Cross-body coupling through a dynamic rigid obstacle shared between contacts
-/// (rigid<->link and link<->link), and the obstacle's own off-diagonal terms,
-/// are NOT filled here; they are added by a later slice. With link-vs-link
-/// contacts dropped upstream, a shared dynamic obstacle is the only cross-block
-/// coupling, so this within-domain assembly is exact for worlds where no
-/// dynamic rigid body is simultaneously a rigid-contact participant and a link
-/// contact's obstacle.
+/// It also fills the coupling through a dynamic rigid body shared between
+/// contacts: a link contact's own obstacle self-term (so the diagonal completes
+/// to the stored denominator when that body is not also a rigid participant),
+/// link<->link coupling through a shared obstacle, and rigid<->link coupling
+/// through a body that is both a rigid-contact participant and a link obstacle.
+/// Such a shared body's `(invMass, invInertia)` is reconciled to one canonical
+/// value (the rigid path's) so the assembled operator stays a consistent,
+/// symmetric Delassus. With link-vs-link contacts dropped upstream, a shared
+/// dynamic obstacle is the only cross-body coupling, so the assembled system is
+/// the complete Delassus for the accepted contact set.
 [[nodiscard]] DART_EXPERIMENTAL_API UnifiedConstraintProblem
 assembleUnifiedConstraintProblem(
     const RigidBodyContactProblem& rigidProblem,
