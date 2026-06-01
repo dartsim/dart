@@ -3218,6 +3218,51 @@ TEST(World, MultibodySiblingLinksResolveContact)
   EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
 }
 
+// Test cross-multibody link-vs-link contact: two separate fixed-base
+// articulated bodies overlap and approach along their prismatic rails. The
+// unified row carries both articulated ends, so the impulse changes both
+// multibodies' staged velocities.
+TEST(World, CrossMultibodyLinksResolveContact)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  const auto addRobot = [&](std::string_view name, double z, double velocity) {
+    auto robot = world.addMultibody(name);
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "slider";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitZ();
+    auto link = robot.addLink("link", base, spec);
+    link.setMass(1.0);
+    link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, z));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
+    return link;
+  };
+
+  auto lower = addRobot("lower_robot", 0.0, 0.5);
+  auto upper = addRobot("upper_robot", 0.35, -0.5);
+  auto lowerJoint = lower.getParentJoint();
+  auto upperJoint = upper.getParentJoint();
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  const double relativeVelocity
+      = upperJoint.getVelocity()[0] - lowerJoint.getVelocity()[0];
+  EXPECT_GE(relativeVelocity, -1e-9);
+  EXPECT_LT(lowerJoint.getVelocity()[0], 0.5);
+  EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
+}
+
 // Test that Coulomb friction at a link contact decelerates a sliding link. A
 // vertical prismatic carries a horizontal prismatic link whose sphere rests on
 // the ground; an initial horizontal velocity is braked to rest by friction.

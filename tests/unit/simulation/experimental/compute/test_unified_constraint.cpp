@@ -261,6 +261,210 @@ TEST(UnifiedConstraint, RigidFreeLinkBlockMatchesWithinMultibodyCoupling)
 }
 
 //==============================================================================
+TEST(UnifiedConstraint, CrossMultibodyLinkRowAddsSecondArticulatedEnd)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  const auto addPrismaticRobot = [&](const std::string& name) {
+    auto robot = world.addMultibody(name);
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "slider";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitZ();
+    auto link = robot.addLink("link", base, spec);
+    link.setMass(1.0);
+    return std::pair{robot.getEntity(), link.getEntity()};
+  };
+
+  const auto [robotA, linkA] = addPrismaticRobot("a");
+  const auto [robotB, linkB] = addPrismaticRobot("b");
+
+  Eigen::VectorXd velocityA(1);
+  velocityA << -0.5;
+  Eigen::VectorXd velocityB(1);
+  velocityB << 0.25;
+
+  sx::compute::LinkContact cross;
+  cross.link = linkA;
+  cross.otherLink = linkB;
+  cross.otherMultibody = robotB;
+  cross.normal = Eigen::Vector3d::UnitZ();
+  cross.point = Eigen::Vector3d::Zero();
+  cross.depth = 0.0;
+  cross.friction = 0.5;
+
+  auto& registry = world.getRegistry();
+  const auto& structureA = registry.get<sx::comps::MultibodyStructure>(robotA);
+  const auto& structureB = registry.get<sx::comps::MultibodyStructure>(robotB);
+
+  std::vector<sx::compute::LinkContact> contactsA{cross};
+  auto problemA = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structureA, velocityA, 0.01, contactsA);
+  ASSERT_EQ(problemA.rows.size(), 1u);
+  auto& crossRow = problemA.rows[0];
+  EXPECT_FALSE(crossRow.active); // completed by UnifiedConstraintStage normally
+  crossRow.otherNormalJacobian = Eigen::VectorXd::Ones(1);
+  crossRow.otherTangentJacobian1 = Eigen::VectorXd::Zero(1);
+  crossRow.otherTangentJacobian2 = Eigen::VectorXd::Zero(1);
+
+  std::vector<sx::compute::LinkContact> contactB{sx::compute::LinkContact{
+      linkB, Eigen::Vector3d::UnitZ(), Eigen::Vector3d::Zero(), 0.0, 0.5, 0.0}};
+  auto problemB = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structureB, velocityB, 0.01, contactB);
+  ASSERT_EQ(problemB.rows.size(), 1u);
+
+  crossRow.normalDenominator += crossRow.otherNormalJacobian.dot(
+      problemB.inverseMass * crossRow.otherNormalJacobian);
+  crossRow.normalRhs = 0.75; // -(velocityA - velocityB)
+  crossRow.active = true;
+
+  std::vector<sx::compute::UnifiedMultibodyContact> multibodyContacts;
+  multibodyContacts.push_back({robotA, problemA});
+  multibodyContacts.push_back({robotB, problemB});
+  sx::compute::RigidBodyContactProblem emptyRigid;
+  const auto unified = sx::compute::assembleUnifiedConstraintProblem(
+      emptyRigid, multibodyContacts);
+
+  ASSERT_EQ(unified.multibodyBlocks.size(), 2u);
+  ASSERT_EQ(unified.multibodyBlocks[0].rows.size(), 1u);
+  ASSERT_EQ(unified.multibodyBlocks[1].rows.size(), 1u);
+  EXPECT_EQ(unified.multibodyBlocks[0].rows[0].otherMultibodyIndex, 1);
+  ASSERT_EQ(unified.delassus.rows(), 6);
+
+  // Cross row self-term = A-side unit inverse mass + B-side unit inverse mass.
+  EXPECT_DOUBLE_EQ(unified.delassus(0, 0), 2.0);
+  // Coupling to B's own link row carries the opposite sign on the shared
+  // articulated B end.
+  EXPECT_DOUBLE_EQ(unified.delassus(0, 3), -1.0);
+  EXPECT_DOUBLE_EQ(unified.delassus(3, 0), -1.0);
+  EXPECT_TRUE(unified.delassus.isApprox(unified.delassus.transpose(), 1e-12));
+
+  Eigen::VectorXd lambda = Eigen::VectorXd::Zero(6);
+  lambda[0] = 1.0;
+  std::vector<Eigen::VectorXd> velocities{
+      Eigen::VectorXd::Zero(1), Eigen::VectorXd::Zero(1)};
+  sx::compute::applyUnifiedConstraintImpulses(
+      registry, unified, lambda, std::span<Eigen::VectorXd>(velocities));
+
+  EXPECT_DOUBLE_EQ(velocities[0][0], 1.0);
+  EXPECT_DOUBLE_EQ(velocities[1][0], -1.0);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, FallbackFrictionUpdatesCrossMultibodyOtherEnd)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  const auto addTwoAxisRobot = [&](const std::string& name) {
+    auto robot = world.addMultibody(name);
+    auto base = robot.addLink("base");
+    sx::JointSpec zSpec;
+    zSpec.name = "z";
+    zSpec.type = sx::JointType::Prismatic;
+    zSpec.axis = Eigen::Vector3d::UnitZ();
+    auto zLink = robot.addLink("z_link", base, zSpec);
+    sx::JointSpec xSpec;
+    xSpec.name = "x";
+    xSpec.type = sx::JointType::Prismatic;
+    xSpec.axis = Eigen::Vector3d::UnitX();
+    auto tip = robot.addLink("tip", zLink, xSpec);
+    tip.setMass(1.0);
+    return std::pair{robot.getEntity(), tip.getEntity()};
+  };
+
+  const auto [robotA, linkA] = addTwoAxisRobot("a");
+  const auto [robotB, linkB] = addTwoAxisRobot("b");
+
+  Eigen::VectorXd velocityA(2);
+  velocityA << -1.0, 1.0;
+  Eigen::VectorXd velocityB(2);
+  velocityB << 1.0, -1.0;
+
+  sx::compute::LinkContact cross;
+  cross.link = linkA;
+  cross.otherLink = linkB;
+  cross.otherMultibody = robotB;
+  cross.normal = Eigen::Vector3d::UnitZ();
+  cross.point = Eigen::Vector3d::Zero();
+  cross.friction = 0.5;
+
+  sx::compute::LinkContact probe;
+  probe.link = linkB;
+  probe.normal = cross.normal;
+  probe.point = cross.point;
+  probe.friction = cross.friction;
+
+  auto& registry = world.getRegistry();
+  const auto& structureA = registry.get<sx::comps::MultibodyStructure>(robotA);
+  const auto& structureB = registry.get<sx::comps::MultibodyStructure>(robotB);
+  std::vector<sx::compute::LinkContact> contactsA{cross};
+  std::vector<sx::compute::LinkContact> probeContactsB{probe};
+
+  auto problemA = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structureA, velocityA, 0.01, contactsA);
+  auto probeProblemB = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structureB, velocityB, 0.01, probeContactsB);
+  auto problemB = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structureB, velocityB, 0.01, {});
+  ASSERT_EQ(problemA.rows.size(), 1u);
+  ASSERT_EQ(probeProblemB.rows.size(), 1u);
+
+  auto& row = problemA.rows[0];
+  row.otherNormalJacobian = probeProblemB.rows[0].normalJacobian;
+  row.otherTangentJacobian1 = probeProblemB.rows[0].tangentJacobian1;
+  row.otherTangentJacobian2 = probeProblemB.rows[0].tangentJacobian2;
+  row.normalDenominator += row.otherNormalJacobian.dot(
+      problemB.inverseMass * row.otherNormalJacobian);
+  row.tangentDenominator1 += row.otherTangentJacobian1.dot(
+      problemB.inverseMass * row.otherTangentJacobian1);
+  row.tangentDenominator2 += row.otherTangentJacobian2.dot(
+      problemB.inverseMass * row.otherTangentJacobian2);
+  row.normalRhs
+      = -(row.normalJacobian.dot(velocityA)
+          - row.otherNormalJacobian.dot(velocityB));
+  row.tangentRhs1
+      = -(row.tangentJacobian1.dot(velocityA)
+          - row.otherTangentJacobian1.dot(velocityB));
+  row.tangentRhs2
+      = -(row.tangentJacobian2.dot(velocityA)
+          - row.otherTangentJacobian2.dot(velocityB));
+  row.active = true;
+
+  std::vector<sx::compute::UnifiedMultibodyContact> multibodyContacts;
+  multibodyContacts.push_back({robotA, problemA});
+  multibodyContacts.push_back({robotB, problemB});
+  sx::compute::RigidBodyContactProblem emptyRigid;
+  const auto unified = sx::compute::assembleUnifiedConstraintProblem(
+      emptyRigid, multibodyContacts);
+  ASSERT_EQ(unified.multibodyBlocks.size(), 2u);
+  ASSERT_EQ(unified.multibodyBlocks[0].rows.size(), 1u);
+  ASSERT_TRUE(unified.multibodyBlocks[1].rows.empty());
+  const auto& unifiedRow = unified.multibodyBlocks[0].rows[0];
+  EXPECT_EQ(unifiedRow.otherMultibodyIndex, 1);
+
+  std::vector<Eigen::VectorXd> velocities{velocityA, velocityB};
+  const double tangentBefore
+      = unifiedRow.tangentJacobian2.dot(velocities[0])
+        - unifiedRow.otherTangentJacobian2.dot(velocities[1]);
+  sx::compute::applyUnifiedConstraintFallback(
+      registry, unified, std::span<Eigen::VectorXd>(velocities), 8);
+
+  const double normalAfter
+      = unifiedRow.normalJacobian.dot(velocities[0])
+        - unifiedRow.otherNormalJacobian.dot(velocities[1]);
+  const double tangentAfter
+      = unifiedRow.tangentJacobian2.dot(velocities[0])
+        - unifiedRow.otherTangentJacobian2.dot(velocities[1]);
+  EXPECT_NEAR(normalAfter, 0.0, 1e-9);
+  EXPECT_LT(std::abs(tangentAfter), std::abs(tangentBefore));
+  EXPECT_LT(velocities[0][1], velocityA[1]);
+  EXPECT_GT(velocities[1][1], velocityB[1]);
+}
+
+//==============================================================================
 TEST(UnifiedConstraint, FindexReferencesValidNormalRows)
 {
   sx::World world;

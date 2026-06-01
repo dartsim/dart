@@ -583,11 +583,25 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     cases, and `test_unified_constraint_stage`; full
     `ctest -L simulation-experimental` passed (44/44), and `pixi run lint`
     passed.
-  - **Remaining after Slice 5a:** cross-multibody link-vs-link contacts. The
-    current `UnifiedRowOwner`/`UnifiedMultibodyBlock` model assumes each link row
-    belongs to one multibody block; a contact between two different multibodies
-    needs either a row with two articulated ends or explicit cross-block
-    ownership so solve/apply/fallback can update both staged velocity vectors.
+  - **(DONE locally) Slice 5b — cross-multibody link-vs-link contacts.** A
+    cross-multibody link row is owned by one multibody but now carries
+    `otherLink` + `otherMultibody` as a second articulated end. The stage hoists
+    multibody contact collection so both the owner and the other multibody get
+    solve blocks and staged velocities, completes the other side's contact-point
+    Jacobians after all blocks are assembled, and routes the solved normal and
+    friction impulses with opposite signs into both staged velocity vectors.
+    `assembleUnifiedConstraintProblem` resolves `otherMultibodyIndex`, adds the
+    cross-block articulated Delassus terms without perturbing the existing
+    primary-primary block, and both the direct apply path and rank-deficient
+    fallback update the second articulated end. Added assembler/apply coverage
+    for the second articulated end and an emergent world test where two separate
+    prismatic multibodies collide and stop approaching. Focused validation
+    passed: `build-simulation-experimental-tests`, selected
+    `test_unified_constraint`, selected `test_world`, and
+    `test_multibody_link_contact`; full
+    `ctest -L simulation-experimental` passed (44/44). Final validation passed:
+    `pixi run lint`, post-lint `pixi run build-simulation-experimental-tests`,
+    and post-lint `ctest -L simulation-experimental` (44/44).
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
@@ -623,10 +637,10 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     post-integration clamps; motors stay the pre-contact equality solve. Islands
     and warm-starting are deliberate non-goals (flag, don't silently omit).
 
-Then: **cross-multibody link-vs-link** (slice 5b) and **islands** for scaling; optional
-**friction-cone polish** — the ODE `findex` bound is frozen once per solve (a
-one-shot decoupling approximation); a true cone or an outer normal/friction
-iteration would tighten coupled stacking friction if a scene needs it.
+Then: **islands** for scaling; optional **friction-cone polish** — the ODE
+`findex` bound is frozen once per solve (a one-shot decoupling approximation); a
+true cone or an outer normal/friction iteration would tighten coupled stacking
+friction if a scene needs it.
 
 ## Immediate Next Step
 
@@ -648,10 +662,9 @@ architectural prerequisite, detailed below.
 What works today: the default semi-implicit pipeline velocity-integrates rigid
 and articulated bodies, runs one `UnifiedConstraintStage` boxed-LCP over
 rigid-rigid, link-vs-static-rigid, link-vs-dynamic-rigid, and same-multibody
-link-vs-link rows, then position-integrates. Rigid positional correction still
-runs after the unified velocity solve. **Missing:** cross-multibody
-link-vs-link rows and scaling polish (islands / warm starting / friction-cone
-iteration).
+link-vs-link and cross-multibody link-vs-link rows, then position-integrates.
+Rigid positional correction still runs after the unified velocity solve.
+**Missing:** scaling polish (islands / warm starting / friction-cone iteration).
 
 - **Pipeline ordering (done for semi-implicit):** the default semi-implicit
   `World::step` pipeline now runs `RigidBodyVelocityStage` →

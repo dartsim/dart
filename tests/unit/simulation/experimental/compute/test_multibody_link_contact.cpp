@@ -52,12 +52,19 @@ void expectRowsExactlyEqual(
 {
   EXPECT_EQ(lhs.active, rhs.active);
   EXPECT_EQ(lhs.otherBody, rhs.otherBody);
+  EXPECT_EQ(lhs.otherLink, rhs.otherLink);
+  EXPECT_EQ(lhs.otherMultibody, rhs.otherMultibody);
+  EXPECT_EQ(lhs.otherMultibodyIndex, rhs.otherMultibodyIndex);
   EXPECT_EQ(lhs.normalJacobian, rhs.normalJacobian);
   EXPECT_EQ(lhs.tangentJacobian1, rhs.tangentJacobian1);
   EXPECT_EQ(lhs.tangentJacobian2, rhs.tangentJacobian2);
+  EXPECT_EQ(lhs.otherNormalJacobian, rhs.otherNormalJacobian);
+  EXPECT_EQ(lhs.otherTangentJacobian1, rhs.otherTangentJacobian1);
+  EXPECT_EQ(lhs.otherTangentJacobian2, rhs.otherTangentJacobian2);
   EXPECT_EQ(lhs.normal, rhs.normal);
   EXPECT_EQ(lhs.tangent1, rhs.tangent1);
   EXPECT_EQ(lhs.tangent2, rhs.tangent2);
+  EXPECT_EQ(lhs.point, rhs.point);
   EXPECT_EQ(lhs.otherArm, rhs.otherArm);
   EXPECT_EQ(lhs.otherInvInertia, rhs.otherInvInertia);
   EXPECT_DOUBLE_EQ(lhs.normalDenominator, rhs.normalDenominator);
@@ -69,6 +76,7 @@ void expectRowsExactlyEqual(
   EXPECT_DOUBLE_EQ(lhs.normalRhs, rhs.normalRhs);
   EXPECT_DOUBLE_EQ(lhs.tangentRhs1, rhs.tangentRhs1);
   EXPECT_DOUBLE_EQ(lhs.tangentRhs2, rhs.tangentRhs2);
+  EXPECT_DOUBLE_EQ(lhs.restitution, rhs.restitution);
   EXPECT_DOUBLE_EQ(lhs.otherInvMass, rhs.otherInvMass);
 }
 

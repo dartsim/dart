@@ -132,8 +132,9 @@ computeMultibodyLinkWorldJacobian(
 /// points from the obstacle into the link. The obstacle is either immovable
 /// (`otherBody == entt::null` and `otherLink == entt::null`, a one-sided
 /// solve), a dynamic rigid body that receives the equal-and-opposite impulse,
-/// or another link in the same multibody whose point Jacobian is subtracted
-/// from the primary link's point Jacobian.
+/// another link in the same multibody whose point Jacobian is subtracted from
+/// the primary link's point Jacobian, or another link in a different multibody
+/// whose articulated end is carried separately.
 struct LinkContact
 {
   entt::entity link = entt::null;
@@ -145,6 +146,8 @@ struct LinkContact
   entt::entity otherBody = entt::null; ///< dynamic rigid-body obstacle, or null
   entt::entity otherLink
       = entt::null; ///< same-multibody link obstacle, or null
+  entt::entity otherMultibody
+      = entt::null; ///< owner of cross-multibody otherLink, or null
 };
 
 /// One link contact after Jacobian and inverse-mass precomputation, ready for
@@ -153,19 +156,24 @@ struct LinkContact
 /// Each Jacobian maps a world-space contact impulse along its direction into
 /// the owning multibody's generalized-velocity space (`J^T d`, size DOF). The
 /// denominators are the diagonal Delassus entries `J M^-1 J^T`, where `J` is
-/// either the primary link's point Jacobian or the relative point Jacobian
-/// against another link in the same multibody. Dynamic rigid obstacles augment
-/// the denominator with that body's point inverse mass. A contact that cannot
-/// move either body (e.g. a fixed-base link against an immovable obstacle) is
-/// left inactive.
+/// either the primary link's point Jacobian, the relative point Jacobian
+/// against another link in the same multibody, or the primary side of a
+/// cross-multibody contact. Dynamic rigid obstacles and cross-multibody
+/// articulated ends augment the denominator with their point inverse mass. A
+/// contact that cannot move either body (e.g. a fixed-base link against an
+/// immovable obstacle) is left inactive.
 struct MultibodyLinkContactRow
 {
   Eigen::VectorXd normalJacobian;
   Eigen::VectorXd tangentJacobian1;
   Eigen::VectorXd tangentJacobian2;
+  Eigen::VectorXd otherNormalJacobian;
+  Eigen::VectorXd otherTangentJacobian1;
+  Eigen::VectorXd otherTangentJacobian2;
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
   Eigen::Vector3d tangent1 = Eigen::Vector3d::Zero();
   Eigen::Vector3d tangent2 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
   double normalDenominator = 0.0;
   double tangentDenominator1 = 0.0;
   double tangentDenominator2 = 0.0;
@@ -183,7 +191,11 @@ struct MultibodyLinkContactRow
   double normalImpulse = 0.0;
   double tangentImpulse1 = 0.0;
   double tangentImpulse2 = 0.0;
+  double restitution = 0.0;
   entt::entity otherBody = entt::null;
+  entt::entity otherLink = entt::null;
+  entt::entity otherMultibody = entt::null;
+  int otherMultibodyIndex = -1;
   double otherInvMass = 0.0;
   Eigen::Matrix3d otherInvInertia = Eigen::Matrix3d::Zero();
   Eigen::Vector3d otherArm = Eigen::Vector3d::Zero();

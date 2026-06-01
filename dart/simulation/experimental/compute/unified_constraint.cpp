@@ -68,6 +68,21 @@ const Eigen::VectorXd& jacobianOf(
 }
 
 //==============================================================================
+const Eigen::VectorXd& otherJacobianOf(
+    const MultibodyLinkContactRow& row, UnifiedContactDirection direction)
+{
+  switch (direction) {
+    case UnifiedContactDirection::Normal:
+      return row.otherNormalJacobian;
+    case UnifiedContactDirection::Tangent1:
+      return row.otherTangentJacobian1;
+    case UnifiedContactDirection::Tangent2:
+      return row.otherTangentJacobian2;
+  }
+  return row.otherNormalJacobian;
+}
+
+//==============================================================================
 const Eigen::Vector3d& directionOfRigid(
     const RigidBodyContactConstraint& constraint,
     UnifiedContactDirection direction)
@@ -110,6 +125,17 @@ struct RigidEnd
   double invMass = 0.0;
   Eigen::Matrix3d invInertia = Eigen::Matrix3d::Zero();
   Eigen::Vector3d arm = Eigen::Vector3d::Zero();
+};
+
+//==============================================================================
+// One articulated multibody a link row's impulse acts on. Primary link ends use
+// sign +1; cross-multibody obstacle link ends use sign -1.
+struct ArticulatedEnd
+{
+  int multibodyIndex = -1;
+  double sign = 0.0;
+  bool primary = false;
+  Eigen::VectorXd jacobian;
 };
 
 //==============================================================================
@@ -163,6 +189,22 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
     block.blockBase = nextBase;
     nextBase += static_cast<Eigen::Index>(block.rows.size()) * kRows;
     problem.multibodyBlocks.push_back(std::move(block));
+  }
+  std::unordered_map<entt::entity, int> multibodyBlockIndex;
+  multibodyBlockIndex.reserve(problem.multibodyBlocks.size());
+  for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+    multibodyBlockIndex[problem.multibodyBlocks[k].multibody]
+        = static_cast<int>(k);
+  }
+  for (auto& block : problem.multibodyBlocks) {
+    for (auto& row : block.rows) {
+      if (row.otherMultibody == entt::null) {
+        continue;
+      }
+      const auto it = multibodyBlockIndex.find(row.otherMultibody);
+      row.otherMultibodyIndex
+          = it == multibodyBlockIndex.end() ? -1 : it->second;
+    }
   }
 
   const Eigen::Index size = nextBase;
@@ -291,10 +333,13 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
   // is the J^T M^-1 J coupling already filled above). ---
   std::vector<Eigen::Vector3d> rowDirection(static_cast<std::size_t>(size));
   std::vector<std::vector<RigidEnd>> rowEnds(static_cast<std::size_t>(size));
+  std::vector<std::vector<ArticulatedEnd>> rowArticulatedEnds(
+      static_cast<std::size_t>(size));
   std::vector<char> rowIsLink(static_cast<std::size_t>(size), 0);
   for (Eigen::Index r = 0; r < size; ++r) {
     const auto& owner = problem.rowOwners[static_cast<std::size_t>(r)];
     auto& ends = rowEnds[static_cast<std::size_t>(r)];
+    auto& articulatedEnds = rowArticulatedEnds[static_cast<std::size_t>(r)];
     if (owner.domain == UnifiedContactDomain::Rigid) {
       const auto& constraint = problem.rigidConstraints[owner.sourceIndex];
       rowDirection[static_cast<std::size_t>(r)]
@@ -318,6 +363,15 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
       const auto& row = block.rows[owner.sourceIndex];
       rowDirection[static_cast<std::size_t>(r)]
           = directionOfLink(row, owner.direction);
+      articulatedEnds.push_back(
+          {owner.multibodyIndex, +1.0, true, jacobianOf(row, owner.direction)});
+      if (row.otherMultibodyIndex >= 0) {
+        articulatedEnds.push_back(
+            {row.otherMultibodyIndex,
+             -1.0,
+             false,
+             otherJacobianOf(row, owner.direction)});
+      }
       if (row.otherBody != entt::null) {
         ends.push_back(
             {row.otherBody,
@@ -365,6 +419,45 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
             continue; // not the same shared body
           }
           addend += sharedBodyEntry(endI, directionI, endJ, directionJ);
+        }
+      }
+      if (addend != 0.0) {
+        problem.delassus(i, j) += addend;
+      }
+    }
+  }
+
+  // --- Cross-multibody articulated coupling. The dense within-multibody pass
+  // above already filled primary-primary terms for rows owned by the same
+  // block. Cross-link rows add a second articulated end with sign -1; fill
+  // every term involving such non-primary ends here, including their self
+  // contribution and coupling against rows owned by the other multibody.
+  for (Eigen::Index i = 0; i < size; ++i) {
+    const auto& endsI = rowArticulatedEnds[static_cast<std::size_t>(i)];
+    if (endsI.empty()) {
+      continue;
+    }
+    for (Eigen::Index j = 0; j < size; ++j) {
+      const auto& endsJ = rowArticulatedEnds[static_cast<std::size_t>(j)];
+      if (endsJ.empty()) {
+        continue;
+      }
+      double addend = 0.0;
+      for (const auto& endI : endsI) {
+        if (endI.multibodyIndex < 0) {
+          continue;
+        }
+        for (const auto& endJ : endsJ) {
+          if (endI.multibodyIndex != endJ.multibodyIndex) {
+            continue;
+          }
+          if (endI.primary && endJ.primary) {
+            continue; // filled by the dense within-multibody pass
+          }
+          const auto& block = problem.multibodyBlocks[static_cast<std::size_t>(
+              endI.multibodyIndex)];
+          addend += endI.sign * endJ.sign
+                    * endJ.jacobian.dot(block.inverseMass * endI.jacobian);
         }
       }
       if (addend != 0.0) {
@@ -440,6 +533,19 @@ void applyUnifiedConstraintImpulses(
                   * (row.normalJacobian * normalImpulse
                      + row.tangentJacobian1 * tangentImpulse1
                      + row.tangentJacobian2 * tangentImpulse2);
+
+      if (row.otherMultibodyIndex >= 0) {
+        const auto& otherBlock
+            = problem.multibodyBlocks[static_cast<std::size_t>(
+                row.otherMultibodyIndex)];
+        Eigen::VectorXd& otherVelocity
+            = multibodyVelocities[static_cast<std::size_t>(
+                row.otherMultibodyIndex)];
+        otherVelocity -= otherBlock.inverseMass
+                         * (row.otherNormalJacobian * normalImpulse
+                            + row.otherTangentJacobian1 * tangentImpulse1
+                            + row.otherTangentJacobian2 * tangentImpulse2);
+      }
 
       if (row.otherBody != entt::null) {
         auto& obstacleVelocity = registry.get<comps::Velocity>(row.otherBody);
@@ -569,6 +675,7 @@ void applyUnifiedConstraintFallback(
                                     Eigen::VectorXd& velocity,
                                     const Eigen::Vector3d& tangent,
                                     const Eigen::VectorXd& tangentJacobian,
+                                    const Eigen::VectorXd& otherTangentJacobian,
                                     double tangentDenominator,
                                     double& accumulated,
                                     double limit) {
@@ -582,13 +689,24 @@ void applyUnifiedConstraintFallback(
       tangentVelocity -= (obstacleVelocity.linear
                           + obstacleVelocity.angular.cross(row.otherArm))
                              .dot(tangent);
+    } else if (row.otherMultibodyIndex >= 0) {
+      const auto& otherVelocity = multibodyVelocities[static_cast<std::size_t>(
+          row.otherMultibodyIndex)];
+      tangentVelocity -= otherTangentJacobian.dot(otherVelocity);
     }
     const double newImpulse = std::clamp(
         accumulated - tangentVelocity / tangentDenominator, -limit, limit);
     const double delta = newImpulse - accumulated;
     accumulated = newImpulse;
     velocity += block.inverseMass * tangentJacobian * delta;
-    if (row.otherBody != entt::null) {
+    if (row.otherMultibodyIndex >= 0) {
+      const auto& otherBlock = problem.multibodyBlocks[static_cast<std::size_t>(
+          row.otherMultibodyIndex)];
+      Eigen::VectorXd& otherVelocity
+          = multibodyVelocities[static_cast<std::size_t>(
+              row.otherMultibodyIndex)];
+      otherVelocity -= otherBlock.inverseMass * otherTangentJacobian * delta;
+    } else if (row.otherBody != entt::null) {
       auto& obstacleVelocity = registry.get<comps::Velocity>(row.otherBody);
       obstacleVelocity.linear -= delta * row.otherInvMass * tangent;
       obstacleVelocity.angular
@@ -635,6 +753,7 @@ void applyUnifiedConstraintFallback(
             velocity,
             row.tangent1,
             row.tangentJacobian1,
+            row.otherTangentJacobian1,
             row.tangentDenominator1,
             linkTangent1[k][c],
             limit);
@@ -644,6 +763,7 @@ void applyUnifiedConstraintFallback(
             velocity,
             row.tangent2,
             row.tangentJacobian2,
+            row.otherTangentJacobian2,
             row.tangentDenominator2,
             linkTangent2[k][c],
             limit);

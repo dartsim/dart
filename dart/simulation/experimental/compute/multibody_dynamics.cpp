@@ -839,6 +839,23 @@ double linkContactRelativeVelocity(
 }
 
 //==============================================================================
+Eigen::MatrixXd pointLinearJacobian(
+    const DynamicsTree& tree,
+    const std::vector<Eigen::MatrixXd>& bodyJacobian,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& point)
+{
+  const Eigen::Matrix3d rotation
+      = tree.links[linkIndex].worldTransform.linear();
+  const Eigen::Vector3d origin
+      = tree.links[linkIndex].worldTransform.translation();
+  const Eigen::MatrixXd angularJacobian
+      = rotation * bodyJacobian[linkIndex].topRows(3);
+  return rotation * bodyJacobian[linkIndex].bottomRows(3)
+         - skew(point - origin) * angularJacobian;
+}
+
+//==============================================================================
 void solveMultibodyLinkContacts(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
@@ -986,8 +1003,22 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
   const auto isRigidBody = [&](entt::entity entity) {
     return registry.all_of<comps::RigidBodyTag>(entity);
   };
+  const auto isLink = [&](entt::entity entity) {
+    return registry.all_of<comps::Link>(entity);
+  };
   const auto isDynamic = [&](entt::entity entity) {
     return !registry.all_of<comps::StaticBodyTag>(entity);
+  };
+  const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
+    auto view = registry.view<comps::MultibodyStructure>();
+    for (auto multibody : view) {
+      const auto& candidate = view.get<comps::MultibodyStructure>(multibody);
+      if (std::find(candidate.links.begin(), candidate.links.end(), linkEntity)
+          != candidate.links.end()) {
+        return multibody;
+      }
+    }
+    return static_cast<entt::entity>(entt::null);
   };
   const auto frictionOf = [&](entt::entity entity) {
     if (const auto* material
@@ -1020,9 +1051,10 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
 
     // The contact normal points bodyA -> bodyB; orient it into the link. A
     // dynamic rigid-body obstacle is passed as otherBody for the two-sided
-    // impulse; a static obstacle leaves it null (one-sided). A same-multibody
-    // link obstacle is passed as otherLink and represented by a relative
-    // point-Jacobian row for this multibody.
+    // impulse; a static obstacle leaves it null (one-sided). Same-multibody
+    // link obstacles use one relative point-Jacobian row. Cross-multibody
+    // link pairs are routed once, from bodyA's multibody, and carry the other
+    // multibody as a second articulated end for the unified solve.
     if (aInBody && bInBody) {
       linkContacts.push_back(
           {entityA,
@@ -1033,6 +1065,20 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
            restitution,
            entt::null,
            entityB});
+    } else if (aInBody && !bInBody && isLink(entityB)) {
+      const entt::entity otherMultibody = findMultibodyOwningLink(entityB);
+      if (otherMultibody != entt::null) {
+        linkContacts.push_back(
+            {entityA,
+             -contact.normal,
+             contact.point,
+             contact.depth,
+             friction,
+             restitution,
+             entt::null,
+             entityB,
+             otherMultibody});
+      }
     } else if (aInBody && !bInBody && isRigidBody(entityB)) {
       linkContacts.push_back(
           {entityA,
@@ -1086,6 +1132,102 @@ void simulateMultibody(
   integrateMultibodyPositions(registry, structure, nextVelocity, timeStep);
 }
 
+//==============================================================================
+struct CrossMultibodyAssemblyContext
+{
+  const comps::MultibodyStructure* structure = nullptr;
+  DynamicsTree tree;
+  std::vector<Eigen::MatrixXd> bodyJacobian;
+};
+
+//==============================================================================
+void completeCrossMultibodyLinkRows(
+    const entt::registry& registry,
+    std::span<UnifiedMultibodyContact> multibodyContacts,
+    std::span<const Eigen::VectorXd> multibodyVelocities)
+{
+  std::unordered_map<entt::entity, std::size_t> multibodyIndex;
+  multibodyIndex.reserve(multibodyContacts.size());
+  std::vector<CrossMultibodyAssemblyContext> contexts;
+  contexts.reserve(multibodyContacts.size());
+
+  for (std::size_t k = 0; k < multibodyContacts.size(); ++k) {
+    const auto multibody = multibodyContacts[k].multibody;
+    multibodyIndex[multibody] = k;
+
+    const auto& structure = registry.get<comps::MultibodyStructure>(multibody);
+    CrossMultibodyAssemblyContext context;
+    context.structure = &structure;
+    context.tree = buildDynamicsTree(registry, structure);
+    context.bodyJacobian = linkBodyJacobians(context.tree);
+    contexts.push_back(std::move(context));
+  }
+
+  constexpr double restitutionThreshold = 1e-2;
+  for (std::size_t k = 0; k < multibodyContacts.size(); ++k) {
+    auto& rows = multibodyContacts[k].problem.rows;
+    const Eigen::VectorXd& primaryVelocity = multibodyVelocities[k];
+    for (auto& row : rows) {
+      if (row.otherMultibody == entt::null) {
+        continue;
+      }
+
+      const auto otherMultibodyIt = multibodyIndex.find(row.otherMultibody);
+      if (otherMultibodyIt == multibodyIndex.end()) {
+        continue;
+      }
+      const std::size_t otherIndex = otherMultibodyIt->second;
+      const auto& otherContext = contexts[otherIndex];
+      const auto& otherLinks = otherContext.structure->links;
+      const auto otherLinkIt
+          = std::find(otherLinks.begin(), otherLinks.end(), row.otherLink);
+      if (otherLinkIt == otherLinks.end()) {
+        continue;
+      }
+      const auto otherLinkIndex
+          = static_cast<std::size_t>(otherLinkIt - otherLinks.begin());
+      const Eigen::MatrixXd otherPointJacobian = pointLinearJacobian(
+          otherContext.tree,
+          otherContext.bodyJacobian,
+          otherLinkIndex,
+          row.point);
+
+      row.otherNormalJacobian = otherPointJacobian.transpose() * row.normal;
+      row.otherTangentJacobian1 = otherPointJacobian.transpose() * row.tangent1;
+      row.otherTangentJacobian2 = otherPointJacobian.transpose() * row.tangent2;
+
+      const Eigen::MatrixXd& otherInverseMass
+          = multibodyContacts[otherIndex].problem.inverseMass;
+      row.normalDenominator += row.otherNormalJacobian.dot(
+          otherInverseMass * row.otherNormalJacobian);
+      row.tangentDenominator1 += row.otherTangentJacobian1.dot(
+          otherInverseMass * row.otherTangentJacobian1);
+      row.tangentDenominator2 += row.otherTangentJacobian2.dot(
+          otherInverseMass * row.otherTangentJacobian2);
+
+      const Eigen::VectorXd& otherVelocity = multibodyVelocities[otherIndex];
+      const auto relativeVelocity = [&](const Eigen::VectorXd& primaryJacobian,
+                                        const Eigen::VectorXd& otherJacobian) {
+        return primaryJacobian.dot(primaryVelocity)
+               - otherJacobian.dot(otherVelocity);
+      };
+
+      const double approachingVelocity
+          = relativeVelocity(row.normalJacobian, row.otherNormalJacobian);
+      row.restitutionTarget = (approachingVelocity < -restitutionThreshold)
+                                  ? -row.restitution * approachingVelocity
+                                  : 0.0;
+      row.normalRhs
+          = -approachingVelocity + std::max(row.bias, row.restitutionTarget);
+      row.tangentRhs1
+          = -relativeVelocity(row.tangentJacobian1, row.otherTangentJacobian1);
+      row.tangentRhs2
+          = -relativeVelocity(row.tangentJacobian2, row.otherTangentJacobian2);
+      row.active = row.normalDenominator > 0.0;
+    }
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -1097,14 +1239,11 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
     std::span<const LinkContact> linkContacts)
 {
   MultibodyLinkContactProblem problem;
-  if (linkContacts.empty() || structure.links.empty()) {
+  if (structure.links.empty()) {
     return problem;
   }
 
   const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0) {
-    return problem;
-  }
 
   DART_EXPERIMENTAL_THROW_T_IF(
       nextVelocity.size() != static_cast<Eigen::Index>(tree.dofCount),
@@ -1114,14 +1253,17 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
       nextVelocity.size(),
       tree.dofCount);
 
-  const MassAndBias mb = computeMassAndBias(
-      tree.links,
-      tree.dofCount,
-      Eigen::Vector3d::Zero(),
-      nextVelocity,
-      tree.armature);
-
-  problem.inverseMass = mb.massMatrix.inverse();
+  if (tree.dofCount == 0) {
+    problem.inverseMass.resize(0, 0);
+  } else {
+    const MassAndBias mb = computeMassAndBias(
+        tree.links,
+        tree.dofCount,
+        Eigen::Vector3d::Zero(),
+        nextVelocity,
+        tree.armature);
+    problem.inverseMass = mb.massMatrix.inverse();
+  }
   const Eigen::MatrixXd& inverseMass = problem.inverseMass;
   const std::vector<Eigen::MatrixXd> bodyJacobian = linkBodyJacobians(tree);
   constexpr double penetrationSlop = 1e-4;
@@ -1129,10 +1271,12 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
 
   // Precompute the contact-space Jacobians (normal + two tangents) once. A
   // contact against another link in the same multibody uses the relative point
-  // Jacobian. A contact against a dynamic rigid body also stores that body's
-  // inverse mass and inertia and the contact arm, so the impulse is applied to
-  // both bodies (two-sided); an immovable obstacle leaves these zero
-  // (one-sided).
+  // Jacobian. A cross-multibody link contact keeps only this multibody's point
+  // Jacobian here; UnifiedConstraintStage completes the second articulated end
+  // once every multibody block has been assembled. A contact against a dynamic
+  // rigid body also stores that body's inverse mass and inertia and the contact
+  // arm, so the impulse is applied to both bodies (two-sided); an immovable
+  // obstacle leaves these zero (one-sided).
   problem.rows.assign(linkContacts.size(), MultibodyLinkContactRow{});
 
   for (std::size_t c = 0; c < linkContacts.size(); ++c) {
@@ -1145,30 +1289,29 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
     const auto index
         = static_cast<std::size_t>(linkIt - structure.links.begin());
 
-    const auto pointLinearJacobianFor
-        = [&](std::size_t linkIndex) -> Eigen::MatrixXd {
-      const Eigen::Matrix3d rotation
-          = tree.links[linkIndex].worldTransform.linear();
-      const Eigen::Vector3d origin
-          = tree.links[linkIndex].worldTransform.translation();
-      const Eigen::MatrixXd angularJacobian
-          = rotation * bodyJacobian[linkIndex].topRows(3);
-      return rotation * bodyJacobian[linkIndex].bottomRows(3)
-             - skew(contact.point - origin) * angularJacobian;
-    };
-    Eigen::MatrixXd pointLinearJacobian = pointLinearJacobianFor(index);
+    auto& row = problem.rows[c];
+    row.point = contact.point;
+    row.otherLink = contact.otherLink;
+    row.otherMultibody = contact.otherMultibody;
+    row.restitution = contact.restitution;
+
+    Eigen::MatrixXd pointJacobian
+        = pointLinearJacobian(tree, bodyJacobian, index, contact.point);
     if (contact.otherLink != entt::null) {
       const auto otherLinkIt = std::find(
           structure.links.begin(), structure.links.end(), contact.otherLink);
-      if (otherLinkIt == structure.links.end() || otherLinkIt == linkIt) {
+      if (otherLinkIt == linkIt) {
         continue;
       }
-      const auto otherIndex
-          = static_cast<std::size_t>(otherLinkIt - structure.links.begin());
-      pointLinearJacobian -= pointLinearJacobianFor(otherIndex);
+      if (otherLinkIt != structure.links.end()) {
+        const auto otherIndex
+            = static_cast<std::size_t>(otherLinkIt - structure.links.begin());
+        pointJacobian -= pointLinearJacobian(
+            tree, bodyJacobian, otherIndex, contact.point);
+      } else if (contact.otherMultibody == entt::null) {
+        continue;
+      }
     }
-
-    auto& row = problem.rows[c];
 
     // Couple a dynamic rigid-body obstacle: cache its inverse mass, inverse
     // world inertia, and the contact arm.
@@ -1199,12 +1342,12 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
 
     const Eigen::Vector3d normal = contact.normal.normalized();
     row.normal = normal;
-    row.normalJacobian = pointLinearJacobian.transpose() * normal;
+    row.normalJacobian = pointJacobian.transpose() * normal;
     const Eigen::Vector3d normalArm = row.otherArm.cross(normal);
     row.normalDenominator
         = row.normalJacobian.dot(inverseMass * row.normalJacobian)
           + row.otherInvMass + normalArm.dot(row.otherInvInertia * normalArm);
-    if (row.normalDenominator <= 0.0) {
+    if (row.normalDenominator <= 0.0 && contact.otherMultibody == entt::null) {
       continue; // the contact cannot move either body (e.g. fixed base)
     }
 
@@ -1216,8 +1359,8 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
     const Eigen::Vector3d tangent2 = normal.cross(tangent1);
     row.tangent1 = tangent1;
     row.tangent2 = tangent2;
-    row.tangentJacobian1 = pointLinearJacobian.transpose() * tangent1;
-    row.tangentJacobian2 = pointLinearJacobian.transpose() * tangent2;
+    row.tangentJacobian1 = pointJacobian.transpose() * tangent1;
+    row.tangentJacobian2 = pointJacobian.transpose() * tangent2;
     const Eigen::Vector3d tangentArm1 = row.otherArm.cross(tangent1);
     const Eigen::Vector3d tangentArm2 = row.otherArm.cross(tangent2);
     row.tangentDenominator1
@@ -1252,7 +1395,7 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
         registry, row, row.tangentJacobian1, tangent1, nextVelocity);
     row.tangentRhs2 = -linkContactRelativeVelocity(
         registry, row, row.tangentJacobian2, tangent2, nextVelocity);
-    row.active = true;
+    row.active = contact.otherMultibody == entt::null;
   }
 
   return problem;
@@ -1598,43 +1741,66 @@ void UnifiedConstraintStage::execute(
   // Per-multibody link blocks. Recompute each multibody's dynamics tree and
   // inverse mass in-stage (never cached across stages). Mirror
   // MultibodyContactStage's PendingMultibodyVelocity create-from-gather so a
-  // multibody whose velocity has not been staged still resolves. The staged
-  // velocities are collected in lockstep with the contacts (and hence with the
-  // assembled multibody blocks) for the solve and write-back.
-  std::vector<UnifiedMultibodyContact> multibodyContacts;
-  std::vector<Eigen::VectorXd> multibodyVelocities;
+  // multibody whose velocity has not been staged still resolves. Cross-
+  // multibody link rows are owned by bodyA's multibody, but the other
+  // multibody still needs a block and staged velocity so the solved impulse can
+  // update both articulated ends.
+  std::vector<entt::entity> multibodyEntities;
+  std::unordered_map<entt::entity, std::vector<LinkContact>>
+      contactsByMultibody;
+  std::unordered_map<entt::entity, bool> requiredMultibody;
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
+    multibodyEntities.push_back(entity);
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    const std::vector<LinkContact> linkContacts
+    std::vector<LinkContact> linkContacts
         = collectMultibodyLinkContacts(registry, structure, contacts);
-    if (linkContacts.empty()) {
+    for (const auto& contact : linkContacts) {
+      if (contact.otherMultibody != entt::null) {
+        requiredMultibody[contact.otherMultibody] = true;
+      }
+    }
+    if (!linkContacts.empty()) {
+      requiredMultibody[entity] = true;
+    }
+    contactsByMultibody.emplace(entity, std::move(linkContacts));
+  }
+
+  std::vector<UnifiedMultibodyContact> multibodyContacts;
+  std::vector<Eigen::VectorXd> multibodyVelocities;
+  for (auto entity : multibodyEntities) {
+    auto contactsIt = contactsByMultibody.find(entity);
+    const std::vector<LinkContact>& linkContacts = contactsIt->second;
+    if (linkContacts.empty()
+        && requiredMultibody.find(entity) == requiredMultibody.end()) {
       continue;
     }
 
+    const auto& structure = registry.get<comps::MultibodyStructure>(entity);
+    Eigen::VectorXd stagedVelocity;
     auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
-    if (pendingVelocity == nullptr) {
-      Eigen::VectorXd currentVelocity
-          = gatherMultibodyVelocity(registry, structure);
-      if (currentVelocity.size() == 0) {
-        continue;
-      }
-      pendingVelocity = &registry.emplace_or_replace<PendingMultibodyVelocity>(
-          entity, PendingMultibodyVelocity{std::move(currentVelocity)});
+    if (pendingVelocity != nullptr) {
+      stagedVelocity = pendingVelocity->velocity;
+    } else {
+      stagedVelocity = gatherMultibodyVelocity(registry, structure);
     }
 
     MultibodyLinkContactProblem linkProblem
         = assembleMultibodyLinkContactProblem(
-            registry,
-            structure,
-            pendingVelocity->velocity,
-            timeStep,
-            linkContacts);
-    multibodyVelocities.push_back(pendingVelocity->velocity);
+            registry, structure, stagedVelocity, timeStep, linkContacts);
+    multibodyVelocities.push_back(std::move(stagedVelocity));
     multibodyContacts.push_back({entity, std::move(linkProblem)});
   }
+  completeCrossMultibodyLinkRows(
+      registry, multibodyContacts, multibodyVelocities);
 
-  if (rigidProblem.constraints.empty() && multibodyContacts.empty()) {
+  bool hasActiveLinkRows = false;
+  for (const auto& contact : multibodyContacts) {
+    for (const auto& row : contact.problem.rows) {
+      hasActiveLinkRows = hasActiveLinkRows || row.active;
+    }
+  }
+  if (rigidProblem.constraints.empty() && !hasActiveLinkRows) {
     return;
   }
 
@@ -1651,6 +1817,14 @@ void UnifiedConstraintStage::execute(
   // component so the position stage integrates the post-contact velocity. The
   // blocks are in the same order the staged velocities were collected.
   for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+    if (multibodyVelocities[k].size() == 0) {
+      if (registry.all_of<PendingMultibodyVelocity>(
+              problem.multibodyBlocks[k].multibody)) {
+        registry.remove<PendingMultibodyVelocity>(
+            problem.multibodyBlocks[k].multibody);
+      }
+      continue;
+    }
     registry.emplace_or_replace<PendingMultibodyVelocity>(
         problem.multibodyBlocks[k].multibody,
         PendingMultibodyVelocity{std::move(multibodyVelocities[k])});
