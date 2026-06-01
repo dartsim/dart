@@ -185,7 +185,9 @@ Paper audit:
     private World rigid snapshot/solve/apply wrapper and combined step helper
     from world-space point-joint inputs, including a private fixed-joint ECS
     extractor and step-helper overload for rigid-body-linked joint entities.
-    Public multibody joint extraction is still not wired.
+    The internal contact-stage AVBD opt-in also appends those fixed-joint rows
+    to its velocity projection when contact rows activate. Public multibody
+    joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, and
     not articulated joint support yet.
@@ -245,7 +247,8 @@ numbers.
    endpoint features, private rigid point-joint linear/angular/combined row
    builders with step-start previous constraint values, and private World
    snapshot/step point-joint append/solve/apply coverage plus fixed-joint ECS
-   extraction through the step helper have narrow CPU paths.
+   extraction through the step helper and the internal contact-stage velocity
+   projection have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

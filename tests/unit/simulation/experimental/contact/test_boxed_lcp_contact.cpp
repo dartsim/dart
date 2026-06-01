@@ -43,7 +43,9 @@
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 
@@ -55,6 +57,7 @@
 #include <cmath>
 
 namespace sx = dart::simulation::experimental;
+namespace dvbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
 
@@ -127,6 +130,49 @@ TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
   EXPECT_GT(sphere->getTranslation().z(), 0.498);
   EXPECT_LT(sphere->getTranslation().z(), 0.505);
   EXPECT_GT(sphere->getLinearVelocity().z(), 0.0);
+}
+
+//==============================================================================
+// Fixed-joint rows are still private AVBD detail, but the contact-stage opt-in
+// should append them to the same rigid World projection when they link rigid
+// body entities.
+TEST(AvbdContact, FixedJointRowsParticipateInProjection)
+{
+  auto avbd = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
+  avbd->setGravity(Eigen::Vector3d::Zero());
+
+  auto ground = avbd->getRigidBody("ground");
+  auto sphere = avbd->getRigidBody("sphere");
+  ASSERT_TRUE(ground.has_value());
+  ASSERT_TRUE(sphere.has_value());
+
+  Eigen::Isometry3d spherePose = Eigen::Isometry3d::Identity();
+  spherePose.translation() = Eigen::Vector3d(0.25, 0.0, 0.49);
+  sphere->setTransform(spherePose);
+
+  auto& registry = avbd->getRegistry();
+  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      sphere->getEntity());
+
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = ground->getEntity();
+  joint.childLink = sphere->getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d(0.0, 0.0, 1.0);
+  config.localAnchorB = Eigen::Vector3d::Zero();
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  avbd->enterSimulationMode();
+  avbd->step();
+
+  EXPECT_LT(std::abs(sphere->getTranslation().x()), 0.05);
+  EXPECT_LT(sphere->getLinearVelocity().x(), 0.0);
+  EXPECT_GT(sphere->getTranslation().z(), 0.498);
 }
 
 //==============================================================================

@@ -7354,8 +7354,18 @@ void RigidBodyPositionStage::execute(
 //==============================================================================
 struct RigidBodyContactStage::AvbdScratch
 {
+  void clear()
+  {
+    normalInventory.records().clear();
+    frictionInventory.records().clear();
+    jointLinearInventory.records().clear();
+    jointAngularInventory.records().clear();
+  }
+
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
+  dvbd::AvbdScalarRowInventory jointLinearInventory;
+  dvbd::AvbdScalarRowInventory jointAngularInventory;
 };
 
 //==============================================================================
@@ -7389,8 +7399,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   const auto contacts = world.collide();
   if (contacts.empty()) {
     if (m_avbdScratch != nullptr) {
-      m_avbdScratch->normalInventory.records().clear();
-      m_avbdScratch->frictionInventory.records().clear();
+      m_avbdScratch->clear();
     }
     return;
   }
@@ -7416,9 +7425,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     dvbd::AvbdRigidWorldContactSnapshot snapshot
         = dvbd::buildAvbdRigidWorldContactSnapshot(
             registry, contacts, contactOptions);
+    const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
+        = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
+    const std::size_t appendedJoints
+        = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
 
     if (snapshot.contacts.size() == contacts.size()
-        && !snapshot.contacts.empty()) {
+        && (!snapshot.contacts.empty() || appendedJoints != 0u)) {
       const double timeStep = world.getTimeStep();
       dvbd::predictAvbdRigidWorldContactInertialTargets(
           registry, snapshot, timeStep);
@@ -7441,9 +7454,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
               snapshot,
               m_avbdScratch->normalInventory,
               m_avbdScratch->frictionInventory,
+              m_avbdScratch->jointLinearInventory,
+              m_avbdScratch->jointAngularInventory,
               timeStep,
               solveOptions);
-      if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u) {
+      if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u
+          || solveResult.jointLinearRows != 0u
+          || solveResult.jointAngularRows != 0u) {
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
                 registry, snapshot, timeStep);
@@ -7453,11 +7470,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       }
     }
 
-    m_avbdScratch->normalInventory.records().clear();
-    m_avbdScratch->frictionInventory.records().clear();
+    m_avbdScratch->clear();
   } else if (m_avbdScratch != nullptr) {
-    m_avbdScratch->normalInventory.records().clear();
-    m_avbdScratch->frictionInventory.records().clear();
+    m_avbdScratch->clear();
   }
 
   // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the frictionless

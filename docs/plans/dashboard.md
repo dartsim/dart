@@ -301,9 +301,11 @@ its own line so status updates remain git-history friendly.
   seeded for AVBD alpha regularization. Those private point-joint rows can now
   be appended to the World rigid snapshot/solve/apply wrapper and combined step
   helper from world-space point-joint inputs, and a private fixed-joint ECS
-  extractor can feed the step helper for rigid-body-linked joint entities.
-  Public multibody joint extraction is not wired yet. The next local slice is
-  full narrow-phase feature extraction, contact-complete rigid joint rows, or
+  extractor can feed the step helper for rigid-body-linked joint entities. The
+  internal contact-stage AVBD opt-in can append those fixed-joint rows to its
+  velocity projection when contact rows activate. Public multibody joint
+  extraction is not wired yet. The next local slice is full narrow-phase
+  feature extraction, contact-complete rigid joint rows, or broader
   rigid/articulated World integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
