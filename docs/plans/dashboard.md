@@ -591,15 +591,17 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Scope note: WS1–WS5 first slices plus the PLAN-080-WS4 boxed-LCP contact
   prerequisite are implemented and verified (FD-of-step validated; default build
-  untouched and bitwise-identical when off). The work is committed on
-  `feature/differentiable-simulation` and open as PR #2761 (milestone DART 7.0,
-  CHANGELOG included). Remaining for that path is hardening/examples/promotion,
-  not new workstreams. Dojo is now tracked as a separate planned evaluation
+  untouched and bitwise-identical when off). That path landed via PR #2761
+  (merged 2026-05-30, milestone DART 7.0, CHANGELOG included; the
+  `feature/differentiable-simulation` branch was deleted post-merge). Remaining
+  for that path is hardening/examples/promotion, not new workstreams. Dojo is
+  now tracked as a separate planned evaluation
   track under PLAN-110: maximal-coordinate variational hard-contact NCP/IPM with
   implicit gradients, using Dojo.jl as method evidence and a comparison baseline
   rather than a dependency.
-- Next step: Drive PR #2761 to merge (experimental surface, single-branch to
-  `main`). Then: run the torch-autograd test (`pip install torch`); add the
+- Next step: The WS1–WS5 experimental surface is merged to `main` (PR #2761);
+  the remaining work is the hardening/examples/Dojo-spike follow-ups. Run the
+  torch-autograd test (`pip install torch`); add the
   standalone worked trajectory-optimization / system-identification example
   programs (the GUI demo and the convergence tests already ship); harden the
   static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
