@@ -587,9 +587,9 @@
     contact snapshot now also derives box face/edge/corner endpoint feature IDs
     and scopes contact row ordinals per canonical endpoint pair so unrelated
     contact manifolds do not perturb warm-start identity. Added private rigid
-    point-joint linear and angular AVBD row builders so fixed-anchor joint
-    translation and orientation rows can share the rigid row driver; this is not
-    articulated World joint wiring yet.
+    point-joint linear, angular, and combined AVBD row builders so fixed-anchor
+    joint translation and orientation rows can share the rigid row driver; this
+    is not articulated World joint wiring yet.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration

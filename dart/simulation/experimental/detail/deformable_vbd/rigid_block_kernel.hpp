@@ -1144,6 +1144,22 @@ inline void buildAvbdRigidPointJointAngularRows(
 }
 
 //==============================================================================
+inline void buildAvbdRigidPointJointConstraintRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& linearInventory,
+    AvbdScalarRowInventory& angularInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  buildAvbdRigidPointJointRows(
+      states, joints, linearInventory, linearRows, warmStartOptions);
+  buildAvbdRigidPointJointAngularRows(
+      states, joints, angularInventory, angularRows, warmStartOptions);
+}
+
+//==============================================================================
 inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     std::vector<AvbdRigidBodyState>& states,
     const std::vector<double>& masses,
