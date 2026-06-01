@@ -38,7 +38,9 @@ and ask.
   `docs/dev_tasks/<task>/` into `docs/plans/` or `docs/onboarding/`, then
   remove the dev-task folder completely in the completing change.
 - Run `pixi run lint` before committing.
-- Run relevant tests; use `pixi run test-all` before done when feasible.
+- Run relevant tests; use `pixi run test-all` before done when feasible, and
+  also `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA
+  runtime.
 - Push with `git push -u origin HEAD` and create/update the PR only after
   explicit maintainer/user approval.
 - For already-published PRs, prefer additive follow-up commits. Amend or

@@ -36,6 +36,8 @@ git checkout -b fix/<topic>-6.16 origin/release-6.16
 # Make changes, then
 pixi run lint
 pixi run test-all
+# On Linux hosts with a visible NVIDIA CUDA runtime
+pixi run -e cuda test-all
 
 # After explicit maintainer/user approval, push and create PR
 git push -u origin HEAD

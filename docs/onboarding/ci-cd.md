@@ -235,7 +235,7 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 | `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule       | Yes           |
 | `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                      | N/A           |
 | `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                  | N/A           |
-| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | PR path-scoped compile; manual GPU    | N/A           |
+| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | Path-scoped PR; trusted GPU runtime   | N/A           |
 | `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Release-branch push/PR; manual canary | Yes           |
 | `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual         | N/A           |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule   | Yes           |
@@ -245,14 +245,14 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 Use CI tiers to reduce PR feedback cost without removing coverage from the
 project's continuous validation surface.
 
-| Tier                      | Required before merge | Examples                                                                                       |
-| ------------------------- | --------------------- | ---------------------------------------------------------------------------------------------- |
-| Core branch push          | No                    | Lint, Ubuntu core release tests, path-scoped SIMD                                              |
-| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                  |
-| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                    |
-| Release support PR        | Yes on release lines  | gz-physics compatibility on `release-6.16` PRs                                                 |
-| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags           |
-| Scheduled/manual coverage | No                    | FreeBSD VM, CUDA runtime smoke, gz-physics migration canaries, repeated full matrix, lockfiles |
+| Tier                      | Required before merge | Examples                                                                                           |
+| ------------------------- | --------------------- | -------------------------------------------------------------------------------------------------- |
+| Core branch push          | No                    | Lint, Ubuntu core release tests, path-scoped SIMD                                                  |
+| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                      |
+| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                        |
+| Release support PR        | Yes on release lines  | gz-physics compatibility on `release-6.16` PRs                                                     |
+| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags               |
+| Scheduled/manual coverage | No                    | FreeBSD VM, CUDA packet benchmarks, gz-physics migration canaries, repeated full matrix, lockfiles |
 
 Guardrails:
 
@@ -267,13 +267,13 @@ Guardrails:
 - Keep at least one dartpy wheel per supported OS in PR CI. Expanded Python
   version coverage can run on `main`, release tags, schedules, and manual
   dispatch.
-- For hardware-gated accelerator paths, split hosted compile coverage from
-  runtime smoke coverage. PR CI should validate toolkit resolution and CUDA
-  targets on a runner that exists in the normal matrix when possible; runtime
-  jobs that require a special self-hosted label should stay manual and
-  non-required until an online runner with that label is consistently
-  available. If a hardware job remains queued, check runner labels before
-  treating the queue as a code failure.
+- For hardware-gated accelerator paths, split trusted runtime coverage from
+  untrusted fork coverage. Same-repository PRs, protected branch pushes, and
+  manual dispatches may use the `ubuntu-latest-gpu` runner for CUDA runtime
+  tests. Fork PRs must stay on a GitHub-hosted runner and compile the CUDA
+  targets without running untrusted code on the long-lived GPU runner. If a
+  hardware job remains queued, check runner labels before treating the queue as
+  a code failure.
 - Run the full dartpy wheel matrix when `publish_dartpy.yml` itself changes so
   workflow edits validate both PR and continuous wheel tiers before merge.
 - Require stable aggregate check names for variable CI matrices. For dartpy
@@ -580,6 +580,12 @@ does not repeat local-only validation in every platform job:
 
 Use `pixi run test-all` for local pre-PR validation; avoid adding it to CI jobs
 unless the duplicated lint/docs/build work is intentional.
+On Linux hosts with a visible NVIDIA CUDA runtime, also run
+`pixi run -e cuda test-all`; the CUDA-environment helper preserves the `cuda`
+Pixi environment for nested tasks and executes the CUDA CTest + benchmark smoke
+path automatically when a runtime is detected. The local CUDA Pixi config
+auto-detects visible GPU compute capabilities for `DART_CUDA_ARCHITECTURES` so
+runtime checks do not depend on PTX JIT compatibility with the installed driver.
 
 ## Monitoring and Maintenance
 
