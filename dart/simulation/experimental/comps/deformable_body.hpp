@@ -35,6 +35,7 @@
 
 #include <Eigen/Core>
 
+#include <limits>
 #include <vector>
 
 #include <cstddef>
@@ -203,6 +204,40 @@ struct DeformableVbdConfig
   /// a positive value the VBD solve keeps the body resting on the ground
   /// barrier set instead of routing the body to the default solver.
   double contactStiffness = 0.0;
+  /// Internal AVBD slice flag: use warm-started augmented-Lagrangian
+  /// contact-normal rows for static half-space contact when the current scene
+  /// is inside the supported CPU mass-spring envelope. Unsupported cases fall
+  /// back to the existing VBD penalty-contact path.
+  bool useAvbdContactNormalRows = false;
+  /// Internal AVBD slice flag: use warm-started augmented-Lagrangian
+  /// self-contact normal rows for lagged point-triangle / edge-edge candidates
+  /// when the current scene is inside the supported CPU mass-spring envelope.
+  /// With positive material friction, matching tangent rows are generated for
+  /// those same primitives. Unsupported cases fall back to the existing VBD
+  /// self-contact penalty path.
+  bool useAvbdSelfContactNormalRows = false;
+  /// Internal AVBD slice flag: replace exact fixed-node skipping with
+  /// warm-started hard point-attachment rows for pinned/scripted nodes when the
+  /// current scene is inside the supported CPU mass-spring envelope.
+  bool useAvbdAttachmentRows = false;
+  /// Starting stiffness for AVBD hard point-attachment rows.
+  double avbdAttachmentStiffness = 1000.0;
+  /// Internal AVBD slice flag: use progressive finite-stiffness rows for
+  /// deformable springs in the supported CPU mass-spring envelope.
+  bool useAvbdFiniteStiffnessRows = false;
+  /// Starting stiffness for AVBD finite-stiffness deformable rows. Spring rows
+  /// use this in material stiffness units; tetrahedral material rows use it as
+  /// a dimensionless multiplier on the Lamé parameters and cap at 1.0 unless
+  /// avbdMaxStiffness is lower.
+  double avbdFiniteStiffnessStart = 1.0;
+  /// AVBD alpha regularization for pre-existing contact error.
+  double avbdAlpha = 0.99;
+  /// AVBD stiffness-growth coefficient for active rows.
+  double avbdBeta = 1000.0;
+  /// AVBD warm-start decay for active lambda/stiffness state.
+  double avbdGamma = 0.99;
+  /// Hard cap for AVBD row stiffness.
+  double avbdMaxStiffness = std::numeric_limits<double>::infinity();
 };
 
 /// Transient scratch buffers reused by the default deformable solver.
@@ -219,6 +254,7 @@ struct DeformableSolverScratch
   std::vector<Eigen::Vector3d> previousStepPositions;
   std::vector<Eigen::Vector3d> externalAccelerations;
   std::vector<std::uint8_t> activeFixed;
+  std::vector<std::uint8_t> activeDirichlet;
 };
 
 void registerDeformableBodySerializers(
