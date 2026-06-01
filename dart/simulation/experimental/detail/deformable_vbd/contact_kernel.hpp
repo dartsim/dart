@@ -132,7 +132,7 @@ canonicalizeAvbdContactEndpoints(
 }
 
 //==============================================================================
-inline AvbdScalarRowKey makeAvbdContactManifoldRowKey(
+inline AvbdScalarRowKey makeAvbdEndpointPairRowKey(
     AvbdScalarRowRole role,
     AvbdContactEndpointId first,
     AvbdContactEndpointId second,
@@ -150,6 +150,17 @@ inline AvbdScalarRowKey makeAvbdContactManifoldRowKey(
   key.row = row;
   key.axis = axis;
   return key;
+}
+
+//==============================================================================
+inline AvbdScalarRowKey makeAvbdContactManifoldRowKey(
+    AvbdScalarRowRole role,
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    std::uint32_t row = 0,
+    std::uint8_t axis = 0)
+{
+  return makeAvbdEndpointPairRowKey(role, first, second, row, axis);
 }
 
 //==============================================================================

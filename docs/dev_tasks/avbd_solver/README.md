@@ -177,9 +177,11 @@ Paper audit:
     back into the velocity consumed by the standard position stage. The private
     rigid contact snapshot now derives box face/edge/corner endpoint feature IDs
     and scopes row ordinals per canonical endpoint pair for narrower warm-start
-    persistence. Unsupported envelopes still fall back to sequential impulses.
-    This is not full narrow-phase feature extraction, not full rigid
-    contact/joint rows, and not articulated joint support yet.
+    persistence. A private point-joint linear row builder now creates the first
+    rigid joint-row family for fixed-anchor translation constraints through the
+    existing rigid row driver. Unsupported envelopes still fall back to
+    sequential impulses. This is not full narrow-phase feature extraction, not
+    full rigid contact/joint rows, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
@@ -232,7 +234,8 @@ numbers.
    driver, private rigid contact-manifold row builder, private World-contact
    snapshot/solve/writeback helpers, combined private wrapper, first internal
    `RigidAvbdContactConfig` contact-stage velocity-projection activation, and
-   box-feature/pair-scoped rigid contact row identity have narrow CPU paths.
+   box-feature/pair-scoped rigid contact row identity, and private rigid
+   point-joint linear row builder have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

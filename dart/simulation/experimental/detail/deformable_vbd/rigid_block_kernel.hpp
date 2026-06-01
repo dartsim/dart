@@ -168,6 +168,19 @@ struct AvbdRigidBodyPointPairFrictionRows
   AvbdRigidPointPairRow second;
 };
 
+struct AvbdRigidPointJoint
+{
+  std::uint32_t bodyA = 0;
+  std::uint32_t bodyB = 0;
+  AvbdContactEndpointId endpointA;
+  AvbdContactEndpointId endpointB;
+  Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
+  double startStiffness = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+  std::uint32_t row = 0;
+};
+
 struct AvbdRigidContactManifoldPoint
 {
   std::uint32_t bodyA = 0;
@@ -369,6 +382,36 @@ inline bool isValidAvbdRigidContactManifoldPoint(
          && contact.normalFromAtoB.allFinite()
          && contact.normalFromAtoB.squaredNorm() > 0.0 && contact.depth > 0.0
          && std::isfinite(contact.depth);
+}
+
+//==============================================================================
+inline bool isValidAvbdRigidPointJoint(
+    const AvbdRigidPointJoint& joint, std::size_t bodyCount)
+{
+  return joint.bodyA < bodyCount && joint.bodyB < bodyCount
+         && joint.bodyA != joint.bodyB && joint.localPointA.allFinite()
+         && joint.localPointB.allFinite();
+}
+
+//==============================================================================
+inline AvbdScalarRowDescriptor makeAvbdRigidJointLinearRowDescriptor(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    double startStiffness,
+    double maxStiffness,
+    std::uint32_t row = 0,
+    std::uint8_t axis = 0)
+{
+  AvbdScalarRowDescriptor descriptor;
+  descriptor.key = makeAvbdEndpointPairRowKey(
+      AvbdScalarRowRole::JointLinear, first, second, row, axis);
+  descriptor.kind = AvbdScalarRowKind::HardConstraint;
+  descriptor.bounds
+      = {-std::numeric_limits<double>::infinity(),
+         std::numeric_limits<double>::infinity()};
+  descriptor.startStiffness = startStiffness;
+  descriptor.maxStiffness = maxStiffness;
+  return descriptor;
 }
 
 } // namespace detail
@@ -844,6 +887,63 @@ inline void buildAvbdRigidContactManifoldRows(
         0.0);
     indexedRows.second.bounds = secondRecord.descriptor.bounds;
     frictionRows.push_back(indexedRows);
+  }
+}
+
+//==============================================================================
+inline void buildAvbdRigidPointJointRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& linearInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  std::vector<AvbdRigidPointJoint> activeJoints;
+  activeJoints.reserve(joints.size());
+  std::vector<AvbdScalarRowDescriptor> descriptors;
+  descriptors.reserve(3 * joints.size());
+  for (const AvbdRigidPointJoint& joint : joints) {
+    if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
+      continue;
+    }
+
+    activeJoints.push_back(joint);
+    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      descriptors.push_back(
+          detail::makeAvbdRigidJointLinearRowDescriptor(
+              joint.endpointA,
+              joint.endpointB,
+              joint.startStiffness,
+              joint.maxStiffness,
+              joint.row,
+              axis));
+    }
+  }
+
+  linearInventory.syncActiveRows(descriptors, warmStartOptions);
+
+  linearRows.clear();
+  linearRows.reserve(linearInventory.size());
+  for (std::size_t jointIndex = 0; jointIndex < activeJoints.size();
+       ++jointIndex) {
+    const AvbdRigidPointJoint& joint = activeJoints[jointIndex];
+    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      const std::size_t recordIndex = 3 * jointIndex + axis;
+      if (recordIndex >= linearInventory.size()) {
+        return;
+      }
+
+      const AvbdScalarRowRecord& record = linearInventory[recordIndex];
+      AvbdRigidBodyPointPairRow indexedRow;
+      indexedRow.bodyA = joint.bodyA;
+      indexedRow.bodyB = joint.bodyB;
+      indexedRow.row.localPointA = joint.localPointA;
+      indexedRow.row.localPointB = joint.localPointB;
+      indexedRow.row.axis = Eigen::Vector3d::Unit(axis);
+      indexedRow.row.state = record.state;
+      indexedRow.row.bounds = record.descriptor.bounds;
+      linearRows.push_back(indexedRow);
+    }
   }
 }
 

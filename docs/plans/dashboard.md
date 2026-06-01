@@ -294,8 +294,11 @@ its own line so status updates remain git-history friendly.
   unsupported envelopes fall back to the existing sequential-impulse path. The
   private rigid contact snapshot now derives box face/edge/corner endpoint
   feature IDs and scopes row ordinals per canonical endpoint pair for narrower
-  warm-start persistence. The next local slice is full narrow-phase feature
-  extraction, rigid contact/joint rows, or rigid/articulated World integration.
+  warm-start persistence, and the private rigid row path now has the first
+  point-joint linear row builder for fixed-anchor translation constraints. The
+  next local slice is full narrow-phase feature extraction,
+  angular/contact-complete rigid joint rows, or rigid/articulated World
+  integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

@@ -706,6 +706,120 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedLinearRows)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+
+  std::vector<vbd::AvbdRigidPointJoint> joints(1);
+  joints[0].bodyA = 0;
+  joints[0].bodyB = 1;
+  joints[0].endpointA = {
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].endpointB = {
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].localPointA = Vec3(0.1, 0.2, 0.3);
+  joints[0].localPointB = Vec3(-0.2, 0.4, 0.1);
+  joints[0].startStiffness = 70.0;
+  joints[0].maxStiffness = 500.0;
+  joints[0].row = 4;
+
+  vbd::AvbdScalarRowInventory linearInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 0.5;
+  warmStart.gamma = 0.25;
+
+  vbd::buildAvbdRigidPointJointRows(
+      states, joints, linearInventory, linearRows, warmStart);
+
+  ASSERT_EQ(linearInventory.size(), 3u);
+  ASSERT_EQ(linearRows.size(), 3u);
+  for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+    const auto& descriptor = linearInventory[axis].descriptor;
+    EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::JointLinear);
+    EXPECT_EQ(descriptor.key.row, 4u);
+    EXPECT_EQ(descriptor.key.axis, axis);
+    EXPECT_DOUBLE_EQ(descriptor.startStiffness, 70.0);
+    EXPECT_DOUBLE_EQ(descriptor.maxStiffness, 500.0);
+    EXPECT_TRUE(std::isinf(descriptor.bounds.lower));
+    EXPECT_LT(descriptor.bounds.lower, 0.0);
+    EXPECT_TRUE(std::isinf(descriptor.bounds.upper));
+    EXPECT_GT(descriptor.bounds.upper, 0.0);
+    EXPECT_EQ(linearRows[axis].bodyA, 0u);
+    EXPECT_EQ(linearRows[axis].bodyB, 1u);
+    EXPECT_NEAR(
+        (linearRows[axis].row.axis - Vec3::Unit(axis)).norm(), 0.0, 1e-12);
+  }
+
+  linearInventory[0].state.lambda = 8.0;
+  linearInventory[0].state.stiffness = 120.0;
+  vbd::buildAvbdRigidPointJointRows(
+      states, joints, linearInventory, linearRows, warmStart);
+
+  ASSERT_EQ(linearInventory.size(), 3u);
+  EXPECT_DOUBLE_EQ(linearInventory[0].state.lambda, 1.0);
+  EXPECT_DOUBLE_EQ(linearInventory[0].state.stiffness, 70.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidPointJointRowsDriveAnchorsTogether)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3::Zero();
+  states[1].position = Vec3::UnitX();
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias
+      = {Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+  std::vector<vbd::AvbdRigidPointJoint> joints(1);
+  joints[0].bodyA = 0;
+  joints[0].bodyB = 1;
+  joints[0].endpointA = {
+      1, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].endpointB = {
+      2, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].startStiffness = 100.0;
+  joints[0].maxStiffness = 1000.0;
+
+  vbd::AvbdScalarRowInventory linearInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  vbd::buildAvbdRigidPointJointRows(
+      states, joints, linearInventory, linearRows);
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 8;
+  options.regularization = 1e-12;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  rowOptions.beta = 1000.0;
+  rowOptions.maxStiffness = 1000.0;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          linearRows,
+          frictionRows,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  EXPECT_GT(stats.bodyUpdates, 0u);
+  EXPECT_LT(states[1].position.x(), 0.25);
+  EXPECT_NEAR(states[1].position.y(), 0.0, 1e-12);
+  EXPECT_NEAR(states[1].position.z(), 0.0, 1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsInactiveRows)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
