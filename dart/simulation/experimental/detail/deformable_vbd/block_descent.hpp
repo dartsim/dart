@@ -399,15 +399,21 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
     return block;
   };
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
           continue;
         }
         const VertexBlock block = assemble(vertex);
-        positions[vertex] += solveVertexBlock(block, options.regularization);
+        const Eigen::Vector3d delta
+            = solveVertexBlock(block, options.regularization);
+        positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
     }
@@ -427,6 +433,9 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
           positions[spring.a], positions[spring.b], spring.restLength);
       row.state = updateAvbdSpringFiniteStiffnessRow(
           row.state, constraintValue, row, avbdOptions);
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
     }
   }
 
@@ -609,15 +618,21 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     return block;
   };
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
           continue;
         }
         const VertexBlock block = assemble(vertex);
-        positions[vertex] += solveVertexBlock(block, options.regularization);
+        const Eigen::Vector3d delta
+            = solveVertexBlock(block, options.regularization);
+        positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
     }
@@ -722,6 +737,9 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
             row.state, positions, row, *selfContactFrictionOptions);
         ++i;
       }
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
     }
   }
 
@@ -1094,15 +1112,21 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     return block;
   };
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
           continue;
         }
         const VertexBlock block = assemble(vertex);
-        positions[vertex] += solveVertexBlock(block, options.regularization);
+        const Eigen::Vector3d delta
+            = solveVertexBlock(block, options.regularization);
+        positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
     }
@@ -1172,6 +1196,9 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
             row.state, positions, row, *selfContactFrictionOptions);
         ++i;
       }
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
     }
   }
 
@@ -1630,15 +1657,21 @@ inline BlockDescentStats blockDescentMassSpringAvbdGround(
     return block;
   };
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
           continue;
         }
         const VertexBlock block = assemble(vertex);
-        positions[vertex] += solveVertexBlock(block, options.regularization);
+        const Eigen::Vector3d delta
+            = solveVertexBlock(block, options.regularization);
+        positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
     }
@@ -1653,6 +1686,9 @@ inline BlockDescentStats blockDescentMassSpringAvbdGround(
           avbdOptions,
           row.previousConstraintValue,
           row.bounds);
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
     }
   }
 
@@ -1708,15 +1744,21 @@ inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
     return block;
   };
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
           continue;
         }
         const VertexBlock block = assemble(vertex);
-        positions[vertex] += solveVertexBlock(block, options.regularization);
+        const Eigen::Vector3d delta
+            = solveVertexBlock(block, options.regularization);
+        positions[vertex] += delta;
+        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
     }
@@ -1726,6 +1768,9 @@ inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
       }
       row.state = updateAvbdPointAttachmentRow(
           row.state, positions[row.vertex], row, avbdOptions);
+    }
+    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
+      break;
     }
   }
 

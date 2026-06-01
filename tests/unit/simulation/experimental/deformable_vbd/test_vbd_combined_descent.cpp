@@ -1081,3 +1081,52 @@ TEST(VbdCombinedDescent, AvbdSelfContactFrictionRowsReduceTangentialMotion)
   EXPECT_GT(withFriction, 0.05);
   EXPECT_LT(withFriction, withoutFriction);
 }
+
+//==============================================================================
+TEST(VbdCombinedDescent, AvbdRowsHonorConvergenceDisplacement)
+{
+  std::vector<Vec3> positions = {Vec3::Zero()};
+  const std::vector<double> masses = {1.0};
+  const std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<Vec3> inertialTargets = positions;
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(positions.size(), springs);
+  const auto adjacency = vbd::SpringAdjacency::build(positions.size(), springs);
+
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
+  std::vector<vbd::AvbdPointAttachmentRow> attachments(1);
+  attachments[0].vertex = 0;
+  attachments[0].target = positions[0];
+  attachments[0].axis = Vec3::UnitX();
+  attachments[0].state.stiffness = 100.0;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 12;
+  options.convergenceDisplacement = 1e-12;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+
+  const vbd::BlockDescentStats stats = vbd::blockDescentMassSpringAvbdRows(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      /*fallbackSpringStiffness=*/0.0,
+      /*timeStep=*/0.1,
+      contacts,
+      attachments,
+      springRows,
+      coloring,
+      adjacency,
+      options,
+      contactOptions,
+      attachmentOptions,
+      springOptions);
+
+  EXPECT_EQ(stats.iterations, 1u);
+  EXPECT_EQ(stats.vertexUpdates, 1u);
+  EXPECT_NEAR(positions[0].norm(), 0.0, 1e-12);
+}
