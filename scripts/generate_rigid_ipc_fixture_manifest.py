@@ -238,6 +238,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "evidence."
         ),
     },
+    "fixtures/3D/unit-tests/erleben/spikes.json": {
+        "test": "ErlebenSpikesFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited Erleben spikes row: an inverted spike "
+            "rests on a fixed upright spike, activates rigid IPC contact, "
+            "stays finite, and reports no meaningful native overlap after "
+            "each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned spike-on-spike runtime coverage for the "
+            "3D unit-test fixture mechanism. Other Erleben rows remain "
+            "planned until they have topology-specific DART runtime evidence."
+        ),
+    },
     "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json": {
         "test": "CubeSettlesOnTwoTrianglePlaneFixtureRow",
         "expected_invariant": (
