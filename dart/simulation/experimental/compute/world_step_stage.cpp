@@ -6434,6 +6434,18 @@ void applyRigidIpcKinematicRuntimeBodies(
   }
 }
 
+//==============================================================================
+bool canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+{
+  // If no barrier/friction rows are active, discarding the dynamic solve result
+  // does not invalidate the prescribed kinematic advance. With active contact
+  // rows, however, a rejected solve means there is no accepted swept path for
+  // the current dynamic state against the kinematic end pose.
+  return result.assembly.activeConstraints.empty()
+         && result.assembly.activeFrictionConstraints.empty();
+}
+
 } // namespace
 
 //==============================================================================
@@ -7001,6 +7013,9 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // velocity to the contact-consistent no-op instead of reporting a persistent
   // failure for a static dense contact.
   if (result.failed && !restingContactBlocked) {
+    if (canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(result)) {
+      applyRigidIpcKinematicRuntimeBodies(world, runtimeBodies);
+    }
     return;
   }
   // Otherwise apply the last intersection-free iterate the bounded solve
@@ -7016,6 +7031,9 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // iteration budget) is still skipped.
   if (!result.converged && !result.madeProgress() && !restingContactBlocked) {
     m_lastStats.nonConvergedResultSkipped = true;
+    if (canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(result)) {
+      applyRigidIpcKinematicRuntimeBodies(world, runtimeBodies);
+    }
     return;
   }
 
