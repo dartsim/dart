@@ -53,6 +53,7 @@ add_library(
   compute/parallel_executor.cpp
   compute/rigid_body_constraint.cpp
   compute/rigid_body_state_batch.cpp
+  compute/unified_constraint.cpp
   compute/variational_integration.cpp
   compute/sequential_executor.cpp
   compute/world_batch.cpp

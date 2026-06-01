@@ -66,6 +66,9 @@ void expectRowsExactlyEqual(
   EXPECT_DOUBLE_EQ(lhs.bias, rhs.bias);
   EXPECT_DOUBLE_EQ(lhs.restitutionTarget, rhs.restitutionTarget);
   EXPECT_DOUBLE_EQ(lhs.friction, rhs.friction);
+  EXPECT_DOUBLE_EQ(lhs.normalRhs, rhs.normalRhs);
+  EXPECT_DOUBLE_EQ(lhs.tangentRhs1, rhs.tangentRhs1);
+  EXPECT_DOUBLE_EQ(lhs.tangentRhs2, rhs.tangentRhs2);
   EXPECT_DOUBLE_EQ(lhs.otherInvMass, rhs.otherInvMass);
 }
 
@@ -184,6 +187,14 @@ TEST(MultibodyLinkContact, AssemblesOneSidedLinkContactRowDeterministically)
       = (approach < -1e-2) ? -contact.restitution * approach : 0.0;
   EXPECT_DOUBLE_EQ(row.restitutionTarget, expectedRestitution);
   EXPECT_GT(row.restitutionTarget, 0.0); // the leg is descending into ground
+
+  // Boxed-LCP right-hand sides: the normal target mirrors the Gauss-Seidel
+  // normal update; the tangent targets drive tangential relative velocity to
+  // zero (one-sided, so no obstacle term).
+  EXPECT_DOUBLE_EQ(
+      row.normalRhs, -approach + std::max(row.bias, row.restitutionTarget));
+  EXPECT_DOUBLE_EQ(row.tangentRhs1, -row.tangentJacobian1.dot(nextVelocity));
+  EXPECT_DOUBLE_EQ(row.tangentRhs2, -row.tangentJacobian2.dot(nextVelocity));
 
   // Element-exact repeat assembly: the seam is deterministic.
   ASSERT_EQ(repeated.rows.size(), problem.rows.size());

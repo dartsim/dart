@@ -1211,6 +1211,18 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
     row.restitutionTarget = (approachingVelocity < -restitutionThreshold)
                                 ? -contact.restitution * approachingVelocity
                                 : 0.0;
+
+    // Pre-solve boxed-LCP right-hand sides. The normal target mirrors the
+    // Gauss-Seidel normal update (`-v_n + max(bias, restitution)`); the tangent
+    // targets drive the tangential relative velocity to zero. Computed from the
+    // staged pre-solve velocity so the unified constraint solve can consume
+    // them without re-reading the registry.
+    row.normalRhs
+        = -approachingVelocity + std::max(row.bias, row.restitutionTarget);
+    row.tangentRhs1 = -linkContactRelativeVelocity(
+        registry, row, row.tangentJacobian1, tangent1, nextVelocity);
+    row.tangentRhs2 = -linkContactRelativeVelocity(
+        registry, row, row.tangentJacobian2, tangent2, nextVelocity);
     row.active = true;
   }
 

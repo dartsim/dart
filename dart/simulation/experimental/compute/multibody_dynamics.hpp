@@ -166,6 +166,14 @@ struct MultibodyLinkContactRow
   double bias = 0.0; ///< Baumgarte penetration-recovery velocity target
   double restitutionTarget = 0.0;
   double friction = 1.0;
+  /// Pre-solve boxed-LCP right-hand sides (`w = A*lambda - b` convention), the
+  /// velocity-level targets the unified constraint solve drives to. The normal
+  /// row uses `-v_n + max(bias, restitutionTarget)` (matching the Gauss-Seidel
+  /// normal update); the tangent rows drive the tangential relative velocity to
+  /// zero (`-v_t`). Computed once from the staged pre-solve velocity.
+  double normalRhs = 0.0;
+  double tangentRhs1 = 0.0;
+  double tangentRhs2 = 0.0;
   double normalImpulse = 0.0;
   double tangentImpulse1 = 0.0;
   double tangentImpulse2 = 0.0;

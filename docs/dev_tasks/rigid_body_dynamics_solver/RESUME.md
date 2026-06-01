@@ -407,6 +407,57 @@ simulation-experimental` (41/41), and `pixi run lint`.
   `test_rigid_body_constraint`, `test_world`, and `test_skeleton_to_multibody`,
   plus full `ctest --test-dir build/default/cpp/Release --output-on-failure -L
 simulation-experimental` (42/42), and `pixi run lint`.
+- **Slice 3c — `UnifiedConstraintStage` (the unify). Validated design + 3-way
+  adversarial critique** (workflow `unify-contact-solve-design`, 14 agents).
+  Decomposed into 7 individually-gated sub-slices; ONLY the last (3c-ii.2) flips
+  the pipeline — everything before ships net-new, dead, unit-tested code (zero
+  behavior risk). Hard correctness pins from the critiques: (a) construct
+  `LcpOptions` as `solver.getDefaultOptions(); o.earlyTermination = true;`
+  verbatim — never default-construct (it flips `succeeded()`, hence the fallback
+  decision, in exactly the rank-deficient cases bit-identity must cover);
+  (b) a dynamic obstacle shared between a rigid contact and a link contact must
+  have ONE inverse mass/inertia injected into the rigid diagonal, link diagonal,
+  AND all cross terms (the two legacy paths normalize differently and zero
+  differently on LDLT failure, which would make A asymmetric); (c) compact
+  inactive link rows BEFORE computing global findex; (d) the rank-deficient
+  fallback's normal-row gather enumerates in ASCENDING global-row order so the
+  multibody-free case reproduces the legacy `i*3` stride byte-for-byte; (e) fill
+  shared-obstacle cross terms over ALL NINE direction pairs (rigid
+  `unitOrthogonal` vs link `cross` tangent frames are misaligned). Rigid
+  bit-identity is guaranteed ONLY for multibody-free and disjoint-mixed worlds;
+  shared-obstacle mixed scenes change at FP level (simultaneous vs sequential
+  solve) and are tolerance-based. Variational path is untouched (keeps
+  `RigidBodyContactStage`); the `method != Variational` gate is structural.
+  - **(DONE locally) Slice 3c-i.2 — unified problem types + within-domain
+    assembler.** Added `compute/unified_constraint.{hpp,cpp}` with
+    `UnifiedConstraintProblem` (global `delassus/rhs/lo/hi/findex` + `RowOwner`
+    provenance + verbatim `rigidConstraints` copy + per-multibody
+    `UnifiedMultibodyBlock`s) and the pure function
+    `assembleUnifiedConstraintProblem(rigidProblem, multibodyContacts)`. It
+    copies the rigid `A,b,lo,hi,findex` VERBATIM into the leading block, compacts
+    each multibody's active link rows, lays out three-row triples after the rigid
+    block, fills the full dense within-multibody `J_i^T M_k^-1 J_j` coupling (the
+    diagonal reproduces the stored row denominators bit-identically for
+    obstacle-free contacts), and sets link `lo/hi/findex` against the COMPACTED
+    global indices. Cross terms are zero (deferred to 3c-i.3). Extended
+    `MultibodyLinkContactRow` with `normalRhs/tangentRhs1/tangentRhs2` (the
+    pre-solve boxed-LCP targets) computed in `assembleMultibodyLinkContactProblem`
+    so the unified assembler stays a pure function of the sub-problems; the GS
+    solve ignores them, so 3b behavior is unchanged. NO pipeline change. Added
+    `test_unified_constraint` (multibody-free reproduces
+    `assembleRigidBodyContactProblem` byte-for-byte; rigid-free single-multibody
+    dense block equals `J_i^T M^-1 J_j` with the diagonal == denominators and a
+    non-trivial off-diagonal; findex range/self/normal-target asserts; fixed-base
+    inactive-row compaction → non-singular) and extended the 3b test for the new
+    rhs fields. Verified focused build + CTest for `test_unified_constraint`,
+    `test_multibody_link_contact`, `test_rigid_body_constraint`,
+    `test_multibody_constraint`, `test_world`, `test_skeleton_to_multibody`, full
+    `ctest -L simulation-experimental` (43/43), and `pixi run lint`.
+  - **Next: 3c-i.3** shared-obstacle cross terms + single-source inertia
+    reconciliation (cases 2-obstacle/3/4, all nine direction pairs, symmetry +
+    finite-difference tests); then 3c-i.4 solver+apply (pinned `LcpOptions`),
+    3c-i.5 generalized fallback, 3c-ii.1 the `UnifiedConstraintStage` class
+    (dead, unit-tested via direct `execute`), 3c-ii.2 the pipeline flip.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
