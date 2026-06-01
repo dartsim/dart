@@ -57,11 +57,13 @@ jobs:
             run_build: true
             dartpy: "OFF"
             gui: "OFF"
+            cmake_build_type: Debug
           - language: python
             build_mode: none
             run_build: false
             dartpy: "ON"
             gui: "ON"
+            cmake_build_type: Release
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -88,14 +90,14 @@ jobs:
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
         run: |
-          pixi run config ${{ matrix.dartpy }}
+          pixi run config ${{ matrix.dartpy }} ${{ matrix.cmake_build_type }}
 
       - name: Build
         if: matrix.run_build
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
         run: |
-          pixi run build ${{ matrix.dartpy }}
+          pixi run build ${{ matrix.dartpy }} ${{ matrix.cmake_build_type }}
 
       - name: CodeQL Analyze
         uses: github/codeql-action/analyze@v4
