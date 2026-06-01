@@ -583,7 +583,10 @@
     routes privately opted-in rigid contacts through private 6-DOF AVBD
     point-pair rows as a velocity-level projection while unsupported envelopes
     fall back to the existing sequential-impulse path; no AVBD row storage or
-    solver registry is exposed through the public facade.
+    solver registry is exposed through the public facade. The private rigid
+    contact snapshot now also derives box face/edge/corner endpoint feature IDs
+    and scopes contact row ordinals per canonical endpoint pair so unrelated
+    contact manifolds do not perturb warm-start identity.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration

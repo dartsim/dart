@@ -54,7 +54,9 @@ existing VBD path. The first internal rigid contact-stage AVBD activation is
 now guarded by `RigidAvbdContactConfig`: supported free rigid-body contacts use
 the private World-contact snapshot and 6-DOF row solve as a velocity projection
 consumed by the standard rigid position stage, while unsupported envelopes fall
-back to sequential impulses.
+back to sequential impulses. The private rigid contact snapshot also derives box
+face/edge/corner endpoint feature IDs and scopes row ordinals per canonical
+endpoint pair so unrelated manifolds do not perturb row identity.
 
 ## Current Branch
 
@@ -78,21 +80,23 @@ manifold-point inputs and verifies that they can drive the private serial rigid
 row solve plus dynamic rigid-body ECS writeback through a combined private
 wrapper. The current branch additionally adds the first internal
 `RigidAvbdContactConfig` contact-stage activation for supported free rigid-body
-contacts as a velocity-level projection.
+contacts as a velocity-level projection and box-feature/pair-scoped rigid
+contact row identity for the private snapshot path.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
-broader rigid contact-manifold feature persistence, rigid contact/joint rows,
-or rigid/articulated World wiring are the preferred row-family gaps now that
+full narrow-phase feature extraction, rigid contact/joint rows, or
+rigid/articulated World wiring are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
 rigid row driver plus private rigid contact-manifold row builder and
-World-contact snapshot/solve/writeback helpers plus a combined private wrapper
-and first internal contact-stage activation exist. Keep the supported envelope
-narrow and preserve fallback coverage for topology mixes, damping/acceleration,
-parallel solves, and unsupported requested row combinations.
+World-contact snapshot/solve/writeback helpers plus a combined private wrapper,
+first internal contact-stage activation, and box-feature/pair-scoped row
+identity exist. Keep the supported envelope narrow and preserve fallback
+coverage for topology mixes, damping/acceleration, parallel solves, and
+unsupported requested row combinations.
 
 ## Context That Would Be Lost
 
@@ -143,8 +147,10 @@ parallel solves, and unsupported requested row combinations.
   persistence, broad dynamic/rigid feature persistence, rigid/articulated
   joints, rigid/soft coupling, or GPU parity. Private dynamic/rigid contact
   identity helpers now pack contact feature kind/index IDs, canonicalize
-  two-endpoint contact row keys, and create normal/friction row descriptors, but
-  broad dynamic/rigid contact manifold persistence is not solved yet.
+  two-endpoint contact row keys, derive private box face/edge/corner endpoint
+  feature IDs for rigid snapshots, scope row ordinals per canonical endpoint
+  pair, and create normal/friction row descriptors, but full narrow-phase
+  feature extraction is not solved yet.
 
 ## How to Resume
 

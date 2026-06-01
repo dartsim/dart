@@ -863,12 +863,30 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
     EXPECT_EQ(
         manifoldPoint.endpointB.object,
         vbd::avbdRigidWorldContactObjectId(sourceContact.bodyB.getEntity()));
-    EXPECT_EQ(
-        vbd::avbdContactFeatureKind(manifoldPoint.endpointA.feature),
-        vbd::AvbdContactFeatureKind::Body);
-    EXPECT_EQ(
-        vbd::avbdContactFeatureKind(manifoldPoint.endpointB.feature),
-        vbd::AvbdContactFeatureKind::Body);
+    const auto expectEndpointFeature
+        = [&](const vbd::AvbdContactEndpointId& endpoint, entt::entity entity) {
+            if (entity == ground.getEntity()) {
+              const std::uint64_t groundFeatureCode
+                  = vbd::avbdBoxContactFeatureCode(
+                      sourceContact.point - ground.getTranslation(),
+                      Vec3(2.0, 2.0, 0.25));
+              EXPECT_EQ(
+                  vbd::avbdContactFeatureKind(endpoint.feature),
+                  vbd::AvbdContactFeatureKind::Face);
+              EXPECT_EQ(
+                  vbd::avbdContactFeatureLocalIndex(endpoint.feature),
+                  vbd::packAvbdBoxContactFeatureId(
+                      /*boxIndex=*/0, groundFeatureCode));
+            } else {
+              EXPECT_EQ(
+                  vbd::avbdContactFeatureKind(endpoint.feature),
+                  vbd::AvbdContactFeatureKind::Body);
+            }
+          };
+    expectEndpointFeature(
+        manifoldPoint.endpointA, sourceContact.bodyA.getEntity());
+    expectEndpointFeature(
+        manifoldPoint.endpointB, sourceContact.bodyB.getEntity());
     EXPECT_NEAR((manifoldPoint.point - sourceContact.point).norm(), 0.0, 1e-12);
     EXPECT_NEAR(
         (manifoldPoint.normalFromAtoB - sourceContact.normal).norm(),
@@ -903,6 +921,54 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
     EXPECT_NEAR((pointA - snapshot.contacts[i].point).norm(), 0.0, 1e-12);
     EXPECT_NEAR((pointB - snapshot.contacts[i].point).norm(), 0.0, 1e-12);
   }
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotPersistsFeatureScopedRows)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions boxOptions;
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox(Vec3(1.0, 1.0, 1.0)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Vec3(2.0, 0.0, 0.0);
+  auto sphereA = world.addRigidBody("sphere_a", sphereOptions);
+  sphereA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sphereOptions.position = Vec3(0.0, 2.0, 0.0);
+  auto sphereB = world.addRigidBody("sphere_b", sphereOptions);
+  sphereB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const sx::CollisionBody boxBody(box.getEntity(), &world);
+  const sx::CollisionBody sphereBodyA(sphereA.getEntity(), &world);
+  const sx::CollisionBody sphereBodyB(sphereB.getEntity(), &world);
+  const std::vector<sx::Contact> contacts{
+      {boxBody, sphereBodyA, Vec3(1.0, 0.1, 0.0), Vec3::UnitX(), 0.1},
+      {boxBody, sphereBodyB, Vec3(0.0, 1.0, 0.1), Vec3::UnitY(), 0.2},
+      {boxBody, sphereBodyA, Vec3(1.0, -0.1, 0.0), Vec3::UnitX(), 0.3}};
+
+  const vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+
+  ASSERT_EQ(snapshot.contacts.size(), contacts.size());
+  EXPECT_EQ(snapshot.contacts[0].row, 0u);
+  EXPECT_EQ(snapshot.contacts[1].row, 0u);
+  EXPECT_EQ(snapshot.contacts[2].row, 1u);
+  EXPECT_EQ(
+      snapshot.contacts[0].endpointA.feature,
+      snapshot.contacts[2].endpointA.feature);
+  EXPECT_NE(
+      snapshot.contacts[0].endpointA.feature,
+      snapshot.contacts[1].endpointA.feature);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[0].endpointA.feature),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[1].endpointA.feature),
+      vbd::AvbdContactFeatureKind::Face);
 }
 
 //==============================================================================

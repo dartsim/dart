@@ -284,6 +284,16 @@ TEST(VbdContact, AvbdBoxContactFeatureCodeSeparatesBoxManifolds)
   EXPECT_NE(
       vbd::packAvbdBoxContactFeatureId(0, positiveXFace),
       vbd::packAvbdBoxContactFeatureId(0, positiveYFace));
+
+  EXPECT_EQ(
+      vbd::avbdBoxContactFeatureKind(positiveXFace),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdBoxContactFeatureKind(positiveXPositiveYEdge),
+      vbd::AvbdContactFeatureKind::Edge);
+  EXPECT_EQ(
+      vbd::avbdBoxContactFeatureKind(positiveCorner),
+      vbd::AvbdContactFeatureKind::Vertex);
 }
 
 //==============================================================================

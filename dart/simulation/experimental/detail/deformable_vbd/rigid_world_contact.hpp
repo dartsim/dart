@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/experimental/body/contact.hpp>
+#include <dart/simulation/experimental/comps/collision_geometry.hpp>
 #include <dart/simulation/experimental/comps/contact_material.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
@@ -44,7 +45,9 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -211,6 +214,52 @@ inline double avbdRigidWorldContactFriction(
 }
 
 //==============================================================================
+inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
+    const entt::registry& registry,
+    entt::entity entity,
+    const Eigen::Vector3d& point)
+{
+  const auto* transform = registry.try_get<comps::Transform>(entity);
+  if (transform == nullptr) {
+    return point;
+  }
+
+  return normalizeAvbdRigidOrientation(transform->orientation).conjugate()
+         * (point - transform->position);
+}
+
+//==============================================================================
+inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
+    const entt::registry& registry,
+    entt::entity entity,
+    const Eigen::Vector3d& point)
+{
+  AvbdContactEndpointId endpoint{
+      avbdRigidWorldContactObjectId(entity),
+      packAvbdContactFeatureId(AvbdContactFeatureKind::Body, 0)};
+
+  const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
+  if (geometry == nullptr || geometry->shape.type != CollisionShapeType::Box
+      || !geometry->shape.halfExtents.allFinite()
+      || (geometry->shape.halfExtents.array() <= 0.0).any()) {
+    return endpoint;
+  }
+
+  const Eigen::Vector3d localPoint
+      = avbdRigidWorldContactLocalPoint(registry, entity, point);
+  if (!localPoint.allFinite()) {
+    return endpoint;
+  }
+
+  const std::uint64_t featureCode
+      = avbdBoxContactFeatureCode(localPoint, geometry->shape.halfExtents);
+  endpoint.feature = packAvbdContactFeatureId(
+      avbdBoxContactFeatureKind(featureCode),
+      packAvbdBoxContactFeatureId(/*boxIndex=*/0, featureCode));
+  return endpoint;
+}
+
+//==============================================================================
 inline std::uint32_t findAvbdRigidWorldBodyIndex(
     const AvbdRigidWorldContactSnapshot& snapshot, entt::entity entity)
 {
@@ -266,6 +315,10 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
 {
   AvbdRigidWorldContactSnapshot snapshot;
   snapshot.contacts.reserve(contacts.size());
+  std::map<
+      std::pair<AvbdContactEndpointId, AvbdContactEndpointId>,
+      std::uint32_t>
+      rowCounters;
 
   for (std::size_t contactIndex = 0; contactIndex < contacts.size();
        ++contactIndex) {
@@ -302,12 +355,10 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
     AvbdRigidContactManifoldPoint manifoldPoint;
     manifoldPoint.bodyA = bodyA;
     manifoldPoint.bodyB = bodyB;
-    manifoldPoint.endpointA = AvbdContactEndpointId{
-        avbdRigidWorldContactObjectId(entityA),
-        packAvbdContactFeatureId(AvbdContactFeatureKind::Body, 0)};
-    manifoldPoint.endpointB = AvbdContactEndpointId{
-        avbdRigidWorldContactObjectId(entityB),
-        packAvbdContactFeatureId(AvbdContactFeatureKind::Body, 0)};
+    manifoldPoint.endpointA = detail::avbdRigidWorldContactEndpointId(
+        registry, entityA, contact.point);
+    manifoldPoint.endpointB = detail::avbdRigidWorldContactEndpointId(
+        registry, entityB, contact.point);
     manifoldPoint.point = contact.point;
     manifoldPoint.normalFromAtoB = contact.normal;
     manifoldPoint.depth = contact.depth;
@@ -316,8 +367,13 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
         * detail::avbdRigidWorldContactFriction(registry, entityB));
     manifoldPoint.startStiffness = options.startStiffness;
     manifoldPoint.maxStiffness = options.maxStiffness;
-    manifoldPoint.row = static_cast<std::uint32_t>(std::min<std::size_t>(
-        contactIndex, std::numeric_limits<std::uint32_t>::max()));
+    const auto rowKey = canonicalizeAvbdContactEndpoints(
+        manifoldPoint.endpointA, manifoldPoint.endpointB);
+    std::uint32_t& nextRow = rowCounters[rowKey];
+    manifoldPoint.row = nextRow;
+    if (nextRow < std::numeric_limits<std::uint32_t>::max()) {
+      ++nextRow;
+    }
     snapshot.contacts.push_back(manifoldPoint);
   }
 

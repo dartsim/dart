@@ -197,6 +197,31 @@ inline std::uint64_t packAvbdBoxContactFeatureId(
          + (featureCode % kAvbdBoxContactFeatureCodeCount);
 }
 
+//==============================================================================
+inline AvbdContactFeatureKind avbdBoxContactFeatureKind(
+    std::uint64_t featureCode)
+{
+  std::uint64_t code = featureCode % kAvbdBoxContactFeatureCodeCount;
+  std::uint8_t boundaryAxes = 0;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (code % 3u != 1u) {
+      ++boundaryAxes;
+    }
+    code /= 3u;
+  }
+
+  if (boundaryAxes == 1u) {
+    return AvbdContactFeatureKind::Face;
+  }
+  if (boundaryAxes == 2u) {
+    return AvbdContactFeatureKind::Edge;
+  }
+  if (boundaryAxes == 3u) {
+    return AvbdContactFeatureKind::Vertex;
+  }
+  return AvbdContactFeatureKind::Body;
+}
+
 /// One active AVBD half-space normal row for a deformable vertex. Row
 /// generation and persistence live outside this narrow kernel; this struct is
 /// the CPU block-stamping slice for an already-active contact candidate.
