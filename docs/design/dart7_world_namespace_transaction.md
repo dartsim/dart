@@ -7,8 +7,8 @@ This design owns the durable rationale for **how the classic DART 6
 can own the official DART 7 `dart::simulation::World` C++ name and the
 `dartpy.World` / `dartpy.simulation.World` Python names. It is the design
 artifact for PLAN-041 workstream 4 (World name-collision transaction). Roadmap
-operating state for PLAN-041 lives in `docs/plans/dashboard.md`; the workstream
-sequence, gates, and acceptance criteria live in
+operating state for PLAN-041 lives in `docs/plans/dashboard.md`; the active
+workstream sequence, verification commands, and acceptance criteria live in
 `docs/plans/041-official-simulation-api-promotion.md`. The promoted C++ and
 Python API shapes are owned by `docs/design/simulation_experimental_cpp_api.md`
 and `docs/design/simulation_experimental_python_api.md`; the release topology is
@@ -25,8 +25,8 @@ Promotion cannot simply rename the experimental class into `dart::simulation`
 because that name is already a fully exported, default-built, widely consumed
 public symbol. The two definitions are not ABI- or lifecycle-compatible (see the
 occupancy map below), so there is no safe in-place type alias. The collision
-must be cleared by an explicit, gated transaction before the official facade PR
-can land.
+must be cleared by an explicit transaction before the official facade PR can
+land.
 
 ## Current Occupancy Of `dart::simulation::World` (C++)
 
@@ -91,7 +91,7 @@ can land.
   (`dart/simulation/experimental/CMakeLists.txt:31-32`,
   `dart/simulation/experimental/CMakeLists.txt:197-200`). It links
   `EnTT::EnTT` **PUBLIC** (`dart/simulation/experimental/CMakeLists.txt:115`) and
-  is gated **OFF by default** behind `DART_BUILD_SIMULATION_EXPERIMENTAL`
+  is controlled by `DART_BUILD_SIMULATION_EXPERIMENTAL`, which defaults to **OFF**
   (`CMakeLists.txt:409-414`, `CMakeLists.txt:897-899`). The header style is
   `#pragma once` and the headers install via a `DIRECTORY` glob to
   `include/dart/simulation/experimental`
@@ -178,9 +178,9 @@ Transaction implications:
   this guard. Do not hand-author a `dart/simulation/World.hpp`; it would collide
   with the generated compat header on case-sensitive filesystems and with the
   source `world.hpp` on case-insensitive ones.
-- Whichever option is chosen, keep a macOS (case-insensitive) build in the gate
-  for the facade PR so the `World.hpp`/`world.hpp` behavior is exercised on both
-  filesystem classes.
+- Whichever option is chosen, validate the facade on both case-sensitive and
+  case-insensitive filesystems so the `World.hpp`/`world.hpp` behavior is
+  exercised before promotion.
 
 ## Option (a): Temporary Non-Colliding Facade While Consumers Migrate
 
@@ -195,7 +195,7 @@ Pros:
 
 - Smallest blast radius per PR. The first facade PR adds a new symbol and breaks
   nothing; the 159 in-tree consumers migrate incrementally behind a green build.
-- Lets parity, boundary, and package gates stabilize against the new facade
+- Lets parity, boundary, and package validation stabilize against the new facade
   before the classic world is removed, reducing the chance of a single giant PR
   failing late.
 - Python mirror is clean: bind the new world into a non-colliding submodule
@@ -208,7 +208,7 @@ Cons:
 - Ships **two worlds at once** during the window, which is exactly what PLAN-041
   acceptance criteria warn against ("This avoids shipping two official worlds").
   The temporary name must be explicitly marked non-official, time-boxed, and
-  gated, or it risks becoming a de facto second public API.
+  verified, or it risks becoming a de facto second public API.
 - A throwaway public name (`World7`, `v7::World`) leaks transition mechanics into
   user-facing code and downstream (gz-physics) include paths, then forces a
   second rename. Two renames cost more total churn than one.
@@ -245,9 +245,9 @@ Pros:
 Cons:
 
 - Large, high-risk PR touching 159 in-tree consumers plus Python bindings,
-  stubs, and generated docs. Must pass `build`, `test-unit`,
-  `test-simulation-experimental`, `test-py`, boundary, and package smokes
-  together.
+  stubs, and generated docs. PLAN-041 should sequence prerequisite validation so
+  the final replacement is not the first time lifecycle, package, Python, and
+  boundary decisions meet.
 - The ECS world is non-copyable/non-movable and value-typed, while the classic
   world is shared-ownership (`WorldPtr`, `clone()`, `create()`). The facade must
   reconcile lifecycle: either the facade re-adds heap/shared-ownership factories
@@ -264,80 +264,19 @@ Cons:
 
 ## Recommended Transaction
 
-**Adopt option (b), atomic replacement, but stage the prerequisites so the
-replacement PR itself is mechanical and gated.** Option (b) is the only path that
-never ships two official `dart::simulation::World` symbols, costs one rename and
-one ABI/downstream migration, and preserves the official include path and
-namespace. The two-worlds window and double rename of option (a) directly
-conflict with the PLAN-041 acceptance criterion of not shipping two official
-worlds, and the throwaway public name would leak into gz-physics include paths.
+**Adopt option (b), atomic replacement, with prerequisites sequenced in
+PLAN-041 before the replacement PR.** Option (b) is the only path that never
+ships two official `dart::simulation::World` symbols, costs one rename and one
+ABI/downstream migration, and preserves the official include path and namespace.
+The two-worlds window and double rename of option (a) directly conflict with the
+PLAN-041 acceptance criterion of not shipping two official worlds, and the
+throwaway public name would leak into gz-physics include paths.
 
-The atomic swap is made safe by doing the risky, behavior-changing work in
-earlier, independently gated PRs and reserving the actual name swap for a
-focused, mostly-mechanical PR.
-
-Ordered step sequence (each PR is independently green before the next):
-
-1. **Build-shape prerequisite (PLAN-041 workstream 2).** Make the ECS-backed
-   baseline non-optional in default builds and keep EnTT/ECS out of the public
-   boundary. Gates: `pixi run build`, `pixi run test-simulation-experimental`,
-   reduced-build check while `DART_BUILD_SIMULATION_EXPERIMENTAL` still exists,
-   installed-package C++ smoke. No public name changes yet.
-2. **Boundary enforcement prerequisite (PLAN-041 workstream 3).** Update
-   `scripts/check_api_boundaries.py` /
-   `scripts/generate_api_boundary_inventory.py` so promoted headers fail if they
-   expose EnTT, `entt::registry`, ECS storage, component namespaces, solver
-   registries, backend types, or direct registry access (the current
-   `getRegistry()` escape hatch must be hidden from the promoted facade). Gates:
-   `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`.
-3. **C++ facade prerequisite (PLAN-041 workstream 5).** Introduce the public
-   ECS-backed facade behind a non-colliding interim symbol _only inside the
-   codebase_ (an internal facade type or the experimental namespace), with
-   opaque ownership / wrappers so no public header includes
-   `<entt/entt.hpp>`. Reconcile lifecycle here: decide whether the facade
-   re-introduces shared-ownership factories (`create`, `WorldPtr`, `clone`) or
-   moves to value semantics, and land that decision with tests **before** the
-   name swap. Gates: `pixi run build`, `pixi run test-unit`,
-   `pixi run test-simulation-experimental`, `pixi run check-api-boundaries`.
-4. **Atomic name-swap PR (this transaction).** In one PR:
-   - replace the classic definition in `dart/simulation/world.hpp` and
-     `dart/simulation/fwd.hpp` with the ECS-backed facade (or re-point those
-     headers at the facade), so `dart::simulation::World` / `WorldPtr` resolve to
-     the ECS facade;
-   - quarantine the classic implementation under an explicit legacy/internal
-     namespace and/or a non-default `simulation-legacy` target that **does not
-     export `dart::simulation::World`** (or delete it if no consumer still needs
-     it), per the PLAN-041 quarantine rule;
-   - retarget the 159 in-tree consumers (`dart/utils/**`, `dart/io/**`,
-     `dart/gui/**`, `dart/sensor/**`, `dartsim/**`) to the facade API;
-   - keep the public header name `dart/simulation/world.hpp` so the case-insensitive
-     `World.hpp` guard (`cmake/dart_defs.cmake:1276-1282`) continues to apply and
-     no hand-written `dart/simulation/World.hpp` is introduced;
-   - preflight with `git merge-tree` against active solver/loader PR heads and
-     handle generated compatibility headers in the same move.
-     Gates: `pixi run build`, `pixi run test-unit`,
-     `pixi run test-simulation-experimental`, `pixi run check-api-boundaries`,
-     `pixi run check-api-boundary-inventory`, a **macOS (case-insensitive
-     filesystem)** build, and installed-package C++ smoke.
-5. **Python name-swap PR (PLAN-041 workstream 6).** Rebind `simulation.World`
-   from the classic type to the ECS facade type in
-   `python/dartpy/simulation/world.cpp`, removing the old
-   `nb::class_<dart::simulation::World>(m, "World")` in the same change so the
-   `simulation` module never holds two C++ types under the name `"World"`. Decide
-   the `dartpy.simulation_experimental` alias window. Regenerate stubs and docs.
-   Gates: `pixi run test-py`, `pixi run generate-stubs`,
-   `pixi run api-docs-py`, and a wheel import smoke.
-6. **Compatibility documentation (PLAN-041 acceptance + clean-break strategy).**
-   Record the DART 6 / gz-physics support expectations on the DART 6.16 lane
-   (Gazebo branch/version matrix, support window, sunset trigger) in the
-   compatibility owner docs referenced by
-   `docs/design/dart7_clean_break_strategy.md` before main removes the classic
-   surface.
-
-This keeps the dangerous, behavior-changing decisions (build shape, boundary
-hiding, lifecycle reconciliation) in earlier gated PRs and reduces the atomic
-swap to a name retarget plus a mechanical consumer sweep, which is the smallest
-safe shape for a single-PR atomic replacement.
+The durable design decision is the ownership model for the public name: there is
+exactly one official `dart::simulation::World` at each committed state, and the
+classic implementation is either removed or quarantined somewhere that no longer
+exports that name. PLAN-041 owns the active PR sequence, verification commands,
+and open maintainer decisions needed to make the atomic replacement reviewable.
 
 ## `dartpy.World` Decision
 
@@ -354,8 +293,8 @@ Recommendation: **keep `dartpy.World` identical to `dartpy.simulation.World`**,
 because the existing `_promote_symbols` machinery
 (`python/dartpy/_layout.py:65-81`) already makes the top-level name an exact
 copy of the submodule class object, and the DART 7 layout intentionally promotes
-flat top-level names. After the Python name-swap PR (step 5),
-`dartpy.simulation.World` is the ECS facade, so `dartpy.World` automatically
+flat top-level names. After the Python cutover, `dartpy.simulation.World` is the
+ECS facade, so `dartpy.World` automatically
 becomes the ECS facade with the same class identity — `isinstance` and `is`
 checks stay consistent across `dartpy.World` and `dartpy.simulation.World`
 because they are the same object, not two registrations.
@@ -364,8 +303,8 @@ Rationale and guardrails:
 
 - The risk PLAN-041 flags is _silently_ repointing `dartpy.World` at a different
   world without a maintainer decision. Choosing "identical to
-  `dartpy.simulation.World`" makes the repoint explicit and gated rather than
-  silent: the same step-5 PR that rebinds `simulation.World` updates
+  `dartpy.simulation.World`" makes the repoint explicit and validated rather
+  than silent: the same Python cutover that rebinds `simulation.World` updates
   `python/stubs/dartpy/__init__.pyi` (currently re-exporting `World` from
   `.simulation`, lines 256-268/402) and `simulation.pyi` (currently the classic
   shape, line 90), and adds a wheel import smoke asserting
@@ -383,14 +322,3 @@ Rationale and guardrails:
 
 Either chosen behavior must be covered by tests, regenerated stubs, regenerated
 docs, and wheel import smokes per the PLAN-041 acceptance criteria.
-
-## Open Items For Maintainer Sign-Off
-
-- Confirm option (b) atomic replacement over option (a) temporary facade.
-- Confirm the lifecycle reconciliation for the facade (re-add
-  `WorldPtr`/`create`/`clone` shared ownership vs move consumers to value
-  semantics) in the workstream 5 facade PR before the name swap.
-- Confirm the `dartpy.World` decision: identical to `dartpy.simulation.World`
-  (recommended) vs deprecate-then-remove.
-- Confirm the classic-world quarantine target name and that it stops exporting
-  `dart::simulation::World`, vs outright removal.

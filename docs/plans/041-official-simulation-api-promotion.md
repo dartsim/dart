@@ -118,6 +118,74 @@ The plan incorporates three focused review perspectives before implementation:
     options, stale path filters, old package components, and remaining migration
     shims once the official path is the only supported DART 7 path.
 
+## World Name-Collision Transaction Path
+
+The durable rationale lives in
+[`../design/dart7_world_namespace_transaction.md`](../design/dart7_world_namespace_transaction.md).
+That design recommends option (b): atomically replace the classic
+`dart::simulation::World` public definition with the ECS-backed facade, after
+sequencing the risky prerequisites independently. The plan owns the active
+sequence, per-step gates, and open decisions for that transaction.
+
+Open maintainer decisions before implementation:
+
+- Confirm option (b) atomic replacement over option (a) temporary facade.
+- Confirm the facade lifecycle shape before the name swap: re-add
+  `WorldPtr`/`create`/`clone` shared ownership, move consumers to value
+  semantics, or choose another explicit owner model.
+- Confirm `dartpy.World` as identical to `dartpy.simulation.World`
+  (recommended) versus a deprecate-then-remove transition.
+- Confirm the classic-world quarantine target name and that it stops exporting
+  `dart::simulation::World`, or remove the classic implementation outright.
+
+Current intended sequence:
+
+1. **Build-shape prerequisite (workstream 2).** Make the ECS-backed baseline
+   non-optional in default builds and keep EnTT/ECS out of the public boundary.
+   No public name changes yet. Gate with `pixi run build`,
+   `pixi run test-simulation-experimental`, a reduced-build check while
+   `DART_BUILD_SIMULATION_EXPERIMENTAL` still exists, and an installed-package
+   C++ smoke.
+2. **Boundary enforcement prerequisite (workstream 3).** Update
+   `scripts/check_api_boundaries.py` and
+   `scripts/generate_api_boundary_inventory.py` so promoted headers fail if they
+   expose EnTT, `entt::registry`, ECS storage, component namespaces, solver
+   registries, backend types, or direct registry access. The current
+   `getRegistry()` escape hatch must be hidden from the promoted facade. Gate
+   with `pixi run check-api-boundaries` and
+   `pixi run check-api-boundary-inventory`.
+3. **C++ facade prerequisite (workstream 5).** Introduce the public ECS-backed
+   facade behind a non-colliding internal/interim symbol, with opaque ownership
+   or wrappers so no public header includes `<entt/entt.hpp>`. Reconcile the
+   lifecycle model before the public name swap. Gate with `pixi run build`,
+   `pixi run test-unit`, `pixi run test-simulation-experimental`, and
+   `pixi run check-api-boundaries`.
+4. **Atomic C++ name-swap PR (workstreams 4, 5, 7, and 8).** Replace or repoint
+   `dart/simulation/world.hpp` and `dart/simulation/fwd.hpp` so
+   `dart::simulation::World` / `WorldPtr` resolve to the ECS facade; quarantine
+   or remove the classic implementation so it no longer exports
+   `dart::simulation::World`; retarget the 159 in-tree consumers in
+   `dart/utils/**`, `dart/io/**`, `dart/gui/**`, `dart/sensor/**`, and
+   `dartsim/**`; keep the public header name `dart/simulation/world.hpp`; do
+   not hand-author `dart/simulation/World.hpp`; and preflight active solver and
+   loader PR heads with `git merge-tree`. Gate with `pixi run build`,
+   `pixi run test-unit`, `pixi run test-simulation-experimental`,
+   `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`, a
+   macOS case-insensitive-filesystem build, and an installed-package C++ smoke.
+5. **Python name-swap PR (workstream 6).** Rebind `simulation.World` from the
+   classic type to the ECS facade in `python/dartpy/simulation/world.cpp`,
+   removing the old `nb::class_<dart::simulation::World>(m, "World")` in the
+   same change so the `simulation` module never holds two C++ types under the
+   name `"World"`. Decide the `dartpy.simulation_experimental` alias window.
+   Gate with `pixi run test-py`, `pixi run generate-stubs`,
+   `pixi run api-docs-py`, and a wheel import smoke.
+6. **Compatibility documentation (acceptance + clean-break strategy).** Record
+   DART 6 / gz-physics support expectations on the DART 6.16 lane, including
+   the Gazebo branch/version matrix, support window, and sunset trigger in the
+   compatibility owner docs referenced by
+   [`../design/dart7_clean_break_strategy.md`](../design/dart7_clean_break_strategy.md)
+   before main removes the classic surface.
+
 ## High-Risk Surfaces
 
 Review these before implementation PRs:
