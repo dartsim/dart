@@ -102,7 +102,8 @@ self-contact friction rows project their generalized tangential dual into the
 current 12D tangent stencil.
 The first private rigid-body foundation adds a 6-DOF block accumulator,
 world-frame quaternion tangent updates, an inertia term, a 6x6 block solve, and
-a scalar rigid point-attachment row with focused tests.
+a scalar rigid point-attachment row plus two-body point-pair row stamping with
+focused tests.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

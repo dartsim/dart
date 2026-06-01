@@ -145,7 +145,8 @@ Paper audit:
   - First internal 6-DOF rigid block foundation started:
     `AvbdRigidBodyBlock`, quaternion tangent-step helpers,
     `addAvbdRigidBodyInertiaTerm`, `solveAvbdRigidBodyBlock`,
-    `applyAvbdRigidBodyStep`, and a scalar rigid point-attachment row in
+    `applyAvbdRigidBodyStep`, scalar rigid point-attachment rows, and private
+    two-body rigid point-pair row stamping in
     `dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp`,
     with focused `AvbdRigidBlock.*` coverage. This is not World wiring, not
     rigid contact manifolds, and not articulated joint support yet.
@@ -195,7 +196,8 @@ numbers.
    finite-stiffness rows, self-contact normals, pairwise static/dynamic friction
    switching, supported World self-contact friction rows, pure-tet self-contact
    friction rows, combined static/self-contact friction row coexistence, and the
-   first private 6-DOF rigid block foundation have narrow CPU paths.
+   first private 6-DOF rigid block plus two-body point-pair row foundation have
+   narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

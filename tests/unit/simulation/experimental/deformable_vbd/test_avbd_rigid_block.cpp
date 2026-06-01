@@ -154,6 +154,91 @@ TEST(AvbdRigidBlock, PointAttachmentDualUpdateGrowsInsideBounds)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, PointPairStampsEqualAndOppositeRigidDirections)
+{
+  vbd::AvbdRigidBodyState stateA;
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3::UnitX();
+
+  vbd::AvbdRigidPointPairRow row;
+  row.axis = Vec3::UnitX();
+  row.state.stiffness = 25.0;
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const double forceMagnitude = vbd::addAvbdRigidPointPair(
+      blockA, blockB, stateA, stateB, row, /*alpha=*/0.0);
+
+  vbd::Vector6d expectedA = vbd::Vector6d::Zero();
+  expectedA.head<3>() = Vec3::UnitX();
+
+  vbd::Vector6d expectedB = vbd::Vector6d::Zero();
+  expectedB.head<3>() = -Vec3::UnitX();
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 25.0);
+  EXPECT_NEAR((blockA.force - 25.0 * expectedA).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockB.force - 25.0 * expectedB).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (blockA.hessian - 25.0 * expectedA * expectedA.transpose()).norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (blockB.hessian - 25.0 * expectedB * expectedB.transpose()).norm(),
+      0.0,
+      1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, PointPairIncludesTorqueDirections)
+{
+  vbd::AvbdRigidBodyState stateA;
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(0.0, 1.0, 0.0);
+
+  vbd::AvbdRigidPointPairRow row;
+  row.localPointA = Vec3::UnitY();
+  row.localPointB = -Vec3::UnitY();
+  row.axis = Vec3::UnitX();
+
+  const vbd::Vector6d firstDirection
+      = vbd::avbdRigidPointPairDirectionA(stateA, row);
+  const vbd::Vector6d secondDirection
+      = vbd::avbdRigidPointPairDirectionB(stateB, row);
+
+  EXPECT_NEAR((firstDirection.head<3>() - Vec3::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (firstDirection.tail<3>() - Vec3(0.0, 0.0, -1.0)).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((secondDirection.head<3>() + Vec3::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (secondDirection.tail<3>() - Vec3(0.0, 0.0, -1.0)).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, PointPairDualUpdateUsesBounds)
+{
+  vbd::AvbdRigidBodyState stateA;
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3::UnitX();
+
+  vbd::AvbdRigidPointPairRow row;
+  row.axis = Vec3::UnitX();
+  row.state.stiffness = 10.0;
+  row.bounds.lower = 0.0;
+  row.bounds.upper = 2.0;
+
+  vbd::AvbdRigidPointAttachmentOptions options;
+  options.beta = 4.0;
+
+  const vbd::AvbdScalarRowState updated = vbd::updateAvbdRigidPointPairRow(
+      row.state, stateA, stateB, row, options);
+
+  EXPECT_DOUBLE_EQ(updated.lambda, 2.0);
+  EXPECT_DOUBLE_EQ(updated.stiffness, 10.0);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, SolveRejectsIndefiniteHessian)
 {
   vbd::AvbdRigidBodyBlock block;

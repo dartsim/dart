@@ -181,10 +181,10 @@ The first AVBD implementation slices add:
 - a private 6-DOF rigid-body block foundation:
   `AvbdRigidBodyBlock`, world-frame quaternion tangent-step helpers,
   `addAvbdRigidBodyInertiaTerm`, `solveAvbdRigidBodyBlock`,
-  `applyAvbdRigidBodyStep`, and `AvbdRigidPointAttachmentRow`, with focused
-  `AvbdRigidBlock.*` coverage. This is a local kernel foundation only; rigid
-  contact manifolds, articulated joints, motors, fracture, World wiring, and
-  soft/rigid coupling are still missing; and
+  `applyAvbdRigidBodyStep`, `AvbdRigidPointAttachmentRow`, and
+  `AvbdRigidPointPairRow`, with focused `AvbdRigidBlock.*` coverage. This is a
+  local kernel foundation only; rigid contact manifolds, articulated joints,
+  motors, fracture, World wiring, and soft/rigid coupling are still missing; and
 - explicit World fallback coverage so unsupported mixed spring-plus-tet,
   mass-spring self-contact without the self-contact AVBD flag, Chebyshev,
   Rayleigh-damped, parallel, and unsupported-row requests keep using the
@@ -200,7 +200,7 @@ full hard-contact/friction solver, and not CPU/GPU parity.
 | Scalar hard-row dual state, clamping, warm start, alpha regularization, finite-stiffness ramp      | First internal utility and unit tests started                                                                                                                                                                                                                                                                                        | A0            |
 | Constraint row inventory and storage for contacts, joints, attachments, friction, motors, fracture | Deterministic scalar row inventory started; active static contact-normal, hard-attachment, finite-spring, friction-tangent, self-contact-normal, and self-contact-friction World rows wired in narrow envelopes                                                                                                                      | A1            |
 | CPU AVBD primal/dual loop over DART VBD vertices and rigid bodies                                  | Narrow serial mass-spring contact-normal, hard-attachment, finite-spring, optional friction-tangent, self-contact-normal, and self-contact-friction rows now combine; pure-tet finite-material rows now combine with AVBD self-contact normal/friction rows when requested; rigid block kernel foundation started, full rows missing | A2-A4         |
-| 6-DOF rigid block assembly with quaternion/tangent angular updates                                 | Private 6-DOF block accumulator, inertia term, quaternion tangent update, block solve, and scalar point-attachment row started; no World wiring, contact manifolds, joints, motors, or articulation yet                                                                                                                              | A3            |
+| 6-DOF rigid block assembly with quaternion/tangent angular updates                                 | Private 6-DOF block accumulator, inertia term, quaternion tangent update, block solve, scalar point-attachment row, and two-body point-pair row stamping started; no World wiring, contact manifolds, joints, motors, or articulation yet                                                                                            | A3            |
 | Inequality/contact/friction row bounds with static/dynamic friction switching                      | Contact-normal lower-bound slice and bounded friction-tangent World generation started for supported static mass-spring contact; adjacent tangent pairs have static/dynamic switching and pairwise cone projection; full contact-manifold cone persistence missing                                                                   | A4            |
 | Joint, attachment, motor, fracture, and breakable hard constraints                                 | Scalar hard point-attachment kernel and narrow World attachment wiring started; joints, motors, and fracture missing                                                                                                                                                                                                                 | A5            |
 | Unified rigid/soft interactions and cloth/articulated-body coupling                                | Missing                                                                                                                                                                                                                                                                                                                              | A6            |

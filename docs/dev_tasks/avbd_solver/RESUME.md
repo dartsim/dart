@@ -54,14 +54,15 @@ existing VBD path.
 
 ## Current Branch
 
-`feature/avbd-plan104-contact-manifold-friction` - checkpoint commits based on current
+`feature/avbd-plan104-rigid-block-foundation` - checkpoint commits based on current
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
 tangent rows, static box feature IDs, static half-space tangent dual projection,
 self-contact tangent dual projection, supported World self-contact
 normal/friction rows, combined static/self-contact friction row coexistence
-coverage, and the first private 6-DOF rigid block foundation.
+coverage, and the first private 6-DOF rigid block plus two-body point-pair row
+foundation.
 
 ## Immediate Next Step
 
@@ -101,10 +102,11 @@ combinations.
   static/self-contact friction regression now guards both row families in one
   supported World solve. The first private rigid foundation now has a 6-DOF
   block accumulator, world-frame quaternion tangent update, inertia term, block
-  solve, and scalar rigid point-attachment row, but no World wiring. This does
-  not imply hard-contact/friction completeness, full contact-manifold friction
-  persistence, dynamic/rigid contact manifolds, rigid/articulated joints,
-  rigid/soft coupling, or GPU parity.
+  solve, scalar rigid point-attachment row, and two-body point-pair row
+  stamping, but no World wiring. This does not imply hard-contact/friction
+  completeness, full contact-manifold friction persistence, dynamic/rigid
+  contact manifolds, rigid/articulated joints, rigid/soft coupling, or GPU
+  parity.
 
 ## How to Resume
 

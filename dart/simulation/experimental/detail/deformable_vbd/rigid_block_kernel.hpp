@@ -128,6 +128,18 @@ struct AvbdRigidPointAttachmentRow
       std::numeric_limits<double>::infinity()};
 };
 
+struct AvbdRigidPointPairRow
+{
+  Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
+  AvbdScalarRowState state;
+  double previousConstraintValue = 0.0;
+  AvbdScalarRowBounds bounds{
+      -std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity()};
+};
+
 struct AvbdRigidPointAttachmentOptions
 {
   double alpha = 0.0;
@@ -214,6 +226,43 @@ inline Vector6d avbdRigidPointAttachmentDirection(
 }
 
 //==============================================================================
+inline double avbdRigidPointPairConstraintValue(
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairRow& row)
+{
+  return row.axis.dot(
+      avbdRigidBodyWorldPoint(stateB, row.localPointB)
+      - avbdRigidBodyWorldPoint(stateA, row.localPointA));
+}
+
+//==============================================================================
+inline Vector6d avbdRigidPointPairDirectionA(
+    const AvbdRigidBodyState& stateA, const AvbdRigidPointPairRow& row)
+{
+  const Eigen::Vector3d arm
+      = avbdRigidBodyWorldPoint(stateA, row.localPointA) - stateA.position;
+
+  Vector6d direction = Vector6d::Zero();
+  direction.head<3>() = row.axis;
+  direction.tail<3>() = arm.cross(row.axis);
+  return direction;
+}
+
+//==============================================================================
+inline Vector6d avbdRigidPointPairDirectionB(
+    const AvbdRigidBodyState& stateB, const AvbdRigidPointPairRow& row)
+{
+  const Eigen::Vector3d arm
+      = avbdRigidBodyWorldPoint(stateB, row.localPointB) - stateB.position;
+
+  Vector6d direction = Vector6d::Zero();
+  direction.head<3>() = -row.axis;
+  direction.tail<3>() = arm.cross(-row.axis);
+  return direction;
+}
+
+//==============================================================================
 inline double addAvbdRigidPointAttachment(
     AvbdRigidBodyBlock& block,
     const AvbdRigidBodyState& state,
@@ -234,6 +283,34 @@ inline double addAvbdRigidPointAttachment(
 }
 
 //==============================================================================
+inline double addAvbdRigidPointPair(
+    AvbdRigidBodyBlock& blockA,
+    AvbdRigidBodyBlock& blockB,
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairRow& row,
+    double alpha)
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdRigidPointPairConstraintValue(stateA, stateB, row),
+      row.previousConstraintValue,
+      alpha);
+  const double forceMagnitude
+      = computeAvbdHardConstraintForce(row.state, constraintValue, row.bounds);
+  const Vector6d firstDirection = avbdRigidPointPairDirectionA(stateA, row);
+  const Vector6d secondDirection = avbdRigidPointPairDirectionB(stateB, row);
+
+  // AVBD solves per-body blocks; coupling is carried by the shared scalar dual.
+  blockA.force.noalias() += forceMagnitude * firstDirection;
+  blockB.force.noalias() += forceMagnitude * secondDirection;
+  blockA.hessian.noalias()
+      += row.state.stiffness * (firstDirection * firstDirection.transpose());
+  blockB.hessian.noalias()
+      += row.state.stiffness * (secondDirection * secondDirection.transpose());
+  return forceMagnitude;
+}
+
+//==============================================================================
 inline AvbdScalarRowState updateAvbdRigidPointAttachmentRow(
     AvbdScalarRowState state,
     const AvbdRigidBodyState& rigidState,
@@ -242,6 +319,22 @@ inline AvbdScalarRowState updateAvbdRigidPointAttachmentRow(
 {
   const double constraintValue = regularizeAvbdConstraintValue(
       avbdRigidPointAttachmentConstraintValue(rigidState, row),
+      row.previousConstraintValue,
+      options.alpha);
+  return updateAvbdHardConstraintRow(
+      state, constraintValue, options.beta, row.bounds, options.maxStiffness);
+}
+
+//==============================================================================
+inline AvbdScalarRowState updateAvbdRigidPointPairRow(
+    AvbdScalarRowState state,
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairRow& row,
+    const AvbdRigidPointAttachmentOptions& options)
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdRigidPointPairConstraintValue(stateA, stateB, row),
       row.previousConstraintValue,
       options.alpha);
   return updateAvbdHardConstraintRow(
