@@ -207,6 +207,10 @@
         runtime stage. A cube falls onto a fixed cliff-edge mesh, activates
         rigid IPC contact, stays finite, and reports no meaningful native
         overlap after each step.
+  - [x] Add audited Erleben internal-edges fixture coverage through the opt-in
+        runtime stage. A cube falls onto a fixed internal-edge mesh, activates
+        rigid IPC contact, stays finite, and reports no meaningful native
+        overlap after each step.
   - [x] Add audited large-mass-ratio fixture coverage through the opt-in runtime
         stage. A large heavy cube closes into a small cube resting above a fixed
         mesh plane while both contacts preserve nonnegative clearance and finite
@@ -396,6 +400,9 @@
   - [x] Mark the audited Erleben cliff-edges unit-test fixture row
         (`fixtures/3D/unit-tests/erleben/cliff-edges.json`) as implemented after
         cube-on-Erleben-cliff runtime overlap coverage landed.
+  - [x] Mark the audited Erleben internal-edges unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/internal-edges.json`) as implemented
+        after cube-on-Erleben-internal-edges runtime overlap coverage landed.
   - [x] Mark the audited 3D large-mass-ratio unit-test fixture row
         (`fixtures/3D/unit-tests/large-mass-ratio.json`) and its non-visual
         Fig. 16 paper-unit alias as implemented after large-cube/small-cube
@@ -545,11 +552,12 @@ DART-owned implementation.
   row and its non-visual Fig. 16 paper-unit alias are marked implemented
   through stacked-box runtime clearance coverage. The two-triangle tet fixture
   row is marked implemented through tet-corner-on-two-triangle-plane runtime
-  overlap coverage. The Erleben cliff-edges fixture row is marked implemented
-  through cube-on-Erleben-cliff runtime overlap coverage. The cube-falling-on-edge
-  fixture row is marked implemented through tilted-cube-on-edge runtime overlap
-  coverage. The face-vertex unit-test fixture row and its non-visual Fig. 16
-  paper-unit alias are marked implemented through tetrahedral face-vertex
+  overlap coverage. The Erleben cliff-edges and internal-edges fixture rows are
+  marked implemented through cube-on-Erleben-mesh runtime overlap coverage. The
+  cube-falling-on-edge fixture row is marked implemented through
+  tilted-cube-on-edge runtime overlap coverage. The face-vertex unit-test
+  fixture row and its non-visual Fig. 16 paper-unit alias are marked implemented
+  through tetrahedral face-vertex
   runtime overlap coverage. The vertex-face unit-test fixture row and its
   non-visual Fig. 16 paper-unit alias are marked implemented through
   tetrahedral vertex-face runtime overlap coverage. The vertex-vertex unit-test

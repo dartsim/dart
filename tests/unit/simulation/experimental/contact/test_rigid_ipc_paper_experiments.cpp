@@ -280,6 +280,34 @@ sx::CollisionShape makeErlebenCliffMesh()
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeErlebenInternalEdgesMesh()
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {-1.0, 1.0, -0.5},
+      {-1.0, 1.0, 0.5},
+      {-1.0, -1.0, -0.5},
+      {-1.0, -1.0, 0.5},
+      {1.0, 1.0, -0.5},
+      {1.0, 1.0, 0.5},
+      {1.0, -1.0, -0.5},
+      {1.0, -1.0, 0.5},
+      {-1.0, 0.0, 0.5},
+      {0.0, -1.0, 0.5},
+      {1.0, 0.0, 0.5},
+      {0.0, 1.0, 0.5},
+      {-0.5, 0.5, 0.5},
+      {0.5, 0.5, 0.5},
+  };
+  std::vector<Eigen::Vector3i> triangles
+      = {{8, 3, 2},   {9, 7, 6},   {10, 5, 4},  {11, 1, 0},  {6, 0, 2},
+         {1, 11, 12}, {11, 5, 13}, {3, 8, 9},   {7, 9, 10},  {5, 10, 13},
+         {12, 8, 1},  {10, 9, 13}, {13, 9, 11}, {12, 11, 9}, {8, 12, 9},
+         {2, 0, 8},   {0, 1, 8},   {6, 2, 9},   {2, 3, 9},   {4, 6, 10},
+         {6, 7, 10},  {0, 4, 11},  {4, 5, 11},  {6, 4, 0}};
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 // Build one arch voussoir (wedge block) spanning the angular range
 // [theta0, theta1] in the world x-z plane, between inner and outer radii, with
 // half-width halfW along y. Writes the world centroid (the body position) into
@@ -1302,6 +1330,53 @@ TEST(RigidIpcPaperExperiments, ErlebenCliffEdgesFixtureRowStaysSeparated)
   cubeOptions.mass = 1.0;
   cubeOptions.position = Eigen::Vector3d(0.0, 0.0, 0.05);
   auto cube = world.addRigidBody("erleben_cliff_cube", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startZ = cube.getTranslation().z();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_LT(cube.getTranslation().z(), startZ - 0.02);
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_TRUE(cube.getLinearVelocity().allFinite());
+}
+
+TEST(RigidIpcPaperExperiments, ErlebenInternalEdgesFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions supportOptions;
+  supportOptions.isStatic = true;
+  supportOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto support = world.addRigidBody("erleben_internal_edges", supportOptions);
+  support.setCollisionShape(makeErlebenInternalEdgesMesh());
+
+  constexpr double cubeHalfExtent = 0.5;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d(0.0, 0.0, 0.05);
+  auto cube = world.addRigidBody("erleben_internal_edges_cube", cubeOptions);
   cube.setCollisionShape(
       sx::CollisionShape::makeBox(
           {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
