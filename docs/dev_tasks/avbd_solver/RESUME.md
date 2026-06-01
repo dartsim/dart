@@ -57,8 +57,8 @@ consumed by the standard rigid position stage, while unsupported envelopes fall
 back to sequential impulses. The private rigid contact snapshot also derives box
 face/edge/corner endpoint feature IDs and scopes row ordinals per canonical
 endpoint pair so unrelated manifolds do not perturb row identity. The private
-rigid block path also has the first point-joint linear row builder for
-fixed-anchor translation constraints.
+rigid block path also has point-joint linear and angular row builders for
+fixed-anchor translation and orientation constraints.
 
 ## Current Branch
 
@@ -83,13 +83,13 @@ row solve plus dynamic rigid-body ECS writeback through a combined private
 wrapper. The current branch additionally adds the first internal
 `RigidAvbdContactConfig` contact-stage activation for supported free rigid-body
 contacts as a velocity-level projection and box-feature/pair-scoped rigid
-contact row identity for the private snapshot path, plus a private point-joint
-linear row builder.
+contact row identity for the private snapshot path, plus private point-joint
+linear and angular row builders.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice: full
-narrow-phase feature extraction, angular/contact-complete rigid joint rows, or
+narrow-phase feature extraction, contact-complete rigid joint rows, or
 rigid/articulated World wiring are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
@@ -97,8 +97,8 @@ point-pair constructors, paired friction-cone helpers, and a private serial
 rigid row driver plus private rigid contact-manifold row builder and
 World-contact snapshot/solve/writeback helpers plus a combined private wrapper,
 first internal contact-stage activation, box-feature/pair-scoped row identity,
-and private point-joint linear rows exist. Keep the supported envelope narrow
-and preserve fallback coverage for topology mixes, damping/acceleration,
+and private point-joint linear/angular rows exist. Keep the supported envelope
+narrow and preserve fallback coverage for topology mixes, damping/acceleration,
 parallel solves, and unsupported requested row combinations.
 
 ## Context That Would Be Lost
@@ -152,9 +152,9 @@ parallel solves, and unsupported requested row combinations.
   identity helpers now pack contact feature kind/index IDs, canonicalize
   two-endpoint contact row keys, derive private box face/edge/corner endpoint
   feature IDs for rigid snapshots, scope row ordinals per canonical endpoint
-  pair, and create normal/friction/joint-linear row descriptors, but full
-  narrow-phase feature extraction and articulated World joint wiring are not
-  solved yet.
+  pair, and create normal/friction/joint-linear/joint-angular row descriptors,
+  but full narrow-phase feature extraction and articulated World joint wiring
+  are not solved yet.
 
 ## How to Resume
 

@@ -449,6 +449,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   result.frictionRows = 2u * frictionRows.size();
 
   std::vector<AvbdRigidBodyPointAttachmentRow> attachmentRows;
+  std::vector<AvbdRigidBodyAngularPairRow> angularRows;
   const std::vector<AvbdRigidBodyState> inertialTargets
       = snapshot.inertialTargets.size() == snapshot.states.size()
             ? snapshot.inertialTargets
@@ -462,6 +463,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       timeStep,
       attachmentRows,
       normalRows,
+      angularRows,
       frictionRows,
       options.descent,
       options.row,

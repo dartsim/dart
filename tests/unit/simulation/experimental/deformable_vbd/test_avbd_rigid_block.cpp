@@ -490,6 +490,7 @@ TEST(AvbdRigidBlock, RigidRowDriverSeparatesContactPair)
       -Vec3::UnitX(),
       /*targetDistance=*/1.0,
       rowState);
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularPairs;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs;
 
   vbd::AvbdRigidBlockDescentOptions options;
@@ -507,6 +508,7 @@ TEST(AvbdRigidBlock, RigidRowDriverSeparatesContactPair)
           /*timeStep=*/1.0,
           attachments,
           pointPairs,
+          angularPairs,
           frictionPairs,
           options,
           rowOptions,
@@ -535,6 +537,7 @@ TEST(AvbdRigidBlock, RigidRowDriverAppliesFrictionPair)
 
   std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
   std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularPairs;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs(1);
   frictionPairs[0].bodyA = 0;
   frictionPairs[0].bodyB = 1;
@@ -568,6 +571,7 @@ TEST(AvbdRigidBlock, RigidRowDriverAppliesFrictionPair)
           /*timeStep=*/1.0,
           attachments,
           pointPairs,
+          angularPairs,
           frictionPairs,
           options,
           rowOptions,
@@ -599,6 +603,7 @@ TEST(AvbdRigidBlock, RigidRowDriverHonorsConvergenceDisplacement)
   attachments[0].row.axis = Vec3::UnitX();
   attachments[0].row.state = rowState;
   std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularPairs;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs;
 
   vbd::AvbdRigidBlockDescentOptions options;
@@ -617,6 +622,7 @@ TEST(AvbdRigidBlock, RigidRowDriverHonorsConvergenceDisplacement)
           /*timeStep=*/1.0,
           attachments,
           pointPairs,
+          angularPairs,
           frictionPairs,
           options,
           rowOptions,
@@ -785,6 +791,7 @@ TEST(AvbdRigidBlock, RigidPointJointRowsDriveAnchorsTogether)
 
   vbd::AvbdScalarRowInventory linearInventory;
   std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
   vbd::buildAvbdRigidPointJointRows(
       states, joints, linearInventory, linearRows);
 
@@ -808,6 +815,7 @@ TEST(AvbdRigidBlock, RigidPointJointRowsDriveAnchorsTogether)
           /*timeStep=*/1.0,
           attachments,
           linearRows,
+          angularRows,
           frictionRows,
           options,
           rowOptions,
@@ -817,6 +825,129 @@ TEST(AvbdRigidBlock, RigidPointJointRowsDriveAnchorsTogether)
   EXPECT_LT(states[1].position.x(), 0.25);
   EXPECT_NEAR(states[1].position.y(), 0.0, 1e-12);
   EXPECT_NEAR(states[1].position.z(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedAngularRows)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+
+  std::vector<vbd::AvbdRigidPointJoint> joints(1);
+  joints[0].bodyA = 0;
+  joints[0].bodyB = 1;
+  joints[0].endpointA = {
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].endpointB = {
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].targetRelativeOrientation = rotationZ(0.25);
+  joints[0].startStiffness = 70.0;
+  joints[0].maxStiffness = 500.0;
+  joints[0].row = 4;
+
+  vbd::AvbdScalarRowInventory angularInventory;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 0.5;
+  warmStart.gamma = 0.25;
+
+  vbd::buildAvbdRigidPointJointAngularRows(
+      states, joints, angularInventory, angularRows, warmStart);
+
+  ASSERT_EQ(angularInventory.size(), 3u);
+  ASSERT_EQ(angularRows.size(), 3u);
+  for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+    const auto& descriptor = angularInventory[axis].descriptor;
+    EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::JointAngular);
+    EXPECT_EQ(descriptor.key.row, 4u);
+    EXPECT_EQ(descriptor.key.axis, axis);
+    EXPECT_DOUBLE_EQ(descriptor.startStiffness, 70.0);
+    EXPECT_DOUBLE_EQ(descriptor.maxStiffness, 500.0);
+    EXPECT_TRUE(std::isinf(descriptor.bounds.lower));
+    EXPECT_LT(descriptor.bounds.lower, 0.0);
+    EXPECT_TRUE(std::isinf(descriptor.bounds.upper));
+    EXPECT_GT(descriptor.bounds.upper, 0.0);
+    EXPECT_EQ(angularRows[axis].bodyA, 0u);
+    EXPECT_EQ(angularRows[axis].bodyB, 1u);
+    EXPECT_NEAR(
+        (angularRows[axis].row.axis - Vec3::Unit(axis)).norm(), 0.0, 1e-12);
+    EXPECT_NEAR(
+        (angularRows[axis].row.targetRelativeOrientation.toRotationMatrix()
+         - rotationZ(0.25).toRotationMatrix())
+            .norm(),
+        0.0,
+        1e-12);
+  }
+
+  angularInventory[0].state.lambda = 8.0;
+  angularInventory[0].state.stiffness = 120.0;
+  vbd::buildAvbdRigidPointJointAngularRows(
+      states, joints, angularInventory, angularRows, warmStart);
+
+  ASSERT_EQ(angularInventory.size(), 3u);
+  EXPECT_DOUBLE_EQ(angularInventory[0].state.lambda, 1.0);
+  EXPECT_DOUBLE_EQ(angularInventory[0].state.stiffness, 70.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidPointJointAngularRowsDriveOrientationsTogether)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].orientation = Eigen::Quaterniond::Identity();
+  states[1].orientation = rotationZ(0.6);
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias
+      = {Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+  std::vector<vbd::AvbdRigidPointJoint> joints(1);
+  joints[0].bodyA = 0;
+  joints[0].bodyB = 1;
+  joints[0].endpointA = {
+      1, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].endpointB = {
+      2, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].startStiffness = 100.0;
+  joints[0].maxStiffness = 1000.0;
+
+  vbd::AvbdScalarRowInventory angularInventory;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
+  vbd::buildAvbdRigidPointJointAngularRows(
+      states, joints, angularInventory, angularRows);
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 8;
+  options.regularization = 1e-12;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  rowOptions.beta = 1000.0;
+  rowOptions.maxStiffness = 1000.0;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          pointPairs,
+          angularRows,
+          frictionRows,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  const Vec3 error = vbd::avbdRigidBodyOrientationError(
+      states[1].orientation, states[0].orientation);
+  EXPECT_GT(stats.bodyUpdates, 0u);
+  EXPECT_NEAR(error.x(), 0.0, 1e-12);
+  EXPECT_NEAR(error.y(), 0.0, 1e-12);
+  EXPECT_LT(std::abs(error.z()), 0.05);
 }
 
 //==============================================================================
@@ -888,6 +1019,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldRowsDriveSeparation)
       frictionRows);
 
   std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
   vbd::AvbdRigidBlockDescentOptions options;
   options.iterations = 1;
   vbd::AvbdRigidPointAttachmentOptions rowOptions;
@@ -902,6 +1034,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldRowsDriveSeparation)
           /*timeStep=*/1.0,
           attachments,
           normalRows,
+          angularRows,
           frictionRows,
           options,
           rowOptions,

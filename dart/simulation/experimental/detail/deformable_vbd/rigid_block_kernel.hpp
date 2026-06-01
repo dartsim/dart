@@ -147,6 +147,18 @@ struct AvbdRigidPointPairRow
       std::numeric_limits<double>::infinity()};
 };
 
+struct AvbdRigidAngularPairRow
+{
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
+  double offset = 0.0;
+  AvbdScalarRowState state;
+  double previousConstraintValue = 0.0;
+  AvbdScalarRowBounds bounds{
+      -std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity()};
+};
+
 struct AvbdRigidBodyPointAttachmentRow
 {
   std::uint32_t body = 0;
@@ -158,6 +170,13 @@ struct AvbdRigidBodyPointPairRow
   std::uint32_t bodyA = 0;
   std::uint32_t bodyB = 0;
   AvbdRigidPointPairRow row;
+};
+
+struct AvbdRigidBodyAngularPairRow
+{
+  std::uint32_t bodyA = 0;
+  std::uint32_t bodyB = 0;
+  AvbdRigidAngularPairRow row;
 };
 
 struct AvbdRigidBodyPointPairFrictionRows
@@ -176,6 +195,7 @@ struct AvbdRigidPointJoint
   AvbdContactEndpointId endpointB;
   Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
   Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
   std::uint32_t row = 0;
@@ -304,6 +324,15 @@ inline Eigen::Vector3d avbdRigidPointPairRelativePosition(
 }
 
 //==============================================================================
+inline Eigen::Quaterniond avbdRigidAngularPairTargetOrientationB(
+    const AvbdRigidBodyState& stateA, const AvbdRigidAngularPairRow& row)
+{
+  return normalizeAvbdRigidOrientation(
+      row.targetRelativeOrientation
+      * normalizeAvbdRigidOrientation(stateA.orientation));
+}
+
+//==============================================================================
 inline Eigen::Vector3d avbdRigidBodyLocalPoint(
     const AvbdRigidBodyState& state, const Eigen::Vector3d& worldPoint)
 {
@@ -371,6 +400,22 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactFrictionTangentRow(
   return row;
 }
 
+//==============================================================================
+inline AvbdRigidAngularPairRow makeAvbdRigidJointAngularRow(
+    const Eigen::Quaterniond& targetRelativeOrientation,
+    const Eigen::Vector3d& axis,
+    AvbdScalarRowState state,
+    double previousConstraintValue = 0.0)
+{
+  AvbdRigidAngularPairRow row;
+  row.targetRelativeOrientation
+      = normalizeAvbdRigidOrientation(targetRelativeOrientation);
+  row.axis = normalizedAvbdRigidPointPairAxis(axis);
+  row.state = state;
+  row.previousConstraintValue = previousConstraintValue;
+  return row;
+}
+
 namespace detail {
 
 //==============================================================================
@@ -414,6 +459,27 @@ inline AvbdScalarRowDescriptor makeAvbdRigidJointLinearRowDescriptor(
   return descriptor;
 }
 
+//==============================================================================
+inline AvbdScalarRowDescriptor makeAvbdRigidJointAngularRowDescriptor(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    double startStiffness,
+    double maxStiffness,
+    std::uint32_t row = 0,
+    std::uint8_t axis = 0)
+{
+  AvbdScalarRowDescriptor descriptor;
+  descriptor.key = makeAvbdEndpointPairRowKey(
+      AvbdScalarRowRole::JointAngular, first, second, row, axis);
+  descriptor.kind = AvbdScalarRowKind::HardConstraint;
+  descriptor.bounds
+      = {-std::numeric_limits<double>::infinity(),
+         std::numeric_limits<double>::infinity()};
+  descriptor.startStiffness = startStiffness;
+  descriptor.maxStiffness = maxStiffness;
+  return descriptor;
+}
+
 } // namespace detail
 
 //==============================================================================
@@ -446,6 +512,18 @@ inline double avbdRigidPointPairConstraintValue(
   return row.offset
          + row.axis.dot(
              avbdRigidPointPairRelativePosition(stateA, stateB, row));
+}
+
+//==============================================================================
+inline double avbdRigidAngularPairConstraintValue(
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidAngularPairRow& row)
+{
+  return row.offset
+         + row.axis.dot(avbdRigidBodyOrientationError(
+             stateB.orientation,
+             avbdRigidAngularPairTargetOrientationB(stateA, row)));
 }
 
 //==============================================================================
@@ -579,6 +657,24 @@ inline Vector6d avbdRigidPointPairDirectionB(
 }
 
 //==============================================================================
+inline Vector6d avbdRigidAngularPairDirectionA(
+    const AvbdRigidAngularPairRow& row)
+{
+  Vector6d direction = Vector6d::Zero();
+  direction.tail<3>() = row.axis;
+  return direction;
+}
+
+//==============================================================================
+inline Vector6d avbdRigidAngularPairDirectionB(
+    const AvbdRigidAngularPairRow& row)
+{
+  Vector6d direction = Vector6d::Zero();
+  direction.tail<3>() = -row.axis;
+  return direction;
+}
+
+//==============================================================================
 inline double addAvbdRigidPointAttachment(
     AvbdRigidBodyBlock& block,
     const AvbdRigidBodyState& state,
@@ -617,6 +713,33 @@ inline double addAvbdRigidPointPair(
   const Vector6d secondDirection = avbdRigidPointPairDirectionB(stateB, row);
 
   // AVBD solves per-body blocks; coupling is carried by the shared scalar dual.
+  blockA.force.noalias() += forceMagnitude * firstDirection;
+  blockB.force.noalias() += forceMagnitude * secondDirection;
+  blockA.hessian.noalias()
+      += row.state.stiffness * (firstDirection * firstDirection.transpose());
+  blockB.hessian.noalias()
+      += row.state.stiffness * (secondDirection * secondDirection.transpose());
+  return forceMagnitude;
+}
+
+//==============================================================================
+inline double addAvbdRigidAngularPair(
+    AvbdRigidBodyBlock& blockA,
+    AvbdRigidBodyBlock& blockB,
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidAngularPairRow& row,
+    double alpha)
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdRigidAngularPairConstraintValue(stateA, stateB, row),
+      row.previousConstraintValue,
+      alpha);
+  const double forceMagnitude
+      = computeAvbdHardConstraintForce(row.state, constraintValue, row.bounds);
+  const Vector6d firstDirection = avbdRigidAngularPairDirectionA(row);
+  const Vector6d secondDirection = avbdRigidAngularPairDirectionB(row);
+
   blockA.force.noalias() += forceMagnitude * firstDirection;
   blockB.force.noalias() += forceMagnitude * secondDirection;
   blockA.hessian.noalias()
@@ -687,6 +810,22 @@ inline AvbdScalarRowState updateAvbdRigidPointPairRow(
 {
   const double constraintValue = regularizeAvbdConstraintValue(
       avbdRigidPointPairConstraintValue(stateA, stateB, row),
+      row.previousConstraintValue,
+      options.alpha);
+  return updateAvbdHardConstraintRow(
+      state, constraintValue, options.beta, row.bounds, options.maxStiffness);
+}
+
+//==============================================================================
+inline AvbdScalarRowState updateAvbdRigidAngularPairRow(
+    AvbdScalarRowState state,
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidAngularPairRow& row,
+    const AvbdRigidPointAttachmentOptions& options)
+{
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdRigidAngularPairConstraintValue(stateA, stateB, row),
       row.previousConstraintValue,
       options.alpha);
   return updateAvbdHardConstraintRow(
@@ -948,6 +1087,63 @@ inline void buildAvbdRigidPointJointRows(
 }
 
 //==============================================================================
+inline void buildAvbdRigidPointJointAngularRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& angularInventory,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  std::vector<AvbdRigidPointJoint> activeJoints;
+  activeJoints.reserve(joints.size());
+  std::vector<AvbdScalarRowDescriptor> descriptors;
+  descriptors.reserve(3 * joints.size());
+  for (const AvbdRigidPointJoint& joint : joints) {
+    if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
+      continue;
+    }
+
+    activeJoints.push_back(joint);
+    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      descriptors.push_back(
+          detail::makeAvbdRigidJointAngularRowDescriptor(
+              joint.endpointA,
+              joint.endpointB,
+              joint.startStiffness,
+              joint.maxStiffness,
+              joint.row,
+              axis));
+    }
+  }
+
+  angularInventory.syncActiveRows(descriptors, warmStartOptions);
+
+  angularRows.clear();
+  angularRows.reserve(angularInventory.size());
+  for (std::size_t jointIndex = 0; jointIndex < activeJoints.size();
+       ++jointIndex) {
+    const AvbdRigidPointJoint& joint = activeJoints[jointIndex];
+    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      const std::size_t recordIndex = 3 * jointIndex + axis;
+      if (recordIndex >= angularInventory.size()) {
+        return;
+      }
+
+      const AvbdScalarRowRecord& record = angularInventory[recordIndex];
+      AvbdRigidBodyAngularPairRow indexedRow;
+      indexedRow.bodyA = joint.bodyA;
+      indexedRow.bodyB = joint.bodyB;
+      indexedRow.row = makeAvbdRigidJointAngularRow(
+          joint.targetRelativeOrientation,
+          Eigen::Vector3d::Unit(axis),
+          record.state);
+      indexedRow.row.bounds = record.descriptor.bounds;
+      angularRows.push_back(indexedRow);
+    }
+  }
+}
+
+//==============================================================================
 inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     std::vector<AvbdRigidBodyState>& states,
     const std::vector<double>& masses,
@@ -957,6 +1153,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     double timeStep,
     std::vector<AvbdRigidBodyPointAttachmentRow>& attachmentRows,
     std::vector<AvbdRigidBodyPointPairRow>& pointPairRows,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularPairRows,
     std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionPairRows,
     const AvbdRigidBlockDescentOptions& options,
     const AvbdRigidPointAttachmentOptions& rowOptions,
@@ -1001,6 +1198,37 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
         if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
           const Vector6d direction
               = avbdRigidPointPairDirectionB(states[body], row);
+          block.force.noalias() += forceMagnitude * direction;
+          block.hessian.noalias()
+              += row.state.stiffness * (direction * direction.transpose());
+        }
+      };
+
+  const auto addAngularPairToBlock =
+      [&](AvbdRigidBodyBlock& block,
+          std::uint32_t body,
+          const AvbdRigidBodyAngularPairRow& indexedRow) {
+        if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+          return;
+        }
+
+        const AvbdRigidAngularPairRow& row = indexedRow.row;
+        const double constraintValue = regularizeAvbdConstraintValue(
+            avbdRigidAngularPairConstraintValue(
+                states[indexedRow.bodyA], states[indexedRow.bodyB], row),
+            row.previousConstraintValue,
+            rowOptions.alpha);
+        const double forceMagnitude = computeAvbdHardConstraintForce(
+            row.state, constraintValue, row.bounds);
+
+        if (indexedRow.bodyA == body) {
+          const Vector6d direction = avbdRigidAngularPairDirectionA(row);
+          block.force.noalias() += forceMagnitude * direction;
+          block.hessian.noalias()
+              += row.state.stiffness * (direction * direction.transpose());
+        }
+        if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
+          const Vector6d direction = avbdRigidAngularPairDirectionB(row);
           block.force.noalias() += forceMagnitude * direction;
           block.hessian.noalias()
               += row.state.stiffness * (direction * direction.transpose());
@@ -1072,6 +1300,9 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     for (const AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
       addPointPairToBlock(block, body, indexedRow);
     }
+    for (const AvbdRigidBodyAngularPairRow& indexedRow : angularPairRows) {
+      addAngularPairToBlock(block, body, indexedRow);
+    }
     for (const AvbdRigidBodyPointPairFrictionRows& indexedRows :
          frictionPairRows) {
       addFrictionPairToBlock(block, body, indexedRows);
@@ -1109,6 +1340,16 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     for (AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
       if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
         indexedRow.row.state = updateAvbdRigidPointPairRow(
+            indexedRow.row.state,
+            states[indexedRow.bodyA],
+            states[indexedRow.bodyB],
+            indexedRow.row,
+            rowOptions);
+      }
+    }
+    for (AvbdRigidBodyAngularPairRow& indexedRow : angularPairRows) {
+      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
+        indexedRow.row.state = updateAvbdRigidAngularPairRow(
             indexedRow.row.state,
             states[indexedRow.bodyA],
             states[indexedRow.bodyB],
