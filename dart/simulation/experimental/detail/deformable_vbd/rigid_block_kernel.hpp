@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <cmath>
@@ -167,6 +168,21 @@ struct AvbdRigidBodyPointPairFrictionRows
   AvbdRigidPointPairRow second;
 };
 
+struct AvbdRigidContactManifoldPoint
+{
+  std::uint32_t bodyA = 0;
+  std::uint32_t bodyB = 0;
+  AvbdContactEndpointId endpointA;
+  AvbdContactEndpointId endpointB;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normalFromAtoB = Eigen::Vector3d::UnitX();
+  double depth = 0.0;
+  double frictionCoefficient = 0.0;
+  double startStiffness = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+  std::uint32_t row = 0;
+};
+
 struct AvbdRigidPointAttachmentOptions
 {
   double alpha = 0.0;
@@ -275,6 +291,14 @@ inline Eigen::Vector3d avbdRigidPointPairRelativePosition(
 }
 
 //==============================================================================
+inline Eigen::Vector3d avbdRigidBodyLocalPoint(
+    const AvbdRigidBodyState& state, const Eigen::Vector3d& worldPoint)
+{
+  return normalizeAvbdRigidOrientation(state.orientation).conjugate()
+         * (worldPoint - state.position);
+}
+
+//==============================================================================
 inline AvbdRigidPointPairRow makeAvbdRigidContactNormalRow(
     const Eigen::Vector3d& localPointA,
     const Eigen::Vector3d& localPointB,
@@ -292,6 +316,24 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactNormalRow(
   row.previousConstraintValue = previousConstraintValue;
   row.bounds = avbdContactNormalBounds();
   return row;
+}
+
+//==============================================================================
+inline Eigen::Matrix<double, 3, 2> avbdRigidContactTangentBasis(
+    const Eigen::Vector3d& normalFromAtoB)
+{
+  Eigen::Vector3d normal = normalFromAtoB;
+  const double norm = normal.norm();
+  if (!normal.allFinite() || norm <= 0.0) {
+    normal = Eigen::Vector3d::UnitX();
+  } else {
+    normal /= norm;
+  }
+
+  Eigen::Matrix<double, 3, 2> basis;
+  basis.col(0) = normal.unitOrthogonal();
+  basis.col(1) = normal.cross(basis.col(0)).normalized();
+  return basis;
 }
 
 //==============================================================================
@@ -315,6 +357,21 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactFrictionTangentRow(
   row.bounds = avbdFrictionTangentBounds(forceLimit);
   return row;
 }
+
+namespace detail {
+
+//==============================================================================
+inline bool isValidAvbdRigidContactManifoldPoint(
+    const AvbdRigidContactManifoldPoint& contact, std::size_t bodyCount)
+{
+  return contact.bodyA < bodyCount && contact.bodyB < bodyCount
+         && contact.bodyA != contact.bodyB && contact.point.allFinite()
+         && contact.normalFromAtoB.allFinite()
+         && contact.normalFromAtoB.squaredNorm() > 0.0 && contact.depth > 0.0
+         && std::isfinite(contact.depth);
+}
+
+} // namespace detail
 
 //==============================================================================
 inline double avbdRigidPointAttachmentConstraintValue(
@@ -651,6 +708,143 @@ inline void applyAvbdRigidBodyStep(
   state.position += step.head<3>();
   state.orientation = normalizeAvbdRigidOrientation(
       avbdRigidOrientationDelta(step.tail<3>()) * state.orientation);
+}
+
+//==============================================================================
+inline void buildAvbdRigidContactManifoldRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidContactManifoldPoint> contacts,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& normalRows,
+    std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  std::vector<AvbdRigidContactManifoldPoint> activeContacts;
+  activeContacts.reserve(contacts.size());
+  std::vector<AvbdScalarRowDescriptor> normalDescriptors;
+  normalDescriptors.reserve(contacts.size());
+  for (const AvbdRigidContactManifoldPoint& contact : contacts) {
+    if (!detail::isValidAvbdRigidContactManifoldPoint(contact, states.size())) {
+      continue;
+    }
+
+    activeContacts.push_back(contact);
+    normalDescriptors.push_back(makeAvbdContactNormalRowDescriptor(
+        contact.endpointA,
+        contact.endpointB,
+        contact.startStiffness,
+        contact.maxStiffness,
+        contact.row));
+  }
+
+  normalInventory.syncActiveRows(normalDescriptors, warmStartOptions);
+
+  std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
+  frictionDescriptors.reserve(2 * activeContacts.size());
+  for (std::size_t i = 0; i < activeContacts.size(); ++i) {
+    const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
+    const double laggedNormalForce
+        = i < normalInventory.size()
+              ? std::max(0.0, normalInventory[i].state.lambda)
+              : 0.0;
+    const double forceLimit
+        = std::max(0.0, contact.frictionCoefficient) * laggedNormalForce;
+    frictionDescriptors.push_back(makeAvbdContactFrictionRowDescriptor(
+        contact.endpointA,
+        contact.endpointB,
+        /*axis=*/0,
+        forceLimit,
+        contact.startStiffness,
+        contact.maxStiffness,
+        contact.row));
+    frictionDescriptors.push_back(makeAvbdContactFrictionRowDescriptor(
+        contact.endpointA,
+        contact.endpointB,
+        /*axis=*/1,
+        forceLimit,
+        contact.startStiffness,
+        contact.maxStiffness,
+        contact.row));
+  }
+
+  frictionInventory.syncActiveRows(frictionDescriptors, warmStartOptions);
+
+  normalRows.clear();
+  normalRows.reserve(normalInventory.size());
+  for (std::size_t i = 0;
+       i < activeContacts.size() && i < normalInventory.size();
+       ++i) {
+    const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
+    const AvbdScalarRowRecord& record = normalInventory[i];
+    AvbdRigidBodyPointPairRow indexedRow;
+    indexedRow.bodyA = contact.bodyA;
+    indexedRow.bodyB = contact.bodyB;
+    indexedRow.row = makeAvbdRigidContactNormalRow(
+        avbdRigidBodyLocalPoint(states[contact.bodyA], contact.point),
+        avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point),
+        -contact.normalFromAtoB,
+        contact.depth,
+        record.state,
+        contact.depth);
+    normalRows.push_back(indexedRow);
+  }
+
+  frictionRows.clear();
+  frictionRows.reserve(activeContacts.size());
+  for (std::size_t contactIndex = 0; contactIndex < activeContacts.size();
+       ++contactIndex) {
+    const std::size_t firstRecordIndex = 2 * contactIndex;
+    const std::size_t secondRecordIndex = firstRecordIndex + 1;
+    if (secondRecordIndex >= frictionInventory.size()) {
+      break;
+    }
+
+    const AvbdRigidContactManifoldPoint& contact = activeContacts[contactIndex];
+    const AvbdScalarRowRecord& firstRecord
+        = frictionInventory[firstRecordIndex];
+    const AvbdScalarRowRecord& secondRecord
+        = frictionInventory[secondRecordIndex];
+    const Eigen::Vector3d localPointA
+        = avbdRigidBodyLocalPoint(states[contact.bodyA], contact.point);
+    const Eigen::Vector3d localPointB
+        = avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point);
+    AvbdRigidPointPairRow seed;
+    seed.localPointA = localPointA;
+    seed.localPointB = localPointB;
+    const Eigen::Vector3d relativePosition = avbdRigidPointPairRelativePosition(
+        states[contact.bodyA], states[contact.bodyB], seed);
+    const Eigen::Matrix<double, 3, 2> basis
+        = avbdRigidContactTangentBasis(contact.normalFromAtoB);
+    const auto forceLimitFromBounds = [](AvbdScalarRowBounds bounds) {
+      const double lowerLimit = bounds.lower < 0.0 ? -bounds.lower : 0.0;
+      const double upperLimit = bounds.upper > 0.0 ? bounds.upper : 0.0;
+      return std::max(0.0, std::min(lowerLimit, upperLimit));
+    };
+
+    AvbdRigidBodyPointPairFrictionRows indexedRows;
+    indexedRows.bodyA = contact.bodyA;
+    indexedRows.bodyB = contact.bodyB;
+    indexedRows.first = makeAvbdRigidContactFrictionTangentRow(
+        localPointA,
+        localPointB,
+        basis.col(0),
+        relativePosition,
+        forceLimitFromBounds(firstRecord.descriptor.bounds),
+        firstRecord.state,
+        0.0);
+    indexedRows.first.bounds = firstRecord.descriptor.bounds;
+    indexedRows.second = makeAvbdRigidContactFrictionTangentRow(
+        localPointA,
+        localPointB,
+        basis.col(1),
+        relativePosition,
+        forceLimitFromBounds(secondRecord.descriptor.bounds),
+        secondRecord.state,
+        0.0);
+    indexedRows.second.bounds = secondRecord.descriptor.bounds;
+    frictionRows.push_back(indexedRows);
+  }
 }
 
 //==============================================================================

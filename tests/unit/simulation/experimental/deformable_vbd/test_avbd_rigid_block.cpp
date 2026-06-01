@@ -612,6 +612,176 @@ TEST(AvbdRigidBlock, RigidRowDriverHonorsConvergenceDisplacement)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
+  contacts[0].bodyA = 0;
+  contacts[0].bodyB = 1;
+  contacts[0].endpointA
+      = {42,
+         vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 4)};
+  contacts[0].endpointB = {
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
+  contacts[0].point = Vec3::Zero();
+  contacts[0].normalFromAtoB = 2.0 * Vec3::UnitX();
+  contacts[0].depth = 0.2;
+  contacts[0].frictionCoefficient = 0.5;
+  contacts[0].startStiffness = 80.0;
+  contacts[0].maxStiffness = 400.0;
+  contacts[0].row = 3;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+
+  ASSERT_EQ(normalInventory.size(), 1u);
+  EXPECT_EQ(
+      normalInventory[0].descriptor.key.objectA, contacts[0].endpointB.object);
+  EXPECT_EQ(
+      normalInventory[0].descriptor.key.featureA,
+      contacts[0].endpointB.feature);
+  EXPECT_EQ(normalInventory[0].descriptor.key.row, 3u);
+  EXPECT_DOUBLE_EQ(normalInventory[0].descriptor.startStiffness, 80.0);
+  EXPECT_DOUBLE_EQ(normalInventory[0].descriptor.maxStiffness, 400.0);
+  ASSERT_EQ(normalRows.size(), 1u);
+  EXPECT_EQ(normalRows[0].bodyA, 0u);
+  EXPECT_EQ(normalRows[0].bodyB, 1u);
+  EXPECT_NEAR((normalRows[0].row.axis + Vec3::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(
+          states[0], states[1], normalRows[0].row),
+      0.2,
+      1e-12);
+
+  normalInventory[0].state.lambda = 8.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+
+  ASSERT_EQ(frictionRows.size(), 1u);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.lower, -4.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.upper, 4.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.lower, -4.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.upper, 4.0);
+  EXPECT_NEAR(frictionRows[0].first.axis.dot(Vec3::UnitX()), 0.0, 1e-12);
+  EXPECT_NEAR(frictionRows[0].second.axis.dot(Vec3::UnitX()), 0.0, 1e-12);
+  EXPECT_NEAR(
+      frictionRows[0].first.axis.dot(frictionRows[0].second.axis), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsInactiveRows)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(2);
+  contacts[0].bodyA = 0;
+  contacts[0].bodyB = 1;
+  contacts[0].normalFromAtoB = Vec3::UnitX();
+  contacts[0].depth = 0.0;
+  contacts[1].bodyA = 0;
+  contacts[1].bodyB = 1;
+  contacts[1].normalFromAtoB = Vec3::Zero();
+  contacts[1].depth = 0.1;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows);
+
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  EXPECT_TRUE(normalRows.empty());
+  EXPECT_TRUE(frictionRows.empty());
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldRowsDriveSeparation)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias{
+      Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
+  contacts[0].bodyA = 0;
+  contacts[0].bodyB = 1;
+  contacts[0].endpointA = {
+      1, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  contacts[0].endpointB = {
+      2, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  contacts[0].point = Vec3::Zero();
+  contacts[0].normalFromAtoB = Vec3::UnitX();
+  contacts[0].depth = 0.5;
+  contacts[0].startStiffness = 100.0;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows);
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 1;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          normalRows,
+          frictionRows,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  EXPECT_EQ(stats.bodyUpdates, 1u);
+  EXPECT_GT(states[1].position.x(), 0.4);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, SolveRejectsIndefiniteHessian)
 {
   vbd::AvbdRigidBodyBlock block;
