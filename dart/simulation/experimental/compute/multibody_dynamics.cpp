@@ -1020,8 +1020,20 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
 
     // The contact normal points bodyA -> bodyB; orient it into the link. A
     // dynamic rigid-body obstacle is passed as otherBody for the two-sided
-    // impulse; a static obstacle leaves it null (one-sided).
-    if (aInBody && !bInBody && isRigidBody(entityB)) {
+    // impulse; a static obstacle leaves it null (one-sided). A same-multibody
+    // link obstacle is passed as otherLink and represented by a relative
+    // point-Jacobian row for this multibody.
+    if (aInBody && bInBody) {
+      linkContacts.push_back(
+          {entityA,
+           -contact.normal,
+           contact.point,
+           contact.depth,
+           friction,
+           restitution,
+           entt::null,
+           entityB});
+    } else if (aInBody && !bInBody && isRigidBody(entityB)) {
       linkContacts.push_back(
           {entityA,
            -contact.normal,
@@ -1116,9 +1128,11 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
   constexpr double baumgarteFactor = 0.2;
 
   // Precompute the contact-space Jacobians (normal + two tangents) once. A
-  // contact against a dynamic rigid body also stores that body's inverse mass
-  // and inertia and the contact arm, so the impulse is applied to both bodies
-  // (two-sided); an immovable obstacle leaves these zero (one-sided).
+  // contact against another link in the same multibody uses the relative point
+  // Jacobian. A contact against a dynamic rigid body also stores that body's
+  // inverse mass and inertia and the contact arm, so the impulse is applied to
+  // both bodies (two-sided); an immovable obstacle leaves these zero
+  // (one-sided).
   problem.rows.assign(linkContacts.size(), MultibodyLinkContactRow{});
 
   for (std::size_t c = 0; c < linkContacts.size(); ++c) {
@@ -1131,20 +1145,34 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
     const auto index
         = static_cast<std::size_t>(linkIt - structure.links.begin());
 
-    const Eigen::Matrix3d rotation = tree.links[index].worldTransform.linear();
-    const Eigen::Vector3d origin
-        = tree.links[index].worldTransform.translation();
-    const Eigen::MatrixXd angularJacobian
-        = rotation * bodyJacobian[index].topRows(3);
-    const Eigen::MatrixXd pointLinearJacobian
-        = rotation * bodyJacobian[index].bottomRows(3)
-          - skew(contact.point - origin) * angularJacobian;
+    const auto pointLinearJacobianFor
+        = [&](std::size_t linkIndex) -> Eigen::MatrixXd {
+      const Eigen::Matrix3d rotation
+          = tree.links[linkIndex].worldTransform.linear();
+      const Eigen::Vector3d origin
+          = tree.links[linkIndex].worldTransform.translation();
+      const Eigen::MatrixXd angularJacobian
+          = rotation * bodyJacobian[linkIndex].topRows(3);
+      return rotation * bodyJacobian[linkIndex].bottomRows(3)
+             - skew(contact.point - origin) * angularJacobian;
+    };
+    Eigen::MatrixXd pointLinearJacobian = pointLinearJacobianFor(index);
+    if (contact.otherLink != entt::null) {
+      const auto otherLinkIt = std::find(
+          structure.links.begin(), structure.links.end(), contact.otherLink);
+      if (otherLinkIt == structure.links.end() || otherLinkIt == linkIt) {
+        continue;
+      }
+      const auto otherIndex
+          = static_cast<std::size_t>(otherLinkIt - structure.links.begin());
+      pointLinearJacobian -= pointLinearJacobianFor(otherIndex);
+    }
 
     auto& row = problem.rows[c];
 
     // Couple a dynamic rigid-body obstacle: cache its inverse mass, inverse
     // world inertia, and the contact arm.
-    if (contact.otherBody != entt::null
+    if (contact.otherLink == entt::null && contact.otherBody != entt::null
         && registry.all_of<comps::MassProperties, comps::Transform>(
             contact.otherBody)
         && !registry.all_of<comps::StaticBodyTag>(contact.otherBody)) {
@@ -1370,8 +1398,9 @@ void MultibodyForwardDynamicsStage::execute(
   // Collision query once per step; route each contact that touches a link to
   // the multibody that owns it. Link-vs-rigid-body contacts are resolved here:
   // a static obstacle is one-sided, a dynamic rigid body receives the
-  // equal-and-opposite impulse (two-sided). Link-vs-link contacts remain a
-  // later slice (they need the unified constraint solve across multibodies).
+  // equal-and-opposite impulse (two-sided). Same-multibody link-vs-link
+  // contacts use one relative-Jacobian row; cross-multibody link-vs-link
+  // contacts remain a later unified-solve slice.
   const std::vector<Contact> contacts = world.collide();
 
   auto view = registry.view<comps::MultibodyStructure>();

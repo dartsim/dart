@@ -23,13 +23,12 @@ namespace {
 namespace sx = dart::simulation::experimental;
 
 //==============================================================================
-// The unified constraint stage, run directly (it is not yet wired into the
-// default pipeline), resolves a rigid-body contact: a sphere overlapping a
-// static ground has its downward velocity arrested and is projected out of
-// penetration. This exercises the stage's orchestration -- collision query,
-// rigid-rigid assembly, the joint solve, impulse application, and the rigid
-// positional projection. Link-side orchestration is exercised by the full
-// emergent suite once the stage replaces the per-domain contact stages.
+// The unified constraint stage, run directly, resolves a rigid-body contact: a
+// sphere overlapping a static ground has its downward velocity arrested and is
+// projected out of penetration. This exercises the stage's orchestration:
+// collision query, rigid-rigid assembly, the joint solve, impulse application,
+// and the rigid positional projection. Link-side orchestration is exercised by
+// the full emergent world suite through the default pipeline.
 TEST(UnifiedConstraintStage, ArrestsAndSeparatesOverlappingRigidContact)
 {
   sx::World world;

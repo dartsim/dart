@@ -201,7 +201,7 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
   // indices, plus the full dense within-multibody Delassus coupling
   // J_i^T M_k^-1 J_j. The diagonal reproduces the stored row denominators for a
   // contact with no dynamic obstacle (same expression, same evaluation order).
-  // Shared-dynamic-obstacle off-diagonal terms are added by a later slice. ---
+  // Shared-dynamic-obstacle terms are added after inertia reconciliation. ---
   for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
     const auto& block = problem.multibodyBlocks[k];
     const Eigen::MatrixXd& inverseMass = block.inverseMass;

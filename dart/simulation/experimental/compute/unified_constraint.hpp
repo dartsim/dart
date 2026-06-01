@@ -147,9 +147,10 @@ struct UnifiedConstraintProblem
 /// through a body that is both a rigid-contact participant and a link obstacle.
 /// Such a shared body's `(invMass, invInertia)` is reconciled to one canonical
 /// value (the rigid path's) so the assembled operator stays a consistent,
-/// symmetric Delassus. With link-vs-link contacts dropped upstream, a shared
-/// dynamic obstacle is the only cross-body coupling, so the assembled system is
-/// the complete Delassus for the accepted contact set.
+/// symmetric Delassus. Same-multibody link-vs-link contacts are already encoded
+/// in their block's relative Jacobian. A shared dynamic rigid obstacle is the
+/// only remaining accepted cross-body coupling, so the assembled system is the
+/// complete Delassus for the accepted contact set.
 [[nodiscard]] DART_EXPERIMENTAL_API UnifiedConstraintProblem
 assembleUnifiedConstraintProblem(
     const RigidBodyContactProblem& rigidProblem,

@@ -130,8 +130,10 @@ computeMultibodyLinkWorldJacobian(
 
 /// One contact acting on a single link of a multibody, oriented so the normal
 /// points from the obstacle into the link. The obstacle is either immovable
-/// (`otherBody == entt::null`, a one-sided solve) or a dynamic rigid body that
-/// receives the equal-and-opposite impulse (a two-sided solve).
+/// (`otherBody == entt::null` and `otherLink == entt::null`, a one-sided
+/// solve), a dynamic rigid body that receives the equal-and-opposite impulse,
+/// or another link in the same multibody whose point Jacobian is subtracted
+/// from the primary link's point Jacobian.
 struct LinkContact
 {
   entt::entity link = entt::null;
@@ -141,6 +143,8 @@ struct LinkContact
   double friction = 1.0;    ///< combined Coulomb friction coefficient
   double restitution = 0.0; ///< combined normal restitution coefficient
   entt::entity otherBody = entt::null; ///< dynamic rigid-body obstacle, or null
+  entt::entity otherLink
+      = entt::null; ///< same-multibody link obstacle, or null
 };
 
 /// One link contact after Jacobian and inverse-mass precomputation, ready for
@@ -148,10 +152,12 @@ struct LinkContact
 ///
 /// Each Jacobian maps a world-space contact impulse along its direction into
 /// the owning multibody's generalized-velocity space (`J^T d`, size DOF). The
-/// denominators are the diagonal Delassus entries `J M^-1 J^T`, augmented for a
-/// two-sided dynamic rigid obstacle with that body's point inverse mass. A
-/// contact that cannot move either body (e.g. a fixed-base link against an
-/// immovable obstacle) is left inactive.
+/// denominators are the diagonal Delassus entries `J M^-1 J^T`, where `J` is
+/// either the primary link's point Jacobian or the relative point Jacobian
+/// against another link in the same multibody. Dynamic rigid obstacles augment
+/// the denominator with that body's point inverse mass. A contact that cannot
+/// move either body (e.g. a fixed-base link against an immovable obstacle) is
+/// left inactive.
 struct MultibodyLinkContactRow
 {
   Eigen::VectorXd normalJacobian;

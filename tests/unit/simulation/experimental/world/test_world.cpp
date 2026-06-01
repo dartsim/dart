@@ -3168,6 +3168,56 @@ TEST(World, MultibodyLinkPushesDynamicRigidBody)
   EXPECT_NEAR(box.getLinearVelocity().x(), commonVelocity, 0.1);
 }
 
+// Test same-multibody link-vs-link contact: two sibling prismatic links overlap
+// and approach along their shared rail. The unified contact stage routes the
+// pair as one relative-Jacobian link row, so the links separate instead of
+// passing through each other.
+TEST(World, MultibodySiblingLinksResolveContact)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("sibling_robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec lowerSpec;
+  lowerSpec.name = "lower";
+  lowerSpec.type = sx::JointType::Prismatic;
+  lowerSpec.axis = Eigen::Vector3d::UnitZ();
+  auto lower = robot.addLink("lower", base, lowerSpec);
+  lower.setMass(1.0);
+  lower.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  sx::JointSpec upperSpec;
+  upperSpec.name = "upper";
+  upperSpec.type = sx::JointType::Prismatic;
+  upperSpec.axis = Eigen::Vector3d::UnitZ();
+  auto upper = robot.addLink("upper", base, upperSpec);
+  upper.setMass(1.0);
+  upper.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  auto lowerJoint = lower.getParentJoint();
+  auto upperJoint = upper.getParentJoint();
+  lowerJoint.setPosition(Eigen::VectorXd::Constant(1, 0.0));
+  upperJoint.setPosition(Eigen::VectorXd::Constant(1, 0.35));
+  lowerJoint.setVelocity(Eigen::VectorXd::Constant(1, 0.5));
+  upperJoint.setVelocity(Eigen::VectorXd::Constant(1, -0.5));
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  const double relativeVelocity
+      = upperJoint.getVelocity()[0] - lowerJoint.getVelocity()[0];
+  EXPECT_GE(relativeVelocity, -1e-9);
+  EXPECT_LT(lowerJoint.getVelocity()[0], 0.5);
+  EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
+}
+
 // Test that Coulomb friction at a link contact decelerates a sliding link. A
 // vertical prismatic carries a horizontal prismatic link whose sphere rests on
 // the ground; an initial horizontal velocity is braked to rest by friction.

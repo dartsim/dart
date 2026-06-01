@@ -103,6 +103,47 @@ struct PrismaticLegWorld
   }
 };
 
+//==============================================================================
+// A fixed-base multibody with two independent unit-mass prismatic links sliding
+// along +Z.
+struct TwoPrismaticLinksWorld
+{
+  sx::World world;
+  entt::entity multibody = entt::null;
+  entt::entity lower = entt::null;
+  entt::entity upper = entt::null;
+
+  TwoPrismaticLinksWorld()
+  {
+    world.setGravity(Eigen::Vector3d::Zero());
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+
+    sx::JointSpec lowerSpec;
+    lowerSpec.name = "lower";
+    lowerSpec.type = sx::JointType::Prismatic;
+    lowerSpec.axis = Eigen::Vector3d::UnitZ();
+    auto lowerLink = robot.addLink("lower", base, lowerSpec);
+    lowerLink.setMass(1.0);
+
+    sx::JointSpec upperSpec;
+    upperSpec.name = "upper";
+    upperSpec.type = sx::JointType::Prismatic;
+    upperSpec.axis = Eigen::Vector3d::UnitZ();
+    auto upperLink = robot.addLink("upper", base, upperSpec);
+    upperLink.setMass(1.0);
+
+    multibody = robot.getEntity();
+    lower = lowerLink.getEntity();
+    upper = upperLink.getEntity();
+  }
+
+  const sx::comps::MultibodyStructure& structure()
+  {
+    return world.getRegistry().get<sx::comps::MultibodyStructure>(multibody);
+  }
+};
+
 } // namespace
 
 //==============================================================================
@@ -200,6 +241,60 @@ TEST(MultibodyLinkContact, AssemblesOneSidedLinkContactRowDeterministically)
   ASSERT_EQ(repeated.rows.size(), problem.rows.size());
   expectRowsExactlyEqual(problem.rows[0], repeated.rows[0]);
   EXPECT_EQ(problem.inverseMass, repeated.inverseMass);
+}
+
+//==============================================================================
+TEST(MultibodyLinkContact, UsesRelativeJacobianForSameMultibodyLinkObstacle)
+{
+  TwoPrismaticLinksWorld scene;
+
+  sx::compute::LinkContact contact;
+  contact.link = scene.lower;
+  contact.otherLink = scene.upper;
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.point = Eigen::Vector3d::Zero();
+  contact.depth = 0.0; // isolate relative velocity from Baumgarte bias
+  contact.friction = 0.4;
+  contact.restitution = 0.0;
+
+  Eigen::VectorXd nextVelocity(2);
+  nextVelocity << -0.5, 0.25;
+
+  const std::vector<sx::compute::LinkContact> contacts{contact};
+  const auto problem = sx::compute::assembleMultibodyLinkContactProblem(
+      scene.world.getRegistry(),
+      scene.structure(),
+      nextVelocity,
+      0.01,
+      contacts);
+
+  ASSERT_EQ(problem.rows.size(), 1u);
+  ASSERT_EQ(problem.inverseMass.rows(), 2);
+  ASSERT_EQ(problem.inverseMass.cols(), 2);
+
+  const auto& row = problem.rows[0];
+  EXPECT_TRUE(row.active);
+  EXPECT_TRUE(row.otherBody == entt::null);
+  EXPECT_DOUBLE_EQ(row.otherInvMass, 0.0);
+  EXPECT_TRUE(row.otherInvInertia.isZero(0.0));
+  EXPECT_TRUE(row.otherArm.isZero(0.0));
+
+  // The row is the primary link point velocity minus the same-multibody
+  // obstacle link point velocity. With two independent +Z prismatic joints
+  // that relative normal Jacobian is [1, -1].
+  Eigen::Vector2d expectedNormalJacobian;
+  expectedNormalJacobian << 1.0, -1.0;
+  EXPECT_TRUE(row.normalJacobian.isApprox(expectedNormalJacobian, 1e-12));
+  EXPECT_GT(row.normalDenominator, 0.0);
+  EXPECT_DOUBLE_EQ(
+      row.normalDenominator,
+      row.normalJacobian.dot(problem.inverseMass * row.normalJacobian));
+
+  const double approachingVelocity = row.normalJacobian.dot(nextVelocity);
+  EXPECT_DOUBLE_EQ(approachingVelocity, -0.75);
+  EXPECT_DOUBLE_EQ(row.bias, 0.0);
+  EXPECT_DOUBLE_EQ(row.restitutionTarget, 0.0);
+  EXPECT_DOUBLE_EQ(row.normalRhs, 0.75);
 }
 
 //==============================================================================

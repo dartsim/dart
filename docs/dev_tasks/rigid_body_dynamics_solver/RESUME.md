@@ -333,7 +333,9 @@ MultibodyPosition`, then Deformable, Kinematics. The hard part is splitting
   `MultibodyVelocityStage`/`MultibodyPositionStage` + reorder, link contacts
   still in their own stage; (3+4, **merged** — do not bisect the link-contact
   set across two solvers) unify rigid + link-static + link-dynamic-rigid into
-  `UnifiedConstraintStage`; (5) link-vs-link + new routing.
+  `UnifiedConstraintStage`; (5a) same-multibody link-vs-link routing via
+  relative Jacobians; (5b) cross-multibody link-vs-link, which needs a
+  multi-block row ownership/application model.
 - **(DONE locally, commit `d7f3a17c98f`) Slice 1 — multibody position integration
   helper.** Added `compute/multibody_constraint.{hpp,cpp}` with
   `integrateMultibodyPositions(registry, structure, nextVelocity, timeStep)`,
@@ -530,9 +532,10 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     focused build + `test_unified_constraint_stage` (2/2) + `test_world`
     (104/104), full `ctest -L simulation-experimental` (44/44), `pixi run lint`.
   - **(DONE locally) Slice 3c-ii.2 — the pipeline flip (the behavior-changing
-    slice).** `appendSemiImplicitSplitStages()` (`world.cpp`) now wires
-    `RigidBodyVelocityStage → MultibodyVelocityStage → UnifiedConstraintStage →
-    RigidBodyPositionStage → MultibodyPositionStage → DeformableDynamicsStage`:
+    slice).** `appendSemiImplicitSplitStages()` (`world.cpp`) now wires the
+    semi-implicit order as `RigidBodyVelocityStage`, `MultibodyVelocityStage`,
+    `UnifiedConstraintStage`, `RigidBodyPositionStage`, `MultibodyPositionStage`,
+    then `DeformableDynamicsStage`:
     the single `UnifiedConstraintStage` replaces the separate
     `RigidBodyContactStage` + `MultibodyContactStage` passes. Positions-last and
     the post-solve velocity-limit clamp (in `MultibodyPositionStage`) are
@@ -562,6 +565,29 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     coupled boxed-LCP. Remaining Subsystem A work is **slice 5 (link-vs-link
     two-sided contacts + the new collision routing)** and optional islands /
     warm-starting / friction-cone polish (all explicit follow-ups).
+  - **(DONE locally) Slice 5a — same-multibody link-vs-link contacts.**
+    `LinkContact` now carries `otherLink` for a link obstacle owned by the same
+    `MultibodyStructure`. `collectMultibodyLinkContacts` accepts both-in-body
+    collision pairs and orients one contact row into the primary link; the
+    assembler subtracts the obstacle link's contact-point Jacobian from the
+    primary link's Jacobian, so the existing unified block naturally sees
+    `J_rel M^-1 J_rel^T` and the solved impulse updates both links through the
+    same staged generalized velocity. Dynamic rigid `otherBody` coupling remains
+    unchanged and is intentionally ignored when `otherLink` is set. Added
+    assembler coverage for the `[1, -1]` relative Jacobian on two sibling
+    prismatic links and an emergent world test where overlapping sibling links
+    stop approaching and separate through the default `UnifiedConstraintStage`.
+    Focused validation passed:
+    `build-simulation-experimental-tests`, `test_multibody_link_contact`,
+    selected `test_world` link-contact cases, selected `test_unified_constraint`
+    cases, and `test_unified_constraint_stage`; full
+    `ctest -L simulation-experimental` passed (44/44), and `pixi run lint`
+    passed.
+  - **Remaining after Slice 5a:** cross-multibody link-vs-link contacts. The
+    current `UnifiedRowOwner`/`UnifiedMultibodyBlock` model assumes each link row
+    belongs to one multibody block; a contact between two different multibodies
+    needs either a row with two articulated ends or explicit cross-block
+    ownership so solve/apply/fallback can update both staged velocity vectors.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
@@ -597,7 +623,7 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     post-integration clamps; motors stay the pre-contact equality solve. Islands
     and warm-starting are deliberate non-goals (flag, don't silently omit).
 
-Then: **link-vs-link** (slice 5) and **islands** for scaling; optional
+Then: **cross-multibody link-vs-link** (slice 5b) and **islands** for scaling; optional
 **friction-cone polish** — the ODE `findex` bound is frozen once per solve (a
 one-shot decoupling approximation); a true cone or an outer normal/friction
 iteration would tighten coupled stacking friction if a scene needs it.
@@ -619,28 +645,20 @@ architectural prerequisite, detailed below.
 
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
-What works today: rigid-body-vs-rigid-body and rigid-body-vs-static contacts
-(`RigidBodyContactStage` — a coupled boxed-LCP over all rigid-rigid contacts that
-solves the normal impulses and Coulomb friction jointly, three rows per contact
-with the friction cone enforced via the solver's `findex`, plus restitution and
-positional correction; a rank-deficient set falls back to the coupled normal-only
-LCP + a sequential friction sweep); link-vs-static-rigid-body and
-link-vs-dynamic-rigid-body one-sided articulated contact (inside
-`simulateMultibody`). **Missing:** link-vs-link (two-sided) contacts and a single
-unified boxed-LCP/PGS solve over rigid-rigid AND link contacts at once (the
-pipeline reorder).
+What works today: the default semi-implicit pipeline velocity-integrates rigid
+and articulated bodies, runs one `UnifiedConstraintStage` boxed-LCP over
+rigid-rigid, link-vs-static-rigid, link-vs-dynamic-rigid, and same-multibody
+link-vs-link rows, then position-integrates. Rigid positional correction still
+runs after the unified velocity solve. **Missing:** cross-multibody
+link-vs-link rows and scaling polish (islands / warm starting / friction-cone
+iteration).
 
-- **Pipeline ordering (partly addressed):** the default semi-implicit
+- **Pipeline ordering (done for semi-implicit):** the default semi-implicit
   `World::step` pipeline now runs `RigidBodyVelocityStage` →
-  `MultibodyVelocityStage` → `RigidBodyContactStage` →
-  `MultibodyContactStage` → `RigidBodyPositionStage` →
-  `MultibodyPositionStage` → `DeformableDynamicsStage` → `KinematicsStage`. A
-  fully coupled solve still needs to replace the two contact stages with one
-  unified contact/constraint solve over all bodies so rigid-rigid and link
-  contacts are resolved jointly rather than in separate passes. This touches the
-  core step loop and all passing tests, so keep slicing with the suite as the
-  guardrail (revert if it destabilizes, as was done for the first universal-joint
-  attempt).
+  `MultibodyVelocityStage` → `UnifiedConstraintStage` →
+  `RigidBodyPositionStage` → `MultibodyPositionStage` →
+  `DeformableDynamicsStage` → `KinematicsStage`. The variational branch keeps
+  its dedicated path.
 - **After reordering:** assemble every contact as a constraint row with a
   Jacobian that maps the contact impulse to each involved body's velocity —
   rigid bodies via `invMass`/`invWorldInertia` + arm (already in
@@ -659,9 +677,9 @@ lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
   `MultibodyForwardDynamicsStage` in `World::step`, so these impulses reach the
   rigid body's pose in the same step (no lag; addressed a P1 review note).
   Verified by total X-momentum conservation when a prismatic striker link hits a
-  free body (C++ + dartpy). **Still remaining:** link-vs-link
-  contacts and the coupled simultaneous boxed-LCP (both need the pipeline
-  reordering above).
+  free body (C++ + dartpy). The later unified pipeline supersedes this
+  per-multibody solve for the default semi-implicit path. **Still remaining:**
+  cross-multibody link-vs-link contacts and scaling polish.
 
 ### Subsystem B — model loading (URDF/SDF/MJCF) into the experimental World
 
