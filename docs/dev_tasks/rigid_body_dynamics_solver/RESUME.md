@@ -268,6 +268,13 @@ paths are unchanged; setting it to `false` filters link-vs-link pairs within the
 same multibody while preserving rigid-body, link-vs-rigid-body, and
 cross-multibody link contacts. Covered by C++ and dartpy tests.
 
+**(DONE) Broad-phase pruning for `World::collide()`.** Experimental collision
+queries now build the native collision world's AABB broad-phase snapshot and
+only run narrow-phase contact generation for candidate pairs. Contact reporting,
+same-entity compound-shape skipping, and same-multibody link filtering semantics
+are preserved. Covered by the existing collision-query suite plus a sparse
+far-body regression.
+
 **Resume here — Subsystem A (the remaining headline gap):**
 
 **Subsystem A — coupled boxed-LCP.** Reorder the `World::step` pipeline to

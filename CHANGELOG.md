@@ -824,6 +824,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     an explicit `includeSameMultibodyLinkPairs` / dartpy
     `include_same_multibody_link_pairs` switch to filter same-multibody link
     self-collision pairs without changing the default query behavior.
+  - `World::collide()` now uses the native collision broad phase to prune
+    candidate pairs before narrow-phase contact generation while preserving the
+    same `Contact` reporting semantics.
   - Added an experimental articulated contact response: multibody links with
     collision shapes now rest on static rigid-body obstacles. `World::step()`
     resolves each link-vs-static contact with a unilateral normal impulse using

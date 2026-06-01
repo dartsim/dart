@@ -2996,6 +2996,40 @@ TEST(World, CollisionQueryUsesShapeLocalTransform)
   EXPECT_NEAR(contacts.front().depth, 0.2, 1e-6);
 }
 
+// Test that the collision query still reports sparse contacts after candidate
+// pair generation is pruned by the native broad phase.
+TEST(World, CollisionQueryFindsSparseBroadPhaseCandidate)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  for (int i = 0; i < 20; ++i) {
+    sx::RigidBodyOptions farOptions;
+    farOptions.position = Eigen::Vector3d(10.0 + 3.0 * i, 0.0, 0.0);
+    auto farBody = world.addRigidBody("far_" + std::to_string(i), farOptions);
+    farBody.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+  }
+
+  auto nearA = world.addRigidBody("near_a");
+  nearA.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  sx::RigidBodyOptions nearBOptions;
+  nearBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto nearB = world.addRigidBody("near_b", nearBOptions);
+  nearB.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  for (const auto& contact : contacts) {
+    const auto nameA = contact.bodyA.getName();
+    const auto nameB = contact.bodyB.getName();
+    EXPECT_TRUE(
+        (nameA == "near_a" && nameB == "near_b")
+        || (nameA == "near_b" && nameB == "near_a"));
+  }
+}
+
 // Test that multiple shapes on the same rigid body behave as compound
 // collision geometry and do not self-collide.
 TEST(World, CollisionQuerySupportsCompoundRigidBodyShapes)

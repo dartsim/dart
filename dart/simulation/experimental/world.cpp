@@ -64,6 +64,7 @@
 #include <array>
 #include <format>
 #include <istream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -1745,6 +1746,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     ncol::CollisionObject object;
   };
   std::vector<ObjectEntry> entries;
+  std::vector<std::size_t> entryByObjectId;
 
   const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
     auto view = m_registry.view<comps::MultibodyStructure>();
@@ -1788,10 +1790,16 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
         break;
     }
     const Eigen::Isometry3d shapePose = pose * collisionShape.localTransform;
-    entries.push_back(
-        {entity,
-         multibody,
-         collisionWorld.createObject(std::move(shape), shapePose)});
+    ncol::CollisionObject object
+        = collisionWorld.createObject(std::move(shape), shapePose);
+    const std::size_t entryIndex = entries.size();
+    const std::size_t objectId = object.getId();
+    if (objectId >= entryByObjectId.size()) {
+      entryByObjectId.resize(
+          objectId + 1, std::numeric_limits<std::size_t>::max());
+    }
+    entryByObjectId[objectId] = entryIndex;
+    entries.push_back({entity, multibody, object});
   };
 
   // Rigid bodies pose their collision shapes from the rigid-body transform.
@@ -1825,42 +1833,49 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     }
   }
 
-  // Pairwise narrow-phase queries. Each pair's bodies are known here, so the
-  // contacts map back to the right rigid bodies without relying on the result
-  // carrying object identity. This is O(n^2); a future slice can use the native
-  // broad phase to prune candidate pairs.
+  // Broad-phase-pruned narrow-phase queries. Each candidate pair's bodies are
+  // known here, so the contacts map back to the right experimental bodies
+  // without relying on the result carrying object identity.
   const auto option = ncol::CollisionOption::fullContacts();
+  const auto candidatePairs = collisionWorld.buildBroadPhaseSnapshot();
   std::vector<Contact> contacts;
-  for (std::size_t i = 0; i < entries.size(); ++i) {
-    for (std::size_t j = i + 1; j < entries.size(); ++j) {
-      if (entries[i].entity == entries[j].entity) {
-        continue;
-      }
-      if (!options.includeSameMultibodyLinkPairs
-          && entries[i].multibody != entt::null
-          && entries[i].multibody == entries[j].multibody) {
-        continue;
-      }
+  for (const auto& pair : candidatePairs.pairs) {
+    if (pair.first >= entryByObjectId.size()
+        || pair.second >= entryByObjectId.size()) {
+      continue;
+    }
+    const std::size_t i = entryByObjectId[pair.first];
+    const std::size_t j = entryByObjectId[pair.second];
+    if (i >= entries.size() || j >= entries.size()) {
+      continue;
+    }
+    if (entries[i].entity == entries[j].entity) {
+      continue;
+    }
+    if (!options.includeSameMultibodyLinkPairs
+        && entries[i].multibody != entt::null
+        && entries[i].multibody == entries[j].multibody) {
+      continue;
+    }
 
-      ncol::CollisionResult result;
-      if (!collisionWorld.collide(
-              entries[i].object, entries[j].object, option, result)) {
-        continue;
-      }
+    ncol::CollisionResult result;
+    if (!collisionWorld.collide(
+            entries[i].object, entries[j].object, option, result)) {
+      continue;
+    }
 
-      for (std::size_t k = 0; k < result.numContacts(); ++k) {
-        const auto& point = result.getContact(k);
-        // The native narrow phase reports the normal pointing from the second
-        // object toward the first; the public Contact convention points from
-        // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
-        contacts.push_back(
-            Contact{
-                CollisionBody(entries[i].entity, this),
-                CollisionBody(entries[j].entity, this),
-                point.position,
-                -point.normal,
-                point.depth});
-      }
+    for (std::size_t k = 0; k < result.numContacts(); ++k) {
+      const auto& point = result.getContact(k);
+      // The native narrow phase reports the normal pointing from the second
+      // object toward the first; the public Contact convention points from
+      // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
+      contacts.push_back(
+          Contact{
+              CollisionBody(entries[i].entity, this),
+              CollisionBody(entries[j].entity, this),
+              point.position,
+              -point.normal,
+              point.depth});
     }
   }
 
