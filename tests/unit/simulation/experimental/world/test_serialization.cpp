@@ -1551,6 +1551,21 @@ Eigen::VectorXd chainState(dart::simulation::experimental::World& world)
   return s;
 }
 
+// A single dynamic rigid body that free-falls under gravity. getStateVector()
+// is populated for dynamic rigid bodies (the differentiable [q; q̇] reduction),
+// so the rigid-body integration path can be checked with the state vector
+// directly, complementing the multibody joint-state path above.
+void buildFallingBody(dart::simulation::experimental::World& world)
+{
+  namespace sx = dart::simulation::experimental;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.position = Eigen::Vector3d(0.0, 0.0, 5.0);
+  options.linearVelocity = Eigen::Vector3d(0.3, -0.2, 0.0);
+  world.addRigidBody("ball", options);
+}
+
 // Deterministic CPU integration of identical state should agree to round-off;
 // this tight tolerance guards against benign platform summation-order
 // differences without hiding a real divergence.
@@ -1621,4 +1636,41 @@ TEST(Serialization, CheckpointReloadMatchesUninterruptedRun)
   EXPECT_LT((chainState(resumed) - referenceState).norm(), kReplayTol)
       << "Checkpoint+reload mid-run must match the uninterrupted reference run";
   EXPECT_DOUBLE_EQ(resumed.getTime(), reference.getTime());
+}
+
+// Same replay guarantee for the rigid-body integration path, checked through
+// the world state vector [q; q̇] which is populated for dynamic rigid bodies.
+TEST(Serialization, RigidBodyCheckpointReloadContinuesIdentically)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World worldA;
+  buildFallingBody(worldA);
+  worldA.enterSimulationMode();
+
+  const Eigen::VectorXd initial = worldA.getStateVector();
+  ASSERT_EQ(initial.size(), 6) // [pos(3); linVel(3)] for one dynamic body
+      << "One dynamic rigid body should expose a size-6 state vector";
+  worldA.step(25); // advance to a mid-trajectory checkpoint
+
+  const Eigen::VectorXd checkpoint = worldA.getStateVector();
+  EXPECT_GT((checkpoint - initial).norm(), 1e-6)
+      << "Falling body must evolve under gravity";
+
+  std::stringstream ss;
+  worldA.saveBinary(ss);
+  sx::World worldB;
+  worldB.loadBinary(ss);
+
+  ASSERT_EQ(worldB.getStateVector().size(), checkpoint.size());
+  EXPECT_LT((worldB.getStateVector() - checkpoint).norm(), kReplayTol)
+      << "Reloaded rigid-body state must match the checkpoint";
+
+  worldA.step(25);
+  worldB.step(25);
+
+  EXPECT_LT(
+      (worldB.getStateVector() - worldA.getStateVector()).norm(), kReplayTol)
+      << "Reloaded world must continue identically for the rigid-body path";
+  EXPECT_DOUBLE_EQ(worldB.getTime(), worldA.getTime());
 }
