@@ -1,5 +1,31 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: Erleben spike-in-hole fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/spike-in-hole.json`: an inverted spike
+  advances through a fixed hole mesh under the upstream velocity direction,
+  activates rigid IPC contact, stays finite, and reports no meaningful native
+  overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenSpikeInHoleFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. This retires the audited Erleben unit-test fixture rows
+  tracked in the current P0 manifest slice.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSpikeInHoleFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: Erleben wedge-in-crack fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

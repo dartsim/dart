@@ -370,6 +370,45 @@ sx::CollisionShape makeErlebenCrackMesh()
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeErlebenHoleMesh()
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {-1.0, -0.5, -0.5}, {-1.0, -0.5, 0.5},  {-1.0, -1.0, -0.5},
+      {-1.0, -1.0, 0.5},  {-0.5, -0.5, -0.5}, {-0.5, -0.5, 0.5},
+      {-0.5, -1.0, -0.5}, {-0.5, -1.0, 0.5},  {-1.0, 0.5, -0.5},
+      {-1.0, 0.5, 0.5},   {-0.5, 0.5, 0.5},   {-0.5, 0.5, -0.5},
+      {-1.0, 1.0, -0.5},  {-1.0, 1.0, 0.5},   {-0.5, 1.0, 0.5},
+      {-0.5, 1.0, -0.5},  {0.5, 0.5, 0.5},    {0.5, 0.5, -0.5},
+      {0.5, 1.0, 0.5},    {0.5, 1.0, -0.5},   {1.0, 0.5, 0.5},
+      {1.0, 0.5, -0.5},   {1.0, 1.0, 0.5},    {1.0, 1.0, -0.5},
+      {0.5, -0.5, 0.5},   {0.5, -0.5, -0.5},  {1.0, -0.5, 0.5},
+      {1.0, -0.5, -0.5},  {0.5, -1.0, 0.5},   {0.5, -1.0, -0.5},
+      {1.0, -1.0, 0.5},   {1.0, -1.0, -0.5},  {1.0, -0.0, -0.5},
+      {1.0, -0.0, 0.5},   {-1.0, -0.0, -0.5}, {-1.0, -0.0, 0.5},
+      {-0.0, 1.0, 0.5},   {-0.0, 1.0, -0.5},  {0.0, -1.0, 0.5},
+      {0.0, -1.0, -0.5},  {0.0, 0.0, 0.0},
+  };
+  std::vector<Eigen::Vector3i> triangles
+      = {{1, 2, 0},    {2, 3, 7},    {34, 9, 35},  {2, 4, 0},    {3, 1, 7},
+         {11, 12, 8},  {39, 25, 4},  {14, 12, 15}, {8, 12, 9},   {13, 14, 10},
+         {17, 23, 19}, {37, 18, 36}, {11, 8, 34},  {20, 23, 21}, {21, 32, 20},
+         {18, 20, 16}, {19, 23, 18}, {30, 28, 24}, {16, 10, 36}, {25, 27, 32},
+         {28, 31, 29}, {27, 33, 32}, {27, 29, 31}, {17, 19, 37}, {11, 25, 17},
+         {27, 31, 26}, {7, 39, 6},   {15, 37, 14}, {0, 35, 1},   {1, 3, 2},
+         {6, 2, 7},    {34, 8, 9},   {2, 6, 4},    {7, 1, 5},    {11, 15, 12},
+         {4, 6, 39},   {39, 29, 25}, {35, 9, 10},  {14, 13, 12}, {12, 13, 9},
+         {10, 9, 13},  {36, 18, 16}, {35, 10, 5},  {17, 21, 23}, {37, 19, 18},
+         {0, 4, 34},   {4, 11, 34},  {20, 22, 23}, {33, 20, 32}, {18, 22, 20},
+         {24, 26, 30}, {38, 5, 24},  {16, 33, 24}, {33, 26, 24}, {20, 33, 16},
+         {32, 21, 17}, {17, 25, 32}, {28, 30, 31}, {27, 26, 33}, {27, 25, 29},
+         {37, 15, 11}, {11, 17, 37}, {5, 38, 7},   {28, 38, 24}, {1, 35, 5},
+         {11, 4, 25},  {10, 14, 36}, {30, 26, 31}, {7, 38, 39},  {36, 14, 37},
+         {0, 34, 35},  {29, 39, 28}, {28, 39, 38}, {24, 5, 40},  {24, 40, 16},
+         {10, 16, 40}, {5, 10, 40},  {22, 18, 23}};
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 // Build one arch voussoir (wedge block) spanning the angular range
 // [theta0, theta1] in the world x-z plane, between inner and outer radii, with
 // half-width halfW along y. Writes the world centroid (the body position) into
@@ -1790,6 +1829,53 @@ TEST(RigidIpcPaperExperiments, ErlebenWedgeInCrackFixtureRowStaysSeparated)
   EXPECT_GT(wedge.getTranslation().x(), startX + 0.005);
   EXPECT_TRUE(wedge.getTranslation().allFinite());
   EXPECT_TRUE(wedge.getLinearVelocity().allFinite());
+}
+
+TEST(RigidIpcPaperExperiments, ErlebenSpikeInHoleFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions holeOptions;
+  holeOptions.isStatic = true;
+  holeOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto hole = world.addRigidBody("erleben_hole_for_spike", holeOptions);
+  hole.setCollisionShape(makeErlebenHoleMesh());
+
+  sx::RigidBodyOptions spikeOptions;
+  spikeOptions.mass = 1.0;
+  spikeOptions.position = Eigen::Vector3d(0.0, 0.0, 2.0001);
+  spikeOptions.orientation
+      = Eigen::AngleAxisd(std::numbers::pi, Eigen::Vector3d::UnitY());
+  spikeOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto spike = world.addRigidBody("erleben_spike_in_hole", spikeOptions);
+  spike.setCollisionShape(makeErlebenSpikeMesh());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startX = spike.getTranslation().x();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_GT(spike.getTranslation().x(), startX + 0.005);
+  EXPECT_TRUE(spike.getTranslation().allFinite());
+  EXPECT_TRUE(spike.getLinearVelocity().allFinite());
 }
 
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)

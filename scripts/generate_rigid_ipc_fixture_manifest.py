@@ -309,6 +309,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "until it has topology-specific DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/erleben/spike-in-hole.json": {
+        "test": "ErlebenSpikeInHoleFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited Erleben spike-in-hole row: an inverted "
+            "spike advances through a fixed hole mesh under the upstream "
+            "velocity direction, activates rigid IPC contact, stays finite, "
+            "and reports no meaningful native overlap after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned spike-in-hole runtime coverage for the 3D "
+            "unit-test fixture mechanism. This retires the audited Erleben "
+            "unit-test fixture rows tracked in the current P0 manifest slice."
+        ),
+    },
     "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json": {
         "test": "CubeSettlesOnTwoTrianglePlaneFixtureRow",
         "expected_invariant": (
