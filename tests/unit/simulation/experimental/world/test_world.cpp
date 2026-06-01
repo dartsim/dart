@@ -4189,6 +4189,50 @@ TEST(World, RigidIpcContactStageSkipsKinematicWritebackWithActiveContact)
   EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), -0.1, 1e-12);
 }
 
+// Test that a fast kinematic obstacle cannot bypass conservative CCD by
+// starting and ending outside the activation distance while crossing a dynamic
+// body mid-step.
+TEST(World, RigidIpcContactStageBlocksKinematicSweepThroughDynamicBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(
+      sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
+
+  sx::RigidBodyOptions wallOptions;
+  wallOptions.position = Eigen::Vector3d(-0.3, 0.0, 0.0);
+  wallOptions.linearVelocity = Eigen::Vector3d(0.6, 0.0, 0.0);
+  auto wall = world.addRigidBody("kinematic_wall", wallOptions);
+  wall.setCollisionShape(sx::CollisionShape::makeBox({0.04, 0.2, 0.2}));
+  wall.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_EQ(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::LineSearchBlocked);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_TRUE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_GT(stats.lineSearchHits, 0u);
+  EXPECT_LT(stats.lastLineSearchStepBound, 1.0);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(wall.getTranslation().x(), -0.3, 1e-12);
+  EXPECT_NEAR(wall.getLinearVelocity().x(), 0.6, 1e-12);
+}
+
 // Test that the default World step pipeline can select the experimental rigid
 // IPC solver family without double-applying the legacy free-rigid velocity and
 // position stages.

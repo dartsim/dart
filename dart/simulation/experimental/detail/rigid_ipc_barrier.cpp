@@ -2357,6 +2357,36 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
   // relative floor (filled once the initial gradient norm is known below).
   RigidIpcProjectedNewtonOptions newtonOptions = options.newton;
 
+  const auto makeKinematicLineSearchStart = [&]() {
+    std::vector<RigidIpcBarrierSurface> lineSearchStart = result.surfaces;
+    for (std::size_t i = 0; i < lineSearchStart.size(); ++i) {
+      if (surfaces[i].kinematic) {
+        lineSearchStart[i].pose = surfaces[i].kinematicStartPose;
+      }
+    }
+    return lineSearchStart;
+  };
+  const auto checkConvergedKinematicSweep = [&]() {
+    if (!hasKinematic || !options.useLineSearch) {
+      return true;
+    }
+    const std::vector<RigidIpcBarrierSurface> lineSearchStart
+        = makeKinematicLineSearchStart();
+    result.lineSearch = computeRigidIpcLineSearchStepBound(
+        lineSearchStart, result.surfaces, options.lineSearch);
+    recordSolveLineSearchStats(result);
+    if (result.lineSearch.limited) {
+      ++result.stats.lineSearchLimitedSteps;
+    }
+    if (!result.lineSearch.allowsPositiveStep()
+        || (result.lineSearch.limited && result.lineSearch.stepBound < 1.0)) {
+      result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
+      result.failed = true;
+      return false;
+    }
+    return true;
+  };
+
   for (std::size_t frictionIteration = 0;
        frictionIteration < frictionIterationCount;
        ++frictionIteration) {
@@ -2411,11 +2441,17 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
       result.lastStep = step;
 
       if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
+        if (!checkConvergedKinematicSweep()) {
+          return result;
+        }
         result.status = RigidIpcProjectedNewtonSolveStatus::NoDofs;
         result.converged = true;
         return result;
       }
       if (step.converged) {
+        if (!checkConvergedKinematicSweep()) {
+          return result;
+        }
         result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
         result.converged = true;
         break;
@@ -2441,12 +2477,8 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         // (anti-tunneling against a moving obstacle); dynamic surfaces keep
         // their current iterate.
         if (hasKinematic) {
-          std::vector<RigidIpcBarrierSurface> lineSearchStart = result.surfaces;
-          for (std::size_t i = 0; i < lineSearchStart.size(); ++i) {
-            if (surfaces[i].kinematic) {
-              lineSearchStart[i].pose = surfaces[i].kinematicStartPose;
-            }
-          }
+          const std::vector<RigidIpcBarrierSurface> lineSearchStart
+              = makeKinematicLineSearchStart();
           result.lineSearch = computeRigidIpcLineSearchStepBound(
               lineSearchStart, candidateSurfaces, options.lineSearch);
         } else {

@@ -6443,7 +6443,9 @@ bool canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(
   // rows, however, a rejected solve means there is no accepted swept path for
   // the current dynamic state against the kinematic end pose.
   return result.assembly.activeConstraints.empty()
-         && result.assembly.activeFrictionConstraints.empty();
+         && result.assembly.activeFrictionConstraints.empty()
+         && !result.lineSearch.limited
+         && result.lineSearch.allowsPositiveStep();
 }
 
 } // namespace
