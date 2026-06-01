@@ -33,6 +33,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace dart::simulation::experimental {
 
@@ -48,8 +49,10 @@ enum class CollisionShapeType
 /// Public value object describing a body's collision geometry.
 ///
 /// This is a backend-neutral facade: the experimental World maps it onto the
-/// maintained native collision engine when running collision queries. The shape
-/// is expressed in the owning body's frame, centered at the body frame origin.
+/// maintained native collision engine when running collision queries.
+/// `localTransform` expresses the shape frame in the owning body/link frame; it
+/// defaults to identity, so existing call sites keep a shape centered at the
+/// body/link frame origin.
 ///
 /// Only the fields relevant to `type` are used. Prefer the named constructors
 /// (`makeSphere`, `makeBox`) for clarity.
@@ -64,6 +67,9 @@ struct CollisionShape
   /// Box half extents along the body x/y/z axes (used when type == Box). Each
   /// component must be positive.
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
+
+  /// Shape-frame pose expressed in the owning body/link frame.
+  Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
 
   /// Create a sphere collision shape.
   [[nodiscard]] static CollisionShape makeSphere(double radius)

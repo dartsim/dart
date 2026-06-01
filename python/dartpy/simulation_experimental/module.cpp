@@ -457,19 +457,38 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("BOX", sim::CollisionShapeType::Box);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
-      .def_static("sphere", &sim::CollisionShape::makeSphere, nb::arg("radius"))
+      .def_static(
+          "sphere",
+          [](double radius, const nb::handle& localTransform) {
+            sim::CollisionShape shape = sim::CollisionShape::makeSphere(radius);
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
+          nb::arg("radius"),
+          nb::arg("local_transform") = nb::none())
       .def_static(
           "box",
-          [](const nb::handle& halfExtents) {
-            return sim::CollisionShape::makeBox(toVector3(halfExtents));
+          [](const nb::handle& halfExtents, const nb::handle& localTransform) {
+            sim::CollisionShape shape
+                = sim::CollisionShape::makeBox(toVector3(halfExtents));
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
           },
-          nb::arg("half_extents"))
+          nb::arg("half_extents"),
+          nb::arg("local_transform") = nb::none())
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
           "radius", [](const sim::CollisionShape& self) { return self.radius; })
-      .def_prop_ro("half_extents", [](const sim::CollisionShape& self) {
-        return self.halfExtents;
+      .def_prop_ro(
+          "half_extents",
+          [](const sim::CollisionShape& self) { return self.halfExtents; })
+      .def_prop_ro("local_transform", [](const sim::CollisionShape& self) {
+        return self.localTransform.matrix();
       });
 
   nb::enum_<sim::ClosureKinematicsPolicy>(m, "ClosureKinematicsPolicy")

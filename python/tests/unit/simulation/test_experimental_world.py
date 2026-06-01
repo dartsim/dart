@@ -2041,6 +2041,27 @@ def test_experimental_collision_query():
     assert len(world.collide()) == 0
 
 
+def test_experimental_collision_shape_local_transform():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    body_a = world.add_rigid_body("a")
+    body_a.set_collision_shape(
+        sx.CollisionShape.sphere(0.5, _translation_transform(1.0, 0.0, 0.0))
+    )
+    body_b = world.add_rigid_body("b", position=(1.8, 0.0, 0.0))
+    body_b.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert np.allclose(
+        np.array(body_a.collision_shape.local_transform),
+        np.array(_translation_transform(1.0, 0.0, 0.0)),
+    )
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.2, abs=1e-6)
+
+
 def test_experimental_collision_query_includes_links():
     sx = _simulation_experimental()
 

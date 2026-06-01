@@ -2971,6 +2971,31 @@ TEST(World, CollisionQueryReportsContacts)
   EXPECT_TRUE(world.collide().empty());
 }
 
+// Test that CollisionShape local transforms offset the native collision object
+// relative to its owning body.
+TEST(World, CollisionQueryUsesShapeLocalTransform)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto bodyA = world.addRigidBody("a");
+  sx::CollisionShape offsetSphere = sx::CollisionShape::makeSphere(0.5);
+  offsetSphere.localTransform.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  bodyA.setCollisionShape(offsetSphere);
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.position = Eigen::Vector3d(1.8, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  // The body origins are too far apart for radius-0.5 spheres, but the first
+  // sphere is centered at x=1 in body A's frame, producing 0.2 penetration.
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.2, 1e-6);
+}
+
 // Test that multibody links with collision shapes participate in collision
 // queries and are reported as CollisionBody links (not rigid bodies).
 TEST(World, CollisionQueryIncludesMultibodyLinks)

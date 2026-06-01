@@ -118,10 +118,14 @@ class CollisionShapeType(enum.Enum):
 
 class CollisionShape:
     @staticmethod
-    def sphere(radius: float) -> CollisionShape: ...
+    def sphere(
+        radius: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
 
     @staticmethod
-    def box(half_extents: object) -> CollisionShape: ...
+    def box(
+        half_extents: object, local_transform: object | None = None
+    ) -> CollisionShape: ...
 
     @property
     def type(self) -> CollisionShapeType: ...
@@ -131,6 +135,9 @@ class CollisionShape:
 
     @property
     def half_extents(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def local_transform(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4, 4), order='F')]: ...
 
 class ClosureKinematicsPolicy(enum.Enum):
     RESIDUAL_ONLY = 0

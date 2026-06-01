@@ -1751,8 +1751,9 @@ std::vector<Contact> World::collide()
         shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
         break;
     }
+    const Eigen::Isometry3d shapePose = pose * collisionShape.localTransform;
     entries.push_back(
-        {entity, collisionWorld.createObject(std::move(shape), pose)});
+        {entity, collisionWorld.createObject(std::move(shape), shapePose)});
   };
 
   // Rigid bodies pose their collision shape from the rigid-body transform.

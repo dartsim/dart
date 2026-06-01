@@ -30,14 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/tri_mesh.hpp"
-
+// clang-format off
 #include "math/trimesh.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/vector.h>
+
+#include "dart/math/tri_mesh.hpp"
+// clang-format on
 
 #include <memory>
 #include <vector>

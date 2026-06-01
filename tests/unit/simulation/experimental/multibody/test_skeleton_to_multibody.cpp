@@ -587,9 +587,8 @@ TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
 }
 
 //==============================================================================
-// An origin-coincident box collision shape is translated onto the link, with
-// its full extent halved. An offset shape is skipped (no pose offset on the
-// experimental CollisionShape).
+// A box collision shape is translated onto the link with its full extent halved
+// and its shape-node offset preserved as the CollisionShape local transform.
 TEST(SkeletonToMultibody, TranslatesCollisionShapes)
 {
   auto skeleton = dd::Skeleton::create("collision");
@@ -621,6 +620,8 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
           .cwiseAbs()
           .maxCoeff(),
       1e-12);
+  EXPECT_TRUE(
+      shape->localTransform.isApprox(Eigen::Isometry3d::Identity(), 1e-12));
 
   // load_collision_shapes = false skips translation.
   sx::World plain;
@@ -632,7 +633,7 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   ASSERT_TRUE(bareLink.has_value());
   EXPECT_FALSE(bareLink->hasCollisionShape());
 
-  // An offset collision shape is skipped (the facade has no shape pose offset).
+  // An offset collision shape keeps the shape-node local transform.
   auto offsetSkeleton = dd::Skeleton::create("offset_collision");
   auto [offsetJoint, offsetBody]
       = offsetSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
@@ -651,7 +652,12 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
       = sx::io::buildMultibodyFromSkeleton(offsetWorld, *offsetSkeleton);
   const auto offsetLink = offsetMultibody.getLink("body");
   ASSERT_TRUE(offsetLink.has_value());
-  EXPECT_FALSE(offsetLink->hasCollisionShape());
+  ASSERT_TRUE(offsetLink->hasCollisionShape());
+  const auto offsetShape = offsetLink->getCollisionShape();
+  ASSERT_TRUE(offsetShape.has_value());
+  EXPECT_EQ(offsetShape->type, sx::CollisionShapeType::Box);
+  EXPECT_TRUE(
+      offsetShape->localTransform.isApprox(translation(0.1, 0.0, -0.2), 1e-12));
 }
 
 //==============================================================================

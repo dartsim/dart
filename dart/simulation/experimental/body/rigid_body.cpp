@@ -64,6 +64,20 @@ bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
 }
 
 //==============================================================================
+void validateCollisionShapeTransform(
+    const dart::simulation::experimental::CollisionShape& shape)
+{
+  const Eigen::Matrix3d rotation = shape.localTransform.linear();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !shape.localTransform.matrix().allFinite()
+          || !(rotation.transpose() * rotation)
+                  .isApprox(Eigen::Matrix3d::Identity(), 1e-9)
+          || std::abs(rotation.determinant() - 1.0) > 1e-9,
+      dart::simulation::experimental::InvalidArgumentException,
+      "Collision shape local transform must be a finite rigid transform");
+}
+
+//==============================================================================
 void validateMass(double mass)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -469,6 +483,7 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
           "Box collision shape half extents must be positive and finite");
       break;
   }
+  validateCollisionShapeTransform(shape);
 
   auto& registry = getWorld()->getRegistry();
   comps::CollisionGeometry geometry{shape};

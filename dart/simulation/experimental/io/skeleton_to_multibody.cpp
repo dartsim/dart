@@ -261,12 +261,12 @@ void copyJointProperties(const dynamics::Joint& legacy, Joint& experimental)
   experimental.setEffortLimits(lower, upper);
 }
 
-/// The first origin-coincident sphere or box collision shape of a body (a shape
-/// node with a collision aspect), as an experimental CollisionShape. Returns
-/// nullopt when the body has no representable collision shape. The experimental
-/// CollisionShape has no pose offset, so shapes whose relative transform is not
-/// identity, other shape types (mesh/capsule/cylinder/plane), and additional
-/// shapes per body are skipped.
+/// The first sphere or box collision shape of a body (a shape node with a
+/// collision aspect), as an experimental CollisionShape. The shape node's
+/// relative transform becomes the CollisionShape local transform. Returns
+/// nullopt when the body has no representable collision shape; unsupported
+/// shape types (mesh/capsule/cylinder/plane) and additional shapes per body are
+/// skipped.
 std::optional<CollisionShape> translateCollisionShape(
     const dynamics::BodyNode& body)
 {
@@ -275,10 +275,6 @@ std::optional<CollisionShape> translateCollisionShape(
       [&result](const dynamics::ShapeNode* shapeNode) {
         if (result.has_value() || shapeNode == nullptr) {
           return;
-        }
-        if (!shapeNode->getRelativeTransform().isApprox(
-                Eigen::Isometry3d::Identity(), kAnchorTolerance)) {
-          return; // a shape offset from the body origin cannot be represented
         }
         const auto shape = shapeNode->getShape();
         if (!shape) {
@@ -292,6 +288,9 @@ std::optional<CollisionShape> translateCollisionShape(
           // Legacy box size is the full extent; the facade uses half extents.
           result = CollisionShape::makeBox(
               static_cast<const dynamics::BoxShape&>(*shape).getSize() / 2.0);
+        }
+        if (result.has_value()) {
+          result->localTransform = shapeNode->getRelativeTransform();
         }
         // mesh/capsule/cylinder/plane are not yet translated.
       });

@@ -767,10 +767,12 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     pre-joint offset (`transformToParent`) rather than massless intermediate
     links: a parent with sibling joints at different offsets, and offset/rotated
     roots, load directly. See the committed sections above.
-  - **(DONE, restricted) Collision shapes.** Origin-coincident sphere/box shapes
-    are translated; offset shapes need a `CollisionShape` pose-offset field +
-    serialization story (see "Resume here" above). Subsystem B model loading is
-    otherwise complete.
+  - **(DONE) Collision shapes.** Sphere/box collision shapes are translated with
+    their shape-node local transform preserved on `CollisionShape`; the native
+    collision query, deformable obstacle queries, binary serialization, and
+    dartpy bindings all use that local transform. Unsupported shape types
+    (mesh/capsule/cylinder/plane) and additional shapes per body are still
+    skipped. Subsystem B model loading is otherwise complete.
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),

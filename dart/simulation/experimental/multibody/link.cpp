@@ -59,6 +59,19 @@ bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
   return factorization.info() == Eigen::Success;
 }
 
+//==============================================================================
+void validateCollisionShapeTransform(const CollisionShape& shape)
+{
+  const Eigen::Matrix3d rotation = shape.localTransform.linear();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !shape.localTransform.matrix().allFinite()
+          || !(rotation.transpose() * rotation)
+                  .isApprox(Eigen::Matrix3d::Identity(), 1e-9)
+          || std::abs(rotation.determinant() - 1.0) > 1e-9,
+      InvalidArgumentException,
+      "Collision shape local transform must be a finite rigid transform");
+}
+
 } // namespace
 
 //==============================================================================
@@ -198,6 +211,7 @@ void Link::setCollisionShape(const CollisionShape& shape)
           "Box collision shape half extents must be positive and finite");
       break;
   }
+  validateCollisionShapeTransform(shape);
 
   auto& registry = getWorld()->getRegistry();
   registry.emplace_or_replace<comps::CollisionGeometry>(

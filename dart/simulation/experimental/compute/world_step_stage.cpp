@@ -109,6 +109,29 @@ Eigen::Isometry3d toIsometry(
 }
 
 //==============================================================================
+std::optional<comps::Transform> collisionShapeWorldTransform(
+    const comps::Transform& bodyTransform, const CollisionShape& shape)
+{
+  if (!bodyTransform.position.allFinite()
+      || !bodyTransform.orientation.coeffs().allFinite()
+      || !shape.localTransform.matrix().allFinite()) {
+    return std::nullopt;
+  }
+
+  const Eigen::Quaterniond bodyOrientation
+      = normalizeOrIdentity(bodyTransform.orientation);
+  const Eigen::Quaterniond shapeOrientation(shape.localTransform.linear());
+
+  comps::Transform result;
+  result.position = bodyTransform.position
+                    + bodyOrientation.toRotationMatrix()
+                          * shape.localTransform.translation();
+  result.orientation = bodyOrientation * shapeOrientation.normalized();
+  result.orientation.normalize();
+  return result;
+}
+
+//==============================================================================
 Eigen::Isometry3d getLocalFrameTransform(
     const entt::registry& registry, entt::entity entity)
 {
@@ -1270,7 +1293,9 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto& transform = view.get<comps::Transform>(entity);
-    if (!transform.position.allFinite()) {
+    const auto shapeTransform
+        = collisionShapeWorldTransform(transform, geometry.shape);
+    if (!shapeTransform.has_value()) {
       continue;
     }
 
@@ -1281,7 +1306,7 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
         continue;
       }
       snapshot = makeStaticBoxSurfaceCcdSnapshot(
-          entity, geometry.shape.halfExtents, transform);
+          entity, geometry.shape.halfExtents, *shapeTransform);
       ++stats.staticRigidSurfaceCcdBoxCount;
     } else if (geometry.shape.type == CollisionShapeType::Sphere) {
       if (!std::isfinite(geometry.shape.radius)
@@ -1289,7 +1314,7 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
         continue;
       }
       snapshot = makeStaticSphereSurfaceCcdSnapshot(
-          entity, geometry.shape.radius, transform);
+          entity, geometry.shape.radius, *shapeTransform);
       ++stats.staticRigidSurfaceCcdSphereCount;
     } else {
       continue;
@@ -1411,16 +1436,29 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     if (geometry.shape.type != CollisionShapeType::Box
         || !geometry.shape.halfExtents.allFinite()
         || (geometry.shape.halfExtents.array() <= 0.0).any()
-        || !transform.position.allFinite() || !velocity.linear.allFinite()
-        || !velocity.angular.allFinite()) {
+        || !velocity.linear.allFinite() || !velocity.angular.allFinite()) {
+      continue;
+    }
+    const auto startShapeTransform
+        = collisionShapeWorldTransform(transform, geometry.shape);
+    if (!startShapeTransform.has_value()) {
       continue;
     }
 
     const auto endTransform
         = predictRigidBodyEndTransform(transform, velocity, timeStep);
+    const auto endShapeTransform
+        = collisionShapeWorldTransform(endTransform, geometry.shape);
+    if (!endShapeTransform.has_value()) {
+      continue;
+    }
     const auto& halfExtents = geometry.shape.halfExtents;
     const std::size_t samples = movingRigidSurfaceCcdSampleCount(
-        halfExtents, transform, endTransform, velocity.angular, timeStep);
+        halfExtents,
+        *startShapeTransform,
+        *endShapeTransform,
+        velocity.angular,
+        timeStep);
 
     // Keep consecutive sample boxes overlapping. The natural (uncapped) spacing
     // is one box min-half-extent, so the boxes overlap with margin; once the
@@ -1429,7 +1467,7 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     // spacing to bridge the gap. inflation is 0 in the common (uncapped) case.
     const double minHalfExtent = halfExtents.minCoeff();
     const double linearMotion
-        = (endTransform.position - transform.position).norm();
+        = (endShapeTransform->position - startShapeTransform->position).norm();
     const double angularMotion
         = halfExtents.norm() * velocity.angular.norm() * timeStep;
     const double motion = linearMotion + angularMotion;
@@ -1444,18 +1482,19 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     }
 
     const Eigen::Quaterniond startOrientation
-        = normalizeOrIdentity(transform.orientation);
+        = normalizeOrIdentity(startShapeTransform->orientation);
     const Eigen::Quaterniond endOrientation
-        = normalizeOrIdentity(endTransform.orientation);
+        = normalizeOrIdentity(endShapeTransform->orientation);
 
     for (std::size_t k = 0; k < samples; ++k) {
       // samples is always >= 2, so the denominator is never zero.
       const double fraction
           = static_cast<double>(k) / static_cast<double>(samples - 1);
       comps::Transform sampleTransform;
-      sampleTransform.position
-          = transform.position
-            + fraction * (endTransform.position - transform.position);
+      sampleTransform.position = startShapeTransform->position
+                                 + fraction
+                                       * (endShapeTransform->position
+                                          - startShapeTransform->position);
       sampleTransform.orientation
           = startOrientation.slerp(fraction, endOrientation);
 
@@ -1572,35 +1611,38 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto& transform = view.get<comps::Transform>(entity);
+    const auto shapeTransform
+        = collisionShapeWorldTransform(transform, geometry.shape);
+    if (!shapeTransform.has_value()) {
+      continue;
+    }
 
     switch (geometry.shape.type) {
       case CollisionShapeType::Sphere: {
         const double radius = geometry.shape.radius;
-        if (!(radius > 0.0) || !std::isfinite(radius)
-            || !transform.position.allFinite()) {
+        if (!(radius > 0.0) || !std::isfinite(radius)) {
           break;
         }
 
         StaticGroundBarrier barrier;
         barrier.shape = StaticGroundBarrier::Shape::Sphere;
-        barrier.center = transform.position;
+        barrier.center = shapeTransform->position;
         barrier.radius = radius;
-        barrier.top = transform.position.z() + radius;
+        barrier.top = shapeTransform->position.z() + radius;
         barriers.push_back(barrier);
         break;
       }
       case CollisionShapeType::Box: {
         if (!geometry.shape.halfExtents.allFinite()
-            || (geometry.shape.halfExtents.array() <= 0.0).any()
-            || !transform.position.allFinite()) {
+            || (geometry.shape.halfExtents.array() <= 0.0).any()) {
           break;
         }
 
         StaticGroundBarrier barrier;
         barrier.shape = StaticGroundBarrier::Shape::Box;
-        barrier.center = transform.position;
-        barrier.rotation
-            = normalizeOrIdentity(transform.orientation).toRotationMatrix();
+        barrier.center = shapeTransform->position;
+        barrier.rotation = normalizeOrIdentity(shapeTransform->orientation)
+                               .toRotationMatrix();
         barrier.halfExtents = geometry.shape.halfExtents;
         barriers.push_back(barrier);
         break;
@@ -1633,14 +1675,16 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto& transform = view.get<comps::Transform>(entity);
+    const auto shapeTransform
+        = collisionShapeWorldTransform(transform, geometry.shape);
     if (geometry.shape.type != CollisionShapeType::Sphere
         || !(geometry.shape.radius > 0.0)
         || !std::isfinite(geometry.shape.radius)
-        || !transform.position.allFinite()) {
+        || !shapeTransform.has_value()) {
       continue;
     }
     obstacles.push_back(
-        SphereObstacleBarrier{transform.position, geometry.shape.radius});
+        SphereObstacleBarrier{shapeTransform->position, geometry.shape.radius});
   }
   return obstacles;
 }
@@ -1660,16 +1704,18 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto& transform = view.get<comps::Transform>(entity);
+    const auto shapeTransform
+        = collisionShapeWorldTransform(transform, geometry.shape);
     if (geometry.shape.type != CollisionShapeType::Box
         || !geometry.shape.halfExtents.allFinite()
         || (geometry.shape.halfExtents.array() <= 0.0).any()
-        || !transform.position.allFinite()
-        || !transform.orientation.coeffs().allFinite()) {
+        || !shapeTransform.has_value()) {
       continue;
     }
     BoxObstacleBarrier obstacle;
-    obstacle.center = transform.position;
-    obstacle.rotation = transform.orientation.normalized().toRotationMatrix();
+    obstacle.center = shapeTransform->position;
+    obstacle.rotation
+        = normalizeOrIdentity(shapeTransform->orientation).toRotationMatrix();
     obstacle.halfExtents = geometry.shape.halfExtents;
     obstacles.push_back(obstacle);
   }
