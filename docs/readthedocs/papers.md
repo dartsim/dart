@@ -202,7 +202,7 @@ Springer, 2006.
 | `marsden-west-2001`                | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration                        | referenced  | medium   | reference |
 | `chen-2024-vbd`                    | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
 | `vbd-2024`                         | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
-| `avbd-2025`                        | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
+| `avbd-2025`                        | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact/integration                | in-progress | high     | adopt     |
 | `smith-2012-rosi`                  | Smith et al., "Reflections on Simultaneous Impact" (2012)                                                                  | contact/impact                     | referenced  | medium   | baseline  |
 | `zhang-2015-qce`                   | Zhang et al., "Quadratic Contact Energy Model for Multi-impact Simulation" (2015)                                          | contact/impact                     | referenced  | medium   | evaluate  |
 | `vouga-2017-all-well`              | Vouga et al., "All's Well That Ends Well: Guaranteed Resolution of Simultaneous Rigid Body Impact" (2017)                  | contact/impact                     | referenced  | medium   | evaluate  |
@@ -635,8 +635,8 @@ Graphics_ (SIGGRAPH 2024). arXiv:2403.06321.
 
 ### `avbd-2025`
 
-Chris Giles, Elie Diaz, and Cem Yuksel. "Augmented Vertex Block Descent."
-_ACM Transactions on Graphics_, 44(4), Article 90, 2025. DOI:
+Chris Giles, Elie Diaz, and Cem Yuksel. "Augmented Vertex Block Descent." _ACM
+Transactions on Graphics_ 44(4), Article 90, 2025. DOI:
 [10.1145/3731195](https://doi.org/10.1145/3731195).
 
 Related public resources:
@@ -645,17 +645,42 @@ Related public resources:
   [graphics.cs.utah.edu/research/projects/avbd](https://graphics.cs.utah.edu/research/projects/avbd/)
 - Paper PDF:
   [Augmented_VBD-SIGGRAPH25.pdf](https://graphics.cs.utah.edu/research/projects/avbd/Augmented_VBD-SIGGRAPH25.pdf)
+- Reference demo sources:
+  [avbd-demo2d](https://github.com/savant117/avbd-demo2d) and
+  [avbd-demo3d](https://github.com/savant117/avbd-demo3d)
+- Online demos:
+  [2D demo](https://graphics.cs.utah.edu/research/projects/avbd/avbd_demo2d.html)
+  and
+  [3D demo](https://graphics.cs.utah.edu/research/projects/avbd/avbd_demo3d.html)
 
-- **Type:** paper · **Topic:** contact/integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
-- **Where used:** contact-extension survey in
-  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md)
-  and the
-  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
-- **Notes:** Augmented-Lagrangian extension of VBD with bounded constraint
-  forces (`f = clamp(k·C+λ, fmin, fmax)`) and Coulomb friction via a lagged
-  normal-force clamp. Identified as the best structural fit for adding hard,
-  drift-free non-penetration and a friction cone to the variational integrator
-  without a global PSD solve (PLAN-082 contact rung C3). Not a commitment.
+```bib
+@article{Giles2025AVBD,
+  author = {Chris Giles and Elie Diaz and Cem Yuksel},
+  title = {Augmented Vertex Block Descent},
+  journal = {ACM Transactions on Graphics},
+  volume = {44},
+  number = {4},
+  articleno = {90},
+  year = {2025},
+  doi = {10.1145/3731195}
+}
+```
+
+- **Type:** paper · **Topic:** contact/integration · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
+  and its
+  [AVBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/avbd-paper-gap-audit.md);
+  also informs the PLAN-082 contact-extension survey.
+- **Notes:** Adopted as the hard-constraint extension of DART's VBD-family
+  solver work: augmented-Lagrangian dual rows, bounded equality/inequality
+  forces, hard contact/friction, finite-stiffness ramping for high stiffness
+  ratios, quasi-Newton Hessian approximation, alpha-regularized error
+  correction, warm-started dual/stiffness state, rigid-body 6-DOF blocks,
+  articulated joints, fracture limits, and unified soft/rigid interactions.
+  Full completion requires CPU and GPU implementations, all paper/site/video
+  experiments and demos integrated into DART tests/benchmarks/`py-demos`, and
+  benchmark packets proving DART beats the reference demo repositories and the
+  published RTX-4090 paper numbers before any parity claim.
 
 ### `smith-2012-rosi`
 

@@ -493,6 +493,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Linked `dart-gui` to Foundation on Apple platforms so OpenSceneGraph's macOS resource-path initialization has the Objective-C Foundation runtime it requires.
   - Removed the Filament GUI smoke CI job's distro libc++ package dependency and made its example runner use Pixi-provided libc++/libc++abi libraries when available.
   - Limited Codecov CI uploads to the generated `coverage.info` report so the uploader does not rescan gcov files after the coverage task has already produced lcov output.
+  - Included simulation-experimental and simulation detail implementation files
+    in Codecov reports by removing stale Codecov path exclusions. ([#2835](https://github.com/dartsim/dart/pull/2835))
   - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
   - Added opt-in CUDA smoke support for experimental simulation builds, including
     a gated CMake option, Pixi CUDA environment, private SoA integration test and
@@ -1923,6 +1925,24 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     isolated per-node point cloud. The paper's multi-body / self-collision
     scenes (216 squishy balls, 10,368 models, tearing cloth) need surface
     self-contact and are deferred.
+  - Added internal experimental Augmented VBD (AVBD) row foundations on top of
+    the VBD deformable path: scalar row updates, deterministic row inventory,
+    mass-spring contact-normal / hard-attachment / finite-stiffness /
+    friction-tangent rows, finite-stiffness tetrahedral material rows, and
+    point-triangle / edge-edge self-contact normal rows.
+    Narrow World opt-ins now cover supported serial mass-spring row
+    combinations, supported serial mass-spring self-contact normal rows, and
+    supported pure-tet finite-material rows with diagnostics and explicit
+    fallback coverage, including bounded friction tangents for supported
+    static-contact mass-spring scenes. The supported mass-spring friction
+    tangent pairs now use the previous tangential dual to switch between static
+    sticking and dynamic sliding and project pair forces to the circular
+    Coulomb cone. AVBD self-contact friction tangent rows now reuse lagged
+    point-triangle / edge-edge tangent stencils in the combined mass-spring row
+    driver, with supported World generation for serial self-contact scenes plus
+    pairwise static/dynamic switching and cone-projection coverage. Full AVBD
+    contact/friction, broader self-contact friction envelopes, rigid/soft
+    coupling, GPU parity, demos, and benchmark parity remain future work.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

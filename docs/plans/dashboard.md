@@ -240,13 +240,46 @@ its own line so status updates remain git-history friendly.
   obstacle barriers, adding lagged VT/EE surface self-collision penalties, and
   adding the TinyVBD tilted-strand plus contact showcase py-demos; it also
   retires the temporary `docs/dev_tasks/vbd_deformable_solver/` tracker by
-  promoting the gap audit into this plan. Remaining work, in order:
+  promoting the gap audit into this plan. Remaining VBD closeout work is:
   self-contact tangential friction, OGC source/code audit and CPU
   proof-of-contact from
   [`104-vertex-block-descent-solver/ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md),
   committed benchmark/profiling JSON for the new scenes, paper tetrahedral scene
   reproduction, Phase 8b SoA + Gaia-CPU comparison, and Phase 9 RTX-4090
-  same-GPU Table 1 reproduction.
+  same-GPU Table 1 reproduction. Maintainer direction now promotes Augmented VBD
+  (`avbd-2025`) as the next PLAN-104
+  implementation focus: use
+  [`104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](104-vertex-block-descent-solver/avbd-paper-gap-audit.md)
+  plus the active [`../dev_tasks/avbd_solver/`](../dev_tasks/avbd_solver/)
+  tracker to implement AVBD's hard constraints, bounded contact/friction,
+  finite-stiffness ramping, 6-DOF rigid/articulated blocks, soft/rigid coupling,
+  all paper/demo scenes, and CPU/GPU benchmark parity. The local AVBD foundation
+  now includes the internal scalar-row utility, deterministic row
+  key/inventory warm-start cache, a standalone CPU half-space contact-normal
+  block-descent kernel for active mass-spring rows, a scalar hard
+  point-attachment row kernel/driver, a finite-stiffness spring row
+  kernel/driver, a combined serial mass-spring AVBD row driver for those row
+  families plus bounded friction tangents, self-contact normal rows, and
+  self-contact friction rows, and narrow internal World opt-ins in the
+  supported static-contact mass-spring, self-contact mass-spring, and
+  pure-tetrahedral envelopes. Pure-tetrahedral finite-stiffness scenes can now
+  also opt into AVBD self-contact normal rows and matching self-contact
+  friction rows in the same serial tet solve, with explicit
+  fallback coverage for unsupported topology mixes, unrequested self-contact
+  AVBD rows, Chebyshev, Rayleigh-damped, parallel, and unsupported-row requests;
+  adjacent friction tangent pairs now use lagged-dual static/dynamic switching
+  and pairwise circular-cone projection, including supported World generation
+  for self-contact friction rows. Static box obstacle row keys now distinguish
+  faces, edges, and corners so same-feature rows warm-start while box-manifold
+  changes reset normal/friction state; persisting static half-space friction
+  rows also project their decayed dual into the current tangent basis when smooth
+  obstacle normals change, and persisting self-contact friction rows project
+  their generalized tangential dual into the current 12D tangent stencil. The
+  first private rigid foundation adds a 6-DOF block accumulator, world-frame
+  quaternion tangent update, inertia term, block solve, scalar rigid
+  point-attachment row, and two-body point-pair row stamping. It is not a
+  scene-level parity claim. The next local slice is dynamic/rigid contact
+  manifold IDs, rigid contact/joint rows, or rigid/articulated World wiring.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
@@ -260,7 +293,13 @@ its own line so status updates remain git-history friendly.
   matrix, vertex-facet and edge-edge contact tests, conservative-bound and
   truncation tests, force/Hessian finite-difference evidence, limitation
   coverage, IPC/VBD comparison packets, and no public OGC/Gaia/Newton/Warp or
-  backend-type leak.
+  backend-type leak. AVBD progress is not complete until DART
+  implements every algorithm/feature from the paper, project page, videos, and
+  `avbd-demo2d`/`avbd-demo3d`; provides CPU and GPU implementations for all
+  solver and benchmark paths; ports every paper/site/video/demo experiment into
+  tests, benchmarks, `py-demos`, and visual evidence; and records benchmark JSON
+  proving DART beats both the reference demo repositories and the published
+  paper numbers for every claimed CPU/GPU case.
 
 ### PLAN-082: Linear-Time Variational Integrator
 
