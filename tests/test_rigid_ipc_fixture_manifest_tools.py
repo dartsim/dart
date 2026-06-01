@@ -906,6 +906,18 @@ def test_rigid_ipc_manifest_marks_edge_vertex_ccd_source_row_implemented(
     assert "flipped edge order" in row["expected_invariant"]
 
 
+def test_rigid_ipc_manifest_marks_generic_hash_grid_source_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+
+    row = module.row_for_path("tests/ccd/test_hash_grid.cpp", "test-source", tmp_path)
+
+    assert row["status"] == "implemented"
+    assert "SweptPrimitiveCandidatePairsMatchBruteForce" in row["dart_artifact"]
+    assert "swept point, edge, and triangle AABBs" in row["expected_invariant"]
+
+
 def test_rigid_ipc_manifest_marks_generic_toi_source_row_implemented(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
 

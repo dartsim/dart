@@ -1,5 +1,31 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: generic hash-grid source row
+
+Delivered a bounded Phase 2/6 algorithm-manifest slice:
+
+- Added DART-owned swept primitive broad-phase coverage in
+  `SpatialHashBroadPhase.SweptPrimitiveCandidatePairsMatchBruteForce`: swept
+  point, edge, and triangle AABBs produce the same candidate pairs with native
+  spatial hash as with brute force, including expected point-edge and
+  edge-triangle overlaps.
+- Marked the remaining audited CCD/barrier test-source row,
+  `tests/ccd/test_hash_grid.cpp`, implemented in the generated manifest. All
+  audited upstream test-source rows in the current manifest are now
+  implemented.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_spatial_hash`
+- `./build/default/cpp/Release/bin/test_spatial_hash --gtest_color=no --gtest_filter=SpatialHashBroadPhase.SweptPrimitiveCandidatePairsMatchBruteForce`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: generated point-edge TOI source rows
 
 Delivered a bounded Phase 2/6 algorithm-manifest slice:

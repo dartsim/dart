@@ -810,6 +810,27 @@ IMPLEMENTED_TEST_SOURCE_ROWS = {
             "interval arithmetic remains tracked by Phase 2c."
         ),
     },
+    "tests/ccd/test_hash_grid.cpp": {
+        "artifact": (
+            "test_spatial_hash::"
+            "SpatialHashBroadPhase.SweptPrimitiveCandidatePairsMatchBruteForce"
+        ),
+        "command": (
+            "pixi run bash -lc 'build/default/cpp/Release/bin/"
+            "test_spatial_hash --gtest_color=no --gtest_filter="
+            "SpatialHashBroadPhase.SweptPrimitiveCandidatePairsMatchBruteForce'"
+        ),
+        "expected_invariant": (
+            "DART covers the audited generic hash-grid source row by comparing "
+            "native spatial-hash broad-phase candidate pairs against brute "
+            "force for swept point, edge, and triangle AABBs."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned swept-primitive broad-phase parity coverage; "
+            "full upstream impact-filter parity remains tracked by the direct "
+            "CCD and runtime fixture rows."
+        ),
+    },
     "tests/ccd/test_time_of_impact.cpp": {
         "artifact": (
             "test_rigid_ipc_fixture::"

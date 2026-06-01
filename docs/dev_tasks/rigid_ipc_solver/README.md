@@ -420,12 +420,14 @@
         `tests/ccd/collision_generator.hpp`,
         `tests/ccd/test_edge_vertex_ccd.cpp`, and
         `tests/ccd/test_time_of_impact.cpp`) as implemented after deterministic
-        generated point-edge TOI coverage landed. The generic hash-grid source
-        row remains planned until it has matching DART-owned evidence.
+        generated point-edge TOI coverage landed.
   - [x] Mark the audited rigid-body hash-grid source row
         (`tests/ccd/test_rigid_body_hash_grid.cpp`) as implemented through
-        DART-owned large hash-grid benchmark evidence. The generic hash-grid
-        source row remains planned.
+        DART-owned large hash-grid benchmark evidence.
+  - [x] Mark the audited generic hash-grid source row
+        (`tests/ccd/test_hash_grid.cpp`) as implemented after DART-owned swept
+        point, edge, and triangle broad-phase candidate pairs matched brute
+        force.
   - [x] Mark the audited below-threshold high-school-physics friction fixture
         rows (`fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json`
         and the Fig. 18 paper alias) as implemented after exact
@@ -634,7 +636,8 @@ DART-owned implementation.
   `RigidIpcCcdCase` regression suites. The collision-generator, edge-vertex
   CCD, and generic TOI source rows are marked implemented through deterministic
   generated point-edge TOI coverage plus upstream-style rigid TOI rows. The
-  generic hash-grid source row remains planned until similarly matched.
+  generic hash-grid source row is marked implemented through swept primitive
+  broad-phase candidate-pair parity against brute force.
   The below-threshold Fig. 18 high-school-physics friction fixture row
   (`mu=0.49`) and its paper alias are now marked implemented through exact
   `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is
@@ -692,8 +695,9 @@ DART-owned implementation.
   threshold rows remain planned because they still need matching DART stick
   evidence.
   The rigid-body hash-grid source row is marked implemented through the
-  DART-owned large hash-grid benchmark; the generic hash-grid source row remains
-  planned until DART has brute-force-vs-culled broad-phase parity coverage.
+  DART-owned large hash-grid benchmark; the generic hash-grid source row is
+  marked implemented through swept point/edge/triangle broad-phase candidate
+  parity against brute force.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
