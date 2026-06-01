@@ -906,6 +906,61 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Vec3(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox(Vec3(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Vec3(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  vbd::AvbdRigidWorldContactOptions contactOptions;
+  contactOptions.startStiffness = 200.0;
+  vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          world.getRegistry(), world.collide(), contactOptions);
+  ASSERT_FALSE(snapshot.contacts.empty());
+
+  const std::size_t sphereIndex
+      = findEntityIndex(snapshot.entities, sphere.getEntity());
+  const double initialSphereZ = snapshot.states[sphereIndex].position.z();
+
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 4;
+  solveOptions.descent.convergenceDisplacement = 1e-12;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  const vbd::AvbdRigidWorldContactSolveResult result
+      = vbd::solveAvbdRigidWorldContactSnapshot(
+          snapshot,
+          normalInventory,
+          frictionInventory,
+          /*timeStep=*/1.0,
+          solveOptions);
+
+  EXPECT_EQ(result.normalRows, snapshot.contacts.size());
+  EXPECT_GT(result.stats.bodyUpdates, 0u);
+  EXPECT_GT(snapshot.states[sphereIndex].position.z(), initialSphereZ);
+
+  ASSERT_FALSE(normalInventory.empty());
+  bool foundPositiveNormalDual = false;
+  for (const vbd::AvbdScalarRowRecord& record : normalInventory.records()) {
+    foundPositiveNormalDual
+        = foundPositiveNormalDual || record.state.lambda > 0.0;
+  }
+  EXPECT_TRUE(foundPositiveNormalDual);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotSkipsStaticPairs)
 {
   sx::World world;

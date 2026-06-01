@@ -69,21 +69,22 @@ driver now sweeps point attachments, contact-normal point pairs, and paired
 friction tangent rows. A private rigid contact-manifold row builder now turns
 active contact points with stable endpoint feature IDs into warm-started normal
 and paired tangent rows for that driver. A private World-contact snapshot helper
-now translates rigid-body `World::collide()` contacts into those manifold-point
-inputs and verifies the path against focused row-builder coverage.
+now translates rigid-body `World::collide()` contacts into those
+manifold-point inputs and verifies that they can drive the private serial rigid
+row solve.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
-solver-stage rigid contact manifold use, rigid contact/joint rows, or
+contact-stage rigid AVBD writeback, rigid contact/joint rows, or
 rigid/articulated World wiring are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
 rigid row driver plus private rigid contact-manifold row builder and
-World-contact snapshot helper exist. Keep the supported envelope narrow and
-preserve fallback coverage for topology mixes, damping/acceleration, parallel
-solves, and unsupported requested row combinations.
+World-contact snapshot/solve helper exist. Keep the supported envelope narrow
+and preserve fallback coverage for topology mixes, damping/acceleration,
+parallel solves, and unsupported requested row combinations.
 
 ## Context That Would Be Lost
 
@@ -124,8 +125,9 @@ solves, and unsupported requested row combinations.
   contact points with stable endpoint feature IDs into warm-started normal and
   paired tangent rows for that driver. A private World-contact snapshot helper
   now converts rigid-body `World::collide()` output into manifold-point inputs
-  for that builder, but there is still no solver-stage activation. This does
-  not imply hard-contact/friction completeness, full contact-manifold friction
+  for that builder and runs them through the private serial rigid row solve, but
+  there is still no contact-stage writeback/activation. This does not imply
+  hard-contact/friction completeness, full contact-manifold friction
   persistence, broad dynamic/rigid feature persistence, rigid/articulated
   joints, rigid/soft coupling, or GPU parity. Private
   dynamic/rigid contact identity helpers now pack contact feature kind/index

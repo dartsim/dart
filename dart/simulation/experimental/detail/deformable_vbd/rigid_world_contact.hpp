@@ -67,6 +67,21 @@ struct AvbdRigidWorldContactSnapshot
   std::vector<AvbdRigidContactManifoldPoint> contacts;
 };
 
+struct AvbdRigidWorldContactSolveOptions
+{
+  AvbdRowWarmStartOptions warmStart;
+  AvbdRigidPointAttachmentOptions row;
+  AvbdRigidPointPairFrictionOptions friction;
+  AvbdRigidBlockDescentOptions descent;
+};
+
+struct AvbdRigidWorldContactSolveResult
+{
+  AvbdRigidBlockDescentStats stats;
+  std::size_t normalRows = 0;
+  std::size_t frictionRows = 0;
+};
+
 //==============================================================================
 inline std::uint64_t avbdRigidWorldContactObjectId(entt::entity entity) noexcept
 {
@@ -198,6 +213,65 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
   }
 
   return snapshot;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
+    AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    double timeStep,
+    const AvbdRigidWorldContactSolveOptions& options = {})
+{
+  AvbdRigidWorldContactSolveResult result;
+  if (snapshot.states.empty()) {
+    return result;
+  }
+
+  std::vector<AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  buildAvbdRigidContactManifoldRows(
+      snapshot.states,
+      snapshot.contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      options.warmStart);
+  result.normalRows = normalRows.size();
+  result.frictionRows = 2u * frictionRows.size();
+
+  std::vector<AvbdRigidBodyPointAttachmentRow> attachmentRows;
+  const std::vector<AvbdRigidBodyState> inertialTargets = snapshot.states;
+  result.stats = blockDescentRigidBodiesAvbdRows(
+      snapshot.states,
+      snapshot.masses,
+      snapshot.bodyInertias,
+      snapshot.fixed,
+      inertialTargets,
+      timeStep,
+      attachmentRows,
+      normalRows,
+      frictionRows,
+      options.descent,
+      options.row,
+      options.friction);
+
+  for (std::size_t i = 0; i < normalRows.size() && i < normalInventory.size();
+       ++i) {
+    normalInventory[i].state = normalRows[i].row.state;
+  }
+  for (std::size_t i = 0; i < frictionRows.size(); ++i) {
+    const std::size_t first = 2u * i;
+    const std::size_t second = first + 1u;
+    if (second >= frictionInventory.size()) {
+      break;
+    }
+    frictionInventory[first].state = frictionRows[i].first.state;
+    frictionInventory[second].state = frictionRows[i].second.state;
+  }
+
+  return result;
 }
 
 } // namespace dart::simulation::experimental::detail::deformable_vbd
