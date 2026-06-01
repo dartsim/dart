@@ -30,6 +30,70 @@ design.
 - Publish the Gazebo support window, branch/version matrix, and sunset date or
   sunset trigger before DART 7 removes legacy API surfaces from main.
 
+### DART 6.16 Support Packet
+
+This packet is the published support window for the DART 6.16 compatibility
+line. It exists so downstream users — primarily Gazebo via `gz-physics` — know
+which branch to track, what fixes to expect, and when the line will close. The
+companion CI lane split (keeping required gz-physics validation on
+`release-6.16` while main's gz-physics workflow stays a manual migration canary)
+is a separate maintainer-gated branch-protection change and is **not** in scope
+for this document update.
+
+**Gazebo support window**
+
+- Pinned gz-physics branch: `gz-physics9_9.0.0` (the branch cloned by the
+  `pixi.toml` Gazebo integration task; see `feature.gazebo.tasks` `download-gz`).
+- Validation command: `pixi run -e gazebo test-gz`, run on `release-6.16` or a
+  release branch when compatibility surfaces change. Main-branch runs are
+  migration canaries, not a DART 7 API design constraint.
+- DART version compatibility floor for the pinned gz-physics checkout: DART
+  6.10+ (`scripts/patch_gz_physics.py` `MIN_COMPATIBLE_VERSION = (6, 10)`,
+  `MAX_COMPATIBLE_VERSION = (7, 0)`), so DART 7's generated
+  `DARTConfigVersion.cmake` still satisfies pinned gz-physics `find_package`
+  requests during migration.
+
+**Branch / version matrix**
+
+| Branch         | DART line       | Public API target      | gz-physics pin                         | Backport policy                                              |
+| -------------- | --------------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| `release-6.16` | DART 6 (6.16.x) | Established DART 6 API | `gz-physics9_9.0.0`                    | Compatibility-critical fixes only (see scope below)          |
+| `main`         | DART 7 (7.0.0)  | DART 7 clean-break API | `gz-physics9_9.0.0` (migration canary) | DART 7 development; no DART 6 compatibility shims by default |
+
+**Backport scope (release-6.16)**
+
+Backport only:
+
+- critical bug fixes,
+- build fixes,
+- security fixes,
+- Gazebo/gz-physics compatibility fixes that released downstream users need.
+
+Do not backport normal DART 7 features. Each backport should record the
+gz-physics compatibility evidence (`pixi run -e gazebo test-gz`) when it touches
+a compatibility surface, or note why gz-physics is unaffected.
+
+**Sunset condition (trigger-based)**
+
+The DART 6.16 support line sunsets on a trigger, not a fixed calendar date:
+
+- **Trigger:** DART 7.0.0 is published to package managers **and** a maintainer
+  decision sets a support tail. After DART 7.0.0 is published, DART 6.16 enters
+  a maintenance-only tail of **N months** (security/critical-only), after which
+  the line is closed.
+- **N is a maintainer decision** and is intentionally left unset here. A typical
+  starting point for discussion is 6–12 months after DART 7.0.0 publication, but
+  the concrete value, and whether the tail is security-only or also build/compat,
+  **requires maintainer sign-off** before it is treated as policy.
+- Until DART 7.0.0 is published and N is decided, `release-6.16` remains the
+  active compatibility line and the sunset clock has not started.
+
+> Maintainer sign-off needed: (1) the value of **N** (support-tail length after
+> DART 7.0.0 publication) and the tail's fix scope; (2) the Gazebo CI lane split
+> (required gz-physics validation pinned to `release-6.16`; main's gz-physics
+> workflow demoted to a manual canary), which is a separate branch-protection
+> change outside this PR.
+
 ## DART 7: Clean-Break Release
 
 - `main` targets DART 7.0.0 as a clean break from the DART 6 public API, with a
