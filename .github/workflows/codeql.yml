@@ -97,7 +97,16 @@ jobs:
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
         run: |
-          pixi run build ${{ matrix.dartpy }} ${{ matrix.cmake_build_type }}
+          BUILD_DIR="build/default/cpp/${{ matrix.cmake_build_type }}"
+          pixi run python scripts/cmake_build.py \
+            --build-dir "$BUILD_DIR" \
+            --target dart_component_dart \
+            --target dart-collision-native \
+            --target dart-utils \
+            --target dart-utils-urdf \
+            --target dart-io \
+            --target dart-simulation-experimental \
+            --target dartsim_engine
 
       - name: CodeQL Analyze
         uses: github/codeql-action/analyze@v4
