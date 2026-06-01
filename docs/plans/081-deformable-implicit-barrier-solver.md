@@ -43,6 +43,12 @@
   reproduce as examples, tests, or benchmark reports, with per-row
   prerequisite kernels, performance targets, and `Status` tracking. Every
   paper-parity slice should advance at least one row toward `landed`.
+- Unified Newton-barrier family:
+  [`083-unified-newton-barrier-multibody.md`](083-unified-newton-barrier-multibody.md)
+  owns the cross-variant plan for sharing IPC, rigid IPC, and ABD distance,
+  barrier, CCD, tangent, friction, PSD, projected-Newton, diagnostics, CPU/GPU
+  benchmark, and py-demos evidence. PLAN-081 remains the deformable IPC variant
+  owner; shared primitives should move only when a second variant needs them.
 - Implementation tracking: the first C++ slice is complete in this plan; future
   slices continue from the workstreams below. Because full IPC parity is now a
   multi-session implementation, start a new `docs/dev_tasks/` folder when that
@@ -97,6 +103,12 @@
    focused C++ behavior tests exist. Bind only the user-facing deformable body
    handle/options and basic state accessors after the C++ slice is stable. Add a
    small dartpy example in a later Python facade slice.
+8. **Unified Newton-barrier extraction** — Coordinate with PLAN-083 before
+   duplicating any distance, barrier, tangent, CCD, friction, PSD, sparse
+   Newton, diagnostics, benchmark, or visual-evidence infrastructure. Deformable
+   IPC may keep variant-local code while the second-use contract is unstable,
+   but a promoted second use should define an internal shared interface and
+   focused cross-variant tests.
 
 ## First PR Acceptance Criteria
 
@@ -252,3 +264,5 @@ friction, complete scene-corpus coverage, or full IPC parity.
   or the first-slice spring-grid baseline without an accepted tradeoff.
 - Maintainers decide to import an external library instead of implementing the
   method in DART-owned code.
+- PLAN-083 promotes a shared Newton-barrier primitive or ABI that changes this
+  plan's variant-local ownership.

@@ -1,0 +1,127 @@
+# PLAN-083 Paper And Deck Manifest
+
+This sidecar maps the unified Newton-barrier paper and the supplied ABD deck
+into DART-owned artifacts. It is the first operating manifest for PLAN-083:
+every cited figure, table, unit-test family, benchmark row, and comparison row
+below remains `planned` until DART has code, tests, py-demos examples,
+benchmark/profiling packets, and visual evidence matching the row.
+
+## Source Snapshot
+
+- Unified paper: Chen et al., "A Unified Newton Barrier Method for Multibody
+  Dynamics," ACM Transactions on Graphics 41(4), article 66, 2022. DOI:
+  <https://doi.org/10.1145/3528223.3530076>. PDF audited from
+  <https://cseweb.ucsd.edu/~haosu/Other_Doc/papers_212s4-yaml25_finalppr.pdf>.
+- ABD method reference: Lan et al., "Affine Body Dynamics: Fast, Stable &
+  Intersection-free Simulation of Stiff Materials," ACM Transactions on
+  Graphics 41(4), article 67, 2022. DOI:
+  <https://doi.org/10.1145/3528223.3530064>.
+- ABD deck supplied with the request:
+  <https://games-1312234642.cos.ap-guangzhou.myqcloud.com/pdf/Games2022242%E6%9D%8E%E6%97%BB%E8%BE%B0.pdf>.
+- Related DART owners:
+  [`../083-unified-newton-barrier-multibody.md`](../083-unified-newton-barrier-multibody.md),
+  [`../081-deformable-implicit-barrier-solver.md`](../081-deformable-implicit-barrier-solver.md),
+  [`../082-rigid-implicit-barrier-contact.md`](../082-rigid-implicit-barrier-contact.md),
+  [`../080-rigid-body-dynamics-solver.md`](../080-rigid-body-dynamics-solver.md),
+  and [`../../readthedocs/papers.md`](../../readthedocs/papers.md).
+
+## Status Values
+
+- `planned`: row is classified but has no DART artifact that can satisfy it.
+- `in-progress`: implementation exists in a branch or task but is not complete.
+- `landed`: DART has matching code, tests/examples/benchmarks, and local gates.
+- `reference-beaten`: landed plus matched reference/paper comparison shows DART
+  beats the relevant CPU or GPU target.
+- `manual`: the row is intentionally proven by a documented manual run.
+- `not-applicable`: a maintainer-visible rationale excludes the row.
+
+## Cross-Plan Classification Policy
+
+- Rows that are pure deformable IPC obligations stay in PLAN-081 and link back
+  here only when they share primitives with unified multibody work.
+- Rows that are exact/reduced rigid IPC obligations stay in PLAN-082 and are
+  correctness oracles for any future ABD replacement claim.
+- ABD rows are PLAN-083-owned until a dedicated implementation task exists.
+- Public APIs must use DART-owned method/capability names. Internal rows may
+  cite IPC, rigid IPC, ABD, Bullet, and paper figure names for provenance.
+
+## Unified Paper Obligations
+
+| ID                   | Source ref       | DART target type          | Required DART artifact / invariant                                                                                                                               | Primary owners       | CPU/GPU target                                                                                                      | Status  |
+| -------------------- | ---------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------- | ------- |
+| `unb-fig-01`         | Fig. 1           | py-demo + benchmark       | "Lying Flat" mixed scene: rigid rings, neo-Hookean deformable tori, circular rods, articulated ragdoll, cloth, frictional contact, and articulation constraints. | PLAN-083 + 081 + 082 | Paper Table 2 row: dt 1/24, 77 bodies, 18k nodes, mu 0.2, max contacts 1575, avg contacts 89.6, 26.2 iter/step.     | planned |
+| `unb-fig-02`         | Fig. 2           | py-demo + benchmark       | Hanging bridge: 10 elastic rods, 40 rigid boards, point connections, ball traversal, rigid/codimensional deformable coupling.                                    | PLAN-083 + 081 + 082 | Paper Table 2 row: dt 1/24, 51 bodies, 2.3k nodes, mu 0.2, max contacts 18, avg contacts 1.9, 10.3 iter/step.       | planned |
+| `unb-fig-03`         | Fig. 3 / Fig. 21 | py-demo + validation      | Pulley system: four pulleys, elastic rods, point connections, hinge, sliding constraints, frictional lifting, analytical and real-world force comparison.        | PLAN-083 + PLAN-080  | Paper Table 2 row plus force-vs-mass comparison for 50 g to 250 g loads.                                            | planned |
+| `unb-fig-04`         | Fig. 4           | py-demo + visual evidence | Umbrella: rigid rod skeleton, cloth coupling, point connection, hinge, sliding constraints, shrinking/wrinkling cloth.                                           | PLAN-083 + 081 + 080 | Paper Table 2 row: dt 1/24, 19 bodies, 30k nodes, max contacts 491, avg contacts 176.7, 10.2 iter/step.             | planned |
+| `unb-fig-05`         | Fig. 5           | unit test                 | Hinge as two point-connection pairs in maximal/affine coordinates, with free rotation around the axis and bounded range extension.                               | PLAN-083 + PLAN-080  | Correctness-only; no paper timing row.                                                                              | planned |
+| `unb-fig-06`         | Fig. 6           | unit test                 | Cone twist decomposition into three virtual hinge links with separately controlled bending/twisting ranges.                                                      | PLAN-083 + PLAN-080  | Correctness-only; no paper timing row.                                                                              | planned |
+| `unb-fig-07`         | Fig. 7           | unit test                 | Sliding range represented through bounded distance inequalities without detachment.                                                                              | PLAN-083 + PLAN-080  | Correctness-only; compare against direct internal-contact model where useful.                                       | planned |
+| `unb-fig-08`         | Fig. 8           | unit test                 | Rotation range represented as distance-to-arc midpoint inequality with barrier satisfaction.                                                                     | PLAN-083 + PLAN-080  | Correctness-only; no paper timing row.                                                                              | planned |
+| `unb-fig-09`         | Fig. 9           | diagnostic test           | Falling box energy transition: kinetic/gravitational energy exchanges with barrier potential and zero elastic energy for stiff body approximation.               | PLAN-083             | Energy conservation diagnostic at h = 0.001 s.                                                                      | planned |
+| `unb-fig-10`         | Fig. 10          | py-demo + benchmark       | Terrain vehicle with cylinder engine, multiple rigid bodies, point/hinge constraints, passive wheels, frictional terrain navigation.                             | PLAN-083 + PLAN-080  | Paper Table 2 row: dt 1/24, 10 bodies, 34k nodes, mu 0.8, max contacts 13, avg contacts 4.8, 26.3 iter/step.        | planned |
+| `unb-fig-11`         | Fig. 11          | py-demo + benchmark       | Sixty ragdolls with 11 bodies and 10 cone-twist joints each, no interpenetration, joint limits satisfied.                                                        | PLAN-083 + PLAN-080  | Paper Table 2 row: dt 1/100, 1861 bodies, 18k nodes, max contacts 17820, avg contacts 16590.2, 43.1 iter/step.      | planned |
+| `unb-fig-12`         | Fig. 12          | unit tests + snapshots    | Point connection, point connection with cloth, hinge rotation ranges, and bounded sliding monocular; sliding speedup versus direct internal-contact model.       | PLAN-083 + 081 + 080 | Correctness rows; monocular target includes the reported 10x speedup.                                               | planned |
+| `unb-fig-13`         | Fig. 13          | py-demo + unit test       | Nunchaku cone twist with separately controlled rotation ranges for horizontal, vertical, and twisting motion.                                                    | PLAN-083 + PLAN-080  | Correctness-only; no paper timing row.                                                                              | planned |
+| `unb-fig-14`         | Fig. 14          | benchmark + diagnostic    | Implicit Euler versus BDF-2 falling-box energy curves for h = 0.1, 0.01, 0.001, and 0.0001 s.                                                                    | PLAN-083             | Match energy-ratio trends and document BDF-2 accuracy gain.                                                         | planned |
+| `unb-fig-15`         | Fig. 15          | benchmark + diagnostic    | Falling box Young's modulus sweep showing stiffness high enough for stiff-body restitution without energy leaking into vibration.                                | PLAN-083             | Sweep Y = 1e5, 1e6, 1e7, 1e8 Pa; document DART-selected stiffness policy.                                           | planned |
+| `unb-fig-16`         | Fig. 16          | benchmark + diagnostic    | Falling box barrier stiffness and activation-distance sweep.                                                                                                     | PLAN-083             | Sweep kappa and d_hat; match qualitative energy-loss behavior and record accepted DART defaults.                    | planned |
+| `unb-fig-17`         | Fig. 17          | diagnostic test           | Barrier force plot showing why too-large or too-small kappa creates sharp force slopes.                                                                          | PLAN-083             | Correctness-only; derivative/force curve comparison.                                                                | planned |
+| `unb-fig-18`         | Fig. 18          | benchmark + diagnostic    | Falling box gravity sweep with the same barrier parameters preserving elastic contact for a useful velocity range.                                               | PLAN-083             | Sweep gravity 1, 2, 4, 8 m/s^2; record velocity/energy limits.                                                      | planned |
+| `unb-fig-19`         | Fig. 19          | benchmark + diagnostic    | Semi-implicit Rayleigh damping for contact and hinge constraints, producing controllable energy loss.                                                            | PLAN-083 + PLAN-080  | Sweep damping coefficients for falling box and rotating board.                                                      | planned |
+| `unb-fig-20`         | Fig. 20          | benchmark + comparison    | Windmill comparison with Bullet: hinge-constrained blades, falling box impact, cube piles, no floor/body interpenetration.                                       | PLAN-083 + PLAN-080  | Paper reports DART-style method 1.4x faster than Bullet; DART must compare against Bullet or a documented baseline. | planned |
+| `unb-fig-22`         | Fig. 22          | py-demo + benchmark       | Candy: affine body packed by twisted cylindrical shell, mixed rigid/deformable coupling, cloth self-contact, friction.                                           | PLAN-083 + 081       | Paper Table 2 row: dt 1/24, 2 bodies, 17k nodes, mu 0.4, max contacts 1309, avg contacts 339.3, 8.1 iter/step.      | planned |
+| `unb-fig-23`         | Fig. 23          | py-demo + benchmark       | Precession: unicycle rolling with different angular velocities and frictional contact.                                                                           | PLAN-083 + PLAN-080  | Paper Table 2 row: dt 1/240, 5 bodies, 4k nodes, mu 0.8, max contacts 4, avg contacts 0.3, 3.5 iter/step.           | planned |
+| `unb-fig-24`         | Fig. 24          | benchmark report          | Timing breakdown by gradient, Hessian, contact pairs, CCD, and linear solve for all real-world scenes.                                                           | PLAN-083 + PLAN-030  | CPU and GPU packets must report the same categories.                                                                | planned |
+| `unb-fig-25`         | Fig. 25          | scaling benchmark         | N by N nunchaku scalability, N = 20, 40, 60, 80, 100, with timing per step and linear-growth check.                                                              | PLAN-083 + PLAN-030  | CPU and GPU scaling packets; compare slope and scene size.                                                          | planned |
+| `unb-table-01`       | Table 1          | parameter contract        | Restitution parameters: time-integration rule, time step, damping coefficient, barrier stiffness/threshold, and Young's modulus.                                 | PLAN-083             | Public/internal options must document units, defaults, serialization, and diagnostics.                              | planned |
+| `unb-table-02`       | Table 2          | benchmark manifest        | Simulation setup/statistics rows for Bridge, Pulley, Terrain, Umbrella, Ragdolls, Precession, Lying Flat, Windmill, and Candy.                                   | PLAN-083 + PLAN-030  | Reproduce counts, dt, mu, contacts, iter/step, ms/iter where applicable.                                            | planned |
+| `unb-alg-dofs`       | Sections 3-4     | shared internal contract  | Unified Lagrangian nodal displacement adapters for deformable, affine stiff-body, rigid, shell, rod, particle, and codimensional state.                          | PLAN-083 + 081 + 082 | Correctness tests before performance claims.                                                                        | planned |
+| `unb-alg-change-var` | Section 4.1      | shared internal contract  | Sparse change-of-variable handling for linearly independent equality constraints with row-pivoted upper-triangular basis extension.                              | PLAN-083 + PLAN-080  | Unit tests for sparsity, rank, residuals, and solve equivalence.                                                    | planned |
+| `unb-alg-barriers`   | Sections 4.3/6   | shared internal contract  | Barrier handling for general inequalities, ACCD-filtered line search, local Hessian PSD projection, and global convergence.                                      | PLAN-083 + 081 + 082 | Cross-variant derivative, PSD, CCD, and feasibility tests.                                                          | planned |
+| `unb-alg-friction`   | Sections 5-6     | shared internal contract  | Lagged friction normal force and tangent operators until convergence for mixed dimensions and bodies.                                                            | PLAN-083 + 081 + 082 | Stiction/sliding threshold tests, friction work diagnostics, CPU/GPU parity.                                        | planned |
+| `unb-alg-bdf2`       | Sections 3/5/6   | solver capability         | BDF-2 incremental-potential step with velocity update and energy diagnostics, opt-in before any default change.                                                  | PLAN-083             | Exact reproducibility, serialization, and energy behavior tests.                                                    | planned |
+| `unb-alg-rayleigh`   | Section 5.1      | solver capability         | Semi-implicit Rayleigh damping on barrier/contact/articulation potentials using lagged PSD Hessians.                                                             | PLAN-083 + PLAN-080  | Derivative/energy tests plus contact and hinge damping sweeps.                                                      | planned |
+
+## ABD Deck Obligations
+
+| ID                     | Source ref         | DART target type       | Required DART artifact / invariant                                                                                                              | Primary owners      | CPU/GPU target                                                                                                          | Status  |
+| ---------------------- | ------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------- |
+| `abd-alg-affine-body`  | ABD formulation    | internal solver slice  | 12-DOF affine body state, affine-to-full vertex map, stiff orthogonality potential, inertia/contact/friction chain rules, and diagnostics.      | PLAN-083            | Correctness against exact rigid IPC and current rigid contact on matched simple scenes.                                 | planned |
+| `abd-vs-rigid-wreck`   | Wrecking Ball      | benchmark + comparison | Wrecking-ball rigid scene with 14k triangles and 575 bodies.                                                                                    | PLAN-083 + PLAN-082 | Deck reports rigid IPC 17.6 s/step vs ABD 0.14 s/step at dt = 0.01 s; DART must beat or explain.                        | planned |
+| `abd-vs-rigid-cards`   | House of Cards     | benchmark + comparison | House-of-cards rigid scene with 336 triangles and 158 bodies.                                                                                   | PLAN-083 + PLAN-082 | Deck reports rigid IPC 8.9 s/step vs ABD 0.086 s/step at dt = 0.01 s.                                                   | planned |
+| `abd-chain-8`          | 8x8 Chain Net      | benchmark + comparison | Chain net with 63k triangles and 114 bodies.                                                                                                    | PLAN-083 + PLAN-082 | Deck reports rigid IPC 2.1 s/step vs ABD 0.06 s/step at dt = 0.01 s.                                                    | planned |
+| `abd-chain-16`         | 16x16 Chain Net    | benchmark + comparison | Chain net with 445k triangles and 673 bodies.                                                                                                   | PLAN-083 + PLAN-082 | Deck reports rigid IPC 804 s/step vs ABD 1.2 s/step at dt = 0.01 s.                                                     | planned |
+| `abd-chain-96`         | 96x96 Chain Net    | stress benchmark       | Large chain net with 12M triangles and 28k bodies.                                                                                              | PLAN-083 + PLAN-030 | Deck reports ABD 310 s/step at dt = 0.01 s; DART needs CPU and GPU packets.                                             | planned |
+| `abd-gears`            | Gears              | benchmark + GPU packet | Gear scene with 2.5M triangles and 28 bodies plus contact-force visualization.                                                                  | PLAN-083 + PLAN-030 | Deck reports ABD 11.7 s/step at dt = 0.01 s and "On GPU: 85x faster"; DART must define CPU/GPU matched-accuracy packet. | planned |
+| `abd-bullet-small`     | Bullet comparison  | benchmark + comparison | Small rigid contact scene: 1.2k triangles, 16 bodies.                                                                                           | PLAN-083 + PLAN-080 | Deck reports Bullet 1.5 ms at 1/240 s and 3 ms at 1 ms; ABD 2.2 ms at 1/240 s and 2 ms at 1 ms; "Comparable."           | planned |
+| `abd-bullet-medium`    | Bullet comparison  | benchmark + comparison | Medium rigid contact scene: 3.5k triangles, 142 bodies.                                                                                         | PLAN-083 + PLAN-080 | Deck reports Bullet 58/82 ms vs ABD 41/19 ms; target >4x faster for 1 ms step row.                                      | planned |
+| `abd-bullet-large`     | Bullet comparison  | benchmark + comparison | Large rigid contact scene: 11k triangles, 562 bodies.                                                                                           | PLAN-083 + PLAN-080 | Deck reports Bullet 809/804 ms vs ABD 328/102 ms; target >8x faster for 1 ms step row.                                  | planned |
+| `abd-complex-geometry` | Complex geometries | benchmark + py-demo    | Complex geometry contact with 1.2M triangles and 29 bodies.                                                                                     | PLAN-083            | Deck reports ABD 2.8 s/step at dt = 0.01 s.                                                                             | planned |
+| `abd-fem-coupling`     | ABD + FEM bodies   | py-demo + benchmark    | ABD coupling with FEM deformable bodies, 1.1M triangles and 27 bodies.                                                                          | PLAN-083 + PLAN-081 | Deck reports 16.4 s/step at dt = 0.01 s.                                                                                | planned |
+| `abd-articulation`     | Slides 35-39       | unit tests             | Point connection, sliding, hinge, cone twist, distance, relative sliding, bounded distance, sliding range, and rotation range articulation set. | PLAN-083 + PLAN-080 | Correctness and range satisfaction; benchmark only after correctness.                                                   | planned |
+| `abd-restitution`      | Slides 40-44       | diagnostic tests       | Perfectly elastic restitution through BDF-2 and controllable contact/hinge restitution through lagged Rayleigh damping.                         | PLAN-083            | Match qualitative energy curves and damping sweeps from deck.                                                           | planned |
+| `abd-demo-suite`       | Slides 46-52       | py-demos categories    | Hanging Bridge, Pulley System, Umbrella, Terrain Navigation, Precession, Ragdolls, and Lying Flat in appropriate py-demos categories.           | PLAN-083 + PLAN-103 | Each demo needs headless visual evidence and any benchmark row above when performance is claimed.                       | planned |
+| `abd-future-gpu`       | Slide 54           | compute plan           | GPU acceleration plan for contact stencils, CCD, barrier/friction kernels, assembly, and linear solve without public backend leakage.           | PLAN-083 + PLAN-030 | Private CPU/GPU parity packet before any public GPU API.                                                                | planned |
+
+## Py-Demos Category Targets
+
+| Category target               | Rows                                                                                                                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `IPC Deformable (sx)`         | `unb-fig-01`, `unb-fig-02`, `unb-fig-04`, `unb-fig-22`, `abd-fem-coupling` when deformable/codimensional coupling is the focus.                                                                              |
+| `Rigid Body` / `Experimental` | `abd-vs-rigid-*`, `abd-chain-*`, `abd-gears`, `abd-bullet-*`, and `abd-complex-geometry` once ABD has an opt-in runtime path.                                                                                |
+| `Constraints & Joints`        | `unb-fig-03`, `unb-fig-05`, `unb-fig-06`, `unb-fig-07`, `unb-fig-08`, `unb-fig-12`, `unb-fig-13`, and `abd-articulation`.                                                                                    |
+| `Control & Modern` / `Robots` | `unb-fig-10`, `unb-fig-11`, and `unb-fig-23` depending on whether the demo emphasizes mechanism control, ragdoll dynamics, or rolling locomotion.                                                            |
+| Benchmark-only or diagnostics | `unb-fig-09`, `unb-fig-14`, `unb-fig-15`, `unb-fig-16`, `unb-fig-17`, `unb-fig-18`, `unb-fig-19`, `unb-fig-24`, `unb-fig-25`, `unb-table-01`, `unb-table-02`, and `abd-future-gpu` until visual demos exist. |
+
+## Completion Discipline
+
+- A row may move from `planned` only when it names a concrete DART artifact,
+  command, expected invariant, and evidence file or PR.
+- Performance rows require matched scene parameters and matched accuracy. Slower
+  rows need an explicit accepted tradeoff rather than a parity claim.
+- GPU rows require CPU/GPU result parity on the same DART scene. If the source
+  has no GPU number, record that absence and compare GPU against DART CPU.
+- Visual rows require long-horizon headless Filament captures and nonblank /
+  motion-difference checks before they can be called examples.
+- Shared primitive rows require cross-variant regression coverage before moving
+  code out of PLAN-081 or PLAN-082 ownership.

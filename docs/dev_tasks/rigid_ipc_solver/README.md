@@ -211,6 +211,11 @@ DART-owned implementation.
 - Keep public DART names method/capability based. Internal code may cite the
   paper and upstream paths for tests and manifest provenance, but user-facing
   APIs should not expose upstream project names as solver identities.
+- PLAN-083 is the cross-variant Newton-barrier owner. Rigid IPC remains the
+  exact/reduced-coordinate correctness oracle while shared distance, barrier,
+  tangent, CCD, friction, PSD, sparse Newton, diagnostics, benchmark, and visual
+  evidence primitives are consolidated with deformable IPC and the planned ABD
+  track when a second-use contract is stable.
 - The initial importer lives under
   `dart/simulation/experimental/io/detail/rigid_ipc_fixture.*` so it can cover
   upstream fixture rows without becoming a public solver-selection API.

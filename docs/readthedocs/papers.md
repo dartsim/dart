@@ -183,36 +183,38 @@ Springer, 2006.
 
 ## Algorithms & Methods (Papers)
 
-| ID                              | Reference                                                                                                                  | Topic                              | Status      | Priority | Verdict   |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ----------- | -------- | --------- |
-| `featherstone-1983`             | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics                           | planned     | high     | adopt     |
-| `liu-jain-mbs`                  | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics                           | implemented | —        | adopt     |
-| `tan-lcp`                       | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact                            | implemented | —        | adopt     |
-| `stewart-trinkle-1996`          | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact                            | referenced  | medium   | baseline  |
-| `baraff-1996`                   | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics                           | referenced  | low      | reference |
-| `macklin-xpbd-2016`             | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration                        | referenced  | medium   | evaluate  |
-| `gjk-1988`                      | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
-| `ipc-2020`                      | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
-| `rigid-ipc-2021`                | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
-| `werling-2021`                  | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
-| `howell-2022-dojo`              | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
-| `lee-vi-2016`                   | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
-| `marsden-west-2001`             | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration                        | referenced  | medium   | reference |
-| `chen-2024-vbd`                 | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
-| `vbd-2024`                      | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
-| `avbd-2025`                     | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
-| `nakamura-1987-task-priority`   | Nakamura, Hanafusa & Yoshikawa, "Task-Priority Based Redundancy Control of Robot Manipulators" (1987)                      | kinematics                         | planned     | medium   | adopt     |
-| `buss-kim-2005-sdls`            | Buss & Kim, "Selectively Damped Least Squares for Inverse Kinematics" (2005)                                               | kinematics                         | planned     | medium   | evaluate  |
-| `aristidou-lasenby-2011-fabrik` | Aristidou & Lasenby, "FABRIK: A fast, iterative solver for the Inverse Kinematics problem" (2011)                          | kinematics                         | planned     | medium   | evaluate  |
-| `beeson-ames-2015-tracik`       | Beeson & Ames, "TRAC-IK: An open-source library for improved solving of generic inverse kinematics" (2015)                 | kinematics                         | planned     | medium   | baseline  |
-| `starke-2020-bioik`             | Starke, _Bio IK: A Memetic Evolutionary Algorithm for Generic Multi-Objective Inverse Kinematics_ (2020)                   | kinematics                         | planned     | medium   | evaluate  |
-| `rakita-2018-relaxedik`         | Rakita, Mutlu & Gleicher, "RelaxedIK: Real-time Synthesis of Accurate and Feasible Robot Arm Motion" (2018)                | kinematics                         | planned     | high     | baseline  |
-| `zucker-2013-chomp`             | Zucker et al., "CHOMP: Covariant Hamiltonian Optimization for Motion Planning" (2013)                                      | motion-planning                    | referenced  | medium   | baseline  |
-| `mukadam-2018-gpmp2`            | Mukadam et al., "Continuous-time Gaussian process motion planning via probabilistic inference" (2018)                      | motion-planning                    | referenced  | medium   | evaluate  |
-| `ames-2022-ikflow`              | Ames, Morgan & Konidaris, "IKFlow: Generating Diverse Inverse Kinematics Solutions" (2022)                                 | kinematics                         | deferred    | medium   | evaluate  |
-| `johnson-murphey-2009`          | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration                        | referenced  | high     | baseline  |
-| `leyendecker-2008`              | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration                        | referenced  | high     | evaluate  |
-| `kobilarov-crane-desbrun-2009`  | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration                        | referenced  | medium   | reference |
+| ID                                 | Reference                                                                                                                  | Topic                              | Status      | Priority | Verdict   |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ----------- | -------- | --------- |
+| `featherstone-1983`                | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics                           | planned     | high     | adopt     |
+| `liu-jain-mbs`                     | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics                           | implemented | —        | adopt     |
+| `tan-lcp`                          | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact                            | implemented | —        | adopt     |
+| `stewart-trinkle-1996`             | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact                            | referenced  | medium   | baseline  |
+| `baraff-1996`                      | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics                           | referenced  | low      | reference |
+| `macklin-xpbd-2016`                | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration                        | referenced  | medium   | evaluate  |
+| `gjk-1988`                         | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
+| `ipc-2020`                         | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
+| `rigid-ipc-2021`                   | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
+| `lan-2022-abd`                     | Lan et al., "Affine Body Dynamics" (2022)                                                                                  | contact/dynamics                   | planned     | high     | adopt     |
+| `chen-2022-unified-newton-barrier` | Chen et al., "A Unified Newton Barrier Method for Multibody Dynamics" (2022)                                               | contact/integration/multibody      | planned     | high     | adopt     |
+| `werling-2021`                     | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
+| `howell-2022-dojo`                 | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
+| `lee-vi-2016`                      | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
+| `marsden-west-2001`                | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration                        | referenced  | medium   | reference |
+| `chen-2024-vbd`                    | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
+| `vbd-2024`                         | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
+| `avbd-2025`                        | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
+| `nakamura-1987-task-priority`      | Nakamura, Hanafusa & Yoshikawa, "Task-Priority Based Redundancy Control of Robot Manipulators" (1987)                      | kinematics                         | planned     | medium   | adopt     |
+| `buss-kim-2005-sdls`               | Buss & Kim, "Selectively Damped Least Squares for Inverse Kinematics" (2005)                                               | kinematics                         | planned     | medium   | evaluate  |
+| `aristidou-lasenby-2011-fabrik`    | Aristidou & Lasenby, "FABRIK: A fast, iterative solver for the Inverse Kinematics problem" (2011)                          | kinematics                         | planned     | medium   | evaluate  |
+| `beeson-ames-2015-tracik`          | Beeson & Ames, "TRAC-IK: An open-source library for improved solving of generic inverse kinematics" (2015)                 | kinematics                         | planned     | medium   | baseline  |
+| `starke-2020-bioik`                | Starke, _Bio IK: A Memetic Evolutionary Algorithm for Generic Multi-Objective Inverse Kinematics_ (2020)                   | kinematics                         | planned     | medium   | evaluate  |
+| `rakita-2018-relaxedik`            | Rakita, Mutlu & Gleicher, "RelaxedIK: Real-time Synthesis of Accurate and Feasible Robot Arm Motion" (2018)                | kinematics                         | planned     | high     | baseline  |
+| `zucker-2013-chomp`                | Zucker et al., "CHOMP: Covariant Hamiltonian Optimization for Motion Planning" (2013)                                      | motion-planning                    | referenced  | medium   | baseline  |
+| `mukadam-2018-gpmp2`               | Mukadam et al., "Continuous-time Gaussian process motion planning via probabilistic inference" (2018)                      | motion-planning                    | referenced  | medium   | evaluate  |
+| `ames-2022-ikflow`                 | Ames, Morgan & Konidaris, "IKFlow: Generating Diverse Inverse Kinematics Solutions" (2022)                                 | kinematics                         | deferred    | medium   | evaluate  |
+| `johnson-murphey-2009`             | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration                        | referenced  | high     | baseline  |
+| `leyendecker-2008`                 | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration                        | referenced  | high     | evaluate  |
+| `kobilarov-crane-desbrun-2009`     | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration                        | referenced  | medium   | reference |
 
 ### `featherstone-1983`
 
@@ -402,6 +404,93 @@ Related public resources:
   smoothed friction, same-domain rigid method selection, CPU/GPU benchmark
   packets, comparison baselines, and headless Filament evidence for promoted
   scenes.
+
+### `lan-2022-abd`
+
+Lei Lan, Danny M. Kaufman, Minchen Li, Chenfanfu Jiang, and Yin Yang.
+"Affine Body Dynamics: Fast, Stable & Intersection-free Simulation of Stiff
+Materials." _ACM Transactions on Graphics_, 41(4), Article 67, 2022. DOI:
+[10.1145/3528223.3530064](https://doi.org/10.1145/3528223.3530064).
+
+Related public resources:
+
+- Paper: [arxiv.org/abs/2201.10022](https://arxiv.org/abs/2201.10022)
+- Presentation deck used for PLAN-083:
+  [Multibody ABD deck](https://games-1312234642.cos.ap-guangzhou.myqcloud.com/pdf/Games2022242%E6%9D%8E%E6%97%BB%E8%BE%B0.pdf)
+
+```bib
+@article{Lan2022ABD,
+  author = {Lei Lan and Danny M. Kaufman and Minchen Li and Chenfanfu Jiang and Yin Yang},
+  title = {Affine Body Dynamics: Fast, Stable \& Intersection-free Simulation of Stiff Materials},
+  journal = {ACM Transactions on Graphics},
+  volume = {41},
+  number = {4},
+  articleno = {67},
+  year = {2022},
+  doi = {10.1145/3528223.3530064}
+}
+```
+
+- **Type:** paper · **Topic:** contact/dynamics · **Status:** planned · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-083`](https://github.com/dartsim/dart/blob/main/docs/plans/083-unified-newton-barrier-multibody.md)
+  as the planned affine/stiff-body representation track, coordinated with
+  [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact.md).
+- **Notes:** ABD is the planned reduced stiff-body branch of DART's unified
+  Newton-barrier family. It treats a stiff body as a compact affine coordinate
+  system with an orthogonality stiffness, preserving IPC-style
+  nonintersection/friction guarantees while avoiding the expensive curved
+  trajectory machinery of exact rigid IPC.
+
+  DART should evaluate ABD as an additional internal method family, not as an
+  immediate replacement for the existing exact/reduced rigid IPC path. A
+  promoted ABD slice must prove correctness against rigid IPC fixtures, current
+  DART rigid contact scenes, and the paper/deck benchmarks before any default
+  solver behavior changes. Public APIs should use DART-owned names such as
+  affine stiff-body dynamics rather than exposing `ABD` as a user-facing solver
+  identity.
+
+### `chen-2022-unified-newton-barrier`
+
+Yunuo Chen, Minchen Li, Lei Lan, Hao Su, Yin Yang, and Chenfanfu Jiang. "A
+Unified Newton Barrier Method for Multibody Dynamics." _ACM Transactions on
+Graphics_, 41(4), Article 66, 2022. DOI:
+[10.1145/3528223.3530076](https://doi.org/10.1145/3528223.3530076).
+
+Related public resources:
+
+- Paper PDF supplied for PLAN-083:
+  [UCSD-hosted PDF](https://cseweb.ucsd.edu/~haosu/Other_Doc/papers_212s4-yaml25_finalppr.pdf)
+
+```bib
+@article{Chen2022UnifiedNewtonBarrier,
+  author = {Yunuo Chen and Minchen Li and Lei Lan and Hao Su and Yin Yang and Chenfanfu Jiang},
+  title = {A Unified Newton Barrier Method for Multibody Dynamics},
+  journal = {ACM Transactions on Graphics},
+  volume = {41},
+  number = {4},
+  articleno = {66},
+  year = {2022},
+  doi = {10.1145/3528223.3530076}
+}
+```
+
+- **Type:** paper · **Topic:** contact/integration/multibody · **Status:** planned · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-083`](https://github.com/dartsim/dart/blob/main/docs/plans/083-unified-newton-barrier-multibody.md)
+  as the cross-variant plan for consolidating deformable IPC, rigid IPC, ABD,
+  articulation constraints, restitution, CPU/GPU evidence, and py-demos examples.
+- **Notes:** This paper is the target for DART's unified Newton-barrier
+  multibody direction. It combines IPC-style contact/friction, affine/stiff
+  bodies, deformables, codimensional geometry, linear equality constraints
+  through change of variables, nonlinear equality penalties, inequality barrier
+  ranges, BDF-2 integration, and semi-implicit Rayleigh damping for restitution.
+
+  DART should implement the method as a DART-owned solver family inside the
+  experimental `World`, using PLAN-081 and PLAN-082 as variant owners and
+  PLAN-083 as the shared API/kernel/benchmark plan. Completion requires mapped
+  figure/table/unit-test coverage, py-demos examples, CPU and GPU benchmark
+  packets, and explicit comparisons against DART incumbents, upstream
+  references, and paper-reported numbers. The paper and deck remain references
+  and baselines, not runtime dependencies.
 
 ### `werling-2021`
 
