@@ -41,8 +41,11 @@
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::experimental::detail::deformable_vbd {
 
@@ -143,6 +146,27 @@ struct AvbdRigidPointPairRow
       std::numeric_limits<double>::infinity()};
 };
 
+struct AvbdRigidBodyPointAttachmentRow
+{
+  std::uint32_t body = 0;
+  AvbdRigidPointAttachmentRow row;
+};
+
+struct AvbdRigidBodyPointPairRow
+{
+  std::uint32_t bodyA = 0;
+  std::uint32_t bodyB = 0;
+  AvbdRigidPointPairRow row;
+};
+
+struct AvbdRigidBodyPointPairFrictionRows
+{
+  std::uint32_t bodyA = 0;
+  std::uint32_t bodyB = 0;
+  AvbdRigidPointPairRow first;
+  AvbdRigidPointPairRow second;
+};
+
 struct AvbdRigidPointAttachmentOptions
 {
   double alpha = 0.0;
@@ -156,6 +180,19 @@ struct AvbdRigidPointPairFrictionOptions
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
   double staticFrictionTolerance = 1e-12;
+};
+
+struct AvbdRigidBlockDescentOptions
+{
+  std::size_t iterations = 20;
+  double regularization = 0.0;
+  double convergenceDisplacement = 0.0;
+};
+
+struct AvbdRigidBlockDescentStats
+{
+  std::size_t iterations = 0;
+  std::size_t bodyUpdates = 0;
 };
 
 //==============================================================================
@@ -614,6 +651,194 @@ inline void applyAvbdRigidBodyStep(
   state.position += step.head<3>();
   state.orientation = normalizeAvbdRigidOrientation(
       avbdRigidOrientationDelta(step.tail<3>()) * state.orientation);
+}
+
+//==============================================================================
+inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
+    std::vector<AvbdRigidBodyState>& states,
+    const std::vector<double>& masses,
+    const std::vector<Eigen::Matrix3d>& bodyInertias,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<AvbdRigidBodyState>& inertialTargets,
+    double timeStep,
+    std::vector<AvbdRigidBodyPointAttachmentRow>& attachmentRows,
+    std::vector<AvbdRigidBodyPointPairRow>& pointPairRows,
+    std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionPairRows,
+    const AvbdRigidBlockDescentOptions& options,
+    const AvbdRigidPointAttachmentOptions& rowOptions,
+    const AvbdRigidPointPairFrictionOptions& frictionOptions)
+{
+  AvbdRigidBlockDescentStats stats;
+  const std::size_t bodyCount = states.size();
+  if (bodyCount == 0 || masses.size() != bodyCount
+      || bodyInertias.size() != bodyCount || fixed.size() != bodyCount
+      || inertialTargets.size() != bodyCount || timeStep <= 0.0) {
+    return stats;
+  }
+
+  const auto validBody = [bodyCount](std::uint32_t body) {
+    return body < bodyCount;
+  };
+
+  const auto addPointPairToBlock =
+      [&](AvbdRigidBodyBlock& block,
+          std::uint32_t body,
+          const AvbdRigidBodyPointPairRow& indexedRow) {
+        if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+          return;
+        }
+
+        const AvbdRigidPointPairRow& row = indexedRow.row;
+        const double constraintValue = regularizeAvbdConstraintValue(
+            avbdRigidPointPairConstraintValue(
+                states[indexedRow.bodyA], states[indexedRow.bodyB], row),
+            row.previousConstraintValue,
+            rowOptions.alpha);
+        const double forceMagnitude = computeAvbdHardConstraintForce(
+            row.state, constraintValue, row.bounds);
+
+        if (indexedRow.bodyA == body) {
+          const Vector6d direction
+              = avbdRigidPointPairDirectionA(states[body], row);
+          block.force.noalias() += forceMagnitude * direction;
+          block.hessian.noalias()
+              += row.state.stiffness * (direction * direction.transpose());
+        }
+        if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
+          const Vector6d direction
+              = avbdRigidPointPairDirectionB(states[body], row);
+          block.force.noalias() += forceMagnitude * direction;
+          block.hessian.noalias()
+              += row.state.stiffness * (direction * direction.transpose());
+        }
+      };
+
+  const auto addFrictionPairToBlock =
+      [&](AvbdRigidBodyBlock& block,
+          std::uint32_t body,
+          const AvbdRigidBodyPointPairFrictionRows& indexedRows) {
+        if (!validBody(indexedRows.bodyA) || !validBody(indexedRows.bodyB)) {
+          return;
+        }
+
+        const Eigen::Vector2d force
+            = avbdRigidPointPairFrictionTangentPairForce(
+                states[indexedRows.bodyA],
+                states[indexedRows.bodyB],
+                indexedRows.first,
+                indexedRows.second,
+                frictionOptions);
+        if (indexedRows.bodyA == body) {
+          const Vector6d firstDirection
+              = avbdRigidPointPairDirectionA(states[body], indexedRows.first);
+          const Vector6d secondDirection
+              = avbdRigidPointPairDirectionA(states[body], indexedRows.second);
+          block.force.noalias()
+              += force.x() * firstDirection + force.y() * secondDirection;
+          block.hessian.noalias()
+              += indexedRows.first.state.stiffness
+                 * (firstDirection * firstDirection.transpose());
+          block.hessian.noalias()
+              += indexedRows.second.state.stiffness
+                 * (secondDirection * secondDirection.transpose());
+        }
+        if (indexedRows.bodyB == body
+            && indexedRows.bodyB != indexedRows.bodyA) {
+          const Vector6d firstDirection
+              = avbdRigidPointPairDirectionB(states[body], indexedRows.first);
+          const Vector6d secondDirection
+              = avbdRigidPointPairDirectionB(states[body], indexedRows.second);
+          block.force.noalias()
+              += force.x() * firstDirection + force.y() * secondDirection;
+          block.hessian.noalias()
+              += indexedRows.first.state.stiffness
+                 * (firstDirection * firstDirection.transpose());
+          block.hessian.noalias()
+              += indexedRows.second.state.stiffness
+                 * (secondDirection * secondDirection.transpose());
+        }
+      };
+
+  const auto assemble = [&](std::uint32_t body) {
+    AvbdRigidBodyBlock block;
+    addAvbdRigidBodyInertiaTerm(
+        block,
+        masses[body],
+        bodyInertias[body],
+        timeStep,
+        states[body],
+        inertialTargets[body]);
+
+    for (const AvbdRigidBodyPointAttachmentRow& indexedRow : attachmentRows) {
+      if (indexedRow.body == body) {
+        addAvbdRigidPointAttachment(
+            block, states[body], indexedRow.row, rowOptions.alpha);
+      }
+    }
+    for (const AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
+      addPointPairToBlock(block, body, indexedRow);
+    }
+    for (const AvbdRigidBodyPointPairFrictionRows& indexedRows :
+         frictionPairRows) {
+      addFrictionPairToBlock(block, body, indexedRows);
+    }
+    return block;
+  };
+
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    double maxStepSquared = 0.0;
+    for (std::uint32_t body = 0; body < bodyCount; ++body) {
+      if (fixed[body] != 0u) {
+        continue;
+      }
+
+      const AvbdRigidBodyBlock block = assemble(body);
+      const Vector6d step
+          = solveAvbdRigidBodyBlock(block, options.regularization);
+      applyAvbdRigidBodyStep(states[body], step);
+      maxStepSquared = std::max(maxStepSquared, step.squaredNorm());
+      ++stats.bodyUpdates;
+    }
+
+    for (AvbdRigidBodyPointAttachmentRow& indexedRow : attachmentRows) {
+      if (validBody(indexedRow.body)) {
+        indexedRow.row.state = updateAvbdRigidPointAttachmentRow(
+            indexedRow.row.state,
+            states[indexedRow.body],
+            indexedRow.row,
+            rowOptions);
+      }
+    }
+    for (AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
+      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
+        indexedRow.row.state = updateAvbdRigidPointPairRow(
+            indexedRow.row.state,
+            states[indexedRow.bodyA],
+            states[indexedRow.bodyB],
+            indexedRow.row,
+            rowOptions);
+      }
+    }
+    for (AvbdRigidBodyPointPairFrictionRows& indexedRows : frictionPairRows) {
+      if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
+        updateAvbdRigidPointPairFrictionTangentPair(
+            indexedRows.first,
+            indexedRows.second,
+            states[indexedRows.bodyA],
+            states[indexedRows.bodyB],
+            frictionOptions);
+      }
+    }
+
+    if (convergenceSquared > 0.0 && maxStepSquared <= convergenceSquared) {
+      break;
+    }
+  }
+
+  return stats;
 }
 
 } // namespace dart::simulation::experimental::detail::deformable_vbd

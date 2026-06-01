@@ -279,7 +279,8 @@ its own line so status updates remain git-history friendly.
   quaternion tangent update, inertia term, block solve, scalar rigid
   point-attachment row, two-body point-pair row stamping, and private
   point-pair contact/friction row constructors plus paired friction-cone
-  projection. Private
+  projection, with a private serial row driver for point attachments,
+  contact-normal point pairs, and paired friction tangent rows. Private
   dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
   normal/friction row descriptor helpers have started, but no dynamic/rigid
   contact manifolds are generated yet. This is not a scene-level parity claim.

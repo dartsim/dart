@@ -106,7 +106,9 @@ a scalar rigid point-attachment row plus two-body point-pair row stamping with
 focused tests. Point-pair rows now also carry a scalar offset and private
 constructors for rigid contact-normal rows and bounded contact-friction tangent
 rows, plus a paired friction helper that switches between static sticking and
-dynamic sliding while projecting the force to a circular Coulomb cone. Future
+dynamic sliding while projecting the force to a circular Coulomb cone. A
+private serial rigid row driver now sweeps point attachments,
+contact-normal point pairs, and paired friction tangent rows. Future
 dynamic/rigid contact manifold generation has a narrow 6-DOF row target, but
 the manifolds are not generated yet.
 Private dynamic/rigid contact identity helpers now pack contact feature

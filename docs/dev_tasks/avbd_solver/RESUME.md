@@ -64,7 +64,9 @@ normal/friction rows, combined static/self-contact friction row coexistence
 coverage, and the first private 6-DOF rigid block plus contact/friction
 point-pair row foundation. Private rigid point-pair friction tangent pairs now
 reuse the deformable friction semantics for lagged-dual static/dynamic
-switching and circular Coulomb-cone projection.
+switching and circular Coulomb-cone projection, and a private serial rigid row
+driver now sweeps point attachments, contact-normal point pairs, and paired
+friction tangent rows.
 
 ## Immediate Next Step
 
@@ -73,10 +75,10 @@ dynamic/rigid contact manifold row generation, rigid contact/joint rows, or
 rigid/articulated World wiring are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
-point-pair constructors and paired friction-cone helpers exist. Keep the
-supported envelope narrow and preserve fallback coverage for topology mixes,
-damping/acceleration, parallel solves, and unsupported requested row
-combinations.
+point-pair constructors, paired friction-cone helpers, and a private serial
+rigid row driver exist. Keep the supported envelope narrow and preserve
+fallback coverage for topology mixes, damping/acceleration, parallel solves,
+and unsupported requested row combinations.
 
 ## Context That Would Be Lost
 
@@ -111,13 +113,15 @@ combinations.
   stamping. Point-pair rows also carry a scalar offset with private
   rigid-contact normal and bounded friction tangent constructors plus paired
   tangent static/dynamic switching and circular Coulomb-cone projection for
-  future contact-manifold generation, but there is still no World wiring. This
-  does not imply hard-contact/friction completeness, full contact-manifold
-  friction persistence, dynamic/rigid contact manifolds, rigid/articulated
-  joints, rigid/soft coupling, or GPU parity. Private dynamic/rigid contact
-  identity helpers now pack contact feature kind/index IDs, canonicalize
-  two-endpoint contact row keys, and create normal/friction row descriptors, but
-  no dynamic/rigid contact manifolds are generated yet.
+  future contact-manifold generation, and a private serial rigid row driver can
+  sweep point attachments, contact-normal point pairs, and paired friction
+  tangent rows. There is still no World wiring. This does not imply
+  hard-contact/friction completeness, full contact-manifold friction
+  persistence, dynamic/rigid contact manifolds, rigid/articulated joints,
+  rigid/soft coupling, or GPU parity. Private dynamic/rigid contact identity
+  helpers now pack contact feature kind/index IDs, canonicalize two-endpoint
+  contact row keys, and create normal/friction row descriptors, but no
+  dynamic/rigid contact manifolds are generated yet.
 
 ## How to Resume
 

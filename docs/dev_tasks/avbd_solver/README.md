@@ -153,11 +153,13 @@ Paper audit:
     `dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp`,
     with focused `AvbdRigidBlock.*` coverage. Point-pair rows now also carry a
     scalar offset, private constructors for rigid contact-normal and bounded
-    contact-friction tangent rows, and a paired tangent helper that switches
+    contact-friction tangent rows, a paired tangent helper that switches
     between static sticking and dynamic sliding while projecting the force to a
-    circular Coulomb cone. Future contact-manifold generation can reuse the
-    same 6-DOF stamping path. This is not World wiring, not contact-manifold
-    generation, and not articulated joint support yet.
+    circular Coulomb cone, and a private serial row driver for point-attachment,
+    contact-normal point-pair, and paired friction tangent rows. Future
+    contact-manifold generation can reuse the same 6-DOF stamping path. This is
+    not World wiring, not contact-manifold generation, and not articulated joint
+    support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
@@ -206,7 +208,8 @@ numbers.
    switching, supported World self-contact friction rows, pure-tet self-contact
    friction rows, combined static/self-contact friction row coexistence, and the
    first private 6-DOF rigid block plus contact/friction point-pair row
-   foundation and rigid point-pair friction-cone helper have narrow CPU paths.
+   foundation, rigid point-pair friction-cone helper, and private serial rigid
+   row driver have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

@@ -30,6 +30,8 @@
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include <cmath>
 
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
@@ -446,6 +448,167 @@ TEST(AvbdRigidBlock, ContactFrictionPointPairSwitchesToDynamicSlipDirection)
   EXPECT_NEAR(rowY.state.lambda, 5.0, 1e-12);
   EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
   EXPECT_DOUBLE_EQ(rowY.state.stiffness, 20.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidRowDriverSeparatesContactPair)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = Vec3(0.5, 0.0, 0.0);
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias{
+      Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 100.0;
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs(1);
+  pointPairs[0].bodyA = 0;
+  pointPairs[0].bodyB = 1;
+  pointPairs[0].row = vbd::makeAvbdRigidContactNormalRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      -Vec3::UnitX(),
+      /*targetDistance=*/1.0,
+      rowState);
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs;
+
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 1;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          pointPairs,
+          frictionPairs,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  EXPECT_EQ(stats.iterations, 1u);
+  EXPECT_EQ(stats.bodyUpdates, 1u);
+  EXPECT_NEAR(states[0].position.norm(), 0.0, 1e-12);
+  EXPECT_GT(states[1].position.x(), 0.9);
+  EXPECT_GT(pointPairs[0].row.state.lambda, 0.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidRowDriverAppliesFrictionPair)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = Vec3(0.0, 1.0, 0.0);
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias{
+      Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 10.0;
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs(1);
+  frictionPairs[0].bodyA = 0;
+  frictionPairs[0].bodyB = 1;
+  frictionPairs[0].first = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitX(),
+      Vec3::Zero(),
+      /*forceLimit=*/5.0,
+      rowState);
+  frictionPairs[0].second = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      /*forceLimit=*/5.0,
+      rowState);
+
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 1;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          pointPairs,
+          frictionPairs,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  EXPECT_EQ(stats.iterations, 1u);
+  EXPECT_EQ(stats.bodyUpdates, 1u);
+  EXPECT_NEAR(states[1].position.x(), 0.0, 1e-12);
+  EXPECT_LT(states[1].position.y(), 1.0);
+  EXPECT_NEAR(frictionPairs[0].first.state.lambda, 0.0, 1e-12);
+  EXPECT_NEAR(frictionPairs[0].second.state.lambda, 5.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidRowDriverHonorsConvergenceDisplacement)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(1);
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0};
+  const std::vector<Eigen::Matrix3d> inertias{Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {0u};
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 10.0;
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments(1);
+  attachments[0].body = 0;
+  attachments[0].row.target = Vec3::Zero();
+  attachments[0].row.axis = Vec3::UnitX();
+  attachments[0].row.state = rowState;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs;
+
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 8;
+  options.convergenceDisplacement = 1e-12;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          pointPairs,
+          frictionPairs,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  EXPECT_EQ(stats.iterations, 1u);
+  EXPECT_EQ(stats.bodyUpdates, 1u);
+  EXPECT_NEAR(states[0].position.norm(), 0.0, 1e-12);
 }
 
 //==============================================================================
