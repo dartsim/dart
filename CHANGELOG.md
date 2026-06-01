@@ -54,6 +54,14 @@
     readout, fixed-scale CPU/GPU history plots against the 60 FPS budget, the
     active backend, and frame counters, building on the existing GUI
     `ProfileAccumulator` without a separate timing system.
+  - Restyled the `dart::gui` Dear ImGui viewer with a cohesive modern dark
+    theme (VS Code/Blender/Unity-inspired) in place of the stock `StyleColorsDark`
+    look: cool neutral surfaces, a single restrained blue accent used for
+    selection/focus/active state, VS Code-style active-tab accent overlines,
+    flat hairline-bordered widgets with soft rounding, pill scrollbars, and more
+    breathable spacing. Centralized in `configureImGuiStyle` so every panel, the
+    perf HUD, and the docked regions share one look; colors are scale-independent
+    while metrics still scale with `--gui-scale`/DPI.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
