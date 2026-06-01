@@ -59,11 +59,13 @@ land.
   `include/dart/simulation/world.hpp` (`dart/simulation/CMakeLists.txt:22-29`),
   plus generated `All.hpp` / `simulation.hpp` component headers and PascalCase
   compatibility headers (`dart/simulation/CMakeLists.txt:9-39`).
-- In-tree consumers: 159 source files reference `simulation::World` /
-  `dart/simulation/world.hpp` (`git grep -l "simulation::World|simulation/world.hpp"`
-  over `*.cpp`/`*.hpp`/`*.h`), including `dart/utils/**` parsers
-  (URDF/SDF/MJCF/SKEL), `dart/io/read.hpp`, `dart/gui/**`, `dart/sensor/**`, and
-  `dartsim/ui/src/editor.cpp`. This is the in-repo migration surface.
+- In-tree consumers: grepping C/C++ source and header files for
+  `simulation::World` or `dart/simulation/world.hpp` currently finds 159 files:
+  35 under `dart/`, 1 under `dartsim/`, 47 under `examples/`, 5 under
+  `python/`, and 71 under `tests/`. The runtime/library subset includes
+  `dart/utils/**` parsers (URDF/SDF/MJCF/SKEL), `dart/io/read.hpp`,
+  `dart/gui/**`, `dart/sensor/**`, and `dartsim/ui/src/editor.cpp`; examples,
+  tests, and Python bindings are also part of the in-repo migration surface.
 
 ### ECS-backed world (experimental, target for promotion)
 
@@ -244,10 +246,10 @@ Pros:
 
 Cons:
 
-- Large, high-risk PR touching 159 in-tree consumers plus Python bindings,
-  stubs, and generated docs. PLAN-041 should sequence prerequisite validation so
-  the final replacement is not the first time lifecycle, package, Python, and
-  boundary decisions meet.
+- Large, high-risk PR touching 159 in-tree files across runtime code, examples,
+  tests, and Python bindings, plus stubs and generated docs. PLAN-041 should
+  sequence prerequisite validation so the final replacement is not the first time
+  lifecycle, package, Python, and boundary decisions meet.
 - The ECS world is non-copyable/non-movable and value-typed, while the classic
   world is shared-ownership (`WorldPtr`, `clone()`, `create()`). The facade must
   reconcile lifecycle: either the facade re-adds heap/shared-ownership factories

@@ -160,25 +160,32 @@ Current intended sequence:
    lifecycle model before the public name swap. Gate with `pixi run build`,
    `pixi run test-unit`, `pixi run test-simulation-experimental`, and
    `pixi run check-api-boundaries`.
-4. **Atomic C++ name-swap PR (workstreams 4, 5, 7, and 8).** Replace or repoint
-   `dart/simulation/world.hpp` and `dart/simulation/fwd.hpp` so
+4. **Atomic C++/Python name-swap PR (workstreams 4, 5, 6, 7, and 8).** Replace
+   or repoint `dart/simulation/world.hpp` and `dart/simulation/fwd.hpp` so
    `dart::simulation::World` / `WorldPtr` resolve to the ECS facade; quarantine
    or remove the classic implementation so it no longer exports
-   `dart::simulation::World`; retarget the 159 in-tree consumers in
-   `dart/utils/**`, `dart/io/**`, `dart/gui/**`, `dart/sensor/**`, and
-   `dartsim/**`; keep the public header name `dart/simulation/world.hpp`; do
-   not hand-author `dart/simulation/World.hpp`; and preflight active solver and
-   loader PR heads with `git merge-tree`. Gate with `pixi run build`,
-   `pixi run test-unit`, `pixi run test-simulation-experimental`,
+   `dart::simulation::World`; rebind `simulation.World` from the classic type to
+   the ECS facade in `python/dartpy/simulation/world.cpp`; remove the old
+   `nb::class_<dart::simulation::World>(m, "World")` in the same change so the
+   `simulation` module never holds two C++ types under the name `"World"`; and
+   regenerate stubs/docs for the final Python shape. Retarget all 159 matched
+   in-tree consumer files: 35 under `dart/`, 1 under `dartsim/`, 47 under
+   `examples/`, 5 under `python/`, and 71 under `tests/`. Keep the public header
+   name `dart/simulation/world.hpp`; do not hand-author
+   `dart/simulation/World.hpp`; and preflight active solver and loader PR heads
+   with `git merge-tree`. Gate with `pixi run build`, `pixi run test-unit`,
+   `pixi run test-simulation-experimental`, `pixi run test-py`,
+   `pixi run generate-stubs`, `pixi run api-docs-py`,
    `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`, a
-   macOS case-insensitive-filesystem build, and an installed-package C++ smoke.
-5. **Python name-swap PR (workstream 6).** Rebind `simulation.World` from the
-   classic type to the ECS facade in `python/dartpy/simulation/world.cpp`,
-   removing the old `nb::class_<dart::simulation::World>(m, "World")` in the
-   same change so the `simulation` module never holds two C++ types under the
-   name `"World"`. Decide the `dartpy.simulation_experimental` alias window.
-   Gate with `pixi run test-py`, `pixi run generate-stubs`,
-   `pixi run api-docs-py`, and a wheel import smoke.
+   macOS case-insensitive-filesystem build, an installed-package C++ smoke, and
+   a wheel import smoke.
+5. **Compatibility alias cleanup (workstreams 6 and 10).** Decide and then
+   retire any `dartpy.simulation_experimental` alias window, obsolete
+   `DART_BUILD_SIMULATION_EXPERIMENTAL` option, stale package component, or
+   migration shim left behind by the atomic name-swap PR. Do not defer the
+   `dartpy.simulation.World` rebind itself past the atomic C++/Python name-swap
+   state. Gate with `pixi run test-py`, `pixi run generate-stubs`,
+   `pixi run api-docs-py`, package/export smokes, and a wheel import smoke.
 6. **Compatibility documentation (acceptance + clean-break strategy).** Record
    DART 6 / gz-physics support expectations on the DART 6.16 lane, including
    the Gazebo branch/version matrix, support window, and sunset trigger in the
