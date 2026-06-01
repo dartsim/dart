@@ -35,6 +35,9 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <utility>
+#include <vector>
+
 namespace dart::simulation::experimental {
 
 /// The geometric family of a collision shape.
@@ -47,6 +50,7 @@ enum class CollisionShapeType
   Capsule,
   Cylinder,
   Plane,
+  Mesh,
 };
 
 /// Public value object describing a body's collision geometry.
@@ -58,8 +62,8 @@ enum class CollisionShapeType
 /// body/link frame origin.
 ///
 /// Only the fields relevant to `type` are used. Prefer the named constructors
-/// (`makeSphere`, `makeBox`, `makeCapsule`, `makeCylinder`, `makePlane`) for
-/// clarity.
+/// (`makeSphere`, `makeBox`, `makeCapsule`, `makeCylinder`, `makePlane`,
+/// `makeMesh`) for clarity.
 struct CollisionShape
 {
   /// Geometric family selecting which fields below are used.
@@ -86,6 +90,14 @@ struct CollisionShape
   /// Plane offset along the shape-frame normal (used when type == Plane). Must
   /// be finite.
   double offset = 0.0;
+
+  /// Mesh vertices in the shape frame (used when type == Mesh). Each vertex
+  /// must be finite.
+  std::vector<Eigen::Vector3d> vertices;
+
+  /// Mesh triangle indices into `vertices` (used when type == Mesh). Each index
+  /// must reference an existing vertex.
+  std::vector<Eigen::Vector3i> triangles;
 
   /// Create a sphere collision shape.
   [[nodiscard]] static CollisionShape makeSphere(double radius)
@@ -134,6 +146,18 @@ struct CollisionShape
     shape.type = CollisionShapeType::Plane;
     shape.normal = normal.normalized();
     shape.offset = offset;
+    return shape;
+  }
+
+  /// Create a triangle mesh collision shape.
+  [[nodiscard]] static CollisionShape makeMesh(
+      std::vector<Eigen::Vector3d> vertices,
+      std::vector<Eigen::Vector3i> triangles)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Mesh;
+    shape.vertices = std::move(vertices);
+    shape.triangles = std::move(triangles);
     return shape;
   }
 };

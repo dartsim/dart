@@ -122,6 +122,8 @@ class CollisionShapeType(enum.Enum):
 
     PLANE = 4
 
+    MESH = 5
+
 class CollisionShape:
     @staticmethod
     def sphere(
@@ -148,6 +150,11 @@ class CollisionShape:
         normal: object, offset: float, local_transform: object | None = None
     ) -> CollisionShape: ...
 
+    @staticmethod
+    def mesh(
+        vertices: object, triangles: object, local_transform: object | None = None
+    ) -> CollisionShape: ...
+
     @property
     def type(self) -> CollisionShapeType: ...
 
@@ -165,6 +172,12 @@ class CollisionShape:
 
     @property
     def offset(self) -> float: ...
+
+    @property
+    def vertices(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @property
+    def triangles(self) -> list[Annotated[NDArray[numpy.int32], dict(shape=(3), order='C')]]: ...
 
     @property
     def local_transform(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4, 4), order='F')]: ...

@@ -39,6 +39,7 @@
 #include <Eigen/Cholesky>
 
 #include <cmath>
+#include <cstddef>
 
 namespace {
 
@@ -75,6 +76,31 @@ void validateCollisionShapeTransform(
           || std::abs(rotation.determinant() - 1.0) > 1e-9,
       dart::simulation::experimental::InvalidArgumentException,
       "Collision shape local transform must be a finite rigid transform");
+}
+
+//==============================================================================
+void validateMeshCollisionShape(
+    const dart::simulation::experimental::CollisionShape& shape)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      shape.vertices.empty() || shape.triangles.empty(),
+      dart::simulation::experimental::InvalidArgumentException,
+      "Mesh collision shape must have at least one vertex and one triangle");
+
+  for (const auto& vertex : shape.vertices) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !vertex.allFinite(),
+        dart::simulation::experimental::InvalidArgumentException,
+        "Mesh collision shape vertices must be finite");
+  }
+
+  const auto vertexCount = static_cast<int>(shape.vertices.size());
+  for (const auto& triangle : shape.triangles) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        triangle.minCoeff() < 0 || triangle.maxCoeff() >= vertexCount,
+        dart::simulation::experimental::InvalidArgumentException,
+        "Mesh collision shape triangle indices must reference vertices");
+  }
 }
 
 //==============================================================================
@@ -505,6 +531,9 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
           InvalidArgumentException,
           "Plane collision shape normal must be finite and nonzero, and "
           "offset must be finite");
+      break;
+    case CollisionShapeType::Mesh:
+      validateMeshCollisionShape(shape);
       break;
   }
   validateCollisionShapeTransform(shape);

@@ -143,7 +143,7 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
   (`Servo`/`Acceleration`/`Locked`/`Mimic`) are defined but rejected by the
   forward dynamics. C++ + dartpy tests.
 - Phase 2 (partial) — collision query bridge: public `CollisionShape`
-  (sphere/box/capsule/cylinder/plane) attachable to rigid bodies, public
+  (sphere/box/capsule/cylinder/plane/triangular mesh) attachable to rigid bodies, public
   `Contact`, and
   `World::collide()` bridging to `dart/collision/native` via pairwise
   narrow-phase queries (returns contact point/normal/depth; the native normal is
@@ -202,7 +202,7 @@ worktree should be clean after the current shape slice is committed; verify with
 Current validation for the model-loading/collision-shape line:
 `pixi run lint`, `pixi run build`, `pixi run build-simulation-experimental-tests`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -L
-simulation-experimental` (44/44), and `pixi run test-py` (402 passed).
+simulation-experimental` (44/44), and `pixi run test-py` (403 passed).
 
 ### Committed: pre-joint offset on `JointSpec`
 
@@ -247,9 +247,11 @@ shape of each body (a shape node with a collision aspect) onto the link, gated b
 serializes that transform, and `World::collide()` poses native shapes as
 `worldTransform * shape.localTransform`. Capsules and cylinders carry radius
 plus height, and planes carry normal plus offset, through C++, dartpy,
-serialization, and the native collision query. Deformable obstacle barriers
-still consume sphere/box only. Mesh shapes and additional shapes per body remain
-Phase 2 shape backlog.
+serialization, and the native collision query. Triangular mesh shapes carry
+their vertex/index buffers through C++, dartpy, serialization, native collision
+queries, and the model-loading bridge. Deformable obstacle barriers still
+consume sphere/box only. Additional shapes per body and mesh-like variants
+remain Phase 2 shape backlog.
 
 **Resume here — Subsystem A (the remaining headline gap):**
 
@@ -768,13 +770,13 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     pre-joint offset (`transformToParent`) rather than massless intermediate
     links: a parent with sibling joints at different offsets, and offset/rotated
     roots, load directly. See the committed sections above.
-  - **(DONE) Collision shapes.** Sphere/box/capsule/cylinder/plane collision
-    shapes are translated with their shape-node local transform preserved on
+  - **(DONE) Collision shapes.** Sphere/box/capsule/cylinder/plane/triangular
+    mesh collision shapes are translated with their shape-node local transform preserved on
     `CollisionShape`; the native collision query, binary serialization, and
     dartpy bindings all use that local transform. Deformable obstacle queries
-    still consume sphere/box barriers only. Unsupported shape types
-    (mesh-like shapes) and additional shapes per body are still skipped.
-    Subsystem B model loading is otherwise complete.
+    still consume sphere/box barriers only. Mesh-like variants and additional
+    shapes per body are still skipped. Subsystem B model loading is otherwise
+    complete.
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),
@@ -817,7 +819,8 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 2:** mesh shapes, self-collision/filtering, broad-phase pruning, a
+- **Phase 2:** additional shapes per body, mesh-like variants
+  (convex/soft/heightmap), self-collision/filtering, broad-phase pruning, a
   persistent collision world instead of rebuilding per `collide()`.
 - **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
   mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.

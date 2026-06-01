@@ -671,9 +671,10 @@ skeleton, options)` and dartpy `build_multibody_from_skeleton` /
     experimental World, and `io::buildMultibodiesFromWorld` (dartpy
     `build_multibodies_from_world`) loads every skeleton of a legacy
     `simulation::World` as its own multibody (a whole scene). Sphere, box,
-    capsule, cylinder, and plane collision shapes are carried onto the links
-    with their shape-node offsets preserved (gated by `loadCollisionShapes`).
-    Other collision shape types and rotated parent-side offsets on
+    capsule, cylinder, plane, and triangular mesh collision shapes are carried
+    onto the links with their shape-node offsets preserved (gated by
+    `loadCollisionShapes`). Other collision shape types and rotated
+    parent-side offsets on
     ball/free/planar joints are not yet translated (the former is skipped; the
     latter raises a descriptive error).
   - Added experimental articulated-body forward dynamics for fixed-base
@@ -797,7 +798,7 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `getDampingCoefficient`/`setDampingCoefficient`; dartpy
     `joint.spring_stiffness`, `joint.rest_position`, `joint.damping_coefficient`).
   - Added experimental rigid-body collision queries: attach a `CollisionShape`
-    (sphere, box, capsule, cylinder, or plane) to a rigid body and call
+    (sphere, box, capsule, cylinder, plane, or triangular mesh) to a rigid body and call
     `World::collide()` to get contact points (position, world-frame normal,
     penetration depth) via the maintained native collision engine. dartpy adds
     `CollisionShape`, `CollisionShapeType`, `Contact`,

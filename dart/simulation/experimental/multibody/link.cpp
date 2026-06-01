@@ -43,6 +43,7 @@
 #include <optional>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
@@ -70,6 +71,30 @@ void validateCollisionShapeTransform(const CollisionShape& shape)
           || std::abs(rotation.determinant() - 1.0) > 1e-9,
       InvalidArgumentException,
       "Collision shape local transform must be a finite rigid transform");
+}
+
+//==============================================================================
+void validateMeshCollisionShape(const CollisionShape& shape)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      shape.vertices.empty() || shape.triangles.empty(),
+      InvalidArgumentException,
+      "Mesh collision shape must have at least one vertex and one triangle");
+
+  for (const auto& vertex : shape.vertices) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !vertex.allFinite(),
+        InvalidArgumentException,
+        "Mesh collision shape vertices must be finite");
+  }
+
+  const auto vertexCount = static_cast<int>(shape.vertices.size());
+  for (const auto& triangle : shape.triangles) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        triangle.minCoeff() < 0 || triangle.maxCoeff() >= vertexCount,
+        InvalidArgumentException,
+        "Mesh collision shape triangle indices must reference vertices");
+  }
 }
 
 } // namespace
@@ -233,6 +258,9 @@ void Link::setCollisionShape(const CollisionShape& shape)
           InvalidArgumentException,
           "Plane collision shape normal must be finite and nonzero, and "
           "offset must be finite");
+      break;
+    case CollisionShapeType::Mesh:
+      validateMeshCollisionShape(shape);
       break;
   }
   validateCollisionShapeTransform(shape);

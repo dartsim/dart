@@ -480,6 +480,17 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
       = Eigen::Vector3d(-0.3, 0.2, 0.05);
   plane.setCollisionShape(planeCollisionShape);
 
+  auto mesh = world1.addRigidBody("mesh");
+  sx::CollisionShape meshCollisionShape = sx::CollisionShape::makeMesh(
+      {Eigen::Vector3d(-1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(-1.0, 1.0, 0.0),
+       Eigen::Vector3d(1.0, 1.0, 0.0)},
+      {Eigen::Vector3i(0, 1, 2), Eigen::Vector3i(1, 3, 2)});
+  meshCollisionShape.localTransform.translation()
+      = Eigen::Vector3d(0.1, 0.2, 0.3);
+  mesh.setCollisionShape(meshCollisionShape);
+
   std::stringstream ss;
   world1.saveBinary(ss);
 
@@ -540,6 +551,19 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   EXPECT_DOUBLE_EQ(planeShape->offset, 0.15);
   EXPECT_TRUE(planeShape->localTransform.isApprox(
       planeCollisionShape.localTransform, 1e-12));
+
+  auto meshRestored = world2.getRigidBody("mesh");
+  ASSERT_TRUE(meshRestored.has_value());
+  auto meshShape = meshRestored->getCollisionShape();
+  ASSERT_TRUE(meshShape.has_value());
+  EXPECT_EQ(meshShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(meshShape->vertices.size(), meshCollisionShape.vertices.size());
+  ASSERT_EQ(meshShape->triangles.size(), meshCollisionShape.triangles.size());
+  EXPECT_TRUE(
+      meshShape->vertices[0].isApprox(meshCollisionShape.vertices[0], 1e-12));
+  EXPECT_EQ(meshShape->triangles[1], meshCollisionShape.triangles[1]);
+  EXPECT_TRUE(meshShape->localTransform.isApprox(
+      meshCollisionShape.localTransform, 1e-12));
 }
 
 TEST(Serialization, WithLoopClosures)

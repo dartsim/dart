@@ -44,6 +44,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <cstddef>
+
 namespace dart::simulation::experimental::io {
 
 //==============================================================================
@@ -65,6 +67,50 @@ void registerComponentIfNeeded(SerializerRegistry& registry)
       registry.registerSerializer(
           std::make_unique<CategoryComponentSerializer<ComponentT>>());
     }
+  }
+}
+
+void clearMeshCollisionGeometry(comps::CollisionGeometry& geometry)
+{
+  geometry.shape.vertices.clear();
+  geometry.shape.triangles.clear();
+}
+
+void writeMeshCollisionGeometry(
+    std::ostream& output, const comps::CollisionGeometry& geometry)
+{
+  std::size_t vertexCount = geometry.shape.vertices.size();
+  writePOD(output, vertexCount);
+  for (const auto& vertex : geometry.shape.vertices) {
+    writeVector3d(output, vertex);
+  }
+
+  std::size_t triangleCount = geometry.shape.triangles.size();
+  writePOD(output, triangleCount);
+  for (const auto& triangle : geometry.shape.triangles) {
+    writePOD(output, triangle[0]);
+    writePOD(output, triangle[1]);
+    writePOD(output, triangle[2]);
+  }
+}
+
+void readMeshCollisionGeometry(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  std::size_t vertexCount = 0;
+  readPOD(input, vertexCount);
+  geometry.shape.vertices.resize(vertexCount);
+  for (auto& vertex : geometry.shape.vertices) {
+    readVector3d(input, vertex);
+  }
+
+  std::size_t triangleCount = 0;
+  readPOD(input, triangleCount);
+  geometry.shape.triangles.resize(triangleCount);
+  for (auto& triangle : geometry.shape.triangles) {
+    readPOD(input, triangle[0]);
+    readPOD(input, triangle[1]);
+    readPOD(input, triangle[2]);
   }
 }
 
@@ -152,6 +198,7 @@ void deserializeCollisionGeometryV5(
   geometry.shape.localTransform = Eigen::Isometry3d::Identity();
   geometry.shape.normal = Eigen::Vector3d::UnitZ();
   geometry.shape.offset = 0.0;
+  clearMeshCollisionGeometry(geometry);
 }
 
 void deserializeCollisionGeometryV6(
@@ -164,6 +211,7 @@ void deserializeCollisionGeometryV6(
   readIsometry3d(input, geometry.shape.localTransform);
   geometry.shape.normal = Eigen::Vector3d::UnitZ();
   geometry.shape.offset = 0.0;
+  clearMeshCollisionGeometry(geometry);
 }
 
 void deserializeCollisionGeometryV7OrV8(
@@ -176,6 +224,20 @@ void deserializeCollisionGeometryV7OrV8(
   readIsometry3d(input, geometry.shape.localTransform);
   geometry.shape.normal = Eigen::Vector3d::UnitZ();
   geometry.shape.offset = 0.0;
+  clearMeshCollisionGeometry(geometry);
+}
+
+void deserializeCollisionGeometryV9(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  readPOD(input, geometry.shape.type);
+  readPOD(input, geometry.shape.radius);
+  readPOD(input, geometry.shape.height);
+  readVector3d(input, geometry.shape.halfExtents);
+  readIsometry3d(input, geometry.shape.localTransform);
+  readVector3d(input, geometry.shape.normal);
+  readPOD(input, geometry.shape.offset);
+  clearMeshCollisionGeometry(geometry);
 }
 
 void serializeCollisionGeometry(
@@ -188,6 +250,7 @@ void serializeCollisionGeometry(
   writeIsometry3d(output, geometry.shape.localTransform);
   writeVector3d(output, geometry.shape.normal);
   writePOD(output, geometry.shape.offset);
+  writeMeshCollisionGeometry(output, geometry);
 }
 
 void deserializeCollisionGeometry(
@@ -200,6 +263,7 @@ void deserializeCollisionGeometry(
   readIsometry3d(input, geometry.shape.localTransform);
   readVector3d(input, geometry.shape.normal);
   readPOD(input, geometry.shape.offset);
+  readMeshCollisionGeometry(input, geometry);
 }
 
 class CollisionGeometryComponentSerializer final
@@ -241,6 +305,10 @@ private:
     }
     if (formatVersion == 7u || formatVersion == 8u) {
       deserializeCollisionGeometryV7OrV8(input, component);
+      return;
+    }
+    if (formatVersion == 9u) {
+      deserializeCollisionGeometryV9(input, component);
       return;
     }
 

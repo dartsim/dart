@@ -44,6 +44,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
@@ -53,6 +54,8 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
+
+#include <dart/math/tri_mesh.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -590,9 +593,9 @@ TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
 }
 
 //==============================================================================
-// Box, capsule, cylinder, and plane collision shapes are translated onto links,
-// with full box extents halved and shape-node offsets preserved as
-// CollisionShape local transforms.
+// Box, capsule, cylinder, plane, and triangular mesh collision shapes are
+// translated onto links, with full box extents halved, mesh scale applied, and
+// shape-node offsets preserved as CollisionShape local transforms.
 TEST(SkeletonToMultibody, TranslatesCollisionShapes)
 {
   auto skeleton = dd::Skeleton::create("collision");
@@ -737,6 +740,41 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_DOUBLE_EQ(planeShape->offset, 0.2);
   EXPECT_TRUE(planeShape->localTransform.isApprox(
       translation(-0.15, 0.2, 0.05), 1e-12));
+
+  // A triangular MeshShape carries scaled vertices and triangle indices.
+  auto meshSkeleton = dd::Skeleton::create("mesh_collision");
+  auto [meshJoint, meshBody]
+      = meshSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  meshJoint->setName("joint");
+  meshBody->setName("body");
+  auto legacyMesh = std::make_shared<dart::math::TriMesh<double>>();
+  legacyMesh->addVertex(-1.0, -1.0, 0.0);
+  legacyMesh->addVertex(1.0, -1.0, 0.0);
+  legacyMesh->addVertex(-1.0, 1.0, 0.0);
+  legacyMesh->addVertex(1.0, 1.0, 0.0);
+  legacyMesh->addTriangle(0, 1, 2);
+  legacyMesh->addTriangle(1, 3, 2);
+  auto* meshShapeNode = meshBody->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::MeshShape>(
+          Eigen::Vector3d(2.0, 1.0, 1.0), legacyMesh));
+  meshShapeNode->setRelativeTransform(translation(0.1, 0.2, -0.05));
+
+  sx::World meshWorld;
+  auto meshMultibody
+      = sx::io::buildMultibodyFromSkeleton(meshWorld, *meshSkeleton);
+  const auto meshLink = meshMultibody.getLink("body");
+  ASSERT_TRUE(meshLink.has_value());
+  ASSERT_TRUE(meshLink->hasCollisionShape());
+  const auto meshShape = meshLink->getCollisionShape();
+  ASSERT_TRUE(meshShape.has_value());
+  EXPECT_EQ(meshShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(meshShape->vertices.size(), 4u);
+  ASSERT_EQ(meshShape->triangles.size(), 2u);
+  EXPECT_TRUE(
+      meshShape->vertices[1].isApprox(Eigen::Vector3d(2.0, -1.0, 0.0), 1e-12));
+  EXPECT_EQ(meshShape->triangles[1], Eigen::Vector3i(1, 3, 2));
+  EXPECT_TRUE(
+      meshShape->localTransform.isApprox(translation(0.1, 0.2, -0.05), 1e-12));
 }
 
 //==============================================================================

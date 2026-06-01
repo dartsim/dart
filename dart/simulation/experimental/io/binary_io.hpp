@@ -75,7 +75,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   7: CollisionShape gained a height field for capsule shapes
 //   8: CollisionShape gained a Cylinder type using radius and height
 //   9: CollisionShape gained Plane normal and offset fields
-constexpr std::uint32_t kBinaryFormatVersion = 9;
+//   10: CollisionShape gained Mesh vertices and triangle indices
+constexpr std::uint32_t kBinaryFormatVersion = 10;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

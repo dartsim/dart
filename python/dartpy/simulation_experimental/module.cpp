@@ -212,6 +212,37 @@ Eigen::VectorXd toVectorX(const std::vector<double>& values)
   return vector;
 }
 
+std::vector<Eigen::Vector3d> toVector3List(const nb::handle& value)
+{
+  const auto sequence = nb::cast<nb::sequence>(value);
+  std::vector<Eigen::Vector3d> result;
+  const nb::ssize_t length = nb::len(sequence);
+  result.reserve(static_cast<std::size_t>(length));
+  for (nb::ssize_t i = 0; i < length; ++i) {
+    result.push_back(toVector3(sequence[i]));
+  }
+  return result;
+}
+
+std::vector<Eigen::Vector3i> toTriangleList(const nb::handle& value)
+{
+  const auto sequence = nb::cast<nb::sequence>(value);
+  std::vector<Eigen::Vector3i> result;
+  const nb::ssize_t length = nb::len(sequence);
+  result.reserve(static_cast<std::size_t>(length));
+  for (nb::ssize_t i = 0; i < length; ++i) {
+    const auto triangle = nb::cast<nb::sequence>(sequence[i]);
+    if (nb::len(triangle) != 3) {
+      throw nb::type_error("Expected triangle indices with length 3");
+    }
+    result.emplace_back(
+        nb::cast<int>(triangle[0]),
+        nb::cast<int>(triangle[1]),
+        nb::cast<int>(triangle[2]));
+  }
+  return result;
+}
+
 std::string toOptionalName(const nb::handle& value)
 {
   if (value.is_none()) {
@@ -457,7 +488,8 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("BOX", sim::CollisionShapeType::Box)
       .value("CAPSULE", sim::CollisionShapeType::Capsule)
       .value("CYLINDER", sim::CollisionShapeType::Cylinder)
-      .value("PLANE", sim::CollisionShapeType::Plane);
+      .value("PLANE", sim::CollisionShapeType::Plane)
+      .value("MESH", sim::CollisionShapeType::Mesh);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
       .def_static(
@@ -524,6 +556,21 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("normal"),
           nb::arg("offset"),
           nb::arg("local_transform") = nb::none())
+      .def_static(
+          "mesh",
+          [](const nb::handle& vertices,
+             const nb::handle& triangles,
+             const nb::handle& localTransform) {
+            sim::CollisionShape shape = sim::CollisionShape::makeMesh(
+                toVector3List(vertices), toTriangleList(triangles));
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
+          nb::arg("vertices"),
+          nb::arg("triangles"),
+          nb::arg("local_transform") = nb::none())
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
@@ -537,6 +584,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "normal", [](const sim::CollisionShape& self) { return self.normal; })
       .def_prop_ro(
           "offset", [](const sim::CollisionShape& self) { return self.offset; })
+      .def_prop_ro(
+          "vertices",
+          [](const sim::CollisionShape& self) { return self.vertices; })
+      .def_prop_ro(
+          "triangles",
+          [](const sim::CollisionShape& self) { return self.triangles; })
       .def_prop_ro("local_transform", [](const sim::CollisionShape& self) {
         return self.localTransform.matrix();
       });

@@ -1762,6 +1762,10 @@ std::vector<Contact> World::collide()
         shape = std::make_unique<ncol::PlaneShape>(
             collisionShape.normal, collisionShape.offset);
         break;
+      case CollisionShapeType::Mesh:
+        shape = std::make_unique<ncol::MeshShape>(
+            collisionShape.vertices, collisionShape.triangles);
+        break;
     }
     const Eigen::Isometry3d shapePose = pose * collisionShape.localTransform;
     entries.push_back(
