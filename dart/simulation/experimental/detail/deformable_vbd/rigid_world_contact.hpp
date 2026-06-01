@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/comps/contact_material.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
+#include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 
@@ -47,6 +48,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 namespace dart::simulation::experimental::detail::deformable_vbd {
@@ -82,10 +84,101 @@ struct AvbdRigidWorldContactSolveResult
   std::size_t frictionRows = 0;
 };
 
+struct AvbdRigidWorldContactApplyResult
+{
+  std::size_t bodies = 0;
+};
+
 //==============================================================================
 inline std::uint64_t avbdRigidWorldContactObjectId(entt::entity entity) noexcept
 {
   return static_cast<std::uint64_t>(entt::to_integral(entity)) + 1u;
+}
+
+//==============================================================================
+inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
+    const AvbdRigidBodyState& state)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.linear()
+      = normalizeAvbdRigidOrientation(state.orientation).toRotationMatrix();
+  transform.translation() = state.position;
+  return transform;
+}
+
+//==============================================================================
+inline Eigen::Isometry3d avbdRigidWorldContactFrameLocalTransform(
+    const entt::registry& registry, entt::entity entity)
+{
+  if (const auto* props
+      = registry.try_get<comps::FreeFrameProperties>(entity)) {
+    return props->localTransform;
+  }
+
+  if (const auto* props
+      = registry.try_get<comps::FixedFrameProperties>(entity)) {
+    return props->localTransform;
+  }
+
+  return Eigen::Isometry3d::Identity();
+}
+
+//==============================================================================
+inline Eigen::Isometry3d avbdRigidWorldContactFrameWorldTransform(
+    const entt::registry& registry, entt::entity entity)
+{
+  if (entity == entt::null || !registry.valid(entity)) {
+    return Eigen::Isometry3d::Identity();
+  }
+
+  if (const auto* transform = registry.try_get<comps::Transform>(entity)) {
+    return avbdRigidWorldContactToIsometry(
+        AvbdRigidBodyState{transform->position, transform->orientation});
+  }
+
+  if (const auto* cache = registry.try_get<comps::FrameCache>(entity);
+      cache != nullptr && !cache->needTransformUpdate) {
+    return cache->worldTransform;
+  }
+
+  const auto* frameState = registry.try_get<comps::FrameState>(entity);
+  const Eigen::Isometry3d parentWorld
+      = frameState != nullptr ? avbdRigidWorldContactFrameWorldTransform(
+                                    registry, frameState->parentFrame)
+                              : Eigen::Isometry3d::Identity();
+  return parentWorld
+         * avbdRigidWorldContactFrameLocalTransform(registry, entity);
+}
+
+//==============================================================================
+inline void avbdRigidWorldContactMarkFrameSubtreeDirty(
+    entt::registry& registry, entt::entity root)
+{
+  if (root == entt::null || !registry.valid(root)) {
+    return;
+  }
+
+  std::vector<entt::entity> stack;
+  stack.push_back(root);
+  const auto frameStateView = registry.view<comps::FrameState>();
+
+  while (!stack.empty()) {
+    const entt::entity entity = stack.back();
+    stack.pop_back();
+    if (!registry.valid(entity)) {
+      continue;
+    }
+
+    if (auto* cache = registry.try_get<comps::FrameCache>(entity)) {
+      cache->needTransformUpdate = true;
+    }
+
+    for (const entt::entity child : frameStateView) {
+      if (frameStateView.get<comps::FrameState>(child).parentFrame == entity) {
+        stack.push_back(child);
+      }
+    }
+  }
 }
 
 namespace detail {
@@ -269,6 +362,75 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     }
     frictionInventory[first].state = frictionRows[i].first.state;
     frictionInventory[second].state = frictionRows[i].second.state;
+  }
+
+  return result;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
+    entt::registry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot,
+    double timeStep)
+{
+  AvbdRigidWorldContactApplyResult result;
+  const std::size_t bodyCount = std::min(
+      {snapshot.entities.size(),
+       snapshot.states.size(),
+       snapshot.fixed.size()});
+  const bool updateVelocity = timeStep > 0.0 && std::isfinite(timeStep);
+
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    if (snapshot.fixed[body] != 0u) {
+      continue;
+    }
+
+    const entt::entity entity = snapshot.entities[body];
+    if (entity == entt::null || !registry.valid(entity)) {
+      continue;
+    }
+
+    auto* transform = registry.try_get<comps::Transform>(entity);
+    auto* velocity = registry.try_get<comps::Velocity>(entity);
+    if (transform == nullptr || velocity == nullptr) {
+      continue;
+    }
+
+    const AvbdRigidBodyState& state = snapshot.states[body];
+    if (!state.position.allFinite()) {
+      continue;
+    }
+
+    const Eigen::Quaterniond oldOrientation
+        = normalizeAvbdRigidOrientation(transform->orientation);
+    const Eigen::Vector3d oldPosition = transform->position;
+    const Eigen::Quaterniond newOrientation
+        = normalizeAvbdRigidOrientation(state.orientation);
+
+    transform->position = state.position;
+    transform->orientation = newOrientation;
+    if (updateVelocity) {
+      velocity->linear = (state.position - oldPosition) / timeStep;
+      velocity->angular
+          = avbdRigidRotationVector(newOrientation * oldOrientation.conjugate())
+            / timeStep;
+    }
+
+    if (auto* props = registry.try_get<comps::FreeFrameProperties>(entity)) {
+      const auto* frameState = registry.try_get<comps::FrameState>(entity);
+      const Eigen::Isometry3d parentWorld
+          = frameState != nullptr ? avbdRigidWorldContactFrameWorldTransform(
+                                        registry, frameState->parentFrame)
+                                  : Eigen::Isometry3d::Identity();
+      props->localTransform
+          = parentWorld.inverse()
+            * avbdRigidWorldContactToIsometry(
+                AvbdRigidBodyState{
+                    transform->position, transform->orientation});
+    }
+
+    avbdRigidWorldContactMarkFrameSubtreeDirty(registry, entity);
+    ++result.bodies;
   }
 
   return result;

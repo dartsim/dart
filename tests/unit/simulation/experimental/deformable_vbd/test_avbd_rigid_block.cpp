@@ -961,6 +961,68 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotApplyWritesDynamicBodyState)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Vec3(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox(Vec3(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Vec3(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  vbd::AvbdRigidWorldContactOptions contactOptions;
+  contactOptions.startStiffness = 200.0;
+  vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          world.getRegistry(), world.collide(), contactOptions);
+  ASSERT_FALSE(snapshot.contacts.empty());
+
+  const std::size_t sphereIndex
+      = findEntityIndex(snapshot.entities, sphere.getEntity());
+  const double initialSphereZ = sphere.getTransform().translation().z();
+
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 4;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  const vbd::AvbdRigidWorldContactSolveResult solveResult
+      = vbd::solveAvbdRigidWorldContactSnapshot(
+          snapshot,
+          normalInventory,
+          frictionInventory,
+          /*timeStep=*/1.0,
+          solveOptions);
+  ASSERT_GT(solveResult.stats.bodyUpdates, 0u);
+  ASSERT_GT(snapshot.states[sphereIndex].position.z(), initialSphereZ);
+
+  const double writebackTimeStep = 0.5;
+  const vbd::AvbdRigidWorldContactApplyResult applyResult
+      = vbd::applyAvbdRigidWorldContactSnapshot(
+          world.getRegistry(), snapshot, writebackTimeStep);
+
+  EXPECT_EQ(applyResult.bodies, 1u);
+  EXPECT_NEAR(
+      sphere.getTransform().translation().z(),
+      snapshot.states[sphereIndex].position.z(),
+      1e-12);
+  EXPECT_NEAR(
+      sphere.getLinearVelocity().z(),
+      (snapshot.states[sphereIndex].position.z() - initialSphereZ)
+          / writebackTimeStep,
+      1e-12);
+  EXPECT_NEAR(ground.getTransform().translation().z(), -0.25, 1e-12);
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Vec3::Zero(), 1e-12));
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotSkipsStaticPairs)
 {
   sx::World world;

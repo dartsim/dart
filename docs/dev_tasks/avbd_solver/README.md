@@ -144,10 +144,11 @@ Paper audit:
     descriptors. The first private rigid contact-manifold row builder can turn
     active contact points into warm-started rigid normal/friction rows. The
     first private World-contact snapshot helper can translate rigid-body
-    `World::collide()` contacts into those manifold points and run them through
-    the private serial rigid row solve in focused tests, but contact-stage
-    writeback/activation, full row-family generation, articulated blocks,
-    parallel dual/stiffness updates, and GPU parity remain missing.
+    `World::collide()` contacts into those manifold points, run them through
+    the private serial rigid row solve, and write dynamic rigid-body state back
+    to the ECS in focused tests, but contact-stage activation, full row-family
+    generation, articulated blocks, parallel dual/stiffness updates, and GPU
+    parity remain missing.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
   - First internal 6-DOF rigid block foundation started:
     `AvbdRigidBodyBlock`, quaternion tangent-step helpers,
@@ -167,9 +168,9 @@ Paper audit:
     paired tangent rows for the private serial rigid row driver. The first
     private World-contact snapshot helper now extracts rigid contacts from
     `World::collide()` into that row-builder input and can drive the private
-    serial rigid row solve. This is not contact-stage writeback/activation, not
-    broad-phase/narrow-phase feature persistence, and not articulated joint
-    support yet.
+    serial rigid row solve plus dynamic rigid-body ECS writeback. This is not
+    contact-stage activation, not broad-phase/narrow-phase feature persistence,
+    and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
@@ -209,7 +210,7 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   contact-stage rigid AVBD writeback, rigid contact/joint rows, or
+   contact-stage rigid AVBD activation, rigid contact/joint rows, or
    rigid/articulated World wiring are the preferred next gaps now that static
    box feature IDs, private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
@@ -220,7 +221,7 @@ numbers.
    first private 6-DOF rigid block plus contact/friction point-pair row
    foundation, rigid point-pair friction-cone helper, private serial rigid row
    driver, private rigid contact-manifold row builder, and private World-contact
-   snapshot/solve helper have narrow CPU paths.
+   snapshot/solve/writeback helper have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

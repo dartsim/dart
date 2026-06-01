@@ -285,10 +285,11 @@ its own line so status updates remain git-history friendly.
   dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
   normal/friction row descriptor helpers have started, and a private
   World-contact snapshot helper now translates rigid-body `World::collide()`
-  contacts into manifold-point inputs and runs them through the private serial
-  rigid row solve. This is not contact-stage writeback/activation or a
-  scene-level parity claim. The next local slice is contact-stage rigid AVBD
-  writeback, rigid contact/joint rows, or rigid/articulated World integration.
+  contacts into manifold-point inputs, runs them through the private serial
+  rigid row solve, and writes dynamic rigid-body state back to the ECS in
+  focused tests. This is not contact-stage activation or a scene-level parity
+  claim. The next local slice is contact-stage rigid AVBD activation, rigid
+  contact/joint rows, or rigid/articulated World integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
