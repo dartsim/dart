@@ -233,9 +233,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         ),
         "notes_or_gap": (
             "Covered by DART-owned tilted-cube-on-edge runtime coverage for "
-            "the 3D unit-test fixture mechanism. Edge-edge and tet-corner "
-            "rows remain planned until they have topology-specific DART "
-            "runtime evidence."
+            "the 3D unit-test fixture mechanism. Edge-edge rows remain "
+            "planned until they have topology-specific DART runtime evidence."
         ),
     },
     "fixtures/3D/unit-tests/face-vertex.json": {
@@ -249,8 +248,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         "notes_or_gap": (
             "Covered by DART-owned tetrahedral face-vertex runtime coverage "
             "for the 3D unit-test fixture mechanism and its non-visual Fig. 16 "
-            "paper-unit alias. Edge-edge and tet-corner rows remain planned "
-            "until they have topology-specific DART runtime evidence."
+            "paper-unit alias. Edge-edge rows remain planned until they have "
+            "topology-specific DART runtime evidence."
         ),
     },
     "fixtures/paper-figures/16-unit-tests/face-vertex.json": {
@@ -280,8 +279,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         "notes_or_gap": (
             "Covered by DART-owned tetrahedral vertex-face runtime coverage "
             "for the 3D unit-test fixture mechanism and its non-visual Fig. 16 "
-            "paper-unit alias. Edge-edge and tet-corner rows remain planned "
-            "until they have topology-specific DART runtime evidence."
+            "paper-unit alias. Edge-edge rows remain planned until they have "
+            "topology-specific DART runtime evidence."
         ),
     },
     "fixtures/paper-figures/16-unit-tests/vertex-face.json": {
@@ -312,8 +311,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         "notes_or_gap": (
             "Covered by DART-owned tetrahedral vertex-vertex runtime coverage "
             "for the 3D unit-test fixture mechanism and its non-visual Fig. 16 "
-            "paper-unit alias. Edge-edge and tet-corner rows remain planned "
-            "until they have topology-specific DART runtime evidence."
+            "paper-unit alias. Edge-edge rows remain planned until they have "
+            "topology-specific DART runtime evidence."
         ),
     },
     "fixtures/paper-figures/16-unit-tests/vertex-vertex.json": {
@@ -327,6 +326,36 @@ IMPLEMENTED_FIXTURE_ROWS = {
         ),
         "notes_or_gap": (
             "This paper-unit row aliases the audited 3D vertex-vertex unit-test "
+            "fixture, so it is retired by the same DART-owned runtime "
+            "coverage. Visual paper-figure rows still require example and "
+            "headless visual evidence before retirement."
+        ),
+    },
+    "fixtures/3D/unit-tests/tet-corner.json": {
+        "test": "TetCornerFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited 3D tet-corner row: a tetrahedral corner "
+            "falls under gravity into a fixed three-wall and support-plane "
+            "corner, activates rigid IPC contact, stays finite, and reports no "
+            "meaningful native overlap after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned tetrahedral corner-in-walls runtime "
+            "coverage for the 3D unit-test fixture mechanism and its "
+            "non-visual Fig. 16 paper-unit alias. Edge-edge rows remain "
+            "planned until they have topology-specific DART runtime evidence."
+        ),
+    },
+    "fixtures/paper-figures/16-unit-tests/tet-corner.json": {
+        "test": "TetCornerFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the non-visual Fig. 16 tet-corner unit-test alias: a "
+            "tetrahedral corner falls under gravity into a fixed three-wall "
+            "and support-plane corner, activates rigid IPC contact, stays "
+            "finite, and reports no meaningful native overlap after each step."
+        ),
+        "notes_or_gap": (
+            "This paper-unit row aliases the audited 3D tet-corner unit-test "
             "fixture, so it is retired by the same DART-owned runtime "
             "coverage. Visual paper-figure rows still require example and "
             "headless visual evidence before retirement."

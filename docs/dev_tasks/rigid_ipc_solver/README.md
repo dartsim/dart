@@ -224,6 +224,10 @@
         tetrahedral corner vertex above a fixed support plane, activates rigid
         IPC contact, stays finite, and reports no meaningful native overlap
         after each step.
+  - [x] Add audited tet-corner fixture coverage through the opt-in runtime
+        stage. A tetrahedral corner falls into a fixed three-wall and
+        support-plane corner, activates rigid IPC contact, stays finite, and
+        reports no meaningful native overlap after each step.
   - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
         through the opt-in runtime stage. Free rotating cube and scaled-sphere /
         ellipsoid rows advance orientation under zero gravity, stay finite, and
@@ -400,6 +404,10 @@
         (`fixtures/3D/unit-tests/vertex-vertex.json`) and its non-visual Fig. 16
         paper-unit alias as implemented after tetrahedral vertex-vertex runtime
         overlap coverage landed.
+  - [x] Mark the audited 3D tet-corner unit-test fixture row
+        (`fixtures/3D/unit-tests/tet-corner.json`) and its non-visual Fig. 16
+        paper-unit alias as implemented after tetrahedral corner-in-walls
+        runtime overlap coverage landed.
   - [x] Mark the audited 3D rotating-cube unit-test fixture row
         (`fixtures/3D/unit-tests/rotation/rotating-cube.json`) as implemented
         after no-contact rotating-cube runtime coverage landed.
@@ -528,9 +536,11 @@ DART-owned implementation.
   non-visual Fig. 16 paper-unit alias are marked implemented through
   tetrahedral vertex-face runtime overlap coverage. The vertex-vertex unit-test
   fixture row and its non-visual Fig. 16 paper-unit alias are marked implemented
-  through tetrahedral vertex-vertex runtime overlap coverage. The torque
-  rotation fixture row is marked implemented through no-contact applied-torque
-  coverage. The `mu=0.5`
+  through tetrahedral vertex-vertex runtime overlap coverage. The tet-corner
+  unit-test fixture row and its non-visual Fig. 16 paper-unit alias are marked
+  implemented through tetrahedral corner-in-walls runtime overlap coverage. The
+  torque rotation fixture row is marked implemented through no-contact
+  applied-torque coverage. The `mu=0.5`
   threshold rows remain planned because they still need matching DART stick
   evidence.
   The rigid-body hash-grid source row is marked implemented through the

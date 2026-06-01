@@ -1,5 +1,30 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: tet-corner fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/tet-corner.json`: a tetrahedral corner falls under
+  gravity into a fixed three-wall and support-plane corner, activates rigid IPC
+  contact, stays finite, and reports no meaningful native overlap after each
+  step in `RigidIpcPaperExperiments.TetCornerFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Edge-edge rows remain
+  planned until they have topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TetCornerFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: vertex-vertex fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

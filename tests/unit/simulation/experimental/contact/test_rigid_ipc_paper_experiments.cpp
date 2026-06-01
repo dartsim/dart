@@ -237,13 +237,13 @@ sx::CollisionShape makeTetPyramidMesh()
       std::move(vertices), std::move(triangles));
 }
 
-sx::CollisionShape makeTetCornerMesh()
+sx::CollisionShape makeTetCornerMesh(double scale = 1.0)
 {
   std::vector<Eigen::Vector3d> vertices = {
-      {0.0, 0.0, 0.0},
-      {1.0, 0.0, 0.0},
-      {0.0, 0.0, 1.0},
-      {0.0, 1.0, 0.0},
+      scale * Eigen::Vector3d(0.0, 0.0, 0.0),
+      scale * Eigen::Vector3d(1.0, 0.0, 0.0),
+      scale * Eigen::Vector3d(0.0, 0.0, 1.0),
+      scale * Eigen::Vector3d(0.0, 1.0, 0.0),
   };
   std::vector<Eigen::Vector3i> triangles
       = {{0, 2, 1}, {0, 3, 2}, {1, 2, 3}, {0, 1, 3}};
@@ -1149,6 +1149,65 @@ TEST(RigidIpcPaperExperiments, VertexVertexFixtureRowStaysSeparated)
   EXPECT_LT(moving.getTranslation().z(), startZ - 0.1);
   EXPECT_TRUE(moving.getTranslation().allFinite());
   EXPECT_TRUE(moving.getLinearVelocity().allFinite());
+}
+
+TEST(RigidIpcPaperExperiments, TetCornerFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.55);
+  auto ground = world.addRigidBody("tet_corner_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({5.0, 5.0, 0.05}));
+
+  for (int i = 0; i < 3; ++i) {
+    sx::RigidBodyOptions wallOptions;
+    wallOptions.isStatic = true;
+    if (i == 0) {
+      wallOptions.position = Eigen::Vector3d(-1.0, 0.0, 0.0);
+    } else if (i == 1) {
+      wallOptions.position = Eigen::Vector3d(0.0, -1.0, 0.0);
+    } else {
+      wallOptions.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+    }
+    auto wall = world.addRigidBody(
+        "tet_corner_wall_" + std::to_string(i), wallOptions);
+    wall.setCollisionShape(sx::CollisionShape::makeBox({0.5, 0.5, 0.5}));
+  }
+
+  sx::RigidBodyOptions tetOptions;
+  tetOptions.mass = 1.0;
+  tetOptions.position = Eigen::Vector3d(-0.4995, -0.4995, 0.6);
+  auto tet = world.addRigidBody("tet_corner_moving", tetOptions);
+  tet.setCollisionShape(makeTetCornerMesh(0.999));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startZ = tet.getTranslation().z();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_LT(tet.getTranslation().z(), startZ - 0.1);
+  EXPECT_TRUE(tet.getTranslation().allFinite());
+  EXPECT_TRUE(tet.getLinearVelocity().allFinite());
 }
 
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
