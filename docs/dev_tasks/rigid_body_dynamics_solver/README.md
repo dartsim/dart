@@ -23,17 +23,18 @@ solver** under a multi-solver, multi-physics architecture.
       later floating-base and supported joint-type slices; joint
       effort/acceleration, link mass/inertia, link offsets, and public dynamics
       accessors; verified vs analytical dynamics and DART-6 parity checks).
-- [ ] Phase 2: collision bridge (started: `CollisionShape` sphere/box/capsule/
+- [x] Phase 2: collision bridge (`CollisionShape` sphere/box/capsule/
       cylinder/plane/triangular mesh on rigid bodies and links, plus
       `MeshShape`/`ConvexMeshShape`/`HeightmapShape`/`SoftMeshShape`
       model-loading translation, multiple collision shapes per body/link, and
       `World::collide()` query bridging to the native engine, returning
-      `Contact` points; C++ + dartpy + tests. Filtering started with
+      `Contact` points; C++ + dartpy + tests. Filtering covers
       `CollisionQueryOptions::includeSameMultibodyLinkPairs` /
       dartpy `include_same_multibody_link_pairs`; body-type filtering now
       covers rigid-body, rigid-body/link, and link/link pairs; broad-phase
-      pruning now uses native collision candidate pairs. Remaining: persistent
-      collision world).
+      pruning now uses native collision candidate pairs; `World::collide()`
+      now persists the native collision world across queries and only rebuilds
+      when collision geometry changes).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
       contact solver between free rigid bodies with accumulated normal impulses,
       restitution, two-tangent Coulomb friction, positional correction, and a
@@ -88,9 +89,7 @@ solvers, couplers, ECS storage, or execution backends.
 
 1. Keep the local `feature/experimental-model-loader` branch clean and validated
    while it carries the model-loading/contact follow-up commits ahead of origin.
-2. Continue remaining Phase 2 shape backlog from `RESUME.md`: collision-world
-   scaling.
-3. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
+2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
 
 ## Relationship To The API-Design Dev Task

@@ -112,6 +112,43 @@ bool hasEntityWithName(const entt::registry& registry, std::string_view name)
 
 namespace dart::simulation::experimental {
 
+namespace ncol = dart::collision::native;
+
+struct World::CollisionQueryCache
+{
+  struct Key
+  {
+    entt::entity entity;
+    std::size_t shapeIndex;
+    std::uint64_t geometryRevision;
+    entt::entity multibody;
+    bool isLink;
+
+    bool operator==(const Key&) const = default;
+  };
+
+  struct ObjectEntry
+  {
+    entt::entity entity;
+    entt::entity multibody;
+    bool isLink;
+    ncol::CollisionObject object;
+  };
+
+  void clear()
+  {
+    collisionWorld.clear();
+    keys.clear();
+    entries.clear();
+    entryByObjectId.clear();
+  }
+
+  ncol::CollisionWorld collisionWorld;
+  std::vector<Key> keys;
+  std::vector<ObjectEntry> entries;
+  std::vector<std::size_t> entryByObjectId;
+};
+
 namespace {
 
 //==============================================================================
@@ -1040,6 +1077,9 @@ void World::clear()
   m_deformableBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
+  if (m_collisionQueryCache) {
+    m_collisionQueryCache->clear();
+  }
 }
 
 //==============================================================================
@@ -1733,21 +1773,13 @@ std::vector<Contact> World::collide()
 //==============================================================================
 std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 {
-  namespace ncol = dart::collision::native;
-
-  ncol::CollisionWorld collisionWorld;
-
-  // Build one native collision object per shape-bearing rigid body, remembering
-  // which experimental entity each object came from.
-  struct ObjectEntry
+  struct ShapeEntrySpec
   {
-    entt::entity entity;
-    entt::entity multibody;
-    bool isLink;
-    ncol::CollisionObject object;
+    CollisionQueryCache::Key key;
+    const CollisionShape* shape;
+    Eigen::Isometry3d pose;
   };
-  std::vector<ObjectEntry> entries;
-  std::vector<std::size_t> entryByObjectId;
+  std::vector<ShapeEntrySpec> specs;
 
   const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
     auto view = m_registry.view<comps::MultibodyStructure>();
@@ -1761,11 +1793,8 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     return static_cast<entt::entity>(entt::null);
   };
 
-  const auto addEntry = [&](entt::entity entity,
-                            entt::entity multibody,
-                            bool isLink,
-                            const CollisionShape& collisionShape,
-                            const Eigen::Isometry3d& pose) {
+  const auto makeNativeShape =
+      [](const CollisionShape& collisionShape) -> std::unique_ptr<ncol::Shape> {
     std::unique_ptr<ncol::Shape> shape;
     switch (collisionShape.type) {
       case CollisionShapeType::Sphere:
@@ -1791,20 +1820,27 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
             collisionShape.vertices, collisionShape.triangles);
         break;
     }
-    const Eigen::Isometry3d shapePose = pose * collisionShape.localTransform;
-    ncol::CollisionObject object
-        = collisionWorld.createObject(std::move(shape), shapePose);
-    const std::size_t entryIndex = entries.size();
-    const std::size_t objectId = object.getId();
-    if (objectId >= entryByObjectId.size()) {
-      entryByObjectId.resize(
-          objectId + 1, std::numeric_limits<std::size_t>::max());
-    }
-    entryByObjectId[objectId] = entryIndex;
-    entries.push_back({entity, multibody, isLink, object});
+    return shape;
   };
 
-  const auto includesPair = [&](const ObjectEntry& a, const ObjectEntry& b) {
+  const auto addSpecs = [&](entt::entity entity,
+                            entt::entity multibody,
+                            bool isLink,
+                            const comps::CollisionGeometry& geometry,
+                            const Eigen::Isometry3d& pose) {
+    for (std::size_t i = 0; i < geometry.shapes.size(); ++i) {
+      const auto& shape = geometry.shapes[i];
+      specs.push_back(
+          ShapeEntrySpec{
+              CollisionQueryCache::Key{
+                  entity, i, geometry.revision, multibody, isLink},
+              &shape,
+              pose * shape.localTransform});
+    }
+  };
+
+  const auto includesPair = [&](const CollisionQueryCache::ObjectEntry& a,
+                                const CollisionQueryCache::ObjectEntry& b) {
     if (a.entity == b.entity) {
       return false;
     }
@@ -1834,9 +1870,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     pose.linear() = transform.orientation.normalized().toRotationMatrix();
     pose.translation() = transform.position;
-    for (const auto& shape : geometry.shapes) {
-      addEntry(entity, entt::null, false, shape, pose);
-    }
+    addSpecs(entity, entt::null, false, geometry, pose);
   }
 
   // Multibody links pose their collision shapes through the frame accessor so
@@ -1848,8 +1882,49 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
     const Link link(entity, this);
     const entt::entity multibody = findMultibodyOwningLink(entity);
-    for (const auto& shape : geometry.shapes) {
-      addEntry(entity, multibody, true, shape, link.getWorldTransform());
+    addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
+  }
+
+  if (!m_collisionQueryCache) {
+    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+  }
+  auto& cache = *m_collisionQueryCache;
+
+  const bool rebuildCache = cache.keys.size() != specs.size()
+                            || !std::equal(
+                                specs.begin(),
+                                specs.end(),
+                                cache.keys.begin(),
+                                [](const ShapeEntrySpec& spec,
+                                   const CollisionQueryCache::Key& key) {
+                                  return spec.key == key;
+                                });
+
+  if (rebuildCache) {
+    cache.clear();
+    cache.collisionWorld.reserveObjects(specs.size());
+    cache.keys.reserve(specs.size());
+    cache.entries.reserve(specs.size());
+    for (const auto& spec : specs) {
+      ncol::CollisionObject object = cache.collisionWorld.createObject(
+          makeNativeShape(*spec.shape), spec.pose);
+      const std::size_t entryIndex = cache.entries.size();
+      const std::size_t objectId = object.getId();
+      if (objectId >= cache.entryByObjectId.size()) {
+        cache.entryByObjectId.resize(
+            objectId + 1, std::numeric_limits<std::size_t>::max());
+      }
+      cache.entryByObjectId[objectId] = entryIndex;
+      cache.keys.push_back(spec.key);
+      cache.entries.push_back(
+          CollisionQueryCache::ObjectEntry{
+              spec.key.entity, spec.key.multibody, spec.key.isLink, object});
+    }
+  } else {
+    for (std::size_t i = 0; i < specs.size(); ++i) {
+      auto& object = cache.entries[i].object;
+      object.setTransform(specs[i].pose);
+      cache.collisionWorld.updateObject(object);
     }
   }
 
@@ -1857,25 +1932,25 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
   // known here, so the contacts map back to the right experimental bodies
   // without relying on the result carrying object identity.
   const auto option = ncol::CollisionOption::fullContacts();
-  const auto candidatePairs = collisionWorld.buildBroadPhaseSnapshot();
+  const auto candidatePairs = cache.collisionWorld.buildBroadPhaseSnapshot();
   std::vector<Contact> contacts;
   for (const auto& pair : candidatePairs.pairs) {
-    if (pair.first >= entryByObjectId.size()
-        || pair.second >= entryByObjectId.size()) {
+    if (pair.first >= cache.entryByObjectId.size()
+        || pair.second >= cache.entryByObjectId.size()) {
       continue;
     }
-    const std::size_t i = entryByObjectId[pair.first];
-    const std::size_t j = entryByObjectId[pair.second];
-    if (i >= entries.size() || j >= entries.size()) {
+    const std::size_t i = cache.entryByObjectId[pair.first];
+    const std::size_t j = cache.entryByObjectId[pair.second];
+    if (i >= cache.entries.size() || j >= cache.entries.size()) {
       continue;
     }
-    if (!includesPair(entries[i], entries[j])) {
+    if (!includesPair(cache.entries[i], cache.entries[j])) {
       continue;
     }
 
     ncol::CollisionResult result;
-    if (!collisionWorld.collide(
-            entries[i].object, entries[j].object, option, result)) {
+    if (!cache.collisionWorld.collide(
+            cache.entries[i].object, cache.entries[j].object, option, result)) {
       continue;
     }
 
@@ -1886,8 +1961,8 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
       // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
       contacts.push_back(
           Contact{
-              CollisionBody(entries[i].entity, this),
-              CollisionBody(entries[j].entity, this),
+              CollisionBody(cache.entries[i].entity, this),
+              CollisionBody(cache.entries[j].entity, this),
               point.position,
               -point.normal,
               point.depth});

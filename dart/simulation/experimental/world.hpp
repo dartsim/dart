@@ -44,6 +44,7 @@
 #include <entt/entt.hpp>
 
 #include <iosfwd>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -262,6 +263,7 @@ private:
   friend class DeformableBody;
 
   Frame resolveParentFrame(const Frame& parent) const;
+  struct CollisionQueryCache;
   entt::entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -296,6 +298,7 @@ private:
   std::size_t m_deformableBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
+  mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
 };
 
 } // namespace dart::simulation::experimental

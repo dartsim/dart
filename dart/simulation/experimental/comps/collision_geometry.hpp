@@ -37,6 +37,8 @@
 
 #include <vector>
 
+#include <cstdint>
+
 namespace dart::simulation::experimental::comps {
 
 /// Collision geometry attached to a body or link.
@@ -48,6 +50,7 @@ struct CollisionGeometry
   DART_EXPERIMENTAL_PROPERTY_COMPONENT(CollisionGeometry);
 
   std::vector<CollisionShape> shapes;
+  std::uint64_t revision = 0;
 
   [[nodiscard]] bool hasShapes() const
   {

@@ -830,6 +830,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - `World::collide()` now uses the native collision broad phase to prune
     candidate pairs before narrow-phase contact generation while preserving the
     same `Contact` reporting semantics.
+  - `World::collide()` now keeps a persistent native collision world between
+    queries, updating cached object transforms and rebuilding only when the
+    experimental collision geometry topology changes.
   - Added an experimental articulated contact response: multibody links with
     collision shapes now rest on static rigid-body obstacles. `World::step()`
     resolves each link-vs-static contact with a unilateral normal impulse using

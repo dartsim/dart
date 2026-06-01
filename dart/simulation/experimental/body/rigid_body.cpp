@@ -546,7 +546,10 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
   validateCollisionShape(shape);
 
   auto& registry = getWorld()->getRegistry();
+  const auto* existing
+      = registry.try_get<comps::CollisionGeometry>(getEntity());
   comps::CollisionGeometry geometry{{shape}};
+  geometry.revision = existing ? existing->revision + 1 : 1;
   registry.emplace_or_replace<comps::CollisionGeometry>(getEntity(), geometry);
 }
 
@@ -562,6 +565,7 @@ void RigidBody::addCollisionShape(const CollisionShape& shape)
   auto& geometry
       = registry.get_or_emplace<comps::CollisionGeometry>(getEntity());
   geometry.shapes.push_back(shape);
+  ++geometry.revision;
 }
 
 //==============================================================================

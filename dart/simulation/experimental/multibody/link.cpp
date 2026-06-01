@@ -285,8 +285,11 @@ void Link::setCollisionShape(const CollisionShape& shape)
   validateCollisionShape(shape);
 
   auto& registry = getWorld()->getRegistry();
-  registry.emplace_or_replace<comps::CollisionGeometry>(
-      getEntity(), comps::CollisionGeometry{{shape}});
+  const auto* existing
+      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  comps::CollisionGeometry geometry{{shape}};
+  geometry.revision = existing ? existing->revision + 1 : 1;
+  registry.emplace_or_replace<comps::CollisionGeometry>(getEntity(), geometry);
 }
 
 //==============================================================================
@@ -298,6 +301,7 @@ void Link::addCollisionShape(const CollisionShape& shape)
   auto& geometry
       = registry.get_or_emplace<comps::CollisionGeometry>(getEntity());
   geometry.shapes.push_back(shape);
+  ++geometry.revision;
 }
 
 //==============================================================================

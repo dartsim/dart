@@ -281,6 +281,12 @@ now includes explicit rigid-body, rigid-body/link, and link/link switches
 `include_link_pairs`) while preserving the existing same-multibody link subset
 filter and the default all-pairs behavior. Covered by C++ and dartpy tests.
 
+**(DONE) Persistent native collision world for `World::collide()`.** Collision
+queries now keep a native collision world cache across calls, update cached
+object transforms/AABBs for repeated queries, and rebuild only when the
+experimental collision geometry revision or topology changes. Covered by the
+collision-query suite plus a transform-update and shape-invalidation regression.
+
 **Resume here — Subsystem A (the remaining headline gap):**
 
 **Subsystem A — coupled boxed-LCP.** Reorder the `World::step` pipeline to
@@ -851,8 +857,6 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 2:** a persistent collision world instead of rebuilding per
-  `collide()`.
 - **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
   mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,

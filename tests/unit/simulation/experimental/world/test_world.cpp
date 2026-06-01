@@ -3030,6 +3030,41 @@ TEST(World, CollisionQueryFindsSparseBroadPhaseCandidate)
   }
 }
 
+// Test that repeated collision queries update cached native object poses and
+// rebuild when collision geometry changes.
+TEST(World, CollisionQueryCacheUpdatesTransformsAndShapes)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto bodyA = world.addRigidBody("a");
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions bodyBOptions;
+  bodyBOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", bodyBOptions);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  ASSERT_FALSE(world.collide().empty());
+
+  Eigen::Isometry3d farPose = Eigen::Isometry3d::Identity();
+  farPose.translation() = Eigen::Vector3d(3.0, 0.0, 0.0);
+  bodyB.setTransform(farPose);
+  EXPECT_TRUE(world.collide().empty());
+
+  Eigen::Isometry3d nearPose = Eigen::Isometry3d::Identity();
+  nearPose.translation() = Eigen::Vector3d(0.8, 0.0, 0.0);
+  bodyB.setTransform(nearPose);
+  ASSERT_FALSE(world.collide().empty());
+
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.1));
+  EXPECT_TRUE(world.collide().empty());
+
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  EXPECT_FALSE(world.collide().empty());
+}
+
 // Test that multiple shapes on the same rigid body behave as compound
 // collision geometry and do not self-collide.
 TEST(World, CollisionQuerySupportsCompoundRigidBodyShapes)
