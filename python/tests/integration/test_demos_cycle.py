@@ -817,22 +817,28 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
     import numpy as np
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
+    good_setup: SceneSetup | None = None
+
     def build_good() -> SceneSetup:
+        nonlocal good_setup
+        if good_setup is not None:
+            return good_setup
         world = dart.World("good")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
-        return SceneSetup(world=world)
+        good_setup = SceneSetup(world=world)
+        return good_setup
 
     def build_slow() -> SceneSetup:
-        time.sleep(0.02)
+        time.sleep(0.05)
         world = dart.World("slow")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
-    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "1")
+    monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "10")
     events = tmp_path / "events.jsonl"
     screenshot = tmp_path / "snap.ppm"
     rc = run(
@@ -1170,12 +1176,12 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
         world.add_simple_frame(frame)
 
         def pre_step() -> None:
-            time.sleep(0.02)
+            time.sleep(0.25)
 
         return SceneSetup(world=world, pre_step=pre_step)
 
     monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "0")
-    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "1")
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "100")
     events = tmp_path / "events.jsonl"
     screenshot = tmp_path / "snap.ppm"
     rc = run(
