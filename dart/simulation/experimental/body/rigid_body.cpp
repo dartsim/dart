@@ -490,6 +490,14 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
           "Capsule collision shape radius and height must be positive and "
           "finite");
       break;
+    case CollisionShapeType::Cylinder:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.height) || shape.height <= 0.0,
+          InvalidArgumentException,
+          "Cylinder collision shape radius and height must be positive and "
+          "finite");
+      break;
   }
   validateCollisionShapeTransform(shape);
 

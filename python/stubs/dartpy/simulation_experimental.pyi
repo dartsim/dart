@@ -118,6 +118,8 @@ class CollisionShapeType(enum.Enum):
 
     CAPSULE = 2
 
+    CYLINDER = 3
+
 class CollisionShape:
     @staticmethod
     def sphere(
@@ -131,6 +133,11 @@ class CollisionShape:
 
     @staticmethod
     def capsule(
+        radius: float, height: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
+
+    @staticmethod
+    def cylinder(
         radius: float, height: float, local_transform: object | None = None
     ) -> CollisionShape: ...
 

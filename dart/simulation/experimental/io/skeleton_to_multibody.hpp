@@ -73,11 +73,11 @@ struct SkeletonToMultibodyOptions
   /// multibody. Other joint types are left at their defaults.
   bool copyJointProperties = true;
 
-  /// When true (the default), translate the first sphere, box, or capsule
-  /// collision shape of each body (a shape node with a collision aspect) onto
-  /// the created link, preserving the shape node's relative transform as the
-  /// CollisionShape local transform. Other shape types (mesh, cylinder, plane),
-  /// and additional shapes per body are skipped.
+  /// When true (the default), translate the first sphere, box, capsule, or
+  /// cylinder collision shape of each body (a shape node with a collision
+  /// aspect) onto the created link, preserving the shape node's relative
+  /// transform as the CollisionShape local transform. Other shape types (mesh,
+  /// plane), and additional shapes per body are skipped.
   bool loadCollisionShapes = true;
 };
 

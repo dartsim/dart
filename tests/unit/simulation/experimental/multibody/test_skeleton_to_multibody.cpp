@@ -41,6 +41,7 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/planar_joint.hpp>
@@ -588,9 +589,9 @@ TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
 }
 
 //==============================================================================
-// Box and capsule collision shapes are translated onto links, with full box
-// extents halved and shape-node offsets preserved as CollisionShape local
-// transforms.
+// Box, capsule, and cylinder collision shapes are translated onto links, with
+// full box extents halved and shape-node offsets preserved as CollisionShape
+// local transforms.
 TEST(SkeletonToMultibody, TranslatesCollisionShapes)
 {
   auto skeleton = dd::Skeleton::create("collision");
@@ -685,6 +686,32 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_DOUBLE_EQ(capsuleShape->height, 0.8);
   EXPECT_TRUE(capsuleShape->localTransform.isApprox(
       translation(-0.1, 0.2, 0.3), 1e-12));
+
+  // A cylinder shares the radius/height representation with a capsule.
+  auto cylinderSkeleton = dd::Skeleton::create("cylinder_collision");
+  auto [cylinderJoint, cylinderBody]
+      = cylinderSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(
+          nullptr);
+  cylinderJoint->setName("joint");
+  cylinderBody->setName("body");
+  auto* cylinderShapeNode
+      = cylinderBody->createShapeNodeWith<dd::CollisionAspect>(
+          std::make_shared<dd::CylinderShape>(0.3, 0.7));
+  cylinderShapeNode->setRelativeTransform(translation(0.25, -0.1, 0.15));
+
+  sx::World cylinderWorld;
+  auto cylinderMultibody
+      = sx::io::buildMultibodyFromSkeleton(cylinderWorld, *cylinderSkeleton);
+  const auto cylinderLink = cylinderMultibody.getLink("body");
+  ASSERT_TRUE(cylinderLink.has_value());
+  ASSERT_TRUE(cylinderLink->hasCollisionShape());
+  const auto cylinderShape = cylinderLink->getCollisionShape();
+  ASSERT_TRUE(cylinderShape.has_value());
+  EXPECT_EQ(cylinderShape->type, sx::CollisionShapeType::Cylinder);
+  EXPECT_DOUBLE_EQ(cylinderShape->radius, 0.3);
+  EXPECT_DOUBLE_EQ(cylinderShape->height, 0.7);
+  EXPECT_TRUE(cylinderShape->localTransform.isApprox(
+      translation(0.25, -0.1, 0.15), 1e-12));
 }
 
 //==============================================================================

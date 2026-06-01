@@ -44,6 +44,7 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/joint.hpp>
@@ -262,12 +263,12 @@ void copyJointProperties(const dynamics::Joint& legacy, Joint& experimental)
   experimental.setEffortLimits(lower, upper);
 }
 
-/// The first sphere, box, or capsule collision shape of a body (a shape node
-/// with a collision aspect), as an experimental CollisionShape. The shape
-/// node's relative transform becomes the CollisionShape local transform.
+/// The first sphere, box, capsule, or cylinder collision shape of a body (a
+/// shape node with a collision aspect), as an experimental CollisionShape. The
+/// shape node's relative transform becomes the CollisionShape local transform.
 /// Returns nullopt when the body has no representable collision shape;
-/// unsupported shape types (mesh/cylinder/plane) and additional shapes per body
-/// are skipped.
+/// unsupported shape types (mesh/plane) and additional shapes per body are
+/// skipped.
 std::optional<CollisionShape> translateCollisionShape(
     const dynamics::BodyNode& body)
 {
@@ -294,11 +295,16 @@ std::optional<CollisionShape> translateCollisionShape(
               = static_cast<const dynamics::CapsuleShape&>(*shape);
           result = CollisionShape::makeCapsule(
               capsule.getRadius(), capsule.getHeight());
+        } else if (type == dynamics::CylinderShape::getStaticType()) {
+          const auto& cylinder
+              = static_cast<const dynamics::CylinderShape&>(*shape);
+          result = CollisionShape::makeCylinder(
+              cylinder.getRadius(), cylinder.getHeight());
         }
         if (result.has_value()) {
           result->localTransform = shapeNode->getRelativeTransform();
         }
-        // mesh/cylinder/plane are not yet translated.
+        // mesh/plane are not yet translated.
       });
   return result;
 }

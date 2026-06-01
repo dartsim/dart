@@ -455,7 +455,8 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
       .value("BOX", sim::CollisionShapeType::Box)
-      .value("CAPSULE", sim::CollisionShapeType::Capsule);
+      .value("CAPSULE", sim::CollisionShapeType::Capsule)
+      .value("CYLINDER", sim::CollisionShapeType::Cylinder);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
       .def_static(
@@ -486,6 +487,19 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](double radius, double height, const nb::handle& localTransform) {
             sim::CollisionShape shape
                 = sim::CollisionShape::makeCapsule(radius, height);
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
+          nb::arg("radius"),
+          nb::arg("height"),
+          nb::arg("local_transform") = nb::none())
+      .def_static(
+          "cylinder",
+          [](double radius, double height, const nb::handle& localTransform) {
+            sim::CollisionShape shape
+                = sim::CollisionShape::makeCylinder(radius, height);
             if (!localTransform.is_none()) {
               shape.localTransform = toIsometry(localTransform);
             }
