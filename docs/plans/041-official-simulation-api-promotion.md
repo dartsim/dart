@@ -162,10 +162,12 @@ Current intended sequence:
    `pixi run check-api-boundaries`.
 4. **Atomic C++/Python name-swap PR (workstreams 4, 5, 6, 7, and 8).** Replace
    or repoint `dart/simulation/world.hpp` and `dart/simulation/fwd.hpp` so
-   `dart::simulation::World` / `WorldPtr` resolve to the ECS facade; quarantine
-   or remove the classic implementation so it no longer exports
-   `dart::simulation::World`; rebind `simulation.World` from the classic type to
-   the ECS facade in `python/dartpy/simulation/world.cpp`; remove the old
+   `dart::simulation::World` resolves to the ECS facade and `fwd.hpp` reflects
+   the maintainer-approved lifecycle model, keeping `WorldPtr` only if shared
+   ownership is selected; quarantine or remove the classic implementation so it
+   no longer exports `dart::simulation::World`; rebind `simulation.World` from
+   the classic type to the ECS facade in `python/dartpy/simulation/world.cpp`;
+   remove the old
    `nb::class_<dart::simulation::World>(m, "World")` in the same change so the
    `simulation` module never holds two C++ types under the name `"World"`; and
    regenerate stubs/docs for the final Python shape. Retarget all 158 matched
