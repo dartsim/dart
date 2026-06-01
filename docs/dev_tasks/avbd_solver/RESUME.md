@@ -64,9 +64,9 @@ values seeded for AVBD alpha regularization. Those private point-joint rows can
 now be appended to the World rigid snapshot/solve/apply wrapper and combined
 step helper from world-space point-joint inputs; a private fixed-joint ECS
 extractor plus step-helper overload now covers rigid-body-linked joint
-entities, and the internal contact-stage AVBD opt-in now appends those
-fixed-joint rows to its velocity projection when contact rows activate. Public
-multibody joint extraction is still not wired.
+entities, and the internal contact-stage AVBD opt-in can now project those
+fixed-joint rows with or without active contacts. Public multibody joint
+extraction is still not wired.
 
 ## Current Branch
 
@@ -96,7 +96,7 @@ linear, angular, and combined row builders with World snapshot/step
 append/solve/apply coverage for world-space point-joint inputs and a private
 fixed-joint ECS extractor plus step-helper overload for rigid-body-linked joint
 entities, plus internal contact-stage velocity-projection coverage for those
-fixed-joint rows.
+fixed-joint rows with or without active contacts.
 
 ## Immediate Next Step
 
@@ -175,9 +175,9 @@ combinations.
   participating in the private World snapshot/solve/apply wrapper and combined
   step helper from world-space point-joint inputs, plus private fixed-joint ECS
   extraction through the step helper and internal contact-stage velocity
-  projection for rigid-body-linked joint entities, but full narrow-phase
-  feature extraction and public articulated World joint wiring are not solved
-  yet.
+  projection for rigid-body-linked joint entities with or without active
+  contacts, but full narrow-phase feature extraction and public articulated
+  World joint wiring are not solved yet.
 
 ## How to Resume
 

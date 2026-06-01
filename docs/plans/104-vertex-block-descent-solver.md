@@ -126,9 +126,9 @@ previous values seeded for AVBD alpha regularization. Those private point-joint
 rows can now be appended to the World rigid snapshot/solve/apply wrapper and
 combined step helper from world-space point-joint inputs, and a private
 fixed-joint ECS extractor can feed the step helper for rigid-body-linked joint
-entities. The internal contact-stage AVBD opt-in can append those fixed-joint
-rows to its velocity projection when contact rows activate. Public multibody
-joint extraction and articulated World joint wiring are not solved yet.
+entities. The internal contact-stage AVBD opt-in can project those fixed-joint
+rows with or without active contacts. Public multibody joint extraction and
+articulated World joint wiring are not solved yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

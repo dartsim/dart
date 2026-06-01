@@ -600,9 +600,9 @@
     wrapper and combined step helper with persistent linear and angular joint
     row inventories. A detail-only fixed-joint ECS extractor and step-helper
     overload can now feed that private path for rigid-body-linked joint
-    entities, and the internal contact-stage AVBD opt-in appends those fixed
-    joint rows to its velocity projection when contact rows activate. Public
-    multibody joint wiring is still out of scope.
+    entities, and the internal contact-stage AVBD opt-in can project those
+    fixed joint rows with or without active contact rows. Public multibody
+    joint wiring is still out of scope.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration

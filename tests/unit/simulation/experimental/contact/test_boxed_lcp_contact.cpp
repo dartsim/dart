@@ -176,6 +176,44 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
 }
 
 //==============================================================================
+// Private fixed-joint rows should also project rigid bodies when no contact
+// rows are present, so the World path does not depend on contact activation.
+TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = world.getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x()), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
 // A body dropped onto a static ground rests in the same place under both
 // solver paths (non-penetration, normal velocity -> 0, same resting height).
 TEST(BoxedLcpContact, RestingHeightMatchesSequentialImpulse)

@@ -7397,14 +7397,53 @@ ComputeStageMetadata RigidBodyContactStage::getMetadata() const noexcept
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
   const auto contacts = world.collide();
+  auto& registry = world.getRegistry();
+
   if (contacts.empty()) {
+    const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
+        = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
+    if (!joints.empty()) {
+      if (m_avbdScratch == nullptr) {
+        m_avbdScratch = std::make_unique<AvbdScratch>();
+      }
+
+      dvbd::AvbdRigidWorldContactSnapshot snapshot;
+      const std::size_t appendedJoints
+          = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+      if (appendedJoints != 0u) {
+        const double timeStep = world.getTimeStep();
+        dvbd::predictAvbdRigidWorldContactInertialTargets(
+            registry, snapshot, timeStep);
+
+        dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
+        solveOptions.descent.iterations = m_iterations;
+        solveOptions.descent.regularization = 1e-12;
+        const dvbd::AvbdRigidWorldContactSolveResult solveResult
+            = dvbd::solveAvbdRigidWorldContactSnapshot(
+                snapshot,
+                m_avbdScratch->normalInventory,
+                m_avbdScratch->frictionInventory,
+                m_avbdScratch->jointLinearInventory,
+                m_avbdScratch->jointAngularInventory,
+                timeStep,
+                solveOptions);
+        if (solveResult.jointLinearRows != 0u
+            || solveResult.jointAngularRows != 0u) {
+          const dvbd::AvbdRigidWorldContactApplyResult projection
+              = dvbd::applyAvbdRigidWorldContactVelocityProjection(
+                  registry, snapshot, timeStep);
+          if (projection.bodies != 0u) {
+            return;
+          }
+        }
+      }
+    }
+
     if (m_avbdScratch != nullptr) {
       m_avbdScratch->clear();
     }
     return;
   }
-
-  auto& registry = world.getRegistry();
 
   // Internal AVBD rigid contact path (PLAN-104 AVBD): when every active contact
   // has at least one body carrying the private opt-in config, assemble the
