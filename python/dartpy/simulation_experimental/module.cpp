@@ -1066,7 +1066,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "set_collision_shape",
           &sim::Link::setCollisionShape,
           nb::arg("shape"))
+      .def(
+          "add_collision_shape",
+          &sim::Link::addCollisionShape,
+          nb::arg("shape"))
       .def_prop_ro("collision_shape", &sim::Link::getCollisionShape)
+      .def_prop_ro("collision_shapes", &sim::Link::getCollisionShapes)
       .def_prop_ro("has_collision_shape", &sim::Link::hasCollisionShape)
       .def_prop_ro("is_valid", &sim::Link::isValid)
       .def("__repr__", [](const sim::Link& self) {
@@ -1448,6 +1453,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           "set_collision_shape",
           &sim::RigidBody::setCollisionShape,
           nb::arg("shape"))
+      .def(
+          "add_collision_shape",
+          &sim::RigidBody::addCollisionShape,
+          nb::arg("shape"))
       .def_prop_rw(
           "is_deformable_surface_ccd_obstacle",
           &sim::RigidBody::isDeformableSurfaceCcdObstacle,
@@ -1457,6 +1466,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::RigidBody::isDeformableGroundBarrier,
           &sim::RigidBody::setDeformableGroundBarrier)
       .def_prop_ro("collision_shape", &sim::RigidBody::getCollisionShape)
+      .def_prop_ro("collision_shapes", &sim::RigidBody::getCollisionShapes)
       .def_prop_ro("has_collision_shape", &sim::RigidBody::hasCollisionShape)
       .def_prop_ro("linear_momentum", &sim::RigidBody::getLinearMomentum)
       .def_prop_ro("angular_momentum", &sim::RigidBody::getAngularMomentum)

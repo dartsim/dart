@@ -1772,7 +1772,7 @@ std::vector<Contact> World::collide()
         {entity, collisionWorld.createObject(std::move(shape), shapePose)});
   };
 
-  // Rigid bodies pose their collision shape from the rigid-body transform.
+  // Rigid bodies pose their collision shapes from the rigid-body transform.
   auto rigidBodyView = m_registry.view<
       comps::CollisionGeometry,
       comps::Transform,
@@ -1784,10 +1784,12 @@ std::vector<Contact> World::collide()
     Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     pose.linear() = transform.orientation.normalized().toRotationMatrix();
     pose.translation() = transform.position;
-    addEntry(entity, geometry.shape, pose);
+    for (const auto& shape : geometry.shapes) {
+      addEntry(entity, shape, pose);
+    }
   }
 
-  // Multibody links pose their collision shape through the frame accessor so
+  // Multibody links pose their collision shapes through the frame accessor so
   // dirty joint-driven caches are refreshed before the query.
   auto linkView
       = m_registry
@@ -1795,7 +1797,9 @@ std::vector<Contact> World::collide()
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
     const Link link(entity, this);
-    addEntry(entity, geometry.shape, link.getWorldTransform());
+    for (const auto& shape : geometry.shapes) {
+      addEntry(entity, shape, link.getWorldTransform());
+    }
   }
 
   // Pairwise narrow-phase queries. Each pair's bodies are known here, so the
@@ -1806,6 +1810,10 @@ std::vector<Contact> World::collide()
   std::vector<Contact> contacts;
   for (std::size_t i = 0; i < entries.size(); ++i) {
     for (std::size_t j = i + 1; j < entries.size(); ++j) {
+      if (entries[i].entity == entries[j].entity) {
+        continue;
+      }
+
       ncol::CollisionResult result;
       if (!collisionWorld.collide(
               entries[i].object, entries[j].object, option, result)) {

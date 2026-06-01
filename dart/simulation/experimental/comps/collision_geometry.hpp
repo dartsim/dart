@@ -35,6 +35,8 @@
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/comps/component_category.hpp>
 
+#include <vector>
+
 namespace dart::simulation::experimental::comps {
 
 /// Collision geometry attached to a body or link.
@@ -45,7 +47,20 @@ struct CollisionGeometry
 {
   DART_EXPERIMENTAL_PROPERTY_COMPONENT(CollisionGeometry);
 
-  CollisionShape shape;
+  std::vector<CollisionShape> shapes;
+
+  [[nodiscard]] bool hasShapes() const
+  {
+    return !shapes.empty();
+  }
+
+  [[nodiscard]] const CollisionShape* getPrimaryShape() const
+  {
+    if (shapes.empty()) {
+      return nullptr;
+    }
+    return &shapes.front();
+  }
 };
 
 /// Tag marking static collision geometry as a one-sided ground barrier for

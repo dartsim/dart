@@ -2062,6 +2062,45 @@ def test_experimental_collision_shape_local_transform():
     assert contacts[0].depth == pytest.approx(0.2, abs=1e-6)
 
 
+def test_experimental_compound_collision_shapes():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    compound = world.add_rigid_body("compound")
+    compound.add_collision_shape(sx.CollisionShape.sphere(0.5))
+    compound.add_collision_shape(sx.CollisionShape.sphere(0.5))
+    compound.add_collision_shape(
+        sx.CollisionShape.sphere(0.5, _translation_transform(2.0, 0.0, 0.0))
+    )
+
+    assert compound.has_collision_shape
+    assert compound.collision_shape.type == sx.CollisionShapeType.SPHERE
+    assert len(compound.collision_shapes) == 3
+    assert len(world.collide()) == 0
+
+    target = world.add_rigid_body("target", position=(2.8, 0.0, 0.0))
+    target.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    assert len(world.collide()) >= 1
+
+    compound.set_collision_shape(sx.CollisionShape.box((0.1, 0.2, 0.3)))
+    assert len(compound.collision_shapes) == 1
+    assert compound.collision_shape.type == sx.CollisionShapeType.BOX
+
+    link_world = sx.World()
+    robot = link_world.add_multibody("robot")
+    base = robot.add_link("base")
+    base.add_collision_shape(sx.CollisionShape.sphere(0.25))
+    base.add_collision_shape(
+        sx.CollisionShape.box(
+            (0.1, 0.2, 0.3), _translation_transform(1.0, 0.0, 0.0)
+        )
+    )
+    assert base.has_collision_shape
+    assert len(base.collision_shapes) == 2
+    assert base.collision_shape.type == sx.CollisionShapeType.SPHERE
+
+
 def test_experimental_collision_shape_capsule():
     sx = _simulation_experimental()
 

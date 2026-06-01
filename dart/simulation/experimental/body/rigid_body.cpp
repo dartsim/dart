@@ -104,6 +104,55 @@ void validateMeshCollisionShape(
 }
 
 //==============================================================================
+void validateCollisionShape(
+    const dart::simulation::experimental::CollisionShape& shape)
+{
+  switch (shape.type) {
+    case dart::simulation::experimental::CollisionShapeType::Sphere:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0,
+          dart::simulation::experimental::InvalidArgumentException,
+          "Sphere collision shape radius must be positive and finite");
+      break;
+    case dart::simulation::experimental::CollisionShapeType::Box:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.halfExtents.allFinite()
+              || (shape.halfExtents.array() <= 0.0).any(),
+          dart::simulation::experimental::InvalidArgumentException,
+          "Box collision shape half extents must be positive and finite");
+      break;
+    case dart::simulation::experimental::CollisionShapeType::Capsule:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.height) || shape.height <= 0.0,
+          dart::simulation::experimental::InvalidArgumentException,
+          "Capsule collision shape radius and height must be positive and "
+          "finite");
+      break;
+    case dart::simulation::experimental::CollisionShapeType::Cylinder:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.height) || shape.height <= 0.0,
+          dart::simulation::experimental::InvalidArgumentException,
+          "Cylinder collision shape radius and height must be positive and "
+          "finite");
+      break;
+    case dart::simulation::experimental::CollisionShapeType::Plane:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.normal.allFinite() || shape.normal.squaredNorm() <= 0.0
+              || !std::isfinite(shape.offset),
+          dart::simulation::experimental::InvalidArgumentException,
+          "Plane collision shape normal must be finite and nonzero, and "
+          "offset must be finite");
+      break;
+    case dart::simulation::experimental::CollisionShapeType::Mesh:
+      validateMeshCollisionShape(shape);
+      break;
+  }
+  validateCollisionShapeTransform(shape);
+}
+
+//==============================================================================
 void validateMass(double mass)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -494,53 +543,25 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  switch (shape.type) {
-    case CollisionShapeType::Sphere:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !std::isfinite(shape.radius) || shape.radius <= 0.0,
-          InvalidArgumentException,
-          "Sphere collision shape radius must be positive and finite");
-      break;
-    case CollisionShapeType::Box:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !shape.halfExtents.allFinite()
-              || (shape.halfExtents.array() <= 0.0).any(),
-          InvalidArgumentException,
-          "Box collision shape half extents must be positive and finite");
-      break;
-    case CollisionShapeType::Capsule:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !std::isfinite(shape.radius) || shape.radius <= 0.0
-              || !std::isfinite(shape.height) || shape.height <= 0.0,
-          InvalidArgumentException,
-          "Capsule collision shape radius and height must be positive and "
-          "finite");
-      break;
-    case CollisionShapeType::Cylinder:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !std::isfinite(shape.radius) || shape.radius <= 0.0
-              || !std::isfinite(shape.height) || shape.height <= 0.0,
-          InvalidArgumentException,
-          "Cylinder collision shape radius and height must be positive and "
-          "finite");
-      break;
-    case CollisionShapeType::Plane:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !shape.normal.allFinite() || shape.normal.squaredNorm() <= 0.0
-              || !std::isfinite(shape.offset),
-          InvalidArgumentException,
-          "Plane collision shape normal must be finite and nonzero, and "
-          "offset must be finite");
-      break;
-    case CollisionShapeType::Mesh:
-      validateMeshCollisionShape(shape);
-      break;
-  }
-  validateCollisionShapeTransform(shape);
+  validateCollisionShape(shape);
 
   auto& registry = getWorld()->getRegistry();
-  comps::CollisionGeometry geometry{shape};
+  comps::CollisionGeometry geometry{{shape}};
   registry.emplace_or_replace<comps::CollisionGeometry>(getEntity(), geometry);
+}
+
+//==============================================================================
+void RigidBody::addCollisionShape(const CollisionShape& shape)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateCollisionShape(shape);
+
+  auto& registry = getWorld()->getRegistry();
+  auto& geometry
+      = registry.get_or_emplace<comps::CollisionGeometry>(getEntity());
+  geometry.shapes.push_back(shape);
 }
 
 //==============================================================================
@@ -602,9 +623,25 @@ std::optional<CollisionShape> RigidBody::getCollisionShape() const
   const auto& registry = getWorld()->getRegistry();
   if (const auto* geometry
       = registry.try_get<comps::CollisionGeometry>(getEntity())) {
-    return geometry->shape;
+    if (const auto* shape = geometry->getPrimaryShape()) {
+      return *shape;
+    }
   }
   return std::nullopt;
+}
+
+//==============================================================================
+std::vector<CollisionShape> RigidBody::getCollisionShapes() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  const auto& registry = getWorld()->getRegistry();
+  if (const auto* geometry
+      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+    return geometry->shapes;
+  }
+  return {};
 }
 
 //==============================================================================
@@ -613,8 +650,10 @@ bool RigidBody::hasCollisionShape() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().all_of<comps::CollisionGeometry>(
-      getEntity());
+  const auto& registry = getWorld()->getRegistry();
+  const auto* geometry
+      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  return geometry != nullptr && geometry->hasShapes();
 }
 
 // getEntity() and isValid() inherited from Frame

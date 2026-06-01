@@ -458,6 +458,11 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
 
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
+  sx::CollisionShape ballCompoundShape
+      = sx::CollisionShape::makeBox(Eigen::Vector3d(0.1, 0.2, 0.3));
+  ballCompoundShape.localTransform.translation()
+      = Eigen::Vector3d(0.5, 0.0, 0.0);
+  ball.addCollisionShape(ballCompoundShape);
 
   auto capsule = world1.addRigidBody("capsule");
   sx::CollisionShape capsuleCollisionShape
@@ -521,6 +526,16 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   ASSERT_TRUE(ballShape.has_value());
   EXPECT_EQ(ballShape->type, sx::CollisionShapeType::Sphere);
   EXPECT_DOUBLE_EQ(ballShape->radius, 0.3);
+  const auto ballShapes = ballRestored->getCollisionShapes();
+  ASSERT_EQ(ballShapes.size(), 2u);
+  EXPECT_EQ(ballShapes[0].type, sx::CollisionShapeType::Sphere);
+  EXPECT_EQ(ballShapes[1].type, sx::CollisionShapeType::Box);
+  EXPECT_TRUE(
+      ballShapes[1].halfExtents.isApprox(
+          Eigen::Vector3d(0.1, 0.2, 0.3), 1e-12));
+  EXPECT_TRUE(
+      ballShapes[1].localTransform.isApprox(
+          ballCompoundShape.localTransform, 1e-12));
 
   auto capsuleRestored = world2.getRigidBody("capsule");
   ASSERT_TRUE(capsuleRestored.has_value());

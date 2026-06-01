@@ -345,73 +345,75 @@ std::optional<CollisionShape> makeHeightmapCollisionShape(
   return CollisionShape::makeMesh(std::move(vertices), std::move(triangles));
 }
 
-/// The first sphere, box, capsule, cylinder, plane, triangular mesh, convex
-/// mesh, heightmap, or soft mesh collision shape of a body (a shape node with a
-/// collision aspect), as an experimental CollisionShape. The shape node's
-/// relative transform becomes the CollisionShape local transform.
-/// Returns nullopt when the body has no representable collision shape;
-/// unsupported shape types and additional shapes per body are skipped.
-std::optional<CollisionShape> translateCollisionShape(
+/// All sphere, box, capsule, cylinder, plane, triangular mesh, convex mesh,
+/// heightmap, or soft mesh collision shapes of a body (shape nodes with a
+/// collision aspect), as experimental CollisionShape values. Each shape node's
+/// relative transform becomes the CollisionShape local transform. Unsupported
+/// shape types are skipped.
+std::vector<CollisionShape> translateCollisionShapes(
     const dynamics::BodyNode& body)
 {
-  std::optional<CollisionShape> result;
+  std::vector<CollisionShape> result;
   body.eachShapeNodeWith<dynamics::CollisionAspect>(
       [&result](const dynamics::ShapeNode* shapeNode) {
-        if (result.has_value() || shapeNode == nullptr) {
+        if (shapeNode == nullptr) {
           return;
         }
         const auto shape = shapeNode->getShape();
         if (!shape) {
           return;
         }
+
+        std::optional<CollisionShape> translated;
         const auto type = shape->getType();
         if (type == dynamics::SphereShape::getStaticType()) {
-          result = CollisionShape::makeSphere(
+          translated = CollisionShape::makeSphere(
               static_cast<const dynamics::SphereShape&>(*shape).getRadius());
         } else if (type == dynamics::BoxShape::getStaticType()) {
           // Legacy box size is the full extent; the facade uses half extents.
-          result = CollisionShape::makeBox(
+          translated = CollisionShape::makeBox(
               static_cast<const dynamics::BoxShape&>(*shape).getSize() / 2.0);
         } else if (type == dynamics::CapsuleShape::getStaticType()) {
           const auto& capsule
               = static_cast<const dynamics::CapsuleShape&>(*shape);
-          result = CollisionShape::makeCapsule(
+          translated = CollisionShape::makeCapsule(
               capsule.getRadius(), capsule.getHeight());
         } else if (type == dynamics::CylinderShape::getStaticType()) {
           const auto& cylinder
               = static_cast<const dynamics::CylinderShape&>(*shape);
-          result = CollisionShape::makeCylinder(
+          translated = CollisionShape::makeCylinder(
               cylinder.getRadius(), cylinder.getHeight());
         } else if (type == dynamics::PlaneShape::getStaticType()) {
           const auto& plane = static_cast<const dynamics::PlaneShape&>(*shape);
-          result
+          translated
               = CollisionShape::makePlane(plane.getNormal(), plane.getOffset());
         } else if (type == dynamics::MeshShape::getStaticType()) {
           const auto& mesh = static_cast<const dynamics::MeshShape&>(*shape);
-          result = makeMeshCollisionShape(mesh.getTriMesh(), mesh.getScale());
+          translated
+              = makeMeshCollisionShape(mesh.getTriMesh(), mesh.getScale());
         } else if (type == dynamics::ConvexMeshShape::getStaticType()) {
           const auto& convex
               = static_cast<const dynamics::ConvexMeshShape&>(*shape);
-          result = makeMeshCollisionShape(
+          translated = makeMeshCollisionShape(
               convex.getMesh(), Eigen::Vector3d::Ones());
         } else if (type == dynamics::HeightmapShaped::getStaticType()) {
           const auto& heightmap
               = static_cast<const dynamics::HeightmapShaped&>(*shape);
-          result = makeHeightmapCollisionShape(heightmap);
+          translated = makeHeightmapCollisionShape(heightmap);
         } else if (type == dynamics::HeightmapShapef::getStaticType()) {
           const auto& heightmap
               = static_cast<const dynamics::HeightmapShapef&>(*shape);
-          result = makeHeightmapCollisionShape(heightmap);
+          translated = makeHeightmapCollisionShape(heightmap);
         } else if (type == dynamics::SoftMeshShape::getStaticType()) {
           const auto& soft
               = static_cast<const dynamics::SoftMeshShape&>(*shape);
-          result = makeMeshCollisionShape(
+          translated = makeMeshCollisionShape(
               soft.getTriMesh(), Eigen::Vector3d::Ones());
         }
-        if (result.has_value()) {
-          result->localTransform = shapeNode->getRelativeTransform();
+        if (translated.has_value()) {
+          translated->localTransform = shapeNode->getRelativeTransform();
+          result.push_back(std::move(*translated));
         }
-        // Additional collision shapes per body are not yet translated.
       });
   return result;
 }
@@ -434,7 +436,7 @@ struct LinkPlan
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
   Eigen::VectorXd position; // copied generalized state; empty when not copied
   Eigen::VectorXd velocity;
-  std::optional<CollisionShape> collisionShape;
+  std::vector<CollisionShape> collisionShapes;
 };
 
 } // namespace
@@ -523,7 +525,7 @@ Multibody buildMultibodyFromSkeleton(
       plan.velocity = std::move(velocity);
     }
     if (options.loadCollisionShapes) {
-      plan.collisionShape = translateCollisionShape(*body);
+      plan.collisionShapes = translateCollisionShapes(*body);
     }
 
     plans.push_back(std::move(plan));
@@ -564,8 +566,8 @@ Multibody buildMultibodyFromSkeleton(
             || plan.spec.type == JointType::Prismatic)) {
       copyJointProperties(*plan.joint, parentJoint);
     }
-    if (plan.collisionShape.has_value()) {
-      link.setCollisionShape(*plan.collisionShape);
+    for (const auto& shape : plan.collisionShapes) {
+      link.addCollisionShape(shape);
     }
 
     linkOf.emplace(plan.body, link);

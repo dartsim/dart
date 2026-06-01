@@ -2996,6 +2996,46 @@ TEST(World, CollisionQueryUsesShapeLocalTransform)
   EXPECT_NEAR(contacts.front().depth, 0.2, 1e-6);
 }
 
+// Test that multiple shapes on the same rigid body behave as compound
+// collision geometry and do not self-collide.
+TEST(World, CollisionQuerySupportsCompoundRigidBodyShapes)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto compound = world.addRigidBody("compound");
+  compound.addCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  compound.addCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::CollisionShape offsetSphere = sx::CollisionShape::makeSphere(0.5);
+  offsetSphere.localTransform.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  compound.addCollisionShape(offsetSphere);
+
+  ASSERT_EQ(compound.getCollisionShapes().size(), 3u);
+  ASSERT_TRUE(compound.getCollisionShape().has_value());
+  EXPECT_EQ(compound.getCollisionShape()->type, sx::CollisionShapeType::Sphere);
+
+  EXPECT_TRUE(world.collide().empty());
+
+  sx::RigidBodyOptions targetOptions;
+  targetOptions.position = Eigen::Vector3d(2.8, 0.0, 0.0);
+  auto target = world.addRigidBody("target", targetOptions);
+  target.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  for (const auto& contact : contacts) {
+    EXPECT_NE(contact.bodyA.getEntity(), contact.bodyB.getEntity());
+  }
+
+  compound.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  const auto replacedShapes = compound.getCollisionShapes();
+  ASSERT_EQ(replacedShapes.size(), 1u);
+  EXPECT_EQ(replacedShapes.front().type, sx::CollisionShapeType::Box);
+}
+
 // Test that capsule shapes are bridged into the native collision query.
 TEST(World, CollisionQuerySupportsCapsuleShape)
 {

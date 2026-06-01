@@ -813,6 +813,13 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     handle (a rigid body or a link) via `body_a`/`body_b`, with
     `name`/`is_rigid_body`/`is_link`/`as_rigid_body`/`as_link`. The rigid-body
     contact response stage skips link pairs (their response is a later slice).
+  - Experimental rigid bodies and links can now carry multiple collision shapes
+    as compound geometry. `setCollisionShape` remains a replace-with-one API,
+    while `addCollisionShape` appends shapes and `getCollisionShapes` returns
+    the full list (dartpy: `add_collision_shape`, `collision_shapes`). Model
+    loading imports every representable collision shape node on a body, binary
+    serialization stores the full shape list, and `World::collide()` skips
+    same-entity shape pairs so compound pieces do not self-collide.
   - Added an experimental articulated contact response: multibody links with
     collision shapes now rest on static rigid-body obstacles. `World::step()`
     resolves each link-vs-static contact with a unilateral normal impulse using

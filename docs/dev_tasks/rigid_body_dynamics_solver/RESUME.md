@@ -195,14 +195,15 @@ Current work is on branch `feature/experimental-model-loader` in
 The branch is ahead of `origin/feature/experimental-model-loader` with local
 model-loading/contact follow-up commits. Current slices on the branch cover
 cross-multibody/link contacts, row-island unified constraints, preserved
-collision shape offsets, and capsule/cylinder/plane collision shape support. The
-worktree should be clean after the current shape slice is committed; verify with
-`git status -sb` before continuing or publishing.
+collision shape offsets, capsule/cylinder/plane/mesh-like collision shape
+support, and multiple collision shapes per body/link. The worktree should be
+clean after the current shape slice is committed; verify with `git status -sb`
+before continuing or publishing.
 
 Current validation for the model-loading/collision-shape line:
 `pixi run lint`, `pixi run build`, `pixi run build-simulation-experimental-tests`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -L
-simulation-experimental` (44/44), and `pixi run test-py` (403 passed).
+simulation-experimental` (44/44), and `pixi run test-py` (404 passed).
 
 ### Committed: pre-joint offset on `JointSpec`
 
@@ -253,8 +254,11 @@ model-loading bridge as experimental mesh collision shapes; `HeightmapShape`
 instances are triangulated into the same carrier, and `SoftMeshShape` instances
 snapshot their point-mass mesh into that carrier. Triangular meshes also
 round-trip through C++, dartpy, serialization, and native collision queries.
-Deformable obstacle barriers still consume sphere/box only. Additional shapes
-per body remain Phase 2 shape backlog.
+Multiple shapes per body/link are stored as compound collision geometry,
+serialized in binary format v11, exposed in C++/dartpy, imported from all
+representable collision shape nodes in the model-loading bridge, and skipped for
+same-entity self collision in `World::collide()`. Deformable obstacle barriers
+still consume the first sphere/box shape only.
 
 **Resume here — Subsystem A (the remaining headline gap):**
 
@@ -779,9 +783,11 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     serialization, and dartpy bindings all use that local transform.
     `ConvexMeshShape` model-loading translation reuses the experimental mesh
     carrier, `HeightmapShape` is triangulated into the same carrier, and
-    `SoftMeshShape` snapshots its point-mass mesh into that carrier. Deformable
-    obstacle queries still consume sphere/box barriers only. Additional shapes
-    per body are still skipped. Subsystem B model loading is otherwise complete.
+    `SoftMeshShape` snapshots its point-mass mesh into that carrier. Multiple
+    representable collision shape nodes per body/link are imported, serialized,
+    exposed in C++/dartpy, and collided as compound geometry without same-entity
+    self contacts. Deformable obstacle queries still consume the first
+    sphere/box barrier only. Subsystem B model loading is otherwise complete.
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),
@@ -824,9 +830,8 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 2:** additional shapes per body, self-collision/filtering,
-  broad-phase pruning, a persistent collision world instead of rebuilding per
-  `collide()`.
+- **Phase 2:** self-collision/filtering, broad-phase pruning, a persistent
+  collision world instead of rebuilding per `collide()`.
 - **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
   mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,

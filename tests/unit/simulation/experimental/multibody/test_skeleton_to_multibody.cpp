@@ -55,6 +55,7 @@
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
@@ -614,6 +615,9 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
       = std::make_shared<dd::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
   auto* shapeNode = body->createShapeNode(boxShape);
   shapeNode->createCollisionAspect();
+  auto* secondShapeNode = body->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::SphereShape>(0.05));
+  secondShapeNode->setRelativeTransform(translation(0.2, -0.1, 0.3));
 
   sx::World world;
   sx::Multibody multibody
@@ -632,6 +636,13 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
       1e-12);
   EXPECT_TRUE(
       shape->localTransform.isApprox(Eigen::Isometry3d::Identity(), 1e-12));
+  const auto shapes = link->getCollisionShapes();
+  ASSERT_EQ(shapes.size(), 2u);
+  EXPECT_EQ(shapes[0].type, sx::CollisionShapeType::Box);
+  EXPECT_EQ(shapes[1].type, sx::CollisionShapeType::Sphere);
+  EXPECT_DOUBLE_EQ(shapes[1].radius, 0.05);
+  EXPECT_TRUE(
+      shapes[1].localTransform.isApprox(translation(0.2, -0.1, 0.3), 1e-12));
 
   // load_collision_shapes = false skips translation.
   sx::World plain;
