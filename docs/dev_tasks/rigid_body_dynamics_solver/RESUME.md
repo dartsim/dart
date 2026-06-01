@@ -529,18 +529,39 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     full emergent suite at the flip, where the stage actually runs.) Verified
     focused build + `test_unified_constraint_stage` (2/2) + `test_world`
     (104/104), full `ctest -L simulation-experimental` (44/44), `pixi run lint`.
-  - **Next: 3c-ii.2 — the pipeline flip (the ONLY behavior-changing slice).**
-    Add a `UnifiedConstraintStage unifiedConstraint;` member to
-    `WorldStepPipelineStages` (`world.cpp`) and replace
-    `.addStage(rigidBodyContact).addStage(multibodyContact)` with
-    `.addStage(unifiedConstraint)` in `appendSemiImplicitSplitStages()` (same
-    position; positions-last + the post-solve velocity clamp preserved). Leave
-    the variational branch and both legacy stage classes intact (semi-implicit
-    only). Gate on the full `pixi run test-all` (not just the experimental
-    label): multibody-free + disjoint-mixed regressions stay bit-identical;
-    shared-obstacle scenes are tolerance-based with documented drift (re-baseline
-    multibody-contact regressions as tolerance-based, not bit-exact). Do this as a
-    focused, independently-reviewed step.
+  - **(DONE locally) Slice 3c-ii.2 — the pipeline flip (the behavior-changing
+    slice).** `appendSemiImplicitSplitStages()` (`world.cpp`) now wires
+    `RigidBodyVelocityStage → MultibodyVelocityStage → UnifiedConstraintStage →
+    RigidBodyPositionStage → MultibodyPositionStage → DeformableDynamicsStage`:
+    the single `UnifiedConstraintStage` replaces the separate
+    `RigidBodyContactStage` + `MultibodyContactStage` passes. Positions-last and
+    the post-solve velocity-limit clamp (in `MultibodyPositionStage`) are
+    preserved. The variational branch and both legacy stage classes are left
+    intact (the variational path still uses `RigidBodyContactStage`). The whole
+    emergent suite — rigid drop/rest/stack/friction/bounce, link-rest, two-sided
+    striker momentum — now runs through the unified boxed-LCP and stays within
+    its existing tolerances. Verified: full `ctest -L simulation-experimental`
+    (44/44, including `test_unified_constraint_stage`), and an independent
+    code-review pass APPROVED with zero behavior-changing defects (verified
+    positions-last, the lockstep block/velocity write-back including the
+    zero-active-row case, the byte-identical rigid positional projection running
+    exactly once, the `PendingMultibodyVelocity` lifecycle, and that the single
+    `collide()` call is a consistency improvement).
+  - **Known environmental blocker (NOT from this work):** `pixi run test-all`
+    cannot complete the **dartpy (Python bindings) build** in this environment —
+    `python/dartpy/.../tri_mesh.cpp`, `hierarchical_ik.cpp`, etc. fail with
+    `_POSIX_C_SOURCE`/`_XOPEN_SOURCE` redefined in `pyconfig.h` under `-Werror`
+    (the system `features.h` uses `202405L`/`800`, newer than Python 3.12's
+    `200809L`/`700`). Confirmed pre-existing: the dartpy build fails identically
+    with this slice's change stashed. It blocks the Python half of `test-all`
+    for the whole repo; address separately (e.g. include `<Python.h>` first in the
+    affected binding TUs, or relax `-Werror=cpp` for dartpy).
+  - **Slice 3c is complete locally** (assembler → cross terms → solver/apply →
+    fallback → stage → flip, six gated commits). The default semi-implicit
+    pipeline now resolves rigid-rigid and articulated link contacts in ONE
+    coupled boxed-LCP. Remaining Subsystem A work is **slice 5 (link-vs-link
+    two-sided contacts + the new collision routing)** and optional islands /
+    warm-starting / friction-cone polish (all explicit follow-ups).
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2

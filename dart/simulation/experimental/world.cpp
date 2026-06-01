@@ -202,6 +202,7 @@ struct WorldStepPipelineStages
   compute::MultibodyVelocityStage multibodyVelocity;
   compute::MultibodyContactStage multibodyContact;
   compute::MultibodyPositionStage multibodyPosition;
+  compute::UnifiedConstraintStage unifiedConstraint;
   compute::MultibodyVariationalIntegrationStage multibodyVariational;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
@@ -241,10 +242,15 @@ private:
 
   void appendSemiImplicitSplitStages()
   {
+    // One coupled boxed-LCP over all rigid-rigid and articulated link contacts
+    // replaces the separate RigidBodyContactStage + MultibodyContactStage
+    // passes (kept for the variational branch). Positions-last is preserved
+    // (both velocity stages precede the solve, both position stages follow),
+    // and the joint velocity-limit clamp stays post-solve in
+    // MultibodyPositionStage.
     pipeline.addStage(rigidBodyVelocity)
         .addStage(multibodyVelocity)
-        .addStage(rigidBodyContact)
-        .addStage(multibodyContact)
+        .addStage(unifiedConstraint)
         .addStage(rigidBodyPosition)
         .addStage(multibodyPosition)
         .addStage(deformableDynamics);
