@@ -8692,16 +8692,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D vertex-face row: a tetrahedral pyramid vertex falls under gravity toward a separate fixed tetrahedral pyramid face, activates rigid IPC contact, stays finite, and reports no meaningful native overlap after each step.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::vertex_face",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.VertexFaceFixtureRowStaysSeparated",
       "required_assets_or_importer": [
         "meshes/tet-pyramid.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::vertex_face",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.VertexFaceFixtureRowStaysSeparated'",
+      "notes_or_gap": "Covered by DART-owned tetrahedral vertex-face runtime coverage for the 3D unit-test fixture mechanism and its non-visual Fig. 16 paper-unit alias. Vertex-vertex, edge-edge, and tet-corner rows remain planned until they have topology-specific DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/vertex-vertex.json",
@@ -9394,16 +9394,16 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the non-visual Fig. 16 vertex-face unit-test alias: a tetrahedral pyramid vertex falls under gravity toward a separate fixed tetrahedral pyramid face, activates rigid IPC contact, stays finite, and reports no meaningful native overlap after each step.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::vertex_face",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.VertexFaceFixtureRowStaysSeparated",
       "required_assets_or_importer": [
         "meshes/tet-pyramid.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::vertex_face",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.VertexFaceFixtureRowStaysSeparated'",
+      "notes_or_gap": "This paper-unit row aliases the audited 3D vertex-face unit-test fixture, so it is retired by the same DART-owned runtime coverage. Visual paper-figure rows still require example and headless visual evidence before retirement."
     },
     {
       "upstream_path": "fixtures/paper-figures/16-unit-tests/vertex-vertex.json",

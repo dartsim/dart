@@ -1039,6 +1039,54 @@ TEST(RigidIpcPaperExperiments, FaceVertexFixtureRowStaysSeparated)
   EXPECT_TRUE(moving.getLinearVelocity().allFinite());
 }
 
+TEST(RigidIpcPaperExperiments, VertexFaceFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  const Eigen::AngleAxisd flip(std::numbers::pi, Eigen::Vector3d::UnitY());
+
+  sx::RigidBodyOptions fixedOptions;
+  fixedOptions.isStatic = true;
+  fixedOptions.position = Eigen::Vector3d::Zero();
+  fixedOptions.orientation = flip;
+  auto fixed = world.addRigidBody("vertex_face_fixed_tet", fixedOptions);
+  fixed.setCollisionShape(makeTetPyramidMesh());
+
+  sx::RigidBodyOptions movingOptions;
+  movingOptions.mass = 1.0;
+  movingOptions.position = Eigen::Vector3d(0.0, 0.0, 1.15);
+  movingOptions.orientation = flip;
+  auto moving = world.addRigidBody("vertex_face_moving_tet", movingOptions);
+  moving.setCollisionShape(makeTetPyramidMesh());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startZ = moving.getTranslation().z();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_LT(moving.getTranslation().z(), startZ - 0.2);
+  EXPECT_TRUE(moving.getTranslation().allFinite());
+  EXPECT_TRUE(moving.getLinearVelocity().allFinite());
+}
+
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
 {
   sx::World world;
