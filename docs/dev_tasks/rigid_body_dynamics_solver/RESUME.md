@@ -170,9 +170,9 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
 
 Historical gates passed at each slice: `pixi run lint`, focused C++ tests
 (`test_world`, `test_serialization`, `test_compute_graph`), and
-`test_experimental_world.py`. The current re-alignment merge is in progress on
-the `feature/experimental-rigid-body-dynamics` branch and still needs local
-verification before pushing.
+`test_experimental_world.py`. The current `feature/experimental-model-loader`
+branch has been reconciled with `origin/main` and locally validated; it is not
+associated with a hosted PR yet.
 
 Key implementation note: each link's center of mass is assumed at the link frame
 origin; the joint motion subspace is transformed by the post-joint link offset
@@ -193,17 +193,23 @@ Current work is on branch `feature/experimental-model-loader` in
 ### Local branch state
 
 The branch is ahead of `origin/feature/experimental-model-loader` with local
-model-loading/contact follow-up commits. Current slices on the branch cover
+model-loading/contact follow-up commits plus the latest merge from `origin/main`
+(`a806d68cd3a3a79441314d4599b6991adc580d26`). Current slices on the branch cover
 cross-multibody/link contacts, row-island unified constraints, preserved
 collision shape offsets, capsule/cylinder/plane/mesh-like collision shape
-support, and multiple collision shapes per body/link. The worktree should be
-clean after the current shape slice is committed; verify with `git status -sb`
-before continuing or publishing.
+support, and multiple collision shapes per body/link. As of 2026-06-01, `gh pr
+list --head feature/experimental-model-loader` reports no associated PR.
 
-Current validation for the model-loading/collision-shape line:
-`pixi run lint`, `pixi run build`, `pixi run build-simulation-experimental-tests`,
-`ctest --test-dir build/default/cpp/Release --output-on-failure -L
-simulation-experimental` (44/44), and `pixi run test-py` (404 passed).
+Current validation for the reconciled model-loading/collision-shape line:
+`pixi run update-api-boundary-inventory`,
+`pixi run check-api-boundary-inventory`,
+`pixi run build-simulation-experimental-tests`,
+`pixi run test-simulation-experimental` (52/52),
+`pixi run test-py` (486 passed, 9 skipped), `pixi run lint`,
+`pixi run test-all`, and `pixi run -e cuda test-all` all passed. The docs build
+still emits four non-fatal autodoc warnings from generated dartpy stubs around
+`LocalResource.get_size = getSize`; they did not fail either default or CUDA
+`test-all`.
 
 ### Committed: pre-joint offset on `JointSpec`
 
@@ -705,10 +711,11 @@ demos). The blocker described in earlier sessions is resolved.
 **All joint types are implemented and verified** (fixed, revolute, prismatic,
 screw, universal, planar, ball, free) with a floating base via a `Free` joint,
 including the config-dependent-subspace `cJ` term and SO(3)/SE(3) manifold
-integration. **Subsystem B (model loading) is now started** — see below.
-The remaining work is Subsystem A (coupled boxed-LCP) and the rest of
-Subsystem B, each a dedicated multi-session effort with a specific
-architectural prerequisite, detailed below.
+integration. **Subsystem B (model loading) and the Subsystem A unified contact
+solve are both well underway** — see below. The immediate next step is to decide
+whether to publish `feature/experimental-model-loader` as a new PR or continue
+locally with a smaller follow-up slice such as visual geometry/material loading,
+richer load diagnostics, or warm-starting/friction-cone polish.
 
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
@@ -900,9 +907,10 @@ response)** and beyond.
    sphere shape descends under gravity and rests on a static rigid ground
    (penetration stops, normal velocity -> 0).
 
-When committing this session's work: create a feature branch, run the pre-commit
-checklist (`pixi run lint`, build, tests), and open a PR with milestone
-`DART 7.0`.
+When publishing this branch: preserve the local merge commit from `origin/main`,
+push only after explicit maintainer approval, and open a PR with milestone
+`DART 7.0`. The branch already has the default and CUDA `test-all` gates passing
+after the merge.
 
 ## Context That Would Be Lost
 
@@ -928,8 +936,8 @@ checklist (`pixi run lint`, build, tests), and open a PR with milestone
 ## How To Resume
 
 ```bash
-cd /home/js/dev/dartsim/dart/task_2
-git status && git log -3 --oneline
+cd /home/js/dev/dartsim/dart/task_1
+git status -sb && git log -3 --oneline
 ```
 
 Then read, in order:
