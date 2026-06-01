@@ -199,6 +199,10 @@
   - [x] Add the first audited tessellated-plane fixture coverage through the
         opt-in runtime stage. A cube falls onto a fixed two-triangle mesh plane,
         activates contact, stays finite, and preserves nonnegative clearance.
+  - [x] Add audited two-triangle tet fixture coverage through the opt-in runtime
+        stage. A tetrahedral corner falls onto a fixed two-triangle mesh plane,
+        activates rigid IPC contact, stays finite, and reports no meaningful
+        native overlap after each step.
   - [x] Add audited large-mass-ratio fixture coverage through the opt-in runtime
         stage. A large heavy cube closes into a small cube resting above a fixed
         mesh plane while both contacts preserve nonnegative clearance and finite
@@ -380,7 +384,11 @@
   - [x] Mark the audited 3D two-triangle tessellated-plane unit-test fixture row
         (`fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`) as
         implemented after cube-on-two-triangle-plane runtime coverage landed.
-        The tet and 8K tessellated-plane rows remain planned.
+        The 8K tessellated-plane row remains planned.
+  - [x] Mark the audited 3D two-triangle tet unit-test fixture row
+        (`fixtures/3D/unit-tests/tessellated-plane/two-triangles-tet.json`) as
+        implemented after tet-corner-on-two-triangle-plane runtime overlap
+        coverage landed.
   - [x] Mark the audited 3D large-mass-ratio unit-test fixture row
         (`fixtures/3D/unit-tests/large-mass-ratio.json`) and its non-visual
         Fig. 16 paper-unit alias as implemented after large-cube/small-cube
@@ -528,19 +536,21 @@ DART-owned implementation.
   scaled-sphere/ellipsoid unit-test fixture rows are marked implemented through
   no-contact orientation integration coverage. The five-cubes unit-test fixture
   row and its non-visual Fig. 16 paper-unit alias are marked implemented
-  through stacked-box runtime clearance coverage. The cube-falling-on-edge
-  fixture row is marked implemented through tilted-cube-on-edge runtime overlap
-  coverage. The face-vertex unit-test fixture row and its non-visual Fig. 16
-  paper-unit alias are marked implemented through tetrahedral face-vertex
-  runtime overlap coverage. The vertex-face unit-test fixture row and its
-  non-visual Fig. 16 paper-unit alias are marked implemented through
-  tetrahedral vertex-face runtime overlap coverage. The vertex-vertex unit-test
-  fixture row and its non-visual Fig. 16 paper-unit alias are marked implemented
-  through tetrahedral vertex-vertex runtime overlap coverage. The tet-corner
+  through stacked-box runtime clearance coverage. The two-triangle tet fixture
+  row is marked implemented through tet-corner-on-two-triangle-plane runtime
+  overlap coverage. The cube-falling-on-edge fixture row is marked implemented
+  through tilted-cube-on-edge runtime overlap coverage. The face-vertex
   unit-test fixture row and its non-visual Fig. 16 paper-unit alias are marked
-  implemented through tetrahedral corner-in-walls runtime overlap coverage. The
-  torque rotation fixture row is marked implemented through no-contact
-  applied-torque coverage. The `mu=0.5`
+  implemented through tetrahedral face-vertex runtime overlap coverage. The
+  vertex-face unit-test fixture row and its non-visual Fig. 16 paper-unit alias
+  are marked implemented through tetrahedral vertex-face runtime overlap
+  coverage. The vertex-vertex unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias are marked implemented through tetrahedral vertex-vertex
+  runtime overlap coverage. The tet-corner unit-test fixture row and its
+  non-visual Fig. 16 paper-unit alias are marked implemented through
+  tetrahedral corner-in-walls runtime overlap coverage. The torque rotation
+  fixture row is marked implemented through no-contact applied-torque coverage.
+  The `mu=0.5`
   threshold rows remain planned because they still need matching DART stick
   evidence.
   The rigid-body hash-grid source row is marked implemented through the

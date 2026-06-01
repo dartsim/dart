@@ -188,9 +188,24 @@ IMPLEMENTED_FIXTURE_ROWS = {
         ),
         "notes_or_gap": (
             "Covered by DART-owned cube-on-two-triangle-plane runtime "
-            "coverage for the 3D unit-test fixture mechanism. The "
-            "two-triangle tet and 8K tessellated-plane rows remain planned "
-            "until they have matching topology-specific DART runtime evidence."
+            "coverage for the 3D unit-test fixture mechanism. The 8K "
+            "tessellated-plane row remains planned until it has matching "
+            "topology-specific DART runtime evidence."
+        ),
+    },
+    "fixtures/3D/unit-tests/tessellated-plane/two-triangles-tet.json": {
+        "test": "TetCornerFallsOnTwoTrianglePlaneFixtureRow",
+        "expected_invariant": (
+            "DART covers the audited 3D two-triangle tet row: a tetrahedral "
+            "corner falls under gravity onto a fixed two-triangle mesh plane, "
+            "activates rigid IPC contact, stays finite, and reports no "
+            "meaningful native overlap after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned tet-corner-on-two-triangle-plane runtime "
+            "coverage for the 3D unit-test fixture mechanism. The 8K "
+            "tessellated-plane row remains planned until it has matching "
+            "topology-specific DART runtime evidence."
         ),
     },
     "fixtures/3D/unit-tests/5-cubes.json": {
