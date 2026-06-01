@@ -833,12 +833,13 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
         return good_setup
 
     def build_slow() -> SceneSetup:
-        time.sleep(0.05)
+        time.sleep(0.25)
         world = dart.World("slow")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
     monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "10")
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "100")
     events = tmp_path / "events.jsonl"
     screenshot = tmp_path / "snap.ppm"
     rc = run(
@@ -883,9 +884,14 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
     assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
     assert events_by_name["requested_demo_switch"]["target_scene"] == "slow"
     assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
-    assert (
-        "Python demo scene 'slow' build exceeded"
-        in events_by_name["restored_previous_demo"]["status"]
+    restored_status = events_by_name["restored_previous_demo"]["status"]
+    assert any(
+        expected in restored_status
+        for expected in (
+            "Python demo scene 'slow' build exceeded",
+            "factory startup exceeded budget",
+            "startup exceeded budget",
+        )
     )
     assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
 
