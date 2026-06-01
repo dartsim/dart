@@ -223,6 +223,10 @@
         stage. An inverted spike rests on a fixed upright spike, activates rigid
         IPC contact, stays finite, and reports no meaningful native overlap
         after each step.
+  - [x] Add audited Erleben wedges fixture coverage through the opt-in runtime
+        stage. An inverted wedge rests on a fixed upright wedge, activates rigid
+        IPC contact, stays finite, and reports no meaningful native overlap
+        after each step.
   - [x] Add audited large-mass-ratio fixture coverage through the opt-in runtime
         stage. A large heavy cube closes into a small cube resting above a fixed
         mesh plane while both contacts preserve nonnegative clearance and finite
@@ -424,6 +428,9 @@
   - [x] Mark the audited Erleben spikes unit-test fixture row
         (`fixtures/3D/unit-tests/erleben/spikes.json`) as implemented after
         spike-on-spike runtime overlap coverage landed.
+  - [x] Mark the audited Erleben wedges unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/wedges.json`) as implemented after
+        wedge-on-wedge runtime overlap coverage landed.
   - [x] Mark the audited 3D large-mass-ratio unit-test fixture row
         (`fixtures/3D/unit-tests/large-mass-ratio.json`) and its non-visual
         Fig. 16 paper-unit alias as implemented after large-cube/small-cube
@@ -578,10 +585,11 @@ DART-owned implementation.
   Erleben sliding-spike and sliding-wedge fixture rows are marked implemented
   through sliding-body-on-plane runtime overlap coverage. The Erleben spikes
   fixture row is marked implemented through spike-on-spike runtime overlap
-  coverage. The cube-falling-on-edge fixture row is marked implemented through
-  tilted-cube-on-edge runtime overlap coverage. The face-vertex unit-test
-  fixture row and its non-visual Fig. 16 paper-unit alias are marked implemented
-  through tetrahedral face-vertex
+  coverage, and the Erleben wedges fixture row is marked implemented through
+  wedge-on-wedge runtime overlap coverage. The cube-falling-on-edge fixture row
+  is marked implemented through tilted-cube-on-edge runtime overlap coverage.
+  The face-vertex unit-test fixture row and its non-visual Fig. 16 paper-unit
+  alias are marked implemented through tetrahedral face-vertex
   runtime overlap coverage. The vertex-face unit-test fixture row and its
   non-visual Fig. 16 paper-unit alias are marked implemented through
   tetrahedral vertex-face runtime overlap coverage. The vertex-vertex unit-test

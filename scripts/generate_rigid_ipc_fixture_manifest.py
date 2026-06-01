@@ -252,6 +252,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "planned until they have topology-specific DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/erleben/wedges.json": {
+        "test": "ErlebenWedgesFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited Erleben wedges row: an inverted wedge "
+            "rests on a fixed upright wedge, activates rigid IPC contact, "
+            "stays finite, and reports no meaningful native overlap after "
+            "each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned wedge-on-wedge runtime coverage for the "
+            "3D unit-test fixture mechanism. Other Erleben rows remain "
+            "planned until they have topology-specific DART runtime evidence."
+        ),
+    },
     "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json": {
         "test": "CubeSettlesOnTwoTrianglePlaneFixtureRow",
         "expected_invariant": (
