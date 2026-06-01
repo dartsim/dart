@@ -90,18 +90,57 @@ Suggested (Unverified):
 ```bash
 N=$(( ( $(nproc) * 2 ) / 3 ))
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test-all
+if [ "$(uname -s)" = "Linux" ] && command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi -L >/dev/null 2>&1; then
+  DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e cuda test-all
+fi
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
 Signals to look for:
 
 - The full test run ends with `✓ All tests passed!`
+- On a Linux CUDA host, the CUDA-environment run also ends with
+  `✓ All tests passed!`
 - The Gazebo integration workflow prints `✓ Full gz-physics suite passed and DART plugin links successfully!`
+
+### CUDA Validation
+
+`pixi run test-all` validates the default CPU/dartpy environment. It does not
+prove CUDA runtime coverage by itself. When a Linux host exposes an NVIDIA CUDA
+runtime, also run:
+
+```bash
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e cuda test-all
+```
+
+The CUDA-environment `test-all` preserves the `cuda` Pixi environment for nested
+tasks, builds the CUDA targets, runs CTest coverage labelled
+`simulation-experimental-cuda`, and then runs `pixi run -e cuda test-cuda` when a
+CUDA runtime is detected. The CUDA smoke task currently covers:
+
+- `test_rigid_body_state_batch_cuda`
+- `test_deformable_psd_projection_cuda`
+- `test_vbd_block_descent_cuda`
+- `bm_cuda_rigid_body_state_batch`
+- `bm_vbd_cuda`
+
+When `DART_CUDA_ARCHITECTURES` is unset and `nvidia-smi` reports visible GPUs,
+the CUDA Pixi config auto-detects compute capabilities and passes concrete CUDA
+architectures to CMake. This avoids relying on PTX JIT compatibility between a
+newer Pixi CUDA toolkit and the installed NVIDIA driver. Set
+`DART_CUDA_ARCHITECTURES=<arch>` to override the detected list.
+
+If the `cuda` environment is active but no CUDA runtime is detected, `test-all`
+still validates the CUDA build path and reports that runtime tests were skipped.
+Do not report GPU runtime validation from that run.
 
 ## Gotchas
 
 - The first lint run can take a while and it runs auto-fixers; expect diffs, rerun if interrupted, and check `git status` before committing.
 - `pixi run test-all` runs linting and documentation builds as part of the suite; expect longer runtime and potential formatting diffs, so review changes before committing.
+- `pixi run -e cuda test-all` is Linux-only because the `cuda` Pixi environment
+  is Linux-only. It requires a visible NVIDIA runtime to execute GPU runtime
+  checks; otherwise CUDA tests are build-only or skipped.
 - `pixi run lint` can rewrite identifiers via codespell; if a spelling or casing is intentional, add it to `.codespellrc` and re-run lint.
 - If pixi reports a missing task or feature, your `pixi.toml` may be out of sync with the target branch; update it before retrying.
 

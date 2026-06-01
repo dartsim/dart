@@ -78,6 +78,21 @@ DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OV
 DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
 DART_BUILD_DIFF_VALUE=${DART_BUILD_DIFF_OVERRIDE:-OFF}
 DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_CUDA_ARCHITECTURES_VALUE}" ] \
+  && command -v nvidia-smi >/dev/null 2>&1; then
+  if DETECTED_CUDA_ARCHITECTURES=$(
+    nvidia-smi --query-gpu=compute_cap --format=csv,noheader \
+      | tr -cd '0-9\n' \
+      | sed '/^$/d' \
+      | sort -u \
+      | paste -sd';' -
+  ); then
+    if [ -n "${DETECTED_CUDA_ARCHITECTURES}" ]; then
+      DART_CUDA_ARCHITECTURES_VALUE=${DETECTED_CUDA_ARCHITECTURES}
+    fi
+  fi
+fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_FILAMENT_PLATFORM_DEFAULT=OFF
@@ -98,6 +113,10 @@ if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
 fi
 DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_DISABLE_COMPILER_CACHE:-}" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -123,10 +142,12 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  # Do not automatically reuse the C++ launcher for nvcc. sccache can leave
+  # nvcc/fatbinary without its generated PTX input on local CUDA builds.
   if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
     LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
-  elif [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
-    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+  else
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
   fi
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
@@ -397,6 +418,21 @@ DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OV
 DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
 DART_BUILD_DIFF_VALUE=${DART_BUILD_DIFF_OVERRIDE:-OFF}
 DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_CUDA_ARCHITECTURES_VALUE}" ] \
+  && command -v nvidia-smi >/dev/null 2>&1; then
+  if DETECTED_CUDA_ARCHITECTURES=$(
+    nvidia-smi --query-gpu=compute_cap --format=csv,noheader \
+      | tr -cd '0-9\n' \
+      | sed '/^$/d' \
+      | sort -u \
+      | paste -sd';' -
+  ); then
+    if [ -n "${DETECTED_CUDA_ARCHITECTURES}" ]; then
+      DART_CUDA_ARCHITECTURES_VALUE=${DETECTED_CUDA_ARCHITECTURES}
+    fi
+  fi
+fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_FILAMENT_PLATFORM_DEFAULT=OFF
@@ -417,6 +453,10 @@ if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
 fi
 DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_DISABLE_COMPILER_CACHE:-}" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -442,10 +482,12 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  # Do not automatically reuse the C++ launcher for nvcc. sccache can leave
+  # nvcc/fatbinary without its generated PTX input on local CUDA builds.
   if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
     LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
-  elif [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
-    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+  else
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
   fi
 fi
 cmake \
@@ -579,7 +621,8 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_rigid_body_state_batch_cuda \
   --target test_deformable_psd_projection_cuda \
   --target test_vbd_block_descent_cuda \
-  --target bm_cuda_rigid_body_state_batch
+  --target bm_cuda_rigid_body_state_batch \
+  --target bm_vbd_cuda
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -894,6 +937,9 @@ ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-c
   --benchmark_min_time=1ms
 "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
   --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
+  --benchmark_min_time=0.001s
+"${BUILD_DIR}/bin/bm_vbd_cuda" \
+  --benchmark_filter='BM_Vbd(Cpu|Cuda)Step/32$' \
   --benchmark_min_time=0.001s
 """,
 ], depends-on = [
@@ -2361,6 +2407,7 @@ libode = ">=0.16.6,<0.17"
 # tests and benchmarks. CUDA stays out of the default environment and public API.
 #
 # Usage:
+#   pixi run -e cuda test-all
 #   pixi run -e cuda test-cuda
 #   pixi run -e cuda bm-phase5-cuda-full
 #

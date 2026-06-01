@@ -27,7 +27,9 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
    - branch: `fix/<downstream-project>-<issue-number>-<brief-description>-6.16`
    - add a regression test that reproduces the downstream symptom
    - keep the fix minimal; no unrelated refactors
-6. Run `pixi run lint` and relevant tests; use `pixi run test-all` when feasible.
+6. Run `pixi run lint` and relevant tests; use `pixi run test-all` when
+   feasible, and also `pixi run -e cuda test-all` on Linux hosts with a visible
+   NVIDIA CUDA runtime.
 7. Ask for explicit maintainer/user approval before pushing or creating PRs.
    After approval, create the release-branch PR with milestone `DART 6.16.x`
    and reference the downstream issue.

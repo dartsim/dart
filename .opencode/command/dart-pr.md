@@ -167,8 +167,9 @@ with `@codex review` only after explicit maintainer/user approval and only when
 the approved follow-up push addressed Codex review comments, or when the first
 trigger has a concrete timeout/blocker.
 
-After Codex returns no actionable issues and local `pixi run test-all` passes on
-the current head, a draft PR is ready to mark ready for human review after
-explicit approval even if hosted CI is still pending. Do not merge until branch
-protection and required checks pass unless a maintainer explicitly approves a
-policy bypass.
+After Codex returns no actionable issues and local validation passes on the
+current head (default `pixi run test-all`, plus `pixi run -e cuda test-all` on
+Linux hosts with a visible NVIDIA CUDA runtime), a draft PR is ready to mark
+ready for human review after explicit approval even if hosted CI is still
+pending. Do not merge until branch protection and required checks pass unless a
+maintainer explicitly approves a policy bypass.

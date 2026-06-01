@@ -168,8 +168,9 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run build                 # cmake --build … --target all
    pixi run build-tests           # builds the C++ test targets
    pixi run test                  # ctest -LE simulation-experimental
-   pixi run -e cuda test-cuda     # optional CUDA smoke path; Linux CUDA host
    pixi run test-all              # helper script that runs lint + build + tests
+   pixi run -e cuda test-all      # CUDA-enabled full helper; Linux CUDA host
+   pixi run -e cuda test-cuda     # focused CUDA smoke path; Linux CUDA host
    ```
 
    Parallelism knobs (optional):
@@ -219,9 +220,19 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```bash
    DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
    DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
+   if [ "$(uname -s)" = "Linux" ] && command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi -L >/dev/null 2>&1; then
+     DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e cuda test-all
+   fi
    ```
 
-   Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
+   Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally;
+   check `git status` afterwards before committing. On a Linux CUDA host, the
+   CUDA-environment `test-all` preserves the `cuda` Pixi environment for nested
+   tasks and also runs the CUDA CTest + benchmark smoke path; without a visible
+   NVIDIA runtime it validates CUDA build coverage but skips runtime tests. When
+   `DART_CUDA_ARCHITECTURES` is unset and `nvidia-smi` reports visible GPUs, the
+   CUDA Pixi config auto-detects compute capabilities for the generated CUDA
+   targets; set `DART_CUDA_ARCHITECTURES=<arch>` to override that default.
 
 4. Run a C++ example when needed:
 

@@ -154,8 +154,10 @@ gh pr checks <PR_NUMBER>
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
    - If the PR is draft, mark it ready after explicit approval once Codex is
-     clean and local `pixi run test-all` passed on the current head. Hosted CI
-     may still be pending for the ready-for-review transition.
+     clean and local validation passed on the current head: default
+     `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux hosts with
+     a visible NVIDIA CUDA runtime. Hosted CI may still be pending for the
+     ready-for-review transition.
    - Confirm required hosted checks are passing before merge.
    - Do not merge unless explicitly asked or the workflow clearly includes merge.
    - PR comments, review re-triggers, thread resolution, reviewer requests,

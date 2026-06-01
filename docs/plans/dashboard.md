@@ -83,10 +83,11 @@ its own line so status updates remain git-history friendly.
   preserves the rigid-body contact/multibody solver pipeline, while the batched
   SoA rigid-body stage remains an explicit unconstrained path and
   benchmark/prototype seam. Phase 5 is closed with a GO: `CI CUDA / CUDA Build`
-  compiles the CUDA targets on a GitHub-hosted `ubuntu-latest` runner (green on
-  `main`), and because the project does not maintain a self-hosted GPU runner,
-  the go/no-go runtime packet is measured manually on a CUDA host. The recorded
-  GO (2026-05-28, RTX 5000 Ada): speedup 109.6x at 4096/128/100 with final-state
+  compiles the CUDA targets for fork PRs on the hosted fallback and runs CUDA
+  tests on the trusted `ubuntu-latest-gpu` runner for same-repository PRs,
+  protected branch pushes, and manual dispatches. The go/no-go runtime packet is
+  still a measured benchmark packet from a CUDA host. The recorded GO
+  (2026-05-28, RTX 5000 Ada): speedup 109.6x at 4096/128/100 with final-state
   error 1.78e-15, packet accepted (see the owner doc's "Recorded Phase 5
   Go/No-Go"). Keep CUDA private and non-required. The sidecar package shape,
   go/no-go threshold, `bm-phase5-gpu-packet-check` /
@@ -94,10 +95,10 @@ its own line so status updates remain git-history friendly.
   evidence gates, and the `check-phase5-cuda-benchmark-contract` row contract
   are recorded in the owner doc. To refresh the packet on any CUDA host, run
   `bm-phase5-cuda-full` then `bm-phase5-cuda-packet`;
-  `check-phase5-cuda-workflow` guards that `ci_cuda.yml` keeps the build/import
-  gate and never reintroduces a self-hosted GPU runner. Phase 3's speedup surface
-  is the checked contact-island benchmark, not the trivial Euler rigid-body
-  rows.
+  `check-phase5-cuda-workflow` guards that `ci_cuda.yml` keeps fork PRs on the
+  hosted compile fallback and restricts GPU-runtime steps to trusted events.
+  Phase 3's speedup surface is the checked contact-island benchmark, not the
+  trivial Euler rigid-body rows.
 - Phase 6 backlog (unblocked by the Phase 5 GO, unstarted; each item needs its
   own design note and gate before work starts): broaden GPU stage coverage
   beyond the single rigid-body integration stage; promote auto-scheduling from
@@ -115,9 +116,10 @@ its own line so status updates remain git-history friendly.
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
   contact-shaped proxy, contact-island speedup surface, and Phase 5 CPU-baseline
-  history; `pixi run -e cuda test-cuda` covers the opt-in CUDA smoke path on CUDA
-  hosts; and future compute-bound contact/constraint work must extend the
-  checked benchmark gate.
+  history; `pixi run -e cuda test-all` is the local full CUDA gate on Linux CUDA
+  hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path; and
+  future compute-bound contact/constraint work must extend the checked
+  benchmark gate.
   Taskflow remains behind the experimental executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior
   stays untouched.
