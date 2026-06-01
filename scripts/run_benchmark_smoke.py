@@ -13,6 +13,13 @@ That keeps the CUDA (and any other) benchmark smoke honest: if the filter stops
 matching, the smoke step fails loudly instead of reporting a green pass over
 zero benchmarks.
 
+The enumeration step captures the binary's output to count matches. When the
+binary instead fails to enumerate at all (a missing executable, or a startup
+crash such as a CUDA-init failure during static benchmark registration), the
+wrapper re-emits the binary's own stdout/stderr and exits non-zero with an
+actionable message, so the real diagnostic still reaches the log rather than
+being swallowed behind a Python traceback.
+
 Usage:
     python scripts/run_benchmark_smoke.py <binary> [benchmark args...]
 
@@ -29,6 +36,10 @@ import sys
 from typing import List, Sequence
 
 
+class BenchmarkEnumerationError(RuntimeError):
+    """Raised when a benchmark binary cannot be enumerated for matches."""
+
+
 def count_matching_benchmarks(binary: str, run_args: Sequence[str]) -> int:
     """Return how many benchmarks ``run_args`` select in ``binary``.
 
@@ -36,13 +47,35 @@ def count_matching_benchmarks(binary: str, run_args: Sequence[str]) -> int:
     to stdout and ignores run-only flags such as ``--benchmark_min_time``. When
     nothing matches it writes a diagnostic to stderr and leaves stdout empty, so
     counting non-blank stdout lines yields the match count.
+
+    Raises ``BenchmarkEnumerationError`` when the binary is missing or exits
+    non-zero while enumerating, after re-emitting whatever the binary printed so
+    its own diagnostic is not lost.
     """
-    result = subprocess.run(
-        [binary, "--benchmark_list_tests=true", *run_args],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            [binary, "--benchmark_list_tests=true", *run_args],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as exc:
+        raise BenchmarkEnumerationError(
+            f"benchmark binary not found: {binary}"
+        ) from exc
+
+    if result.returncode != 0:
+        # Surface the binary's own output (e.g. a CUDA startup error) instead of
+        # letting capture_output swallow it behind a bare traceback.
+        if result.stdout:
+            sys.stdout.write(result.stdout)
+        if result.stderr:
+            sys.stderr.write(result.stderr)
+        raise BenchmarkEnumerationError(
+            f"benchmark binary '{binary}' exited {result.returncode} while "
+            "enumerating benchmarks with --benchmark_list_tests=true"
+        )
+
     return sum(1 for line in result.stdout.splitlines() if line.strip())
 
 
@@ -55,7 +88,12 @@ def _describe_filter(run_args: Sequence[str]) -> str:
 
 def run_smoke(binary: str, run_args: Sequence[str]) -> int:
     """List-then-run ``binary``; fail when the filter selects no benchmarks."""
-    matched = count_matching_benchmarks(binary, run_args)
+    try:
+        matched = count_matching_benchmarks(binary, run_args)
+    except BenchmarkEnumerationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
     if matched == 0:
         print(
             f"ERROR: benchmark filter '{_describe_filter(run_args)}' matched no "
@@ -65,7 +103,11 @@ def run_smoke(binary: str, run_args: Sequence[str]) -> int:
         )
         return 1
 
-    completed = subprocess.run([binary, *run_args], check=False)
+    try:
+        completed = subprocess.run([binary, *run_args], check=False)
+    except FileNotFoundError:
+        print(f"ERROR: benchmark binary not found: {binary}", file=sys.stderr)
+        return 1
     return completed.returncode
 
 

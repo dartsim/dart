@@ -18,8 +18,9 @@ def load_smoke_module():
 
 
 class _CompletedStub:
-    def __init__(self, stdout="", returncode=0):
+    def __init__(self, stdout="", stderr="", returncode=0):
         self.stdout = stdout
+        self.stderr = stderr
         self.returncode = returncode
 
 
@@ -46,6 +47,50 @@ def test_count_matching_benchmarks_counts_nonblank_stdout_lines(monkeypatch):
     assert captured["kwargs"]["capture_output"] is True
 
 
+def test_count_matching_benchmarks_raises_and_reemits_on_nonzero(monkeypatch, capsys):
+    module = load_smoke_module()
+
+    def fake_run(cmd, **kwargs):
+        return _CompletedStub(
+            stdout="partial stdout\n",
+            stderr="CUDA driver init failed\n",
+            returncode=134,
+        )
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    try:
+        module.count_matching_benchmarks("bin/bm", ["--benchmark_filter=BM_X$"])
+        raised = False
+    except module.BenchmarkEnumerationError as exc:
+        raised = True
+        assert "exited 134" in str(exc)
+
+    assert raised
+    # The binary's own diagnostic must reach the log, not be swallowed.
+    out = capsys.readouterr()
+    assert "partial stdout" in out.out
+    assert "CUDA driver init failed" in out.err
+
+
+def test_count_matching_benchmarks_raises_on_missing_binary(monkeypatch):
+    module = load_smoke_module()
+
+    def fake_run(cmd, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    try:
+        module.count_matching_benchmarks("bin/missing", ["--benchmark_filter=BM_X$"])
+        raised = False
+    except module.BenchmarkEnumerationError as exc:
+        raised = True
+        assert "not found" in str(exc)
+
+    assert raised
+
+
 def test_run_smoke_fails_and_skips_run_when_no_match(monkeypatch):
     module = load_smoke_module()
     calls = []
@@ -61,6 +106,24 @@ def test_run_smoke_fails_and_skips_run_when_no_match(monkeypatch):
 
     assert rc == 1
     # Only the list invocation runs; the benchmark itself must not be executed.
+    assert len(calls) == 1
+    assert "--benchmark_list_tests=true" in calls[0]
+
+
+def test_run_smoke_fails_and_skips_run_when_enumerate_errors(monkeypatch):
+    module = load_smoke_module()
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return _CompletedStub(stderr="boom\n", returncode=1)
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    rc = module.run_smoke("bin/bm", ["--benchmark_filter=BM_X$"])
+
+    assert rc == 1
+    # The enumerate failure must abort before the real benchmark run.
     assert len(calls) == 1
     assert "--benchmark_list_tests=true" in calls[0]
 
