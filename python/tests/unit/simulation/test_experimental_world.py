@@ -2411,6 +2411,32 @@ def test_experimental_kinematic_body():
     np.testing.assert_allclose(body.linear_velocity, [1.0, 0.0, 0.0], atol=1e-9)
 
 
+def test_experimental_static_setter_clears_kinematic_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, 0.0)
+    world.time_step = 0.1
+
+    body = world.add_rigid_body("body", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.box((0.2, 0.2, 0.2)))
+    body.linear_velocity = (1.0, 0.0, 0.0)
+    body.is_kinematic = True
+    assert body.is_kinematic
+    assert not body.is_static
+
+    body.is_static = True
+    assert body.is_static
+    assert not body.is_kinematic
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert body.transform[0, 3] == pytest.approx(0.0, abs=1e-9)
+    np.testing.assert_allclose(body.linear_velocity, [1.0, 0.0, 0.0], atol=1e-9)
+
+
 def test_experimental_collision_query_includes_links():
     sx = _simulation_experimental()
 

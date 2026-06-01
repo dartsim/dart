@@ -3408,6 +3408,37 @@ TEST(World, RigidBodyContactTreatsKinematicBodyAsStaticObstacle)
   EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
 }
 
+TEST(World, RigidBodyStaticSetterClearsKinematicMode)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d::Zero();
+  auto body = world.addRigidBody("body", options);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+  body.setKinematic(true);
+  ASSERT_TRUE(body.isKinematic());
+  ASSERT_FALSE(body.isStatic());
+
+  body.setStatic(true);
+  EXPECT_TRUE(body.isStatic());
+  EXPECT_FALSE(body.isKinematic());
+
+  const Eigen::Vector3d initialPosition = body.getTranslation();
+  world.step();
+
+  EXPECT_TRUE(body.getTranslation().isApprox(initialPosition, 1e-12));
+  EXPECT_TRUE(
+      body.getLinearVelocity().isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
 // Test that a dynamic body dropped onto a static ground comes to rest on it
 // (gravity + contact response + positional correction keep it from sinking).
 TEST(World, RigidBodyRestsOnStaticGround)

@@ -459,6 +459,7 @@ void RigidBody::setStatic(bool isStatic)
 
   auto& registry = getWorld()->getRegistry();
   if (isStatic) {
+    registry.remove<comps::KinematicBodyTag>(getEntity());
     registry.emplace_or_replace<comps::StaticBodyTag>(getEntity());
   } else {
     registry.remove<comps::StaticBodyTag>(getEntity());
