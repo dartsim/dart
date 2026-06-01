@@ -376,6 +376,37 @@ simulation-experimental` (40/40), and `pixi run lint`.
   `test_rigid_body_constraint` and `test_world`, plus full
   `ctest --test-dir build/default/cpp/Release --output-on-failure -L
 simulation-experimental` (41/41), and `pixi run lint`.
+- **(DONE locally) Slice 3b — multibody link-contact assembly seam (the
+  link-side comparator).** Extracted the link-contact row assembly (point
+  Jacobians, normal/tangent directions, diagonal Delassus denominators,
+  Baumgarte bias, restitution target, two-sided dynamic-rigid-obstacle coupling)
+  out of `solveMultibodyLinkContacts` into a public
+  `assembleMultibodyLinkContactProblem(registry, structure, nextVelocity,
+  timeStep, linkContacts)` in `compute/multibody_dynamics.{hpp,cpp}`, returning
+  `MultibodyLinkContactProblem{rows, inverseMass}` (the joint-space M^-1 the
+  unify needs to form `J_i^T M^-1 J_j` cross-coupling). Promoted the anonymous
+  `LinkContact`/`ContactRow` to public `LinkContact` / `MultibodyLinkContactRow`,
+  and shared the relative-velocity math through a file-local
+  `linkContactRelativeVelocity` helper used by both the restitution baseline and
+  the unchanged 8-iteration Gauss-Seidel sweep. This is the link-side
+  counterpart of slice 3a's `assembleRigidBodyContactProblem`: the unify (3c)
+  stacks both assemblers' rows into one boxed-LCP, comparing the rigid sub-block
+  against `assembleRigidBodyContactProblem` and the link sub-block against this.
+  **Behavior-preserving** — no `World::step` reorder, no solve-math change; the
+  assembler computes `inverseMass` once and the solve consumes it (no recompute).
+  An independent code-review pass confirmed byte-for-byte equivalence against
+  `HEAD`. The assembler lives in `multibody_dynamics.*` (it needs the internal
+  dynamics tree / mass matrix / body Jacobians); `multibody_constraint.*` stays
+  the pure position-integration home. Added `test_multibody_link_contact`
+  locking the one-sided row (orthonormal contact frame, denominator
+  self-consistency, Baumgarte bias, restitution target), the two-sided obstacle
+  coupling (unit inverse mass / identity inverse inertia / arm, strict
+  denominator increase), element-exact repeat assembly, and the
+  velocity-dimension-mismatch throw. Verified with focused build + CTest for
+  `test_multibody_link_contact`, `test_multibody_constraint`,
+  `test_rigid_body_constraint`, `test_world`, and `test_skeleton_to_multibody`,
+  plus full `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (42/42), and `pixi run lint`.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2

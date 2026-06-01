@@ -40,9 +40,13 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <entt/entity/entity.hpp> // entt::entity and entt::null for the
+                                  // link-contact structs below
 #include <entt/fwd.hpp>
 
+#include <span>
 #include <string_view>
+#include <vector>
 
 namespace dart::simulation::experimental::comps {
 struct MultibodyStructure;
@@ -123,6 +127,88 @@ computeMultibodyLinkWorldJacobian(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
+
+/// One contact acting on a single link of a multibody, oriented so the normal
+/// points from the obstacle into the link. The obstacle is either immovable
+/// (`otherBody == entt::null`, a one-sided solve) or a dynamic rigid body that
+/// receives the equal-and-opposite impulse (a two-sided solve).
+struct LinkContact
+{
+  entt::entity link = entt::null;
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ(); ///< world, into the link
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();   ///< world contact point
+  double depth = 0.0;
+  double friction = 1.0;    ///< combined Coulomb friction coefficient
+  double restitution = 0.0; ///< combined normal restitution coefficient
+  entt::entity otherBody = entt::null; ///< dynamic rigid-body obstacle, or null
+};
+
+/// One link contact after Jacobian and inverse-mass precomputation, ready for
+/// the velocity-level solve.
+///
+/// Each Jacobian maps a world-space contact impulse along its direction into
+/// the owning multibody's generalized-velocity space (`J^T d`, size DOF). The
+/// denominators are the diagonal Delassus entries `J M^-1 J^T`, augmented for a
+/// two-sided dynamic rigid obstacle with that body's point inverse mass. A
+/// contact that cannot move either body (e.g. a fixed-base link against an
+/// immovable obstacle) is left inactive.
+struct MultibodyLinkContactRow
+{
+  Eigen::VectorXd normalJacobian;
+  Eigen::VectorXd tangentJacobian1;
+  Eigen::VectorXd tangentJacobian2;
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+  Eigen::Vector3d tangent1 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d tangent2 = Eigen::Vector3d::Zero();
+  double normalDenominator = 0.0;
+  double tangentDenominator1 = 0.0;
+  double tangentDenominator2 = 0.0;
+  double bias = 0.0; ///< Baumgarte penetration-recovery velocity target
+  double restitutionTarget = 0.0;
+  double friction = 1.0;
+  double normalImpulse = 0.0;
+  double tangentImpulse1 = 0.0;
+  double tangentImpulse2 = 0.0;
+  entt::entity otherBody = entt::null;
+  double otherInvMass = 0.0;
+  Eigen::Matrix3d otherInvInertia = Eigen::Matrix3d::Zero();
+  Eigen::Vector3d otherArm = Eigen::Vector3d::Zero();
+  bool active = false;
+};
+
+/// The assembled link-contact rows for one multibody plus its joint-space
+/// inverse mass, the operator the contact impulses act through.
+struct MultibodyLinkContactProblem
+{
+  std::vector<MultibodyLinkContactRow> rows;
+  Eigen::MatrixXd inverseMass; ///< joint-space M^-1 (size DOF x DOF)
+};
+
+/// Assemble the link-contact rows for a single multibody at its current
+/// configuration.
+///
+/// Builds the multibody's dynamics tree, joint-space inverse mass, and per-link
+/// body Jacobians, then precomputes each contact's point Jacobian, normal and
+/// tangent directions, diagonal Delassus denominators, Baumgarte bias, and
+/// restitution target (plus a dynamic rigid obstacle's coupling for a two-sided
+/// contact). This is the link-side counterpart of
+/// `assembleRigidBodyContactProblem`; the velocity solve consumes the returned
+/// rows and inverse mass. Contacts whose link is not part of `structure`, or
+/// that cannot move either body, are skipped (left inactive).
+///
+/// `nextVelocity` is the staged generalized velocity (joint construction order)
+/// used as the pre-solve baseline for the restitution target. For a multibody
+/// with no movable degrees of freedom the returned problem is empty.
+///
+/// @throws InvalidArgumentException if `nextVelocity` does not match the
+///         multibody's movable degree-of-freedom count.
+[[nodiscard]] DART_EXPERIMENTAL_API MultibodyLinkContactProblem
+assembleMultibodyLinkContactProblem(
+    const entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& nextVelocity,
+    double timeStep,
+    std::span<const LinkContact> linkContacts);
 
 /// Fixed-base articulated-body forward-dynamics stage.
 ///
