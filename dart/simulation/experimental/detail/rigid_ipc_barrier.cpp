@@ -2386,6 +2386,17 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     }
     return true;
   };
+  const auto kinematicLineSearchLimitBlocksAcceptedState
+      = [&](const RigidIpcLineSearchResult& lineSearch) {
+          if (!lineSearch.limited || !(lineSearch.stepBound < 1.0)) {
+            return false;
+          }
+          const bool bodyAIsKinematic = lineSearch.bodyA < surfaces.size()
+                                        && surfaces[lineSearch.bodyA].kinematic;
+          const bool bodyBIsKinematic = lineSearch.bodyB < surfaces.size()
+                                        && surfaces[lineSearch.bodyB].kinematic;
+          return bodyAIsKinematic || bodyBIsKinematic;
+        };
 
   for (std::size_t frictionIteration = 0;
        frictionIteration < frictionIterationCount;
@@ -2486,12 +2497,18 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
               result.surfaces, candidateSurfaces, options.lineSearch);
         }
         recordSolveLineSearchStats(result);
-        step = computeRigidIpcProjectedNewtonStep(
-            result.assembly, result.lineSearch, newtonOptions);
-        result.lastStep = step;
         if (result.lineSearch.limited) {
           ++result.stats.lineSearchLimitedSteps;
         }
+        if (hasKinematic
+            && kinematicLineSearchLimitBlocksAcceptedState(result.lineSearch)) {
+          result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
+          result.failed = true;
+          return result;
+        }
+        step = computeRigidIpcProjectedNewtonStep(
+            result.assembly, result.lineSearch, newtonOptions);
+        result.lastStep = step;
         if (step.lineSearchBlocked) {
           if (adaptive.enabled && iteration < options.maxIterations
               && barrierOptions.stiffness < maxBarrierStiffness) {

@@ -6956,8 +6956,13 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   const bool lineSearchBlocked
       = result.status
         == sxdetail::RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
+  const bool hasKinematicRuntimeBody = std::any_of(
+      runtimeBodies.begin(), runtimeBodies.end(), [](const auto& body) {
+        return body.kinematic;
+      });
   const bool restingContactBlocked
-      = result.failed && lineSearchBlocked && result.stats.acceptedSteps == 0u
+      = !hasKinematicRuntimeBody && result.failed && lineSearchBlocked
+        && result.stats.acceptedSteps == 0u
         && result.stats.lineSearchZeroStepCount > 0u
         && !result.assembly.activeConstraints.empty();
 
