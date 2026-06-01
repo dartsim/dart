@@ -4602,14 +4602,21 @@ void runVbdDeformableSolve(
       break;
     }
   }
-  const bool wantsAvbdRows
-      = config.useAvbdContactNormalRows || config.useAvbdSelfContactNormalRows
-        || config.useAvbdAttachmentRows || config.useAvbdFiniteStiffnessRows;
+  const bool hasRequestedAvbdContactNormalRows
+      = config.useAvbdContactNormalRows && contactPlanes != nullptr;
+  const bool hasRequestedAvbdAttachmentRows
+      = config.useAvbdAttachmentRows && hasFixedNodes;
+  const bool hasRequestedAvbdFiniteStiffnessRows
+      = config.useAvbdFiniteStiffnessRows && !vbdScratch.springs.empty();
   const bool useAvbdFrictionRows = config.useAvbdContactNormalRows
                                    && contactPlanes != nullptr
                                    && frictionCoeff > 0.0;
   const bool useAvbdSelfContactRows
       = config.useAvbdSelfContactNormalRows && selfContact != nullptr;
+  const bool hasRequestedAvbdMassSpringRows
+      = hasRequestedAvbdContactNormalRows || useAvbdSelfContactRows
+        || hasRequestedAvbdAttachmentRows
+        || hasRequestedAvbdFiniteStiffnessRows;
   const bool useAvbdSelfContactFrictionRows
       = useAvbdSelfContactRows && frictionCoeff > 0.0;
   const bool hasUnsupportedAvbdFrictionSource
@@ -4617,11 +4624,8 @@ void runVbdDeformableSolve(
         && ((contactPlanes != nullptr && !useAvbdFrictionRows)
             || (selfContact != nullptr && !useAvbdSelfContactFrictionRows));
   const bool canUseAvbdMassSpringRows
-      = wantsAvbdRows
-        && (!config.useAvbdContactNormalRows || contactPlanes != nullptr)
-        && (!config.useAvbdAttachmentRows || hasFixedNodes)
-        && (!config.useAvbdFiniteStiffnessRows || !vbdScratch.springs.empty())
-        && vbdScratch.tets.empty() && !hasUnsupportedAvbdFrictionSource
+      = hasRequestedAvbdMassSpringRows && vbdScratch.tets.empty()
+        && !hasUnsupportedAvbdFrictionSource
         && (selfContact == nullptr || useAvbdSelfContactRows)
         && config.workerThreads <= 1 && !options.useChebyshev
         && options.rayleighDamping <= 0.0;
