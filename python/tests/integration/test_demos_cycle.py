@@ -890,7 +890,6 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
         for expected in (
             "Python demo scene 'slow' build exceeded",
             "factory startup exceeded budget",
-            "startup exceeded budget",
         )
     )
     assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
