@@ -97,6 +97,36 @@ sx::CollisionShape makeDiskMesh(double radius, double halfHeight, int segments)
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeConeMesh(double radius, double halfHeight, int segments)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  std::vector<Eigen::Vector3i> triangles;
+  vertices.reserve(static_cast<std::size_t>(segments + 2));
+  triangles.reserve(static_cast<std::size_t>(2 * segments));
+
+  const int apex = 0;
+  const int baseCenter = 1;
+  vertices.emplace_back(0.0, 0.0, halfHeight);
+  vertices.emplace_back(0.0, 0.0, -halfHeight);
+
+  const int baseRing = 2;
+  for (int i = 0; i < segments; ++i) {
+    const double angle
+        = 2.0 * std::numbers::pi * static_cast<double>(i) / segments;
+    vertices.emplace_back(
+        radius * std::cos(angle), radius * std::sin(angle), -halfHeight);
+  }
+
+  for (int i = 0; i < segments; ++i) {
+    const int n = (i + 1) % segments;
+    triangles.emplace_back(apex, baseRing + i, baseRing + n);
+    triangles.emplace_back(baseCenter, baseRing + n, baseRing + i);
+  }
+
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 sx::CollisionShape makeEllipsoidMesh(
     const Eigen::Vector3d& radii, int stacks, int slices)
 {
@@ -800,6 +830,58 @@ TEST(RigidIpcPaperExperiments, SlidingCubeFixtureRowIsBrakedByFriction)
   EXPECT_LT(frictional.displacement, frictionless.displacement);
   EXPECT_LT(frictional.speed, frictionless.speed - 0.05);
   EXPECT_GT(frictional.speed, 0.0);
+}
+
+TEST(RigidIpcPaperExperiments, RollingConeFixtureRowAdvancesWithContact)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("rolling_cone_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({3.0, 1.0, 0.05}));
+  ground.setFriction(0.5);
+
+  sx::RigidBodyOptions coneOptions;
+  coneOptions.mass = 1.0;
+  coneOptions.position = Eigen::Vector3d(-0.1, 0.0, 0.05);
+  coneOptions.orientation = Eigen::AngleAxisd(
+      117.0 * std::numbers::pi / 180.0, Eigen::Vector3d::UnitX());
+  coneOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto cone = world.addRigidBody("rolling_cone", coneOptions);
+  cone.setCollisionShape(
+      makeConeMesh(/*radius=*/0.1, /*halfHeight=*/0.1, /*segments=*/48));
+  cone.setFriction(0.5);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startX = cone.getTranslation().x();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 24; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_GT(cone.getTranslation().x(), startX + 0.05);
+  EXPECT_GT(cone.getAngularVelocity().norm(), 0.01);
+  EXPECT_TRUE(cone.getTranslation().allFinite());
+  EXPECT_TRUE(cone.getLinearVelocity().allFinite());
+  EXPECT_TRUE(cone.getAngularVelocity().allFinite());
 }
 
 // Fig. 7 ("Spolling coin"): a coin spinning on a frictional surface is braked

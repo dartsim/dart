@@ -110,6 +110,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "corpus rows remain planned until they have matching DART evidence."
         ),
     },
+    "fixtures/3D/friction/rolling/cone.json": {
+        "test": "RollingConeFixtureRowAdvancesWithContact",
+        "expected_invariant": (
+            "DART covers the audited 3D rolling-cone row: a tilted cone with "
+            "initial tangential velocity advances over a fixed frictional "
+            "plane, activates rigid IPC contact, stays finite, preserves "
+            "clearance, and develops angular velocity."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned rolling-cone runtime coverage for the "
+            "upstream 3D friction fixture mechanism. The oloid row remains "
+            "planned until it has matching DART evidence."
+        ),
+    },
     "fixtures/3D/friction/spolling-coin.json": {
         "test": "SpinningCoinIsBrakedByFrictionWithoutPenetration",
         "expected_invariant": (

@@ -338,6 +338,11 @@
         `fixtures/3D/friction/sliding.json`. The DART paper experiment now
         compares the `mu=0.05` sliding cube against a frictionless run and
         proves observable braking without penetration.
+  - [x] Add audited 3D rolling-cone friction fixture coverage for
+        `fixtures/3D/friction/rolling/cone.json`. The DART paper experiment now
+        advances a tilted cone over a fixed frictional plane, activates rigid
+        IPC contact, preserves clearance, and develops angular velocity. The
+        oloid row remains planned.
   - [x] Add exact upstream 3D spolling-coin friction fixture coverage for
         `fixtures/3D/friction/spolling-coin.json`. The DART paper experiment
         proves the spinning disk remains intersection-free while contact
@@ -412,6 +417,10 @@
   - [x] Mark the audited 3D sliding friction fixture row
         (`fixtures/3D/friction/sliding.json`) as implemented after exact
         differential sliding-cube coverage landed.
+  - [x] Mark the audited 3D rolling-cone friction fixture row
+        (`fixtures/3D/friction/rolling/cone.json`) as implemented after
+        DART-owned rolling-cone runtime contact coverage landed. The oloid row
+        remains planned.
   - [x] Mark the audited 3D spolling-coin friction fixture row
         (`fixtures/3D/friction/spolling-coin.json`) as implemented after exact
         spinning-disk friction coverage landed. The Fig. 7 paper visual alias
@@ -600,11 +609,13 @@ DART-owned implementation.
   `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is
   marked implemented through exact stick coverage. The 3D sliding friction row
   is also marked implemented through differential `mu=0.05` sliding-cube
-  coverage. The 3D spolling-coin friction fixture row is marked implemented
-  through Fig. 7 spin-damping and intersection-free coverage, while its
-  paper-figure visual alias remains planned until DART has matching example and
-  headless visual evidence. The low/moderate/high-friction `mu=0.1`, `mu=0.5`,
-  and `mu=1.0` turntable fixture rows are marked implemented through
+  coverage. The 3D rolling-cone fixture row is marked implemented through
+  tilted-cone frictional contact coverage, while the oloid row remains planned.
+  The 3D spolling-coin friction fixture row is marked implemented through Fig.
+  7 spin-damping and intersection-free coverage, while its paper-figure visual
+  alias remains planned until DART has matching example and headless visual
+  evidence. The low/moderate/high-friction `mu=0.1`, `mu=0.5`, and `mu=1.0`
+  turntable fixture rows are marked implemented through
   rotating-cylinder drag coverage, while the `mu=0` row and Fig. 13 visual
   aliases remain planned. The 3D tunneling unit-test fixture row is marked
   implemented through high-speed cube-vs-wall runtime coverage that reports a

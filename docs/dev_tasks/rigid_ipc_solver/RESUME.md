@@ -1,5 +1,25 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: rolling-cone friction fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/friction/rolling/cone.json`: a tilted cone advances over a fixed
+  frictional plane, activates rigid IPC contact, stays finite, preserves
+  clearance, and develops angular velocity in
+  `RigidIpcPaperExperiments.RollingConeFixtureRowAdvancesWithContact`.
+- Marked that upstream rolling-cone friction fixture row implemented in the
+  generated manifest. The oloid rolling fixture row remains planned until it has
+  matching DART evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RollingConeFixtureRowAdvancesWithContact`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: 8K tessellated-plane fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:
