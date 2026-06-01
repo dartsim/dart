@@ -62,8 +62,9 @@ point-joint linear, angular, and combined row builders for fixed-anchor
 translation and orientation constraints, with step-start previous constraint
 values seeded for AVBD alpha regularization. Those private point-joint rows can
 now be appended to the World rigid snapshot/solve/apply wrapper and combined
-step helper from world-space point-joint inputs; ECS joint extraction is still
-not wired.
+step helper from world-space point-joint inputs; a private fixed-joint ECS
+extractor now covers rigid-body-linked joint entities, but public multibody
+joint extraction is still not wired.
 
 ## Current Branch
 
@@ -90,7 +91,8 @@ wrapper. The current branch additionally adds the first internal
 contacts as a velocity-level projection and box-feature/pair-scoped rigid
 contact row identity for the private snapshot path, plus private point-joint
 linear, angular, and combined row builders with World snapshot/step
-append/solve/apply coverage for world-space point-joint inputs.
+append/solve/apply coverage for world-space point-joint inputs and a private
+fixed-joint ECS extractor for rigid-body-linked joint entities.
 
 ## Immediate Next Step
 
@@ -105,7 +107,8 @@ World-contact snapshot/solve/writeback helpers plus a combined private wrapper,
 first internal contact-stage activation, box-feature/pair-scoped row identity,
 private cylinder side/cap/rim endpoint features, and private point-joint
 linear/angular/combined rows with step-start previous constraint values and
-private World snapshot/step append/solve/apply coverage exist.
+private World snapshot/step append/solve/apply coverage plus fixed-joint ECS
+extraction exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -166,8 +169,10 @@ combinations.
   normal/friction/joint-linear/joint-angular row descriptors, with private
   point-joint rows now seeding step-start previous constraint values and
   participating in the private World snapshot/solve/apply wrapper and combined
-  step helper from world-space point-joint inputs, but full narrow-phase
-  feature extraction and articulated World joint wiring are not solved yet.
+  step helper from world-space point-joint inputs, plus private fixed-joint ECS
+  extraction for rigid-body-linked joint entities, but full narrow-phase
+  feature extraction and public articulated World joint wiring are not solved
+  yet.
 
 ## How to Resume
 

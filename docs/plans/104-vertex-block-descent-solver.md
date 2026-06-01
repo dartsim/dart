@@ -124,8 +124,10 @@ private rigid row path also has point-joint linear, angular, and combined
 builders for fixed-anchor translation/orientation rows, with step-start
 previous values seeded for AVBD alpha regularization. Those private point-joint
 rows can now be appended to the World rigid snapshot/solve/apply wrapper and
-combined step helper from world-space point-joint inputs, but ECS joint
-extraction and articulated World joint wiring are not solved yet.
+combined step helper from world-space point-joint inputs, and a private
+fixed-joint ECS extractor covers rigid-body-linked joint entities. Public
+multibody joint extraction and articulated World joint wiring are not solved
+yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

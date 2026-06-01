@@ -1499,6 +1499,79 @@ TEST(AvbdRigidBlock, RigidWorldContactStepSolvesPointJointRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  linkOptions.orientation = rotationZ(0.6);
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = world.getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+  auto& config
+      = registry.emplace<vbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Vec3::Zero();
+  config.localAnchorB = Vec3::Zero();
+  config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  config.startStiffness = 100.0;
+  config.maxStiffness = 1000.0;
+
+  const std::vector<vbd::AvbdRigidWorldPointJointInput> joints
+      = vbd::extractAvbdRigidWorldPointJointInputs(registry);
+  ASSERT_EQ(joints.size(), 1u);
+  EXPECT_EQ(joints[0].bodyA, base.getEntity());
+  EXPECT_EQ(joints[0].bodyB, link.getEntity());
+  EXPECT_NEAR(joints[0].anchorA.x(), 0.0, 1e-12);
+  EXPECT_NEAR(joints[0].anchorB.x(), 1.0, 1e-12);
+  EXPECT_DOUBLE_EQ(joints[0].startStiffness, 100.0);
+  EXPECT_DOUBLE_EQ(joints[0].maxStiffness, 1000.0);
+
+  vbd::AvbdRigidWorldContactStepOptions stepOptions;
+  stepOptions.solve.descent.iterations = 8;
+  stepOptions.solve.descent.regularization = 1e-12;
+  stepOptions.solve.row.beta = 1000.0;
+  stepOptions.solve.row.maxStiffness = 1000.0;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+
+  const vbd::AvbdRigidWorldContactStepResult result
+      = vbd::runAvbdRigidWorldContactStep(
+          registry,
+          std::span<const sx::Contact>(),
+          joints,
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          /*timeStep=*/1.0,
+          stepOptions);
+
+  EXPECT_EQ(result.joints, 1u);
+  EXPECT_EQ(result.solve.jointLinearRows, 3u);
+  EXPECT_EQ(result.solve.jointAngularRows, 3u);
+  EXPECT_EQ(result.apply.bodies, 1u);
+  EXPECT_NEAR(link.getTransform().translation().x(), 0.0, 0.25);
+  const Vec3 error = vbd::avbdRigidBodyOrientationError(
+      Eigen::Quaterniond(link.getTransform().linear()),
+      Eigen::Quaterniond::Identity());
+  EXPECT_LT(std::abs(error.z()), 0.05);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
 {
   sx::World world;

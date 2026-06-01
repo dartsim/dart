@@ -37,6 +37,7 @@
 #include <dart/simulation/experimental/comps/contact_material.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
+#include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 
@@ -68,6 +69,16 @@ struct AvbdRigidWorldPointJointInput
   entt::entity bodyB = entt::null;
   Eigen::Vector3d anchorA = Eigen::Vector3d::Zero();
   Eigen::Vector3d anchorB = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  double startStiffness = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
+struct AvbdRigidWorldPointJointConfig
+{
+  bool enabled = true;
+  Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
@@ -803,6 +814,65 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
   result.apply
       = applyAvbdRigidWorldContactSnapshot(registry, snapshot, timeStep);
   return result;
+}
+
+//==============================================================================
+inline std::vector<AvbdRigidWorldPointJointInput>
+extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
+{
+  std::vector<AvbdRigidWorldPointJointInput> inputs;
+  const auto view
+      = registry.view<comps::Joint, AvbdRigidWorldPointJointConfig>();
+  inputs.reserve(view.size_hint());
+
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& config = view.get<AvbdRigidWorldPointJointConfig>(entity);
+    if (!config.enabled || joint.type != comps::JointType::Fixed) {
+      continue;
+    }
+
+    if (joint.parentLink == entt::null || joint.childLink == entt::null
+        || joint.parentLink == joint.childLink) {
+      continue;
+    }
+
+    if (!registry.all_of<
+            comps::RigidBodyTag,
+            comps::Transform,
+            comps::MassProperties>(joint.parentLink)
+        || !registry.all_of<
+            comps::RigidBodyTag,
+            comps::Transform,
+            comps::MassProperties>(joint.childLink)) {
+      continue;
+    }
+
+    if (!config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
+        || !config.targetRelativeOrientation.coeffs().allFinite()) {
+      continue;
+    }
+
+    const auto& transformA = registry.get<comps::Transform>(joint.parentLink);
+    const auto& transformB = registry.get<comps::Transform>(joint.childLink);
+    const Eigen::Isometry3d worldA = avbdRigidWorldContactToIsometry(
+        AvbdRigidBodyState{transformA.position, transformA.orientation});
+    const Eigen::Isometry3d worldB = avbdRigidWorldContactToIsometry(
+        AvbdRigidBodyState{transformB.position, transformB.orientation});
+
+    AvbdRigidWorldPointJointInput input;
+    input.bodyA = joint.parentLink;
+    input.bodyB = joint.childLink;
+    input.anchorA = worldA * config.localAnchorA;
+    input.anchorB = worldB * config.localAnchorB;
+    input.targetRelativeOrientation
+        = normalizeAvbdRigidOrientation(config.targetRelativeOrientation);
+    input.startStiffness = config.startStiffness;
+    input.maxStiffness = config.maxStiffness;
+    inputs.push_back(input);
+  }
+
+  return inputs;
 }
 
 //==============================================================================
