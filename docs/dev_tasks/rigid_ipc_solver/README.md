@@ -192,6 +192,11 @@
         zero-progress resting-contact plateau writes back the unchanged safe pose
         instead of surfacing as a persistent failed solve. Covered by the
         five-voussoir Fig. 11 arch regression.
+  - [x] Add audited 25-stone arch fixture coverage through the opt-in runtime
+        stage. A generated 25-voussoir frictional arch stands on a fixed
+        support, activates rigid IPC contact, stays finite, preserves support
+        clearance, and keeps the keystone from collapsing. Larger arch rows and
+        the Fig. 11 visual alias remain planned.
   - [x] Phase 3u: add the first audited high-speed tunneling fixture coverage
         through the opt-in runtime stage. A rotated cube with a large time-step
         velocity toward a fixed wall remains intersection-free, and the stage
@@ -421,6 +426,10 @@
         (`fixtures/3D/friction/rolling/cone.json`) as implemented after
         DART-owned rolling-cone runtime contact coverage landed. The oloid row
         remains planned.
+  - [x] Mark the audited 25-stone 3D arch fixture row
+        (`fixtures/3D/friction/arch/arch-25-stones.json`) as implemented after
+        DART-owned 25-voussoir runtime contact coverage landed. Larger arch
+        rows and the Fig. 11 visual alias remain planned.
   - [x] Mark the audited 3D spolling-coin friction fixture row
         (`fixtures/3D/friction/spolling-coin.json`) as implemented after exact
         spinning-disk friction coverage landed. The Fig. 7 paper visual alias
@@ -611,6 +620,9 @@ DART-owned implementation.
   is also marked implemented through differential `mu=0.05` sliding-cube
   coverage. The 3D rolling-cone fixture row is marked implemented through
   tilted-cone frictional contact coverage, while the oloid row remains planned.
+  The 25-stone arch fixture row is marked implemented through 25-voussoir
+  frictional arch runtime coverage, while larger arch rows and the Fig. 11
+  visual alias remain planned.
   The 3D spolling-coin friction fixture row is marked implemented through Fig.
   7 spin-damping and intersection-free coverage, while its paper-figure visual
   alias remains planned until DART has matching example and headless visual

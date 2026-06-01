@@ -243,6 +243,26 @@ def test_rigid_ipc_manifest_marks_rolling_cone_row_implemented(tmp_path):
     assert "oloid row remains planned" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_arch_25_row_implemented(tmp_path):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path / "fixtures" / "3D" / "friction" / "arch" / "arch-25-stones.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"coefficient_friction":0.5}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/friction/arch/arch-25-stones.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "TwentyFiveVoussoirFrictionArchFixtureRowStands" in row["dart_artifact"]
+    assert "25-stone arch row" in row["expected_invariant"]
+    assert "Larger arch rows" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_spolling_coin_row_implemented(tmp_path):
     module = _load_script("generate_rigid_ipc_fixture_manifest")
     data_path = tmp_path / "fixtures" / "3D" / "friction" / "spolling-coin.json"

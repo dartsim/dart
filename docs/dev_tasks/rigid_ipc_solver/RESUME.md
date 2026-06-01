@@ -1,5 +1,25 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: 25-stone arch fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/friction/arch/arch-25-stones.json`: a generated 25-voussoir
+  frictional arch stands on a fixed support, activates rigid IPC contact, stays
+  finite, preserves support clearance, and keeps the keystone from collapsing in
+  `RigidIpcPaperExperiments.TwentyFiveVoussoirFrictionArchFixtureRowStands`.
+- Marked that upstream 25-stone arch fixture row implemented in the generated
+  manifest. Larger arch rows and the Fig. 11 visual alias remain planned until
+  they have matching DART evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TwentyFiveVoussoirFrictionArchFixtureRowStands`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: rolling-cone friction fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

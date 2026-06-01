@@ -2444,3 +2444,72 @@ TEST(RigidIpcPaperExperiments, FiveVoussoirFrictionArchStandsInEquilibrium)
   // Nothing fell through the ground (top at z = lift) beyond the barrier band.
   EXPECT_GT(minVoussoirZ, lift - 5e-3);
 }
+
+TEST(RigidIpcPaperExperiments, TwentyFiveVoussoirFrictionArchFixtureRowStands)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  constexpr int kBlocks = 25;
+  constexpr double innerRadius = 1.0;
+  constexpr double rOut = 1.3;
+  constexpr double halfW = 0.15;
+  constexpr double lift = 0.02;
+  const double dTheta = std::numbers::pi / kBlocks;
+  constexpr double angularGap = 1e-3;
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5 + lift);
+  auto ground = world.addRigidBody("arch_25_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({3.0, 1.0, 0.5}));
+  ground.setFriction(1.0);
+
+  std::vector<sx::RigidBody> voussoirs;
+  std::vector<std::vector<Eigen::Vector3d>> localVertices;
+  for (int i = 0; i < kBlocks; ++i) {
+    const double t0 = i * dTheta + 0.5 * angularGap;
+    const double t1 = (i + 1) * dTheta - 0.5 * angularGap;
+    Eigen::Vector3d center;
+    auto shape = makeVoussoirMesh(t0, t1, innerRadius, rOut, halfW, center);
+    localVertices.push_back(shape.vertices);
+    sx::RigidBodyOptions options;
+    options.mass = 1.0;
+    options.position = center + Eigen::Vector3d(0.0, 0.0, lift);
+    auto v = world.addRigidBody(
+        std::string("arch_25_voussoir_") + std::to_string(i), options);
+    v.setCollisionShape(shape);
+    v.setFriction(1.0);
+    voussoirs.push_back(v);
+  }
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double keystoneStartZ = voussoirs[kBlocks / 2].getTranslation().z();
+  double minVoussoirZ = lift;
+  bool sawActiveContact = false;
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (std::size_t i = 0; i < voussoirs.size(); ++i) {
+      const Eigen::Matrix3d R = voussoirs[i].getRotation();
+      const Eigen::Vector3d t = voussoirs[i].getTranslation();
+      for (const Eigen::Vector3d& localVertex : localVertices[i]) {
+        minVoussoirZ = std::min(minVoussoirZ, (t + R * localVertex).z());
+      }
+    }
+  }
+  const double keystoneEndZ = voussoirs[kBlocks / 2].getTranslation().z();
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_GT(keystoneEndZ, keystoneStartZ - 0.02);
+  EXPECT_TRUE(voussoirs[kBlocks / 2].getTranslation().allFinite());
+  EXPECT_GT(minVoussoirZ, lift - 5e-3);
+}

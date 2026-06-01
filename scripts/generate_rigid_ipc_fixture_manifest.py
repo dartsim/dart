@@ -124,6 +124,21 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "planned until it has matching DART evidence."
         ),
     },
+    "fixtures/3D/friction/arch/arch-25-stones.json": {
+        "test": "TwentyFiveVoussoirFrictionArchFixtureRowStands",
+        "expected_invariant": (
+            "DART covers the audited 25-stone arch row: a 25-voussoir "
+            "frictional arch stands on a fixed support, activates rigid IPC "
+            "contact, stays finite, and preserves nonnegative support "
+            "clearance without keystone collapse."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned 25-voussoir arch runtime coverage for the "
+            "upstream 3D friction fixture mechanism. Larger arch rows and the "
+            "Fig. 11 visual alias remain planned until they have matching "
+            "DART evidence."
+        ),
+    },
     "fixtures/3D/friction/spolling-coin.json": {
         "test": "SpinningCoinIsBrakedByFrictionWithoutPenetration",
         "expected_invariant": (
