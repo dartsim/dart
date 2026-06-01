@@ -167,12 +167,15 @@ struct UnifiedConstraintSolution
 /// Solve the unified boxed-LCP `w = A*lambda - b`, `lo <= lambda <= hi` with
 /// the Coulomb cone coupled through `findex`, jointly over all contacts.
 ///
-/// Uses the Dantzig solver's default options with early termination, so a
-/// rank-deficient contact set fails cleanly (`succeeded == false`) instead of
-/// emitting a partial solution; the caller falls back in that case. An empty
-/// problem succeeds trivially with an empty `lambda`. The options MUST come
-/// from `getDefaultOptions()` (not a default-constructed `LcpOptions`), because
-/// the validation/tolerance fields determine `succeeded()`.
+/// Decomposes independent row islands before solving: rows are connected by
+/// nonzero Delassus entries or by `findex` normal/friction bound references. A
+/// fully coupled problem still uses one monolithic solve. Each island uses the
+/// Dantzig solver's default options with early termination, so a rank-deficient
+/// contact set fails cleanly (`succeeded == false`) instead of emitting a
+/// partial solution; the caller falls back in that case. An empty problem
+/// succeeds trivially with an empty `lambda`. The options MUST come from
+/// `getDefaultOptions()` (not a default-constructed `LcpOptions`), because the
+/// validation/tolerance fields determine `succeeded()`.
 [[nodiscard]] DART_EXPERIMENTAL_API UnifiedConstraintSolution
 solveUnifiedConstraintProblem(const UnifiedConstraintProblem& problem);
 

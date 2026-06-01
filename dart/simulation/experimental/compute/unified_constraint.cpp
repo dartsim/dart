@@ -154,6 +154,87 @@ double sharedBodyEntry(
                                  .cross(endI.arm)));
 }
 
+//==============================================================================
+std::vector<std::vector<Eigen::Index>> computeRowIslands(
+    const UnifiedConstraintProblem& problem)
+{
+  const Eigen::Index size = problem.rhs.size();
+  std::vector<std::vector<Eigen::Index>> islands;
+  std::vector<char> visited(static_cast<std::size_t>(size), 0);
+  std::vector<Eigen::Index> stack;
+
+  const auto visit = [&](Eigen::Index row) {
+    if (row < 0 || row >= size) {
+      return false;
+    }
+    auto& wasVisited = visited[static_cast<std::size_t>(row)];
+    if (wasVisited != 0) {
+      return false;
+    }
+    wasVisited = 1;
+    stack.push_back(row);
+    return true;
+  };
+
+  for (Eigen::Index start = 0; start < size; ++start) {
+    if (!visit(start)) {
+      continue;
+    }
+
+    std::vector<Eigen::Index> island;
+    while (!stack.empty()) {
+      const Eigen::Index row = stack.back();
+      stack.pop_back();
+      island.push_back(row);
+
+      const Eigen::Index normalRow = problem.findex[row];
+      visit(normalRow);
+      for (Eigen::Index candidate = 0; candidate < size; ++candidate) {
+        if (candidate == row) {
+          continue;
+        }
+        if (problem.findex[candidate] == row
+            || problem.delassus(row, candidate) != 0.0
+            || problem.delassus(candidate, row) != 0.0) {
+          visit(candidate);
+        }
+      }
+    }
+    std::sort(island.begin(), island.end());
+    islands.push_back(std::move(island));
+  }
+
+  return islands;
+}
+
+//==============================================================================
+UnifiedConstraintSolution solveBoxedLcp(
+    const Eigen::MatrixXd& delassus,
+    const Eigen::VectorXd& rhs,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex)
+{
+  UnifiedConstraintSolution solution;
+  const Eigen::Index size = rhs.size();
+  if (size == 0) {
+    solution.succeeded = true;
+    return solution;
+  }
+
+  const math::LcpProblem lcpProblem(delassus, rhs, lo, hi, findex);
+  math::DantzigSolver solver;
+  // Pin the options to the solver default + early termination. A
+  // default-constructed LcpOptions would change the validation/tolerance fields
+  // that decide succeeded(), and thus flip the rank-deficient fallback
+  // decision.
+  math::LcpOptions options = solver.getDefaultOptions();
+  options.earlyTermination = true;
+  const auto result = solver.solve(lcpProblem, solution.lambda, options);
+  solution.succeeded = result.succeeded() && solution.lambda.size() == size;
+  return solution;
+}
+
 } // namespace
 
 //==============================================================================
@@ -480,17 +561,66 @@ UnifiedConstraintSolution solveUnifiedConstraintProblem(
     return solution;
   }
 
-  const math::LcpProblem lcpProblem(
-      problem.delassus, problem.rhs, problem.lo, problem.hi, problem.findex);
-  math::DantzigSolver solver;
-  // Pin the options to the solver default + early termination. A
-  // default-constructed LcpOptions would change the validation/tolerance fields
-  // that decide succeeded(), and thus flip the rank-deficient fallback
-  // decision.
-  math::LcpOptions options = solver.getDefaultOptions();
-  options.earlyTermination = true;
-  const auto result = solver.solve(lcpProblem, solution.lambda, options);
-  solution.succeeded = result.succeeded() && solution.lambda.size() == size;
+  const std::vector<std::vector<Eigen::Index>> islands
+      = computeRowIslands(problem);
+  if (islands.size() == 1
+      && static_cast<Eigen::Index>(islands[0].size()) == size) {
+    return solveBoxedLcp(
+        problem.delassus, problem.rhs, problem.lo, problem.hi, problem.findex);
+  }
+
+  solution.lambda = Eigen::VectorXd::Zero(size);
+  for (const auto& island : islands) {
+    const auto islandSize = static_cast<Eigen::Index>(island.size());
+    std::vector<Eigen::Index> localIndex(static_cast<std::size_t>(size), -1);
+    for (Eigen::Index local = 0; local < islandSize; ++local) {
+      localIndex[static_cast<std::size_t>(
+          island[static_cast<std::size_t>(local)])] = local;
+    }
+
+    Eigen::MatrixXd islandDelassus(islandSize, islandSize);
+    Eigen::VectorXd islandRhs(islandSize);
+    Eigen::VectorXd islandLo(islandSize);
+    Eigen::VectorXd islandHi(islandSize);
+    Eigen::VectorXi islandFindex = Eigen::VectorXi::Constant(islandSize, -1);
+    for (Eigen::Index row = 0; row < islandSize; ++row) {
+      const Eigen::Index globalRow = island[static_cast<std::size_t>(row)];
+      islandRhs[row] = problem.rhs[globalRow];
+      islandLo[row] = problem.lo[globalRow];
+      islandHi[row] = problem.hi[globalRow];
+      const Eigen::Index globalFindex = problem.findex[globalRow];
+      if (globalFindex >= 0) {
+        if (globalFindex >= size) {
+          solution.succeeded = false;
+          return solution;
+        }
+        const Eigen::Index remapped
+            = localIndex[static_cast<std::size_t>(globalFindex)];
+        if (remapped < 0) {
+          solution.succeeded = false;
+          return solution;
+        }
+        islandFindex[row] = static_cast<int>(remapped);
+      }
+      for (Eigen::Index col = 0; col < islandSize; ++col) {
+        islandDelassus(row, col) = problem.delassus(
+            globalRow, island[static_cast<std::size_t>(col)]);
+      }
+    }
+
+    const UnifiedConstraintSolution islandSolution = solveBoxedLcp(
+        islandDelassus, islandRhs, islandLo, islandHi, islandFindex);
+    if (!islandSolution.succeeded) {
+      solution.succeeded = false;
+      return solution;
+    }
+    for (Eigen::Index local = 0; local < islandSize; ++local) {
+      solution.lambda[island[static_cast<std::size_t>(local)]]
+          = islandSolution.lambda[local];
+    }
+  }
+
+  solution.succeeded = true;
   return solution;
 }
 

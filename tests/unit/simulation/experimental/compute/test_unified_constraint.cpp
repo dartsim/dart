@@ -22,6 +22,7 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <span>
 #include <vector>
 
@@ -758,6 +759,32 @@ TEST(UnifiedConstraint, SolvedSolutionSatisfiesBoxedLcpConditions)
   EXPECT_LE(std::abs(solution.lambda[2]), mu * normalImpulse + 1e-9);
   // Friction is genuinely active (the box is sliding).
   EXPECT_GT(std::abs(solution.lambda[1]) + std::abs(solution.lambda[2]), 1e-9);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, SolvesIndependentIslandsWithLocalFindex)
+{
+  sx::compute::UnifiedConstraintProblem problem;
+  problem.delassus = Eigen::MatrixXd::Identity(6, 6);
+  problem.rhs.resize(6);
+  problem.rhs << 1.0, 2.0, -2.0, 2.0, -3.0, 3.0;
+  problem.lo.resize(6);
+  problem.lo << 0.0, -0.5, -0.5, 0.0, -0.25, -0.25;
+  problem.hi.resize(6);
+  problem.hi << std::numeric_limits<double>::infinity(), 0.5, 0.5,
+      std::numeric_limits<double>::infinity(), 0.25, 0.25;
+  problem.findex.resize(6);
+  problem.findex << -1, 0, 0, -1, 3, 3;
+
+  const auto solution = sx::compute::solveUnifiedConstraintProblem(problem);
+  ASSERT_TRUE(solution.succeeded);
+  ASSERT_EQ(solution.lambda.size(), 6);
+  EXPECT_DOUBLE_EQ(solution.lambda[0], 1.0);
+  EXPECT_DOUBLE_EQ(solution.lambda[1], 0.5);
+  EXPECT_DOUBLE_EQ(solution.lambda[2], -0.5);
+  EXPECT_DOUBLE_EQ(solution.lambda[3], 2.0);
+  EXPECT_DOUBLE_EQ(solution.lambda[4], -0.5);
+  EXPECT_DOUBLE_EQ(solution.lambda[5], 0.5);
 }
 
 //==============================================================================

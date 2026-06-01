@@ -602,6 +602,21 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     `ctest -L simulation-experimental` passed (44/44). Final validation passed:
     `pixi run lint`, post-lint `pixi run build-simulation-experimental-tests`,
     and post-lint `ctest -L simulation-experimental` (44/44).
+  - **(DONE locally) Slice 5c — row-islanded unified LCP solve.**
+    `solveUnifiedConstraintProblem` now decomposes independent row islands before
+    calling Dantzig: rows are connected by nonzero Delassus entries or by
+    `findex` normal/friction references, each island is solved with the same
+    pinned `getDefaultOptions(); earlyTermination = true` settings, and the
+    local lambdas are scattered back into the global impulse vector. Fully
+    coupled systems still use the original monolithic solve, and any island
+    failure returns `succeeded=false` so the existing global fallback remains the
+    recovery path. Added a regression with two independent contact islands where
+    the second island's friction rows must remap global `findex=3` to local row
+    zero. Focused validation passed: `build-simulation-experimental-tests`,
+    selected `test_unified_constraint`; full
+    `ctest -L simulation-experimental` passed (44/44). Final validation passed:
+    `pixi run lint`, post-lint `pixi run build-simulation-experimental-tests`,
+    and post-lint `ctest -L simulation-experimental` (44/44).
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
@@ -634,13 +649,14 @@ multibodyVelocities)` which applies the solved global impulses to rigid
   - _Out of scope initially_: the variational integrator path
     (`variational_integration.cpp:1101`) keeps its own contact handling — gate
     `UnifiedConstraintStage` on `method != Variational`. Joint limits stay
-    post-integration clamps; motors stay the pre-contact equality solve. Islands
-    and warm-starting are deliberate non-goals (flag, don't silently omit).
+    post-integration clamps; motors stay the pre-contact equality solve.
+    Warm-starting remains a deliberate non-goal until it has a separate
+    evidence-backed slice.
 
-Then: **islands** for scaling; optional **friction-cone polish** — the ODE
-`findex` bound is frozen once per solve (a one-shot decoupling approximation); a
-true cone or an outer normal/friction iteration would tighten coupled stacking
-friction if a scene needs it.
+Then: optional **friction-cone polish** — the ODE `findex` bound is frozen once
+per solve (a one-shot decoupling approximation); a true cone or an outer
+normal/friction iteration would tighten coupled stacking friction if a scene
+needs it. Warm-starting is also available as a separate scaling polish slice.
 
 ## Immediate Next Step
 
@@ -664,7 +680,8 @@ and articulated bodies, runs one `UnifiedConstraintStage` boxed-LCP over
 rigid-rigid, link-vs-static-rigid, link-vs-dynamic-rigid, and same-multibody
 link-vs-link and cross-multibody link-vs-link rows, then position-integrates.
 Rigid positional correction still runs after the unified velocity solve.
-**Missing:** scaling polish (islands / warm starting / friction-cone iteration).
+**Missing:** remaining scaling/polish work (warm starting / friction-cone
+iteration).
 
 - **Pipeline ordering (done for semi-implicit):** the default semi-implicit
   `World::step` pipeline now runs `RigidBodyVelocityStage` →
