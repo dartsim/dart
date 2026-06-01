@@ -43,6 +43,14 @@
   reproduce as examples, tests, or benchmark reports, with per-row
   prerequisite kernels, performance targets, and `Status` tracking. Every
   paper-parity slice should advance at least one row toward `landed`.
+- SPB self-intersection recovery audit:
+  [`081-deformable-implicit-barrier-solver/spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md)
+  owns the Shortest Path to Boundary research and implementation sequence for
+  tetrahedral self-intersection recovery.
+- PD-IPC GPU audit:
+  [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md)
+  owns the Penetration-free Projective Dynamics on the GPU research and
+  implementation sequence for GPU-accelerated IPC-class deformable contact.
 - Implementation tracking: the first C++ slice is complete in this plan; future
   slices continue from the workstreams below. Because full IPC parity is now a
   multi-session implementation, start a new `docs/dev_tasks/` folder when that
@@ -90,6 +98,20 @@
    conservative queries; exact roots remain validation-only. PR #2709's public
    continuous-cast API is useful for reusable user-facing CCD exposure but is
    not a blocker for internal PLAN-081 solver work.
+   5a. **SPB self-intersection recovery** — Follow
+   [`spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md):
+   source/code audit, internal tetrahedral shortest-path-to-boundary query,
+   DCD vertex-tet and edge-tet candidates, recovery constraints or penalty
+   terms, hybrid CCD/DCD behavior, reduced paper-scene corpus, benchmark JSON,
+   and headless visual evidence. Keep SPB internal and tetrahedral-only until
+   those gates pass.
+   5b. **PD-IPC GPU evaluation** - Follow
+   [`pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md):
+   source/code audit, CPU-verifiable two-level projective IPC slice, fast-CCD
+   validation against conservative DART CCD, A-Jacobi CPU/GPU prototype,
+   patch-based GPU culling, reduced paper-scene corpus, benchmark JSON,
+   same-host CPU/GPU packets, and headless visual evidence. Keep PD-IPC
+   internal and backend-neutral until those gates pass.
 6. **Coupling expansion** — Introduce pairwise rigid/deformable couplers behind
    the solver architecture once contact buffers expose the needed state views.
    Keep common `World::step()` free of coupler or solver vocabulary.
@@ -186,6 +208,12 @@ method family. In short, the remaining gap is:
   adaptation, and IPC accuracy diagnostics;
 - deformable self-contact, deformable-rigid/codimensional contact, and
   pair-culling broad phase;
+- recovery from already self-intersecting tetrahedral states via the SPB sidecar
+  if the corpus shows that CCD/barrier-only slices leave unresolved
+  penetrations in fast deformable solvers;
+- GPU-accelerated projective IPC via the PD-IPC sidecar if CPU IPC, VBD, and OGC
+  evidence shows a performance gap that can be closed without weakening DART's
+  conservative CCD contract or leaking backend concepts;
 - smoothed lagged friction with `epsilon_v`, tangent bases, contact-force
   lagging, and friction convergence diagnostics;
 - upstream tutorial, paper, stress, friction, scaling, SQP-comparison, and

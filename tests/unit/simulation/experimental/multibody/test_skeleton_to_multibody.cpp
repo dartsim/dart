@@ -680,7 +680,7 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_TRUE(
       offsetShape->localTransform.isApprox(translation(0.1, 0.0, -0.2), 1e-12));
 
-  // A capsule preserves radius, cylindrical-section height, and offset.
+  // A capsule preserves radius, cylindrical-section half-height, and offset.
   auto capsuleSkeleton = dd::Skeleton::create("capsule_collision");
   auto [capsuleJoint, capsuleBody]
       = capsuleSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
@@ -701,11 +701,12 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   ASSERT_TRUE(capsuleShape.has_value());
   EXPECT_EQ(capsuleShape->type, sx::CollisionShapeType::Capsule);
   EXPECT_DOUBLE_EQ(capsuleShape->radius, 0.2);
-  EXPECT_DOUBLE_EQ(capsuleShape->height, 0.8);
+  EXPECT_TRUE(
+      capsuleShape->halfExtents.isApprox(Eigen::Vector3d(0.2, 0.2, 0.4)));
   EXPECT_TRUE(capsuleShape->localTransform.isApprox(
       translation(-0.1, 0.2, 0.3), 1e-12));
 
-  // A cylinder shares the radius/height representation with a capsule.
+  // A cylinder shares the radius/half-height representation with a capsule.
   auto cylinderSkeleton = dd::Skeleton::create("cylinder_collision");
   auto [cylinderJoint, cylinderBody]
       = cylinderSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(
@@ -727,7 +728,8 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   ASSERT_TRUE(cylinderShape.has_value());
   EXPECT_EQ(cylinderShape->type, sx::CollisionShapeType::Cylinder);
   EXPECT_DOUBLE_EQ(cylinderShape->radius, 0.3);
-  EXPECT_DOUBLE_EQ(cylinderShape->height, 0.7);
+  EXPECT_TRUE(
+      cylinderShape->halfExtents.isApprox(Eigen::Vector3d(0.3, 0.3, 0.35)));
   EXPECT_TRUE(cylinderShape->localTransform.isApprox(
       translation(0.25, -0.1, 0.15), 1e-12));
 

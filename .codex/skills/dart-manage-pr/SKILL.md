@@ -151,14 +151,15 @@ gh pr checks <PR_NUMBER>
    - Never reply to AI-generated review comments from bot users such as
      `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
      `github-actions[bot]`, or `copilot[bot]`.
-   - When a draft PR is first marked ready for review, Codex review is expected
-     to start automatically. Before posting `@codex review`, wait a reasonable
-     time for the PR-body Codex activity indicator or a submitted Codex review.
+   - When a draft PR is first published, request Codex review with a top-level
+     `@codex review` once explicit maintainer/user approval covers PR comments;
+     it can run while the PR remains draft. If Codex already shows an activity
+     signal or submitted review, do not post a duplicate trigger.
    - Apply AI-review fixes silently. After explicit maintainer/user approval
      and after the branch is ready, push, resolve reviewed and addressed
-     threads, and request a fresh AI review only when the automatic first review
-     did not appear after a reasonable wait, or when the approved follow-up push
-     addressed Codex review comments:
+     threads, and request a fresh AI review only when the approved follow-up
+     push addressed Codex review comments, or when the first trigger has a
+     concrete timeout/blocker:
      ```bash
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```
@@ -167,8 +168,14 @@ gh pr checks <PR_NUMBER>
    - After posting `@codex review`, keep monitoring until a submitted review,
      a visible activity signal, or a concrete timeout/blocker is observed.
 5. Mark ready or merge only when appropriate:
-   - Confirm required checks are passing and review requirements are satisfied.
-   - If the PR is draft and ready, mark it ready only when the user or task asks.
+   - Confirm review requirements are satisfied and local validation matches the
+     intended transition.
+   - If the PR is draft, mark it ready after explicit approval once Codex is
+     clean and local validation passed on the current head: default
+     `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux hosts with
+     a visible NVIDIA CUDA runtime. Hosted CI may still be pending for the
+     ready-for-review transition.
+   - Confirm required hosted checks are passing before merge.
    - Do not merge unless explicitly asked or the workflow clearly includes merge.
    - PR comments, review re-triggers, thread resolution, reviewer requests,
      ready-for-review transitions, merges, and branch deletion are external

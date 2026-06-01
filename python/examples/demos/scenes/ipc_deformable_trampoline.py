@@ -14,14 +14,17 @@ reproduction (no FEM/codimensional elasticity or obstacle contact).
 
 from __future__ import annotations
 
+from collections import deque
+
 import dartpy.simulation_experimental as sx
+import numpy as np
 
 from .._ipc_deformable_bridge import (
     IpcDeformableBridge,
     build_grid_options,
     grid_index,
 )
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _SIZE = 11  # 11x11 = 121 nodes
 _SPACING = 0.07
@@ -69,9 +72,61 @@ def build() -> SceneSetup:
     bridge = IpcDeformableBridge(world, name="ipc_deformable_trampoline")
     bridge.add_deformable_visual(body, name="deformable_trampoline")
 
+    center_index = grid_index(_SIZE, int(_CENTER), int(_CENTER))
+    center_height_history = deque(maxlen=120)
+    sag_history = deque(maxlen=120)
+    speed_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text(f"grid: {_SIZE} x {_SIZE}")
+        builder.text("pins: four corners")
+        if positions.size:
+            center_height = float(positions[center_index, 2])
+            rim_height = float(
+                np.mean(
+                    [
+                        positions[grid_index(_SIZE, 0, 0), 2],
+                        positions[grid_index(_SIZE, _SIZE - 1, 0), 2],
+                        positions[grid_index(_SIZE, 0, _SIZE - 1), 2],
+                        positions[grid_index(_SIZE, _SIZE - 1, _SIZE - 1), 2],
+                    ]
+                )
+            )
+            sag = rim_height - center_height
+            center_speed = (
+                float(velocities[center_index, 2]) if velocities.size else 0.0
+            )
+            center_height_history.append(center_height)
+            sag_history.append(sag)
+            speed_history.append(center_speed)
+            builder.text(f"center height: {center_height:.3f} m")
+            builder.text(f"center sag: {sag:.3f} m")
+            builder.text(f"center vertical speed: {center_speed:.3f} m/s")
+        diagnostics = world.last_deformable_solver_diagnostics
+        builder.text(
+            f"solver iters: {diagnostics.solver_iterations} | "
+            f"contacts: {diagnostics.self_contact_barrier_active_contacts}"
+        )
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if center_height_history:
+            builder.separator()
+            builder.plot_lines("Center height", list(center_height_history))
+            builder.plot_lines("Center sag", list(sag_history))
+            builder.plot_lines("Center vertical speed", list(speed_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC Trampoline", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

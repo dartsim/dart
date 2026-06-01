@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import math
 import sys
+from collections import deque
 from typing import Any, Callable, Iterable, Sequence
 
 import dartpy as dart
@@ -339,6 +340,162 @@ def build_fem_twist_bar(
     return options, edges
 
 
+def build_fem_compression_bar(
+    *,
+    cells_x: int,
+    cells_y: int,
+    cells_z: int,
+    cell_size: float,
+    origin: Sequence[float],
+    youngs_modulus: float,
+    compression_rate: float,
+    compression_end_time: float,
+    poisson_ratio: float = 0.3,
+    density: float = 1.0e3,
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """A slender FEM beam whose two pinned end faces are driven toward each other.
+
+    Opposing scripted ``DeformableDirichletBoundaryCondition``s translate the end
+    faces inward (along the bar's long x axis) at ``compression_rate`` until
+    ``compression_end_time``; the soft FEM core buckles and folds onto itself, so
+    its surface comes into contact with itself. This exercises the self-contact
+    barrier on a volumetric FEM body -- a DART-native step toward the IPC paper's
+    self-collision stress tests.
+    """
+
+    positions, tetrahedra, edges, node_index, (nx, ny, nz) = _fem_bar_mesh(
+        cells_x, cells_y, cells_z, cell_size, origin
+    )
+    options = _fem_bar_options(
+        positions, tetrahedra, youngs_modulus, poisson_ratio, density
+    )
+
+    axis_y = origin[1] + 0.5 * cells_y * cell_size
+    axis_z = origin[2] + 0.5 * cells_z * cell_size
+
+    def end_face(i: int) -> list[int]:
+        return [node_index(i, j, k) for k in range(nz) for j in range(ny)]
+
+    conditions = []
+    for face_i, sign in ((0, 1.0), (nx - 1, -1.0)):
+        condition = sx.DeformableDirichletBoundaryCondition()
+        condition.nodes = end_face(face_i)
+        condition.linear_velocity = np.array([sign * compression_rate, 0.0, 0.0])
+        condition.center = np.array([origin[0] + face_i * cell_size, axis_y, axis_z])
+        condition.start_time = 0.0
+        condition.end_time = compression_end_time
+        conditions.append(condition)
+    options.dirichlet_boundary_conditions = conditions
+    return options, edges
+
+
+def build_cloth_from_obj(
+    path: "str | Path",
+    *,
+    mass: float = 0.02,
+    edge_stiffness: float = 200.0,
+    damping: float = 1.0,
+    translate: Sequence[float] = (0.0, 0.0, 0.0),
+    fixed_nodes: Iterable[int] = (),
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """Build a mass-spring cloth membrane from a Wavefront ``.obj`` surface mesh.
+
+    Loads the triangle mesh via :func:`sx.load_obj_triangle_mesh`, then derives
+    the mass-spring topology the experimental solver needs: one structural spring
+    per unique triangle edge (rest length = the loaded inter-node distance), a
+    uniform nodal ``mass``, and the surface triangles (kept for self-contact and
+    rendering). ``translate`` offsets every vertex (e.g. to lift the sheet above
+    an obstacle). Returns the options plus the unique edge list for the wireframe.
+    """
+
+    options = sx.load_obj_triangle_mesh(str(path))
+
+    offset = np.asarray(translate, dtype=float)
+    positions = [np.asarray(p, dtype=float) + offset for p in options.positions]
+    options.positions = positions
+    options.masses = [mass] * len(positions)
+    options.edge_stiffness = edge_stiffness
+    options.damping = damping
+
+    seen: set[tuple[int, int]] = set()
+    edges: list[tuple[int, int]] = []
+    edge_objects: list[sx.DeformableEdge] = []
+    for triangle in options.surface_triangles:
+        corners = (triangle.node_a, triangle.node_b, triangle.node_c)
+        for a, b in (
+            (corners[0], corners[1]),
+            (corners[1], corners[2]),
+            (corners[2], corners[0]),
+        ):
+            key = (a, b) if a < b else (b, a)
+            if key in seen:
+                continue
+            seen.add(key)
+            rest = float(np.linalg.norm(positions[key[0]] - positions[key[1]]))
+            edge_objects.append(sx.DeformableEdge(key[0], key[1], rest))
+            edges.append(key)
+    options.edges = edge_objects
+
+    fixed = list(fixed_nodes)
+    if fixed:
+        options.fixed_nodes = fixed
+    return options, edges
+
+
+def build_strand_from_seg(
+    path: "str | Path",
+    *,
+    mass: float = 0.05,
+    edge_stiffness: float = 150.0,
+    damping: float = 1.0,
+    translate: Sequence[float] = (0.0, 0.0, 0.0),
+    fixed_nodes: Iterable[int] = (),
+) -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
+    """Build a mass-spring strand from a ``.seg`` segment mesh.
+
+    Loads the segment mesh via :func:`sx.load_seg_line_mesh` (positions + spring
+    edges with auto rest lengths), then sets a uniform nodal ``mass``,
+    ``edge_stiffness`` and ``damping``. ``translate`` offsets every vertex.
+    Returns the options plus the segment list for the wireframe.
+    """
+
+    options = sx.load_seg_line_mesh(str(path))
+    offset = np.asarray(translate, dtype=float)
+    options.positions = [
+        np.asarray(p, dtype=float) + offset for p in options.positions
+    ]
+    options.masses = [mass] * len(options.positions)
+    options.edge_stiffness = edge_stiffness
+    options.damping = damping
+    edges = [(edge.node_a, edge.node_b) for edge in options.edges]
+    fixed = list(fixed_nodes)
+    if fixed:
+        options.fixed_nodes = fixed
+    return options, edges
+
+
+def build_particles_from_pt(
+    path: "str | Path",
+    *,
+    mass: float = 0.02,
+    translate: Sequence[float] = (0.0, 0.0, 0.0),
+) -> "sx.DeformableBodyOptions":
+    """Build a cloud of free deformable particles from a ``.pt`` point set.
+
+    Loads the points via :func:`sx.load_point_set` (positions only) and assigns
+    a uniform nodal ``mass``; with no springs or tetrahedra the nodes are inertial
+    particles that fall under gravity and stack on contact barriers.
+    """
+
+    options = sx.load_point_set(str(path))
+    offset = np.asarray(translate, dtype=float)
+    options.positions = [
+        np.asarray(p, dtype=float) + offset for p in options.positions
+    ]
+    options.masses = [mass] * len(options.positions)
+    return options
+
+
 class IpcDeformableBridge:
     """Mirrors sx deformable bodies onto a render `dart.simulation.World`."""
 
@@ -351,6 +508,7 @@ class IpcDeformableBridge:
         # (body, [node SimpleFrame, ...], edge LineSegmentShape) per deformable.
         self._deformables: list[tuple[Any, list[Any], Any]] = []
         self._step_failed = False
+        self._min_height_history: deque[float] = deque(maxlen=120)
 
     def add_deformable_visual(
         self,
@@ -369,14 +527,14 @@ class IpcDeformableBridge:
 
         edge_shape = dart.LineSegmentShape(_EDGE_THICKNESS)
         for i in range(node_count):
-            edge_shape.addVertex(np.asarray(body.node_position(i), dtype=float))
+            edge_shape.add_vertex(np.asarray(body.node_position(i), dtype=float))
         if edges is None:
             edges = [
                 (body.edge(i).node_a, body.edge(i).node_b)
                 for i in range(body.edge_count)
             ]
         for node_a, node_b in edges:
-            edge_shape.addConnection(int(node_a), int(node_b))
+            edge_shape.add_connection(int(node_a), int(node_b))
         edge_frame = dart.SimpleFrame(dart.Frame.world(), f"{name}_edges", np.eye(4))
         edge_frame.set_shape(edge_shape)
         edge_frame.create_visual_aspect().set_color(list(_EDGE_COLOR))
@@ -436,7 +594,65 @@ class IpcDeformableBridge:
             for i, frame in enumerate(node_frames):
                 position = np.asarray(body.node_position(i), dtype=float)
                 frame.set_transform(_translation(position))
-                edge_shape.setVertex(i, position)
+                edge_shape.set_vertex(i, position)
+
+    def _node_positions(self) -> list[np.ndarray]:
+        positions: list[np.ndarray] = []
+        for body, _node_frames, _edge_shape in self._deformables:
+            for i in range(int(body.node_count)):
+                positions.append(np.asarray(body.node_position(i), dtype=float))
+        return positions
+
+    def _fixed_node_count(self) -> int:
+        fixed = 0
+        for body, _node_frames, _edge_shape in self._deformables:
+            for i in range(int(body.node_count)):
+                try:
+                    fixed += int(bool(body.is_fixed_node(i)))
+                except Exception:  # noqa: BLE001
+                    pass
+        return fixed
+
+    def build_diagnostics_panel(self, builder: Any, context: Any) -> None:
+        """Render generic IPC deformable solver diagnostics."""
+
+        del context
+        node_count = sum(
+            int(body.node_count) for body, _frames, _edge in self._deformables
+        )
+        positions = self._node_positions()
+        builder.text("solver: deformable IPC")
+        builder.text(f"world time: {self._sx_world.time:.3f} s")
+        builder.text(f"time step: {self._sx_world.time_step:.4f} s")
+        builder.text(f"nodes: {node_count} | fixed: {self._fixed_node_count()}")
+        diagnostics = getattr(
+            self._sx_world, "last_deformable_solver_diagnostics", None
+        )
+        if diagnostics is not None:
+            builder.text(
+                f"iters: {diagnostics.solver_iterations} | "
+                f"line search: {diagnostics.line_search_trials}"
+            )
+            builder.text(
+                f"self contacts: {diagnostics.self_contact_barrier_active_contacts} | "
+                f"converged: {diagnostics.converged_active_contact_count}"
+            )
+            min_distance = float(diagnostics.min_active_contact_distance)
+            if np.isfinite(min_distance):
+                builder.text(f"min active distance: {min_distance:.5f} m")
+        if positions:
+            stacked = np.vstack(positions)
+            minimum = np.min(stacked, axis=0)
+            maximum = np.max(stacked, axis=0)
+            self._min_height_history.append(float(minimum[2]))
+            builder.text(f"z range: {minimum[2]:.3f} .. {maximum[2]:.3f} m")
+            builder.text(
+                f"span xy: {maximum[0] - minimum[0]:.3f} x "
+                f"{maximum[1] - minimum[1]:.3f} m"
+            )
+        builder.text(f"step failed: {'yes' if self._step_failed else 'no'}")
+        if self._min_height_history:
+            builder.plot_lines("Min z", list(self._min_height_history))
 
     def pre_step(self) -> None:
         """Advance the sx deformable physics one step, then sync the render.

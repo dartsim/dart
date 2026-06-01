@@ -21,6 +21,7 @@
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
+#include <functional>
 #include <string_view>
 #include <vector>
 
@@ -100,17 +101,196 @@ struct VariationalLoopConstraint
                                      ///< rotation (rigid).
 };
 
+/// **EXPERIMENTAL SPIKE (PLAN-082 contact-roadmap gate 2).** Kinematics of the
+/// *trial* configuration `q^{k+1}` passed to an in-loop contact-force hook on
+/// each RIQN iteration, so the hook can evaluate a contact potential's
+/// generalized force `Q_c(q^{k+1})` at the current iterate (the coupling that
+/// folds the potential's curvature into the root-find). All
+/// transforms/Jacobians are at the trial configuration; the body Jacobians are
+/// body-frame `[angular; linear]` (`6 x dofCount`), in the integrator's
+/// generalized-coordinate order. This is probe scaffolding for the
+/// compliant-contact go/no-go spike, not a production contact surface.
+struct VariationalContactContext
+{
+  /// Per-link world transform at the trial configuration (link construction
+  /// order, parent-before-child).
+  const std::vector<Eigen::Isometry3d>& linkWorldTransforms;
+  /// Per-link body-frame spatial Jacobian (`6 x dofCount`, `[angular; linear]`)
+  /// at the trial configuration.
+  const std::vector<Eigen::MatrixXd>& linkBodyJacobians;
+  /// Movable generalized-coordinate count (the `Q_c` the hook returns has this
+  /// length).
+  std::size_t dofCount;
+  /// Per-link world transform at the *previous* configuration `q^k` (the start
+  /// of the step), same link order. Lagged contact laws (friction) use it for
+  /// the contact-point position (normal magnitude) at the step start.
+  const std::vector<Eigen::Isometry3d>& previousLinkWorldTransforms;
+  /// Per-link body-frame spatial Jacobian at `q^k`. With `previousVelocity` it
+  /// gives the lagged contact-point sliding velocity that fixes the friction
+  /// direction over the step (so friction stays constant across RIQN iterates,
+  /// hence smooth for the root-find -- the roadmap's "lagged friction").
+  const std::vector<Eigen::MatrixXd>& previousLinkBodyJacobians;
+  /// Generalized velocity at `q^k` (lagged).
+  const Eigen::VectorXd& previousVelocity;
+  /// The integration time step (s).
+  double timeStep;
+};
+
+/// **EXPERIMENTAL SPIKE.** In-loop contact-force hook for the variational
+/// integrator: given the trial configuration's kinematics, returns a per-DOF
+/// generalized contact force `Q_c` (a `dofCount`-vector) folded into the forced
+/// DEL residual exactly like the applied/external force (`residual -= dt *
+/// Q_c`, same sign/scaling). An empty hook (the default) is zero overhead and
+/// leaves the numerics byte-for-byte identical to the no-contact integrator.
+using VariationalContactHook
+    = std::function<Eigen::VectorXd(const VariationalContactContext&)>;
+
+/// **EXPERIMENTAL SPIKE.** Generalized force `J(p)^T * F` of a world-frame
+/// force `worldForce` applied at the body-frame point `localPoint` on link
+/// `linkIndex`, using the trial-configuration kinematics in `context` (the
+/// world-frame translational point Jacobian `J(p) = R_i (J_linear - [p]
+/// J_angular)` mapped back to generalized coordinates). The glue a contact hook
+/// uses to turn a Cartesian contact force into the reduced-coordinate `Q_c`.
+[[nodiscard]] DART_EXPERIMENTAL_API Eigen::VectorXd
+variationalContactPointForce(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce);
+
+/// **EXPERIMENTAL (PLAN-082 Phase C).** A body-fixed contact point: the point
+/// at body-frame position `localPoint` on link `linkIndex`, evaluated against
+/// the contact geometry at the trial configuration.
+struct VariationalContactPoint
+{
+  std::size_t linkIndex = 0; ///< link carrying the point
+  Eigen::Vector3d localPoint = Eigen::Vector3d::Zero(); ///< body-frame position
+};
+
+/// **EXPERIMENTAL (PLAN-082 Phase C, rung C2 — compliant contact).** A static
+/// ground half-space `{x : n . (x - p0) >= 0}` and a set of body-fixed contact
+/// points repelled by a one-sided quadratic penalty potential
+/// `E = 1/2 k max(0,-d)^2`, where `d = n . (p - p0)` is the signed distance of
+/// a world contact point `p` to the plane. Its gradient is the compliant normal
+/// force `F = k max(0,-d) n` (the VBD/XPBD compliant-contact force law). This
+/// is the real distance/gradient query the gate-2 spike's hard-coded plane
+/// stood in for, for the link-point-vs-analytic-ground case: bounded curvature
+/// RIQN absorbs, leaving a small `mg/k` residual penetration (see the contact
+/// roadmap's `k <= 1e4 mg` envelope).
+struct VariationalGroundContact
+{
+  Eigen::Vector3d planeNormal
+      = Eigen::Vector3d::UnitZ(); ///< unit normal, out of the ground
+  Eigen::Vector3d planePoint
+      = Eigen::Vector3d::Zero(); ///< any point on the plane
+  double stiffness = 0.0;        ///< penalty stiffness k (N/m), >= 0
+  double frictionCoefficient
+      = 0.0; ///< Coulomb friction mu (>= 0); 0 disables friction (rung C1)
+  double frictionRegularization = 1.0e-4; ///< friction velocity scale eps_v
+                                          ///< (m/s); > 0 required when mu > 0
+  double dampingCoefficient = 0.0; ///< Kelvin-Voigt normal damping c (N*s/m,
+                                   ///< >= 0); dissipates the contact transient
+                                   ///< (needed for clean AL settling). Honored
+                                   ///< by VariationalGroundContactSolver.
+  std::vector<VariationalContactPoint> points; ///< body-fixed contact points
+};
+
+/// **EXPERIMENTAL (PLAN-082 Phase C, rung C2).** Build an in-loop
+/// `VariationalContactHook` for compliant ground contact. Each RIQN iteration
+/// it evaluates every contact point's world position at the trial
+/// configuration, computes the signed plane distance, and for penetrating
+/// points (`d < 0`) accumulates the compliant normal force `k(-d) n` mapped to
+/// a generalized force by `variationalContactPointForce`. Empty `points` or
+/// `stiffness == 0` yields a no-op hook (byte-for-byte identical to the
+/// no-contact integrator). Throws if the plane normal is zero or the stiffness
+/// is negative; the normal is normalized defensively.
+[[nodiscard]] DART_EXPERIMENTAL_API VariationalContactHook
+makeVariationalGroundContactHook(VariationalGroundContact contact);
+
+/// **EXPERIMENTAL (PLAN-082 Phase C, rung C3 — augmented Lagrangian).** A
+/// stateful augmented-Lagrangian wrapper over ground contact that drives the
+/// penetration toward zero at finite stiffness (unlike the pure-penalty `mg/k`
+/// residual). It holds a per-contact-point dual `lambda >= 0`: each step the
+/// normal force is `max(0, lambda + k(-d))` (penalty + dual), with friction
+/// bounded by that AL normal magnitude. After each converged step, call
+/// `updateDuals` with the converged per-link world transforms to advance
+/// `lambda <- max(0, lambda + k(-d))` (dual ascent), warm-started across steps;
+/// over a few steps `lambda` carries the steady contact load and the
+/// penetration drives to ~0. `lambda = 0` (the initial state) reduces to the C2
+/// compliant penalty. Usage: build once, then each step `integrate(...,
+/// solver.hook())` followed by
+/// `solver.updateDuals(convergedLinkWorldTransforms)`.
+class DART_EXPERIMENTAL_API VariationalGroundContactSolver
+{
+public:
+  explicit VariationalGroundContactSolver(VariationalGroundContact contact);
+
+  /// In-loop contact hook reading the current duals (constant across the step's
+  /// RIQN iterates, so the AL force is smooth for the root-find). The returned
+  /// hook reads this solver's live duals, so build it once and reuse it.
+  [[nodiscard]] VariationalContactHook hook() const;
+
+  /// Advance the duals after a converged step, from the per-link world
+  /// transforms at the converged configuration (same link order as the
+  /// context).
+  void updateDuals(const std::vector<Eigen::Isometry3d>& linkWorldTransforms);
+
+  /// The current per-contact-point duals (the accumulated AL contact forces).
+  [[nodiscard]] const std::vector<double>& duals() const
+  {
+    return mDuals;
+  }
+
+  /// Seed the duals, e.g. warm-started from persisted state across a save/load
+  /// (or across the `World::step()` stage's per-step solver rebuild). The size
+  /// must match the contact-point count; throws otherwise.
+  void setDuals(std::vector<double> duals);
+
+private:
+  VariationalGroundContact mContact;
+  std::vector<double> mDuals; ///< per contact point, >= 0
+};
+
+/// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link).** A sphere-sphere contact
+/// pair between two links of a multibody (self-contact): spheres of radius
+/// `radiusA`/`radiusB` fixed at body-frame centers `centerA`/`centerB` on links
+/// `linkA`/`linkB` (structure link indices).
+struct VariationalSphereContactPair
+{
+  std::size_t linkA = 0;
+  Eigen::Vector3d centerA = Eigen::Vector3d::Zero();
+  double radiusA = 0.0;
+  std::size_t linkB = 0;
+  Eigen::Vector3d centerB = Eigen::Vector3d::Zero();
+  double radiusB = 0.0;
+};
+
+/// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link contact, first slice).**
+/// Build an in-loop hook for compliant sphere-sphere contact between links of
+/// the same multibody. Each RIQN iteration, at the trial configuration, every
+/// overlapping pair contributes an equal-and-opposite penalty force
+/// `k*penetration` (with Kelvin-Voigt damping `c` along the center line)
+/// pushing the two link spheres apart, mapped to a generalized force via the
+/// per-link point Jacobians. This is the simplest link-vs-link query (sphere
+/// primitives); arbitrary link geometry reuses the rigid IPC contact stack (the
+/// gate-1 adapter, see the contact roadmap). Throws on negative stiffness or
+/// damping.
+[[nodiscard]] DART_EXPERIMENTAL_API VariationalContactHook
+makeVariationalLinkSphereContactHook(
+    double stiffness,
+    double dampingCoefficient,
+    std::vector<VariationalSphereContactPair> pairs);
+
 /// Advance one multibody by one step with the linear-time variational
 /// integrator (Lee, Liu, Park, Srinivasa, WAFR 2016 / arXiv:1609.02898).
 ///
 /// Each step solves the forced discrete Euler-Lagrange equation
 /// `D2 Ld(q^{k-1}, q^k) + D1 Ld(q^k, q^{k+1}) + F^k = 0` for the next
-/// configuration by RIQN: the residual is evaluated in O(n) by a discrete
-/// recursive Newton-Euler sweep (DRNEA), and the quasi-Newton update applies
-/// the approximate inverse Jacobian `dt * M(q^k)^{-1}` via an O(n)
-/// articulated-body-inertia (ABA) inverse-mass solve, so the whole step is
-/// linear-time in the degree-of-freedom count. Gravity enters as a forcing-side
-/// spatial impulse (not a Lagrangian potential).
+/// configuration by a Newton root-find: the residual is evaluated in O(n) by a
+/// discrete recursive Newton-Euler sweep (DRNEA), and the Newton update applies
+/// the inverse Jacobian in O(n) via an articulated-body recursion, so the whole
+/// step is linear-time in the degree-of-freedom count. Gravity enters as a
+/// forcing-side spatial impulse (not a Lagrangian potential).
 ///
 /// Scope (Phase A1): fixed-base open chains with fixed, revolute, and prismatic
 /// joints; fixed time step. Other joint types and floating bases are rejected.
@@ -129,13 +309,42 @@ struct VariationalLoopConstraint
 /// O(n) inverse-mass apply: `lambda = (J M^{-1} J^T)^{-1} (-g)`,
 /// `dq = M^{-1} J^T lambda`. This keeps closed loops satisfied each step.
 ///
-/// The `dt * M^{-1}` quasi-Newton preconditioner is only an approximate inverse
-/// Jacobian, so the plain iteration's convergence rate degrades for long
-/// chains. When the generalized coordinates form a vector space (every movable
-/// joint is revolute/prismatic) the RIQN fixed-point iteration is accelerated
-/// with depth-m Anderson mixing, which keeps the iteration count bounded for
-/// large degree-of-freedom counts; spherical/floating coordinates live on a
-/// manifold where linear mixing is invalid and use the plain step.
+/// Preconditioner policy: when the generalized coordinates form a vector space
+/// (every movable joint is revolute/prismatic) the update is the *exact*
+/// recursive-Jacobian Newton step -- it solves `J(q^{k+1}) dq = residual` for
+/// the exact forced-DEL Jacobian via a non-symmetric articulated-body recursion
+/// in O(n) -- so the iteration count stays bounded and length-independent, and
+/// long/stiff chains converge well within the iteration budget. Spherical and
+/// floating coordinates live on a manifold the exact step does not yet handle,
+/// so they fall back to the fixed `dt * M(q^k)^{-1}` quasi-Newton step (only an
+/// approximate inverse Jacobian, manifold-correct), accelerated by
+/// tangent-space Anderson mixing (see `andersonDepth`). The converged DEL root
+/// is independent of the preconditioner, so this never changes the integrated
+/// trajectory, only the iteration count.
+///
+/// `andersonDepth` is the depth-m history of the tangent-space Anderson
+/// acceleration applied to the manifold (spherical/floating) quasi-Newton
+/// fixed-point iteration: the per-iteration tangent updates and the tangent
+/// log-differences between consecutive iterates are mixed (a least-squares
+/// secant/Anderson(m) extrapolation, retracted with the per-joint manifold map)
+/// before the manifold retraction. On a long, stiff spherical/floating chain
+/// the plain `dt * M^{-1}` fixed point reaches a per-step residual plateau and
+/// cannot drive the residual below a length-dependent floor; the acceleration
+/// pushes through that plateau, so the manifold path converges to tolerances
+/// (and on steps) the plain step cannot reach, at a comparable iteration count.
+/// `0` disables it (the plain quasi-Newton fixed point), exposed so callers and
+/// tests can compare the plain and accelerated paths. It has no effect on the
+/// Euclidean exact-Newton path.
+///
+/// **EXPERIMENTAL SPIKE (contact-roadmap gate 2).** `contactHook`, when set,
+/// supplies a per-DOF generalized contact force `Q_c` re-evaluated at the
+/// *trial* configuration on every RIQN iteration (including each line-search
+/// trial) and folded into the forced-DEL residual exactly like the applied
+/// force (`residual -= dt * Q_c`), so a bounded (compliant/penalty) contact
+/// potential's curvature couples into the root-find. The default empty hook is
+/// zero overhead and leaves the no-contact numerics byte-for-byte identical;
+/// this parameter is probe scaffolding for the compliant-contact go/no-go
+/// spike, not a production contact surface.
 DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     entt::registry& registry,
     const comps::MultibodyStructure& structure,
@@ -144,7 +353,9 @@ DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
     MultibodyVariationalState& state,
     int maxIterations = 100,
     double tolerance = 1e-10,
-    const std::vector<VariationalLoopConstraint>& constraints = {});
+    const std::vector<VariationalLoopConstraint>& constraints = {},
+    std::size_t andersonDepth = 5,
+    const VariationalContactHook& contactHook = {});
 
 /// Total mechanical energy (kinetic + gravitational potential) of one multibody
 /// at its current configuration and velocity.

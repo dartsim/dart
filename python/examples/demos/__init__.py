@@ -5,6 +5,6 @@ see ``docs/plans/103-examples-strategy.md`` for the strategy.
 """
 
 from .registry import make_demo_scenes
-from .runner import PythonDemoScene, SceneSetup, run
+from .runner import PythonDemoScene, ScenePanel, SceneSetup, run
 
-__all__ = ["PythonDemoScene", "SceneSetup", "make_demo_scenes", "run"]
+__all__ = ["PythonDemoScene", "ScenePanel", "SceneSetup", "make_demo_scenes", "run"]

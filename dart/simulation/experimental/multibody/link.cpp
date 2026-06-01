@@ -60,9 +60,92 @@ bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
   return factorization.info() == Eigen::Success;
 }
 
-//==============================================================================
-void validateCollisionShapeTransform(const CollisionShape& shape)
+void validateCollisionShape(const CollisionShape& shape, const char* ownerName)
 {
+  switch (shape.type) {
+    case CollisionShapeType::Sphere:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0,
+          InvalidArgumentException,
+          "{} sphere collision shape radius must be positive and finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Box:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.halfExtents.allFinite()
+              || (shape.halfExtents.array() <= 0.0).any(),
+          InvalidArgumentException,
+          "{} box collision shape half extents must be positive and finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Capsule:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.halfExtents.z())
+              || shape.halfExtents.z() <= 0.0,
+          InvalidArgumentException,
+          "{} capsule collision shape radius and half-height must be positive "
+          "and finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Cylinder:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0
+              || !std::isfinite(shape.halfExtents.z())
+              || shape.halfExtents.z() <= 0.0,
+          InvalidArgumentException,
+          "{} cylinder collision shape radius and half-height must be "
+          "positive and finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Plane:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.normal.allFinite() || shape.normal.squaredNorm() <= 0.0
+              || !std::isfinite(shape.offset),
+          InvalidArgumentException,
+          "{} plane collision shape normal must be finite and nonzero, and "
+          "offset must be finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Mesh: {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          shape.vertices.empty(),
+          InvalidArgumentException,
+          "{} mesh collision shape must contain at least one vertex",
+          ownerName);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          shape.triangles.empty(),
+          InvalidArgumentException,
+          "{} mesh collision shape must contain at least one triangle",
+          ownerName);
+
+      for (const Eigen::Vector3d& vertex : shape.vertices) {
+        DART_EXPERIMENTAL_THROW_T_IF(
+            !vertex.allFinite(),
+            InvalidArgumentException,
+            "{} mesh collision shape vertices must be finite",
+            ownerName);
+      }
+
+      const int vertexCount = static_cast<int>(shape.vertices.size());
+      for (const Eigen::Vector3i& triangle : shape.triangles) {
+        DART_EXPERIMENTAL_THROW_T_IF(
+            triangle.minCoeff() < 0 || triangle.maxCoeff() >= vertexCount,
+            InvalidArgumentException,
+            "{} mesh collision shape triangle indices are out of range",
+            ownerName);
+        DART_EXPERIMENTAL_THROW_T_IF(
+            triangle.x() == triangle.y() || triangle.x() == triangle.z()
+                || triangle.y() == triangle.z(),
+            InvalidArgumentException,
+            "{} mesh collision shape triangles must use three distinct "
+            "vertices",
+            ownerName);
+      }
+      break;
+    }
+  }
+
   const Eigen::Matrix3d rotation = shape.localTransform.linear();
   DART_EXPERIMENTAL_THROW_T_IF(
       !shape.localTransform.matrix().allFinite()
@@ -70,79 +153,8 @@ void validateCollisionShapeTransform(const CollisionShape& shape)
                   .isApprox(Eigen::Matrix3d::Identity(), 1e-9)
           || std::abs(rotation.determinant() - 1.0) > 1e-9,
       InvalidArgumentException,
-      "Collision shape local transform must be a finite rigid transform");
-}
-
-//==============================================================================
-void validateMeshCollisionShape(const CollisionShape& shape)
-{
-  DART_EXPERIMENTAL_THROW_T_IF(
-      shape.vertices.empty() || shape.triangles.empty(),
-      InvalidArgumentException,
-      "Mesh collision shape must have at least one vertex and one triangle");
-
-  for (const auto& vertex : shape.vertices) {
-    DART_EXPERIMENTAL_THROW_T_IF(
-        !vertex.allFinite(),
-        InvalidArgumentException,
-        "Mesh collision shape vertices must be finite");
-  }
-
-  const auto vertexCount = static_cast<int>(shape.vertices.size());
-  for (const auto& triangle : shape.triangles) {
-    DART_EXPERIMENTAL_THROW_T_IF(
-        triangle.minCoeff() < 0 || triangle.maxCoeff() >= vertexCount,
-        InvalidArgumentException,
-        "Mesh collision shape triangle indices must reference vertices");
-  }
-}
-
-//==============================================================================
-void validateCollisionShape(const CollisionShape& shape)
-{
-  switch (shape.type) {
-    case CollisionShapeType::Sphere:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !std::isfinite(shape.radius) || shape.radius <= 0.0,
-          InvalidArgumentException,
-          "Sphere collision shape radius must be positive and finite");
-      break;
-    case CollisionShapeType::Box:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !shape.halfExtents.allFinite()
-              || (shape.halfExtents.array() <= 0.0).any(),
-          InvalidArgumentException,
-          "Box collision shape half extents must be positive and finite");
-      break;
-    case CollisionShapeType::Capsule:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !std::isfinite(shape.radius) || shape.radius <= 0.0
-              || !std::isfinite(shape.height) || shape.height <= 0.0,
-          InvalidArgumentException,
-          "Capsule collision shape radius and height must be positive and "
-          "finite");
-      break;
-    case CollisionShapeType::Cylinder:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !std::isfinite(shape.radius) || shape.radius <= 0.0
-              || !std::isfinite(shape.height) || shape.height <= 0.0,
-          InvalidArgumentException,
-          "Cylinder collision shape radius and height must be positive and "
-          "finite");
-      break;
-    case CollisionShapeType::Plane:
-      DART_EXPERIMENTAL_THROW_T_IF(
-          !shape.normal.allFinite() || shape.normal.squaredNorm() <= 0.0
-              || !std::isfinite(shape.offset),
-          InvalidArgumentException,
-          "Plane collision shape normal must be finite and nonzero, and "
-          "offset must be finite");
-      break;
-    case CollisionShapeType::Mesh:
-      validateMeshCollisionShape(shape);
-      break;
-  }
-  validateCollisionShapeTransform(shape);
+      "{} collision shape local transform must be a finite rigid transform",
+      ownerName);
 }
 
 } // namespace
@@ -282,7 +294,7 @@ std::vector<CollisionShape> Link::getCollisionShapes() const
 //==============================================================================
 void Link::setCollisionShape(const CollisionShape& shape)
 {
-  validateCollisionShape(shape);
+  validateCollisionShape(shape, "Link");
 
   auto& registry = getWorld()->getRegistry();
   const auto* existing
@@ -295,7 +307,7 @@ void Link::setCollisionShape(const CollisionShape& shape)
 //==============================================================================
 void Link::addCollisionShape(const CollisionShape& shape)
 {
-  validateCollisionShape(shape);
+  validateCollisionShape(shape, "Link");
 
   auto& registry = getWorld()->getRegistry();
   auto& geometry

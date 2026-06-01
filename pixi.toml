@@ -76,7 +76,23 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
 fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
+DART_BUILD_DIFF_VALUE=${DART_BUILD_DIFF_OVERRIDE:-OFF}
 DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_CUDA_ARCHITECTURES_VALUE}" ] \
+  && command -v nvidia-smi >/dev/null 2>&1; then
+  if DETECTED_CUDA_ARCHITECTURES=$(
+    nvidia-smi --query-gpu=compute_cap --format=csv,noheader \
+      | tr -cd '0-9\n' \
+      | sed '/^$/d' \
+      | sort -u \
+      | paste -sd';' -
+  ); then
+    if [ -n "${DETECTED_CUDA_ARCHITECTURES}" ]; then
+      DART_CUDA_ARCHITECTURES_VALUE=${DETECTED_CUDA_ARCHITECTURES}
+    fi
+  fi
+fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_FILAMENT_PLATFORM_DEFAULT=OFF
@@ -89,6 +105,7 @@ DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
+DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-ON}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
 if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
@@ -96,6 +113,10 @@ if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
 fi
 DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_DISABLE_COMPILER_CACHE:-}" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -121,10 +142,12 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  # Do not automatically reuse the C++ launcher for nvcc. sccache can leave
+  # nvcc/fatbinary without its generated PTX input on local CUDA builds.
   if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
     LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
-  elif [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
-    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+  else
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
   fi
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
@@ -138,6 +161,7 @@ cmake \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
   -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} \
+  -DDART_BUILD_DIFF=${DART_BUILD_DIFF_VALUE} \
   -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
@@ -153,7 +177,7 @@ cmake \
   -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
-  -DDART_USE_SYSTEM_IMGUI=ON \
+  -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} \
   -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
@@ -287,6 +311,11 @@ check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
+check-dart7-clean-break-policy = { cmd = [
+  "python",
+  "scripts/check_dart7_clean_break_policy.py",
+] }
+
 check-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 check-compute-backend-boundaries = { cmd = [
   "python",
@@ -330,6 +359,7 @@ check-lint = { depends-on = [
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
   "check-docs-policy",
+  "check-dart7-clean-break-policy",
   "check-api-boundaries",
   "check-compute-backend-boundaries",
   "check-no-gpu-runtime-dependencies",
@@ -386,7 +416,23 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
 fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
+DART_BUILD_DIFF_VALUE=${DART_BUILD_DIFF_OVERRIDE:-OFF}
 DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_CUDA_ARCHITECTURES_VALUE}" ] \
+  && command -v nvidia-smi >/dev/null 2>&1; then
+  if DETECTED_CUDA_ARCHITECTURES=$(
+    nvidia-smi --query-gpu=compute_cap --format=csv,noheader \
+      | tr -cd '0-9\n' \
+      | sed '/^$/d' \
+      | sort -u \
+      | paste -sd';' -
+  ); then
+    if [ -n "${DETECTED_CUDA_ARCHITECTURES}" ]; then
+      DART_CUDA_ARCHITECTURES_VALUE=${DETECTED_CUDA_ARCHITECTURES}
+    fi
+  fi
+fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_FILAMENT_PLATFORM_DEFAULT=OFF
@@ -399,6 +445,7 @@ DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
+DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-ON}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
 if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
@@ -406,6 +453,10 @@ if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
 fi
 DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_DISABLE_COMPILER_CACHE:-}" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -431,10 +482,12 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  # Do not automatically reuse the C++ launcher for nvcc. sccache can leave
+  # nvcc/fatbinary without its generated PTX input on local CUDA builds.
   if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
     LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
-  elif [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
-    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+  else
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
   fi
 fi
 cmake \
@@ -447,6 +500,7 @@ cmake \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
   -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} \
+  -DDART_BUILD_DIFF=${DART_BUILD_DIFF_VALUE} \
   -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
@@ -462,7 +516,7 @@ cmake \
   -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
-  -DDART_USE_SYSTEM_IMGUI=ON \
+  -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} \
   -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
@@ -565,7 +619,10 @@ BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_rigid_body_state_batch_cuda \
-  --target bm_cuda_rigid_body_state_batch
+  --target test_deformable_psd_projection_cuda \
+  --target test_vbd_block_descent_cuda \
+  --target bm_cuda_rigid_body_state_batch \
+  --target bm_vbd_cuda
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -615,6 +672,10 @@ config-py = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
+BUILD_DIR_NAME={{ build_dir }}
+if [ -z "${BUILD_DIR_NAME}" ]; then
+  BUILD_DIR_NAME="${BUILD_TYPE}"
+fi
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
 DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-OFF}
@@ -626,6 +687,7 @@ if [ -z "${DART_BUILD_DARTPY_VALUE}" ]; then
 fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
+DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-{{ use_system_imgui }}}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -650,11 +712,34 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
-cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
+cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
+  { arg = "use_system_imgui", default = "ON" },
+  { arg = "build_dir", default = "" },
+] }
+
+build-py-dev-docking = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_DIR={{ build_dir }}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR} python scripts/cmake_build.py --target dartpy
+""",
+], depends-on = [
+  { task = "config-py", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+    "OFF",
+    "{{ build_dir }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+  { arg = "build_dir", default = "Release-docking" },
 ] }
 
 py-ex = { cmd = [
@@ -676,8 +761,17 @@ py-demos = { cmd = [
   "-m",
   "examples.demos",
 ], depends-on = [
-  "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
+
+# Capture a Python demo through the real Filament viewer and convert the PPM
+# outputs to PNG (and MP4 with --video when ffmpeg is available).
+py-demo-capture = { cmd = [
+  "python",
+  "scripts/capture_py_demo.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
 py-ex-hello-world-gui = { depends-on = [
   { task = "py-ex", args = [
@@ -838,11 +932,17 @@ set -euo pipefail
 BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-cuda
-"${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
+# Benchmark smoke runs go through run_benchmark_smoke.py because Google Benchmark
+# exits 0 even when a --benchmark_filter matches nothing; the wrapper fails loudly
+# so a renamed or dropped benchmark cannot silently stop being exercised.
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
   --benchmark_filter='BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/1024/128/10$' \
   --benchmark_min_time=1ms
-"${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
   --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
+  --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_vbd_cuda" \
+  --benchmark_filter='BM_Vbd(Cpu|Cuda)Step/32$' \
   --benchmark_min_time=0.001s
 """,
 ], depends-on = [
@@ -1955,6 +2055,7 @@ check-lint = { depends-on = [
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
   "check-docs-policy",
+  "check-dart7-clean-break-policy",
   "check-api-boundaries",
   "check-api-boundary-inventory",
   "check-ai-commands",
@@ -2309,6 +2410,7 @@ libode = ">=0.16.6,<0.17"
 # tests and benchmarks. CUDA stays out of the default environment and public API.
 #
 # Usage:
+#   pixi run -e cuda test-all
 #   pixi run -e cuda test-cuda
 #   pixi run -e cuda bm-phase5-cuda-full
 #

@@ -18,7 +18,9 @@ planning artifact; it does not itself claim implemented behavior.
 
 The formulas and numbers below were verified against the arXiv full text
 (arXiv:2403.06321), the project page, and the `Gaia`/`TinyVBD` reference source.
-Code references are to those repositories' `main` branch.
+Code references are to those repositories' `main` branch. This is the durable
+method audit for PLAN-104; implementation status and remaining work are
+summarized in the parent plan and dashboard.
 
 ## Verified Reference Details (load-bearing)
 
@@ -116,7 +118,7 @@ acceleration, and (b) an optional **Chebyshev semi-iterative acceleration** of
 the block-descent sweeps. The exact blend rule and Chebyshev parameters are to
 be transcribed from the paper during Phase 5.
 
-## Component-by-Component Gap
+## Initial Component-by-Component Gap
 
 | VBD component                                             | DART experimental world today                                                                                            | Phase that closes the gap         |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |

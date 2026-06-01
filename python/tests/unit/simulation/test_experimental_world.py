@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import gc
 import importlib
 import math
 import os
 from pathlib import Path
 
+import dartpy as dart
 import numpy as np
 import pytest
-
-import dartpy as dart
 
 
 def _cache_reports_experimental_disabled() -> bool:
@@ -18,9 +18,7 @@ def _cache_reports_experimental_disabled() -> bool:
 
     repo_root = Path(__file__).resolve().parents[4]
     build_type = (
-        os.environ.get("BUILD_TYPE")
-        or os.environ.get("CMAKE_BUILD_TYPE")
-        or "Release"
+        os.environ.get("BUILD_TYPE") or os.environ.get("CMAKE_BUILD_TYPE") or "Release"
     )
     pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     candidates: list[Path] = []
@@ -242,6 +240,10 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "LoopClosureRuntimePolicy",
         "LoopClosureResidual",
         "LoopClosureResidualCoordinates",
+        "SkeletonLoadOptions",
+        "ModelFormat",
+        "RootJointType",
+        "ReadOptions",
         "StateSpace",
         "StateVariable",
     )
@@ -249,6 +251,13 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         assert hasattr(sx, symbol), symbol
         assert f'"{symbol}"' in stub
         assert f"class {symbol}" in stub
+
+    assert hasattr(sx, "add_skeleton")
+    assert '"add_skeleton"' in stub
+    assert "def add_skeleton(" in stub
+    assert hasattr(sx, "add_world")
+    assert '"add_world"' in stub
+    assert "def add_world(" in stub
 
     for member in (
         "runtime_policy",
@@ -284,7 +293,14 @@ def test_experimental_stub_tracks_public_runtime_symbols():
 
 
 def _stub_class_block(stub: str, class_name: str) -> str:
-    start = stub.index(f"class {class_name}")
+    # Match the exact class header so a name like "RigidBody" does not also match
+    # "RigidBodySolver". Stub headers look like "class Name:" or "class Name(Base):".
+    for marker in (f"class {class_name}:", f"class {class_name}("):
+        start = stub.find(marker)
+        if start != -1:
+            break
+    else:
+        raise AssertionError(f"class {class_name} not found in stub")
     end = stub.find("\nclass ", start + 1)
     if end == -1:
         end = len(stub)
@@ -300,22 +316,13 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
 
     assert hasattr(sx.RigidBody, "is_deformable_surface_ccd_obstacle")
     assert not hasattr(sx.Link, "is_deformable_surface_ccd_obstacle")
-    assert (
-        "is_deformable_surface_ccd_obstacle"
-        in _stub_class_block(stub, "RigidBody")
-    )
-    assert (
-        "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
-    )
+    assert "is_deformable_surface_ccd_obstacle" in _stub_class_block(stub, "RigidBody")
+    assert "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
 
     assert hasattr(sx.RigidBody, "is_deformable_ground_barrier")
     assert not hasattr(sx.Link, "is_deformable_ground_barrier")
-    assert (
-        "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
-    )
-    assert (
-        "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
-    )
+    assert "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
+    assert "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
 
 
 def test_experimental_state_space_metadata_value_object():
@@ -336,12 +343,8 @@ def test_experimental_state_space_metadata_value_object():
     assert space.dimension == 4
     assert space.num_variables == 3
     assert space.variable_names == ["arm.q", "arm.dq0", "arm.dq1"]
-    assert space.lower_bounds.tolist() == pytest.approx(
-        [-1.0, -1.0, -10.0, -10.0]
-    )
-    assert space.upper_bounds.tolist() == pytest.approx(
-        [1.0, 1.0, 10.0, 10.0]
-    )
+    assert space.lower_bounds.tolist() == pytest.approx([-1.0, -1.0, -10.0, -10.0])
+    assert space.upper_bounds.tolist() == pytest.approx([1.0, 1.0, 10.0, 10.0])
     assert space.has_variable("arm.q")
     assert not space.has_variable("missing")
     assert space.get_variable_index("arm.q") == 0
@@ -602,6 +605,286 @@ def test_link_local_transform_includes_joint_motion():
         [0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
         abs=1e-12,
     )
+
+
+def test_experimental_add_skeleton_imports_legacy_revolute_tree():
+    sx = _simulation_experimental()
+
+    skeleton = dart.Skeleton("py_loader")
+    properties = dart.RevoluteJointProperties()
+    properties.mAxis = np.asarray([0.0, 1.0, 0.0], dtype=float)
+    joint, body = skeleton.create_revolute_joint_and_body_node_pair(
+        None, properties
+    )
+    joint.set_name("hinge")
+    joint.set_position(0, 0.2)
+    joint.set_velocity(0, -0.3)
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_anchor_"
+
+    world = sx.World()
+    multibody = sx.add_skeleton(world, skeleton, options)
+
+    assert multibody.name == "py_loader"
+    assert multibody.num_links == 2
+    assert multibody.num_joints == 1
+    assert multibody.num_dofs == 1
+    assert multibody.get_link(f"py_anchor_{body.get_name()}") is not None
+
+    loaded_link = multibody.get_link(body.get_name())
+    assert loaded_link is not None
+    loaded_joint = loaded_link.parent_joint
+    assert loaded_joint.name == "hinge"
+    assert loaded_joint.type == sx.JointType.REVOLUTE
+    assert loaded_joint.axis.tolist() == pytest.approx([0.0, 1.0, 0.0])
+    assert loaded_joint.position.tolist() == pytest.approx([0.2])
+    assert loaded_joint.velocity.tolist() == pytest.approx([-0.3])
+
+
+def test_experimental_add_skeleton_loads_uri():
+    sx = _simulation_experimental()
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_uri_anchor_"
+
+    world = sx.World()
+    multibody = sx.add_skeleton(
+        world, "dart://sample/skel/test/single_pendulum.skel", options
+    )
+
+    assert multibody.name == "single_pendulum"
+    assert multibody.num_links == 2
+    assert multibody.num_joints == 1
+    assert multibody.num_dofs == 1
+    assert multibody.get_link("py_uri_anchor_link 1") is not None
+
+    loaded_link = multibody.get_link("link 1")
+    assert loaded_link is not None
+    loaded_joint = loaded_link.parent_joint
+    assert loaded_joint.name == "joint 1"
+    assert loaded_joint.type == sx.JointType.REVOLUTE
+    assert loaded_joint.axis.tolist() == pytest.approx([0.0, 0.0, 1.0])
+    assert loaded_link.has_collision_shape
+    assert loaded_link.collision_shape.type == sx.CollisionShapeType.BOX
+    assert loaded_link.collision_shape.half_extents.tolist() == pytest.approx(
+        [0.05, 0.1, 0.15]
+    )
+
+
+def test_experimental_add_skeleton_uri_accepts_read_options():
+    sx = _simulation_experimental()
+
+    read_options = sx.ReadOptions()
+    assert read_options.format == sx.ModelFormat.AUTO
+    assert read_options.sdf_default_root_joint_type == sx.RootJointType.FLOATING
+    read_options.format = sx.ModelFormat.SKEL
+    read_options.sdf_default_root_joint_type = sx.RootJointType.FIXED
+    read_options.add_package_directory("unused", "/tmp")
+
+    load_options = sx.SkeletonLoadOptions()
+    load_options.root_anchor_prefix = "py_read_options_anchor_"
+
+    world = sx.World()
+    multibody = sx.add_skeleton(
+        world,
+        "dart://sample/skel/test/single_pendulum.skel",
+        read_options,
+        load_options,
+    )
+
+    assert multibody.name == "single_pendulum"
+    assert multibody.get_link("py_read_options_anchor_link 1") is not None
+
+    wrong_format = sx.ReadOptions()
+    wrong_format.format = sx.ModelFormat.SDF
+    with pytest.raises(Exception, match="Failed to read Skeleton"):
+        sx.add_skeleton(
+            sx.World(),
+            "dart://sample/skel/test/single_pendulum.skel",
+            wrong_format,
+        )
+
+
+def test_experimental_add_world_imports_legacy_world():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_legacy_world")
+    skeleton = dart.Skeleton("py_world_loader")
+    properties = dart.RevoluteJointProperties()
+    properties.mAxis = np.asarray([0.0, 1.0, 0.0], dtype=float)
+    joint, body = skeleton.create_revolute_joint_and_body_node_pair(
+        None, properties
+    )
+    joint.set_name("hinge")
+    joint.set_position(0, 0.25)
+    legacy_world.add_skeleton(skeleton)
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_world_anchor_"
+
+    world = sx.World()
+    multibodies = sx.add_world(world, legacy_world, options)
+
+    assert len(multibodies) == 1
+    assert world.num_multibodies == 1
+    assert multibodies[0].name == "py_world_loader"
+    assert multibodies[0].get_link(f"py_world_anchor_{body.get_name()}") is not None
+
+    loaded_link = multibodies[0].get_link(body.get_name())
+    assert loaded_link is not None
+    loaded_joint = loaded_link.parent_joint
+    assert loaded_joint.name == "hinge"
+    assert loaded_joint.position.tolist() == pytest.approx([0.25])
+
+
+def test_experimental_add_world_rejects_unsupported_world_without_mutation():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_unsupported_world")
+    supported = dart.Skeleton("py_supported_world_loader")
+    supported.create_revolute_joint_and_body_node_pair()
+    legacy_world.add_skeleton(supported)
+
+    unsupported = dart.Skeleton("py_unsupported_euler_world_loader")
+    unsupported.create_euler_joint_and_body_node_pair()
+    legacy_world.add_skeleton(unsupported)
+
+    world = sx.World()
+    with pytest.raises(Exception, match="Cannot translate legacy joint"):
+        sx.add_world(world, legacy_world)
+    assert world.num_multibodies == 0
+
+
+def test_experimental_add_world_rejects_name_conflict_without_mutation():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_conflict_world")
+    first = dart.Skeleton("py_first_world_loader")
+    first.create_revolute_joint_and_body_node_pair()
+    legacy_world.add_skeleton(first)
+
+    second = dart.Skeleton("py_second_world_loader")
+    second.create_revolute_joint_and_body_node_pair()
+    legacy_world.add_skeleton(second)
+
+    world = sx.World()
+    world.add_multibody("py_second_world_loader")
+
+    with pytest.raises(Exception, match="already contains a Multibody"):
+        sx.add_world(world, legacy_world)
+    assert world.num_multibodies == 1
+    assert world.get_multibody("py_first_world_loader") is None
+
+
+def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_axis_conflict_world")
+    supported = dart.Skeleton("py_supported_world_loader")
+    supported.create_revolute_joint_and_body_node_pair()
+    legacy_world.add_skeleton(supported)
+
+    invalid = dart.Skeleton("py_parallel_universal_axis")
+    joint, _ = invalid.create_universal_joint_and_body_node_pair()
+    joint.set_name("py_bad_universal")
+    joint.set_axis1(np.asarray([0.0, 0.0, 1.0], dtype=float))
+    joint.set_axis2(np.asarray([0.0, 0.0, 1.0], dtype=float))
+    legacy_world.add_skeleton(invalid)
+
+    world = sx.World()
+    with pytest.raises(Exception, match="axis must not be parallel"):
+        sx.add_world(world, legacy_world)
+    assert world.num_multibodies == 0
+    assert world.get_multibody("py_supported_world_loader") is None
+
+
+def test_experimental_add_world_rejects_invalid_body_inertia_without_mutation():
+    sx = _simulation_experimental()
+
+    legacy_world = dart.World("py_invalid_inertia_world")
+    supported = dart.Skeleton("py_supported_world_loader")
+    supported.create_revolute_joint_and_body_node_pair()
+    legacy_world.add_skeleton(supported)
+
+    invalid = dart.Skeleton("py_zero_mass_world_loader")
+    _, body = invalid.create_revolute_joint_and_body_node_pair()
+    inertia = body.get_inertia()
+    inertia.set_mass(0.0)
+    body.set_inertia(inertia)
+    legacy_world.add_skeleton(invalid)
+
+    world = sx.World()
+    with pytest.raises(Exception, match="mass must be positive"):
+        sx.add_world(world, legacy_world)
+    assert world.num_multibodies == 0
+    assert world.get_multibody("py_supported_world_loader") is None
+
+
+def test_experimental_add_world_loads_uri():
+    sx = _simulation_experimental()
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_world_uri_anchor_"
+
+    world = sx.World()
+    multibodies = sx.add_world(
+        world, "dart://sample/skel/test/single_pendulum.skel", options
+    )
+
+    assert len(multibodies) == 1
+    assert world.num_multibodies == 1
+    assert multibodies[0].name == "single_pendulum"
+    assert multibodies[0].get_link("py_world_uri_anchor_link 1") is not None
+
+
+def test_experimental_add_world_uri_accepts_read_options():
+    sx = _simulation_experimental()
+
+    read_options = sx.ReadOptions()
+    read_options.format = sx.ModelFormat.SKEL
+
+    load_options = sx.SkeletonLoadOptions()
+    load_options.root_anchor_prefix = "py_world_read_options_anchor_"
+
+    world = sx.World()
+    multibodies = sx.add_world(
+        world,
+        "dart://sample/skel/test/single_pendulum.skel",
+        read_options,
+        load_options,
+    )
+
+    assert len(multibodies) == 1
+    assert multibodies[0].name == "single_pendulum"
+    assert (
+        multibodies[0].get_link("py_world_read_options_anchor_link 1")
+        is not None
+    )
+
+    wrong_format = sx.ReadOptions()
+    wrong_format.format = sx.ModelFormat.SDF
+    with pytest.raises(Exception, match="Failed to read World"):
+        sx.add_world(
+            sx.World(),
+            "dart://sample/skel/test/single_pendulum.skel",
+            wrong_format,
+        )
+
+
+def test_experimental_add_world_results_keep_world_alive():
+    sx = _simulation_experimental()
+
+    options = sx.SkeletonLoadOptions()
+    options.root_anchor_prefix = "py_world_lifetime_anchor_"
+
+    multibodies = sx.add_world(
+        sx.World(), "dart://sample/skel/test/single_pendulum.skel", options
+    )
+    gc.collect()
+
+    assert multibodies[0].name == "single_pendulum"
+    assert multibodies[0].get_link("py_world_lifetime_anchor_link 1") is not None
 
 
 def test_experimental_loop_closure_topology_api():
@@ -1003,9 +1286,7 @@ def test_experimental_screw_joint_dynamics():
     nut = robot.add_link(
         "nut",
         parent=base,
-        joint=sx.JointSpec(
-            name="helix", type=sx.JointType.SCREW, axis=(0.0, 0.0, 1.0)
-        ),
+        joint=sx.JointSpec(name="helix", type=sx.JointType.SCREW, axis=(0.0, 0.0, 1.0)),
     )
     mass = 2.0
     inertia_zz = 0.1
@@ -1027,9 +1308,7 @@ def test_experimental_screw_joint_dynamics():
     world.step()
     # Gravity drives the screw down: qddot = -m g pitch / M.
     expected_accel = -mass * 9.81 * pitch / expected_mass
-    assert joint.acceleration.tolist()[0] == pytest.approx(
-        expected_accel, abs=1e-9
-    )
+    assert joint.acceleration.tolist()[0] == pytest.approx(expected_accel, abs=1e-9)
 
 
 def test_experimental_universal_joint_dynamics():
@@ -1235,9 +1514,7 @@ def test_experimental_ball_joint_dynamics():
 
     world.enter_simulation_mode()
 
-    expected_mass = np.diag(
-        [0.05, 0.12 + mass * 0.7**2, 0.2 + mass * 0.7**2]
-    )
+    expected_mass = np.diag([0.05, 0.12 + mass * 0.7**2, 0.2 + mass * 0.7**2])
     assert np.allclose(robot.mass_matrix, expected_mass, atol=1e-12)
     gravity = robot.gravity_forces
     assert gravity[0] == pytest.approx(0.0, abs=1e-12)
@@ -1334,12 +1611,8 @@ def test_experimental_free_joint_dynamics():
     total = dt * steps
     assert spin_joint.velocity.tolist() == pytest.approx(twist, abs=1e-9)
     position = spin_joint.position
-    assert position[:3].tolist() == pytest.approx(
-        [0.0, 0.0, 3.0 * total], abs=1e-9
-    )
-    assert position[3:].tolist() == pytest.approx(
-        [0.0, 0.0, 2.0 * total], abs=1e-9
-    )
+    assert position[:3].tolist() == pytest.approx([0.0, 0.0, 3.0 * total], abs=1e-9)
+    assert position[3:].tolist() == pytest.approx([0.0, 0.0, 2.0 * total], abs=1e-9)
 
 
 def test_experimental_link_center_of_mass_offset():
@@ -1367,12 +1640,8 @@ def test_experimental_link_center_of_mass_offset():
     world.enter_simulation_mode()
 
     # Parallel-axis mass matrix and horizontal-pendulum gravity torque.
-    assert robot.mass_matrix[0, 0] == pytest.approx(
-        inertia_yy + mass * length**2
-    )
-    assert robot.gravity_forces.tolist() == pytest.approx(
-        [-mass * 9.81 * length]
-    )
+    assert robot.mass_matrix[0, 0] == pytest.approx(inertia_yy + mass * length**2)
+    assert robot.gravity_forces.tolist() == pytest.approx([-mass * 9.81 * length])
 
 
 def test_experimental_multibody_dynamics_terms():
@@ -1518,9 +1787,7 @@ def test_experimental_multibody_inverse_dynamics():
     # At q = 0, qdot = 0: tau = (I + m L^2) qddot + g, with g = -m g L.
     accel = 3.0
     tau = robot.compute_inverse_dynamics([accel])
-    expected = (
-        inertia_yy + mass * length * length
-    ) * accel - mass * 9.81 * length
+    expected = (inertia_yy + mass * length * length) * accel - mass * 9.81 * length
     assert tau.tolist() == pytest.approx([expected])
 
     with pytest.raises(Exception, match="must match"):
@@ -1559,9 +1826,7 @@ def test_experimental_multibody_impulse_response():
     assert delta_velocity.tolist() == pytest.approx([impulse / inertia_pivot])
 
     # Consistency: M dqdot = f.
-    assert (robot.mass_matrix @ delta_velocity).tolist() == pytest.approx(
-        [impulse]
-    )
+    assert (robot.mass_matrix @ delta_velocity).tolist() == pytest.approx([impulse])
 
     with pytest.raises(Exception, match="must match"):
         robot.compute_impulse_response([0.0, 0.0])
@@ -1594,9 +1859,7 @@ def test_experimental_multibody_link_jacobian():
     jacobian = robot.get_jacobian(bob)
     assert jacobian.shape == (6, 1)
     # Body twist [axis; axis x p] = [0, 1, 0, 0, 0, -L].
-    assert jacobian[:, 0].tolist() == pytest.approx(
-        [0.0, 1.0, 0.0, 0.0, 0.0, -length]
-    )
+    assert jacobian[:, 0].tolist() == pytest.approx([0.0, 1.0, 0.0, 0.0, 0.0, -length])
 
     # The fixed base cannot move: its Jacobian is zero.
     base_jacobian = robot.get_jacobian(base)
@@ -1701,9 +1964,7 @@ def test_experimental_joint_armature():
 
     world.step()
     expected_accel = 9.81 * mass * length / expected_mass
-    assert joint.acceleration.tolist()[0] == pytest.approx(
-        expected_accel, abs=1e-9
-    )
+    assert joint.acceleration.tolist()[0] == pytest.approx(expected_accel, abs=1e-9)
 
 
 def test_experimental_joint_coulomb_friction():
@@ -2107,7 +2368,7 @@ def test_experimental_collision_shape_capsule():
     world = sx.World()
 
     capsule = world.add_rigid_body("capsule")
-    shape = sx.CollisionShape.capsule(0.25, 1.0)
+    shape = sx.CollisionShape.capsule(radius=0.25, half_height=0.5)
     capsule.set_collision_shape(shape)
     sphere = world.add_rigid_body("sphere", position=(0.45, 0.0, 0.0))
     sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
@@ -2115,6 +2376,10 @@ def test_experimental_collision_shape_capsule():
     assert capsule.collision_shape.type == sx.CollisionShapeType.CAPSULE
     assert capsule.collision_shape.radius == pytest.approx(0.25)
     assert capsule.collision_shape.height == pytest.approx(1.0)
+    assert capsule.collision_shape.half_height == pytest.approx(0.5)
+    assert capsule.collision_shape.half_extents.tolist() == pytest.approx(
+        [0.25, 0.25, 0.5]
+    )
 
     contacts = world.collide()
     assert len(contacts) >= 1
@@ -2127,7 +2392,7 @@ def test_experimental_collision_shape_cylinder():
     world = sx.World()
 
     cylinder = world.add_rigid_body("cylinder")
-    shape = sx.CollisionShape.cylinder(0.25, 1.0)
+    shape = sx.CollisionShape.cylinder(radius=0.25, half_height=0.5)
     cylinder.set_collision_shape(shape)
     sphere = world.add_rigid_body("sphere", position=(0.45, 0.0, 0.0))
     sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
@@ -2135,6 +2400,10 @@ def test_experimental_collision_shape_cylinder():
     assert cylinder.collision_shape.type == sx.CollisionShapeType.CYLINDER
     assert cylinder.collision_shape.radius == pytest.approx(0.25)
     assert cylinder.collision_shape.height == pytest.approx(1.0)
+    assert cylinder.collision_shape.half_height == pytest.approx(0.5)
+    assert cylinder.collision_shape.half_extents.tolist() == pytest.approx(
+        [0.25, 0.25, 0.5]
+    )
 
     contacts = world.collide()
     assert len(contacts) >= 1
@@ -2187,6 +2456,56 @@ def test_experimental_collision_shape_mesh():
     contacts = world.collide()
     assert len(contacts) >= 1
     assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
+
+
+def test_experimental_mesh_collision_shape_public_surface():
+    sx = _simulation_experimental()
+
+    shape = sx.CollisionShape.mesh(
+        vertices=[
+            (0.0, 0.0, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+        ],
+        triangles=[(0, 1, 2)],
+    )
+
+    assert shape.type == sx.CollisionShapeType.MESH
+    np.testing.assert_allclose(
+        [vertex.tolist() for vertex in shape.vertices],
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ],
+    )
+    assert [triangle.tolist() for triangle in shape.triangles] == [[0, 1, 2]]
+
+    world = sx.World()
+    body = world.add_rigid_body("mesh")
+    body.set_collision_shape(shape)
+    assert body.collision_shape.type == sx.CollisionShapeType.MESH
+
+
+def test_experimental_cylinder_collision_shape_public_surface_and_query():
+    sx = _simulation_experimental()
+
+    shape = sx.CollisionShape.cylinder(radius=0.25, half_height=0.75)
+    assert shape.type == sx.CollisionShapeType.CYLINDER
+    assert shape.radius == pytest.approx(0.25)
+    assert shape.half_extents.tolist() == pytest.approx([0.25, 0.25, 0.75])
+
+    world = sx.World()
+    cylinder = world.add_rigid_body("cylinder")
+    cylinder.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.4, 0.0, 0.0))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    for contact in contacts:
+        names = {contact.body_a.name, contact.body_b.name}
+        assert names == {"cylinder", "sphere"}
 
 
 def test_experimental_collision_query_includes_links():
@@ -2432,10 +2751,7 @@ def test_experimental_multibody_link_pushes_dynamic_rigid_body():
     box_pushed = False
     for _ in range(600):
         world.step()
-        momentum = (
-            striker_mass * joint.velocity[0]
-            + box_mass * box.linear_velocity[0]
-        )
+        momentum = striker_mass * joint.velocity[0] + box_mass * box.linear_velocity[0]
         # Equal-and-opposite contact impulses conserve total X momentum.
         assert momentum == pytest.approx(initial_momentum, abs=1e-6)
         if box.linear_velocity[0] > 1e-3:
@@ -2588,9 +2904,7 @@ def test_experimental_rigid_body_options_reject_invalid_values():
     with pytest.raises(Exception, match="mass must be positive and finite"):
         sx.RigidBodyOptions(mass=0.0)
 
-    with pytest.raises(
-        Exception, match="inertia must be symmetric positive definite"
-    ):
+    with pytest.raises(Exception, match="inertia must be symmetric positive definite"):
         sx.RigidBodyOptions(
             inertia=((1.0, 0.0, 0.0), (0.0, -1.0, 0.0), (0.0, 0.0, 1.0))
         )
@@ -2752,9 +3066,7 @@ def test_experimental_deformable_body_python_api():
     assert edge.node_b == 1
 
     # The fixed node stays put; the stretched spring contracts the free node.
-    np.testing.assert_allclose(
-        body.node_position(0), [0.0, 0.0, 0.0], atol=1e-12
-    )
+    np.testing.assert_allclose(body.node_position(0), [0.0, 0.0, 0.0], atol=1e-12)
     before_x = body.node_position(1)[0]
     world.step()
     after_x = body.node_position(1)[0]
@@ -2806,6 +3118,255 @@ def test_experimental_deformable_body_topology_python_api():
     # The unit corner tetrahedron has volume 1/6.
     assert body.tetrahedron_rest_volume(0) == pytest.approx(1.0 / 6.0)
     assert body.node_mass(0) == pytest.approx(1.0)
+
+
+def test_experimental_adaptive_barrier_stiffness_holds_heavy_node_higher():
+    sx = _simulation_experimental()
+
+    def settle(adaptive: bool) -> float:
+        world = sx.World(time_step=0.01)
+        world.gravity = [0.0, 0.0, -0.5]
+        ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+        ground.is_static = True
+        ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
+        ground.is_deformable_ground_barrier = True
+
+        options = sx.DeformableBodyOptions()
+        options.positions = [np.array([0.0, 0.0, 0.015])]
+        options.masses = [40.0]
+        options.material.use_adaptive_barrier_stiffness = adaptive
+        body = world.add_deformable_body("heavy_node", options)
+        world.step(600)
+        return float(body.node_position(0)[2])
+
+    fixed_z = settle(False)
+    adaptive_z = settle(True)
+    # Both settle intersection-free in the activation band (d_hat = 2e-2).
+    assert 0.0 < fixed_z < 2e-2
+    assert 0.0 < adaptive_z < 2e-2
+    # The stiffer adaptive barrier holds the heavy node measurably higher.
+    assert adaptive_z > fixed_z + 1e-3
+
+
+def test_experimental_world_exposes_deformable_solver_diagnostics():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+    world.gravity = [0.0, 0.0, -9.81]
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.material.youngs_modulus = 1.0e4
+    options.material.use_finite_element_elasticity = True
+    options.fixed_nodes = [0]
+    world.add_deformable_body("tet", options)
+
+    # Before any step the diagnostics are zero-initialized.
+    before = world.last_deformable_solver_diagnostics
+    assert before.body_count == 0
+    assert before.node_count == 0
+    assert before.solver_iterations == 0
+    assert before.projected_newton_hessian_nonzeros == 0
+    assert before.projected_newton_hessian_storage_bytes == 0
+    assert before.projected_newton_matrix_free_solves == 0
+
+    world.step(5)
+
+    after = world.last_deformable_solver_diagnostics
+    assert after.body_count == 1
+    assert after.node_count == 4
+    # The FEM body runs the implicit projected-Newton solve every step.
+    assert after.solver_iterations >= 1
+    assert after.objective_evaluations >= 1
+    assert after.projected_newton_steps + after.projected_newton_fallbacks >= 1
+    assert after.projected_newton_hessian_nonzeros > 0
+    assert after.projected_newton_hessian_storage_bytes > 0
+    # This body uses the default direct (sparse Cholesky) solve, so the iterative
+    # (conjugate-gradient) path is never taken.
+    assert after.projected_newton_iterative_solves == 0
+    assert after.projected_newton_matrix_free_solves == 0
+    assert after.projected_newton_iterative_iterations == 0
+    assert after.projected_newton_iterative_max_error == 0.0
+    # No contacts in this free-hanging single tet.
+    assert after.self_contact_barrier_active_contacts == 0
+    assert after.converged_active_contact_count == 0
+
+    # The snapshot is read-only.
+    with pytest.raises((AttributeError, TypeError)):
+        after.node_count = 99
+
+
+def test_experimental_world_iterative_solver_diagnostic():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+    world.gravity = [0.0, 0.0, -9.81]
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.material.youngs_modulus = 1.0e4
+    options.material.use_finite_element_elasticity = True
+    # Opt in to the iterative (incomplete-Cholesky-preconditioned CG) linear
+    # solve instead of the sparse Cholesky factorization.
+    options.material.use_iterative_linear_solver = True
+    options.fixed_nodes = [0]
+    world.add_deformable_body("tet", options)
+
+    # The iterative-solve count surfaces through the public diagnostics, so a
+    # caller can observe which linear-solve path the projected-Newton step took.
+    total_iterative_solves = 0
+    total_iterative_iterations = 0
+    max_hessian_nonzeros = 0
+    max_hessian_storage_bytes = 0
+    max_iterative_error = 0.0
+    for _ in range(8):
+        world.step()
+        diagnostics = world.last_deformable_solver_diagnostics
+        total_iterative_solves += diagnostics.projected_newton_iterative_solves
+        total_iterative_iterations += (
+            diagnostics.projected_newton_iterative_iterations
+        )
+        max_hessian_nonzeros = max(
+            max_hessian_nonzeros, diagnostics.projected_newton_hessian_nonzeros
+        )
+        max_hessian_storage_bytes = max(
+            max_hessian_storage_bytes,
+            diagnostics.projected_newton_hessian_storage_bytes,
+        )
+        max_iterative_error = max(
+            max_iterative_error,
+            diagnostics.projected_newton_iterative_max_error,
+        )
+    assert total_iterative_solves > 0
+    assert total_iterative_iterations >= 0
+    assert max_hessian_nonzeros > 0
+    assert max_hessian_storage_bytes > 0
+    assert math.isfinite(max_iterative_error)
+    assert max_iterative_error >= 0.0
+
+
+def test_experimental_world_matrix_free_solver_diagnostic():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.01)
+    world.gravity = [0.0, 0.0, -9.81]
+
+    options = sx.DeformableBodyOptions()
+    options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    options.tetrahedra = [sx.DeformableTetrahedron(0, 1, 2, 3)]
+    options.material.youngs_modulus = 1.0e4
+    options.material.use_finite_element_elasticity = True
+    options.material.use_matrix_free_linear_solver = True
+    options.fixed_nodes = [0]
+    world.add_deformable_body("tet", options)
+
+    total_iterative_solves = 0
+    total_matrix_free_solves = 0
+    total_iterative_iterations = 0
+    max_hessian_nonzeros = 0
+    max_hessian_storage_bytes = 0
+    max_iterative_error = 0.0
+    for _ in range(8):
+        world.step()
+        diagnostics = world.last_deformable_solver_diagnostics
+        total_iterative_solves += diagnostics.projected_newton_iterative_solves
+        total_matrix_free_solves += (
+            diagnostics.projected_newton_matrix_free_solves
+        )
+        total_iterative_iterations += (
+            diagnostics.projected_newton_iterative_iterations
+        )
+        max_hessian_nonzeros = max(
+            max_hessian_nonzeros, diagnostics.projected_newton_hessian_nonzeros
+        )
+        max_hessian_storage_bytes = max(
+            max_hessian_storage_bytes,
+            diagnostics.projected_newton_hessian_storage_bytes,
+        )
+        max_iterative_error = max(
+            max_iterative_error,
+            diagnostics.projected_newton_iterative_max_error,
+        )
+
+    assert total_matrix_free_solves > 0
+    assert total_iterative_solves == total_matrix_free_solves
+    assert total_iterative_iterations >= 0
+    assert max_hessian_nonzeros == 0
+    assert max_hessian_storage_bytes == 0
+    assert math.isfinite(max_iterative_error)
+    assert max_iterative_error >= 0.0
+
+
+def test_experimental_world_matrix_free_solver_matches_direct_ground_contact():
+    sx = _simulation_experimental()
+
+    def settle(matrix_free: bool):
+        world = sx.World(time_step=0.01)
+        world.gravity = [0.0, 0.0, -0.5]
+        ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+        ground.is_static = True
+        ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
+        ground.is_deformable_ground_barrier = True
+
+        options = sx.DeformableBodyOptions()
+        options.positions = [np.array([0.0, 0.0, 0.015])]
+        options.masses = [40.0]
+        options.material.use_matrix_free_linear_solver = matrix_free
+        body = world.add_deformable_body("node", options)
+
+        total_iterative_solves = 0
+        total_matrix_free_solves = 0
+        max_hessian_nonzeros = 0
+        for _ in range(600):
+            world.step()
+            diagnostics = world.last_deformable_solver_diagnostics
+            total_iterative_solves += (
+                diagnostics.projected_newton_iterative_solves
+            )
+            total_matrix_free_solves += (
+                diagnostics.projected_newton_matrix_free_solves
+            )
+            max_hessian_nonzeros = max(
+                max_hessian_nonzeros,
+                diagnostics.projected_newton_hessian_nonzeros,
+            )
+        return (
+            float(body.node_position(0)[2]),
+            total_iterative_solves,
+            total_matrix_free_solves,
+            max_hessian_nonzeros,
+        )
+
+    direct_z, direct_solves, direct_matrix_free, direct_hessian_nonzeros = (
+        settle(False)
+    )
+    matrix_z, matrix_solves, matrix_free_solves, matrix_hessian_nonzeros = (
+        settle(True)
+    )
+
+    assert direct_solves == 0
+    assert direct_matrix_free == 0
+    assert direct_hessian_nonzeros > 0
+
+    assert matrix_solves > 0
+    assert matrix_solves == matrix_free_solves
+    assert matrix_hessian_nonzeros == 0
+    assert 0.0 < matrix_z < 2e-2
+    assert matrix_z == pytest.approx(direct_z, abs=1e-9)
 
 
 def test_experimental_deformable_body_boundary_conditions_python_api():

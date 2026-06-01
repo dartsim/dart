@@ -11,16 +11,18 @@
     runs gravity, articulated forward dynamics for all joint types (fixed,
     revolute, prismatic, screw, universal, planar, ball, free), a floating base,
     derived quantities, actuator/limit primitives, a collision-query bridge,
-    and the required dart-gui example. The active local follow-up line completes
-    the legacy `dynamics::Skeleton` / `simulation::World` → experimental
-    `Multibody` bridge for all joint types, branching and root offsets,
-    collision shape import, compound shapes, and joint properties
-    (`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`), then
-    upgrades `World::collide()` with body-type filtering, native broad-phase
-    pruning, and a persistent native collision-query world. The semi-implicit
-    default pipeline now resolves rigid-rigid and articulated link contacts in a
-    single unified boxed-LCP. The remaining gaps are solver scaling polish
-    (warm starting and friction-cone iteration) plus separate deferred actuator,
+    and the required dart-gui example. The active follow-up line adds the
+    legacy `dynamics::Skeleton` / `simulation::World` to experimental
+    `Multibody` bridge, including `addSkeleton()` / `addWorld()` URI-loading
+    facades, joint-family/property transfer, branching and root offsets,
+    collision shape import with local transforms, compound shapes, and dartpy
+    coverage. It also upgrades `World::collide()` with body-type filtering,
+    native broad-phase pruning, and a persistent native collision-query world.
+    The semi-implicit default pipeline now resolves rigid-rigid and articulated
+    link contacts in a single unified boxed-LCP. Remaining gaps are solver
+    scaling polish (warm starting and friction-cone iteration), richer
+    model-loading diagnostics/load-result ergonomics, visual/material import,
+    multi-DOF joint-property forces, and separate deferred actuator,
     mimic/coupler, loop-closure, integrator, and COM-Jacobian slices.
   - Legacy DART 6 dynamics baseline: `dart/dynamics/`, `dart/constraint/`,
     `dart/simulation/world.cpp`.
@@ -63,7 +65,7 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 - Each workstream lands as small verifiable slices with focused tests; gap-matrix
   rows flip to PRESENT with evidence.
 - Parity gate: experimental dynamics match legacy DART 6 on identical scenes
-  (energy-drift bounds and trajectory tolerance) before any DART 8 promotion
+  (energy-drift bounds and trajectory tolerance) before any DART 7 promotion
   claim for the affected capability.
 - The public API never exposes `Solver`, `Coupler`, `PhysicsDomain`, schedule
   phase types, ECS storage, component types, execution-backend names, or the
@@ -78,4 +80,4 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 - A phase completes, splits, or is reprioritized.
 - The native-collision bridge or boxed-LCP contract changes shape.
 - Parity evidence reveals a needed design change in the architecture doc.
-- A maintainer reprioritizes against other DART 7 → DART 8 work.
+- A maintainer reprioritizes against other DART 7 clean-break work.

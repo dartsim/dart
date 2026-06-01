@@ -50,8 +50,6 @@ set(
   "${CMAKE_CURRENT_LIST_DIR}/scenes/hubo_puppet.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/g1_puppet.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/human_joint_limits.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_rigid_body_gui.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_deformable.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/collision_sandbox.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/collision_sandbox/pair_registry.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_simbicon.cpp"
@@ -62,6 +60,16 @@ set(
   "${CMAKE_CURRENT_LIST_DIR}/scenes/wam_ikfast.cpp"
 )
 
+# Scenes that depend on the experimental simulation module (dart::simulation::
+# experimental). They are compiled and registered only when that optional module
+# is built, since CI and downstreams can configure with
+# DART_BUILD_SIMULATION_EXPERIMENTAL=OFF.
+set(
+  demos_experimental_scene_sources
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_rigid_body_gui.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_deformable.cpp"
+)
+
 add_library(demos_scenes STATIC ${demos_scene_sources})
 target_include_directories(demos_scenes PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(
@@ -69,12 +77,19 @@ target_link_libraries(
   PUBLIC dart-gui dart-io dart-collision-native
 )
 if(TARGET dart-simulation-experimental)
+  target_sources(demos_scenes PRIVATE ${demos_experimental_scene_sources})
   target_link_libraries(demos_scenes PUBLIC dart-simulation-experimental)
+  target_compile_definitions(
+    demos_scenes
+    PUBLIC DART_DEMOS_HAS_SIMULATION_EXPERIMENTAL
+  )
 endif()
 target_compile_features(demos_scenes PUBLIC cxx_std_20)
 set_target_properties(demos_scenes PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
-  dart_format_add(${demos_scene_sources})
+  dart_format_add(
+    ${demos_scene_sources} ${demos_experimental_scene_sources}
+  )
 endif()
 
 # Thin app: only the entry point, linked against the scene library.
@@ -99,6 +114,39 @@ if(TARGET dart-demos)
       UNIT_gui_DemosGoldenParity
       PROPERTIES LABELS "unit;gui;demos"
     )
+    if(NOT APPLE)
+      if(WIN32)
+        set(_demos_golden_lib_path_var "PATH")
+        set(_demos_golden_runtime_paths)
+        if(DEFINED ENV{CONDA_PREFIX})
+          list(
+            APPEND _demos_golden_runtime_paths
+            "$ENV{CONDA_PREFIX}/Library/bin"
+            "$ENV{CONDA_PREFIX}/bin"
+          )
+        endif()
+      else()
+        set(_demos_golden_lib_path_var "LD_LIBRARY_PATH")
+        set(_demos_golden_runtime_paths)
+        if(DEFINED ENV{CONDA_PREFIX})
+          list(APPEND _demos_golden_runtime_paths "$ENV{CONDA_PREFIX}/lib")
+        endif()
+      endif()
+      list(APPEND _demos_golden_runtime_paths "$<TARGET_FILE_DIR:dart>")
+      set(_demos_golden_env_mods)
+      foreach(_demos_golden_runtime_path IN LISTS _demos_golden_runtime_paths)
+        if(_demos_golden_runtime_path)
+          list(
+            APPEND _demos_golden_env_mods
+            "${_demos_golden_lib_path_var}=path_list_prepend:${_demos_golden_runtime_path}"
+          )
+        endif()
+      endforeach()
+      set_tests_properties(
+        UNIT_gui_DemosGoldenParity
+        PROPERTIES ENVIRONMENT_MODIFICATION "${_demos_golden_env_mods}"
+      )
+    endif()
     # The aggregate `tests` target (tests/CMakeLists.txt) is finalized before
     # examples/ is added, so it cannot pick up this example-tree test through the
     # DART_unit_TESTS global property. Attach it explicitly so `pixi run

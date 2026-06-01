@@ -334,7 +334,12 @@ DeformableMaterialProperties DeformableBody::getMaterialProperties() const
       material.density,
       material.youngsModulus,
       material.poissonRatio,
-      material.frictionCoefficient};
+      material.frictionCoefficient,
+      material.useFiniteElementElasticity,
+      material.useFixedCorotationalElasticity,
+      material.useAdaptiveBarrierStiffness,
+      material.useIterativeLinearSolver,
+      material.useMatrixFreeLinearSolver};
 }
 
 } // namespace dart::simulation::experimental

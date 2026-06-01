@@ -13,13 +13,15 @@ onto a SimpleFrame box visual each frame.
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
 from .._sx_bridge import SxRenderBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
 def build() -> SceneSetup:
@@ -59,10 +61,57 @@ def build() -> SceneSetup:
     )
     bridge.sync()
 
+    angular_speed_history: deque[float] = deque(maxlen=120)
+    drift_history: deque[float] = deque(maxlen=120)
+    energy_drift_history: deque[float] = deque(maxlen=120)
+    momentum_drift_history: deque[float] = deque(maxlen=120)
+    inertia_diag = np.diag(np.asarray(body.inertia, dtype=float))
+    initial_velocity = np.asarray(joint.velocity, dtype=float)
+    initial_energy = 0.5 * body.mass * float(np.dot(initial_velocity[:3], initial_velocity[:3]))
+    initial_energy += 0.5 * float(
+        np.dot(inertia_diag * initial_velocity[3:], initial_velocity[3:])
+    )
+    initial_momentum = float(np.linalg.norm(inertia_diag * initial_velocity[3:]))
+
+    def build_panel(builder: object, context: object) -> None:
+        joint = body.parent_joint
+        velocity = np.asarray(joint.velocity, dtype=float)
+        angular_speed = float(np.linalg.norm(velocity[3:]))
+        drift_speed = float(np.linalg.norm(velocity[:3]))
+        energy = 0.5 * body.mass * float(np.dot(velocity[:3], velocity[:3]))
+        energy += 0.5 * float(np.dot(inertia_diag * velocity[3:], velocity[3:]))
+        momentum = float(np.linalg.norm(inertia_diag * velocity[3:]))
+        energy_drift = energy - initial_energy
+        momentum_drift = momentum - initial_momentum
+        angular_speed_history.append(angular_speed)
+        drift_history.append(drift_speed)
+        energy_drift_history.append(energy_drift)
+        momentum_drift_history.append(momentum_drift)
+
+        builder.text("solver: variational integrator")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text("gravity: zero")
+        builder.text(f"angular speed: {angular_speed:.3f} rad/s")
+        builder.text(f"drift speed: {drift_speed:.3f} m/s")
+        builder.text(f"energy drift: {energy_drift:+.3e} J")
+        builder.text(f"angular momentum drift: {momentum_drift:+.3e}")
+        changed, spin_y = builder.slider("Y spin", float(velocity[4]), -8.0, 8.0)
+        if changed:
+            next_velocity = velocity.copy()
+            next_velocity[4] = float(spin_y)
+            joint.velocity = next_velocity
+        builder.plot_lines("Angular speed", list(angular_speed_history))
+        builder.plot_lines("Drift speed", list(drift_history))
+        builder.plot_lines("Energy drift", list(energy_drift_history))
+        builder.plot_lines("Momentum drift", list(momentum_drift_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
         force_drag=bridge.force_drag,
+        panels=[ScenePanel("Variational Tumbler", build_panel)],
         info={"sx_world": world, "dofs": robot.num_dofs},
     )
 
@@ -70,7 +119,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_variational_tumbler",
     title="Variational Tumbler (sx)",
-    category="Experimental",
+    category="Variational Integrators (sx)",
     summary="A torque-free floating body tumbles without energy/momentum drift.",
     build=build,
 )

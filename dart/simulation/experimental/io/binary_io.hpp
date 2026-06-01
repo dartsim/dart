@@ -70,14 +70,21 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      Distance family)
 //   5: Link gained an `externalForce` field (per-step external spatial wrench
 //      applied via Link::applyForce; serialized, round-trips to zero)
-//   6: CollisionShape gained a local transform for body/link-relative shape
-//      offsets
-//   7: CollisionShape gained a height field for capsule shapes
-//   8: CollisionShape gained a Cylinder type using radius and height
-//   9: CollisionShape gained Plane normal and offset fields
-//   10: CollisionShape gained Mesh vertices and triangle indices
-//   11: CollisionGeometry stores multiple CollisionShape records
-constexpr std::uint32_t kBinaryFormatVersion = 11;
+//   6: World differentiable flag serialized after the deformable-body counter
+//   7: CollisionShape mesh vertices and triangle indices serialized
+//   8: VariationalContact (variational-integrator ground-contact config, incl.
+//      the augmented-Lagrangian dual-update cadence) and its
+//      VariationalContactDualState (per-point duals + cadence counter)
+//      registered as serializable components
+//   9: Link gained a separate parent-to-joint transform before the legacy
+//      joint-to-link transform for preserving imported joint origins
+//   10: DeformableMaterial gained `useMatrixFreeLinearSolver`
+//   11: Reserved by the experimental-model-loader branch for collision shape
+//      local transforms, Plane, Mesh, and multiple CollisionGeometry shapes
+//   12: Merged DART 7 format: mainline versions 6-10 plus the branch collision
+//      geometry record layout, storing capsule/cylinder half-height in
+//      CollisionShape::halfExtents.z()
+constexpr std::uint32_t kBinaryFormatVersion = 12;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

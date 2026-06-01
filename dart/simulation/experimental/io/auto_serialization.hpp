@@ -56,6 +56,117 @@ template <typename T>
   requires(!comps::HasComponentCategory<T>)
 void autoDeserialize(std::istream& in, T& value);
 
+namespace detail {
+
+template <typename T>
+inline constexpr bool IsVector3dList
+    = std::same_as<T, std::vector<Eigen::Vector3d>>;
+
+template <typename T>
+inline constexpr bool IsVector3iList
+    = std::same_as<T, std::vector<Eigen::Vector3i>>;
+
+inline void writeVector3i(std::ostream& out, const Eigen::Vector3i& vec)
+{
+  writePOD(out, vec.x());
+  writePOD(out, vec.y());
+  writePOD(out, vec.z());
+}
+
+inline void readVector3i(std::istream& in, Eigen::Vector3i& vec)
+{
+  int x = 0;
+  int y = 0;
+  int z = 0;
+  readPOD(in, x);
+  readPOD(in, y);
+  readPOD(in, z);
+  vec = Eigen::Vector3i(x, y, z);
+}
+
+inline void writeVector3dList(
+    std::ostream& out, const std::vector<Eigen::Vector3d>& values)
+{
+  const std::size_t count = values.size();
+  writePOD(out, count);
+  for (const Eigen::Vector3d& value : values) {
+    writeVector3d(out, value);
+  }
+}
+
+inline void readVector3dList(
+    std::istream& in, std::vector<Eigen::Vector3d>& values)
+{
+  std::size_t count = 0;
+  readPOD(in, count);
+  values.resize(count);
+  for (Eigen::Vector3d& value : values) {
+    readVector3d(in, value);
+  }
+}
+
+inline void writeVector3iList(
+    std::ostream& out, const std::vector<Eigen::Vector3i>& values)
+{
+  const std::size_t count = values.size();
+  writePOD(out, count);
+  for (const Eigen::Vector3i& value : values) {
+    writeVector3i(out, value);
+  }
+}
+
+inline void readVector3iList(
+    std::istream& in, std::vector<Eigen::Vector3i>& values)
+{
+  std::size_t count = 0;
+  readPOD(in, count);
+  values.resize(count);
+  for (Eigen::Vector3i& value : values) {
+    readVector3i(in, value);
+  }
+}
+
+// A list of trivially-copyable elements (e.g. std::vector<std::size_t>),
+// serialized as a count followed by the raw POD elements. Excludes the Eigen
+// vector lists above, which keep their own dedicated packed layout.
+template <typename T>
+struct IsTrivialVectorHelper : std::false_type
+{
+};
+template <typename U>
+struct IsTrivialVectorHelper<std::vector<U>>
+  : std::bool_constant<std::is_trivially_copyable_v<U>>
+{
+};
+
+template <typename T>
+inline constexpr bool IsTrivialList
+    = IsTrivialVectorHelper<T>::value
+      && !IsVector3dList<T> && !IsVector3iList<T>;
+
+template <typename U>
+inline void writeTrivialList(std::ostream& out, const std::vector<U>& values)
+{
+  const std::size_t count = values.size();
+  writePOD(out, count);
+  for (const U& value : values) {
+    writePOD(out, value);
+  }
+}
+
+template <typename U>
+inline void readTrivialList(std::istream& in, std::vector<U>& values)
+{
+  std::size_t count = 0;
+  readPOD(in, count);
+  values.resize(count);
+  for (U& value : values) {
+    readPOD(in, value);
+  }
+}
+
+} // namespace detail
+
 //==============================================================================
 // Automatic Serialization for TagComponent (empty components)
 //==============================================================================
@@ -94,6 +205,12 @@ void autoSerialize(
       writeString(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       writeVector3d(out, field);
+    } else if constexpr (detail::IsVector3dList<FieldType>) {
+      detail::writeVector3dList(out, field);
+    } else if constexpr (detail::IsVector3iList<FieldType>) {
+      detail::writeVector3iList(out, field);
+    } else if constexpr (detail::IsTrivialList<FieldType>) {
+      detail::writeTrivialList(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       writeIsometry3d(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
@@ -132,6 +249,12 @@ void autoDeserialize(std::istream& in, T& component)
       readString(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       readVector3d(in, field);
+    } else if constexpr (detail::IsVector3dList<FieldType>) {
+      detail::readVector3dList(in, field);
+    } else if constexpr (detail::IsVector3iList<FieldType>) {
+      detail::readVector3iList(in, field);
+    } else if constexpr (detail::IsTrivialList<FieldType>) {
+      detail::readTrivialList(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       readIsometry3d(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
@@ -200,6 +323,12 @@ void autoSerialize(
       writeString(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       writeVector3d(out, field);
+    } else if constexpr (detail::IsVector3dList<FieldType>) {
+      detail::writeVector3dList(out, field);
+    } else if constexpr (detail::IsVector3iList<FieldType>) {
+      detail::writeVector3iList(out, field);
+    } else if constexpr (detail::IsTrivialList<FieldType>) {
+      detail::writeTrivialList(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       writeIsometry3d(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
@@ -268,6 +397,12 @@ void autoDeserialize(std::istream& in, T& component)
       readString(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       readVector3d(in, field);
+    } else if constexpr (detail::IsVector3dList<FieldType>) {
+      detail::readVector3dList(in, field);
+    } else if constexpr (detail::IsVector3iList<FieldType>) {
+      detail::readVector3iList(in, field);
+    } else if constexpr (detail::IsTrivialList<FieldType>) {
+      detail::readTrivialList(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       readIsometry3d(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
@@ -332,6 +467,10 @@ void autoSerialize(
       writeVectorXd(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       writeVector3d(out, field);
+    } else if constexpr (detail::IsVector3dList<FieldType>) {
+      detail::writeVector3dList(out, field);
+    } else if constexpr (detail::IsVector3iList<FieldType>) {
+      detail::writeVector3iList(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {
@@ -361,6 +500,10 @@ void autoDeserialize(std::istream& in, T& value)
       readVectorXd(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       readVector3d(in, field);
+    } else if constexpr (detail::IsVector3dList<FieldType>) {
+      detail::readVector3dList(in, field);
+    } else if constexpr (detail::IsVector3iList<FieldType>) {
+      detail::readVector3iList(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {

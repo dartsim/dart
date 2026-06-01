@@ -9,6 +9,8 @@ __all__: list[str] = [
     "CollisionShape",
     "CollisionShapeType",
     "Contact",
+    "ContactGradientMode",
+    "ContactSolverMethod",
     "DeformableBody",
     "DeformableBodyOptions",
     "DeformableDirichletBoundaryCondition",
@@ -19,6 +21,7 @@ __all__: list[str] = [
     "DeformableSceneDiagnostics",
     "DeformableSceneInfo",
     "DeformableSceneLoadOptions",
+    "DeformableSolverDiagnostics",
     "DeformableSolverOptions",
     "DeformableSurfaceTriangle",
     "DeformableTetrahedron",
@@ -35,20 +38,33 @@ __all__: list[str] = [
     "LoopClosureResidualCoordinates",
     "LoopClosureRuntimePolicy",
     "LoopClosureSpec",
+    "ModelFormat",
     "Multibody",
     "MultibodyOptions",
+    "PhysicalParameter",
+    "ReadOptions",
     "RigidBody",
     "RigidBodyOptions",
+    "RigidBodySolver",
+    "RootJointType",
+    "SkeletonLoadOptions",
     "SkeletonToMultibodyOptions",
     "StateSpace",
     "StateVariable",
+    "StepDerivatives",
+    "StepGradient",
     "World",
     "WorldSyncStage",
+    "add_skeleton",
+    "add_world",
     "build_multibodies_from_world",
     "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
+    "load_obj_triangle_mesh",
+    "load_point_set",
+    "load_seg_line_mesh",
 ]
 
 
@@ -63,6 +79,7 @@ from numpy.typing import NDArray
 
 import dartpy.dynamics
 import dartpy.simulation
+import dartpy.simulation_experimental.diff as diff
 
 
 class JointType(enum.Enum):
@@ -112,18 +129,44 @@ class LoopClosureResidualCoordinates(enum.Enum):
 class WorldSyncStage(enum.Enum):
     KINEMATICS = 0
 
+class RigidBodySolver(enum.Enum):
+    SEQUENTIAL_IMPULSE = 0
+
+    IPC = 1
+
+class ContactSolverMethod(enum.Enum):
+    SEQUENTIAL_IMPULSE = 0
+
+    BOXED_LCP = 1
+
+class ContactGradientMode(enum.Enum):
+    ANALYTIC = 0
+
+    COMPLEMENTARITY_AWARE = 1
+
+    PRE_CONTACT_SURROGATE = 2
+
+class PhysicalParameter(enum.Enum):
+    MASS = 0
+
+    CENTER_OF_MASS = 1
+
+    INERTIA = 2
+
+    FRICTION = 3
+
 class CollisionShapeType(enum.Enum):
     SPHERE = 0
 
     BOX = 1
 
-    CAPSULE = 2
+    MESH = 2
 
-    CYLINDER = 3
+    CAPSULE = 3
 
-    PLANE = 4
+    CYLINDER = 4
 
-    MESH = 5
+    PLANE = 5
 
 class CollisionShape:
     @staticmethod
@@ -138,12 +181,12 @@ class CollisionShape:
 
     @staticmethod
     def capsule(
-        radius: float, height: float, local_transform: object | None = None
+        radius: float, half_height: float, local_transform: object | None = None
     ) -> CollisionShape: ...
 
     @staticmethod
     def cylinder(
-        radius: float, height: float, local_transform: object | None = None
+        radius: float, half_height: float, local_transform: object | None = None
     ) -> CollisionShape: ...
 
     @staticmethod
@@ -164,6 +207,9 @@ class CollisionShape:
 
     @property
     def height(self) -> float: ...
+
+    @property
+    def half_height(self) -> float: ...
 
     @property
     def half_extents(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
@@ -837,6 +883,12 @@ class RigidBody(Frame):
     def is_deformable_surface_ccd_obstacle(self, arg: bool, /) -> None: ...
 
     @property
+    def is_deformable_obstacle_barrier_only(self) -> bool: ...
+
+    @is_deformable_obstacle_barrier_only.setter
+    def is_deformable_obstacle_barrier_only(self, arg: bool, /) -> None: ...
+
+    @property
     def is_deformable_ground_barrier(self) -> bool: ...
 
     @is_deformable_ground_barrier.setter
@@ -974,6 +1026,82 @@ class CollisionQueryOptions:
 
     def __repr__(self) -> str: ...
 
+class StepDerivatives:
+    @property
+    def state_jacobian(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    @property
+    def control_jacobian(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    @property
+    def parameter_jacobian(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    def __repr__(self) -> str: ...
+
+class StepGradient:
+    @property
+    def state(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def control(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    def __repr__(self) -> str: ...
+
+class DeformableSolverDiagnostics:
+    @property
+    def body_count(self) -> int: ...
+
+    @property
+    def node_count(self) -> int: ...
+
+    @property
+    def edge_count(self) -> int: ...
+
+    @property
+    def solver_iterations(self) -> int: ...
+
+    @property
+    def objective_evaluations(self) -> int: ...
+
+    @property
+    def line_search_trials(self) -> int: ...
+
+    @property
+    def projected_newton_steps(self) -> int: ...
+
+    @property
+    def projected_newton_fallbacks(self) -> int: ...
+
+    @property
+    def projected_newton_hessian_nonzeros(self) -> int: ...
+
+    @property
+    def projected_newton_hessian_storage_bytes(self) -> int: ...
+
+    @property
+    def projected_newton_iterative_solves(self) -> int: ...
+
+    @property
+    def projected_newton_matrix_free_solves(self) -> int: ...
+
+    @property
+    def projected_newton_iterative_iterations(self) -> int: ...
+
+    @property
+    def projected_newton_iterative_max_error(self) -> float: ...
+
+    @property
+    def self_contact_barrier_active_contacts(self) -> int: ...
+
+    @property
+    def friction_dissipation(self) -> float: ...
+
+    @property
+    def min_active_contact_distance(self) -> float: ...
+
+    @property
+    def converged_active_contact_count(self) -> int: ...
+
 class DeformableMaterialProperties:
     def __init__(self) -> None: ...
 
@@ -1012,6 +1140,24 @@ class DeformableMaterialProperties:
 
     @use_fixed_corotational_elasticity.setter
     def use_fixed_corotational_elasticity(self, arg: bool, /) -> None: ...
+
+    @property
+    def use_adaptive_barrier_stiffness(self) -> bool: ...
+
+    @use_adaptive_barrier_stiffness.setter
+    def use_adaptive_barrier_stiffness(self, arg: bool, /) -> None: ...
+
+    @property
+    def use_iterative_linear_solver(self) -> bool: ...
+
+    @use_iterative_linear_solver.setter
+    def use_iterative_linear_solver(self, arg: bool, /) -> None: ...
+
+    @property
+    def use_matrix_free_linear_solver(self) -> bool: ...
+
+    @use_matrix_free_linear_solver.setter
+    def use_matrix_free_linear_solver(self, arg: bool, /) -> None: ...
 
 class DeformableEdge:
     def __init__(self, node_a: int = ..., node_b: int = ..., rest_length: float = ...) -> None: ...
@@ -1310,6 +1456,50 @@ class DeformableBody:
     @property
     def material_properties(self) -> DeformableMaterialProperties: ...
 
+class SkeletonLoadOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def root_anchor_prefix(self) -> str: ...
+
+    @root_anchor_prefix.setter
+    def root_anchor_prefix(self, arg: str, /) -> None: ...
+
+class ModelFormat(enum.Enum):
+    AUTO = 0
+
+    SKEL = 1
+
+    SDF = 2
+
+    URDF = 3
+
+    MJCF = 4
+
+class RootJointType(enum.Enum):
+    FLOATING = 0
+
+    FIXED = 1
+
+class ReadOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def format(self) -> ModelFormat: ...
+
+    @format.setter
+    def format(self, arg: ModelFormat, /) -> None: ...
+
+    @property
+    def sdf_default_root_joint_type(self) -> RootJointType: ...
+
+    @sdf_default_root_joint_type.setter
+    def sdf_default_root_joint_type(self, arg: RootJointType, /) -> None: ...
+
+    def add_package_directory(
+        self, package_name: str, package_directory: str
+    ) -> None: ...
+
 class DeformableSceneLoadOptions:
     def __init__(self) -> None: ...
 
@@ -1461,14 +1651,34 @@ def build_multibody_from_skeleton(world: World, skeleton: dartpy.dynamics.Skelet
 
 def build_multibodies_from_world(world: World, legacy_world: dartpy.simulation.World, options: SkeletonToMultibodyOptions = ...) -> list[Multibody]: ...
 
+@overload
+def add_skeleton(world: World, skeleton: object, options: SkeletonLoadOptions = ...) -> Multibody: ...
+@overload
+def add_skeleton(world: World, uri: str, options: SkeletonLoadOptions = ...) -> Multibody: ...
+@overload
+def add_skeleton(world: World, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> Multibody: ...
+
+@overload
+def add_world(world: World, source_world: object, options: SkeletonLoadOptions = ...) -> list[Multibody]: ...
+@overload
+def add_world(world: World, uri: str, options: SkeletonLoadOptions = ...) -> list[Multibody]: ...
+@overload
+def add_world(world: World, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> list[Multibody]: ...
+
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 
 def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnostics: ...
 
 def load_gmsh_tet_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
+def load_obj_triangle_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
+def load_seg_line_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
+def load_point_set(path: str | os.PathLike) -> DeformableBodyOptions: ...
+
 class World:
-    def __init__(self, time_step: float = ...) -> None: ...
+    def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC) -> None: ...
 
     def add_free_frame(self, name: str = ..., *, parent: object | None = ...) -> FreeFrame: ...
 
@@ -1522,6 +1732,9 @@ class World:
     def step(self, n: int = ...) -> None: ...
 
     @property
+    def last_deformable_solver_diagnostics(self) -> DeformableSolverDiagnostics: ...
+
+    @property
     def time_step(self) -> float: ...
 
     @time_step.setter
@@ -1540,6 +1753,12 @@ class World:
     def gravity(self, arg: object, /) -> None: ...
 
     @property
+    def rigid_body_solver(self) -> RigidBodySolver: ...
+
+    @rigid_body_solver.setter
+    def rigid_body_solver(self, arg: RigidBodySolver, /) -> None: ...
+
+    @property
     def multibody_options(self) -> MultibodyOptions: ...
 
     @multibody_options.setter
@@ -1556,6 +1775,45 @@ class World:
 
     @property
     def num_rigid_bodies(self) -> int: ...
+
+    @property
+    def is_differentiable(self) -> bool: ...
+
+    @property
+    def contact_solver_method(self) -> ContactSolverMethod: ...
+
+    @property
+    def contact_gradient_mode(self) -> ContactGradientMode: ...
+
+    @contact_gradient_mode.setter
+    def contact_gradient_mode(self, arg: ContactGradientMode, /) -> None: ...
+
+    @property
+    def num_dofs(self) -> int: ...
+
+    @property
+    def num_efforts(self) -> int: ...
+
+    @property
+    def state_vector(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @state_vector.setter
+    def state_vector(self, arg: object, /) -> None: ...
+
+    @property
+    def control_vector(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @control_vector.setter
+    def control_vector(self, arg: object, /) -> None: ...
+
+    def get_step_derivatives(self) -> StepDerivatives: ...
+
+    def apply_step_vjp(self, d_loss_d_next_state: object) -> StepGradient: ...
+
+    def add_differentiable_parameter(self, body: RigidBody, parameter: PhysicalParameter = PhysicalParameter.MASS, *, lower_bound: object | None = ..., upper_bound: object | None = ...) -> None: ...
+
+    @property
+    def num_differentiable_parameters(self) -> int: ...
 
     def collide(self, options: CollisionQueryOptions = ...) -> list[Contact]: ...
 

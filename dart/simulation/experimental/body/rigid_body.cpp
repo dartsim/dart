@@ -100,50 +100,63 @@ void validateMeshCollisionShape(
         triangle.minCoeff() < 0 || triangle.maxCoeff() >= vertexCount,
         dart::simulation::experimental::InvalidArgumentException,
         "Mesh collision shape triangle indices must reference vertices");
+    DART_EXPERIMENTAL_THROW_T_IF(
+        triangle.x() == triangle.y() || triangle.x() == triangle.z()
+            || triangle.y() == triangle.z(),
+        dart::simulation::experimental::InvalidArgumentException,
+        "Mesh collision shape triangles must use three distinct vertices");
   }
 }
 
 //==============================================================================
 void validateCollisionShape(
-    const dart::simulation::experimental::CollisionShape& shape)
+    const dart::simulation::experimental::CollisionShape& shape,
+    const char* ownerName)
 {
   switch (shape.type) {
     case dart::simulation::experimental::CollisionShapeType::Sphere:
       DART_EXPERIMENTAL_THROW_T_IF(
           !std::isfinite(shape.radius) || shape.radius <= 0.0,
           dart::simulation::experimental::InvalidArgumentException,
-          "Sphere collision shape radius must be positive and finite");
+          "{} sphere collision shape radius must be positive and finite",
+          ownerName);
       break;
     case dart::simulation::experimental::CollisionShapeType::Box:
       DART_EXPERIMENTAL_THROW_T_IF(
           !shape.halfExtents.allFinite()
               || (shape.halfExtents.array() <= 0.0).any(),
           dart::simulation::experimental::InvalidArgumentException,
-          "Box collision shape half extents must be positive and finite");
+          "{} box collision shape half extents must be positive and finite",
+          ownerName);
       break;
     case dart::simulation::experimental::CollisionShapeType::Capsule:
       DART_EXPERIMENTAL_THROW_T_IF(
           !std::isfinite(shape.radius) || shape.radius <= 0.0
-              || !std::isfinite(shape.height) || shape.height <= 0.0,
+              || !std::isfinite(shape.halfExtents.z())
+              || shape.halfExtents.z() <= 0.0,
           dart::simulation::experimental::InvalidArgumentException,
-          "Capsule collision shape radius and height must be positive and "
-          "finite");
+          "{} capsule collision shape radius and half-height must be positive "
+          "and finite",
+          ownerName);
       break;
     case dart::simulation::experimental::CollisionShapeType::Cylinder:
       DART_EXPERIMENTAL_THROW_T_IF(
           !std::isfinite(shape.radius) || shape.radius <= 0.0
-              || !std::isfinite(shape.height) || shape.height <= 0.0,
+              || !std::isfinite(shape.halfExtents.z())
+              || shape.halfExtents.z() <= 0.0,
           dart::simulation::experimental::InvalidArgumentException,
-          "Cylinder collision shape radius and height must be positive and "
-          "finite");
+          "{} cylinder collision shape radius and half-height must be positive "
+          "and finite",
+          ownerName);
       break;
     case dart::simulation::experimental::CollisionShapeType::Plane:
       DART_EXPERIMENTAL_THROW_T_IF(
           !shape.normal.allFinite() || shape.normal.squaredNorm() <= 0.0
               || !std::isfinite(shape.offset),
           dart::simulation::experimental::InvalidArgumentException,
-          "Plane collision shape normal must be finite and nonzero, and "
-          "offset must be finite");
+          "{} plane collision shape normal must be finite and nonzero, and "
+          "offset must be finite",
+          ownerName);
       break;
     case dart::simulation::experimental::CollisionShapeType::Mesh:
       validateMeshCollisionShape(shape);
@@ -543,7 +556,7 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  validateCollisionShape(shape);
+  validateCollisionShape(shape, "RigidBody");
 
   auto& registry = getWorld()->getRegistry();
   const auto* existing
@@ -559,7 +572,7 @@ void RigidBody::addCollisionShape(const CollisionShape& shape)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  validateCollisionShape(shape);
+  validateCollisionShape(shape, "RigidBody");
 
   auto& registry = getWorld()->getRegistry();
   auto& geometry
@@ -616,6 +629,30 @@ bool RigidBody::isDeformableSurfaceCcdObstacle() const
   return getWorld()
       ->getRegistry()
       .all_of<comps::DeformableSurfaceCcdObstacleTag>(getEntity());
+}
+
+//==============================================================================
+void RigidBody::setDeformableObstacleBarrierOnly(bool enabled)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  auto& registry = getWorld()->getRegistry();
+  if (enabled) {
+    registry.get_or_emplace<comps::DeformableObstacleNoCcdTag>(getEntity());
+  } else {
+    registry.remove<comps::DeformableObstacleNoCcdTag>(getEntity());
+  }
+}
+
+//==============================================================================
+bool RigidBody::isDeformableObstacleBarrierOnly() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().all_of<comps::DeformableObstacleNoCcdTag>(
+      getEntity());
 }
 
 //==============================================================================

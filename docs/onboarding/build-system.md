@@ -661,6 +661,7 @@ pixi run build-coverage  # Build with coverage
 pixi run test            # Run C++ tests
 pixi run test-py         # Run Python tests
 pixi run test-all        # Run all tests
+pixi run -e cuda test-all # Run CUDA-enabled full validation on Linux CUDA hosts
 ```
 
 #### Linting Tasks
@@ -834,7 +835,12 @@ change skips this gate, state the deferral reason in the PR description.
 - **Missing DART components at configure time.** Example errors:
   - `Could NOT find DART (missing: collision-bullet collision-ode) (Required is at least version "7.0")`
   - `... but it set DART_FOUND to FALSE ...`
-  - **Resolution:** The downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
+  - **Resolution:** The downstream is requesting legacy components. In DART 7,
+    Bullet/ODE backends are part of the core `dart` component;
+    `collision-bullet` / `collision-ode` exist only as deprecated compatibility
+    components while clean-break gates are being closed. Prefer to update
+    downstream to depend on `dart`; keep this workflow passing on the DART 6.16
+    support lane for existing consumers.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py`
   limited to validating the DART version requirement; otherwise this workflow
   stops catching real compatibility breaks.

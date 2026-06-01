@@ -10,24 +10,27 @@ fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 
 ## Files
 
-| File                                                                             | Purpose                                                                                                                                  |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| [`algorithm_extension_contracts.md`](algorithm_extension_contracts.md)           | Durable rules for research-facing algorithm extension and baseline contracts                                                             |
-| [`compute_backend_research.md`](compute_backend_research.md)                     | Evidence survey and DART workload-candidate ranking behind the scalable-compute roadmap                                                  |
-| [`dartsim_gui_simulator.md`](dartsim_gui_simulator.md)                           | Headless editor engine + thin ImGui/Filament GUI architecture for the dartsim simulator                                                  |
-| [`dartsim_gui_toolkit_decisions.md`](dartsim_gui_toolkit_decisions.md)           | Toolkit (ImGui vs Qt), app-shell language (C++ vs Python), Filament headless, and deploy decisions for the dartsim application           |
-| [`demos_app.md`](demos_app.md)                                                   | `dart-demos` architecture: GUI examples consolidated into one app as runtime-switchable scenes; examples-vs-renderer-fixtures split      |
-| [`filament_fidelity_profile.md`](filament_fidelity_profile.md)                   | Renderer-neutral fidelity-profile and camera-sensor seam for real-time vs offline rendering                                              |
-| [`hierarchical_allocator.md`](hierarchical_allocator.md)                         | World-level memory management proposal and allocator ownership rationale                                                                 |
-| [`lie_group_batch.md`](lie_group_batch.md)                                       | Consolidated batch (data-parallel) strategy for the typed Lie group API (SO3/SE3)                                                        |
-| [`renderer_realtime_and_scalability.md`](renderer_realtime_and_scalability.md)   | Viewer real-time loop (interpolation/RTF) and large-scene scalability (instancing) roadmap                                               |
-| [`scalable_compute_decisions.md`](scalable_compute_decisions.md)                 | Workload-first CPU, SIMD, and GPU decision framework for scalable computation                                                            |
-| [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)       | C++ API shape for promoting `dart::simulation::experimental` to the DART 8 simulation API                                                |
-| [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md) | Python API shape for `dartpy.simulation_experimental` over the experimental simulation stack                                             |
-| [`simulation_experimental_references.md`](simulation_experimental_references.md) | Compatibility pointer to the consolidated research reference catalog                                                                     |
-| [`../readthedocs/papers.md`](../readthedocs/papers.md)                           | Managed catalog of research papers, textbooks, standards, and comparative engines for the experimental world (status, priority, verdict) |
-| [`simulation_solver_architecture.md`](simulation_solver_architecture.md)         | Internal architecture for solvers, domain assignment, multi-physics coupling, and the step schedule behind the experimental `World`      |
-| [`simulation_variational_integrator.md`](simulation_variational_integrator.md)   | Architecture and math rationale for the linear-time variational integrator (discrete-mechanics) integration family (PLAN-082)            |
+| File                                                                             | Purpose                                                                                                                                      |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`algorithm_extension_contracts.md`](algorithm_extension_contracts.md)           | Durable rules for research-facing algorithm extension and baseline contracts                                                                 |
+| [`compute_backend_research.md`](compute_backend_research.md)                     | Evidence survey and DART workload-candidate ranking behind the scalable-compute roadmap                                                      |
+| [`dartsim_gui_simulator.md`](dartsim_gui_simulator.md)                           | Headless editor engine + thin ImGui/Filament GUI architecture for the dartsim simulator                                                      |
+| [`dartsim_gui_toolkit_decisions.md`](dartsim_gui_toolkit_decisions.md)           | Toolkit (ImGui vs Qt), app-shell language (C++ vs Python), Filament headless, and deploy decisions for the dartsim application               |
+| [`dart7_clean_break_strategy.md`](dart7_clean_break_strategy.md)                 | Release-topology decision: DART 7 is the clean-break line, DART 6.16 carries compatibility/gz-physics support, and promotion is parity-gated |
+| [`demos_app.md`](demos_app.md)                                                   | `dart-demos` architecture: GUI examples consolidated into one app as runtime-switchable scenes; examples-vs-renderer-fixtures split          |
+| [`differentiable_simulation.md`](differentiable_simulation.md)                   | Opt-in analytic differentiable-simulation architecture and public API, including the Nimble LCP-gradient path and Dojo evaluation track      |
+| [`filament_fidelity_profile.md`](filament_fidelity_profile.md)                   | Renderer-neutral fidelity-profile and camera-sensor seam for real-time vs offline rendering                                                  |
+| [`hierarchical_allocator.md`](hierarchical_allocator.md)                         | World-level memory management proposal and allocator ownership rationale                                                                     |
+| [`lie_group_batch.md`](lie_group_batch.md)                                       | Consolidated batch (data-parallel) strategy for the typed Lie group API (SO3/SE3)                                                            |
+| [`multi-core-cpu-compute-graph.md`](multi-core-cpu-compute-graph.md)             | Archived Taskflow multi-core CPU compute-graph architecture (pipeline decomposition, determinism) preserved as a backend-agnostic reference  |
+| [`renderer_realtime_and_scalability.md`](renderer_realtime_and_scalability.md)   | Viewer real-time loop (interpolation/RTF) and large-scene scalability (instancing) roadmap                                                   |
+| [`scalable_compute_decisions.md`](scalable_compute_decisions.md)                 | Workload-first CPU, SIMD, and GPU decision framework for scalable computation                                                                |
+| [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)       | C++ API shape for promoting `dart::simulation::experimental` to the DART 7 clean-break simulation API                                        |
+| [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md) | Python API shape for `dartpy.simulation_experimental` over the experimental simulation stack                                                 |
+| [`simulation_experimental_references.md`](simulation_experimental_references.md) | Compatibility pointer to the consolidated research reference catalog                                                                         |
+| [`../readthedocs/papers.md`](../readthedocs/papers.md)                           | Managed catalog of research papers, textbooks, standards, and comparative engines for the experimental world (status, priority, verdict)     |
+| [`simulation_solver_architecture.md`](simulation_solver_architecture.md)         | Internal architecture for solvers, domain assignment, multi-physics coupling, and the step schedule behind the experimental `World`          |
+| [`simulation_variational_integrator.md`](simulation_variational_integrator.md)   | Architecture and math rationale for the linear-time variational integrator (discrete-mechanics) integration family (PLAN-082)                |
 
 ## Placement Rules
 

@@ -11,6 +11,7 @@ it without rebuilding the world.
 from __future__ import annotations
 
 import math
+from collections import deque
 from dataclasses import dataclass
 from typing import Any
 
@@ -18,7 +19,7 @@ import numpy as np
 
 import dartpy as dart
 
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _CART_EXTENT = (0.4, 0.2, 0.15)
 _POLE_EXTENT = (0.04, 0.04, 0.6)
@@ -90,9 +91,13 @@ class CartPoleEnv:
         self.world.set_time(0.0)
         return self._observation()
 
-    def step(self, action: float) -> tuple[np.ndarray, float, bool, dict]:
+    def apply_action(self, action: float) -> float:
         force = float(np.clip(action, -_MAX_FORCE, _MAX_FORCE))
         self.cart.set_force(0, force)
+        return force
+
+    def step(self, action: float) -> tuple[np.ndarray, float, bool, dict]:
+        self.apply_action(action)
         self.world.step()
         obs = self._observation()
         terminated = bool(abs(obs[2]) > self._terminal_angle)
@@ -111,13 +116,34 @@ class CartPoleEnv:
 def build() -> SceneSetup:
     env = CartPoleEnv()
     env.reset()
+    last_action = {"value": 0.0}
+    cart_history = deque(maxlen=120)
+    angle_history = deque(maxlen=120)
 
-    def step(n: int) -> None:
-        for _ in range(max(0, n)):
-            env.step(0.0)  # passive: no control input
+    def pre_step() -> None:
+        last_action["value"] = env.apply_action(0.0)  # passive: no control input
 
-    return SceneSetup(world=env.world, step=step,
-                      info={"env": env, "controller": "passive"})
+    def build_panel(builder: object, context: object) -> None:
+        obs = env._observation()
+        terminated = bool(abs(obs[2]) > env._terminal_angle)
+        cart_history.append(float(obs[0]))
+        angle_history.append(float(obs[2]))
+        builder.text("mode: Gymnasium-style passive rollout")
+        builder.text(f"action range: +/-{_MAX_FORCE:.1f} N")
+        builder.text(f"last action: {last_action['value']:.3f} N")
+        builder.text(f"cart x: {obs[0]:.3f} m | v: {obs[1]:.3f} m/s")
+        builder.text(f"pole angle: {obs[2]:.3f} rad | w: {obs[3]:.3f} rad/s")
+        builder.text(f"terminated: {terminated}")
+        builder.separator()
+        builder.plot_lines("Cart x", list(cart_history))
+        builder.plot_lines("Pole angle", list(angle_history))
+
+    return SceneSetup(
+        world=env.world,
+        pre_step=pre_step,
+        panels=[ScenePanel("Cart-pole Env", build_panel)],
+        info={"env": env, "controller": "passive"},
+    )
 
 
 SCENE = PythonDemoScene(

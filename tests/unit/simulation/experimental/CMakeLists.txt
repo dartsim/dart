@@ -54,11 +54,79 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
       PRIVATE ${PROJECT_NAME}-collision-native
     )
   endif()
+  dart_experimental_add_unit_test_dir(io ${CMAKE_CURRENT_SOURCE_DIR}/io)
+  if(TARGET test_rigid_ipc_fixture)
+    target_link_libraries(
+      test_rigid_ipc_fixture
+      PRIVATE ${PROJECT_NAME}-collision-native
+    )
+  endif()
   dart_experimental_add_unit_test_dir(deformable_vbd ${CMAKE_CURRENT_SOURCE_DIR}/deformable_vbd)
   dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/world)
+  if(TARGET test_skeleton_loader)
+    target_link_libraries(test_skeleton_loader PRIVATE ${PROJECT_NAME}-io)
+  endif()
   dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/frame)
   dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
   dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
+
+  # test_variational_integration runs a long linear-time variational-integrator
+  # convergence sweep. It is comfortably fast in Release, but under coverage
+  # (gcov) instrumentation it -- like its integration-test siblings test_world
+  # and test_deformable_body (~1000-1600s) -- exceeds the default 1500s ctest
+  # timeout and fails the Coverage (Debug) job. Give it the same headroom as
+  # UNIT_simulation_World (TIMEOUT 3600); the guard keeps this a no-op in build
+  # configurations where the test is not registered.
+  if(TEST test_variational_integration)
+    set_tests_properties(test_variational_integration PROPERTIES TIMEOUT 3600)
+  endif()
+
+  # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only
+  # the always-compiled WorldOptions core, so it runs in both build configs. The
+  # FD-vs-analytic Jacobian test exercises the detail-only differentiable code
+  # path and is registered only when DART_BUILD_DIFF is ON.
+  dart_experimental_add_test(
+    test_diff_zero_cost_parity
+    ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_zero_cost_parity.cpp
+  )
+  if(DART_BUILD_DIFF)
+    dart_experimental_add_test(
+      test_diff_smooth_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_smooth_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_contact_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_contact_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_public_contact_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_public_contact_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_contact_gradient_modes
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_contact_gradient_modes.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_apply_step_vjp
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_apply_step_vjp.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_parameter_jacobian
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_parameter_jacobian.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_rollout
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_rollout.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_optimization
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_optimization.cpp
+    )
+    dart_experimental_add_test(
+      test_diff_paper_experiments
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_paper_experiments.cpp
+    )
+  endif()
 
   if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
     dart_experimental_add_test(

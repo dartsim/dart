@@ -124,7 +124,10 @@ void BM_VariationalStep(benchmark::State& state)
 }
 BENCHMARK(BM_VariationalStep)
     ->RangeMultiplier(2)
-    ->Range(4, 64) // linear regime; the RIQN iteration count stays small here
+    // The exact recursive-Jacobian Newton preconditioner keeps the iteration
+    // count small and length-independent (~3 iters at every n), so the per-step
+    // cost stays linear across the long-chain regime the integrator targets.
+    ->Range(4, 128)
     ->Complexity(benchmark::oN);
 
 // The O(n) articulated-body inverse-mass apply alone (the RIQN quasi-Newton

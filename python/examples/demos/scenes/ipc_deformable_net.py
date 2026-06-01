@@ -12,16 +12,18 @@ reproduction (no FEM/codimensional elasticity or obstacle contact).
 
 from __future__ import annotations
 
+from collections import deque
 import math
 
 import dartpy.simulation_experimental as sx
+import numpy as np
 
 from .._ipc_deformable_bridge import (
     IpcDeformableBridge,
     build_grid_options,
     grid_index,
 )
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _COLUMNS = 9
 _ROWS = 5
@@ -64,9 +66,58 @@ def build() -> SceneSetup:
     bridge = IpcDeformableBridge(world, name="ipc_deformable_net")
     bridge.add_deformable_visual(body, name="deformable_net")
 
+    pin_indices = (
+        grid_index(_COLUMNS, 0, 0),
+        grid_index(_COLUMNS, _COLUMNS - 1, 0),
+    )
+    sag_history = deque(maxlen=120)
+    sway_history = deque(maxlen=120)
+    speed_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text(f"grid: {_COLUMNS} x {_ROWS}")
+        builder.text("pins: two top corners")
+        if positions.size:
+            pin_height = float(np.mean([positions[i, 2] for i in pin_indices]))
+            min_z = float(np.min(positions[:, 2]))
+            sag = pin_height - min_z
+            sway = float(np.mean(positions[:, 1]))
+            lateral_speed = (
+                float(np.mean(np.linalg.norm(velocities[:, :2], axis=1)))
+                if velocities.size
+                else 0.0
+            )
+            sag_history.append(sag)
+            sway_history.append(sway)
+            speed_history.append(lateral_speed)
+            builder.text(f"net sag: {sag:.3f} m")
+            builder.text(f"mean lateral sway: {sway:.3f} m")
+            builder.text(f"mean lateral speed: {lateral_speed:.3f} m/s")
+        diagnostics = world.last_deformable_solver_diagnostics
+        builder.text(
+            f"solver iters: {diagnostics.solver_iterations} | "
+            f"contacts: {diagnostics.self_contact_barrier_active_contacts}"
+        )
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if sag_history:
+            builder.separator()
+            builder.plot_lines("Net sag", list(sag_history))
+            builder.plot_lines("Lateral sway", list(sway_history))
+            builder.plot_lines("Lateral speed", list(speed_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC Net", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

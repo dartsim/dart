@@ -1,11 +1,11 @@
 # PLAN-103: Examples Strategy (Python-First)
 
 - Operating state: `PLAN-103` in [`dashboard.md`](dashboard.md)
-- Outcome: Python is DART's primary, growing example surface (a headless
-  scene-registry runner plus a Colab notebook gallery); C++ examples are frozen
-  and smaller; common scene + physics logic is near-identical across languages
-  and kept honest by a thin golden-set parity smoke, not 1:1 duplicate
-  maintenance.
+- Outcome: Python is DART's primary, growing example surface (an interactive
+  `py-demos` workspace with headless/capture modes plus a Colab notebook
+  gallery); C++ examples are frozen and smaller; common scene + physics logic is
+  near-identical across languages and kept honest by a thin golden-set parity
+  smoke, not 1:1 duplicate maintenance.
 - Related: PLAN-102 (C++ `dart-demos`, Complete — frozen by this plan),
   PLAN-012 (cloud dartpy tutorials — consumes this plan's scene modules),
   PLAN-101 (`dartsim` editor — a retire-later precondition).
@@ -38,10 +38,12 @@ scenarios, and freezes (does not delete) the working C++ examples.
   ported**.
 - Modernize **content** Python-first (modern robotics-research scenarios), then
   mirror only a small golden subset in C++.
-- Python's consolidated "demos" surface is **headless**: a scene-registry runner
-  plus a notebook gallery. `dartpy.gui` exposes only headless descriptors
-  (renderable extraction, camera math, picking, screenshot); **no interactive
-  viewer binding is added**.
+- Python's consolidated "demos" surface is a scene-registry workspace plus a
+  notebook gallery. `pixi run py-demos` opens the Filament + ImGui multi-scene
+  viewer by default, while `--headless`, `--cycle-scenes`, `--screenshot`, and
+  `py-demo-capture` keep CI smoke and visual evidence paths noninteractive.
+  `dartpy.gui.run_demos` is the constrained examples host; **no Python-side
+  scene authoring API is added**.
 - C++ `dart-demos` is **frozen now**, retired **later** only when both the Python
   surface covers the breadth and the `dartsim` editor (PLAN-101) can open curated
   example scenes interactively. Renderer regression coverage is independent
@@ -52,15 +54,16 @@ scenarios, and freezes (does not delete) the working C++ examples.
 
 ## Scope
 
-In scope: the Python headless scene-registry runner and scene modules; the
-notebook gallery; the cross-language golden-set parity smoke; modernized
-Python-first example content; the doc/source-of-truth updates; the C++
-freeze + retire-later checklist.
+In scope: the Python scene-registry runner/workspace and scene modules; the
+headless smoke/capture modes; the notebook gallery; the cross-language
+golden-set parity smoke; modernized Python-first example content; the
+doc/source-of-truth updates; the C++ freeze + retire-later checklist.
 
-Out of scope: any interactive `dartpy` viewer binding; deleting C++ examples now;
-growing the C++ `dart-demos` scene set; changes to `dart/gui/detail/scenes`
-renderer fixtures (owned by the renderer tests); the Colab publication mechanics
-owned by PLAN-012 (this plan supplies the scene modules notebooks import).
+Out of scope: a general-purpose Python scene authoring/viewer binding; deleting
+C++ examples now; growing the C++ `dart-demos` scene set; changes to
+`dart/gui/detail/scenes` renderer fixtures (owned by the renderer tests); the
+Colab publication mechanics owned by PLAN-012 (this plan supplies the scene
+modules notebooks import).
 
 ## Resolved Decisions
 
@@ -71,8 +74,9 @@ owned by PLAN-012 (this plan supplies the scene modules notebooks import).
    with PLAN-012) and **imports** the scene modules from `python/examples/demos`
    so scene logic is single-sourced. The runner mirrors `dart-demos`:
    `python -m examples.demos --scene <id>` and `--cycle-scenes`, plus
-   `--frames N`, `--screenshot <path>`; it is always headless (`--headless`
-   accepted as an explicit no-op). Add a `pixi run py-demos` task.
+   `--frames N`, `--screenshot <path>`, `--headless`, and `--list`.
+   `pixi run py-demos` opens the interactive workspace unless headless flags
+   request a noninteractive smoke/capture run.
 2. **Canonical modern set + C++ subset.** Python-first (Python-only for now):
    `legged_whole_body_control` (quadruped/humanoid balance via a whole-body
    PD/QP controller), `contact_rich_manipulation` (arm/gripper pushing or
@@ -139,10 +143,10 @@ for the residual Phase-5 retire-later follow-ups.
 
 ## Acceptance Criteria
 
-- `python -m examples.demos` runs headless with `--scene`/`--cycle-scenes`/
-  `--frames`/`--screenshot`, lists scenes from an ordered registry, and the two
-  existing Python examples are scenes in it; `pixi run py-demos` works and a
-  Python cycle smoke is CTest/pytest-gated.
+- `python -m examples.demos` runs the interactive workspace by default, supports
+  headless `--scene`/`--cycle-scenes`/`--frames`/`--screenshot`, lists scenes
+  from an ordered registry, and the two existing Python examples are scenes in
+  it; `pixi run py-demos` works and a Python cycle smoke is CTest/pytest-gated.
 - The golden set (Decision 4) has shared expected-state fixtures and passing
   C++ and Python golden smokes; modifying a golden scene's physics fails the
   smoke until the fixture is deliberately regenerated.
@@ -156,11 +160,10 @@ for the residual Phase-5 retire-later follow-ups.
 
 ## Gate
 
-See `dashboard.md` PLAN-103. Objective-specific proof: the Python headless runner
-
-- cycle smoke are green; the golden-set fixtures + dual-language smokes catch
-  drift; the notebook gallery imports (not copies) the scene modules; C++ stays
-  frozen with the retire checklist tracked.
+See `dashboard.md` PLAN-103. Objective-specific proof: the Python
+runner/workspace headless cycle and capture smokes are green; the golden-set
+fixtures + dual-language smokes catch drift; the notebook gallery imports (not
+copies) the scene modules; C++ stays frozen with the retire checklist tracked.
 
 ## Retire-Later Checklist (C++ `dart-demos`)
 
@@ -168,15 +171,32 @@ Retire `examples/demos` (the C++ app), `pixi run demos`, and the
 `run_cpp_example.py` `demos` spec only when ALL hold. Current status (Phase 5
 explicit "not now"):
 
-1. **NOT MET (narrowed).** Python headless runner covers the breadth (≥ C++
-   pedagogical coverage). Today: **29 Python scenes vs 40 C++ scenes** (~73%).
-   The remaining C++-only scenes are heavyweight or interactive-only:
-   `heightmap`/`point_cloud` need `HeightmapShape`/`PointCloudShape` bindings;
-   the puppet/vehicle/biped/`hybrid_dynamics`/`joint_constraints`/
-   `human_joint_limits` scenes need full IK/controller subsystems;
-   `drag_and_drop`/`imgui`/`tinkertoy`/`simulation_event_handler` are
-   GUI-callback-only and out of scope for a headless runner. Closing this gate
-   is gradual, not a single follow-up.
+1. **NOT MET (largely closed).** Python demos cover the breadth (>= C++
+   pedagogical coverage). Today: **79 Python scenes vs 41 C++ scenes** (Python
+   now exceeds C++ once the Python-first modern scenarios, the IPC-deformable
+   category, and the variational/differentiable sx scenes are counted); on the
+   C++-set-only axis, **39 of 41 C++ scenes** (~95 %) have a Python
+   mirror. The remaining C++-only scenes fall into well-understood binding
+   gaps tracked outside this gate:
+   - **Viewer-callback / interactive UI** — `imgui`, `tinkertoy`,
+     `simulation_event_handler`. Need Python bindings for
+     `dart::gui::KeyboardAction`/Gizmo/event-handler callbacks threaded
+     through `ApplicationOptions`.
+   - **Custom `ConstraintBase` subclass** — `human_joint_limits`. Needs a
+     trampoline binding for `dart::constraint::ConstraintBase` so a
+     `NeuralJointLimitConstraint` analogue can be authored in Python.
+   - **Heavyweight puppet IK / mocap controllers** — `atlas_puppet`,
+     `hubo_puppet`, `fetch`, `g1_puppet`. Need gizmo + IK pendant +
+     MJCF/ReadOptions package-resolver bindings.
+   - **SIMBICON walking controller in C++** — `atlas_simbicon`. Controller
+     and state-machine sources live under
+     `tests/integration/atlas_simbicon/` and are not Python-bound.
+   - **Runtime-loaded analytical IKFast** — `wam_ikfast`. Needs a
+     `SharedLibraryIkFast` binding.
+   - **`sx::World` deformable mesh build** — `experimental_deformable`.
+     `DeformableBody`/`DeformableBodyOptions` exist; the scene also needs a
+     tet-mesh construction helper (or a Python adapter to
+     `dartpy.simulation_experimental.load_deformable_scene`).
 2. **NOT MET.** Notebook gallery published with a green Colab smoke. Today:
    `python/tutorials/01_browse_demos.ipynb` is the seed; Colab publication +
    smoke is PLAN-012's responsibility.
@@ -204,13 +224,9 @@ Until conditions 1–3 are met, C++ `dart-demos` stays frozen-but-present.
 - Colab single-source install: how notebooks in `python/tutorials/` import
   `python/examples/demos` scene modules in a managed runtime (packaged import vs
   `%pip install` from the repo subdirectory) is shared with PLAN-012.
-- The `dartpy.gui` headless surface may need camera/screenshot additions for the
-  Python golden screenshot floor; scope confirmed in Phase 2.
-- Final golden tolerance + step count per scene are set when fixtures are
-  generated in Phase 2.
 - `sensor_depth_segmentation` depends on the renderer's depth/segmentation
   outputs (the fidelity-profile seam, PLAN-090) being reachable headless from
-  `dartpy.gui`; confirm before Phase 3.
+  `dartpy.gui`; confirm before adding that scene.
 
 ## Landed State (Phases 1–4, on `main`)
 
@@ -220,10 +236,12 @@ now" recorded in the checklist above. Verified via `pixi run py-demos --
 
 - **Runner + registry.** `python/examples/demos/` is an importable package with
   an ordered registry and a `__main__` CLI mirroring `dart-demos`
-  (`--scene`/`--cycle-scenes`/`--frames`/`--screenshot`/`--list`, headless).
-  `pixi run py-demos`; the cycle smoke is pytest-gated
-  (`python/tests/integration/test_demos_cycle.py`). **29 Python scenes** across
-  Basics/Rigid Body/Collision/Constraints/Soft Bodies/Robots/Control/Experimental.
+  (`--scene`/`--cycle-scenes`/`--frames`/`--screenshot`/`--list`, plus
+  interactive/headless modes). `pixi run py-demos`; the cycle smoke is
+  pytest-gated (`python/tests/integration/test_demos_cycle.py`). **79 Python
+  scenes** across Getting Started, Visualization, Rigid Body, Collision,
+  Constraints & Joints, Soft Bodies, Robots, Control & IK, Control & Modern,
+  Experimental, IPC Deformable (sx), and Differentiable (sx).
 - **Golden parity.** Shared JSON fixtures + dual-language smokes
   (`python/tests/unit/test_golden_parity.py`,
   `tests/unit/gui/test_demos_golden_parity.cpp`) assert 3 scenes within 1e-9.
@@ -237,9 +255,16 @@ now" recorded in the checklist above. Verified via `pixi run py-demos --
 - **Interactive viewer.** `pixi run py-demos` delegates to `dartpy.gui.run_demos`
   (bindings in `python/dartpy/gui/viewer.cpp`), opening the same Filament + ImGui
   multi-scene viewer as `pixi run demos` with the Python catalog; `--screenshot`
-  writes a real PPM. Python `step`/`pre_step` controllers run under the headless
-  runner used by golden tests; the interactive viewer does not forward them yet
-  (a future `preStep` binding pass).
+  writes a real PPM. Python `pre_step` controllers, sx force-drag callbacks, and
+  scene-specific `ScenePanel` diagnostics now run inside the interactive viewer.
+  The default workspace docks `Simulation`, `Demos`, scene panels, and DART
+  diagnostics. The navigator is searchable, category-grouped, experimental-focus
+  aware for sx/solver scenes, and transactional scene switches roll back or can
+  be retargeted instead of leaving the workspace stuck on a broken candidate.
+  `py-demo-capture --show-ui` records the same docked workspace for visual
+  debugging, filters UI warm-up frames, and can emit screenshots, PNG sequences,
+  and MP4s. This remains an examples workspace, not a Python-side scene
+  authoring API.
 - **Bindings added to unblock ports.** `python/dartpy/dynamics/shape.cpp`:
   `Capsule`/`Cylinder`/`Ellipsoid`/`Cone`/`Pyramid`/`LineSegment`/`Plane` shapes;
   `skeleton.cpp`: `getVelocities`/`setVelocities`/`getForces`/`getMassMatrix`/
@@ -249,8 +274,42 @@ now" recorded in the checklist above. Verified via `pixi run py-demos --
   `dart-demos` as the `experimental_deformable` scene (Soft Bodies); the
   standalone example dir was removed and references updated (PLAN-081).
 
-`dartpy.gui` remains a headless-descriptor submodule plus the new headless
-multi-scene `run_demos` entry; no interactive viewer _authoring_ binding is
-added. C++ `dart-demos` (PLAN-102) stays frozen; design in
+`dartpy.gui` remains a renderer-owned submodule with descriptor/headless helpers
+plus the constrained multi-scene `run_demos` examples host; no interactive
+viewer _authoring_ binding is added. C++ `dart-demos` (PLAN-102) stays frozen;
+design in
 [`../design/demos_app.md`](../design/demos_app.md). PLAN-012 (Colab) consumes
 these scene modules; PLAN-101 (editor scene loading) is a retire precondition.
+
+## Delta (in flight): `examples-strategy-breadth` branch
+
+Phase-5 gate 1 (breadth) is being closed incrementally on top of the
+landed-state baseline. The breadth-growth branch adds the following:
+
+- **+10 Python scene mirrors** of previously C++-only `dart-demos` scenes:
+  `hybrid_dynamics`, `lcp_physics`, `heightmap`, `point_cloud`, `vehicle`,
+  `biped_stand`, `experimental_rigid_body_gui`, `collision_sandbox`,
+  `joint_constraints`, `drag_and_drop`. Each verified under
+  `pixi run py-demos -- --scene <id> --headless`. (39 of 41 C++ scenes now
+  mirrored; coverage on the C++-set axis ~95 %.)
+- **Shape bindings.** `python/dartpy/dynamics/shape.cpp`: `HeightmapShape`
+  (double instantiation; default ctor, `set_height_field` (width/depth + flat
+  list OR HeightField matrix), `get_height_field`, `set_scale`/`get_scale`,
+  `get_width`/`get_depth`/`get_min_height`/`get_max_height`, `flip_y`,
+  `get_static_type`) and `PointCloudShape` (visual-size ctor;
+  `reserve`/`add_point`/`add_points`/`set_points`/`get_points`/
+  `get_num_points`/`remove_all_points`; point-shape-type + color-mode +
+  overall-color + visual-size accessors; nested `ColorMode` /
+  `PointShapeType` enums).
+- **External-force + COM bindings.** `body_node.cpp`:
+  `addExtForce`/`setExtForce`/`clearExternalForces`. `skeleton.cpp`:
+  `getConstraintForces`, `getCOM`, `clearExternalForces`. These close the
+  Stable PD controller binding gap so `biped_stand` and `joint_constraints`
+  port cleanly.
+- **Documentation.** Retire-Later Checklist condition 1 updated to track the
+  remaining C++-only scenes by their binding/infra gap (gizmo callbacks,
+  custom `ConstraintBase`, puppet IK + MJCF/ReadOptions, SIMBICON state
+  machine, `SharedLibraryIkFast`, tet-mesh helper for `sx::World`
+  deformable). OSC golden-parity gap kept deferred; documented that the
+  per-scene-tolerance path also requires updating the C++ smoke's
+  hardcoded `kGoldenAbsTol` and regenerating the OSC fixture on both sides.

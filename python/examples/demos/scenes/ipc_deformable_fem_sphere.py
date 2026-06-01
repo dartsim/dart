@@ -13,10 +13,13 @@ DART-native FEM showcase -- not a faithful IPC paper-figure reproduction.
 
 from __future__ import annotations
 
+from collections import deque
+
+import numpy as np
 import dartpy.simulation_experimental as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _SPHERE_RADIUS = 0.12
 _SPHERE_CENTER = (0.0, 0.0, _SPHERE_RADIUS)  # resting on the ground top (z = 0)
@@ -66,9 +69,50 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="fem_sphere", edges=edges)
 
+    clearance_history = {
+        "sphere": deque(maxlen=120),
+        "ground": deque(maxlen=120),
+        "span_z": deque(maxlen=120),
+    }
+
+    def build_panel(builder: object, context: object) -> None:
+        builder.text("obstacles: sphere radial barrier + ground")
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        if positions.size:
+            sphere_offsets = positions - np.asarray(_SPHERE_CENTER, dtype=float)
+            sphere_clearance = float(
+                np.min(np.linalg.norm(sphere_offsets, axis=1) - _SPHERE_RADIUS)
+            )
+            ground_clearance = float(np.min(positions[:, 2]))
+            span = np.max(positions, axis=0) - np.min(positions, axis=0)
+            clearance_history["sphere"].append(sphere_clearance)
+            clearance_history["ground"].append(ground_clearance)
+            clearance_history["span_z"].append(float(span[2]))
+            builder.text(f"sphere clearance: {sphere_clearance:.4f} m")
+            builder.text(f"ground clearance: {ground_clearance:.4f} m")
+            builder.text(
+                f"span xyz: {span[0]:.3f} x {span[1]:.3f} x {span[2]:.3f} m"
+            )
+        diagnostics = world.last_deformable_solver_diagnostics
+        builder.text(
+            f"solver iters: {diagnostics.solver_iterations} | "
+            f"contacts: {diagnostics.self_contact_barrier_active_contacts}"
+        )
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if clearance_history["sphere"]:
+            builder.separator()
+            builder.plot_lines("Sphere clearance", list(clearance_history["sphere"]))
+            builder.plot_lines("Ground clearance", list(clearance_history["ground"]))
+            builder.plot_lines("Span z", list(clearance_history["span_z"]))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC FEM Sphere", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

@@ -45,6 +45,7 @@ namespace {
 namespace dynamics = dart::dynamics;
 namespace gui = dart::gui;
 namespace legacy_sim = dart::simulation;
+namespace math = dart::math;
 namespace sx = dart::simulation::experimental;
 
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
@@ -89,10 +90,10 @@ std::shared_ptr<dynamics::Shape> makeVisualShape(
       return std::make_shared<dynamics::BoxShape>(2.0 * shape.halfExtents);
     case sx::CollisionShapeType::Capsule:
       return std::make_shared<dynamics::CapsuleShape>(
-          shape.radius, shape.height);
+          shape.radius, 2.0 * shape.halfExtents.z());
     case sx::CollisionShapeType::Cylinder:
       return std::make_shared<dynamics::CylinderShape>(
-          shape.radius, shape.height);
+          shape.radius, 2.0 * shape.halfExtents.z());
     case sx::CollisionShapeType::Plane:
       return std::make_shared<dynamics::PlaneShape>(shape.normal, shape.offset);
     case sx::CollisionShapeType::Mesh:

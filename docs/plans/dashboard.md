@@ -83,10 +83,11 @@ its own line so status updates remain git-history friendly.
   preserves the rigid-body contact/multibody solver pipeline, while the batched
   SoA rigid-body stage remains an explicit unconstrained path and
   benchmark/prototype seam. Phase 5 is closed with a GO: `CI CUDA / CUDA Build`
-  compiles the CUDA targets on a GitHub-hosted `ubuntu-latest` runner (green on
-  `main`), and because the project does not maintain a self-hosted GPU runner,
-  the go/no-go runtime packet is measured manually on a CUDA host. The recorded
-  GO (2026-05-28, RTX 5000 Ada): speedup 109.6x at 4096/128/100 with final-state
+  compiles the CUDA targets for fork PRs on the hosted fallback and runs CUDA
+  tests on the trusted `ubuntu-latest-gpu` runner for same-repository PRs,
+  protected branch pushes, and manual dispatches. The go/no-go runtime packet is
+  still a measured benchmark packet from a CUDA host. The recorded GO
+  (2026-05-28, RTX 5000 Ada): speedup 109.6x at 4096/128/100 with final-state
   error 1.78e-15, packet accepted (see the owner doc's "Recorded Phase 5
   Go/No-Go"). Keep CUDA private and non-required. The sidecar package shape,
   go/no-go threshold, `bm-phase5-gpu-packet-check` /
@@ -94,28 +95,31 @@ its own line so status updates remain git-history friendly.
   evidence gates, and the `check-phase5-cuda-benchmark-contract` row contract
   are recorded in the owner doc. To refresh the packet on any CUDA host, run
   `bm-phase5-cuda-full` then `bm-phase5-cuda-packet`;
-  `check-phase5-cuda-workflow` guards that `ci_cuda.yml` keeps the build/import
-  gate and never reintroduces a self-hosted GPU runner. Phase 3's speedup surface
-  is the checked contact-island benchmark, not the trivial Euler rigid-body
-  rows.
+  `check-phase5-cuda-workflow` guards that `ci_cuda.yml` keeps fork PRs on the
+  hosted compile fallback and restricts GPU-runtime steps to trusted events.
+  Phase 3's speedup surface is the checked contact-island benchmark, not the
+  trivial Euler rigid-body rows.
 - Phase 6 backlog (unblocked by the Phase 5 GO, unstarted; each item needs its
   own design note and gate before work starts): broaden GPU stage coverage
   beyond the single rigid-body integration stage; promote auto-scheduling from
   resource-access metadata behind a verified scheduler contract (honest
   declarations, deferred structural changes, deterministic reductions, cost
   gate); heterogeneous batches and single-scene contact/constraint GPU work
-  (Pattern B, only after Pattern A evidence justifies it); and differentiable
-  state types if differentiability is promoted from a deferred to a committed
-  capability. Rationale for each lives in
+  (Pattern B, only after Pattern A evidence justifies it), including any PD-IPC
+  GPU contact path tracked under
+  [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md);
+  and differentiable state types if differentiability is promoted from a
+  deferred to a committed capability. Rationale for each lives in
   [`../design/compute_backend_research.md`](../design/compute_backend_research.md).
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
   contact-shaped proxy, contact-island speedup surface, and Phase 5 CPU-baseline
-  history; `pixi run -e cuda test-cuda` covers the opt-in CUDA smoke path on CUDA
-  hosts; and future compute-bound contact/constraint work must extend the
-  checked benchmark gate.
+  history; `pixi run -e cuda test-all` is the local full CUDA gate on Linux CUDA
+  hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path; and
+  future compute-bound contact/constraint work must extend the checked
+  benchmark gate.
   Taskflow remains behind the experimental executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior
   stays untouched.
@@ -128,17 +132,18 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25). The
-  active local line now carries the model-loading bridge from legacy
+  active line now carries the model-loading bridge from legacy
   `dynamics::Skeleton` / `simulation::World` into experimental `Multibody`
-  objects, including all joint types, branching and root offsets, collision
-  shape import, compound shapes, joint properties, broad-phase-pruned collision
+  objects, including the `addSkeleton()` / `addWorld()` URI-loading facades,
+  joint-family/property transfer, branching and root offsets, collision shape
+  import with local transforms, compound shapes, broad-phase-pruned collision
   queries, and a persistent native collision-query world. The semi-implicit
   default pipeline also now runs one unified boxed-LCP over rigid-rigid and
   articulated link contacts. Continue the remaining Subsystem A polish in
   `docs/dev_tasks/rigid_body_dynamics_solver/`: warm starting, friction-cone
-  iteration, and scaling work around the unified contact solve; keep remaining
-  actuator, mimic/coupler, loop-closure, integrator, and COM-Jacobian work as
-  separate deferred slices.
+  iteration, and scaling work around the unified contact solve; keep richer
+  model-loading diagnostics, visual/material import, actuator, mimic/coupler,
+  loop-closure, integrator, and COM-Jacobian work as separate deferred slices.
 - Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.
@@ -156,6 +161,16 @@ its own line so status updates remain git-history friendly.
   mesh/material state, scene loading, BE/Newmark integration, PT/EE distance
   derivatives, conservative CCD line search, projected Newton, friction,
   diagnostics, and the complete upstream example/test/benchmark/visual corpus.
+  Track Shortest Path to Boundary as a separate self-intersection recovery
+  sidecar in
+  [`081-deformable-implicit-barrier-solver/spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md):
+  first source/code audit, then a standalone tetrahedral query and DCD recovery
+  spike before any solver or public API claim.
+  Track Penetration-free Projective Dynamics on the GPU as a separate
+  GPU-accelerated IPC sidecar in
+  [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md):
+  first source/code audit, then a CPU-verifiable projective IPC slice and
+  fast-CCD validation before any A-Jacobi, GPU-culling, or speedup claim.
 - Gate: Full IPC-parity progress is not complete until the implementation
   distinguishes the first point-mass/static-ground slice from full IPC, keeps
   IPC naming backend-neutral, proves mesh contact, barrier, distance, CCD,
@@ -164,7 +179,53 @@ its own line so status updates remain git-history friendly.
   records benchmark/profiling JSON for kernels/solver/scenes/scaling, verifies
   long-horizon headless Filament captures for GUI examples, and keeps
   `pixi run lint`, `pixi run build`, focused C++ tests, and
-  `check-api-boundaries` green.
+  `check-api-boundaries` green. SPB additionally needs the sidecar source/code
+  matrix, tetrahedral traversal and feasible-region tests, vertex-tet and
+  edge-tet DCD candidate tests, pre-intersected recovery evidence, limitation
+  coverage, CCD/DCD comparison packets, and no public SPB/reference-project,
+  Embree, MeshFrame2, CuMatrix, solver, ECS, or backend-type leak. PD-IPC
+  additionally needs the sidecar source/code matrix, CPU reference tests for the
+  two-level projective IPC loop, fast-CCD validation against conservative DART
+  CCD including public false-negative examples, A-Jacobi residual/convergence
+  tests, optional GPU culling and solver packets with setup/transfer/readback
+  timing, and no public PD-IPC/A-Jacobi/reference-project/CUDA or backend-type
+  leak.
+
+### PLAN-082: Rigid Implicit-Barrier Contact Solver
+
+- Owner doc:
+  [`082-rigid-implicit-barrier-contact.md`](082-rigid-implicit-barrier-contact.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Continue the active dev task from fixture replay, comparison
+  script ingestion, curved-trajectory CCD/residual/subdivision slices, local
+  rigid barrier derivatives, scene-level sparse barrier assembly, and
+  conservative line-search feasibility, and barrier/dynamics Newton solve
+  scaffolding, first physical dynamics-term construction, opt-in runtime rigid
+  IPC stage, same-domain `World` rigid solver selection, and runtime sphere
+  triangulation, durable stage diagnostics, and the first activated-contact
+  runtime regression plus vertex-vertex line-search CCD, invalid runtime
+  geometry rejection, explicit non-converged-result skipping, and
+  primitive-family friction potentials, first lagged friction assembly, and
+  bounded outer lagged-friction passes into remaining geometry corpus coverage,
+  runtime fixture behavior, production convergence criteria, production-ready
+  default activation criteria, mixed-domain coupling, rigorous interval
+  arithmetic, direct CCD evaluator parity, remaining comparison script
+  commands, and full fixture/test/benchmark/visual parity. Keep the
+  simultaneous-impact intake as a PLAN-082 sidecar until solver-neutral scenes
+  prove a restitution/order-uncertainty gap not already covered by rigid IPC or
+  AVBD-style finite-time contact.
+- Gate: Full rigid IPC progress is not complete until the implementation covers
+  every manifest row with DART-owned tests, examples, benchmarks, comparison
+  packets, CPU/GPU evidence where applicable, and headless Filament visual
+  captures; `scripts/check_rigid_ipc_fixture_manifest.py` stays green with an
+  audited upstream checkout, public APIs remain backend-neutral and free of
+  solver registries/ECS storage, and every promoted runtime slice passes
+  `pixi run lint`, `pixi run build`, focused C++ tests, and
+  `check-api-boundaries`. A simultaneous-impact operator additionally requires
+  the sidecar literature matrix, corpus evidence, IPC/AVBD comparison, and
+  public-boundary review before promotion.
 
 ### PLAN-104: Vertex Block Descent Solver
 
@@ -173,13 +234,27 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Implement Vertex Block Descent (VBD, Chen et al. SIGGRAPH 2024) as
-  a DART-owned deformable solver on the existing experimental deformable ECS
-  components and the variational implicit-Euler objective. Track slice-level
-  work in `docs/dev_tasks/vbd_deformable_solver/`, starting with the per-vertex
-  block kernels, graph coloring, and the block-descent driver, then FEM
-  hyperelasticity, acceleration, solver wiring, contact/friction, and CPU/GPU
-  performance.
+- Next step: The DART-owned VBD CPU+CUDA solver landed on `main` (#2781):
+  per-vertex block kernels, graph coloring, the colored Gauss-Seidel
+  block-descent driver, Stable Neo-Hookean tetrahedra, Chebyshev/Rayleigh
+  acceleration, the implicit-Euler stepper, the opt-in World wiring
+  (`comps::DeformableVbdConfig` + the `advanceDeformableBody` VBD branch), the
+  algorithm-neutral public `configureDeformableSolver` API and dartpy binding,
+  static half-space ground contact + Coulomb friction, the CUDA mass-spring and
+  tetrahedral rollouts (CUDA-graph capture + mixed precision), the CPU baseline
+  benchmark, and the first GUI showcases (cloth/net/beam). PR #2801 extends
+  that landed path by routing VBD tetrahedra through the shared
+  `deformable_elasticity` FEM kernels, preserving VBD on static sphere/box
+  obstacle barriers, adding lagged VT/EE surface self-collision penalties, and
+  adding the TinyVBD tilted-strand plus contact showcase py-demos; it also
+  retires the temporary `docs/dev_tasks/vbd_deformable_solver/` tracker by
+  promoting the gap audit into this plan. Remaining work, in order:
+  self-contact tangential friction, OGC source/code audit and CPU
+  proof-of-contact from
+  [`104-vertex-block-descent-solver/ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md),
+  committed benchmark/profiling JSON for the new scenes, paper tetrahedral scene
+  reproduction, Phase 8b SoA + Gaia-CPU comparison, and Phase 9 RTX-4090
+  same-GPU Table 1 reproduction.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
@@ -189,7 +264,11 @@ its own line so status updates remain git-history friendly.
   JSON that beats the reference and/or paper numbers before any parity claim,
   verifies headless Filament captures for GUI examples, and keeps
   `pixi run lint`, `pixi run build`, focused C++ tests, and
-  `check-api-boundaries` green.
+  `check-api-boundaries` green. OGC additionally needs the sidecar source/code
+  matrix, vertex-facet and edge-edge contact tests, conservative-bound and
+  truncation tests, force/Hessian finite-difference evidence, limitation
+  coverage, IPC/VBD comparison packets, and no public OGC/Gaia/Newton/Warp or
+  backend-type leak.
 
 ### PLAN-082: Linear-Time Variational Integrator
 
@@ -288,13 +367,34 @@ its own line so status updates remain git-history friendly.
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)
-- Status: Complete
-- Horizon: Later
+- Status: Active
+- Horizon: Now
 - Dimension: Release transition
-- Next step: Use the DART 7 gate table and packaging checklist during release
-  packaging or release-hardening passes.
-- Gate: Release gate evidence names the relevant local or CI command, blocker,
-  or external compatibility check for each touched release surface.
+- Next step: Follow the DART 7 implementation order in the release roadmap:
+  finish policy alignment and Gazebo lane split, publish the DART 6.16 support
+  packet, then treat PLAN-041 official simulation API promotion as the
+  release-critical path. Keep research-solver breadth out of the DART 7 release
+  blocker set unless a promoted API depends on it.
+- Gate: DART 7 is not release-ready until the clean-break gates in the release
+  roadmap have direct evidence, package metadata no longer implies DART
+  6/gz-physics compatibility, and DART 6.16 support scope plus sunset trigger
+  are published.
+
+### PLAN-041: Official Simulation API Promotion
+
+- Owner doc:
+  [`041-official-simulation-api-promotion.md`](041-official-simulation-api-promotion.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Release transition
+- Next step: Land the reviewed promotion contract, then start the readiness
+  audit and package-facade work before any broad `experimental/` source-tree
+  move. The intended path is DART 7 official API promotion, not a DART 8 middle
+  step.
+- Gate: The planning PR passes the docs-only gates; implementation PRs must keep
+  API-boundary checks, C++/Python tests, package/export smokes, and CUDA/full
+  gates green according to the touched scope. The promoted public API must hide
+  ECS, component, solver-registry, backend, and implementation-folder details.
 
 ### PLAN-050: Experimental World Split
 
@@ -303,11 +403,11 @@ its own line so status updates remain git-history friendly.
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Track any future DART 8 promotion work under the release roadmap
-  once the experimental world has parity gates.
+- Next step: Track DART 7 promotion work under the release roadmap once the
+  experimental world has parity gates.
 - Gate: `dartpy.simulation_experimental` is separate from legacy
-  `dartpy.simulation`, has focused import/API coverage, and the DART 7/8
-  transition path is documented in onboarding docs.
+  `dartpy.simulation`, has focused import/API coverage, and the clean-break
+  promotion path is documented in onboarding docs.
 
 ### PLAN-060: Backend-Hidden GUI Roadmap
 
@@ -321,16 +421,16 @@ its own line so status updates remain git-history friendly.
 - Gate: GUI promotion stays backend-hidden and aligned with the maintained
   Filament renderer onboarding guidance.
 
-### PLAN-070: DART 8 Compatibility Cleanup
+### PLAN-070: Post-DART-7 Compatibility Cleanup
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)
-- Status: Complete
+- Status: Parked
 - Horizon: Later
 - Dimension: Release transition
-- Next step: Use the compatibility-debt inventory and cleanup review checklist
-  during DART 7 packaging passes and DART 8 removal planning.
-- Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
-  package/export status, and gz-physics compatibility where relevant.
+- Next step: Reopen only after the DART 7 clean break ships and the next major
+  release has concrete DART 7-era compatibility debt to remove.
+- Gate: Future DART 8 cleanup decisions cite migration notes, changelog
+  entries, package/export status, and downstream support status where relevant.
 
 ### PLAN-090: Filament Renderer Performance
 
@@ -440,3 +540,73 @@ its own line so status updates remain git-history friendly.
   against the shared fixture; the notebook imports (not copies) the scene
   modules; C++ `dart-demos` unchanged; `pixi run lint` and `check-docs-policy`
   green.
+
+### PLAN-110: Differentiable Simulation
+
+- Owner doc:
+  [`110-differentiable-simulation.md`](110-differentiable-simulation.md);
+  durable design in
+  [`../design/differentiable_simulation.md`](../design/differentiable_simulation.md).
+- Status: Active
+- Horizon: Next
+- Dimension: Algorithm extensibility
+- Scope note: WS1–WS5 first slices plus the PLAN-080-WS4 boxed-LCP contact
+  prerequisite are implemented and verified (FD-of-step validated; default build
+  untouched and bitwise-identical when off). The work is committed on
+  `feature/differentiable-simulation` and open as PR #2761 (milestone DART 7.0,
+  CHANGELOG included). Remaining for that path is hardening/examples/promotion,
+  not new workstreams. Dojo is now tracked as a separate planned evaluation
+  track under PLAN-110: maximal-coordinate variational hard-contact NCP/IPM with
+  implicit gradients, using Dojo.jl as method evidence and a comparison baseline
+  rather than a dependency.
+- Next step: Drive PR #2761 to merge (experimental surface, single-branch to
+  `main`). Then: run the torch-autograd test (`pip install torch`); add the
+  standalone worked trajectory-optimization / system-identification example
+  programs (the GUI demo and the convergence tests already ship); harden the
+  static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
+  own PR); and extend the deferred parameters/contacts (CENTER_OF_MASS,
+  articulated multibody-link contact). After the active path lands, run the
+  Dojo de-risking spike from
+  [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
+  before any public API or runtime dependency promise. Track in
+  `docs/dev_tasks/differentiable_simulation/`.
+- Gate: differentiability is off by default with bitwise-identical results and
+  zero snapshot allocation when off (`test_diff_zero_cost_parity` + on/off
+  overhead benchmark against a stated budget); analytic Jacobians agree with
+  central finite differences at relative error `< 1e-4` over `h ∈ {1e-5,1e-6,1e-7}`
+  on named scenes (Tied-set/boundary configs excluded) before any parity claim;
+  a `DART_BUILD_DIFF` build option with CI on _and_ off and a workflow guard;
+  serialization round-trip (or documented non-serialization) of the
+  `differentiable`/`contact_gradient_mode`/parameter-registration state; the
+  public surface never exposes the reverse-pass cache, LCP snapshot,
+  solver/coupler/backend types, ECS storage, or a tensor framework in the C++
+  core (`check-api-boundaries` green); and mode-switch/limit subgradient and
+  elastic-approximation limits are documented with saddle-escape and
+  pre-contact surrogates opt-in only (no FD gate by construction).
+  Dojo-style work additionally needs an internal NCP/IPM spike, central-path
+  smoothness/accuracy contract, finite-difference gradient agreement, one
+  reproduced Dojo example packet, benchmark/profiling JSON, and proof that no
+  Dojo.jl dependency or solver/cache/backend type leaks into the public surface.
+
+### PLAN-120: Inverse Kinematics And Motion Synthesis
+
+- Owner doc:
+  [`120-inverse-kinematics-and-motion.md`](120-inverse-kinematics-and-motion.md)
+- Status: Proposed
+- Horizon: Later
+- Dimension: Algorithm extensibility
+- Next step: Run the Phase 0 design inventory before implementation: map
+  classic DART `InverseKinematics`/`WholeBodyIK`/`CompositeIK`/`IKFast` behavior
+  to experimental `World` concepts; define the shared IK benchmark scene set;
+  draft `docs/design/inverse_kinematics_motion.md`; and decide which pose,
+  motion-level, and `auto` selection APIs can wait on existing experimental
+  state-space, kinematics-only, rollout, collision-query, and model-loading
+  seams.
+- Gate: PLAN-120 is not implementation-ready until the design inventory proves
+  manifold-correct state-space operations for mixed joint spaces, carries
+  forward or intentionally retires each DART 6 whole-body IK feature, ranks
+  Jacobian/analytical/optimization/heuristic/statistical/learned proposal
+  families against shared scenes, defines long-horizon motion IK evidence that
+  prevents per-frame discontinuities, singularity stalls, and local-minimum
+  traps from being hidden, and specifies deterministic diagnostics for the
+  `auto` policy.

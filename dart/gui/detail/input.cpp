@@ -38,6 +38,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
+#include <array>
 #include <limits>
 
 #include <cctype>
@@ -62,6 +63,361 @@ using dart::gui::togglePaused;
 using dart::gui::updateOrbitCameraController;
 
 namespace {
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 1)
+  #define DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS 1
+#else
+  #define DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS 0
+#endif
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 4)
+  #define DART_GUI_DETAIL_HAS_GLFW_EXTENDED_CURSORS 1
+#else
+  #define DART_GUI_DETAIL_HAS_GLFW_EXTENDED_CURSORS 0
+#endif
+
+#if GLFW_VERSION_MAJOR > 3                                                     \
+    || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 2)
+  #define DART_GUI_DETAIL_HAS_GLFW_KEY_NAMES 1
+#else
+  #define DART_GUI_DETAIL_HAS_GLFW_KEY_NAMES 0
+#endif
+
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+struct ImGuiMouseCursorState
+{
+  std::array<GLFWcursor*, ImGuiMouseCursor_COUNT> cursors{};
+  GLFWcursor* lastCursor = nullptr;
+  bool initialized = false;
+  bool cursorHidden = false;
+};
+
+ImGuiMouseCursorState& imguiMouseCursorState()
+{
+  static ImGuiMouseCursorState state;
+  return state;
+}
+
+GLFWcursor* createStandardCursor(int shape)
+{
+  GLFWerrorfun previousErrorCallback = glfwSetErrorCallback(nullptr);
+  GLFWcursor* cursor = glfwCreateStandardCursor(shape);
+  glfwSetErrorCallback(previousErrorCallback);
+  return cursor;
+}
+
+void initializeImGuiMouseCursors(ImGuiMouseCursorState& state)
+{
+  if (state.initialized) {
+    return;
+  }
+
+  state.cursors[ImGuiMouseCursor_Arrow]
+      = createStandardCursor(GLFW_ARROW_CURSOR);
+  state.cursors[ImGuiMouseCursor_TextInput]
+      = createStandardCursor(GLFW_IBEAM_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeNS]
+      = createStandardCursor(GLFW_VRESIZE_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeEW]
+      = createStandardCursor(GLFW_HRESIZE_CURSOR);
+  state.cursors[ImGuiMouseCursor_Hand] = createStandardCursor(GLFW_HAND_CURSOR);
+  #if DART_GUI_DETAIL_HAS_GLFW_EXTENDED_CURSORS
+  state.cursors[ImGuiMouseCursor_ResizeAll]
+      = createStandardCursor(GLFW_RESIZE_ALL_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeNESW]
+      = createStandardCursor(GLFW_RESIZE_NESW_CURSOR);
+  state.cursors[ImGuiMouseCursor_ResizeNWSE]
+      = createStandardCursor(GLFW_RESIZE_NWSE_CURSOR);
+  state.cursors[ImGuiMouseCursor_NotAllowed]
+      = createStandardCursor(GLFW_NOT_ALLOWED_CURSOR);
+  #endif
+  state.initialized = true;
+}
+
+GLFWcursor* cursorForImGuiMouseCursor(
+    const ImGuiMouseCursorState& state, ImGuiMouseCursor imguiCursor)
+{
+  if (imguiCursor >= 0 && imguiCursor < ImGuiMouseCursor_COUNT) {
+    if (GLFWcursor* cursor = state.cursors[imguiCursor]) {
+      return cursor;
+    }
+  }
+
+  return state.cursors[ImGuiMouseCursor_Arrow];
+}
+#endif
+
+void updateImGuiKeyModifiers(GLFWwindow* window, ImGuiIO& io)
+{
+  if (window == nullptr) {
+    return;
+  }
+
+  io.AddKeyEvent(
+      ImGuiMod_Ctrl,
+      glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
+          || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS);
+  io.AddKeyEvent(
+      ImGuiMod_Shift,
+      glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS
+          || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+  io.AddKeyEvent(
+      ImGuiMod_Alt,
+      glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS
+          || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS);
+  io.AddKeyEvent(
+      ImGuiMod_Super,
+      glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS
+          || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS);
+}
+
+ImGuiKey imguiKeyForPrintableCharacter(char character)
+{
+  const unsigned char unsignedCharacter = static_cast<unsigned char>(character);
+  const int lowerCharacter = std::tolower(unsignedCharacter);
+  if (lowerCharacter >= 'a' && lowerCharacter <= 'z') {
+    return static_cast<ImGuiKey>(
+        ImGuiKey_A + (lowerCharacter - static_cast<int>('a')));
+  }
+
+  if (unsignedCharacter >= static_cast<unsigned char>('0')
+      && unsignedCharacter <= static_cast<unsigned char>('9')) {
+    return static_cast<ImGuiKey>(
+        ImGuiKey_0 + (unsignedCharacter - static_cast<unsigned char>('0')));
+  }
+
+  switch (character) {
+    case ' ':
+      return ImGuiKey_Space;
+    case '\'':
+      return ImGuiKey_Apostrophe;
+    case ',':
+      return ImGuiKey_Comma;
+    case '-':
+      return ImGuiKey_Minus;
+    case '.':
+      return ImGuiKey_Period;
+    case '/':
+      return ImGuiKey_Slash;
+    case ';':
+      return ImGuiKey_Semicolon;
+    case '=':
+      return ImGuiKey_Equal;
+    case '[':
+      return ImGuiKey_LeftBracket;
+    case '\\':
+      return ImGuiKey_Backslash;
+    case ']':
+      return ImGuiKey_RightBracket;
+    case '`':
+      return ImGuiKey_GraveAccent;
+    default:
+      return ImGuiKey_None;
+  }
+}
+
+bool isLayoutTranslatedGlfwKey(int key)
+{
+  return key == GLFW_KEY_SPACE
+         || (key >= GLFW_KEY_APOSTROPHE && key <= GLFW_KEY_GRAVE_ACCENT)
+         || key == GLFW_KEY_WORLD_1 || key == GLFW_KEY_WORLD_2;
+}
+
+ImGuiKey imguiKeyForTranslatedPrintableGlfwKey(int key, int scancode)
+{
+  if (!isLayoutTranslatedGlfwKey(key)) {
+    return ImGuiKey_None;
+  }
+
+#if DART_GUI_DETAIL_HAS_GLFW_KEY_NAMES
+  // GLFW key tokens are US-position codes; key names follow the active layout.
+  const char* keyName = glfwGetKeyName(key, scancode);
+  if (keyName == nullptr || keyName[0] == '\0' || keyName[1] != '\0') {
+    return ImGuiKey_None;
+  }
+
+  return imguiKeyForPrintableCharacter(keyName[0]);
+#else
+  static_cast<void>(scancode);
+  return ImGuiKey_None;
+#endif
+}
+
+ImGuiKey imguiKeyForGlfwKey(int key, int scancode)
+{
+  const ImGuiKey translatedKey
+      = imguiKeyForTranslatedPrintableGlfwKey(key, scancode);
+  if (translatedKey != ImGuiKey_None) {
+    return translatedKey;
+  }
+
+  switch (key) {
+    case GLFW_KEY_TAB:
+      return ImGuiKey_Tab;
+    case GLFW_KEY_LEFT:
+      return ImGuiKey_LeftArrow;
+    case GLFW_KEY_RIGHT:
+      return ImGuiKey_RightArrow;
+    case GLFW_KEY_UP:
+      return ImGuiKey_UpArrow;
+    case GLFW_KEY_DOWN:
+      return ImGuiKey_DownArrow;
+    case GLFW_KEY_PAGE_UP:
+      return ImGuiKey_PageUp;
+    case GLFW_KEY_PAGE_DOWN:
+      return ImGuiKey_PageDown;
+    case GLFW_KEY_HOME:
+      return ImGuiKey_Home;
+    case GLFW_KEY_END:
+      return ImGuiKey_End;
+    case GLFW_KEY_INSERT:
+      return ImGuiKey_Insert;
+    case GLFW_KEY_DELETE:
+      return ImGuiKey_Delete;
+    case GLFW_KEY_BACKSPACE:
+      return ImGuiKey_Backspace;
+    case GLFW_KEY_SPACE:
+      return ImGuiKey_Space;
+    case GLFW_KEY_ENTER:
+      return ImGuiKey_Enter;
+    case GLFW_KEY_ESCAPE:
+      return ImGuiKey_Escape;
+    case GLFW_KEY_APOSTROPHE:
+      return ImGuiKey_Apostrophe;
+    case GLFW_KEY_COMMA:
+      return ImGuiKey_Comma;
+    case GLFW_KEY_MINUS:
+      return ImGuiKey_Minus;
+    case GLFW_KEY_PERIOD:
+      return ImGuiKey_Period;
+    case GLFW_KEY_SLASH:
+      return ImGuiKey_Slash;
+    case GLFW_KEY_SEMICOLON:
+      return ImGuiKey_Semicolon;
+    case GLFW_KEY_EQUAL:
+      return ImGuiKey_Equal;
+    case GLFW_KEY_LEFT_BRACKET:
+      return ImGuiKey_LeftBracket;
+    case GLFW_KEY_BACKSLASH:
+      return ImGuiKey_Backslash;
+    case GLFW_KEY_WORLD_1:
+    case GLFW_KEY_WORLD_2:
+      return ImGuiKey_Oem102;
+    case GLFW_KEY_RIGHT_BRACKET:
+      return ImGuiKey_RightBracket;
+    case GLFW_KEY_GRAVE_ACCENT:
+      return ImGuiKey_GraveAccent;
+    case GLFW_KEY_CAPS_LOCK:
+      return ImGuiKey_CapsLock;
+    case GLFW_KEY_SCROLL_LOCK:
+      return ImGuiKey_ScrollLock;
+    case GLFW_KEY_NUM_LOCK:
+      return ImGuiKey_NumLock;
+    case GLFW_KEY_PRINT_SCREEN:
+      return ImGuiKey_PrintScreen;
+    case GLFW_KEY_PAUSE:
+      return ImGuiKey_Pause;
+    case GLFW_KEY_KP_0:
+      return ImGuiKey_Keypad0;
+    case GLFW_KEY_KP_1:
+      return ImGuiKey_Keypad1;
+    case GLFW_KEY_KP_2:
+      return ImGuiKey_Keypad2;
+    case GLFW_KEY_KP_3:
+      return ImGuiKey_Keypad3;
+    case GLFW_KEY_KP_4:
+      return ImGuiKey_Keypad4;
+    case GLFW_KEY_KP_5:
+      return ImGuiKey_Keypad5;
+    case GLFW_KEY_KP_6:
+      return ImGuiKey_Keypad6;
+    case GLFW_KEY_KP_7:
+      return ImGuiKey_Keypad7;
+    case GLFW_KEY_KP_8:
+      return ImGuiKey_Keypad8;
+    case GLFW_KEY_KP_9:
+      return ImGuiKey_Keypad9;
+    case GLFW_KEY_KP_DECIMAL:
+      return ImGuiKey_KeypadDecimal;
+    case GLFW_KEY_KP_DIVIDE:
+      return ImGuiKey_KeypadDivide;
+    case GLFW_KEY_KP_MULTIPLY:
+      return ImGuiKey_KeypadMultiply;
+    case GLFW_KEY_KP_SUBTRACT:
+      return ImGuiKey_KeypadSubtract;
+    case GLFW_KEY_KP_ADD:
+      return ImGuiKey_KeypadAdd;
+    case GLFW_KEY_KP_ENTER:
+      return ImGuiKey_KeypadEnter;
+    case GLFW_KEY_KP_EQUAL:
+      return ImGuiKey_KeypadEqual;
+    case GLFW_KEY_LEFT_SHIFT:
+      return ImGuiKey_LeftShift;
+    case GLFW_KEY_LEFT_CONTROL:
+      return ImGuiKey_LeftCtrl;
+    case GLFW_KEY_LEFT_ALT:
+      return ImGuiKey_LeftAlt;
+    case GLFW_KEY_LEFT_SUPER:
+      return ImGuiKey_LeftSuper;
+    case GLFW_KEY_RIGHT_SHIFT:
+      return ImGuiKey_RightShift;
+    case GLFW_KEY_RIGHT_CONTROL:
+      return ImGuiKey_RightCtrl;
+    case GLFW_KEY_RIGHT_ALT:
+      return ImGuiKey_RightAlt;
+    case GLFW_KEY_RIGHT_SUPER:
+      return ImGuiKey_RightSuper;
+    case GLFW_KEY_MENU:
+      return ImGuiKey_Menu;
+    default:
+      break;
+  }
+
+  if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
+    return static_cast<ImGuiKey>(ImGuiKey_0 + (key - GLFW_KEY_0));
+  }
+  if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
+    return static_cast<ImGuiKey>(ImGuiKey_A + (key - GLFW_KEY_A));
+  }
+  if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F24) {
+    return static_cast<ImGuiKey>(ImGuiKey_F1 + (key - GLFW_KEY_F1));
+  }
+
+  return ImGuiKey_None;
+}
+
+void handleKey(
+    GLFWwindow* window, int key, int scancode, int action, int /*mods*/)
+{
+  if (ImGui::GetCurrentContext() == nullptr
+      || (action != GLFW_PRESS && action != GLFW_RELEASE
+          && action != GLFW_REPEAT)) {
+    return;
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+  updateImGuiKeyModifiers(window, io);
+
+  const ImGuiKey imguiKey = imguiKeyForGlfwKey(key, scancode);
+  if (imguiKey == ImGuiKey_None) {
+    return;
+  }
+
+  const bool pressed = action != GLFW_RELEASE;
+  io.AddKeyEvent(imguiKey, pressed);
+  io.SetKeyEventNativeData(imguiKey, key, scancode);
+}
+
+void handleChar(GLFWwindow*, unsigned int codepoint)
+{
+  if (ImGui::GetCurrentContext() == nullptr) {
+    return;
+  }
+
+  ImGui::GetIO().AddInputCharacter(codepoint);
+}
 
 void handleScroll(GLFWwindow* window, double xOffset, double yOffset)
 {
@@ -176,6 +532,52 @@ bool isShortcutDown(GLFWwindow* window, const KeyboardShortcut& shortcut)
   return true;
 }
 
+void resizeKeyboardActionStateIfNeeded(
+    const DartScene& scene, ApplicationInputState& state)
+{
+  if (state.customActionWasPressed.size() != scene.keyboardActions.size()
+      || state.customActionSuppressUntilReleased.size()
+             != scene.keyboardActions.size()) {
+    state.customActionWasPressed.assign(scene.keyboardActions.size(), false);
+    state.customActionSuppressUntilReleased.assign(
+        scene.keyboardActions.size(), false);
+  }
+}
+
+void updateKeyboardActionCaptureState(
+    GLFWwindow* window, const DartScene& scene, ApplicationInputState& state)
+{
+  resizeKeyboardActionStateIfNeeded(scene, state);
+
+  for (std::size_t i = 0; i < scene.keyboardActions.size(); ++i) {
+    const bool isPressed
+        = isShortcutDown(window, scene.keyboardActions[i].shortcut);
+    state.customActionWasPressed[i] = isPressed;
+    if (isPressed) {
+      state.customActionSuppressUntilReleased[i] = true;
+    } else {
+      state.customActionSuppressUntilReleased[i] = false;
+    }
+  }
+}
+
+KeyboardActionContext makeKeyboardActionContext(
+    dart::gui::ViewerLifecycleState& lifecycle,
+    dart::gui::RenderSettings& renderSettings,
+    OrbitCameraController& cameraController,
+    const OrbitCamera& homeCamera)
+{
+  KeyboardActionContext context;
+  context.lifecycle = &lifecycle;
+  context.renderSettings = &renderSettings;
+  context.resetCamera = [&cameraController, homeCamera]() {
+    cameraController.camera = homeCamera;
+    resetOrbitCameraTracking(cameraController);
+  };
+
+  return context;
+}
+
 void dispatchKeyboardActions(
     GLFWwindow* window,
     DartScene& scene,
@@ -184,28 +586,27 @@ void dispatchKeyboardActions(
     const OrbitCamera& homeCamera,
     ApplicationInputState& state)
 {
-  if (state.customActionWasPressed.size() != scene.keyboardActions.size()) {
-    state.customActionWasPressed.assign(scene.keyboardActions.size(), false);
-  }
+  resizeKeyboardActionStateIfNeeded(scene, state);
 
-  KeyboardActionContext context;
-  context.lifecycle = &lifecycle;
-  context.renderSettings = &scene.renderSettings;
-  context.resetCamera = [&cameraController, homeCamera]() {
-    cameraController.camera = homeCamera;
-    resetOrbitCameraTracking(cameraController);
-  };
+  KeyboardActionContext context = makeKeyboardActionContext(
+      lifecycle, scene.renderSettings, cameraController, homeCamera);
 
   for (std::size_t i = 0; i < scene.keyboardActions.size(); ++i) {
     const auto& action = scene.keyboardActions[i];
     const bool isPressed = isShortcutDown(window, action.shortcut);
     const bool wasPressed = state.customActionWasPressed[i];
+    const bool suppressUntilReleased
+        = state.customActionSuppressUntilReleased[i];
     const bool shouldTrigger
-        = action.trigger == KeyboardActionTrigger::Release
-              ? (!isPressed && wasPressed)
-              : (isPressed && (action.repeat || !wasPressed));
+        = !suppressUntilReleased
+          && (action.trigger == KeyboardActionTrigger::Release
+                  ? (!isPressed && wasPressed)
+                  : (isPressed && (action.repeat || !wasPressed)));
     if (shouldTrigger && action.callback) {
       action.callback(context);
+    }
+    if (!isPressed) {
+      state.customActionSuppressUntilReleased[i] = false;
     }
     state.customActionWasPressed[i] = isPressed;
   }
@@ -221,6 +622,8 @@ void attachOrbitCameraController(
   }
 
   glfwSetWindowUserPointer(window, &controller);
+  glfwSetKeyCallback(window, handleKey);
+  glfwSetCharCallback(window, handleChar);
   glfwSetScrollCallback(window, handleScroll);
 }
 
@@ -244,12 +647,17 @@ void pollApplicationInput(
   }
 
   glfwPollEvents();
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+  const bool uiCapturesKeyboard = ImGui::GetCurrentContext() != nullptr
+                                  && ImGui::GetIO().WantCaptureKeyboard;
+  const bool isEscapePressed
+      = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+  if (!uiCapturesKeyboard && isEscapePressed && !state.wasEscapePressed) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
+  state.wasEscapePressed = isEscapePressed;
 
   const bool isSpacePressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-  if (isSpacePressed && !state.wasSpacePressed) {
+  if (!uiCapturesKeyboard && isSpacePressed && !state.wasSpacePressed) {
     togglePaused(lifecycle);
   }
   state.wasSpacePressed = isSpacePressed;
@@ -257,27 +665,32 @@ void pollApplicationInput(
   // F2 toggles the performance HUD at runtime (no need to pass --perf-hud).
   const bool isPerfHudKeyPressed
       = glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS;
-  if (isPerfHudKeyPressed && !state.wasPerfHudKeyPressed) {
+  if (!uiCapturesKeyboard && isPerfHudKeyPressed
+      && !state.wasPerfHudKeyPressed) {
     showPerfHud = !showPerfHud;
   }
   state.wasPerfHudKeyPressed = isPerfHudKeyPressed;
 
   const bool isStepPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
-  if (isStepPressed && !state.wasStepPressed) {
+  if (!uiCapturesKeyboard && isStepPressed && !state.wasStepPressed) {
     requestSingleStep(lifecycle, false);
   }
   state.wasStepPressed = isStepPressed;
 
-  for (const auto& handle : scene.ikHandles) {
-    if (glfwGetKey(window, handle.hotkey) == GLFW_PRESS) {
-      selectionController.select(
-          handle.targetRenderableId, handle.label + " IK target");
-      lifecycle.paused = true;
+  if (!uiCapturesKeyboard) {
+    for (const auto& handle : scene.ikHandles) {
+      if (glfwGetKey(window, handle.hotkey) == GLFW_PRESS) {
+        selectionController.select(
+            handle.targetRenderableId, handle.label + " IK target");
+        lifecycle.paused = true;
+      }
     }
-  }
 
-  dispatchKeyboardActions(
-      window, scene, lifecycle, cameraController, homeCamera, state);
+    dispatchKeyboardActions(
+        window, scene, lifecycle, cameraController, homeCamera, state);
+  } else {
+    updateKeyboardActionCaptureState(window, scene, state);
+  }
 }
 
 void updateImGuiMouseInput(
@@ -286,6 +699,10 @@ void updateImGuiMouseInput(
     int framebufferWidth,
     int framebufferHeight)
 {
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+  io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+#endif
+
   for (bool& mouseDown : io.MouseDown) {
     mouseDown = false;
   }
@@ -320,6 +737,70 @@ void updateImGuiMouseInput(
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
   io.MouseDown[2]
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+}
+
+void updateImGuiMouseCursor(GLFWwindow* window, ImGuiIO& io)
+{
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+  io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+  if (window == nullptr || ImGui::GetCurrentContext() == nullptr) {
+    return;
+  }
+
+  auto& state = imguiMouseCursorState();
+  initializeImGuiMouseCursors(state);
+
+  if ((io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) != 0
+      || glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+    state.lastCursor = nullptr;
+    state.cursorHidden = false;
+    return;
+  }
+
+  const ImGuiMouseCursor imguiCursor = ImGui::GetMouseCursor();
+  if (imguiCursor == ImGuiMouseCursor_None || io.MouseDrawCursor) {
+    if (!state.cursorHidden) {
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+      state.lastCursor = nullptr;
+      state.cursorHidden = true;
+    }
+    return;
+  }
+
+  GLFWcursor* cursor = cursorForImGuiMouseCursor(state, imguiCursor);
+  if (state.cursorHidden) {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    state.cursorHidden = false;
+  }
+  if (state.lastCursor != cursor) {
+    glfwSetCursor(window, cursor);
+    state.lastCursor = cursor;
+  }
+#else
+  (void)window;
+  (void)io;
+#endif
+}
+
+void destroyImGuiMouseCursors(GLFWwindow* window)
+{
+#if DART_GUI_DETAIL_HAS_GLFW_STANDARD_CURSORS
+  auto& state = imguiMouseCursorState();
+  if (window != nullptr) {
+    glfwSetCursor(window, nullptr);
+  }
+  for (GLFWcursor*& cursor : state.cursors) {
+    if (cursor != nullptr) {
+      glfwDestroyCursor(cursor);
+      cursor = nullptr;
+    }
+  }
+  state.lastCursor = nullptr;
+  state.initialized = false;
+  state.cursorHidden = false;
+#else
+  (void)window;
+#endif
 }
 
 bool isSceneMouseInputCapturedByUi(bool showUi, const ImGuiIO& io)

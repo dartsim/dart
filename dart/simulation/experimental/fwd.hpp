@@ -46,7 +46,11 @@ class LoopClosure;
 class Multibody;
 class RigidBody;
 class World;
+enum class ContactSolverMethod;
+enum class ContactGradientMode;
 enum class WorldSyncStage;
+enum class PhysicalParameter;
+struct PhysicalParameterSelector;
 
 namespace compute {
 class ComputeExecutor;

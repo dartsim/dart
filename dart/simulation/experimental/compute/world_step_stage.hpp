@@ -129,6 +129,31 @@ struct DeformableSolverStats
   // repeats; symbolic < numeric indicates the analysis was amortized.
   std::size_t projectedNewtonSymbolicFactorizations = 0;
   std::size_t projectedNewtonNumericFactorizations = 0;
+  // Maximum compressed sparse Hessian footprint assembled for a
+  // projected-Newton linear solve in this step. These are matrix-storage
+  // diagnostics (not full process peak memory): nonzeros counts Eigen's
+  // compressed sparse entries, and storage bytes estimates the value, inner
+  // index, and outer pointer arrays for that matrix.
+  std::size_t projectedNewtonHessianNonZeros = 0;
+  std::size_t projectedNewtonHessianStorageBytes = 0;
+  // Iterative (conjugate-gradient) linear solves. Counts Newton iterations that
+  // took the matrix-light CG path instead of the sparse Cholesky factorization
+  // -- either because the mesh exceeds the direct-solve node cap or because the
+  // body opted in via DeformableMaterial.useIterativeLinearSolver. CG never
+  // factorizes, so it scales to far larger meshes; a nonzero value here with
+  // zero numeric factorizations means the whole solve ran iteratively.
+  std::size_t projectedNewtonIterativeSolves = 0;
+  // Iterative solves that used the matrix-free Hessian-vector product path
+  // instead of an assembled sparse Hessian. This is a subset of
+  // projectedNewtonIterativeSolves.
+  std::size_t projectedNewtonMatrixFreeSolves = 0;
+  // Total conjugate-gradient iterations consumed by successful iterative
+  // projected-Newton linear solves. This is the solve-effort axis for the M7
+  // scaling benchmarks; zero when every Newton step used the direct solver.
+  std::size_t projectedNewtonIterativeIterations = 0;
+  // Maximum Eigen-reported relative residual estimate across successful
+  // iterative projected-Newton linear solves in this step.
+  double projectedNewtonIterativeMaxError = 0.0;
   // Convergence diagnostic: the largest L2 gradient norm at solve termination
   // across the step's deformable bodies (the projected-Newton residual). Near
   // the gradient tolerance means the solve converged; a large value means a
@@ -291,10 +316,16 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
-/// Resolves contacts between free rigid bodies with sequential normal impulses
-/// (frictionless, fully inelastic). Static bodies (non-positive mass) act as
-/// immovable. This is the first contact-solver slice; friction, restitution
-/// tuning, joints/links, and an LCP formulation are future work.
+/// Resolves contacts between free rigid bodies. Static bodies (non-positive
+/// mass) act as immovable.
+///
+/// Two solver paths are available, selected per-World via
+/// `WorldOptions::contactSolverMethod`:
+///   - `SequentialImpulse` (default): the long-standing sequential normal +
+///     friction impulse solve with positional correction.
+///   - `BoxedLcp`: an opt-in boxed-LCP normal solve (frictionless first slice)
+///     via the pivoting Dantzig solver. Contacts outside that scope (friction,
+///     articulated links) fall through to the sequential-impulse behavior.
 class DART_EXPERIMENTAL_API RigidBodyContactStage final : public WorldStepStage
 {
 public:
@@ -308,6 +339,83 @@ public:
 
 private:
   std::size_t m_iterations;
+};
+
+/// Terminal state of the most recent opt-in rigid IPC solver execution.
+enum class RigidIpcSolveStatus
+{
+  NoDofs,
+  Converged,
+  MaxIterations,
+  LineSearchBlocked,
+  FactorizationFailed,
+};
+
+/// Summary of the most recent opt-in rigid IPC solver execution.
+struct RigidIpcSolverStats
+{
+  RigidIpcSolveStatus status = RigidIpcSolveStatus::NoDofs;
+  std::size_t bodyCount = 0;
+  std::size_t dynamicBodyCount = 0;
+  std::size_t surfaceCount = 0;
+  std::size_t skippedUnsupportedShapeCount = 0;
+  std::size_t activeConstraints = 0;
+  std::size_t activeFrictionConstraints = 0;
+  std::size_t activeDynamicsTerms = 0;
+  std::size_t solverIterations = 0;
+  std::size_t frictionIterations = 0;
+  std::size_t acceptedSteps = 0;
+  std::size_t lineSearchLimitedSteps = 0;
+  double initialValue = 0.0;
+  double finalValue = 0.0;
+  double initialGradientNorm = 0.0;
+  double finalGradientNorm = 0.0;
+  double finalMomentumBalance = 0.0;
+  double lastStepNorm = 0.0;
+  double barrierStiffness = 0.0;
+  std::size_t barrierStiffnessIncreases = 0;
+  double lastLineSearchStepBound = 1.0;
+  bool lastLineSearchIndeterminate = false;
+  std::size_t lineSearchPointPointChecks = 0;
+  std::size_t lineSearchPointEdgeChecks = 0;
+  std::size_t lineSearchEdgeEdgeChecks = 0;
+  std::size_t lineSearchPointTriangleChecks = 0;
+  std::size_t lineSearchHits = 0;
+  std::size_t lineSearchMisses = 0;
+  std::size_t lineSearchIndeterminateCount = 0;
+  std::size_t lineSearchZeroStepCount = 0;
+  bool converged = false;
+  bool failed = false;
+  bool resultApplied = false;
+  bool nonConvergedResultSkipped = false;
+
+  void reset() noexcept
+  {
+    *this = {};
+  }
+};
+
+/// Opt-in rigid IPC world-step stage for free rigid bodies.
+///
+/// This stage is intentionally not part of the default `World::step()`
+/// pipeline yet. It lets tests and custom pipelines exercise the internal IPC
+/// barrier/Newton path on mesh-like rigid bodies while the default rigid solver
+/// remains the established sequential-impulse stage.
+class DART_EXPERIMENTAL_API RigidIpcContactStage final : public WorldStepStage
+{
+public:
+  explicit RigidIpcContactStage(std::size_t maxIterations = 8);
+
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+
+  [[nodiscard]] std::size_t getMaxIterations() const noexcept;
+  [[nodiscard]] const RigidIpcSolverStats& getLastStats() const noexcept;
+
+private:
+  std::size_t m_maxIterations;
+  RigidIpcSolverStats m_lastStats;
 };
 
 /// Default deformable-body dynamics stage.

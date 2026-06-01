@@ -752,7 +752,9 @@ lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
 
 `dart::io` (`dart/io/read.hpp`) parses to the **legacy** types only:
 `readSkeleton` → `dynamics::SkeletonPtr`, `readWorld` → `simulation::WorldPtr`.
-There is no experimental-World loader yet, so this needs a translation layer:
+The first experimental-World bridge composes the legacy Skeleton parser with
+the experimental importer; richer diagnostics and unsupported-feature reporting
+still need the remaining translation layer:
 
 - Walk the legacy `Skeleton`'s `BodyNode` tree; for each `BodyNode` create an
   experimental `Link` (mass, inertia) and for each parent `Joint` map the legacy
@@ -766,61 +768,38 @@ There is no experimental-World loader yet, so this needs a translation layer:
   URDF/Skeleton COM offsets directly (no reframing). Verified by an offset-COM
   pendulum (C++ + dartpy). Child-joint origins relative to the body frame still
   map onto `transformFromParent` as today.
-- **(STARTED — slice 1) The translation pass.**
-  `dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}` adds
-  `io::buildMultibodyFromSkeleton(world, skeleton, options)` (dartpy
-  `build_multibody_from_skeleton` + `SkeletonToMultibodyOptions`). Composed with
-  `dart::io::readSkeleton` (URDF/SDF/MJCF → legacy `Skeleton`) it loads a model
-  file into the experimental World; the Python test loads `KR5` this way.
-  - **Frame-mapping decision (the crux).** The experimental dynamics anchors
-    every joint at its parent link's frame **origin** (`childInParent =
-jointMotion(q) * transformFromParent`), while a legacy joint carries
-    arbitrary parent/child offsets `A`, `C`. The loader therefore (a) places each
-    experimental link's frame on that link's **outgoing** joint via
-    `O_b = childJoint.transformFromParentBodyNode`, (b) adds a synthetic fixed
-    `base` link for the world frame so a root body's offset is realized, and
-    (c) per edge computes `M = O_parent^-1 * A`,
-    `transformFromParent = M * C^-1 * O_b`, `axis_exp = M.linear() * axis`, with
-    inertia/COM re-expressed in the placed frame. For a moving joint `M` must be
-    translation-free; that single check rejects both offset roots and
-    branches whose siblings do not share a parent-side frame. Verified by
-    matching the legacy `Skeleton` mass matrix + Coriolis/gravity forces
-    (DART-6 parity) for revolute, prismatic, welded-base, rotated-frame, and
-    multi-tree chains (C++ + dartpy).
-  - **(DONE) All joint types.** weld, revolute, prismatic, screw, universal,
-    ball→`Spherical`, free→`Floating` (floating base), and planar are mapped,
-    with `copyState` converting the coordinate conventions: the screw pitch is
-    rescaled (legacy per-revolution → experimental per-radian), and the free
-    joint's `[rotation; translation]` parent-frame velocity is swapped and
-    rotated by `R^T` into the experimental `[translation; rotation]` body-twist
-    layout. Verified by per-type DART-6 parity (mass matrix + gravity +
-    Coriolis; the free case checks the body spatial velocity and `M = G M_legacy
-G^T` with `G` the body-twist basis change, since the velocity-dependent
-    Coriolis term does not transform by `G` alone). Axis-based joints tolerate a
-    rotated parent offset; ball/free/planar require an identity parent offset
-    (their orientation coordinates are not yet re-expressed under a rotated
-    parent frame — a follow-up).
-  - **(DONE) Branching at an offset and offset/rotated roots.** Solved by the
-    pre-joint offset (`transformToParent`) rather than massless intermediate
-    links: a parent with sibling joints at different offsets, and offset/rotated
-    roots, load directly. See the committed sections above.
-  - **(DONE) Collision shapes.** Sphere/box/capsule/cylinder/plane/triangular
-    mesh collision shapes are translated with their shape-node local transform
-    preserved on `CollisionShape`; the native collision query, binary
-    serialization, and dartpy bindings all use that local transform.
-    `ConvexMeshShape` model-loading translation reuses the experimental mesh
-    carrier, `HeightmapShape` is triangulated into the same carrier, and
-    `SoftMeshShape` snapshots its point-mass mesh into that carrier. Multiple
-    representable collision shape nodes per body/link are imported, serialized,
-    exposed in C++/dartpy, and collided as compound geometry without same-entity
-    self contacts. Deformable obstacle queries still consume the first
-    sphere/box barrier only. Subsystem B model loading is otherwise complete.
-  - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
-    limits, damping, spring stiffness + rest position, and Coulomb friction are
-    carried into the experimental joint (`copyJointProperties`, default on),
-    round-trip tested. Multi-DOF joint properties are left at defaults (the
-    experimental dynamics applies these per-coordinate forces for the 1-DOF
-    joints; extend to multi-DOF once those properties are honored there).
+- **(DONE) C++/dartpy model-loading bridge.**
+  `simulation::experimental::io::buildMultibodyFromSkeleton()` /
+  `buildMultibodiesFromWorld()` provide the lower-level translation pass, while
+  `addSkeleton()` / `addWorld()` and dartpy
+  `simulation_experimental.add_skeleton()` / `add_world()` compose that bridge
+  with `dart::io::readSkeleton()` / `readWorld()` URI loading and optional
+  `ReadOptions` / `SkeletonLoadOptions`.
+  - **Frame-mapping decision.** The importer places each experimental link frame
+    on that link's outgoing joint frame, adds a synthetic fixed root anchor when
+    needed, and computes each child joint's parent-to-joint transform with mass,
+    inertia, COM, axes, and joint state re-expressed in the placed frame. For
+    moving joints the residual parent-side mapping must be translation-free;
+    that check rejects currently unrepresentable legacy layouts honestly.
+  - **(DONE) Joint families and properties.** Weld, revolute, prismatic, screw,
+    universal, ball-to-spherical, planar, and free-to-floating tree joints are
+    mapped, including names, synthetic root anchors, axes, screw pitch, state,
+    actuator family, revolute/prismatic limits, damping, springs, friction, mass,
+    inertia, and local COM offsets. C++ and dartpy tests cover structure/property
+    transfer, classic-vs-experimental pendulum stepping, higher-DOF joint-family
+    parity, URI loading, already-parsed handoff, and multi-skeleton world import.
+  - **(DONE) Collision shapes.** Sphere, box, capsule, cylinder, plane, and
+    triangular mesh collision shapes are translated with shape-node local
+    transforms preserved on `CollisionShape`. Convex meshes reuse the mesh
+    carrier, heightmaps are triangulated into that carrier, and soft meshes
+    snapshot their point-mass mesh into it. Multiple representable collision
+    shape nodes per body/link are imported, serialized, exposed in C++/dartpy,
+    and collided as compound geometry without same-entity self contacts.
+  - **Remaining:** visual geometry, materials, resource-retriever bindings,
+    richer diagnostics/load-result ergonomics, multi-DOF joint-property force
+    application, rotated parent-offset handling for ball/free/planar coordinate
+    re-expression, and deformable obstacle queries beyond the first sphere/box
+    barrier.
 
 ### Subsystem C — MVP GUI example (DONE)
 

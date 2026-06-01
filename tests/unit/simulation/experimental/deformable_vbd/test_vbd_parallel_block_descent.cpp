@@ -38,6 +38,8 @@
 #include <vector>
 
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
+namespace dc = dart::simulation::experimental::detail::deformable_contact;
+namespace sim = dart::simulation::experimental;
 
 namespace {
 
@@ -280,5 +282,101 @@ TEST(VbdParallelBlockDescent, DeformableMatchesSerialExactly)
       EXPECT_NEAR((serial[i] - parallel[i]).norm(), 0.0, 1e-12)
           << "threads=" << threads << " vertex=" << i;
     }
+  }
+}
+
+//==============================================================================
+// Self-contact stencils are step-lagged and not represented in the cached
+// spring/tet coloring. The parallel deformable driver must therefore fall back
+// to the serial path while self-contact is active instead of updating one
+// stencil vertex while another same-color thread reads it.
+TEST(VbdParallelBlockDescent, ActiveSelfContactFallsBackToSerial)
+{
+  const std::vector<Vec3> rest
+      = {Vec3(0.3, 0.3, 0.01),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0)};
+  const std::vector<double> masses(rest.size(), 1.0);
+  const std::vector<std::uint8_t> fixed(rest.size(), 0u);
+  const std::vector<Vec3> inertialTargets = rest;
+  const std::vector<vbd::SpringElement> springs;
+  const std::vector<vbd::TetMeshElement> tets;
+  const vbd::SpringAdjacency springAdjacency
+      = vbd::SpringAdjacency::build(rest.size(), springs);
+  const vbd::TetAdjacency tetAdjacency
+      = vbd::TetAdjacency::build(rest.size(), tets);
+  const vbd::VertexColoring coloring
+      = vbd::colorDeformable(rest.size(), springs, tets);
+
+  dc::ContactCandidateSet candidates;
+  candidates.pointTriangleCandidates.push_back(
+      {/*point=*/0, /*triangle=*/0, 0.0});
+  const std::vector<sim::DeformableSurfaceTriangle> triangles = {{1, 2, 3}};
+  const vbd::SelfContactAdjacency selfContact
+      = vbd::SelfContactAdjacency::build(
+          rest.size(),
+          candidates,
+          triangles,
+          /*squaredActivationDistance=*/4e-4,
+          1e5);
+  ASSERT_TRUE(selfContact.active());
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 5;
+  // The serial deformable driver honors this early-termination threshold and
+  // exits after one sweep; the true parallel path ignores it and would report
+  // the full iteration budget.
+  options.convergenceDisplacement = 1e100;
+
+  std::vector<Vec3> serial = rest;
+  const vbd::BlockDescentStats serialStats = vbd::blockDescentDeformable(
+      serial,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      /*springStiffness=*/0.0,
+      springAdjacency,
+      tets,
+      /*mu=*/0.0,
+      /*lambda=*/0.0,
+      tetAdjacency,
+      /*timeStep=*/0.01,
+      coloring,
+      options,
+      nullptr,
+      nullptr,
+      0.0,
+      &selfContact);
+
+  std::vector<Vec3> parallel = rest;
+  const vbd::BlockDescentStats parallelStats
+      = vbd::parallelBlockDescentDeformable(
+          parallel,
+          masses,
+          fixed,
+          inertialTargets,
+          springs,
+          /*springStiffness=*/0.0,
+          springAdjacency,
+          tets,
+          /*mu=*/0.0,
+          /*lambda=*/0.0,
+          tetAdjacency,
+          /*timeStep=*/0.01,
+          coloring,
+          options,
+          /*threadCount=*/4u,
+          nullptr,
+          nullptr,
+          0.0,
+          &selfContact);
+
+  EXPECT_EQ(serialStats.iterations, 1u);
+  EXPECT_EQ(parallelStats.iterations, serialStats.iterations);
+  ASSERT_EQ(serial.size(), parallel.size());
+  for (std::size_t i = 0; i < serial.size(); ++i) {
+    EXPECT_NEAR((serial[i] - parallel[i]).norm(), 0.0, 1e-12) << "vertex=" << i;
   }
 }

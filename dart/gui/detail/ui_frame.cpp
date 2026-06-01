@@ -291,6 +291,29 @@ void renderViewportPaneLabels(const FrameViewport& viewport, double guiScale)
 }
 
 #ifdef IMGUI_HAS_DOCK
+void clearDockNodeResizeLocks(ImGuiID dockId)
+{
+  ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
+  if (node == nullptr) {
+    return;
+  }
+
+  constexpr ImGuiDockNodeFlags kNoResizeFlags
+      = static_cast<int>(ImGuiDockNodeFlags_NoResize)
+        | static_cast<int>(ImGuiDockNodeFlags_NoResizeX)
+        | static_cast<int>(ImGuiDockNodeFlags_NoResizeY);
+  node->SharedFlags &= ~kNoResizeFlags;
+  node->LocalFlags &= ~kNoResizeFlags;
+  node->LocalFlagsInWindows &= ~kNoResizeFlags;
+  node->UpdateMergedFlags();
+
+  for (ImGuiDockNode* child : node->ChildNodes) {
+    if (child != nullptr) {
+      clearDockNodeResizeLocks(child->ID);
+    }
+  }
+}
+
 // Builds a default IDE-style dock layout: top/bottom bars span full width and
 // left/right columns fill the remaining middle, leaving a transparent central
 // node for the 3D viewport. Each panel docks into the region named by its
@@ -308,10 +331,19 @@ void buildDefaultDockLayout(
   bool useBottom = true;
   bool useLeft = false;
   bool useRight = false;
+  float topFraction = 0.07f;
   for (const auto& panel : panels) {
     switch (panel.dockSide) {
       case DockSide::Top:
         useTop = true;
+        if (panel.initialSize.has_value()) {
+          const float viewportHeight = ImGui::GetMainViewport()->Size.y;
+          if (viewportHeight > 0.0f) {
+            topFraction = std::max(
+                topFraction,
+                static_cast<float>((*panel.initialSize)[1]) / viewportHeight);
+          }
+        }
         break;
       case DockSide::Bottom:
         useBottom = true;
@@ -338,6 +370,7 @@ void buildDefaultDockLayout(
       static_cast<int>(ImGuiDockNodeFlags_DockSpace)
           | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
   ImGui::DockBuilderSetNodeSize(dockId, ImGui::GetMainViewport()->Size);
+  topFraction = std::clamp(topFraction, 0.07f, 0.18f);
 
   ImGuiID center = dockId;
   ImGuiID top = 0;
@@ -346,19 +379,19 @@ void buildDefaultDockLayout(
   ImGuiID right = 0;
   if (useTop) {
     top = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Up, 0.07f, nullptr, &center);
+        center, ImGuiDir_Up, topFraction, nullptr, &center);
   }
   if (useBottom) {
     bottom = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Down, 0.26f, nullptr, &center);
+        center, ImGuiDir_Down, 0.12f, nullptr, &center);
   }
   if (useLeft) {
     left = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Left, 0.20f, nullptr, &center);
+        center, ImGuiDir_Left, 0.24f, nullptr, &center);
   }
   if (useRight) {
     right = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Right, 0.25f, nullptr, &center);
+        center, ImGuiDir_Right, 0.34f, nullptr, &center);
   }
 
   for (const auto& panel : panels) {
@@ -396,6 +429,7 @@ void buildDefaultDockLayout(
     ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, left);
   }
 
+  clearDockNodeResizeLocks(dockId);
   ImGui::DockBuilderFinish(dockId);
 }
 #endif // IMGUI_HAS_DOCK
@@ -431,18 +465,23 @@ void updateFrameUi(
   ImGui::NewFrame();
 #ifdef IMGUI_HAS_DOCK
   if (dartScene.dockingEnabled) {
-    const ImGuiID dockId = ImGui::DockSpaceOverViewport(
-        0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-    if (!dartScene.dockLayoutInitialized) {
-      dartScene.dockLayoutInitialized = true;
-      // Apply the default layout only when no saved layout exists; a restored
-      // imgui.ini layout leaves the root dock node already split.
-      const ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
-      if (node == nullptr || node->IsLeafNode()) {
-        buildDefaultDockLayout(dockId, panels);
-      }
+    const ImGuiID dockId = ImHashStr("DARTMainDockSpace");
+    const bool resetDockLayout
+        = dart::gui::consumeDockLayoutResetRequest(lifecycle);
+    if (resetDockLayout || !lifecycle.dockLayoutInitialized) {
+      lifecycle.dockLayoutInitialized = true;
+      // Apply the default layout deterministically on startup. The py-demos
+      // workspace is an examples browser first; a stale imgui.ini layout should
+      // not make its first frame look broken or obscure the viewport.
+      buildDefaultDockLayout(dockId, panels);
     }
+    ImGui::DockSpaceOverViewport(
+        dockId,
+        ImGui::GetMainViewport(),
+        ImGuiDockNodeFlags_PassthruCentralNode);
   }
+#else
+  dart::gui::consumeDockLayoutResetRequest(lifecycle);
 #endif
   const std::string selectedLabel = selectionController.selectedLabel();
   const auto cameraBasis
@@ -506,6 +545,7 @@ void updateFrameUi(
       panelContext.simulationTime,
       panelContext.contactCount,
       panelContext.selectedLabel,
+      selectionController.interactionStatus(),
       !dartScene.ikHandles.empty(),
       orbitLight,
       debugOverlays.staticOptions,
@@ -543,6 +583,7 @@ void updateFrameUi(
     drawPerfHud(perfHud, profile, backendName);
   }
   ImGui::Render();
+  updateImGuiMouseCursor(window, imguiIo);
   updateImGuiOverlay(
       engine,
       imguiOverlay,

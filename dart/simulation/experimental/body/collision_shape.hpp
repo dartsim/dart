@@ -47,10 +47,13 @@ enum class CollisionShapeType
 {
   Sphere,
   Box,
-  Capsule,
-  Cylinder,
-  Plane,
   Mesh,
+  Capsule,
+  // Appended after the original primitive set so serialized ordinals for
+  // Sphere/Box/Mesh/Capsule stay stable.
+  Cylinder,
+  // Appended after Cylinder so existing serialized ordinals stay stable.
+  Plane,
 };
 
 /// Public value object describing a body's collision geometry.
@@ -72,13 +75,11 @@ struct CollisionShape
   /// Sphere radius (used when type == Sphere). Must be positive.
   double radius = 0.5;
 
-  /// Box half extents along the body x/y/z axes (used when type == Box). Each
-  /// component must be positive.
+  /// Box half extents along the shape x/y/z axes (used when type == Box).
+  /// Each component must be positive. For a Capsule or Cylinder,
+  /// `halfExtents.z()` is the axial half-height along shape z; this reuse keeps
+  /// the serialized layout stable.
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
-
-  /// Capsule cylindrical-section height or cylinder height along the local z
-  /// axis (used when type == Capsule or Cylinder). Must be positive.
-  double height = 1.0;
 
   /// Shape-frame pose expressed in the owning body/link frame.
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
@@ -118,23 +119,15 @@ struct CollisionShape
     return shape;
   }
 
-  /// Create a capsule collision shape.
-  [[nodiscard]] static CollisionShape makeCapsule(double radius, double height)
+  /// Create a triangle mesh collision shape in the shape frame.
+  [[nodiscard]] static CollisionShape makeMesh(
+      std::vector<Eigen::Vector3d> vertices,
+      std::vector<Eigen::Vector3i> triangles)
   {
     CollisionShape shape;
-    shape.type = CollisionShapeType::Capsule;
-    shape.radius = radius;
-    shape.height = height;
-    return shape;
-  }
-
-  /// Create a cylinder collision shape.
-  [[nodiscard]] static CollisionShape makeCylinder(double radius, double height)
-  {
-    CollisionShape shape;
-    shape.type = CollisionShapeType::Cylinder;
-    shape.radius = radius;
-    shape.height = height;
+    shape.type = CollisionShapeType::Mesh;
+    shape.vertices = std::move(vertices);
+    shape.triangles = std::move(triangles);
     return shape;
   }
 
@@ -149,15 +142,30 @@ struct CollisionShape
     return shape;
   }
 
-  /// Create a triangle mesh collision shape.
-  [[nodiscard]] static CollisionShape makeMesh(
-      std::vector<Eigen::Vector3d> vertices,
-      std::vector<Eigen::Vector3i> triangles)
+  /// Create a capsule collision shape (a z-axis segment of half-length
+  /// `halfHeight` swept by `radius`). Both must be positive. The half-height is
+  /// stored in `halfExtents.z()` (x/y are set to `radius` so every component
+  /// stays positive for the shared shape validators).
+  [[nodiscard]] static CollisionShape makeCapsule(
+      double radius, double halfHeight)
   {
     CollisionShape shape;
-    shape.type = CollisionShapeType::Mesh;
-    shape.vertices = std::move(vertices);
-    shape.triangles = std::move(triangles);
+    shape.type = CollisionShapeType::Capsule;
+    shape.radius = radius;
+    shape.halfExtents = Eigen::Vector3d(radius, radius, halfHeight);
+    return shape;
+  }
+
+  /// Create a z-axis cylinder collision shape. Both radius and half-height must
+  /// be positive. The half-height is stored in `halfExtents.z()` (x/y are set
+  /// to `radius` so every component stays positive for the shared validators).
+  [[nodiscard]] static CollisionShape makeCylinder(
+      double radius, double halfHeight)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Cylinder;
+    shape.radius = radius;
+    shape.halfExtents = Eigen::Vector3d(radius, radius, halfHeight);
     return shape;
   }
 };

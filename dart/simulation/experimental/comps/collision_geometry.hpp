@@ -80,4 +80,17 @@ struct DeformableSurfaceCcdObstacleTag
   DART_EXPERIMENTAL_TAG_COMPONENT(DeformableSurfaceCcdObstacleTag);
 };
 
+/// Tag marking a deformable obstacle as barrier-only: it still exerts its
+/// clamped-log contact barrier (and so participates in friction), but is
+/// excluded from the surface-CCD line-search limiter. The CCD scales the whole
+/// step (normal + tangential) to prevent penetration, which masks tangential
+/// sliding and hence obstacle friction; opting an obstacle out lets a
+/// deformable slide and be decelerated by friction (the barrier still prevents
+/// penetration for the quasi-static contact this is intended for). Only
+/// meaningful on a body that also carries DeformableSurfaceCcdObstacleTag.
+struct DeformableObstacleNoCcdTag
+{
+  DART_EXPERIMENTAL_TAG_COMPONENT(DeformableObstacleNoCcdTag);
+};
+
 } // namespace dart::simulation::experimental::comps

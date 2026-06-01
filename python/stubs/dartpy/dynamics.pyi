@@ -6,14 +6,18 @@ __all__: list[str] = [
     "BallJoint",
     "BodyNode",
     "BoxShape",
+    "CapsuleShape",
     "Chain",
     "ChainCriteria",
     "CollisionAspect",
+    "ConeShape",
     "Coupler",
+    "CylinderShape",
     "DefaultActuatorType",
     "DegreeOfFreedom",
     "Detachable",
     "DynamicsAspect",
+    "EllipsoidShape",
     "EndEffector",
     "Entity",
     "EulerJoint",
@@ -29,6 +33,7 @@ __all__: list[str] = [
     "JacobianNode",
     "Joint",
     "LOCKED",
+    "LineSegmentShape",
     "Linkage",
     "LinkageCriteria",
     "MIMIC",
@@ -39,8 +44,10 @@ __all__: list[str] = [
     "Motor",
     "PASSIVE",
     "PlanarJoint",
+    "PlaneShape",
     "PrismaticJoint",
     "PrismaticJointProperties",
+    "PyramidShape",
     "RevoluteJoint",
     "RevoluteJointProperties",
     "SERVO",
@@ -1847,6 +1854,199 @@ class BoxShape(Shape):
 
     set_size = setSize
 
+class CapsuleShape(Shape):
+    def __init__(self, radius: float, height: float) -> None: ...
+
+    def getRadius(*args, **kwargs) -> Any: ...
+
+    def setRadius(*args, **kwargs) -> Any: ...
+
+    def getHeight(*args, **kwargs) -> Any: ...
+
+    def setHeight(*args, **kwargs) -> Any: ...
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    compute_inertia = computeInertia
+
+    get_height = getHeight
+
+    get_radius = getRadius
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    set_height = setHeight
+
+    set_radius = setRadius
+
+class CylinderShape(Shape):
+    def __init__(self, radius: float, height: float) -> None: ...
+
+    def getRadius(*args, **kwargs) -> Any: ...
+
+    def setRadius(*args, **kwargs) -> Any: ...
+
+    def getHeight(*args, **kwargs) -> Any: ...
+
+    def setHeight(*args, **kwargs) -> Any: ...
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    compute_inertia = computeInertia
+
+    get_height = getHeight
+
+    get_radius = getRadius
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    set_height = setHeight
+
+    set_radius = setRadius
+
+class EllipsoidShape(Shape):
+    def __init__(self, diameters: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]) -> None: ...
+
+    def getDiameters(*args, **kwargs) -> Any: ...
+
+    def setDiameters(*args, **kwargs) -> Any: ...
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    compute_inertia = computeInertia
+
+    get_diameters = getDiameters
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    set_diameters = setDiameters
+
+class ConeShape(Shape):
+    def __init__(self, radius: float, height: float) -> None: ...
+
+    def getRadius(*args, **kwargs) -> Any: ...
+
+    def setRadius(*args, **kwargs) -> Any: ...
+
+    def getHeight(*args, **kwargs) -> Any: ...
+
+    def setHeight(*args, **kwargs) -> Any: ...
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    compute_inertia = computeInertia
+
+    get_height = getHeight
+
+    get_radius = getRadius
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    set_height = setHeight
+
+    set_radius = setRadius
+
+class PyramidShape(Shape):
+    def __init__(self, base_width: float, base_depth: float, height: float) -> None: ...
+
+    def getBaseWidth(*args, **kwargs) -> Any: ...
+
+    def setBaseWidth(*args, **kwargs) -> Any: ...
+
+    def getBaseDepth(*args, **kwargs) -> Any: ...
+
+    def setBaseDepth(*args, **kwargs) -> Any: ...
+
+    def getHeight(*args, **kwargs) -> Any: ...
+
+    def setHeight(*args, **kwargs) -> Any: ...
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    compute_inertia = computeInertia
+
+    get_base_depth = getBaseDepth
+
+    get_base_width = getBaseWidth
+
+    get_height = getHeight
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    set_base_depth = setBaseDepth
+
+    set_base_width = setBaseWidth
+
+    set_height = setHeight
+
+class PlaneShape(Shape):
+    def __init__(self, normal: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], offset: float) -> None: ...
+
+    def setNormal(*args, **kwargs) -> Any: ...
+
+    def getNormal(*args, **kwargs) -> Any: ...
+
+    def setOffset(*args, **kwargs) -> Any: ...
+
+    def getOffset(*args, **kwargs) -> Any: ...
+
+    compute_inertia = computeInertia
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    get_normal = getNormal
+
+    get_offset = getOffset
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    set_normal = setNormal
+
+    set_offset = setOffset
+
+class LineSegmentShape(Shape):
+    def __init__(self, thickness: float = ...) -> None: ...
+
+    def addVertex(*args, **kwargs) -> Any: ...
+
+    def addConnection(*args, **kwargs) -> Any: ...
+
+    def setVertex(*args, **kwargs) -> Any: ...
+
+    def getThickness(*args, **kwargs) -> Any: ...
+
+    def setThickness(*args, **kwargs) -> Any: ...
+
+    add_connection = addConnection
+
+    add_vertex = addVertex
+
+    compute_inertia = computeInertia
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    get_thickness = getThickness
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    set_thickness = setThickness
+
+    set_vertex = setVertex
+
 class MeshShape(Shape):
     def __init__(self, scale: object, mesh: dartpy.math.TriMesh) -> None: ...
 
@@ -2143,6 +2343,8 @@ class BodyNode(JacobianNode):
 
     def getSpatialVelocity(*args, **kwargs) -> Any: ...
 
+    def getLinearVelocity(*args, **kwargs) -> Any: ...
+
     def getBodyNodePtr(*args, **kwargs) -> Any: ...
 
     def getChildBodyNode(*args, **kwargs) -> Any: ...
@@ -2158,6 +2360,8 @@ class BodyNode(JacobianNode):
     def getEndEffector(*args, **kwargs) -> Any: ...
 
     def getInertia(*args, **kwargs) -> Any: ...
+
+    def setInertia(*args, **kwargs) -> Any: ...
 
     def getOrCreateIK(*args, **kwargs) -> Any: ...
 
@@ -2249,6 +2453,8 @@ class BodyNode(JacobianNode):
 
     def getLinearJacobianDeriv(*args, **kwargs) -> Any: ...
 
+    get_linear_velocity = getLinearVelocity
+
     get_name = getName
 
     get_num_dependent_dofs = getNumDependentDofs
@@ -2300,6 +2506,8 @@ class BodyNode(JacobianNode):
     is_world = isWorld
 
     def isWorld(*args, **kwargs) -> Any: ...
+
+    set_inertia = setInertia
 
 class MetaSkeleton:
     def cloneMetaSkeleton(*args, **kwargs) -> Any: ...
@@ -3038,7 +3246,19 @@ class Skeleton(MetaSkeleton):
 
     def setPositions(*args, **kwargs) -> Any: ...
 
+    def getVelocities(*args, **kwargs) -> Any: ...
+
+    def setVelocities(*args, **kwargs) -> Any: ...
+
+    def getForces(*args, **kwargs) -> Any: ...
+
     def resetPositions(*args, **kwargs) -> Any: ...
+
+    def getMassMatrix(*args, **kwargs) -> Any: ...
+
+    def getCoriolisAndGravityForces(*args, **kwargs) -> Any: ...
+
+    def setForces(*args, **kwargs) -> Any: ...
 
     def enableSelfCollisionCheck(*args, **kwargs) -> Any: ...
 
@@ -3110,9 +3330,15 @@ class Skeleton(MetaSkeleton):
 
     enable_self_collision_check = enableSelfCollisionCheck
 
+    get_coriolis_and_gravity_forces = getCoriolisAndGravityForces
+
     get_end_effector = getEndEffector
 
+    get_forces = getForces
+
     get_ik = getIK
+
+    get_mass_matrix = getMassMatrix
 
     get_num_end_effectors = getNumEndEffectors
 
@@ -3122,13 +3348,19 @@ class Skeleton(MetaSkeleton):
 
     get_root_joint = getRootJoint
 
+    get_velocities = getVelocities
+
     is_enabled_adjacent_body_check = isEnabledAdjacentBodyCheck
 
     is_enabled_self_collision_check = isEnabledSelfCollisionCheck
 
     reset_positions = resetPositions
 
+    set_forces = setForces
+
     set_positions = setPositions
+
+    set_velocities = setVelocities
 
 class Inertia:
     @overload

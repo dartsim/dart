@@ -377,12 +377,12 @@ std::vector<CollisionShape> translateCollisionShapes(
           const auto& capsule
               = static_cast<const dynamics::CapsuleShape&>(*shape);
           translated = CollisionShape::makeCapsule(
-              capsule.getRadius(), capsule.getHeight());
+              capsule.getRadius(), 0.5 * capsule.getHeight());
         } else if (type == dynamics::CylinderShape::getStaticType()) {
           const auto& cylinder
               = static_cast<const dynamics::CylinderShape&>(*shape);
           translated = CollisionShape::makeCylinder(
-              cylinder.getRadius(), cylinder.getHeight());
+              cylinder.getRadius(), 0.5 * cylinder.getHeight());
         } else if (type == dynamics::PlaneShape::getStaticType()) {
           const auto& plane = static_cast<const dynamics::PlaneShape&>(*shape);
           translated

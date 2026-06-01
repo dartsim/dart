@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -50,7 +51,11 @@ dart::simulation::WorldPtr createJointConstraintsWorld()
         "Failed to load joint_constraints world from "
         + std::string(kJointConstraintsWorldUri));
   }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  // The fullbody world is authored Y-up; reorient to the canonical Z-up
+  // convention. The PD controller tracks joint angles and the balance feedback
+  // uses the sagittal (X) center-of-mass/pressure offset, both invariant under
+  // the rigid RotX(+90deg) rotation, so the biped still balances.
+  reorientWorldToZUp(world);
 
   auto ground = world->getSkeleton("ground skeleton");
   if (ground == nullptr) {
@@ -201,7 +206,7 @@ private:
         = mHeelLeft->getTransform() * Eigen::Vector3d(0.05, 0.0, 0.0);
     const Eigen::Vector2d offset(
         centerOfMass[0] - centerOfPressure[0],
-        centerOfMass[2] - centerOfPressure[2]);
+        centerOfMass[1] - centerOfPressure[1]);
     if (mTorques.size() > 26 && offset[0] < 0.1) {
       const double sagittalOffset = centerOfMass[0] - centerOfPressure[0];
       constexpr double kAnkleHipGain = 20.0;
@@ -240,7 +245,7 @@ dart::gui::OrbitCamera makeJointConstraintsCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d::Zero();
-  camera.up = Eigen::Vector3d::UnitY();
+  camera.up = Eigen::Vector3d::UnitZ();
   camera.yaw = 0.5404195002705842;
   camera.pitch = 0.4758822496604165;
   camera.distance = 6.557438524302;
@@ -285,13 +290,13 @@ std::vector<dart::gui::KeyboardAction> createJointConstraintsKeyboardActions(
       controller,
       '3',
       "Apply joint-constraints right perturbation",
-      Eigen::Vector3d(0.0, 0.0, 50.0),
+      Eigen::Vector3d(0.0, 50.0, 0.0),
       "push right"));
   actions.push_back(makePerturbAction(
       controller,
       '4',
       "Apply joint-constraints left perturbation",
-      Eigen::Vector3d(0.0, 0.0, -50.0),
+      Eigen::Vector3d(0.0, -50.0, 0.0),
       "push left"));
 
   dart::gui::KeyboardAction toggleHarness;
@@ -334,11 +339,11 @@ dart::gui::Panel createJointConstraintsPanel(
       controller->perturb(Eigen::Vector3d(-40.0, 0.0, 0.0), "push backward");
     }
     if (builder.button("Push right")) {
-      controller->perturb(Eigen::Vector3d(0.0, 0.0, 50.0), "push right");
+      controller->perturb(Eigen::Vector3d(0.0, 50.0, 0.0), "push right");
     }
     builder.sameLine();
     if (builder.button("Push left")) {
-      controller->perturb(Eigen::Vector3d(0.0, 0.0, -50.0), "push left");
+      controller->perturb(Eigen::Vector3d(0.0, -50.0, 0.0), "push left");
     }
     if (builder.button(
             controller->harnessOn() ? "Remove harness" : "Add harness")) {

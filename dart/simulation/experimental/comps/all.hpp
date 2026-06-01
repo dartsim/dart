@@ -43,3 +43,5 @@
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/comps/variational_contact.hpp>
+#include <dart/simulation/experimental/comps/variational_contact_dual_state.hpp>

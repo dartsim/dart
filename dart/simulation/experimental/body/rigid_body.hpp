@@ -242,6 +242,17 @@ public:
   /// Return whether this body is opted in as a deformable surface CCD obstacle.
   [[nodiscard]] bool isDeformableSurfaceCcdObstacle() const;
 
+  /// Opt this deformable obstacle into barrier-only mode: it keeps its
+  /// clamped-log contact barrier (and so participates in friction) but is
+  /// excluded from the surface-CCD line-search limiter, which otherwise scales
+  /// the whole step and masks tangential sliding. Intended for quasi-static
+  /// contact where the barrier alone prevents penetration; only meaningful when
+  /// the body is also a deformable surface CCD obstacle.
+  void setDeformableObstacleBarrierOnly(bool enabled);
+
+  /// Return whether this obstacle is in barrier-only (no surface CCD) mode.
+  [[nodiscard]] bool isDeformableObstacleBarrierOnly() const;
+
   /// Get this body's collision shape, if one is attached.
   ///
   /// For compound collision geometry this returns the first attached shape.

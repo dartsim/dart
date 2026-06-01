@@ -66,11 +66,16 @@
 
 #include <utils/Log.h>
 
+#include <algorithm>
 #include <array>
 #include <exception>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <limits>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -84,11 +89,21 @@
 
 namespace {
 
+using dart::gui::advanceRecordedFramePlayback;
 using dart::gui::elapsedMs;
 using dart::gui::OrbitCameraController;
 using dart::gui::printProfile;
 using dart::gui::ProfileAccumulator;
+using dart::gui::requestDockLayoutReset;
+using dart::gui::requestSceneReplay;
+using dart::gui::requestSceneSwitch;
+using dart::gui::requestSingleStep;
 using dart::gui::RunOptions;
+using dart::gui::setRecordedFramePlaybackIndex;
+using dart::gui::stepRecordedFramePlayback;
+using dart::gui::toggleFrameOutputCapture;
+using dart::gui::togglePaused;
+using dart::gui::toggleRecordedFramePlayback;
 using dart::gui::ViewerLifecycleState;
 using dart::gui::detail::ApplicationInputState;
 using dart::gui::detail::ApplicationWindow;
@@ -137,6 +152,7 @@ using dart::gui::detail::runOffscreenParitySelfCheck;
 using dart::gui::detail::SceneFrameUpdater;
 using dart::gui::detail::SceneLights;
 using dart::gui::detail::ScreenshotCapture;
+using dart::gui::detail::ScriptedForceDrag;
 using dart::gui::detail::SelectionController;
 using dart::gui::detail::shouldContinueApplicationLoop;
 using dart::gui::detail::SimulationStepper;
@@ -149,7 +165,21 @@ using dart::gui::detail::updateFrameViewport;
 // extraction, render, and teardown without making the smoke test slow.
 constexpr int kCycleFramesPerScene = 4;
 
+// User-requested demo switches are treated as candidate activations. If the
+// candidate returns but still exceeds this startup budget, the host restores
+// the previous demo instead of leaving the workspace on a slow/broken scene.
+constexpr double kDemoSceneStartupTimeoutMs = 5000.0;
+
 bool hasSceneOption(int argc, char* argv[]);
+
+struct ScriptedDemoSwitch
+{
+  int afterFrames = 0;
+  std::string sceneId;
+  std::filesystem::path eventLogPath;
+  bool requested = false;
+  bool observed = false;
+};
 
 bool isTruthyEnvironmentVariable(const char* name)
 {
@@ -211,17 +241,536 @@ void applySceneOptions(
   appOptions.onForceDrag = src.onForceDrag;
 }
 
+// Canonicalize a scene id so hyphen- and underscore-separated names compare
+// equal. The catalog uses snake_case ids (e.g. "atlas_simbicon") while --help
+// and historical usage spell them with hyphens (e.g. "atlas-simbicon").
+std::string canonicalSceneId(std::string_view id)
+{
+  std::string out(id);
+  for (char& c : out) {
+    if (c == '_') {
+      c = '-';
+    }
+  }
+  return out;
+}
+
 int demoSceneIndex(
     const std::vector<dart::gui::DemoSceneEntry>& scenes,
     std::string_view id,
     int fallback)
 {
+  const std::string target = canonicalSceneId(id);
   for (std::size_t i = 0; i < scenes.size(); ++i) {
-    if (scenes[i].id == id) {
+    if (canonicalSceneId(scenes[i].id) == target) {
       return static_cast<int>(i);
     }
   }
   return fallback;
+}
+
+std::string sanitizePathComponent(std::string_view value)
+{
+  std::string sanitized;
+  sanitized.reserve(value.size());
+  for (const unsigned char ch : value) {
+    if (std::isalnum(ch) || ch == '-' || ch == '_') {
+      sanitized.push_back(static_cast<char>(ch));
+    } else {
+      sanitized.push_back('_');
+    }
+  }
+  return sanitized.empty() ? "scene" : sanitized;
+}
+
+std::string defaultDemoFrameOutputDirectory(std::string_view sceneId)
+{
+  std::error_code error;
+  std::filesystem::path root = std::filesystem::temp_directory_path(error);
+  if (error) {
+    root = ".";
+  }
+  return (root / "dart_demos_frames" / sanitizePathComponent(sceneId)).string();
+}
+
+double resolveDemoSceneStartupTimeoutMs()
+{
+  const char* value = std::getenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS");
+  if (value == nullptr || std::string_view(value).empty()) {
+    return kDemoSceneStartupTimeoutMs;
+  }
+
+  char* end = nullptr;
+  const double parsed = std::strtod(value, &end);
+  if (end == value || !std::isfinite(parsed) || parsed <= 0.0) {
+    return kDemoSceneStartupTimeoutMs;
+  }
+  return parsed;
+}
+
+std::string demoSceneDisplayName(const dart::gui::DemoSceneEntry& scene)
+{
+  return scene.title.empty() ? scene.id : scene.title;
+}
+
+std::string jsonEscape(std::string_view value)
+{
+  std::string out;
+  out.reserve(value.size() + 2);
+  for (const char ch : value) {
+    switch (ch) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '"':
+        out += "\\\"";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        out.push_back(ch);
+        break;
+    }
+  }
+  return out;
+}
+
+void appendDemoEvent(
+    const ScriptedDemoSwitch* scriptedSwitch,
+    std::string_view event,
+    std::string_view activeScene,
+    std::string_view status,
+    int frame)
+{
+  if (scriptedSwitch == nullptr || scriptedSwitch->eventLogPath.empty()) {
+    return;
+  }
+
+  std::ofstream out(scriptedSwitch->eventLogPath, std::ios::app);
+  if (!out) {
+    return;
+  }
+  out << "{\"source\":\"viewer\",\"event\":\"" << jsonEscape(event)
+      << "\",\"frame\":" << frame << ",\"active_scene\":\""
+      << jsonEscape(activeScene) << "\",\"target_scene\":\""
+      << jsonEscape(scriptedSwitch->sceneId) << "\",\"status\":\""
+      << jsonEscape(status) << "\"}\n";
+}
+
+std::optional<ScriptedDemoSwitch> parseScriptedDemoSwitch(
+    std::string_view spec, std::ostream& errors)
+{
+  const std::size_t separator = spec.find(':');
+  if (separator == std::string_view::npos || separator == 0
+      || separator + 1 >= spec.size()) {
+    errors << "--scripted-demo-switch expects <after-frames>:<scene-id>\n";
+    return std::nullopt;
+  }
+
+  const std::string frameText(spec.substr(0, separator));
+  char* end = nullptr;
+  const long parsedFrame = std::strtol(frameText.c_str(), &end, 10);
+  if (end == frameText.c_str() || *end != '\0' || parsedFrame < 1
+      || parsedFrame > std::numeric_limits<int>::max()) {
+    errors << "--scripted-demo-switch frame must be a positive integer\n";
+    return std::nullopt;
+  }
+
+  ScriptedDemoSwitch scriptedSwitch;
+  scriptedSwitch.afterFrames = static_cast<int>(parsedFrame);
+  scriptedSwitch.sceneId = std::string(spec.substr(separator + 1));
+  return scriptedSwitch;
+}
+
+std::optional<Eigen::Vector3d> parseVector3(
+    std::string_view text, std::ostream& errors)
+{
+  Eigen::Vector3d values = Eigen::Vector3d::Zero();
+  std::size_t begin = 0;
+  for (int i = 0; i < 3; ++i) {
+    const std::size_t end = i < 2 ? text.find(',', begin) : text.size();
+    if (end == std::string_view::npos || end == begin) {
+      errors << "expected vector as <x>,<y>,<z>\n";
+      return std::nullopt;
+    }
+    const std::string component(text.substr(begin, end - begin));
+    char* parsedEnd = nullptr;
+    values[i] = std::strtod(component.c_str(), &parsedEnd);
+    if (parsedEnd == component.c_str() || *parsedEnd != '\0'
+        || !std::isfinite(values[i])) {
+      errors << "expected finite vector component in '" << text << "'\n";
+      return std::nullopt;
+    }
+    begin = end + 1;
+  }
+  if (begin < text.size() + 1) {
+    errors << "expected vector as <x>,<y>,<z>\n";
+    return std::nullopt;
+  }
+  return values;
+}
+
+std::optional<Eigen::Vector2d> parseVector2(
+    std::string_view text, std::ostream& errors)
+{
+  Eigen::Vector2d values = Eigen::Vector2d::Zero();
+  std::size_t begin = 0;
+  for (int i = 0; i < 2; ++i) {
+    const std::size_t end = i < 1 ? text.find(',', begin) : text.size();
+    if (end == std::string_view::npos || end == begin) {
+      errors << "expected vector as <x>,<y>\n";
+      return std::nullopt;
+    }
+    const std::string component(text.substr(begin, end - begin));
+    char* parsedEnd = nullptr;
+    values[i] = std::strtod(component.c_str(), &parsedEnd);
+    if (parsedEnd == component.c_str() || *parsedEnd != '\0'
+        || !std::isfinite(values[i])) {
+      errors << "expected finite vector component in '" << text << "'\n";
+      return std::nullopt;
+    }
+    begin = end + 1;
+  }
+  if (begin < text.size() + 1) {
+    errors << "expected vector as <x>,<y>\n";
+    return std::nullopt;
+  }
+  return values;
+}
+
+std::optional<ScriptedForceDrag> parseScriptedForceDrag(
+    std::string_view spec, std::ostream& errors)
+{
+  const std::size_t first = spec.find(':');
+  const std::size_t second = first == std::string_view::npos
+                                 ? std::string_view::npos
+                                 : spec.find(':', first + 1);
+  const std::size_t third = second == std::string_view::npos
+                                ? std::string_view::npos
+                                : spec.find(':', second + 1);
+  if (first == std::string_view::npos || second == std::string_view::npos
+      || third == std::string_view::npos || first == 0 || second == first + 1
+      || third == second + 1 || third + 1 >= spec.size()) {
+    errors << "--scripted-force-drag expects "
+              "<after-frames>:<target>:<dx>,<dy>,<dz>:<duration-frames>\n";
+    return std::nullopt;
+  }
+
+  const auto parsePositiveInt =
+      [&errors](
+          std::string_view text, std::string_view field) -> std::optional<int> {
+    const std::string value(text);
+    char* end = nullptr;
+    const long parsed = std::strtol(value.c_str(), &end, 10);
+    if (end == value.c_str() || *end != '\0' || parsed < 1
+        || parsed > std::numeric_limits<int>::max()) {
+      errors << field << " must be a positive integer\n";
+      return std::nullopt;
+    }
+    return static_cast<int>(parsed);
+  };
+
+  auto afterFrames = parsePositiveInt(spec.substr(0, first), "after-frames");
+  if (!afterFrames.has_value()) {
+    return std::nullopt;
+  }
+  auto offset
+      = parseVector3(spec.substr(second + 1, third - second - 1), errors);
+  if (!offset.has_value()) {
+    return std::nullopt;
+  }
+  auto durationFrames
+      = parsePositiveInt(spec.substr(third + 1), "duration-frames");
+  if (!durationFrames.has_value()) {
+    return std::nullopt;
+  }
+
+  ScriptedForceDrag forceDrag;
+  forceDrag.afterFrames = *afterFrames;
+  forceDrag.target = std::string(spec.substr(first + 1, second - first - 1));
+  forceDrag.targetOffset = *offset;
+  forceDrag.durationFrames = *durationFrames;
+  return forceDrag;
+}
+
+std::optional<ScriptedForceDrag> parseScriptedPointerForceDrag(
+    std::string_view spec, std::ostream& errors)
+{
+  const std::size_t first = spec.find(':');
+  const std::size_t second = first == std::string_view::npos
+                                 ? std::string_view::npos
+                                 : spec.find(':', first + 1);
+  const std::size_t third = second == std::string_view::npos
+                                ? std::string_view::npos
+                                : spec.find(':', second + 1);
+  if (first == std::string_view::npos || second == std::string_view::npos
+      || third == std::string_view::npos || first == 0 || second == first + 1
+      || third == second + 1 || third + 1 >= spec.size()) {
+    errors << "--scripted-pointer-force-drag expects "
+              "<after-frames>:<x>,<y>:<dx>,<dy>:<duration-frames>\n";
+    return std::nullopt;
+  }
+
+  const auto parsePositiveInt =
+      [&errors](
+          std::string_view text, std::string_view field) -> std::optional<int> {
+    const std::string value(text);
+    char* end = nullptr;
+    const long parsed = std::strtol(value.c_str(), &end, 10);
+    if (end == value.c_str() || *end != '\0' || parsed < 1
+        || parsed > std::numeric_limits<int>::max()) {
+      errors << field << " must be a positive integer\n";
+      return std::nullopt;
+    }
+    return static_cast<int>(parsed);
+  };
+
+  auto afterFrames = parsePositiveInt(spec.substr(0, first), "after-frames");
+  if (!afterFrames.has_value()) {
+    return std::nullopt;
+  }
+  auto startCursor
+      = parseVector2(spec.substr(first + 1, second - first - 1), errors);
+  if (!startCursor.has_value()) {
+    return std::nullopt;
+  }
+  auto cursorDelta
+      = parseVector2(spec.substr(second + 1, third - second - 1), errors);
+  if (!cursorDelta.has_value()) {
+    return std::nullopt;
+  }
+  auto durationFrames
+      = parsePositiveInt(spec.substr(third + 1), "duration-frames");
+  if (!durationFrames.has_value()) {
+    return std::nullopt;
+  }
+
+  ScriptedForceDrag forceDrag;
+  forceDrag.afterFrames = *afterFrames;
+  forceDrag.target
+      = "pixel:" + std::string(spec.substr(first + 1, second - first - 1));
+  forceDrag.startCursor = *startCursor;
+  forceDrag.cursorDelta = *cursorDelta;
+  forceDrag.durationFrames = *durationFrames;
+  forceDrag.usePointer = true;
+  return forceDrag;
+}
+
+std::vector<std::filesystem::path> recordedFramePaths(
+    const std::string& outputDirectory)
+{
+  std::vector<std::filesystem::path> paths;
+  if (outputDirectory.empty()) {
+    return paths;
+  }
+
+  std::error_code error;
+  if (!std::filesystem::is_directory(outputDirectory, error)) {
+    return paths;
+  }
+
+  for (const auto& entry :
+       std::filesystem::directory_iterator(outputDirectory, error)) {
+    if (error || !entry.is_regular_file(error)) {
+      continue;
+    }
+    const auto path = entry.path();
+    const std::string filename = path.filename().string();
+    if (path.extension() == ".ppm" && filename.starts_with("frame_")) {
+      paths.push_back(path);
+    }
+  }
+  std::sort(paths.begin(), paths.end());
+  return paths;
+}
+
+std::string formatFixed(double value, int precision)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(precision) << value;
+  return stream.str();
+}
+
+bool toolbarButton(
+    dart::gui::PanelBuilder& builder,
+    std::string_view label,
+    std::string_view tooltip)
+{
+  const bool clicked = builder.button(label);
+  builder.itemTooltip(tooltip);
+  return clicked;
+}
+
+std::string& demoSidebarSearch()
+{
+  static std::string search;
+  return search;
+}
+
+bool& demoSidebarExperimentalFocus(bool defaultValue)
+{
+  static std::optional<bool> focus;
+  if (!focus.has_value()) {
+    focus = defaultValue;
+  }
+  return *focus;
+}
+
+dart::gui::Panel makeDemoSimulationPanel(
+    const std::vector<dart::gui::DemoSceneEntry>& scenes, int activeIndex)
+{
+  dart::gui::Panel panel;
+  panel.title = "Simulation";
+  panel.dockSide = dart::gui::DockSide::Top;
+  panel.initialSize = std::array<double, 2>{760.0, 108.0};
+  panel.autoResize = false;
+  panel.buildWithContext = [&scenes, activeIndex](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    dart::gui::ViewerLifecycleState* lifecycle = context.lifecycle;
+    if (lifecycle == nullptr) {
+      builder.text("Simulation controls unavailable.");
+      return;
+    }
+
+    const dart::gui::DemoSceneEntry* active = nullptr;
+    if (activeIndex >= 0 && activeIndex < static_cast<int>(scenes.size())) {
+      active = &scenes[static_cast<std::size_t>(activeIndex)];
+    }
+
+    if (toolbarButton(
+            builder,
+            lifecycle->paused ? ">##start_simulation" : "||##pause_simulation",
+            lifecycle->paused ? "Start simulation." : "Pause simulation.")) {
+      togglePaused(*lifecycle);
+    }
+    builder.sameLine();
+    if (toolbarButton(
+            builder, ">|##step_simulation", "Advance one simulation step.")) {
+      requestSingleStep(*lifecycle);
+    }
+    builder.sameLine();
+    if (toolbarButton(builder, "Reset", "Rebuild the active demo scene.")
+        && active != nullptr) {
+      requestSceneSwitch(*lifecycle, active->id);
+    }
+    builder.sameLine();
+    if (toolbarButton(
+            builder,
+            "Replay",
+            "Restart and run the active demo from the beginning.")
+        && active != nullptr) {
+      requestSceneReplay(*lifecycle, active->id);
+    }
+    builder.sameLine();
+    if (toolbarButton(
+            builder,
+            "Layout",
+            "Restore the default docked workspace layout.")) {
+      requestDockLayoutReset(*lifecycle);
+    }
+    builder.sameLine();
+    const bool recordingFrames = lifecycle->frameOutputEnabled
+                                 && !lifecycle->frameOutputDirectory.empty();
+    const std::string recordDirectory
+        = active == nullptr ? defaultDemoFrameOutputDirectory("scene")
+                            : defaultDemoFrameOutputDirectory(active->id);
+    std::string status = "time " + formatFixed(context.simulationTime, 3)
+                         + " s | contacts "
+                         + std::to_string(context.contactCount);
+    if (active != nullptr) {
+      status += " | " + active->title;
+    }
+
+    if (toolbarButton(
+            builder,
+            recordingFrames ? "Stop##record_frames" : "Rec##record_frames",
+            recordingFrames ? "Stop recording frame images."
+                            : "Record frame images for playback.")) {
+      toggleFrameOutputCapture(*lifecycle, recordDirectory);
+    }
+    builder.sameLine();
+    builder.text(status);
+    if (recordingFrames) {
+      builder.sameLine();
+      builder.text("recording frames");
+      builder.itemTooltip(lifecycle->frameOutputDirectory);
+    }
+    if (!lifecycle->sceneActivationStatus.empty()) {
+      builder.text(lifecycle->sceneActivationStatus);
+    }
+
+    const auto recordedFrames
+        = recordedFramePaths(lifecycle->frameOutputDirectory);
+    const int recordedFrameCount
+        = recordedFrames.size()
+                  > static_cast<std::size_t>(std::numeric_limits<int>::max())
+              ? std::numeric_limits<int>::max()
+              : static_cast<int>(recordedFrames.size());
+    advanceRecordedFramePlayback(*lifecycle, recordedFrameCount);
+    if (!lifecycle->frameOutputDirectory.empty() || recordedFrameCount > 0) {
+      builder.separator();
+      builder.text(std::string("frames ") + std::to_string(recordedFrameCount));
+      builder.itemTooltip(lifecycle->frameOutputDirectory);
+
+      if (recordedFrameCount > 0) {
+        builder.sameLine();
+        if (toolbarButton(
+                builder, "|<##first_recorded_frame", "First recorded frame.")) {
+          setRecordedFramePlaybackIndex(*lifecycle, recordedFrameCount, 0);
+        }
+        builder.sameLine();
+        if (toolbarButton(
+                builder,
+                "<##previous_recorded_frame",
+                "Previous recorded frame.")) {
+          stepRecordedFramePlayback(*lifecycle, recordedFrameCount, -1);
+        }
+        builder.sameLine();
+        if (toolbarButton(
+                builder,
+                lifecycle->recordedFramePlaybackPlaying
+                    ? "||##pause_recorded_frames"
+                    : ">##play_recorded_frames",
+                lifecycle->recordedFramePlaybackPlaying
+                    ? "Pause recorded-frame playback."
+                    : "Play recorded frames.")) {
+          toggleRecordedFramePlayback(*lifecycle, recordedFrameCount);
+        }
+        builder.sameLine();
+        if (toolbarButton(
+                builder, ">##next_recorded_frame", "Next recorded frame.")) {
+          stepRecordedFramePlayback(*lifecycle, recordedFrameCount, 1);
+        }
+        builder.sameLine();
+        if (toolbarButton(
+                builder, ">|##last_recorded_frame", "Last recorded frame.")) {
+          setRecordedFramePlaybackIndex(
+              *lifecycle, recordedFrameCount, recordedFrameCount - 1);
+        }
+        const int selectedIndex = std::clamp(
+            lifecycle->recordedFramePlaybackIndex, 0, recordedFrameCount - 1);
+        setRecordedFramePlaybackIndex(
+            *lifecycle, recordedFrameCount, selectedIndex);
+        const auto& selectedPath
+            = recordedFrames[static_cast<std::size_t>(selectedIndex)];
+        builder.sameLine();
+        builder.text(
+            std::to_string(selectedIndex + 1) + "/"
+            + std::to_string(recordedFrameCount) + " "
+            + selectedPath.filename().string());
+        builder.itemTooltip(selectedPath.string());
+      }
+    }
+  };
+  return panel;
 }
 
 // Built-in sidebar panel listing the demo catalog grouped by category (ordered
@@ -238,46 +787,127 @@ dart::gui::Panel makeDemoSidebarPanel(
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
+    dart::gui::ViewerLifecycleState* lifecycle = context.lifecycle;
+    const dart::gui::DemoSceneEntry* active = nullptr;
     if (activeIndex >= 0 && activeIndex < static_cast<int>(scenes.size())) {
-      const auto& active = scenes[static_cast<std::size_t>(activeIndex)];
-      builder.text("Current: " + active.title);
-      if (!active.summary.empty()) {
-        builder.text(active.summary);
+      active = &scenes[static_cast<std::size_t>(activeIndex)];
+      builder.text("Current: " + active->title);
+      if (!active->summary.empty()) {
+        builder.text(active->summary);
       }
+    }
+    if (lifecycle != nullptr && !lifecycle->sceneActivationStatus.empty()) {
+      builder.separator();
+      builder.text(lifecycle->sceneActivationStatus);
     }
     builder.separator();
 
-    // Tree-style catalog: each category is a collapsible header, scenes
-    // within are indented list rows (selectable text instead of buttons).
-    std::string lastCategory;
-    bool categoryOpen = true;
-    bool inCategory = false;
-    for (std::size_t i = 0; i < scenes.size(); ++i) {
-      const auto& entry = scenes[i];
-      if (i == 0 || entry.category != lastCategory) {
-        if (inCategory) {
-          builder.unindent();
-          inCategory = false;
-        }
-        lastCategory = entry.category;
-        categoryOpen = builder.collapsingHeader(entry.category, true);
-        if (categoryOpen) {
-          builder.indent();
-          inCategory = true;
-        }
-      }
-      if (!categoryOpen) {
-        continue;
-      }
-      const bool isActive = static_cast<int>(i) == activeIndex;
-      const std::string label = entry.title + "##demo_" + entry.id;
-      if (builder.selectable(label, isActive) && !isActive
-          && context.lifecycle != nullptr) {
-        dart::gui::requestSceneSwitch(*context.lifecycle, entry.id);
+    std::string& search = demoSidebarSearch();
+    builder.text("Search");
+    builder.textInput("##demo_search", search);
+    if (!search.empty()) {
+      builder.sameLine();
+      if (builder.button("Clear")) {
+        search.clear();
       }
     }
-    if (inCategory) {
-      builder.unindent();
+    const std::string normalizedSearch
+        = dart::gui::detail::normalizedDemoSearchText(search);
+    const bool defaultExperimentalFocus
+        = active != nullptr
+          && dart::gui::detail::demoSceneMatchesExperimentalFocus(*active);
+    bool& experimentalFocus
+        = demoSidebarExperimentalFocus(defaultExperimentalFocus);
+    bool requestedExperimentalFocus = experimentalFocus;
+    if (builder.checkbox("Experimental focus", requestedExperimentalFocus)) {
+      experimentalFocus = requestedExperimentalFocus;
+    }
+    builder.itemTooltip(
+        "Show simulation-experimental and solver-focused demos.");
+    std::size_t visibleSceneCount = 0;
+    std::size_t availableSceneCount = 0;
+    for (const auto& scene : scenes) {
+      if (!experimentalFocus
+          || dart::gui::detail::demoSceneMatchesExperimentalFocus(scene)) {
+        ++availableSceneCount;
+      }
+      if (dart::gui::detail::demoSceneVisibleInNavigator(
+              scene, normalizedSearch, experimentalFocus)) {
+        ++visibleSceneCount;
+      }
+    }
+    builder.text(
+        "Showing " + std::to_string(visibleSceneCount) + "/"
+        + std::to_string(availableSceneCount)
+        + (experimentalFocus ? " experimental demos" : " demos"));
+    builder.separator();
+
+    // Tree-style catalog: categories are grouped by first appearance even if
+    // the scene list later interleaves categories. Scenes within each category
+    // are indented list rows (selectable text instead of buttons).
+    bool anyVisible = false;
+    const std::vector<dart::gui::detail::DemoCategoryGroup> categoryGroups
+        = dart::gui::detail::groupDemoScenesByCategory(scenes);
+    for (const auto& group : categoryGroups) {
+      std::size_t visibleCount = 0;
+      std::size_t totalCount = 0;
+      bool categoryHasActive = false;
+      for (const std::size_t i : group.sceneIndices) {
+        if (!experimentalFocus
+            || dart::gui::detail::demoSceneMatchesExperimentalFocus(
+                scenes[i])) {
+          ++totalCount;
+        }
+        if (dart::gui::detail::demoSceneVisibleInNavigator(
+                scenes[i], normalizedSearch, experimentalFocus)) {
+          ++visibleCount;
+        }
+        categoryHasActive
+            = categoryHasActive || static_cast<int>(i) == activeIndex;
+      }
+      if (visibleCount == 0u) {
+        continue;
+      }
+
+      anyVisible = true;
+      std::string header = group.category + " (";
+      if (!normalizedSearch.empty()) {
+        header += std::to_string(visibleCount) + "/";
+      }
+      header += std::to_string(totalCount) + ")##demo_category_"
+                + sanitizePathComponent(group.category);
+      const bool defaultOpen = !normalizedSearch.empty() || categoryHasActive;
+      const bool categoryOpen = builder.collapsingHeader(header, defaultOpen);
+      if (categoryOpen) {
+        builder.indent();
+        for (const std::size_t i : group.sceneIndices) {
+          const auto& entry = scenes[i];
+          if (!dart::gui::detail::demoSceneVisibleInNavigator(
+                  entry, normalizedSearch, experimentalFocus)) {
+            continue;
+          }
+          const bool isActive = static_cast<int>(i) == activeIndex;
+          const bool isPending
+              = lifecycle != nullptr
+                && lifecycle->sceneActivationPendingScene == entry.id;
+          std::string label = entry.title;
+          if (isPending) {
+            label += " (starting)";
+          }
+          label += "##demo_" + entry.id;
+          const bool clicked = builder.selectable(label, isActive || isPending);
+          // Explain what each scene demonstrates when the row is hovered.
+          builder.itemTooltip(entry.summary);
+          if (clicked && !isActive && lifecycle != nullptr
+              && lifecycle->sceneActivationPendingScene != entry.id) {
+            requestSceneSwitch(*lifecycle, entry.id);
+          }
+        }
+        builder.unindent();
+      }
+    }
+    if (!anyVisible) {
+      builder.text("No demos match the current search.");
     }
   };
   return panel;
@@ -289,7 +919,9 @@ int runGuiBackendApplicationImpl(
     const dart::gui::ApplicationOptions& applicationOptions,
     const std::vector<dart::gui::DemoSceneEntry>* demoCatalog,
     int initialDemoIndex,
-    bool cycleScenes)
+    bool cycleScenes,
+    std::optional<ScriptedDemoSwitch> scriptedDemoSwitch = std::nullopt,
+    std::optional<ScriptedForceDrag> scriptedForceDrag = std::nullopt)
 {
   AppOptions appOptions
       = parseOptions(argc, argv, applicationOptions.runDefaults);
@@ -415,30 +1047,85 @@ int runGuiBackendApplicationImpl(
   bool frameCaptureSucceeded = true;
   SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
+  const double demoSceneStartupTimeoutMs = resolveDemoSceneStartupTimeoutMs();
 
   int activeIndex = initialDemoIndex;
   bool keepRunning = true;
   std::size_t finalContacts = 0;
+  std::optional<int> pendingDemoFallbackIndex;
 
   // Outer scene loop. For the single-scene path this runs exactly once; for the
   // demos host it rebuilds the scene-bound state when a switch is requested,
   // while the window, engine, materials, lights, and ImGui overlay persist.
   while (keepRunning) {
+    const auto sceneStartupStart = ProfileAccumulator::Clock::now();
+    const dart::gui::DemoSceneEntry* candidateDemoEntry = nullptr;
+    auto restorePendingDemoFallback = [&](std::string_view reason) -> bool {
+      if (demoCatalog == nullptr || candidateDemoEntry == nullptr
+          || !pendingDemoFallbackIndex.has_value()) {
+        return false;
+      }
+
+      const int fallbackIndex = *pendingDemoFallbackIndex;
+      if (fallbackIndex < 0
+          || fallbackIndex >= static_cast<int>(demoCatalog->size())
+          || fallbackIndex == activeIndex) {
+        pendingDemoFallbackIndex.reset();
+        return false;
+      }
+
+      const auto& fallbackEntry
+          = (*demoCatalog)[static_cast<std::size_t>(fallbackIndex)];
+      std::cerr << "demo scene '" << candidateDemoEntry->id
+                << "' failed to start (" << reason
+                << "); restoring previous demo '" << fallbackEntry.id << "'\n";
+      lifecycle.sceneActivationStatus
+          = "Restored previous demo '" + demoSceneDisplayName(fallbackEntry)
+            + "' after '" + demoSceneDisplayName(*candidateDemoEntry)
+            + "' failed: " + std::string(reason);
+      appendDemoEvent(
+          scriptedDemoSwitch ? &*scriptedDemoSwitch : nullptr,
+          "restored_previous_demo",
+          fallbackEntry.id,
+          lifecycle.sceneActivationStatus,
+          -1);
+      lifecycle.sceneActivationPendingScene.clear();
+      activeIndex = fallbackIndex;
+      pendingDemoFallbackIndex.reset();
+      lifecycle.sceneSwitchRequested = false;
+      lifecycle.requestedScene.clear();
+      return true;
+    };
+
     if (demoCatalog != nullptr) {
       const auto& demoEntry
           = (*demoCatalog)[static_cast<std::size_t>(activeIndex)];
+      candidateDemoEntry = &demoEntry;
+
       dart::gui::ApplicationOptions sceneOptions;
       try {
         sceneOptions = demoEntry.factory();
       } catch (const std::exception& error) {
+        if (restorePendingDemoFallback(
+                std::string("factory threw: ") + error.what())) {
+          continue;
+        }
         // Soft-fail: a scene that cannot build (e.g. a missing asset) must not
         // crash the host. Show an empty world so the sidebar stays usable.
+        lifecycle.sceneActivationStatus = "Failed to start demo '"
+                                          + demoSceneDisplayName(demoEntry)
+                                          + "': " + error.what();
+        lifecycle.sceneActivationPendingScene.clear();
         std::cerr << "demo scene '" << demoEntry.id
                   << "' failed to load: " << error.what() << "\n";
         sceneOptions = dart::gui::ApplicationOptions{};
       }
       if (sceneOptions.world == nullptr) {
         sceneOptions.world = dart::simulation::World::create("(empty)");
+      }
+      if (elapsedMs(sceneStartupStart) > demoSceneStartupTimeoutMs
+          && restorePendingDemoFallback("factory startup exceeded budget")) {
+        continue;
       }
       applySceneOptions(
           appOptions, sceneOptions, renderOutputModeExplicit, renderOutputMode);
@@ -447,7 +1134,8 @@ int runGuiBackendApplicationImpl(
       // fallback) on builds without ImGui docking support.
       appOptions.dockingEnabled = true;
       std::vector<dart::gui::Panel> panels;
-      panels.reserve(appOptions.panels.size() + 1);
+      panels.reserve(appOptions.panels.size() + 2);
+      panels.push_back(makeDemoSimulationPanel(*demoCatalog, activeIndex));
       panels.push_back(makeDemoSidebarPanel(*demoCatalog, activeIndex));
       for (auto& scenePanel : appOptions.panels) {
         panels.push_back(std::move(scenePanel));
@@ -482,15 +1170,29 @@ int runGuiBackendApplicationImpl(
             applicationOptions.allowEmptyScene,
             std::cerr);
     if (!maybeInitialSceneState) {
+      if (demoCatalog != nullptr
+          && restorePendingDemoFallback("render state creation failed")) {
+        continue;
+      }
       frameCaptureSucceeded = false;
       keepRunning = false;
       break;
     }
     InitialSceneState sceneState = std::move(*maybeInitialSceneState);
+    std::optional<Renderable> selectionDebugOverlay;
+    if (demoCatalog != nullptr
+        && elapsedMs(sceneStartupStart) > demoSceneStartupTimeoutMs
+        && restorePendingDemoFallback("startup exceeded budget")) {
+      destroySceneRenderables(
+          *engine,
+          *scene,
+          sceneState.sceneRenderables,
+          sceneState.debugOverlays,
+          selectionDebugOverlay);
+      continue;
+    }
     auto& sceneRenderables = sceneState.sceneRenderables;
     auto& debugOverlays = sceneState.debugOverlays;
-
-    std::optional<Renderable> selectionDebugOverlay;
 
     SceneFrameUpdater sceneFrameUpdater(
         window,
@@ -507,9 +1209,12 @@ int runGuiBackendApplicationImpl(
         simulationStepper,
         lights,
         orbitStartClock,
-        profile);
+        profile,
+        scriptedForceDrag ? &*scriptedForceDrag : nullptr);
 
     bool sceneFrameFailed = false;
+    bool restoredPendingDemoDuringFrame = false;
+    std::string sceneFrameFailureReason = "first frame failed";
     bool cycleAdvance = false;
     int framesThisScene = 0;
 
@@ -586,7 +1291,7 @@ int runGuiBackendApplicationImpl(
 
       const bool uiCapturesMouse
           = isSceneMouseInputCapturedByUi(appOptions.showUi, imguiIo);
-      {
+      try {
         DART_PROFILE_SCOPED_N("GUI scene update");
         sceneFrameUpdater.update(
             viewport,
@@ -594,6 +1299,23 @@ int runGuiBackendApplicationImpl(
             uiCapturesMouse,
             orbitLight,
             appOptions.orbitLightPeriodSeconds);
+      } catch (const std::exception& error) {
+        sceneFrameFailureReason
+            = std::string("frame update threw: ") + error.what();
+        std::cerr << "demo scene '"
+                  << (candidateDemoEntry == nullptr ? std::string()
+                                                    : candidateDemoEntry->id)
+                  << "' frame update failed: " << error.what() << "\n";
+        sceneFrameFailed = true;
+        break;
+      } catch (...) {
+        sceneFrameFailureReason = "frame update threw an unknown exception";
+        std::cerr << "demo scene '"
+                  << (candidateDemoEntry == nullptr ? std::string()
+                                                    : candidateDemoEntry->id)
+                  << "' frame update failed with an unknown exception\n";
+        sceneFrameFailed = true;
+        break;
       }
 
       if (appOptions.showUi) {
@@ -662,18 +1384,63 @@ int runGuiBackendApplicationImpl(
         sceneFrameFailed = true;
         break;
       }
+      if (demoCatalog != nullptr && framesThisScene == 0
+          && pendingDemoFallbackIndex.has_value()
+          && elapsedMs(sceneStartupStart) > demoSceneStartupTimeoutMs
+          && restorePendingDemoFallback(
+              "first frame exceeded startup budget")) {
+        restoredPendingDemoDuringFrame = true;
+        break;
+      }
+      if (demoCatalog != nullptr) {
+        lifecycle.sceneActivationPendingScene.clear();
+        if (lifecycle.sceneActivationStatus.starts_with("Starting ")) {
+          lifecycle.sceneActivationStatus.clear();
+        }
+        if (scriptedDemoSwitch.has_value() && scriptedDemoSwitch->requested
+            && !scriptedDemoSwitch->observed
+            && (*demoCatalog)[static_cast<std::size_t>(activeIndex)].id
+                   == scriptedDemoSwitch->sceneId) {
+          scriptedDemoSwitch->observed = true;
+          appendDemoEvent(
+              &*scriptedDemoSwitch,
+              "observed_target_demo",
+              scriptedDemoSwitch->sceneId,
+              lifecycle.sceneActivationStatus,
+              framesThisScene);
+        }
+      }
+      if (demoCatalog != nullptr && !frameRenderResult.continueLoop) {
+        pendingDemoFallbackIndex.reset();
+      }
       if (frameRenderResult.continueLoop) {
         continue;
       }
       if (frameRenderResult.stopLoop) {
         break;
       }
-      if (cycleScenes && ++framesThisScene >= kCycleFramesPerScene) {
+      ++framesThisScene;
+      if (demoCatalog != nullptr && scriptedDemoSwitch.has_value()
+          && !scriptedDemoSwitch->requested
+          && framesThisScene >= scriptedDemoSwitch->afterFrames) {
+        scriptedDemoSwitch->requested = true;
+        appendDemoEvent(
+            &*scriptedDemoSwitch,
+            "requested_demo_switch",
+            (*demoCatalog)[static_cast<std::size_t>(activeIndex)].id,
+            "scripted switch requested",
+            framesThisScene);
+        requestSceneSwitch(lifecycle, scriptedDemoSwitch->sceneId);
+      }
+      if (cycleScenes && framesThisScene >= kCycleFramesPerScene) {
         cycleAdvance = true;
       }
     }
 
     finalContacts = dartScene.world->getLastCollisionResult().getNumContacts();
+    sceneFrameUpdater.releaseScriptedForceDragIfActive(
+        "scripted force-drag released during scene teardown");
+    selectionController.cancelActiveDrag(dartScene);
     destroySceneRenderables(
         *engine,
         *scene,
@@ -681,21 +1448,50 @@ int runGuiBackendApplicationImpl(
         debugOverlays,
         selectionDebugOverlay);
 
-    if (sceneFrameFailed) {
+    if (restoredPendingDemoDuringFrame) {
+      continue;
+    } else if (sceneFrameFailed) {
+      if (demoCatalog != nullptr
+          && restorePendingDemoFallback(sceneFrameFailureReason)) {
+        continue;
+      }
       frameCaptureSucceeded = false;
       keepRunning = false;
     } else if (demoCatalog != nullptr && lifecycle.sceneSwitchRequested) {
-      activeIndex
+      const int requestedIndex
           = demoSceneIndex(*demoCatalog, lifecycle.requestedScene, activeIndex);
+      if (requestedIndex != activeIndex) {
+        pendingDemoFallbackIndex = activeIndex;
+      } else {
+        pendingDemoFallbackIndex.reset();
+      }
+      activeIndex = requestedIndex;
     } else if (demoCatalog != nullptr && cycleScenes && cycleAdvance) {
+      pendingDemoFallbackIndex.reset();
       if (activeIndex + 1 < static_cast<int>(demoCatalog->size())) {
         ++activeIndex;
       } else {
         keepRunning = false;
       }
     } else {
+      pendingDemoFallbackIndex.reset();
       keepRunning = false;
     }
+  }
+
+  if (scriptedDemoSwitch.has_value() && demoCatalog != nullptr) {
+    std::string activeScene;
+    if (activeIndex >= 0
+        && activeIndex < static_cast<int>(demoCatalog->size())) {
+      activeScene = (*demoCatalog)[static_cast<std::size_t>(activeIndex)].id;
+    }
+    appendDemoEvent(
+        &*scriptedDemoSwitch,
+        scriptedDemoSwitch->observed ? "script_completed"
+                                     : "script_finished_without_target",
+        activeScene,
+        lifecycle.sceneActivationStatus,
+        -1);
   }
 
   const bool screenshotSucceeded = finalizeScreenshotCapture(
@@ -816,6 +1612,9 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     initialId = env;
   }
   bool cycleScenes = false;
+  std::optional<ScriptedDemoSwitch> scriptedDemoSwitch;
+  std::optional<ScriptedForceDrag> scriptedForceDrag;
+  std::string scriptedEventLogPath;
 
   std::vector<char*> filteredArguments;
   filteredArguments.reserve(static_cast<std::size_t>(argc));
@@ -826,6 +1625,79 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     const std::string_view arg = argv[i] == nullptr ? "" : argv[i];
     if (arg == "--cycle-scenes") {
       cycleScenes = true;
+      continue;
+    }
+    if (arg == "--scripted-demo-switch") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr << "runDemos: --scripted-demo-switch requires an argument\n";
+        return 1;
+      }
+      auto parsed = parseScriptedDemoSwitch(argv[i + 1], std::cerr);
+      if (!parsed.has_value()) {
+        return 1;
+      }
+      if (!scriptedEventLogPath.empty()) {
+        parsed->eventLogPath = scriptedEventLogPath;
+      }
+      scriptedDemoSwitch = std::move(parsed);
+      ++i;
+      continue;
+    }
+    if (arg == "--scripted-force-drag") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr << "runDemos: --scripted-force-drag requires an argument\n";
+        return 1;
+      }
+      if (scriptedForceDrag.has_value()) {
+        std::cerr << "runDemos: only one scripted force-drag mode is allowed\n";
+        return 1;
+      }
+      auto parsed = parseScriptedForceDrag(argv[i + 1], std::cerr);
+      if (!parsed.has_value()) {
+        return 1;
+      }
+      if (!scriptedEventLogPath.empty()) {
+        parsed->eventLogPath = scriptedEventLogPath;
+      }
+      scriptedForceDrag = std::move(parsed);
+      ++i;
+      continue;
+    }
+    if (arg == "--scripted-pointer-force-drag") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr
+            << "runDemos: --scripted-pointer-force-drag requires an argument\n";
+        return 1;
+      }
+      if (scriptedForceDrag.has_value()) {
+        std::cerr << "runDemos: only one scripted force-drag mode is allowed\n";
+        return 1;
+      }
+      auto parsed = parseScriptedPointerForceDrag(argv[i + 1], std::cerr);
+      if (!parsed.has_value()) {
+        return 1;
+      }
+      if (!scriptedEventLogPath.empty()) {
+        parsed->eventLogPath = scriptedEventLogPath;
+      }
+      scriptedForceDrag = std::move(parsed);
+      ++i;
+      continue;
+    }
+    if (arg == "--scripted-demo-event-log") {
+      if (i + 1 >= argc || argv[i + 1] == nullptr) {
+        std::cerr
+            << "runDemos: --scripted-demo-event-log requires an argument\n";
+        return 1;
+      }
+      scriptedEventLogPath = argv[i + 1];
+      if (scriptedDemoSwitch.has_value()) {
+        scriptedDemoSwitch->eventLogPath = scriptedEventLogPath;
+      }
+      if (scriptedForceDrag.has_value()) {
+        scriptedForceDrag->eventLogPath = scriptedEventLogPath;
+      }
+      ++i;
       continue;
     }
     if (arg == "--scene") {
@@ -840,7 +1712,76 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
 
   int index = 0;
   if (!initialId.empty()) {
-    index = ::demoSceneIndex(scenes, initialId, 0);
+    index = ::demoSceneIndex(scenes, initialId, -1);
+    if (index < 0) {
+      // Don't fall back to the first scene: an unknown id is almost always a
+      // typo, and a silent fallback makes headless screenshot/cycle runs render
+      // (and exit 0 on) the wrong scene -- the exact case this guard prevents.
+      // Fail loudly with a nonzero status instead.
+      std::cerr << "runDemos: unknown --scene '" << initialId
+                << "'. Available scenes:";
+      for (const auto& scene : scenes) {
+        std::cerr << ' ' << scene.id;
+      }
+      std::cerr << '\n';
+      return 1;
+    }
+  }
+
+  if (!scriptedEventLogPath.empty() && !scriptedDemoSwitch.has_value()
+      && !scriptedForceDrag.has_value()) {
+    std::cerr << "runDemos: --scripted-demo-event-log requires "
+                 "--scripted-demo-switch, --scripted-force-drag, or "
+                 "--scripted-pointer-force-drag\n";
+    return 1;
+  }
+  if (scriptedDemoSwitch.has_value() && cycleScenes) {
+    std::cerr << "runDemos: --scripted-demo-switch cannot be combined with "
+                 "--cycle-scenes\n";
+    return 1;
+  }
+  if (scriptedDemoSwitch.has_value() && !scriptedDemoSwitch->sceneId.empty()) {
+    const int scriptedIndex
+        = ::demoSceneIndex(scenes, scriptedDemoSwitch->sceneId, -1);
+    if (scriptedIndex < 0) {
+      std::cerr << "runDemos: unknown scripted demo target '"
+                << scriptedDemoSwitch->sceneId << "'. Available scenes:";
+      for (const auto& scene : scenes) {
+        std::cerr << ' ' << scene.id;
+      }
+      std::cerr << '\n';
+      return 1;
+    }
+    scriptedDemoSwitch->sceneId
+        = scenes[static_cast<std::size_t>(scriptedIndex)].id;
+    if (!scriptedDemoSwitch->eventLogPath.empty()) {
+      std::error_code error;
+      const auto parent = scriptedDemoSwitch->eventLogPath.parent_path();
+      if (!parent.empty()) {
+        std::filesystem::create_directories(parent, error);
+      }
+      std::ofstream eventLog(scriptedDemoSwitch->eventLogPath);
+      if (!eventLog) {
+        std::cerr << "runDemos: failed to create scripted demo event log '"
+                  << scriptedDemoSwitch->eventLogPath.string() << "'\n";
+        return 1;
+      }
+    }
+  }
+  if (scriptedForceDrag.has_value()
+      && !scriptedForceDrag->eventLogPath.empty()) {
+    std::error_code error;
+    const auto path = std::filesystem::path(scriptedForceDrag->eventLogPath);
+    const auto parent = path.parent_path();
+    if (!parent.empty()) {
+      std::filesystem::create_directories(parent, error);
+    }
+    std::ofstream eventLog(path);
+    if (!eventLog) {
+      std::cerr << "runDemos: failed to create scripted force-drag event log '"
+                << scriptedForceDrag->eventLogPath << "'\n";
+      return 1;
+    }
   }
 
   return runGuiBackendApplicationImpl(
@@ -849,7 +1790,9 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
       ApplicationOptions{},
       &scenes,
       index,
-      cycleScenes);
+      cycleScenes,
+      std::move(scriptedDemoSwitch),
+      std::move(scriptedForceDrag));
 }
 
 } // namespace dart::gui

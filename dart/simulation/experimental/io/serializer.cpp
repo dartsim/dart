@@ -195,63 +195,36 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
                                  : Eigen::VectorXd::Constant(dof, infinity);
 }
 
-void deserializeCollisionGeometryV5(
-    std::istream& input, comps::CollisionGeometry& geometry)
+void initializeCollisionShapeDefaults(CollisionShape& shape)
 {
-  CollisionShape shape;
-  readPOD(input, shape.type);
-  readPOD(input, shape.radius);
-  readVector3d(input, shape.halfExtents);
-  shape.height = 1.0;
   shape.localTransform = Eigen::Isometry3d::Identity();
   shape.normal = Eigen::Vector3d::UnitZ();
   shape.offset = 0.0;
   clearMeshCollisionShape(shape);
-  setSingleCollisionShape(geometry, std::move(shape));
 }
 
-void deserializeCollisionGeometryV6(
+void deserializeCollisionGeometryPreV7(
     std::istream& input, comps::CollisionGeometry& geometry)
 {
   CollisionShape shape;
   readPOD(input, shape.type);
   readPOD(input, shape.radius);
   readVector3d(input, shape.halfExtents);
-  shape.height = 1.0;
-  readIsometry3d(input, shape.localTransform);
+  initializeCollisionShapeDefaults(shape);
+  setSingleCollisionShape(geometry, std::move(shape));
+}
+
+void deserializeCollisionGeometryV7ToV10(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  CollisionShape shape;
+  readPOD(input, shape.type);
+  readPOD(input, shape.radius);
+  readVector3d(input, shape.halfExtents);
+  shape.localTransform = Eigen::Isometry3d::Identity();
   shape.normal = Eigen::Vector3d::UnitZ();
   shape.offset = 0.0;
-  clearMeshCollisionShape(shape);
-  setSingleCollisionShape(geometry, std::move(shape));
-}
-
-void deserializeCollisionGeometryV7OrV8(
-    std::istream& input, comps::CollisionGeometry& geometry)
-{
-  CollisionShape shape;
-  readPOD(input, shape.type);
-  readPOD(input, shape.radius);
-  readPOD(input, shape.height);
-  readVector3d(input, shape.halfExtents);
-  readIsometry3d(input, shape.localTransform);
-  shape.normal = Eigen::Vector3d::UnitZ();
-  shape.offset = 0.0;
-  clearMeshCollisionShape(shape);
-  setSingleCollisionShape(geometry, std::move(shape));
-}
-
-void deserializeCollisionGeometryV9(
-    std::istream& input, comps::CollisionGeometry& geometry)
-{
-  CollisionShape shape;
-  readPOD(input, shape.type);
-  readPOD(input, shape.radius);
-  readPOD(input, shape.height);
-  readVector3d(input, shape.halfExtents);
-  readIsometry3d(input, shape.localTransform);
-  readVector3d(input, shape.normal);
-  readPOD(input, shape.offset);
-  clearMeshCollisionShape(shape);
+  readMeshCollisionGeometry(input, shape);
   setSingleCollisionShape(geometry, std::move(shape));
 }
 
@@ -259,7 +232,6 @@ void serializeCollisionShape(std::ostream& output, const CollisionShape& shape)
 {
   writePOD(output, shape.type);
   writePOD(output, shape.radius);
-  writePOD(output, shape.height);
   writeVector3d(output, shape.halfExtents);
   writeIsometry3d(output, shape.localTransform);
   writeVector3d(output, shape.normal);
@@ -271,7 +243,6 @@ void deserializeCollisionShape(std::istream& input, CollisionShape& shape)
 {
   readPOD(input, shape.type);
   readPOD(input, shape.radius);
-  readPOD(input, shape.height);
   readVector3d(input, shape.halfExtents);
   readIsometry3d(input, shape.localTransform);
   readVector3d(input, shape.normal);
@@ -279,12 +250,47 @@ void deserializeCollisionShape(std::istream& input, CollisionShape& shape)
   readMeshCollisionGeometry(input, shape);
 }
 
-void deserializeCollisionGeometryV10(
-    std::istream& input, comps::CollisionGeometry& geometry)
+CollisionShapeType deserializeBranchV11CollisionShapeType(std::istream& input)
 {
-  CollisionShape shape;
-  deserializeCollisionShape(input, shape);
-  setSingleCollisionShape(geometry, std::move(shape));
+  std::uint32_t rawType = 0;
+  readPOD(input, rawType);
+  switch (rawType) {
+    case 0u:
+      return CollisionShapeType::Sphere;
+    case 1u:
+      return CollisionShapeType::Box;
+    case 2u:
+      return CollisionShapeType::Capsule;
+    case 3u:
+      return CollisionShapeType::Cylinder;
+    case 4u:
+      return CollisionShapeType::Plane;
+    case 5u:
+      return CollisionShapeType::Mesh;
+    default:
+      throw std::runtime_error(
+          std::format("Unsupported legacy CollisionShapeType {}", rawType));
+  }
+}
+
+void deserializeBranchV11CollisionShape(
+    std::istream& input, CollisionShape& shape)
+{
+  shape.type = deserializeBranchV11CollisionShapeType(input);
+  readPOD(input, shape.radius);
+  double legacyHeight = 1.0;
+  readPOD(input, legacyHeight);
+  readVector3d(input, shape.halfExtents);
+  readIsometry3d(input, shape.localTransform);
+  readVector3d(input, shape.normal);
+  readPOD(input, shape.offset);
+  readMeshCollisionGeometry(input, shape);
+
+  if (shape.type == CollisionShapeType::Capsule
+      || shape.type == CollisionShapeType::Cylinder) {
+    shape.halfExtents
+        = Eigen::Vector3d(shape.radius, shape.radius, 0.5 * legacyHeight);
+  }
 }
 
 void serializeCollisionGeometry(
@@ -306,71 +312,51 @@ void deserializeCollisionGeometry(
   for (auto& shape : geometry.shapes) {
     deserializeCollisionShape(input, shape);
   }
+  geometry.revision = 0;
 }
 
-class CollisionGeometryComponentSerializer final
-  : public TypedComponentSerializer<comps::CollisionGeometry>
+void deserializeBranchV11CollisionGeometry(
+    std::istream& input, comps::CollisionGeometry& geometry)
 {
-public:
-  [[nodiscard]] std::string_view getTypeName() const override
-  {
-    return comps::CollisionGeometry::getTypeName();
+  std::size_t shapeCount = 0;
+  readPOD(input, shapeCount);
+  geometry.shapes.resize(shapeCount);
+  for (auto& shape : geometry.shapes) {
+    deserializeBranchV11CollisionShape(input, shape);
   }
+  geometry.revision = 0;
+}
 
-private:
-  void saveComponent(
-      std::ostream& output,
-      const comps::CollisionGeometry& component,
-      const EntityMap& /*entityMap*/) const override
-  {
-    serializeCollisionGeometry(output, component);
-  }
-
-  void loadComponent(
-      std::istream& input, comps::CollisionGeometry& component) const override
-  {
-    deserializeCollisionGeometry(input, component);
-  }
-
-  void loadComponent(
-      std::istream& input,
-      comps::CollisionGeometry& component,
-      std::uint32_t formatVersion) const override
-  {
-    if (formatVersion <= 5u) {
-      deserializeCollisionGeometryV5(input, component);
-      return;
-    }
-    if (formatVersion == 6u) {
-      deserializeCollisionGeometryV6(input, component);
-      return;
-    }
-    if (formatVersion == 7u || formatVersion == 8u) {
-      deserializeCollisionGeometryV7OrV8(input, component);
-      return;
-    }
-    if (formatVersion == 9u) {
-      deserializeCollisionGeometryV9(input, component);
-      return;
-    }
-    if (formatVersion == 10u) {
-      deserializeCollisionGeometryV10(input, component);
-      return;
-    }
-
-    loadComponent(input, component);
-  }
-};
-
-void registerCollisionGeometrySerializer(SerializerRegistry& registry)
+void deserializeLinkV8(
+    std::istream& input, comps::Link& link, std::uint32_t formatVersion)
 {
-  if (registry.getSerializer(comps::CollisionGeometry::getTypeName())
-      != nullptr) {
-    return;
+  readString(input, link.name);
+  autoDeserialize(input, link.mass);
+
+  link.transformFromParentToJoint = Eigen::Isometry3d::Identity();
+  readIsometry3d(input, link.transformFromParentJoint);
+
+  std::uint32_t parentJoint = static_cast<std::uint32_t>(entt::null);
+  readPOD(input, parentJoint);
+  link.parentJoint = static_cast<entt::entity>(parentJoint);
+
+  std::size_t childJointCount = 0;
+  readPOD(input, childJointCount);
+  link.childJoints.resize(childJointCount);
+  for (entt::entity& childJoint : link.childJoints) {
+    std::uint32_t entityId = static_cast<std::uint32_t>(entt::null);
+    readPOD(input, entityId);
+    childJoint = static_cast<entt::entity>(entityId);
   }
 
-  registry.registerSerializer(
-      std::make_unique<CollisionGeometryComponentSerializer>());
+  readIsometry3d(input, link.worldTransform);
+
+  link.externalForce.setZero();
+  if (formatVersion >= 5u) {
+    for (Eigen::Index i = 0; i < link.externalForce.size(); ++i) {
+      readPOD(input, link.externalForce[i]);
+    }
+  }
 }
 
 class JointComponentSerializer final
@@ -420,6 +406,109 @@ void registerJointSerializer(SerializerRegistry& registry)
   registry.registerSerializer(std::make_unique<JointComponentSerializer>());
 }
 
+class CollisionGeometryComponentSerializer final
+  : public TypedComponentSerializer<comps::CollisionGeometry>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return comps::CollisionGeometry::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const comps::CollisionGeometry& component,
+      const EntityMap& /*entityMap*/) const override
+  {
+    serializeCollisionGeometry(output, component);
+  }
+
+  void loadComponent(
+      std::istream& input, comps::CollisionGeometry& component) const override
+  {
+    deserializeCollisionGeometry(input, component);
+  }
+
+  void loadComponent(
+      std::istream& input,
+      comps::CollisionGeometry& component,
+      std::uint32_t formatVersion) const override
+  {
+    if (formatVersion < 7u) {
+      deserializeCollisionGeometryPreV7(input, component);
+      return;
+    }
+    if (formatVersion <= 10u) {
+      deserializeCollisionGeometryV7ToV10(input, component);
+      return;
+    }
+    if (formatVersion == 11u) {
+      deserializeBranchV11CollisionGeometry(input, component);
+      return;
+    }
+
+    loadComponent(input, component);
+  }
+};
+
+void registerCollisionGeometrySerializer(SerializerRegistry& registry)
+{
+  if (registry.getSerializer(comps::CollisionGeometry::getTypeName())
+      != nullptr) {
+    return;
+  }
+
+  registry.registerSerializer(
+      std::make_unique<CollisionGeometryComponentSerializer>());
+}
+
+class LinkComponentSerializer final
+  : public TypedComponentSerializer<comps::Link>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return comps::Link::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const comps::Link& component,
+      const EntityMap& entityMap) const override
+  {
+    autoSerialize(output, component, entityMap);
+  }
+
+  void loadComponent(std::istream& input, comps::Link& component) const override
+  {
+    autoDeserialize(input, component);
+  }
+
+  void loadComponent(
+      std::istream& input,
+      comps::Link& component,
+      std::uint32_t formatVersion) const override
+  {
+    if (formatVersion < 9u) {
+      deserializeLinkV8(input, component, formatVersion);
+      return;
+    }
+
+    loadComponent(input, component);
+  }
+};
+
+void registerLinkSerializer(SerializerRegistry& registry)
+{
+  if (registry.getSerializer(comps::Link::getTypeName()) != nullptr) {
+    return;
+  }
+
+  registry.registerSerializer(std::make_unique<LinkComponentSerializer>());
+}
+
 void registerBuiltInSerializers(SerializerRegistry& registry)
 {
   registerComponentIfNeeded<comps::Name>(registry);
@@ -448,9 +537,15 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   // references, so no remap pass entry needed).
   registerComponentIfNeeded<compute::MultibodyVariationalState>(registry);
 
+  // The variational integrator's ground-contact config (link indices, not
+  // entity references, so likewise no remap pass entry needed) and its
+  // augmented-Lagrangian dual state (per-point duals + cadence counter).
+  registerComponentIfNeeded<comps::VariationalContact>(registry);
+  registerComponentIfNeeded<comps::VariationalContactDualState>(registry);
+
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 
-  registerComponentIfNeeded<comps::Link>(registry);
+  registerLinkSerializer(registry);
   registerJointSerializer(registry);
 
   registerComponentIfNeeded<comps::Transform>(registry);

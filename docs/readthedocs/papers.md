@@ -183,24 +183,44 @@ Springer, 2006.
 
 ## Algorithms & Methods (Papers)
 
-| ID                             | Reference                                                                                                                  | Topic       | Status      | Priority | Verdict   |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------- | -------- | --------- |
-| `featherstone-1983`            | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics    | planned     | high     | adopt     |
-| `liu-jain-mbs`                 | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics    | implemented | —        | adopt     |
-| `tan-lcp`                      | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact     | implemented | —        | adopt     |
-| `stewart-trinkle-1996`         | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact     | referenced  | medium   | baseline  |
-| `baraff-1996`                  | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics    | referenced  | low      | reference |
-| `macklin-xpbd-2016`            | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration | referenced  | medium   | evaluate  |
-| `gjk-1988`                     | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision   | implemented | —        | adopt     |
-| `ipc-2020`                     | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact     | in-progress | high     | adopt     |
-| `lee-vi-2016`                  | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration | planned     | high     | adopt     |
-| `marsden-west-2001`            | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration | referenced  | medium   | reference |
-| `chen-2024-vbd`                | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration | in-progress | high     | adopt     |
-| `vbd-2024`                     | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact     | referenced  | medium   | evaluate  |
-| `avbd-2025`                    | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact     | referenced  | medium   | evaluate  |
-| `johnson-murphey-2009`         | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration | referenced  | high     | baseline  |
-| `leyendecker-2008`             | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration | referenced  | high     | evaluate  |
-| `kobilarov-crane-desbrun-2009` | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration | referenced  | medium   | reference |
+| ID                                 | Reference                                                                                                                  | Topic                              | Status      | Priority | Verdict   |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ----------- | -------- | --------- |
+| `featherstone-1983`                | Featherstone, "Calculation of robot dynamics using articulated-body inertias" (1983)                                       | dynamics                           | planned     | high     | adopt     |
+| `liu-jain-mbs`                     | Liu & Jain, _A Quick Tutorial on Multibody Dynamics_                                                                       | dynamics                           | implemented | —        | adopt     |
+| `tan-lcp`                          | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                                                  | contact                            | implemented | —        | adopt     |
+| `stewart-trinkle-1996`             | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)                                            | contact                            | referenced  | medium   | baseline  |
+| `baraff-1996`                      | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                                                           | dynamics                           | referenced  | low      | reference |
+| `macklin-xpbd-2016`                | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016)                                 | integration                        | referenced  | medium   | evaluate  |
+| `gjk-1988`                         | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
+| `ipc-2020`                         | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
+| `rigid-ipc-2021`                   | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
+| `lan-2022-pdipc`                   | Lan et al., "Penetration-free Projective Dynamics on the GPU" (2022)                                                       | contact/integration/GPU            | planned     | high     | evaluate  |
+| `chen-2023-spb`                    | Chen, Diaz & Yuksel, "Shortest Path to Boundary for Self-Intersecting Meshes" (2023)                                       | contact/collision                  | planned     | high     | evaluate  |
+| `werling-2021`                     | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
+| `howell-2022-dojo`                 | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
+| `lee-vi-2016`                      | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
+| `marsden-west-2001`                | Marsden & West, "Discrete mechanics and variational integrators" (2001)                                                    | integration                        | referenced  | medium   | reference |
+| `chen-2024-vbd`                    | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
+| `vbd-2024`                         | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
+| `avbd-2025`                        | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact                            | referenced  | medium   | evaluate  |
+| `smith-2012-rosi`                  | Smith et al., "Reflections on Simultaneous Impact" (2012)                                                                  | contact/impact                     | referenced  | medium   | baseline  |
+| `zhang-2015-qce`                   | Zhang et al., "Quadratic Contact Energy Model for Multi-impact Simulation" (2015)                                          | contact/impact                     | referenced  | medium   | evaluate  |
+| `vouga-2017-all-well`              | Vouga et al., "All's Well That Ends Well: Guaranteed Resolution of Simultaneous Rigid Body Impact" (2017)                  | contact/impact                     | referenced  | medium   | evaluate  |
+| `halm-posa-2024-set-valued-impact` | Halm & Posa, "Set-valued rigid-body dynamics for simultaneous, inelastic, frictional impacts" (2024)                       | contact/impact                     | referenced  | medium   | evaluate  |
+| `lelidec-2024-contact-models`      | Le Lidec et al., "Contact Models in Robotics: a Comparative Analysis" (2024)                                               | contact/survey                     | referenced  | medium   | reference |
+| `ogc-2025`                         | Chen et al., "Offset Geometric Contact" (2025)                                                                             | contact/collision                  | planned     | high     | evaluate  |
+| `nakamura-1987-task-priority`      | Nakamura, Hanafusa & Yoshikawa, "Task-Priority Based Redundancy Control of Robot Manipulators" (1987)                      | kinematics                         | planned     | medium   | adopt     |
+| `buss-kim-2005-sdls`               | Buss & Kim, "Selectively Damped Least Squares for Inverse Kinematics" (2005)                                               | kinematics                         | planned     | medium   | evaluate  |
+| `aristidou-lasenby-2011-fabrik`    | Aristidou & Lasenby, "FABRIK: A fast, iterative solver for the Inverse Kinematics problem" (2011)                          | kinematics                         | planned     | medium   | evaluate  |
+| `beeson-ames-2015-tracik`          | Beeson & Ames, "TRAC-IK: An open-source library for improved solving of generic inverse kinematics" (2015)                 | kinematics                         | planned     | medium   | baseline  |
+| `starke-2020-bioik`                | Starke, _Bio IK: A Memetic Evolutionary Algorithm for Generic Multi-Objective Inverse Kinematics_ (2020)                   | kinematics                         | planned     | medium   | evaluate  |
+| `rakita-2018-relaxedik`            | Rakita, Mutlu & Gleicher, "RelaxedIK: Real-time Synthesis of Accurate and Feasible Robot Arm Motion" (2018)                | kinematics                         | planned     | high     | baseline  |
+| `zucker-2013-chomp`                | Zucker et al., "CHOMP: Covariant Hamiltonian Optimization for Motion Planning" (2013)                                      | motion-planning                    | referenced  | medium   | baseline  |
+| `mukadam-2018-gpmp2`               | Mukadam et al., "Continuous-time Gaussian process motion planning via probabilistic inference" (2018)                      | motion-planning                    | referenced  | medium   | evaluate  |
+| `ames-2022-ikflow`                 | Ames, Morgan & Konidaris, "IKFlow: Generating Diverse Inverse Kinematics Solutions" (2022)                                 | kinematics                         | deferred    | medium   | evaluate  |
+| `johnson-murphey-2009`             | Johnson & Murphey, "Scalable variational integrators for constrained mechanical systems in generalized coordinates" (2009) | integration                        | referenced  | high     | baseline  |
+| `leyendecker-2008`                 | Leyendecker, Marsden & Ortiz, "Variational integrators for constrained dynamical systems" (2008)                           | integration                        | referenced  | high     | evaluate  |
+| `kobilarov-crane-desbrun-2009`     | Kobilarov, Crane & Desbrun, "Lie group integrators for animation and control of vehicles" (2009)                           | integration                        | referenced  | medium   | reference |
 
 ### `featherstone-1983`
 
@@ -336,6 +356,180 @@ Related public resources:
   repository should remain a reference/baseline rather than a runtime
   dependency.
 
+### `rigid-ipc-2021`
+
+Zachary Ferguson, Minchen Li, Teseo Schneider, Francisca Gil-Ureta, Timothy
+Langlois, Chenfanfu Jiang, Denis Zorin, Danny M. Kaufman, and Daniele Panozzo.
+"Intersection-free Rigid Body Dynamics." _ACM Transactions on Graphics_, 40(4),
+Article 183, 2021. DOI:
+[10.1145/3450626.3459802](https://doi.org/10.1145/3450626.3459802).
+
+Related public resources:
+
+- Paper/project page:
+  [ipc-sim.github.io/rigid-ipc](https://ipc-sim.github.io/rigid-ipc/)
+- Reference implementation:
+  [ipc-sim/rigid-ipc](https://github.com/ipc-sim/rigid-ipc)
+
+```bib
+@article{Ferguson2021RigidIPC,
+  author = {Zachary Ferguson and Minchen Li and Teseo Schneider and Francisca Gil-Ureta and Timothy Langlois and Chenfanfu Jiang and Denis Zorin and Danny M. Kaufman and Daniele Panozzo},
+  title = {Intersection-free Rigid Body Dynamics},
+  journal = {ACM Transactions on Graphics},
+  volume = {40},
+  number = {4},
+  articleno = {183},
+  year = {2021},
+  doi = {10.1145/3450626.3459802}
+}
+```
+
+- **Type:** paper · **Topic:** contact/integration · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact.md)
+  and its
+  [rigid-ipc manifest](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/rigid_ipc_fixture_manifest.json).
+- **Notes:** Provides the target method family for robust rigid-body contact:
+  reduced-coordinate incremental potentials, contact barriers, curved-trajectory
+  continuous collision detection with minimum separation, projected Newton,
+  friction, and a fixture/test/benchmark corpus for rigid scenes. The DART
+  implementation is experimental and DART-owned; the upstream repository is a
+  reference and benchmark baseline, not a runtime dependency.
+
+  Current DART work has the audited upstream manifest, an internal fixture
+  reader with first experimental-`World` replay state, supported
+  OBJ/OFF/MSH/STL mesh replay plus polygonal inline geometry replay into
+  native-backed mesh collision shapes, upstream comparison `.txt` shape-row
+  ingestion, direct CCD row readers, and first internal curved-trajectory CCD
+  tests for face-vertex, edge-edge, and point-edge primitives. The first direct
+  evaluator regressions cover upstream-style
+  expected-TOI rows, parameter-space residual equations for those contacts, and
+  first parameter-box subdivision queries for those contacts, plus first
+  root-row full-step misses, not full corpus parity. The complete implementation
+  still needs remaining comparison script command coverage, full conservative
+  CCD parity, barrier derivatives and Hessians, sparse projected Newton, lagged
+  smoothed friction, same-domain rigid method selection, CPU/GPU benchmark
+  packets, comparison baselines, and headless Filament evidence for promoted
+  scenes.
+
+### `lan-2022-pdipc`
+
+Lei Lan, Guanqun Ma, Yin Yang, Changxi Zheng, Minchen Li, and Chenfanfu Jiang.
+"Penetration-free Projective Dynamics on the GPU." _ACM Transactions on
+Graphics_, 41(4), Article 69, 2022. DOI:
+[10.1145/3528223.3530069](https://doi.org/10.1145/3528223.3530069).
+
+Related public resources:
+
+- Paper PDF:
+  [lan2022pdipc.pdf](https://www.math.ucla.edu/multiples/publication/lan2022pdipc.pdf)
+- GAMES webinar deck:
+  [Games2022240](https://games-1312234642.cos.ap-guangzhou.myqcloud.com/pdf/Games2022240%E8%93%9D%E7%A3%8A.pdf)
+- Summary page:
+  [Physics-Based Animation](https://www.physicsbasedanimation.com/2022/05/27/penetration-free-projective-dynamics-on-the-gpu/)
+- Paper video:
+  [youtube.com/watch?v=acEplzIIOEs](https://www.youtube.com/watch?v=acEplzIIOEs)
+- CCD reference implementation:
+  [Continuous-Collision-Detection/Fast-Approximate-Root-CCD](https://github.com/Continuous-Collision-Detection/Fast-Approximate-Root-CCD)
+- Robotics projective-dynamics reference:
+  [DragonZoom/projective-dynamics-for-robotics](https://github.com/DragonZoom/projective-dynamics-for-robotics)
+
+- **Type:** paper · **Topic:** contact/integration/GPU · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-081 PD-IPC GPU gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md).
+- **Notes:** Candidate GPU acceleration path for IPC-class deformable contact:
+  it combines projective dynamics, IPC barriers, two-level local/global
+  iteration, A-Jacobi, patch-based GPU collision culling, and
+  minimum-gradient-Newton CCD pruning for solids and shells. DART should treat
+  the fast CCD shortcut as an optimization to validate against conservative
+  native CCD, because the public non-author CCD implementation reports missed
+  point-triangle and edge-edge collisions. Keep the method internal and
+  backend-neutral until CPU reference tests, A-Jacobi convergence evidence,
+  conservative-CCD fallback policy, GPU packet benchmarks, and headless visual
+  evidence pass.
+
+### `werling-2021`
+
+Werling, K., Omens, D., Lee, J., Exarchos, I., & Liu, C. K. "Fast and
+Feature-Complete Differentiable Physics for Articulated Rigid Bodies."
+_Robotics: Science and Systems (RSS)_, 2021. arXiv:2103.16021.
+
+Related public resources:
+
+- Paper: [arxiv.org/abs/2103.16021](https://arxiv.org/abs/2103.16021)
+- Project docs: [nimblephysics.org/docs](https://nimblephysics.org/docs/)
+- Reference implementation (a DART fork):
+  [keenon/nimblephysics](https://github.com/keenon/nimblephysics)
+
+```bib
+@inproceedings{Werling2021Differentiable,
+  author = {Keenon Werling and Dalton Omens and Jeongseok Lee and Ioannis Exarchos and C. Karen Liu},
+  title = {Fast and Feature-Complete Differentiable Physics for Articulated Rigid Bodies},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year = {2021},
+  eprint = {2103.16021}
+}
+```
+
+- **Type:** paper · **Topic:** differentiable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-110`](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation.md),
+  its [Nimble paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation/nimble-gap-audit.md),
+  and [differentiable-simulation design](https://github.com/dartsim/dart/blob/main/docs/design/differentiable_simulation.md).
+- **Notes:** Target method for opt-in differentiable simulation: analytic
+  gradients through the contact LCP in generalized coordinates by implicit
+  differentiation of the complementarity conditions, exploiting active-set
+  sparsity (a small clamping-block solve) for speed. The paper itself is a DART
+  fork, so its forward-pass ingredients map directly onto DART's boxed-LCP
+  library, articulated-body dynamics, and `tan-lcp` contact formulation.
+
+  The DART implementation is experimental, DART-owned, and **opt-in** (off by
+  default, zero cost when disabled) — a deliberate divergence from the
+  always-on upstream. DART does not vendor or link the upstream repository as a
+  runtime dependency, and public APIs use DART-owned method/quantity names
+  rather than the upstream project name as a solver identity.
+
+  This entry should not be described as complete: full parity requires the
+  boxed-LCP contact path in the experimental world (PLAN-080 prerequisite), the
+  clamping/separating/tied classification and clamping-block gradient, contact
+  Jacobian derivatives, the parameter (mass/COM/inertia/friction) selector,
+  the PyTorch `autograd.Function` bridge, finite-difference-checked correctness,
+  and trajectory-optimization plus system-identification examples.
+
+### `howell-2022-dojo`
+
+Howell, T. A., Le Cleac'h, S., Bruedigam, J., Chen, Q., Sun, J., Kolter, J. Z.,
+Schwager, M., & Manchester, Z. "Dojo: A Differentiable Physics Engine for
+Robotics." arXiv:2203.00806, 2022.
+
+Related public resources:
+
+- Paper: [arxiv.org/abs/2203.00806](https://arxiv.org/abs/2203.00806)
+- Project site: [sites.google.com/view/dojo-sim/home](https://sites.google.com/view/dojo-sim/home)
+- Reference implementation:
+  [dojo-sim/Dojo.jl](https://github.com/dojo-sim/Dojo.jl)
+
+```bib
+@article{howelllecleach2022,
+  title={Dojo: A Differentiable Physics Engine for Robotics},
+  author={Howell, Taylor and Le Cleac'h, Simon and Bruedigam, Jan and Chen, Qianzhong and Sun, Jiankai and Kolter, J. Zico and Schwager, Mac and Manchester, Zachary},
+  journal={arXiv preprint arXiv:2203.00806},
+  url={https://arxiv.org/abs/2203.00806},
+  year={2022}
+}
+```
+
+- **Type:** paper · **Topic:** differentiable/contact/integration · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:** [`PLAN-110`](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation.md)
+  and its [Dojo solver gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/110-differentiable-simulation/dojo-gap-audit.md).
+- **Notes:** Dojo is an additional differentiable-rigid-body solver reference,
+  not the current PLAN-110 implementation target. The method combines
+  maximal-coordinate rigid bodies, variational integration, hard contact as a
+  nonlinear complementarity problem with second-order cone friction constraints,
+  a custom primal-dual interior-point solver, and implicit gradients through the
+  relaxed solve. DART will evaluate whether those ideas justify a separate
+  opt-in solver family after the active Nimble-style boxed-LCP path lands. The
+  Dojo.jl repository is a comparison baseline only; DART does not vendor or link
+  it as a runtime dependency.
+
 ### `chen-2024-vbd`
 
 Anka He Chen, Ziheng Liu, Yin Yang, and Cem Yuksel. "Vertex Block Descent."
@@ -364,7 +558,7 @@ Related public resources:
 
 - **Type:** paper · **Topic:** integration/deformable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
 - **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
-  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/vbd_deformable_solver/vbd-paper-gap-audit.md).
+  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/vbd-paper-gap-audit.md).
 - **Notes:** Block coordinate descent on the variational implicit-Euler
   objective for elastodynamics: each vertex is a 3-DOF block updated with one
   regularized Newton step using a positive-definite local 3x3 Hessian, with
@@ -441,17 +635,311 @@ Graphics_ (SIGGRAPH 2024). arXiv:2403.06321.
 
 ### `avbd-2025`
 
-Giles, et al. "Augmented Vertex Block Descent." _ACM Transactions on Graphics_
-(SIGGRAPH 2025).
+Chris Giles, Elie Diaz, and Cem Yuksel. "Augmented Vertex Block Descent."
+_ACM Transactions on Graphics_, 44(4), Article 90, 2025. DOI:
+[10.1145/3731195](https://doi.org/10.1145/3731195).
+
+Related public resources:
+
+- Project page:
+  [graphics.cs.utah.edu/research/projects/avbd](https://graphics.cs.utah.edu/research/projects/avbd/)
+- Paper PDF:
+  [Augmented_VBD-SIGGRAPH25.pdf](https://graphics.cs.utah.edu/research/projects/avbd/Augmented_VBD-SIGGRAPH25.pdf)
 
 - **Type:** paper · **Topic:** contact/integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
 - **Where used:** contact-extension survey in
-  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
+  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md)
+  and the
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
 - **Notes:** Augmented-Lagrangian extension of VBD with bounded constraint
   forces (`f = clamp(k·C+λ, fmin, fmax)`) and Coulomb friction via a lagged
   normal-force clamp. Identified as the best structural fit for adding hard,
   drift-free non-penetration and a friction cone to the variational integrator
   without a global PSD solve (PLAN-082 contact rung C3). Not a commitment.
+
+### `smith-2012-rosi`
+
+Breannan Smith, Danny M. Kaufman, Etienne Vouga, Rasmus Tamstorf, and Eitan
+Grinspun. "Reflections on Simultaneous Impact." _ACM Transactions on Graphics_,
+31(4), Article 106, 2012. DOI:
+[10.1145/2185520.2185602](https://doi.org/10.1145/2185520.2185602).
+
+Related public resources:
+
+- Project page: [cs.columbia.edu/cg/rosi](https://www.cs.columbia.edu/cg/rosi/)
+- Paper PDF: [rosi.pdf](https://www.cs.columbia.edu/cg/rosi/rosi.pdf)
+- Supplement:
+  [rosi_supp.pdf](https://www.cs.columbia.edu/cg/rosi/rosi_supp.pdf)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** baseline
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Baseline for event-level simultaneous impact: generalized
+  reflections, physical desiderata such as feasibility, symmetry, break-away,
+  kinetic-energy behavior, and a restitution model aimed at avoiding inelastic
+  collapse. DART should use it first as a benchmark/specification source, not as
+  a public solver identity.
+
+### `zhang-2015-qce`
+
+Tianxiang Zhang, Sheng Li, Dinesh Manocha, Guoping Wang, and Hanqiu Sun.
+"Quadratic Contact Energy Model for Multi-impact Simulation." _Computer Graphics
+Forum_, 34(7), 133-144, 2015. DOI:
+[10.1111/cgf.12752](https://doi.org/10.1111/cgf.12752).
+
+Related public resource:
+
+- Paper PDF:
+  [graphics.pku.edu.cn/docs/20220703165309179406.pdf](https://www.graphics.pku.edu.cn/docs/20220703165309179406.pdf)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Candidate multi-impact model that frames contact-point potential
+  energy with a closed-form quadratic contact energy, then combines it with LCP
+  handling for restitution and friction. Useful for a minimal internal baseline
+  if PLAN-082 proves that finite-time rigid IPC or AVBD-style contact leaves a
+  true restitution / wave-propagation gap.
+
+### `vouga-2017-all-well`
+
+Etienne Vouga, Breannan Smith, Danny M. Kaufman, Rasmus Tamstorf, and Eitan
+Grinspun. "All's Well That Ends Well: Guaranteed Resolution of Simultaneous
+Rigid Body Impact." _ACM Transactions on Graphics_, 36(4), Article 151, 2017.
+DOI: [10.1145/3072959.3073689](https://doi.org/10.1145/3072959.3073689).
+
+Related public resources:
+
+- Paper PDF:
+  [term-revised.pdf](https://www.cs.utexas.edu/~evouga/uploads/4/5/6/8/45689883/term-revised.pdf)
+- Project page:
+  [evouga/all's-well-that-ends-well](https://www.cs.utexas.edu/~evouga/allrsquos-well-that-ends-well-guaranteed-resolution-of-simultaneous-rigid-body-impact.html)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** The strongest termination-focused follow-up to generalized
+  reflections and pairwise impact schemes. It belongs in DART as a go/no-go
+  benchmark for finite termination, approximate energy behavior, drift, and
+  break-away before any event-level impact operator is promoted.
+
+### `halm-posa-2024-set-valued-impact`
+
+Mathew Halm and Michael Posa. "Set-valued rigid-body dynamics for simultaneous,
+inelastic, frictional impacts." _International Journal of Robotics Research_,
+43(10), 2024. DOI:
+[10.1177/02783649241236860](https://doi.org/10.1177/02783649241236860).
+
+Related public resources:
+
+- Journal page:
+  [journals.sagepub.com/doi/10.1177/02783649241236860](https://journals.sagepub.com/doi/10.1177/02783649241236860)
+- arXiv: [2103.15714](https://arxiv.org/abs/2103.15714)
+
+- **Type:** paper · **Topic:** contact/impact · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Robotics-specific newer reference that argues simultaneous
+  frictional impacts should sometimes be represented as a set of plausible
+  outcomes instead of a single heuristic ordering. Evaluate as an uncertainty /
+  benchmark direction before exposing any set-valued public API.
+
+### `lelidec-2024-contact-models`
+
+Quentin Le Lidec, Wilson Jallet, Louis Montaut, Ivan Laptev, Cordelia Schmid,
+and Justin Carpentier. "Contact Models in Robotics: a Comparative Analysis."
+_IEEE Transactions on Robotics_, 40, 3716-3733, 2024. DOI:
+[10.1109/TRO.2024.3434208](https://doi.org/10.1109/TRO.2024.3434208).
+
+Related public resources:
+
+- Project page:
+  [di.ens.fr/willow/projects/contact_models_in_robotics](https://www.di.ens.fr/willow/projects/contact_models_in_robotics/)
+- Paper PDF:
+  [lelidec2024contacts.pdf](https://simple-robotics.github.io/publications/contact-models/static/paper/lelidec2024contacts.pdf)
+- arXiv: [2304.06372](https://arxiv.org/abs/2304.06372)
+
+- **Type:** paper · **Topic:** contact/survey · **Status:** referenced · **Priority:** medium · **Verdict:** reference
+- **Where used:**
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Survey and benchmark framing for robotics contact models, including
+  Signorini/Coulomb/maximum-dissipation laws, simulator approximations, and
+  physical/computational criteria. Use it to keep the PLAN-082 comparison matrix
+  honest, not as a direct implementation target.
+
+### `chen-2023-spb`
+
+He Chen, Elie Diaz, and Cem Yuksel. "Shortest Path to Boundary for
+Self-Intersecting Meshes." _ACM Transactions on Graphics_, 42(4), 2023. DOI:
+[10.1145/3592136](https://doi.org/10.1145/3592136).
+
+Related public resources:
+
+- Project page:
+  [graphics.cs.utah.edu/research/projects/shortest-path-to-boundary](https://graphics.cs.utah.edu/research/projects/shortest-path-to-boundary/)
+- arXiv: [2305.09778](https://arxiv.org/abs/2305.09778)
+- Supplemental:
+  [sig23_shortest_path-supplemental.pdf](https://graphics.cs.utah.edu/research/projects/shortest-path-to-boundary/sig23_shortest_path-supplemental.pdf)
+- Code:
+  [AnkaChan/Shortest-Path-to-Boundary-for-Self-Intersecting-Meshes](https://github.com/AnkaChan/Shortest-Path-to-Boundary-for-Self-Intersecting-Meshes)
+- Paper video:
+  [youtube.com/watch?v=qRBHY9ntwbU](https://www.youtube.com/watch?v=qRBHY9ntwbU)
+
+- **Type:** paper · **Topic:** contact/collision · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-081 SPB gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/081-deformable-implicit-barrier-solver/spb-gap-audit.md).
+- **Notes:** Volumetric self-intersection recovery method for tetrahedral
+  deformables: DCD finds preexisting intersections, SPB finds a valid shortest
+  path from an internal point to the boundary, and CCD remains necessary for new
+  crossings. It is not a codimensional cloth/strand method and should remain an
+  internal recovery sidecar until DART has query tests, recovery constraints,
+  hybrid CCD/DCD evidence, benchmark packets, and visual captures.
+
+### `ogc-2025`
+
+Anka He Chen, Jerry Hsu, Ziheng Liu, Miles Macklin, Yin Yang, and Cem Yuksel.
+"Offset Geometric Contact." _ACM Transactions on Graphics_, 44(4), Article 160, 2025. DOI: [10.1145/3731205](https://doi.org/10.1145/3731205).
+
+Related public resources:
+
+- Project page:
+  [graphics.cs.utah.edu/research/projects/ogc](https://graphics.cs.utah.edu/research/projects/ogc/)
+- Paper PDF:
+  [Offset_Geometric_Contact-SIGGRAPH2025.pdf](https://graphics.cs.utah.edu/research/projects/ogc/Offset_Geometric_Contact-SIGGRAPH2025.pdf)
+- Code (Gaia):
+  [github.com/AnkaChan/Gaia](https://github.com/AnkaChan/Gaia)
+- Code (Newton):
+  [newton/\_src/solvers/vbd](https://github.com/newton-physics/newton/tree/main/newton/_src/solvers/vbd)
+- Paper video:
+  [youtube.com/watch?v=xxyniqSLJik](https://www.youtube.com/watch?v=xxyniqSLJik)
+
+- **Type:** paper · **Topic:** contact/collision · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:**
+  [`PLAN-104 OGC gap audit`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/ogc-gap-audit.md),
+  [`PLAN-082 simultaneous-impact intake`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md).
+- **Notes:** Newer finite-time contact alternative for codimensional objects:
+  offset geometry, local displacement bounds, and GPU-friendly local operations
+  that avoid expensive CCD in its target setting. It is not a rigid-impact
+  operator. Its implementation path is now tracked under PLAN-104 as a VBD
+  contact sidecar with required source/code audit, CPU proof-of-contact,
+  IPC/VBD comparison packets, and public-boundary review before promotion.
+
+### `nakamura-1987-task-priority`
+
+Nakamura, Y., Hanafusa, H., & Yoshikawa, T. "Task-Priority Based Redundancy
+Control of Robot Manipulators." _International Journal of Robotics Research_,
+6(2), 1987. DOI:
+[10.1177/027836498700600201](https://doi.org/10.1177/027836498700600201).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** adopt
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Grounds whole-body and task-priority IK: higher-priority task
+  residuals constrain lower-priority objectives through redundancy/null spaces.
+  Classic DART already has related `HierarchicalIK`, `CompositeIK`, and
+  `WholeBodyIK` APIs; the experimental world needs a DART-owned task model
+  before carrying them forward.
+
+### `buss-kim-2005-sdls`
+
+Buss, S. R., & Kim, J.-S. "Selectively Damped Least Squares for Inverse
+Kinematics." _Journal of Graphics Tools_, 10(3), 2005. DOI:
+[10.1080/2151237X.2005.10129202](https://doi.org/10.1080/2151237X.2005.10129202).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate singularity-robust extension to classic DART's Jacobian
+  DLS baseline. Evaluate against DART's manifold state-space contract and
+  near-singular benchmark scenes before adopting.
+
+### `aristidou-lasenby-2011-fabrik`
+
+Aristidou, A., & Lasenby, J. "FABRIK: A fast, iterative solver for the Inverse
+Kinematics problem." _Graphical Models_, 73(5), 2011. DOI:
+[10.1016/j.gmod.2011.05.003](https://doi.org/10.1016/j.gmod.2011.05.003).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate fast heuristic or seed generator for simple chains and
+  animation-style tasks. Must be benchmarked honestly for joint limits,
+  orientation objectives, trees, whole-body targets, and closed chains before
+  any broad support claim.
+
+### `beeson-ames-2015-tracik`
+
+Beeson, P., & Ames, B. "TRAC-IK: An open-source library for improved solving of
+generic inverse kinematics." _IEEE-RAS International Conference on Humanoid
+Robots_, 2015. DOI:
+[10.1109/HUMANOIDS.2015.7363472](https://doi.org/10.1109/HUMANOIDS.2015.7363472).
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** baseline
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Baseline for generic constrained IK with joint limits and
+  optimization-based fallback behavior. DART should not expose a TRAC-IK-named
+  public solver; use method-family names and compare against the behavior.
+
+### `starke-2020-bioik`
+
+Starke, S. _Bio IK: A Memetic Evolutionary Algorithm for Generic Multi-Objective
+Inverse Kinematics._ Dissertation, University of Hamburg, 2020.
+<https://ediss.sub.uni-hamburg.de/handle/ediss/8703>
+
+- **Type:** paper · **Topic:** kinematics · **Status:** planned · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate evolutionary/local-search family for multi-objective,
+  multi-effector, whole-body IK and seed generation. Evaluate as a bounded
+  fallback or pre-trial method, not as a replacement for checked local solvers.
+
+### `rakita-2018-relaxedik`
+
+Rakita, D., Mutlu, B., & Gleicher, M. "RelaxedIK: Real-time Synthesis of
+Accurate and Feasible Robot Arm Motion." _Robotics: Science and Systems XIV_, 2018. DOI:
+[10.15607/RSS.2018.XIV.043](https://doi.org/10.15607/RSS.2018.XIV.043).
+
+- **Type:** paper · **Topic:** kinematics/motion-planning · **Status:** planned · **Priority:** high · **Verdict:** baseline
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Baseline for treating IK as real-time motion synthesis with
+  competing objectives such as pose accuracy, continuity, collision avoidance,
+  and singularity avoidance. This is the closest published fit for the
+  "not just per-frame IK" requirement.
+
+### `zucker-2013-chomp`
+
+Zucker, M., Ratliff, N., Dragan, A., Pivtoraiko, M., Klingensmith, M., Dellin,
+C., Bagnell, J. A., & Srinivasa, S. "CHOMP: Covariant Hamiltonian Optimization
+for Motion Planning." _International Journal of Robotics Research_, 32(9), 2013.
+<https://publications.ri.cmu.edu/chomp-covariant-hamiltonian-optimization-for-motion-planning>
+
+- **Type:** paper · **Topic:** motion-planning · **Status:** referenced · **Priority:** medium · **Verdict:** baseline
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Baseline trajectory-optimization framing for smoothness,
+  obstacle/collision cost, and local-minimum mitigation over a whole motion
+  rather than independent pose IK frames.
+
+### `mukadam-2018-gpmp2`
+
+Mukadam, M., Dong, J., Yan, X., Dellaert, F., & Boots, B. "Continuous-time
+Gaussian process motion planning via probabilistic inference." _International
+Journal of Robotics Research_, 37(11), 2018. arXiv:
+[1707.07383](https://arxiv.org/abs/1707.07383).
+
+- **Type:** paper · **Topic:** motion-planning/statistics · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Candidate statistical trajectory prior for smooth continuous-time
+  IK/motion solves. Evaluate after DART owns explicit state-space, collision
+  query, and rollout APIs.
+
+### `ames-2022-ikflow`
+
+Ames, B., Morgan, J., & Konidaris, G. "IKFlow: Generating Diverse Inverse
+Kinematics Solutions." _IEEE Robotics and Automation Letters_, 7(3), 2022.
+arXiv: [2111.08933](https://arxiv.org/abs/2111.08933).
+
+- **Type:** paper · **Topic:** kinematics/learning · **Status:** deferred · **Priority:** medium · **Verdict:** evaluate
+- **Where used:** [`PLAN-120`](https://github.com/dartsim/dart/blob/main/docs/plans/120-inverse-kinematics-and-motion.md).
+- **Notes:** Learned diverse-solution generator to evaluate as a proposal
+  distribution for classical refinement, not as an unchecked correctness source
+  or default solver. Requires datasets, model-version diagnostics, deterministic
+  fallback, and cross-robot generalization evidence.
 
 ### `johnson-murphey-2009`
 
@@ -544,19 +1032,20 @@ MuJoCo XML (MJCF). <https://mujoco.readthedocs.io/en/stable/XMLreference.html>
 Software references that informed the experimental API shape, terminology, and
 algorithm-family choices. These are baselines/comparisons, not dependencies.
 
-| ID            | Engine                               | Used for                                               | Status     | Verdict   |
-| ------------- | ------------------------------------ | ------------------------------------------------------ | ---------- | --------- |
-| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API                 | referenced | baseline  |
-| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos      | referenced | baseline  |
-| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA      | referenced | baseline  |
-| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary       | referenced | baseline  |
-| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging              | referenced | reference |
-| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                      | referenced | reference |
-| `genesis`     | Genesis                              | entity/morph model, batched sim                        | referenced | reference |
-| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`              | referenced | reference |
-| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops                | referenced | baseline  |
-| `gaia`        | Gaia (VBD research framework)        | VBD correctness/performance baseline (`chen-2024-vbd`) | referenced | baseline  |
-| `tinyvbd`     | TinyVBD (minimal VBD reference)      | VBD algorithm reference (`chen-2024-vbd`)              | referenced | baseline  |
+| ID            | Engine                               | Used for                                                                    | Status     | Verdict   |
+| ------------- | ------------------------------------ | --------------------------------------------------------------------------- | ---------- | --------- |
+| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API                                      | referenced | baseline  |
+| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos                           | referenced | baseline  |
+| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA                           | referenced | baseline  |
+| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary                            | referenced | baseline  |
+| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging                                   | referenced | reference |
+| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                                           | referenced | reference |
+| `genesis`     | Genesis                              | entity/morph model, batched sim                                             | referenced | reference |
+| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`                                   | referenced | reference |
+| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops                                     | referenced | baseline  |
+| `gaia`        | Gaia (VBD research framework)        | VBD correctness/performance baseline (`chen-2024-vbd`)                      | referenced | baseline  |
+| `tinyvbd`     | TinyVBD (minimal VBD reference)      | VBD algorithm reference (`chen-2024-vbd`)                                   | referenced | baseline  |
+| `dojo`        | Dojo.jl                              | Dojo-style differentiable rigid-body solver evaluation (`howell-2022-dojo`) | referenced | evaluate  |
 
 ### Notes on engine verdicts
 
@@ -572,6 +1061,10 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
   Block Descent (`chen-2024-vbd`). DART's PLAN-104 VBD solver is compared
   against them for correctness and performance on matched scenes, but DART
   reimplements VBD independently and does not vendor or link them.
+- **`dojo` — evaluate:** a Julia implementation and paper/site reference for a
+  differentiable maximal-coordinate variational hard-contact NCP/IPM solver.
+  PLAN-110 uses it as method evidence for a possible second solver family, but
+  DART must first complete the Dojo gap audit and de-risking spike.
 
 Design-doc links for these comparisons live in
 [`simulation_experimental_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)

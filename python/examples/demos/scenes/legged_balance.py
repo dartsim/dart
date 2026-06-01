@@ -9,11 +9,13 @@ scene surface scales to control-loop scenarios. Full multi-link WBC controllers
 
 from __future__ import annotations
 
+from collections import deque
+
 import numpy as np
 
 import dartpy as dart
 
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _KP = 80.0
 _KD = 10.0
@@ -44,15 +46,37 @@ def build() -> SceneSetup:
     pendulum = _make_pendulum()
     world.add_skeleton(pendulum)
     joint = pendulum.get_joint(0)
+    last_tau = {"value": 0.0}
+    angle_history = deque(maxlen=120)
+    torque_history = deque(maxlen=120)
 
     def pre_step() -> None:
         q = joint.get_position(0)
         qdot = joint.get_velocity(0)
         tau = -_KP * (q - _DESIRED_ANGLE) - _KD * qdot
+        last_tau["value"] = tau
         joint.set_force(0, tau)
 
-    return SceneSetup(world=world, pre_step=pre_step,
-                      info={"controller": "PD", "kp": _KP, "kd": _KD})
+    def build_panel(builder: object, context: object) -> None:
+        q = float(joint.get_position(0))
+        qdot = float(joint.get_velocity(0))
+        angle_history.append(q)
+        torque_history.append(float(last_tau["value"]))
+        builder.text("controller: PD balance")
+        builder.text(f"target angle: {_DESIRED_ANGLE:.3f} rad")
+        builder.text(f"angle: {q:.3f} rad")
+        builder.text(f"angular velocity: {qdot:.3f} rad/s")
+        builder.text(f"torque: {last_tau['value']:.3f} N m")
+        builder.separator()
+        builder.plot_lines("Angle", list(angle_history))
+        builder.plot_lines("Torque", list(torque_history))
+
+    return SceneSetup(
+        world=world,
+        pre_step=pre_step,
+        panels=[ScenePanel("Legged Balance", build_panel)],
+        info={"controller": "PD", "kp": _KP, "kd": _KD},
+    )
 
 
 SCENE = PythonDemoScene(

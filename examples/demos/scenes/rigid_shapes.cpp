@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/config.hpp>
 
@@ -192,10 +193,11 @@ Eigen::Isometry3d makeRandomTransform()
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   const Eigen::Vector3d rotation = dart::math::Random::uniform<Eigen::Vector3d>(
       -dart::math::pi, dart::math::pi);
+  // Z-up: random lateral X/Y over the ground, random drop height along +Z.
   transform.translation() = Eigen::Vector3d(
       dart::math::Random::uniform(-1.0, 1.0),
-      dart::math::Random::uniform(0.5, 1.0),
-      dart::math::Random::uniform(-1.0, 1.0));
+      dart::math::Random::uniform(-1.0, 1.0),
+      dart::math::Random::uniform(0.5, 1.0));
   transform.linear() = dart::math::expMapRot(rotation);
   return transform;
 }
@@ -391,6 +393,9 @@ dart::simulation::WorldPtr createRigidShapesWorld(
       && !updateGroundThickness(world, config.groundThickness)) {
     throw std::runtime_error("Failed to update ground thickness");
   }
+  // shapes.skel is authored Y-up; reorient to the canonical Z-up convention
+  // (the spawn poses and gravity toggle are already Z-up).
+  reorientWorldToZUp(world);
   return world;
 }
 
@@ -467,7 +472,7 @@ dart::gui::OrbitCamera makeRigidShapesCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d::Zero();
-  camera.up = Eigen::Vector3d::UnitY();
+  camera.up = Eigen::Vector3d::UnitZ();
   camera.yaw = 0.7853981633974483;
   camera.pitch = 0.6154797086703874;
   camera.distance = 3.4641016151377544;

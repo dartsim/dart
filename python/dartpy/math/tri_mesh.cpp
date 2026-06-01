@@ -30,16 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// nanobind must include Python.h before DART/Eigen headers on glibc; otherwise
+// Python's feature macros are redefined under -Werror.
 // clang-format off
+#include <nanobind/nanobind.h>
+#include "dart/math/tri_mesh.hpp"
 #include "math/trimesh.hpp"
+// clang-format on
 
 #include <nanobind/eigen/dense.h>
-#include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/vector.h>
-
-#include "dart/math/tri_mesh.hpp"
-// clang-format on
 
 #include <memory>
 #include <vector>

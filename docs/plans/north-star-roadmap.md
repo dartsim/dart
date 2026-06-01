@@ -17,7 +17,8 @@ plan operating state.
 - **Scalable compute**: multi-core CPU, SIMD, and evidence-backed GPU planning.
 - **AI-native execution**: agents can choose, execute, verify, and revise work
   from tracked evidence.
-- **Release transition**: DART 7 hardening and DART 8 compatibility removal.
+- **Release transition**: DART 7 clean-break hardening and DART 6.16
+  compatibility support.
 
 ## Source-Of-Truth Split
 

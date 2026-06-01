@@ -9,6 +9,7 @@
  */
 
 #include "scenes.hpp"
+#include "z_up.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -86,7 +87,11 @@ dart::simulation::WorldPtr createBipedStandWorld()
         "Failed to load biped_stand world from "
         + std::string(kBipedStandWorldUri));
   }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  // The fullbody world is authored Y-up; reorient to the canonical Z-up
+  // convention. The SPD controller tracks joint angles and the balance feedback
+  // uses the sagittal (X) center-of-mass/pressure offset, both invariant under
+  // the rigid RotX(+90deg) rotation, so the biped still balances.
+  reorientWorldToZUp(world);
 
   auto ground = world->getSkeleton("ground skeleton");
   if (ground == nullptr) {
@@ -252,11 +257,11 @@ dart::gui::Panel createBipedStandPanel(
                                dart::gui::PanelContext& context) {
     builder.text("SPD standing controller with panel perturbations");
     builder.text("Press space to start simulation.");
-    builder.text("Keys: 1 +X, 2 -X, 3 +Z, 4 -Z push for 100 frames.");
+    builder.text("Keys: 1 +X, 2 -X, 3 +Y, 4 -Y push for 100 frames.");
     builder.text("1: Push robot with +50 along x-axis N for 100 frames");
     builder.text("2: Push robot with -50 along x-axis N for 100 frames");
-    builder.text("3: Push robot with +50 along z-axis N for 100 frames");
-    builder.text("4: Push robot with -50 along z-axis N for 100 frames");
+    builder.text("3: Push robot with +50 along y-axis N for 100 frames");
+    builder.text("4: Push robot with -50 along y-axis N for 100 frames");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -274,12 +279,12 @@ dart::gui::Panel createBipedStandPanel(
     if (builder.button("Push -X")) {
       controller->perturb(Eigen::Vector3d(-50.0, 0.0, 0.0));
     }
-    if (builder.button("Push +Z")) {
-      controller->perturb(Eigen::Vector3d(0.0, 0.0, 50.0));
+    if (builder.button("Push +Y")) {
+      controller->perturb(Eigen::Vector3d(0.0, 50.0, 0.0));
     }
     builder.sameLine();
-    if (builder.button("Push -Z")) {
-      controller->perturb(Eigen::Vector3d(0.0, 0.0, -50.0));
+    if (builder.button("Push -Y")) {
+      controller->perturb(Eigen::Vector3d(0.0, -50.0, 0.0));
     }
     builder.text(
         "impulse frames: " + std::to_string(controller->impulseDuration()));
@@ -326,9 +331,9 @@ std::vector<dart::gui::KeyboardAction> createBipedStandKeyboardActions(
   actions.push_back(makeBipedStandAction(
       controller, '2', "Push -X", Eigen::Vector3d(-50.0, 0.0, 0.0)));
   actions.push_back(makeBipedStandAction(
-      controller, '3', "Push +Z", Eigen::Vector3d(0.0, 0.0, 50.0)));
+      controller, '3', "Push +Y", Eigen::Vector3d(0.0, 50.0, 0.0)));
   actions.push_back(makeBipedStandAction(
-      controller, '4', "Push -Z", Eigen::Vector3d(0.0, 0.0, -50.0)));
+      controller, '4', "Push -Y", Eigen::Vector3d(0.0, -50.0, 0.0)));
   return actions;
 }
 
