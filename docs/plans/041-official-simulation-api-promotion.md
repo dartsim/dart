@@ -168,9 +168,9 @@ Current intended sequence:
    the ECS facade in `python/dartpy/simulation/world.cpp`; remove the old
    `nb::class_<dart::simulation::World>(m, "World")` in the same change so the
    `simulation` module never holds two C++ types under the name `"World"`; and
-   regenerate stubs/docs for the final Python shape. Retarget all 159 matched
+   regenerate stubs/docs for the final Python shape. Retarget all 158 matched
    in-tree consumer files: 35 under `dart/`, 1 under `dartsim/`, 47 under
-   `examples/`, 5 under `python/`, and 71 under `tests/`. Keep the public header
+   `examples/`, 4 under `python/`, and 71 under `tests/`. Keep the public header
    name `dart/simulation/world.hpp`; do not hand-author
    `dart/simulation/World.hpp`; and preflight active solver and loader PR heads
    with `git merge-tree`. Gate with `pixi run build`, `pixi run test-unit`,
