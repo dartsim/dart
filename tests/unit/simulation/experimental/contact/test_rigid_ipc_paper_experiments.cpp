@@ -1627,6 +1627,51 @@ TEST(RigidIpcPaperExperiments, ErlebenWedgesFixtureRowStaysSeparated)
   EXPECT_TRUE(moving.getLinearVelocity().allFinite());
 }
 
+TEST(RigidIpcPaperExperiments, ErlebenSpikeAndWedgeFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions wedgeOptions;
+  wedgeOptions.isStatic = true;
+  wedgeOptions.position = Eigen::Vector3d(0.0, 0.0, -3.0);
+  auto wedge
+      = world.addRigidBody("erleben_fixed_wedge_for_spike", wedgeOptions);
+  wedge.setCollisionShape(makeErlebenWedgeMesh());
+
+  sx::RigidBodyOptions spikeOptions;
+  spikeOptions.mass = 1.0;
+  spikeOptions.position = Eigen::Vector3d(0.0, 0.0, 3.0001);
+  spikeOptions.orientation
+      = Eigen::AngleAxisd(std::numbers::pi, Eigen::Vector3d::UnitY());
+  auto spike = world.addRigidBody("erleben_spike_on_wedge", spikeOptions);
+  spike.setCollisionShape(makeErlebenSpikeMesh());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_TRUE(spike.getTranslation().allFinite());
+  EXPECT_TRUE(spike.getLinearVelocity().allFinite());
+}
+
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
 {
   sx::World world;

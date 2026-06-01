@@ -266,6 +266,21 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "planned until they have topology-specific DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/erleben/spike-and-wedge.json": {
+        "test": "ErlebenSpikeAndWedgeFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited Erleben spike-and-wedge row: an inverted "
+            "spike rests on a fixed upright wedge, activates rigid IPC "
+            "contact, stays finite, and reports no meaningful native overlap "
+            "after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned spike-on-wedge runtime coverage for the "
+            "3D unit-test fixture mechanism. Crack and hole Erleben rows "
+            "remain planned until they have topology-specific DART runtime "
+            "evidence."
+        ),
+    },
     "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json": {
         "test": "CubeSettlesOnTwoTrianglePlaneFixtureRow",
         "expected_invariant": (

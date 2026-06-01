@@ -8156,17 +8156,17 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited Erleben spike-and-wedge row: an inverted spike rests on a fixed upright wedge, activates rigid IPC contact, stays finite, and reports no meaningful native overlap after each step.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::spike_and_wedge",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.ErlebenSpikeAndWedgeFixtureRowStaysSeparated",
       "required_assets_or_importer": [
         "meshes/erleben/spike.obj",
         "meshes/erleben/wedge.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::spike_and_wedge",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSpikeAndWedgeFixtureRowStaysSeparated'",
+      "notes_or_gap": "Covered by DART-owned spike-on-wedge runtime coverage for the 3D unit-test fixture mechanism. Crack and hole Erleben rows remain planned until they have topology-specific DART runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/erleben/spike-in-crack.json",
