@@ -45,6 +45,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/plane_shape.hpp>
@@ -812,6 +813,41 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_EQ(convexShape->triangles[3], Eigen::Vector3i(1, 2, 3));
   EXPECT_TRUE(convexShape->localTransform.isApprox(
       translation(-0.05, 0.15, 0.25), 1e-12));
+
+  // A HeightmapShape is triangulated into the experimental mesh carrier.
+  auto heightmapSkeleton = dd::Skeleton::create("heightmap_collision");
+  auto [heightmapJoint, heightmapBody]
+      = heightmapSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(
+          nullptr);
+  heightmapJoint->setName("joint");
+  heightmapBody->setName("body");
+  auto heightmap = std::make_shared<dd::HeightmapShaped>();
+  heightmap->setScale(Eigen::Vector3d(0.5, 0.25, 2.0));
+  const std::vector<double> heights = {0.0, 1.0, 2.0, 3.0};
+  heightmap->setHeightField(2u, 2u, heights);
+  auto* heightmapShapeNode
+      = heightmapBody->createShapeNodeWith<dd::CollisionAspect>(heightmap);
+  heightmapShapeNode->setRelativeTransform(translation(0.05, -0.15, 0.2));
+
+  sx::World heightmapWorld;
+  auto heightmapMultibody
+      = sx::io::buildMultibodyFromSkeleton(heightmapWorld, *heightmapSkeleton);
+  const auto heightmapLink = heightmapMultibody.getLink("body");
+  ASSERT_TRUE(heightmapLink.has_value());
+  ASSERT_TRUE(heightmapLink->hasCollisionShape());
+  const auto heightmapShape = heightmapLink->getCollisionShape();
+  ASSERT_TRUE(heightmapShape.has_value());
+  EXPECT_EQ(heightmapShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(heightmapShape->vertices.size(), 4u);
+  ASSERT_EQ(heightmapShape->triangles.size(), 2u);
+  EXPECT_TRUE(heightmapShape->vertices[0].isApprox(
+      Eigen::Vector3d(-0.25, 0.125, 0.0), 1e-12));
+  EXPECT_TRUE(heightmapShape->vertices[3].isApprox(
+      Eigen::Vector3d(0.25, -0.125, 6.0), 1e-12));
+  EXPECT_EQ(heightmapShape->triangles[0], Eigen::Vector3i(0, 1, 2));
+  EXPECT_EQ(heightmapShape->triangles[1], Eigen::Vector3i(1, 3, 2));
+  EXPECT_TRUE(heightmapShape->localTransform.isApprox(
+      translation(0.05, -0.15, 0.2), 1e-12));
 }
 
 //==============================================================================

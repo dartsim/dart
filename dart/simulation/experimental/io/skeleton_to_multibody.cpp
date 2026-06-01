@@ -47,6 +47,7 @@
 #include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
@@ -65,6 +66,7 @@
 
 #include <Eigen/Geometry>
 
+#include <limits>
 #include <numbers>
 #include <optional>
 #include <string>
@@ -293,10 +295,59 @@ std::optional<CollisionShape> makeMeshCollisionShape(
   return CollisionShape::makeMesh(std::move(vertices), std::move(triangles));
 }
 
-/// The first sphere, box, capsule, cylinder, plane, triangular mesh, or convex
-/// mesh collision shape of a body (a shape node with a collision aspect), as an
-/// experimental CollisionShape. The shape node's relative transform becomes the
-/// CollisionShape local transform.
+template <typename S>
+std::optional<CollisionShape> makeHeightmapCollisionShape(
+    const dynamics::HeightmapShape<S>& heightmap)
+{
+  const auto width = heightmap.getWidth();
+  const auto depth = heightmap.getDepth();
+  if (width < 2 || depth < 2) {
+    return std::nullopt;
+  }
+
+  constexpr auto maxInt
+      = static_cast<std::size_t>(std::numeric_limits<int>::max());
+  if (width > maxInt / depth || width * depth > maxInt) {
+    return std::nullopt;
+  }
+
+  const auto& field = heightmap.getHeightField();
+  const auto scale = heightmap.getScale().template cast<double>();
+  const double xOffset = 0.5 * static_cast<double>(width - 1);
+  const double yOffset = 0.5 * static_cast<double>(depth - 1);
+
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(width * depth);
+  for (std::size_t y = 0; y < depth; ++y) {
+    for (std::size_t x = 0; x < width; ++x) {
+      vertices.emplace_back(
+          scale.x() * (static_cast<double>(x) - xOffset),
+          -scale.y() * (static_cast<double>(y) - yOffset),
+          scale.z() * static_cast<double>(field(y, x)));
+    }
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve((width - 1) * (depth - 1) * 2);
+  for (std::size_t y = 0; y + 1 < depth; ++y) {
+    for (std::size_t x = 0; x + 1 < width; ++x) {
+      const int v00 = static_cast<int>(y * width + x);
+      const int v10 = static_cast<int>(y * width + (x + 1));
+      const int v01 = static_cast<int>((y + 1) * width + x);
+      const int v11 = static_cast<int>((y + 1) * width + (x + 1));
+
+      triangles.emplace_back(v00, v10, v01);
+      triangles.emplace_back(v10, v11, v01);
+    }
+  }
+
+  return CollisionShape::makeMesh(std::move(vertices), std::move(triangles));
+}
+
+/// The first sphere, box, capsule, cylinder, plane, triangular mesh, convex
+/// mesh, or heightmap collision shape of a body (a shape node with a collision
+/// aspect), as an experimental CollisionShape. The shape node's relative
+/// transform becomes the CollisionShape local transform.
 /// Returns nullopt when the body has no representable collision shape;
 /// unsupported mesh-like variants and additional shapes per body are skipped.
 std::optional<CollisionShape> translateCollisionShape(
@@ -342,11 +393,19 @@ std::optional<CollisionShape> translateCollisionShape(
               = static_cast<const dynamics::ConvexMeshShape&>(*shape);
           result = makeMeshCollisionShape(
               convex.getMesh(), Eigen::Vector3d::Ones());
+        } else if (type == dynamics::HeightmapShaped::getStaticType()) {
+          const auto& heightmap
+              = static_cast<const dynamics::HeightmapShaped&>(*shape);
+          result = makeHeightmapCollisionShape(heightmap);
+        } else if (type == dynamics::HeightmapShapef::getStaticType()) {
+          const auto& heightmap
+              = static_cast<const dynamics::HeightmapShapef&>(*shape);
+          result = makeHeightmapCollisionShape(heightmap);
         }
         if (result.has_value()) {
           result->localTransform = shapeNode->getRelativeTransform();
         }
-        // Soft and heightmap mesh-like variants are not yet translated.
+        // Soft mesh variants are not yet translated.
       });
   return result;
 }
