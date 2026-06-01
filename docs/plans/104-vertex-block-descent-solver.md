@@ -103,18 +103,21 @@ current 12D tangent stencil.
 The first private rigid-body foundation adds a 6-DOF block accumulator,
 world-frame quaternion tangent updates, an inertia term, a 6x6 block solve, and
 a scalar rigid point-attachment row plus two-body point-pair row stamping with
-focused tests.
+focused tests. Point-pair rows now also carry a scalar offset and private
+constructors for rigid contact-normal rows and bounded contact-friction tangent
+rows, giving future dynamic/rigid contact manifold generation a narrow 6-DOF
+row target.
 Private dynamic/rigid contact identity helpers now pack contact feature
 kind/index IDs, canonicalize two-endpoint row keys, and create normal/friction
-row descriptors, but they do not generate or solve dynamic/rigid contact rows
-yet.
+row descriptors, but they do not generate or solve dynamic/rigid contact
+manifolds yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
 completeness beyond current static half-space and lagged self-contact rows,
-dynamic/rigid contact row generation, rigid/articulated joint rows, rigid/soft
+dynamic/rigid contact manifold generation, rigid/articulated joint rows, rigid/soft
 coupling, GPU parity, demos, and benchmark packets remain open.
 
 ## Relationship To PLAN-081

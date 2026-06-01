@@ -30,6 +30,8 @@
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
+#include <cmath>
+
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
@@ -236,6 +238,96 @@ TEST(AvbdRigidBlock, PointPairDualUpdateUsesBounds)
 
   EXPECT_DOUBLE_EQ(updated.lambda, 2.0);
   EXPECT_DOUBLE_EQ(updated.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, ContactNormalPointPairUsesGapOffsetAndBounds)
+{
+  vbd::AvbdRigidBodyState stateA;
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(0.1, 0.0, 0.0);
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 100.0;
+
+  const vbd::AvbdRigidPointPairRow row = vbd::makeAvbdRigidContactNormalRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      -Vec3::UnitX(),
+      /*targetDistance=*/0.2,
+      rowState);
+
+  EXPECT_DOUBLE_EQ(row.bounds.lower, 0.0);
+  EXPECT_TRUE(std::isinf(row.bounds.upper));
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(stateA, stateB, row), 0.1, 1e-12);
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const double forceMagnitude = vbd::addAvbdRigidPointPair(
+      blockA, blockB, stateA, stateB, row, /*alpha=*/0.0);
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 10.0);
+  EXPECT_NEAR(
+      (blockA.force.head<3>() - Vec3(-10.0, 0.0, 0.0)).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (blockB.force.head<3>() - Vec3(10.0, 0.0, 0.0)).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(blockA.force.tail<3>().norm(), 0.0, 1e-12);
+  EXPECT_NEAR(blockB.force.tail<3>().norm(), 0.0, 1e-12);
+  EXPECT_GE(
+      blockA.hessian.selfadjointView<Eigen::Lower>().eigenvalues().minCoeff(),
+      -1e-12);
+  EXPECT_GE(
+      blockB.hessian.selfadjointView<Eigen::Lower>().eigenvalues().minCoeff(),
+      -1e-12);
+
+  stateB.position = Vec3(0.3, 0.0, 0.0);
+  const vbd::AvbdScalarRowState separated = vbd::updateAvbdRigidPointPairRow(
+      row.state, stateA, stateB, row, vbd::AvbdRigidPointAttachmentOptions{});
+  EXPECT_DOUBLE_EQ(separated.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(separated.stiffness, row.state.stiffness);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, ContactFrictionPointPairUsesLaggedRelativeOffset)
+{
+  vbd::AvbdRigidBodyState stateA;
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(0.0, 0.4, 0.0);
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 100.0;
+
+  const vbd::AvbdRigidPointPairRow row
+      = vbd::makeAvbdRigidContactFrictionTangentRow(
+          Vec3::Zero(),
+          Vec3::Zero(),
+          2.0 * Vec3::UnitY(),
+          Vec3(0.0, 0.1, 0.0),
+          /*forceLimit=*/5.0,
+          rowState);
+
+  EXPECT_NEAR(row.axis.norm(), 1.0, 1e-12);
+  EXPECT_NEAR(row.offset, -0.1, 1e-12);
+  EXPECT_DOUBLE_EQ(row.bounds.lower, -5.0);
+  EXPECT_DOUBLE_EQ(row.bounds.upper, 5.0);
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(stateA, stateB, row), 0.3, 1e-12);
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const double forceMagnitude = vbd::addAvbdRigidPointPair(
+      blockA, blockB, stateA, stateB, row, /*alpha=*/0.0);
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 5.0);
+  EXPECT_NEAR(
+      (blockA.force.head<3>() - Vec3(0.0, 5.0, 0.0)).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (blockB.force.head<3>() - Vec3(0.0, -5.0, 0.0)).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(blockA.force.tail<3>().norm(), 0.0, 1e-12);
+  EXPECT_NEAR(blockB.force.tail<3>().norm(), 0.0, 1e-12);
 }
 
 //==============================================================================

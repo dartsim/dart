@@ -151,8 +151,11 @@ Paper audit:
     `applyAvbdRigidBodyStep`, scalar rigid point-attachment rows, and private
     two-body rigid point-pair row stamping in
     `dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp`,
-    with focused `AvbdRigidBlock.*` coverage. This is not World wiring, not
-    rigid contact manifolds, and not articulated joint support yet.
+    with focused `AvbdRigidBlock.*` coverage. Point-pair rows now also carry a
+    scalar offset and private constructors for rigid contact-normal and
+    bounded contact-friction tangent rows so future contact-manifold generation
+    can reuse the same 6-DOF stamping path. This is not World wiring, not
+    contact-manifold generation, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
@@ -192,7 +195,7 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   dynamic/rigid contact row generation, rigid contact/joint rows, or
+   dynamic/rigid contact manifold row generation, rigid contact/joint rows, or
    rigid/articulated World wiring are the preferred next gaps now that static
    box feature IDs, private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
@@ -200,8 +203,8 @@ numbers.
    finite-stiffness rows, self-contact normals, pairwise static/dynamic friction
    switching, supported World self-contact friction rows, pure-tet self-contact
    friction rows, combined static/self-contact friction row coexistence, and the
-   first private 6-DOF rigid block plus two-body point-pair row foundation have
-   narrow CPU paths.
+   first private 6-DOF rigid block plus contact/friction point-pair row
+   foundation have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

@@ -277,12 +277,13 @@ its own line so status updates remain git-history friendly.
   their generalized tangential dual into the current 12D tangent stencil. The
   first private rigid foundation adds a 6-DOF block accumulator, world-frame
   quaternion tangent update, inertia term, block solve, scalar rigid
-  point-attachment row, and two-body point-pair row stamping. Private
+  point-attachment row, two-body point-pair row stamping, and private
+  point-pair contact/friction row constructors. Private
   dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
   normal/friction row descriptor helpers have started, but no dynamic/rigid
-  contact rows are generated yet. This is not a scene-level parity claim. The
-  next local slice is dynamic/rigid contact row generation, rigid contact/joint
-  rows, or rigid/articulated World wiring.
+  contact manifolds are generated yet. This is not a scene-level parity claim.
+  The next local slice is dynamic/rigid contact manifold row generation, rigid
+  contact/joint rows, or rigid/articulated World wiring.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

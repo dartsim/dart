@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/experimental/detail/deformable_vbd/avbd_constraint.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/contact_kernel.hpp>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
@@ -133,6 +134,7 @@ struct AvbdRigidPointPairRow
   Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
   Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
   Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
+  double offset = 0.0;
   AvbdScalarRowState state;
   double previousConstraintValue = 0.0;
   AvbdScalarRowBounds bounds{
@@ -205,6 +207,70 @@ inline Eigen::Vector3d avbdRigidBodyWorldPoint(
 }
 
 //==============================================================================
+inline Eigen::Vector3d normalizedAvbdRigidPointPairAxis(
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& fallback = Eigen::Vector3d::UnitX())
+{
+  const double norm = axis.norm();
+  if (axis.allFinite() && norm > 0.0) {
+    return axis / norm;
+  }
+  return fallback;
+}
+
+//==============================================================================
+inline Eigen::Vector3d avbdRigidPointPairRelativePosition(
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairRow& row)
+{
+  return avbdRigidBodyWorldPoint(stateB, row.localPointB)
+         - avbdRigidBodyWorldPoint(stateA, row.localPointA);
+}
+
+//==============================================================================
+inline AvbdRigidPointPairRow makeAvbdRigidContactNormalRow(
+    const Eigen::Vector3d& localPointA,
+    const Eigen::Vector3d& localPointB,
+    const Eigen::Vector3d& normalOnA,
+    double targetDistance,
+    AvbdScalarRowState state,
+    double previousConstraintValue = 0.0)
+{
+  AvbdRigidPointPairRow row;
+  row.localPointA = localPointA;
+  row.localPointB = localPointB;
+  row.axis = normalizedAvbdRigidPointPairAxis(normalOnA);
+  row.offset = targetDistance;
+  row.state = state;
+  row.previousConstraintValue = previousConstraintValue;
+  row.bounds = avbdContactNormalBounds();
+  return row;
+}
+
+//==============================================================================
+inline AvbdRigidPointPairRow makeAvbdRigidContactFrictionTangentRow(
+    const Eigen::Vector3d& localPointA,
+    const Eigen::Vector3d& localPointB,
+    const Eigen::Vector3d& tangentOnA,
+    const Eigen::Vector3d& stepStartRelativePosition,
+    double forceLimit,
+    AvbdScalarRowState state,
+    double previousConstraintValue = 0.0)
+{
+  AvbdRigidPointPairRow row;
+  row.localPointA = localPointA;
+  row.localPointB = localPointB;
+  row.axis
+      = normalizedAvbdRigidPointPairAxis(tangentOnA, Eigen::Vector3d::UnitY());
+  row.offset = -row.axis.dot(stepStartRelativePosition);
+  row.state = state;
+  row.previousConstraintValue = previousConstraintValue;
+  row.bounds = avbdFrictionTangentBounds(forceLimit);
+  return row;
+}
+
+//==============================================================================
 inline double avbdRigidPointAttachmentConstraintValue(
     const AvbdRigidBodyState& state, const AvbdRigidPointAttachmentRow& row)
 {
@@ -231,9 +297,9 @@ inline double avbdRigidPointPairConstraintValue(
     const AvbdRigidBodyState& stateB,
     const AvbdRigidPointPairRow& row)
 {
-  return row.axis.dot(
-      avbdRigidBodyWorldPoint(stateB, row.localPointB)
-      - avbdRigidBodyWorldPoint(stateA, row.localPointA));
+  return row.offset
+         + row.axis.dot(
+             avbdRigidPointPairRelativePosition(stateA, stateB, row));
 }
 
 //==============================================================================
