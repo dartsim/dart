@@ -58,7 +58,8 @@ back to sequential impulses. The private rigid contact snapshot also derives box
 face/edge/corner endpoint feature IDs and scopes row ordinals per canonical
 endpoint pair so unrelated manifolds do not perturb row identity. The private
 rigid block path also has point-joint linear, angular, and combined row
-builders for fixed-anchor translation and orientation constraints.
+builders for fixed-anchor translation and orientation constraints, with
+step-start previous constraint values seeded for AVBD alpha regularization.
 
 ## Current Branch
 
@@ -97,8 +98,9 @@ point-pair constructors, paired friction-cone helpers, and a private serial
 rigid row driver plus private rigid contact-manifold row builder and
 World-contact snapshot/solve/writeback helpers plus a combined private wrapper,
 first internal contact-stage activation, box-feature/pair-scoped row identity,
-and private point-joint linear/angular/combined rows exist. Keep the supported
-envelope narrow and preserve fallback coverage for topology mixes,
+and private point-joint linear/angular/combined rows with step-start previous
+constraint values exist. Keep the supported envelope narrow and preserve
+fallback coverage for topology mixes,
 damping/acceleration, parallel solves, and unsupported requested row
 combinations.
 
@@ -154,8 +156,9 @@ combinations.
   two-endpoint contact row keys, derive private box face/edge/corner endpoint
   feature IDs for rigid snapshots, scope row ordinals per canonical endpoint
   pair, and create normal/friction/joint-linear/joint-angular row descriptors,
-  but full narrow-phase feature extraction and articulated World joint wiring
-  are not solved yet.
+  with private point-joint rows now seeding step-start previous constraint
+  values, but full narrow-phase feature extraction and articulated World joint
+  wiring are not solved yet.
 
 ## How to Resume
 

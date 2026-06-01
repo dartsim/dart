@@ -740,6 +740,7 @@ TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedLinearRows)
 
   ASSERT_EQ(linearInventory.size(), 3u);
   ASSERT_EQ(linearRows.size(), 3u);
+  const Eigen::Vector3d expectedPreviousLinear(-0.3, 0.2, -0.2);
   for (std::uint8_t axis = 0; axis < 3u; ++axis) {
     const auto& descriptor = linearInventory[axis].descriptor;
     EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::JointLinear);
@@ -755,6 +756,10 @@ TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedLinearRows)
     EXPECT_EQ(linearRows[axis].bodyB, 1u);
     EXPECT_NEAR(
         (linearRows[axis].row.axis - Vec3::Unit(axis)).norm(), 0.0, 1e-12);
+    EXPECT_NEAR(
+        linearRows[axis].row.previousConstraintValue,
+        expectedPreviousLinear[axis],
+        1e-12);
   }
 
   linearInventory[0].state.lambda = 8.0;
@@ -855,6 +860,7 @@ TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedAngularRows)
 
   ASSERT_EQ(angularInventory.size(), 3u);
   ASSERT_EQ(angularRows.size(), 3u);
+  const Eigen::Vector3d expectedPreviousAngular(0.0, 0.0, -0.25);
   for (std::uint8_t axis = 0; axis < 3u; ++axis) {
     const auto& descriptor = angularInventory[axis].descriptor;
     EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::JointAngular);
@@ -875,6 +881,10 @@ TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedAngularRows)
          - rotationZ(0.25).toRotationMatrix())
             .norm(),
         0.0,
+        1e-12);
+    EXPECT_NEAR(
+        angularRows[axis].row.previousConstraintValue,
+        expectedPreviousAngular[axis],
         1e-12);
   }
 

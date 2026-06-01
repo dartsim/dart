@@ -1081,6 +1081,9 @@ inline void buildAvbdRigidPointJointRows(
       indexedRow.row.axis = Eigen::Vector3d::Unit(axis);
       indexedRow.row.state = record.state;
       indexedRow.row.bounds = record.descriptor.bounds;
+      indexedRow.row.previousConstraintValue
+          = avbdRigidPointPairConstraintValue(
+              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
       linearRows.push_back(indexedRow);
     }
   }
@@ -1138,6 +1141,9 @@ inline void buildAvbdRigidPointJointAngularRows(
           Eigen::Vector3d::Unit(axis),
           record.state);
       indexedRow.row.bounds = record.descriptor.bounds;
+      indexedRow.row.previousConstraintValue
+          = avbdRigidAngularPairConstraintValue(
+              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
       angularRows.push_back(indexedRow);
     }
   }

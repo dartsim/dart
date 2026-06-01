@@ -296,7 +296,8 @@ its own line so status updates remain git-history friendly.
   feature IDs and scopes row ordinals per canonical endpoint pair for narrower
   warm-start persistence, and the private rigid row path now has point-joint
   linear, angular, and combined row builders for fixed-anchor translation and
-  orientation constraints. The next local slice is full narrow-phase feature
+  orientation constraints, with step-start previous values seeded for AVBD
+  alpha regularization. The next local slice is full narrow-phase feature
   extraction, contact-complete rigid joint rows, or rigid/articulated World
   integration.
 - Gate: VBD progress is not complete until the implementation distinguishes

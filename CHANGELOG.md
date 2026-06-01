@@ -588,8 +588,9 @@
     and scopes contact row ordinals per canonical endpoint pair so unrelated
     contact manifolds do not perturb warm-start identity. Added private rigid
     point-joint linear, angular, and combined AVBD row builders so fixed-anchor
-    joint translation and orientation rows can share the rigid row driver; this
-    is not articulated World joint wiring yet.
+    joint translation and orientation rows can share the rigid row driver; the
+    builders seed step-start constraint values for AVBD alpha regularization.
+    This is not articulated World joint wiring yet.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
