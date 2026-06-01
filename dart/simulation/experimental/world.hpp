@@ -53,6 +53,15 @@
 
 namespace dart::simulation::experimental {
 
+/// Options controlling `World::collide()` query filtering.
+struct CollisionQueryOptions
+{
+  /// Include contacts between different links that belong to the same
+  /// multibody. Enabled by default to preserve explicit self-contact queries
+  /// and the articulated same-multibody contact solver path.
+  bool includeSameMultibodyLinkPairs = true;
+};
+
 class DART_EXPERIMENTAL_API World
 {
 public:
@@ -200,13 +209,21 @@ public:
   // Collision queries
   //--------------------------------------------------------------------------
 
-  /// Run a collision query over all rigid bodies that have a collision shape.
+  /// Run a collision query over all bodies that have a collision shape.
   ///
   /// This is a query, not a solver: it reports contact points (position,
   /// world-frame normal from bodyA toward bodyB, and penetration depth) using
-  /// the current body world transforms. It does not modify body state. Bodies
-  /// without a collision shape are ignored.
+  /// the current body world transforms. It does not modify body state. Rigid
+  /// bodies and multibody links without a collision shape are ignored.
   [[nodiscard]] std::vector<Contact> collide();
+
+  /// Run a collision query with explicit filtering options.
+  ///
+  /// `includeSameMultibodyLinkPairs=false` filters link-vs-link contacts within
+  /// the same multibody while preserving rigid-body pairs, link-vs-rigid-body
+  /// pairs, and link-vs-link contacts across different multibodies.
+  [[nodiscard]] std::vector<Contact> collide(
+      const CollisionQueryOptions& options);
 
   //--------------------------------------------------------------------------
   // Serialization

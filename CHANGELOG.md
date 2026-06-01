@@ -820,6 +820,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     loading imports every representable collision shape node on a body, binary
     serialization stores the full shape list, and `World::collide()` skips
     same-entity shape pairs so compound pieces do not self-collide.
+  - Added `CollisionQueryOptions` for experimental collision queries, including
+    an explicit `includeSameMultibodyLinkPairs` / dartpy
+    `include_same_multibody_link_pairs` switch to filter same-multibody link
+    self-collision pairs without changing the default query behavior.
   - Added an experimental articulated contact response: multibody links with
     collision shapes now rest on static rigid-body obstacles. `World::step()`
     resolves each link-vs-static contact with a unilateral normal impulse using

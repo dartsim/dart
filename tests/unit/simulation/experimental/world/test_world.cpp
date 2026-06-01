@@ -3210,6 +3210,59 @@ TEST(World, CollisionQueryRefreshesDirtyLinkTransforms)
   EXPECT_TRUE(sawMovedLink);
 }
 
+// Test that collision-query options can filter self-collision pairs within a
+// multibody while preserving the default same-multibody contact behavior.
+TEST(World, CollisionQueryCanFilterSameMultibodyLinkPairs)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  base.setCollisionShape(sx::CollisionShape::makeSphere(0.75));
+
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitX();
+  auto link = robot.addLink("link", base, spec);
+  link.setCollisionShape(sx::CollisionShape::makeSphere(0.75));
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  world.enterSimulationMode();
+
+  bool sawSameMultibodyPair = false;
+  const auto defaultContacts = world.collide();
+  for (const auto& contact : defaultContacts) {
+    const bool bothLinks = contact.bodyA.isLink() && contact.bodyB.isLink();
+    const bool namesMatch = (contact.bodyA.getName() == "base"
+                             && contact.bodyB.getName() == "link")
+                            || (contact.bodyA.getName() == "link"
+                                && contact.bodyB.getName() == "base");
+    sawSameMultibodyPair = sawSameMultibodyPair || (bothLinks && namesMatch);
+  }
+  EXPECT_TRUE(sawSameMultibodyPair);
+
+  sx::CollisionQueryOptions options;
+  options.includeSameMultibodyLinkPairs = false;
+  EXPECT_TRUE(world.collide(options).empty());
+
+  Eigen::Isometry3d nearPose = Eigen::Isometry3d::Identity();
+  nearPose.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  obstacle.setTransform(nearPose);
+
+  const auto filteredContacts = world.collide(options);
+  ASSERT_FALSE(filteredContacts.empty());
+  for (const auto& contact : filteredContacts) {
+    EXPECT_TRUE(contact.bodyA.isRigidBody() || contact.bodyB.isRigidBody());
+  }
+}
+
 // Test that a multibody link with a collision shape rests on a static ground
 // via the articulated contact response (a fixed-base prismatic "leg" drops
 // under gravity and stops where its sphere meets the ground).

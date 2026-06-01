@@ -2226,6 +2226,49 @@ def test_experimental_collision_query_includes_links():
     assert saw_rigid_body
 
 
+def test_experimental_collision_query_can_filter_same_multibody_link_pairs():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    robot = world.add_multibody("robot")
+    base = robot.add_link("base")
+    base.set_collision_shape(sx.CollisionShape.sphere(0.75))
+
+    link = robot.add_link(
+        "link",
+        parent=base,
+        joint=sx.JointSpec(name="slider", type=sx.JointType.PRISMATIC),
+    )
+    link.set_collision_shape(sx.CollisionShape.sphere(0.75))
+
+    obstacle = world.add_rigid_body("obstacle", position=(10.0, 0.0, 0.0))
+    obstacle.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    world.enter_simulation_mode()
+
+    default_contacts = world.collide()
+    assert any(
+        contact.body_a.is_link
+        and contact.body_b.is_link
+        and {contact.body_a.name, contact.body_b.name} == {"base", "link"}
+        for contact in default_contacts
+    )
+
+    options = sx.CollisionQueryOptions(include_same_multibody_link_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_same_multibody_link_pairs=False" in repr(options)
+
+    obstacle.transform = _translation_transform(0.2, 0.0, 0.0)
+
+    filtered_contacts = world.collide(options)
+    assert len(filtered_contacts) >= 1
+    assert all(
+        contact.body_a.is_rigid_body or contact.body_b.is_rigid_body
+        for contact in filtered_contacts
+    )
+
+
 def test_experimental_contact_stops_approaching_bodies():
     sx = _simulation_experimental()
 

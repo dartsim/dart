@@ -260,6 +260,14 @@ representable collision shape nodes in the model-loading bridge, and skipped for
 same-entity self collision in `World::collide()`. Deformable obstacle barriers
 still consume the first sphere/box shape only.
 
+**(DONE) First collision-query filtering option.** `CollisionQueryOptions`
+adds an explicit `includeSameMultibodyLinkPairs` switch (dartpy:
+`include_same_multibody_link_pairs`) for `World::collide()`. The default remains
+`true` so existing same-multibody self-contact queries and articulated solver
+paths are unchanged; setting it to `false` filters link-vs-link pairs within the
+same multibody while preserving rigid-body, link-vs-rigid-body, and
+cross-multibody link contacts. Covered by C++ and dartpy tests.
+
 **Resume here — Subsystem A (the remaining headline gap):**
 
 **Subsystem A — coupled boxed-LCP.** Reorder the `World::step` pipeline to

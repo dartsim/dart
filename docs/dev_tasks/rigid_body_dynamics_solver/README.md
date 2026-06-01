@@ -28,8 +28,10 @@ solver** under a multi-solver, multi-physics architecture.
       `MeshShape`/`ConvexMeshShape`/`HeightmapShape`/`SoftMeshShape`
       model-loading translation, multiple collision shapes per body/link, and
       `World::collide()` query bridging to the native engine, returning
-      `Contact` points; C++ + dartpy + tests. Remaining: self-collision/
-      filtering, broad-phase pruning, persistent collision world).
+      `Contact` points; C++ + dartpy + tests. Filtering started with
+      `CollisionQueryOptions::includeSameMultibodyLinkPairs` /
+      dartpy `include_same_multibody_link_pairs`. Remaining: broader
+      collision filtering, broad-phase pruning, persistent collision world).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
       contact solver between free rigid bodies with accumulated normal impulses,
       restitution, two-tangent Coulomb friction, positional correction, and a

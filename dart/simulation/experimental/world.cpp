@@ -1726,6 +1726,12 @@ void World::step(
 //==============================================================================
 std::vector<Contact> World::collide()
 {
+  return collide(CollisionQueryOptions{});
+}
+
+//==============================================================================
+std::vector<Contact> World::collide(const CollisionQueryOptions& options)
+{
   namespace ncol = dart::collision::native;
 
   ncol::CollisionWorld collisionWorld;
@@ -1735,11 +1741,25 @@ std::vector<Contact> World::collide()
   struct ObjectEntry
   {
     entt::entity entity;
+    entt::entity multibody;
     ncol::CollisionObject object;
   };
   std::vector<ObjectEntry> entries;
 
+  const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
+    auto view = m_registry.view<comps::MultibodyStructure>();
+    for (auto multibody : view) {
+      const auto& structure = view.get<comps::MultibodyStructure>(multibody);
+      if (std::find(structure.links.begin(), structure.links.end(), linkEntity)
+          != structure.links.end()) {
+        return multibody;
+      }
+    }
+    return static_cast<entt::entity>(entt::null);
+  };
+
   const auto addEntry = [&](entt::entity entity,
+                            entt::entity multibody,
                             const CollisionShape& collisionShape,
                             const Eigen::Isometry3d& pose) {
     std::unique_ptr<ncol::Shape> shape;
@@ -1769,7 +1789,9 @@ std::vector<Contact> World::collide()
     }
     const Eigen::Isometry3d shapePose = pose * collisionShape.localTransform;
     entries.push_back(
-        {entity, collisionWorld.createObject(std::move(shape), shapePose)});
+        {entity,
+         multibody,
+         collisionWorld.createObject(std::move(shape), shapePose)});
   };
 
   // Rigid bodies pose their collision shapes from the rigid-body transform.
@@ -1785,7 +1807,7 @@ std::vector<Contact> World::collide()
     pose.linear() = transform.orientation.normalized().toRotationMatrix();
     pose.translation() = transform.position;
     for (const auto& shape : geometry.shapes) {
-      addEntry(entity, shape, pose);
+      addEntry(entity, entt::null, shape, pose);
     }
   }
 
@@ -1797,8 +1819,9 @@ std::vector<Contact> World::collide()
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
     const Link link(entity, this);
+    const entt::entity multibody = findMultibodyOwningLink(entity);
     for (const auto& shape : geometry.shapes) {
-      addEntry(entity, shape, link.getWorldTransform());
+      addEntry(entity, multibody, shape, link.getWorldTransform());
     }
   }
 
@@ -1811,6 +1834,11 @@ std::vector<Contact> World::collide()
   for (std::size_t i = 0; i < entries.size(); ++i) {
     for (std::size_t j = i + 1; j < entries.size(); ++j) {
       if (entries[i].entity == entries[j].entity) {
+        continue;
+      }
+      if (!options.includeSameMultibodyLinkPairs
+          && entries[i].multibody != entt::null
+          && entries[i].multibody == entries[j].multibody) {
         continue;
       }
 

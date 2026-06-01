@@ -5,6 +5,7 @@ __all__: list[str] = [
     "ClosureDynamicsPolicy",
     "ClosureKinematicsPolicy",
     "CollisionBody",
+    "CollisionQueryOptions",
     "CollisionShape",
     "CollisionShapeType",
     "Contact",
@@ -944,6 +945,17 @@ class Contact:
     @property
     def depth(self) -> float: ...
 
+class CollisionQueryOptions:
+    def __init__(self, include_same_multibody_link_pairs: bool = ...) -> None: ...
+
+    @property
+    def include_same_multibody_link_pairs(self) -> bool: ...
+
+    @include_same_multibody_link_pairs.setter
+    def include_same_multibody_link_pairs(self, arg: bool, /) -> None: ...
+
+    def __repr__(self) -> str: ...
+
 class DeformableMaterialProperties:
     def __init__(self) -> None: ...
 
@@ -1527,7 +1539,7 @@ class World:
     @property
     def num_rigid_bodies(self) -> int: ...
 
-    def collide(self) -> list[Contact]: ...
+    def collide(self, options: CollisionQueryOptions = ...) -> list[Contact]: ...
 
     def clear(self) -> None: ...
 

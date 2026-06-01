@@ -64,6 +64,7 @@ struct DeformableSurfaceTriangle;
 struct DeformableTetrahedron;
 
 // Options structs
+struct CollisionQueryOptions;
 struct FixedFrameOptions;
 struct FreeFrameOptions;
 struct DeformableBodyOptions;

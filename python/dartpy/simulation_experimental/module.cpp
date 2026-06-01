@@ -1606,6 +1606,26 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "depth", [](const sim::Contact& self) { return self.depth; });
 
+  nb::class_<sim::CollisionQueryOptions>(m, "CollisionQueryOptions")
+      .def(
+          "__init__",
+          [](sim::CollisionQueryOptions* self,
+             bool includeSameMultibodyLinkPairs) {
+            new (self)
+                sim::CollisionQueryOptions{includeSameMultibodyLinkPairs};
+          },
+          nb::arg("include_same_multibody_link_pairs") = true)
+      .def_rw(
+          "include_same_multibody_link_pairs",
+          &sim::CollisionQueryOptions::includeSameMultibodyLinkPairs)
+      .def("__repr__", [](const sim::CollisionQueryOptions& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "include_same_multibody_link_pairs",
+            repr_bool(self.includeSameMultibodyLinkPairs));
+        return format_repr("CollisionQueryOptions", fields);
+      });
+
   nb::class_<sim::DeformableMaterialProperties>(
       m, "DeformableMaterialProperties")
       .def(nb::init<>())
@@ -2186,7 +2206,12 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
-      .def("collide", &sim::World::collide)
+      .def(
+          "collide",
+          [](sim::World& self, const sim::CollisionQueryOptions& options) {
+            return self.collide(options);
+          },
+          nb::arg("options") = sim::CollisionQueryOptions{})
       .def("clear", &sim::World::clear)
       .def("__repr__", [](const sim::World& self) {
         std::vector<std::pair<std::string, std::string>> fields;
