@@ -284,4 +284,33 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
+/// Resolves all rigid-rigid and articulated link-vs-rigid-body contacts with a
+/// single coupled boxed-LCP, replacing the separate `RigidBodyContactStage` and
+/// `MultibodyContactStage` velocity-level passes.
+///
+/// Each step it queries collisions once, assembles the rigid-rigid contact
+/// problem and each multibody's link-contact problem (recomputing the dynamics
+/// tree and inverse mass in-stage, never cached across stages), stacks them
+/// into one unified system whose shared-dynamic-obstacle coupling is
+/// consistent, and solves it jointly (with a rank-deficient fallback). Rigid
+/// impulses are applied to body velocities and link impulses to each
+/// multibody's staged generalized velocity (`PendingMultibodyVelocity`), so a
+/// position stage can run afterwards; a rigid positional projection then
+/// removes residual penetration. This is a semi-implicit-pipeline stage only —
+/// the variational path keeps its own contact handling.
+class DART_EXPERIMENTAL_API UnifiedConstraintStage final : public WorldStepStage
+{
+public:
+  explicit UnifiedConstraintStage(std::size_t frictionIterations = 8);
+
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+
+  [[nodiscard]] std::size_t getFrictionIterations() const noexcept;
+
+private:
+  std::size_t m_frictionIterations;
+};
+
 } // namespace dart::simulation::experimental::compute

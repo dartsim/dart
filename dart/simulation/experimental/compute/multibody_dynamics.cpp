@@ -42,6 +42,7 @@
 #include "dart/simulation/experimental/comps/multibody.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/multibody_constraint.hpp"
+#include "dart/simulation/experimental/compute/unified_constraint.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -1519,6 +1520,133 @@ void MultibodyPositionStage::execute(
     if (registry.all_of<PendingMultibodyVelocity>(entity)) {
       registry.remove<PendingMultibodyVelocity>(entity);
     }
+  }
+}
+
+//==============================================================================
+UnifiedConstraintStage::UnifiedConstraintStage(std::size_t frictionIterations)
+  : m_frictionIterations(std::max<std::size_t>(1, frictionIterations))
+{
+}
+
+//==============================================================================
+std::string_view UnifiedConstraintStage::getName() const noexcept
+{
+  return "unified_constraint";
+}
+
+//==============================================================================
+ComputeStageMetadata UnifiedConstraintStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::Constraint,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataLocality};
+}
+
+//==============================================================================
+std::size_t UnifiedConstraintStage::getFrictionIterations() const noexcept
+{
+  return m_frictionIterations;
+}
+
+//==============================================================================
+void UnifiedConstraintStage::execute(
+    World& world, ComputeExecutor& /*executor*/)
+{
+  auto& registry = world.getRegistry();
+  const double timeStep = world.getTimeStep();
+  const std::vector<Contact> contacts = world.collide();
+  if (contacts.empty()) {
+    return;
+  }
+
+  // Rigid-rigid block. The rigid assembler filters to rigid-rigid pairs, so it
+  // is given the full contact set.
+  RigidBodyContactProblem rigidProblem
+      = assembleRigidBodyContactProblem(registry, contacts);
+
+  // Per-multibody link blocks. Recompute each multibody's dynamics tree and
+  // inverse mass in-stage (never cached across stages). Mirror
+  // MultibodyContactStage's PendingMultibodyVelocity create-from-gather so a
+  // multibody whose velocity has not been staged still resolves. The staged
+  // velocities are collected in lockstep with the contacts (and hence with the
+  // assembled multibody blocks) for the solve and write-back.
+  std::vector<UnifiedMultibodyContact> multibodyContacts;
+  std::vector<Eigen::VectorXd> multibodyVelocities;
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    const std::vector<LinkContact> linkContacts
+        = collectMultibodyLinkContacts(registry, structure, contacts);
+    if (linkContacts.empty()) {
+      continue;
+    }
+
+    auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
+    if (pendingVelocity == nullptr) {
+      Eigen::VectorXd currentVelocity
+          = gatherMultibodyVelocity(registry, structure);
+      if (currentVelocity.size() == 0) {
+        continue;
+      }
+      pendingVelocity = &registry.emplace_or_replace<PendingMultibodyVelocity>(
+          entity, PendingMultibodyVelocity{std::move(currentVelocity)});
+    }
+
+    MultibodyLinkContactProblem linkProblem
+        = assembleMultibodyLinkContactProblem(
+            registry,
+            structure,
+            pendingVelocity->velocity,
+            timeStep,
+            linkContacts);
+    multibodyVelocities.push_back(pendingVelocity->velocity);
+    multibodyContacts.push_back({entity, std::move(linkProblem)});
+  }
+
+  if (rigidProblem.constraints.empty() && multibodyContacts.empty()) {
+    return;
+  }
+
+  const UnifiedConstraintProblem problem
+      = assembleUnifiedConstraintProblem(rigidProblem, multibodyContacts);
+
+  resolveUnifiedConstraints(
+      registry,
+      problem,
+      std::span<Eigen::VectorXd>(multibodyVelocities),
+      m_frictionIterations);
+
+  // Write each multibody's resolved generalized velocity back to its staging
+  // component so the position stage integrates the post-contact velocity. The
+  // blocks are in the same order the staged velocities were collected.
+  for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+    registry.emplace_or_replace<PendingMultibodyVelocity>(
+        problem.multibodyBlocks[k].multibody,
+        PendingMultibodyVelocity{std::move(multibodyVelocities[k])});
+  }
+
+  // Rigid positional projection: remove residual penetration beyond a small
+  // allowance without injecting velocity (verbatim from RigidBodyContactStage).
+  constexpr double allowance = 1e-4;
+  constexpr double correctionFactor = 0.2;
+  for (const auto& constraint : problem.rigidConstraints) {
+    const double penetration = constraint.depth - allowance;
+    if (penetration <= 0.0) {
+      continue;
+    }
+    const double totalInverseMass = constraint.invMassA + constraint.invMassB;
+    if (totalInverseMass <= 0.0) {
+      continue;
+    }
+    const Eigen::Vector3d correction
+        = (correctionFactor * penetration / totalInverseMass)
+          * constraint.normal;
+    registry.get<comps::Transform>(constraint.bodyA).position
+        -= constraint.invMassA * correction;
+    registry.get<comps::Transform>(constraint.bodyB).position
+        += constraint.invMassB * correction;
   }
 }
 

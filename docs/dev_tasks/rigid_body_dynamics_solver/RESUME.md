@@ -507,11 +507,40 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     rank-deficient set, exercised directly since this configuration's joint solve
     happens to succeed). Verified focused build + `test_unified_constraint`
     (13/13), full `ctest -L simulation-experimental` (43/43), `pixi run lint`.
-  - **Next: 3c-ii.1** the `UnifiedConstraintStage` class (per-multibody context
-    hoist, recompute `M^-1` in-stage, snapshot invariant, `PendingMultibodyVelocity`
-    create-from-gather + write-back, rigid positional projection over a verbatim
-    constraints copy) — dead, unit-tested via direct `execute`; then 3c-ii.2 the
-    pipeline flip (the only behavior-changing slice).
+  - **(DONE locally) Slice 3c-ii.1 — the `UnifiedConstraintStage` class (dead,
+    not wired).** Added `UnifiedConstraintStage` (declared in
+    `multibody_dynamics.hpp`, defined in `multibody_dynamics.cpp` for access to
+    the anonymous routing/staging helpers `collectMultibodyLinkContacts`,
+    `gatherMultibodyVelocity`, `PendingMultibodyVelocity`). Its `execute`
+    queries collisions once, assembles the rigid-rigid problem and each
+    multibody's link problem (recomputing the dynamics tree / `M^-1` in-stage,
+    never cached; `PendingMultibodyVelocity` created from `gatherMultibodyVelocity`
+    when absent, mirroring `MultibodyContactStage`), stacks them via
+    `assembleUnifiedConstraintProblem`, calls `resolveUnifiedConstraints` over the
+    staged generalized velocities (collected in lockstep with the contacts so the
+    blocks line up), writes each resolved velocity back to `PendingMultibodyVelocity`,
+    then runs the rigid positional projection verbatim from
+    `RigidBodyContactStage`. Defaults to 8 friction iterations (matching both
+    `RigidBodyContactStage` and the link GS). NOT wired into any pipeline.
+    Unit-tested via direct `execute` (`test_unified_constraint_stage`): a sphere
+    overlapping a static ground has its descent arrested and is projected out of
+    penetration, and a contact-free body is untouched. (The link-side
+    orchestration and the bit-identity / tolerance baselines are validated by the
+    full emergent suite at the flip, where the stage actually runs.) Verified
+    focused build + `test_unified_constraint_stage` (2/2) + `test_world`
+    (104/104), full `ctest -L simulation-experimental` (44/44), `pixi run lint`.
+  - **Next: 3c-ii.2 — the pipeline flip (the ONLY behavior-changing slice).**
+    Add a `UnifiedConstraintStage unifiedConstraint;` member to
+    `WorldStepPipelineStages` (`world.cpp`) and replace
+    `.addStage(rigidBodyContact).addStage(multibodyContact)` with
+    `.addStage(unifiedConstraint)` in `appendSemiImplicitSplitStages()` (same
+    position; positions-last + the post-solve velocity clamp preserved). Leave
+    the variational branch and both legacy stage classes intact (semi-implicit
+    only). Gate on the full `pixi run test-all` (not just the experimental
+    label): multibody-free + disjoint-mixed regressions stay bit-identical;
+    shared-obstacle scenes are tolerance-based with documented drift (re-baseline
+    multibody-contact regressions as tolerance-based, not bit-exact). Do this as a
+    focused, independently-reviewed step.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2
