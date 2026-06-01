@@ -5,12 +5,10 @@ name: CI gz-physics
 on:
   push:
     branches:
-      - "**"
+      - "release-*"
   pull_request:
     branches:
-      - "**"
-  schedule:
-    - cron: "0 2 * * 0,3"
+      - "release-*"
   workflow_dispatch:
 
 concurrency:

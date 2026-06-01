@@ -31,13 +31,13 @@ touched several places. The proliferation did not scale.
 
 Per PLAN-103, Python is DART's primary, growing example surface; this C++
 `dart-demos` app is **frozen** (maintained, not grown). New example content is
-authored Python-first (a headless `dartpy` scene-registry runner plus a Colab
-notebook gallery), and only a small golden subset is mirrored in C++ and kept
-honest by a thin parity smoke. `dart-demos` is retired only later, when the
-Python surface covers the breadth and the `dartsim` editor (PLAN-101) can open
-curated example scenes interactively; the retire-later checklist lives in
-PLAN-103. Renderer regression coverage is independent (see below), so a future
-retirement loses no renderer coverage.
+authored Python-first (`pixi run py-demos`, the headless runner, capture
+helpers, and the Colab notebook gallery), and only a small golden subset is
+mirrored in C++ and kept honest by a thin parity smoke. `dart-demos` is retired
+only later, when the Python surface covers the breadth and the `dartsim` editor
+(PLAN-101) can open curated example scenes interactively; the retire-later
+checklist lives in PLAN-103. Renderer regression coverage is independent (see
+below), so a future retirement loses no renderer coverage.
 
 ## Architecture
 
@@ -56,8 +56,10 @@ dart::gui::ApplicationOptions dart::examples::demos::make<Name>Scene();
 Scenes are declared in `examples/demos/scenes.hpp` and registered — with a
 stable `id`, display `title`, `category`, and one-line `summary` — in
 `examples/demos/registry.cpp`. The registry vector order defines display order;
-categories appear in first-appearance order. Adding an example is: one scene
-file, one header declaration, one registry entry, one CMake source line.
+categories appear in first-appearance order. Experimental-world Python scenes
+should use solver/domain categories rather than a catch-all bucket so the
+navigator scales as the catalog grows. Adding an example is: one scene file,
+one header declaration, one registry entry, one CMake source line.
 
 The factory is lazy (built when the scene is first selected), so launch stays
 fast and an asset/remote-load failure affects only that scene. The host
@@ -83,6 +85,64 @@ no renderer/UI-toolkit code leaks above the `dart::gui` boundary (PLAN-060).
 CLI: `--scene <id>` selects the initial scene; `--cycle-scenes` advances through
 every scene for a few frames and exits (the headless smoke,
 `EXAMPLE_dart_demos_cycle_headless_smoke`).
+
+### Python `py-demos` workspace
+
+`pixi run py-demos` uses the same `dart::gui::runDemos` host through
+`dartpy.gui.run_demos`, so Python examples can run as an interactive multi-scene
+workspace rather than only a headless smoke runner. The workspace docks a top
+`Simulation` toolbar, a searchable/category-grouped `Demos` navigator, optional
+scene-specific panels on the right, and DART diagnostics at the bottom. Python
+scenes return `SceneSetup` objects with optional `pre_step`, `force_drag`, and
+`ScenePanel` callbacks; those callbacks render through the renderer-neutral
+`PanelBuilder`/`PanelContext` abstraction rather than direct ImGui calls.
+
+The Python catalog is broad enough that navigation needs domain focus, not only
+search. When an sx/experimental scene is active, the `Demos` navigator starts in
+`Experimental focus`, showing simulation-experimental and solver-focused
+categories while keeping the full legacy DART API catalog one checkbox away.
+Users can also replace a queued sidebar switch by clicking a different target
+before the candidate starts, so the UI does not trap the user on a stale pending
+row while the transactional activation path decides what to load.
+
+`pixi run py-demo-capture` drives the same Filament render path headlessly,
+including optional ImGui panels via `--show-ui`, and writes screenshots, frame
+sequences, and MP4s for visual debugging. It rejects blank/noop captures so
+layout, camera, lighting, and material changes have inspectable artifacts. With
+`--show-ui`, capture also checks that the docked ImGui workspace is present and
+drops warm-up frame-output images captured before the UI becomes visible, so
+recorded PNG sequences and MP4s start from a useful workspace frame.
+
+External-force interactions are a user-facing scene state, not just an input
+callback. The common sx bridge panel shows whether force application is idle,
+disabled, rejected for a static/unmapped target, or actively applying force; it
+also exposes target and magnitude so a single headless `--show-ui` capture can
+prove what the viewport spring/arrow is doing.
+
+Runtime demo switches are transactional. If a requested scene throws while
+building, misses the startup budget, cannot create render state, or fails its
+first frame, the host restores the previous active scene and leaves the reason
+visible in the `Simulation` and `Demos` panels. Python scene builders are
+bounded by the same `DART_DEMO_SCENE_STARTUP_TIMEOUT_MS` budget by default, with
+`DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS` available as a Python-specific override.
+Python `pre_step` callbacks are also bounded during candidate startup, and the
+host rolls back a switched demo whose first frame returns over budget. A native
+scene that never returns from construction or simulation would still need
+process isolation; this guard is for failures that return or Python callbacks
+that can be interrupted by the watchdog.
+
+The Python workspace rebuilds a deterministic dock layout on startup instead of
+trusting any saved panel layout from a previous run. `Reset Layout` is the
+explicit recovery action after interactive rearrangement. This keeps stale
+`imgui.ini` state from obscuring the viewport or hiding panels when
+scene-specific controls change. The layout builder runs before dockspace
+submission so ImGui applies the initial `Demos`, `Simulation`, scene-panel, and
+diagnostics placements as docked windows on the first rendered frames.
+Dock layout initialization is viewer-lifetime state, not per-scene state, so a
+user-resized splitter survives runtime demo switches until `Reset Layout` is
+pressed. The default dock builder also clears ImGui no-resize flags from its
+nodes so top, left, right, and bottom dock regions expose normal draggable
+splitters.
 
 ### Build layout
 
@@ -126,7 +186,8 @@ the renderer.
 - Not a scene editor (authoring/undo/redo/project I/O on the experimental World
   is `dartsim`'s role; see `dartsim_gui_simulator.md`).
 - No renderer/backend changes; demos builds on `dart::gui`.
-- No dockable workspace yet; a fixed system-ImGui sidebar is sufficient for v1.
+- No Python-side scene authoring API; `py-demos` is an examples workspace for
+  playback, controls, diagnostics, and capture, not an editor.
 - `examples/demos` builds the scenes straight into the `dart-demos` executable.
   Splitting them into a `demos_scenes` library is a future option, only needed if
   something other than the app (e.g. a test) must link the scene registry.

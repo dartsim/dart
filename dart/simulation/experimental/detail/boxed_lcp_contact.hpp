@@ -38,7 +38,8 @@
 // solve (PLAN-080 WS4). It is NOT a public facade header: it exposes the LCP
 // Delassus system and the contact Jacobian, which must never appear in a public
 // signature. It lives under `detail/` so Doxygen and the API-boundary checks
-// treat it as internal, and it is not part of the DART 8 promotion target.
+// treat it as internal, and it is not part of the DART 7 public-facade
+// promotion target.
 //
 // The snapshot it carries is the seam PLAN-110 WS2 will differentiate: it holds
 // the solved boxed LCP `{A, b, lo, hi, findex, f}` plus the stacked contact

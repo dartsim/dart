@@ -57,11 +57,20 @@
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/io/gmsh_tet_mesh.hpp>
 #include <dart/simulation/experimental/io/obj_triangle_mesh.hpp>
+#include <dart/simulation/experimental/io/skeleton_loader.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/space/state_space.hpp>
 #include <dart/simulation/experimental/world.hpp>
+
+#include <dart/simulation/world.hpp>
+
+#include <dart/dynamics/skeleton.hpp>
+
+#include <dart/common/uri.hpp>
+
+#include <dart/io/read.hpp>
 
 #include <Eigen/Cholesky>
 #include <nanobind/eigen/dense.h>
@@ -70,6 +79,7 @@
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/filesystem.h>
 #include <nanobind/stl/optional.h>
+#include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
@@ -239,6 +249,36 @@ Eigen::Isometry3d toIsometry(const nb::handle& value)
   return transform;
 }
 
+Eigen::Vector3i toVector3i(const nb::handle& value)
+{
+  const auto data = nb::cast<std::array<int, 3>>(value);
+  return Eigen::Vector3i(data[0], data[1], data[2]);
+}
+
+std::vector<Eigen::Vector3d> toVector3List(const nb::handle& value)
+{
+  const auto sequence = nb::cast<nb::sequence>(value);
+  const auto length = static_cast<nb::ssize_t>(nb::len(sequence));
+  std::vector<Eigen::Vector3d> vectors;
+  vectors.reserve(static_cast<std::size_t>(length));
+  for (nb::ssize_t i = 0; i < length; ++i) {
+    vectors.push_back(toVector3(sequence[i]));
+  }
+  return vectors;
+}
+
+std::vector<Eigen::Vector3i> toVector3iList(const nb::handle& value)
+{
+  const auto sequence = nb::cast<nb::sequence>(value);
+  const auto length = static_cast<nb::ssize_t>(nb::len(sequence));
+  std::vector<Eigen::Vector3i> vectors;
+  vectors.reserve(static_cast<std::size_t>(length));
+  for (nb::ssize_t i = 0; i < length; ++i) {
+    vectors.push_back(toVector3i(sequence[i]));
+  }
+  return vectors;
+}
+
 sim::Frame toFrameHandle(const nb::handle& value)
 {
   if (nb::isinstance<sim::FreeFrame>(value)) {
@@ -259,6 +299,19 @@ sim::Frame toFrameHandle(const nb::handle& value)
   }
 
   return nb::cast<sim::Frame>(value);
+}
+
+nb::list castMultibodiesKeepingWorldAlive(
+    std::vector<sim::Multibody> multibodies, const nb::handle& world)
+{
+  nb::list result;
+  for (auto& multibody : multibodies) {
+    nb::object multibodyObject
+        = nb::cast(std::move(multibody), nb::rv_policy::move);
+    nb::detail::keep_alive(multibodyObject.ptr(), world.ptr());
+    result.append(multibodyObject);
+  }
+  return result;
 }
 
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
@@ -480,8 +533,9 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
       .value("BOX", sim::CollisionShapeType::Box)
-      .value("MESH", sim::CollisionShapeType::Mesh)
-      .value("CAPSULE", sim::CollisionShapeType::Capsule);
+      .value("CAPSULE", sim::CollisionShapeType::Capsule)
+      .value("CYLINDER", sim::CollisionShapeType::Cylinder)
+      .value("MESH", sim::CollisionShapeType::Mesh);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
       .def_static("sphere", &sim::CollisionShape::makeSphere, nb::arg("radius"))
@@ -492,42 +546,35 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("half_extents"))
       .def_static(
-          "mesh",
-          [](const nb::handle& vertices, const nb::handle& triangles) {
-            const auto vseq = nb::cast<nb::sequence>(vertices);
-            const auto tseq = nb::cast<nb::sequence>(triangles);
-            std::vector<Eigen::Vector3d> verts;
-            std::vector<Eigen::Vector3i> tris;
-            const auto vn = static_cast<nb::ssize_t>(nb::len(vseq));
-            verts.reserve(static_cast<std::size_t>(vn));
-            for (nb::ssize_t i = 0; i < vn; ++i) {
-              verts.push_back(toVector3(vseq[i]));
-            }
-            const auto tn = static_cast<nb::ssize_t>(nb::len(tseq));
-            tris.reserve(static_cast<std::size_t>(tn));
-            for (nb::ssize_t i = 0; i < tn; ++i) {
-              const auto tri = nb::cast<nb::sequence>(tseq[i]);
-              tris.emplace_back(
-                  nb::cast<int>(tri[0]),
-                  nb::cast<int>(tri[1]),
-                  nb::cast<int>(tri[2]));
-            }
-            return sim::CollisionShape::makeMesh(
-                std::move(verts), std::move(tris));
-          },
-          nb::arg("vertices"),
-          nb::arg("triangles"))
-      .def_static(
           "capsule",
           &sim::CollisionShape::makeCapsule,
           nb::arg("radius"),
           nb::arg("half_height"))
+      .def_static(
+          "cylinder",
+          &sim::CollisionShape::makeCylinder,
+          nb::arg("radius"),
+          nb::arg("half_height"))
+      .def_static(
+          "mesh",
+          [](const nb::handle& vertices, const nb::handle& triangles) {
+            return sim::CollisionShape::makeMesh(
+                toVector3List(vertices), toVector3iList(triangles));
+          },
+          nb::arg("vertices"),
+          nb::arg("triangles"))
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
           "radius", [](const sim::CollisionShape& self) { return self.radius; })
-      .def_prop_ro("half_extents", [](const sim::CollisionShape& self) {
-        return self.halfExtents;
+      .def_prop_ro(
+          "half_extents",
+          [](const sim::CollisionShape& self) { return self.halfExtents; })
+      .def_prop_ro(
+          "vertices",
+          [](const sim::CollisionShape& self) { return self.vertices; })
+      .def_prop_ro("triangles", [](const sim::CollisionShape& self) {
+        return self.triangles;
       });
 
   nb::enum_<sim::ClosureKinematicsPolicy>(m, "ClosureKinematicsPolicy")
@@ -1674,8 +1721,23 @@ void defSimulationExperimentalModule(nb::module_& m)
           "projected_newton_fallbacks",
           &sim::DeformableSolverDiagnostics::projectedNewtonFallbacks)
       .def_ro(
+          "projected_newton_hessian_nonzeros",
+          &sim::DeformableSolverDiagnostics::projectedNewtonHessianNonZeros)
+      .def_ro(
+          "projected_newton_hessian_storage_bytes",
+          &sim::DeformableSolverDiagnostics::projectedNewtonHessianStorageBytes)
+      .def_ro(
           "projected_newton_iterative_solves",
           &sim::DeformableSolverDiagnostics::projectedNewtonIterativeSolves)
+      .def_ro(
+          "projected_newton_matrix_free_solves",
+          &sim::DeformableSolverDiagnostics::projectedNewtonMatrixFreeSolves)
+      .def_ro(
+          "projected_newton_iterative_iterations",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeIterations)
+      .def_ro(
+          "projected_newton_iterative_max_error",
+          &sim::DeformableSolverDiagnostics::projectedNewtonIterativeMaxError)
       .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
@@ -1710,7 +1772,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::DeformableMaterialProperties::useAdaptiveBarrierStiffness)
       .def_rw(
           "use_iterative_linear_solver",
-          &sim::DeformableMaterialProperties::useIterativeLinearSolver);
+          &sim::DeformableMaterialProperties::useIterativeLinearSolver)
+      .def_rw(
+          "use_matrix_free_linear_solver",
+          &sim::DeformableMaterialProperties::useMatrixFreeLinearSolver);
 
   nb::class_<sim::DeformableEdge>(m, "DeformableEdge")
       .def(
@@ -1866,6 +1931,39 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "material_properties", &sim::DeformableBody::getMaterialProperties);
 
+  nb::class_<sim::io::SkeletonLoadOptions>(m, "SkeletonLoadOptions")
+      .def(nb::init<>())
+      .def_rw(
+          "root_anchor_prefix",
+          &sim::io::SkeletonLoadOptions::rootAnchorPrefix);
+
+  nb::enum_<dart::io::ModelFormat>(m, "ModelFormat")
+      .value("AUTO", dart::io::ModelFormat::Auto)
+      .value("SKEL", dart::io::ModelFormat::Skel)
+      .value("SDF", dart::io::ModelFormat::Sdf)
+      .value("URDF", dart::io::ModelFormat::Urdf)
+      .value("MJCF", dart::io::ModelFormat::Mjcf);
+
+  nb::enum_<dart::io::RootJointType>(m, "RootJointType")
+      .value("FLOATING", dart::io::RootJointType::Floating)
+      .value("FIXED", dart::io::RootJointType::Fixed);
+
+  nb::class_<dart::io::ReadOptions>(m, "ReadOptions")
+      .def(nb::init<>())
+      .def_rw("format", &dart::io::ReadOptions::format)
+      .def_rw(
+          "sdf_default_root_joint_type",
+          &dart::io::ReadOptions::sdfDefaultRootJointType)
+      .def(
+          "add_package_directory",
+          [](dart::io::ReadOptions& self,
+             const std::string& packageName,
+             const std::string& packageDirectory) {
+            self.addPackageDirectory(packageName, packageDirectory);
+          },
+          nb::arg("package_name"),
+          nb::arg("package_directory"));
+
   nb::class_<sim::io::DeformableSceneLoadOptions>(
       m, "DeformableSceneLoadOptions")
       .def(nb::init<>())
@@ -1932,6 +2030,97 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::io::DeformableSceneDiagnostics::maxDisplacement)
       .def_ro("min_z", &sim::io::DeformableSceneDiagnostics::minZ)
       .def_ro("max_z", &sim::io::DeformableSceneDiagnostics::maxZ);
+
+  m.def(
+      "add_skeleton",
+      [](sim::World& world,
+         const std::shared_ptr<dart::dynamics::Skeleton>& skeleton,
+         const sim::io::SkeletonLoadOptions& options) {
+        DART_EXPERIMENTAL_THROW_T_IF(
+            !skeleton,
+            sim::InvalidArgumentException,
+            "Skeleton must not be null");
+        return sim::io::addSkeleton(world, *skeleton, options);
+      },
+      nb::arg("world"),
+      nb::arg("skeleton"),
+      nb::arg("options") = sim::io::SkeletonLoadOptions{},
+      nb::keep_alive<0, 1>());
+
+  m.def(
+      "add_skeleton",
+      [](sim::World& world,
+         const std::string& uri,
+         const sim::io::SkeletonLoadOptions& options) {
+        return sim::io::addSkeleton(world, dart::common::Uri(uri), options);
+      },
+      nb::arg("world"),
+      nb::arg("uri"),
+      nb::arg("options") = sim::io::SkeletonLoadOptions{},
+      nb::keep_alive<0, 1>());
+
+  m.def(
+      "add_skeleton",
+      [](sim::World& world,
+         const std::string& uri,
+         const dart::io::ReadOptions& readOptions,
+         const sim::io::SkeletonLoadOptions& options) {
+        return sim::io::addSkeleton(
+            world, dart::common::Uri(uri), readOptions, options);
+      },
+      nb::arg("world"),
+      nb::arg("uri"),
+      nb::arg("read_options"),
+      nb::arg("options") = sim::io::SkeletonLoadOptions{},
+      nb::keep_alive<0, 1>());
+
+  m.def(
+      "add_world",
+      [](const nb::object& worldObject,
+         const std::shared_ptr<dart::simulation::World>& sourceWorld,
+         const sim::io::SkeletonLoadOptions& options) {
+        auto& world = nb::cast<sim::World&>(worldObject);
+        DART_EXPERIMENTAL_THROW_T_IF(
+            !sourceWorld,
+            sim::InvalidArgumentException,
+            "World must not be null");
+        return castMultibodiesKeepingWorldAlive(
+            sim::io::addWorld(world, *sourceWorld, options), worldObject);
+      },
+      nb::arg("world"),
+      nb::arg("source_world"),
+      nb::arg("options") = sim::io::SkeletonLoadOptions{});
+
+  m.def(
+      "add_world",
+      [](const nb::object& worldObject,
+         const std::string& uri,
+         const sim::io::SkeletonLoadOptions& options) {
+        auto& world = nb::cast<sim::World&>(worldObject);
+        return castMultibodiesKeepingWorldAlive(
+            sim::io::addWorld(world, dart::common::Uri(uri), options),
+            worldObject);
+      },
+      nb::arg("world"),
+      nb::arg("uri"),
+      nb::arg("options") = sim::io::SkeletonLoadOptions{});
+
+  m.def(
+      "add_world",
+      [](const nb::object& worldObject,
+         const std::string& uri,
+         const dart::io::ReadOptions& readOptions,
+         const sim::io::SkeletonLoadOptions& options) {
+        auto& world = nb::cast<sim::World&>(worldObject);
+        return castMultibodiesKeepingWorldAlive(
+            sim::io::addWorld(
+                world, dart::common::Uri(uri), readOptions, options),
+            worldObject);
+      },
+      nb::arg("world"),
+      nb::arg("uri"),
+      nb::arg("read_options"),
+      nb::arg("options") = sim::io::SkeletonLoadOptions{});
 
   m.def(
       "load_deformable_scene",

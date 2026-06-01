@@ -109,7 +109,7 @@ _PAIRS: tuple[_Pair, ...] = (
 def _add_frame(
     world: "dart.World", name: str, shape: "dart.Shape", translation, rgba
 ) -> None:
-    frame = dart.SimpleFrame(dart.Frame.World(), name)
+    frame = dart.SimpleFrame(dart.Frame.world(), name)
     frame.set_shape(shape)
     frame.create_visual_aspect().set_rgba(rgba)
     tf = np.eye(4)
@@ -122,7 +122,7 @@ def build() -> SceneSetup:
     world = dart.simulation.World("collision_sandbox")
     world.set_gravity([0.0, 0.0, 0.0])
 
-    ground = dart.SimpleFrame(dart.Frame.World(), "collision_sandbox_ground")
+    ground = dart.SimpleFrame(dart.Frame.world(), "collision_sandbox_ground")
     ground.set_shape(dart.BoxShape(np.array([20.0, 20.0, 0.05])))
     ground.create_visual_aspect().set_rgba(np.array([0.78, 0.78, 0.78, 1.0]))
     ground_tf = np.eye(4)

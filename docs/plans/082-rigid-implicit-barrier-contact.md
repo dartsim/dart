@@ -135,6 +135,8 @@
   [`../dev_tasks/rigid_body_dynamics_solver/`](../dev_tasks/rigid_body_dynamics_solver/)
 - Active rigid IPC implementation tracker:
   [`../dev_tasks/rigid_ipc_solver/`](../dev_tasks/rigid_ipc_solver/)
+- Simultaneous-impact intake and go/no-go sidecar:
+  [`082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md`](082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md)
 - Research catalog:
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
 
@@ -177,6 +179,11 @@
    shared barrier, CCD, projected-Newton, friction, diagnostics, and corpus
    verification primitives so the next algorithm family can reuse them rather
    than adding another isolated solver stack.
+9. **Simultaneous-impact intake** - Keep the explicit event-level
+   simultaneous-impact papers as a benchmark/go-no-go sidecar rather than a new
+   solver commitment. Promote an impact operator only if solver-neutral DART
+   scenes show a gap not covered by sequential impulse, boxed LCP, rigid IPC, or
+   AVBD-style finite-time contact.
 
 ## Acceptance Criteria
 
@@ -200,6 +207,9 @@
   current DART rigid contact path, the audited reference implementation, and
   the paper-reported scene families; regressions or slower rows need an
   explicit accepted tradeoff rather than a parity claim.
+- Simultaneous-impact promotion requires the sidecar's literature matrix,
+  solver-neutral corpus, IPC/AVBD comparison, and public-boundary review before
+  any event-level operator becomes a PLAN-082 workstream.
 
 ## Revision Triggers
 
@@ -210,5 +220,8 @@
   CCD, Newton, friction, diagnostics, or benchmark infrastructure.
 - Hosted or local benchmark evidence shows the implicit-barrier path cannot be
   competitive without a different CPU/GPU data layout.
+- Solver-neutral simultaneous-impact scenes show restitution, ordering
+  uncertainty, energy, termination, or break-away gaps that rigid IPC and
+  AVBD-style finite-time contact do not cover.
 - A maintainer decides a manifest family should be manual, out of scope, or
   promoted earlier than this plan's sequencing.

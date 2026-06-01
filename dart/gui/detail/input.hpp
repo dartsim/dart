@@ -50,10 +50,12 @@ class SelectionController;
 
 struct ApplicationInputState
 {
+  bool wasEscapePressed = false;
   bool wasSpacePressed = false;
   bool wasStepPressed = false;
   bool wasPerfHudKeyPressed = false;
   std::vector<bool> customActionWasPressed;
+  std::vector<bool> customActionSuppressUntilReleased;
 };
 
 void attachOrbitCameraController(
@@ -76,6 +78,10 @@ void updateImGuiMouseInput(
     ImGuiIO& io,
     int framebufferWidth,
     int framebufferHeight);
+
+void updateImGuiMouseCursor(GLFWwindow* window, ImGuiIO& io);
+
+void destroyImGuiMouseCursors(GLFWwindow* window);
 
 bool isSceneMouseInputCapturedByUi(bool showUi, const ImGuiIO& io);
 

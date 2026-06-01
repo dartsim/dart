@@ -1,6 +1,6 @@
 # Resume: IPC Deformable Solver
 
-## Current State (2026-05-30) — PLAN-081 M1–M6 COMPLETE; M7 iterative-CG increment landing
+## Current State (2026-05-31) — PLAN-081 M1–M6 COMPLETE; M7 matrix-free CG in progress
 
 This session drove the experimental deformable solver from "mass-spring scaffold"
 to broad IPC paper-parity (Li et al. 2020). All work shipped as one-PR-per-slice
@@ -33,8 +33,8 @@ AI attribution). Net status by milestone:
   while tangential sliding + friction survive (the CCD limiter no longer scales the
   whole step). The "right" CCD fix (limit only the normal approach, keep fast-motion
   CCD safety) remains a documented higher-risk follow-up, cf. #2732.
-- **M7 scale + performance — four increments landed** (#2810/#2811/#2812 + the
-  public iterative-solve diagnostic). (1) Opt-in **iterative
+- **M7 scale + performance — four increments landed** (#2810/#2811/#2812/#2813)
+  and a CG diagnostic follow-up in progress. (1) Opt-in **iterative
   conjugate-gradient projected-Newton linear solve**
   (`DeformableMaterialProperties.useIterativeLinearSolver`, #2810): reuses the
   sparse SPD Hessian assembly but solves with CG instead of `SimplicialLDLT`, so it
@@ -48,10 +48,15 @@ AI attribution). Net status by milestone:
   **Chunky-3D scaling benchmark** (this PR): `BM_DeformableCube3d{Direct,Cg}Step`
   on a solid N^3 cube (wide Hessian bandwidth) makes the crossover measurable --
   direct 3D fill-in climbs super-linearly while IC-CG stays ~O(nnz); measured ~5x
-  faster CG at ~4k nodes (11.3 vs 2.3 s/step). A CUDA backend exists for PSD
-  projection + VBD (another track, #2781); on-device GPU assembly/solve, a truly
-  matrix-free Hessian-vector CG, an AMG preconditioner for the largest systems,
-  and the 688K-node Fig-22 run + Table-1 reference comparison remain.
+  faster CG at ~4k nodes (11.3 vs 2.3 s/step). (4) Public iterative-solve
+  diagnostics (#2813) expose whether a step used the CG path. The current
+  branch extends that profiling surface with CG iteration/residual counters and
+  an explicit matrix-free CG path with contact parity regressions against the
+  direct sparse solve and sparse IC-CG. A CUDA backend exists for PSD projection
+  and VBD (another track, #2781); automatic matrix-free selection for large
+  meshes, an AMG preconditioner for the largest systems, on-device GPU
+  assembly/solve, and the 688K-node Fig-22 run + Table-1 reference comparison
+  remain.
 
 Session PR train (all merged to `main`): #2787 FEM keystone, #2788 FEM twist,
 #2789 FEM+ground, #2790 sphere barrier Hessian, #2791 box barrier, #2792/#2793
@@ -61,23 +66,29 @@ benchmark Newton-iters, #2800 `.obj` importer, #2802 `.seg`/`.pt` importers, #28
 capsule obstacle, #2805 adaptive stiffness, #2809 barrier-only obstacle (M5 done),
 #2810 iterative-CG solve (M7 increment 1), #2811 incomplete-Cholesky
 preconditioner (M7 increment 2), #2812 chunky-3D scaling benchmark (M7 increment
-3), and the public iterative-solve diagnostic (this PR, M7 increment 4). The IPC
+3), and #2813 public iterative-solve diagnostic (M7 increment 4). The IPC
 Deformable (sx) py-demos category
 now has ~21 scenes (latest: `ipc_deformable_cg_solver`, `ipc_deformable_cg_contact`).
 
 ### M7 Next (resume here)
 
 M1–M6 + M5 are all complete; **M7 (scale + performance) is the only remaining
-milestone.** Three increments landed (iterative CG solve #2810; incomplete-Cholesky
-preconditioner #2811; chunky-3D scaling benchmark, this PR). The remaining M7 work,
-roughly in increasing-risk order:
+milestone.** Four increments landed (iterative CG solve #2810;
+incomplete-Cholesky preconditioner #2811; chunky-3D scaling benchmark #2812;
+public iterative-solve diagnostic #2813). The current branch is a small
+profiling follow-up that adds CG iterations, residual estimates, and assembled
+sparse-Hessian footprint counters, followed by an explicit matrix-free CG path
+that applies local Hessian blocks directly with a block-Jacobi preconditioner.
+The remaining M7 work, roughly in increasing-risk order:
 
-1. **Truly matrix-free CG.** The current path still assembles the sparse Hessian
-   (triplets → `SparseMatrix`) before the CG solve; a matrix-free Hessian-vector
-   product (per-element block × vector, scattered) would drop the assembly memory
-   for very large meshes (Fig 22, 688K nodes). CG params live in
-   `computeProjectedNewtonDirection` in `compute/world_step_stage.cpp` (tolerance
-   `1e-8`, `maxIterations = 2*dim`, `Eigen::Lower`, `Eigen::IncompleteCholesky`).
+1. **Matrix-free CG hardening.** The explicit
+   `useMatrixFreeLinearSolver` path now skips sparse Hessian assembly and reports
+   zero sparse-Hessian footprint, but it uses block-Jacobi rather than the sparse
+   incomplete-Cholesky preconditioner. C++ ground-contact coverage now compares a
+   contacting FEM cube across direct sparse, sparse IC-CG, and matrix-free CG;
+   dartpy coverage compares direct and matrix-free contact settling. Next, harden
+   it on larger contact-heavy meshes and decide when it can become the automatic
+   path for very large meshes (Fig 22, 688K nodes).
 2. **AMG / multigrid preconditioner** for the largest systems (beyond what
    incomplete-Cholesky handles).
 3. **GPU assembly + solve.** Extend the existing CUDA PSD-projection backend
@@ -250,32 +261,49 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-contact-distance-diagnostic` - SINGLE PR off main (the #2738-#2760
-stacked train is fully MERGED to main; per the standing directive all future IPC
-work is one PR, not a stacked train). Adds a CONTACT CLOSEST-APPROACH DIAGNOSTIC
-to DeformableSolverStats: `minActiveContactDistance` (smallest point-triangle /
-edge-edge distance among the active self-contact barrier set at the converged
-iterate -- the IPC intersection-free "minimum distance" statistic, Fig 23 /
-Table 1) + `convergedActiveContactCount` (that active set's size at termination,
-a single-iteration snapshot distinct from the cumulative
-`selfContactBarrierActiveContacts`). New free fn
-`accumulateContactDistanceDiagnostics` recomputes each barrier candidate's
-squared distance at scratch.next, counts those < d_hat^2, tracks the min;
-called once after the outer loop next to `accumulateFrictionDiagnostics`,
-reusing `contactScratch.barrierCandidates` (terminal-rebuilt when capped,
-last-in-loop when converged-early -- same staleness friction accepts).
-Cross-body fold: sum counts, min of mins (gated on the running count so the
-first contacting body seeds the min, robust to a 0.0 distance). BEHAVIOR-
-PRESERVING (diagnostic only). Regressions SelfContactBarrierReportsConverged
-ContactDistance (positive approach < d_hat=2e-2, count <= cumulative) +
-...NoConvergedContactDistanceFarApart (both 0). Bench counters
-converged_active_contacts / min_active_contact_distance on
-BM_DeformableSelfContactBarrierStage (smoke: count 15/120/480 vs cumulative
-255/2.04k/8.16k, min dist 0.0168 < 0.02 d_hat). 6/6 self-contact tests pass.
-NEXT (user directive 2026-05-29): now #2762 made py-demos the first-class
-viewer, MIGRATE all IPC examples/experimentals (paper figures) into the
-consolidated py-demos standalone in proper categories, scalably -- then continue
-the remaining Phase 2/3 items.
+`feature/ipc-deformable-matrix-free-cg` - published as PR #2821 against `main`.
+The hosted PR head is still `fc9f11a153a`, while the local branch has the
+addressed Codex review fix, local handoff updates, and a clean merge of current
+`origin/main` (`5b3faf623b3`). Push only after explicit approval, then resolve
+the addressed Codex thread and request a fresh Codex review if approved. If time
+passes before the push, fetch `origin/main` again and merge it into the branch
+before pushing.
+
+The branch continues on top of `feature/ipc-deformable-cg-iteration-diagnostics`
+after #2810/#2811/#2812/#2813 were all squash-merged. The four older local
+`feature/ipc-deformable-*` branches are patch-equivalent to current
+`origin/main` (`git cherry -v origin/main <branch>` reports `-` for each), and
+their remote refs have been pruned from `origin`. The diagnostics branch remains
+local-only and is part of the active PR #2821 stack. Do not delete local branch
+refs without explicit approval.
+
+The base diagnostics slice is behavior-preserving M7 profiling work. It extends
+the public deformable solver diagnostics beyond `projectedNewtonIterativeSolves`
+with
+`projectedNewtonIterativeIterations`, `projectedNewtonIterativeMaxError`,
+`projectedNewtonHessianNonZeros`, and
+`projectedNewtonHessianStorageBytes` (dartpy:
+`projected_newton_iterative_iterations` /
+`projected_newton_iterative_max_error` /
+`projected_newton_hessian_nonzeros` /
+`projected_newton_hessian_storage_bytes`) so CG-backed Newton steps report solve
+effort, residual estimates, and the assembled sparse-matrix footprint, not just
+path selection. The FEM-bar and chunky 3D cube benchmarks emit matching
+`cg_iters_per_step`, `cg_max_error`, `hessian_nonzeros`, and
+`hessian_storage_bytes` counters toward the Fig. 23 / Table 1 profiling surface.
+The current matrix-free slice adds explicit
+`DeformableMaterialProperties.useMatrixFreeLinearSolver` /
+`use_matrix_free_linear_solver`, reports
+`projectedNewtonMatrixFreeSolves` /
+`projected_newton_matrix_free_solves`, and adds benchmark rows with
+`matrix_free_solves_per_step` plus zero sparse-Hessian footprint counters. It is
+covered on static-ground contact by a C++ FEM cube regression that matches
+direct sparse, sparse IC-CG, and matrix-free CG equilibria while proving the
+matrix-free path keeps zero sparse-Hessian footprint, plus a dartpy single-node
+ground-contact regression that matches the direct solve. The local review-fix
+commit bumps the simulation-experimental binary format to v9 and gates material
+deserialization so v8 files default `useMatrixFreeLinearSolver` to false instead
+of consuming the next byte.
 
 Prior branch `feature/ipc-gpu-psd-perf-gate` - stacked on
 `feature/ipc-gpu-psd-backend-injection` (#2759). GPU-vs-CPU PERF GATE +
@@ -476,18 +504,17 @@ PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU per
 
 ## Immediate Next Step
 
-User directive (2026-05-28): KEEP BUILDING, NEVER STOP while a plan item remains,
-do everything in order (Codex review batched for Saturday). The three sequenced
-items (self-contact friction, Phase 5 harness, Phase 8 facade) are now done.
-REMAINING plan work, in rough priority: Phase 4 is now done except
-codimensional-obstacle friction (blocked on the codim-obstacle barrier);
-barrier-stall convergence robustness (the high-residual finding above; a strong
-next candidate -- additive, addresses a known limitation); live GPU-backend
-injection (wire the CUDA PSD primitive + a GPU-vs-CPU gate via an optional
-executor, world_step_stage stays GPU-free); adaptive barrier stiffness;
-rigid/codim obstacle barrier forces (disturbs #2732); remaining Phase 8 bindings
-(surface/tetra + DBC/NBC + scene loader); upstream corpus port once assets are
-vendored. Optimize CPU AND GPU throughout.
+PR #2821 is the active M7 matrix-free CG slice. The local branch is verified and
+ahead of the hosted PR head; the next approval-gated action is to push the local
+branch, resolve the addressed Codex review thread, and request a fresh Codex
+review. Do not reply inline to the bot review comment.
+
+After PR #2821 is updated and reviewed, continue M7 in bounded performance
+slices: harden matrix-free CG on larger contact-heavy meshes, decide the
+automatic large-mesh selection policy, then move to AMG / multigrid
+preconditioning, on-device GPU assembly + solve, and Fig. 22 / Table 1
+reference-comparison runs. Codimensional-obstacle friction remains blocked on
+codimensional-obstacle barrier support.
 
 ## Context That Would Be Lost
 
@@ -503,8 +530,19 @@ vendored. Optimize CPU AND GPU throughout.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-sparse-newton-solve
+git checkout feature/ipc-deformable-matrix-free-cg
 git status && git log -3 --oneline
+git fetch origin main
+git merge --no-ff origin/main
+cmake --build build/default/cpp/Release --target test_deformable_body dartpy
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SerializationLoadsLegacyV8Material:DeformableBody.SerializationPreservesMeshTopologyAndMaterial:DeformableBody.MatrixFreeLinearSolverMatchesSparseSolversOnGroundContact:DeformableBody.MatrixFreeLinearSolverMatchesSparseDirectSolve'
+PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'matrix_free_solver'
+pixi run check-api-boundary-inventory
+pixi run lint
+
+# Stop here for the current PR #2821 handoff. The remaining commands are
+# historical validation references for older IPC slices; run them only when
+# editing those older areas.
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
 ./build/default/cpp/Release/bin/bm_ipc_distance_kernels --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
@@ -562,13 +600,6 @@ cmake --build build/default/cpp/Release --target test_deformable_body bm_deforma
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.02s --benchmark_filter='BM_DeformableGridStage'
 ```
 
-Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
-scene replay base, `feature/ipc-deformable-contact-kernels` for the candidate
-set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
-`feature/ipc-tangent-stencils` for tangent scaffolding,
-`feature/ipc-motion-aware-candidates` for swept candidate culling,
-`feature/ipc-candidate-buffer-reuse` for reusable candidate buffers, or
-`feature/ipc-ccd-line-search`, `feature/ipc-sweep-scratch`, or
-`feature/ipc-interbody-surface-ccd`, `feature/ipc-ground-barrier-ccd`, or
-`feature/ipc-sweep-pair-traversal`, or `feature/ipc-rigid-surface-ccd` for the
-immediate stacked bases.
+Historical note: use older `feature/ipc-*` branches only for archaeology or
+targeted regression work on their slice; the current handoff branch is
+`feature/ipc-deformable-matrix-free-cg`.

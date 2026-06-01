@@ -86,16 +86,27 @@ struct ViewerLifecycleState
 {
   int renderedFrames = 0;
   int skippedFrames = 0;
+  int recordedFramePlaybackIndex = 0;
   std::string frameOutputDirectory;
   bool paused = false;
   bool stepOnce = false;
   bool screenshotRequested = false;
   bool frameOutputEnabled = false;
+  bool recordedFramePlaybackPlaying = false;
   bool exitRequested = false;
+  bool dockLayoutResetRequested = false;
+  /// True after the default dock layout has been applied for the current
+  /// viewer lifetime. Kept outside per-scene state so user-resized dock splits
+  /// survive demo switches until Reset Layout is requested.
+  bool dockLayoutInitialized = false;
   /// Set by the demos sidebar to ask the application loop to swap the active
   /// scene to `requestedScene` without recreating the window.
   bool sceneSwitchRequested = false;
   std::string requestedScene;
+  /// Human-readable status for the demos host while a scene switch is pending
+  /// or after a candidate scene fails and the host restores the previous one.
+  std::string sceneActivationStatus;
+  std::string sceneActivationPendingScene;
 };
 
 struct OrbitCamera
@@ -215,6 +226,18 @@ DART_GUI_API void setFrameOutputCapture(
 DART_GUI_API void toggleFrameOutputCapture(
     ViewerLifecycleState& state, std::string outputDirectory);
 
+DART_GUI_API void setRecordedFramePlaybackIndex(
+    ViewerLifecycleState& state, int frameCount, int frameIndex);
+
+DART_GUI_API void stepRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount, int delta);
+
+DART_GUI_API void toggleRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount);
+
+DART_GUI_API void advanceRecordedFramePlayback(
+    ViewerLifecycleState& state, int frameCount);
+
 DART_GUI_API bool shouldCaptureFrameOutput(
     const RunOptions& options, const ViewerLifecycleState& state);
 
@@ -235,6 +258,13 @@ DART_GUI_API void requestExit(ViewerLifecycleState& state);
 
 DART_GUI_API void requestSceneSwitch(
     ViewerLifecycleState& state, std::string sceneId);
+
+DART_GUI_API void requestSceneReplay(
+    ViewerLifecycleState& state, std::string sceneId);
+
+DART_GUI_API void requestDockLayoutReset(ViewerLifecycleState& state);
+
+DART_GUI_API bool consumeDockLayoutResetRequest(ViewerLifecycleState& state);
 
 DART_GUI_API bool shouldAdvanceSimulation(const ViewerLifecycleState& state);
 

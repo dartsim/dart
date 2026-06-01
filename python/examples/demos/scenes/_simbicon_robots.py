@@ -8,6 +8,7 @@ since dartpy has no HTTP resource retriever) skeletons.
 
 from __future__ import annotations
 
+from collections import deque
 import math
 import os
 import pathlib
@@ -19,6 +20,7 @@ import numpy as np
 
 import dartpy as dart
 
+from ..runner import ScenePanel
 from ._simbicon import SimbiconConfig, SimbiconController
 from ._z_up import reorient_to_z_up
 
@@ -238,3 +240,46 @@ def build_simbicon_setup(robots):
             controller.pre_step()
 
     return world, controllers, pre_step
+
+
+def make_simbicon_panel(title: str, controllers: list[SimbiconController]) -> ScenePanel:
+    histories = {
+        controller.cfg.name: {
+            "pelvis_height": deque(maxlen=120),
+            "balance_sagittal": deque(maxlen=120),
+            "balance_coronal": deque(maxlen=120),
+        }
+        for controller in controllers
+    }
+
+    def build_panel(builder: object, context: object) -> None:
+        for index, controller in enumerate(controllers):
+            diag = controller.diagnostics()
+            name = str(diag["name"])
+            history = histories[name]
+            pelvis_height = float(diag["pelvis_height"])
+            balance_sagittal = float(diag["balance_sagittal"])
+            balance_coronal = float(diag["balance_coronal"])
+            history["pelvis_height"].append(pelvis_height)
+            history["balance_sagittal"].append(balance_sagittal)
+            history["balance_coronal"].append(balance_coronal)
+            builder.text(f"{name}: state {diag['state']} swing {diag['swing']}")
+            builder.text(f"control enabled: {diag['control_enabled']}")
+            builder.text(f"state time: {float(diag['state_time']):.3f} s")
+            builder.text(f"pelvis height: {pelvis_height:.3f} m")
+            builder.text(
+                f"balance d/v sag: {balance_sagittal:.3f} m, "
+                f"{float(diag['balance_sagittal_velocity']):.3f} m/s"
+            )
+            builder.text(
+                f"balance d/v cor: {balance_coronal:.3f} m, "
+                f"{float(diag['balance_coronal_velocity']):.3f} m/s"
+            )
+            builder.separator()
+            builder.plot_lines(f"{name} z", list(history["pelvis_height"]))
+            builder.plot_lines(f"{name} sag", list(history["balance_sagittal"]))
+            builder.plot_lines(f"{name} cor", list(history["balance_coronal"]))
+            if index + 1 < len(controllers):
+                builder.separator()
+
+    return ScenePanel(title, build_panel)

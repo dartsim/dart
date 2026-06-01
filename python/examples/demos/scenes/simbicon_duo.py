@@ -15,17 +15,22 @@ from ._simbicon_robots import (
     load_g1_skeleton,
     make_atlas_config,
     make_g1_config,
+    make_simbicon_panel,
 )
 
 
 def build() -> SceneSetup:
-    world, _controllers, pre_step = build_simbicon_setup(
+    world, controllers, pre_step = build_simbicon_setup(
         [
             (load_atlas_skeleton, make_atlas_config(), -0.8),
             (load_g1_skeleton, make_g1_config(), 0.8),
         ]
     )
-    setup = SceneSetup(world=world, info={"robots": ["atlas", "g1"]})
+    setup = SceneSetup(
+        world=world,
+        panels=[make_simbicon_panel("SIMBICON Duo", controllers)],
+        info={"robots": ["atlas", "g1"]},
+    )
     setup.pre_step = pre_step
     return setup
 

@@ -129,6 +129,13 @@ struct DeformableSolverStats
   // repeats; symbolic < numeric indicates the analysis was amortized.
   std::size_t projectedNewtonSymbolicFactorizations = 0;
   std::size_t projectedNewtonNumericFactorizations = 0;
+  // Maximum compressed sparse Hessian footprint assembled for a
+  // projected-Newton linear solve in this step. These are matrix-storage
+  // diagnostics (not full process peak memory): nonzeros counts Eigen's
+  // compressed sparse entries, and storage bytes estimates the value, inner
+  // index, and outer pointer arrays for that matrix.
+  std::size_t projectedNewtonHessianNonZeros = 0;
+  std::size_t projectedNewtonHessianStorageBytes = 0;
   // Iterative (conjugate-gradient) linear solves. Counts Newton iterations that
   // took the matrix-light CG path instead of the sparse Cholesky factorization
   // -- either because the mesh exceeds the direct-solve node cap or because the
@@ -136,6 +143,17 @@ struct DeformableSolverStats
   // factorizes, so it scales to far larger meshes; a nonzero value here with
   // zero numeric factorizations means the whole solve ran iteratively.
   std::size_t projectedNewtonIterativeSolves = 0;
+  // Iterative solves that used the matrix-free Hessian-vector product path
+  // instead of an assembled sparse Hessian. This is a subset of
+  // projectedNewtonIterativeSolves.
+  std::size_t projectedNewtonMatrixFreeSolves = 0;
+  // Total conjugate-gradient iterations consumed by successful iterative
+  // projected-Newton linear solves. This is the solve-effort axis for the M7
+  // scaling benchmarks; zero when every Newton step used the direct solver.
+  std::size_t projectedNewtonIterativeIterations = 0;
+  // Maximum Eigen-reported relative residual estimate across successful
+  // iterative projected-Newton linear solves in this step.
+  double projectedNewtonIterativeMaxError = 0.0;
   // Convergence diagnostic: the largest L2 gradient norm at solve termination
   // across the step's deformable bodies (the projected-Newton residual). Near
   // the gradient tolerance means the solve converged; a large value means a

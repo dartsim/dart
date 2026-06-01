@@ -15,10 +15,13 @@ reproduction (no FEM/codimensional elasticity).
 
 from __future__ import annotations
 
+from collections import deque
+
 import dartpy.simulation_experimental as sx
+import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_grid_options
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Viewer-friendly mat (252 nodes); the C++ benchmark drape is 26x22 = 572.
 _COLUMNS = 18
@@ -84,9 +87,66 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="deformable_drape")
 
+    ground_clearance_history = deque(maxlen=120)
+    step_drop_history = deque(maxlen=120)
+    span_z_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("obstacles: ground + raised step barriers")
+        builder.text(f"grid: {_COLUMNS} x {_ROWS}")
+        if positions.size:
+            ground_top = _GROUND_CENTER[2] + _GROUND_HALF[2]
+            step_top = _OBSTACLE_CENTER[2] + _OBSTACLE_HALF[2]
+            over_step = (
+                (np.abs(positions[:, 0] - _OBSTACLE_CENTER[0]) <= _OBSTACLE_HALF[0])
+                & (np.abs(positions[:, 1] - _OBSTACLE_CENTER[1]) <= _OBSTACLE_HALF[1])
+            )
+            off_step = ~over_step
+            ground_clearance = float(np.min(positions[:, 2] - ground_top))
+            step_clearance = (
+                float(np.min(positions[over_step, 2] - step_top))
+                if np.any(over_step)
+                else ground_clearance
+            )
+            step_mean_z = (
+                float(np.mean(positions[over_step, 2]))
+                if np.any(over_step)
+                else float(np.mean(positions[:, 2]))
+            )
+            off_mean_z = (
+                float(np.mean(positions[off_step, 2]))
+                if np.any(off_step)
+                else step_mean_z
+            )
+            step_drop = step_mean_z - off_mean_z
+            span_z = float(np.max(positions[:, 2]) - np.min(positions[:, 2]))
+            ground_clearance_history.append(ground_clearance)
+            step_drop_history.append(step_drop)
+            span_z_history.append(span_z)
+            builder.text(f"ground clearance: {ground_clearance:.4f} m")
+            builder.text(f"step clearance: {step_clearance:.4f} m")
+            builder.text(f"step/off-step height delta: {step_drop:.3f} m")
+        diagnostics = world.last_deformable_solver_diagnostics
+        builder.text(
+            f"solver iters: {diagnostics.solver_iterations} | "
+            f"contacts: {diagnostics.converged_active_contact_count}"
+        )
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if ground_clearance_history:
+            builder.separator()
+            builder.plot_lines("Ground clearance", list(ground_clearance_history))
+            builder.plot_lines("Step height delta", list(step_drop_history))
+            builder.plot_lines("Span z", list(span_z_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC Drape", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

@@ -27,7 +27,7 @@ def _translation(x: float, y: float, z: float) -> np.ndarray:
 def _add_marker(
     world: "dart.World", name: str, position, color
 ) -> None:
-    frame = dart.SimpleFrame(dart.Frame.World(), name)
+    frame = dart.SimpleFrame(dart.Frame.world(), name)
     frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
     frame.create_visual_aspect().set_color(list(color))
     frame.set_relative_transform(_translation(*position))
@@ -38,7 +38,7 @@ def build() -> SceneSetup:
     world = dart.simulation.World("drag_and_drop")
     world.set_gravity([0.0, 0.0, 0.0])
 
-    anchor = dart.SimpleFrame(dart.Frame.World(), "interactive frame")
+    anchor = dart.SimpleFrame(dart.Frame.world(), "interactive frame")
     anchor.set_relative_transform(_translation(4.0, -4.0, 0.0))
     world.add_simple_frame(anchor)
 

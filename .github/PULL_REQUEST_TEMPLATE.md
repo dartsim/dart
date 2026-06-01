@@ -18,7 +18,9 @@
 
 ## Testing
 
-- What you tested (commands, manual steps, or explain why not). Example: `pixi run lint`, `pixi run test-all`
+- What you tested (commands, manual steps, or explain why not). Example:
+  `pixi run lint`, `pixi run test-all`, and on Linux CUDA hosts
+  `pixi run -e cuda test-all`
 
 ## Breaking Changes
 

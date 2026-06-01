@@ -12,17 +12,19 @@ DART-native showcase -- not a faithful IPC paper-figure reproduction.
 
 from __future__ import annotations
 
+from collections import deque
 import math
 
 import dartpy.simulation_experimental as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _ROD_RADIUS = 0.2
 _ROD_HALF_HEIGHT = 3.0
 _ROD_CENTER = (0.0, 0.0, 0.0)
+_FRICTION = 0.8
 # Lay the capsule axis (body z) along world y, via a -90 deg rotation about x.
 _ROD_ORIENTATION = (math.cos(-math.pi / 4), math.sin(-math.pi / 4), 0.0, 0.0)
 
@@ -43,7 +45,7 @@ def _build_strip() -> tuple["sx.DeformableBodyOptions", list[tuple[int, int]]]:
         for a, b in edges
     ]
     # Coulomb friction against the rod opposes the axial shove.
-    options.material.friction_coefficient = 0.8
+    options.material.friction_coefficient = _FRICTION
     return options, edges
 
 
@@ -73,9 +75,45 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="rod_strip", edges=edges)
 
+    speed_history = deque(maxlen=120)
+    clearance_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        velocities = np.asarray(
+            [body.node_velocity(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        if positions.size:
+            radial = np.linalg.norm(
+                positions[:, [0, 2]] - np.asarray(_ROD_CENTER)[[0, 2]], axis=1
+            )
+            clearance = float(np.min(radial - _ROD_RADIUS))
+            axis_speed = float(np.mean(np.abs(velocities[:, 1])))
+            clearance_history.append(clearance)
+            speed_history.append(axis_speed)
+            builder.text(f"friction coefficient: {_FRICTION:.2f}")
+            builder.text(f"rod-axis speed: {axis_speed:.3f} m/s")
+            builder.text(f"rod clearance: {clearance:.4f} m")
+        diagnostics = world.last_deformable_solver_diagnostics
+        builder.text(
+            f"solver iters: {diagnostics.solver_iterations} | "
+            f"friction dissipation: {diagnostics.friction_dissipation:.4f}"
+        )
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if speed_history:
+            builder.separator()
+            builder.plot_lines("Rod-axis speed", list(speed_history))
+            builder.plot_lines("Rod clearance", list(clearance_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC Rod Friction", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

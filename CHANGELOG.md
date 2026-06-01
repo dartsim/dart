@@ -14,7 +14,7 @@
   - Removed all GLUT code and converted GLUT examples to OSG. ([#2044](https://github.com/dartsim/dart/pull/2044))
   - Renamed the OpenSceneGraph GUI component/target to `gui`/`dart-gui` (previously `gui-osg`/`dart-gui-osg`) and replaced the `DART_BUILD_GUI_OSG` toggle with `DART_BUILD_GUI`. ([#2209](https://github.com/dartsim/dart/pull/2209), [#2257](https://github.com/dartsim/dart/pull/2257))
   - Renamed `DartLoader` to `UrdfParser` and standardized parser naming in model-loading APIs. ([#2269](https://github.com/dartsim/dart/pull/2269), [#2270](https://github.com/dartsim/dart/pull/2270))
-  - Replaced the pybind11 dartpy bindings with nanobind and flattened the dartpy namespace; legacy modules and camelCase remain available with `DeprecationWarning` for DART 7.x and are slated for removal in DART 8.0 (see `DARTPY_ENABLE_LEGACY_MODULES`, `DARTPY_WARN_ON_LEGACY_MODULES`, `DARTPY_ENABLE_SNAKE_CASE`, `DARTPY_WARN_ON_CAMELCASE`). ([#2249](https://github.com/dartsim/dart/pull/2249), [#2256](https://github.com/dartsim/dart/pull/2256), [#2259](https://github.com/dartsim/dart/pull/2259))
+  - Replaced the pybind11 dartpy bindings with nanobind and flattened the dartpy namespace; legacy modules and camelCase remain available with `DeprecationWarning` only while DART 7 clean-break gates are being closed, and they are not part of the DART 7 public contract (see `DARTPY_ENABLE_LEGACY_MODULES`, `DARTPY_WARN_ON_LEGACY_MODULES`, `DARTPY_ENABLE_SNAKE_CASE`, `DARTPY_WARN_ON_CAMELCASE`). ([#2249](https://github.com/dartsim/dart/pull/2249), [#2256](https://github.com/dartsim/dart/pull/2256), [#2259](https://github.com/dartsim/dart/pull/2259))
   - Removed the legacy integration module and moved the optimizer component to `dart-optimization`; optional optimizer plugins and pagmo APIs are removed. ([#2201](https://github.com/dartsim/dart/pull/2201), [#2204](https://github.com/dartsim/dart/pull/2204))
   - Removed build-mode macros from public config headers and prefixed feature macros with `DART_`. ([#2275](https://github.com/dartsim/dart/pull/2275), [#2278](https://github.com/dartsim/dart/pull/2278))
   - Removed deprecated experimental example and benchmark directories.
@@ -704,6 +704,28 @@
     (matching legacy DART and easing model loading). Verified by an offset-COM
     pendulum matching the parallel-axis mass matrix, gravity torque, and
     acceleration.
+  - Added an experimental C++ `simulation::experimental::io::addSkeleton`
+    bridge that translates already-parsed legacy `dynamics::Skeleton` trees into
+    experimental multibodies for the Weld/Revolute/Prismatic/Screw/Universal/
+    Ball/Planar/Free tree-joint families, preserving names, root anchors, joint
+    transforms/state/limits/passive properties, mass, inertia, and local COM
+    offsets, plus one centered collidable Box/Sphere/Capsule/Cylinder/Mesh
+    collision shape per link when that legacy geometry maps exactly to the
+    experimental `CollisionShape` facade. URI-loading overloads now accept
+    explicit `dart::io::ReadOptions`, including dartpy `ReadOptions` bindings
+    for format selection, SDF default root-joint selection, and URDF package
+    directories.
+    The dartpy `CollisionShape` facade now exposes the cylinder and mesh types,
+    constructors, mesh vertices, and triangle indices. The bridge is exposed to
+    dartpy as `dartpy.simulation_experimental.add_skeleton()` with
+    `SkeletonLoadOptions` for both already-parsed Skeleton objects and URI
+    strings that use the default `dart::io::readSkeleton()` reader
+    configuration. C++ `addWorld` and dartpy `add_world()` now compose the same
+    importer over every Skeleton in an already-parsed or URI-loaded legacy
+    World. Parser-specific options, remaining legacy-only joint families,
+    offset/multiple/visual shape import, diagnostics, and richer load-result
+    ergonomics remain future model-loading
+    work.
   - Added experimental generalized-coordinate dynamics accessors on `Multibody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,
@@ -1160,6 +1182,38 @@ Capsule Rod (IPC)` py-demos scene.
     which solve path a body uses (zero means every solve was direct). Adds C++
     and Python regressions that the default direct solve reports zero while an
     opt-in iterative body reports a nonzero count.
+  - Extended the public deformable projected-Newton diagnostics with CG effort,
+    residual, and sparse-Hessian footprint counters (PLAN-081 M7).
+    `DeformableSolverDiagnostics` (dartpy
+    `last_deformable_solver_diagnostics`) now also carries
+    `projectedNewtonIterativeIterations` /
+    `projected_newton_iterative_iterations`,
+    `projectedNewtonIterativeMaxError` /
+    `projected_newton_iterative_max_error`,
+    `projectedNewtonHessianNonZeros` /
+    `projected_newton_hessian_nonzeros`, and
+    `projectedNewtonHessianStorageBytes` /
+    `projected_newton_hessian_storage_bytes`, so benchmark and tuning code can
+    distinguish "CG path was used" from "CG converged cheaply" and can track the
+    assembled sparse matrix footprint that future matrix-free CG must remove.
+    The FEM-bar and chunky 3D cube benchmarks now emit `cg_iters_per_step`,
+    `cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters
+    toward the PLAN-081 Fig. 23 / Table 1 profiling surface.
+  - Added an explicit matrix-free deformable projected-Newton CG path
+    (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
+    (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`
+    Hessian assembly and applies local Hessian blocks directly with a
+    block-Jacobi preconditioner. The default direct and sparse IC-CG paths are
+    unchanged. `DeformableSolverDiagnostics` now reports
+    `projectedNewtonMatrixFreeSolves` /
+    `projected_newton_matrix_free_solves`; matrix-free benchmark rows emit
+    `matrix_free_solves_per_step` and zero sparse-Hessian footprint counters.
+    Adds C++ and dartpy ground-contact regressions showing matrix-free CG reaches
+    the same contact equilibrium as the direct sparse solve, while the C++ FEM
+    cube regression also compares sparse IC-CG against both paths. The
+    simulation-experimental binary format is bumped so legacy v8 deformable
+    materials load with the new matrix-free flag defaulted off instead of
+    consuming the following byte.
   - Added a chunky 3D FEM-cube **direct-vs-iterative scaling benchmark** for the
     experimental deformable solver (PLAN-081 M7). `BM_DeformableCube3dDirectStep`
     and `BM_DeformableCube3dCgStep` step a solid N^3 cube of FEM tetrahedra
@@ -2331,6 +2385,33 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Added a robot-agnostic Python SIMBICON controller to `pixi run py-demos` with new `atlas_simbicon`, `g1_simbicon`, and `simbicon_duo` scenes. A single config-driven controller (`scenes/_simbicon.py`) implements the SIMBICON FSM, world-frame torso/swing-hip control, and the `theta_d = theta_d0 + c_d*d + c_v*v` balance feedback, parameterized per robot (`scenes/_simbicon_robots.py`); both the bundled Atlas v5 and the (locally cached) Unitree G1 balance/step under it, including together in one world. Uses the paper's hip-midpoint COM proxy (dartpy exposes no `getCOM`), a foot-height contact proxy, and Stable PD so stiff gains stay stable on G1's light, low-inertia joints.
   - Improved the Python SIMBICON balance robustness with two evidence-driven control fixes. State traces showed both robots fail the same way: the stance leg creeps into a slightly deeper crouch each cycle so the pelvis gradually sinks until it drops out of the control window. (1) Added stance-leg height regulation (`height_kp`) that extends the stance knee back toward the standing pelvis height captured at spawn, and (2) completed the world-frame torso control as a true PD by wiring in the previously-unused `torso_kd` damping term (derived from the pelvis angular velocity). With `height_kp=2.0`, Atlas balances and steps in place for 3000+ steps (it toppled around step 2800 before) and G1's time-to-fall nearly doubles (1170 → 2204 steps). A residual lateral (coronal) instability still topples both over longer horizons; sweeping the coronal feedback gain and a per-side sign flip did not improve it, so the deeper lateral foot-placement work is left as a documented limit rather than masked.
   - Made `dart::gui::runDemos`/`--scene` accept both hyphenated and snake_case scene ids (`atlas-simbicon` and `atlas_simbicon`) and print the available scenes on an unknown id instead of silently starting the first scene, which makes headless screenshot capture reliable.
+  - Hardened `pixi run py-demos` runtime scene switching: Python scene
+    builders and startup `pre_step` callbacks now share the demo startup
+    watchdog, and switched demos that throw, fail render-state creation, or
+    return their first frame over budget restore the previous active demo
+    instead of leaving the workspace stuck on the requested scene. Pending
+    sidebar switches can also be retargeted by clicking a different demo before
+    the candidate starts.
+  - Tightened Python demo visual debugging: the docked `Simulation` panel now
+    uses compact transport controls for simulation and recorded-frame playback,
+    and `py-demo-capture --show-ui` rejects captures without the docked ImGui
+    workspace while dropping warm-up frames before the UI is visible.
+  - Made sx Python demo external-force panels target-aware: they now list
+    mapped dynamic drag targets before a drag starts while continuing to report
+    disabled, static, unmapped, invalid, and applying states.
+  - Added an `Experimental focus` toggle to the Python demos navigator. When
+    the active scene is an sx/experimental demo, the sidebar opens focused on
+    simulation-experimental categories while still allowing users to browse the
+    full legacy DART API catalog by unchecking the toggle.
+  - Kept docked Python demo panes resizable across runtime demo switches by
+    storing dock-layout initialization in the viewer lifecycle and clearing
+    no-resize flags from the default dock nodes.
+  - Updated the GLFW-backed ImGui input bridge so docked Python demo pane
+    edges show the appropriate resize cursors while preserving resizable pane
+    behavior.
+  - Forwarded GLFW keyboard and character input into the ImGui bridge so the
+    docked Python demos sidebar search box accepts typed text while app-level
+    shortcuts yield to focused text fields.
 
 - Tests
   - Test organization and naming updates: reorganized test directories, normalized PascalCase names, and split integration test binaries. ([#2071](https://github.com/dartsim/dart/pull/2071), [#2116](https://github.com/dartsim/dart/pull/2116), [#2193](https://github.com/dartsim/dart/pull/2193), [#2210](https://github.com/dartsim/dart/pull/2210), [#2260](https://github.com/dartsim/dart/pull/2260))

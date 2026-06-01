@@ -7,7 +7,8 @@
 - Contributing code? → [contributing.md](contributing.md) + [code-style.md](code-style.md)
 - Understanding core architecture? → [architecture.md](architecture.md)
 - Gazebo integration? → [build-system.md](build-system.md#gazebo-integration-feature)
-- Key command: `pixi run test-all` (lint + build + all tests)
+- Key command: `pixi run test-all` (lint + build + all default-environment
+  tests); on Linux CUDA hosts also run `pixi run -e cuda test-all`
 
 ## Documentation Principles
 
@@ -487,7 +488,7 @@ drawing expressed as DART values instead of renderer types.
 - `dartpy` (top-level) - Core classes/functions (math, dynamics, collision, simulation, constraint, optimizer) exposed in snake_case
 - `dartpy.io` - File parsers (URDF, SDF, SKEL, MJCF) [alias for legacy `utils`]
 - `dartpy.gui` - Filament-backed GUI descriptors and helpers
-- Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable in DART 7.x but emit `DeprecationWarning` and will be removed in DART 8.0.
+- Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable while DART 7 clean-break gates are being closed, but emit `DeprecationWarning` and should not be part of the DART 7 public contract.
 
 **Key Files**:
 
@@ -1013,6 +1014,8 @@ This section is intentionally brief and delegates to the focused onboarding docs
 Suggested (Unverified):
 
 - `pixi run test-all` (recommended by the PR template)
+- `pixi run -e cuda test-all` when a Linux host has a visible NVIDIA CUDA
+  runtime
 
 ---
 

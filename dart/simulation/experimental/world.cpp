@@ -135,8 +135,18 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
   diagnostics.lineSearchTrials = stats.lineSearchTrials;
   diagnostics.projectedNewtonSteps = stats.projectedNewtonSteps;
   diagnostics.projectedNewtonFallbacks = stats.projectedNewtonFallbacks;
+  diagnostics.projectedNewtonHessianNonZeros
+      = stats.projectedNewtonHessianNonZeros;
+  diagnostics.projectedNewtonHessianStorageBytes
+      = stats.projectedNewtonHessianStorageBytes;
   diagnostics.projectedNewtonIterativeSolves
       = stats.projectedNewtonIterativeSolves;
+  diagnostics.projectedNewtonMatrixFreeSolves
+      = stats.projectedNewtonMatrixFreeSolves;
+  diagnostics.projectedNewtonIterativeIterations
+      = stats.projectedNewtonIterativeIterations;
+  diagnostics.projectedNewtonIterativeMaxError
+      = stats.projectedNewtonIterativeMaxError;
   diagnostics.selfContactBarrierActiveContacts
       = stats.selfContactBarrierActiveContacts;
   diagnostics.frictionDissipation = stats.frictionDissipation;
@@ -769,6 +779,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
       = options.material.useAdaptiveBarrierStiffness;
   data.material.useIterativeLinearSolver
       = options.material.useIterativeLinearSolver;
+  data.material.useMatrixFreeLinearSolver
+      = options.material.useMatrixFreeLinearSolver;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);
@@ -2256,6 +2268,10 @@ std::vector<Contact> World::collide()
             collisionShape.radius,
             collisionShape.radius,
             collisionShape.halfExtents.z() + collisionShape.radius));
+        break;
+      case CollisionShapeType::Cylinder:
+        shape = std::make_unique<ncol::CylinderShape>(
+            collisionShape.radius, 2.0 * collisionShape.halfExtents.z());
         break;
       case CollisionShapeType::Mesh:
         shape = std::make_unique<ncol::MeshShape>(

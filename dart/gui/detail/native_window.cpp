@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/detail/gui_scale.hpp>
+#include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/native_window.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -188,6 +189,7 @@ GLFWwindow* ApplicationWindow::get() const
 void ApplicationWindow::reset(GLFWwindow* window)
 {
   if (mWindow != nullptr) {
+    destroyImGuiMouseCursors(mWindow);
     glfwDestroyWindow(mWindow);
     glfwTerminate();
   }

@@ -9,8 +9,12 @@ guarantee is that the runner itself stays healthy.
 
 from __future__ import annotations
 
+import importlib.util
+import json
 import pathlib
+import signal
 import sys
+import time
 
 # Put python/ on sys.path so the demos package is importable.
 _PYTHON_DIR = pathlib.Path(__file__).resolve().parents[2]
@@ -20,6 +24,18 @@ if str(_PYTHON_DIR) not in sys.path:
 import pytest
 
 from examples.demos import make_demo_scenes, run  # noqa: E402
+
+
+def _capture_py_demo_module():
+    root = pathlib.Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location(
+        "capture_py_demo", root / "scripts" / "capture_py_demo.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _gui_run_demos_available() -> bool:
@@ -38,6 +54,37 @@ def _gui_run_demos_available() -> bool:
     return hasattr(dart, "gui") and hasattr(dart.gui, "run_demos")
 
 
+def _read_ppm(path: pathlib.Path) -> tuple[int, int, bytes]:
+    data = path.read_bytes()
+    parts = data.split(b"\n", 3)
+    assert len(parts) == 4
+    assert parts[0] == b"P6"
+    width, height = (int(part) for part in parts[1].split())
+    assert parts[2] == b"255"
+    return width, height, parts[3][: width * height * 3]
+
+
+def _mean_luminance(
+    pixels: bytes,
+    width: int,
+    x0: int,
+    x1: int,
+    y0: int,
+    y1: int,
+) -> float:
+    total = 0.0
+    count = 0
+    for y in range(y0, y1):
+        row = y * width * 3
+        for x in range(x0, x1):
+            offset = row + x * 3
+            red, green, blue = pixels[offset : offset + 3]
+            total += 0.2126 * red + 0.7152 * green + 0.0722 * blue
+            count += 1
+    assert count > 0
+    return total / count
+
+
 def _simulation_experimental_has(*names: str) -> bool:
     try:
         import dartpy.simulation_experimental as sx
@@ -53,9 +100,7 @@ def _require_simulation_experimental_symbols(*names: str):
         pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
-        formatted = ", ".join(
-            f"simulation_experimental.{name}" for name in missing
-        )
+        formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
         pytest.skip(f"{formatted} unavailable in this build")
     return sx
 
@@ -467,6 +512,54 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     assert not any(s.startswith("ipc_deformable_") for s in experimental)
 
 
+def test_experimental_world_scenes_use_solver_focused_categories() -> None:
+    scenes = make_demo_scenes()
+    by_id = {scene.id: scene for scene in scenes}
+
+    expected = {
+        "Experimental Rigid Body (sx)": {
+            "sx_articulated",
+            "sx_floating_base",
+            "sx_contact",
+            "experimental_rigid_body_gui",
+        },
+        "Rigid IPC (sx)": {
+            "sx_rigid_ipc",
+            "sx_rigid_ipc_slide",
+            "sx_rigid_ipc_incline",
+            "sx_rigid_ipc_pile",
+            "sx_rigid_ipc_tunnel",
+        },
+        "Variational Integrators (sx)": {
+            "sx_variational_chain",
+            "sx_variational_tumbler",
+            "sx_variational_contact",
+            "sx_loop_closure",
+        },
+        "Vertex Block Descent (sx)": {
+            "vbd_cloth",
+            "vbd_net",
+            "vbd_beam",
+            "vbd_tilted_strand",
+            "vbd_obstacle_drape",
+            "vbd_self_fold",
+        },
+    }
+
+    for category, scene_ids in expected.items():
+        for scene_id in scene_ids:
+            assert by_id[scene_id].category == category
+
+    old_experimental = [
+        scene.id for scene in scenes if scene.category == "Experimental"
+    ]
+    assert not any(
+        scene_id.startswith(("sx_", "vbd_"))
+        or scene_id == "experimental_rigid_body_gui"
+        for scene_id in old_experimental
+    )
+
+
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
     """`--screenshot` writes a real PPM via the dartpy.gui Filament viewer
     (PLAN-103 Phase 2 replacement for the old JSON state stub)."""
@@ -501,3 +594,645 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
         # PPM "P6" header + non-empty pixel payload (>1KB) for any valid frame.
         assert data.startswith(b"P6"), f"not a PPM: {data[:8]!r}"
         assert len(data) > 1024, f"PPM too small: {len(data)} bytes"
+
+
+def test_show_ui_uses_docked_workspace_regions(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, ScenePanel, SceneSetup
+
+    if not getattr(dart.gui, "is_docking_available", lambda: False)():
+        pytest.skip("GUI build does not include ImGui docking support")
+
+    monkeypatch.setenv("LIBGL_ALWAYS_SOFTWARE", "1")
+    monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+
+    def build_scene() -> SceneSetup:
+        world = dart.World("docked_smoke")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        panel = ScenePanel(
+            "Controls",
+            lambda builder, _context: builder.text("dock smoke"),
+        )
+        return SceneSetup(world=world, panels=[panel])
+
+    out = tmp_path / "docked.ppm"
+    rc = run(
+        [
+            "--scene",
+            "docked_smoke",
+            "--frames",
+            "4",
+            "--headless",
+            "--show-ui",
+            "--width",
+            "640",
+            "--height",
+            "360",
+            "--screenshot",
+            str(out),
+        ],
+        [
+            PythonDemoScene(
+                id="docked_smoke",
+                title="Docked Smoke",
+                category="Test",
+                summary="Exercises the docked workspace.",
+                build=build_scene,
+            )
+        ],
+    )
+
+    assert rc == 0
+    width, height, pixels = _read_ppm(out)
+    assert (width, height) == (640, 360)
+
+    top = _mean_luminance(pixels, width, 0, width, 0, 70)
+    left = _mean_luminance(pixels, width, 0, 155, 80, 320)
+    right = _mean_luminance(pixels, width, 470, width, 80, 320)
+    bottom = _mean_luminance(pixels, width, 0, width, 320, height)
+    center = _mean_luminance(pixels, width, 180, 460, 100, 300)
+
+    assert top < 70.0
+    assert left < 80.0
+    assert right < 80.0
+    assert bottom < 70.0
+    assert center > 90.0
+    assert center > left + 35.0
+    assert center > right + 35.0
+
+
+def test_py_demo_capture_records_ui_force_drag_artifacts(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+
+    if not getattr(dart.gui, "is_docking_available", lambda: False)():
+        pytest.skip("GUI build does not include ImGui docking support")
+    _require_simulation_experimental_symbols(
+        "World", "RigidBodySolver", "CollisionShape"
+    )
+
+    monkeypatch.setenv("LIBGL_ALWAYS_SOFTWARE", "1")
+    monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+    capture_py_demo = _capture_py_demo_module()
+    output = tmp_path / "capture"
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "sx_rigid_ipc_slide",
+            "--force-drag-target",
+            "ipc_slide_box_visual",
+            "--force-drag-frame",
+            "2",
+            "--force-drag-frames",
+            "5",
+            "--show-ui",
+            "--frames",
+            "10",
+            "--width",
+            "640",
+            "--height",
+            "360",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["ui_ready"]["required"] is True
+    assert manifest["ui_ready"]["dropped_warmup_frames"] >= 0
+    assert pathlib.Path(manifest["artifacts"]["screenshot"]).is_file()
+    png_frames = sorted((output / "png_frames").glob("frame_*.png"))
+    assert png_frames
+    ppm_frames = sorted((output / "frames").glob("frame_*.ppm"))
+    assert [frame.name for frame in ppm_frames] == [
+        f"frame_{index:06d}.ppm" for index in range(1, len(ppm_frames) + 1)
+    ]
+    assert capture_py_demo.ppm_has_docked_workspace_regions(ppm_frames[0])
+
+    events = [
+        json.loads(line)
+        for line in (output / "events.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    event_names = [event["event"] for event in events]
+    assert "force_drag_started" in event_names
+    assert "force_drag_updated" in event_names
+    assert "force_drag_released" in event_names
+    assert event_names[-1] == "artifacts_written"
+
+
+def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
+    tmp_path: pathlib.Path,
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, SceneSetup
+
+    def build_good() -> SceneSetup:
+        world = dart.World("good")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        return SceneSetup(world=world)
+
+    def build_broken() -> SceneSetup:
+        raise RuntimeError("intentional scripted switch failure")
+
+    events = tmp_path / "events.jsonl"
+    screenshot = tmp_path / "snap.ppm"
+    rc = run(
+        [
+            "--scene",
+            "good",
+            "--headless",
+            "--frames",
+            "5",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(screenshot),
+            "--scripted-demo-switch",
+            "2:broken",
+            "--scripted-demo-event-log",
+            str(events),
+        ],
+        [
+            PythonDemoScene(
+                id="good",
+                title="Good",
+                category="Test",
+                summary="Builds successfully.",
+                build=build_good,
+            ),
+            PythonDemoScene(
+                id="broken",
+                title="Broken",
+                category="Test",
+                summary="Throws during factory startup.",
+                build=build_broken,
+            ),
+        ],
+    )
+
+    assert rc == 0
+    payloads = [json.loads(line) for line in events.read_text().splitlines()]
+    events_by_name = {payload["event"]: payload for payload in payloads}
+    assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
+    assert events_by_name["requested_demo_switch"]["target_scene"] == "broken"
+    assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
+    assert "factory threw" in events_by_name["restored_previous_demo"]["status"]
+    assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
+
+
+def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, SceneSetup
+
+    good_setup: SceneSetup | None = None
+
+    def build_good() -> SceneSetup:
+        nonlocal good_setup
+        if good_setup is not None:
+            return good_setup
+        world = dart.World("good")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        good_setup = SceneSetup(world=world)
+        return good_setup
+
+    def build_slow() -> SceneSetup:
+        time.sleep(0.25)
+        world = dart.World("slow")
+        world.set_time_step(0.001)
+        return SceneSetup(world=world)
+
+    monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "10")
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "100")
+    events = tmp_path / "events.jsonl"
+    screenshot = tmp_path / "snap.ppm"
+    rc = run(
+        [
+            "--scene",
+            "good",
+            "--headless",
+            "--frames",
+            "5",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(screenshot),
+            "--scripted-demo-switch",
+            "2:slow",
+            "--scripted-demo-event-log",
+            str(events),
+        ],
+        [
+            PythonDemoScene(
+                id="good",
+                title="Good",
+                category="Test",
+                summary="Builds successfully.",
+                build=build_good,
+            ),
+            PythonDemoScene(
+                id="slow",
+                title="Slow",
+                category="Test",
+                summary="Returns after the startup budget.",
+                build=build_slow,
+            ),
+        ],
+    )
+
+    assert rc == 0
+    payloads = [json.loads(line) for line in events.read_text().splitlines()]
+    events_by_name = {payload["event"]: payload for payload in payloads}
+    assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
+    assert events_by_name["requested_demo_switch"]["target_scene"] == "slow"
+    assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
+    restored_status = events_by_name["restored_previous_demo"]["status"]
+    assert any(
+        expected in restored_status
+        for expected in (
+            "Python demo scene 'slow' build exceeded",
+            "factory startup exceeded budget",
+        )
+    )
+    assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
+
+
+def test_scripted_demo_switch_restores_previous_scene_on_render_state_failure(
+    tmp_path: pathlib.Path,
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, SceneSetup
+
+    def build_good() -> SceneSetup:
+        world = dart.World("good")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        return SceneSetup(world=world)
+
+    def build_empty() -> SceneSetup:
+        world = dart.World("empty")
+        world.set_time_step(0.001)
+        return SceneSetup(world=world)
+
+    events = tmp_path / "events.jsonl"
+    screenshot = tmp_path / "snap.ppm"
+    rc = run(
+        [
+            "--scene",
+            "good",
+            "--headless",
+            "--frames",
+            "5",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(screenshot),
+            "--scripted-demo-switch",
+            "2:empty",
+            "--scripted-demo-event-log",
+            str(events),
+        ],
+        [
+            PythonDemoScene(
+                id="good",
+                title="Good",
+                category="Test",
+                summary="Builds successfully.",
+                build=build_good,
+            ),
+            PythonDemoScene(
+                id="empty",
+                title="Empty",
+                category="Test",
+                summary="Builds but has no visible render state.",
+                build=build_empty,
+            ),
+        ],
+    )
+
+    assert rc == 0
+    payloads = [json.loads(line) for line in events.read_text().splitlines()]
+    events_by_name = {payload["event"]: payload for payload in payloads}
+    assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
+    assert events_by_name["requested_demo_switch"]["target_scene"] == "empty"
+    assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
+    assert (
+        "render state creation failed"
+        in events_by_name["restored_previous_demo"]["status"]
+    )
+    assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
+
+
+def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if (
+        not hasattr(signal, "SIGALRM")
+        or not hasattr(signal, "ITIMER_REAL")
+        or not hasattr(signal, "getitimer")
+        or not hasattr(signal, "setitimer")
+    ):
+        pytest.skip("SIGALRM scene build watchdog unavailable")
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, SceneSetup
+
+    def build_good() -> SceneSetup:
+        world = dart.World("good")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        return SceneSetup(world=world)
+
+    def build_stalled() -> SceneSetup:
+        time.sleep(60.0)
+        world = dart.World("stalled")
+        world.set_time_step(0.001)
+        return SceneSetup(world=world)
+
+    monkeypatch.delenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", raising=False)
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "10")
+    events = tmp_path / "events.jsonl"
+    screenshot = tmp_path / "snap.ppm"
+    started = time.monotonic()
+    rc = run(
+        [
+            "--scene",
+            "good",
+            "--headless",
+            "--frames",
+            "5",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(screenshot),
+            "--scripted-demo-switch",
+            "2:stalled",
+            "--scripted-demo-event-log",
+            str(events),
+        ],
+        [
+            PythonDemoScene(
+                id="good",
+                title="Good",
+                category="Test",
+                summary="Builds successfully.",
+                build=build_good,
+            ),
+            PythonDemoScene(
+                id="stalled",
+                title="Stalled",
+                category="Test",
+                summary="Does not return without a watchdog.",
+                build=build_stalled,
+            ),
+        ],
+    )
+    elapsed = time.monotonic() - started
+
+    assert rc == 0
+    assert elapsed < 5.0
+    payloads = [json.loads(line) for line in events.read_text().splitlines()]
+    events_by_name = {payload["event"]: payload for payload in payloads}
+    assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
+    assert events_by_name["requested_demo_switch"]["target_scene"] == "stalled"
+    assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
+    assert (
+        "Python demo scene 'stalled' build exceeded"
+        in events_by_name["restored_previous_demo"]["status"]
+    )
+    assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
+
+
+def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stalls(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if (
+        not hasattr(signal, "SIGALRM")
+        or not hasattr(signal, "ITIMER_REAL")
+        or not hasattr(signal, "getitimer")
+        or not hasattr(signal, "setitimer")
+    ):
+        pytest.skip("SIGALRM scene callback watchdog unavailable")
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, SceneSetup
+
+    def build_good() -> SceneSetup:
+        world = dart.World("good")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        return SceneSetup(world=world)
+
+    def build_stalled_step() -> SceneSetup:
+        world = dart.World("stalled_step")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "stalled_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
+        world.add_simple_frame(frame)
+
+        def pre_step() -> None:
+            time.sleep(60.0)
+
+        return SceneSetup(world=world, pre_step=pre_step)
+
+    monkeypatch.delenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", raising=False)
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "10")
+    events = tmp_path / "events.jsonl"
+    screenshot = tmp_path / "snap.ppm"
+    started = time.monotonic()
+    rc = run(
+        [
+            "--scene",
+            "good",
+            "--headless",
+            "--frames",
+            "5",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(screenshot),
+            "--scripted-demo-switch",
+            "2:stalled_step",
+            "--scripted-demo-event-log",
+            str(events),
+        ],
+        [
+            PythonDemoScene(
+                id="good",
+                title="Good",
+                category="Test",
+                summary="Builds successfully.",
+                build=build_good,
+            ),
+            PythonDemoScene(
+                id="stalled_step",
+                title="Stalled Step",
+                category="Test",
+                summary="Does not pre-step without a watchdog.",
+                build=build_stalled_step,
+            ),
+        ],
+    )
+    elapsed = time.monotonic() - started
+
+    assert rc == 0
+    assert elapsed < 5.0
+    payloads = [json.loads(line) for line in events.read_text().splitlines()]
+    events_by_name = {payload["event"]: payload for payload in payloads}
+    assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
+    assert events_by_name["requested_demo_switch"]["target_scene"] == "stalled_step"
+    assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
+    assert (
+        "Python demo scene 'stalled_step' pre_step exceeded"
+        in events_by_name["restored_previous_demo"]["status"]
+    )
+    assert events_by_name["script_finished_without_target"]["active_scene"] == "good"
+
+
+def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, SceneSetup
+
+    def build_good() -> SceneSetup:
+        world = dart.World("good")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
+        world.add_simple_frame(frame)
+        return SceneSetup(world=world)
+
+    def build_slow_step() -> SceneSetup:
+        world = dart.World("slow_step")
+        world.set_time_step(0.001)
+        frame = dart.SimpleFrame(dart.Frame.world(), "slow_box")
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
+        world.add_simple_frame(frame)
+
+        def pre_step() -> None:
+            time.sleep(0.25)
+
+        return SceneSetup(world=world, pre_step=pre_step)
+
+    monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "0")
+    monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "100")
+    events = tmp_path / "events.jsonl"
+    screenshot = tmp_path / "snap.ppm"
+    rc = run(
+        [
+            "--scene",
+            "good",
+            "--headless",
+            "--frames",
+            "5",
+            "--width",
+            "160",
+            "--height",
+            "120",
+            "--screenshot",
+            str(screenshot),
+            "--scripted-demo-switch",
+            "2:slow_step",
+            "--scripted-demo-event-log",
+            str(events),
+        ],
+        [
+            PythonDemoScene(
+                id="good",
+                title="Good",
+                category="Test",
+                summary="Builds successfully.",
+                build=build_good,
+            ),
+            PythonDemoScene(
+                id="slow_step",
+                title="Slow Step",
+                category="Test",
+                summary="Returns after the first-frame budget.",
+                build=build_slow_step,
+            ),
+        ],
+    )
+
+    assert rc == 0
+    payloads = [json.loads(line) for line in events.read_text().splitlines()]
+    events_by_name = {payload["event"]: payload for payload in payloads}
+    assert events_by_name["requested_demo_switch"]["active_scene"] == "good"
+    assert events_by_name["requested_demo_switch"]["target_scene"] == "slow_step"
+    assert events_by_name["restored_previous_demo"]["active_scene"] == "good"
+    assert (
+        "first frame exceeded startup budget"
+        in events_by_name["restored_previous_demo"]["status"]
+    )
+    assert events_by_name["script_finished_without_target"]["active_scene"] == "good"

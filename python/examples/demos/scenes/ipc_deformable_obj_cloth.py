@@ -12,12 +12,14 @@ DART-native showcase -- not a faithful IPC paper-figure reproduction.
 
 from __future__ import annotations
 
+from collections import deque
 from pathlib import Path
 
+import numpy as np
 import dartpy.simulation_experimental as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_cloth_from_obj
-from ..runner import PythonDemoScene, SceneSetup
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _CLOTH_PATH = Path(__file__).resolve().parent.parent / "assets" / "cloth_grid.obj"
 _GROUND_CENTER = (0.0, 0.0, -0.26)
@@ -38,6 +40,7 @@ def build() -> SceneSetup:
     ys = [float(p[1]) for p in options.positions]
     y_max = max(ys)
     options.fixed_nodes = [i for i, y in enumerate(ys) if y > y_max - 1e-4]
+    fixed_nodes = list(options.fixed_nodes)
 
     world = sx.World()
     world.gravity = [0.0, 0.0, -9.81]
@@ -60,9 +63,46 @@ def build() -> SceneSetup:
     )
     bridge.add_deformable_visual(body, name="obj_cloth", edges=edges)
 
+    sag_history = deque(maxlen=120)
+    clearance_history = deque(maxlen=120)
+    span_z_history = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = np.asarray(
+            [body.node_position(i) for i in range(int(body.node_count))],
+            dtype=float,
+        )
+        builder.text("asset: cloth_grid.obj")
+        builder.text(f"pins: max-y edge ({len(fixed_nodes)} nodes)")
+        if positions.size:
+            ground_top = _GROUND_CENTER[2] + _GROUND_HALF[2]
+            pinned_z = (
+                float(np.mean(positions[fixed_nodes, 2]))
+                if fixed_nodes
+                else float(np.max(positions[:, 2]))
+            )
+            min_z = float(np.min(positions[:, 2]))
+            sag = pinned_z - min_z
+            clearance = min_z - ground_top
+            span_z = float(np.max(positions[:, 2]) - min_z)
+            sag_history.append(sag)
+            clearance_history.append(clearance)
+            span_z_history.append(span_z)
+            builder.text(f"cloth sag: {sag:.3f} m")
+            builder.text(f"ground clearance: {clearance:.4f} m")
+            builder.text(f"vertical span: {span_z:.3f} m")
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if sag_history:
+            builder.separator()
+            builder.plot_lines("Cloth sag", list(sag_history))
+            builder.plot_lines("Ground clearance", list(clearance_history))
+            builder.plot_lines("Span z", list(span_z_history))
+
     return SceneSetup(
         world=bridge.render_world,
         pre_step=bridge.pre_step,
+        panels=[ScenePanel("IPC OBJ Cloth", build_panel)],
         info={"sx_world": world, "nodes": body.node_count},
     )
 

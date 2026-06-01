@@ -14,14 +14,19 @@ from ._simbicon_robots import (
     build_simbicon_setup,
     load_g1_skeleton,
     make_g1_config,
+    make_simbicon_panel,
 )
 
 
 def build() -> SceneSetup:
-    world, _controllers, pre_step = build_simbicon_setup(
+    world, controllers, pre_step = build_simbicon_setup(
         [(load_g1_skeleton, make_g1_config(), 0.0)]
     )
-    setup = SceneSetup(world=world, info={"robot": "g1"})
+    setup = SceneSetup(
+        world=world,
+        panels=[make_simbicon_panel("G1 SIMBICON", controllers)],
+        info={"robot": "g1"},
+    )
     setup.pre_step = pre_step
     return setup
 

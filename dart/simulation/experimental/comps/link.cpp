@@ -32,10 +32,6 @@
 
 #include "link.hpp"
 
-#include "dart/simulation/experimental/io/category_serializer.hpp"
-
 namespace dart::simulation::experimental::comps {
-
-DART_EXPERIMENTAL_REGISTER_COMPONENT(Link)
 
 } // namespace dart::simulation::experimental::comps
