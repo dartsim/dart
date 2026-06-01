@@ -155,4 +155,41 @@ assembleUnifiedConstraintProblem(
     const RigidBodyContactProblem& rigidProblem,
     std::span<const UnifiedMultibodyContact> multibodyContacts);
 
+/// The result of a joint unified boxed-LCP solve.
+struct UnifiedConstraintSolution
+{
+  Eigen::VectorXd
+      lambda; ///< solved global impulses (empty for an empty problem)
+  bool succeeded = false; ///< the joint Dantzig solve converged at full size
+};
+
+/// Solve the unified boxed-LCP `w = A*lambda - b`, `lo <= lambda <= hi` with
+/// the Coulomb cone coupled through `findex`, jointly over all contacts.
+///
+/// Uses the Dantzig solver's default options with early termination, so a
+/// rank-deficient contact set fails cleanly (`succeeded == false`) instead of
+/// emitting a partial solution; the caller falls back in that case. An empty
+/// problem succeeds trivially with an empty `lambda`. The options MUST come
+/// from `getDefaultOptions()` (not a default-constructed `LcpOptions`), because
+/// the validation/tolerance fields determine `succeeded()`.
+[[nodiscard]] DART_EXPERIMENTAL_API UnifiedConstraintSolution
+solveUnifiedConstraintProblem(const UnifiedConstraintProblem& problem);
+
+/// Apply the solved global impulses back to both domains.
+///
+/// Rigid contacts apply their world-space impulse to both bodies' velocities
+/// (via `applyRigidBodyContactImpulse`). Each link contact drives its owning
+/// multibody's staged generalized velocity by `M_k^-1 J^T lambda` and applies
+/// the equal-and-opposite impulse to a dynamic obstacle's velocity (Newton's
+/// third law). `multibodyVelocities` is parallel to `problem.multibodyBlocks`
+/// and is updated in place. Normal impulses are clamped non-negative (matching
+/// the existing stages); every impulse is applied after the solve, so apply
+/// order is irrelevant. A dynamic body shared between a rigid contact and a
+/// link obstacle accumulates both impulses into the same velocity.
+DART_EXPERIMENTAL_API void applyUnifiedConstraintImpulses(
+    entt::registry& registry,
+    const UnifiedConstraintProblem& problem,
+    const Eigen::VectorXd& lambda,
+    std::span<Eigen::VectorXd> multibodyVelocities);
+
 } // namespace dart::simulation::experimental::compute

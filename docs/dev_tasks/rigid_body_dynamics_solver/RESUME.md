@@ -464,7 +464,7 @@ simulation-experimental` (42/42), and `pixi run lint`.
     tangent frames are misaligned, so tangential coupling is generally nonzero).
     Cross terms are added only for pairs with at least one link row, so the
     verbatim rigid-rigid block is untouched. A shared body's `(invMass,
-    invInertia)` is reconciled to the rigid path's canonical value (the rigid and
+invInertia)` is reconciled to the rigid path's canonical value (the rigid and
     link assemblers normalize / handle LDLT failure differently). Still a pure
     function; NO pipeline change. Added the `CouplesSharedDynamicObstacle`
     test: an obstacle touched by both a rigid contact (on a static ground) and a
@@ -473,9 +473,27 @@ simulation-experimental` (42/42), and `pixi run lint`.
     unchanged, reconciliation equality, and the link diagonal completing to the
     stored denominator. Verified focused build + `test_unified_constraint`
     (5/5), full `ctest -L simulation-experimental` (43/43), `pixi run lint`.
-  - **Next: 3c-i.4** unified solver + impulse application (pinned `LcpOptions`),
-    then 3c-i.5 generalized fallback, 3c-ii.1 the `UnifiedConstraintStage` class
-    (dead, unit-tested via direct `execute`), 3c-ii.2 the pipeline flip.
+  - **(DONE locally) Slice 3c-i.4 — unified solver + impulse application.** Added
+    `solveUnifiedConstraintProblem` (joint Dantzig solve with the PINNED options
+    `solver.getDefaultOptions(); earlyTermination = true;` — never
+    default-constructed — returning `{lambda, succeeded}`) and
+    `applyUnifiedConstraintImpulses(registry, problem, lambda,
+    multibodyVelocities)` which applies the solved global impulses to rigid
+    bodies (`applyRigidBodyContactImpulse` verbatim) and to each multibody's
+    staged generalized velocity (`M_k^-1 J^T lambda`), plus the
+    equal-and-opposite Newton impulse to a dynamic obstacle; a body shared
+    between a rigid contact and a link obstacle accumulates both. Normal impulses
+    clamped non-negative; all applied post-solve so order is irrelevant. Still no
+    pipeline change. Added four tests: boxed-LCP KKT + Coulomb cone on a sliding
+    box, head-on rigid contact driven to zero relative normal velocity, a
+    one-sided link contact reaching the `max(bias, restitution)` target, and the
+    exact equal-and-opposite Newton impulse delivered to a two-sided obstacle.
+    Verified focused build + `test_unified_constraint` (9/9), full
+    `ctest -L simulation-experimental` (43/43), `pixi run lint`.
+  - **Next: 3c-i.5** generalized rank-deficient fallback (ascending normal-row
+    gather + diagonal projection + sequential friction sweep spanning rigid and
+    link rows), then 3c-ii.1 the `UnifiedConstraintStage` class (dead,
+    unit-tested via direct `execute`), 3c-ii.2 the pipeline flip.
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
     position stage runs until every velocity-writing stage has. A naive Slice-2

@@ -10,6 +10,7 @@
 
 #include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
+#include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_constraint.hpp>
@@ -502,4 +503,236 @@ TEST(UnifiedConstraint, CouplesSharedDynamicObstacleAcrossDomains)
   // plus the obstacle self-term), which the within-domain slice left short.
   EXPECT_NEAR(unified.delassus(3, 3), linkRow.normalDenominator, 1e-12);
   EXPECT_GT(linkRow.normalDenominator, 0.0);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, SolvedSolutionSatisfiesBoxedLcpConditions)
+{
+  // A box sliding tangentially while pressing on a static ground exercises the
+  // Coulomb cone: the solved friction must respect |lambda_t| <= mu*lambda_n.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setFriction(0.3);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  boxOptions.linearVelocity
+      = Eigen::Vector3d(2.0, 0.0, -1.0); // slide + descend
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setFriction(0.3);
+
+  std::vector<sx::Contact> contacts;
+  sx::Contact groundBox;
+  groundBox.bodyA = sx::CollisionBody(ground.getEntity(), &world);
+  groundBox.bodyB = sx::CollisionBody(box.getEntity(), &world);
+  groundBox.point = Eigen::Vector3d(0.0, 0.0, 0.0);
+  groundBox.normal = Eigen::Vector3d::UnitZ();
+  groundBox.depth = 0.01;
+  contacts.push_back(groundBox);
+
+  const auto rigid = sx::compute::assembleRigidBodyContactProblem(
+      world.getRegistry(), contacts);
+  const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
+  const auto unified
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
+  const auto solution = sx::compute::solveUnifiedConstraintProblem(unified);
+  ASSERT_TRUE(solution.succeeded);
+  ASSERT_EQ(solution.lambda.size(), unified.rhs.size());
+
+  const Eigen::VectorXd w = unified.delassus * solution.lambda - unified.rhs;
+  const double normalImpulse = std::max(0.0, solution.lambda[0]);
+  EXPECT_GE(solution.lambda[0], -1e-9);       // unilateral normal
+  EXPECT_GE(w[0], -1e-9);                     // separating (w_n >= 0)
+  EXPECT_LE(solution.lambda[0] * w[0], 1e-9); // complementarity
+  const double mu = unified.hi[1];            // friction coefficient
+  EXPECT_LE(std::abs(solution.lambda[1]), mu * normalImpulse + 1e-9);
+  EXPECT_LE(std::abs(solution.lambda[2]), mu * normalImpulse + 1e-9);
+  // Friction is genuinely active (the box is sliding).
+  EXPECT_GT(std::abs(solution.lambda[1]) + std::abs(solution.lambda[2]), 1e-9);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, SolveAndApplyStopsHeadOnRigidContact)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions leftOptions;
+  leftOptions.position = Eigen::Vector3d(-0.5, 0.0, 0.0);
+  leftOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto left = world.addRigidBody("left", leftOptions);
+
+  sx::RigidBodyOptions rightOptions;
+  rightOptions.position = Eigen::Vector3d(0.5, 0.0, 0.0);
+  rightOptions.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  auto right = world.addRigidBody("right", rightOptions);
+
+  std::vector<sx::Contact> contacts;
+  sx::Contact contact;
+  contact.bodyA = sx::CollisionBody(left.getEntity(), &world);
+  contact.bodyB = sx::CollisionBody(right.getEntity(), &world);
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitX(); // points left -> right
+  contact.depth = 0.0;
+  contacts.push_back(contact);
+
+  const auto rigid = sx::compute::assembleRigidBodyContactProblem(
+      world.getRegistry(), contacts);
+  const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
+  const auto unified
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
+  const auto solution = sx::compute::solveUnifiedConstraintProblem(unified);
+  ASSERT_TRUE(solution.succeeded);
+
+  std::vector<Eigen::VectorXd> noMultibodyVelocities;
+  sx::compute::applyUnifiedConstraintImpulses(
+      world.getRegistry(),
+      unified,
+      solution.lambda,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities));
+
+  auto& registry = world.getRegistry();
+  const Eigen::Vector3d velocityLeft
+      = registry.get<sx::comps::Velocity>(left.getEntity()).linear;
+  const Eigen::Vector3d velocityRight
+      = registry.get<sx::comps::Velocity>(right.getEntity()).linear;
+  // No restitution: the approaching normal velocity is driven to zero.
+  const double relativeNormal
+      = (velocityRight - velocityLeft).dot(Eigen::Vector3d::UnitX());
+  EXPECT_NEAR(relativeNormal, 0.0, 1e-9);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, SolveAndApplyDrivesLinkContactToTarget)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  auto robot = world.addMultibody("robot");
+  auto baseLink = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto leg = robot.addLink("leg", baseLink, spec);
+  leg.setMass(1.0);
+
+  sx::compute::LinkContact contact;
+  contact.link = leg.getEntity();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.point = Eigen::Vector3d::Zero();
+  contact.depth = 0.02; // penetration -> Baumgarte push-out target
+  contact.friction = 0.5;
+
+  Eigen::VectorXd nextVelocity(1);
+  nextVelocity << -0.5;
+  const double timeStep = 0.01;
+  const std::vector<sx::compute::LinkContact> linkContacts{contact};
+  auto& registry = world.getRegistry();
+  const auto& structure
+      = registry.get<sx::comps::MultibodyStructure>(robot.getEntity());
+  auto linkProblem = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structure, nextVelocity, timeStep, linkContacts);
+
+  std::vector<sx::compute::UnifiedMultibodyContact> multibodyContacts;
+  multibodyContacts.push_back({robot.getEntity(), linkProblem});
+  sx::compute::RigidBodyContactProblem emptyRigid;
+  const auto unified = sx::compute::assembleUnifiedConstraintProblem(
+      emptyRigid, multibodyContacts);
+  const auto solution = sx::compute::solveUnifiedConstraintProblem(unified);
+  ASSERT_TRUE(solution.succeeded);
+
+  std::vector<Eigen::VectorXd> multibodyVelocities{nextVelocity};
+  sx::compute::applyUnifiedConstraintImpulses(
+      world.getRegistry(),
+      unified,
+      solution.lambda,
+      std::span<Eigen::VectorXd>(multibodyVelocities));
+
+  // One-sided link contact: the post-solve normal velocity reaches the LCP
+  // target max(bias, restitutionTarget).
+  const auto& row = unified.multibodyBlocks[0].rows[0];
+  const double normalVelocity = row.normalJacobian.dot(multibodyVelocities[0]);
+  EXPECT_NEAR(normalVelocity, std::max(row.bias, row.restitutionTarget), 1e-9);
+  EXPECT_GT(row.bias, 0.0); // the contact is penetrating
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, SolveAndApplyDeliversNewtonImpulseToObstacle)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  auto robot = world.addMultibody("robot");
+  auto baseLink = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto leg = robot.addLink("leg", baseLink, spec);
+  leg.setMass(1.0);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.mass = 1.0;
+  obstacleOptions.inertia = Eigen::Matrix3d::Identity();
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+
+  sx::compute::LinkContact contact;
+  contact.link = leg.getEntity();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.point = Eigen::Vector3d(0.1, 0.0, 0.5); // offset -> nonzero arm
+  contact.depth = 0.0;
+  contact.friction = 0.5;
+  contact.otherBody = obstacle.getEntity();
+
+  // The normal points into the link, so a negative normal velocity is the leg
+  // approaching the obstacle -> an active contact with a positive impulse.
+  Eigen::VectorXd nextVelocity(1);
+  nextVelocity << -1.0;
+  const std::vector<sx::compute::LinkContact> linkContacts{contact};
+  auto& registry = world.getRegistry();
+  const auto& structure
+      = registry.get<sx::comps::MultibodyStructure>(robot.getEntity());
+  auto linkProblem = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structure, nextVelocity, 0.01, linkContacts);
+
+  std::vector<sx::compute::UnifiedMultibodyContact> multibodyContacts;
+  multibodyContacts.push_back({robot.getEntity(), linkProblem});
+  sx::compute::RigidBodyContactProblem emptyRigid;
+  const auto unified = sx::compute::assembleUnifiedConstraintProblem(
+      emptyRigid, multibodyContacts);
+  const auto solution = sx::compute::solveUnifiedConstraintProblem(unified);
+  ASSERT_TRUE(solution.succeeded);
+
+  std::vector<Eigen::VectorXd> multibodyVelocities{nextVelocity};
+  sx::compute::applyUnifiedConstraintImpulses(
+      world.getRegistry(),
+      unified,
+      solution.lambda,
+      std::span<Eigen::VectorXd>(multibodyVelocities));
+
+  // The obstacle receives the exact equal-and-opposite (Newton) impulse.
+  const auto& row = unified.multibodyBlocks[0].rows[0];
+  const double normalImpulse = std::max(0.0, solution.lambda[0]);
+  const double tangentImpulse1 = solution.lambda[1];
+  const double tangentImpulse2 = solution.lambda[2];
+  ASSERT_GT(normalImpulse, 0.0); // the contact is active
+
+  const Eigen::Vector3d expectedLinear
+      = -(normalImpulse * row.otherInvMass * row.normal
+          + tangentImpulse1 * row.otherInvMass * row.tangent1
+          + tangentImpulse2 * row.otherInvMass * row.tangent2);
+  const Eigen::Vector3d expectedAngular = -(
+      normalImpulse * row.otherInvInertia * row.otherArm.cross(row.normal)
+      + tangentImpulse1 * row.otherInvInertia * row.otherArm.cross(row.tangent1)
+      + tangentImpulse2 * row.otherInvInertia
+            * row.otherArm.cross(row.tangent2));
+  const auto& obstacleVelocity
+      = registry.get<sx::comps::Velocity>(obstacle.getEntity());
+  EXPECT_TRUE(obstacleVelocity.linear.isApprox(expectedLinear, 1e-12));
+  EXPECT_TRUE(obstacleVelocity.angular.isApprox(expectedAngular, 1e-12));
 }

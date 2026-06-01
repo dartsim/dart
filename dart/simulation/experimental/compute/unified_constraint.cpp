@@ -32,8 +32,15 @@
 
 #include "dart/simulation/experimental/compute/unified_constraint.hpp"
 
-#include <Eigen/Geometry>
+#include "dart/simulation/experimental/comps/dynamics.hpp"
 
+#include <dart/math/lcp/lcp_types.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
+
+#include <algorithm>
 #include <limits>
 #include <unordered_map>
 #include <utility>
@@ -367,6 +374,87 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
   }
 
   return problem;
+}
+
+//==============================================================================
+UnifiedConstraintSolution solveUnifiedConstraintProblem(
+    const UnifiedConstraintProblem& problem)
+{
+  UnifiedConstraintSolution solution;
+  const Eigen::Index size = problem.rhs.size();
+  if (size == 0) {
+    solution.succeeded = true;
+    return solution;
+  }
+
+  const math::LcpProblem lcpProblem(
+      problem.delassus, problem.rhs, problem.lo, problem.hi, problem.findex);
+  math::DantzigSolver solver;
+  // Pin the options to the solver default + early termination. A
+  // default-constructed LcpOptions would change the validation/tolerance fields
+  // that decide succeeded(), and thus flip the rank-deficient fallback
+  // decision.
+  math::LcpOptions options = solver.getDefaultOptions();
+  options.earlyTermination = true;
+  const auto result = solver.solve(lcpProblem, solution.lambda, options);
+  solution.succeeded = result.succeeded() && solution.lambda.size() == size;
+  return solution;
+}
+
+//==============================================================================
+void applyUnifiedConstraintImpulses(
+    entt::registry& registry,
+    const UnifiedConstraintProblem& problem,
+    const Eigen::VectorXd& lambda,
+    std::span<Eigen::VectorXd> multibodyVelocities)
+{
+  constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
+
+  // Rigid contacts: one world-space impulse per contact applied to both bodies.
+  for (std::size_t i = 0; i < problem.rigidConstraints.size(); ++i) {
+    const auto& constraint = problem.rigidConstraints[i];
+    const Eigen::Index normalRow = static_cast<Eigen::Index>(i) * kRows;
+    const double normalImpulse = std::max(0.0, lambda[normalRow]);
+    const Eigen::Vector3d impulse
+        = normalImpulse * constraint.normal
+          + lambda[normalRow + 1] * constraint.tangent1
+          + lambda[normalRow + 2] * constraint.tangent2;
+    applyRigidBodyContactImpulse(registry, constraint, impulse);
+  }
+
+  // Link contacts: drive the owning multibody's staged generalized velocity by
+  // M_k^-1 J^T lambda, and apply the equal-and-opposite impulse to a dynamic
+  // obstacle's velocity.
+  for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+    const auto& block = problem.multibodyBlocks[k];
+    Eigen::VectorXd& velocity = multibodyVelocities[k];
+    for (std::size_t c = 0; c < block.rows.size(); ++c) {
+      const auto& row = block.rows[c];
+      const Eigen::Index normalRow
+          = block.blockBase + static_cast<Eigen::Index>(c) * kRows;
+      const double normalImpulse = std::max(0.0, lambda[normalRow]);
+      const double tangentImpulse1 = lambda[normalRow + 1];
+      const double tangentImpulse2 = lambda[normalRow + 2];
+
+      velocity += block.inverseMass
+                  * (row.normalJacobian * normalImpulse
+                     + row.tangentJacobian1 * tangentImpulse1
+                     + row.tangentJacobian2 * tangentImpulse2);
+
+      if (row.otherBody != entt::null) {
+        auto& obstacleVelocity = registry.get<comps::Velocity>(row.otherBody);
+        const auto applyObstacle = [&](const Eigen::Vector3d& direction,
+                                       double impulse) {
+          obstacleVelocity.linear -= impulse * row.otherInvMass * direction;
+          obstacleVelocity.angular
+              -= impulse * row.otherInvInertia * row.otherArm.cross(direction);
+        };
+        applyObstacle(row.normal, normalImpulse);
+        applyObstacle(row.tangent1, tangentImpulse1);
+        applyObstacle(row.tangent2, tangentImpulse2);
+      }
+    }
+  }
 }
 
 } // namespace dart::simulation::experimental::compute
