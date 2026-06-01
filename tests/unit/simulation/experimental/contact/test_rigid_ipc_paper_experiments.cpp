@@ -223,6 +223,40 @@ sx::CollisionShape makeTwoTrianglePlaneMesh(double halfExtent)
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeTessellatedPlaneMesh(double halfExtent, int cellsPerAxis)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve((cellsPerAxis + 1) * (cellsPerAxis + 1));
+
+  const double step = 2.0 * halfExtent / static_cast<double>(cellsPerAxis);
+  for (int y = 0; y <= cellsPerAxis; ++y) {
+    const double py = -halfExtent + step * static_cast<double>(y);
+    for (int x = 0; x <= cellsPerAxis; ++x) {
+      const double px = -halfExtent + step * static_cast<double>(x);
+      vertices.emplace_back(px, py, 0.0);
+    }
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(cellsPerAxis * cellsPerAxis * 2);
+  const auto index = [cellsPerAxis](int x, int y) {
+    return y * (cellsPerAxis + 1) + x;
+  };
+  for (int y = 0; y < cellsPerAxis; ++y) {
+    for (int x = 0; x < cellsPerAxis; ++x) {
+      const int lowerLeft = index(x, y);
+      const int lowerRight = index(x + 1, y);
+      const int upperLeft = index(x, y + 1);
+      const int upperRight = index(x + 1, y + 1);
+      triangles.emplace_back(lowerRight, upperLeft, lowerLeft);
+      triangles.emplace_back(lowerRight, upperRight, upperLeft);
+    }
+  }
+
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 sx::CollisionShape makeTetPyramidMesh()
 {
   std::vector<Eigen::Vector3d> vertices = {
@@ -937,6 +971,62 @@ TEST(RigidIpcPaperExperiments, CubeSettlesOnTwoTrianglePlaneFixtureRow)
   double minBottomZ = cube.getTranslation().z() - cubeHalfExtent;
   bool sawActiveContact = false;
   for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    const Eigen::Matrix3d R = cube.getRotation();
+    double lowest = std::numeric_limits<double>::infinity();
+    for (double dx : {-cubeHalfExtent, cubeHalfExtent}) {
+      for (double dy : {-cubeHalfExtent, cubeHalfExtent}) {
+        for (double dz : {-cubeHalfExtent, cubeHalfExtent}) {
+          const Eigen::Vector3d v
+              = cube.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+          lowest = std::min(lowest, v.z());
+        }
+      }
+    }
+    minBottomZ = std::min(minBottomZ, lowest);
+  }
+
+  EXPECT_GT(minBottomZ, -5e-3);
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_TRUE(cube.getLinearVelocity().allFinite());
+}
+
+TEST(RigidIpcPaperExperiments, CubeContactsEightKTrianglePlaneFixtureRow)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions planeOptions;
+  planeOptions.isStatic = true;
+  planeOptions.position = Eigen::Vector3d::Zero();
+  auto plane = world.addRigidBody("eight_k_triangle_plane", planeOptions);
+  plane.setCollisionShape(
+      makeTessellatedPlaneMesh(/*halfExtent=*/5.0, /*cellsPerAxis=*/64));
+
+  constexpr double cubeHalfExtent = 0.5;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d(0.0, 0.0, 0.525);
+  cubeOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -0.2);
+  auto cube = world.addRigidBody("eight_k_triangle_plane_cube", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBottomZ = cube.getTranslation().z() - cubeHalfExtent;
+  bool sawActiveContact = false;
+  for (int s = 0; s < 8; ++s) {
     world.step(executor, pipeline);
     const auto& stats = ipcStage.getLastStats();
     EXPECT_FALSE(stats.failed) << "step " << s;

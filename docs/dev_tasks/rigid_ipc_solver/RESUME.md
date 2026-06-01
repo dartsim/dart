@@ -1,5 +1,26 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: 8K tessellated-plane fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/tessellated-plane/8K-triangles.json`: a cube starts
+  near a fixed generated 8192-triangle mesh plane, activates rigid IPC contact,
+  stays finite, and preserves nonnegative clearance in
+  `RigidIpcPaperExperiments.CubeContactsEightKTrianglePlaneFixtureRow`.
+- Marked that upstream 8K tessellated-plane unit-test fixture row implemented
+  in the generated manifest. The earlier two-triangle tessellated-plane rows now
+  point at their own runtime coverage while noting that the 8K topology has
+  separate evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CubeContactsEightKTrianglePlaneFixtureRow`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: Erleben spike-in-hole fixture row
 
 Delivered a bounded Phase 3/6 runtime-manifest slice:

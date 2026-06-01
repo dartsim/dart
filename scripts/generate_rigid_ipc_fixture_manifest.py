@@ -333,8 +333,8 @@ IMPLEMENTED_FIXTURE_ROWS = {
         "notes_or_gap": (
             "Covered by DART-owned cube-on-two-triangle-plane runtime "
             "coverage for the 3D unit-test fixture mechanism. The 8K "
-            "tessellated-plane row remains planned until it has matching "
-            "topology-specific DART runtime evidence."
+            "tessellated-plane row is covered separately by topology-specific "
+            "runtime evidence."
         ),
     },
     "fixtures/3D/unit-tests/tessellated-plane/two-triangles-tet.json": {
@@ -348,8 +348,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
         "notes_or_gap": (
             "Covered by DART-owned tet-corner-on-two-triangle-plane runtime "
             "coverage for the 3D unit-test fixture mechanism. The 8K "
-            "tessellated-plane row remains planned until it has matching "
-            "topology-specific DART runtime evidence."
+            "tessellated-plane row is covered separately by topology-specific "
+            "runtime evidence."
+        ),
+    },
+    "fixtures/3D/unit-tests/tessellated-plane/8K-triangles.json": {
+        "test": "CubeContactsEightKTrianglePlaneFixtureRow",
+        "expected_invariant": (
+            "DART covers the audited 8K tessellated-plane row: a cube starts "
+            "near a fixed 8192-triangle mesh plane, activates rigid IPC "
+            "contact, stays finite, and preserves nonnegative clearance."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned 64x64 tessellated-plane runtime coverage "
+            "for the 3D unit-test fixture mechanism."
         ),
     },
     "fixtures/3D/unit-tests/5-cubes.json": {

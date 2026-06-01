@@ -199,6 +199,10 @@
   - [x] Add the first audited tessellated-plane fixture coverage through the
         opt-in runtime stage. A cube falls onto a fixed two-triangle mesh plane,
         activates contact, stays finite, and preserves nonnegative clearance.
+  - [x] Add audited 8K tessellated-plane fixture coverage through the opt-in
+        runtime stage. A cube starts near a fixed 8192-triangle mesh plane,
+        activates rigid IPC contact, stays finite, and preserves nonnegative
+        clearance.
   - [x] Add audited two-triangle tet fixture coverage through the opt-in runtime
         stage. A tetrahedral corner falls onto a fixed two-triangle mesh plane,
         activates rigid IPC contact, stays finite, and reports no meaningful
@@ -424,7 +428,9 @@
   - [x] Mark the audited 3D two-triangle tessellated-plane unit-test fixture row
         (`fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`) as
         implemented after cube-on-two-triangle-plane runtime coverage landed.
-        The 8K tessellated-plane row remains planned.
+  - [x] Mark the audited 3D 8K tessellated-plane unit-test fixture row
+        (`fixtures/3D/unit-tests/tessellated-plane/8K-triangles.json`) as
+        implemented after 8192-triangle mesh-plane runtime coverage landed.
   - [x] Mark the audited 3D two-triangle tet unit-test fixture row
         (`fixtures/3D/unit-tests/tessellated-plane/two-triangles-tet.json`) as
         implemented after tet-corner-on-two-triangle-plane runtime overlap
@@ -608,10 +614,12 @@ DART-owned implementation.
   row and its non-visual Fig. 16 paper-unit alias are marked implemented
   through stacked-box runtime clearance coverage. The two-triangle tet fixture
   row is marked implemented through tet-corner-on-two-triangle-plane runtime
-  overlap coverage. The Erleben cliff-edges and internal-edges fixture rows are
-  marked implemented through cube-on-Erleben-mesh runtime overlap coverage. The
-  Erleben sliding-spike and sliding-wedge fixture rows are marked implemented
-  through sliding-body-on-plane runtime overlap coverage. The Erleben spikes
+  overlap coverage. The 8K tessellated-plane row is marked implemented through
+  generated 8192-triangle mesh-plane runtime contact coverage. The Erleben
+  cliff-edges and internal-edges fixture rows are marked implemented through
+  cube-on-Erleben-mesh runtime overlap coverage. The Erleben sliding-spike and
+  sliding-wedge fixture rows are marked implemented through
+  sliding-body-on-plane runtime overlap coverage. The Erleben spikes
   fixture row is marked implemented through spike-on-spike runtime overlap
   coverage, and the Erleben wedges fixture row is marked implemented through
   wedge-on-wedge runtime overlap coverage. The Erleben spike-and-wedge fixture

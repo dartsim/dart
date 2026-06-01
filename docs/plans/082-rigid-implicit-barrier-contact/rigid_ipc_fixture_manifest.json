@@ -8502,17 +8502,17 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 8K tessellated-plane row: a cube starts near a fixed 8192-triangle mesh plane, activates rigid IPC contact, stays finite, and preserves nonnegative clearance.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::8k_triangles",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.CubeContactsEightKTrianglePlaneFixtureRow",
       "required_assets_or_importer": [
         "meshes/cube.obj",
         "meshes/plane-8K.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::8k_triangles",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CubeContactsEightKTrianglePlaneFixtureRow'",
+      "notes_or_gap": "Covered by DART-owned 64x64 tessellated-plane runtime coverage for the 3D unit-test fixture mechanism."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/tessellated-plane/two-triangles-tet.json",
@@ -8533,7 +8533,7 @@
         "meshes/tet-corner.obj"
       ],
       "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TetCornerFallsOnTwoTrianglePlaneFixtureRow'",
-      "notes_or_gap": "Covered by DART-owned tet-corner-on-two-triangle-plane runtime coverage for the 3D unit-test fixture mechanism. The 8K tessellated-plane row remains planned until it has matching topology-specific DART runtime evidence."
+      "notes_or_gap": "Covered by DART-owned tet-corner-on-two-triangle-plane runtime coverage for the 3D unit-test fixture mechanism. The 8K tessellated-plane row is covered separately by topology-specific runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json",
@@ -8554,7 +8554,7 @@
         "meshes/plane.obj"
       ],
       "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CubeSettlesOnTwoTrianglePlaneFixtureRow'",
-      "notes_or_gap": "Covered by DART-owned cube-on-two-triangle-plane runtime coverage for the 3D unit-test fixture mechanism. The 8K tessellated-plane row remains planned until it has matching topology-specific DART runtime evidence."
+      "notes_or_gap": "Covered by DART-owned cube-on-two-triangle-plane runtime coverage for the 3D unit-test fixture mechanism. The 8K tessellated-plane row is covered separately by topology-specific runtime evidence."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/tet-corner.json",

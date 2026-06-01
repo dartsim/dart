@@ -582,7 +582,7 @@ def test_rigid_ipc_manifest_marks_two_triangle_plane_row_implemented(
     assert row["status"] == "implemented"
     assert "CubeSettlesOnTwoTrianglePlaneFixtureRow" in row["dart_artifact"]
     assert "two-triangle mesh plane" in row["expected_invariant"]
-    assert "8K tessellated-plane row remains planned" in row["notes_or_gap"]
+    assert "8K tessellated-plane row is covered separately" in row["notes_or_gap"]
 
 
 def test_rigid_ipc_manifest_marks_two_triangle_tet_row_implemented(
@@ -609,7 +609,34 @@ def test_rigid_ipc_manifest_marks_two_triangle_tet_row_implemented(
     assert row["status"] == "implemented"
     assert "TetCornerFallsOnTwoTrianglePlaneFixtureRow" in row["dart_artifact"]
     assert "two-triangle tet row" in row["expected_invariant"]
-    assert "8K tessellated-plane row remains planned" in row["notes_or_gap"]
+    assert "8K tessellated-plane row is covered separately" in row["notes_or_gap"]
+
+
+def test_rigid_ipc_manifest_marks_eight_k_tessellated_plane_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path
+        / "fixtures"
+        / "3D"
+        / "unit-tests"
+        / "tessellated-plane"
+        / "8K-triangles.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/unit-tests/tessellated-plane/8K-triangles.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "CubeContactsEightKTrianglePlaneFixtureRow" in row["dart_artifact"]
+    assert "8K tessellated-plane row" in row["expected_invariant"]
+    assert "64x64 tessellated-plane runtime coverage" in row["notes_or_gap"]
 
 
 def test_rigid_ipc_manifest_marks_large_mass_ratio_rows_implemented(tmp_path):
