@@ -17,6 +17,7 @@ pixi run lint           # Format code/docs (auto-fixes)
 pixi run build          # Build C++ and Python
 pixi run test-unit      # Unit tests only (faster)
 pixi run test-py        # Python tests only
+pixi run -e cuda test-all # CUDA full validation on Linux CUDA hosts
 pixi run check-lint     # Check formatting without fixing
 ```
 
@@ -87,6 +88,9 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 - [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, promote durable artifacts and remove the folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.
+On Linux hosts with a visible NVIDIA CUDA runtime, also run
+`pixi run -e cuda test-all`; it preserves the CUDA Pixi environment and runs the
+CUDA runtime smoke path automatically when a CUDA device is detected.
 
 **Why this exists**: Agents often skip `pixi run lint` when focused on the task. CI will catch issues, but fixing post-push wastes time and CI resources. Run lint locally first—EVERY time.
 

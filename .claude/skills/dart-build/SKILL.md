@@ -14,6 +14,7 @@ pixi run configure    # Configure CMake
 pixi run build        # Build
 pixi run test         # Run tests
 pixi run test-all     # Full validation (lint + build + tests)
+pixi run -e cuda test-all # CUDA-enabled full validation on Linux CUDA hosts
 pixi run lint         # Format code
 ```
 
@@ -31,6 +32,15 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 | Missing dependency | Check `pixi.toml`                          |
 | Build failure      | `pixi run configure` then `pixi run build` |
 | Linking error      | Check CMakeLists.txt in relevant module    |
+
+## CUDA Notes
+
+- On Linux hosts with visible NVIDIA GPUs, the CUDA Pixi config auto-detects
+  compute capabilities for `DART_CUDA_ARCHITECTURES`; set
+  `DART_CUDA_ARCHITECTURES=<arch>` only when overriding that detected list.
+- If CUDA runtime tests fail with unsupported PTX/toolchain errors, verify the
+  generated CUDA flags include the local GPU architecture before assuming a
+  kernel bug.
 
 ## Pixi Lockfiles
 
