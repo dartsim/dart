@@ -1023,6 +1023,55 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotApplyWritesDynamicBodyState)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactStepSolvesAndWritesDynamicBody)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Vec3(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox(Vec3(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Vec3(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const double initialSphereZ = sphere.getTransform().translation().z();
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+
+  vbd::AvbdRigidWorldContactStepOptions options;
+  options.contact.startStiffness = 200.0;
+  options.solve.descent.iterations = 4;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  const double timeStep = 0.5;
+  const vbd::AvbdRigidWorldContactStepResult result
+      = vbd::runAvbdRigidWorldContactStep(
+          world.getRegistry(),
+          contacts,
+          normalInventory,
+          frictionInventory,
+          timeStep,
+          options);
+
+  EXPECT_EQ(result.bodies, 2u);
+  EXPECT_EQ(result.contacts, contacts.size());
+  EXPECT_EQ(result.apply.bodies, 1u);
+  EXPECT_GT(result.solve.stats.bodyUpdates, 0u);
+  EXPECT_GT(sphere.getTransform().translation().z(), initialSphereZ);
+  EXPECT_NEAR(
+      sphere.getLinearVelocity().z(),
+      (sphere.getTransform().translation().z() - initialSphereZ) / timeStep,
+      1e-12);
+  EXPECT_NEAR(ground.getTransform().translation().z(), -0.25, 1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotSkipsStaticPairs)
 {
   sx::World world;

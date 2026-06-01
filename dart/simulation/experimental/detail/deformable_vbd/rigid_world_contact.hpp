@@ -89,6 +89,20 @@ struct AvbdRigidWorldContactApplyResult
   std::size_t bodies = 0;
 };
 
+struct AvbdRigidWorldContactStepOptions
+{
+  AvbdRigidWorldContactOptions contact;
+  AvbdRigidWorldContactSolveOptions solve;
+};
+
+struct AvbdRigidWorldContactStepResult
+{
+  std::size_t bodies = 0;
+  std::size_t contacts = 0;
+  AvbdRigidWorldContactSolveResult solve;
+  AvbdRigidWorldContactApplyResult apply;
+};
+
 //==============================================================================
 inline std::uint64_t avbdRigidWorldContactObjectId(entt::entity entity) noexcept
 {
@@ -433,6 +447,35 @@ inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
     ++result.bodies;
   }
 
+  return result;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
+    entt::registry& registry,
+    std::span<const Contact> contacts,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    double timeStep,
+    const AvbdRigidWorldContactStepOptions& options = {})
+{
+  AvbdRigidWorldContactStepResult result;
+  AvbdRigidWorldContactSnapshot snapshot
+      = buildAvbdRigidWorldContactSnapshot(registry, contacts, options.contact);
+  result.bodies = snapshot.states.size();
+  result.contacts = snapshot.contacts.size();
+  if (snapshot.states.empty() || snapshot.contacts.empty()) {
+    return result;
+  }
+
+  result.solve = solveAvbdRigidWorldContactSnapshot(
+      snapshot, normalInventory, frictionInventory, timeStep, options.solve);
+  if (result.solve.normalRows == 0u && result.solve.frictionRows == 0u) {
+    return result;
+  }
+
+  result.apply
+      = applyAvbdRigidWorldContactSnapshot(registry, snapshot, timeStep);
   return result;
 }
 
