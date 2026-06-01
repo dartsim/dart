@@ -37,6 +37,7 @@
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
+#include <memory>
 #include <string_view>
 #include <vector>
 
@@ -325,17 +326,22 @@ public:
 /// Resolves contacts between free rigid bodies. Static bodies (non-positive
 /// mass) act as immovable.
 ///
-/// Two solver paths are available, selected per-World via
+/// Two public solver paths are available, selected per-World via
 /// `WorldOptions::contactSolverMethod`:
 ///   - `SequentialImpulse` (default): the long-standing sequential normal +
 ///     friction impulse solve with positional correction.
 ///   - `BoxedLcp`: an opt-in boxed-LCP normal solve (frictionless first slice)
 ///     via the pivoting Dantzig solver. Contacts outside that scope (friction,
 ///     articulated links) fall through to the sequential-impulse behavior.
+///
+/// Internal PLAN-104 AVBD work can also opt specific rigid bodies into the
+/// private `RigidAvbdContactConfig` row projection without exposing AVBD row
+/// storage or solver registries through the facade.
 class DART_EXPERIMENTAL_API RigidBodyContactStage final : public WorldStepStage
 {
 public:
   explicit RigidBodyContactStage(std::size_t iterations = 8);
+  ~RigidBodyContactStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
@@ -344,7 +350,10 @@ public:
   [[nodiscard]] std::size_t getIterations() const noexcept;
 
 private:
+  struct AvbdScratch;
+
   std::size_t m_iterations;
+  std::unique_ptr<AvbdScratch> m_avbdScratch;
 };
 
 /// Terminal state of the most recent opt-in rigid IPC solver execution.

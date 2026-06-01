@@ -56,6 +56,7 @@
 #include "dart/simulation/experimental/detail/deformable_vbd/avbd_row_inventory.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/experimental/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
@@ -413,6 +414,57 @@ void integrateRigidBody(
   integrateRigidBodyVelocity(
       registry, entity, assembledForce, force.torque, timeStep);
   integrateRigidBodyPosition(registry, entity, timeStep);
+}
+
+//==============================================================================
+const comps::RigidAvbdContactConfig* enabledRigidAvbdContactConfig(
+    const entt::registry& registry, entt::entity entity)
+{
+  const auto* config = registry.try_get<comps::RigidAvbdContactConfig>(entity);
+  if (config == nullptr || !config->enabled) {
+    return nullptr;
+  }
+  return config;
+}
+
+//==============================================================================
+std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
+    const entt::registry& registry, std::span<const Contact> contacts)
+{
+  std::optional<comps::RigidAvbdContactConfig> merged;
+  for (const Contact& contact : contacts) {
+    const auto* configA
+        = enabledRigidAvbdContactConfig(registry, contact.bodyA.getEntity());
+    const auto* configB
+        = enabledRigidAvbdContactConfig(registry, contact.bodyB.getEntity());
+    if (configA == nullptr && configB == nullptr) {
+      return std::nullopt;
+    }
+
+    const auto absorb = [&](const comps::RigidAvbdContactConfig& config) {
+      if (!merged.has_value()) {
+        merged = config;
+        return;
+      }
+
+      merged->startStiffness
+          = std::max(merged->startStiffness, config.startStiffness);
+      merged->alpha = std::max(merged->alpha, config.alpha);
+      merged->beta = std::max(merged->beta, config.beta);
+      merged->gamma = std::max(merged->gamma, config.gamma);
+      merged->maxStiffness
+          = std::min(merged->maxStiffness, config.maxStiffness);
+    };
+
+    if (configA != nullptr) {
+      absorb(*configA);
+    }
+    if (configB != nullptr) {
+      absorb(*configB);
+    }
+  }
+
+  return merged;
 }
 
 } // namespace
@@ -7300,10 +7352,21 @@ void RigidBodyPositionStage::execute(
 }
 
 //==============================================================================
+struct RigidBodyContactStage::AvbdScratch
+{
+  dvbd::AvbdScalarRowInventory normalInventory;
+  dvbd::AvbdScalarRowInventory frictionInventory;
+};
+
+//==============================================================================
 RigidBodyContactStage::RigidBodyContactStage(std::size_t iterations)
-  : m_iterations(std::max<std::size_t>(1, iterations))
+  : m_iterations(std::max<std::size_t>(1, iterations)),
+    m_avbdScratch(std::make_unique<AvbdScratch>())
 {
 }
+
+//==============================================================================
+RigidBodyContactStage::~RigidBodyContactStage() = default;
 
 //==============================================================================
 std::string_view RigidBodyContactStage::getName() const noexcept
@@ -7325,10 +7388,77 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
   const auto contacts = world.collide();
   if (contacts.empty()) {
+    if (m_avbdScratch != nullptr) {
+      m_avbdScratch->normalInventory.records().clear();
+      m_avbdScratch->frictionInventory.records().clear();
+    }
     return;
   }
 
   auto& registry = world.getRegistry();
+
+  // Internal AVBD rigid contact path (PLAN-104 AVBD): when every active contact
+  // has at least one body carrying the private opt-in config, assemble the
+  // contact manifold into 6-DOF point-pair rows, solve against the
+  // velocity-predicted inertial target, then project the solved displacement
+  // back into velocities. The standard rigid position stage still advances
+  // poses, so default pipeline ordering is unchanged. Unsupported envelopes
+  // fall through to the sequential-impulse path below.
+  if (const auto avbdConfig = rigidAvbdContactStageConfig(registry, contacts)) {
+    if (m_avbdScratch == nullptr) {
+      m_avbdScratch = std::make_unique<AvbdScratch>();
+    }
+
+    dvbd::AvbdRigidWorldContactOptions contactOptions;
+    contactOptions.startStiffness = std::max(0.0, avbdConfig->startStiffness);
+    contactOptions.maxStiffness
+        = std::max(contactOptions.startStiffness, avbdConfig->maxStiffness);
+    dvbd::AvbdRigidWorldContactSnapshot snapshot
+        = dvbd::buildAvbdRigidWorldContactSnapshot(
+            registry, contacts, contactOptions);
+
+    if (snapshot.contacts.size() == contacts.size()
+        && !snapshot.contacts.empty()) {
+      const double timeStep = world.getTimeStep();
+      dvbd::predictAvbdRigidWorldContactInertialTargets(
+          registry, snapshot, timeStep);
+
+      dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
+      solveOptions.warmStart.alpha = avbdConfig->alpha;
+      solveOptions.warmStart.gamma = avbdConfig->gamma;
+      solveOptions.warmStart.maxStiffness = contactOptions.maxStiffness;
+      solveOptions.row.alpha = avbdConfig->alpha;
+      solveOptions.row.beta = avbdConfig->beta;
+      solveOptions.row.maxStiffness = contactOptions.maxStiffness;
+      solveOptions.friction.alpha = avbdConfig->alpha;
+      solveOptions.friction.beta = avbdConfig->beta;
+      solveOptions.friction.maxStiffness = contactOptions.maxStiffness;
+      solveOptions.descent.iterations = m_iterations;
+      solveOptions.descent.regularization = 1e-12;
+
+      const dvbd::AvbdRigidWorldContactSolveResult solveResult
+          = dvbd::solveAvbdRigidWorldContactSnapshot(
+              snapshot,
+              m_avbdScratch->normalInventory,
+              m_avbdScratch->frictionInventory,
+              timeStep,
+              solveOptions);
+      if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u) {
+        const dvbd::AvbdRigidWorldContactApplyResult projection
+            = dvbd::applyAvbdRigidWorldContactVelocityProjection(
+                registry, snapshot, timeStep);
+        if (projection.bodies != 0u) {
+          return;
+        }
+      }
+    }
+
+    m_avbdScratch->normalInventory.records().clear();
+    m_avbdScratch->frictionInventory.records().clear();
+  } else if (m_avbdScratch != nullptr) {
+    m_avbdScratch->normalInventory.records().clear();
+    m_avbdScratch->frictionInventory.records().clear();
+  }
 
   // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the frictionless
   // normal Delassus system with the pivoting Dantzig solver, applying the

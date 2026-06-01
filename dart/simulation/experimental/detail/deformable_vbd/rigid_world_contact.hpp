@@ -63,6 +63,7 @@ struct AvbdRigidWorldContactSnapshot
 {
   std::vector<entt::entity> entities;
   std::vector<AvbdRigidBodyState> states;
+  std::vector<AvbdRigidBodyState> inertialTargets;
   std::vector<double> masses;
   std::vector<Eigen::Matrix3d> bodyInertias;
   std::vector<std::uint8_t> fixed;
@@ -93,6 +94,7 @@ struct AvbdRigidWorldContactStepOptions
 {
   AvbdRigidWorldContactOptions contact;
   AvbdRigidWorldContactSolveOptions solve;
+  bool useVelocityInertialTargets = false;
 };
 
 struct AvbdRigidWorldContactStepResult
@@ -323,6 +325,48 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
 }
 
 //==============================================================================
+inline void predictAvbdRigidWorldContactInertialTargets(
+    const entt::registry& registry,
+    AvbdRigidWorldContactSnapshot& snapshot,
+    double timeStep)
+{
+  snapshot.inertialTargets = snapshot.states;
+  if (timeStep <= 0.0 || !std::isfinite(timeStep)) {
+    return;
+  }
+
+  const std::size_t bodyCount = std::min(
+      {snapshot.entities.size(),
+       snapshot.inertialTargets.size(),
+       snapshot.fixed.size()});
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    if (snapshot.fixed[body] != 0u) {
+      continue;
+    }
+
+    const entt::entity entity = snapshot.entities[body];
+    if (entity == entt::null || !registry.valid(entity)) {
+      continue;
+    }
+
+    const auto* velocity = registry.try_get<comps::Velocity>(entity);
+    if (velocity == nullptr) {
+      continue;
+    }
+
+    AvbdRigidBodyState& target = snapshot.inertialTargets[body];
+    target.position += velocity->linear * timeStep;
+
+    const double angularSpeed = velocity->angular.norm();
+    if (angularSpeed > 0.0 && std::isfinite(angularSpeed)) {
+      target.orientation = normalizeAvbdRigidOrientation(
+          avbdRigidOrientationDelta(velocity->angular * timeStep)
+          * target.orientation);
+    }
+  }
+}
+
+//==============================================================================
 inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdRigidWorldContactSnapshot& snapshot,
     AvbdScalarRowInventory& normalInventory,
@@ -349,7 +393,10 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   result.frictionRows = 2u * frictionRows.size();
 
   std::vector<AvbdRigidBodyPointAttachmentRow> attachmentRows;
-  const std::vector<AvbdRigidBodyState> inertialTargets = snapshot.states;
+  const std::vector<AvbdRigidBodyState> inertialTargets
+      = snapshot.inertialTargets.size() == snapshot.states.size()
+            ? snapshot.inertialTargets
+            : snapshot.states;
   result.stats = blockDescentRigidBodiesAvbdRows(
       snapshot.states,
       snapshot.masses,
@@ -376,6 +423,57 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     }
     frictionInventory[first].state = frictionRows[i].first.state;
     frictionInventory[second].state = frictionRows[i].second.state;
+  }
+
+  return result;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactApplyResult
+applyAvbdRigidWorldContactVelocityProjection(
+    entt::registry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot,
+    double timeStep)
+{
+  AvbdRigidWorldContactApplyResult result;
+  if (timeStep <= 0.0 || !std::isfinite(timeStep)) {
+    return result;
+  }
+
+  const std::size_t bodyCount = std::min(
+      {snapshot.entities.size(),
+       snapshot.states.size(),
+       snapshot.fixed.size()});
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    if (snapshot.fixed[body] != 0u) {
+      continue;
+    }
+
+    const entt::entity entity = snapshot.entities[body];
+    if (entity == entt::null || !registry.valid(entity)) {
+      continue;
+    }
+
+    const auto* transform = registry.try_get<comps::Transform>(entity);
+    auto* velocity = registry.try_get<comps::Velocity>(entity);
+    if (transform == nullptr || velocity == nullptr) {
+      continue;
+    }
+
+    const AvbdRigidBodyState& state = snapshot.states[body];
+    if (!state.position.allFinite()) {
+      continue;
+    }
+
+    const Eigen::Quaterniond oldOrientation
+        = normalizeAvbdRigidOrientation(transform->orientation);
+    const Eigen::Quaterniond newOrientation
+        = normalizeAvbdRigidOrientation(state.orientation);
+    velocity->linear = (state.position - transform->position) / timeStep;
+    velocity->angular
+        = avbdRigidRotationVector(newOrientation * oldOrientation.conjugate())
+          / timeStep;
+    ++result.bodies;
   }
 
   return result;
@@ -466,6 +564,9 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
   result.contacts = snapshot.contacts.size();
   if (snapshot.states.empty() || snapshot.contacts.empty()) {
     return result;
+  }
+  if (options.useVelocityInertialTargets) {
+    predictAvbdRigidWorldContactInertialTargets(registry, snapshot, timeStep);
   }
 
   result.solve = solveAvbdRigidWorldContactSnapshot(

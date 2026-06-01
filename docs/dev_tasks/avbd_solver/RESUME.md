@@ -50,11 +50,15 @@ finite-stiffness, self-contact normal, and self-contact friction families.
 Unsupported mixed spring-plus-tet, mass-spring self-contact without the
 self-contact AVBD flag, Chebyshev, Rayleigh-damped, parallel, and
 unsupported-row requests have explicit fallback coverage that keeps them on the
-existing VBD path.
+existing VBD path. The first internal rigid contact-stage AVBD activation is
+now guarded by `RigidAvbdContactConfig`: supported free rigid-body contacts use
+the private World-contact snapshot and 6-DOF row solve as a velocity projection
+consumed by the standard rigid position stage, while unsupported envelopes fall
+back to sequential impulses.
 
 ## Current Branch
 
-`feature/avbd-plan104-rigid-block-foundation` - checkpoint commits based on current
+`feature/avbd-plan104-rigid-contact-feature-ids` - checkpoint commits based on current
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
@@ -72,21 +76,23 @@ and paired tangent rows for that driver. A private World-contact snapshot helper
 now translates rigid-body `World::collide()` contacts into those
 manifold-point inputs and verifies that they can drive the private serial rigid
 row solve plus dynamic rigid-body ECS writeback through a combined private
-wrapper.
+wrapper. The current branch additionally adds the first internal
+`RigidAvbdContactConfig` contact-stage activation for supported free rigid-body
+contacts as a velocity-level projection.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
-contact-stage rigid AVBD activation, rigid contact/joint rows, or
-rigid/articulated World wiring are the preferred row-family gaps now that
+broader rigid contact-manifold feature persistence, rigid contact/joint rows,
+or rigid/articulated World wiring are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
 rigid row driver plus private rigid contact-manifold row builder and
 World-contact snapshot/solve/writeback helpers plus a combined private wrapper
-exist. Keep the supported envelope narrow and preserve fallback coverage for
-topology mixes, damping/acceleration, parallel solves, and unsupported
-requested row combinations.
+and first internal contact-stage activation exist. Keep the supported envelope
+narrow and preserve fallback coverage for topology mixes, damping/acceleration,
+parallel solves, and unsupported requested row combinations.
 
 ## Context That Would Be Lost
 
@@ -129,14 +135,16 @@ requested row combinations.
   now converts rigid-body `World::collide()` output into manifold-point inputs
   for that builder, runs them through the private serial rigid row solve, and
   writes dynamic rigid-body state back to the ECS through a combined private
-  wrapper in focused tests, but there is still no contact-stage activation. This
-  does not imply hard-contact/friction completeness, full contact-manifold
-  friction
+  wrapper in focused tests. The first internal contact-stage activation now
+  predicts rigid inertial targets from current velocities, solves supported
+  opted-in contacts through the private 6-DOF rows, and projects the solved
+  displacement back into rigid velocity. This does not imply
+  hard-contact/friction completeness, full contact-manifold friction
   persistence, broad dynamic/rigid feature persistence, rigid/articulated
-  joints, rigid/soft coupling, or GPU parity. Private
-  dynamic/rigid contact identity helpers now pack contact feature kind/index
-  IDs, canonicalize two-endpoint contact row keys, and create normal/friction
-  row descriptors, but World dynamic/rigid contact manifolds are not solved yet.
+  joints, rigid/soft coupling, or GPU parity. Private dynamic/rigid contact
+  identity helpers now pack contact feature kind/index IDs, canonicalize
+  two-endpoint contact row keys, and create normal/friction row descriptors, but
+  broad dynamic/rigid contact manifold persistence is not solved yet.
 
 ## How to Resume
 
@@ -145,6 +153,7 @@ git status --short --branch
 pixi run build-simulation-experimental-tests
 build/default/cpp/Release/bin/test_avbd_constraint
 build/default/cpp/Release/bin/test_avbd_rigid_block
+build/default/cpp/Release/bin/test_boxed_lcp_contact --gtest_filter='AvbdContact.*:BoxedLcpContact.MethodSelectorReflectsConstruction'
 build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_filter='VbdCombinedDescent.AvbdSelfContact*'
 build/default/cpp/Release/bin/test_vbd_attachment
 build/default/cpp/Release/bin/test_vbd_finite_stiffness

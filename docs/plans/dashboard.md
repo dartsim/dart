@@ -283,14 +283,17 @@ its own line so status updates remain git-history friendly.
   contact-normal point pairs, and paired friction tangent rows, and a private
   rigid contact-manifold row builder for active contact points. Private
   dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
-  normal/friction row descriptor helpers have started, and a private
-  World-contact snapshot helper now translates rigid-body `World::collide()`
-  contacts into manifold-point inputs, runs them through the private serial
-  rigid row solve, and writes dynamic rigid-body state back to the ECS through a
-  combined private wrapper in focused tests. This is not contact-stage
-  activation or a scene-level parity claim. The next local slice is
-  contact-stage rigid AVBD activation, rigid contact/joint rows, or
-  rigid/articulated World integration.
+  normal/friction row descriptor helpers have started, and private
+  World-contact snapshot/solve/writeback helpers now translate rigid-body
+  `World::collide()` contacts into manifold-point inputs, run them through the
+  private serial rigid row solve, and write dynamic rigid-body state back to the
+  ECS through a combined private wrapper in focused tests. The first
+  contact-stage AVBD activation is now available behind the internal
+  `RigidAvbdContactConfig`: supported free rigid-body contacts route through
+  the private 6-DOF AVBD row solve as a velocity-level projection while
+  unsupported envelopes fall back to the existing sequential-impulse path. The
+  next local slice is broader rigid contact-manifold feature persistence,
+  rigid contact/joint rows, or rigid/articulated World integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

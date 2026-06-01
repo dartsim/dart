@@ -578,6 +578,12 @@
     reproduced on a cartpole. All gradients are finite-difference-of-step
     verified; no solver, reverse-pass cache, ECS, or tensor-backend types are
     exposed publicly.
+  - Added the first internal experimental AVBD rigid-body contact-stage
+    activation for supported free rigid-body contacts. The first World slice
+    routes privately opted-in rigid contacts through private 6-DOF AVBD
+    point-pair rows as a velocity-level projection while unsupported envelopes
+    fall back to the existing sequential-impulse path; no AVBD row storage or
+    solver registry is exposed through the public facade.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
