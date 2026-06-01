@@ -39,6 +39,8 @@
 #include <functional>
 #include <vector>
 
+#include <cmath>
+
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
@@ -91,6 +93,207 @@ TEST(VbdContact, PenaltyForceMatchesFiniteDifferenceWhenPenetrating)
   EXPECT_NEAR((block.force - numericForce).norm(), 0.0, 1e-3);
   // Force pushes out along +normal.
   EXPECT_GT(block.force.dot(plane.normal), 0.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdNormalForceMatchesPenaltyForPenetratingActiveRow)
+{
+  vbd::ContactPlane plane;
+  plane.normal = Vec3(0.0, 1.0, 0.0);
+  plane.offset = 0.0;
+  plane.stiffness = 1.0e4;
+  const Vec3 position(0.3, -0.2, 0.1);
+
+  vbd::VertexBlock penalty;
+  vbd::addHalfSpacePenaltyContact(penalty, position, plane);
+
+  vbd::AvbdScalarRowState row;
+  row.stiffness = plane.stiffness;
+  row.lambda = 0.0;
+
+  vbd::VertexBlock avbd;
+  const double forceMagnitude = vbd::addAvbdHalfSpaceContactNormal(
+      avbd,
+      position,
+      plane,
+      row,
+      /*previousConstraintValue=*/0.0,
+      /*alpha=*/0.0);
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 2000.0);
+  EXPECT_NEAR((avbd.force - penalty.force).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((avbd.hessian - penalty.hessian).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentForceIsCoulombBounded)
+{
+  const Vec3 stepStart(0.0, -0.1, 0.0);
+  const Vec3 position(0.2, -0.1, 0.0);
+
+  vbd::AvbdHalfSpaceFrictionRow row;
+  row.vertex = 0;
+  row.stepStartPosition = stepStart;
+  row.axis = Vec3::UnitX();
+  row.state.stiffness = 100.0;
+  row.state.lambda = 0.0;
+  row.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::VertexBlock block;
+  const double forceMagnitude = vbd::addAvbdHalfSpaceFrictionTangent(
+      block, position, row, /*alpha=*/0.0);
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, -5.0);
+  EXPECT_NEAR(block.force.x(), -5.0, 1e-12);
+  EXPECT_NEAR(block.force.y(), 0.0, 1e-12);
+  EXPECT_NEAR(block.force.z(), 0.0, 1e-12);
+  EXPECT_NEAR(block.hessian(0, 0), 100.0, 1e-12);
+  EXPECT_NEAR(block.hessian(1, 1), 0.0, 1e-12);
+  EXPECT_NEAR(block.hessian(2, 2), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentUpdatesDualStateWithinBounds)
+{
+  vbd::AvbdHalfSpaceFrictionRow row;
+  row.vertex = 0;
+  row.stepStartPosition = Vec3::Zero();
+  row.axis = Vec3::UnitX();
+  row.state.stiffness = 10.0;
+  row.state.lambda = 0.0;
+  row.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  const vbd::AvbdScalarRowState unclamped
+      = vbd::updateAvbdHalfSpaceFrictionTangentRow(
+          row.state, Vec3(0.1, 0.0, 0.0), row, options);
+  EXPECT_NEAR(unclamped.lambda, -1.0, 1e-12);
+  EXPECT_GT(unclamped.stiffness, row.state.stiffness);
+
+  const vbd::AvbdScalarRowState clamped
+      = vbd::updateAvbdHalfSpaceFrictionTangentRow(
+          row.state, Vec3(1.0, 0.0, 0.0), row, options);
+  EXPECT_NEAR(clamped.lambda, -5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(clamped.stiffness, row.state.stiffness);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentPairProjectsStaticForceToCone)
+{
+  vbd::AvbdHalfSpaceFrictionRow rowX;
+  rowX.vertex = 0;
+  rowX.stepStartPosition = Vec3::Zero();
+  rowX.axis = Vec3::UnitX();
+  rowX.state.stiffness = 10.0;
+  rowX.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionRow rowY;
+  rowY.vertex = 0;
+  rowY.stepStartPosition = Vec3::Zero();
+  rowY.axis = Vec3::UnitY();
+  rowY.state.stiffness = 10.0;
+  rowY.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_TRUE(vbd::avbdFrictionPreviousDualInsideCone(rowX, rowY));
+  bool clamped = false;
+  const Eigen::Vector2d force = vbd::avbdHalfSpaceFrictionTangentPairForce(
+      Vec3(1.0, 1.0, 0.0), rowX, rowY, options, &clamped);
+
+  EXPECT_TRUE(clamped);
+  EXPECT_NEAR(force.norm(), 5.0, 1e-12);
+  EXPECT_NEAR(force.x(), force.y(), 1e-12);
+  EXPECT_LT(force.x(), 0.0);
+
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, Vec3(1.0, 1.0, 0.0), options);
+  EXPECT_NEAR(std::hypot(rowX.state.lambda, rowY.state.lambda), 5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentPairSwitchesToDynamicSlipDirection)
+{
+  vbd::AvbdHalfSpaceFrictionRow rowX;
+  rowX.vertex = 0;
+  rowX.stepStartPosition = Vec3::Zero();
+  rowX.axis = Vec3::UnitX();
+  rowX.state.stiffness = 10.0;
+  rowX.state.lambda = -5.0;
+  rowX.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionRow rowY;
+  rowY.vertex = 0;
+  rowY.stepStartPosition = Vec3::Zero();
+  rowY.axis = Vec3::UnitY();
+  rowY.state.stiffness = 20.0;
+  rowY.state.lambda = 0.0;
+  rowY.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_FALSE(vbd::avbdFrictionPreviousDualInsideCone(rowX, rowY));
+  const Eigen::Vector2d force = vbd::avbdHalfSpaceFrictionTangentPairForce(
+      Vec3(0.0, 2.0, 0.0), rowX, rowY, options);
+  EXPECT_NEAR(force.x(), 0.0, 1e-12);
+  EXPECT_NEAR(force.y(), -5.0, 1e-12);
+
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, Vec3(0.0, 2.0, 0.0), options);
+  EXPECT_NEAR(rowX.state.lambda, 0.0, 1e-12);
+  EXPECT_NEAR(rowY.state.lambda, -5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 20.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdBoxContactFeatureCodeSeparatesBoxManifolds)
+{
+  const Vec3 halfExtents(1.0, 2.0, 3.0);
+
+  const std::uint64_t positiveXFace
+      = vbd::avbdBoxContactFeatureCode(Vec3(1.2, 0.0, 0.0), halfExtents);
+  const std::uint64_t positiveXFaceInside
+      = vbd::avbdBoxContactFeatureCode(Vec3(0.95, 0.0, 0.0), halfExtents);
+  const std::uint64_t positiveYFace
+      = vbd::avbdBoxContactFeatureCode(Vec3(0.0, 2.2, 0.0), halfExtents);
+  const std::uint64_t positiveXPositiveYEdge
+      = vbd::avbdBoxContactFeatureCode(Vec3(1.2, 2.2, 0.0), halfExtents);
+  const std::uint64_t positiveCorner
+      = vbd::avbdBoxContactFeatureCode(Vec3(1.2, 2.2, 3.2), halfExtents);
+
+  EXPECT_EQ(positiveXFaceInside, positiveXFace);
+  EXPECT_NE(positiveYFace, positiveXFace);
+  EXPECT_NE(positiveXPositiveYEdge, positiveXFace);
+  EXPECT_NE(positiveXPositiveYEdge, positiveYFace);
+  EXPECT_NE(positiveCorner, positiveXPositiveYEdge);
+
+  EXPECT_NE(
+      vbd::packAvbdBoxContactFeatureId(0, positiveXFace),
+      vbd::packAvbdBoxContactFeatureId(1, positiveXFace));
+  EXPECT_NE(
+      vbd::packAvbdBoxContactFeatureId(0, positiveXFace),
+      vbd::packAvbdBoxContactFeatureId(0, positiveYFace));
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionDualProjectionPreservesWorldImpulse)
+{
+  const Eigen::Vector2d projected = vbd::projectAvbdFrictionDualToTangentPair(
+      3.0, 4.0, Vec3::UnitX(), Vec3::UnitY(), Vec3::UnitY(), -Vec3::UnitX());
+
+  EXPECT_NEAR(projected.x(), 4.0, 1e-12);
+  EXPECT_NEAR(projected.y(), -3.0, 1e-12);
+  EXPECT_NEAR(projected.norm(), 5.0, 1e-12);
 }
 
 //==============================================================================
@@ -161,6 +364,115 @@ TEST(VbdContact, ParticleRestsOnGround)
   EXPECT_GT(positions[0].y(), -0.01);
   EXPECT_LT(positions[0].y(), 0.05);
   EXPECT_LT(std::abs(velocity[0].y()), 0.05);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdGroundContactUpdatesDualStateDuringSolve)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, -0.1, 0.0)};
+  std::vector<double> masses = {1.0};
+  std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(1, springs);
+  const auto adjacency = vbd::SpringAdjacency::build(1, springs);
+  const std::vector<Vec3> inertialTargets = positions;
+
+  vbd::ContactPlane ground;
+  ground.normal = Vec3(0.0, 1.0, 0.0);
+  ground.offset = 0.0;
+
+  vbd::AvbdHalfSpaceContactRow contact;
+  contact.vertex = 0;
+  contact.plane = ground;
+  contact.state.stiffness = 50.0;
+  contact.state.lambda = 0.0;
+  contact.previousConstraintValue = 0.0;
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts = {contact};
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 4;
+  vbd::AvbdHalfSpaceContactOptions avbdOptions;
+  avbdOptions.alpha = 0.0;
+  avbdOptions.beta = 100.0;
+
+  const vbd::BlockDescentStats stats = vbd::blockDescentMassSpringAvbdGround(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      0.0,
+      0.1,
+      contacts,
+      coloring,
+      adjacency,
+      options,
+      avbdOptions);
+
+  EXPECT_EQ(stats.iterations, 4u);
+  EXPECT_GT(positions[0].y(), -0.1);
+  EXPECT_LT(positions[0].y(), 0.0);
+  EXPECT_GT(contacts[0].state.lambda, 0.0);
+  EXPECT_GT(contacts[0].state.stiffness, 50.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionTangentRowsReduceTangentialMotionDuringSolve)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, -0.1, 0.0)};
+  std::vector<double> masses = {1.0};
+  std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<Vec3> inertialTargets = {Vec3(1.0, -0.1, 0.0)};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(1, springs);
+  const auto adjacency = vbd::SpringAdjacency::build(1, springs);
+
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
+  std::vector<vbd::AvbdPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+  std::vector<vbd::AvbdHalfSpaceFrictionRow> frictionRows;
+  frictionRows.emplace_back();
+  frictionRows[0].vertex = 0;
+  frictionRows[0].stepStartPosition = positions[0];
+  frictionRows[0].axis = Vec3::UnitX();
+  frictionRows[0].state.stiffness = 200.0;
+  frictionRows[0].state.lambda = 0.0;
+  frictionRows[0].bounds = vbd::avbdFrictionTangentBounds(100.0);
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 4;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+  vbd::AvbdHalfSpaceFrictionOptions frictionOptions;
+  frictionOptions.alpha = 0.0;
+  frictionOptions.beta = 1.0;
+
+  const vbd::BlockDescentStats stats = vbd::blockDescentMassSpringAvbdRows(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      0.0,
+      0.1,
+      contacts,
+      attachments,
+      springRows,
+      coloring,
+      adjacency,
+      options,
+      contactOptions,
+      attachmentOptions,
+      springOptions,
+      &frictionRows,
+      &frictionOptions);
+
+  EXPECT_EQ(stats.iterations, 4u);
+  EXPECT_GT(positions[0].x(), 0.05);
+  EXPECT_LT(positions[0].x(), 0.6);
+  EXPECT_LT(frictionRows[0].state.lambda, 0.0);
+  EXPECT_GT(frictionRows[0].state.stiffness, 200.0);
 }
 
 //==============================================================================

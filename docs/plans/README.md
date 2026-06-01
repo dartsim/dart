@@ -86,6 +86,7 @@ they should not own priority, timeline, or active implementation state.
 | [`104-vertex-block-descent-solver.md`](104-vertex-block-descent-solver.md)                                                               | PLAN-104 VBD solver scope, remaining corpus/performance work           |
 | [`104-vertex-block-descent-solver/vbd-paper-gap-audit.md`](104-vertex-block-descent-solver/vbd-paper-gap-audit.md)                       | PLAN-104 VBD paper/reference gap audit                                 |
 | [`104-vertex-block-descent-solver/ogc-gap-audit.md`](104-vertex-block-descent-solver/ogc-gap-audit.md)                                   | PLAN-104 OGC source audit and implementation sequence                  |
+| [`104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](104-vertex-block-descent-solver/avbd-paper-gap-audit.md)                     | PLAN-104 AVBD paper/reference gap audit                                |
 | [`110-differentiable-simulation.md`](110-differentiable-simulation.md)                                                                   | PLAN-110 differentiable simulation scope, audits, and gates            |
 | [`101-dartsim-gui-simulator.md`](101-dartsim-gui-simulator.md)                                                                           | PLAN-101 dartsim GUI simulator scope, phases, and acceptance           |
 | [`120-inverse-kinematics-and-motion.md`](120-inverse-kinematics-and-motion.md)                                                           | PLAN-120 IK solver portfolio, whole-body parity, and motion IK         |
