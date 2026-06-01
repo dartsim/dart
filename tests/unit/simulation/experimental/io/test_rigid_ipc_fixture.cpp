@@ -249,7 +249,15 @@ void writeBinaryVtkTetraSurface(const std::filesystem::path& path)
       Eigen::Vector3d(1.0, 0.0, 0.0),
       Eigen::Vector3d(0.0, 1.0, 0.0),
       Eigen::Vector3d(0.0, 0.0, 1.0)};
-  for (const Eigen::Vector3d& vertex : vertices) {
+  // The first binary payload byte is 0x09 (ASCII tab) to verify that the VTK
+  // loader consumes only the text delimiter before the binary block.
+  writeBigEndianUInt64(output, 0x0900000000000000ull);
+  for (Eigen::Index i = 1; i < vertices.front().size(); ++i) {
+    writeBigEndianDouble(output, vertices.front()[i]);
+  }
+  for (std::size_t vertexIndex = 1u; vertexIndex < vertices.size();
+       ++vertexIndex) {
+    const Eigen::Vector3d& vertex = vertices[vertexIndex];
     for (Eigen::Index i = 0; i < vertex.size(); ++i) {
       writeBigEndianDouble(output, vertex[i]);
     }

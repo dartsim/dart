@@ -2107,14 +2107,16 @@ enum class VtkEncoding
   return text;
 }
 
-void skipVtkBinaryWhitespace(std::istream& input)
+void consumeVtkBinaryDataDelimiter(std::istream& input)
 {
-  while (true) {
-    const int next = input.peek();
-    if (next == std::char_traits<char>::eof()
-        || !std::isspace(static_cast<unsigned char>(next))) {
-      return;
-    }
+  const int next = input.peek();
+  if (next == std::char_traits<char>::eof()
+      || !std::isspace(static_cast<unsigned char>(next))) {
+    return;
+  }
+
+  input.get();
+  if (next == '\r' && input.peek() == '\n') {
     input.get();
   }
 }
@@ -2307,7 +2309,7 @@ void appendVtkCellTriangles(
   }
 
   if (encoding == VtkEncoding::Binary) {
-    skipVtkBinaryWhitespace(input);
+    consumeVtkBinaryDataDelimiter(input);
   }
 
   std::vector<Eigen::Vector3d> vertices;
@@ -2337,7 +2339,7 @@ void appendVtkCellTriangles(
   }
 
   if (encoding == VtkEncoding::Binary) {
-    skipVtkBinaryWhitespace(input);
+    consumeVtkBinaryDataDelimiter(input);
   }
 
   std::vector<std::vector<int>> cells;
@@ -2379,7 +2381,7 @@ void appendVtkCellTriangles(
   }
 
   if (encoding == VtkEncoding::Binary) {
-    skipVtkBinaryWhitespace(input);
+    consumeVtkBinaryDataDelimiter(input);
   }
 
   std::vector<Eigen::Vector3i> triangles;
