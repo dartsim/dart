@@ -66,6 +66,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <format>
 #include <functional>
 #include <memory>
 #include <numbers>
@@ -77,6 +78,27 @@
 #include <cstddef>
 
 namespace dart::simulation::experimental::io {
+
+namespace detail {
+
+class SkeletonLoaderWorldAccess
+{
+public:
+  static std::size_t multibodyCounter(const World& world)
+  {
+    return world.m_multibodyCounter;
+  }
+
+  static void copySkeletonLoaderCounters(World& target, const World& source)
+  {
+    target.m_multibodyCounter = source.m_multibodyCounter;
+    target.m_linkCounter = source.m_linkCounter;
+    target.m_jointCounter = source.m_jointCounter;
+  }
+};
+
+} // namespace detail
+
 namespace {
 
 std::string uniqueName(
@@ -182,6 +204,49 @@ Eigen::Vector3d mapJointAxis2(const dynamics::Joint& joint)
   return Eigen::Vector3d::UnitX();
 }
 
+void validateJointAxesLoadSupported(const dynamics::Joint& joint)
+{
+  const JointType jointType = mapJointType(joint);
+  const Eigen::Vector3d axis = mapJointAxis(joint);
+  const Eigen::Vector3d axis2 = mapJointAxis2(joint);
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !axis.allFinite(),
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis contains non-finite "
+      "values",
+      joint.getName());
+  const double axisNorm = axis.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      axisNorm <= 1e-9,
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis is zero",
+      joint.getName());
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !axis2.allFinite(),
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis2 contains "
+      "non-finite "
+      "values",
+      joint.getName());
+  const double axis2Norm = axis2.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      axis2Norm <= 1e-9,
+      InvalidArgumentException,
+      "Cannot translate legacy Joint '{}' because its axis2 is zero",
+      joint.getName());
+
+  if (jointType == JointType::Planar || jointType == JointType::Universal) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        (axis / axisNorm).cross(axis2 / axis2Norm).norm() <= 1e-6,
+        InvalidArgumentException,
+        "Cannot translate legacy Joint '{}' because its axis must not be "
+        "parallel to axis2 for planar and universal joints",
+        joint.getName());
+  }
+}
+
 double mapJointPitch(const dynamics::Joint& joint)
 {
   if (const auto* screw = dynamic_cast<const dynamics::ScrewJoint*>(&joint)) {
@@ -200,7 +265,7 @@ void validateJointLoadSupported(const dynamics::Joint& joint)
       joint.getName());
 
   validateCoordinateChart(joint);
-  (void)mapJointType(joint);
+  validateJointAxesLoadSupported(joint);
 }
 
 ActuatorType mapActuatorType(const dynamics::Joint& joint)
@@ -353,6 +418,68 @@ void validateSkeletonLoadSupported(const dynamics::Skeleton& skeleton)
         skeleton.getName(),
         i);
     (void)getValidatedCollisionShapeNode(*bodyNode);
+  }
+}
+
+std::string resolveWorldMultibodyName(
+    const World& targetWorld,
+    const dynamics::Skeleton& skeleton,
+    std::unordered_set<std::string>& sourceNames,
+    std::size_t& generatedMultibodyCounter,
+    std::size_t sourceIndex)
+{
+  std::string resolvedName = skeleton.getName();
+  if (resolvedName.empty()) {
+    do {
+      resolvedName
+          = std::format("multibody_{:03d}", ++generatedMultibodyCounter);
+    } while (targetWorld.hasMultibody(resolvedName)
+             || sourceNames.contains(resolvedName));
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      targetWorld.hasMultibody(resolvedName),
+      InvalidArgumentException,
+      "Cannot translate legacy Skeleton at index {} to Multibody '{}' because "
+      "the target World already contains a Multibody with that name",
+      sourceIndex,
+      resolvedName);
+
+  const bool inserted = sourceNames.insert(resolvedName).second;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !inserted,
+      InvalidArgumentException,
+      "Cannot translate legacy World because Skeleton at index {} resolves to "
+      "duplicate Multibody name '{}'",
+      sourceIndex,
+      resolvedName);
+
+  return resolvedName;
+}
+
+void validateWorldLoadSupported(
+    const World& targetWorld,
+    const ::dart::simulation::World& sourceWorld,
+    const SkeletonLoadOptions& options)
+{
+  std::unordered_set<std::string> sourceNames;
+  std::size_t generatedMultibodyCounter
+      = detail::SkeletonLoaderWorldAccess::multibodyCounter(targetWorld);
+  World scratchWorld;
+  detail::SkeletonLoaderWorldAccess::copySkeletonLoaderCounters(
+      scratchWorld, targetWorld);
+
+  for (std::size_t i = 0; i < sourceWorld.getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = sourceWorld.getSkeleton(i);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !skeleton,
+        InvalidArgumentException,
+        "Source World returned a null Skeleton at index {}",
+        i);
+
+    (void)addSkeleton(scratchWorld, *skeleton, options);
+    (void)resolveWorldMultibodyName(
+        targetWorld, *skeleton, sourceNames, generatedMultibodyCounter, i);
   }
 }
 
@@ -631,16 +758,13 @@ std::vector<Multibody> addWorld(
     const ::dart::simulation::World& sourceWorld,
     const SkeletonLoadOptions& options)
 {
+  validateWorldLoadSupported(world, sourceWorld, options);
+
   std::vector<Multibody> multibodies;
   multibodies.reserve(sourceWorld.getNumSkeletons());
 
   for (std::size_t i = 0; i < sourceWorld.getNumSkeletons(); ++i) {
     const dynamics::SkeletonPtr skeleton = sourceWorld.getSkeleton(i);
-    DART_EXPERIMENTAL_THROW_T_IF(
-        !skeleton,
-        InvalidArgumentException,
-        "Source World returned a null Skeleton at index {}",
-        i);
     multibodies.push_back(addSkeleton(world, *skeleton, options));
   }
 
