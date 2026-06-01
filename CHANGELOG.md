@@ -63,7 +63,7 @@
     perf HUD, and the docked regions share one look; colors are scale-independent
     while metrics still scale with `--gui-scale`/DPI.
   - Enabled GPU (CUDA) deformable solve in the Python demos: `pixi run -e cuda
-    py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
+py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     deformable projected-Newton PSD projection to the GPU by default. New dartpy
     functions `simulation_experimental.is_cuda_available()`,
     `set_gpu_deformable_solve(enable)`, and `is_gpu_deformable_solve_enabled()`
