@@ -138,9 +138,11 @@ Paper audit:
     unsupported requested row families all keep using the existing VBD path
     without reporting partial AVBD row counters.
   - Still missing full contact-manifold friction persistence beyond current
-    static half-space and lagged self-contact rows, dynamic/rigid contact
-    manifold IDs, full row-family generation, rigid/articulated blocks, parallel
-    dual/stiffness updates, and GPU parity.
+    static half-space and lagged self-contact rows. The first private
+    dynamic/rigid contact identity helpers now pack feature kind/index values
+    and canonicalize two-endpoint row keys, but dynamic/rigid contact row
+    generation, full row-family generation, rigid/articulated blocks, parallel
+    dual/stiffness updates, and GPU parity remain missing.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
   - First internal 6-DOF rigid block foundation started:
     `AvbdRigidBodyBlock`, quaternion tangent-step helpers,
@@ -189,9 +191,10 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   dynamic/rigid contact manifold IDs, rigid contact/joint rows, or
+   dynamic/rigid contact row generation, rigid contact/joint rows, or
    rigid/articulated World wiring are the preferred next gaps now that static
-   box feature IDs, static half-space tangent dual projection, self-contact
+   box feature IDs, private dynamic/rigid contact feature IDs, static half-space
+   tangent dual projection, self-contact
    tangent dual projection, static contact/friction, attachments,
    finite-stiffness rows, self-contact normals, pairwise static/dynamic friction
    switching, supported World self-contact friction rows, pure-tet self-contact

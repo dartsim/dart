@@ -40,6 +40,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdint>
 
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 
@@ -283,6 +284,64 @@ TEST(VbdContact, AvbdBoxContactFeatureCodeSeparatesBoxManifolds)
   EXPECT_NE(
       vbd::packAvbdBoxContactFeatureId(0, positiveXFace),
       vbd::packAvbdBoxContactFeatureId(0, positiveYFace));
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdContactFeatureIdsRoundTripKindAndIndex)
+{
+  const std::uint64_t vertex
+      = vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 42);
+  const std::uint64_t edge
+      = vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Edge, 42);
+  const std::uint64_t face
+      = vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 7);
+
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(vertex), vbd::AvbdContactFeatureKind::Vertex);
+  EXPECT_EQ(vbd::avbdContactFeatureLocalIndex(vertex), 42u);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(edge), vbd::AvbdContactFeatureKind::Edge);
+  EXPECT_EQ(vbd::avbdContactFeatureLocalIndex(edge), 42u);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(face), vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(vbd::avbdContactFeatureLocalIndex(face), 7u);
+  EXPECT_NE(vertex, edge);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdContactManifoldRowKeyCanonicalizesBodyOrder)
+{
+  const vbd::AvbdContactEndpointId first{
+      17,
+      vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 3)};
+  const vbd::AvbdContactEndpointId second{
+      4, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 9)};
+
+  const vbd::AvbdScalarRowKey forward = vbd::makeAvbdContactManifoldRowKey(
+      vbd::AvbdScalarRowRole::ContactNormal,
+      first,
+      second,
+      /*row=*/2,
+      /*axis=*/0);
+  const vbd::AvbdScalarRowKey reverse = vbd::makeAvbdContactManifoldRowKey(
+      vbd::AvbdScalarRowRole::ContactNormal,
+      second,
+      first,
+      /*row=*/2,
+      /*axis=*/0);
+  const vbd::AvbdScalarRowKey tangent = vbd::makeAvbdContactManifoldRowKey(
+      vbd::AvbdScalarRowRole::FrictionTangent,
+      first,
+      second,
+      /*row=*/2,
+      /*axis=*/1);
+
+  EXPECT_EQ(forward, reverse);
+  EXPECT_EQ(forward.objectA, second.object);
+  EXPECT_EQ(forward.featureA, second.feature);
+  EXPECT_EQ(forward.objectB, first.object);
+  EXPECT_EQ(forward.featureB, first.feature);
+  EXPECT_NE(forward, tangent);
 }
 
 //==============================================================================

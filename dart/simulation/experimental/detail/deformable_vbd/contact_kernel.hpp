@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/experimental/detail/deformable_vbd/avbd_constraint.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/avbd_row_inventory.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 
 #include <Eigen/Core>
@@ -40,6 +41,8 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <tuple>
+#include <utility>
 
 #include <cmath>
 #include <cstdint>
@@ -56,6 +59,98 @@ struct ContactPlane
 };
 
 inline constexpr std::uint64_t kAvbdBoxContactFeatureCodeCount = 27;
+inline constexpr std::uint8_t kAvbdContactFeatureKindShift = 56;
+inline constexpr std::uint64_t kAvbdContactFeatureIndexMask
+    = (std::uint64_t{1} << kAvbdContactFeatureKindShift) - 1u;
+
+enum class AvbdContactFeatureKind : std::uint8_t
+{
+  Unknown = 0,
+  Vertex,
+  Edge,
+  Face,
+  Body,
+  Manifold,
+};
+
+struct AvbdContactEndpointId
+{
+  std::uint64_t object = 0;
+  std::uint64_t feature = 0;
+};
+
+//==============================================================================
+inline std::uint64_t packAvbdContactFeatureId(
+    AvbdContactFeatureKind kind, std::uint64_t localIndex)
+{
+  return (static_cast<std::uint64_t>(kind) << kAvbdContactFeatureKindShift)
+         | (localIndex & kAvbdContactFeatureIndexMask);
+}
+
+//==============================================================================
+inline AvbdContactFeatureKind avbdContactFeatureKind(std::uint64_t featureId)
+{
+  return static_cast<AvbdContactFeatureKind>(
+      featureId >> kAvbdContactFeatureKindShift);
+}
+
+//==============================================================================
+inline std::uint64_t avbdContactFeatureLocalIndex(std::uint64_t featureId)
+{
+  return featureId & kAvbdContactFeatureIndexMask;
+}
+
+//==============================================================================
+inline auto avbdContactEndpointTuple(const AvbdContactEndpointId& endpoint)
+{
+  return std::tuple{endpoint.object, endpoint.feature};
+}
+
+//==============================================================================
+inline bool operator<(
+    const AvbdContactEndpointId& lhs, const AvbdContactEndpointId& rhs)
+{
+  return avbdContactEndpointTuple(lhs) < avbdContactEndpointTuple(rhs);
+}
+
+//==============================================================================
+inline bool operator==(
+    const AvbdContactEndpointId& lhs, const AvbdContactEndpointId& rhs)
+{
+  return avbdContactEndpointTuple(lhs) == avbdContactEndpointTuple(rhs);
+}
+
+//==============================================================================
+inline std::pair<AvbdContactEndpointId, AvbdContactEndpointId>
+canonicalizeAvbdContactEndpoints(
+    AvbdContactEndpointId first, AvbdContactEndpointId second)
+{
+  if (second < first) {
+    return {second, first};
+  }
+  return {first, second};
+}
+
+//==============================================================================
+inline AvbdScalarRowKey makeAvbdContactManifoldRowKey(
+    AvbdScalarRowRole role,
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    std::uint32_t row = 0,
+    std::uint8_t axis = 0)
+{
+  const auto endpoints = canonicalizeAvbdContactEndpoints(first, second);
+
+  AvbdScalarRowKey key;
+  key.role = role;
+  key.objectA = endpoints.first.object;
+  key.objectB = endpoints.second.object;
+  key.featureA = endpoints.first.feature;
+  key.featureB = endpoints.second.feature;
+  key.row = row;
+  key.axis = axis;
+  return key;
+}
 
 //==============================================================================
 /// Encode the closest box surface feature for AVBD static-obstacle contact row

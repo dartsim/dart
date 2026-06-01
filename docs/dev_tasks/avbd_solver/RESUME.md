@@ -67,11 +67,12 @@ foundation.
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
-dynamic/rigid contact manifold IDs, rigid contact/joint rows, or
-rigid/articulated World wiring are the preferred row-family gaps. Keep the
-supported envelope narrow and preserve fallback coverage for topology mixes,
-damping/acceleration, parallel solves, and unsupported requested row
-combinations.
+dynamic/rigid contact row generation, rigid contact/joint rows, or
+rigid/articulated World wiring are the preferred row-family gaps now that
+private dynamic/rigid contact feature IDs and canonical two-endpoint row keys
+exist. Keep the supported envelope narrow and preserve fallback coverage for
+topology mixes, damping/acceleration, parallel solves, and unsupported requested
+row combinations.
 
 ## Context That Would Be Lost
 
@@ -106,7 +107,9 @@ combinations.
   stamping, but no World wiring. This does not imply hard-contact/friction
   completeness, full contact-manifold friction persistence, dynamic/rigid
   contact manifolds, rigid/articulated joints, rigid/soft coupling, or GPU
-  parity.
+  parity. Private dynamic/rigid contact identity helpers now pack contact
+  feature kind/index IDs and canonicalize two-endpoint contact row keys, but no
+  dynamic/rigid contact rows are generated yet.
 
 ## How to Resume
 
