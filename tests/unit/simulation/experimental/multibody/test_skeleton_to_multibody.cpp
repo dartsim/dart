@@ -41,6 +41,7 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -775,6 +776,42 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_EQ(meshShape->triangles[1], Eigen::Vector3i(1, 3, 2));
   EXPECT_TRUE(
       meshShape->localTransform.isApprox(translation(0.1, 0.2, -0.05), 1e-12));
+
+  // A legacy ConvexMeshShape reuses the experimental triangular mesh carrier.
+  auto convexSkeleton = dd::Skeleton::create("convex_mesh_collision");
+  auto [convexJoint, convexBody]
+      = convexSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  convexJoint->setName("joint");
+  convexBody->setName("body");
+  auto convexMesh = std::make_shared<dd::ConvexMeshShape::TriMeshType>();
+  convexMesh->addVertex(0.0, 0.0, 0.0);
+  convexMesh->addVertex(1.0, 0.0, 0.0);
+  convexMesh->addVertex(0.0, 1.0, 0.0);
+  convexMesh->addVertex(0.0, 0.0, 1.0);
+  convexMesh->addTriangle(0, 1, 2);
+  convexMesh->addTriangle(0, 1, 3);
+  convexMesh->addTriangle(0, 2, 3);
+  convexMesh->addTriangle(1, 2, 3);
+  auto* convexShapeNode = convexBody->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::ConvexMeshShape>(convexMesh));
+  convexShapeNode->setRelativeTransform(translation(-0.05, 0.15, 0.25));
+
+  sx::World convexWorld;
+  auto convexMultibody
+      = sx::io::buildMultibodyFromSkeleton(convexWorld, *convexSkeleton);
+  const auto convexLink = convexMultibody.getLink("body");
+  ASSERT_TRUE(convexLink.has_value());
+  ASSERT_TRUE(convexLink->hasCollisionShape());
+  const auto convexShape = convexLink->getCollisionShape();
+  ASSERT_TRUE(convexShape.has_value());
+  EXPECT_EQ(convexShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(convexShape->vertices.size(), 4u);
+  ASSERT_EQ(convexShape->triangles.size(), 4u);
+  EXPECT_TRUE(
+      convexShape->vertices[3].isApprox(Eigen::Vector3d(0.0, 0.0, 1.0), 1e-12));
+  EXPECT_EQ(convexShape->triangles[3], Eigen::Vector3i(1, 2, 3));
+  EXPECT_TRUE(convexShape->localTransform.isApprox(
+      translation(-0.05, 0.15, 0.25), 1e-12));
 }
 
 //==============================================================================

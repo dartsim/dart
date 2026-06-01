@@ -247,11 +247,12 @@ shape of each body (a shape node with a collision aspect) onto the link, gated b
 serializes that transform, and `World::collide()` poses native shapes as
 `worldTransform * shape.localTransform`. Capsules and cylinders carry radius
 plus height, and planes carry normal plus offset, through C++, dartpy,
-serialization, and the native collision query. Triangular mesh shapes carry
-their vertex/index buffers through C++, dartpy, serialization, native collision
-queries, and the model-loading bridge. Deformable obstacle barriers still
-consume sphere/box only. Additional shapes per body and mesh-like variants
-remain Phase 2 shape backlog.
+serialization, and the native collision query. Triangular `MeshShape` and
+`ConvexMeshShape` instances carry their vertex/index buffers through the
+model-loading bridge as experimental mesh collision shapes; triangular meshes
+also round-trip through C++, dartpy, serialization, and native collision
+queries. Deformable obstacle barriers still consume sphere/box only. Additional
+shapes per body and soft/heightmap mesh variants remain Phase 2 shape backlog.
 
 **Resume here — Subsystem A (the remaining headline gap):**
 
@@ -771,12 +772,13 @@ G^T` with `G` the body-twist basis change, since the velocity-dependent
     links: a parent with sibling joints at different offsets, and offset/rotated
     roots, load directly. See the committed sections above.
   - **(DONE) Collision shapes.** Sphere/box/capsule/cylinder/plane/triangular
-    mesh collision shapes are translated with their shape-node local transform preserved on
-    `CollisionShape`; the native collision query, binary serialization, and
-    dartpy bindings all use that local transform. Deformable obstacle queries
-    still consume sphere/box barriers only. Mesh-like variants and additional
-    shapes per body are still skipped. Subsystem B model loading is otherwise
-    complete.
+    mesh collision shapes are translated with their shape-node local transform
+    preserved on `CollisionShape`; the native collision query, binary
+    serialization, and dartpy bindings all use that local transform.
+    `ConvexMeshShape` model-loading translation reuses the experimental mesh
+    carrier. Deformable obstacle queries still consume sphere/box barriers
+    only. Soft/heightmap mesh variants and additional shapes per body are still
+    skipped. Subsystem B model loading is otherwise complete.
   - **(DONE) Joint properties.** Revolute/prismatic position/velocity/effort
     limits, damping, spring stiffness + rest position, and Coulomb friction are
     carried into the experimental joint (`copyJointProperties`, default on),
@@ -819,8 +821,8 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 2:** additional shapes per body, mesh-like variants
-  (convex/soft/heightmap), self-collision/filtering, broad-phase pruning, a
+- **Phase 2:** additional shapes per body, soft/heightmap mesh variants,
+  self-collision/filtering, broad-phase pruning, a
   persistent collision world instead of rebuilding per `collide()`.
 - **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
   mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.

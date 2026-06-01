@@ -44,6 +44,7 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inertia.hpp>
@@ -265,8 +266,35 @@ void copyJointProperties(const dynamics::Joint& legacy, Joint& experimental)
   experimental.setEffortLimits(lower, upper);
 }
 
-/// The first sphere, box, capsule, cylinder, plane, or triangular mesh
-/// collision shape of a body (a shape node with a collision aspect), as an
+std::optional<CollisionShape> makeMeshCollisionShape(
+    const std::shared_ptr<math::TriMesh<double>>& triMesh,
+    const Eigen::Vector3d& scale)
+{
+  if (triMesh == nullptr || triMesh->getVertices().empty()
+      || triMesh->getTriangles().empty()) {
+    return std::nullopt;
+  }
+
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(triMesh->getVertices().size());
+  for (const auto& vertex : triMesh->getVertices()) {
+    vertices.push_back(vertex.cwiseProduct(scale));
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(triMesh->getTriangles().size());
+  for (const auto& triangle : triMesh->getTriangles()) {
+    triangles.emplace_back(
+        static_cast<int>(triangle[0]),
+        static_cast<int>(triangle[1]),
+        static_cast<int>(triangle[2]));
+  }
+
+  return CollisionShape::makeMesh(std::move(vertices), std::move(triangles));
+}
+
+/// The first sphere, box, capsule, cylinder, plane, triangular mesh, or convex
+/// mesh collision shape of a body (a shape node with a collision aspect), as an
 /// experimental CollisionShape. The shape node's relative transform becomes the
 /// CollisionShape local transform.
 /// Returns nullopt when the body has no representable collision shape;
@@ -308,33 +336,17 @@ std::optional<CollisionShape> translateCollisionShape(
               = CollisionShape::makePlane(plane.getNormal(), plane.getOffset());
         } else if (type == dynamics::MeshShape::getStaticType()) {
           const auto& mesh = static_cast<const dynamics::MeshShape&>(*shape);
-          const auto triMesh = mesh.getTriMesh();
-          if (triMesh != nullptr && !triMesh->getVertices().empty()
-              && !triMesh->getTriangles().empty()) {
-            std::vector<Eigen::Vector3d> vertices;
-            vertices.reserve(triMesh->getVertices().size());
-            const Eigen::Vector3d scale = mesh.getScale();
-            for (const auto& vertex : triMesh->getVertices()) {
-              vertices.push_back(vertex.cwiseProduct(scale));
-            }
-
-            std::vector<Eigen::Vector3i> triangles;
-            triangles.reserve(triMesh->getTriangles().size());
-            for (const auto& triangle : triMesh->getTriangles()) {
-              triangles.emplace_back(
-                  static_cast<int>(triangle[0]),
-                  static_cast<int>(triangle[1]),
-                  static_cast<int>(triangle[2]));
-            }
-            result = CollisionShape::makeMesh(
-                std::move(vertices), std::move(triangles));
-          }
+          result = makeMeshCollisionShape(mesh.getTriMesh(), mesh.getScale());
+        } else if (type == dynamics::ConvexMeshShape::getStaticType()) {
+          const auto& convex
+              = static_cast<const dynamics::ConvexMeshShape&>(*shape);
+          result = makeMeshCollisionShape(
+              convex.getMesh(), Eigen::Vector3d::Ones());
         }
         if (result.has_value()) {
           result->localTransform = shapeNode->getRelativeTransform();
         }
-        // Mesh-like variants such as convex, soft, and heightmap shapes are not
-        // yet translated.
+        // Soft and heightmap mesh-like variants are not yet translated.
       });
   return result;
 }
