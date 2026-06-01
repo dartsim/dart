@@ -38,8 +38,8 @@
 // WS1). It is NOT a public facade header: it takes ECS/registry and component
 // types, which must never appear in a public signature. It lives under
 // `detail/` so Doxygen and the API-boundary checks treat it as internal, and it
-// is not part of the DART 8 promotion target. In-tree tests may include it
-// directly.
+// is not part of the DART 7 public-facade promotion target. In-tree tests may
+// include it directly.
 
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/export.hpp>
