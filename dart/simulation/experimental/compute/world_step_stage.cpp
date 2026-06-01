@@ -7399,44 +7399,54 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   const auto contacts = world.collide();
   auto& registry = world.getRegistry();
 
-  if (contacts.empty()) {
+  const auto projectAvbdRigidPointJoints = [&]() {
     const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
         = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
-    if (!joints.empty()) {
-      if (m_avbdScratch == nullptr) {
-        m_avbdScratch = std::make_unique<AvbdScratch>();
-      }
+    if (joints.empty()) {
+      return false;
+    }
 
-      dvbd::AvbdRigidWorldContactSnapshot snapshot;
-      const std::size_t appendedJoints
-          = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
-      if (appendedJoints != 0u) {
-        const double timeStep = world.getTimeStep();
-        dvbd::predictAvbdRigidWorldContactInertialTargets(
+    if (m_avbdScratch == nullptr) {
+      m_avbdScratch = std::make_unique<AvbdScratch>();
+    }
+
+    dvbd::AvbdRigidWorldContactSnapshot snapshot;
+    const std::size_t appendedJoints
+        = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+    if (appendedJoints == 0u) {
+      return false;
+    }
+
+    const double timeStep = world.getTimeStep();
+    dvbd::predictAvbdRigidWorldContactInertialTargets(
+        registry, snapshot, timeStep);
+
+    dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
+    solveOptions.descent.iterations = m_iterations;
+    solveOptions.descent.regularization = 1e-12;
+    const dvbd::AvbdRigidWorldContactSolveResult solveResult
+        = dvbd::solveAvbdRigidWorldContactSnapshot(
+            snapshot,
+            m_avbdScratch->normalInventory,
+            m_avbdScratch->frictionInventory,
+            m_avbdScratch->jointLinearInventory,
+            m_avbdScratch->jointAngularInventory,
+            timeStep,
+            solveOptions);
+    if (solveResult.jointLinearRows == 0u
+        && solveResult.jointAngularRows == 0u) {
+      return false;
+    }
+
+    const dvbd::AvbdRigidWorldContactApplyResult projection
+        = dvbd::applyAvbdRigidWorldContactVelocityProjection(
             registry, snapshot, timeStep);
+    return projection.bodies != 0u;
+  };
 
-        dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
-        solveOptions.descent.iterations = m_iterations;
-        solveOptions.descent.regularization = 1e-12;
-        const dvbd::AvbdRigidWorldContactSolveResult solveResult
-            = dvbd::solveAvbdRigidWorldContactSnapshot(
-                snapshot,
-                m_avbdScratch->normalInventory,
-                m_avbdScratch->frictionInventory,
-                m_avbdScratch->jointLinearInventory,
-                m_avbdScratch->jointAngularInventory,
-                timeStep,
-                solveOptions);
-        if (solveResult.jointLinearRows != 0u
-            || solveResult.jointAngularRows != 0u) {
-          const dvbd::AvbdRigidWorldContactApplyResult projection
-              = dvbd::applyAvbdRigidWorldContactVelocityProjection(
-                  registry, snapshot, timeStep);
-          if (projection.bodies != 0u) {
-            return;
-          }
-        }
-      }
+  if (contacts.empty()) {
+    if (projectAvbdRigidPointJoints()) {
+      return;
     }
 
     if (m_avbdScratch != nullptr) {
@@ -7510,6 +7520,11 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     }
 
     m_avbdScratch->clear();
+  }
+
+  if (projectAvbdRigidPointJoints()) {
+    // Keep the AVBD joint projection active while ordinary contacts continue
+    // through the selected non-AVBD contact solver below.
   } else if (m_avbdScratch != nullptr) {
     m_avbdScratch->clear();
   }

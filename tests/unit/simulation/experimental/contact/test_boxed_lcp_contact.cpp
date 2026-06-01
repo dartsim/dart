@@ -255,6 +255,46 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
 }
 
 //==============================================================================
+// Private fixed-joint rows should continue to project when an unrelated contact
+// falls back to the ordinary rigid contact solver.
+TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
+{
+  auto world = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto sphere = world->getRigidBody("sphere");
+  ASSERT_TRUE(sphere.has_value());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  baseOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto base = world->addRigidBody("joint_base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d(11.0, 0.0, 0.0);
+  auto link = world->addRigidBody("joint_link", linkOptions);
+
+  auto& registry = world->getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  world->enterSimulationMode();
+  world->step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 10.0), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_GT(sphere->getTranslation().z(), 0.49);
+}
+
+//==============================================================================
 // A body dropped onto a static ground rests in the same place under both
 // solver paths (non-penetration, normal velocity -> 0, same resting height).
 TEST(BoxedLcpContact, RestingHeightMatchesSequentialImpulse)
