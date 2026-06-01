@@ -118,6 +118,7 @@ struct AvbdRigidWorldContactStepResult
 {
   std::size_t bodies = 0;
   std::size_t contacts = 0;
+  std::size_t joints = 0;
   AvbdRigidWorldContactSolveResult solve;
   AvbdRigidWorldContactApplyResult apply;
 };
@@ -763,17 +764,22 @@ inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     entt::registry& registry,
     std::span<const Contact> contacts,
+    std::span<const AvbdRigidWorldPointJointInput> joints,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
+    AvbdScalarRowInventory& jointLinearInventory,
+    AvbdScalarRowInventory& jointAngularInventory,
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
   AvbdRigidWorldContactStepResult result;
   AvbdRigidWorldContactSnapshot snapshot
       = buildAvbdRigidWorldContactSnapshot(registry, contacts, options.contact);
+  result.joints = appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
   result.bodies = snapshot.states.size();
   result.contacts = snapshot.contacts.size();
-  if (snapshot.states.empty() || snapshot.contacts.empty()) {
+  if (snapshot.states.empty()
+      || (snapshot.contacts.empty() && snapshot.joints.empty())) {
     return result;
   }
   if (options.useVelocityInertialTargets) {
@@ -781,14 +787,45 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
   }
 
   result.solve = solveAvbdRigidWorldContactSnapshot(
-      snapshot, normalInventory, frictionInventory, timeStep, options.solve);
-  if (result.solve.normalRows == 0u && result.solve.frictionRows == 0u) {
+      snapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      timeStep,
+      options.solve);
+  if (result.solve.normalRows == 0u && result.solve.frictionRows == 0u
+      && result.solve.jointLinearRows == 0u
+      && result.solve.jointAngularRows == 0u) {
     return result;
   }
 
   result.apply
       = applyAvbdRigidWorldContactSnapshot(registry, snapshot, timeStep);
   return result;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
+    entt::registry& registry,
+    std::span<const Contact> contacts,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    double timeStep,
+    const AvbdRigidWorldContactStepOptions& options = {})
+{
+  AvbdScalarRowInventory jointLinearInventory;
+  AvbdScalarRowInventory jointAngularInventory;
+  return runAvbdRigidWorldContactStep(
+      registry,
+      contacts,
+      std::span<const AvbdRigidWorldPointJointInput>(),
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      timeStep,
+      options);
 }
 
 } // namespace dart::simulation::experimental::detail::deformable_vbd

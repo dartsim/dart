@@ -182,7 +182,7 @@ Paper audit:
     rigid joint-row families for fixed-anchor translation and orientation
     constraints through the existing rigid row driver, seed their step-start
     constraint values for AVBD alpha regularization, and can be appended to the
-    private World rigid snapshot/solve/apply wrapper from world-space
+    private World rigid snapshot/solve/apply wrapper and combined step helper from world-space
     point-joint inputs. ECS joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, and
@@ -242,7 +242,7 @@ numbers.
    box-feature/pair-scoped rigid contact row identity, cylinder side/cap/rim
    endpoint features, private rigid point-joint linear/angular/combined row
    builders with step-start previous constraint values, and private World
-   snapshot point-joint append/solve/apply coverage have narrow CPU paths.
+   snapshot/step point-joint append/solve/apply coverage have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

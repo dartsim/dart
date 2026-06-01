@@ -299,10 +299,10 @@ its own line so status updates remain git-history friendly.
   has point-joint linear, angular, and combined row builders for fixed-anchor
   translation and orientation constraints, with step-start previous values
   seeded for AVBD alpha regularization. Those private point-joint rows can now
-  be appended to the World rigid snapshot/solve/apply wrapper from world-space
-  point-joint inputs, but ECS joint extraction is not wired yet. The next local
-  slice is full narrow-phase feature extraction, contact-complete rigid joint
-  rows, or rigid/articulated World integration.
+  be appended to the World rigid snapshot/solve/apply wrapper and combined step
+  helper from world-space point-joint inputs, but ECS joint extraction is not
+  wired yet. The next local slice is full narrow-phase feature extraction,
+  contact-complete rigid joint rows, or rigid/articulated World integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
