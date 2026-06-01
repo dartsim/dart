@@ -88,6 +88,13 @@ public:
   {
     return world.m_multibodyCounter;
   }
+
+  static void copySkeletonLoaderCounters(World& target, const World& source)
+  {
+    target.m_multibodyCounter = source.m_multibodyCounter;
+    target.m_linkCounter = source.m_linkCounter;
+    target.m_jointCounter = source.m_jointCounter;
+  }
 };
 
 } // namespace detail
@@ -458,6 +465,10 @@ void validateWorldLoadSupported(
   std::unordered_set<std::string> sourceNames;
   std::size_t generatedMultibodyCounter
       = detail::SkeletonLoaderWorldAccess::multibodyCounter(targetWorld);
+  World scratchWorld;
+  detail::SkeletonLoaderWorldAccess::copySkeletonLoaderCounters(
+      scratchWorld, targetWorld);
+
   for (std::size_t i = 0; i < sourceWorld.getNumSkeletons(); ++i) {
     const dynamics::SkeletonPtr skeleton = sourceWorld.getSkeleton(i);
     DART_EXPERIMENTAL_THROW_T_IF(
@@ -466,7 +477,6 @@ void validateWorldLoadSupported(
         "Source World returned a null Skeleton at index {}",
         i);
 
-    World scratchWorld;
     (void)addSkeleton(scratchWorld, *skeleton, options);
     (void)resolveWorldMultibodyName(
         targetWorld, *skeleton, sourceNames, generatedMultibodyCounter, i);

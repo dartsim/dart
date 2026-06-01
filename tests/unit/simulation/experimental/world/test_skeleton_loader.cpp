@@ -375,6 +375,58 @@ dynamics::SkeletonPtr createZeroMassSkeleton()
   return skeleton;
 }
 
+void seedWorldLinkAndJointCounters(sx::World& world)
+{
+  sx::Multibody multibody = world.addMultibody("counter_seed");
+  sx::Link root = multibody.addLink("seed_root");
+  (void)multibody.addLink("", root, sx::JointSpec{.name = ""});
+}
+
+dynamics::SkeletonPtr createTargetLinkCounterConflictSkeleton()
+{
+  auto skeleton = dynamics::Skeleton::create("link_counter_conflict");
+
+  auto [rootJoint, rootBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("root"));
+  rootJoint->setName("root_joint");
+  const_cast<std::string&>(rootBody->getName()).clear();
+
+  auto [childJoint, childBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          rootBody,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("link_002"));
+  (void)childBody;
+  childJoint->setName("child_joint");
+
+  return skeleton;
+}
+
+dynamics::SkeletonPtr createTargetJointCounterConflictSkeleton()
+{
+  auto skeleton = dynamics::Skeleton::create("joint_counter_conflict");
+
+  auto [rootJoint, rootBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("root"));
+  const_cast<std::string&>(rootJoint->getName()).clear();
+
+  auto [childJoint, childBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          rootBody,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("child"));
+  (void)childBody;
+  childJoint->setName("joint_002");
+
+  return skeleton;
+}
+
 } // namespace
 
 TEST(SkeletonLoader, TranslatesSupportedTreeProperties)
@@ -628,6 +680,35 @@ TEST(SkeletonLoader, RejectsWorldGeneratedNameConflictBeforeCreatingMultibodies)
       sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
   EXPECT_EQ(world.getMultibodyCount(), 0u);
   EXPECT_FALSE(world.getMultibody("multibody_001").has_value());
+}
+
+TEST(SkeletonLoader, RejectsWorldTargetCounterConflictsBeforeCreatingMultibody)
+{
+  {
+    auto legacyWorld = dart::simulation::World::create("legacy_world");
+    legacyWorld->addSkeleton(createTargetLinkCounterConflictSkeleton());
+
+    sx::World world;
+    seedWorldLinkAndJointCounters(world);
+
+    EXPECT_THROW(
+        sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
+    EXPECT_EQ(world.getMultibodyCount(), 1u);
+    EXPECT_FALSE(world.getMultibody("link_counter_conflict").has_value());
+  }
+
+  {
+    auto legacyWorld = dart::simulation::World::create("legacy_world");
+    legacyWorld->addSkeleton(createTargetJointCounterConflictSkeleton());
+
+    sx::World world;
+    seedWorldLinkAndJointCounters(world);
+
+    EXPECT_THROW(
+        sx::io::addWorld(world, *legacyWorld), sx::InvalidArgumentException);
+    EXPECT_EQ(world.getMultibodyCount(), 1u);
+    EXPECT_FALSE(world.getMultibody("joint_counter_conflict").has_value());
+  }
 }
 
 TEST(SkeletonLoader, RejectsWorldJointAxisConflictBeforeCreatingMultibodies)
