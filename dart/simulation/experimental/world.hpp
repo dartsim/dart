@@ -57,6 +57,10 @@
 
 namespace dart::simulation::experimental {
 
+namespace io::detail {
+class SkeletonLoaderWorldAccess;
+} // namespace io::detail
+
 struct WorldOptions;
 
 /// Solver family used for free rigid-body dynamics in the default experimental
@@ -440,8 +444,8 @@ public:
   //--------------------------------------------------------------------------
   /// @internal
   /// DART 7 implementation escape hatch for tests and subsystem bring-up.
-  /// This is not part of the DART 8 promotion target for the public World
-  /// facade; prefer public handles and accessors for user-facing code.
+  /// This is not part of the DART 7 public World facade promotion target;
+  /// prefer public handles and accessors for user-facing code.
   entt::registry& getRegistry();
   /// @internal
   /// See the non-const overload.
@@ -480,6 +484,7 @@ private:
   friend class Multibody;
   friend class RigidBody;
   friend class DeformableBody;
+  friend class io::detail::SkeletonLoaderWorldAccess;
 
   Frame resolveParentFrame(const Frame& parent) const;
   entt::entity createFrameEntity(
