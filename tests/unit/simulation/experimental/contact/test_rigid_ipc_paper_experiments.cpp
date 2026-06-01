@@ -237,6 +237,20 @@ sx::CollisionShape makeTetPyramidMesh()
       std::move(vertices), std::move(triangles));
 }
 
+sx::CollisionShape makeTetCornerMesh()
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 0.0, 1.0},
+      {0.0, 1.0, 0.0},
+  };
+  std::vector<Eigen::Vector3i> triangles
+      = {{0, 2, 1}, {0, 3, 2}, {1, 2, 3}, {0, 1, 3}};
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 // Build one arch voussoir (wedge block) spanning the angular range
 // [theta0, theta1] in the world x-z plane, between inner and outer radii, with
 // half-width halfW along y. Writes the world centroid (the body position) into
@@ -1083,6 +1097,56 @@ TEST(RigidIpcPaperExperiments, VertexFaceFixtureRowStaysSeparated)
   EXPECT_TRUE(sawActiveContact);
   EXPECT_LT(maxOverlapDepth, 5e-3);
   EXPECT_LT(moving.getTranslation().z(), startZ - 0.2);
+  EXPECT_TRUE(moving.getTranslation().allFinite());
+  EXPECT_TRUE(moving.getLinearVelocity().allFinite());
+}
+
+TEST(RigidIpcPaperExperiments, VertexVertexFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.55);
+  auto ground = world.addRigidBody("vertex_vertex_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({5.0, 5.0, 0.05}));
+
+  sx::RigidBodyOptions fixedOptions;
+  fixedOptions.isStatic = true;
+  fixedOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto fixed = world.addRigidBody("vertex_vertex_fixed_tet", fixedOptions);
+  fixed.setCollisionShape(makeTetCornerMesh());
+
+  sx::RigidBodyOptions movingOptions;
+  movingOptions.mass = 1.0;
+  movingOptions.position = Eigen::Vector3d(0.0, 0.0, 0.7);
+  auto moving = world.addRigidBody("vertex_vertex_moving_tet", movingOptions);
+  moving.setCollisionShape(makeTetCornerMesh());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startZ = moving.getTranslation().z();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_LT(moving.getTranslation().z(), startZ - 0.1);
   EXPECT_TRUE(moving.getTranslation().allFinite());
   EXPECT_TRUE(moving.getLinearVelocity().allFinite());
 }
