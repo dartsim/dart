@@ -88,7 +88,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="sx_rigid_ipc_edge_drop",
     title="Rigid IPC Degenerate Edge Drop (sx)",
-    category="Experimental",
+    category="Rigid IPC (sx)",
     summary="A cube lands on one edge in a degenerate contact and tips to rest, "
     "staying intersection-free via the rigid IPC barrier solver.",
     build=build,
