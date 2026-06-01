@@ -50,6 +50,7 @@
 #include <dart/simulation/experimental/world_options.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -211,6 +212,46 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   EXPECT_LT(std::abs(link.getTranslation().x()), 0.05);
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// The no-contact fixed-joint path should also route angular rows through the
+// private AVBD projection instead of only correcting point-anchor drift.
+TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.orientation = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ());
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = world.getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  world.enterSimulationMode();
+  world.step();
+
+  const Eigen::AngleAxisd residual(link.getTransform().linear());
+  EXPECT_LT(std::abs(residual.angle()), 0.05);
+  EXPECT_LT(link.getAngularVelocity().z(), 0.0);
+  EXPECT_TRUE(
+      base.getTransform().linear().isApprox(Eigen::Matrix3d::Identity()));
 }
 
 //==============================================================================
