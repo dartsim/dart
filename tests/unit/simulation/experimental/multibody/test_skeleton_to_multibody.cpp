@@ -54,6 +54,7 @@
 #include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
@@ -848,6 +849,43 @@ TEST(SkeletonToMultibody, TranslatesCollisionShapes)
   EXPECT_EQ(heightmapShape->triangles[1], Eigen::Vector3i(1, 3, 2));
   EXPECT_TRUE(heightmapShape->localTransform.isApprox(
       translation(0.05, -0.15, 0.2), 1e-12));
+
+  // A SoftMeshShape snapshots the soft body's point-mass mesh into the
+  // experimental mesh carrier.
+  auto softSkeleton = dd::Skeleton::create("soft_mesh_collision");
+  auto [softJoint, softBody]
+      = softSkeleton
+            ->createJointAndBodyNodePair<dd::FreeJoint, dd::SoftBodyNode>(
+                nullptr);
+  softJoint->setName("joint");
+  softBody->setName("body");
+  dd::SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.2, 0.3, 0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0);
+  ASSERT_GT(softBody->getNumShapeNodes(), 0u);
+  auto* softShapeNode = softBody->getShapeNode(0);
+  softShapeNode->setRelativeTransform(translation(-0.2, 0.05, 0.1));
+
+  sx::World softWorld;
+  auto softMultibody
+      = sx::io::buildMultibodyFromSkeleton(softWorld, *softSkeleton);
+  const auto softLink = softMultibody.getLink("body");
+  ASSERT_TRUE(softLink.has_value());
+  ASSERT_TRUE(softLink->hasCollisionShape());
+  const auto softShape = softLink->getCollisionShape();
+  ASSERT_TRUE(softShape.has_value());
+  EXPECT_EQ(softShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(softShape->vertices.size(), softBody->getNumPointMasses());
+  ASSERT_EQ(softShape->triangles.size(), softBody->getNumFaces());
+  ASSERT_GT(softShape->vertices.size(), 0u);
+  ASSERT_GT(softShape->triangles.size(), 0u);
+  EXPECT_TRUE(softShape->vertices[0].isApprox(
+      softBody->getPointMass(0)->getRestingPosition(), 1e-12));
+  EXPECT_EQ(softShape->triangles[0], softBody->getFace(0));
+  EXPECT_TRUE(
+      softShape->localTransform.isApprox(translation(-0.2, 0.05, 0.1), 1e-12));
 }
 
 //==============================================================================

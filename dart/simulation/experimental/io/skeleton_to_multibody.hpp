@@ -74,11 +74,10 @@ struct SkeletonToMultibodyOptions
   bool copyJointProperties = true;
 
   /// When true (the default), translate the first sphere, box, capsule,
-  /// cylinder, plane, triangular mesh, convex mesh, or heightmap collision
-  /// shape of each body (a shape node with a collision aspect) onto the created
-  /// link, preserving the shape node's relative transform as the CollisionShape
-  /// local transform. Soft mesh variants and additional shapes per body are
-  /// skipped.
+  /// cylinder, plane, triangular mesh, convex mesh, heightmap, or soft mesh
+  /// collision shape of each body (a shape node with a collision aspect) onto
+  /// the created link, preserving the shape node's relative transform as the
+  /// CollisionShape local transform. Additional shapes per body are skipped.
   bool loadCollisionShapes = true;
 };
 

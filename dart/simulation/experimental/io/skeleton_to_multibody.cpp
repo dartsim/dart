@@ -60,6 +60,7 @@
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -345,11 +346,11 @@ std::optional<CollisionShape> makeHeightmapCollisionShape(
 }
 
 /// The first sphere, box, capsule, cylinder, plane, triangular mesh, convex
-/// mesh, or heightmap collision shape of a body (a shape node with a collision
-/// aspect), as an experimental CollisionShape. The shape node's relative
-/// transform becomes the CollisionShape local transform.
+/// mesh, heightmap, or soft mesh collision shape of a body (a shape node with a
+/// collision aspect), as an experimental CollisionShape. The shape node's
+/// relative transform becomes the CollisionShape local transform.
 /// Returns nullopt when the body has no representable collision shape;
-/// unsupported mesh-like variants and additional shapes per body are skipped.
+/// unsupported shape types and additional shapes per body are skipped.
 std::optional<CollisionShape> translateCollisionShape(
     const dynamics::BodyNode& body)
 {
@@ -401,11 +402,16 @@ std::optional<CollisionShape> translateCollisionShape(
           const auto& heightmap
               = static_cast<const dynamics::HeightmapShapef&>(*shape);
           result = makeHeightmapCollisionShape(heightmap);
+        } else if (type == dynamics::SoftMeshShape::getStaticType()) {
+          const auto& soft
+              = static_cast<const dynamics::SoftMeshShape&>(*shape);
+          result = makeMeshCollisionShape(
+              soft.getTriMesh(), Eigen::Vector3d::Ones());
         }
         if (result.has_value()) {
           result->localTransform = shapeNode->getRelativeTransform();
         }
-        // Soft mesh variants are not yet translated.
+        // Additional collision shapes per body are not yet translated.
       });
   return result;
 }

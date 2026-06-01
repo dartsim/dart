@@ -671,10 +671,11 @@ skeleton, options)` and dartpy `build_multibody_from_skeleton` /
     experimental World, and `io::buildMultibodiesFromWorld` (dartpy
     `build_multibodies_from_world`) loads every skeleton of a legacy
     `simulation::World` as its own multibody (a whole scene). Sphere, box,
-    capsule, cylinder, plane, triangular `MeshShape`, `ConvexMeshShape`, and
-    `HeightmapShape` collision shapes are carried onto the links with their
-    shape-node offsets preserved (gated by `loadCollisionShapes`). Other
-    collision shape types and rotated parent-side offsets on
+    capsule, cylinder, plane, triangular `MeshShape`, `ConvexMeshShape`,
+    `HeightmapShape`, and `SoftMeshShape` collision shapes are carried onto the
+    links with their shape-node offsets preserved (gated by
+    `loadCollisionShapes`). Other collision shape types and rotated parent-side
+    offsets on
     ball/free/planar joints are not yet translated (the former is skipped; the
     latter raises a descriptive error).
   - Added experimental articulated-body forward dynamics for fixed-base
