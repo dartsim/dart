@@ -20,9 +20,15 @@
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+
+#include <dart/math/tri_mesh.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -46,6 +52,33 @@ Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
   return {r, g, b, a};
 }
 
+std::shared_ptr<dynamics::MeshShape> makeMeshVisualShape(
+    const sx::CollisionShape& shape)
+{
+  auto mesh = std::make_shared<dart::math::TriMesh<double>>();
+  mesh->reserveVertices(shape.vertices.size());
+  mesh->reserveTriangles(shape.triangles.size());
+
+  for (const auto& vertex : shape.vertices) {
+    mesh->addVertex(vertex);
+  }
+
+  for (const auto& triangle : shape.triangles) {
+    mesh->addTriangle(
+        static_cast<dart::math::TriMesh<double>::Index>(triangle.x()),
+        static_cast<dart::math::TriMesh<double>::Index>(triangle.y()),
+        static_cast<dart::math::TriMesh<double>::Index>(triangle.z()));
+  }
+
+  mesh->computeVertexNormals();
+
+  auto visualShape = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), std::move(mesh));
+  visualShape->setColorMode(dynamics::MeshShape::SHAPE_COLOR);
+  visualShape->setAlphaMode(dynamics::MeshShape::SHAPE_ALPHA);
+  return visualShape;
+}
+
 std::shared_ptr<dynamics::Shape> makeVisualShape(
     const sx::CollisionShape& shape)
 {
@@ -54,8 +87,18 @@ std::shared_ptr<dynamics::Shape> makeVisualShape(
       return std::make_shared<dynamics::SphereShape>(shape.radius);
     case sx::CollisionShapeType::Box:
       return std::make_shared<dynamics::BoxShape>(2.0 * shape.halfExtents);
+    case sx::CollisionShapeType::Capsule:
+      return std::make_shared<dynamics::CapsuleShape>(
+          shape.radius, shape.height);
+    case sx::CollisionShapeType::Cylinder:
+      return std::make_shared<dynamics::CylinderShape>(
+          shape.radius, shape.height);
+    case sx::CollisionShapeType::Plane:
+      return std::make_shared<dynamics::PlaneShape>(shape.normal, shape.offset);
+    case sx::CollisionShapeType::Mesh:
+      return makeMeshVisualShape(shape);
   }
-  return std::make_shared<dynamics::SphereShape>(0.25);
+  return nullptr;
 }
 
 struct RenderBody
