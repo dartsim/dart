@@ -295,6 +295,20 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "until it has topology-specific DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/erleben/wedge-in-crack.json": {
+        "test": "ErlebenWedgeInCrackFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited Erleben wedge-in-crack row: an inverted "
+            "wedge advances through a fixed crack mesh under the upstream "
+            "velocity and force direction, activates rigid IPC contact, stays "
+            "finite, and reports no meaningful native overlap after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned wedge-in-crack runtime coverage for the "
+            "3D unit-test fixture mechanism. The hole row remains planned "
+            "until it has topology-specific DART runtime evidence."
+        ),
+    },
     "fixtures/3D/unit-tests/tessellated-plane/two-triangles.json": {
         "test": "CubeSettlesOnTwoTrianglePlaneFixtureRow",
         "expected_invariant": (

@@ -1744,6 +1744,54 @@ TEST(RigidIpcPaperExperiments, ErlebenSpikeInCrackFixtureRowStaysSeparated)
   EXPECT_TRUE(spike.getLinearVelocity().allFinite());
 }
 
+TEST(RigidIpcPaperExperiments, ErlebenWedgeInCrackFixtureRowStaysSeparated)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.8));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions crackOptions;
+  crackOptions.isStatic = true;
+  crackOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto crack = world.addRigidBody("erleben_crack_for_wedge", crackOptions);
+  crack.setCollisionShape(makeErlebenCrackMesh());
+
+  sx::RigidBodyOptions wedgeOptions;
+  wedgeOptions.mass = 1.0;
+  wedgeOptions.position = Eigen::Vector3d(0.0, 0.0, 2.001);
+  wedgeOptions.orientation
+      = Eigen::AngleAxisd(std::numbers::pi, Eigen::Vector3d::UnitY());
+  wedgeOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto wedge = world.addRigidBody("erleben_wedge_in_crack", wedgeOptions);
+  wedge.setCollisionShape(makeErlebenWedgeMesh());
+  wedge.setForce(Eigen::Vector3d(10.0, 0.0, 0.0));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  const double startX = wedge.getTranslation().x();
+  bool sawActiveContact = false;
+  double maxOverlapDepth = 0.0;
+  for (int s = 0; s < 20; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    for (const auto& contact : world.collide()) {
+      maxOverlapDepth = std::max(maxOverlapDepth, contact.depth);
+    }
+  }
+
+  EXPECT_TRUE(sawActiveContact);
+  EXPECT_LT(maxOverlapDepth, 5e-3);
+  EXPECT_GT(wedge.getTranslation().x(), startX + 0.005);
+  EXPECT_TRUE(wedge.getTranslation().allFinite());
+  EXPECT_TRUE(wedge.getLinearVelocity().allFinite());
+}
+
 TEST(RigidIpcPaperExperiments, RotatingCubeFixtureRowAdvancesWithoutContact)
 {
   sx::World world;

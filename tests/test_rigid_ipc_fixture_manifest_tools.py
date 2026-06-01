@@ -514,6 +514,28 @@ def test_rigid_ipc_manifest_marks_erleben_spike_in_crack_row_implemented(
     assert "hole row remains planned" in row["notes_or_gap"]
 
 
+def test_rigid_ipc_manifest_marks_erleben_wedge_in_crack_row_implemented(
+    tmp_path,
+):
+    module = _load_script("generate_rigid_ipc_fixture_manifest")
+    data_path = (
+        tmp_path / "fixtures" / "3D" / "unit-tests" / "erleben" / "wedge-in-crack.json"
+    )
+    data_path.parent.mkdir(parents=True)
+    data_path.write_text('{"rigid_body_problem":{"rigid_bodies":[]}}')
+
+    row = module.row_for_path(
+        "fixtures/3D/unit-tests/erleben/wedge-in-crack.json",
+        "fixture",
+        tmp_path,
+    )
+
+    assert row["status"] == "implemented"
+    assert "ErlebenWedgeInCrackFixtureRowStaysSeparated" in row["dart_artifact"]
+    assert "Erleben wedge-in-crack row" in row["expected_invariant"]
+    assert "hole row remains planned" in row["notes_or_gap"]
+
+
 def test_rigid_ipc_manifest_marks_two_triangle_plane_row_implemented(
     tmp_path,
 ):
