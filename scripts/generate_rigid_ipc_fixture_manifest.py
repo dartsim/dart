@@ -238,6 +238,38 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "DART runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/face-vertex.json": {
+        "test": "FaceVertexFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the audited 3D face-vertex row: a tetrahedral "
+            "pyramid face falls under gravity toward a separate fixed "
+            "tetrahedral pyramid vertex, activates rigid IPC contact, stays "
+            "finite, and reports no meaningful native overlap after each step."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned tetrahedral face-vertex runtime coverage "
+            "for the 3D unit-test fixture mechanism and its non-visual Fig. 16 "
+            "paper-unit alias. Vertex-face, vertex-vertex, edge-edge, and "
+            "tet-corner rows remain planned until they have topology-specific "
+            "DART runtime evidence."
+        ),
+    },
+    "fixtures/paper-figures/16-unit-tests/face-vertex.json": {
+        "test": "FaceVertexFixtureRowStaysSeparated",
+        "expected_invariant": (
+            "DART covers the non-visual Fig. 16 face-vertex unit-test alias: "
+            "a tetrahedral pyramid face falls under gravity toward a separate "
+            "fixed tetrahedral pyramid vertex, activates rigid IPC contact, "
+            "stays finite, and reports no meaningful native overlap after "
+            "each step."
+        ),
+        "notes_or_gap": (
+            "This paper-unit row aliases the audited 3D face-vertex unit-test "
+            "fixture, so it is retired by the same DART-owned runtime "
+            "coverage. Visual paper-figure rows still require example and "
+            "headless visual evidence before retirement."
+        ),
+    },
     "fixtures/3D/unit-tests/large-mass-ratio.json": {
         "test": "LargeMassRatioFixtureRowStaysSeparated",
         "expected_invariant": (
