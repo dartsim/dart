@@ -80,10 +80,7 @@ A promoted public API must not require either.
 ### D. Header inventory by subdirectory (127 total)
 
 Counts are a snapshot and drift as the tree grows; recompute the current total
-with `find dart/simulation/experimental -name '*.hpp' | wc -l`. The dedicated
-promotion-surface audit script (added with the WS1/WS5 facade-prep tooling)
-additionally reports per-header classification and the (transitive) ECS-leak
-set.
+with `find dart/simulation/experimental -name '*.hpp' | wc -l`.
 
 | Subdir        | hpp | Disposition | Notes                                                                                                                                                                                                                   |
 | ------------- | --- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -178,11 +175,28 @@ constraints (per-workstream tracking and status live in the plan, see below):
 - **Python facade:** confirm the `dartpy.simulation` path and the `dartpy.World`
   decision with no duplicate nanobind registration.
 
+## Parity Evidence Map
+
+Promotion of the public subset cannot be claimed until the DART 7 checkable parity
+gates ([`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)) have
+direct evidence. The gates and their required evidence (per-gate status is tracked
+in PLAN-041, not here):
+
+| Gate                         | Required evidence                                                         |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| Experimental model loading   | URDF/SDF/MJCF/SKEL load with topology/DOF/transform/mass/collision.       |
+| Rigid dynamics parity        | Shared open-chain scenes match the classic DART 6 path within tolerances. |
+| Contact/constraint parity    | Contacts, friction, limits, motors, mimic/coupler, loop closures.         |
+| Serialization/replay parity  | Topology/state/assets + record/replay round-trip within bounded error.    |
+| Stable public API promotion  | Promoted headers hide ECS/components/solver/backend (boundary checks).    |
+| Name-collision resolution    | `dart::simulation::World` cleared via an explicit transaction.            |
+| Core build/tests + packaging | Lint, build, tests, and package/export smokes for the touched scope.      |
+
 ## Operating state lives in the plan, not here
 
 Per [`AGENTS.md`](AGENTS.md), this design doc does not own gates, per-workstream
-status, or implementation handoff. The blocker workstream sequence, current
-status, and the parity-evidence gates that block the promotion claim are tracked
+status, or implementation handoff. The blocker workstream sequence and the
+current per-gate parity status are tracked
 in [`../plans/dashboard.md`](../plans/dashboard.md) and
 [`../plans/041-official-simulation-api-promotion.md`](../plans/041-official-simulation-api-promotion.md)
 (PLAN-041), with the DART 7 checkable parity gates in
@@ -191,10 +205,10 @@ in [`../plans/dashboard.md`](../plans/dashboard.md) and
 ## WS1 Acceptance
 
 Workstream 1 is satisfied when: the supported public subset is frozen (above), the
-hide-list is explicit (above), the boundary blockers are enumerated as a checklist
-(above), and the parity-evidence map names each gate. Subsequent workstreams turn
-each checklist item into an implementation PR. Update this audit when the install
-rule, package dependencies, header layout, or parity status changes.
+hide-list is explicit (above), the promotion blockers are stated as durable design
+constraints (above), and the parity-evidence map names each gate (above).
+Per-workstream sequencing and per-gate status live in PLAN-041. Update this audit
+when the install rule, package dependencies, or header layout changes.
 
 ## Verification
 
