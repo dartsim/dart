@@ -1715,8 +1715,19 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("point", [](const sim::Contact& self) { return self.point; })
       .def_prop_ro(
           "normal", [](const sim::Contact& self) { return self.normal; })
+      .def_prop_ro("depth", [](const sim::Contact& self) { return self.depth; })
       .def_prop_ro(
-          "depth", [](const sim::Contact& self) { return self.depth; });
+          "shape_index_a",
+          [](const sim::Contact& self) { return self.shapeIndexA; })
+      .def_prop_ro(
+          "shape_index_b",
+          [](const sim::Contact& self) { return self.shapeIndexB; })
+      .def_prop_ro(
+          "local_point_a",
+          [](const sim::Contact& self) { return self.localPointA; })
+      .def_prop_ro("local_point_b", [](const sim::Contact& self) {
+        return self.localPointB;
+      });
 
   nb::class_<sim::CollisionQueryOptions>(m, "CollisionQueryOptions")
       .def(
