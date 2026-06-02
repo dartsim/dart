@@ -2,6 +2,68 @@
 
 ## DART 6
 
+### [DART 6.17.0 (2026-06-01)](https://github.com/dartsim/dart/milestone/85?closed=1)
+
+DART 6.17.0 is a maintenance release on the DART 6 LTS compatibility line. It
+backports bug fixes and additive improvements to the classic DART 6 API that were
+made on `main` during DART 7 development, so that DART 6 and gz-physics users
+receive them before the DART 7 clean break removes the legacy API from `main`.
+
+* GUI
+
+  * Fix `RealTimeWorldNode` stalling when the viewer lags behind real time: [#2088](https://github.com/dartsim/dart/pull/2088)
+
+* Collision
+
+  * Preserve the minimum pair distance in FCL distance queries: [#2243](https://github.com/dartsim/dart/pull/2243), [#1539](https://github.com/dartsim/dart/issues/1539)
+  * Fix plane collision handling for the Bullet and FCL backends: [#2246](https://github.com/dartsim/dart/pull/2246)
+  * Fix an FCL mesh contact regression: [#2258](https://github.com/dartsim/dart/pull/2258)
+  * Fix Bullet ellipsoid rolling by using primitive sphere/ellipsoid shapes: [#2274](https://github.com/dartsim/dart/pull/2274)
+  * Handle non-`Skeleton` `MetaSkeleton` subscriptions in `CollisionGroup` without crashing: [#2277](https://github.com/dartsim/dart/pull/2277)
+  * Stabilize FCL contact normals and make collision ordering deterministic: [#2282](https://github.com/dartsim/dart/pull/2282)
+  * Guard the body-node collision filter against missing body nodes: [#2343](https://github.com/dartsim/dart/pull/2343)
+  * Add `Contact` accessors for the shape frame, shape node, and body node: [#2245](https://github.com/dartsim/dart/pull/2245)
+  * Fix memory leaks and a use-after-free in the Bullet collision backend: [#2101](https://github.com/dartsim/dart/pull/2101)
+  * Fix a Bullet collision-detection correctness issue: [#2091](https://github.com/dartsim/dart/pull/2091)
+  * Fix ODE `HeightmapShape` visual/collision mismatch and a dangling-pointer bug: [#2305](https://github.com/dartsim/dart/pull/2305)
+
+* Constraint
+
+  * Recover finite Dantzig LCP solutions instead of zeroing the result when only some entries are NaN: [#2253](https://github.com/dartsim/dart/pull/2253)
+
+* Dynamics
+
+  * Compute `BodyNode` potential energy from the center of mass: [#2224](https://github.com/dartsim/dart/pull/2224)
+  * Add `BodyNode` world-transform derivative APIs: [#2131](https://github.com/dartsim/dart/pull/2131)
+  * Preserve Collada unit scaling in `MeshShape`: [#2152](https://github.com/dartsim/dart/pull/2152)
+  * Add debug assertions for non-finite joint inputs: [#2273](https://github.com/dartsim/dart/pull/2273)
+  * Emit collision-shape added/removed signals on shape changes: [#2250](https://github.com/dartsim/dart/pull/2250)
+  * Deep-copy shapes when cloning skeletons: [#2239](https://github.com/dartsim/dart/pull/2239), [#896](https://github.com/dartsim/dart/issues/896)
+  * Add `PlanarJoint` SE(2) conversion helpers: [#2231](https://github.com/dartsim/dart/pull/2231)
+  * Fix joint impulse statefulness by moving impulse state into `GenericJointState`: [#2308](https://github.com/dartsim/dart/pull/2308)
+  * Add a state-independent `Joint::integratePositions` overload: [#2309](https://github.com/dartsim/dart/pull/2309)
+  * Validate negative physics parameters at runtime instead of asserting: [#2431](https://github.com/dartsim/dart/pull/2431)
+  * Clear stale joint commands when the actuator type changes: [#2098](https://github.com/dartsim/dart/pull/2098)
+  * Fix the `FreeJoint` world Jacobian translation: [#2298](https://github.com/dartsim/dart/pull/2298)
+
+* Parsers
+
+  * Enforce SDF joint position limits when finite: [#2232](https://github.com/dartsim/dart/pull/2232)
+  * Handle tiny/degenerate SDF inertial data and warn on missing `<inertial>`: [#2284](https://github.com/dartsim/dart/pull/2284)
+
+* Common
+
+  * Fix `Signal` thread-safety regressions: [#2181](https://github.com/dartsim/dart/pull/2181)
+  * Add `StlAllocator::max_size` and make `deallocate` `noexcept`: [#2287](https://github.com/dartsim/dart/pull/2287)
+  * Fix `Aspect` lifecycle when an aspect is replaced: [#2304](https://github.com/dartsim/dart/pull/2304)
+  * Make `CloneableMap` copy null-safe: [#2358](https://github.com/dartsim/dart/pull/2358)
+
+* Build
+
+  * Prefer the prefix-local Vulkan loader for the ImGui example: [#2085](https://github.com/dartsim/dart/pull/2085)
+  * Allow configuring (or disabling) the examples install destination: [#2100](https://github.com/dartsim/dart/pull/2100)
+  * Register `dart::utils` parser sources correctly in CMake: [#2314](https://github.com/dartsim/dart/pull/2314)
+
 ### [DART 6.16.8 (2026-05-31)](https://github.com/dartsim/dart/milestone/93?closed=1)
 
 * GUI
