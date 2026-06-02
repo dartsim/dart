@@ -1163,6 +1163,16 @@ if(DART_VERBOSE)
   message(STATUS "[ Code Formatting ]")
 endif()
 
+# find_program caches its result and will not re-search once
+# CLANG_FORMAT_EXECUTABLE is set, even if the cached path no longer exists. When
+# the pinned clang-format is upgraded under an existing build tree (e.g. the
+# pixi env moves clang-format-21 -> clang-format-22), the stale cache leaves a
+# dangling DEPENDS and breaks the `format`/`check-format` targets with
+# "needed by 'CMakeFiles/format', missing". Drop a vanished cache entry so the
+# search re-runs against the currently installed toolchain.
+if(CLANG_FORMAT_EXECUTABLE AND NOT EXISTS "${CLANG_FORMAT_EXECUTABLE}")
+  unset(CLANG_FORMAT_EXECUTABLE CACHE)
+endif()
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-22 clang-format)
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
