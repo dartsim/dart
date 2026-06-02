@@ -244,30 +244,43 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  if (mesh == mMesh) {
-    // Nothing to do.
-    return;
+  const bool meshChanged = (mesh != mMesh);
+
+  if (meshChanged) {
+    // Only release/replace the underlying mesh when the pointer actually
+    // changes, so reusing the same aiScene* for a metadata-only update does not
+    // free the mesh we are about to keep.
+    releaseMesh();
+
+    mMesh = mesh;
+    mMeshOwnership = mesh ? MeshOwnership::Imported : MeshOwnership::None;
   }
-
-  releaseMesh();
-
-  mMesh = mesh;
-  mMeshOwnership = mesh ? MeshOwnership::Imported : MeshOwnership::None;
 
   if (!mMesh) {
-    mMeshUri.clear();
-    mMeshPath.clear();
-    mResourceRetriever = nullptr;
+    if (meshChanged) {
+      mMeshUri.clear();
+      mMeshPath.clear();
+      mResourceRetriever = nullptr;
+      incrementVersion();
+    }
     return;
   }
 
+  std::string newMeshPath
+      = resourceRetriever ? resourceRetriever->getFilePath(uri) : std::string();
+
+  // Refresh the metadata even when the mesh pointer is reused, so a
+  // metadata-only update (same aiScene*, different uri/retriever) is not lost;
+  // skip the work (and the version bump) only when nothing actually changed.
+  const bool metadataChanged
+      = meshChanged || mMeshUri.toString() != uri.toString()
+        || mMeshPath != newMeshPath || mResourceRetriever != resourceRetriever;
+
+  if (!metadataChanged)
+    return;
+
   mMeshUri = uri;
-
-  if (resourceRetriever)
-    mMeshPath = resourceRetriever->getFilePath(uri);
-  else
-    mMeshPath.clear();
-
+  mMeshPath = std::move(newMeshPath);
   mResourceRetriever = std::move(resourceRetriever);
 
   incrementVersion();

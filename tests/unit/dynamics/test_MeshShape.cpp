@@ -169,6 +169,35 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
   EXPECT_GT(cloned->getVolume(), 0.0);
 }
 
+TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
+{
+  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
+  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
+  ASSERT_FALSE(fileUri.empty());
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  ASSERT_NE(scene, nullptr);
+
+  auto mesh = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  EXPECT_EQ(mesh->getMeshUri(), fileUri);
+
+  // Reuse the SAME aiScene* but supply a different uri. The mesh pointer must
+  // be kept (not freed/replaced), and the public metadata must still be
+  // refreshed so a metadata-only update is not dropped.
+  const std::string otherUri
+      = common::Uri::createFromPath(DART_DATA_LOCAL_PATH "skel/kima/r-foot.dae")
+            .toString();
+  ASSERT_FALSE(otherUri.empty());
+  ASSERT_NE(otherUri, fileUri);
+
+  mesh->setMesh(scene, otherUri, retriever);
+  EXPECT_EQ(mesh->getMesh(), scene);
+  EXPECT_EQ(mesh->getMeshUri(), otherUri);
+  EXPECT_EQ(mesh->getMeshPath(), retriever->getFilePath(common::Uri(otherUri)));
+}
+
 TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 {
 #ifndef AI_CONFIG_IMPORT_COLLADA_IGNORE_UNIT_SIZE
