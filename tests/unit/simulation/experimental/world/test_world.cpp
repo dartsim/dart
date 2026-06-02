@@ -5449,6 +5449,47 @@ TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
   EXPECT_TRUE(body.getTransform().isApprox(expectedWorldTransform));
 }
 
+// Test that the default non-IPC pipeline advances kinematic rigid bodies by
+// their prescribed velocity while keeping them immune to forces and gravity.
+TEST(World, StepAdvancesKinematicRigidBodyWithDefaultSolver)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const Eigen::Vector3d initialPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond initialOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d linearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d angularVelocity(0.0, 0.0, 0.4);
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.5);
+
+  sx::RigidBodyOptions options;
+  options.position = initialPosition;
+  options.orientation = initialOrientation;
+  options.linearVelocity = linearVelocity;
+  options.angularVelocity = angularVelocity;
+  auto body = world.addRigidBody("kinematic_body", options);
+  body.setKinematic(true);
+  body.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  body.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  world.step();
+
+  const Eigen::Vector3d expectedPosition
+      = initialPosition + linearVelocity * world.getTimeStep();
+  const Eigen::Quaterniond expectedOrientation(
+      Eigen::AngleAxisd(
+          0.25 + angularVelocity.z() * world.getTimeStep(),
+          Eigen::Vector3d::UnitZ()));
+
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition));
+  EXPECT_TRUE(body.getQuaternion().isApprox(expectedOrientation));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(linearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(angularVelocity));
+}
+
 // Test that rigid-body frame ancestry is represented in the integration graph
 // so a parallel executor cannot run a child integration while its parent rigid
 // body is updating frame properties.
