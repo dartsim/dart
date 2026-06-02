@@ -93,6 +93,8 @@ void Signal<_Res(_ArgTypes...), Combiner>::disconnect(
     const std::shared_ptr<Signal::ConnectionBodyType>& connectionBody)
 {
   std::lock_guard<std::mutex> lock(mConnectionMutex);
+  if (connectionBody)
+    connectionBody->markDisconnected();
   mConnectionBodies.erase(connectionBody);
 }
 
@@ -101,6 +103,8 @@ template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 void Signal<_Res(_ArgTypes...), Combiner>::disconnectAll()
 {
   std::lock_guard<std::mutex> lock(mConnectionMutex);
+  for (const auto& connectionBody : mConnectionBodies)
+    connectionBody->markDisconnected();
   mConnectionBodies.clear();
 }
 
@@ -134,6 +138,11 @@ _Res Signal<_Res(_ArgTypes...), Combiner>::raise(ArgTypes&&... args)
   res.reserve(connections.size());
 
   for (const auto& connectionBody : connections) {
+    // Skip connections that were disconnected by an earlier slot during this
+    // raise(). The snapshot above keeps such bodies alive, so we must consult
+    // their connected state instead of relying on removal from the set.
+    if (!connectionBody->isConnected())
+      continue;
     res.emplace_back(
         connectionBody->getSlot()(std::forward<ArgTypes>(args)...));
   }
@@ -203,6 +212,8 @@ void Signal<void(_ArgTypes...)>::disconnect(
     const std::shared_ptr<Signal::ConnectionBodyType>& connectionBody)
 {
   std::lock_guard<std::mutex> lock(mConnectionMutex);
+  if (connectionBody)
+    connectionBody->markDisconnected();
   mConnectionBodies.erase(connectionBody);
 }
 
@@ -211,6 +222,8 @@ template <typename... _ArgTypes>
 void Signal<void(_ArgTypes...)>::disconnectAll()
 {
   std::lock_guard<std::mutex> lock(mConnectionMutex);
+  for (const auto& connectionBody : mConnectionBodies)
+    connectionBody->markDisconnected();
   mConnectionBodies.clear();
 }
 
@@ -241,6 +254,11 @@ void Signal<void(_ArgTypes...)>::raise(Args&&... args)
   }
 
   for (const auto& connectionBody : connections) {
+    // Skip connections that were disconnected by an earlier slot during this
+    // raise(). The snapshot above keeps such bodies alive, so we must consult
+    // their connected state instead of relying on removal from the set.
+    if (!connectionBody->isConnected())
+      continue;
     connectionBody->getSlot()(std::forward<Args>(args)...);
   }
 }

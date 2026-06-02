@@ -393,6 +393,73 @@ TEST(Signal, SelfDisconnectDuringRaise)
 }
 
 //==============================================================================
+TEST(Signal, DisconnectOtherDuringRaise)
+{
+  // When a slot disconnects another slot during raise(), the disconnected slot
+  // must not fire even though raise() iterates over a snapshot of the
+  // connections taken under the mutex. mConnectionBodies is a std::set ordered
+  // by shared_ptr address, so the iteration order of the two slots is not
+  // deterministic; have each slot disconnect the other so that whichever runs
+  // first cancels the second. Exactly one slot must run regardless of order.
+  Signal<void()> signal;
+
+  int callbackCountA = 0;
+  int callbackCountB = 0;
+  Connection connA;
+  Connection connB;
+
+  connA = signal.connect([&]() {
+    ++callbackCountA;
+    connB.disconnect();
+  });
+  connB = signal.connect([&]() {
+    ++callbackCountB;
+    connA.disconnect();
+  });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+
+  // The first slot to run disconnects the other before it is invoked, so the
+  // second is skipped by raise().
+  EXPECT_EQ(callbackCountA + callbackCountB, 1);
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+}
+
+//==============================================================================
+TEST(Signal, DisconnectOtherDuringRaiseNonVoid)
+{
+  // Same as DisconnectOtherDuringRaise but for the non-void specialization of
+  // Signal, which combines the slot return values. Each slot disconnects the
+  // other so the result is independent of the set's iteration order.
+  Signal<int()> signal;
+
+  int callbackCountA = 0;
+  int callbackCountB = 0;
+  Connection connA;
+  Connection connB;
+
+  connA = signal.connect([&]() -> int {
+    ++callbackCountA;
+    connB.disconnect();
+    return 1;
+  });
+  connB = signal.connect([&]() -> int {
+    ++callbackCountB;
+    connA.disconnect();
+    return 2;
+  });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+
+  EXPECT_EQ(callbackCountA + callbackCountB, 1);
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+}
+
+//==============================================================================
 TEST(Signal, ConcurrentUsage)
 {
   constexpr int kNumThreads = 4;
