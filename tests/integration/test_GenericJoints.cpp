@@ -303,3 +303,115 @@ TEST(GenericJoint, RejectsNonFiniteInputs)
       "");
 }
 #endif
+
+//==============================================================================
+// Test that negative physics parameters are clamped to zero with a warning
+// (rather than crashing via assertion). This is important for robustness when
+// loading models with invalid parameters (e.g., negative damping in SDF files).
+//==============================================================================
+TEST(GenericJoint, NegativeDampingClampedToZero)
+{
+  SingleDofJointTest joint;
+
+  // Set negative damping - should be clamped to 0
+  joint.setDampingCoefficient(0, -5.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // Positive damping should work normally
+  joint.setDampingCoefficient(0, 10.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 10.0);
+
+  // Zero damping should work
+  joint.setDampingCoefficient(0, 0.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+}
+
+//==============================================================================
+TEST(GenericJoint, NegativeFrictionClampedToZero)
+{
+  SingleDofJointTest joint;
+
+  // Set negative friction - should be clamped to 0
+  joint.setCoulombFriction(0, -2.0);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+
+  // Positive friction should work normally
+  joint.setCoulombFriction(0, 1.5);
+  EXPECT_EQ(joint.getCoulombFriction(0), 1.5);
+}
+
+//==============================================================================
+TEST(GenericJoint, NegativeSpringStiffnessClampedToZero)
+{
+  SingleDofJointTest joint;
+
+  // Set negative spring stiffness - should be clamped to 0
+  joint.setSpringStiffness(0, -100.0);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+
+  // Positive stiffness should work normally
+  joint.setSpringStiffness(0, 50.0);
+  EXPECT_EQ(joint.getSpringStiffness(0), 50.0);
+}
+
+//==============================================================================
+// Test that NaN and Inf physics parameters are clamped to zero with a warning.
+// This preserves the invariant from the original DART_ASSERT(d >= 0.0) which
+// would reject NaN (since NaN >= 0.0 is false).
+//==============================================================================
+TEST(GenericJoint, NaNDampingClampedToZero)
+{
+  SingleDofJointTest joint;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  // NaN damping should be clamped to 0
+  joint.setDampingCoefficient(0, nan);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // +Inf damping should be clamped to 0
+  joint.setDampingCoefficient(0, inf);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // -Inf damping should be clamped to 0
+  joint.setDampingCoefficient(0, -inf);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // Valid value should still work
+  joint.setDampingCoefficient(0, 5.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 5.0);
+}
+
+//==============================================================================
+TEST(GenericJoint, NaNFrictionClampedToZero)
+{
+  SingleDofJointTest joint;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  joint.setCoulombFriction(0, nan);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+
+  joint.setCoulombFriction(0, inf);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+
+  joint.setCoulombFriction(0, -inf);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+}
+
+//==============================================================================
+TEST(GenericJoint, NaNSpringStiffnessClampedToZero)
+{
+  SingleDofJointTest joint;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  joint.setSpringStiffness(0, nan);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+
+  joint.setSpringStiffness(0, inf);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+
+  joint.setSpringStiffness(0, -inf);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+}

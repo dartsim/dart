@@ -1489,7 +1489,14 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
     return;
   }
 
-  DART_ASSERT(k >= 0.0);
+  if (!std::isfinite(k) || k < 0.0) {
+    DART_WARN(
+        "[GenericJoint] Invalid spring stiffness ({}) set for joint [{}]. "
+        "Spring stiffness must be non-negative and finite. Clamping to 0.",
+        k,
+        this->getName());
+    k = 0.0;
+  }
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
 }
@@ -1539,7 +1546,15 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
     return;
   }
 
-  DART_ASSERT(d >= 0.0);
+  if (!std::isfinite(d) || d < 0.0) {
+    DART_WARN(
+        "[GenericJoint] Invalid damping coefficient ({}) set for joint [{}]. "
+        "Damping must be non-negative and finite (negative damping adds "
+        "energy). Clamping to 0.",
+        d,
+        this->getName());
+    d = 0.0;
+  }
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
 }
@@ -1566,7 +1581,14 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     return;
   }
 
-  DART_ASSERT(friction >= 0.0);
+  if (!std::isfinite(friction) || friction < 0.0) {
+    DART_WARN(
+        "[GenericJoint] Invalid Coulomb friction ({}) set for joint [{}]. "
+        "Friction must be non-negative and finite. Clamping to 0.",
+        friction,
+        this->getName());
+    friction = 0.0;
+  }
 
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
 }
