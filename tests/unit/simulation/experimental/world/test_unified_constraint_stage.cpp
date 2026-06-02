@@ -14,6 +14,7 @@
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
@@ -52,7 +53,11 @@ TEST(UnifiedConstraintStage, ArrestsAndSeparatesOverlappingRigidContact)
   ASSERT_FALSE(world.collide().empty());
   auto& registry = world.getRegistry();
   const double verticalBefore
-      = registry.get<sx::comps::Transform>(ball.getEntity()).position.z();
+      = registry
+            .get<sx::comps::Transform>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    ball.getEntity()))
+            .position.z();
 
   sx::compute::UnifiedConstraintStage stage;
   sx::compute::SequentialExecutor executor;
@@ -60,12 +65,20 @@ TEST(UnifiedConstraintStage, ArrestsAndSeparatesOverlappingRigidContact)
 
   // No restitution: the approaching normal velocity is driven to zero.
   EXPECT_NEAR(
-      registry.get<sx::comps::Velocity>(ball.getEntity()).linear.z(),
+      registry
+          .get<sx::comps::Velocity>(
+              dart::simulation::experimental::detail::toRegistryEntity(
+                  ball.getEntity()))
+          .linear.z(),
       0.0,
       1e-9);
   // The positional projection pushes the penetrating sphere upward.
   EXPECT_GT(
-      registry.get<sx::comps::Transform>(ball.getEntity()).position.z(),
+      registry
+          .get<sx::comps::Transform>(
+              dart::simulation::experimental::detail::toRegistryEntity(
+                  ball.getEntity()))
+          .position.z(),
       verticalBefore);
 }
 
@@ -89,7 +102,9 @@ TEST(UnifiedConstraintStage, LeavesContactFreeBodiesUntouched)
   stage.execute(world, executor);
 
   EXPECT_TRUE(world.getRegistry()
-                  .get<sx::comps::Velocity>(body.getEntity())
+                  .get<sx::comps::Velocity>(
+                      dart::simulation::experimental::detail::toRegistryEntity(
+                          body.getEntity()))
                   .linear.isApprox(Eigen::Vector3d(1.0, -2.0, 3.0), 1e-12));
 }
 

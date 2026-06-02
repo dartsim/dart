@@ -52,6 +52,7 @@
 #include "dart/simulation/experimental/constraint/loop_closure.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure_spec.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/diff/physical_parameter.hpp"
 #include "dart/simulation/experimental/diff/step_derivatives.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
@@ -541,7 +542,7 @@ entt::entity resolveLoopClosureFrame(
       "LoopClosureSpec.{} belongs to a different world",
       fieldName);
 
-  return frame.getEntity();
+  return detail::toRegistryEntity(frame.getEntity());
 }
 
 //==============================================================================
@@ -1315,7 +1316,7 @@ FreeFrame World::addFreeFrame(std::string_view name, const Frame& parent)
       false,
       actualName);
 
-  return FreeFrame(entity, this);
+  return FreeFrame(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================
@@ -1351,7 +1352,7 @@ FixedFrame World::addFixedFrame(
       true,
       actualName);
 
-  return FixedFrame(entity, this);
+  return FixedFrame(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================
@@ -1387,7 +1388,9 @@ entt::entity World::createFrameEntity(
   }
 
   auto& state = m_registry.emplace<comps::FrameState>(entity);
-  state.parentFrame = parentFrame.getEntity();
+  state.parentFrame = parentFrame.isWorld()
+                          ? entt::null
+                          : detail::toRegistryEntity(parentFrame.getEntity());
 
   auto& cache = m_registry.emplace<comps::FrameCache>(entity);
   cache.worldTransform = Eigen::Isometry3d::Identity();
@@ -1409,7 +1412,7 @@ entt::entity World::createFrameEntity(
 Frame World::resolveParentFrame(const Frame& parent) const
 {
   if (parent.isWorld()) {
-    return Frame(entt::null, const_cast<World*>(this));
+    return Frame(Entity{}, const_cast<World*>(this));
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -1454,7 +1457,7 @@ Multibody World::addMultibody(std::string_view name)
   m_registry.emplace<comps::MultibodyTag>(entity);
   m_registry.emplace<comps::MultibodyStructure>(entity);
 
-  return Multibody(entity, this);
+  return Multibody(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================
@@ -1464,7 +1467,7 @@ std::optional<Multibody> World::getMultibody(std::string_view name)
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
-      return Multibody(entity, this);
+      return Multibody(detail::fromRegistryEntity(entity), this);
     }
   }
   return std::nullopt;
@@ -1515,7 +1518,7 @@ LoopClosure World::addLoopClosure(
   closure.offsetB = spec.offsetB;
   closure.distance = spec.distance;
 
-  return LoopClosure(entity, this);
+  return LoopClosure(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================
@@ -1525,7 +1528,7 @@ std::optional<LoopClosure> World::getLoopClosure(std::string_view name)
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
-      return LoopClosure(entity, this);
+      return LoopClosure(detail::fromRegistryEntity(entity), this);
     }
   }
   return std::nullopt;
@@ -1565,7 +1568,7 @@ RigidBody World::addRigidBody(
 
   validateRigidBodyOptions(options);
 
-  Frame parent = Frame(entt::null, this);
+  Frame parent = Frame(Entity{}, this);
   const auto orientation = normalizeOrIdentity(options.orientation);
   const auto initialTransform = toIsometry(options.position, orientation);
 
@@ -1599,7 +1602,7 @@ RigidBody World::addRigidBody(
     m_registry.emplace<comps::StaticBodyTag>(entity);
   }
 
-  return RigidBody(entity, this);
+  return RigidBody(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================
@@ -1625,8 +1628,9 @@ Joint World::addRigidBodyFixedJoint(
       InvalidArgumentException,
       "Fixed-joint parent and child rigid bodies must be distinct");
 
-  const entt::entity parentEntity = parent.getEntity();
-  const entt::entity childEntity = child.getEntity();
+  const entt::entity parentEntity
+      = detail::toRegistryEntity(parent.getEntity());
+  const entt::entity childEntity = detail::toRegistryEntity(child.getEntity());
   const bool parentIsRigidBody = m_registry.all_of<
       comps::RigidBodyTag,
       comps::Transform,
@@ -1705,7 +1709,7 @@ Joint World::addRigidBodyFixedJoint(
         name);
   }
 
-  return Joint(jointEntity, this);
+  return Joint(detail::fromRegistryEntity(jointEntity), this);
 }
 
 //==============================================================================
@@ -1715,7 +1719,7 @@ std::optional<RigidBody> World::getRigidBody(std::string_view name)
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
-      return RigidBody(entity, this);
+      return RigidBody(detail::fromRegistryEntity(entity), this);
     }
   }
   return std::nullopt;
@@ -2009,7 +2013,7 @@ void World::addDifferentiableParameter(
       "World::addDifferentiableParameter(): the selector's body does not "
       "belong to this World");
 
-  const auto entity = selector.body.getEntity();
+  const auto entity = detail::toRegistryEntity(selector.body.getEntity());
   DART_EXPERIMENTAL_THROW_T_IF(
       !m_registry.all_of<comps::RigidBodyTag>(entity),
       InvalidArgumentException,
@@ -2377,8 +2381,8 @@ void World::captureStepDerivatives()
     // the rigid-body contact assembly does not handle: reject it (rather than
     // silently returning a wrong matrix).
     for (const auto& contact : contacts) {
-      const auto entityA = contact.bodyA.getEntity();
-      const auto entityB = contact.bodyB.getEntity();
+      const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+      const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
 
       const bool rigidA = m_registry.all_of<comps::RigidBodyTag>(entityA);
       const bool rigidB = m_registry.all_of<comps::RigidBodyTag>(entityB);
@@ -2585,7 +2589,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
             .view<comps::CollisionGeometry, comps::Link, comps::FrameCache>();
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
-    const Link link(entity, this);
+    const Link link(detail::fromRegistryEntity(entity), this);
     const entt::entity multibody = findMultibodyOwningLink(entity);
     addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
   }
@@ -2666,8 +2670,10 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
       // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
       contacts.push_back(
           Contact{
-              CollisionBody(cache.entries[i].entity, this),
-              CollisionBody(cache.entries[j].entity, this),
+              CollisionBody(
+                  detail::fromRegistryEntity(cache.entries[i].entity), this),
+              CollisionBody(
+                  detail::fromRegistryEntity(cache.entries[j].entity), this),
               point.position,
               -point.normal,
               point.depth,

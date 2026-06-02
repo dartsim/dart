@@ -233,6 +233,7 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runtime_isolation.py" }
 audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
 check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
+audit-dart7-promotion-surface = { cmd = "python scripts/audit_dart7_promotion_surface.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 lint-compute-backend-boundaries = { cmd = [

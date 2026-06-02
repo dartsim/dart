@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 
 #include <Eigen/Dense>
@@ -52,17 +53,11 @@ namespace dart::simulation::experimental {
 /// - End-effector frames
 ///
 /// DART6 equivalent: FixedFrame
-class DART_EXPERIMENTAL_API FixedFrame
-  : public Frame,
-    public EntityObjectWith<
-        TagComps<comps::FixedFrameTag>,
-        ReadOnlyComps<>,
-        WriteOnlyComps<>,
-        ReadWriteComps<comps::FixedFrameProperties>>
+class DART_EXPERIMENTAL_API FixedFrame : public Frame
 {
 public:
   /// Constructor (package-private, use World::addFixedFrame)
-  FixedFrame(entt::entity entity, World* world);
+  FixedFrame(Entity entity, World* world);
 
   //--------------------------------------------------------------------------
   // Transform API
