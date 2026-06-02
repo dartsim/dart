@@ -27,6 +27,15 @@ Research-facing extension points should:
 - keep threading, allocator, SIMD, ECS storage, and backend details behind
   internal boundaries unless they are intentionally public.
 
+Solver and multi-physics methods use the plan-owned
+[`solver-family intake checklist`](../plans/solver-family-intake.md) before
+starting a solver paper or component slice. This durable contract supplies the
+stable principles behind that checklist: route work to an existing family when
+possible, inventory shared collision/kinematics/optimization/benchmark
+components, define apples-to-apples evidence against DART incumbents and
+reference implementations, and keep user-facing configuration simple,
+validated, serializable where result-affecting, and diagnostic-rich.
+
 ## API Boundary Rules
 
 Apply `docs/onboarding/api-boundaries.md` to every extension point:
