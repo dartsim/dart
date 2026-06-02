@@ -61,6 +61,16 @@
 #include <cstdlib>
 #include <cstring>
 
+// The modern viewer theme below assigns Dear ImGui style slots and fields from
+// the 1.89-1.91 series (e.g. ImGuiCol_NavCursor, renamed in 1.91.4). DART
+// targets the bundled ImGui 1.92.x (see cmake/dart_find_dependencies.cmake);
+// building dart::gui against an older ImGui is unsupported and fails here with
+// a clear message instead of a cascade of unknown-identifier errors.
+#if IMGUI_VERSION_NUM < 19200
+  #error                                                                       \
+      "dart::gui requires Dear ImGui >= 1.92 (use the bundled ImGui via DART_USE_SYSTEM_IMGUI=OFF, or upgrade the system ImGui)."
+#endif
+
 namespace dart::gui::detail {
 namespace {
 
@@ -306,9 +316,7 @@ void applyModernDarkColors(ImGuiStyle& style)
   ImVec4* c = style.Colors;
   c[ImGuiCol_Text] = text;
   c[ImGuiCol_TextDisabled] = textDim;
-#if IMGUI_VERSION_NUM >= 19100
-  c[ImGuiCol_TextLink] = accentHover; // hyperlink color, added in ImGui 1.91.0
-#endif
+  c[ImGuiCol_TextLink] = accentHover;
   c[ImGuiCol_WindowBg] = bgWindow;
   c[ImGuiCol_ChildBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
   c[ImGuiCol_PopupBg] = srgb(0x1d, 0x20, 0x27, 0.98f);
@@ -342,22 +350,12 @@ void applyModernDarkColors(ImGuiStyle& style)
   c[ImGuiCol_ResizeGripActive] = accent;
   c[ImGuiCol_Tab] = bgHeader;
   c[ImGuiCol_TabHovered] = frameHover;
-#if IMGUI_VERSION_NUM >= 19090
-  // Tab color slots were renamed and the selected-tab overlines added in ImGui
-  // 1.90.9. DART still supports system ImGui back to 1.80 (see
-  // cmake/dart_find_dependencies.cmake), so older headers fall back to the
-  // pre-rename names below and omit the overlines.
   c[ImGuiCol_TabSelected] = bgPanel;
   c[ImGuiCol_TabSelectedOverline] = accent; // VS Code-style active-tab accent
   c[ImGuiCol_TabDimmed] = bgHeader;
   c[ImGuiCol_TabDimmedSelected] = bgPanel;
   // Unfocused (dimmed) tab bars get no accent overline.
   c[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-#else
-  c[ImGuiCol_TabActive] = bgPanel;
-  c[ImGuiCol_TabUnfocused] = bgHeader;
-  c[ImGuiCol_TabUnfocusedActive] = bgPanel;
-#endif
 #ifdef IMGUI_HAS_DOCK
   // Docking color slots only exist on the ImGui docking branch (the look used
   // by `pixi run py-demos`/`dartsim`). Non-docking builds (system ImGui) omit
@@ -376,11 +374,7 @@ void applyModernDarkColors(ImGuiStyle& style)
   c[ImGuiCol_TableRowBgAlt] = srgb(0xff, 0xff, 0xff, 0.025f);
   c[ImGuiCol_TextSelectedBg] = accentSofter;
   c[ImGuiCol_DragDropTarget] = accentHover;
-#if IMGUI_VERSION_NUM >= 19140
   c[ImGuiCol_NavCursor] = accent;
-#else
-  c[ImGuiCol_NavHighlight] = accent; // renamed to ImGuiCol_NavCursor in 1.91.4
-#endif
   c[ImGuiCol_NavWindowingHighlight] = srgb(0xff, 0xff, 0xff, 0.70f);
   c[ImGuiCol_NavWindowingDimBg] = srgb(0x08, 0x09, 0x0c, 0.55f);
   c[ImGuiCol_ModalWindowDimBg] = srgb(0x08, 0x09, 0x0c, 0.55f);
@@ -403,19 +397,13 @@ void applyModernDarkMetrics(ImGuiStyle& style)
   style.ChildBorderSize = 1.0f;
   style.PopupBorderSize = 1.0f;
   style.FrameBorderSize = 0.0f;
-#if IMGUI_VERSION_NUM >= 18990
-  style.TabBarBorderSize = 1.0f; // added in ImGui 1.89.9
-#endif
-#if IMGUI_VERSION_NUM >= 19100
-  style.TabBarOverlineSize = 2.0f; // added in ImGui 1.91.0
-#endif
+  style.TabBarBorderSize = 1.0f;
+  style.TabBarOverlineSize = 2.0f;
 #ifdef IMGUI_HAS_DOCK
   // DockingSeparatorSize only exists on the ImGui docking branch.
   style.DockingSeparatorSize = 1.0f;
 #endif
-#if IMGUI_VERSION_NUM >= 18930
-  style.SeparatorTextBorderSize = 2.0f; // added in ImGui 1.89.3
-#endif
+  style.SeparatorTextBorderSize = 2.0f;
 
   // Soft, consistent rounding; pill-shaped scrollbars.
   style.WindowRounding = 7.0f;
