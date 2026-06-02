@@ -355,9 +355,11 @@ TEST(GenericJoint, NegativeSpringStiffnessClampedToZero)
 }
 
 //==============================================================================
-// Test that NaN and Inf physics parameters are clamped to zero with a warning.
-// This preserves the invariant from the original DART_ASSERT(d >= 0.0) which
-// would reject NaN (since NaN >= 0.0 is false).
+// Test that NaN and negative physics parameters are clamped to zero with a
+// warning, while positive infinity is preserved. This matches the original
+// DART_ASSERT(d >= 0.0) invariant: NaN and negatives fail `>= 0.0` and are
+// rejected, but +inf satisfies it and is a valid DART 6 sentinel (e.g. infinite
+// Coulomb friction locks a joint), so it must not be clamped.
 //==============================================================================
 TEST(GenericJoint, NaNDampingClampedToZero)
 {
@@ -369,11 +371,12 @@ TEST(GenericJoint, NaNDampingClampedToZero)
   joint.setDampingCoefficient(0, nan);
   EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
 
-  // +Inf damping should be clamped to 0
+  // +Inf damping is permitted on the DART 6 line (infinite coefficients are a
+  // valid sentinel; only NaN and negative values are clamped).
   joint.setDampingCoefficient(0, inf);
-  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), inf);
 
-  // -Inf damping should be clamped to 0
+  // -Inf damping is negative and should be clamped to 0
   joint.setDampingCoefficient(0, -inf);
   EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
 
@@ -392,8 +395,10 @@ TEST(GenericJoint, NaNFrictionClampedToZero)
   joint.setCoulombFriction(0, nan);
   EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
 
+  // Infinite Coulomb friction locks the joint and is a valid DART 6 sentinel,
+  // so it must be preserved rather than clamped.
   joint.setCoulombFriction(0, inf);
-  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+  EXPECT_EQ(joint.getCoulombFriction(0), inf);
 
   joint.setCoulombFriction(0, -inf);
   EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
@@ -409,8 +414,10 @@ TEST(GenericJoint, NaNSpringStiffnessClampedToZero)
   joint.setSpringStiffness(0, nan);
   EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
 
+  // +Inf stiffness is permitted on the DART 6 line; only NaN and negative
+  // values are clamped to 0.
   joint.setSpringStiffness(0, inf);
-  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+  EXPECT_EQ(joint.getSpringStiffness(0), inf);
 
   joint.setSpringStiffness(0, -inf);
   EXPECT_EQ(joint.getSpringStiffness(0), 0.0);

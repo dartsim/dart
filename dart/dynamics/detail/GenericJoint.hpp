@@ -1489,10 +1489,11 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
     return;
   }
 
-  if (!std::isfinite(k) || k < 0.0) {
+  if (std::isnan(k) || k < 0.0) {
     DART_WARN(
         "[GenericJoint] Invalid spring stiffness ({}) set for joint [{}]. "
-        "Spring stiffness must be non-negative and finite. Clamping to 0.",
+        "Spring stiffness must be non-negative; NaN and negative values are "
+        "clamped to 0 (infinite stiffness is permitted).",
         k,
         this->getName());
     k = 0.0;
@@ -1546,11 +1547,11 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
     return;
   }
 
-  if (!std::isfinite(d) || d < 0.0) {
+  if (std::isnan(d) || d < 0.0) {
     DART_WARN(
         "[GenericJoint] Invalid damping coefficient ({}) set for joint [{}]. "
-        "Damping must be non-negative and finite (negative damping adds "
-        "energy). Clamping to 0.",
+        "Damping must be non-negative; NaN and negative values are clamped to "
+        "0 (negative damping adds energy; infinite damping is permitted).",
         d,
         this->getName());
     d = 0.0;
@@ -1581,10 +1582,11 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     return;
   }
 
-  if (!std::isfinite(friction) || friction < 0.0) {
+  if (std::isnan(friction) || friction < 0.0) {
     DART_WARN(
         "[GenericJoint] Invalid Coulomb friction ({}) set for joint [{}]. "
-        "Friction must be non-negative and finite. Clamping to 0.",
+        "Friction must be non-negative; NaN and negative values are clamped to "
+        "0 (infinite friction locks the joint and is permitted).",
         friction,
         this->getName());
     friction = 0.0;
