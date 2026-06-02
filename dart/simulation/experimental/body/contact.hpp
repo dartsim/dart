@@ -36,6 +36,10 @@
 
 #include <Eigen/Core>
 
+#include <limits>
+
+#include <cstddef>
+
 namespace dart::simulation::experimental {
 
 /// A single contact point produced by a collision query.
@@ -47,11 +51,18 @@ namespace dart::simulation::experimental {
 /// coordinates.
 struct Contact
 {
+  static constexpr std::size_t UnknownShapeIndex
+      = std::numeric_limits<std::size_t>::max();
+
   CollisionBody bodyA;
   CollisionBody bodyB;
   Eigen::Vector3d point = Eigen::Vector3d::Zero();
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
   double depth = 0.0;
+  std::size_t shapeIndexA = UnknownShapeIndex;
+  std::size_t shapeIndexB = UnknownShapeIndex;
+  Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
 };
 
 } // namespace dart::simulation::experimental

@@ -54,6 +54,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <vector>
 
 #include <cmath>
 
@@ -110,6 +111,55 @@ TEST(BoxedLcpContact, MethodSelectorReflectsConstruction)
   EXPECT_EQ(
       lcpWorld.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
   EXPECT_FALSE(lcpWorld.isDifferentiable());
+}
+
+//==============================================================================
+// Compound-shape contacts must key AVBD warm-start rows from the contacted
+// shape, not from the body's primary shape.
+TEST(AvbdContact, CompoundShapeFeatureKeysUseContactedShapeIndex)
+{
+  sx::World world;
+
+  auto compound = world.addRigidBody("compound");
+  compound.addCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.1, 0.1, 0.1)));
+  sx::CollisionShape secondary
+      = sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.2, 0.2));
+  secondary.localTransform.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  compound.addCollisionShape(secondary);
+
+  sx::RigidBodyOptions targetOptions;
+  targetOptions.position = Eigen::Vector3d(1.35, 0.0, 0.0);
+  auto target = world.addRigidBody("target", targetOptions);
+  target.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.2, 0.2)));
+
+  const std::vector<sx::Contact> contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  const sx::Contact& contact = contacts.front();
+  const bool compoundIsA = contact.bodyA.getEntity() == compound.getEntity();
+  ASSERT_TRUE(compoundIsA || contact.bodyB.getEntity() == compound.getEntity());
+  const std::size_t compoundShapeIndex
+      = compoundIsA ? contact.shapeIndexA : contact.shapeIndexB;
+  const Eigen::Vector3d compoundLocalPoint
+      = compoundIsA ? contact.localPointA : contact.localPointB;
+  ASSERT_EQ(compoundShapeIndex, 1u);
+  ASSERT_TRUE(compoundLocalPoint.allFinite());
+
+  const dvbd::AvbdRigidWorldContactSnapshot snapshot
+      = dvbd::buildAvbdRigidWorldContactSnapshot(
+          world.getRegistry(), contacts, dvbd::AvbdRigidWorldContactOptions{});
+  ASSERT_FALSE(snapshot.contacts.empty());
+  const auto& manifold = snapshot.contacts.front();
+  const dvbd::AvbdContactEndpointId compoundEndpoint
+      = compoundIsA ? manifold.endpointA : manifold.endpointB;
+
+  const std::uint64_t featureCode = dvbd::avbdBoxContactFeatureCode(
+      compoundLocalPoint, secondary.halfExtents);
+  const std::uint64_t expectedFeature = dvbd::packAvbdContactFeatureId(
+      dvbd::avbdBoxContactFeatureKind(featureCode),
+      dvbd::packAvbdBoxContactFeatureId(compoundShapeIndex, featureCode));
+  EXPECT_EQ(compoundEndpoint.feature, expectedFeature);
 }
 
 //==============================================================================

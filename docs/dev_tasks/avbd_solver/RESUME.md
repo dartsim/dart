@@ -71,7 +71,7 @@ extraction is still not wired.
 
 ## Current Branch
 
-`feature/avbd-plan104-rigid-contact-feature-ids` - checkpoint commits based on current
+`feature/avbd-plan104-contact-manifold-friction` - checkpoint commits based on current
 `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
