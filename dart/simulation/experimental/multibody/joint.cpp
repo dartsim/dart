@@ -581,8 +581,8 @@ RigidBody Joint::getParentRigidBody() const
   const auto& jointComp = getJointComponent(m_world, m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.parentLink == entt::null
-          || !m_world->getRegistry().all_of<comps::RigidBodyTag>(
-              jointComp.parentLink),
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::RigidBodyTag>(jointComp.parentLink),
       InvalidArgumentException,
       "Joint '{}' parent endpoint is not a rigid body",
       jointComp.name);
@@ -595,8 +595,8 @@ RigidBody Joint::getChildRigidBody() const
   const auto& jointComp = getJointComponent(m_world, m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.childLink == entt::null
-          || !m_world->getRegistry().all_of<comps::RigidBodyTag>(
-              jointComp.childLink),
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::RigidBodyTag>(jointComp.childLink),
       InvalidArgumentException,
       "Joint '{}' child endpoint is not a rigid body",
       jointComp.name);
