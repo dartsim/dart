@@ -485,9 +485,9 @@ its own line so status updates remain git-history friendly.
 - Dimension: Release transition
 - Next step: Follow the DART 7 implementation order in the release roadmap:
   finish policy alignment and Gazebo lane split, publish the DART 6.16 support
-  packet, then treat PLAN-041 official simulation API promotion as the
-  release-critical path. Keep research-solver breadth out of the DART 7 release
-  blocker set unless a promoted API depends on it.
+  packet, then settle PLAN-042 public API/source-layout topology before freezing
+  PLAN-041 official simulation API promotion. Keep research-solver breadth out
+  of the DART 7 release blocker set unless a promoted API depends on it.
 - Gate: DART 7 is not release-ready until the clean-break gates in the release
   roadmap have direct evidence, package metadata no longer implies DART
   6/gz-physics compatibility, and DART 6.16 support scope plus sunset trigger
@@ -500,23 +500,45 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Release transition
-- Next step: Land the reviewed promotion contract, then start the readiness
-  audit and package-facade work before any broad `experimental/` source-tree
-  move. The readiness audit must keep the promoted `World` double-backed and
-  explicitly defer public scalar precision selectors (`sx.World(dtype=...)`,
-  `sx.World[...]`, scalar-specific aliases, or a public C++ scalar-template
-  facade) until DART 7 rigid-body and multibody simulation is in good shape for
-  humanoid locomotion and manipulation and a separate scalar-instantiation plan
-  proves the required ownership, binding, serialization, collision,
-  differentiability, package, and migration gates. Keep implementation choices
-  from becoming a one-way door for future scalar support where this is cheap,
-  but do not spend the promotion cycle on public scalar families. The intended
-  path is DART 7 official API promotion, not a DART 8 middle step.
+- Next step: Consume the PLAN-042 namespace/source-layout decision, then start
+  the simulation-specific readiness audit, promoted-header manifest,
+  Python import-layout transaction, and installed-package smoke design before
+  any broad `experimental/` source-tree move. The readiness audit must keep the
+  promoted `World` double-backed and explicitly defer public scalar precision
+  selectors (`sx.World(dtype=...)`, `sx.World[...]`, scalar-specific aliases, or
+  a public C++ scalar-template facade) until DART 7 rigid-body and multibody
+  simulation is in good shape for humanoid locomotion and manipulation and a
+  separate scalar-instantiation plan proves the required ownership, binding,
+  serialization, collision, differentiability, package, and migration gates. The
+  intended path is DART 7 official API promotion, not a DART 8 middle step.
 - Gate: The planning PR passes the docs-only gates; implementation PRs must keep
-  API-boundary checks, C++/Python tests, package/export smokes, and CUDA/full
-  gates green according to the touched scope. The promoted public API must hide
-  ECS, component, solver-registry, backend, implementation-folder, tensor
-  framework, and unplanned scalar-instantiation details.
+  promotion-aware API-boundary checks, C++/Python tests, package/export smokes,
+  stub/API-doc regeneration, and CUDA/full gates green according to the touched
+  scope. The promoted public API must hide ECS, component, solver-registry,
+  backend, implementation-folder, tensor framework, and unplanned
+  scalar-instantiation details, and the installed package must expose only final
+  headers, final CMake targets/components, and final dartpy module paths once
+  promotion is claimed.
+
+### PLAN-042: DART 7 Public API And Source Layout
+
+- Owner doc:
+  [`042-dart7-public-api-and-source-layout.md`](042-dart7-public-api-and-source-layout.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Review and accept or revise the initial PLAN-042 decision/audit
+  packet before PLAN-041 freezes promoted World names. The default packet
+  recommends `dart.World(...)` after `import dartpy as dart` as a root
+  convenience alias to canonical `dart.simulation.World`, explicit C++
+  `dart::simulation::World` without an initial `dart::World` facade,
+  `check-simulation-public-header-allowlist`, `check-dartpy-import-layout`, and
+  no official dependency on `DART_BUILD_SIMULATION_EXPERIMENTAL` or
+  `dart-simulation-experimental`.
+- Gate: The planning PR passes the docs-only gates; follow-up implementation
+  PRs must prove final examples, stubs/docs, package exports, API boundaries,
+  C++/Python tests, feature-off source/wheel behavior, case-insensitive header
+  behavior, and negative smokes for removed DART 6 or experimental paths.
 
 ### PLAN-050: Experimental World Split
 

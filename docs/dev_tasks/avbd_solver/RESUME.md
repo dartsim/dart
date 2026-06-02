@@ -66,13 +66,16 @@ now be appended to the World rigid snapshot/solve/apply wrapper and combined
 step helper from world-space point-joint inputs; a private fixed-joint ECS
 extractor plus step-helper overload now covers rigid-body-linked joint
 entities, and the internal contact-stage AVBD opt-in can now project those
-fixed-joint rows with or without active contacts. Public multibody joint
+fixed-joint rows with or without active contacts. A private helper now derives
+the AVBD fixed-joint config from the current rigid-body pair pose, preserving
+the child-origin anchor and relative orientation for rigid-body-linked fixed
+joints while rejecting multibody link endpoints. Public multibody joint
 extraction is still not wired.
 
 ## Current Branch
 
-`feature/avbd-plan104-contact-manifold-friction` - checkpoint commits based on current
-`origin/main`, including the scalar-row foundation, mass-spring AVBD row
+`feature/avbd-plan104-multibody-fixed-joint-bridge` - checkpoint branch based on
+current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
 tangent rows, static box feature IDs, static half-space tangent dual projection,
@@ -97,13 +100,18 @@ linear, angular, and combined row builders with World snapshot/step
 append/solve/apply coverage for world-space point-joint inputs and a private
 fixed-joint ECS extractor plus step-helper overload for rigid-body-linked joint
 entities, plus internal contact-stage velocity-projection coverage for those
-fixed-joint rows with or without active contacts.
+fixed-joint rows with or without active contacts. This checkpoint adds a private
+fixed-joint pose bridge that converts a rigid-body-linked fixed joint's current
+pose into AVBD local anchors and target relative orientation, initializes
+missing private AVBD fixed-joint configs for opt-in rigid bodies at simulation
+entry, and adds regression coverage that multibody links are not silently
+treated as rigid AVBD bodies.
 
 ## Immediate Next Step
 
-Continue the next bounded AVBD contact/friction or rigid-block slice: full
-narrow-phase feature extraction, contact-complete rigid joint rows, or
-rigid/articulated World wiring are the preferred row-family gaps now that
+Continue the next bounded AVBD contact/friction or rigid-block slice:
+contact-complete rigid joint rows, full narrow-phase feature extraction, or
+true rigid/articulated World wiring are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -113,7 +121,9 @@ first internal contact-stage activation, box-feature/pair-scoped row identity,
 private cylinder side/cap/rim and capsule side/top-cap/bottom-cap endpoint
 features, and private point-joint linear/angular/combined rows with step-start
 previous constraint values and private World snapshot/step append/solve/apply
-coverage plus fixed-joint ECS extraction through the step helper exist.
+coverage plus fixed-joint ECS extraction through the step helper and an
+explicit current-pose rigid-body fixed-joint config bridge plus simulation-entry
+config initialization for opt-in rigid bodies exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row

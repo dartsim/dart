@@ -640,6 +640,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     entities, and the internal contact-stage AVBD opt-in can project those
     fixed joint rows with or without active contact rows. Public multibody
     joint wiring is still out of scope.
+  - Added experimental C++ `World::addRigidBodyFixedJoint()` and dartpy
+    `World.add_rigid_body_fixed_joint()` for design-mode fixed constraints
+    between two free rigid bodies, backed by the private AVBD fixed-joint
+    projection path and covered by a `py-demos` rigid fixed-joint scene.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration

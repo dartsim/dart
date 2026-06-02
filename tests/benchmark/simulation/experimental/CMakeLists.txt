@@ -85,6 +85,11 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_avbd_rigid_fixed_joint
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_avbd_rigid_fixed_joint.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )
