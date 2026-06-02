@@ -44,6 +44,8 @@
 #include <dart/math/ConfigurationSpace.hpp>
 #include <dart/math/Helpers.hpp>
 
+#include <cmath>
+
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
     dterr << "[GenericJoint::" #func "] Mismatch beteween size of "            \
@@ -74,6 +76,65 @@
     return;                                                                    \
   Base::mAspectProperties.mField = value;                                      \
   Joint::incrementVersion();
+
+namespace dart {
+namespace dynamics {
+namespace detail {
+
+template <typename Derived>
+inline void assertFiniteState(
+    const Eigen::MatrixBase<Derived>& values,
+    const Joint* joint,
+    const char* context,
+    const char* valueName)
+{
+#ifndef NDEBUG
+  const bool finite = values.array().isFinite().all();
+  if (!finite) {
+    DART_ERROR(
+        "Non-finite {} passed to {} for Joint [{}] ({}).",
+        valueName,
+        context,
+        joint->getName(),
+        static_cast<const void*>(joint));
+  }
+  DART_ASSERT(finite);
+#else
+  (void)values;
+  (void)joint;
+  (void)context;
+  (void)valueName;
+#endif
+}
+
+inline void assertFiniteState(
+    double value,
+    const Joint* joint,
+    const char* context,
+    const char* valueName)
+{
+#ifndef NDEBUG
+  const bool finite = std::isfinite(value);
+  if (!finite) {
+    DART_ERROR(
+        "Non-finite {} passed to {} for Joint [{}] ({}).",
+        valueName,
+        context,
+        joint->getName(),
+        static_cast<const void*>(joint));
+  }
+  DART_ASSERT(finite);
+#else
+  (void)value;
+  (void)joint;
+  (void)context;
+  (void)valueName;
+#endif
+}
+
+} // namespace detail
+} // namespace dynamics
+} // namespace dart
 
 namespace dart {
 namespace dynamics {
@@ -121,6 +182,9 @@ void GenericJoint<ConfigSpaceT>::setAspectState(const AspectState& state)
   setVelocitiesStatic(state.mVelocities);
   setAccelerationsStatic(state.mAccelerations);
   setForces(state.mForces);
+  this->mAspectState.mVelocityChanges = state.mVelocityChanges;
+  this->mAspectState.mImpulses = state.mImpulses;
+  this->mAspectState.mConstraintImpulses = state.mConstraintImpulses;
 }
 
 //==============================================================================
@@ -483,6 +547,8 @@ void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
     return;
   }
 
+  detail::assertFiniteState(position, this, "setPosition", "position");
+
   if (this->mAspectState.mPositions[index] == position)
     return;
   // TODO(JS): Above code should be changed something like:
@@ -696,6 +762,8 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getInitialPositions() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
 {
+  detail::assertFiniteState(positions, this, "setPositions", "positions");
+
   if (this->mAspectState.mPositions == positions)
     return;
 
@@ -715,6 +783,8 @@ GenericJoint<ConfigSpaceT>::getPositionsStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(const Vector& velocities)
 {
+  detail::assertFiniteState(velocities, this, "setVelocities", "velocities");
+
   if (this->mAspectState.mVelocities == velocities)
     return;
 
@@ -734,6 +804,8 @@ GenericJoint<ConfigSpaceT>::getVelocitiesStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
 {
+  detail::assertFiniteState(accels, this, "setAccelerations", "accelerations");
+
   if (this->mAspectState.mAccelerations == accels)
     return;
 
@@ -757,6 +829,8 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
     GenericJoint_REPORT_OUT_OF_RANGE(setVelocity, index);
     return;
   }
+
+  detail::assertFiniteState(velocity, this, "setVelocity", "velocity");
 
   if (this->mAspectState.mVelocities[index] == velocity)
     return;
@@ -967,6 +1041,9 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
     GenericJoint_REPORT_OUT_OF_RANGE(setAcceleration, index);
     return;
   }
+
+  detail::assertFiniteState(
+      acceleration, this, "setAcceleration", "acceleration");
 
   if (this->mAspectState.mAccelerations[index] == acceleration)
     return;
@@ -1267,7 +1344,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityChange(
     return;
   }
 
-  mVelocityChanges[index] = velocityChange;
+  this->mAspectState.mVelocityChanges[index] = velocityChange;
 }
 
 //==============================================================================
@@ -1279,14 +1356,14 @@ double GenericJoint<ConfigSpaceT>::getVelocityChange(size_t index) const
     return 0.0;
   }
 
-  return mVelocityChanges[index];
+  return this->mAspectState.mVelocityChanges[index];
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetVelocityChanges()
 {
-  mVelocityChanges.setZero();
+  this->mAspectState.mVelocityChanges.setZero();
 }
 
 //==============================================================================
@@ -1299,7 +1376,7 @@ void GenericJoint<ConfigSpaceT>::setConstraintImpulse(
     return;
   }
 
-  mConstraintImpulses[index] = impulse;
+  this->mAspectState.mConstraintImpulses[index] = impulse;
 }
 
 //==============================================================================
@@ -1311,14 +1388,14 @@ double GenericJoint<ConfigSpaceT>::getConstraintImpulse(size_t index) const
     return 0.0;
   }
 
-  return mConstraintImpulses[index];
+  return this->mAspectState.mConstraintImpulses[index];
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetConstraintImpulses()
 {
-  mConstraintImpulses.setZero();
+  this->mAspectState.mConstraintImpulses.setZero();
 }
 
 //==============================================================================
@@ -1331,6 +1408,41 @@ void GenericJoint<ConfigSpaceT>::integratePositions(double dt)
       dt);
 
   setPositionsStatic(math::toEuclideanPoint<ConfigSpaceT>(point));
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::integratePositions(
+    const Eigen::VectorXd& q0,
+    const Eigen::VectorXd& v,
+    double dt,
+    Eigen::VectorXd& result) const
+{
+  if (static_cast<std::size_t>(q0.size()) != getNumDofs()
+      || static_cast<std::size_t>(v.size()) != getNumDofs()) {
+    DART_ERROR(
+        "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
+        "Joint [{}].",
+        q0.size(),
+        v.size(),
+        this->getNumDofs(),
+        this->getName());
+    DART_ASSERT(false);
+    result = Eigen::VectorXd::Zero(getNumDofs());
+    return;
+  }
+
+  detail::assertFiniteState(q0, this, "integratePositions", "q0");
+  detail::assertFiniteState(v, this, "integratePositions", "v");
+  detail::assertFiniteState(dt, this, "integratePositions", "dt");
+
+  const EuclideanPoint q0Static = q0;
+  const Vector vStatic = v;
+
+  const Point& point = math::integratePosition<ConfigSpaceT>(
+      math::toManifoldPoint<ConfigSpaceT>(q0Static), vStatic, dt);
+
+  result = math::toEuclideanPoint<ConfigSpaceT>(point);
 }
 
 //==============================================================================
@@ -1377,7 +1489,15 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
     return;
   }
 
-  DART_ASSERT(k >= 0.0);
+  if (std::isnan(k) || k < 0.0) {
+    DART_WARN(
+        "[GenericJoint] Invalid spring stiffness ({}) set for joint [{}]. "
+        "Spring stiffness must be non-negative; NaN and negative values are "
+        "clamped to 0 (infinite stiffness is permitted).",
+        k,
+        this->getName());
+    k = 0.0;
+  }
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
 }
@@ -1427,7 +1547,15 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
     return;
   }
 
-  DART_ASSERT(d >= 0.0);
+  if (std::isnan(d) || d < 0.0) {
+    DART_WARN(
+        "[GenericJoint] Invalid damping coefficient ({}) set for joint [{}]. "
+        "Damping must be non-negative; NaN and negative values are clamped to "
+        "0 (negative damping adds energy; infinite damping is permitted).",
+        d,
+        this->getName());
+    d = 0.0;
+  }
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
 }
@@ -1454,7 +1582,15 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     return;
   }
 
-  DART_ASSERT(friction >= 0.0);
+  if (std::isnan(friction) || friction < 0.0) {
+    DART_WARN(
+        "[GenericJoint] Invalid Coulomb friction ({}) set for joint [{}]. "
+        "Friction must be non-negative; NaN and negative values are clamped to "
+        "0 (infinite friction locks the joint and is permitted).",
+        friction,
+        this->getName());
+    friction = 0.0;
+  }
 
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
 }
@@ -1539,10 +1675,7 @@ GenericJoint<ConfigSpaceT>::getRelativeJacobianTimeDerivStatic() const
 //==============================================================================
 template <class ConfigSpaceT>
 GenericJoint<ConfigSpaceT>::GenericJoint(const Properties& properties)
-  : mVelocityChanges(Vector::Zero()),
-    mImpulses(Vector::Zero()),
-    mConstraintImpulses(Vector::Zero()),
-    mJacobian(JacobianMatrix::Zero()),
+  : mJacobian(JacobianMatrix::Zero()),
     mJacobianDeriv(JacobianMatrix::Zero()),
     mInvProjArtInertia(Matrix::Zero()),
     mInvProjArtInertiaImplicit(Matrix::Zero()),
@@ -1645,7 +1778,8 @@ void GenericJoint<ConfigSpaceT>::addVelocityChangeTo(
     Eigen::Vector6d& velocityChange)
 {
   // Add joint velocity change to velocityChange
-  velocityChange.noalias() += getRelativeJacobianStatic() * mVelocityChanges;
+  velocityChange.noalias()
+      += getRelativeJacobianStatic() * this->mAspectState.mVelocityChanges;
 
   // Verification
   DART_ASSERT(!math::isNan(velocityChange));
@@ -2166,7 +2300,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
     const Eigen::Vector6d& bodyImpulse)
 {
   //
-  mTotalImpulse = mConstraintImpulses
+  mTotalImpulse = this->mAspectState.mConstraintImpulses
                   - getRelativeJacobianStatic().transpose() * bodyImpulse;
 }
 
@@ -2269,14 +2403,14 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
     const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange)
 {
   //
-  mVelocityChanges
+  this->mAspectState.mVelocityChanges
       = getInvProjArtInertia()
         * (mTotalImpulse
            - getRelativeJacobianStatic().transpose() * artInertia
                  * math::AdInvT(this->getRelativeTransform(), velocityChange));
 
   // Verification
-  DART_ASSERT(!math::isNan(mVelocityChanges));
+  DART_ASSERT(!math::isNan(this->mAspectState.mVelocityChanges));
 }
 
 //==============================================================================
@@ -2350,7 +2484,8 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateImpulseID(
     const Eigen::Vector6d& bodyImpulse)
 {
-  mImpulses = getRelativeJacobianStatic().transpose() * bodyImpulse;
+  this->mAspectState.mImpulses
+      = getRelativeJacobianStatic().transpose() * bodyImpulse;
 }
 
 //==============================================================================
@@ -2403,10 +2538,13 @@ void GenericJoint<ConfigSpaceT>::updateConstrainedTermsDynamic(double timeStep)
 {
   const double invTimeStep = 1.0 / timeStep;
 
-  setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
+  setVelocitiesStatic(
+      getVelocitiesStatic() + this->mAspectState.mVelocityChanges);
   setAccelerationsStatic(
-      getAccelerationsStatic() + mVelocityChanges * invTimeStep);
-  this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
+      getAccelerationsStatic()
+      + this->mAspectState.mVelocityChanges * invTimeStep);
+  this->mAspectState.mForces.noalias()
+      += this->mAspectState.mImpulses * invTimeStep;
   // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 
@@ -2415,7 +2553,8 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateConstrainedTermsKinematic(
     double timeStep)
 {
-  this->mAspectState.mForces.noalias() += mImpulses / timeStep;
+  this->mAspectState.mForces.noalias()
+      += this->mAspectState.mImpulses / timeStep;
 }
 
 //==============================================================================

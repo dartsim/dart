@@ -28,6 +28,13 @@ name: Publish dartpy
         required: false
         default: "false"
 
+# Token-based PyPI publishing (pypa/gh-action-pypi-publish with PYPI_TOKEN
+# secret), not OIDC trusted publishing, so id-token is not required. Jobs only
+# read the repo and exchange build artifacts, so the default token only needs
+# read access to repository contents.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,7 +48,7 @@ jobs:
     name: Check format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.ref }}
 
@@ -130,7 +137,7 @@ jobs:
       DARTPY_CHECKOUT_REF: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.ref }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.DARTPY_CHECKOUT_REF }}
 
@@ -218,7 +225,7 @@ jobs:
   #   name: Build source distribution
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v5
+  #     - uses: actions/checkout@v6
 
   #     - name: Build SDist
   #       run: pipx run build --sdist

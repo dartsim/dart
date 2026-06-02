@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,34 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/detail/ConnectionBody.hpp"
+#include <dart/dart.hpp>
 
-namespace dart {
-namespace common {
+#include <gtest/gtest.h>
 
-namespace signal {
-namespace detail {
+using dart::dynamics::BodyNode;
+using dart::dynamics::Inertia;
+using dart::dynamics::Skeleton;
+using dart::dynamics::SkeletonPtr;
+using dart::dynamics::TranslationalJoint;
 
-//==============================================================================
-ConnectionBodyBase::~ConnectionBodyBase()
+// Regression test for https://github.com/dartsim/dart/issues/1681.
+TEST(BodyNodePotentialEnergy, UsesCenterOfMass)
 {
-  // Do nothing
+  SkeletonPtr skeleton = Skeleton::create("skeleton");
+
+  TranslationalJoint::Properties jointProps;
+  jointProps.mName = "root_joint";
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "body";
+
+  auto pair
+      = skeleton->createJointAndBodyNodePair<TranslationalJoint, BodyNode>(
+          nullptr, jointProps, bodyProps);
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  Inertia inertia;
+  inertia.setMass(2.0);
+  inertia.setLocalCOM(Eigen::Vector3d(0.0, 1.0, 0.0));
+  inertia.setMoment(Eigen::Matrix3d::Identity());
+  body->setInertia(inertia);
+
+  // Place the body so the frame origin and COM differ along gravity.
+  joint->setPositions(Eigen::Vector3d(0.3, 0.5, -0.2));
+
+  const Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+
+  const double expected = -body->getMass() * body->getCOM().dot(gravity);
+  const double energy = body->computePotentialEnergy(gravity);
+
+  EXPECT_DOUBLE_EQ(energy, expected);
 }
-
-//==============================================================================
-void ConnectionBodyBase::markDisconnected()
-{
-  mConnected.store(false, std::memory_order_relaxed);
-}
-
-//==============================================================================
-bool ConnectionBodyBase::isConnected() const
-{
-  return mConnected.load(std::memory_order_relaxed);
-}
-
-} // namespace detail
-} // namespace signal
-
-} // namespace common
-} // namespace dart

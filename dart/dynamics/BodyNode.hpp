@@ -64,6 +64,8 @@ class Skeleton;
 class Joint;
 class DegreeOfFreedom;
 class Shape;
+class ShapeNode;
+class CollisionAspect;
 class EndEffector;
 class Marker;
 
@@ -671,6 +673,16 @@ public:
   /// which is also its parent Frame.
   const Eigen::Isometry3d& getRelativeTransform() const override;
 
+  /// Get the partial derivative of the world transform with respect to the
+  /// specified dependent DegreeOfFreedom.
+  const Eigen::Matrix4d& getWorldTransformDerivative(
+      std::size_t dofIndex) const;
+
+  /// Get the mixed second partial derivative of the world transform with
+  /// respect to the specified dependent DegreesOfFreedom.
+  const Eigen::Matrix4d& getWorldTransformSecondDerivative(
+      std::size_t firstDofIndex, std::size_t secondDofIndex) const;
+
   // Documentation inherited
   const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
 
@@ -1092,6 +1104,12 @@ protected:
   /// mIsWorldJacobianClassicDerivDirty is true.
   void updateWorldJacobianClassicDeriv() const;
 
+  /// Update cached first-order transform derivatives.
+  void updateTransformDerivatives() const;
+
+  /// Update cached second-order transform derivatives.
+  void updateTransformSecondDerivatives() const;
+
   /// \}
 
 protected:
@@ -1144,6 +1162,27 @@ protected:
 
   /// Same as mDependentDofs, but holds const pointers
   std::vector<const DegreeOfFreedom*> mConstDependentDofs;
+
+  using Matrix4dVector
+      = std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>;
+
+  /// Cached relative transform first derivatives (per local DOF)
+  mutable Matrix4dVector mRelativeTransformDerivatives;
+
+  /// Cached world transform first derivatives (per dependent DOF)
+  mutable Matrix4dVector mWorldTransformDerivatives;
+
+  /// Cached relative transform second derivatives (per local DOF pair)
+  mutable std::vector<Matrix4dVector> mRelativeTransformSecondDerivatives;
+
+  /// Cached world transform second derivatives (per dependent DOF pair)
+  mutable std::vector<Matrix4dVector> mWorldTransformSecondDerivatives;
+
+  /// Dirty flag for first-order transform derivatives
+  mutable bool mAreTransformDerivativesDirty;
+
+  /// Dirty flag for second-order transform derivatives
+  mutable bool mAreTransformSecondDerivativesDirty;
 
   //--------------------------------------------------------------------------
   // Dynamical Properties
@@ -1268,6 +1307,20 @@ private:
   /// Hold onto a reference to this BodyNode's own Destructor to make sure that
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;
+
+  /// Notify listeners about collision-shape lifecycle changes.
+  void handleCollisionShapeStateChange(
+      const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable);
+
+  /// Notify listeners when a collidable ShapeNode swaps its Shape.
+  void handleCollisionShapeUpdated(
+      const ShapeNode* shapeNode,
+      ConstShapePtr oldShape,
+      ConstShapePtr newShape);
+
+  friend class CollisionAspect;
+  friend class ShapeNode;
+  friend class ShapeFrame;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

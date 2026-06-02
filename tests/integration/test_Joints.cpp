@@ -35,6 +35,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -340,6 +341,39 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT)
 TEST_F(JOINTS, PLANAR_JOINT)
 {
   kinematicsTest<PlanarJoint>();
+}
+
+//==============================================================================
+TEST_F(JOINTS, PlanarJointIsometry2dHelpers)
+{
+  SkeletonPtr skel = Skeleton::create("planar_helpers");
+  auto pair = skel->createJointAndBodyNodePair<PlanarJoint>();
+  auto* joint = pair.first;
+
+  const Eigen::Vector3d positions(0.25, -0.15, 0.6);
+  const Eigen::Isometry2d tf = PlanarJoint::convertToTransform(positions);
+  EXPECT_TRUE(PlanarJoint::convertToPositions(tf).isApprox(positions, 1e-12));
+
+  const auto verifyPlane = [&](auto setPlane) {
+    setPlane();
+    joint->setPositions(positions);
+
+    const Eigen::Isometry3d expected
+        = Eigen::Translation3d(joint->getTranslationalAxis1() * positions[0])
+          * Eigen::Translation3d(joint->getTranslationalAxis2() * positions[1])
+          * math::expAngular(joint->getRotationalAxis() * positions[2]);
+
+    EXPECT_TRUE(joint->getRelativeTransform().isApprox(expected, 1e-12));
+  };
+
+  verifyPlane([&]() { joint->setXYPlane(); });
+  verifyPlane([&]() { joint->setYZPlane(); });
+  verifyPlane([&]() { joint->setZXPlane(); });
+  verifyPlane([&]() {
+    const Eigen::Vector3d axis1(1.0, 1.0, 0.0);
+    const Eigen::Vector3d axis2(-1.0, 1.0, 0.0);
+    joint->setArbitraryPlane(axis1.normalized(), axis2.normalized());
+  });
 }
 
 // 6-dof joint
@@ -1571,4 +1605,117 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
       }
     }
   }
+}
+
+//==============================================================================
+TEST_F(JOINTS, IntegratePositionsStateIndependent)
+{
+  constexpr double dt = 0.25;
+  constexpr double tol = 1e-12;
+
+  auto verify
+      = [&](Joint& joint, const Eigen::VectorXd& q0, const Eigen::VectorXd& v) {
+          const Eigen::VectorXd positionsBefore = joint.getPositions();
+          const Eigen::VectorXd velocitiesBefore = joint.getVelocities();
+
+          const Eigen::VectorXd qNextStateless
+              = joint.integratePositions(q0, v, dt);
+          EXPECT_VECTOR_NEAR(positionsBefore, joint.getPositions(), 0.0);
+          EXPECT_VECTOR_NEAR(velocitiesBefore, joint.getVelocities(), 0.0);
+
+          joint.setPositions(q0);
+          joint.setVelocities(v);
+          joint.integratePositions(dt);
+          const Eigen::VectorXd qNextStateful = joint.getPositions();
+
+          EXPECT_VECTOR_NEAR(qNextStateful, qNextStateless, tol);
+
+          joint.setPositions(positionsBefore);
+          joint.setVelocities(velocitiesBefore);
+        };
+
+  {
+    SkeletonPtr skel = Skeleton::create("integrate_revolute");
+    auto [joint, body] = skel->createJointAndBodyNodePair<RevoluteJoint>();
+    (void)body;
+
+    joint->setPosition(0, 0.7);
+    joint->setVelocity(0, 0.3);
+
+    const Eigen::VectorXd q0 = (Eigen::VectorXd(1) << -0.4).finished();
+    const Eigen::VectorXd v = (Eigen::VectorXd(1) << 0.9).finished();
+
+    verify(*joint, q0, v);
+  }
+
+  {
+    SkeletonPtr skel = Skeleton::create("integrate_ball");
+    auto [joint, body] = skel->createJointAndBodyNodePair<BallJoint>();
+    (void)body;
+
+    joint->setPositions(Eigen::Vector3d(0.2, -0.1, 0.3));
+    joint->setVelocities(Eigen::Vector3d(0.01, 0.02, -0.03));
+
+    const Eigen::VectorXd q0 = (Eigen::Vector3d(0.5, -0.4, 0.1)).eval();
+    const Eigen::VectorXd v = (Eigen::Vector3d(0.07, -0.02, 0.04)).eval();
+
+    verify(*joint, q0, v);
+  }
+
+  {
+    SkeletonPtr skel = Skeleton::create("integrate_free");
+    auto [joint, body] = skel->createJointAndBodyNodePair<FreeJoint>();
+    (void)body;
+
+    joint->setPositions(
+        (Eigen::Vector6d() << 0.1, -0.2, 0.3, 1.0, -2.0, 3.0).finished());
+    joint->setVelocities(
+        (Eigen::Vector6d() << 0.01, 0.02, -0.03, -0.4, 0.5, -0.6).finished());
+
+    const Eigen::VectorXd q0
+        = (Eigen::Vector6d() << -0.3, 0.2, -0.1, -1.0, 2.0, -3.0).finished();
+    const Eigen::VectorXd v
+        = (Eigen::Vector6d() << 0.06, -0.05, 0.04, 0.7, -0.8, 0.9).finished();
+
+    verify(*joint, q0, v);
+  }
+
+  {
+    SkeletonPtr skel = Skeleton::create("integrate_weld");
+    auto [joint, body] = skel->createJointAndBodyNodePair<WeldJoint>();
+    (void)body;
+
+    const Eigen::VectorXd q0 = Eigen::VectorXd::Zero(0);
+    const Eigen::VectorXd v = Eigen::VectorXd::Zero(0);
+
+    verify(*joint, q0, v);
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, JacobianMethodGradientConversionDoesNotModifySkeletonState)
+{
+  SkeletonPtr skel = Skeleton::create("ik_stateless_integration");
+  auto [joint, body] = skel->createJointAndBodyNodePair<BallJoint>();
+  (void)joint;
+
+  const auto& ik = body->getIK(true);
+  ik->useWholeBody();
+
+  const auto& dofs = ik->getDofs();
+  ASSERT_EQ(dofs.size(), skel->getNumDofs());
+
+  skel->setPositions(Eigen::VectorXd::Random(skel->getNumDofs()));
+  skel->setVelocities(Eigen::VectorXd::Random(skel->getNumDofs()));
+
+  const Eigen::VectorXd positionsBefore = skel->getPositions();
+  const Eigen::VectorXd velocitiesBefore = skel->getVelocities();
+
+  Eigen::VectorXd grad(dofs.size());
+  grad << 0.01, -0.02, 0.03;
+
+  ik->getGradientMethod().convertJacobianMethodOutputToGradient(grad, dofs);
+
+  EXPECT_VECTOR_NEAR(positionsBefore, skel->getPositions(), 0.0);
+  EXPECT_VECTOR_NEAR(velocitiesBefore, skel->getVelocities(), 0.0);
 }

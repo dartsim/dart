@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 namespace dart {
 namespace dynamics {
 
@@ -447,7 +449,15 @@ double SoftBodyNode::getEdgeSpringStiffness() const
 //==============================================================================
 void SoftBodyNode::setDampingCoefficient(double _damp)
 {
-  DART_ASSERT(_damp >= 0.0);
+  if (std::isnan(_damp) || _damp < 0.0) {
+    DART_WARN(
+        "[SoftBodyNode] Invalid damping coefficient ({}) set for soft body "
+        "[{}]. Damping must be non-negative; NaN and negative values are "
+        "clamped to 0.",
+        _damp,
+        this->getName());
+    _damp = 0.0;
+  }
 
   if (_damp == mAspectProperties.mDampCoeff)
     return;

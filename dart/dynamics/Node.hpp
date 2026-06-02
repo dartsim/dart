@@ -202,8 +202,12 @@ protected:
   /// Attach the Node to its BodyNode
   void attach();
 
-  /// When all external references to the Node disappear, it will be deleted
-  void stageForRemoval();
+  /// When all external references to the Node disappear, it will be deleted.
+  ///
+  /// Virtual so subclasses (e.g. ShapeNode) can react to removal even when the
+  /// node is staged through a base ``Node*`` pointer, such as the
+  /// ``mNodeDestructors`` path in ``BodyNode::matchNodes()``.
+  virtual void stageForRemoval();
 
   /// weak pointer to the destructor for this Node. We use a shared_ptr
   /// "destructor" class instead of managing Nodes directly with shared_ptrs

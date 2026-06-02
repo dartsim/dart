@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,34 +30,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/detail/ConnectionBody.hpp"
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
-namespace dart {
-namespace common {
+#include <Eigen/Core>
+#include <gtest/gtest.h>
 
-namespace signal {
-namespace detail {
-
-//==============================================================================
-ConnectionBodyBase::~ConnectionBodyBase()
-{
-  // Do nothing
-}
+using namespace dart::dynamics;
 
 //==============================================================================
-void ConnectionBodyBase::markDisconnected()
+TEST(Issue896, SkeletonCloneDeepCopiesShapes)
 {
-  mConnected.store(false, std::memory_order_relaxed);
+  const auto skel = Skeleton::create("original");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
+
+  const auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 2.0, 3.0));
+  body->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+
+  const auto clone = skel->cloneSkeleton();
+  ASSERT_TRUE(clone);
+
+  auto* clonedBody = clone->getBodyNode(body->getName());
+  ASSERT_NE(clonedBody, nullptr);
+  // Use first shape node; cast checked below
+  auto* clonedShapeNode = clonedBody->getShapeNodeWith<VisualAspect>(0);
+  ASSERT_NE(clonedShapeNode, nullptr);
+
+  const auto originalBox = std::dynamic_pointer_cast<BoxShape>(box);
+  ASSERT_NE(originalBox, nullptr);
+  const auto clonedBox
+      = std::dynamic_pointer_cast<BoxShape>(clonedShapeNode->getShape());
+  ASSERT_NE(clonedBox, nullptr);
+
+  EXPECT_NE(originalBox.get(), clonedBox.get());
+
+  const auto originalSize = originalBox->getSize();
+  const Eigen::Vector3d clonedSize(0.25, 0.5, 0.75);
+
+  clonedBox->setSize(clonedSize);
+  EXPECT_EQ(originalBox->getSize(), originalSize);
+  EXPECT_EQ(clonedBox->getSize(), clonedSize);
 }
-
-//==============================================================================
-bool ConnectionBodyBase::isConnected() const
-{
-  return mConnected.load(std::memory_order_relaxed);
-}
-
-} // namespace detail
-} // namespace signal
-
-} // namespace common
-} // namespace dart

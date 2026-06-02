@@ -35,7 +35,9 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <numeric>
+#include <thread>
 
 using namespace std;
 using namespace Eigen;
@@ -364,4 +366,171 @@ TEST(Signal, FrameSignals)
   F3.setName("new " + F3.getName());
 
   F3.setParentFrame(&F1);
+}
+
+//==============================================================================
+TEST(Signal, SelfDisconnectDuringRaise)
+{
+  constexpr int kNumTrials = 200;
+
+  for (int trial = 0; trial < kNumTrials; ++trial) {
+    Signal<void()> signal;
+
+    Connection self;
+    self = signal.connect([&]() { self.disconnect(); });
+
+    int callbackCount = 0;
+    auto other = signal.connect([&]() { ++callbackCount; });
+    DART_UNUSED(other);
+
+    EXPECT_EQ(signal.getNumConnections(), 2u);
+
+    signal.raise();
+
+    EXPECT_EQ(signal.getNumConnections(), 1u);
+    EXPECT_EQ(callbackCount, 1);
+  }
+}
+
+//==============================================================================
+TEST(Signal, DisconnectOtherDuringRaise)
+{
+  // When a slot disconnects another slot during raise(), the disconnected slot
+  // must not fire even though raise() iterates over a snapshot of the
+  // connections taken under the mutex. mConnectionBodies is a std::set ordered
+  // by shared_ptr address, so the iteration order of the two slots is not
+  // deterministic; have each slot disconnect the other so that whichever runs
+  // first cancels the second. Exactly one slot must run regardless of order.
+  Signal<void()> signal;
+
+  int callbackCountA = 0;
+  int callbackCountB = 0;
+  Connection connA;
+  Connection connB;
+
+  connA = signal.connect([&]() {
+    ++callbackCountA;
+    connB.disconnect();
+  });
+  connB = signal.connect([&]() {
+    ++callbackCountB;
+    connA.disconnect();
+  });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+
+  // The first slot to run disconnects the other before it is invoked, so the
+  // second is skipped by raise().
+  EXPECT_EQ(callbackCountA + callbackCountB, 1);
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+}
+
+//==============================================================================
+TEST(Signal, DisconnectOtherDuringRaiseNonVoid)
+{
+  // Same as DisconnectOtherDuringRaise but for the non-void specialization of
+  // Signal, which combines the slot return values. Each slot disconnects the
+  // other so the result is independent of the set's iteration order.
+  Signal<int()> signal;
+
+  int callbackCountA = 0;
+  int callbackCountB = 0;
+  Connection connA;
+  Connection connB;
+
+  connA = signal.connect([&]() -> int {
+    ++callbackCountA;
+    connB.disconnect();
+    return 1;
+  });
+  connB = signal.connect([&]() -> int {
+    ++callbackCountB;
+    connA.disconnect();
+    return 2;
+  });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+
+  EXPECT_EQ(callbackCountA + callbackCountB, 1);
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+}
+
+//==============================================================================
+TEST(Signal, IsConnectedFalseAfterDisconnectDuringRaise)
+{
+  // When a slot disconnects another connection during raise(), the public
+  // Connection::isConnected() of the disconnected connection must report false
+  // immediately, even though raise() keeps the underlying body alive in its
+  // snapshot for the duration of the call. Use the same order-independent
+  // mutual-disconnect pattern as DisconnectOtherDuringRaise so the result does
+  // not depend on the set's iteration order.
+  Signal<void()> signal;
+
+  Connection connA;
+  Connection connB;
+  bool observedDisconnectedDuringRaise = false;
+
+  connA = signal.connect([&]() {
+    connB.disconnect();
+    // connB was just disconnected while still captured in the raise() snapshot;
+    // its body is alive but must report as disconnected.
+    observedDisconnectedDuringRaise = !connB.isConnected();
+  });
+  connB = signal.connect([&]() {
+    connA.disconnect();
+    observedDisconnectedDuringRaise = !connA.isConnected();
+  });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+
+  EXPECT_TRUE(observedDisconnectedDuringRaise);
+}
+
+//==============================================================================
+TEST(Signal, ConcurrentUsage)
+{
+  constexpr int kNumThreads = 4;
+  constexpr int kIterationsPerThread = 250;
+
+  Signal<void()> signal;
+
+  std::atomic<bool> keepRaising{true};
+  std::atomic<int> raiseCount{0};
+  std::atomic<int> callbackCount{0};
+
+  std::thread raiser([&]() {
+    while (keepRaising.load(std::memory_order_relaxed)) {
+      signal.raise();
+      raiseCount.fetch_add(1, std::memory_order_relaxed);
+    }
+  });
+
+  std::vector<std::thread> workers;
+  workers.reserve(kNumThreads);
+  for (int t = 0; t < kNumThreads; ++t) {
+    workers.emplace_back([&]() {
+      for (int i = 0; i < kIterationsPerThread; ++i) {
+        Connection conn = signal.connect(
+            [&]() { callbackCount.fetch_add(1, std::memory_order_relaxed); });
+        signal.raise();
+        conn.disconnect();
+      }
+    });
+  }
+
+  for (auto& thread : workers)
+    thread.join();
+
+  keepRaising.store(false, std::memory_order_relaxed);
+  raiser.join();
+
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+  EXPECT_GE(callbackCount.load(), kNumThreads * kIterationsPerThread);
+  EXPECT_GT(raiseCount.load(), 0);
 }

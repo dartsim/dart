@@ -38,6 +38,7 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <set>
 
 namespace dart {
@@ -163,6 +164,9 @@ public:
 private:
   /// Connection set
   ConnectionSetType mConnectionBodies;
+
+  /// Guards access to mConnectionBodies
+  mutable std::mutex mConnectionMutex;
 };
 
 /// Signal implements a signal/slot mechanism for the slots don't return a value
@@ -219,6 +223,9 @@ public:
 private:
   /// Connection set
   ConnectionSetType mConnectionBodies;
+
+  /// Guards access to mConnectionBodies
+  mutable std::mutex mConnectionMutex;
 };
 
 /// SlotRegister can be used as a public member for connecting slots to a

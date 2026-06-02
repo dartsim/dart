@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 #define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
+#include <atomic>
 #include <memory>
 
 namespace dart {
@@ -53,6 +54,23 @@ public:
 
   /// Disconnect
   virtual void disconnect() = 0;
+
+  /// Marks this connection body as disconnected.
+  ///
+  /// This is called by the owning Signal under its connection mutex right
+  /// before the body is removed from the connection set. It lets a slot that is
+  /// captured in a Signal::raise() snapshot be skipped if it gets disconnected
+  /// by an earlier slot during the same raise(), and lets a public
+  /// Connection::isConnected() observe the disconnection even while the body is
+  /// still kept alive by that snapshot.
+  void markDisconnected();
+
+  /// Returns true if this connection body is still connected to its Signal.
+  [[nodiscard]] bool isConnected() const;
+
+private:
+  /// Whether this connection body is still connected to its Signal.
+  std::atomic<bool> mConnected{true};
 };
 
 /// class ConnectionBody
