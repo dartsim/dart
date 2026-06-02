@@ -4591,6 +4591,43 @@ TEST(World, StepUsesSelectedRigidIpcSolver)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.2, 1e-8);
 }
 
+// Test that public fixed joints reject the IPC rigid-body solver instead of
+// accepting a joint that the IPC pipeline will not project.
+TEST(World, RigidBodyFixedJointsRejectIpcSolver)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+
+  sx::World solverFirst;
+  solverFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  auto solverFirstParent = solverFirst.addRigidBody("parent", parentOptions);
+  auto solverFirstChild = solverFirst.addRigidBody("child", childOptions);
+  EXPECT_THROW(
+      solverFirst.addRigidBodyFixedJoint(
+          "fixed", solverFirstParent, solverFirstChild),
+      sx::InvalidOperationException);
+
+  const auto solverFirstJoints
+      = solverFirst.getRegistry().view<sx::comps::Joint>();
+  EXPECT_EQ(solverFirstJoints.begin(), solverFirstJoints.end());
+
+  sx::World jointFirst;
+  auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
+  auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
+  (void)jointFirst.addRigidBodyFixedJoint(
+      "fixed", jointFirstParent, jointFirstChild);
+
+  EXPECT_THROW(
+      jointFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc),
+      sx::InvalidOperationException);
+  EXPECT_EQ(
+      jointFirst.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+}
+
 // Test that invalid solver selections are rejected instead of silently falling
 // through to a different rigid-body pipeline.
 TEST(World, SetRigidBodySolverRejectsInvalidEnum)

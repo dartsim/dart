@@ -212,7 +212,8 @@ public:
   ///         different World, both handles refer to the same body, or the name
   ///         is already used by another joint.
   /// @throws InvalidOperationException if the World is in simulation mode or
-  ///         the internal fixed-joint row configuration fails.
+  ///         configured for the IPC rigid-body solver, or if the internal
+  ///         fixed-joint row configuration fails.
   Joint addRigidBodyFixedJoint(
       std::string_view name, const RigidBody& parent, const RigidBody& child);
   std::optional<RigidBody> getRigidBody(std::string_view name);
@@ -261,6 +262,7 @@ public:
   ///
   /// The default remains SequentialImpulse. Ipc is experimental and currently
   /// handles free mesh-like rigid bodies through the internal rigid IPC stage.
+  /// Throws if Ipc is selected while public rigid-body fixed joints exist.
   void setRigidBodySolver(RigidBodySolver solver);
 
   /// Get the solver family used by the default rigid-body step pipeline.
