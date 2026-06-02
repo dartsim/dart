@@ -218,9 +218,9 @@
 3. Generalize PSD projection, projected-Newton, line-search, diagnostics, and
    benchmark-schema contracts when ABD or another solver-family slice creates a
    second-use contract beyond deformable and rigid local needs.
-4. Keep new IPC-family papers or solver components under the solver-family
-   intake gate in
-   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md):
+4. Keep new IPC-family papers or solver components under the plan-owned
+   solver-family intake checklist in
+   [`solver-family-intake.md`](solver-family-intake.md):
    route to an existing variant owner, inventory shared components, define the
    user-facing configuration surface, and define apples-to-apples evidence
    before duplicating primitives or adding broad public options.

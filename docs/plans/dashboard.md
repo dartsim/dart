@@ -66,16 +66,17 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Use the LCP v0 contract, tests, benchmark, and `lcp_physics`
   example as the template when the next algorithm family is selected. For
-  solver or multi-physics papers, first apply the solver-family intake gate in
-  [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
+  solver or multi-physics papers, first apply the solver-family intake
+  checklist in [`solver-family-intake.md`](solver-family-intake.md)
   so the work routes to an existing family, shares common collision,
   kinematics, and optimization components, and defines apples-to-apples
   evidence plus a user-facing configuration shape.
 - Gate: LCP contract docs, focused tests, smoke benchmark, API-boundary
   exclusions, baseline example evidence, and the solver-family intake checklist
-  are recorded before a new solver family or paper implementation starts; for
-  solvers, that checklist includes simple `World` defaults, method-specific
-  advanced options, validation, serialization expectations, and diagnostics.
+  in [`solver-family-intake.md`](solver-family-intake.md) are recorded
+  before a new solver family or paper implementation starts; for solvers, that
+  checklist includes simple `World` defaults, method-specific advanced options,
+  validation, serialization expectations, and diagnostics.
 
 ### PLAN-030: Compute Scalability Roadmap
 
@@ -263,11 +264,12 @@ its own line so status updates remain git-history friendly.
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
   GPU parity evidence, and explicit reference/paper-number comparisons; every
-  new IPC-family solver or component passes the solver-family intake gate in
-  the architecture doc before adding a duplicate primitive or user-facing
-  option; public APIs and solver options remain DART-owned, easy on the common
-  `World` path, validated, serializable where result-affecting, and
-  backend-neutral; `pixi run lint`, docs gates, focused C++/Python tests,
+  new IPC-family solver or component records the solver-family intake checklist
+  from [`solver-family-intake.md`](solver-family-intake.md) before
+  adding a duplicate primitive or user-facing option; public APIs and solver
+  options remain DART-owned, easy on the common `World` path, validated,
+  serializable where result-affecting, and backend-neutral; `pixi run lint`,
+  docs gates, focused C++/Python tests,
   benchmark smokes, and `check-api-boundaries` stay green for each promoted
   slice.
 

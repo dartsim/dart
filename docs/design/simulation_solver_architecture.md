@@ -299,42 +299,16 @@ only meaningful for one method family, keep it scoped to that method's options
 object; do not add a broad `WorldOptions` field that is invalid for most
 worlds.
 
-## Solver Family Intake Gate
+## Planning Intake Boundary
 
-Before starting a new solver, algorithm, paper, or major component
-implementation, the owner plan or dev task must answer this intake checklist:
-
-1. **Family routing.** Name the existing DART solver family and owner plan that
-   receives the work, or justify a new family. Examples: PLAN-081/082/083 for
-   IPC and Newton-barrier variants, PLAN-104 for VBD/OGC/AVBD variants,
-   PLAN-110 plus PLAN-082 for differentiable variational rigid-body work.
-2. **Shared-component inventory.** List the collision, kinematics, model/state,
-   contact buffer, numeric optimization, linear-solver, compute-backend,
-   diagnostics, benchmark, and example components the slice will reuse. Any new
-   duplicate must name the missing contract that prevents reuse.
-3. **Promotion trigger.** Define what second-use evidence would move a
-   variant-local piece into a shared internal owner, and what tests will prove
-   old and new consumers still agree.
-4. **Apples-to-apples evidence.** Define the DART incumbent, reference
-   implementation, paper number, scene corpus, accuracy metric, and benchmark
-   JSON shape used for comparison. A performance claim without matched accuracy
-   and matched scene parameters is not a completion claim.
-5. **Public boundary.** Confirm public APIs and dartpy bindings expose
-   DART-owned domains, method families, policies, diagnostics, and value types,
-   not upstream project names, solver registries, ECS storage, backend resources,
-   or reverse-pass caches.
-6. **Configuration surface.** Define the default `World`/options path, the
-   advanced nested options, validation rules, serialization expectations, and
-   diagnostics. The common path must be simple, and invalid or incompatible
-   option combinations must fail before they produce misleading simulation
-   results.
-7. **Failure and fallback semantics.** Record unsupported-feature errors,
-   fallback behavior, non-convergence handling, determinism requirements, and
-   serialization/restart expectations before promoting a runtime path.
-
-Reviewers should reject new solver work that cannot point to this intake
-evidence. Cleanup of existing implementation is useful only when it also leaves
-this gate clearer for the next paper implementation.
+This design owns the durable solver architecture constraints. The living intake
+checklist for new solver, algorithm, paper, or major component work belongs in
+the planning surface, currently
+[`../plans/solver-family-intake.md`](../plans/solver-family-intake.md)
+and the PLAN-020 dashboard entry. The durable constraint is that new paper
+methods enter through DART-owned solver families, shared components,
+apples-to-apples evidence, facade-safe public contracts, validated
+configuration, and explicit failure/fallback semantics.
 
 ## Where Differentiable Solver Families Fit
 
@@ -455,5 +429,3 @@ Implementation PRs that realize parts of this architecture should include:
 
 Reviewers should reject user-facing APIs that leak solver types, coupler types,
 ECS storage, component types, execution-backend names, or registry access.
-New solver/paper PRs should also link the solver-family intake evidence above
-from the owner plan or dev-task resume surface.
