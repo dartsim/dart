@@ -60,11 +60,14 @@ __all__: list[str] = [
     "build_multibodies_from_world",
     "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
+    "is_accelerated_deformable_solve_available",
+    "is_accelerated_deformable_solve_enabled",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
     "load_obj_triangle_mesh",
     "load_point_set",
     "load_seg_line_mesh",
+    "set_accelerated_deformable_solve",
 ]
 
 
@@ -1826,3 +1829,9 @@ class World:
     def clear(self) -> None: ...
 
     def __repr__(self) -> str: ...
+
+def is_accelerated_deformable_solve_available() -> bool: ...
+
+def set_accelerated_deformable_solve(enable: bool) -> bool: ...
+
+def is_accelerated_deformable_solve_enabled() -> bool: ...
