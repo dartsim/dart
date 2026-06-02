@@ -36,6 +36,7 @@
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/world_registry_access.hpp"
+#include "dart/simulation/experimental/ecs/component_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {
@@ -57,9 +58,7 @@ FreeFrame::FreeFrame(Entity entity, World* world) : Frame(entity, world)
 //==============================================================================
 void FreeFrame::setLocalTransform(const Eigen::Isometry3d& transform)
 {
-  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
-  auto& props = registry.get<comps::FreeFrameProperties>(
-      detail::toRegistryEntity(m_entity));
+  auto& props = ecs::getMutable<FreeFrame, comps::FreeFrameProperties>(*this);
   props.localTransform = transform;
 
   markSubtreeTransformCacheDirty();

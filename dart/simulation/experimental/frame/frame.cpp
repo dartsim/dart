@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/world_registry_access.hpp"
+#include "dart/simulation/experimental/ecs/component_access.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -232,12 +233,8 @@ Frame Frame::getParentFrame() const
     return Frame::world();
   }
 
-  const auto enttEntity = detail::toRegistryEntity(m_entity);
-
   // Get parent from FrameState component (common to all frame types)
-  const auto* frameState
-      = dart::simulation::experimental::detail::registryOf(*m_world)
-            .try_get<comps::FrameState>(enttEntity);
+  const auto* frameState = ecs::tryGetReadOnly<Frame, comps::FrameState>(*this);
   DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
       InvalidOperationException,
@@ -285,7 +282,7 @@ void Frame::setParentFrame(const Frame& parent)
   auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
 
   // Get FrameState component (common to FreeFrame and FixedFrame)
-  auto* frameState = registry.try_get<comps::FrameState>(enttEntity);
+  auto* frameState = ecs::tryGetMutable<Frame, comps::FrameState>(*this);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
@@ -364,10 +361,9 @@ const Eigen::Isometry3d& Frame::getTransform() const
   const auto enttEntity = detail::toRegistryEntity(m_entity);
 
   // Frames with lazy evaluation (FreeFrame, FixedFrame) use FrameCache
-  // const_cast is safe: cache mutation does not change observable state
-  auto* cache = dart::simulation::experimental::detail::registryOf(
-                    *const_cast<Frame*>(this)->m_world)
-                    .try_get<comps::FrameCache>(enttEntity);
+  // getCacheMutable const_casts internally: cache mutation does not change
+  // observable state
+  auto* cache = ecs::getCacheMutable<Frame, comps::FrameCache>(*this);
   DART_EXPERIMENTAL_THROW_T_IF(
       !cache,
       InvalidOperationException,

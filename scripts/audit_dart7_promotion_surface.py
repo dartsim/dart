@@ -217,11 +217,18 @@ def main() -> int:
             print(f"  - {rel}")
         print()
 
-    print(
-        "Keystone blocker: world.hpp holds an entt::registry member, so EnTT/"
-        "Taskflow stay public deps and internals stay installed until the "
-        "Workstream 5 opaque-ownership refactor removes it."
-    )
+    if any(rel == "world.hpp" for rel, _own, _via in promote_leaking):
+        print(
+            "Keystone blocker: world.hpp holds an entt::registry member, so EnTT/"
+            "Taskflow stay public deps and internals stay installed until the "
+            "Workstream 5 opaque-ownership refactor removes it."
+        )
+    elif not promote_leaking:
+        print(
+            "Keystone cleared: world.hpp no longer exposes the EnTT registry "
+            "(Workstream 5 opaque-ownership refactor complete); EnTT/Taskflow can "
+            "move to private deps and the internal headers can leave the install set."
+        )
 
     if args.strict and promote_leaking:
         print()
