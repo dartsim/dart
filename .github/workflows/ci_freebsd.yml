@@ -55,6 +55,14 @@ jobs:
               ros-urdfdom ros-urdfdom_headers
           run: |
             set -e
+            # DART's source tree does not natively target FreeBSD, so apply the
+            # FreeBSD source-compatibility patches (formerly applied by the
+            # docker/freebsd harness) before configuring. They are -p0 patches
+            # applied from the repository root, in sorted order.
+            for patch in tools/freebsd/patches/patch-*; do
+              echo "Applying ${patch}"
+              patch -p0 -N -i "${patch}"
+            done
             cmake -G Ninja -S . -B build/freebsd/cpp/Release \
               -DCMAKE_BUILD_TYPE=Release \
               -DDART_BUILD_DARTPY=OFF \
