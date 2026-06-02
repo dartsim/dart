@@ -70,7 +70,7 @@ namespace dart::simulation::experimental::detail {
 /// apply `Δv = M⁻¹ Jᵀ f`, project away residual penetration, then integrate the
 /// (Euclidean) translational position from the post-contact velocity. This
 /// slice covers the translational state of dynamic rigid bodies in contact with
-/// a static ground or with each other.
+/// prescribed rigid bodies (static or kinematic) or with each other.
 ///
 /// The differentiated OUTPUT state is the body's translational `[pos; linvel]`,
 /// but the LCP solve and the `Δv = M⁻¹ Jᵀ f` impulse map use the full 6-DOF
