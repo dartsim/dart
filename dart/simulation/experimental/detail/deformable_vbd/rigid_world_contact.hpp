@@ -235,6 +235,15 @@ inline void avbdRigidWorldContactMarkFrameSubtreeDirty(
   }
 }
 
+// All shapes of a compound body share one contact-feature id namespace, so each
+// shape is given a disjoint block of feature ids of this size (the full
+// single-shape box+cylinder+capsule range). The per-type packer offsets only
+// reserve room for a single shape of each type, so a box at one shape index
+// would otherwise alias a cylinder/capsule at another and collapse distinct
+// shapes onto the same warm-start row.
+inline constexpr std::uint64_t kAvbdRigidWorldShapeFeatureStride
+    = kAvbdCapsuleContactFeatureIdOffset + kAvbdCapsuleContactFeatureCodeCount;
+
 namespace detail {
 
 //==============================================================================
@@ -267,6 +276,8 @@ inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
 inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     const entt::registry& registry,
     entt::entity entity,
+    std::size_t shapeIndex,
+    const Eigen::Vector3d& localPoint,
     const Eigen::Vector3d& point)
 {
   AvbdContactEndpointId endpoint = avbdRigidWorldBodyEndpointId(entity);
@@ -276,40 +287,60 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     return endpoint;
   }
 
-  const Eigen::Vector3d localPoint
-      = avbdRigidWorldContactLocalPoint(registry, entity, point);
-  if (!localPoint.allFinite()) {
+  Eigen::Vector3d shapeLocalPoint = localPoint;
+  if (shapeIndex == Contact::UnknownShapeIndex) {
+    if (geometry->shapes.size() != 1u) {
+      return endpoint;
+    }
+    shapeIndex = 0u;
+    shapeLocalPoint = avbdRigidWorldContactLocalPoint(registry, entity, point);
+  }
+
+  if (shapeIndex >= geometry->shapes.size()) {
     return endpoint;
   }
 
-  if (geometry->shape.type == CollisionShapeType::Box
-      && geometry->shape.halfExtents.allFinite()
-      && (geometry->shape.halfExtents.array() > 0.0).all()) {
+  const CollisionShape& shape = geometry->shapes[shapeIndex];
+  if (!shapeLocalPoint.allFinite()) {
+    return endpoint;
+  }
+
+  // Offset every shape's feature id into its own disjoint block so distinct
+  // shapes of one compound body never share a warm-start row. Default to a
+  // shape-scoped body feature so shape types without a specialized face/edge
+  // code (sphere, plane, mesh) are still distinguished per shape; the per-type
+  // packers below are called with local index 0 — their box/cylinder/capsule
+  // offsets keep the shape types disjoint within a block — and refine it for
+  // box/cylinder/capsule.
+  const std::uint64_t shapeBlock
+      = shapeIndex * kAvbdRigidWorldShapeFeatureStride;
+  endpoint.feature
+      = packAvbdContactFeatureId(AvbdContactFeatureKind::Body, shapeBlock);
+  if (shape.type == CollisionShapeType::Box && shape.halfExtents.allFinite()
+      && (shape.halfExtents.array() > 0.0).all()) {
     const std::uint64_t featureCode
-        = avbdBoxContactFeatureCode(localPoint, geometry->shape.halfExtents);
+        = avbdBoxContactFeatureCode(shapeLocalPoint, shape.halfExtents);
     endpoint.feature = packAvbdContactFeatureId(
         avbdBoxContactFeatureKind(featureCode),
-        packAvbdBoxContactFeatureId(/*boxIndex=*/0, featureCode));
+        shapeBlock + packAvbdBoxContactFeatureId(0, featureCode));
   } else if (
-      geometry->shape.type == CollisionShapeType::Cylinder
-      && std::isfinite(geometry->shape.radius) && geometry->shape.radius > 0.0
-      && geometry->shape.halfExtents.allFinite()
-      && geometry->shape.halfExtents.z() > 0.0) {
+      shape.type == CollisionShapeType::Cylinder && std::isfinite(shape.radius)
+      && shape.radius > 0.0 && shape.halfExtents.allFinite()
+      && shape.halfExtents.z() > 0.0) {
     const std::uint64_t featureCode = avbdCylinderContactFeatureCode(
-        localPoint, geometry->shape.radius, geometry->shape.halfExtents.z());
+        shapeLocalPoint, shape.radius, shape.halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCylinderContactFeatureKind(featureCode),
-        packAvbdCylinderContactFeatureId(/*cylinderIndex=*/0, featureCode));
+        shapeBlock + packAvbdCylinderContactFeatureId(0, featureCode));
   } else if (
-      geometry->shape.type == CollisionShapeType::Capsule
-      && std::isfinite(geometry->shape.radius) && geometry->shape.radius > 0.0
-      && geometry->shape.halfExtents.allFinite()
-      && geometry->shape.halfExtents.z() > 0.0) {
-    const std::uint64_t featureCode = avbdCapsuleContactFeatureCode(
-        localPoint, geometry->shape.halfExtents.z());
+      shape.type == CollisionShapeType::Capsule && std::isfinite(shape.radius)
+      && shape.radius > 0.0 && shape.halfExtents.allFinite()
+      && shape.halfExtents.z() > 0.0) {
+    const std::uint64_t featureCode
+        = avbdCapsuleContactFeatureCode(shapeLocalPoint, shape.halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCapsuleContactFeatureKind(featureCode),
-        packAvbdCapsuleContactFeatureId(/*capsuleIndex=*/0, featureCode));
+        shapeBlock + packAvbdCapsuleContactFeatureId(0, featureCode));
   }
   return endpoint;
 }
@@ -411,9 +442,17 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
     manifoldPoint.bodyA = bodyA;
     manifoldPoint.bodyB = bodyB;
     manifoldPoint.endpointA = detail::avbdRigidWorldContactEndpointId(
-        registry, entityA, contact.point);
+        registry,
+        entityA,
+        contact.shapeIndexA,
+        contact.localPointA,
+        contact.point);
     manifoldPoint.endpointB = detail::avbdRigidWorldContactEndpointId(
-        registry, entityB, contact.point);
+        registry,
+        entityB,
+        contact.shapeIndexB,
+        contact.localPointB,
+        contact.point);
     manifoldPoint.point = contact.point;
     manifoldPoint.normalFromAtoB = contact.normal;
     manifoldPoint.depth = contact.depth;

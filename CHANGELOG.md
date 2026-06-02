@@ -54,6 +54,28 @@
     readout, fixed-scale CPU/GPU history plots against the 60 FPS budget, the
     active backend, and frame counters, building on the existing GUI
     `ProfileAccumulator` without a separate timing system.
+  - Restyled the `dart::gui` Dear ImGui viewer with a cohesive modern dark
+    theme (VS Code/Blender/Unity-inspired) in place of the stock `StyleColorsDark`
+    look: cool neutral surfaces, a single restrained blue accent used for
+    selection/focus/active state, VS Code-style active-tab accent overlines,
+    flat hairline-bordered widgets with soft rounding, pill scrollbars, and more
+    breathable spacing. Centralized in `configureImGuiStyle` so every panel, the
+    perf HUD, and the docked regions share one look; colors are scale-independent
+    while metrics still scale with `--gui-scale`/DPI.
+  - Enabled GPU (CUDA) deformable solve in the Python demos: `pixi run -e cuda
+py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
+    deformable projected-Newton PSD projection to the GPU by default. New
+    backend-neutral dartpy functions
+    `simulation_experimental.is_accelerated_deformable_solve_available()`,
+    `set_accelerated_deformable_solve(enabled)`, and
+    `is_accelerated_deformable_solve_enabled()` expose the process-wide toggle.
+    The CUDA sidecar registers itself with a backend-neutral core control, so the
+    public API never names a device technology and is a safe no-op on non-CUDA
+    builds, leaving the default environment unchanged. The demo runner adds `--gpu`/`--no-gpu`
+    flags and a `DART_PY_DEMOS_GPU` env override (default `auto`: on when a CUDA
+    device is present), an in-viewer GPU toggle panel, and a startup status
+    line. The `config-py` build task forwards the experimental CUDA opt-in so
+    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -549,6 +571,19 @@
   - Documentation and onboarding improvements (developer guides, CI/testing workflows, IK and servo docs, RTD updates, and translations). ([#2059](https://github.com/dartsim/dart/pull/2059), [#2062](https://github.com/dartsim/dart/pull/2062), [#2089](https://github.com/dartsim/dart/pull/2089), [#2095](https://github.com/dartsim/dart/pull/2095), [#2112](https://github.com/dartsim/dart/pull/2112), [#2156](https://github.com/dartsim/dart/pull/2156), [#2171](https://github.com/dartsim/dart/pull/2171), [#2173](https://github.com/dartsim/dart/pull/2173), [#2174](https://github.com/dartsim/dart/pull/2174), [#2183](https://github.com/dartsim/dart/pull/2183), [#2191](https://github.com/dartsim/dart/pull/2191), [#2196](https://github.com/dartsim/dart/pull/2196), [#2199](https://github.com/dartsim/dart/pull/2199), [#2203](https://github.com/dartsim/dart/pull/2203), [#2213](https://github.com/dartsim/dart/pull/2213), [#2215](https://github.com/dartsim/dart/pull/2215), [#2302](https://github.com/dartsim/dart/pull/2302), [#2303](https://github.com/dartsim/dart/pull/2303), [#2312](https://github.com/dartsim/dart/pull/2312), [#2087](https://github.com/dartsim/dart/pull/2087))
   - Maintenance merges and stability fixes for release branches and simulation-experimental builds. ([#2145](https://github.com/dartsim/dart/pull/2145), [#2188](https://github.com/dartsim/dart/pull/2188), [#2301](https://github.com/dartsim/dart/pull/2301), [#2341](https://github.com/dartsim/dart/pull/2341), [#2357](https://github.com/dartsim/dart/pull/2357), [#2223](https://github.com/dartsim/dart/pull/2223), [#2228](https://github.com/dartsim/dart/pull/2228), [#2236](https://github.com/dartsim/dart/pull/2236))
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
+  - Fixed the Read the Docs dartpy autodoc stub fallback so the generated stubs
+    import cleanly. Class-body forward references emitted by `nanobind`
+    (snake_case method aliases placed before the method, enclosing-class-qualified
+    nested enum members, and aliases to module classes defined later) are now
+    reordered or rewritten, and runtime-only submodules such as
+    `dartpy.simulation_experimental.diff` are bound to placeholder modules. The
+    `dartpy`, `gui`, `simulation_experimental`, and `io` API reference pages no
+    longer fail to import with `NameError`.
+  - Made `clang-format` discovery resilient to toolchain upgrades by dropping a
+    stale `CLANG_FORMAT_EXECUTABLE` cache entry when the cached binary no longer
+    exists, so the `format`/`check-format` targets re-resolve against the current
+    toolchain instead of failing with a dangling dependency when the pinned
+    `clang-format` version changes under an existing build tree.
 
 - Simulation
   - Added opt-in analytic differentiable simulation to the experimental `World`

@@ -106,4 +106,49 @@ DeformablePsdBlockProjector deformablePsdBlockProjector()
   return g_projector.load(std::memory_order_acquire);
 }
 
+namespace {
+
+// The optional registered accelerator and whether it is currently installed.
+// The core never names or links a concrete backend; an accelerator sidecar
+// registers itself here. Set during setup, not concurrently with a solve.
+DeformablePsdAccelerator g_accelerator{};
+std::atomic<bool> g_accelerated{false};
+
+} // namespace
+
+//==============================================================================
+void setDeformablePsdAccelerator(const DeformablePsdAccelerator& accelerator)
+{
+  g_accelerator = accelerator;
+}
+
+//==============================================================================
+bool isDeformablePsdAccelerationAvailable()
+{
+  return g_accelerator.available != nullptr && g_accelerator.available();
+}
+
+//==============================================================================
+bool setDeformablePsdAccelerated(bool enabled)
+{
+  if (enabled && g_accelerator.available != nullptr && g_accelerator.available()
+      && g_accelerator.enable != nullptr && g_accelerator.enable()) {
+    g_accelerated.store(true, std::memory_order_release);
+    return true;
+  }
+  if (g_accelerator.disable != nullptr) {
+    g_accelerator.disable();
+  } else {
+    setDeformablePsdBlockProjector(nullptr);
+  }
+  g_accelerated.store(false, std::memory_order_release);
+  return false;
+}
+
+//==============================================================================
+bool isDeformablePsdAccelerated()
+{
+  return g_accelerated.load(std::memory_order_acquire);
+}
+
 } // namespace dart::simulation::experimental::compute
