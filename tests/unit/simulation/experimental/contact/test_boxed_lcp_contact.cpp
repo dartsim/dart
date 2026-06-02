@@ -43,10 +43,14 @@
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -54,6 +58,7 @@
 #include <cmath>
 
 namespace sx = dart::simulation::experimental;
+namespace dvbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
 
@@ -61,7 +66,8 @@ namespace {
 // Build a frictionless sphere-on-static-ground drop scene with the requested
 // contact solver method. Ground top face is at z = 0; the sphere (radius 0.5)
 // starts above it so it should settle with its center near z = 0.5.
-std::unique_ptr<sx::World> buildDropScene(sx::ContactSolverMethod method)
+std::unique_ptr<sx::World> buildDropScene(
+    sx::ContactSolverMethod method, double sphereHeight = 1.0)
 {
   sx::WorldOptions options;
   options.timeStep = 0.005;
@@ -78,7 +84,7 @@ std::unique_ptr<sx::World> buildDropScene(sx::ContactSolverMethod method)
   ground.setFriction(0.0);
 
   sx::RigidBodyOptions sphereOptions;
-  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, sphereHeight);
   auto sphere = world->addRigidBody("sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
   sphere.setFriction(0.0);
@@ -104,6 +110,188 @@ TEST(BoxedLcpContact, MethodSelectorReflectsConstruction)
   EXPECT_EQ(
       lcpWorld.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
   EXPECT_FALSE(lcpWorld.isDifferentiable());
+}
+
+//==============================================================================
+// The private AVBD contact path is an internal forward-solve opt-in. Its first
+// World slice projects a supported penetrating rigid-body contact into the
+// velocity that the existing position stage then applies.
+TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
+{
+  auto avbd = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
+  avbd->setGravity(Eigen::Vector3d::Zero());
+  auto sphere = avbd->getRigidBody("sphere");
+  ASSERT_TRUE(sphere.has_value());
+  avbd->getRegistry().emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      sphere->getEntity());
+  avbd->enterSimulationMode();
+
+  avbd->step();
+
+  EXPECT_GT(sphere->getTranslation().z(), 0.498);
+  EXPECT_LT(sphere->getTranslation().z(), 0.505);
+  EXPECT_GT(sphere->getLinearVelocity().z(), 0.0);
+}
+
+//==============================================================================
+// Fixed-joint rows are still private AVBD detail, but the contact-stage opt-in
+// should append them to the same rigid World projection when they link rigid
+// body entities.
+TEST(AvbdContact, FixedJointRowsParticipateInProjection)
+{
+  auto avbd = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
+  avbd->setGravity(Eigen::Vector3d::Zero());
+
+  auto ground = avbd->getRigidBody("ground");
+  auto sphere = avbd->getRigidBody("sphere");
+  ASSERT_TRUE(ground.has_value());
+  ASSERT_TRUE(sphere.has_value());
+
+  Eigen::Isometry3d spherePose = Eigen::Isometry3d::Identity();
+  spherePose.translation() = Eigen::Vector3d(0.25, 0.0, 0.49);
+  sphere->setTransform(spherePose);
+
+  auto& registry = avbd->getRegistry();
+  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      sphere->getEntity());
+
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = ground->getEntity();
+  joint.childLink = sphere->getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d(0.0, 0.0, 1.0);
+  config.localAnchorB = Eigen::Vector3d::Zero();
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  avbd->enterSimulationMode();
+  avbd->step();
+
+  EXPECT_LT(std::abs(sphere->getTranslation().x()), 0.05);
+  EXPECT_LT(sphere->getLinearVelocity().x(), 0.0);
+  EXPECT_GT(sphere->getTranslation().z(), 0.498);
+}
+
+//==============================================================================
+// Private fixed-joint rows should also project rigid bodies when no contact
+// rows are present, so the World path does not depend on contact activation.
+TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = world.getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x()), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// The no-contact fixed-joint path should also route angular rows through the
+// private AVBD projection instead of only correcting point-anchor drift.
+TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.orientation = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ());
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = world.getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  world.enterSimulationMode();
+  world.step();
+
+  const Eigen::AngleAxisd residual(link.getTransform().linear());
+  EXPECT_LT(std::abs(residual.angle()), 0.05);
+  EXPECT_LT(link.getAngularVelocity().z(), 0.0);
+  EXPECT_TRUE(
+      base.getTransform().linear().isApprox(Eigen::Matrix3d::Identity()));
+}
+
+//==============================================================================
+// Private fixed-joint rows should continue to project when an unrelated contact
+// falls back to the ordinary rigid contact solver.
+TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
+{
+  auto world = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto sphere = world->getRigidBody("sphere");
+  ASSERT_TRUE(sphere.has_value());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  baseOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto base = world->addRigidBody("joint_base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d(11.0, 0.0, 0.0);
+  auto link = world->addRigidBody("joint_link", linkOptions);
+
+  auto& registry = world->getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.startStiffness = 1e5;
+  config.maxStiffness = 1e6;
+
+  world->enterSimulationMode();
+  world->step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 10.0), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_GT(sphere->getTranslation().z(), 0.49);
 }
 
 //==============================================================================

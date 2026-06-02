@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/experimental/detail/deformable_vbd/avbd_constraint.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/avbd_row_inventory.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/vertex_block_kernel.hpp>
 
 #include <Eigen/Core>
@@ -40,6 +41,8 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <tuple>
+#include <utility>
 
 #include <cmath>
 #include <cstdint>
@@ -56,6 +59,116 @@ struct ContactPlane
 };
 
 inline constexpr std::uint64_t kAvbdBoxContactFeatureCodeCount = 27;
+inline constexpr std::uint64_t kAvbdCylinderContactFeatureCodeCount = 5;
+inline constexpr std::uint64_t kAvbdCapsuleContactFeatureCodeCount = 3;
+inline constexpr std::uint64_t kAvbdCylinderContactFeatureIdOffset
+    = kAvbdBoxContactFeatureCodeCount;
+inline constexpr std::uint64_t kAvbdCapsuleContactFeatureIdOffset
+    = kAvbdCylinderContactFeatureIdOffset
+      + kAvbdCylinderContactFeatureCodeCount;
+inline constexpr std::uint8_t kAvbdContactFeatureKindShift = 56;
+inline constexpr std::uint64_t kAvbdContactFeatureIndexMask
+    = (std::uint64_t{1} << kAvbdContactFeatureKindShift) - 1u;
+
+enum class AvbdContactFeatureKind : std::uint8_t
+{
+  Unknown = 0,
+  Vertex,
+  Edge,
+  Face,
+  Body,
+  Manifold,
+};
+
+struct AvbdContactEndpointId
+{
+  std::uint64_t object = 0;
+  std::uint64_t feature = 0;
+};
+
+//==============================================================================
+inline std::uint64_t packAvbdContactFeatureId(
+    AvbdContactFeatureKind kind, std::uint64_t localIndex)
+{
+  return (static_cast<std::uint64_t>(kind) << kAvbdContactFeatureKindShift)
+         | (localIndex & kAvbdContactFeatureIndexMask);
+}
+
+//==============================================================================
+inline AvbdContactFeatureKind avbdContactFeatureKind(std::uint64_t featureId)
+{
+  return static_cast<AvbdContactFeatureKind>(
+      featureId >> kAvbdContactFeatureKindShift);
+}
+
+//==============================================================================
+inline std::uint64_t avbdContactFeatureLocalIndex(std::uint64_t featureId)
+{
+  return featureId & kAvbdContactFeatureIndexMask;
+}
+
+//==============================================================================
+inline auto avbdContactEndpointTuple(const AvbdContactEndpointId& endpoint)
+{
+  return std::tuple{endpoint.object, endpoint.feature};
+}
+
+//==============================================================================
+inline bool operator<(
+    const AvbdContactEndpointId& lhs, const AvbdContactEndpointId& rhs)
+{
+  return avbdContactEndpointTuple(lhs) < avbdContactEndpointTuple(rhs);
+}
+
+//==============================================================================
+inline bool operator==(
+    const AvbdContactEndpointId& lhs, const AvbdContactEndpointId& rhs)
+{
+  return avbdContactEndpointTuple(lhs) == avbdContactEndpointTuple(rhs);
+}
+
+//==============================================================================
+inline std::pair<AvbdContactEndpointId, AvbdContactEndpointId>
+canonicalizeAvbdContactEndpoints(
+    AvbdContactEndpointId first, AvbdContactEndpointId second)
+{
+  if (second < first) {
+    return {second, first};
+  }
+  return {first, second};
+}
+
+//==============================================================================
+inline AvbdScalarRowKey makeAvbdEndpointPairRowKey(
+    AvbdScalarRowRole role,
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    std::uint32_t row = 0,
+    std::uint8_t axis = 0)
+{
+  const auto endpoints = canonicalizeAvbdContactEndpoints(first, second);
+
+  AvbdScalarRowKey key;
+  key.role = role;
+  key.objectA = endpoints.first.object;
+  key.objectB = endpoints.second.object;
+  key.featureA = endpoints.first.feature;
+  key.featureB = endpoints.second.feature;
+  key.row = row;
+  key.axis = axis;
+  return key;
+}
+
+//==============================================================================
+inline AvbdScalarRowKey makeAvbdContactManifoldRowKey(
+    AvbdScalarRowRole role,
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    std::uint32_t row = 0,
+    std::uint8_t axis = 0)
+{
+  return makeAvbdEndpointPairRowKey(role, first, second, row, axis);
+}
 
 //==============================================================================
 /// Encode the closest box surface feature for AVBD static-obstacle contact row
@@ -100,6 +213,117 @@ inline std::uint64_t packAvbdBoxContactFeatureId(
 {
   return boxIndex * kAvbdBoxContactFeatureCodeCount
          + (featureCode % kAvbdBoxContactFeatureCodeCount);
+}
+
+//==============================================================================
+inline AvbdContactFeatureKind avbdBoxContactFeatureKind(
+    std::uint64_t featureCode)
+{
+  std::uint64_t code = featureCode % kAvbdBoxContactFeatureCodeCount;
+  std::uint8_t boundaryAxes = 0;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (code % 3u != 1u) {
+      ++boundaryAxes;
+    }
+    code /= 3u;
+  }
+
+  if (boundaryAxes == 1u) {
+    return AvbdContactFeatureKind::Face;
+  }
+  if (boundaryAxes == 2u) {
+    return AvbdContactFeatureKind::Edge;
+  }
+  if (boundaryAxes == 3u) {
+    return AvbdContactFeatureKind::Vertex;
+  }
+  return AvbdContactFeatureKind::Body;
+}
+
+//==============================================================================
+/// Encode the closest z-axis cylinder surface feature for AVBD rigid contact
+/// row keys. Codes distinguish the side face, cap faces, and rim edges so warm
+/// starts persist across small same-feature motion but reset when contact moves
+/// between the barrel, caps, and rims.
+inline std::uint64_t avbdCylinderContactFeatureCode(
+    const Eigen::Vector3d& localPosition, double radius, double halfHeight)
+{
+  const double radialDistance
+      = std::hypot(localPosition.x(), localPosition.y());
+  const double absZ = std::abs(localPosition.z());
+  const bool outsideSide = radialDistance > radius;
+  const bool outsideCap = absZ > halfHeight;
+  const bool positiveZ = localPosition.z() >= 0.0;
+
+  if (outsideSide && outsideCap) {
+    return positiveZ ? 3u : 4u;
+  }
+  if (outsideCap) {
+    return positiveZ ? 1u : 2u;
+  }
+  if (outsideSide) {
+    return 0u;
+  }
+
+  const double sideMargin = radius - radialDistance;
+  const double capMargin = halfHeight - absZ;
+  if (capMargin < sideMargin) {
+    return positiveZ ? 1u : 2u;
+  }
+  return 0u;
+}
+
+//==============================================================================
+inline std::uint64_t packAvbdCylinderContactFeatureId(
+    std::uint64_t cylinderIndex, std::uint64_t featureCode)
+{
+  return kAvbdCylinderContactFeatureIdOffset
+         + cylinderIndex * kAvbdCylinderContactFeatureCodeCount
+         + (featureCode % kAvbdCylinderContactFeatureCodeCount);
+}
+
+//==============================================================================
+inline AvbdContactFeatureKind avbdCylinderContactFeatureKind(
+    std::uint64_t featureCode)
+{
+  const std::uint64_t code = featureCode % kAvbdCylinderContactFeatureCodeCount;
+  if (code == 3u || code == 4u) {
+    return AvbdContactFeatureKind::Edge;
+  }
+  return AvbdContactFeatureKind::Face;
+}
+
+//==============================================================================
+/// Encode the closest z-axis capsule surface patch for AVBD rigid contact row
+/// keys. Codes distinguish the cylindrical side from the positive and negative
+/// spherical caps so warm starts persist on the same patch and reset when the
+/// contact moves across the capsule seam.
+inline std::uint64_t avbdCapsuleContactFeatureCode(
+    const Eigen::Vector3d& localPosition, double halfHeight)
+{
+  if (localPosition.z() > halfHeight) {
+    return 1u;
+  }
+  if (localPosition.z() < -halfHeight) {
+    return 2u;
+  }
+  return 0u;
+}
+
+//==============================================================================
+inline std::uint64_t packAvbdCapsuleContactFeatureId(
+    std::uint64_t capsuleIndex, std::uint64_t featureCode)
+{
+  return kAvbdCapsuleContactFeatureIdOffset
+         + capsuleIndex * kAvbdCapsuleContactFeatureCodeCount
+         + (featureCode % kAvbdCapsuleContactFeatureCodeCount);
+}
+
+//==============================================================================
+inline AvbdContactFeatureKind avbdCapsuleContactFeatureKind(
+    std::uint64_t /*featureCode*/)
+{
+  return AvbdContactFeatureKind::Face;
 }
 
 /// One active AVBD half-space normal row for a deformable vertex. Row
@@ -162,6 +386,44 @@ inline AvbdScalarRowBounds avbdFrictionTangentBounds(double forceLimit)
   bounds.lower = -limit;
   bounds.upper = limit;
   return bounds;
+}
+
+//==============================================================================
+inline AvbdScalarRowDescriptor makeAvbdContactNormalRowDescriptor(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    double startStiffness,
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    std::uint32_t row = 0)
+{
+  AvbdScalarRowDescriptor descriptor;
+  descriptor.key = makeAvbdContactManifoldRowKey(
+      AvbdScalarRowRole::ContactNormal, first, second, row, /*axis=*/0);
+  descriptor.kind = AvbdScalarRowKind::HardConstraint;
+  descriptor.bounds = avbdContactNormalBounds();
+  descriptor.startStiffness = startStiffness;
+  descriptor.maxStiffness = maxStiffness;
+  return descriptor;
+}
+
+//==============================================================================
+inline AvbdScalarRowDescriptor makeAvbdContactFrictionRowDescriptor(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    std::uint8_t axis,
+    double forceLimit,
+    double startStiffness,
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    std::uint32_t row = 0)
+{
+  AvbdScalarRowDescriptor descriptor;
+  descriptor.key = makeAvbdContactManifoldRowKey(
+      AvbdScalarRowRole::FrictionTangent, first, second, row, axis);
+  descriptor.kind = AvbdScalarRowKind::HardConstraint;
+  descriptor.bounds = avbdFrictionTangentBounds(forceLimit);
+  descriptor.startStiffness = startStiffness;
+  descriptor.maxStiffness = maxStiffness;
+  return descriptor;
 }
 
 //==============================================================================

@@ -57,6 +57,7 @@ struct Link
 
   /// Fixed transform from the parent link frame to the joint frame.
   Eigen::Isometry3d transformFromParentToJoint = Eigen::Isometry3d::Identity();
+
   /// Fixed transform from the joint frame to this link frame.
   Eigen::Isometry3d transformFromParentJoint = Eigen::Isometry3d::Identity();
 
