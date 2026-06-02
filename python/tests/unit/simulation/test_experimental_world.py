@@ -2532,6 +2532,39 @@ def test_experimental_mesh_collision_shape_public_surface():
     assert body.collision_shape.type == sx.CollisionShapeType.MESH
 
 
+def test_experimental_mesh_collision_shape_drives_rigid_ipc_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    # A unit tetrahedron mesh authored from Python vertex/triangle lists.
+    vertices = [
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
+    ]
+    triangles = [
+        (0, 2, 1),
+        (0, 1, 3),
+        (0, 3, 2),
+        (1, 2, 3),
+    ]
+
+    body = world.add_rigid_body("tet", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.mesh(vertices, triangles))
+
+    assert body.has_collision_shape
+    assert body.collision_shape.type == sx.CollisionShapeType.MESH
+
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, 0.0)
+    body.force = (2.0, 0.0, 0.0)
+    world.enter_simulation_mode()
+    world.step()
+    assert body.transform[0, 3] > 0.0
+
+
 def test_experimental_cylinder_collision_shape_public_surface_and_query():
     sx = _simulation_experimental()
 
@@ -2551,6 +2584,58 @@ def test_experimental_cylinder_collision_shape_public_surface_and_query():
     for contact in contacts:
         names = {contact.body_a.name, contact.body_b.name}
         assert names == {"cylinder", "sphere"}
+
+
+def test_experimental_kinematic_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, -9.81)
+    world.time_step = 0.1
+
+    body = world.add_rigid_body("kinematic", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.box((0.2, 0.2, 0.2)))
+    body.linear_velocity = (1.0, 0.0, 0.0)
+
+    assert not body.is_kinematic
+    body.is_kinematic = True
+    assert body.is_kinematic
+    assert not body.is_static
+
+    world.enter_simulation_mode()
+    world.step()
+
+    # Advanced by its prescribed velocity (ignoring gravity), velocity preserved.
+    assert body.transform[0, 3] == pytest.approx(0.1, abs=1e-9)
+    assert body.transform[2, 3] == pytest.approx(0.0, abs=1e-9)
+    np.testing.assert_allclose(body.linear_velocity, [1.0, 0.0, 0.0], atol=1e-9)
+
+
+def test_experimental_static_setter_clears_kinematic_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, 0.0)
+    world.time_step = 0.1
+
+    body = world.add_rigid_body("body", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.box((0.2, 0.2, 0.2)))
+    body.linear_velocity = (1.0, 0.0, 0.0)
+    body.is_kinematic = True
+    assert body.is_kinematic
+    assert not body.is_static
+
+    body.is_static = True
+    assert body.is_static
+    assert not body.is_kinematic
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert body.transform[0, 3] == pytest.approx(0.0, abs=1e-9)
+    np.testing.assert_allclose(body.linear_velocity, [1.0, 0.0, 0.0], atol=1e-9)
 
 
 def test_experimental_collision_query_includes_links():

@@ -4,18 +4,19 @@
 
 - [x] Phase 0: establish the upstream rigid-ipc fixture, test, benchmark, and
       comparison manifest with validation tooling.
-- [ ] Phase 1: fixture/import surface for rigid meshes, fixed DOFs, kinematic
+- [x] Phase 1: fixture/import surface for rigid meshes, fixed DOFs, kinematic
       controls, forces, gravity, friction, restitution, and diagnostics.
   - [x] Phase 1a: internal JSON fixture reader for the first mesh-path subset
         with explicit unsupported-field diagnostics.
-  - [ ] Phase 1b: turn loaded fixture records into DART-native replay state
+  - [x] Phase 1b: turn loaded fixture records into DART-native replay state
         with mesh resolution, fixture-row ownership, and runtime examples.
     - [x] First internal replay path populates an experimental `World` with
           fixture timestep, gravity, rigid body poses, velocities, loads,
           material coefficients, and body-row metadata.
-    - [x] Attach supported OBJ, OFF, rigid-ipc MSH, binary STL, and ASCII STL
-          mesh assets to DART-native mesh collision shapes and prove replayed
-          mesh bodies participate in `World::collide()`.
+    - [x] Attach supported OBJ, OFF, rigid-ipc MSH, binary STL, ASCII STL, and
+          legacy VTK unstructured-grid surface mesh assets to DART-native mesh
+          collision shapes and prove replayed mesh bodies participate in
+          `World::collide()`.
     - [x] Preserve inline `vertices`/`edges`/`polygons` fixture records and
           replay polygonal inline geometry as native-backed mesh collision
           shapes.
@@ -31,9 +32,31 @@
           experimental `World` through the existing rigid-body integration
           pipeline, proving fixture replay remains a population bridge and does
           not select an IPC solver.
-    - [ ] Add a runtime fixture example and cover remaining comparison
-          script commands and mesh formats beyond OBJ/OFF/MSH/STL/inline
-          polygons.
+    - [x] Add the first opt-in IPC runtime replay regression that steps a
+          fixture-populated `World` through `RigidIpcContactStage` and proves
+          replayed friction metadata affects lagged rigid IPC contact behavior.
+    - [x] Add the first explicit stage-policy bridge for parsed solver
+          metadata: `RigidIpcContactStageOptions` can carry fixture/comparison
+          `dHat`, `epsv`/static-friction speed, velocity tolerance, and
+          lagged-friction iteration settings into the opt-in runtime stage.
+          The reusable internal `applyRigidIpcFixtureStageOptions(...)` bridge
+          applies only metadata with an exact runtime-stage meaning, and fixture
+          replay regressions cover those settings.
+    - [x] Bridge parsed kinematic fixture bodies into runtime kinematic bodies.
+          Fixture replay now calls `RigidBody::setKinematic(true)` for
+          `type = kinematic` / prescribed-motion rows, and a replay regression
+          proves `RigidIpcContactStage` advances the parsed linear and angular
+          velocity instead of holding the body static.
+    - [x] Audit the upstream IPC comparison script command surface at the
+          audited commit and keep the importer covering all commands/body-row
+          options present in that corpus.
+    - [x] Cover the remaining audited upstream mesh extension beyond
+          OBJ/OFF/MSH/STL/inline polygons: legacy `.vtk` unstructured-grid
+          surface meshes now replay as native-backed mesh collision shapes.
+    - [x] Add a reusable internal one-step runtime fixture helper that
+          demonstrates the owned load, replay, stage-policy, and opt-in IPC
+          stepping path without promoting the internal fixture importer as a
+          public solver registry.
 - [ ] Phase 2: rigid curved-trajectory CCD and minimum-separation tests.
   - [x] Phase 2a: internal direct CCD test-data reader for upstream edge-edge
         and face-vertex rows.
@@ -54,8 +77,17 @@
           regressions.
     - [x] Route the first direct CCD evaluator rows through those subdivision
           queries with the audited reference TOI tolerance.
+    - [x] Add deterministic generated point-edge TOI regressions that synthesize
+          linear rigid CCD rows from expected time-of-impact and edge-coordinate
+          parameters, verify the residual equations, recover the interval-query
+          impact times, and preserve a parallel miss row.
     - [x] Evaluate the first audited root direct-CCD rows as full-step misses,
           matching the current DART distance query for those rows.
+    - [x] Add audited kinematic CCD row regressions that preserve the
+          upstream guard against zero-time hits when the row starts separated.
+    - [x] Add tracked wrecking-ball CCD row regressions that mirror the upstream
+          conservative-TOI check: if DART reports a TOI, replaying only through
+          that bound does not report another hit.
     - [ ] Match those rows with the audited reference's interval-root rigid CCD
           semantics across the corpus.
 - [ ] Phase 3: rigid barrier objective, line search, projected Newton, sparse
@@ -138,6 +170,134 @@
         opt-in stage now exposes a max-iteration knob for custom pipelines and
         tests, reports whether a result was applied, and skips non-converged
         solve results instead of writing partial poses back silently.
+  - [x] Phase 3r: add kinematic (prescribed-motion) rigid bodies. A
+        `KinematicBodyTag` body advances by its prescribed linear/angular
+        velocity each step and acts as a moving obstacle: the barrier/dynamics
+        see it at its end pose, lagged friction uses its start->end motion so it
+        drags contacting dynamic bodies, and the conservative CCD line search
+        sweeps its start->end motion so a moving obstacle stays anti-tunneling
+        safe. `RigidBody::setKinematic()` selects it; the no-kinematic path is
+        unchanged (all solver overrides are gated). Covered by prescribed-velocity
+        advance, conveyor friction-drag (Fig. 13 mechanism, linear form), and
+        moving-wall anti-tunneling regressions. The tag is runtime-only (not yet
+        serialized); a Python binding and a turntable demo are follow-ups.
+  - [x] Phase 3s: add sufficient-decrease backtracking to the internal
+        projected-Newton solve. Feasible Newton steps now run through an
+        Armijo-style objective check after conservative CCD scaling. The solve
+        records backtracking diagnostics (also surfaced through the opt-in
+        runtime stage stats) and, when lagged friction or active-set changes make
+        strict Armijo too tight for the finite budget, accepts the best finite
+        objective-decreasing candidate instead of treating the step as an unsafe
+        line-search block.
+  - [x] Phase 3t: harden dense exact-contact resting plateaus in the runtime
+        stage. Adaptive kappa now retries a zero-step line-search block with a
+        higher stiffness, the opt-in stage carries raised stiffness forward
+        across runtime steps while contacts remain active, and an exact
+        zero-progress resting-contact plateau writes back the unchanged safe pose
+        instead of surfacing as a persistent failed solve. Covered by the
+        five-voussoir Fig. 11 arch regression.
+  - [x] Add audited 25-stone arch fixture coverage through the opt-in runtime
+        stage. A generated 25-voussoir frictional arch stands on a fixed
+        support, activates rigid IPC contact, stays finite, preserves support
+        clearance, and keeps the keystone from collapsing. Larger arch rows and
+        the Fig. 11 visual alias remain planned.
+  - [x] Add audited 3D card-tent fixture coverage through the opt-in runtime
+        stage. Two inclined card bodies stand on a fixed frictional support,
+        activate rigid IPC contact, stay finite, preserve upright height, and
+        report no meaningful native overlap. Larger card-house rows remain
+        planned.
+  - [x] Phase 3u: add the first audited high-speed tunneling fixture coverage
+        through the opt-in runtime stage. A rotated cube with a large time-step
+        velocity toward a fixed wall remains intersection-free, and the stage
+        reports a conservative CCD line-search hit.
+  - [x] Add the first audited tessellated-plane fixture coverage through the
+        opt-in runtime stage. A cube falls onto a fixed two-triangle mesh plane,
+        activates contact, stays finite, and preserves nonnegative clearance.
+  - [x] Add audited 8K tessellated-plane fixture coverage through the opt-in
+        runtime stage. A cube starts near a fixed 8192-triangle mesh plane,
+        activates rigid IPC contact, stays finite, and preserves nonnegative
+        clearance.
+  - [x] Add audited two-triangle tet fixture coverage through the opt-in runtime
+        stage. A tetrahedral corner falls onto a fixed two-triangle mesh plane,
+        activates rigid IPC contact, stays finite, and reports no meaningful
+        native overlap after each step.
+  - [x] Add audited Erleben cliff-edges fixture coverage through the opt-in
+        runtime stage. A cube falls onto a fixed cliff-edge mesh, activates
+        rigid IPC contact, stays finite, and reports no meaningful native
+        overlap after each step.
+  - [x] Add audited Erleben internal-edges fixture coverage through the opt-in
+        runtime stage. A cube falls onto a fixed internal-edge mesh, activates
+        rigid IPC contact, stays finite, and reports no meaningful native
+        overlap after each step.
+  - [x] Add audited Erleben sliding-spike fixture coverage through the opt-in
+        runtime stage. An inverted spike slides across a fixed plane, activates
+        rigid IPC contact, stays finite, advances laterally, and reports no
+        meaningful native overlap after each step.
+  - [x] Add audited Erleben sliding-wedge fixture coverage through the opt-in
+        runtime stage. An inverted wedge slides across a fixed plane, activates
+        rigid IPC contact, stays finite, advances laterally, and reports no
+        meaningful native overlap after each step.
+  - [x] Add audited Erleben spikes fixture coverage through the opt-in runtime
+        stage. An inverted spike rests on a fixed upright spike, activates rigid
+        IPC contact, stays finite, and reports no meaningful native overlap
+        after each step.
+  - [x] Add audited Erleben wedges fixture coverage through the opt-in runtime
+        stage. An inverted wedge rests on a fixed upright wedge, activates rigid
+        IPC contact, stays finite, and reports no meaningful native overlap
+        after each step.
+  - [x] Add audited Erleben spike-and-wedge fixture coverage through the opt-in
+        runtime stage. An inverted spike rests on a fixed upright wedge,
+        activates rigid IPC contact, stays finite, and reports no meaningful
+        native overlap after each step.
+  - [x] Add audited Erleben spike-in-crack fixture coverage through the opt-in
+        runtime stage. An inverted spike advances through a fixed crack mesh,
+        activates rigid IPC contact, stays finite, and reports no meaningful
+        native overlap after each step.
+  - [x] Add audited Erleben wedge-in-crack fixture coverage through the opt-in
+        runtime stage. An inverted wedge advances through a fixed crack mesh,
+        activates rigid IPC contact, stays finite, and reports no meaningful
+        native overlap after each step.
+  - [x] Add audited Erleben spike-in-hole fixture coverage through the opt-in
+        runtime stage. An inverted spike advances through a fixed hole mesh,
+        activates rigid IPC contact, stays finite, and reports no meaningful
+        native overlap after each step.
+  - [x] Add audited large-mass-ratio fixture coverage through the opt-in runtime
+        stage. A large heavy cube closes into a small cube resting above a fixed
+        mesh plane while both contacts preserve nonnegative clearance and finite
+        state.
+  - [x] Add audited five-cubes fixture coverage through the opt-in runtime
+        stage. Five aligned cubes fall under gravity onto a fixed support,
+        activate stacked rigid IPC contacts, stay finite, and preserve
+        nonnegative support and cube-cube clearance.
+  - [x] Add audited cube-falling-on-edge fixture coverage through the opt-in
+        runtime stage. A tilted cube falls onto a separate tilted fixed box
+        edge, activates rigid IPC contact, stays finite, and reports no
+        meaningful native overlap after each step.
+  - [x] Add audited face-vertex fixture coverage through the opt-in runtime
+        stage. A tetrahedral pyramid face falls toward a separate fixed
+        tetrahedral pyramid vertex, activates rigid IPC contact, stays finite,
+        and reports no meaningful native overlap after each step.
+  - [x] Add audited vertex-face fixture coverage through the opt-in runtime
+        stage. A tetrahedral pyramid vertex falls toward a separate fixed
+        tetrahedral pyramid face, activates rigid IPC contact, stays finite,
+        and reports no meaningful native overlap after each step.
+  - [x] Add audited vertex-vertex fixture coverage through the opt-in runtime
+        stage. A tetrahedral corner vertex falls toward a separate fixed
+        tetrahedral corner vertex above a fixed support plane, activates rigid
+        IPC contact, stays finite, and reports no meaningful native overlap
+        after each step.
+  - [x] Add audited tet-corner fixture coverage through the opt-in runtime
+        stage. A tetrahedral corner falls into a fixed three-wall and
+        support-plane corner, activates rigid IPC contact, stays finite, and
+        reports no meaningful native overlap after each step.
+  - [x] Phase 3v: add the first audited no-contact rotation fixture coverage
+        through the opt-in runtime stage. Free rotating cube and scaled-sphere /
+        ellipsoid rows advance orientation under zero gravity, stay finite, and
+        do not translate. A no-contact spinning cube over a near plane preserves
+        clearance while rotating. A no-contact Dzhanibekov wing-nut-like row
+        advances safely from an initially tilted high-angular-velocity state. A
+        no-contact torque row gains angular velocity about the applied torque
+        axis without translating.
   - [ ] Broaden remaining runtime geometry corpus coverage, convergence
         criteria, robust IPC contact behavior across corpus scenes, and
         production-ready default activation criteria.
@@ -163,15 +323,235 @@
         through the opt-in stage. A differential `World` regression brakes a
         tangential slide at an activated mesh contact relative to the
         frictionless solve, and reports active friction constraints/passes.
-  - [ ] Extend friction into broader runtime fixture behavior, corpus coverage,
-        and production convergence criteria.
+  - [x] Phase 4e: prove replayed fixture friction metadata participates in
+        opt-in rigid IPC runtime behavior. A differential fixture-replay
+        regression uses identical inline polygon scenes with zero and positive
+        fixture friction, then verifies the frictional IPC step brakes
+        tangential slide and reports active friction passes.
+  - [x] Phase 4f: make the opt-in runtime stage's lagged-friction pass count
+        configurable. `RigidIpcContactStageOptions::frictionIterations` carries
+        parsed fixture/comparison metadata into the projected-Newton solve, and
+        zero iterations disable runtime friction rows while preserving barrier
+        contact behavior.
+  - [x] Phase 4g: make the opt-in runtime stage's lagged-friction static-speed
+        and convergence-tolerance policy configurable. `RigidIpcContactStageOptions`
+        now carries fixture/comparison `epsv`/`static_friction_speed_bound` and
+        velocity-tolerance metadata into the projected-Newton solve; replay
+        coverage proves zero static-friction speed disables lagged friction and
+        a high tolerance stops outer friction passes early.
+  - [x] Add first exact upstream friction-threshold fixture coverage for the
+        below-threshold Fig. 18 row. The DART paper experiment now checks
+        `mu=0.49` against `tan(theta)=0.5`, preserving intersection-free
+        down-slope sliding for both the 3D friction fixture row and its paper
+        alias. The at-threshold `mu=0.5` rows remain planned until the solver
+        has matching stick evidence.
+  - [x] Add exact upstream high-friction incline coverage for the 3D friction
+        fixture row with `mu=1.0`, preserving intersection-free rest/stick
+        behavior while keeping the at-threshold `mu=0.5` row open.
+  - [x] Add exact upstream 3D sliding friction fixture coverage for
+        `fixtures/3D/friction/sliding.json`. The DART paper experiment now
+        compares the `mu=0.05` sliding cube against a frictionless run and
+        proves observable braking without penetration.
+  - [x] Add audited 3D rolling-cone friction fixture coverage for
+        `fixtures/3D/friction/rolling/cone.json`. The DART paper experiment now
+        advances a tilted cone over a fixed frictional plane, activates rigid
+        IPC contact, preserves clearance, and develops angular velocity. The
+        oloid row remains planned.
+  - [x] Add exact upstream 3D spolling-coin friction fixture coverage for
+        `fixtures/3D/friction/spolling-coin.json`. The DART paper experiment
+        proves the spinning disk remains intersection-free while contact
+        friction dissipates angular velocity. The Fig. 7 paper visual alias
+        remains planned until it has matching example and headless visual
+        evidence.
+  - [x] Add exact upstream low/moderate/high-friction turntable fixture
+        coverage for
+        `fixtures/3D/friction/turntable/turntable-mu=0.1.json`,
+        `fixtures/3D/friction/turntable/turntable-mu=0.5.json`, and
+        `fixtures/3D/friction/turntable/turntable-mu=1.0.json`. The DART paper
+        experiment uses a rotating kinematic cylinder and proves contact
+        friction carries the cube tangentially without penetration. The `mu=0`
+        turntable row remains planned.
+  - [ ] Extend friction into broader corpus coverage and production convergence
+        criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
       experimental `World` without exposing solver registries.
 - [ ] Phase 5b: extend solver selection toward persisted scene policy,
       diagnostics, examples, and mixed rigid/deformable coupling.
+  - [x] Add the first explicit opt-in stage options for max iterations, barrier
+        activation distance, lagged-friction iterations, static-friction speed,
+        and friction convergence tolerance without exposing a solver registry.
+  - [x] Add an internal fixture-to-stage-options bridge for replay drivers so
+        parsed solver metadata has one owned path into the opt-in IPC stage
+        without creating a public registry.
+  - [x] Bridge fixture-level kinematic body policy into the runtime body tags
+        consumed by the opt-in IPC stage, preserving parsed prescribed-motion
+        intent without adding a public solver registry.
+  - [x] Add a reusable internal one-step fixture replay helper for manifest
+        drivers that need to populate a replay world, apply parsed stage policy,
+        execute one opt-in IPC stage step, and collect solver diagnostics.
+  - [ ] Continue toward persisted scene policy, diagnostics, examples, and
+        mixed rigid/deformable coupling.
 - [ ] Phase 6: complete the manifest rows as DART-native tests, examples,
       benchmarks, comparison packets, CPU/GPU evidence, and headless Filament
       visuals.
+  - [x] Mark the first audited root direct-CCD data rows
+        (`tests/data/ccd-test-000..003.json`) as implemented in the generated
+        manifest after their hermetic DART load/evaluator regressions landed.
+  - [x] Mark the audited kinematic direct-CCD rows
+        (`tests/data/kinematic/ccd-test-000..012.json`) as implemented in the
+        generated manifest after their zero-time-hit guard regression landed.
+  - [x] Mark the tracked wrecking-ball direct-CCD rows
+        (`tests/data/wrecking-ball/ccd-test-000..385.json`) as implemented in
+        the generated manifest after their conservative-TOI regression landed.
+  - [x] Reclassify the remaining large rigid-body hash-grid data rows
+        (`tests/data/large-rb-hashgrid/large-rb-hashgrid-000..001.json`) as
+        broad-phase benchmark rows instead of direct CCD TOI rows, then mark
+        them implemented after DART-owned benchmark coverage landed. The
+        benchmark computes conservative swept scene bounds from compact audited
+        per-body records, verifies those bounds contain the upstream exact scene
+        bounds, and emits profile counters.
+  - [x] Mark the audited upstream barrier derivative source row
+        (`tests/barrier/test_barriers.cpp`) and rigid-body time-of-impact source
+        row (`tests/ccd/test_rigid_body_time_of_impact.cpp`) as implemented
+        after matching DART barrier-kernel, reduced rigid-barrier, and
+        `RigidIpcCcdCase` regressions were verified.
+  - [x] Mark the audited collision-generator, edge-vertex CCD, and generic TOI
+        source rows (`tests/ccd/collision_generator.cpp`,
+        `tests/ccd/collision_generator.hpp`,
+        `tests/ccd/test_edge_vertex_ccd.cpp`, and
+        `tests/ccd/test_time_of_impact.cpp`) as implemented after deterministic
+        generated point-edge TOI coverage landed.
+  - [x] Mark the audited rigid-body hash-grid source row
+        (`tests/ccd/test_rigid_body_hash_grid.cpp`) as implemented through
+        DART-owned large hash-grid benchmark evidence.
+  - [x] Mark the audited generic hash-grid source row
+        (`tests/ccd/test_hash_grid.cpp`) as implemented after DART-owned swept
+        point, edge, and triangle broad-phase candidate pairs matched brute
+        force.
+  - [x] Mark the audited below-threshold high-school-physics friction fixture
+        rows (`fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json`
+        and the Fig. 18 paper alias) as implemented after exact
+        `RigidIpcPaperExperiments` coverage landed. The `mu=0.5` threshold rows
+        remain planned.
+  - [x] Mark the audited high-friction high-school-physics fixture row
+        (`fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=1.json`)
+        as implemented after exact `RigidIpcPaperExperiments` stick coverage
+        landed.
+  - [x] Mark the audited 3D sliding friction fixture row
+        (`fixtures/3D/friction/sliding.json`) as implemented after exact
+        differential sliding-cube coverage landed.
+  - [x] Mark the audited 3D rolling-cone friction fixture row
+        (`fixtures/3D/friction/rolling/cone.json`) as implemented after
+        DART-owned rolling-cone runtime contact coverage landed. The oloid row
+        remains planned.
+  - [x] Mark the audited 25-stone 3D arch fixture row
+        (`fixtures/3D/friction/arch/arch-25-stones.json`) as implemented after
+        DART-owned 25-voussoir runtime contact coverage landed. Larger arch
+        rows and the Fig. 11 visual alias remain planned.
+  - [x] Mark the audited 3D card-tent fixture row
+        (`fixtures/3D/friction/card-house/card-tent.json`) as implemented after
+        DART-owned two-card tent runtime contact coverage landed. Larger
+        card-house rows remain planned.
+  - [x] Mark the audited 3D spolling-coin friction fixture row
+        (`fixtures/3D/friction/spolling-coin.json`) as implemented after exact
+        spinning-disk friction coverage landed. The Fig. 7 paper visual alias
+        remains planned.
+  - [x] Mark the audited low/moderate/high-friction 3D turntable fixture rows
+        (`fixtures/3D/friction/turntable/turntable-mu=0.1.json`,
+        `fixtures/3D/friction/turntable/turntable-mu=0.5.json`, and
+        `fixtures/3D/friction/turntable/turntable-mu=1.0.json`) as implemented
+        after exact rotating-cylinder friction coverage landed. The `mu=0` row
+        and Fig. 13 paper visual aliases remain planned.
+  - [x] Mark the audited 3D tunneling unit-test fixture row
+        (`fixtures/3D/unit-tests/tunneling.json`) as implemented after
+        high-speed cube-vs-wall conservative line-search coverage landed.
+  - [x] Mark the audited 3D two-triangle tessellated-plane unit-test fixture row
+        (`fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`) as
+        implemented after cube-on-two-triangle-plane runtime coverage landed.
+  - [x] Mark the audited 3D 8K tessellated-plane unit-test fixture row
+        (`fixtures/3D/unit-tests/tessellated-plane/8K-triangles.json`) as
+        implemented after 8192-triangle mesh-plane runtime coverage landed.
+  - [x] Mark the audited 3D two-triangle tet unit-test fixture row
+        (`fixtures/3D/unit-tests/tessellated-plane/two-triangles-tet.json`) as
+        implemented after tet-corner-on-two-triangle-plane runtime overlap
+        coverage landed.
+  - [x] Mark the audited Erleben cliff-edges unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/cliff-edges.json`) as implemented after
+        cube-on-Erleben-cliff runtime overlap coverage landed.
+  - [x] Mark the audited Erleben internal-edges unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/internal-edges.json`) as implemented
+        after cube-on-Erleben-internal-edges runtime overlap coverage landed.
+  - [x] Mark the audited Erleben sliding-spike unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/sliding-spike.json`) as implemented
+        after sliding-spike-on-plane runtime overlap coverage landed.
+  - [x] Mark the audited Erleben sliding-wedge unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/sliding-wedge.json`) as implemented
+        after sliding-wedge-on-plane runtime overlap coverage landed.
+  - [x] Mark the audited Erleben spikes unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/spikes.json`) as implemented after
+        spike-on-spike runtime overlap coverage landed.
+  - [x] Mark the audited Erleben wedges unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/wedges.json`) as implemented after
+        wedge-on-wedge runtime overlap coverage landed.
+  - [x] Mark the audited Erleben spike-and-wedge unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/spike-and-wedge.json`) as implemented
+        after spike-on-wedge runtime overlap coverage landed.
+  - [x] Mark the audited Erleben spike-in-crack unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/spike-in-crack.json`) as implemented
+        after spike-in-crack runtime overlap coverage landed.
+  - [x] Mark the audited Erleben wedge-in-crack unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/wedge-in-crack.json`) as implemented
+        after wedge-in-crack runtime overlap coverage landed.
+  - [x] Mark the audited Erleben spike-in-hole unit-test fixture row
+        (`fixtures/3D/unit-tests/erleben/spike-in-hole.json`) as implemented
+        after spike-in-hole runtime overlap coverage landed.
+  - [x] Mark the audited 3D large-mass-ratio unit-test fixture row
+        (`fixtures/3D/unit-tests/large-mass-ratio.json`) and its non-visual
+        Fig. 16 paper-unit alias as implemented after large-cube/small-cube
+        runtime clearance coverage landed.
+  - [x] Mark the audited 3D five-cubes unit-test fixture row
+        (`fixtures/3D/unit-tests/5-cubes.json`) and its non-visual Fig. 16
+        paper-unit alias as implemented after stacked-box runtime clearance
+        coverage landed.
+  - [x] Mark the audited 3D cube-falling-on-edge unit-test fixture row
+        (`fixtures/3D/unit-tests/cube-falling-on-edge.json`) as implemented
+        after tilted-cube-on-edge runtime overlap coverage landed.
+  - [x] Mark the audited 3D face-vertex unit-test fixture row
+        (`fixtures/3D/unit-tests/face-vertex.json`) and its non-visual Fig. 16
+        paper-unit alias as implemented after tetrahedral face-vertex runtime
+        overlap coverage landed.
+  - [x] Mark the audited 3D vertex-face unit-test fixture row
+        (`fixtures/3D/unit-tests/vertex-face.json`) and its non-visual Fig. 16
+        paper-unit alias as implemented after tetrahedral vertex-face runtime
+        overlap coverage landed.
+  - [x] Mark the audited 3D vertex-vertex unit-test fixture row
+        (`fixtures/3D/unit-tests/vertex-vertex.json`) and its non-visual Fig. 16
+        paper-unit alias as implemented after tetrahedral vertex-vertex runtime
+        overlap coverage landed.
+  - [x] Mark the audited 3D tet-corner unit-test fixture row
+        (`fixtures/3D/unit-tests/tet-corner.json`) and its non-visual Fig. 16
+        paper-unit alias as implemented after tetrahedral corner-in-walls
+        runtime overlap coverage landed.
+  - [x] Mark the audited 3D rotating-cube unit-test fixture row
+        (`fixtures/3D/unit-tests/rotation/rotating-cube.json`) as implemented
+        after no-contact rotating-cube runtime coverage landed.
+  - [x] Mark the audited 3D spinning-cube-over-plane unit-test fixture row
+        (`fixtures/3D/unit-tests/spinning-cube-over-plane.json`) as implemented
+        after no-contact near-plane spinning-cube runtime coverage landed.
+  - [x] Mark the audited 3D scaled-sphere and ellipsoid rotation unit-test
+        fixture rows (`fixtures/3D/unit-tests/rotation/rotating-sphere.json`,
+        `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-major.json`,
+        `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-intermediate.json`,
+        and `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-minor.json`) as
+        implemented after no-contact ellipsoid runtime coverage landed.
+  - [x] Mark the audited 3D torque rotation unit-test fixture row
+        (`fixtures/3D/unit-tests/rotation/torque-test.json`) as implemented
+        after no-contact torque runtime coverage landed.
+  - [x] Mark the audited 3D Dzhanibekov rotation unit-test fixture row
+        (`fixtures/3D/unit-tests/rotation/dzhanibekov.json`) as implemented
+        after no-contact wing-nut runtime coverage landed.
+  - [ ] Continue retiring planned rows only when DART has matching tests,
+        examples, benchmarks, comparison packets, and evidence.
 
 ## Goal
 
@@ -247,8 +627,84 @@ DART-owned implementation.
   face-vertex expected-TOI rows, and the first parameter-box subdivision queries
   find those expected contacts within the reference TOI tolerance. The direct
   CCD row evaluator now routes those first rows through the subdivision queries,
-  while corpus-scale evaluator parity remains open until rigorous interval
-  arithmetic and reference corpus semantics land.
+  does not surface zero-time hits for the audited kinematic rows when they start
+  separated, and the manifest generator now marks the four root rows plus all
+  audited kinematic rows implemented. The tracked wrecking-ball direct-CCD
+  corpus now preserves the upstream conservative-TOI check: when DART reports a
+  hit, a replay truncated at that reported bound does not report another hit.
+  The remaining large rigid-body hash-grid data rows are not direct CCD TOI
+  cases; the manifest now marks them implemented through a DART-owned benchmark
+  that computes conservative swept scene bounds from compact per-body records
+  and verifies those bounds contain the upstream exact scene bounds.
+  The upstream barrier derivative and rigid-body TOI source rows are also marked
+  implemented through DART's barrier-kernel/reduced-rigid-barrier and
+  `RigidIpcCcdCase` regression suites. The collision-generator, edge-vertex
+  CCD, and generic TOI source rows are marked implemented through deterministic
+  generated point-edge TOI coverage plus upstream-style rigid TOI rows. The
+  generic hash-grid source row is marked implemented through swept primitive
+  broad-phase candidate-pair parity against brute force.
+  The below-threshold Fig. 18 high-school-physics friction fixture row
+  (`mu=0.49`) and its paper alias are now marked implemented through exact
+  `RigidIpcPaperExperiments` coverage, and the high-friction `mu=1.0` row is
+  marked implemented through exact stick coverage. The 3D sliding friction row
+  is also marked implemented through differential `mu=0.05` sliding-cube
+  coverage. The 3D rolling-cone fixture row is marked implemented through
+  tilted-cone frictional contact coverage, while the oloid row remains planned.
+  The 25-stone arch fixture row is marked implemented through 25-voussoir
+  frictional arch runtime coverage, while larger arch rows and the Fig. 11
+  visual alias remain planned.
+  The 3D card-tent fixture row is marked implemented through two-card
+  frictional support coverage, while larger card-house rows remain planned.
+  The 3D spolling-coin friction fixture row is marked implemented through Fig.
+  7 spin-damping and intersection-free coverage, while its paper-figure visual
+  alias remains planned until DART has matching example and headless visual
+  evidence. The low/moderate/high-friction `mu=0.1`, `mu=0.5`, and `mu=1.0`
+  turntable fixture rows are marked implemented through
+  rotating-cylinder drag coverage, while the `mu=0` row and Fig. 13 visual
+  aliases remain planned. The 3D tunneling unit-test fixture row is marked
+  implemented through high-speed cube-vs-wall runtime coverage that reports a
+  conservative CCD line-search hit without penetration. The rotating-cube and
+  scaled-sphere/ellipsoid unit-test fixture rows are marked implemented through
+  no-contact orientation integration coverage. The five-cubes unit-test fixture
+  row and its non-visual Fig. 16 paper-unit alias are marked implemented
+  through stacked-box runtime clearance coverage. The two-triangle tet fixture
+  row is marked implemented through tet-corner-on-two-triangle-plane runtime
+  overlap coverage. The 8K tessellated-plane row is marked implemented through
+  generated 8192-triangle mesh-plane runtime contact coverage. The Erleben
+  cliff-edges and internal-edges fixture rows are marked implemented through
+  cube-on-Erleben-mesh runtime overlap coverage. The Erleben sliding-spike and
+  sliding-wedge fixture rows are marked implemented through
+  sliding-body-on-plane runtime overlap coverage. The Erleben spikes
+  fixture row is marked implemented through spike-on-spike runtime overlap
+  coverage, and the Erleben wedges fixture row is marked implemented through
+  wedge-on-wedge runtime overlap coverage. The Erleben spike-and-wedge fixture
+  row is marked implemented through spike-on-wedge runtime overlap coverage.
+  The Erleben spike-in-crack fixture row is marked implemented through
+  spike-in-crack runtime overlap coverage, and the Erleben wedge-in-crack
+  fixture row is marked implemented through wedge-in-crack runtime overlap
+  coverage. The Erleben spike-in-hole fixture row is marked implemented through
+  spike-in-hole runtime overlap coverage, completing the current audited Erleben
+  P0 unit-test fixture slice. The cube-falling-on-edge fixture row is marked
+  implemented through tilted-cube-on-edge runtime overlap coverage. The
+  face-vertex unit-test fixture row and its non-visual Fig. 16 paper-unit alias
+  are marked implemented through tetrahedral face-vertex
+  runtime overlap coverage. The vertex-face unit-test fixture row and its
+  non-visual Fig. 16 paper-unit alias are marked implemented through
+  tetrahedral vertex-face runtime overlap coverage. The vertex-vertex unit-test
+  fixture row and its non-visual Fig. 16 paper-unit alias are marked implemented
+  through tetrahedral vertex-vertex runtime overlap coverage. The tet-corner
+  unit-test fixture row and its non-visual Fig. 16 paper-unit alias are marked
+  implemented through tetrahedral corner-in-walls runtime overlap coverage. The
+  torque rotation fixture row is marked implemented through no-contact
+  applied-torque coverage. The `mu=0.5`
+  threshold rows remain planned because they still need matching DART stick
+  evidence.
+  The rigid-body hash-grid source row is marked implemented through the
+  DART-owned large hash-grid benchmark; the generic hash-grid source row is
+  marked implemented through swept point/edge/triangle broad-phase candidate
+  parity against brute force.
+  Corpus-scale evaluator parity remains open until rigorous interval arithmetic
+  and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
   `dart/simulation/experimental/detail/rigid_ipc_ccd.*`. It is an internal
   DART-owned ACCD query for 3D face-vertex, edge-edge, and point-edge cases over
@@ -314,18 +770,19 @@ DART-owned implementation.
    geometry rejection plus explicit non-converged-result skipping into broader
    convergence criteria, corpus contact behavior, and production-ready default
    activation criteria.
-2. Extend Phase 4 from bounded outer lagged-friction passes into runtime
-   fixture behavior, corpus coverage, and production convergence criteria.
+2. Extend Phase 4 from bounded outer lagged-friction passes and fixture-driven
+   friction controls into broader corpus coverage and production convergence
+   criteria.
 3. Extend Phase 2 with upstream corpus parity: more direct
    `tests/data/ccd-test-*` evaluator checks, kinematic rows, codimensional
    coverage, rigorous interval arithmetic, and accepted tolerances against the
    audited reference.
 4. Extend Phase 1 from mesh and inline replay into fuller fixture coverage:
-   fixture-row runtime examples and remaining comparison script commands. The
-   first default `World::step()` runtime replay regression is covered, but a
-   public-facing example remains open until the importer surface is no longer
-   internal-only.
-5. Keep selecting P0 rows from `fixtures/3D/unit-tests/tunneling.json`, direct
+   fixture-row runtime examples and remaining comparison script commands.
+   Default stepping, opt-in IPC friction replay, fixture-driven stage policy,
+   and kinematic fixture replay are covered, but a public-facing example remains
+   open until the importer surface is no longer internal-only.
+5. Keep selecting P0 rows from remaining 3D unit-test fixtures, direct
    `tests/data/ccd-test-*` files, and one simple paper figure fixture.
 6. Keep the default `World::step()` behavior unchanged until a tested
    DART-owned method policy can select the implicit-barrier path without

@@ -74,6 +74,14 @@ using detail::Subspace;
 using detail::Vector6;
 
 //==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 // SO(3) exponential map: a rotation vector (axis * angle) to a rotation matrix.
 Eigen::Matrix3d rotationExp(const Eigen::Vector3d& rotationVector)
 {
@@ -981,7 +989,7 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
     return registry.all_of<comps::Link>(entity);
   };
   const auto isDynamic = [&](entt::entity entity) {
-    return !registry.all_of<comps::StaticBodyTag>(entity);
+    return !hasPrescribedRigidBodyContactResponse(registry, entity);
   };
   const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
     auto view = registry.view<comps::MultibodyStructure>();
@@ -1461,7 +1469,8 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
     if (contact.otherLink == entt::null && contact.otherBody != entt::null
         && registry.all_of<comps::MassProperties, comps::Transform>(
             contact.otherBody)
-        && !registry.all_of<comps::StaticBodyTag>(contact.otherBody)) {
+        && !hasPrescribedRigidBodyContactResponse(
+            registry, contact.otherBody)) {
       const auto& otherMass
           = registry.get<comps::MassProperties>(contact.otherBody);
       const auto& otherTransform

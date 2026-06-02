@@ -75,6 +75,7 @@ from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
 from .scenes.sx_rigid_fixed_joint import SCENE as SX_RIGID_FIXED_JOINT
 from .scenes.sx_loop_closure import SCENE as SX_LOOP_CLOSURE
 from .scenes.sx_rigid_ipc import SCENE as SX_RIGID_IPC
+from .scenes.sx_rigid_ipc_edge_drop import SCENE as SX_RIGID_IPC_EDGE_DROP
 from .scenes.sx_rigid_ipc_incline import SCENE as SX_RIGID_IPC_INCLINE
 from .scenes.sx_rigid_ipc_pile import SCENE as SX_RIGID_IPC_PILE
 from .scenes.sx_rigid_ipc_slide import SCENE as SX_RIGID_IPC_SLIDE
@@ -157,6 +158,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_RIGID_IPC,
         SX_RIGID_IPC_SLIDE,
         SX_RIGID_IPC_INCLINE,
+        SX_RIGID_IPC_EDGE_DROP,
         SX_RIGID_IPC_PILE,
         SX_RIGID_IPC_TUNNEL,
         SX_VARIATIONAL_CHAIN,

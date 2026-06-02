@@ -107,6 +107,14 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 struct ContactEnd
 {
   entt::entity entity;
@@ -189,8 +197,10 @@ RigidBodyContactProblem assembleRigidBodyContactProblem(
     const auto& massA = registry.get<comps::MassProperties>(entityA);
     const auto& massB = registry.get<comps::MassProperties>(entityB);
 
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const bool prescribedA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool prescribedB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
 
     RigidBodyContactConstraint constraint;
     constraint.bodyA = entityA;
@@ -199,14 +209,16 @@ RigidBodyContactProblem assembleRigidBodyContactProblem(
     constraint.depth = contact.depth;
     constraint.armA = contact.point - transformA.position;
     constraint.armB = contact.point - transformB.position;
-    constraint.staticA = staticA;
-    constraint.staticB = staticB;
-    constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
-    constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
-    constraint.invInertiaA = staticA ? Eigen::Matrix3d::Zero()
-                                     : inverseWorldInertia(massA, transformA);
-    constraint.invInertiaB = staticB ? Eigen::Matrix3d::Zero()
-                                     : inverseWorldInertia(massB, transformB);
+    constraint.staticA = prescribedA;
+    constraint.staticB = prescribedB;
+    constraint.invMassA = prescribedA ? 0.0 : inverseMass(massA);
+    constraint.invMassB = prescribedB ? 0.0 : inverseMass(massB);
+    constraint.invInertiaA = prescribedA
+                                 ? Eigen::Matrix3d::Zero()
+                                 : inverseWorldInertia(massA, transformA);
+    constraint.invInertiaB = prescribedB
+                                 ? Eigen::Matrix3d::Zero()
+                                 : inverseWorldInertia(massB, transformB);
 
     const Eigen::Vector3d crossA = constraint.armA.cross(constraint.normal);
     const Eigen::Vector3d crossB = constraint.armB.cross(constraint.normal);

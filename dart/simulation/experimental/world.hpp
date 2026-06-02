@@ -62,6 +62,10 @@ namespace io::detail {
 class SkeletonLoaderWorldAccess;
 } // namespace io::detail
 
+namespace compute {
+class RigidIpcContactStage;
+} // namespace compute
+
 struct WorldOptions;
 
 /// Solver family used for free rigid-body dynamics in the default experimental
@@ -539,6 +543,7 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::RigidIpcContactStage;
 
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
@@ -564,6 +569,9 @@ private:
   /// differentiable support is compiled (`DART_BUILD_DIFF`); callers gate on
   /// `m_differentiable`.
   void captureStepDerivatives();
+  double getRigidIpcAdaptiveBarrierStiffnessLowerBound() const noexcept;
+  void setRigidIpcAdaptiveBarrierStiffnessLowerBound(double value) noexcept;
+  void resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept;
 
   entt::registry m_registry;
   bool m_simulationMode{false};
@@ -576,6 +584,7 @@ private:
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
+  double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,
