@@ -79,9 +79,11 @@ A promoted public API must not require either.
 
 ### D. Header inventory by subdirectory (127 total)
 
-Counts are a snapshot and drift as the tree grows; run
-`pixi run audit-dart7-promotion-surface` for the live inventory, classification,
-and (transitive) leak set.
+Counts are a snapshot and drift as the tree grows; recompute the current total
+with `find dart/simulation/experimental -name '*.hpp' | wc -l`. The dedicated
+promotion-surface audit script (added with the WS1/WS5 facade-prep tooling)
+additionally reports per-header classification and the (transitive) ECS-leak
+set.
 
 | Subdir        | hpp | Disposition | Notes                                                                                                                                                                                                                   |
 | ------------- | --- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
