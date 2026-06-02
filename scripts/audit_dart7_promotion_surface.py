@@ -103,8 +103,45 @@ def classify(relpath: Path) -> str:
 
 
 def find_leaks(text: str) -> list[str]:
-    """Return the sorted leak-marker names present in the header text."""
+    """Return the sorted direct leak-marker names present in the header text."""
     return sorted(name for name, pat in LEAK_PATTERNS.items() if pat.search(text))
+
+
+# Include of another experimental header. Leaks are followed transitively
+# through these: a promoted header is only clean if neither it NOR any
+# experimental header it (transitively) includes leaks ECS — otherwise
+# including the "clean" header still forces consumers to pull ECS internals
+# (e.g. rigid_body.hpp -> frame/frame.hpp -> ecs/comps/entt).
+EXPERIMENTAL_INCLUDE = re.compile(
+    r"#\s*include\s*[<\"]dart/simulation/experimental/([^>\"]+)[>\"]"
+)
+
+
+def parse_experimental_includes(text: str, known: set[str]) -> set[str]:
+    """Return experimental header relpaths (posix) that `text` includes."""
+    return {
+        m.group(1) for m in EXPERIMENTAL_INCLUDE.finditer(text) if m.group(1) in known
+    }
+
+
+def transitive_leak_sources(
+    rel: str,
+    direct: dict[str, list[str]],
+    includes: dict[str, set[str]],
+) -> dict[str, list[str]]:
+    """Headers in rel's include-closure (incl. self) that directly leak -> leaks."""
+    seen: set[str] = set()
+    stack = [rel]
+    found: dict[str, list[str]] = {}
+    while stack:
+        cur = stack.pop()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        if direct.get(cur):
+            found[cur] = direct[cur]
+        stack.extend(includes.get(cur, ()))
+    return found
 
 
 def main() -> int:
@@ -126,37 +163,52 @@ def main() -> int:
         print(f"error: {EXPERIMENTAL_ROOT} not found (run from the repo root)")
         return 2
 
-    promote_clean: list[Path] = []
-    promote_leaking: list[tuple[Path, list[str]]] = []
-    internal_count = 0
+    # Read every experimental header; record its direct leaks and the
+    # experimental headers it includes, so leaks can be followed transitively.
+    all_rel: set[str] = {h.relative_to(base).as_posix() for h in base.rglob("*.hpp")}
+    direct: dict[str, list[str]] = {}
+    includes: dict[str, set[str]] = {}
+    for rel in all_rel:
+        text = (base / rel).read_text(encoding="utf-8")
+        direct[rel] = find_leaks(text)
+        includes[rel] = parse_experimental_includes(text, all_rel)
 
-    for header in sorted(base.rglob("*.hpp")):
-        rel = header.relative_to(base)
-        kind = classify(rel)
-        if kind == "internal":
+    promote_clean: list[str] = []
+    # (rel, own_direct_leaks, {included_header: its_direct_leaks})
+    promote_leaking: list[tuple[str, list[str], dict[str, list[str]]]] = []
+    internal_count = 0
+    for rel in sorted(all_rel):
+        if classify(Path(rel)) == "internal":
             internal_count += 1
             continue
-        leaks = find_leaks(header.read_text(encoding="utf-8"))
-        if leaks:
-            promote_leaking.append((rel, leaks))
+        sources = transitive_leak_sources(rel, direct, includes)
+        own = sources.pop(rel, [])
+        if own or sources:
+            promote_leaking.append((rel, own, sources))
         else:
             promote_clean.append(rel)
 
     total_promote = len(promote_clean) + len(promote_leaking)
     print("DART 7 promotion-surface audit (PLAN-041)")
     print("=" * 60)
-    print(f"experimental headers scanned : {total_promote + internal_count}")
+    print(f"experimental headers scanned : {len(all_rel)}")
     print(f"  promotion-target headers   : {total_promote}")
     print(f"    clean (no ECS leak)      : {len(promote_clean)}")
     print(f"    leaking ECS storage      : {len(promote_leaking)}")
     print(f"  internal headers (hidden)  : {internal_count}")
+    print("  (leak = direct, or transitive via an included experimental header)")
     print()
 
     if promote_leaking:
         print("Promotion-target headers leaking ECS storage")
         print("(Workstream 5 must clear these before promotion):")
-        for rel, leaks in promote_leaking:
-            print(f"  - {rel}  [{', '.join(leaks)}]")
+        for rel, own, via in promote_leaking:
+            parts = []
+            if own:
+                parts.append(f"direct: {', '.join(own)}")
+            for inc in sorted(via):
+                parts.append(f"via {inc}: {', '.join(via[inc])}")
+            print(f"  - {rel}  [{'; '.join(parts)}]")
         print()
 
     if promote_clean:
