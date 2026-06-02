@@ -19,6 +19,7 @@ if(NOT CMAKE_CROSSCOMPILING
   endif()
   list(APPEND _dart_vulkan_search_prefixes ${CMAKE_PREFIX_PATH})
 
+  set(_dart_vulkan_local_found FALSE)
   foreach(_dart_vulkan_prefix IN LISTS _dart_vulkan_search_prefixes)
     if(NOT _dart_vulkan_prefix)
       continue()
@@ -27,13 +28,19 @@ if(NOT CMAKE_CROSSCOMPILING
       set(_dart_vulkan_path "${_dart_vulkan_prefix}/lib/${_dart_vulkan_candidate}")
       if(EXISTS "${_dart_vulkan_path}")
         set(Vulkan_LIBRARY "${_dart_vulkan_path}" CACHE FILEPATH "Path to the Vulkan loader library" FORCE)
+        set(_dart_vulkan_local_found TRUE)
         break()
       endif()
     endforeach()
-    if(Vulkan_LIBRARY)
+    # Only stop once the CURRENT prefix actually provided a loader. Do not rely on
+    # the pre-existing cached Vulkan_LIBRARY value (which may point at a stale
+    # system loader), otherwise later prefixes would be skipped and the intended
+    # prefix-local preference would be lost.
+    if(_dart_vulkan_local_found)
       break()
     endif()
   endforeach()
+  unset(_dart_vulkan_local_found)
   unset(_dart_vulkan_candidate)
   unset(_dart_vulkan_path)
   unset(_dart_vulkan_prefix)
