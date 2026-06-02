@@ -316,12 +316,13 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   stepping, frame, multibody, rigid-body, and compute-executor hooks.
 - The implemented DART 7 `Multibody`, `Link`, and `Joint` binding is currently
   tree-shaped, with Python-style `JointSpec` construction backed by the public
-  C++ value object, joint type, axis, parent/child, DOF count, and generalized
-  position/velocity access. `World` now exposes `LoopClosure` handles with
-  symmetric frame endpoints, semantic closure families, offsets, runtime
-  participation policy, explicit residual diagnostics, lookup, validation, and
-  serialization. Closure kinematic projection and dynamic closure solving
-  remain staged design targets.
+  C++ value object, joint type, axis, parent/child link access, rigid-body
+  endpoint access for public rigid-body fixed joints, DOF count, and
+  generalized position/velocity access. `World` now exposes `LoopClosure`
+  handles with symmetric frame endpoints, semantic closure families, offsets,
+  runtime participation policy, explicit residual diagnostics, lookup,
+  validation, and serialization. Closure kinematic projection and dynamic
+  closure solving remain staged design targets.
 - The experimental dartpy facade now exposes data-like frame, joint,
   loop-closure, and rigid-body state through Python properties. Lookup and
   topology-changing operations remain methods, but parallel getter/setter-style
@@ -635,16 +636,16 @@ public API exposes dirty flags.
 
 ## Public Object Model
 
-| Object        | Role                                                                  | Initial Python shape                                                                                                                      |
-| ------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                                         |
-| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature.            |
-| `Multibody`   | Articulated rigid-body system.                                        | Name, validity, counts, link and joint construction, link and joint collections.                                                          |
-| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                              |
-| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links, DOF count, generalized position and velocity; broader state/control APIs remain staged.         |
-| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle with runtime-intent policy and residual diagnostics now; projection and dynamic solving remain staged. |
-| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                                       |
-| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                                       |
+| Object        | Role                                                                  | Initial Python shape                                                                                                                           |
+| ------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                                              |
+| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature.                 |
+| `Multibody`   | Articulated rigid-body system.                                        | Name, validity, counts, link and joint construction, link and joint collections.                                                               |
+| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                                   |
+| `Joint`       | Connection between links or public rigid-body fixed-joint endpoints.  | Name, type, axes, link or rigid-body endpoint handles, DOF count, generalized position and velocity; broader state/control APIs remain staged. |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle with runtime-intent policy and residual diagnostics now; projection and dynamic solving remain staged.      |
+| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                                            |
+| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                                            |
 
 `Multibody` is the experimental name because "multibody system" is the standard
 term in the multibody-dynamics literature (Featherstone, _Rigid Body Dynamics

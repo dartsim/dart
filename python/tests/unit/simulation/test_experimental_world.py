@@ -161,6 +161,8 @@ def test_experimental_api_exposes_python_names_only():
             "set_velocity",
             "get_parent_link",
             "get_child_link",
+            "get_parent_rigid_body",
+            "get_child_rigid_body",
             "getName",
             "getType",
             "getAxis",
@@ -171,6 +173,8 @@ def test_experimental_api_exposes_python_names_only():
             "setVelocity",
             "getParentLink",
             "getChildLink",
+            "getParentRigidBody",
+            "getChildRigidBody",
             "isValid",
         ),
         sx.World: (
@@ -289,6 +293,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def getMultibody(",
         "def hasMultibody(",
         "def addRigidBodyFixedJoint(",
+        "def get_parent_rigid_body(",
+        "def get_child_rigid_body(",
         "def has_multibody_count(",
         "def get_rigid_body_count(",
     )
@@ -459,6 +465,8 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.name == "base_to_link"
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
+    assert joint.parent_rigid_body.name == "base"
+    assert joint.child_rigid_body.name == "link"
     with pytest.raises(Exception, match="not a multibody Link"):
         _ = joint.parent_link
     with pytest.raises(Exception, match="not a multibody Link"):
@@ -565,6 +573,10 @@ def test_experimental_multibody_link_joint_common_path():
     assert joint.velocity.tolist() == pytest.approx([0.0])
     assert joint.parent_link.name == "base"
     assert joint.child_link.name == "forearm"
+    with pytest.raises(Exception, match="not a rigid body"):
+        _ = joint.parent_rigid_body
+    with pytest.raises(Exception, match="not a rigid body"):
+        _ = joint.child_rigid_body
     assert arm.get_joint("elbow").child_link.name == "forearm"
     assert arm.get_joint("missing") is None
 
