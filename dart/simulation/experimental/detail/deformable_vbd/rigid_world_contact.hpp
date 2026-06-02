@@ -40,7 +40,6 @@
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
-#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 
 #include <entt/entt.hpp>
 
@@ -268,6 +267,8 @@ inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
 inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     const entt::registry& registry,
     entt::entity entity,
+    std::size_t shapeIndex,
+    const Eigen::Vector3d& localPoint,
     const Eigen::Vector3d& point)
 {
   AvbdContactEndpointId endpoint = avbdRigidWorldBodyEndpointId(entity);
@@ -277,45 +278,50 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     return endpoint;
   }
 
-  const Eigen::Vector3d localPoint
-      = avbdRigidWorldContactLocalPoint(registry, entity, point);
-  if (!localPoint.allFinite()) {
+  Eigen::Vector3d shapeLocalPoint = localPoint;
+  if (shapeIndex == Contact::UnknownShapeIndex) {
+    if (geometry->shapes.size() != 1u) {
+      return endpoint;
+    }
+    shapeIndex = 0u;
+    shapeLocalPoint = avbdRigidWorldContactLocalPoint(registry, entity, point);
+  }
+
+  if (shapeIndex >= geometry->shapes.size()) {
     return endpoint;
   }
 
-  // CollisionGeometry now holds a vector of shapes (compound-shape support,
-  // PLAN-080 #2838); the AVBD feature keying uses the primary (first) shape,
-  // matching the previous single-shape behavior.
-  const auto* shape = geometry->getPrimaryShape();
-  if (shape == nullptr) {
+  const CollisionShape& shape = geometry->shapes[shapeIndex];
+  if (!shapeLocalPoint.allFinite()) {
     return endpoint;
   }
 
-  if (shape->type == CollisionShapeType::Box && shape->halfExtents.allFinite()
-      && (shape->halfExtents.array() > 0.0).all()) {
+  const std::uint64_t packedShapeIndex = static_cast<std::uint64_t>(shapeIndex);
+  if (shape.type == CollisionShapeType::Box && shape.halfExtents.allFinite()
+      && (shape.halfExtents.array() > 0.0).all()) {
     const std::uint64_t featureCode
-        = avbdBoxContactFeatureCode(localPoint, shape->halfExtents);
+        = avbdBoxContactFeatureCode(shapeLocalPoint, shape.halfExtents);
     endpoint.feature = packAvbdContactFeatureId(
         avbdBoxContactFeatureKind(featureCode),
-        packAvbdBoxContactFeatureId(/*boxIndex=*/0, featureCode));
+        packAvbdBoxContactFeatureId(packedShapeIndex, featureCode));
   } else if (
-      shape->type == CollisionShapeType::Cylinder
-      && std::isfinite(shape->radius) && shape->radius > 0.0
-      && shape->halfExtents.allFinite() && shape->halfExtents.z() > 0.0) {
+      shape.type == CollisionShapeType::Cylinder && std::isfinite(shape.radius)
+      && shape.radius > 0.0 && shape.halfExtents.allFinite()
+      && shape.halfExtents.z() > 0.0) {
     const std::uint64_t featureCode = avbdCylinderContactFeatureCode(
-        localPoint, shape->radius, shape->halfExtents.z());
+        shapeLocalPoint, shape.radius, shape.halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCylinderContactFeatureKind(featureCode),
-        packAvbdCylinderContactFeatureId(/*cylinderIndex=*/0, featureCode));
+        packAvbdCylinderContactFeatureId(packedShapeIndex, featureCode));
   } else if (
-      shape->type == CollisionShapeType::Capsule && std::isfinite(shape->radius)
-      && shape->radius > 0.0 && shape->halfExtents.allFinite()
-      && shape->halfExtents.z() > 0.0) {
+      shape.type == CollisionShapeType::Capsule && std::isfinite(shape.radius)
+      && shape.radius > 0.0 && shape.halfExtents.allFinite()
+      && shape.halfExtents.z() > 0.0) {
     const std::uint64_t featureCode
-        = avbdCapsuleContactFeatureCode(localPoint, shape->halfExtents.z());
+        = avbdCapsuleContactFeatureCode(shapeLocalPoint, shape.halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCapsuleContactFeatureKind(featureCode),
-        packAvbdCapsuleContactFeatureId(/*capsuleIndex=*/0, featureCode));
+        packAvbdCapsuleContactFeatureId(packedShapeIndex, featureCode));
   }
   return endpoint;
 }
@@ -384,12 +390,8 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
   for (std::size_t contactIndex = 0; contactIndex < contacts.size();
        ++contactIndex) {
     const Contact& contact = contacts[contactIndex];
-    const entt::entity entityA
-        = dart::simulation::experimental::detail::toRegistryEntity(
-            contact.bodyA.getEntity());
-    const entt::entity entityB
-        = dart::simulation::experimental::detail::toRegistryEntity(
-            contact.bodyB.getEntity());
+    const entt::entity entityA = contact.bodyA.getEntity();
+    const entt::entity entityB = contact.bodyB.getEntity();
     if (entityA == entt::null || entityB == entt::null || entityA == entityB
         || contact.depth <= 0.0 || !std::isfinite(contact.depth)
         || !contact.point.allFinite() || !contact.normal.allFinite()
@@ -421,9 +423,17 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
     manifoldPoint.bodyA = bodyA;
     manifoldPoint.bodyB = bodyB;
     manifoldPoint.endpointA = detail::avbdRigidWorldContactEndpointId(
-        registry, entityA, contact.point);
+        registry,
+        entityA,
+        contact.shapeIndexA,
+        contact.localPointA,
+        contact.point);
     manifoldPoint.endpointB = detail::avbdRigidWorldContactEndpointId(
-        registry, entityB, contact.point);
+        registry,
+        entityB,
+        contact.shapeIndexB,
+        contact.localPointB,
+        contact.point);
     manifoldPoint.point = contact.point;
     manifoldPoint.normalFromAtoB = contact.normal;
     manifoldPoint.depth = contact.depth;

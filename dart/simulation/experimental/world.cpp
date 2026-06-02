@@ -2512,7 +2512,11 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
                   detail::fromRegistryEntity(cache.entries[j].entity), this),
               point.position,
               -point.normal,
-              point.depth});
+              point.depth,
+              specs[i].key.shapeIndex,
+              specs[j].key.shapeIndex,
+              specs[i].pose.inverse() * point.position,
+              specs[j].pose.inverse() * point.position});
     }
   }
 
