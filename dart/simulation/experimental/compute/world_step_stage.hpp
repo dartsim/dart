@@ -463,7 +463,6 @@ public:
 private:
   RigidIpcContactStageOptions m_options;
   RigidIpcSolverStats m_lastStats;
-  double m_adaptiveBarrierStiffnessLowerBound = 1.0;
 };
 
 /// Default deformable-body dynamics stage.

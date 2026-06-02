@@ -4485,6 +4485,55 @@ TEST(World, RigidIpcContactStageSlidingContactDoesNotFreeze)
   EXPECT_GT(box.getLinearVelocity().x(), 0.0);
 }
 
+TEST(World, RigidIpcAdaptiveStiffnessPersistsAcrossSingleStepCalls)
+{
+  namespace sx = dart::simulation::experimental;
+
+  struct Outcome
+  {
+    Eigen::Vector3d position = Eigen::Vector3d::Zero();
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  constexpr int kSteps = 12;
+  const auto run = [](bool batched) -> Outcome {
+    sx::World world;
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.mass = 1.0;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.258);
+    boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto box = world.addRigidBody("box", boxOptions);
+    box.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+
+    if (batched) {
+      world.step(kSteps);
+    } else {
+      for (int step = 0; step < kSteps; ++step) {
+        world.step();
+      }
+    }
+
+    return Outcome{box.getTranslation(), box.getLinearVelocity()};
+  };
+
+  const Outcome singleStepCalls = run(false);
+  const Outcome batchedCall = run(true);
+
+  EXPECT_TRUE(singleStepCalls.position.isApprox(batchedCall.position, 1e-10));
+  EXPECT_TRUE(singleStepCalls.linearVelocity.isApprox(
+      batchedCall.linearVelocity, 1e-10));
+}
+
 // Test that lagged friction in the opt-in rigid IPC stage produces an
 // observable runtime effect: at an activated contact a tangential slide is
 // braked relative to the frictionless solve, without reversing direction.

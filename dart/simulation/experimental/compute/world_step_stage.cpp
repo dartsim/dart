@@ -8383,7 +8383,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.barrier.squaredActivationDistance
       = m_options.activationDistance * m_options.activationDistance;
   options.barrier.stiffness
-      = std::max(1.0, m_adaptiveBarrierStiffnessLowerBound);
+      = std::max(1.0, world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
   // The conservative line search runs a curved ACCD per candidate primitive
   // pair. If the ACCD exhausts its iteration budget on a tight, slowly
   // converging pair it returns Indeterminate, which the line search treats as a
@@ -8481,11 +8481,12 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.failed = result.failed && !restingContactBlocked;
 
   if (result.assembly.activeConstraints.empty()) {
-    m_adaptiveBarrierStiffnessLowerBound = 1.0;
+    world.resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
   } else if (
       std::isfinite(result.stats.barrierStiffness)
       && result.stats.barrierStiffness > 0.0) {
-    m_adaptiveBarrierStiffnessLowerBound = result.stats.barrierStiffness;
+    world.setRigidIpcAdaptiveBarrierStiffnessLowerBound(
+        result.stats.barrierStiffness);
   }
 
   // A failed solve (conservative line search blocked the step, or the
