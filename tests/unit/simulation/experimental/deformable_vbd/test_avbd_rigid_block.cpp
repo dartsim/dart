@@ -29,6 +29,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Eigenvalues>
@@ -1165,10 +1166,14 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
   ASSERT_EQ(snapshot.fixed.size(), snapshot.entities.size());
   ASSERT_EQ(snapshot.contacts.size(), contacts.size());
 
-  const std::size_t groundIndex
-      = findEntityIndex(snapshot.entities, ground.getEntity());
-  const std::size_t sphereIndex
-      = findEntityIndex(snapshot.entities, sphere.getEntity());
+  const std::size_t groundIndex = findEntityIndex(
+      snapshot.entities,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          ground.getEntity()));
+  const std::size_t sphereIndex = findEntityIndex(
+      snapshot.entities,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          sphere.getEntity()));
   EXPECT_EQ(snapshot.fixed[groundIndex], 1u);
   EXPECT_EQ(snapshot.fixed[sphereIndex], 0u);
   EXPECT_DOUBLE_EQ(snapshot.masses[sphereIndex], 2.0);
@@ -1181,22 +1186,32 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
     const vbd::AvbdRigidContactManifoldPoint& manifoldPoint
         = snapshot.contacts[i];
     const sx::Contact& sourceContact = contacts[i];
-    const std::size_t bodyA
-        = findEntityIndex(snapshot.entities, sourceContact.bodyA.getEntity());
-    const std::size_t bodyB
-        = findEntityIndex(snapshot.entities, sourceContact.bodyB.getEntity());
+    const std::size_t bodyA = findEntityIndex(
+        snapshot.entities,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyA.getEntity()));
+    const std::size_t bodyB = findEntityIndex(
+        snapshot.entities,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyB.getEntity()));
 
     EXPECT_EQ(manifoldPoint.bodyA, bodyA);
     EXPECT_EQ(manifoldPoint.bodyB, bodyB);
     EXPECT_EQ(
         manifoldPoint.endpointA.object,
-        vbd::avbdRigidWorldContactObjectId(sourceContact.bodyA.getEntity()));
+        vbd::avbdRigidWorldContactObjectId(
+            dart::simulation::experimental::detail::toRegistryEntity(
+                sourceContact.bodyA.getEntity())));
     EXPECT_EQ(
         manifoldPoint.endpointB.object,
-        vbd::avbdRigidWorldContactObjectId(sourceContact.bodyB.getEntity()));
+        vbd::avbdRigidWorldContactObjectId(
+            dart::simulation::experimental::detail::toRegistryEntity(
+                sourceContact.bodyB.getEntity())));
     const auto expectEndpointFeature
         = [&](const vbd::AvbdContactEndpointId& endpoint, entt::entity entity) {
-            if (entity == ground.getEntity()) {
+            if (entity
+                == dart::simulation::experimental::detail::toRegistryEntity(
+                    ground.getEntity())) {
               const std::uint64_t groundFeatureCode
                   = vbd::avbdBoxContactFeatureCode(
                       sourceContact.point - ground.getTranslation(),
@@ -1215,9 +1230,13 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
             }
           };
     expectEndpointFeature(
-        manifoldPoint.endpointA, sourceContact.bodyA.getEntity());
+        manifoldPoint.endpointA,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyA.getEntity()));
     expectEndpointFeature(
-        manifoldPoint.endpointB, sourceContact.bodyB.getEntity());
+        manifoldPoint.endpointB,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyB.getEntity()));
     EXPECT_NEAR((manifoldPoint.point - sourceContact.point).norm(), 0.0, 1e-12);
     EXPECT_NEAR(
         (manifoldPoint.normalFromAtoB - sourceContact.normal).norm(),
@@ -1607,8 +1626,10 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
           world.getRegistry(), std::span<const sx::Contact>());
 
   std::vector<vbd::AvbdRigidWorldPointJointInput> joints(1);
-  joints[0].bodyA = base.getEntity();
-  joints[0].bodyB = link.getEntity();
+  joints[0].bodyA = dart::simulation::experimental::detail::toRegistryEntity(
+      base.getEntity());
+  joints[0].bodyB = dart::simulation::experimental::detail::toRegistryEntity(
+      link.getEntity());
   joints[0].anchorA = Vec3::Zero();
   joints[0].anchorB = Vec3::UnitX();
   joints[0].targetRelativeOrientation = Eigen::Quaterniond::Identity();
@@ -1620,8 +1641,10 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
       1u);
   ASSERT_EQ(snapshot.joints.size(), 1u);
 
-  const std::size_t linkIndex
-      = findEntityIndex(snapshot.entities, link.getEntity());
+  const std::size_t linkIndex = findEntityIndex(
+      snapshot.entities,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          link.getEntity()));
   const double initialLinkX = snapshot.states[linkIndex].position.x();
 
   vbd::AvbdRigidWorldContactSolveOptions solveOptions;
@@ -1680,8 +1703,10 @@ TEST(AvbdRigidBlock, RigidWorldContactStepSolvesPointJointRows)
   auto link = world.addRigidBody("link", linkOptions);
 
   std::vector<vbd::AvbdRigidWorldPointJointInput> joints(1);
-  joints[0].bodyA = base.getEntity();
-  joints[0].bodyB = link.getEntity();
+  joints[0].bodyA = dart::simulation::experimental::detail::toRegistryEntity(
+      base.getEntity());
+  joints[0].bodyB = dart::simulation::experimental::detail::toRegistryEntity(
+      link.getEntity());
   joints[0].anchorA = Vec3::Zero();
   joints[0].anchorB = Vec3::UnitX();
   joints[0].targetRelativeOrientation = Eigen::Quaterniond::Identity();
@@ -1742,8 +1767,10 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
-  joint.parentLink = base.getEntity();
-  joint.childLink = link.getEntity();
+  joint.parentLink = dart::simulation::experimental::detail::toRegistryEntity(
+      base.getEntity());
+  joint.childLink = dart::simulation::experimental::detail::toRegistryEntity(
+      link.getEntity());
   auto& config
       = registry.emplace<vbd::AvbdRigidWorldPointJointConfig>(jointEntity);
   config.localAnchorA = Vec3::Zero();
@@ -1755,8 +1782,14 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
   const std::vector<vbd::AvbdRigidWorldPointJointInput> joints
       = vbd::extractAvbdRigidWorldPointJointInputs(registry);
   ASSERT_EQ(joints.size(), 1u);
-  EXPECT_EQ(joints[0].bodyA, base.getEntity());
-  EXPECT_EQ(joints[0].bodyB, link.getEntity());
+  EXPECT_EQ(
+      joints[0].bodyA,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          base.getEntity()));
+  EXPECT_EQ(
+      joints[0].bodyB,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          link.getEntity()));
   EXPECT_NEAR(joints[0].anchorA.x(), 0.0, 1e-12);
   EXPECT_NEAR(joints[0].anchorB.x(), 1.0, 1e-12);
   EXPECT_DOUBLE_EQ(joints[0].startStiffness, 100.0);
@@ -1819,8 +1852,10 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
           world.getRegistry(), world.collide(), contactOptions);
   ASSERT_FALSE(snapshot.contacts.empty());
 
-  const std::size_t sphereIndex
-      = findEntityIndex(snapshot.entities, sphere.getEntity());
+  const std::size_t sphereIndex = findEntityIndex(
+      snapshot.entities,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          sphere.getEntity()));
   const double initialSphereZ = snapshot.states[sphereIndex].position.z();
 
   vbd::AvbdRigidWorldContactSolveOptions solveOptions;
@@ -1874,8 +1909,10 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotApplyWritesDynamicBodyState)
           world.getRegistry(), world.collide(), contactOptions);
   ASSERT_FALSE(snapshot.contacts.empty());
 
-  const std::size_t sphereIndex
-      = findEntityIndex(snapshot.entities, sphere.getEntity());
+  const std::size_t sphereIndex = findEntityIndex(
+      snapshot.entities,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          sphere.getEntity()));
   const double initialSphereZ = sphere.getTransform().translation().z();
 
   vbd::AvbdRigidWorldContactSolveOptions solveOptions;

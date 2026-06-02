@@ -12,6 +12,7 @@
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -101,8 +102,10 @@ struct PrismaticLegWorld
     auto leg = robot.addLink("leg", base, spec);
     leg.setMass(1.0);
 
-    multibody = robot.getEntity();
-    link = leg.getEntity();
+    multibody = dart::simulation::experimental::detail::toRegistryEntity(
+        robot.getEntity());
+    link = dart::simulation::experimental::detail::toRegistryEntity(
+        leg.getEntity());
   }
 
   const sx::comps::MultibodyStructure& structure()
@@ -141,9 +144,12 @@ struct TwoPrismaticLinksWorld
     auto upperLink = robot.addLink("upper", base, upperSpec);
     upperLink.setMass(1.0);
 
-    multibody = robot.getEntity();
-    lower = lowerLink.getEntity();
-    upper = upperLink.getEntity();
+    multibody = dart::simulation::experimental::detail::toRegistryEntity(
+        robot.getEntity());
+    lower = dart::simulation::experimental::detail::toRegistryEntity(
+        lowerLink.getEntity());
+    upper = dart::simulation::experimental::detail::toRegistryEntity(
+        upperLink.getEntity());
   }
 
   const sx::comps::MultibodyStructure& structure()
@@ -323,7 +329,8 @@ TEST(MultibodyLinkContact, CouplesDynamicRigidObstacleRow)
   contact.depth = 0.0; // no penetration: isolate the two-sided coupling
   contact.friction = 0.75;
   contact.restitution = 0.0;
-  contact.otherBody = obstacle.getEntity();
+  contact.otherBody = dart::simulation::experimental::detail::toRegistryEntity(
+      obstacle.getEntity());
 
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << -0.4;
@@ -350,7 +357,10 @@ TEST(MultibodyLinkContact, CouplesDynamicRigidObstacleRow)
 
   // The dynamic obstacle is coupled in: unit mass and identity inertia, with
   // the arm measured from the obstacle's body origin to the contact point.
-  EXPECT_EQ(row.otherBody, obstacle.getEntity());
+  EXPECT_EQ(
+      row.otherBody,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          obstacle.getEntity()));
   EXPECT_DOUBLE_EQ(row.otherInvMass, 1.0);
   EXPECT_TRUE(row.otherInvInertia.isApprox(Eigen::Matrix3d::Identity(), 1e-12));
   EXPECT_TRUE(

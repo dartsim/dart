@@ -35,6 +35,7 @@
 // code path and is registered only when DART_BUILD_DIFF is ON.
 
 #include <dart/simulation/experimental/comps/multibody.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/detail/smooth_jacobians.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -311,7 +312,8 @@ sim::StepDerivatives analyticDerivatives(
       world.getRegistry(),
       world.getRegistry()
           .get<dart::simulation::experimental::comps::MultibodyStructure>(
-              mb->getEntity()),
+              dart::simulation::experimental::detail::toRegistryEntity(
+                  mb->getEntity())),
       world.getGravity(),
       world.getTimeStep(),
       tau);

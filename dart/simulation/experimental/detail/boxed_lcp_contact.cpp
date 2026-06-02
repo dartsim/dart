@@ -37,6 +37,7 @@
 #include "dart/simulation/experimental/comps/contact_material.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_types.hpp>
@@ -161,8 +162,8 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
   };
 
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
 
     // Rigid-body pairs only; articulated-link contacts are out of scope for
     // this slice (handled by the multibody solve).

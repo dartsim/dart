@@ -34,24 +34,20 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {
 
 //==============================================================================
-FixedFrame::FixedFrame(entt::entity entity, World* world)
-  : Frame(entity, world),
-    EntityObjectWith<
-        TagComps<comps::FixedFrameTag>,
-        ReadOnlyComps<>,
-        WriteOnlyComps<>,
-        ReadWriteComps<comps::FixedFrameProperties>>()
+FixedFrame::FixedFrame(Entity entity, World* world) : Frame(entity, world)
 {
   // Validate entity has FixedFrameProperties
 #ifndef NDEBUG
   auto& registry = world->getRegistry();
+  const auto enttEntity = detail::toRegistryEntity(entity);
   DART_EXPERIMENTAL_THROW_T_IF(
-      !registry.all_of<comps::FixedFrameProperties>(entity),
+      !registry.all_of<comps::FixedFrameProperties>(enttEntity),
       InvalidArgumentException,
       "Entity does not have FixedFrameProperties component");
 #endif
@@ -61,7 +57,8 @@ FixedFrame::FixedFrame(entt::entity entity, World* world)
 void FixedFrame::setLocalTransform(const Eigen::Isometry3d& transform)
 {
   auto& registry = m_world->getRegistry();
-  auto& props = registry.get<comps::FixedFrameProperties>(m_entity);
+  auto& props = registry.get<comps::FixedFrameProperties>(
+      detail::toRegistryEntity(m_entity));
   props.localTransform = transform;
 
   markSubtreeTransformCacheDirty();

@@ -37,9 +37,9 @@
 #include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_residual.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_runtime_policy.hpp>
+#include <dart/simulation/experimental/entity.hpp>
 
 #include <Eigen/Geometry>
-#include <entt/entt.hpp>
 
 #include <string_view>
 
@@ -54,7 +54,7 @@ namespace dart::simulation::experimental {
 class DART_EXPERIMENTAL_API LoopClosure
 {
 public:
-  LoopClosure(entt::entity entity, World* world);
+  LoopClosure(Entity entity, World* world);
 
   [[nodiscard]] std::string_view getName() const;
   [[nodiscard]] LoopClosureFamily getFamily() const;
@@ -66,12 +66,16 @@ public:
   void setRuntimePolicy(const LoopClosureRuntimePolicy& policy);
   [[nodiscard]] LoopClosureResidual computeResidual() const;
 
-  [[nodiscard]] entt::entity getEntity() const;
+  /// Get the opaque entity token.
+  ///
+  /// Internal code needing the raw ECS handle should call
+  /// `detail::toRegistryEntity(closure.getEntity())`.
+  [[nodiscard]] Entity getEntity() const;
   [[nodiscard]] World* getWorld() const;
   [[nodiscard]] bool isValid() const;
 
 private:
-  entt::entity m_entity;
+  Entity m_entity; ///< Opaque entity token
   World* m_world;
 };
 
