@@ -13,6 +13,7 @@
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -110,7 +111,8 @@ struct PrismaticLegWorld
 
   const sx::comps::MultibodyStructure& structure()
   {
-    return world.getRegistry().get<sx::comps::MultibodyStructure>(multibody);
+    return dart::simulation::experimental::detail::registryOf(world)
+        .get<sx::comps::MultibodyStructure>(multibody);
   }
 };
 
@@ -154,7 +156,8 @@ struct TwoPrismaticLinksWorld
 
   const sx::comps::MultibodyStructure& structure()
   {
-    return world.getRegistry().get<sx::comps::MultibodyStructure>(multibody);
+    return dart::simulation::experimental::detail::registryOf(world)
+        .get<sx::comps::MultibodyStructure>(multibody);
   }
 };
 
@@ -183,13 +186,13 @@ TEST(MultibodyLinkContact, AssemblesOneSidedLinkContactRowDeterministically)
   const double timeStep = 0.01;
 
   const auto problem = sx::compute::assembleMultibodyLinkContactProblem(
-      scene.world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(scene.world),
       scene.structure(),
       nextVelocity,
       timeStep,
       contacts);
   const auto repeated = sx::compute::assembleMultibodyLinkContactProblem(
-      scene.world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(scene.world),
       scene.structure(),
       nextVelocity,
       timeStep,
@@ -276,7 +279,7 @@ TEST(MultibodyLinkContact, UsesRelativeJacobianForSameMultibodyLinkObstacle)
 
   const std::vector<sx::compute::LinkContact> contacts{contact};
   const auto problem = sx::compute::assembleMultibodyLinkContactProblem(
-      scene.world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(scene.world),
       scene.structure(),
       nextVelocity,
       0.01,
@@ -339,13 +342,13 @@ TEST(MultibodyLinkContact, CouplesDynamicRigidObstacleRow)
   const double timeStep = 0.01;
 
   const auto problem = sx::compute::assembleMultibodyLinkContactProblem(
-      scene.world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(scene.world),
       scene.structure(),
       nextVelocity,
       timeStep,
       contacts);
   const auto repeated = sx::compute::assembleMultibodyLinkContactProblem(
-      scene.world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(scene.world),
       scene.structure(),
       nextVelocity,
       timeStep,
@@ -419,7 +422,7 @@ TEST(MultibodyLinkContact, TreatsKinematicRigidObstacleAsOneSided)
 
   const std::vector<sx::compute::LinkContact> contacts{contact};
   const auto problem = sx::compute::assembleMultibodyLinkContactProblem(
-      scene.world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(scene.world),
       scene.structure(),
       nextVelocity,
       0.01,
@@ -457,7 +460,7 @@ TEST(MultibodyLinkContact, RejectsWrongVelocityDimension)
 
   EXPECT_THROW(
       (void)sx::compute::assembleMultibodyLinkContactProblem(
-          scene.world.getRegistry(),
+          dart::simulation::experimental::detail::registryOf(scene.world),
           scene.structure(),
           wrongSize,
           0.01,

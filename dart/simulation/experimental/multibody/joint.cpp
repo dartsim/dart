@@ -36,6 +36,7 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -123,7 +124,7 @@ comps::Joint& getJointComponent(World* world, Entity entityToken)
       world == nullptr, InvalidArgumentException, "Invalid joint handle");
 
   const auto entity = detail::toRegistryEntity(entityToken);
-  auto& registry = world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*world);
   DART_EXPERIMENTAL_THROW_T_IF(
       !registry.valid(entity) || !registry.all_of<comps::Joint>(entity),
       InvalidArgumentException,
@@ -340,7 +341,9 @@ void Joint::setPosition(const Eigen::VectorXd& position)
   validateJointStateVector(position, jointComp.getDOF(), "position");
 
   jointComp.position = position;
-  markSubtreeTransformCacheDirty(m_world->getRegistry(), jointComp.childLink);
+  markSubtreeTransformCacheDirty(
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      jointComp.childLink);
 }
 
 //==============================================================================
@@ -550,7 +553,8 @@ Link Joint::getParentLink() const
   const auto& jointComp = getJointComponent(m_world, m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.parentLink == entt::null
-          || !m_world->getRegistry().all_of<comps::Link>(jointComp.parentLink),
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::Link>(jointComp.parentLink),
       InvalidArgumentException,
       "Joint '{}' parent endpoint is not a multibody Link",
       jointComp.name);
@@ -563,7 +567,8 @@ Link Joint::getChildLink() const
   const auto& jointComp = getJointComponent(m_world, m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.childLink == entt::null
-          || !m_world->getRegistry().all_of<comps::Link>(jointComp.childLink),
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::Link>(jointComp.childLink),
       InvalidArgumentException,
       "Joint '{}' child endpoint is not a multibody Link",
       jointComp.name);
@@ -576,8 +581,8 @@ RigidBody Joint::getParentRigidBody() const
   const auto& jointComp = getJointComponent(m_world, m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.parentLink == entt::null
-          || !m_world->getRegistry().all_of<comps::RigidBodyTag>(
-              jointComp.parentLink),
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::RigidBodyTag>(jointComp.parentLink),
       InvalidArgumentException,
       "Joint '{}' parent endpoint is not a rigid body",
       jointComp.name);
@@ -590,8 +595,8 @@ RigidBody Joint::getChildRigidBody() const
   const auto& jointComp = getJointComponent(m_world, m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.childLink == entt::null
-          || !m_world->getRegistry().all_of<comps::RigidBodyTag>(
-              jointComp.childLink),
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::RigidBodyTag>(jointComp.childLink),
       InvalidArgumentException,
       "Joint '{}' child endpoint is not a rigid body",
       jointComp.name);
@@ -608,8 +613,11 @@ Entity Joint::getEntity() const
 bool Joint::isValid() const
 {
   const auto entity = detail::toRegistryEntity(m_entity);
-  return m_world != nullptr && m_world->getRegistry().valid(entity)
-         && m_world->getRegistry().all_of<comps::Joint>(entity);
+  return m_world != nullptr
+         && dart::simulation::experimental::detail::registryOf(*m_world).valid(
+             entity)
+         && dart::simulation::experimental::detail::registryOf(*m_world)
+                .all_of<comps::Joint>(entity);
 }
 
 } // namespace dart::simulation::experimental

@@ -35,6 +35,8 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
+#include "dart/simulation/experimental/ecs/component_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {
@@ -44,7 +46,7 @@ FreeFrame::FreeFrame(Entity entity, World* world) : Frame(entity, world)
 {
   // Validate entity has FreeFrameProperties
 #ifndef NDEBUG
-  auto& registry = world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*world);
   const auto enttEntity = detail::toRegistryEntity(entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       !registry.all_of<comps::FreeFrameProperties>(enttEntity),
@@ -56,9 +58,7 @@ FreeFrame::FreeFrame(Entity entity, World* world) : Frame(entity, world)
 //==============================================================================
 void FreeFrame::setLocalTransform(const Eigen::Isometry3d& transform)
 {
-  auto& registry = m_world->getRegistry();
-  auto& props = registry.get<comps::FreeFrameProperties>(
-      detail::toRegistryEntity(m_entity));
+  auto& props = ecs::getMutable<FreeFrame, comps::FreeFrameProperties>(*this);
   props.localTransform = transform;
 
   markSubtreeTransformCacheDirty();

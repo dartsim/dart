@@ -14,6 +14,7 @@
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -42,7 +43,7 @@ namespace sxc = dart::simulation::experimental::compute;
 // Returns the (single) multibody structure component in the world.
 const sx::comps::MultibodyStructure& structureOf(sx::World& world)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<sx::comps::MultibodyStructure>();
   return registry.get<sx::comps::MultibodyStructure>(*view.begin());
 }
@@ -104,7 +105,7 @@ void expectPassiveChainEnergyDrift(
       joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
     }
     world.updateKinematics();
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const auto& structure = structureOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     const double e0
@@ -137,7 +138,7 @@ void expectPassiveChainEnergyDrift(
       joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
     }
     world.updateKinematics();
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const auto& structure = structureOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     const double e0
@@ -206,7 +207,11 @@ TEST(VariationalIntegration, PrismaticFreeFallMatchesConstantAcceleration)
 
   sxc::MultibodyVariationalState state;
   const auto report = sxc::integrateMultibodyVariational(
-      world.getRegistry(), structureOf(world), world.getGravity(), dt, state);
+      dart::simulation::experimental::detail::registryOf(world),
+      structureOf(world),
+      world.getGravity(),
+      dt,
+      state);
 
   EXPECT_TRUE(report.converged);
   auto joint = carriage.getParentJoint();
@@ -244,7 +249,11 @@ TEST(VariationalIntegration, RevolutePendulumFirstStepAcceleration)
 
   sxc::MultibodyVariationalState state;
   const auto report = sxc::integrateMultibodyVariational(
-      world.getRegistry(), structureOf(world), world.getGravity(), dt, state);
+      dart::simulation::experimental::detail::registryOf(world),
+      structureOf(world),
+      world.getGravity(),
+      dt,
+      state);
 
   EXPECT_TRUE(report.converged);
   const double expected
@@ -283,7 +292,7 @@ TEST(VariationalIntegration, PendulumConservesEnergyOverLongHorizon)
   bob.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 1.0));
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
 
@@ -342,7 +351,7 @@ TEST(VariationalIntegration, SelectableThroughWorldStep)
   bob.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 1.0));
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double energy0
@@ -403,7 +412,7 @@ TEST(VariationalIntegration, ArticulatedInverseMassMatchesDenseSolve)
   l3.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.2));
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::MatrixXd massMatrix
       = sxc::computeMultibodyDynamicsTerms(
@@ -494,7 +503,11 @@ TEST(VariationalIntegration, FloatingBaseFreeFall)
 
   sxc::MultibodyVariationalState state;
   const auto report = sxc::integrateMultibodyVariational(
-      world.getRegistry(), structureOf(world), world.getGravity(), dt, state);
+      dart::simulation::experimental::detail::registryOf(world),
+      structureOf(world),
+      world.getGravity(),
+      dt,
+      state);
 
   EXPECT_TRUE(report.converged);
   const Eigen::VectorXd accel = body.getParentJoint().getAcceleration();
@@ -531,7 +544,7 @@ TEST(VariationalIntegration, FloatingBaseTorqueFreeConservesEnergy)
   body.getParentJoint().setVelocity(v0);
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double energy0
@@ -590,7 +603,7 @@ TEST(VariationalIntegration, MaintainsDistanceLoopClosure)
   link2.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.4));
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
 
@@ -700,7 +713,7 @@ TEST(VariationalIntegration, ConstraintJacobianMatchesFiniteDifference)
   joints[1].setPosition(Eigen::VectorXd::Constant(1, -0.5));
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
 
   std::vector<sxc::VariationalLoopConstraint> constraints;
@@ -785,7 +798,7 @@ TEST(VariationalIntegration, RiqnMeanIterationsWithinBudget)
   }
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
 
@@ -835,7 +848,7 @@ TEST(VariationalIntegration, NonConvergenceRaisesDocumentedError)
   // A single RIQN iteration cannot drive the nonlinear residual below 1e-30.
   EXPECT_THROW(
       sxc::integrateMultibodyVariational(
-          world.getRegistry(),
+          dart::simulation::experimental::detail::registryOf(world),
           structureOf(world),
           world.getGravity(),
           dt,
@@ -874,7 +887,7 @@ TEST(VariationalIntegration, FloatingBaseConservesMomentum)
   body.getParentJoint().setVelocity(v0);
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
 
@@ -1060,7 +1073,7 @@ TEST(VariationalIntegration, RigidConstraintJacobianMatchesFiniteDifference)
   }
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Isometry3d tipPose = robot.getLinks().back().getTransform();
 
@@ -1338,7 +1351,7 @@ TEST(VariationalIntegration, LongChainConvergesWithinDefaultBudget)
   }
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   sxc::MultibodyVariationalState state;
@@ -1390,7 +1403,7 @@ TEST(VariationalIntegration, LongChainExactPreconditionerConvergesWithinBudget)
     }
     world.updateKinematics();
 
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const auto& structure = structureOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     const double energy0
@@ -1456,7 +1469,10 @@ TEST(VariationalIntegration, DefaultPathDoesNotEngageVariationalIntegrator)
   }
   // The variational stage (hence its state component) is never instantiated.
   EXPECT_EQ(
-      world.getRegistry().view<sxc::MultibodyVariationalState>().size(), 0u);
+      dart::simulation::experimental::detail::registryOf(world)
+          .view<sxc::MultibodyVariationalState>()
+          .size(),
+      0u);
 }
 
 // Measurement harness (disabled in CI): mean/max RIQN iterations vs chain
@@ -1489,7 +1505,7 @@ TEST(VariationalIntegration, DISABLED_RiqnIterationsVsChainLength)
       joint.setPosition(Eigen::VectorXd::Constant(1, 0.3));
     }
     world.updateKinematics();
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const auto& structure = structureOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     sxc::MultibodyVariationalState state;
@@ -1592,7 +1608,7 @@ TEST(VariationalIntegration, ManifoldAndersonAcceleratesSphericalChain)
     }
     world.updateKinematics();
 
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const auto& structure = structureOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     const double energy0
@@ -1721,7 +1737,7 @@ TEST(VariationalIntegration, ManifoldAndersonFloatingSphericalChainStaysCorrect)
     }
     world.updateKinematics();
 
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const auto& structure = structureOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     const double energy0
@@ -1847,7 +1863,11 @@ TEST(ExternalForce, VariationalFreeBodyAccelerationEqualsForceOverMass)
 
   sxc::MultibodyVariationalState state;
   const auto report = sxc::integrateMultibodyVariational(
-      world.getRegistry(), structureOf(world), world.getGravity(), dt, state);
+      dart::simulation::experimental::detail::registryOf(world),
+      structureOf(world),
+      world.getGravity(),
+      dt,
+      state);
 
   EXPECT_TRUE(report.converged);
   const Eigen::VectorXd accel = body.getParentJoint().getAcceleration();
@@ -1897,7 +1917,11 @@ TEST(ExternalForce, VariationalUpwardForceCancelsGravity)
 
   sxc::MultibodyVariationalState state;
   const auto report = sxc::integrateMultibodyVariational(
-      world.getRegistry(), structureOf(world), gravity, dt, state);
+      dart::simulation::experimental::detail::registryOf(world),
+      structureOf(world),
+      gravity,
+      dt,
+      state);
 
   EXPECT_TRUE(report.converged);
   const Eigen::VectorXd velocity = body.getParentJoint().getVelocity();
@@ -2079,7 +2103,7 @@ SpikeDrop dropOntoPlane(double mass, double k, double z0, double dt, int steps)
   carriage.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, z0));
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
 
@@ -2222,7 +2246,7 @@ TEST(VariationalContactSpike, EmptyHookReproducesNoContactTrajectoryExactly)
     }
     world.updateKinematics();
 
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const auto& structure = structureOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
 
@@ -2300,7 +2324,7 @@ TEST(VariationalGroundContact, CompliantSliderRestsBelowConfigurablePlane)
        Eigen::Vector3d::Zero()}); // carriage origin.
   const auto hook = sxc::makeVariationalGroundContactHook(contact);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   sxc::MultibodyVariationalState state;
   for (int step = 0; step < steps; ++step) {
@@ -2373,7 +2397,7 @@ TEST(VariationalGroundContact, CompliantContactStopsRevoluteChainTunneling)
       hook = sxc::makeVariationalGroundContactHook(contact);
     }
 
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     sxc::MultibodyVariationalState state;
     ChainRun run;
@@ -2425,7 +2449,7 @@ TEST(VariationalGroundContact, ZeroStiffnessMatchesNoContact)
           {structure.links.size() - 1, Eigen::Vector3d::Zero()});
       hook = sxc::makeVariationalGroundContactHook(contact);
     }
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     sxc::MultibodyVariationalState state;
     std::vector<double> trajectory;
@@ -2538,7 +2562,7 @@ TEST(VariationalGroundContact, LaggedFrictionDeceleratesSlidingBlock)
         {structure.links.size() - 1, Eigen::Vector3d::Zero()}); // block origin.
     const auto hook = sxc::makeVariationalGroundContactHook(contact);
 
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     sxc::MultibodyVariationalState state;
     SlideRun run;
@@ -2621,7 +2645,7 @@ TEST(
     const sxc::VariationalContactHook hook
         = useAl ? solver.hook() : penaltyHook;
 
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     const Eigen::Vector3d gravity = world.getGravity();
     sxc::MultibodyVariationalState state;
     std::vector<Eigen::Isometry3d> transforms(
@@ -2774,7 +2798,7 @@ TEST(VariationalGroundContact, ConfigRoundTripsThroughBinarySaveLoad)
 
   // The contact config came back field-for-field, including the std::vector
   // link-index / local-position parallel arrays.
-  auto& registry = loaded.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(loaded);
   auto view = registry.view<sx::comps::VariationalContact>();
   ASSERT_EQ(view.size(), 1u);
   const auto& cfg = registry.get<sx::comps::VariationalContact>(*view.begin());
@@ -3048,7 +3072,7 @@ TEST(VariationalLinkContact, SphereContactStopsSlidingLink)
   pair.radiusB = radius;
   const auto hook = sxc::makeVariationalLinkSphereContactHook(k, 20.0, {pair});
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity
       = world.getGravity(); // -Z; irrelevant to the x-only carriage.
   sxc::MultibodyVariationalState state;

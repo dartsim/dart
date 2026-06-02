@@ -131,7 +131,7 @@ enum class JointType
   ///      forwardKinematics; std::function<Eigen::MatrixXd(const
   ///      Eigen::VectorXd&)> jacobian;
   ///    };
-  ///    world.getRegistry().emplace<NeuralJointComponent>(jointEntity);
+  ///    dart::simulation::experimental::detail::registryOf(world).emplace<NeuralJointComponent>(jointEntity);
   ///    @endcode
   ///
   /// 3. Implementing custom ECS systems to handle the custom joint behavior

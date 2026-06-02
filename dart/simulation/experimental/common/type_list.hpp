@@ -40,7 +40,7 @@ namespace dart::simulation::experimental {
 //==============================================================================
 /// TypeList - compile-time list of types
 ///
-/// Used for declaring component access patterns in EntityObject.
+/// Used for declaring component access patterns in ComponentAccessPolicy.
 ///
 /// Example:
 /// @code
