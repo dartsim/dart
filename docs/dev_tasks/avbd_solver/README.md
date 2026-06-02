@@ -187,8 +187,11 @@ Paper audit:
     from world-space point-joint inputs, including a private fixed-joint ECS
     extractor and step-helper overload for rigid-body-linked joint entities.
     The internal contact-stage AVBD opt-in can also project those fixed-joint
-    rows with or without active contact rows. Public multibody joint extraction
-    is still not wired.
+    rows with or without active contact rows. A private current-pose bridge can
+    now derive AVBD local anchors and target relative orientation for
+    rigid-body-linked fixed joints, and it explicitly rejects multibody link
+    endpoints until those bodies have a real articulated AVBD state path.
+    Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, and
     not articulated joint support yet.
@@ -231,8 +234,8 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   contact-stage rigid AVBD activation, rigid contact/joint rows, or
-   rigid/articulated World wiring are the preferred next gaps now that static
+   contact-complete rigid joint rows, full narrow-phase feature extraction, or
+   true rigid/articulated World wiring are the preferred next gaps now that static
    box feature IDs, private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
    tangent dual projection, static contact/friction, attachments,
@@ -250,7 +253,8 @@ numbers.
    constraint values, and private World
    snapshot/step point-joint append/solve/apply coverage plus fixed-joint ECS
    extraction through the step helper and the internal contact-stage velocity
-   projection with or without active contacts have narrow CPU paths.
+   projection with or without active contacts, plus an explicit rigid-body
+   fixed-joint current-pose config bridge, have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

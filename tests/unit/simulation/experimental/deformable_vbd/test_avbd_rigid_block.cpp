@@ -29,6 +29,9 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
+#include <dart/simulation/experimental/multibody/joint.hpp>
+#include <dart/simulation/experimental/multibody/link.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Eigenvalues>
@@ -36,6 +39,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <optional>
 #include <vector>
 
 #include <cmath>
@@ -1626,6 +1630,99 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
       Eigen::Quaterniond(link.getTransform().linear()),
       Eigen::Quaterniond::Identity());
   EXPECT_LT(std::abs(error.z()), 0.05);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  baseOptions.position = Vec3(0.25, -0.5, 0.125);
+  baseOptions.orientation = rotationZ(-0.4);
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3(1.5, -0.25, 0.4);
+  linkOptions.orientation = rotationZ(0.7);
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = world.getRegistry();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  ASSERT_TRUE(
+      vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(
+          registry,
+          jointEntity,
+          /*startStiffness=*/125.0,
+          /*maxStiffness=*/1000.0));
+
+  const auto& config
+      = registry.get<vbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  const Vec3 expectedWorldAnchor = linkOptions.position;
+  EXPECT_TRUE(config.enabled);
+  EXPECT_NEAR(
+      (config.localAnchorA
+       - base.getTransform().inverse() * expectedWorldAnchor)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (config.targetRelativeOrientation.toRotationMatrix()
+       - (linkOptions.orientation * baseOptions.orientation.conjugate())
+             .toRotationMatrix())
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_DOUBLE_EQ(config.startStiffness, 125.0);
+  EXPECT_DOUBLE_EQ(config.maxStiffness, 1000.0);
+
+  const std::vector<vbd::AvbdRigidWorldPointJointInput> joints
+      = vbd::extractAvbdRigidWorldPointJointInputs(registry);
+  ASSERT_EQ(joints.size(), 1u);
+  EXPECT_EQ(joints[0].bodyA, base.getEntity());
+  EXPECT_EQ(joints[0].bodyB, link.getEntity());
+  EXPECT_NEAR((joints[0].anchorA - expectedWorldAnchor).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((joints[0].anchorB - expectedWorldAnchor).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (joints[0].targetRelativeOrientation.toRotationMatrix()
+       - config.targetRelativeOrientation.toRotationMatrix())
+          .norm(),
+      0.0,
+      1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldFixedJointHelperRejectsMultibodyLinks)
+{
+  sx::World world;
+  sx::Multibody robot = world.addMultibody("robot");
+  sx::Link root = robot.addLink("root");
+  robot.addLink(
+      "child",
+      root,
+      sx::JointSpec{
+          .name = "fixed",
+          .type = sx::JointType::Fixed,
+          .transformFromParent
+          = Eigen::Isometry3d(Eigen::Translation3d(Vec3::UnitX()))});
+  const std::optional<sx::Joint> fixed = robot.getJoint("fixed");
+  ASSERT_TRUE(fixed.has_value());
+
+  auto& registry = world.getRegistry();
+  EXPECT_FALSE(
+      vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(
+          registry, fixed->getEntity(), 100.0, 1000.0));
+  EXPECT_FALSE(
+      registry.all_of<vbd::AvbdRigidWorldPointJointConfig>(fixed->getEntity()));
 }
 
 //==============================================================================

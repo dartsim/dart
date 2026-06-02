@@ -161,6 +161,67 @@ inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
 }
 
 //==============================================================================
+inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
+    entt::registry& registry,
+    entt::entity jointEntity,
+    double startStiffness = 1.0,
+    double maxStiffness = std::numeric_limits<double>::infinity())
+{
+  if (!registry.valid(jointEntity) || !std::isfinite(startStiffness)
+      || startStiffness < 0.0 || std::isnan(maxStiffness)
+      || maxStiffness < startStiffness) {
+    return false;
+  }
+
+  const auto* joint = registry.try_get<comps::Joint>(jointEntity);
+  if (joint == nullptr || joint->type != comps::JointType::Fixed
+      || joint->parentLink == entt::null || joint->childLink == entt::null
+      || joint->parentLink == joint->childLink) {
+    return false;
+  }
+
+  if (!registry.all_of<
+          comps::RigidBodyTag,
+          comps::Transform,
+          comps::MassProperties>(joint->parentLink)
+      || !registry.all_of<
+          comps::RigidBodyTag,
+          comps::Transform,
+          comps::MassProperties>(joint->childLink)) {
+    return false;
+  }
+
+  const auto& transformA = registry.get<comps::Transform>(joint->parentLink);
+  const auto& transformB = registry.get<comps::Transform>(joint->childLink);
+  if (!transformA.position.allFinite() || !transformB.position.allFinite()
+      || !transformA.orientation.coeffs().allFinite()
+      || !transformB.orientation.coeffs().allFinite()) {
+    return false;
+  }
+
+  const Eigen::Quaterniond orientationA
+      = normalizeAvbdRigidOrientation(transformA.orientation);
+  const Eigen::Quaterniond orientationB
+      = normalizeAvbdRigidOrientation(transformB.orientation);
+  const Eigen::Isometry3d worldA = avbdRigidWorldContactToIsometry(
+      AvbdRigidBodyState{transformA.position, orientationA});
+  const Eigen::Isometry3d worldB = avbdRigidWorldContactToIsometry(
+      AvbdRigidBodyState{transformB.position, orientationB});
+  const Eigen::Vector3d worldAnchor = worldB.translation();
+
+  auto& config = registry.emplace_or_replace<AvbdRigidWorldPointJointConfig>(
+      jointEntity);
+  config.enabled = true;
+  config.localAnchorA = worldA.inverse() * worldAnchor;
+  config.localAnchorB = worldB.inverse() * worldAnchor;
+  config.targetRelativeOrientation
+      = normalizeAvbdRigidOrientation(orientationB * orientationA.conjugate());
+  config.startStiffness = startStiffness;
+  config.maxStiffness = maxStiffness;
+  return true;
+}
+
+//==============================================================================
 inline Eigen::Isometry3d avbdRigidWorldContactFrameLocalTransform(
     const entt::registry& registry, entt::entity entity)
 {
@@ -275,6 +336,10 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
   if (geometry == nullptr) {
     return endpoint;
   }
+  const CollisionShape* shape = geometry->getPrimaryShape();
+  if (shape == nullptr) {
+    return endpoint;
+  }
 
   const Eigen::Vector3d localPoint
       = avbdRigidWorldContactLocalPoint(registry, entity, point);
@@ -282,31 +347,28 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     return endpoint;
   }
 
-  if (geometry->shape.type == CollisionShapeType::Box
-      && geometry->shape.halfExtents.allFinite()
-      && (geometry->shape.halfExtents.array() > 0.0).all()) {
+  if (shape->type == CollisionShapeType::Box && shape->halfExtents.allFinite()
+      && (shape->halfExtents.array() > 0.0).all()) {
     const std::uint64_t featureCode
-        = avbdBoxContactFeatureCode(localPoint, geometry->shape.halfExtents);
+        = avbdBoxContactFeatureCode(localPoint, shape->halfExtents);
     endpoint.feature = packAvbdContactFeatureId(
         avbdBoxContactFeatureKind(featureCode),
         packAvbdBoxContactFeatureId(/*boxIndex=*/0, featureCode));
   } else if (
-      geometry->shape.type == CollisionShapeType::Cylinder
-      && std::isfinite(geometry->shape.radius) && geometry->shape.radius > 0.0
-      && geometry->shape.halfExtents.allFinite()
-      && geometry->shape.halfExtents.z() > 0.0) {
+      shape->type == CollisionShapeType::Cylinder
+      && std::isfinite(shape->radius) && shape->radius > 0.0
+      && shape->halfExtents.allFinite() && shape->halfExtents.z() > 0.0) {
     const std::uint64_t featureCode = avbdCylinderContactFeatureCode(
-        localPoint, geometry->shape.radius, geometry->shape.halfExtents.z());
+        localPoint, shape->radius, shape->halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCylinderContactFeatureKind(featureCode),
         packAvbdCylinderContactFeatureId(/*cylinderIndex=*/0, featureCode));
   } else if (
-      geometry->shape.type == CollisionShapeType::Capsule
-      && std::isfinite(geometry->shape.radius) && geometry->shape.radius > 0.0
-      && geometry->shape.halfExtents.allFinite()
-      && geometry->shape.halfExtents.z() > 0.0) {
-    const std::uint64_t featureCode = avbdCapsuleContactFeatureCode(
-        localPoint, geometry->shape.halfExtents.z());
+      shape->type == CollisionShapeType::Capsule && std::isfinite(shape->radius)
+      && shape->radius > 0.0 && shape->halfExtents.allFinite()
+      && shape->halfExtents.z() > 0.0) {
+    const std::uint64_t featureCode
+        = avbdCapsuleContactFeatureCode(localPoint, shape->halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCapsuleContactFeatureKind(featureCode),
         packAvbdCapsuleContactFeatureId(/*capsuleIndex=*/0, featureCode));
