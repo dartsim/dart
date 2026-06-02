@@ -34,13 +34,14 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {
 
 //==============================================================================
-FreeFrame::FreeFrame(entt::entity entity, World* world)
-  : Frame(entity, world),
+FreeFrame::FreeFrame(Entity entity, World* world)
+  : Frame(detail::toRegistryEntity(entity), world),
     EntityObjectWith<
         TagComps<comps::FreeFrameTag>,
         ReadOnlyComps<>,
@@ -51,7 +52,8 @@ FreeFrame::FreeFrame(entt::entity entity, World* world)
 #ifndef NDEBUG
   auto& registry = world->getRegistry();
   DART_EXPERIMENTAL_THROW_T_IF(
-      !registry.all_of<comps::FreeFrameProperties>(entity),
+      !registry.all_of<comps::FreeFrameProperties>(
+          detail::toRegistryEntity(entity)),
       InvalidArgumentException,
       "Entity does not have FreeFrameProperties component");
 #endif

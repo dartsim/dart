@@ -53,6 +53,7 @@ PROMOTE_TOPLEVEL = {
     "world.hpp",
     "world_options.hpp",
     "world_sync_stage.hpp",
+    "entity.hpp",
     "fwd.hpp",
     "export.hpp",
     "version.hpp",
@@ -67,6 +68,9 @@ PROMOTE_DIRS = (
 )
 
 # ECS-storage leak markers that must not appear in a promoted public header.
+# Both includes and symbol usage count: handles expose ECS not only via
+# includes but also via the EntityObject/EntityObjectWith template base and
+# comps:: types named in the public class declaration.
 LEAK_PATTERNS = {
     "entt-include": re.compile(r"#\s*include\s*<entt[/>]"),
     "entt-symbol": re.compile(r"\bentt::"),
@@ -75,6 +79,8 @@ LEAK_PATTERNS = {
         r"#\s*include\s*[<\"]dart/simulation/experimental/comps/"
     ),
     "ecs-include": re.compile(r"#\s*include\s*[<\"]dart/simulation/experimental/ecs/"),
+    "comps-symbol": re.compile(r"\bcomps::"),
+    "entity-object-base": re.compile(r"\bEntityObject(With)?\b"),
 }
 
 

@@ -51,6 +51,7 @@
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure_spec.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/diff/physical_parameter.hpp"
 #include "dart/simulation/experimental/diff/step_derivatives.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
@@ -1270,7 +1271,7 @@ FreeFrame World::addFreeFrame(std::string_view name, const Frame& parent)
       false,
       actualName);
 
-  return FreeFrame(entity, this);
+  return FreeFrame(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================
@@ -1306,7 +1307,7 @@ FixedFrame World::addFixedFrame(
       true,
       actualName);
 
-  return FixedFrame(entity, this);
+  return FixedFrame(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================

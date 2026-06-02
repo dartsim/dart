@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 
 #include <Eigen/Dense>
@@ -62,7 +63,7 @@ class DART_EXPERIMENTAL_API FixedFrame
 {
 public:
   /// Constructor (package-private, use World::addFixedFrame)
-  FixedFrame(entt::entity entity, World* world);
+  FixedFrame(Entity entity, World* world);
 
   //--------------------------------------------------------------------------
   // Transform API

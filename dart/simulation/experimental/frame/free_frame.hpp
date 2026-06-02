@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 
 #include <Eigen/Dense>
@@ -61,7 +62,7 @@ class DART_EXPERIMENTAL_API FreeFrame
 {
 public:
   /// Constructor (package-private, use World::addFreeFrame)
-  FreeFrame(entt::entity entity, World* world);
+  FreeFrame(Entity entity, World* world);
 
   //--------------------------------------------------------------------------
   // Transform API

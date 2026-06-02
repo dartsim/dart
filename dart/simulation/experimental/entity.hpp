@@ -30,43 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/frame/fixed_frame.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/common/exceptions.hpp"
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/detail/entity_conversion.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <cstdint>
 
 namespace dart::simulation::experimental {
 
-//==============================================================================
-FixedFrame::FixedFrame(Entity entity, World* world)
-  : Frame(detail::toRegistryEntity(entity), world),
-    EntityObjectWith<
-        TagComps<comps::FixedFrameTag>,
-        ReadOnlyComps<>,
-        WriteOnlyComps<>,
-        ReadWriteComps<comps::FixedFrameProperties>>()
+/// Opaque, backend-neutral identifier for an object owned by a `World`.
+///
+/// The promoted DART 7 public simulation API uses `Entity` instead of the
+/// underlying ECS entity type so that public headers do not depend on the
+/// storage backend. The numeric `value` is an implementation detail: treat
+/// `Entity` as an opaque token obtained from, and passed back to, the `World`
+/// and handle APIs. Convert between `Entity` and the internal ECS entity only
+/// through the internal `detail/entity_conversion.hpp` seam.
+struct Entity
 {
-  // Validate entity has FixedFrameProperties
-#ifndef NDEBUG
-  auto& registry = world->getRegistry();
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !registry.all_of<comps::FixedFrameProperties>(
-          detail::toRegistryEntity(entity)),
-      InvalidArgumentException,
-      "Entity does not have FixedFrameProperties component");
-#endif
-}
+  /// Backend-encoded identifier. Implementation detail; do not interpret. The
+  /// default value is a non-addressable sentinel for a null/invalid entity.
+  std::uint32_t value = 0xFFFFFFFFu;
 
-//==============================================================================
-void FixedFrame::setLocalTransform(const Eigen::Isometry3d& transform)
-{
-  auto& registry = m_world->getRegistry();
-  auto& props = registry.get<comps::FixedFrameProperties>(m_entity);
-  props.localTransform = transform;
-
-  markSubtreeTransformCacheDirty();
-}
+  friend bool operator==(const Entity&, const Entity&) = default;
+};
 
 } // namespace dart::simulation::experimental

@@ -30,43 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/frame/fixed_frame.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/common/exceptions.hpp"
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/detail/entity_conversion.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/entity.hpp>
 
-namespace dart::simulation::experimental {
+#include <entt/entt.hpp>
 
-//==============================================================================
-FixedFrame::FixedFrame(Entity entity, World* world)
-  : Frame(detail::toRegistryEntity(entity), world),
-    EntityObjectWith<
-        TagComps<comps::FixedFrameTag>,
-        ReadOnlyComps<>,
-        WriteOnlyComps<>,
-        ReadWriteComps<comps::FixedFrameProperties>>()
+#include <cstdint>
+
+namespace dart::simulation::experimental::detail {
+
+/// Internal seam converting the public opaque `Entity` token to the ECS entity
+/// handle. Keep all `Entity` <-> `entt::entity` conversions here so public
+/// headers never depend on the storage backend.
+[[nodiscard]] inline entt::entity toRegistryEntity(Entity entity)
 {
-  // Validate entity has FixedFrameProperties
-#ifndef NDEBUG
-  auto& registry = world->getRegistry();
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !registry.all_of<comps::FixedFrameProperties>(
-          detail::toRegistryEntity(entity)),
-      InvalidArgumentException,
-      "Entity does not have FixedFrameProperties component");
-#endif
+  return static_cast<entt::entity>(entity.value);
 }
 
-//==============================================================================
-void FixedFrame::setLocalTransform(const Eigen::Isometry3d& transform)
+/// Internal seam converting an ECS entity handle to the public opaque `Entity`.
+[[nodiscard]] inline Entity fromRegistryEntity(entt::entity entity)
 {
-  auto& registry = m_world->getRegistry();
-  auto& props = registry.get<comps::FixedFrameProperties>(m_entity);
-  props.localTransform = transform;
-
-  markSubtreeTransformCacheDirty();
+  return Entity{static_cast<std::uint32_t>(entity)};
 }
 
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation::experimental::detail
