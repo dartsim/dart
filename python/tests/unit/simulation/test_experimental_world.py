@@ -505,6 +505,25 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
         world.add_rigid_body_fixed_joint("late_joint", base, link)
 
 
+def test_experimental_world_rigid_body_fixed_joint_list_keeps_world_alive():
+    sx = _simulation_experimental()
+
+    def build_joints_from_temporary_world():
+        world = sx.World()
+        base = world.add_rigid_body("base")
+        link = world.add_rigid_body("link")
+        world.add_rigid_body_fixed_joint("base_to_link", base, link)
+        return world.get_rigid_body_fixed_joints()
+
+    fixed_joints = build_joints_from_temporary_world()
+    gc.collect()
+
+    assert len(fixed_joints) == 1
+    assert fixed_joints[0].name == "base_to_link"
+    assert fixed_joints[0].parent_rigid_body.name == "base"
+    assert fixed_joints[0].child_rigid_body.name == "link"
+
+
 def test_experimental_multibody_link_joint_common_path():
     sx = _simulation_experimental()
 

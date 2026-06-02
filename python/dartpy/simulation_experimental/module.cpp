@@ -340,6 +340,18 @@ nb::list castMultibodiesKeepingWorldAlive(
   return result;
 }
 
+nb::list castJointsKeepingWorldAlive(
+    std::vector<sim::Joint> joints, const nb::handle& world)
+{
+  nb::list result;
+  for (auto& joint : joints) {
+    nb::object jointObject = nb::cast(std::move(joint), nb::rv_policy::move);
+    nb::detail::keep_alive(jointObject.ptr(), world.ptr());
+    result.append(jointObject);
+  }
+  return result;
+}
+
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
 {
   if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
@@ -2683,7 +2695,11 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("name"))
       .def(
           "get_rigid_body_fixed_joints",
-          [](sim::World& self) { return self.getRigidBodyFixedJoints(); })
+          [](const nb::object& worldObject) {
+            auto& self = nb::cast<sim::World&>(worldObject);
+            return castJointsKeepingWorldAlive(
+                self.getRigidBodyFixedJoints(), worldObject);
+          })
       .def(
           "has_rigid_body",
           [](const sim::World& self, const std::string& name) {
