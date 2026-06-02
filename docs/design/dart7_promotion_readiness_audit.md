@@ -160,50 +160,33 @@ internals, `compute/*` backend/kernel implementations (executors, kernels,
 device/batch backends), and `World::getRegistry()`. The `diff/` subtree is a
 separate opt-in capability (PLAN-110), not core-promotion surface.
 
-## Blockers To Clear Before Promotion (checklist)
+## Promotion Blockers (durable design constraints)
 
-Tracked against PLAN-041 workstreams; each needs its own implementation PR:
+The audit above identifies the surface promotion must clear. As durable design
+constraints (per-workstream tracking and status live in the plan, see below):
 
-- [ ] **B-AUDIT-1 (WS2)** Replace the install glob with an explicit public-header
-      allowlist (or move internals under `detail/`/non-installed paths) so only the
-      PROMOTE subset installs.
-- [ ] **B-AUDIT-2 (WS2)** Make `EnTT` and `Taskflow` **private** component
-      dependencies; the promoted public headers must not include or require either.
-- [ ] **B-AUDIT-3 (WS2)** Make the promoted baseline build in default builds
-      (remove the `DART_BUILD_SIMULATION_EXPERIMENTAL` gate for the promoted
-      subset); keep reduced-build/package smokes while the option still exists.
-- [ ] **B-AUDIT-4 (WS5)** Clean the promote-target handles so no public signature
-      or include exposes `entt`/registry/components (opaque ownership / pimpl /
-      forward-declared handles).
-- [ ] **B-AUDIT-5 (WS5)** Remove or internalize `World::getRegistry()` from the
-      promoted header (keep only behind an internal/test-only path).
-- [ ] **B-AUDIT-6 (WS3)** Extend `scripts/check_api_boundaries.py` +
-      `generate_api_boundary_inventory.py` to **reject** EnTT/registry/`getRegistry`/
-      `comps`/`ecs`/`detail`/solver-registry/backend leakage from the _promoted_
-      headers, and add negative installed-package smokes for forbidden headers and
-      the obsolete `simulation-experimental` target.
-- [ ] **B-AUDIT-7 (WS4)** Resolve the `dart::simulation::World` name collision per
-      the Workstream 4 transaction design before the promoted facade owns the
-      official namespace.
-- [ ] **B-AUDIT-8 (WS6)** Confirm the `dartpy.simulation` import path, the
-      `dartpy.World` decision, and no duplicate nanobind class registration.
+- **Install boundary:** replace the `*.hpp` install glob with an explicit
+  public-header allowlist; make `EnTT`/`Taskflow` private dependencies; make the
+  promoted baseline build without `DART_BUILD_SIMULATION_EXPERIMENTAL`.
+- **Handle de-ECS:** no promoted public signature or include exposes
+  `entt`/registry/component types; remove or internalize `World::getRegistry()`.
+- **Boundary enforcement:** boundary checks reject EnTT/registry/`comps`/`ecs`/
+  `detail`/backend leakage from promoted headers, with negative
+  installed-package smokes.
+- **Name collision:** clear `dart::simulation::World` via an explicit
+  transaction before the promoted facade owns the official namespace.
+- **Python facade:** confirm the `dartpy.simulation` path and the `dartpy.World`
+  decision with no duplicate nanobind registration.
 
-## Parity Evidence Map (gates the promotion claim)
+## Operating state lives in the plan, not here
 
-Promotion of the public subset cannot be **claimed** until the DART 7 checkable
-parity gates (`docs/onboarding/release-roadmap.md`) have direct evidence. Current
-state (this audit references in-flight work for context only; it does not own
-those PRs):
-
-| Gate (release roadmap)       | Required evidence                                                      | Status (as of this audit)                      |
-| ---------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------- |
-| Experimental model loading   | URDF/SDF/MJCF/SKEL load with topology/DOF/transform/mass/collision.    | In review (PLAN-080 model-loader work).        |
-| Rigid dynamics parity        | Shared open-chain scenes match classic DART 6 within tolerances.       | Harness in progress (PLAN-080 B2).             |
-| Contact/constraint parity    | Contacts, friction, limits, motors, mimic/coupler, loop closures.      | Unified boxed-LCP solver in review (PLAN-080). |
-| Serialization/replay parity  | Topology/state/assets + record/replay round-trip within bounded error. | Not yet started (owed; B4).                    |
-| Stable public API promotion  | Promoted APIs hide ECS/components/solver/backend (boundary checks).    | Blocked on B-AUDIT-1..6 above.                 |
-| Name-collision resolution    | `dart::simulation::World` cleared via explicit transaction.            | Design proposed (WS4).                         |
-| Core build/tests + packaging | Lint, build, tests, package/export smokes per touched scope.           | Per-PR.                                        |
+Per [`AGENTS.md`](AGENTS.md), this design doc does not own gates, per-workstream
+status, or implementation handoff. The blocker workstream sequence, current
+status, and the parity-evidence gates that block the promotion claim are tracked
+in [`../plans/dashboard.md`](../plans/dashboard.md) and
+[`../plans/041-official-simulation-api-promotion.md`](../plans/041-official-simulation-api-promotion.md)
+(PLAN-041), with the DART 7 checkable parity gates in
+[`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md).
 
 ## WS1 Acceptance
 
