@@ -71,6 +71,7 @@ add_library(
   comps/multibody.cpp
   comps/name.cpp
   comps/rigid_body.cpp
+  detail/affine_body_dynamics.cpp
   detail/boxed_lcp_contact.cpp
   detail/deformable_contact/continuous_collision_step.cpp
   detail/rigid_ipc_barrier.cpp

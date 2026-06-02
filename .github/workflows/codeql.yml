@@ -44,6 +44,7 @@ jobs:
   analyze:
     name: Security | CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       BUILD_TYPE: Release
       DART_VERBOSE: ON
@@ -56,11 +57,13 @@ jobs:
             run_build: true
             dartpy: "OFF"
             gui: "OFF"
+            cmake_build_type: Debug
           - language: python
             build_mode: none
             run_build: false
             dartpy: "ON"
             gui: "ON"
+            cmake_build_type: Release
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -87,14 +90,23 @@ jobs:
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
         run: |
-          pixi run config ${{ matrix.dartpy }}
+          pixi run config ${{ matrix.dartpy }} ${{ matrix.cmake_build_type }}
 
       - name: Build
         if: matrix.run_build
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
         run: |
-          pixi run build ${{ matrix.dartpy }}
+          BUILD_DIR="build/default/cpp/${{ matrix.cmake_build_type }}"
+          pixi run python scripts/cmake_build.py \
+            --build-dir "$BUILD_DIR" \
+            --target dart_component_dart \
+            --target dart-collision-native \
+            --target dart-utils \
+            --target dart-utils-urdf \
+            --target dart-io \
+            --target dart-simulation-experimental \
+            --target dartsim_engine
 
       - name: CodeQL Analyze
         uses: github/codeql-action/analyze@v4
