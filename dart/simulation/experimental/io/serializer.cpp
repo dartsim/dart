@@ -368,11 +368,26 @@ void deserializeBranchV11CollisionGeometry(
   geometry.revision = 0;
 }
 
+void deserializeLegacyMassProperties(
+    std::istream& input, comps::MassProperties& mass)
+{
+  readPOD(input, mass.mass);
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i; j < 3; ++j) {
+      readPOD(input, mass.inertia(i, j));
+      if (i != j) {
+        mass.inertia(j, i) = mass.inertia(i, j);
+      }
+    }
+  }
+  readVector3d(input, mass.localCenterOfMass);
+}
+
 void deserializeLinkV8(
     std::istream& input, comps::Link& link, std::uint32_t formatVersion)
 {
   readString(input, link.name);
-  autoDeserialize(input, link.mass);
+  deserializeLegacyMassProperties(input, link.mass);
 
   link.transformFromParentToJoint = Eigen::Isometry3d::Identity();
   readIsometry3d(input, link.transformFromParentJoint);
