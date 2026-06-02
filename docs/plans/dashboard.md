@@ -277,9 +277,37 @@ its own line so status updates remain git-history friendly.
   their generalized tangential dual into the current 12D tangent stencil. The
   first private rigid foundation adds a 6-DOF block accumulator, world-frame
   quaternion tangent update, inertia term, block solve, scalar rigid
-  point-attachment row, and two-body point-pair row stamping. It is not a
-  scene-level parity claim. The next local slice is dynamic/rigid contact
-  manifold IDs, rigid contact/joint rows, or rigid/articulated World wiring.
+  point-attachment row, two-body point-pair row stamping, and private
+  point-pair contact/friction row constructors plus paired friction-cone
+  projection, with a private serial row driver for point attachments,
+  contact-normal point pairs, and paired friction tangent rows, and a private
+  rigid contact-manifold row builder for active contact points. Private
+  dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
+  normal/friction row descriptor helpers have started, and private
+  World-contact snapshot/solve/writeback helpers now translate rigid-body
+  `World::collide()` contacts into manifold-point inputs, run them through the
+  private serial rigid row solve, and write dynamic rigid-body state back to the
+  ECS through a combined private wrapper in focused tests. The first
+  contact-stage AVBD activation is now available behind the internal
+  `RigidAvbdContactConfig`: supported free rigid-body contacts route through
+  the private 6-DOF AVBD row solve as a velocity-level projection while
+  unsupported envelopes fall back to the existing sequential-impulse path. The
+  private rigid contact snapshot now derives box face/edge/corner endpoint
+  feature IDs and scopes row ordinals per canonical endpoint pair for narrower
+  warm-start persistence, cylinder side/cap/rim and capsule
+  side/top-cap/bottom-cap endpoint features extend the same private identity
+  path beyond boxes, and the private rigid row path now has point-joint linear,
+  angular, and combined row builders for fixed-anchor
+  translation and orientation constraints, with step-start previous values
+  seeded for AVBD alpha regularization. Those private point-joint rows can now
+  be appended to the World rigid snapshot/solve/apply wrapper and combined step
+  helper from world-space point-joint inputs, and a private fixed-joint ECS
+  extractor can feed the step helper for rigid-body-linked joint entities. The
+  internal contact-stage AVBD opt-in can project those fixed-joint rows with or
+  without active contacts. Public multibody joint extraction is not wired yet.
+  The next local slice is full narrow-phase feature extraction,
+  contact-complete rigid joint rows, or broader rigid/articulated World
+  integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

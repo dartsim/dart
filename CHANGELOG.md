@@ -578,6 +578,33 @@
     reproduced on a cartpole. All gradients are finite-difference-of-step
     verified; no solver, reverse-pass cache, ECS, or tensor-backend types are
     exposed publicly.
+  - Added the first internal experimental AVBD rigid-body contact-stage
+    activation for supported free rigid-body contacts. The first World slice
+    routes privately opted-in rigid contacts through private 6-DOF AVBD
+    point-pair rows as a velocity-level projection while unsupported envelopes
+    fall back to the existing sequential-impulse path; no AVBD row storage or
+    solver registry is exposed through the public facade. The private rigid
+    contact snapshot now also derives box face/edge/corner and capsule
+    side/top-cap/bottom-cap endpoint feature IDs and scopes contact row ordinals
+    per canonical endpoint pair so unrelated contact manifolds do not perturb
+    warm-start identity. Added private rigid point-joint linear, angular, and
+    combined AVBD row builders so fixed-anchor joint translation and orientation
+    rows can share the rigid row driver; the builders seed step-start constraint
+    values for AVBD alpha regularization. This is not articulated World joint
+    wiring yet.
+  - Extended the private AVBD rigid contact feature identity path with cylinder
+    side/cap/rim endpoint features, so cylinder contacts warm-start across
+    same-feature motion but reset when they move between barrel, cap, and rim
+    manifolds. Capsule side/top-cap/bottom-cap endpoint features provide the
+    same private warm-start partitioning for capsule contacts.
+  - Added a private AVBD rigid World point-joint snapshot path that appends
+    world-space point-joint inputs to the same rigid snapshot/solve/apply
+    wrapper and combined step helper with persistent linear and angular joint
+    row inventories. A detail-only fixed-joint ECS extractor and step-helper
+    overload can now feed that private path for rigid-body-linked joint
+    entities, and the internal contact-stage AVBD opt-in can project those
+    fixed joint rows with or without active contact rows. Public multibody
+    joint wiring is still out of scope.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
