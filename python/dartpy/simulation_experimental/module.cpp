@@ -2611,6 +2611,18 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("inertia") = nb::none(),
           nb::keep_alive<0, 1>())
       .def(
+          "add_rigid_body_fixed_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child) {
+            return self.addRigidBodyFixedJoint(name, parent, child);
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::keep_alive<0, 1>())
+      .def(
           "has_rigid_body",
           [](const sim::World& self, const std::string& name) {
             return self.hasRigidBody(name);

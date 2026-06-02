@@ -179,6 +179,7 @@ def test_experimental_api_exposes_python_names_only():
             "hasMultibody",
             "getMultibodyCount",
             "addRigidBody",
+            "addRigidBodyFixedJoint",
             "getRigidBody",
             "hasRigidBody",
             "getRigidBodyCount",
@@ -285,6 +286,7 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def set_runtime_policy(",
         "def getMultibody(",
         "def hasMultibody(",
+        "def addRigidBodyFixedJoint(",
         "def has_multibody_count(",
         "def get_rigid_body_count(",
     )
@@ -441,6 +443,34 @@ def test_experimental_world_smoke():
     assert world.num_multibodies == 0
     assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
+
+
+def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
+    sx = _simulation_experimental()
+
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    base = world.add_rigid_body("base")
+    base.is_static = True
+    link = world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
+
+    joint = world.add_rigid_body_fixed_joint("base_to_link", base, link)
+    assert joint.name == "base_to_link"
+    assert joint.type == sx.JointType.FIXED
+    assert joint.num_dofs == 0
+    with pytest.raises(Exception, match="already exists"):
+        world.add_rigid_body_fixed_joint("base_to_link", base, link)
+
+    drifted_pose = np.eye(4)
+    drifted_pose[:3, 3] = (1.25, 0.0, 0.0)
+    link.transform = drifted_pose
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert float(link.translation[0]) == pytest.approx(1.0, abs=0.05)
+    assert float(link.linear_velocity[0]) < 0.0
+    with pytest.raises(Exception, match="simulation mode"):
+        world.add_rigid_body_fixed_joint("late_joint", base, link)
 
 
 def test_experimental_multibody_link_joint_common_path():

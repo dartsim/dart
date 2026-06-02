@@ -72,6 +72,7 @@ from .scenes.soft_bodies import SCENE as SOFT_BODIES
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
+from .scenes.sx_rigid_fixed_joint import SCENE as SX_RIGID_FIXED_JOINT
 from .scenes.sx_loop_closure import SCENE as SX_LOOP_CLOSURE
 from .scenes.sx_rigid_ipc import SCENE as SX_RIGID_IPC
 from .scenes.sx_rigid_ipc_incline import SCENE as SX_RIGID_IPC_INCLINE
@@ -145,6 +146,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_FLOATING_BASE,
         SX_CONTACT,
         EXPERIMENTAL_RIGID_BODY_GUI,
+        SX_RIGID_FIXED_JOINT,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
         # a drop, friction (flat + inclined), a multi-body pile, then the
         # intersection-free (no-tunneling) guarantee. Only scenes that run in

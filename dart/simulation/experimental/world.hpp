@@ -201,6 +201,20 @@ public:
   RigidBody addRigidBody(
       std::string_view name,
       const RigidBodyOptions& options = RigidBodyOptions{});
+  /// Create a fixed constraint between two free rigid bodies.
+  ///
+  /// The current relative pose is captured when the joint is created. During
+  /// simulation steps the experimental rigid-body constraint path projects the
+  /// child body back toward that captured pose. This is design-mode only:
+  /// create bodies and fixed joints before `enterSimulationMode()`.
+  ///
+  /// @throws InvalidArgumentException if either body is invalid, belongs to a
+  ///         different World, both handles refer to the same body, or the name
+  ///         is already used by another joint.
+  /// @throws InvalidOperationException if the World is in simulation mode or
+  ///         the internal fixed-joint row configuration fails.
+  Joint addRigidBodyFixedJoint(
+      std::string_view name, const RigidBody& parent, const RigidBody& child);
   std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;

@@ -59,6 +59,7 @@
 #include "dart/simulation/experimental/frame/free_frame.hpp"
 #include "dart/simulation/experimental/io/binary_io.hpp"
 #include "dart/simulation/experimental/io/serializer.hpp"
+#include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/multibody/multibody.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
@@ -1551,6 +1552,103 @@ RigidBody World::addRigidBody(
   }
 
   return RigidBody(entity, this);
+}
+
+//==============================================================================
+Joint World::addRigidBodyFixedJoint(
+    std::string_view name, const RigidBody& parent, const RigidBody& child)
+{
+  ensureDesignMode();
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !parent.isValid(),
+      InvalidArgumentException,
+      "Fixed-joint parent rigid body is invalid or has been destroyed");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !child.isValid(),
+      InvalidArgumentException,
+      "Fixed-joint child rigid body is invalid or has been destroyed");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      parent.getWorld() != this || child.getWorld() != this,
+      InvalidArgumentException,
+      "Fixed-joint rigid bodies must belong to this World");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      parent.getEntity() == child.getEntity(),
+      InvalidArgumentException,
+      "Fixed-joint parent and child rigid bodies must be distinct");
+
+  const entt::entity parentEntity = parent.getEntity();
+  const entt::entity childEntity = child.getEntity();
+  const bool parentIsRigidBody = m_registry.all_of<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::MassProperties>(parentEntity);
+  const bool childIsRigidBody = m_registry.all_of<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::MassProperties>(childEntity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !parentIsRigidBody || !childIsRigidBody,
+      InvalidArgumentException,
+      "Fixed-joint endpoints must be valid rigid bodies");
+
+  std::string actualName;
+  if (name.empty()) {
+    do {
+      actualName = std::format("joint_{:03d}", ++m_jointCounter);
+    } while (hasEntityWithName<comps::Joint>(m_registry, actualName));
+  } else {
+    actualName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasEntityWithName<comps::Joint>(m_registry, actualName),
+        InvalidArgumentException,
+        "Joint '{}' already exists",
+        actualName);
+  }
+
+  const entt::entity jointEntity = m_registry.create();
+  m_registry.emplace<comps::Name>(jointEntity, actualName);
+
+  auto& joint = m_registry.emplace<comps::Joint>(jointEntity);
+  joint.type = comps::JointType::Fixed;
+  joint.name = std::move(actualName);
+  joint.parentLink = parentEntity;
+  joint.childLink = childEntity;
+
+  const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
+  joint.position = Eigen::VectorXd::Zero(dof);
+  joint.velocity = Eigen::VectorXd::Zero(dof);
+  joint.acceleration = Eigen::VectorXd::Zero(dof);
+  joint.torque = Eigen::VectorXd::Zero(dof);
+  joint.springStiffness = Eigen::VectorXd::Zero(dof);
+  joint.dampingCoefficient = Eigen::VectorXd::Zero(dof);
+  joint.restPosition = Eigen::VectorXd::Zero(dof);
+  joint.armature = Eigen::VectorXd::Zero(dof);
+  joint.coulombFriction = Eigen::VectorXd::Zero(dof);
+  joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+
+  const double infinity = std::numeric_limits<double>::infinity();
+  joint.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
+
+  const comps::RigidAvbdContactConfig defaultAvbdConfig;
+  if (!detail::deformable_vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(
+          m_registry,
+          jointEntity,
+          defaultAvbdConfig.startStiffness,
+          defaultAvbdConfig.maxStiffness)) {
+    m_registry.destroy(jointEntity);
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "Failed to configure fixed joint '{}' from current rigid-body poses",
+        name);
+  }
+
+  return Joint(jointEntity, this);
 }
 
 //==============================================================================

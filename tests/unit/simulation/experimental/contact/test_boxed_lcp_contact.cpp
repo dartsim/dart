@@ -43,9 +43,10 @@
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
-#include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
+#include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 
@@ -262,6 +263,46 @@ TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
   EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// The public facade should create the fixed-joint row config without exposing
+// ECS or AVBD detail components to users.
+TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyFixedJoint("base_to_link", base, link);
+  EXPECT_EQ(joint.getName(), "base_to_link");
+  EXPECT_EQ(joint.getType(), sx::JointType::Fixed);
+  EXPECT_EQ(joint.getDOFCount(), 0u);
+  EXPECT_THROW(
+      world.addRigidBodyFixedJoint("base_to_link", base, link),
+      sx::InvalidArgumentException);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  link.setTransform(driftedPose);
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_THROW(
+      world.addRigidBodyFixedJoint("late_joint", base, link),
+      sx::InvalidOperationException);
 }
 
 //==============================================================================
