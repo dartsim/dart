@@ -36,6 +36,7 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -192,7 +193,7 @@ std::optional<Link> Multibody::getLink(std::string_view name) const
   for (const auto& linkEntity : structure.links) {
     const auto& nameComp = safeGet<comps::Name>(registry, linkEntity);
     if (nameComp.name == name) {
-      return Link(linkEntity, m_world);
+      return Link(detail::fromRegistryEntity(linkEntity), m_world);
     }
   }
 
@@ -225,7 +226,7 @@ std::vector<Link> Multibody::getLinks() const
   std::vector<Link> links;
   links.reserve(structure.links.size());
   for (const auto& linkEntity : structure.links) {
-    links.emplace_back(linkEntity, m_world);
+    links.emplace_back(detail::fromRegistryEntity(linkEntity), m_world);
   }
 
   return links;
@@ -347,7 +348,7 @@ Link Multibody::addLink(std::string_view name)
   // Add to Multibody structure
   structure.links.push_back(linkEntity);
 
-  return Link(linkEntity, m_world);
+  return Link(detail::fromRegistryEntity(linkEntity), m_world);
 }
 
 //==============================================================================
@@ -526,7 +527,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   structure.links.push_back(linkEntity);
   structure.joints.push_back(jointEntity);
 
-  return Link(linkEntity, m_world);
+  return Link(detail::fromRegistryEntity(linkEntity), m_world);
 }
 
 //==============================================================================

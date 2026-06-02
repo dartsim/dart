@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -160,7 +161,10 @@ void validateCollisionShape(const CollisionShape& shape, const char* ownerName)
 } // namespace
 
 //==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
+Link::Link(Entity entity, World* world)
+  : Frame(detail::toRegistryEntity(entity), world)
+{
+}
 
 //==============================================================================
 std::string_view Link::getName() const

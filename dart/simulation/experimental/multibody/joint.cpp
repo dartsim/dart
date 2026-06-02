@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -548,14 +549,14 @@ Eigen::VectorXd Joint::getEffortUpperLimits() const
 Link Joint::getParentLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
-  return Link(jointComp.parentLink, m_world);
+  return Link(detail::fromRegistryEntity(jointComp.parentLink), m_world);
 }
 
 //==============================================================================
 Link Joint::getChildLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
-  return Link(jointComp.childLink, m_world);
+  return Link(detail::fromRegistryEntity(jointComp.childLink), m_world);
 }
 
 //==============================================================================

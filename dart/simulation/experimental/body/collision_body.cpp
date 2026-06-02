@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -95,7 +96,7 @@ std::optional<RigidBody> CollisionBody::asRigidBody() const
   if (!isRigidBody()) {
     return std::nullopt;
   }
-  return RigidBody(m_entity, m_world);
+  return RigidBody(detail::fromRegistryEntity(m_entity), m_world);
 }
 
 //==============================================================================
@@ -104,7 +105,7 @@ std::optional<Link> CollisionBody::asLink() const
   if (!isLink()) {
     return std::nullopt;
   }
-  return Link(m_entity, m_world);
+  return Link(detail::fromRegistryEntity(m_entity), m_world);
 }
 
 } // namespace dart::simulation::experimental

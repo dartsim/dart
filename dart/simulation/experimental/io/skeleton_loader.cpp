@@ -699,7 +699,7 @@ Multibody addSkeleton(
         "BodyNode '{}' has no parent joint",
         bodyNode.getName());
 
-    Link link(entt::null, nullptr);
+    Link link(Entity{}, nullptr);
     if (parentLink == nullptr) {
       const std::string anchorName = uniqueName(
           options.rootAnchorPrefix + bodyNode.getName(), usedLinkNames);

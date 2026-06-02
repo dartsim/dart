@@ -1550,7 +1550,7 @@ RigidBody World::addRigidBody(
     m_registry.emplace<comps::StaticBodyTag>(entity);
   }
 
-  return RigidBody(entity, this);
+  return RigidBody(detail::fromRegistryEntity(entity), this);
 }
 
 //==============================================================================
@@ -1560,7 +1560,7 @@ std::optional<RigidBody> World::getRigidBody(std::string_view name)
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
-      return RigidBody(entity, this);
+      return RigidBody(detail::fromRegistryEntity(entity), this);
     }
   }
   return std::nullopt;
@@ -2425,7 +2425,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
             .view<comps::CollisionGeometry, comps::Link, comps::FrameCache>();
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
-    const Link link(entity, this);
+    const Link link(detail::fromRegistryEntity(entity), this);
     const entt::entity multibody = findMultibodyOwningLink(entity);
     addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
   }

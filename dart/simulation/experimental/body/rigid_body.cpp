@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -188,7 +189,8 @@ void validateInertia(const Eigen::Matrix3d& inertia)
 namespace dart::simulation::experimental {
 
 //==============================================================================
-RigidBody::RigidBody(entt::entity entity, World* world) : Frame(entity, world)
+RigidBody::RigidBody(Entity entity, World* world)
+  : Frame(detail::toRegistryEntity(entity), world)
 {
   // Frame base constructor handles entity and world
 }
