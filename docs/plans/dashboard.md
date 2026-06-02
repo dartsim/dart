@@ -65,9 +65,18 @@ its own line so status updates remain git-history friendly.
 - Horizon: Later
 - Dimension: Algorithm extensibility
 - Next step: Use the LCP v0 contract, tests, benchmark, and `lcp_physics`
-  example as the template when the next algorithm family is selected.
+  example as the template when the next algorithm family is selected. For
+  solver or multi-physics papers, first apply the solver-family intake
+  checklist in [`solver-family-intake.md`](solver-family-intake.md)
+  so the work routes to an existing family, shares common collision,
+  kinematics, and optimization components, and defines apples-to-apples
+  evidence plus a user-facing configuration shape.
 - Gate: LCP contract docs, focused tests, smoke benchmark, API-boundary
-  exclusions, and baseline example evidence are recorded.
+  exclusions, baseline example evidence, and the solver-family intake checklist
+  in [`solver-family-intake.md`](solver-family-intake.md) are recorded
+  before a new solver family or paper implementation starts; for solvers, that
+  checklist includes simple `World` defaults, method-specific advanced options,
+  validation, serialization expectations, and diagnostics.
 
 ### PLAN-030: Compute Scalability Roadmap
 
@@ -240,23 +249,29 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue Phase 2 in
+- Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
-  use the PLAN-083
+  Phase 1 promoted shared distance/barrier/tangent/friction primitives into
+  `detail/newton_barrier`, Phase 2 has internal ABD barrier/friction derivative
+  oracles, and the next move is to promote the first ABD benchmark packet from
+  smoke shape to a comparison manifest row. Use the PLAN-083
   [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
   sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, and VBD/OGC-adjacent obligations in the right owners; promote the first
-  ABD benchmark packet from smoke shape to a comparison manifest row now that
-  affine barrier and friction primitive derivative oracles are stable.
-  Generalize PSD projection and projected-Newton contracts when the ABD slice
-  creates a second-use contract.
+  SPB, and VBD/OGC-adjacent obligations in the right owners. Generalize PSD
+  projection, projected-Newton, line-search, diagnostics, and benchmark schemas
+  only when second-use evidence proves a shared contract.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
-  GPU parity evidence, and explicit reference/paper-number comparisons; public
-  APIs remain DART-owned and backend-neutral; `pixi run lint`, docs gates,
-  focused C++/Python tests, benchmark smokes, and `check-api-boundaries` stay
-  green for each promoted slice.
+  GPU parity evidence, and explicit reference/paper-number comparisons; every
+  new IPC-family solver or component records the solver-family intake checklist
+  from [`solver-family-intake.md`](solver-family-intake.md) before
+  adding a duplicate primitive or user-facing option; public APIs and solver
+  options remain DART-owned, easy on the common `World` path, validated,
+  serializable where result-affecting, and backend-neutral; `pixi run lint`,
+  docs gates, focused C++/Python tests,
+  benchmark smokes, and `check-api-boundaries` stay green for each promoted
+  slice.
 
 ### PLAN-104: Vertex Block Descent Solver
 

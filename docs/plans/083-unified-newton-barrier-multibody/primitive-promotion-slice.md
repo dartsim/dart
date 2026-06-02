@@ -1,9 +1,9 @@
 # PLAN-083 Primitive Promotion Slice
 
-This sidecar turns the shared primitive audit into the first implementation
-slice for the unified Newton-barrier family. It is intentionally narrow: move
-pure world-primitive math into a DART-owned internal Newton-barrier layer while
-preserving PLAN-081 and PLAN-082 behavior.
+This sidecar records the implemented first consolidation slice for the unified
+Newton-barrier family. It remains as the contract checklist for preserving the
+DART-owned internal Newton-barrier layer while PLAN-081, PLAN-082, and PLAN-083
+continue to evolve.
 
 ## Outcome
 
@@ -14,24 +14,25 @@ to work during active branch reconciliation.
 
 ## Current Evidence
 
-| Evidence            | Current state                                                                                                                                                                                                                                   |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Distance kernels    | `dart/simulation/experimental/detail/deformable_contact/primitive_distance.hpp` owns PT/EE/PE/PP squared distances, features, gradients, Hessians, and the edge-edge mollifier.                                                                 |
-| Barrier kernels     | `dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp` owns the C2 clamped-log scalar barrier and primitive barrier derivatives.                                                                                           |
-| Tangent stencils    | `dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp` owns PT/EE/PE/PP tangent bases, projections, and metrics for friction.                                                                                             |
-| Rigid reuse         | `dart/simulation/experimental/detail/rigid_ipc_barrier.cpp` directly calls `deformable_contact::pointTriangleBarrier`, `pointEdgeBarrier`, `edgeEdgeBarrier`, `pointPointBarrier`, `c2ClampedLogBarrier`, and all four tangent-stencil helpers. |
-| PSD backend         | `dart/simulation/experimental/compute/deformable_psd_backend.*` is already a CPU/CUDA-pluggable block PSD projector, but its name is deformable-specific.                                                                                       |
-| Existing tests      | `test_primitive_distance`, `test_barrier_kernel`, `test_tangent_stencil`, `test_rigid_ipc_barrier`, and `test_deformable_psd_projection_cuda` cover the active pieces.                                                                          |
-| Existing benchmarks | `bm_ipc_distance_kernels`, `bm_ipc_barrier_kernel`, `bm_ipc_tangent_stencil`, and `bm_rigid_ipc_solver` are the baseline timing surfaces.                                                                                                       |
+| Evidence            | Current state                                                                                                                                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Distance kernels    | `dart/simulation/experimental/detail/newton_barrier/primitive_distance.hpp` owns PT/EE/PE/PP squared distances, features, gradients, Hessians, and the edge-edge mollifier; `deformable_contact` forwards compatibility aliases. |
+| Barrier kernels     | `dart/simulation/experimental/detail/newton_barrier/barrier_kernel.hpp` owns the C2 clamped-log scalar barrier and primitive barrier derivatives; `deformable_contact` forwards compatibility aliases.                           |
+| Tangent stencils    | `dart/simulation/experimental/detail/newton_barrier/tangent_stencil.hpp` owns PT/EE/PE/PP tangent bases, projections, and metrics for friction; `deformable_contact` forwards compatibility aliases.                             |
+| Rigid/ABD reuse     | `dart/simulation/experimental/detail/rigid_ipc_barrier.{hpp,cpp}` and `dart/simulation/experimental/detail/affine_body_dynamics.{hpp,cpp}` consume the Newton-barrier owner directly for shared barrier/friction primitives.     |
+| PSD backend         | `dart/simulation/experimental/compute/deformable_psd_backend.*` is already a CPU/CUDA-pluggable block PSD projector, but its name is deformable-specific.                                                                        |
+| Existing tests      | `test_primitive_distance`, `test_barrier_kernel`, `test_tangent_stencil`, `test_newton_barrier_primitives`, `test_rigid_ipc_barrier`, `test_affine_body_dynamics`, and CUDA PSD coverage cover the active pieces.                |
+| Existing benchmarks | `bm_ipc_distance_kernels`, `bm_ipc_barrier_kernel`, `bm_ipc_tangent_stencil`, `bm_rigid_ipc_solver`, and `bm_affine_body_dynamics` are the baseline timing surfaces.                                                             |
 
-## Proposed Internal Shape
+## Implemented Internal Shape
 
-Add header-only primitive owners under:
+Header-only primitive owners live under:
 
 ```text
 dart/simulation/experimental/detail/newton_barrier/
 ├── primitive_distance.hpp
 ├── barrier_kernel.hpp
+├── friction_kernel.hpp
 └── tangent_stencil.hpp
 ```
 
@@ -41,7 +42,7 @@ Use namespace:
 dart::simulation::experimental::detail::newton_barrier
 ```
 
-Keep compatibility forwarding from:
+Compatibility forwarding remains under:
 
 ```text
 dart/simulation/experimental/detail/deformable_contact/
@@ -50,10 +51,10 @@ dart/simulation/experimental/detail/deformable_contact/
 └── tangent_stencil.hpp
 ```
 
-The forwarding headers should include the new owner header and provide `using`
+The forwarding headers include the new owner headers and provide `using`
 declarations or aliases for the existing `deformable_contact` names. This keeps
-active PLAN-081 code and branch-local includes compiling while making the new
-owner explicit for PLAN-082 and PLAN-083 work.
+active PLAN-081 code and branch-local includes compiling while making the
+Newton-barrier owner explicit for PLAN-082 and PLAN-083 work.
 
 ## Slice Scope
 
