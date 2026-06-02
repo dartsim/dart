@@ -37,6 +37,8 @@
 #include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
+#include <dart/simulation/experimental/diff/step_derivatives.hpp>
+#include <dart/simulation/experimental/diff/step_gradient.hpp>
 #include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/multibody/multibody_options.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
