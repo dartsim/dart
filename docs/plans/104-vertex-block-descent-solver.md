@@ -114,8 +114,9 @@ endpoint feature IDs into warm-started normal and paired tangent rows. A private
 World-contact snapshot helper now maps rigid-body `World::collide()` contacts
 into those manifold-point inputs and runs them through the private serial rigid
 row solve plus dynamic rigid-body ECS writeback through a combined private
-wrapper in focused coverage, but the rigid contact stage does not activate
-those AVBD results yet.
+wrapper in focused coverage. The internal `RigidAvbdContactConfig`
+contact-stage path now activates supported free rigid-body contacts as a
+velocity projection, while unsupported envelopes still fall back.
 Private dynamic/rigid contact identity helpers now pack contact feature
 kind/index IDs, canonicalize two-endpoint row keys, and create normal/friction
 row descriptors. Rigid snapshots now derive box face/edge/corner, cylinder
