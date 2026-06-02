@@ -96,6 +96,40 @@ benchmark reports, or developer docs. They should not become required public
 type names, solver names, namespace names, or object identities unless a later
 design promotes a backend API intentionally.
 
+### Scalar Precision Policy
+
+The DART 7 promotion path should treat the current `World` facade as
+double-precision unless a later scalar-instantiation plan proves otherwise.
+Public scalar-type support is lower priority than getting the DART 7
+rigid-body and multibody simulation stack into good shape for humanoid
+locomotion and manipulation. Until that baseline is strong, scalar precision is
+a deferred design track, not a release-blocking API feature.
+
+The existing scalar-generic compute lessons remain useful for internal kernels,
+SIMD, autodiff experiments, and future explicit instantiations, but they are not
+themselves a public `World` precision contract. Keep those internal choices
+non-one-way-door where reasonable: avoid hard-coding storage, handle, package,
+or boundary decisions that would make a future scalar-instantiation plan
+unnecessarily invasive, but do not spend DART 7 promotion effort on public
+scalar families before the locomotion/manipulation baseline is ready.
+
+Do not promote scalar precision by forking the user-facing `World` identity or
+by making backend/runtime precision names part of the required public type name.
+A later public scalar-precision design must first define:
+
+- concrete C++ instantiation ownership for `World`, options, handles, state,
+  derivative, serialization, and package/export symbols;
+- finite-difference, determinism, collision, Python, and installed-package
+  gates for every advertised scalar;
+- migration behavior for existing double-backed code; and
+- API-boundary checks proving no solver, backend, ECS, or tensor-framework
+  implementation type leaks into promoted headers.
+
+Until those gates exist, scalar-generic rewrites should instantiate only the
+supported public scalar and keep alternate precision or autodiff scalar choices
+behind internal tests, benchmarks, or explicitly experimental developer
+surfaces.
+
 ### One World, Multiple Runtime Intents
 
 The same `World` should support full physics and kinematics-only workflows.

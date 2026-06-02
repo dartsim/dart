@@ -136,6 +136,51 @@ should configure physics intent, algorithm family, accuracy/performance policy,
 and fallback behavior through DART-owned value objects and capability queries.
 Adding a backend should be an implementation improvement, not an API fork.
 
+### World Scalar Precision
+
+For DART 7 promotion, `sx.World()` and `sx.World(time_step=...)` remain the
+double-backed public path. Do not add a public precision selector until the C++
+core, bindings, stubs, serialization, collision, differentiability, and package
+gates can prove that every advertised scalar is real end to end. Public scalar
+type support is deferred until the DART 7 rigid-body and multibody simulation
+stack is in good shape for humanoid locomotion and manipulation; precision
+syntax should not distract from that baseline.
+
+While deferred, keep the API shape from becoming a one-way door. Avoid binding,
+stub, serialization, and package decisions that would make later scalar support
+unnecessarily invasive, but keep the user-facing path simple and double-backed
+until a dedicated scalar-instantiation plan starts.
+
+If scalar precision becomes public later, prefer constructor or options syntax:
+
+```python
+world = sx.World(dtype=sx.float64)
+```
+
+or the equivalent `sx.WorldOptions(dtype=...)` spelling once `WorldOptions`
+itself is part of the Python facade. This keeps the common construction path
+Pythonic, discoverable in signatures, and aligned with array/tensor conventions.
+The binding may still dispatch to concrete scalar-specific implementation
+classes underneath; `dtype=` is a public factory contract, not a requirement
+that nanobind represent every scalar as one runtime C++ class.
+
+Do not make `sx.World[sx.float64]` the primary runtime construction API. Class
+subscription reads like typing/generic specialization in Python and would make
+precision part of public `World` identity before DART has committed to a scalar
+type family. If maintainers later need scalar-specialized aliases for advanced
+users or type checkers, they should be secondary to `dtype=` and covered by the
+same identity, `isinstance`, stub, and migration tests.
+
+Any future `dtype` contract must be explicit:
+
+- default to `sx.float64` and expose a read-only `world.dtype`;
+- accept only documented DART or NumPy-compatible dtype tokens;
+- reject mixed-world operations and mismatched caller-provided output buffers
+  unless an explicit conversion API exists;
+- guarantee state, control, rollout, derivative, and bridge array dtypes; and
+- reject unsupported dtypes with clear errors instead of silently computing in
+  double and casting results.
+
 ### One World, Multiple Runtime Intents
 
 The same `World` should support full physics and kinematics-only workflows.
