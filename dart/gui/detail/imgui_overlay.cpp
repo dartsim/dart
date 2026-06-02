@@ -61,6 +61,16 @@
 #include <cstdlib>
 #include <cstring>
 
+// The modern viewer theme below assigns Dear ImGui style slots and fields from
+// the 1.89-1.91 series (e.g. ImGuiCol_NavCursor, renamed in 1.91.4). DART
+// targets the bundled ImGui 1.92.x (see cmake/dart_find_dependencies.cmake);
+// building dart::gui against an older ImGui is unsupported and fails here with
+// a clear message instead of a cascade of unknown-identifier errors.
+#if IMGUI_VERSION_NUM < 19200
+  #error                                                                       \
+      "dart::gui requires Dear ImGui >= 1.92 (use the bundled ImGui via DART_USE_SYSTEM_IMGUI=OFF, or upgrade the system ImGui)."
+#endif
+
 namespace dart::gui::detail {
 namespace {
 
@@ -260,14 +270,174 @@ void loadImGuiFont(ImGuiIO& io, float uiScale)
   io.Fonts->AddFontDefault(&config);
 }
 
+namespace {
+
+// ── Modern editor theme ──────────────────────────────────────────────────────
+// A cohesive dark palette in the spirit of VS Code / Blender / Unity: cool
+// neutral surfaces, a single restrained blue accent, low-contrast borders, and
+// soft rounding. Centralizing it here keeps every panel, the perf HUD, and the
+// docked regions visually consistent instead of ImGui's stock high-contrast
+// dark theme (saturated-blue selection, square widgets, cramped spacing).
+
+ImVec4 srgb(int r, int g, int b, float a = 1.0f)
+{
+  return ImVec4(
+      static_cast<float>(r) / 255.0f,
+      static_cast<float>(g) / 255.0f,
+      static_cast<float>(b) / 255.0f,
+      a);
+}
+
+void applyModernDarkColors(ImGuiStyle& style)
+{
+  // Surfaces, deepest to lightest.
+  const ImVec4 bgWindow = srgb(0x1b, 0x1d, 0x23); // floating/docked window body
+  const ImVec4 bgPanel = srgb(0x21, 0x24, 0x2b);  // docked tab content, hover
+  const ImVec4 bgHeader
+      = srgb(0x16, 0x18, 0x1d); // title/menu/tab bars, headers
+  // Control fills (text inputs, sliders, combos, buttons).
+  const ImVec4 frame = srgb(0x2a, 0x2e, 0x37);
+  const ImVec4 frameHover = srgb(0x33, 0x39, 0x44);
+  const ImVec4 frameActive = srgb(0x3c, 0x43, 0x51);
+  const ImVec4 button = srgb(0x2f, 0x35, 0x40);
+  const ImVec4 buttonHover = srgb(0x3a, 0x42, 0x50);
+  // Accent: one clean blue, used sparingly for focus/selection/active state.
+  const ImVec4 accent = srgb(0x4c, 0x8c, 0xf0);
+  const ImVec4 accentHover = srgb(0x66, 0x9a, 0xf3);
+  const ImVec4 accentActive = srgb(0x3a, 0x78, 0xdc);
+  const ImVec4 accentSoft = srgb(0x4c, 0x8c, 0xf0, 0.22f); // selection fills
+  const ImVec4 accentSofter
+      = srgb(0x4c, 0x8c, 0xf0, 0.38f); // hover/active fills
+  // Text and lines.
+  const ImVec4 text = srgb(0xcd, 0xd3, 0xde);
+  const ImVec4 textDim = srgb(0x7e, 0x87, 0x94);
+  const ImVec4 border = srgb(0x32, 0x38, 0x43, 0.60f);
+
+  ImVec4* c = style.Colors;
+  c[ImGuiCol_Text] = text;
+  c[ImGuiCol_TextDisabled] = textDim;
+  c[ImGuiCol_TextLink] = accentHover;
+  c[ImGuiCol_WindowBg] = bgWindow;
+  c[ImGuiCol_ChildBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  c[ImGuiCol_PopupBg] = srgb(0x1d, 0x20, 0x27, 0.98f);
+  c[ImGuiCol_Border] = border;
+  c[ImGuiCol_BorderShadow] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  c[ImGuiCol_FrameBg] = frame;
+  c[ImGuiCol_FrameBgHovered] = frameHover;
+  c[ImGuiCol_FrameBgActive] = frameActive;
+  c[ImGuiCol_TitleBg] = bgHeader;
+  c[ImGuiCol_TitleBgActive] = bgHeader;
+  c[ImGuiCol_TitleBgCollapsed] = bgHeader;
+  c[ImGuiCol_MenuBarBg] = bgHeader;
+  c[ImGuiCol_ScrollbarBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  c[ImGuiCol_ScrollbarGrab] = srgb(0x3a, 0x41, 0x4e);
+  c[ImGuiCol_ScrollbarGrabHovered] = srgb(0x47, 0x4f, 0x5e);
+  c[ImGuiCol_ScrollbarGrabActive] = accent;
+  c[ImGuiCol_CheckMark] = accent;
+  c[ImGuiCol_SliderGrab] = accent;
+  c[ImGuiCol_SliderGrabActive] = accentHover;
+  c[ImGuiCol_Button] = button;
+  c[ImGuiCol_ButtonHovered] = buttonHover;
+  c[ImGuiCol_ButtonActive] = accentActive;
+  c[ImGuiCol_Header] = accentSoft;
+  c[ImGuiCol_HeaderHovered] = accentSofter;
+  c[ImGuiCol_HeaderActive] = accentSofter;
+  c[ImGuiCol_Separator] = border;
+  c[ImGuiCol_SeparatorHovered] = accent;
+  c[ImGuiCol_SeparatorActive] = accentHover;
+  c[ImGuiCol_ResizeGrip] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f); // edge-drag instead
+  c[ImGuiCol_ResizeGripHovered] = accentSofter;
+  c[ImGuiCol_ResizeGripActive] = accent;
+  c[ImGuiCol_Tab] = bgHeader;
+  c[ImGuiCol_TabHovered] = frameHover;
+  c[ImGuiCol_TabSelected] = bgPanel;
+  c[ImGuiCol_TabSelectedOverline] = accent; // VS Code-style active-tab accent
+  c[ImGuiCol_TabDimmed] = bgHeader;
+  c[ImGuiCol_TabDimmedSelected] = bgPanel;
+  // Unfocused (dimmed) tab bars get no accent overline.
+  c[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+#ifdef IMGUI_HAS_DOCK
+  // Docking color slots only exist on the ImGui docking branch (the look used
+  // by `pixi run py-demos`/`dartsim`). Non-docking builds (system ImGui) omit
+  // them.
+  c[ImGuiCol_DockingPreview] = accentSofter;
+  c[ImGuiCol_DockingEmptyBg] = srgb(0x12, 0x14, 0x18);
+#endif
+  c[ImGuiCol_PlotLines] = textDim;
+  c[ImGuiCol_PlotLinesHovered] = accentHover;
+  c[ImGuiCol_PlotHistogram] = accent;
+  c[ImGuiCol_PlotHistogramHovered] = accentHover;
+  c[ImGuiCol_TableHeaderBg] = bgHeader;
+  c[ImGuiCol_TableBorderStrong] = srgb(0x32, 0x38, 0x43);
+  c[ImGuiCol_TableBorderLight] = srgb(0x28, 0x2d, 0x36);
+  c[ImGuiCol_TableRowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  c[ImGuiCol_TableRowBgAlt] = srgb(0xff, 0xff, 0xff, 0.025f);
+  c[ImGuiCol_TextSelectedBg] = accentSofter;
+  c[ImGuiCol_DragDropTarget] = accentHover;
+  c[ImGuiCol_NavCursor] = accent;
+  c[ImGuiCol_NavWindowingHighlight] = srgb(0xff, 0xff, 0xff, 0.70f);
+  c[ImGuiCol_NavWindowingDimBg] = srgb(0x08, 0x09, 0x0c, 0.55f);
+  c[ImGuiCol_ModalWindowDimBg] = srgb(0x08, 0x09, 0x0c, 0.55f);
+}
+
+void applyModernDarkMetrics(ImGuiStyle& style)
+{
+  // Generous, even spacing reads as "designed" rather than dense-default ImGui.
+  style.WindowPadding = ImVec2(12.0f, 10.0f);
+  style.FramePadding = ImVec2(9.0f, 5.0f);
+  style.CellPadding = ImVec2(8.0f, 4.0f);
+  style.ItemSpacing = ImVec2(9.0f, 7.0f);
+  style.ItemInnerSpacing = ImVec2(7.0f, 5.0f);
+  style.IndentSpacing = 20.0f;
+  style.ScrollbarSize = 13.0f;
+  style.GrabMinSize = 11.0f;
+
+  // Thin hairline borders for definition; flat (border-less) widgets.
+  style.WindowBorderSize = 1.0f;
+  style.ChildBorderSize = 1.0f;
+  style.PopupBorderSize = 1.0f;
+  style.FrameBorderSize = 0.0f;
+  style.TabBarBorderSize = 1.0f;
+  style.TabBarOverlineSize = 2.0f;
+#ifdef IMGUI_HAS_DOCK
+  // DockingSeparatorSize only exists on the ImGui docking branch.
+  style.DockingSeparatorSize = 1.0f;
+#endif
+  style.SeparatorTextBorderSize = 2.0f;
+
+  // Soft, consistent rounding; pill-shaped scrollbars.
+  style.WindowRounding = 7.0f;
+  style.ChildRounding = 6.0f;
+  style.PopupRounding = 6.0f;
+  style.FrameRounding = 5.0f;
+  style.GrabRounding = 5.0f;
+  style.TabRounding = 6.0f;
+  style.ScrollbarRounding = 9.0f;
+
+  // Left-aligned titles, no collapse caret: a cleaner, editor-like title bar.
+  style.WindowTitleAlign = ImVec2(0.0f, 0.5f);
+  style.WindowMenuButtonPosition = ImGuiDir_None;
+  style.SeparatorTextAlign = ImVec2(0.0f, 0.5f);
+  style.SeparatorTextPadding = ImVec2(20.0f, 6.0f);
+
+  style.Alpha = 1.0f;
+  style.DisabledAlpha = 0.5f;
+}
+
+} // namespace
+
 void configureImGuiStyle(float uiScale)
 {
   auto& style = ImGui::GetStyle();
   style = ImGuiStyle();
+  // Start from the stock dark theme so any field we do not override keeps a
+  // sensible value, then layer the DART editor look on top.
   ImGui::StyleColorsDark();
+  applyModernDarkMetrics(style);
+  applyModernDarkColors(style);
+  // Sizes are authored at 1.0; scale them last for HiDPI/user scale. Colors and
+  // alpha are scale-independent and stay untouched.
   style.ScaleAllSizes(uiScale);
-  style.WindowRounding = 4.0f * uiScale;
-  style.Colors[ImGuiCol_WindowBg].w = 0.72f;
 }
 
 void configureImGuiFonts(float uiScale)

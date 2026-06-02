@@ -685,10 +685,85 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "${DART_BUILD_DARTPY_VALUE}" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
+# This task exists to build dartpy. The cuda environment disables dartpy via
+# DART_BUILD_DARTPY_OVERRIDE for its lean compute-only build-cuda path (which
+# uses the 'config' task, not this one), so honor an explicit dartpy=ON request
+# over that environment override here. Lets 'pixi run -e cuda py-demos' build a
+# CUDA-enabled dartpy + GUI without changing the shared cuda activation env.
+if [ "${DART_BUILD_DARTPY_VALUE}" = "OFF" ] && [ "{{ dartpy }}" = "ON" ]; then
+  DART_BUILD_DARTPY_VALUE=ON
+fi
+# Forward the experimental CUDA opt-in so the cuda environment produces a
+# CUDA-enabled dartpy (the GPU deformable-solve sidecar). Defaults OFF, so the
+# default python build is unchanged.
+DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
+DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_CUDA_ARCHITECTURES_VALUE}" ] \
+  && command -v nvidia-smi >/dev/null 2>&1; then
+  if DETECTED_CUDA_ARCHITECTURES=$(
+    nvidia-smi --query-gpu=compute_cap --format=csv,noheader \
+      | tr -cd '0-9\n' \
+      | sed '/^$/d' \
+      | sort -u \
+      | paste -sd';' -
+  ); then
+    if [ -n "${DETECTED_CUDA_ARCHITECTURES}" ]; then
+      DART_CUDA_ARCHITECTURES_VALUE=${DETECTED_CUDA_ARCHITECTURES}
+    fi
+  fi
+fi
+# Host compiler for the CUDA-enabled dartpy + GUI build. The prebuilt Filament
+# libraries reference glibc symbols newer than the conda portability sysroot
+# (glibc 2.28) exports, so the conda toolchain cannot link the GUI. Build the C
+# and C++ sources (and the final link) with the host system compiler instead (it
+# ships a newer glibc, exactly as the default environment already does), while
+# CUDA itself keeps using the conda nvcc (pinned so CMake does not pick up an
+# older system nvcc); the conda env's NVCC_PREPEND_FLAGS already routes nvcc's
+# host pass through the conda compiler, and the resulting .cu objects only need
+# older glibc symbols, so the system-compiler final link resolves everything.
+# Overridable via DART_CUDA_HOST_CC / DART_CUDA_HOST_CXX for hosts/CI whose
+# system compiler lives elsewhere. No effect on non-CUDA builds.
+COMPILER_DEFS=""
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  DART_CUDA_HOST_CC_VALUE=${DART_CUDA_HOST_CC:-/usr/bin/cc}
+  DART_CUDA_HOST_CXX_VALUE=${DART_CUDA_HOST_CXX:-/usr/bin/c++}
+  # The conda libc++ (which Filament needs) lives in the conda lib dir. The
+  # system compiler does not search it by default, and the conda LDFLAGS -L /
+  # -rpath are not reliably applied to every target, so add the conda lib dir as
+  # both a link-time search path (so Filaments -lc++ resolves) and a runtime
+  # rpath (so the conda GUI libraries such as libglfw load) via
+  # CMAKE_CXX_STANDARD_LIBRARIES, which is appended to every C++ link. Scoped to
+  # the cuda build, so the default environment is untouched.
+  #
+  # Use the system compiler as nvcc's host too (CMAKE_CUDA_HOST_COMPILER), so C,
+  # C++, and the CUDA host pass all target the same host glibc (2.38). Otherwise
+  # nvcc's host defaults to the conda compiler (via NVCC_PREPEND_FLAGS), whose
+  # startup objects and implicit link drag the conda sysroot glibc (libm/librt
+  # linker scripts with absolute /lib64 paths, and __libc_csu_* startup symbols
+  # removed in glibc 2.34) that the system-compiler final link cannot resolve.
+  # CMAKE_CUDA_RUNTIME_LIBRARY=Shared links the shared libcudart (the default
+  # Static runtime drags the same conda sysroot deps).
+  COMPILER_DEFS="-DCMAKE_C_COMPILER=${DART_CUDA_HOST_CC_VALUE} -DCMAKE_CXX_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_COMPILER=${CONDA_PREFIX}/bin/nvcc -DCMAKE_CUDA_HOST_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared -DCMAKE_CXX_STANDARD_LIBRARIES=-Wl,-L,${CONDA_PREFIX}/lib,-rpath,${CONDA_PREFIX}/lib"
+  # nvcc still reports the conda CUDA toolkit's sysroot lib dirs as implicit link
+  # dirs, so -lm/-lrt could resolve to the conda sysroot glibc linker scripts
+  # (absolute /lib64 paths). Prepend the host multiarch lib dir so they resolve
+  # to the valid host glibc first. Safe now that the CUDA host is the system
+  # compiler too. Defaults to the linux-64 layout (the cuda feature is linux-64
+  # only); override with DART_CUDA_HOST_LIBDIR if your distro differs.
+  DART_CUDA_HOST_LIBDIR_VALUE=${DART_CUDA_HOST_LIBDIR:-/usr/lib/x86_64-linux-gnu}
+  export LDFLAGS="-L${DART_CUDA_HOST_LIBDIR_VALUE} ${LDFLAGS:-}"
+fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-{{ use_system_imgui }}}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
+  && [ -z "${DART_DISABLE_COMPILER_CACHE:-}" ]; then
+  # sccache can leave nvcc/fatbinary without its generated PTX on local CUDA
+  # builds; disable the compiler cache for CUDA configs (matches 'config').
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -711,8 +786,16 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  # Do not automatically reuse the C++ launcher for nvcc (matches 'config').
+  if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
+  else
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
+  fi
+fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
-cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
+cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} ${COMPILER_DEFS} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },

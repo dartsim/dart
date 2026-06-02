@@ -11,6 +11,11 @@ catalog. The CLI mirrors `dart-demos`:
 - `--headless`: render without opening a window
 - `--width N`, `--height N`, `--backend ...`: forward to the viewer
 - `--list`: print the Python scene catalog and exit (no viewer)
+- `--gpu` / `--no-gpu`: force GPU (CUDA) deformable solve on/off; the default
+  ("auto") enables it when a CUDA device is available (e.g. under
+  `pixi run -e cuda py-demos`). `DART_PY_DEMOS_GPU=on|off|auto` overrides the
+  default. The GPU offload covers the deformable projected-Newton PSD
+  projection and is a process-wide toggle (also exposed in an in-viewer panel).
 
 Scenes with a Python-side controller (`SceneSetup.pre_step`) have that
 callable forwarded to the viewer's per-step hook so the controller still
@@ -222,7 +227,9 @@ def _bounded_scene_build(scene_id: str):
         yield
 
 
-def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
+def _make_world_factory(
+    scene: PythonDemoScene, gpu_panel: ScenePanel | None = None
+) -> Callable[[], Any]:
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
     Returns one of:
@@ -251,8 +258,13 @@ def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
                     original_pre_step()
 
             pre_step = bounded_pre_step
-        if setup.panels:
-            return (setup.world, pre_step, setup.force_drag, setup.panels)
+        panels = list(setup.panels)
+        if gpu_panel is not None:
+            # A runner-injected, scene-independent GPU compute toggle (only
+            # present when CUDA is available); see _make_gpu_panel.
+            panels.append(gpu_panel)
+        if panels:
+            return (setup.world, pre_step, setup.force_drag, panels)
         if setup.force_drag is not None:
             return (setup.world, pre_step, setup.force_drag)
         if pre_step is not None:
@@ -260,6 +272,95 @@ def _make_world_factory(scene: PythonDemoScene) -> Callable[[], Any]:
         return setup.world
 
     return factory
+
+
+def _gpu_preference(cli_pref: bool | None) -> str:
+    """Resolve the GPU-compute preference: ``on`` / ``off`` / ``auto``.
+
+    Precedence: an explicit ``--gpu`` / ``--no-gpu`` flag, then the
+    ``DART_PY_DEMOS_GPU`` environment variable, else ``auto`` (enable when a
+    CUDA device is available).
+    """
+
+    if cli_pref is not None:
+        return "on" if cli_pref else "off"
+    env = os.environ.get("DART_PY_DEMOS_GPU", "auto").strip().lower()
+    if env in {"1", "on", "true", "yes", "gpu", "cuda"}:
+        return "on"
+    if env in {"0", "off", "false", "no", "cpu"}:
+        return "off"
+    return "auto"
+
+
+def _strip_gpu_flags(argv: list[str]) -> list[str]:
+    """Drop ``--gpu`` / ``--no-gpu`` before forwarding argv to the C++ viewer.
+
+    The viewer's argument parser does not know these runner-local flags, so they
+    must not reach it.
+    """
+
+    return [arg for arg in argv if arg not in {"--gpu", "--no-gpu"}]
+
+
+def _make_gpu_panel(sx: Any) -> ScenePanel:
+    """A small in-viewer panel that toggles GPU (CUDA) deformable solve.
+
+    The PSD-projection backend is process-wide, so this single toggle affects
+    every deformable scene. Only injected when CUDA is available.
+    """
+
+    def build(builder: Any, _context: Any) -> None:
+        builder.text("GPU compute (CUDA)")
+        builder.separator()
+        enabled = bool(sx.is_accelerated_deformable_solve_enabled())
+        changed, new_enabled = builder.checkbox("GPU deformable solve", enabled)
+        if changed:
+            sx.set_accelerated_deformable_solve(bool(new_enabled))
+        builder.text("Offloads the deformable projected-Newton")
+        builder.text("PSD projection to the GPU (CUDA).")
+        builder.text("Process-wide: affects every deformable scene.")
+
+    return ScenePanel("GPU", build, dock_side="right", initial_size=(300.0, 150.0))
+
+
+def _configure_gpu_compute(dart: Any, cli_pref: bool | None) -> ScenePanel | None:
+    """Apply the resolved GPU preference and return an in-app toggle panel.
+
+    Returns a ``ScenePanel`` to inject into every scene when CUDA is available,
+    otherwise ``None`` (the default/CPU build is left untouched). Prints a
+    one-line status so headless and interactive runs both report the mode.
+    """
+
+    sx = getattr(dart, "simulation_experimental", None)
+    if sx is None or not hasattr(sx, "set_accelerated_deformable_solve"):
+        return None
+
+    available = bool(sx.is_accelerated_deformable_solve_available())
+    preference = _gpu_preference(cli_pref)
+    if preference == "off":
+        enabled = bool(sx.set_accelerated_deformable_solve(False))
+    elif preference == "on":
+        enabled = bool(sx.set_accelerated_deformable_solve(True))
+        if not enabled:
+            print(
+                "py-demos: GPU requested but CUDA is unavailable; using CPU.",
+                file=sys.stderr,
+            )
+    else:  # auto
+        enabled = bool(sx.set_accelerated_deformable_solve(available))
+
+    if available:
+        print(
+            f"py-demos: GPU deformable solve (CUDA) "
+            f"{'ON' if enabled else 'off'} [{preference}]; "
+            f"toggle in the GPU panel or with --gpu/--no-gpu."
+        )
+        return _make_gpu_panel(sx)
+
+    print(
+        "py-demos: CUDA not available in this build; " "deformable solve runs on CPU."
+    )
+    return None
 
 
 def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
@@ -280,6 +381,11 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--scene", default=None)
     parser.add_argument("--help", "-h", action="store_true")
+    # GPU (CUDA) deformable-solve toggle. Default (unset) is "auto": enable when
+    # a CUDA device is available (e.g. under `pixi run -e cuda py-demos`),
+    # otherwise run on CPU. DART_PY_DEMOS_GPU overrides the default.
+    parser.add_argument("--gpu", dest="gpu", action="store_true", default=None)
+    parser.add_argument("--no-gpu", dest="gpu", action="store_false")
     known, _passthrough = parser.parse_known_args(argv)
 
     if known.list:
@@ -287,18 +393,6 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
         return 0
 
     _validate_scene(known.scene, scenes)
-
-    # Build the catalog for the viewer.
-    catalog = [
-        (
-            scene.id,
-            scene.title,
-            scene.category,
-            scene.summary,
-            _make_world_factory(scene),
-        )
-        for scene in scenes
-    ]
 
     # Import dartpy.gui lazily so `--list` works even when the GUI
     # backend isn't built (e.g. on CI variants without filament).
@@ -313,5 +407,22 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
         )
         return 2
 
-    full_argv = ["py-demos", *argv]
+    # Resolve the GPU-compute preference before scenes build/step. Returns an
+    # in-viewer toggle panel when CUDA is available, else None (CPU build).
+    gpu_panel = _configure_gpu_compute(dart, known.gpu)
+
+    # Build the catalog for the viewer.
+    catalog = [
+        (
+            scene.id,
+            scene.title,
+            scene.category,
+            scene.summary,
+            _make_world_factory(scene, gpu_panel),
+        )
+        for scene in scenes
+    ]
+
+    # The viewer's argument parser does not know the runner-local GPU flags.
+    full_argv = ["py-demos", *_strip_gpu_flags(argv)]
     return int(dart.gui.run_demos(catalog, full_argv))
