@@ -7702,11 +7702,17 @@ bool canApplyRestingContactNoOp(
   }
 
   constexpr double kStationaryVelocityTolerance = 1e-10;
+  constexpr double kContactPowerTolerance = 1e-12;
   bool sawDynamicContactBody = false;
-  const auto requireStationaryContactBodies = [&](const auto& constraint) {
+  std::vector<double> contactPowerSum(bodies.size(), 0.0);
+  std::vector<bool> sawNonStationaryContactBody(bodies.size(), false);
+  std::vector<bool> stationaryContactBody(bodies.size(), false);
+  const auto accumulateContactPower = [&](const auto& constraint) {
     const std::array<std::size_t, 2> bodyIndices{
         constraint.bodyA, constraint.bodyB};
-    for (const std::size_t bodyIndex : bodyIndices) {
+    for (std::size_t localBody = 0; localBody < bodyIndices.size();
+         ++localBody) {
+      const std::size_t bodyIndex = bodyIndices[localBody];
       if (bodyIndex >= bodies.size() || !bodies[bodyIndex].surface.dynamic) {
         continue;
       }
@@ -7716,20 +7722,46 @@ bool canApplyRestingContactNoOp(
       if (!velocity.allFinite()) {
         return false;
       }
-      if (velocity.norm() > kStationaryVelocityTolerance) {
+      if (velocity.norm() <= kStationaryVelocityTolerance) {
+        stationaryContactBody[bodyIndex] = true;
+        continue;
+      }
+      sawNonStationaryContactBody[bodyIndex] = true;
+
+      const auto gradient = constraint.reduced.gradient.template segment<6>(
+          static_cast<Eigen::Index>(6 * localBody));
+      if (!gradient.allFinite()) {
         return false;
       }
+      const double barrierPower = gradient.dot(velocity);
+      if (!std::isfinite(barrierPower)) {
+        return false;
+      }
+      contactPowerSum[bodyIndex] += barrierPower;
     }
     return true;
   };
 
   for (const auto& constraint : result.assembly.activeConstraints) {
-    if (!requireStationaryContactBodies(constraint)) {
+    if (!accumulateContactPower(constraint)) {
       return false;
     }
   }
   for (const auto& constraint : result.assembly.activeFrictionConstraints) {
-    if (!requireStationaryContactBodies(constraint)) {
+    if (!accumulateContactPower(constraint)) {
+      return false;
+    }
+  }
+
+  for (std::size_t bodyIndex = 0; bodyIndex < bodies.size(); ++bodyIndex) {
+    if (!stationaryContactBody[bodyIndex]
+        && !sawNonStationaryContactBody[bodyIndex]) {
+      continue;
+    }
+    if (!sawNonStationaryContactBody[bodyIndex]) {
+      continue;
+    }
+    if (std::abs(contactPowerSum[bodyIndex]) <= kContactPowerTolerance) {
       return false;
     }
   }
@@ -8460,10 +8492,11 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // factorization failed) normally never writes back: applying it could
   // penetrate. The exception is an exact resting-contact plateau where the
   // line search blocked before any accepted step and the active dynamic contact
-  // bodies were already stationary. Writing back the unchanged current pose is
-  // safe in that narrow case (it introduces no new motion) and avoids reporting
-  // a persistent failure for a static dense contact. Separating or tangential
-  // motion must be preserved by leaving the runtime state untouched.
+  // bodies were either stationary or constrained by contact-gradient work.
+  // Writing back the unchanged current pose is safe in that narrow case (it
+  // introduces no new motion) and avoids reporting a persistent failure for a
+  // static dense contact. Pure tangential or friction-only motion must be
+  // preserved by leaving the runtime state untouched.
   if (result.failed && !restingContactBlocked) {
     applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
         world, runtimeBodies, solverBodies, result);

@@ -4992,10 +4992,9 @@ TEST(World, RigidIpcContactStageDoesNotMaskBlockedKinematicSweepAsResting)
   EXPECT_NEAR(wall.getLinearVelocity().x(), 0.1, 1e-12);
 }
 
-// Test that a zero-step non-kinematic block only becomes a no-op resting
-// writeback when the active dynamic body was already stationary. Pure
-// tangential motion at exact contact is valid motion to preserve, not a resting
-// velocity to erase.
+// Test that a zero-step non-kinematic block does not become a no-op resting
+// writeback for pure tangential motion at exact contact; that is valid motion
+// to preserve, not a resting velocity to erase.
 TEST(World, RigidIpcContactStagePreservesTangentialVelocityOnZeroStepBlock)
 {
   namespace sx = dart::simulation::experimental;
