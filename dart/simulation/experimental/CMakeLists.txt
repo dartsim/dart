@@ -48,9 +48,12 @@ add_library(
   compute/compute_stage_metadata.cpp
   compute/deformable_psd_backend.cpp
   compute/execution_profile.cpp
+  compute/multibody_constraint.cpp
   compute/multibody_dynamics.cpp
   compute/parallel_executor.cpp
+  compute/rigid_body_constraint.cpp
   compute/rigid_body_state_batch.cpp
+  compute/unified_constraint.cpp
   compute/variational_integration.cpp
   compute/sequential_executor.cpp
   compute/world_batch.cpp
@@ -83,6 +86,7 @@ add_library(
   io/obj_triangle_mesh.cpp
   io/serializer.cpp
   io/skeleton_loader.cpp
+  io/skeleton_to_multibody.cpp
   multibody/joint.cpp
   multibody/link.cpp
   multibody/multibody.cpp

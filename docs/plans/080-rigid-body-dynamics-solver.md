@@ -7,24 +7,23 @@
   delivered as the first solver under a multi-solver, multi-physics architecture
   that keeps the public facade free of solver, coupler, and backend types.
 - Current evidence:
-  - Experimental `step()` is only basic free-body integration with no gravity,
-    no articulated dynamics, no contacts, no constraint solver
-    (`dart/simulation/experimental/compute/world_step_stage.cpp`).
-  - `simulation::experimental::io::addSkeleton` starts the model-loading lane
-    by translating already-parsed legacy `dynamics::Skeleton` trees into
-    experimental multibodies for the tree-joint families that already map to
-    the experimental multibody facade, by importing all Skeletons from a legacy
-    `simulation::World`, and by loading URI strings through
-    `dart::io::readSkeleton()`/`readWorld()` with optional `ReadOptions`. It now
-    preserves one centered collidable Box/Sphere/Capsule/Cylinder/Mesh collision
-    shape per link when the legacy shape maps exactly to the experimental
-    `CollisionShape` facade, with property-transfer, higher-DOF joint,
-    collision-shape, Skeleton/World URI-loading, multi-skeleton import, and
-    dartpy `simulation_experimental.add_skeleton()` / `add_world()` coverage.
-  - Remaining DART 7 promotion gaps are articulated dynamics, collision/contact
-    solving, joint-limit/mimic/loop-closure constraints, richer model-loading
-    diagnostics and load-result ergonomics, source-offset/multiple/visual shape
-    import, and serialization/replay evidence.
+  - The rigid-body MVP shipped (PR #2705, merged 2026-05-25): `World::step()`
+    runs gravity, articulated forward dynamics for all joint types (fixed,
+    revolute, prismatic, screw, universal, planar, ball, free), a floating base,
+    derived quantities, actuator/limit primitives, a collision-query bridge,
+    and the required dart-gui example. The active follow-up line adds the
+    legacy `dynamics::Skeleton` / `simulation::World` to experimental
+    `Multibody` bridge, including `addSkeleton()` / `addWorld()` URI-loading
+    facades, joint-family/property transfer, branching and root offsets,
+    collision shape import with local transforms, compound shapes, and dartpy
+    coverage. It also upgrades `World::collide()` with body-type filtering,
+    native broad-phase pruning, and a persistent native collision-query world.
+    The semi-implicit default pipeline now resolves rigid-rigid and articulated
+    link contacts in a single unified boxed-LCP. Remaining gaps are solver
+    scaling polish (warm starting and friction-cone iteration), richer
+    model-loading diagnostics/load-result ergonomics, visual/material import,
+    multi-DOF joint-property forces, and separate deferred actuator,
+    mimic/coupler, loop-closure, integrator, and COM-Jacobian slices.
   - Legacy DART 6 dynamics baseline: `dart/dynamics/`, `dart/constraint/`,
     `dart/simulation/world.cpp`.
   - Reusable foundations: boxed-LCP library `dart/math/lcp/` (PLAN-020), native
@@ -52,9 +51,10 @@ Sequenced; see the dev-task roadmap for slice-level detail.
    damping/springs, manifold-aware integration.
 3. **Collision bridge** — experimental collision geometry/material value
    objects and a World-owned bridge to the native collision engine producing
-   typed contact buffers.
+   typed contact buffers with broad-phase-pruned, filterable, cached queries.
 4. **Constraint & contact solver** — wire boxed-LCP into contact + joint-limit
-   solving with restitution/friction/ERP-CFM, islands, impulse update.
+   solving with restitution/friction/ERP-CFM, islands, impulse update, and
+   solver scaling polish.
 5. **Joint features & actuators** — actuator types, limits, Coulomb friction,
    mimic/coupler, armature.
 6. **Loop closures & improvements** — closure projection/solve, pluggable

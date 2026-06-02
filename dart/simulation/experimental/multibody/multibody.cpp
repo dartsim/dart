@@ -434,9 +434,14 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   linkComp.name = std::move(actualLinkName);
 
   DART_EXPERIMENTAL_THROW_T_IF(
+      !options.transformToParent.matrix().allFinite(),
+      InvalidArgumentException,
+      "Link transform to parent must contain only finite values");
+  DART_EXPERIMENTAL_THROW_T_IF(
       !options.transformFromParent.matrix().allFinite(),
       InvalidArgumentException,
       "Link transform from parent must contain only finite values");
+  linkComp.transformFromParentToJoint = options.transformToParent;
   linkComp.transformFromParentJoint = options.transformFromParent;
 
   // Create joint entity
@@ -536,6 +541,7 @@ Link Multibody::addLink(
           .jointType = joint.type,
           .axis = joint.axis,
           .axis2 = joint.axis2,
+          .transformToParent = joint.transformToParent,
           .transformFromParent = joint.transformFromParent,
       });
 }

@@ -131,11 +131,19 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Prioritize the DART 7 release gates for the experimental World:
-  model loading beyond the basic legacy bridge, parity scenes, open-chain
-  dynamics, contacts/constraints, and serialization evidence; track slice-level
-  work in
-  `docs/dev_tasks/rigid_body_dynamics_solver/`.
+- Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25). The
+  active line now carries the model-loading bridge from legacy
+  `dynamics::Skeleton` / `simulation::World` into experimental `Multibody`
+  objects, including the `addSkeleton()` / `addWorld()` URI-loading facades,
+  joint-family/property transfer, branching and root offsets, collision shape
+  import with local transforms, compound shapes, broad-phase-pruned collision
+  queries, and a persistent native collision-query world. The semi-implicit
+  default pipeline also now runs one unified boxed-LCP over rigid-rigid and
+  articulated link contacts. Continue the remaining Subsystem A polish in
+  `docs/dev_tasks/rigid_body_dynamics_solver/`: warm starting, friction-cone
+  iteration, and scaling work around the unified contact solve; keep richer
+  model-loading diagnostics, visual/material import, actuator, mimic/coupler,
+  loop-closure, integrator, and COM-Jacobian work as separate deferred slices.
 - Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.

@@ -32,52 +32,29 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
-#include <dart/simulation/experimental/comps/dynamics.hpp>
+#include <dart/simulation/experimental/export.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-#include <entt/entt.hpp>
-
-#include <string>
-#include <vector>
+#include <Eigen/Core>
+#include <entt/fwd.hpp>
 
 namespace dart::simulation::experimental::comps {
-
-/// Link component (body in articulated chain)
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Link
-{
-  DART_EXPERIMENTAL_STATE_COMPONENT(Link);
-
-  std::string name;
-
-  MassProperties mass;
-
-  /// Fixed transform from the parent link frame to the joint frame.
-  Eigen::Isometry3d transformFromParentToJoint = Eigen::Isometry3d::Identity();
-
-  /// Fixed transform from the joint frame to this link frame.
-  Eigen::Isometry3d transformFromParentJoint = Eigen::Isometry3d::Identity();
-
-  entt::entity parentJoint = entt::null;
-  std::vector<entt::entity> childJoints;
-
-  Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
-
-  /// Accumulated external spatial force (wrench) expressed in the link frame,
-  /// using the `[angular; linear]` = `[torque; force]` convention shared by the
-  /// dynamics stages. Set by `Link::applyForce`, read by both the semi-implicit
-  /// forward-dynamics and variational-integrator paths, and cleared after each
-  /// world step (one-shot per step, mirroring legacy `BodyNode::addExtForce`).
-  Eigen::Matrix<double, 6, 1> externalForce
-      = Eigen::Matrix<double, 6, 1>::Zero();
-
-  static constexpr auto entityFields()
-  {
-    return std::make_tuple(&Link::parentJoint, &Link::childJoints);
-  }
-};
-
+struct MultibodyStructure;
 } // namespace dart::simulation::experimental::comps
+
+namespace dart::simulation::experimental::compute {
+
+/// Write back a multibody's next generalized velocity and integrate positions.
+///
+/// `nextVelocity` is ordered by the multibody construction order, matching the
+/// generalized-coordinate vector used by the forward-dynamics solve. The helper
+/// preserves the existing integration semantics: Euclidean joints integrate
+/// linearly with position-limit hard stops, spherical/floating joints integrate
+/// orientation on SO(3), and floating translation limits only affect the first
+/// three translational coordinates.
+DART_EXPERIMENTAL_API void integrateMultibodyPositions(
+    entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& nextVelocity,
+    double timeStep);
+
+} // namespace dart::simulation::experimental::compute

@@ -43,6 +43,7 @@
 #include <optional>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
@@ -59,7 +60,6 @@ bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
   return factorization.info() == Eigen::Success;
 }
 
-//==============================================================================
 void validateCollisionShape(const CollisionShape& shape, const char* ownerName)
 {
   switch (shape.type) {
@@ -96,6 +96,15 @@ void validateCollisionShape(const CollisionShape& shape, const char* ownerName)
           InvalidArgumentException,
           "{} cylinder collision shape radius and half-height must be "
           "positive and finite",
+          ownerName);
+      break;
+    case CollisionShapeType::Plane:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.normal.allFinite() || shape.normal.squaredNorm() <= 0.0
+              || !std::isfinite(shape.offset),
+          InvalidArgumentException,
+          "{} plane collision shape normal must be finite and nonzero, and "
+          "offset must be finite",
           ownerName);
       break;
     case CollisionShapeType::Mesh: {
@@ -136,6 +145,16 @@ void validateCollisionShape(const CollisionShape& shape, const char* ownerName)
       break;
     }
   }
+
+  const Eigen::Matrix3d rotation = shape.localTransform.linear();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !shape.localTransform.matrix().allFinite()
+          || !(rotation.transpose() * rotation)
+                  .isApprox(Eigen::Matrix3d::Identity(), 1e-9)
+          || std::abs(rotation.determinant() - 1.0) > 1e-9,
+      InvalidArgumentException,
+      "{} collision shape local transform must be a finite rigid transform",
+      ownerName);
 }
 
 } // namespace
@@ -254,9 +273,22 @@ std::optional<CollisionShape> Link::getCollisionShape() const
   const auto& registry = getWorld()->getRegistry();
   if (const auto* geometry
       = registry.try_get<comps::CollisionGeometry>(getEntity())) {
-    return geometry->shape;
+    if (const auto* shape = geometry->getPrimaryShape()) {
+      return *shape;
+    }
   }
   return std::nullopt;
+}
+
+//==============================================================================
+std::vector<CollisionShape> Link::getCollisionShapes() const
+{
+  const auto& registry = getWorld()->getRegistry();
+  if (const auto* geometry
+      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+    return geometry->shapes;
+  }
+  return {};
 }
 
 //==============================================================================
@@ -265,15 +297,32 @@ void Link::setCollisionShape(const CollisionShape& shape)
   validateCollisionShape(shape, "Link");
 
   auto& registry = getWorld()->getRegistry();
-  registry.emplace_or_replace<comps::CollisionGeometry>(
-      getEntity(), comps::CollisionGeometry{shape});
+  const auto* existing
+      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  comps::CollisionGeometry geometry{{shape}};
+  geometry.revision = existing ? existing->revision + 1 : 1;
+  registry.emplace_or_replace<comps::CollisionGeometry>(getEntity(), geometry);
+}
+
+//==============================================================================
+void Link::addCollisionShape(const CollisionShape& shape)
+{
+  validateCollisionShape(shape, "Link");
+
+  auto& registry = getWorld()->getRegistry();
+  auto& geometry
+      = registry.get_or_emplace<comps::CollisionGeometry>(getEntity());
+  geometry.shapes.push_back(shape);
+  ++geometry.revision;
 }
 
 //==============================================================================
 bool Link::hasCollisionShape() const
 {
-  return getWorld()->getRegistry().all_of<comps::CollisionGeometry>(
-      getEntity());
+  const auto& registry = getWorld()->getRegistry();
+  const auto* geometry
+      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  return geometry != nullptr && geometry->hasShapes();
 }
 
 //==============================================================================

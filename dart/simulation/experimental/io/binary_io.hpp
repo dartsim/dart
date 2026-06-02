@@ -79,7 +79,12 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   9: Link gained a separate parent-to-joint transform before the legacy
 //      joint-to-link transform for preserving imported joint origins
 //   10: DeformableMaterial gained `useMatrixFreeLinearSolver`
-constexpr std::uint32_t kBinaryFormatVersion = 10;
+//   11: Reserved by the experimental-model-loader branch for collision shape
+//      local transforms, Plane, Mesh, and multiple CollisionGeometry shapes
+//   12: Merged DART 7 format: mainline versions 6-10 plus the branch collision
+//      geometry record layout, storing capsule/cylinder half-height in
+//      CollisionShape::halfExtents.z()
+constexpr std::uint32_t kBinaryFormatVersion = 12;
 
 //==============================================================================
 // Low-level Binary I/O for POD types
