@@ -4537,6 +4537,57 @@ TEST(World, RigidIpcContactStageReportsUnsupportedShapes)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.0, 1e-12);
 }
 
+// Test that kinematic writeback is independent of whether the body has a rigid
+// IPC-supported collision surface. Unsupported kinematic shapes still advance
+// by prescribed velocity; they simply do not contribute rigid IPC contact rows.
+TEST(World, RigidIpcContactStageAdvancesUnsupportedKinematicBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  dynamicOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(
+      sx::CollisionShape::makeMesh(
+          {Eigen::Vector3d(0.0, 0.0, 0.0),
+           Eigen::Vector3d(1.0, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 1.0, 0.0)},
+          {Eigen::Vector3i(0, 1, 2)}));
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  kinematicOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto kinematicBody
+      = world.addRigidBody("kinematic_capsule", kinematicOptions);
+  kinematicBody.setCollisionShape(sx::CollisionShape::makeCapsule(0.1, 0.5));
+  kinematicBody.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.bodyCount, 2u);
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_EQ(stats.surfaceCount, 1u);
+  EXPECT_EQ(stats.skippedUnsupportedShapeCount, 1u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::MaxIterations);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_TRUE(stats.nonConvergedResultSkipped);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(kinematicBody.getTranslation().x(), 10.2, 1e-12);
+  EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), 2.0, 1e-12);
+}
+
 // Test that the opt-in IPC stage validates runtime collision geometry before
 // handing it to internal barrier and CCD loops.
 TEST(World, RigidIpcContactStageSkipsInvalidRuntimeGeometry)

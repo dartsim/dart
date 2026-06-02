@@ -2993,8 +2993,8 @@ TEST(DeformableBody, MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint)
 //==============================================================================
 // Kinematic rigid IPC bodies are already advanced before deformableDynamics in
 // the IPC pipeline. The deformable surface-CCD collector should therefore use
-// the realized current pose as a static/current-pose obstacle, not predict an
-// extra velocity step into the next frame.
+// the realized current step trace, not predict an extra velocity step into the
+// next frame.
 TEST(DeformableBody, KinematicSurfaceCcdObstacleUsesRealizedPoseInIpcPipeline)
 {
   sx::World world;
@@ -3022,11 +3022,56 @@ TEST(DeformableBody, KinematicSurfaceCcdObstacleUsesRealizedPoseInIpcPipeline)
   EXPECT_TRUE(body.isValid());
   expectVectorNear(box.getTranslation(), velocity * world.getTimeStep());
   const auto& stats = deformableStage.getLastStats();
-  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 1u);
-  EXPECT_EQ(stats.staticRigidSurfaceCcdTriangleCount, 12u);
-  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 0u);
-  EXPECT_EQ(stats.movingRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_GE(stats.movingRigidSurfaceCcdSampleCount, 2u);
+  EXPECT_EQ(
+      stats.movingRigidSurfaceCcdTriangleCount,
+      12u * stats.movingRigidSurfaceCcdSampleCount);
   EXPECT_EQ(stats.movingRigidSurfaceCcdHits, 0u);
+}
+
+//==============================================================================
+// The IPC trace must cover the realized kinematic start->end sweep. A
+// final-pose snapshot at x = 2 would not block this deformable point, but the
+// realized corridor from x = -2 to x = 2 crosses its path and must limit it.
+TEST(DeformableBody, KinematicSurfaceCcdObstacleSweepsRealizedIpcMotion)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  const Eigen::Vector3d startPosition(-2.0, 0.0, 0.0);
+  const Eigen::Vector3d velocity(40.0, 0.0, 0.0);
+  auto box = addMovingSurfaceCcdBox(
+      world, "kinematic_box", startPosition, halfExtents, velocity);
+  box.setKinematic(true);
+
+  auto body = world.addDeformableBody(
+      "swept_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(1.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::RigidIpcContactStage ipcStage;
+  compute::DeformableDynamicsStage deformableStage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage).addStage(deformableStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(body.isValid());
+  expectVectorNear(
+      box.getTranslation(), startPosition + velocity * world.getTimeStep());
+  const auto& stats = deformableStage.getLastStats();
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.movingRigidSurfaceCcdLimitedSteps, 0u);
+
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), 0.0);
+  EXPECT_LT(finalPosition.x(), 0.1);
 }
 
 //==============================================================================

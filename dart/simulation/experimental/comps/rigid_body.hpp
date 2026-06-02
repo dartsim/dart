@@ -33,8 +33,11 @@
 #pragma once
 
 #include <dart/simulation/experimental/comps/component_category.hpp>
+#include <dart/simulation/experimental/comps/dynamics.hpp>
 
 #include <limits>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental::comps {
 
@@ -67,6 +70,19 @@ struct StaticBodyTag
 /// **Internal Implementation Detail** - Not exposed in public API
 struct KinematicBodyTag
 {
+};
+
+/// Runtime-only trace of a kinematic body's realized motion during the current
+/// world step. Rigid IPC writes this when it advances a kinematic body before
+/// deformable dynamics so the deformable CCD stage can limit against the swept
+/// current-step motion instead of only the final pose.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct KinematicBodyStepTrace
+{
+  std::size_t frame = 0u;
+  Transform startTransform;
+  Transform endTransform;
 };
 
 /// Internal opt-in configuration for the first AVBD rigid contact World slice.

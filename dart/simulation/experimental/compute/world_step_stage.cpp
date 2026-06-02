@@ -1628,6 +1628,14 @@ bool isCurrentPoseRigidSurfaceCcdObstacle(
 }
 
 //==============================================================================
+bool hasCurrentKinematicStepTrace(const World& world, const entt::entity entity)
+{
+  const auto& registry = world.getRegistry();
+  const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
+  return trace != nullptr && trace->frame == world.getFrame();
+}
+
+//==============================================================================
 std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
     const World& world, DeformableSolverStats& stats)
 {
@@ -1646,6 +1654,9 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
     if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+    if (hasCurrentKinematicStepTrace(world, entity)) {
       continue;
     }
 
@@ -1754,10 +1765,11 @@ std::size_t movingRigidSurfaceCcdSampleCount(
 // Collect conservative static box snapshots that tile each MOVING rigid box
 // obstacle's swept motion over the step. Each snapshot is an ordinary static
 // pose, so the existing static-style limiter and
-// interBodySurfaceContactStepBound handle them unchanged. The obstacle end pose
-// is predicted from velocity, so the deformable is limited against where the
-// obstacle will be even though the deformable stage runs before
-// RigidBodyPositionStage.
+// interBodySurfaceContactStepBound handle them unchanged. Free-rigid obstacle
+// end poses are predicted from velocity because deformable dynamics runs before
+// RigidBodyPositionStage. Kinematic obstacle end poses come from the current
+// step trace written by rigid IPC, so deformables are limited against the
+// realized start->current motion instead of a future frame.
 //
 // This treats the swept volume as a static blocker for the step (timing-
 // agnostic): it is more conservative than a timing-aware sweep for fast
@@ -1777,20 +1789,17 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
   ++stats.movingRigidSurfaceCcdSnapshotBuilds;
 
   const auto& registry = world.getRegistry();
-  // Moving obstacles are free (non-static) rigid bodies integrated by
-  // RigidBodyPositionStage. Static bodies and kinematic bodies are current-pose
-  // obstacles instead: the IPC pipeline advances kinematic bodies before
-  // deformableDynamics, so predicting another velocity step here would sweep
-  // them into the next frame. The excludes keep this set disjoint from
-  // collectStaticRigidSurfaceCcdObstacles so no body is limited or counted
-  // twice. comps::Velocity is required to predict the end pose.
+  // Moving obstacles are free rigid bodies integrated by RigidBodyPositionStage
+  // or kinematic bodies already advanced by the rigid IPC stage. Static bodies
+  // stay in collectStaticRigidSurfaceCcdObstacles. Kinematic bodies only enter
+  // this moving set when rigid IPC left a current-frame trace; otherwise they
+  // remain current-pose obstacles.
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform,
-      comps::Velocity>(
-      entt::exclude<comps::StaticBodyTag, comps::KinematicBodyTag>);
+      comps::Velocity>(entt::exclude<comps::StaticBodyTag>);
 
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
@@ -1801,20 +1810,29 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     }
     const auto& transform = view.get<comps::Transform>(entity);
     const auto& velocity = view.get<comps::Velocity>(entity);
+    const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+    const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
+    if (isKinematic && (trace == nullptr || trace->frame != world.getFrame())) {
+      continue;
+    }
     if (shape->type != CollisionShapeType::Box
         || !shape->halfExtents.allFinite()
         || (shape->halfExtents.array() <= 0.0).any()
         || !velocity.linear.allFinite() || !velocity.angular.allFinite()) {
       continue;
     }
+    const comps::Transform startTransform
+        = isKinematic ? trace->startTransform : transform;
+    const comps::Transform endTransform
+        = isKinematic
+              ? trace->endTransform
+              : predictRigidBodyEndTransform(transform, velocity, timeStep);
     const auto startShapeTransform
-        = collisionShapeWorldTransform(transform, *shape);
+        = collisionShapeWorldTransform(startTransform, *shape);
     if (!startShapeTransform.has_value()) {
       continue;
     }
 
-    const auto endTransform
-        = predictRigidBodyEndTransform(transform, velocity, timeStep);
     const auto endShapeTransform
         = collisionShapeWorldTransform(endTransform, *shape);
     if (!endShapeTransform.has_value()) {
@@ -7028,6 +7046,8 @@ struct RigidIpcRuntimeBody
 {
   entt::entity entity = entt::null;
   bool kinematic = false;
+  bool hasSupportedSurface = false;
+  std::size_t surfaceIndex = std::numeric_limits<std::size_t>::max();
   sxdetail::RigidIpcPose initialPose;
   sxdetail::RigidIpcVector6d initialVelocity
       = sxdetail::RigidIpcVector6d::Zero();
@@ -7064,6 +7084,15 @@ sxdetail::RigidIpcPose toRigidIpcPose(const comps::Transform& transform)
   pose.position = transform.position;
   pose.rotation = rotationVectorFromQuaternion(transform.orientation);
   return pose;
+}
+
+//==============================================================================
+comps::Transform toTransform(const sxdetail::RigidIpcPose& pose)
+{
+  comps::Transform transform;
+  transform.position = pose.position;
+  transform.orientation = quaternionFromRotationVector(pose.rotation);
+  return transform;
 }
 
 //==============================================================================
@@ -7394,15 +7423,21 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
     }
     if (!copiedSurface) {
       ++stats.skippedUnsupportedShapeCount;
-      continue;
+      if (!isKinematic) {
+        continue;
+      }
     }
 
-    body.dynamicsTerm
-        = makeRuntimeRigidIpcDynamicsTerm(world, entity, body.initialPose);
-    if (body.surface.dynamic) {
-      ++stats.dynamicBodyCount;
+    if (copiedSurface) {
+      body.hasSupportedSurface = true;
+      body.surfaceIndex = stats.surfaceCount;
+      body.dynamicsTerm
+          = makeRuntimeRigidIpcDynamicsTerm(world, entity, body.initialPose);
+      if (body.surface.dynamic) {
+        ++stats.dynamicBodyCount;
+      }
+      ++stats.surfaceCount;
     }
-    ++stats.surfaceCount;
     bodies.push_back(std::move(body));
   }
 
@@ -7419,6 +7454,20 @@ std::size_t findRuntimeBodyIndex(
     }
   }
   return bodies.size();
+}
+
+//==============================================================================
+void clearKinematicBodyStepTraces(World& world)
+{
+  auto& registry = world.getRegistry();
+  auto view = registry.view<comps::KinematicBodyStepTrace>();
+  std::vector<entt::entity> tracedEntities;
+  for (const auto entity : view) {
+    tracedEntities.push_back(entity);
+  }
+  for (const auto entity : tracedEntities) {
+    registry.remove<comps::KinematicBodyStepTrace>(entity);
+  }
 }
 
 //==============================================================================
@@ -7458,6 +7507,14 @@ void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
 {
   auto& registry = world.getRegistry();
   auto& transform = registry.get<comps::Transform>(body.entity);
+
+  comps::KinematicBodyStepTrace trace;
+  trace.frame = world.getFrame();
+  trace.startTransform = toTransform(body.initialPose);
+  trace.endTransform = toTransform(body.surface.pose);
+  registry.emplace_or_replace<comps::KinematicBodyStepTrace>(
+      body.entity, std::move(trace));
+
   transform.position = body.surface.pose.position;
   transform.orientation
       = quaternionFromRotationVector(body.surface.pose.rotation);
@@ -7492,28 +7549,34 @@ void applyRigidIpcRuntimeResult(
       = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
   for (const auto entity : orderedEntities) {
     const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
-    if (bodyIndex >= bodies.size() || bodyIndex >= result.surfaces.size()) {
+    if (bodyIndex >= bodies.size()) {
       continue;
     }
     const auto& body = bodies[bodyIndex];
     if (body.kinematic) {
       applyKinematicRuntimeBody(world, body);
-    } else if (body.surface.dynamic) {
+    } else if (body.surface.dynamic && body.hasSupportedSurface) {
+      if (body.surfaceIndex >= result.surfaces.size()) {
+        continue;
+      }
       applyRigidIpcPoseToRuntimeBody(
-          world, body, result.surfaces[bodyIndex].pose);
+          world, body, result.surfaces[body.surfaceIndex].pose);
     }
   }
 }
 
 //==============================================================================
 void applyRigidIpcKinematicRuntimeBodies(
-    World& world, const std::vector<RigidIpcRuntimeBody>& bodies)
+    World& world,
+    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const bool includeSupportedKinematicSurfaces = true)
 {
   auto& registry = world.getRegistry();
   std::vector<entt::entity> writebackEntities;
   writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
-    if (body.kinematic) {
+    if (body.kinematic
+        && (includeSupportedKinematicSurfaces || !body.hasSupportedSurface)) {
       writebackEntities.push_back(body.entity);
     }
   }
@@ -7534,9 +7597,11 @@ bool canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
 {
   // If no barrier/friction rows are active, discarding the dynamic solve result
-  // does not invalidate the prescribed kinematic advance. With active contact
-  // rows, however, a rejected solve means there is no accepted swept path for
-  // the current dynamic state against the kinematic end pose.
+  // does not invalidate prescribed kinematic advances for supported IPC
+  // surfaces. With active contact rows, however, a rejected solve means there
+  // is no accepted swept path for the current dynamic state against the
+  // supported kinematic end pose. Unsupported kinematic bodies are applied
+  // separately because they never contributed rows to this solve.
   return result.assembly.activeConstraints.empty()
          && result.assembly.activeFrictionConstraints.empty()
          && !result.lineSearch.limited
@@ -8109,6 +8174,7 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
        {"rigid_body.velocity", ComputeAccessMode::ReadWrite},
        {"rigid_body.mass", ComputeAccessMode::Read},
        {"rigid_body.force", ComputeAccessMode::Read},
+       {"rigid_body.kinematic_step_trace", ComputeAccessMode::ReadWrite},
        {"collision_geometry", ComputeAccessMode::Read}}};
 }
 
@@ -8116,6 +8182,7 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
 void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
 {
   m_lastStats.reset();
+  clearKinematicBodyStepTraces(world);
 
   const auto runtimeBodies = collectRigidIpcRuntimeBodies(world, m_lastStats);
 
@@ -8129,11 +8196,19 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
     return;
   }
 
+  std::vector<RigidIpcRuntimeBody> solverBodies;
+  solverBodies.reserve(m_lastStats.surfaceCount);
+  for (const auto& body : runtimeBodies) {
+    if (body.hasSupportedSurface) {
+      solverBodies.push_back(body);
+    }
+  }
+
   std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
-  surfaces.reserve(runtimeBodies.size());
-  dynamicsTerms.reserve(runtimeBodies.size());
-  for (const auto& body : runtimeBodies) {
+  surfaces.reserve(solverBodies.size());
+  dynamicsTerms.reserve(solverBodies.size());
+  for (const auto& body : solverBodies) {
     surfaces.push_back(body.surface);
     dynamicsTerms.push_back(body.dynamicsTerm);
   }
@@ -8149,7 +8224,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
   double massSum = 0.0;
   std::size_t massCount = 0;
-  for (const auto& body : runtimeBodies) {
+  for (const auto& body : solverBodies) {
     const Eigen::Matrix3d rotation
         = sxdetail::rigidIpcRotationVectorToMatrix(body.surface.pose.rotation);
     for (const Eigen::Vector3d& localVertex : body.surface.vertices) {
@@ -8235,12 +8310,12 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       = result.status
         == sxdetail::RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
   const bool hasKinematicRuntimeBody = std::any_of(
-      runtimeBodies.begin(), runtimeBodies.end(), [](const auto& body) {
+      solverBodies.begin(), solverBodies.end(), [](const auto& body) {
         return body.kinematic;
       });
   const bool restingContactBlocked
       = !hasKinematicRuntimeBody && lineSearchBlocked
-        && canApplyRestingContactNoOp(runtimeBodies, result);
+        && canApplyRestingContactNoOp(solverBodies, result);
 
   m_lastStats.status = toPublicRigidIpcSolveStatus(result.status);
   m_lastStats.activeConstraints = result.assembly.activeConstraints.size();
@@ -8297,9 +8372,10 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // a persistent failure for a static dense contact. Separating or tangential
   // motion must be preserved by leaving the runtime state untouched.
   if (result.failed && !restingContactBlocked) {
-    if (canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(result)) {
-      applyRigidIpcKinematicRuntimeBodies(world, runtimeBodies);
-    }
+    applyRigidIpcKinematicRuntimeBodies(
+        world,
+        runtimeBodies,
+        canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(result));
     return;
   }
   // Otherwise apply the last intersection-free iterate the bounded solve
@@ -8315,9 +8391,10 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // iteration budget) is still skipped.
   if (!result.converged && !result.madeProgress() && !restingContactBlocked) {
     m_lastStats.nonConvergedResultSkipped = true;
-    if (canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(result)) {
-      applyRigidIpcKinematicRuntimeBodies(world, runtimeBodies);
-    }
+    applyRigidIpcKinematicRuntimeBodies(
+        world,
+        runtimeBodies,
+        canApplyKinematicRuntimeBodiesAfterRejectedRigidIpcSolve(result));
     return;
   }
 
@@ -8384,6 +8461,7 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
        {"deformable_body.model", ComputeAccessMode::Read},
        {"deformable_body.topology", ComputeAccessMode::Read},
        {"deformable_body.boundary_conditions", ComputeAccessMode::Read},
+       {"rigid_body.kinematic_step_trace", ComputeAccessMode::Read},
        {"static_collision_geometry", ComputeAccessMode::Read}}};
 }
 
