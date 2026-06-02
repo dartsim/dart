@@ -104,7 +104,8 @@ struct PrismaticLegWorld
 
     multibody = dart::simulation::experimental::detail::toRegistryEntity(
         robot.getEntity());
-    link = leg.getEntity();
+    link = dart::simulation::experimental::detail::toRegistryEntity(
+        leg.getEntity());
   }
 
   const sx::comps::MultibodyStructure& structure()
@@ -145,8 +146,10 @@ struct TwoPrismaticLinksWorld
 
     multibody = dart::simulation::experimental::detail::toRegistryEntity(
         robot.getEntity());
-    lower = lowerLink.getEntity();
-    upper = upperLink.getEntity();
+    lower = dart::simulation::experimental::detail::toRegistryEntity(
+        lowerLink.getEntity());
+    upper = dart::simulation::experimental::detail::toRegistryEntity(
+        upperLink.getEntity());
   }
 
   const sx::comps::MultibodyStructure& structure()
@@ -326,7 +329,8 @@ TEST(MultibodyLinkContact, CouplesDynamicRigidObstacleRow)
   contact.depth = 0.0; // no penetration: isolate the two-sided coupling
   contact.friction = 0.75;
   contact.restitution = 0.0;
-  contact.otherBody = obstacle.getEntity();
+  contact.otherBody = dart::simulation::experimental::detail::toRegistryEntity(
+      obstacle.getEntity());
 
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << -0.4;
@@ -353,7 +357,10 @@ TEST(MultibodyLinkContact, CouplesDynamicRigidObstacleRow)
 
   // The dynamic obstacle is coupled in: unit mass and identity inertia, with
   // the arm measured from the obstacle's body origin to the contact point.
-  EXPECT_EQ(row.otherBody, obstacle.getEntity());
+  EXPECT_EQ(
+      row.otherBody,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          obstacle.getEntity()));
   EXPECT_DOUBLE_EQ(row.otherInvMass, 1.0);
   EXPECT_TRUE(row.otherInvInertia.isApprox(Eigen::Matrix3d::Identity(), 1e-12));
   EXPECT_TRUE(

@@ -140,11 +140,11 @@ TEST(AvbdContact, CompoundShapeFeatureKeysUseContactedShapeIndex)
   const sx::Contact& contact = contacts.front();
   const bool compoundIsA
       = sx::detail::toRegistryEntity(contact.bodyA.getEntity())
-        == compound.getEntity();
+        == sx::detail::toRegistryEntity(compound.getEntity());
   ASSERT_TRUE(
       compoundIsA
       || sx::detail::toRegistryEntity(contact.bodyB.getEntity())
-             == compound.getEntity());
+             == sx::detail::toRegistryEntity(compound.getEntity()));
   const std::size_t compoundShapeIndex
       = compoundIsA ? contact.shapeIndexA : contact.shapeIndexB;
   const Eigen::Vector3d compoundLocalPoint
@@ -182,7 +182,8 @@ TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
   auto sphere = avbd->getRigidBody("sphere");
   ASSERT_TRUE(sphere.has_value());
   avbd->getRegistry().emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
-      sphere->getEntity());
+      dart::simulation::experimental::detail::toRegistryEntity(
+          sphere->getEntity()));
   avbd->enterSimulationMode();
 
   avbd->step();
@@ -211,14 +212,15 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
   sphere->setTransform(spherePose);
 
   auto& registry = avbd->getRegistry();
+  const auto& toReg = dart::simulation::experimental::detail::toRegistryEntity;
   registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
-      sphere->getEntity());
+      toReg(sphere->getEntity()));
 
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
-  joint.parentLink = ground->getEntity();
-  joint.childLink = sphere->getEntity();
+  joint.parentLink = toReg(ground->getEntity());
+  joint.childLink = toReg(sphere->getEntity());
 
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
@@ -257,8 +259,10 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
-  joint.parentLink = base.getEntity();
-  joint.childLink = link.getEntity();
+  joint.parentLink = dart::simulation::experimental::detail::toRegistryEntity(
+      base.getEntity());
+  joint.childLink = dart::simulation::experimental::detail::toRegistryEntity(
+      link.getEntity());
 
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
@@ -295,8 +299,10 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
-  joint.parentLink = base.getEntity();
-  joint.childLink = link.getEntity();
+  joint.parentLink = dart::simulation::experimental::detail::toRegistryEntity(
+      base.getEntity());
+  joint.childLink = dart::simulation::experimental::detail::toRegistryEntity(
+      link.getEntity());
 
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
@@ -337,8 +343,10 @@ TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
-  joint.parentLink = base.getEntity();
-  joint.childLink = link.getEntity();
+  joint.parentLink = dart::simulation::experimental::detail::toRegistryEntity(
+      base.getEntity());
+  joint.childLink = dart::simulation::experimental::detail::toRegistryEntity(
+      link.getEntity());
 
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);

@@ -367,7 +367,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
 
   // Validate parent link exists
   auto& registry = m_world->getRegistry();
-  auto parentEntity = options.parentLink.getEntity();
+  auto parentEntity = detail::toRegistryEntity(options.parentLink.getEntity());
 
   DART_EXPERIMENTAL_THROW_T_IF(
       options.parentLink.getWorld() != m_world,
@@ -649,7 +649,7 @@ Eigen::MatrixXd Multibody::getJacobian(const Link& link) const
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyLinkJacobian(
-      registry, structure, link.getEntity());
+      registry, structure, detail::toRegistryEntity(link.getEntity()));
 }
 
 //==============================================================================
@@ -664,7 +664,7 @@ Eigen::MatrixXd Multibody::getWorldJacobian(const Link& link) const
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyLinkWorldJacobian(
-      registry, structure, link.getEntity());
+      registry, structure, detail::toRegistryEntity(link.getEntity()));
 }
 
 //==============================================================================
@@ -715,7 +715,9 @@ void Multibody::addGroundContactPoint(
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   const auto it = std::find(
-      structure.links.begin(), structure.links.end(), link.getEntity());
+      structure.links.begin(),
+      structure.links.end(),
+      detail::toRegistryEntity(link.getEntity()));
   DART_EXPERIMENTAL_THROW_T_IF(
       it == structure.links.end(),
       InvalidArgumentException,
