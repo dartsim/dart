@@ -299,23 +299,33 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     fallbackRan = true;
   }
 
-  const bool hasNaN = mX.hasNaN();
-  if (!success && fallbackRan && hasNaN) {
-    // If the fallback produced NaNs, zero just those entries but still allow
-    // non-NaN entries to propagate.
-    for (int i = 0; i < mX.size(); ++i) {
-      if (std::isnan(mX[i]))
-        mX[i] = 0.0;
-    }
-  }
+  // Capture the NaN state of the solution BEFORE any scrubbing so that
+  // usability is decided from the pre-scrub state. Scrubbing NaN entries must
+  // not be allowed to turn a failed solve into an apparently usable one.
+  const bool hadNaN = mX.hasNaN();
 
   // Treat a finite fallback solution as usable even if the solver reported
-  // failure to avoid discarding potentially valid impulses.
+  // failure to avoid discarding potentially valid impulses. Note this uses the
+  // pre-scrub NaN state (hadNaN), NOT a post-scrub recheck, so a failed
+  // fallback that wrote NaNs cannot be promoted to success by scrubbing.
   const bool finalSuccess
-      = success || fallbackSuccess || (fallbackRan && !mX.hasNaN());
+      = success || fallbackSuccess || (fallbackRan && !hadNaN);
 
-  if (!finalSuccess) {
-    if (hasNaN) {
+  if (finalSuccess) {
+    // The solution will be used. If an otherwise-usable solution (e.g. a
+    // successful fallback) carries stray NaNs, scrub just those entries to 0
+    // so the remaining finite impulses can propagate.
+    if (hadNaN) {
+      for (int i = 0; i < mX.size(); ++i) {
+        if (std::isnan(mX[i]))
+          mX[i] = 0.0;
+      }
+    }
+  } else {
+    // Fail safe: the solve genuinely failed (including a failed fallback that
+    // produced NaNs), so zero the ENTIRE solution rather than propagating
+    // partial finite impulses.
+    if (hadNaN) {
       dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
             << "values: " << mX.transpose() << ". We're setting it zero for "
             << "safety. Consider using more robust solver such as PGS as a "
