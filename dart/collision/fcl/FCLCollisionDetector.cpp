@@ -1117,10 +1117,9 @@ bool collisionCallback(
   if (result) {
     const bool usingMeshContacts
         = (collData->primitiveShapeType == FCLCollisionDetector::MESH);
-    const bool forcingMeshFallback
-        = usingMeshContacts
-          && collData->contactPointComputationMethod
-                 == FCLCollisionDetector::FCL;
+    const bool forcingMeshFallback = usingMeshContacts
+                                     && collData->contactPointComputationMethod
+                                            == FCLCollisionDetector::FCL;
 
     // Post processing -- converting fcl contact information to ours if needed
     if (usingMeshContacts) {
