@@ -644,6 +644,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `World.add_rigid_body_fixed_joint()` for design-mode fixed constraints
     between two free rigid bodies, backed by the private AVBD fixed-joint
     projection path and covered by a `py-demos` rigid fixed-joint scene.
+  - Added explicit rigid-body endpoint accessors for public experimental
+    rigid-body fixed joints (`Joint::getParentRigidBody()`/
+    `getChildRigidBody()`, dartpy `joint.parent_rigid_body`/
+    `joint.child_rigid_body`) with tests, benchmark coverage, and py-demo
+    panel output.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
