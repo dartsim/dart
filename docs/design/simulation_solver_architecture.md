@@ -17,8 +17,10 @@ It is the internal-organization companion to the public-facade design docs:
 
 This doc does not restate those rules; it explains the engine architecture that
 sits behind that facade. Active phase tracking lives in
-`docs/plans/dashboard.md` (PLAN-080) and
-`docs/dev_tasks/rigid_body_dynamics_solver/`.
+`docs/plans/dashboard.md`; current solver-family owners include PLAN-080
+(rigid/articulated baseline), PLAN-081/082/083 (implicit-barrier and unified
+Newton-barrier work), PLAN-104 (VBD/AVBD), and PLAN-110 (differentiable
+simulation).
 
 ## Purpose
 
@@ -73,6 +75,39 @@ Public selection uses method/approach/paper or DART-owned names — for example
 `articulated-body`, `semi-implicit`, `projected Gauss-Seidel`, `XPBD`,
 `implicit time stepping`. Solver, preset, and example names must not be derived
 from other engines or projects.
+
+### Paper Methods Enter Through Families, Not Silos
+
+DART is research-focused, so adding algorithms from new papers is expected.
+That does not mean each paper gets an isolated solver stack. A new paper method
+must first be routed to the nearest DART-owned family: for example deformable
+IPC, rigid IPC, and affine/unified IPC belong under the Newton-barrier family;
+VBD, OGC, and AVBD belong under the VBD family; differentiable LCP and Dojo-style
+variational gradients belong under the differentiable/variational rigid-body
+families. A new family is justified only when the method cannot share a domain,
+state adapter, objective, contact representation, optimization loop, benchmark
+schema, or public capability vocabulary with an existing family.
+
+DART 7 is a clean-break API line, so backward compatibility is not a reason to
+carry duplicate public solver surfaces. Prefer a clean internal contract and a
+single public capability vocabulary over preserving an early experimental shape.
+
+### Shared Components Are The Default
+
+When two solver families need the same concept, the second use should trigger a
+promotion decision instead of a copy. Shared candidates include collision and
+contact candidate generation, primitive distances, barrier/friction kernels,
+kinematics and state adapters, line-search contracts, PSD projection, sparse
+linear solves, projected-Newton diagnostics, benchmark JSON schemas, py-demo
+scene plumbing, and compute-backend gates. A variant may keep local code while a
+contract is unstable, but its plan or dev-task handoff must state why the code
+cannot consume an existing shared component and what evidence would allow
+promotion later.
+
+Shared does not mean lowest-common-denominator. A promoted component must keep
+variant-specific correctness oracles and expose extension points for legitimate
+differences such as endpoint-linear versus curved rigid CCD, generalized versus
+affine coordinates, or block descent versus Newton solves.
 
 ### Coupling Is A First-Class, Pairwise, Swappable Strategy
 
@@ -231,6 +266,76 @@ documented fallback behavior or an unsupported-capability error when the build
 lacks the implementation. Solver registries, plugin loaders, and accelerator
 resource handles are not part of this contract and require their own design.
 
+## Configuration Surface Rules
+
+Solver configuration starts from the user's `World` creation path, not from
+internal solver objects. The common path should be:
+
+- create a `World` with a small options object or default constructor;
+- add bodies/domains through the public facade;
+- set at most a method-family or policy preset when the default is not desired;
+- call `step()` and read diagnostics when a requested capability is unsupported.
+
+The configuration design must keep simple use simple and invalid use hard:
+
+- use typed options, named policies, validated units, bounded numeric ranges,
+  and documented defaults instead of loosely related scalar fields;
+- validate incompatible options before or during finalization with actionable
+  unsupported-capability errors;
+- group advanced algorithm knobs under method-specific nested option objects so
+  common `World` setup is not flooded by every paper parameter;
+- keep option names DART-owned and capability-oriented, while allowing
+  provenance in internal tests, manifests, and benchmark rows;
+- preserve serialization/restart behavior for options that affect simulation
+  results, or document why an option is runtime-only;
+- expose diagnostics that explain which method family, fallback, or unsupported
+  path was used without exposing solver registries, ECS storage, or backend
+  resources.
+
+Advanced options should scale with the algorithms DART implements, but they
+should not require users to understand storage layout, stage order, reference
+project terminology, or compute-backend internals. If an advanced option is
+only meaningful for one method family, keep it scoped to that method's options
+object; do not add a broad `WorldOptions` field that is invalid for most
+worlds.
+
+## Solver Family Intake Gate
+
+Before starting a new solver, algorithm, paper, or major component
+implementation, the owner plan or dev task must answer this intake checklist:
+
+1. **Family routing.** Name the existing DART solver family and owner plan that
+   receives the work, or justify a new family. Examples: PLAN-081/082/083 for
+   IPC and Newton-barrier variants, PLAN-104 for VBD/OGC/AVBD variants,
+   PLAN-110 plus PLAN-082 for differentiable variational rigid-body work.
+2. **Shared-component inventory.** List the collision, kinematics, model/state,
+   contact buffer, numeric optimization, linear-solver, compute-backend,
+   diagnostics, benchmark, and example components the slice will reuse. Any new
+   duplicate must name the missing contract that prevents reuse.
+3. **Promotion trigger.** Define what second-use evidence would move a
+   variant-local piece into a shared internal owner, and what tests will prove
+   old and new consumers still agree.
+4. **Apples-to-apples evidence.** Define the DART incumbent, reference
+   implementation, paper number, scene corpus, accuracy metric, and benchmark
+   JSON shape used for comparison. A performance claim without matched accuracy
+   and matched scene parameters is not a completion claim.
+5. **Public boundary.** Confirm public APIs and dartpy bindings expose
+   DART-owned domains, method families, policies, diagnostics, and value types,
+   not upstream project names, solver registries, ECS storage, backend resources,
+   or reverse-pass caches.
+6. **Configuration surface.** Define the default `World`/options path, the
+   advanced nested options, validation rules, serialization expectations, and
+   diagnostics. The common path must be simple, and invalid or incompatible
+   option combinations must fail before they produce misleading simulation
+   results.
+7. **Failure and fallback semantics.** Record unsupported-feature errors,
+   fallback behavior, non-convergence handling, determinism requirements, and
+   serialization/restart expectations before promoting a runtime path.
+
+Reviewers should reject new solver work that cannot point to this intake
+evidence. Cleanup of existing implementation is useful only when it also leaves
+this gate clearer for the next paper implementation.
+
 ## Where Differentiable Solver Families Fit
 
 Differentiability is a solver capability of the experimental `World`, not a
@@ -289,6 +394,9 @@ contract (see the compute-surface rules in the public-facade doc).
 - Do not expose `Solver`, `Coupler`, `PhysicsDomain`, or schedule phase types as
   required public types in DART 7. Select behavior by documented method-family
   names and policy value objects.
+- Keep solver options centered on the `World` and public body/domain handles:
+  simple defaults and presets for common users, method-specific nested option
+  objects for advanced users, and validation for incompatible combinations.
 - Expose dynamics through entity handles and state/control/contact views with
   documented ownership and freshness, never through the registry.
 - Default selection must keep the easy path (`World` + `addRigidBody` /
@@ -347,3 +455,5 @@ Implementation PRs that realize parts of this architecture should include:
 
 Reviewers should reject user-facing APIs that leak solver types, coupler types,
 ECS storage, component types, execution-backend names, or registry access.
+New solver/paper PRs should also link the solver-family intake evidence above
+from the owner plan or dev-task resume surface.

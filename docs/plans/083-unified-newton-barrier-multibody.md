@@ -28,6 +28,17 @@
     manifests, curved-trajectory CCD, reduced rigid barrier derivatives,
     projected Newton scaffolding, lagged friction, opt-in runtime stage,
     solver selection, diagnostics, and first rigid IPC py-demos.
+  - The active PLAN-083 task has already promoted pure world-primitive
+    distance, barrier, tangent-stencil, and tangential-friction math into the
+    internal `detail/newton_barrier` owner. Deformable compatibility headers
+    forward to it, rigid IPC consumes it directly, ABD consumes it for affine
+    barrier/friction chain-rule rows, and `test_newton_barrier_primitives`
+    covers old/new alias and rigid-consumer parity.
+  - The internal ABD foundation now has `detail/affine_body_dynamics`, affine
+    state/surface adapters, orthogonality energy, rigid barrier/friction
+    equivalence oracles, and `bm_affine_body_dynamics` smoke rows. Those are
+    correctness foundations, not a runtime solver or paper-scale completion
+    claim.
   - PLAN-080 owns the experimental rigid-body dynamics and articulation path;
     PLAN-030 owns the private CPU/GPU compute gates; PLAN-103 owns the
     Python-first examples surface.
@@ -85,8 +96,9 @@
    PT/EE/PE/PP distances, tangent stencils, conservative CCD, candidate sets,
    PSD projection, sparse projected Newton, lagged friction, Rayleigh damping,
    diagnostics, benchmark JSON, and headless visual evidence should be shared
-   when a second variant uses them. Variant-specific code must justify any
-   divergence in its plan or dev-task handoff.
+   when a second variant uses them. The first distance/barrier/tangent/friction
+   promotion now lives under `detail/newton_barrier`; future variant-specific
+   code must justify any divergence in its plan or dev-task handoff.
 4. **Affine body dynamics is a new stiff-body representation track.** ABD's
    12-DOF affine body with stiff orthogonality potential is planned as an
    alternate stiff/rigid representation. It must coexist with DART's generalized
@@ -132,11 +144,13 @@
    two supplied references plus existing IPC/rigid-IPC manifests. Every figure,
    unit test, benchmark table, comparison, and slide-deck performance row must
    map to a DART artifact, target category, command, and completion status.
-2. **Shared internal primitive layer** - Inventory duplicate IPC primitives in
-   deformable, rigid, ABD, and adjacent IPC-family code, then promote stable
-   second-use pieces to a shared internal Newton-barrier module with focused
-   tests and benchmark targets. The consolidation map records which variant
-   owns each obligation until that second-use evidence exists.
+2. **Shared internal primitive layer** - Maintain the promoted
+   `detail/newton_barrier` primitive owner for distance, barrier, tangent, and
+   friction math, then promote additional second-use pieces such as PSD
+   projection, line-search contracts, projected-Newton diagnostics, and
+   benchmark schemas only after focused cross-variant tests prove the shared
+   behavior. The consolidation map records which variant owns each obligation
+   until that second-use evidence exists.
 3. **ABD stiff-body track** - Add affine-body model/state representation,
    orthogonality energy, inertia/contact/friction chain rules, stiffness
    controls, and solver diagnostics. Compare against the rigid IPC oracle,
@@ -169,6 +183,11 @@
 - The experimental public facade remains backend-neutral and DART-owned: no
   public `IPC`, `RigidIPC`, `ABD`, upstream repository, solver registry,
   coupler registry, ECS, device, stream, memory-pool, or backend task type.
+- Solver options remain easy on the common `World` creation path: defaults and
+  presets cover ordinary use, advanced method-specific knobs live in nested
+  option objects with typed validation, incompatible combinations fail with
+  actionable diagnostics, and result-affecting options have serialization/
+  restart behavior or an explicit runtime-only rationale.
 - Correctness tests prove no-intersection, no-inversion where applicable,
   constraint satisfaction, finite energy, derivative correctness, PSD projection
   behavior, line-search feasibility, friction/stiction behavior, restitution
@@ -191,15 +210,21 @@
 1. Use the PLAN-083 sidecar manifest to drive status changes for every unified
    paper/deck figure, unit-test row, benchmark row, comparison row, and py-demos
    target category.
-2. Continue Phase 2 in
+2. Continue the active
    [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
    promote the first ABD benchmark packet from smoke shape to a comparison
    manifest row now that affine barrier and friction primitive derivative
    oracles are stable.
-3. Generalize PSD projection and projected-Newton contracts when ABD or another
-   solver-family slice creates a second-use contract beyond deformable and rigid
-   local needs.
-4. Keep dev-task status, resume context, and implementation gates synchronized
+3. Generalize PSD projection, projected-Newton, line-search, diagnostics, and
+   benchmark-schema contracts when ABD or another solver-family slice creates a
+   second-use contract beyond deformable and rigid local needs.
+4. Keep new IPC-family papers or solver components under the solver-family
+   intake gate in
+   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md):
+   route to an existing variant owner, inventory shared components, define the
+   user-facing configuration surface, and define apples-to-apples evidence
+   before duplicating primitives or adding broad public options.
+5. Keep dev-task status, resume context, and implementation gates synchronized
    with this owner plan until the active task can be retired into durable
    design, plan, benchmark, and example artifacts.
 

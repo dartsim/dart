@@ -27,6 +27,17 @@ Research-facing extension points should:
 - keep threading, allocator, SIMD, ECS storage, and backend details behind
   internal boundaries unless they are intentionally public.
 
+Solver and multi-physics methods have an additional intake gate in
+[`simulation_solver_architecture.md`](simulation_solver_architecture.md). Before
+starting a solver paper or component slice, route it to an existing family when
+possible, inventory shared collision/kinematics/optimization/benchmark
+components, and define the apples-to-apples evidence that will compare it
+against DART incumbents, reference implementations, and paper numbers. The same
+gate requires a user-facing configuration shape: simple defaults and presets on
+the common `World` path, method-specific nested options for advanced users,
+typed validation, serialization expectations, and diagnostics for unsupported
+or fallback behavior.
+
 ## API Boundary Rules
 
 Apply `docs/onboarding/api-boundaries.md` to every extension point:
