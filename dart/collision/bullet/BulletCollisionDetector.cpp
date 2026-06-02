@@ -87,9 +87,6 @@ void reportRayHits(
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ);
 
-std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
-    const Eigen::Vector3d& radii);
-
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene);
 
@@ -523,12 +520,15 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     std::unique_ptr<btCollisionShape> bulletCollisionShape;
     if (ellipsoid->isSphere()) {
+      // A true sphere uses a primitive btSphereShape so it rolls smoothly
+      // instead of stepping over the facets of a mesh approximation.
       bulletCollisionShape = std::make_unique<btSphereShape>(radii[0]);
     } else {
-      bulletCollisionShape = createBulletEllipsoidMultiSphere(radii);
-    }
-
-    if (!bulletCollisionShape) {
+      // A non-spherical ellipsoid keeps the convex mesh approximation, which is
+      // geometrically accurate. Approximating it with a union of spheres
+      // (btMultiSphereShape) reports contacts for points outside the true
+      // ellipsoid surface (e.g. radii (2, 1, 1) becomes a capsule-like volume),
+      // introducing false-positive collisions and constraints.
       bulletCollisionShape = createBulletEllipsoidMesh(
           radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
     }
@@ -911,53 +911,6 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
   gimpactMeshShape->updateBound();
 
   return gimpactMeshShape;
-}
-
-//==============================================================================
-std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
-    const Eigen::Vector3d& radii)
-{
-  const double minRadius = radii.minCoeff();
-  const double maxRadius = radii.maxCoeff();
-  constexpr double kMaxAspectRatioForMultiSphere = 4.0;
-
-  if (minRadius <= 0.0)
-    return nullptr;
-  if (maxRadius / minRadius > kMaxAspectRatioForMultiSphere)
-    return nullptr;
-
-  std::vector<btVector3> centers;
-  std::vector<btScalar> childRadii;
-
-  centers.emplace_back(btVector3(0.0, 0.0, 0.0));
-  childRadii.emplace_back(static_cast<btScalar>(minRadius));
-
-  const double axisEpsilon = 1e-9;
-
-  for (auto i = 0u; i < 3; ++i) {
-    const double axisRadius = radii[i];
-    const double childRadius
-        = std::min({radii[(i + 1) % 3], radii[(i + 2) % 3], axisRadius});
-    const double delta = axisRadius - childRadius;
-
-    if (delta <= axisEpsilon)
-      continue;
-
-    Eigen::Vector3d offset = Eigen::Vector3d::Zero();
-    offset[i] = delta;
-    centers.emplace_back(convertVector3(offset));
-    childRadii.emplace_back(static_cast<btScalar>(childRadius));
-
-    offset[i] = -delta;
-    centers.emplace_back(convertVector3(offset));
-    childRadii.emplace_back(static_cast<btScalar>(childRadius));
-  }
-
-  if (centers.empty())
-    return nullptr;
-
-  return std::make_unique<btMultiSphereShape>(
-      centers.data(), childRadii.data(), centers.size());
 }
 
 //==============================================================================
