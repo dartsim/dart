@@ -32,9 +32,26 @@
 
 #pragma once
 
-// Convenience header that includes all entity object components
-// For template method implementations, include entity_object_with_impl.hpp in
-// .cpp files
+#include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/ecs/entity_object_base.hpp>
-#include <dart/simulation/experimental/ecs/entity_object_with.hpp>
+#include <dart/simulation/experimental/export.hpp>
+
+#include <entt/entt.hpp>
+
+namespace dart::simulation::experimental::detail {
+
+/// Internal escape hatch returning the ECS registry that backs a `World`.
+///
+/// This replaces the former public `World` registry accessor member so the
+/// promoted public `world.hpp` names no EnTT symbols. It is the retained DART 7
+/// implementation seam for subsystem bring-up and tests; it is NOT part of the
+/// promoted public surface and lives in `detail/`. It is built on the
+/// `friend` `storageOf` accessor, so it reaches the privately-held storage
+/// without widening the public API.
+[[nodiscard]] DART_EXPERIMENTAL_API entt::registry& registryOf(World& world);
+
+/// See the non-const overload.
+[[nodiscard]] DART_EXPERIMENTAL_API const entt::registry& registryOf(
+    const World& world);
+
+} // namespace dart::simulation::experimental::detail

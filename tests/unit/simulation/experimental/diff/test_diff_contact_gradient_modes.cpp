@@ -50,6 +50,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/detail/contact_jacobians.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
@@ -188,7 +189,7 @@ sx::StepDerivatives analyticDerivatives(
 {
   const auto contacts = world.collide();
   return sx::detail::contactStepDerivatives(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       contacts,
       world.getGravity(),
       world.getTimeStep(),

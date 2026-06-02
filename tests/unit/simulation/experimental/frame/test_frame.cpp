@@ -33,6 +33,7 @@
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -53,7 +54,7 @@ TEST(Frame, LazyEvaluation)
   World world;
   auto freeFrame = world.addFreeFrame("test");
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto entity = dart::simulation::experimental::detail::toRegistryEntity(
       freeFrame.getEntity());
 
@@ -89,7 +90,7 @@ TEST(Frame, CacheInvalidation)
   World world;
   auto freeFrame = world.addFreeFrame("test");
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto entity = dart::simulation::experimental::detail::toRegistryEntity(
       freeFrame.getEntity());
 
@@ -222,7 +223,7 @@ TEST(Frame, ReparentInvalidatesSubtreeCaches)
   T_grand.translate(Eigen::Vector3d(0, 2, 0));
   grandchild.setLocalTransform(T_grand);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto childEntity = dart::simulation::experimental::detail::toRegistryEntity(
       child.getEntity());
   auto grandEntity = dart::simulation::experimental::detail::toRegistryEntity(
@@ -263,7 +264,7 @@ TEST(Frame, FixedFrameCaching)
   EXPECT_TRUE(T1.isApprox(T));
 
   // Check that cache is clean after query
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto entity = dart::simulation::experimental::detail::toRegistryEntity(
       fixedFrame.getEntity());
   {
@@ -289,7 +290,7 @@ TEST(Frame, FixedFrameCacheInvalidation)
 
   [[maybe_unused]] auto T_cached = fixedFrame.getTransform();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto entity = dart::simulation::experimental::detail::toRegistryEntity(
       fixedFrame.getEntity());
   {

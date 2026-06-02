@@ -12,6 +12,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_constraint.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
@@ -102,9 +103,9 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
   contacts.push_back(lowerUpper);
 
   const auto problem = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   const auto repeated = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(problem.constraints.size(), 2u);
   ASSERT_EQ(problem.delassus.rows(), 6);
@@ -193,7 +194,7 @@ TEST(RigidBodyConstraint, TreatsKinematicBodiesAsPrescribed)
 
   const std::vector<sx::Contact> contacts{contact};
   const auto problem = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(problem.constraints.size(), 1u);
   const auto& constraint = problem.constraints[0];
@@ -217,7 +218,9 @@ TEST(RigidBodyConstraint, TreatsKinematicBodiesAsPrescribed)
   const Eigen::Vector3d dynamicLinearBefore = dynamic.getLinearVelocity();
 
   sx::compute::applyRigidBodyContactImpulse(
-      world.getRegistry(), constraint, Eigen::Vector3d::UnitZ());
+      dart::simulation::experimental::detail::registryOf(world),
+      constraint,
+      Eigen::Vector3d::UnitZ());
 
   EXPECT_TRUE(
       kinematic.getLinearVelocity().isApprox(kinematicLinearBefore, 1e-12));

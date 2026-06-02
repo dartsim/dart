@@ -33,6 +33,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <entt/entt.hpp>
@@ -73,7 +74,8 @@ bool DeformableBody::isValid() const noexcept
     return false;
   }
 
-  const auto& registry = m_world->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto entity = toEntity(m_entityId);
   return registry.valid(entity)
          && registry.all_of<comps::DeformableBodyTag>(entity);
@@ -86,7 +88,9 @@ std::string DeformableBody::getName() const
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
   const auto entity = toEntity(m_entityId);
-  if (const auto* name = m_world->getRegistry().try_get<comps::Name>(entity)) {
+  if (const auto* name
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .try_get<comps::Name>(entity)) {
     return name->name;
   }
 
@@ -99,7 +103,7 @@ std::size_t DeformableBody::getNodeCount() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  return m_world->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*m_world)
       .get<comps::DeformableNodeState>(toEntity(m_entityId))
       .positions.size();
 }
@@ -110,8 +114,9 @@ Eigen::Vector3d DeformableBody::getPosition(std::size_t node) const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& state = m_world->getRegistry().get<comps::DeformableNodeState>(
-      toEntity(m_entityId));
+  const auto& state
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableNodeState>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       node >= state.positions.size(),
       OutOfRangeException,
@@ -129,8 +134,8 @@ void DeformableBody::setPosition(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
   validateFiniteVector(position, "position");
 
-  auto& state = m_world->getRegistry().get<comps::DeformableNodeState>(
-      toEntity(m_entityId));
+  auto& state = dart::simulation::experimental::detail::registryOf(*m_world)
+                    .get<comps::DeformableNodeState>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       node >= state.positions.size(),
       OutOfRangeException,
@@ -147,8 +152,9 @@ Eigen::Vector3d DeformableBody::getVelocity(std::size_t node) const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& state = m_world->getRegistry().get<comps::DeformableNodeState>(
-      toEntity(m_entityId));
+  const auto& state
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableNodeState>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       node >= state.velocities.size(),
       OutOfRangeException,
@@ -166,8 +172,8 @@ void DeformableBody::setVelocity(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
   validateFiniteVector(velocity, "velocity");
 
-  auto& state = m_world->getRegistry().get<comps::DeformableNodeState>(
-      toEntity(m_entityId));
+  auto& state = dart::simulation::experimental::detail::registryOf(*m_world)
+                    .get<comps::DeformableNodeState>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       node >= state.velocities.size(),
       OutOfRangeException,
@@ -183,8 +189,9 @@ double DeformableBody::getMass(std::size_t node) const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& state = m_world->getRegistry().get<comps::DeformableNodeState>(
-      toEntity(m_entityId));
+  const auto& state
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableNodeState>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       node >= state.masses.size(),
       OutOfRangeException,
@@ -200,8 +207,9 @@ bool DeformableBody::isFixedNode(std::size_t node) const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& state = m_world->getRegistry().get<comps::DeformableNodeState>(
-      toEntity(m_entityId));
+  const auto& state
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableNodeState>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       node >= state.fixed.size(),
       OutOfRangeException,
@@ -217,7 +225,7 @@ std::size_t DeformableBody::getEdgeCount() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  return m_world->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*m_world)
       .get<comps::DeformableSpringModel>(toEntity(m_entityId))
       .edges.size();
 }
@@ -228,8 +236,9 @@ DeformableEdge DeformableBody::getEdge(std::size_t edge) const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& model = m_world->getRegistry().get<comps::DeformableSpringModel>(
-      toEntity(m_entityId));
+  const auto& model
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableSpringModel>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       edge >= model.edges.size(),
       OutOfRangeException,
@@ -246,7 +255,7 @@ std::size_t DeformableBody::getSurfaceTriangleCount() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  return m_world->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*m_world)
       .get<comps::DeformableMeshTopology>(toEntity(m_entityId))
       .surfaceTriangles.size();
 }
@@ -259,8 +268,8 @@ DeformableSurfaceTriangle DeformableBody::getSurfaceTriangle(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
   const auto& topology
-      = m_world->getRegistry().get<comps::DeformableMeshTopology>(
-          toEntity(m_entityId));
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableMeshTopology>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       triangle >= topology.surfaceTriangles.size(),
       OutOfRangeException,
@@ -278,7 +287,7 @@ std::size_t DeformableBody::getTetrahedronCount() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  return m_world->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*m_world)
       .get<comps::DeformableMeshTopology>(toEntity(m_entityId))
       .tetrahedra.size();
 }
@@ -291,8 +300,8 @@ DeformableTetrahedron DeformableBody::getTetrahedron(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
   const auto& topology
-      = m_world->getRegistry().get<comps::DeformableMeshTopology>(
-          toEntity(m_entityId));
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableMeshTopology>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       tetrahedron >= topology.tetrahedra.size(),
       OutOfRangeException,
@@ -311,8 +320,8 @@ double DeformableBody::getTetrahedronRestVolume(std::size_t tetrahedron) const
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
   const auto& topology
-      = m_world->getRegistry().get<comps::DeformableMeshTopology>(
-          toEntity(m_entityId));
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableMeshTopology>(toEntity(m_entityId));
   DART_EXPERIMENTAL_THROW_T_IF(
       tetrahedron >= topology.tetrahedronRestVolumes.size(),
       OutOfRangeException,
@@ -328,8 +337,9 @@ DeformableMaterialProperties DeformableBody::getMaterialProperties() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& material = m_world->getRegistry().get<comps::DeformableMaterial>(
-      toEntity(m_entityId));
+  const auto& material
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .get<comps::DeformableMaterial>(toEntity(m_entityId));
   return DeformableMaterialProperties{
       material.density,
       material.youngsModulus,

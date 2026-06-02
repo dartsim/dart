@@ -39,6 +39,7 @@
 #include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Core>
@@ -94,7 +95,7 @@ std::unique_ptr<sx::World> makeGridWorld(int side, bool enableVbd)
   world->setTimeStep(0.005);
   world->addDeformableBody("grid", makeGridOptions(side));
   if (enableVbd) {
-    auto& registry = world->getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(*world);
     for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
       // Cap at 50 sweeps but stop early once converged, matching how the
       // default solver terminates on residual.

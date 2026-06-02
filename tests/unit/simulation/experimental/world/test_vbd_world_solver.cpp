@@ -37,6 +37,7 @@
 #include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <entt/entt.hpp>
@@ -101,7 +102,7 @@ sx::DeformableBodyOptions makeTetSpringOptions(double youngsModulus)
 // Opt every deformable body in the world into the internal VBD inner solver.
 void enableVbd(sx::World& world, std::size_t iterations)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
     registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(
         entity, sx::comps::DeformableVbdConfig{true, iterations});
@@ -113,7 +114,7 @@ void enableVbd(sx::World& world, std::size_t iterations)
 void enableVbdConfig(
     sx::World& world, const sx::comps::DeformableVbdConfig& cfg)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
     registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, cfg);
   }

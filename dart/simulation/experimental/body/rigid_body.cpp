@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -197,7 +198,8 @@ RigidBody::RigidBody(Entity entity, World* world) : Frame(entity, world)
 //==============================================================================
 std::string RigidBody::getName() const
 {
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (const auto* name
       = registry.try_get<comps::Name>(detail::toRegistryEntity(getEntity()))) {
     return name->name;
@@ -228,7 +230,8 @@ void RigidBody::setTransform(const Eigen::Isometry3d& transform)
       InvalidArgumentException,
       "RigidBody transform rotation must be orthonormal");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   auto& freeFrame = registry.get<comps::FreeFrameProperties>(
       detail::toRegistryEntity(getEntity()));
   auto& rigidTransform
@@ -250,8 +253,7 @@ Eigen::Vector3d RigidBody::getLinearVelocity() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()
-      ->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
       .linear;
 }
@@ -264,8 +266,7 @@ void RigidBody::setLinearVelocity(const Eigen::Vector3d& velocity)
 
   validateFiniteVector(velocity, "linear velocity");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
       .linear = velocity;
 }
@@ -276,8 +277,7 @@ Eigen::Vector3d RigidBody::getAngularVelocity() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()
-      ->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
       .angular;
 }
@@ -290,8 +290,7 @@ void RigidBody::setAngularVelocity(const Eigen::Vector3d& velocity)
 
   validateFiniteVector(velocity, "angular velocity");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
       .angular = velocity;
 }
@@ -302,8 +301,7 @@ double RigidBody::getMass() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()
-      ->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .mass;
 }
@@ -316,8 +314,7 @@ void RigidBody::setMass(double mass)
 
   validateMass(mass);
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .mass = mass;
 }
@@ -328,8 +325,7 @@ Eigen::Matrix3d RigidBody::getInertia() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()
-      ->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .inertia;
 }
@@ -342,8 +338,7 @@ void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
 
   validateInertia(inertia);
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .inertia = inertia;
 }
@@ -354,8 +349,7 @@ Eigen::Vector3d RigidBody::getForce() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()
-      ->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .force;
 }
@@ -368,8 +362,7 @@ void RigidBody::setForce(const Eigen::Vector3d& force)
 
   validateFiniteVector(force, "force");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .force = force;
 }
@@ -382,8 +375,7 @@ void RigidBody::applyForce(const Eigen::Vector3d& force)
 
   validateFiniteVector(force, "force");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .force += force;
 }
@@ -394,8 +386,7 @@ void RigidBody::clearForce()
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .force.setZero();
 }
@@ -406,8 +397,7 @@ Eigen::Vector3d RigidBody::getTorque() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()
-      ->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .torque;
 }
@@ -420,8 +410,7 @@ void RigidBody::setTorque(const Eigen::Vector3d& torque)
 
   validateFiniteVector(torque, "torque");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .torque = torque;
 }
@@ -434,8 +423,7 @@ void RigidBody::applyTorque(const Eigen::Vector3d& torque)
 
   validateFiniteVector(torque, "torque");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .torque += torque;
 }
@@ -446,8 +434,7 @@ void RigidBody::clearTorque()
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  getWorld()
-      ->getRegistry()
+  dart::simulation::experimental::detail::registryOf(*getWorld())
       .get<comps::Force>(detail::toRegistryEntity(getEntity()))
       .torque.setZero();
 }
@@ -458,7 +445,8 @@ Eigen::Vector3d RigidBody::getLinearMomentum() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto& mass = registry.get<comps::MassProperties>(
       detail::toRegistryEntity(getEntity()));
   const auto& velocity
@@ -472,7 +460,8 @@ Eigen::Vector3d RigidBody::getAngularMomentum() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto& mass = registry.get<comps::MassProperties>(
       detail::toRegistryEntity(getEntity()));
   const auto& velocity
@@ -493,7 +482,8 @@ double RigidBody::getKineticEnergy() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto& mass = registry.get<comps::MassProperties>(
       detail::toRegistryEntity(getEntity()));
   const auto& velocity
@@ -518,7 +508,8 @@ double RigidBody::getPotentialEnergy() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto& mass = registry.get<comps::MassProperties>(
       detail::toRegistryEntity(getEntity()));
   const auto& transform
@@ -532,7 +523,8 @@ void RigidBody::setStatic(bool isStatic)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto entity = detail::toRegistryEntity(getEntity());
   if (isStatic) {
     registry.remove<comps::KinematicBodyTag>(entity);
@@ -548,8 +540,8 @@ bool RigidBody::isStatic() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().all_of<comps::StaticBodyTag>(
-      detail::toRegistryEntity(getEntity()));
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
+      .all_of<comps::StaticBodyTag>(detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -558,7 +550,8 @@ void RigidBody::setKinematic(bool isKinematic)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto entity = detail::toRegistryEntity(getEntity());
   if (isKinematic) {
     // Kinematic and static are mutually exclusive: a kinematic body is advanced
@@ -576,8 +569,8 @@ bool RigidBody::isKinematic() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().all_of<comps::KinematicBodyTag>(
-      detail::toRegistryEntity(getEntity()));
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
+      .all_of<comps::KinematicBodyTag>(detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -590,7 +583,8 @@ void RigidBody::setRestitution(double restitution)
       InvalidArgumentException,
       "RigidBody restitution must be in [0, 1]");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   auto& material = registry.get_or_emplace<comps::ContactMaterial>(
       detail::toRegistryEntity(getEntity()));
   material.restitution = restitution;
@@ -602,7 +596,8 @@ double RigidBody::getRestitution() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (const auto* material = registry.try_get<comps::ContactMaterial>(
           detail::toRegistryEntity(getEntity()))) {
     return material->restitution;
@@ -620,7 +615,8 @@ void RigidBody::setFriction(double friction)
       InvalidArgumentException,
       "RigidBody friction must be non-negative and finite");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   auto& material = registry.get_or_emplace<comps::ContactMaterial>(
       detail::toRegistryEntity(getEntity()));
   material.friction = friction;
@@ -632,7 +628,8 @@ double RigidBody::getFriction() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (const auto* material = registry.try_get<comps::ContactMaterial>(
           detail::toRegistryEntity(getEntity()))) {
     return material->friction;
@@ -648,7 +645,8 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
 
   validateCollisionShape(shape, "RigidBody");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto* existing = registry.try_get<comps::CollisionGeometry>(
       detail::toRegistryEntity(getEntity()));
   comps::CollisionGeometry geometry{{shape}};
@@ -665,7 +663,8 @@ void RigidBody::addCollisionShape(const CollisionShape& shape)
 
   validateCollisionShape(shape, "RigidBody");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   auto& geometry = registry.get_or_emplace<comps::CollisionGeometry>(
       detail::toRegistryEntity(getEntity()));
   geometry.shapes.push_back(shape);
@@ -678,7 +677,8 @@ void RigidBody::setDeformableGroundBarrier(bool enabled)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (enabled) {
     registry.get_or_emplace<comps::DeformableGroundBarrierTag>(
         detail::toRegistryEntity(getEntity()));
@@ -694,8 +694,9 @@ bool RigidBody::isDeformableGroundBarrier() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().all_of<comps::DeformableGroundBarrierTag>(
-      detail::toRegistryEntity(getEntity()));
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
+      .all_of<comps::DeformableGroundBarrierTag>(
+          detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -704,7 +705,8 @@ void RigidBody::setDeformableSurfaceCcdObstacle(bool enabled)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (enabled) {
     registry.get_or_emplace<comps::DeformableSurfaceCcdObstacleTag>(
         detail::toRegistryEntity(getEntity()));
@@ -720,8 +722,7 @@ bool RigidBody::isDeformableSurfaceCcdObstacle() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()
-      ->getRegistry()
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
       .all_of<comps::DeformableSurfaceCcdObstacleTag>(
           detail::toRegistryEntity(getEntity()));
 }
@@ -732,7 +733,8 @@ void RigidBody::setDeformableObstacleBarrierOnly(bool enabled)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  auto& registry = getWorld()->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (enabled) {
     registry.get_or_emplace<comps::DeformableObstacleNoCcdTag>(
         detail::toRegistryEntity(getEntity()));
@@ -748,8 +750,9 @@ bool RigidBody::isDeformableObstacleBarrierOnly() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().all_of<comps::DeformableObstacleNoCcdTag>(
-      detail::toRegistryEntity(getEntity()));
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
+      .all_of<comps::DeformableObstacleNoCcdTag>(
+          detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -758,7 +761,8 @@ std::optional<CollisionShape> RigidBody::getCollisionShape() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (const auto* geometry = registry.try_get<comps::CollisionGeometry>(
           detail::toRegistryEntity(getEntity()))) {
     if (const auto* shape = geometry->getPrimaryShape()) {
@@ -774,7 +778,8 @@ std::vector<CollisionShape> RigidBody::getCollisionShapes() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   if (const auto* geometry = registry.try_get<comps::CollisionGeometry>(
           detail::toRegistryEntity(getEntity()))) {
     return geometry->shapes;
@@ -788,7 +793,8 @@ bool RigidBody::hasCollisionShape() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  const auto& registry = getWorld()->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto* geometry = registry.try_get<comps::CollisionGeometry>(
       detail::toRegistryEntity(getEntity()));
   return geometry != nullptr && geometry->hasShapes();

@@ -59,6 +59,7 @@
 #include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/rigid_ipc_barrier.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
@@ -631,7 +632,7 @@ ComputeStageMetadata RigidBodyIntegrationStage::getMetadata() const noexcept
 //==============================================================================
 void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto rigidBodyView = registry.view<
       comps::RigidBodyTag,
       comps::Transform,
@@ -725,7 +726,8 @@ struct RigidBodyForceBatch
 RigidBodyForceBatch assembleRigidBodyForces(
     const World& world, bool includeGravity)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view
       = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
 
@@ -1639,7 +1641,8 @@ bool isCurrentPoseRigidSurfaceCcdObstacle(
 //==============================================================================
 bool hasCurrentKinematicStepTrace(const World& world, const entt::entity entity)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
   return trace != nullptr && trace->frame == world.getFrame();
 }
@@ -1650,7 +1653,8 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
 {
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
 
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   // Barrier-only obstacles keep their contact barrier but are excluded from the
   // CCD limiter, so a deformable can slide tangentially against them (and be
   // decelerated by friction) instead of having its whole step over-limited.
@@ -1800,7 +1804,8 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
 {
   ++stats.movingRigidSurfaceCcdSnapshotBuilds;
 
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   // Moving obstacles are free rigid bodies integrated by RigidBodyPositionStage
   // or kinematic bodies already advanced by the rigid IPC stage. Static bodies
   // stay in collectStaticRigidSurfaceCcdObstacles. Kinematic bodies only enter
@@ -1997,7 +2002,8 @@ std::optional<StaticGroundContact> boxContactAt(
 //==============================================================================
 std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::StaticBodyTag,
@@ -2070,7 +2076,8 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
 std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
     const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
@@ -2103,7 +2110,8 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
 //==============================================================================
 std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
@@ -2143,7 +2151,8 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
 std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
     const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
@@ -7116,7 +7125,8 @@ sxdetail::RigidIpcPose integrateRigidIpcKinematicPose(
     const entt::entity entity,
     const sxdetail::RigidIpcPose& startPose)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   const auto& velocity = registry.get<comps::Velocity>(entity);
   double timeStep = world.getTimeStep();
   if (const auto* tag = registry.try_get<comps::KinematicBodyTag>(entity);
@@ -7363,7 +7373,8 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
     const entt::entity entity,
     const sxdetail::RigidIpcPose& pose)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
   const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
   // Static and kinematic bodies both have prescribed motion: they contribute no
@@ -7393,7 +7404,8 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
     const World& world, RigidIpcSolverStats& stats)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::Transform,
@@ -7485,7 +7497,7 @@ std::size_t findRuntimeBodyIndex(
 //==============================================================================
 void clearKinematicBodyStepTraces(World& world)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<comps::KinematicBodyStepTrace>();
   std::vector<entt::entity> tracedEntities;
   for (const auto entity : view) {
@@ -7502,7 +7514,7 @@ void applyRigidIpcPoseToRuntimeBody(
     const RigidIpcRuntimeBody& body,
     const sxdetail::RigidIpcPose& pose)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto& transform = registry.get<comps::Transform>(body.entity);
   auto& velocity = registry.get<comps::Velocity>(body.entity);
 
@@ -7531,7 +7543,7 @@ void applyRigidIpcPoseToRuntimeBody(
 // kinematic velocity), so the obstacle keeps moving at a constant rate.
 void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto& transform = registry.get<comps::Transform>(body.entity);
 
   comps::KinematicBodyStepTrace trace;
@@ -7562,7 +7574,7 @@ void applyRigidIpcRuntimeResult(
     const std::vector<RigidIpcRuntimeBody>& bodies,
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   std::vector<entt::entity> writebackEntities;
   writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
@@ -7597,7 +7609,7 @@ void applyRigidIpcKinematicRuntimeBodies(
     const std::vector<RigidIpcRuntimeBody>& bodies,
     const std::vector<entt::entity>& blockedKinematicEntities)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   std::vector<entt::entity> writebackEntities;
   writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
@@ -7794,7 +7806,7 @@ ComputeStageMetadata RigidBodyVelocityStage::getMetadata() const noexcept
 void RigidBodyVelocityStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto timeStep = world.getTimeStep();
   const auto forces = assembleRigidBodyForces(world, true);
 
@@ -7836,7 +7848,7 @@ ComputeStageMetadata RigidBodyPositionStage::getMetadata() const noexcept
 void RigidBodyPositionStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto timeStep = world.getTimeStep();
 
   auto view = registry.view<
@@ -7901,7 +7913,7 @@ ComputeStageMetadata RigidBodyContactStage::getMetadata() const noexcept
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
   const auto contacts = world.collide();
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
 
   const auto projectAvbdRigidPointJoints = [&]() {
     const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
@@ -8598,7 +8610,7 @@ void DeformableDynamicsStage::execute(
 {
   m_lastStats.reset();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
@@ -8723,7 +8735,7 @@ ComputeStageMetadata BatchedRigidBodyIntegrationStage::getMetadata()
 void BatchedRigidBodyIntegrationStage::execute(
     World& world, ComputeExecutor& executor)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto forces = assembleRigidBodyForces(world, true);
   const auto& entities = forces.entities;
 

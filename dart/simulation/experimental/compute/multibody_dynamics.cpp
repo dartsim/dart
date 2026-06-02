@@ -45,6 +45,7 @@
 #include "dart/simulation/experimental/compute/unified_constraint.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -1727,7 +1728,7 @@ ComputeStageMetadata MultibodyForwardDynamicsStage::getMetadata() const noexcept
 void MultibodyForwardDynamicsStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
@@ -1775,7 +1776,7 @@ ComputeStageMetadata MultibodyVelocityStage::getMetadata() const noexcept
 void MultibodyVelocityStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
@@ -1814,7 +1815,7 @@ ComputeStageMetadata MultibodyContactStage::getMetadata() const noexcept
 //==============================================================================
 void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
   const std::vector<Contact> contacts = world.collide();
 
@@ -1861,7 +1862,7 @@ ComputeStageMetadata MultibodyPositionStage::getMetadata() const noexcept
 void MultibodyPositionStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
 
   auto view = registry.view<comps::MultibodyStructure>();
@@ -1919,7 +1920,7 @@ std::size_t UnifiedConstraintStage::getFrictionIterations() const noexcept
 void UnifiedConstraintStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
   const std::vector<Contact> contacts = world.collide();
   if (contacts.empty()) {

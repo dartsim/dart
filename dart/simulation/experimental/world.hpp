@@ -39,12 +39,12 @@
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/diff/step_gradient.hpp>
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/multibody/multibody_options.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 #include <dart/simulation/experimental/world_sync_stage.hpp>
 
 #include <Eigen/Geometry>
-#include <entt/entt.hpp>
 
 #include <iosfwd>
 #include <memory>
@@ -61,6 +61,12 @@ namespace dart::simulation::experimental {
 namespace io::detail {
 class SkeletonLoaderWorldAccess;
 } // namespace io::detail
+
+namespace detail {
+struct WorldStorage;
+[[nodiscard]] WorldStorage& storageOf(World& world);
+[[nodiscard]] const WorldStorage& storageOf(const World& world);
+} // namespace detail
 
 namespace compute {
 class RigidIpcContactStage;
@@ -487,18 +493,6 @@ public:
   [[nodiscard]] MultibodyOptions getMultibodyOptions() const;
 
   //--------------------------------------------------------------------------
-  // Registry access
-  //--------------------------------------------------------------------------
-  /// @internal
-  /// DART 7 implementation escape hatch for tests and subsystem bring-up.
-  /// This is not part of the DART 7 public World facade promotion target;
-  /// prefer public handles and accessors for user-facing code.
-  entt::registry& getRegistry();
-  /// @internal
-  /// See the non-const overload.
-  const entt::registry& getRegistry() const;
-
-  //--------------------------------------------------------------------------
   // Collision queries
   //--------------------------------------------------------------------------
 
@@ -545,9 +539,17 @@ private:
   friend class io::detail::SkeletonLoaderWorldAccess;
   friend class compute::RigidIpcContactStage;
 
+  /// Internal storage seam. `detail::storageOf` reaches the privately-held,
+  /// ECS-typed `WorldStorage` without exposing it on the public surface; the
+  /// internal `detail::registryOf` escape hatch is built on top of it.
+  /// Friending these `detail` free functions names no EnTT symbols, so it is
+  /// leak-free.
+  friend detail::WorldStorage& detail::storageOf(World& world);
+  friend const detail::WorldStorage& detail::storageOf(const World& world);
+
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
-  entt::entity createFrameEntity(
+  Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
       const Eigen::Isometry3d& localTransform,
@@ -560,7 +562,8 @@ private:
   void resetCountersFromRegistry();
 
   /// Record the analytic step Jacobians at the current (pre-step) state into
-  /// `m_stepDerivatives`. Under `ContactSolverMethod::BoxedLcp` this captures
+  /// the cached step derivatives. Under `ContactSolverMethod::BoxedLcp` this
+  /// captures
   /// the active contacts from `collide()` and routes through the contact-aware
   /// Jacobian (`detail::contactStepDerivatives`), reducing to the contact-free
   /// result when there are no active contacts and throwing
@@ -573,7 +576,14 @@ private:
   void setRigidIpcAdaptiveBarrierStiffnessLowerBound(double value) noexcept;
   void resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept;
 
-  entt::registry m_registry;
+  /// Opaque, ECS-typed state (the EnTT registry, the registered differentiable
+  /// parameters, and the cached step Jacobians). Held by pointer so the
+  /// promoted public `world.hpp` names no EnTT symbols; the complete type lives
+  /// in the internal `detail/world_storage.hpp`. Because this is a `unique_ptr`
+  /// to an incomplete type, `~World()` (and the move operations, were they
+  /// enabled) must be declared here and defined out-of-line in `world.cpp`.
+  /// Always non-null after construction.
+  std::unique_ptr<detail::WorldStorage> m_storage;
   bool m_simulationMode{false};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
@@ -593,20 +603,6 @@ private:
   MultibodyIntegrationMethod m_multibodyIntegrationMethod{
       MultibodyIntegrationMethod::SemiImplicit};
   std::size_t m_frame{0};
-
-  /// Cached explicit Jacobians of the most recent differentiable step.
-  /// Populated only when `m_differentiable` is true and differentiable support
-  /// is compiled
-  /// (`DART_BUILD_DIFF`); always empty otherwise.
-  std::optional<StepDerivatives> m_stepDerivatives;
-
-  /// Registered differentiable physical parameters, in registration order. Each
-  /// entry pairs the owning rigid-body entity with the parameter to
-  /// differentiate. Columns of `StepDerivatives::parameterJacobian` follow this
-  /// order. Stored in both build configs (the public registration API exists
-  /// either way); only consumed when differentiable support is compiled.
-  std::vector<std::pair<entt::entity, PhysicalParameter>>
-      m_differentiableParameters;
 
   std::size_t m_freeFrameCounter{0};
   std::size_t m_fixedFrameCounter{0};
