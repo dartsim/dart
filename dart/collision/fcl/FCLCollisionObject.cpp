@@ -40,6 +40,9 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
+#include <atomic>
+#include <cstddef>
+
 namespace dart {
 namespace collision {
 
@@ -63,8 +66,17 @@ FCLCollisionObject::FCLCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     const std::shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom))
+    mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom)),
+    mCreationIndex(0u)
 {
+  // Assign a monotonically increasing creation index so that objects sharing
+  // the same key can be ordered deterministically without relying on pointer
+  // addresses (which vary with allocation order and ASLR). The Nth object
+  // created in a run receives index N, which is reproducible across runs and
+  // distinct for clones created at different times.
+  static std::atomic<std::size_t> sCounter{0};
+  mCreationIndex = sCounter++;
+
   mFCLCollisionObject->setUserData(this);
 
   if (shapeFrame) {

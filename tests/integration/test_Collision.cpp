@@ -1003,6 +1003,107 @@ TEST_F(Collision, FCLDeterministicPairOrderingMeshPaths)
 }
 
 //==============================================================================
+TEST_F(Collision, FCLDeterministicEqualKeyOrdering)
+{
+  // Two identically-named SimpleFrames produce the SAME deterministic key, so
+  // the pair ordering cannot be resolved by key comparison alone. The tie must
+  // be broken by the stable per-object creation index (not pointer addresses),
+  // which is reproducible across runs and clones. Verify that the resulting
+  // ordering follows creation order and is stable across repeated detect calls.
+  auto detector = FCLCollisionDetector::create();
+
+  // Identical names -> identical collision-object keys.
+  auto frameA = SimpleFrame::createShared(Frame::World(), "dup");
+  auto frameB = SimpleFrame::createShared(Frame::World(), "dup");
+
+  ShapePtr boxA(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr boxB(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frameA->setShape(boxA);
+  frameB->setShape(boxB);
+
+  // Overlap the boxes to guarantee a contact.
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 1u;
+
+  auto groupA = detector->createCollisionGroup(frameA.get());
+  auto groupB = detector->createCollisionGroup(frameB.get());
+
+  // Repeat the detection in both argument orders. With equal keys the pair
+  // ordering must be resolved by the stable creation index (not pointer
+  // values), so the first collision object must always be the one with the
+  // smaller creation index, regardless of which group is passed first or of
+  // allocation order. The canonical object ordering must also be identical
+  // across every call, and the normal must be stable across repeated calls in
+  // the same argument order.
+  const CollisionObject* canonicalObj1 = nullptr;
+  const CollisionObject* canonicalObj2 = nullptr;
+  Eigen::Vector3d abNormal = Eigen::Vector3d::Zero();
+  Eigen::Vector3d baNormal = Eigen::Vector3d::Zero();
+  bool haveAbNormal = false;
+  bool haveBaNormal = false;
+
+  for (int iter = 0; iter < 5; ++iter) {
+    for (bool abOrder : {true, false}) {
+      collision::CollisionResult result;
+      auto* g1 = abOrder ? groupA.get() : groupB.get();
+      auto* g2 = abOrder ? groupB.get() : groupA.get();
+      EXPECT_TRUE(g1->collide(g2, option, &result));
+      ASSERT_EQ(result.getNumContacts(), 1u);
+
+      const auto& contact = result.getContact(0);
+      ASSERT_GT(contact.normal.norm(), 0.0);
+
+      // The two collision objects share the same key but have distinct creation
+      // indices; the tie must be broken on those indices, not pointer values.
+      const auto* obj1
+          = dynamic_cast<const FCLCollisionObject*>(contact.collisionObject1);
+      const auto* obj2
+          = dynamic_cast<const FCLCollisionObject*>(contact.collisionObject2);
+      ASSERT_NE(obj1, nullptr);
+      ASSERT_NE(obj2, nullptr);
+      EXPECT_EQ(obj1->getKey(), obj2->getKey());
+      EXPECT_NE(obj1->getCreationIndex(), obj2->getCreationIndex());
+
+      // Ordering must follow creation order: object1 has the smaller index.
+      EXPECT_LT(obj1->getCreationIndex(), obj2->getCreationIndex());
+
+      // The canonical object ordering must match for every call, regardless of
+      // the argument order or repetition (this is what the tie-break fixes).
+      if (canonicalObj1 == nullptr) {
+        canonicalObj1 = contact.collisionObject1;
+        canonicalObj2 = contact.collisionObject2;
+      } else {
+        EXPECT_EQ(contact.collisionObject1, canonicalObj1);
+        EXPECT_EQ(contact.collisionObject2, canonicalObj2);
+      }
+
+      // The contact normal must be stable across repeated detect calls in the
+      // same argument order. (FCL's box-box contact geometry may differ between
+      // the AB and BA argument orders, so the normals are compared per order.)
+      if (abOrder) {
+        if (!haveAbNormal) {
+          abNormal = contact.normal;
+          haveAbNormal = true;
+        } else {
+          EXPECT_TRUE(contact.normal.isApprox(abNormal));
+        }
+      } else {
+        if (!haveBaNormal) {
+          baNormal = contact.normal;
+          haveBaNormal = true;
+        } else {
+          EXPECT_TRUE(contact.normal.isApprox(baNormal));
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
 void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());

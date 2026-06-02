@@ -36,6 +36,7 @@
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
+#include <cstddef>
 #include <string>
 
 namespace dart {
@@ -58,6 +59,13 @@ public:
     return mKey;
   }
 
+  /// Monotonically increasing index assigned at construction time. Provides a
+  /// stable, ASLR-independent tie-breaker for objects that share the same key.
+  std::size_t getCreationIndex() const
+  {
+    return mCreationIndex;
+  }
+
 protected:
   /// Constructor
   FCLCollisionObject(
@@ -75,6 +83,10 @@ protected:
 
   /// Stable identifier for deterministic ordering.
   std::string mKey;
+
+  /// Stable, ASLR-independent creation order index used to tie-break objects
+  /// that share the same key.
+  std::size_t mCreationIndex;
 };
 
 } // namespace collision
