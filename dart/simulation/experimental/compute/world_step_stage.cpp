@@ -450,13 +450,21 @@ void integrateRigidBodyPosition(
 }
 
 //==============================================================================
+bool isPrescribedRigidBodyIntegrationBody(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 void integrateRigidBody(
     entt::registry& registry,
     entt::entity entity,
     const Eigen::Vector3d& gravity,
     const double timeStep)
 {
-  if (registry.all_of<comps::StaticBodyTag>(entity)) {
+  if (isPrescribedRigidBodyIntegrationBody(registry, entity)) {
     return;
   }
 
@@ -735,7 +743,7 @@ RigidBodyForceBatch assembleRigidBodyForces(
     Eigen::Vector3d assembledForce = applied.force;
     Eigen::Vector3d assembledTorque = applied.torque;
 
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+    if (isPrescribedRigidBodyIntegrationBody(registry, entity)) {
       assembledForce.setZero();
       assembledTorque.setZero();
     } else if (includeGravity) {
@@ -757,7 +765,7 @@ RigidBodyForceBatch assembleRigidBodyForces(
 }
 
 //==============================================================================
-void restoreStaticRigidBodyState(
+void restorePrescribedRigidBodyState(
     const entt::registry& registry,
     const std::vector<entt::entity>& entities,
     const RigidBodyStateBatch& source,
@@ -770,7 +778,7 @@ void restoreStaticRigidBodyState(
       "Rigid-body batch state does not match the rigid-body entity count");
 
   for (std::size_t i = 0; i < entities.size(); ++i) {
-    if (!registry.all_of<comps::StaticBodyTag>(entities[i])) {
+    if (!isPrescribedRigidBodyIntegrationBody(registry, entities[i])) {
       continue;
     }
 
@@ -8685,7 +8693,7 @@ void BatchedRigidBodyIntegrationStage::execute(
       getMetadata());
   executor.execute(graph);
 
-  restoreStaticRigidBodyState(registry, entities, initialState, state);
+  restorePrescribedRigidBodyState(registry, entities, initialState, state);
   applyRigidBodyState(world, state);
 
   // Restore frame-cache consistency the same way the per-entity integrator

@@ -5346,6 +5346,44 @@ TEST(World, RigidBodyIntegrationStageSkipsStaticBodies)
   EXPECT_TRUE(body.getAngularVelocity().isApprox(initialAngularVelocity));
 }
 
+// Test that the direct rigid-body integration stage also preserves kinematic
+// bodies when custom pipelines bypass the default IPC contact stage.
+TEST(World, RigidBodyIntegrationStageSkipsKinematicBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  const Eigen::Vector3d initialPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond initialOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d initialLinearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d initialAngularVelocity(0.4, 0.1, -0.2);
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.position = initialPosition;
+  options.orientation = initialOrientation;
+  options.linearVelocity = initialLinearVelocity;
+  options.angularVelocity = initialAngularVelocity;
+  auto body = world.addRigidBody("kinematic_body", options);
+  body.setKinematic(true);
+  body.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  body.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyIntegrationStage stage(1);
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(body.getTranslation().isApprox(initialPosition));
+  EXPECT_TRUE(body.getQuaternion().isApprox(initialOrientation));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(initialLinearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(initialAngularVelocity));
+}
+
 // Test that the batched SoA integration stage also preserves static-body state
 // while continuing to integrate dynamic rigid bodies in the same batch.
 TEST(World, BatchedRigidBodyIntegrationStageSkipsStaticBodies)
@@ -5390,6 +5428,57 @@ TEST(World, BatchedRigidBodyIntegrationStageSkipsStaticBodies)
   EXPECT_TRUE(staticBody.getQuaternion().isApprox(staticOrientation));
   EXPECT_TRUE(staticBody.getLinearVelocity().isApprox(staticLinearVelocity));
   EXPECT_TRUE(staticBody.getAngularVelocity().isApprox(staticAngularVelocity));
+  EXPECT_TRUE(dynamicBody.getTranslation().isApprox(
+      dynamicPosition + dynamicLinearVelocity * dt));
+  EXPECT_TRUE(dynamicBody.getLinearVelocity().isApprox(dynamicLinearVelocity));
+}
+
+// Test that the batched SoA integration stage preserves kinematic-body state
+// while continuing to integrate dynamic rigid bodies in the same batch.
+TEST(World, BatchedRigidBodyIntegrationStageSkipsKinematicBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  const Eigen::Vector3d kinematicPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond kinematicOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d kinematicLinearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d kinematicAngularVelocity(0.4, 0.1, -0.2);
+
+  sx::World world;
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = kinematicPosition;
+  kinematicOptions.orientation = kinematicOrientation;
+  kinematicOptions.linearVelocity = kinematicLinearVelocity;
+  kinematicOptions.angularVelocity = kinematicAngularVelocity;
+  auto kinematicBody = world.addRigidBody("kinematic_body", kinematicOptions);
+  kinematicBody.setKinematic(true);
+  kinematicBody.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  kinematicBody.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  const Eigen::Vector3d dynamicPosition(-1.0, -2.0, 4.0);
+  const Eigen::Vector3d dynamicLinearVelocity(0.5, 1.0, -2.0);
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = dynamicPosition;
+  dynamicOptions.linearVelocity = dynamicLinearVelocity;
+  auto dynamicBody = world.addRigidBody("dynamic_body", dynamicOptions);
+
+  constexpr double dt = 0.5;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::BatchedRigidBodyIntegrationStage stage;
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(kinematicBody.getTranslation().isApprox(kinematicPosition));
+  EXPECT_TRUE(kinematicBody.getQuaternion().isApprox(kinematicOrientation));
+  EXPECT_TRUE(
+      kinematicBody.getLinearVelocity().isApprox(kinematicLinearVelocity));
+  EXPECT_TRUE(
+      kinematicBody.getAngularVelocity().isApprox(kinematicAngularVelocity));
   EXPECT_TRUE(dynamicBody.getTranslation().isApprox(
       dynamicPosition + dynamicLinearVelocity * dt));
   EXPECT_TRUE(dynamicBody.getLinearVelocity().isApprox(dynamicLinearVelocity));
