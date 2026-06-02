@@ -27,6 +27,8 @@
   - `compute_backend_research.md` recorded differentiability as _deferred_ with an
     explicit promotion question; this plan answers it (analytic method committed
     for contact; autodiff-scalar templating reserved for smooth terms only).
+    Public scalar precision selection remains out of scope for this plan and is
+    governed by the simulation experimental API design docs plus PLAN-041.
   - Forward-pass ingredients DART already owns: boxed-LCP library `dart/math/lcp/`
     (`LcpResult LcpSolver::solve(const LcpProblem&, VectorXd& x, const LcpOptions&)`),
     articulated-body dynamics `compute/multibody_dynamics.*` (`M, C, g`, link
@@ -132,6 +134,16 @@ system-identification example programs, the torch-autograd end-to-end test (need
 torch in-env), a `DART_BUILD_DIFF` CI job, and minor robustness/coverage items —
 tracked in `docs/dev_tasks/differentiable_simulation/`.
 
+This plan must not add a public `World` precision selector as a differentiability
+shortcut. Autodiff-scalar templating may remain an internal smooth-term or spike
+mechanism, but public `sx.World(dtype=...)`, `sx.World[...]`, or scalar-specific
+`World` aliases belong to a separate scalar-instantiation plan with its own API,
+binding, serialization, collision, determinism, and package gates. That separate
+plan should wait until the DART 7 rigid-body and multibody stack is already in
+good shape for humanoid locomotion and manipulation; PLAN-110 may keep internal
+scalar-generic seams open, but should not turn them into a user-facing precision
+family.
+
 ## Acceptance Criteria
 
 - Each workstream lands as small verifiable slices with focused tests; gap-audit
@@ -164,6 +176,10 @@ tracked in `docs/dev_tasks/differentiable_simulation/`.
   or a tensor framework in the C++ core; `pixi run check-api-boundaries` stays
   green. Owner commands per slice: `pixi run lint`, `pixi run build` (diff on/off),
   the focused C++ FD/parity tests, `check-api-boundaries`, `pixi run test-py`.
+- The differentiability surface does not imply a public scalar-specialized
+  `World` family. Any future scalar precision API is planned and gated outside
+  PLAN-110 after the rigid-body and multibody locomotion/manipulation baseline
+  is ready, before it reaches user-facing C++ or Python names.
 - Gradient-correctness limits (mode-switch/limit subgradients, elastic
   approximation) are documented; saddle-escape and pre-contact surrogates are
   opt-in only.
