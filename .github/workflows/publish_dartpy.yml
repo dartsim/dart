@@ -8,6 +8,9 @@ name: Publish dartpy
       - "release-*"
     tags:
       - "v*.*.*"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
   schedule:
     - cron: "0 10 * * 0,3"
   workflow_dispatch:
