@@ -33,8 +33,11 @@ on:
       - "**/*.rst"
       - "**/*.po"
       - "**/*.pot"
-  schedule:
-    - cron: "0 6 * * 1" # Weekly on Mondays at 06:00 UTC
+  # Note: no `schedule:` trigger. GitHub only runs scheduled workflows from the
+  # default branch (main), so a cron here on the release line would never scan
+  # release-6.17/release-6.16 and would give a false sense of weekly coverage.
+  # Scanning runs on every push/PR to the release branches; use workflow_dispatch
+  # for an on-demand scan.
   workflow_dispatch:
 
 permissions:
