@@ -1620,6 +1620,14 @@ SurfaceContactSnapshot makeStaticSphereSurfaceCcdSnapshot(
 }
 
 //==============================================================================
+bool isCurrentPoseRigidSurfaceCcdObstacle(
+    const entt::registry& registry, const entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
     const World& world, DeformableSolverStats& stats)
 {
@@ -1631,13 +1639,16 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   // decelerated by friction) instead of having its whole step over-limited.
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>(entt::exclude<comps::DeformableObstacleNoCcdTag>);
 
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
@@ -1767,15 +1778,19 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
 
   const auto& registry = world.getRegistry();
   // Moving obstacles are free (non-static) rigid bodies integrated by
-  // RigidBodyPositionStage. entt::exclude<StaticBodyTag> keeps this set
-  // disjoint from collectStaticRigidSurfaceCcdObstacles so no body is limited
-  // or counted twice. comps::Velocity is required to predict the end pose.
+  // RigidBodyPositionStage. Static bodies and kinematic bodies are current-pose
+  // obstacles instead: the IPC pipeline advances kinematic bodies before
+  // deformableDynamics, so predicting another velocity step here would sweep
+  // them into the next frame. The excludes keep this set disjoint from
+  // collectStaticRigidSurfaceCcdObstacles so no body is limited or counted
+  // twice. comps::Velocity is required to predict the end pose.
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform,
-      comps::Velocity>(entt::exclude<comps::StaticBodyTag>);
+      comps::Velocity>(
+      entt::exclude<comps::StaticBodyTag, comps::KinematicBodyTag>);
 
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
@@ -2028,13 +2043,16 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
   const auto& registry = world.getRegistry();
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>();
 
   std::vector<SphereObstacleBarrier> obstacles;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
@@ -2058,13 +2076,16 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
   const auto& registry = world.getRegistry();
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>();
 
   std::vector<BoxObstacleBarrier> obstacles;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
@@ -2095,13 +2116,16 @@ std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
   const auto& registry = world.getRegistry();
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>();
 
   std::vector<CapsuleObstacleBarrier> obstacles;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {

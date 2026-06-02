@@ -2991,6 +2991,45 @@ TEST(DeformableBody, MovingAndStaticRigidSurfaceCcdCollectorsAreDisjoint)
 }
 
 //==============================================================================
+// Kinematic rigid IPC bodies are already advanced before deformableDynamics in
+// the IPC pipeline. The deformable surface-CCD collector should therefore use
+// the realized current pose as a static/current-pose obstacle, not predict an
+// extra velocity step into the next frame.
+TEST(DeformableBody, KinematicSurfaceCcdObstacleUsesRealizedPoseInIpcPipeline)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const Eigen::Vector3d halfExtents(0.05, 1.0, 1.0);
+  const Eigen::Vector3d velocity(1.0, 0.0, 0.0);
+  auto box = addMovingSurfaceCcdBox(
+      world, "kinematic_box", Eigen::Vector3d::Zero(), halfExtents, velocity);
+  box.setKinematic(true);
+
+  auto body = world.addDeformableBody(
+      "far_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(10.0, 0.0, 0.0), Eigen::Vector3d::Zero()));
+
+  compute::SequentialExecutor executor;
+  compute::RigidIpcContactStage ipcStage;
+  compute::DeformableDynamicsStage deformableStage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage).addStage(deformableStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(body.isValid());
+  expectVectorNear(box.getTranslation(), velocity * world.getTimeStep());
+  const auto& stats = deformableStage.getLastStats();
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdTriangleCount, 12u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdHits, 0u);
+}
+
+//==============================================================================
 // A very fast obstacle exceeds the sample cap; the sampled boxes are then
 // inflated to keep overlapping, so the deformable still cannot tunnel into the
 // swept corridor (the conservative invariant holds past the cap).
