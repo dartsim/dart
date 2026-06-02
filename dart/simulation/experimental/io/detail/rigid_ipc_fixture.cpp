@@ -33,7 +33,12 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/io/detail/rigid_ipc_fixture.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -2091,6 +2096,317 @@ void applyFixtureGeometryTransform(
              : std::move(binaryResult);
 }
 
+enum class VtkEncoding
+{
+  Ascii,
+  Binary
+};
+
+[[nodiscard]] std::string uppercaseAscii(std::string text)
+{
+  std::transform(text.begin(), text.end(), text.begin(), [](char c) {
+    return static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+  });
+  return text;
+}
+
+void consumeVtkBinaryDataDelimiter(std::istream& input)
+{
+  const int next = input.peek();
+  if (next == std::char_traits<char>::eof()
+      || !std::isspace(static_cast<unsigned char>(next))) {
+    return;
+  }
+
+  input.get();
+  if (next == '\r' && input.peek() == '\n') {
+    input.get();
+  }
+}
+
+[[nodiscard]] std::optional<std::uint32_t> readBigEndianUInt32(
+    std::istream& input)
+{
+  std::array<unsigned char, 4> bytes{};
+  input.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
+  if (!input) {
+    return std::nullopt;
+  }
+  return (static_cast<std::uint32_t>(bytes[0]) << 24u)
+         | (static_cast<std::uint32_t>(bytes[1]) << 16u)
+         | (static_cast<std::uint32_t>(bytes[2]) << 8u)
+         | static_cast<std::uint32_t>(bytes[3]);
+}
+
+[[nodiscard]] std::optional<std::uint64_t> readBigEndianUInt64(
+    std::istream& input)
+{
+  std::array<unsigned char, 8> bytes{};
+  input.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
+  if (!input) {
+    return std::nullopt;
+  }
+
+  std::uint64_t value = 0u;
+  for (const unsigned char byte : bytes) {
+    value = (value << 8u) | static_cast<std::uint64_t>(byte);
+  }
+  return value;
+}
+
+[[nodiscard]] std::optional<double> readVtkScalar(
+    std::istream& input, const VtkEncoding encoding, const std::string& type)
+{
+  if (encoding == VtkEncoding::Ascii) {
+    double value = 0.0;
+    if (!(input >> value) || !std::isfinite(value)) {
+      return std::nullopt;
+    }
+    return value;
+  }
+
+  if (type == "float") {
+    const std::optional<std::uint32_t> raw = readBigEndianUInt32(input);
+    if (!raw.has_value()) {
+      return std::nullopt;
+    }
+    const float value = std::bit_cast<float>(*raw);
+    if (!std::isfinite(value)) {
+      return std::nullopt;
+    }
+    return static_cast<double>(value);
+  }
+
+  if (type == "double") {
+    const std::optional<std::uint64_t> raw = readBigEndianUInt64(input);
+    if (!raw.has_value()) {
+      return std::nullopt;
+    }
+    const double value = std::bit_cast<double>(*raw);
+    if (!std::isfinite(value)) {
+      return std::nullopt;
+    }
+    return value;
+  }
+
+  return std::nullopt;
+}
+
+[[nodiscard]] std::optional<int> readVtkInt(
+    std::istream& input, const VtkEncoding encoding)
+{
+  if (encoding == VtkEncoding::Ascii) {
+    long value = 0;
+    if (!(input >> value)
+        || value < static_cast<long>(std::numeric_limits<int>::min())
+        || value > static_cast<long>(std::numeric_limits<int>::max())) {
+      return std::nullopt;
+    }
+    return static_cast<int>(value);
+  }
+
+  const std::optional<std::uint32_t> raw = readBigEndianUInt32(input);
+  if (!raw.has_value()) {
+    return std::nullopt;
+  }
+  return std::bit_cast<std::int32_t>(*raw);
+}
+
+void appendVtkCellTriangles(
+    const std::vector<int>& cell,
+    const int cellType,
+    const std::size_t vertexCount,
+    std::vector<Eigen::Vector3i>& triangles)
+{
+  constexpr int kVtkTriangle = 5;
+  constexpr int kVtkPolygon = 7;
+  constexpr int kVtkQuad = 9;
+
+  if (cellType != kVtkTriangle && cellType != kVtkPolygon
+      && cellType != kVtkQuad) {
+    return;
+  }
+  if (cellType == kVtkTriangle && cell.size() != 3u) {
+    return;
+  }
+  if (cellType == kVtkQuad && cell.size() != 4u) {
+    return;
+  }
+  if (cell.size() < 3u) {
+    return;
+  }
+
+  for (const int index : cell) {
+    if (index < 0 || static_cast<std::size_t>(index) >= vertexCount) {
+      return;
+    }
+  }
+
+  for (std::size_t i = 1u; i + 1u < cell.size(); ++i) {
+    triangles.emplace_back(cell[0], cell[i], cell[i + 1u]);
+  }
+}
+
+[[nodiscard]] MeshLoadResult loadVtkCollisionMesh(
+    const std::filesystem::path& path,
+    const Eigen::Vector3d& scale,
+    const Eigen::Vector3d& rotationDegrees)
+{
+  std::ifstream input(path, std::ios::binary);
+  if (!input) {
+    return meshLoadFailure("could not open mesh file");
+  }
+
+  std::string header;
+  std::string title;
+  std::string encodingLine;
+  if (!std::getline(input, header) || !std::getline(input, title)
+      || !std::getline(input, encodingLine)) {
+    return meshLoadFailure("VTK mesh missing legacy header");
+  }
+  (void)title;
+  if (header.find("vtk DataFile") == std::string::npos) {
+    return meshLoadFailure("VTK mesh missing legacy signature");
+  }
+
+  std::string encodingToken = uppercaseAscii(encodingLine);
+  encodingToken.erase(
+      std::remove_if(
+          encodingToken.begin(),
+          encodingToken.end(),
+          [](char c) {
+            return std::isspace(static_cast<unsigned char>(c)) != 0;
+          }),
+      encodingToken.end());
+  VtkEncoding encoding = VtkEncoding::Ascii;
+  if (encodingToken == "ASCII") {
+    encoding = VtkEncoding::Ascii;
+  } else if (encodingToken == "BINARY") {
+    encoding = VtkEncoding::Binary;
+  } else {
+    return meshLoadFailure("VTK mesh has unsupported encoding");
+  }
+
+  std::string datasetKeyword;
+  std::string datasetType;
+  if (!(input >> datasetKeyword >> datasetType)
+      || uppercaseAscii(datasetKeyword) != "DATASET"
+      || uppercaseAscii(datasetType) != "UNSTRUCTURED_GRID") {
+    return meshLoadFailure("VTK mesh must be an unstructured grid");
+  }
+
+  std::string pointsKeyword;
+  std::size_t pointCount = 0u;
+  std::string scalarType;
+  if (!(input >> pointsKeyword >> pointCount >> scalarType)
+      || uppercaseAscii(pointsKeyword) != "POINTS") {
+    return meshLoadFailure("VTK mesh missing POINTS section");
+  }
+  scalarType = uppercaseAscii(scalarType);
+  std::transform(
+      scalarType.begin(), scalarType.end(), scalarType.begin(), [](char c) {
+        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+      });
+  if (scalarType != "float" && scalarType != "double") {
+    return meshLoadFailure("VTK mesh POINTS section must use float or double");
+  }
+
+  if (encoding == VtkEncoding::Binary) {
+    consumeVtkBinaryDataDelimiter(input);
+  }
+
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(pointCount);
+  for (std::size_t i = 0u; i < pointCount; ++i) {
+    Eigen::Vector3d vertex = Eigen::Vector3d::Zero();
+    for (Eigen::Index axis = 0; axis < 3; ++axis) {
+      const std::optional<double> value
+          = readVtkScalar(input, encoding, scalarType);
+      if (!value.has_value()) {
+        return meshLoadFailure("VTK mesh ended while reading points");
+      }
+      vertex[axis] = *value;
+    }
+    vertices.push_back(vertex);
+  }
+
+  std::string cellsKeyword;
+  std::size_t cellCount = 0u;
+  std::size_t cellIndexCount = 0u;
+  if (!(input >> cellsKeyword >> cellCount >> cellIndexCount)
+      || uppercaseAscii(cellsKeyword) != "CELLS") {
+    return meshLoadFailure("VTK mesh missing CELLS section");
+  }
+  if (cellIndexCount < cellCount) {
+    return meshLoadFailure("VTK mesh has invalid CELLS index count");
+  }
+
+  if (encoding == VtkEncoding::Binary) {
+    consumeVtkBinaryDataDelimiter(input);
+  }
+
+  std::vector<std::vector<int>> cells;
+  cells.reserve(cellCount);
+  std::size_t consumedCellIndices = 0u;
+  for (std::size_t i = 0u; i < cellCount; ++i) {
+    const std::optional<int> size = readVtkInt(input, encoding);
+    if (!size.has_value() || *size < 0) {
+      return meshLoadFailure("VTK mesh has invalid cell size");
+    }
+    consumedCellIndices += 1u + static_cast<std::size_t>(*size);
+    if (consumedCellIndices > cellIndexCount) {
+      return meshLoadFailure("VTK mesh has too many cell indices");
+    }
+
+    std::vector<int> cell;
+    cell.reserve(static_cast<std::size_t>(*size));
+    for (int index = 0; index < *size; ++index) {
+      const std::optional<int> vertexIndex = readVtkInt(input, encoding);
+      if (!vertexIndex.has_value()) {
+        return meshLoadFailure("VTK mesh ended while reading cells");
+      }
+      cell.push_back(*vertexIndex);
+    }
+    cells.push_back(std::move(cell));
+  }
+  if (consumedCellIndices != cellIndexCount) {
+    return meshLoadFailure("VTK mesh has unused cell indices");
+  }
+
+  std::string cellTypesKeyword;
+  std::size_t cellTypeCount = 0u;
+  if (!(input >> cellTypesKeyword >> cellTypeCount)
+      || uppercaseAscii(cellTypesKeyword) != "CELL_TYPES") {
+    return meshLoadFailure("VTK mesh missing CELL_TYPES section");
+  }
+  if (cellTypeCount != cellCount) {
+    return meshLoadFailure("VTK mesh CELL_TYPES count mismatch");
+  }
+
+  if (encoding == VtkEncoding::Binary) {
+    consumeVtkBinaryDataDelimiter(input);
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  for (std::size_t i = 0u; i < cellTypeCount; ++i) {
+    const std::optional<int> cellType = readVtkInt(input, encoding);
+    if (!cellType.has_value()) {
+      return meshLoadFailure("VTK mesh ended while reading cell types");
+    }
+    appendVtkCellTriangles(cells[i], *cellType, vertices.size(), triangles);
+  }
+
+  if (vertices.empty()) {
+    return meshLoadFailure("VTK mesh contains no points");
+  }
+  if (triangles.empty()) {
+    return meshLoadFailure("VTK mesh contains no supported surface cells");
+  }
+
+  return makeLoadedMeshResult(
+      std::move(vertices), std::move(triangles), scale, rotationDegrees);
+}
+
 [[nodiscard]] MeshLoadResult loadCollisionMesh(
     const std::filesystem::path& path,
     const Eigen::Vector3d& scale,
@@ -2115,6 +2431,9 @@ void applyFixtureGeometryTransform(
   }
   if (extension == ".stl") {
     return loadStlCollisionMesh(path, scale, rotationDegrees);
+  }
+  if (extension == ".vtk") {
+    return loadVtkCollisionMesh(path, scale, rotationDegrees);
   }
 
   return meshLoadFailure(
@@ -2720,6 +3039,34 @@ RigidIpcFixture loadRigidIpcComparisonScript(
   return fixture;
 }
 
+void applyRigidIpcFixtureStageOptions(
+    const RigidIpcFixture& fixture,
+    compute::RigidIpcContactStageOptions& options)
+{
+  if (fixture.barrierActivationDistance.has_value()
+      && std::isfinite(*fixture.barrierActivationDistance)
+      && *fixture.barrierActivationDistance > 0.0) {
+    options.activationDistance = *fixture.barrierActivationDistance;
+  }
+  if (fixture.frictionIterations.has_value()
+      && *fixture.frictionIterations >= 0) {
+    options.frictionIterations
+        = static_cast<std::size_t>(*fixture.frictionIterations);
+  }
+  if (fixture.staticFrictionSpeedBound.has_value()
+      && std::isfinite(*fixture.staticFrictionSpeedBound)
+      && *fixture.staticFrictionSpeedBound >= 0.0) {
+    options.staticFrictionSpeedBound = *fixture.staticFrictionSpeedBound;
+  }
+  if (fixture.velocityConvergenceTolerance.has_value()
+      && fixture.velocityConvergenceToleranceIsAbsolute.value_or(false)
+      && std::isfinite(*fixture.velocityConvergenceTolerance)
+      && *fixture.velocityConvergenceTolerance >= 0.0) {
+    options.frictionConvergenceTolerance
+        = *fixture.velocityConvergenceTolerance;
+  }
+}
+
 RigidIpcReplayState populateRigidIpcReplayWorld(
     World& world,
     const RigidIpcFixture& fixture,
@@ -2743,10 +3090,20 @@ RigidIpcReplayState populateRigidIpcReplayWorld(
     bodyOptions.position = source.position;
     bodyOptions.linearVelocity = source.linearVelocity;
     bodyOptions.angularVelocity = degreesToRadians(source.angularVelocity);
-    bodyOptions.isStatic = source.mode != RigidIpcBodyMode::Dynamic
-                           || allFixed(source.fixedDofs);
+    bodyOptions.isStatic
+        = source.mode == RigidIpcBodyMode::Static || allFixed(source.fixedDofs);
 
     RigidBody body = world.addRigidBody(bodyName, bodyOptions);
+    if (source.mode == RigidIpcBodyMode::Kinematic) {
+      body.setKinematic(true);
+      if (source.kinematicMaxTime.has_value()
+          && std::isfinite(*source.kinematicMaxTime)
+          && *source.kinematicMaxTime >= 0.0) {
+        auto& tag = dart::simulation::experimental::detail::registryOf(world).get<comps::KinematicBodyTag>(
+            rigid_detail::toRegistryEntity(body.getEntity()));
+        tag.maxTime = *source.kinematicMaxTime;
+      }
+    }
     body.setForce(source.force);
     body.setTorque(source.torque);
     if (std::isfinite(fixture.coefficientFriction)
@@ -2798,6 +3155,31 @@ RigidIpcReplayState populateRigidIpcReplayWorld(
     }
 
     state.bodies.push_back(std::move(bodyState));
+  }
+
+  return state;
+}
+
+RigidIpcReplayState populateAndStepRigidIpcReplayWorld(
+    World& world,
+    const RigidIpcFixture& fixture,
+    const RigidIpcReplayOptions& replayOptions,
+    compute::RigidIpcContactStageOptions stageOptions,
+    compute::RigidIpcSolverStats* stats)
+{
+  RigidIpcReplayState state
+      = populateRigidIpcReplayWorld(world, fixture, replayOptions);
+
+  applyRigidIpcFixtureStageOptions(fixture, stageOptions);
+
+  compute::SequentialExecutor executor;
+  compute::RigidIpcContactStage ipcStage(stageOptions);
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  if (stats != nullptr) {
+    *stats = ipcStage.getLastStats();
   }
 
   return state;

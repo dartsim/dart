@@ -1546,6 +1546,10 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_rw(
           "is_static", &sim::RigidBody::isStatic, &sim::RigidBody::setStatic)
       .def_prop_rw(
+          "is_kinematic",
+          &sim::RigidBody::isKinematic,
+          &sim::RigidBody::setKinematic)
+      .def_prop_rw(
           "restitution",
           &sim::RigidBody::getRestitution,
           &sim::RigidBody::setRestitution)

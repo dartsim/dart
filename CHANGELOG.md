@@ -1091,9 +1091,52 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added bounded outer lagged-friction passes to the internal rigid IPC
     projected-Newton solve, including a zero-iteration friction disable,
     refreshed momentum-balance diagnostics, and runtime active-pass counts.
+  - Added sufficient-decrease backtracking to the internal rigid IPC
+    projected-Newton solve. Feasible Newton candidates are now checked against
+    the assembled objective after conservative CCD scaling, with diagnostics for
+    objective checks/backtracks exposed through the opt-in runtime stage and a
+    safe decreasing-candidate fallback for lagged-friction active-set changes.
   - Added a runtime regression proving lagged rigid IPC friction observably
     brakes a tangential slide at an activated mesh contact relative to the
     frictionless solve, and reports active friction constraints/passes.
+  - Added a rigid IPC fixture replay regression proving parsed fixture friction
+    metadata carries into the opt-in runtime IPC stage: identical replayed
+    inline-polygon scenes now differentiate frictionless and frictional slide
+    while reporting active friction diagnostics.
+  - Added `RigidIpcContactStageOptions` for the opt-in experimental rigid IPC
+    stage, allowing callers to configure max iterations, barrier activation
+    distance, and lagged-friction passes without exposing a solver registry.
+    Fixture replay coverage now applies parsed `dHat` and friction-iteration
+    metadata to that stage configuration.
+  - Extended `RigidIpcContactStageOptions` with lagged-friction static-speed
+    and convergence-tolerance controls, allowing fixture/comparison `epsv` and
+    velocity-tolerance metadata to drive the opt-in runtime IPC friction solve.
+  - Made rigid IPC fixture replay populate parsed kinematic bodies as runtime
+    kinematic rigid bodies, so the opt-in IPC stage advances their prescribed
+    linear and angular motion instead of treating them as immovable static
+    bodies.
+  - Added an internal rigid IPC fixture-to-stage-options bridge so replay
+    drivers can consistently apply parsed barrier, friction, and absolute
+    convergence-tolerance metadata to the opt-in runtime IPC stage.
+  - Added an internal one-step rigid IPC fixture runtime replay helper that
+    populates an experimental `World`, applies parsed fixture stage policy, runs
+    one opt-in IPC contact-stage step, and can return solver diagnostics for
+    manifest drivers.
+  - Hardened the internal rigid IPC interval-root CCD evaluator so accepted root
+    boxes that start at `t=0` no longer report a zero-time hit when the input
+    row starts separated, matching the audited kinematic CCD rows' guard.
+    The generated rigid IPC fixture manifest now marks
+    `tests/data/kinematic/ccd-test-000..012.json` as implemented by that
+    regression.
+  - Added tracked wrecking-ball direct-CCD coverage for
+    `tests/data/wrecking-ball/ccd-test-000..385.json`, preserving the upstream
+    conservative-TOI check that a replay truncated at DART's reported impact
+    bound does not report another hit. The generated rigid IPC fixture manifest
+    now marks those rows as implemented by that regression.
+  - Extended rigid IPC fixture mesh replay to legacy VTK unstructured-grid
+    surface meshes, covering the remaining mesh extension present in the
+    audited upstream rigid-ipc corpus while preserving native mesh collision
+    shape replay semantics.
   - Added the first rigid IPC performance benchmark (`bm_rigid_ipc_solver`)
     covering the per-primitive reduced barrier kernels, scene-level assembly,
     the projected-Newton solve, and the conservative CCD line search, with a
@@ -1142,9 +1185,17 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     stage apply the best intersection-free configuration a bounded solve reaches
     (matching the reference, which steps with the optimizer's best feasible
     iterate) instead of discarding any not-fully-converged result. The
-    anti-tunneling guarantee is unchanged: a line-search-blocked or failed solve
-    is still never written back. Covered by adaptive-stiffness unit tests and a
-    no-freeze sliding-contact runtime regression.
+    anti-tunneling guarantee is unchanged: unsafe failed solves are still never
+    written back. Covered by adaptive-stiffness unit tests and a no-freeze
+    sliding-contact runtime regression.
+  - Hardened dense exact-contact resting plateaus in the opt-in rigid IPC
+    runtime stage. A zero-step line-search block now gives adaptive kappa a
+    bounded stiffness-increase retry before failing, the stage carries raised
+    kappa forward across active-contact runtime steps, and an exact
+    zero-progress resting-contact plateau writes back the unchanged safe pose
+    instead of reporting a persistent failed solve. The Fig. 11 arch regression
+    now uses five voussoirs and asserts the stage does not fail while the arch
+    remains intersection-free.
   - Added a `sx_rigid_ipc_slide` Python demo scene (registered in the py-demos
     Experimental category) showing a box slide across static ground and be
     friction-braked to rest through the rigid IPC barrier solver, now viable

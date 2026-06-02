@@ -68,6 +68,10 @@ struct WorldStorage;
 [[nodiscard]] const WorldStorage& storageOf(const World& world);
 } // namespace detail
 
+namespace compute {
+class RigidIpcContactStage;
+} // namespace compute
+
 struct WorldOptions;
 
 /// Solver family used for free rigid-body dynamics in the default experimental
@@ -533,6 +537,7 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::RigidIpcContactStage;
 
   /// Internal storage seam. `detail::storageOf` reaches the privately-held,
   /// ECS-typed `WorldStorage` without exposing it on the public surface; the
@@ -567,6 +572,9 @@ private:
   /// differentiable support is compiled (`DART_BUILD_DIFF`); callers gate on
   /// `m_differentiable`.
   void captureStepDerivatives();
+  double getRigidIpcAdaptiveBarrierStiffnessLowerBound() const noexcept;
+  void setRigidIpcAdaptiveBarrierStiffnessLowerBound(double value) noexcept;
+  void resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept;
 
   /// Opaque, ECS-typed state (the EnTT registry, the registered differentiable
   /// parameters, and the cached step Jacobians). Held by pointer so the
@@ -586,6 +594,7 @@ private:
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
+  double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,

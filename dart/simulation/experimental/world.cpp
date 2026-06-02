@@ -1281,6 +1281,7 @@ void World::clear()
   m_differentiable = false;
   m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
   m_contactGradientMode = ContactGradientMode::Analytic;
+  resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
   m_storage->stepDerivatives.reset();
   m_storage->differentiableParameters.clear();
   m_time = 0.0;
@@ -2490,6 +2491,26 @@ void World::captureStepDerivatives()
     return; // WS1: one multibody.
   }
 #endif
+}
+
+//==============================================================================
+double World::getRigidIpcAdaptiveBarrierStiffnessLowerBound() const noexcept
+{
+  return m_rigidIpcAdaptiveBarrierStiffnessLowerBound;
+}
+
+//==============================================================================
+void World::setRigidIpcAdaptiveBarrierStiffnessLowerBound(
+    const double value) noexcept
+{
+  m_rigidIpcAdaptiveBarrierStiffnessLowerBound
+      = std::isfinite(value) && value > 0.0 ? value : 1.0;
+}
+
+//==============================================================================
+void World::resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept
+{
+  m_rigidIpcAdaptiveBarrierStiffnessLowerBound = 1.0;
 }
 
 //==============================================================================

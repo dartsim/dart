@@ -111,6 +111,15 @@ struct RigidIpcBarrierSurface
   std::vector<Eigen::Vector3i> triangles;
   double frictionCoefficient = 1.0;
   bool dynamic = true;
+  // Kinematic (prescribed-motion) obstacle: holds no solver DOFs (dynamic ==
+  // false), but its pose advances from `kinematicStartPose` to `pose` over the
+  // step. The barrier and dynamics see it at the end pose (`pose`); friction
+  // and the conservative CCD line search use the start->end motion so it both
+  // drags contacting dynamic bodies and stays swept-collision safe. Ignored
+  // unless `kinematic` is set, so non-kinematic scenes are bit-for-bit
+  // unchanged.
+  bool kinematic = false;
+  RigidIpcPose kinematicStartPose;
 };
 
 struct RigidIpcBarrierConstraint
@@ -250,6 +259,15 @@ struct RigidIpcProjectedNewtonOptions
   double hessianRegularization = 1e-8;
   double maxStepNorm = std::numeric_limits<double>::infinity();
   double lineSearchSafetyScale = 0.99;
+  /// When enabled, the solve loop backtracks feasible Newton steps until the
+  /// assembled objective satisfies an Armijo sufficient-decrease check. If the
+  /// finite backtracking budget misses Armijo but finds a decreasing feasible
+  /// candidate, the solve accepts that best decreasing candidate rather than
+  /// treating the step as an unsafe CCD block.
+  bool useSufficientDecreaseLineSearch = true;
+  double sufficientDecreaseFactor = 1e-4;
+  double backtrackingScale = 0.5;
+  std::size_t maxBacktrackingIterations = 16;
 };
 
 struct RigidIpcProjectedNewtonStats
@@ -331,6 +349,8 @@ struct RigidIpcProjectedNewtonSolveStats
   std::size_t lineSearchMisses = 0;
   std::size_t lineSearchIndeterminateCount = 0;
   std::size_t lineSearchZeroStepCount = 0;
+  std::size_t sufficientDecreaseChecks = 0;
+  std::size_t sufficientDecreaseBacktracks = 0;
   std::size_t activeFrictionConstraints = 0;
   std::size_t frictionIterations = 0;
   std::size_t barrierStiffnessIncreases = 0;

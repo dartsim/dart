@@ -3823,6 +3823,130 @@ TEST(World, RigidBodyContactIgnoresStoredStaticVelocity)
   EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
 }
 
+// Test that kinematic bodies behave like static obstacles in the default rigid
+// body contact solver: their prescribed velocity is not treated as dynamic
+// contact velocity, and penetration correction does not move them.
+TEST(World, RigidBodyContactTreatsKinematicBodyAsStaticObstacle)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  obstacle.setKinematic(true);
+  ASSERT_TRUE(obstacle.isKinematic());
+  ASSERT_FALSE(obstacle.isStatic());
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+  auto dynamic = world.addRigidBody("dynamic", dynamicOptions);
+  dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  const auto& contact = contacts.front();
+  constexpr double kinematicSpeed = 5.0;
+  if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+    obstacle.setLinearVelocity(kinematicSpeed * contact.normal);
+  } else {
+    ASSERT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+    obstacle.setLinearVelocity(-kinematicSpeed * contact.normal);
+  }
+
+  const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+
+  world.setTimeStep(0.001);
+  world.step();
+
+  EXPECT_TRUE(obstacle.isKinematic());
+  EXPECT_TRUE(
+      obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+  EXPECT_NEAR(obstacle.getLinearVelocity().norm(), kinematicSpeed, 1e-12);
+  EXPECT_TRUE(dynamic.getLinearVelocity().isZero(1e-12));
+  EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
+}
+
+TEST(World, BoxedLcpContactTreatsKinematicBodyAsStaticObstacle)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  obstacle.setKinematic(true);
+  ASSERT_TRUE(obstacle.isKinematic());
+  ASSERT_FALSE(obstacle.isStatic());
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+  auto dynamic = world.addRigidBody("dynamic", dynamicOptions);
+  dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  const auto& contact = contacts.front();
+  constexpr double kinematicSpeed = 5.0;
+  if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+    obstacle.setLinearVelocity(kinematicSpeed * contact.normal);
+  } else {
+    ASSERT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+    obstacle.setLinearVelocity(-kinematicSpeed * contact.normal);
+  }
+
+  const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+
+  world.setTimeStep(0.001);
+  world.step();
+
+  EXPECT_TRUE(obstacle.isKinematic());
+  EXPECT_TRUE(
+      obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+  EXPECT_NEAR(obstacle.getLinearVelocity().norm(), kinematicSpeed, 1e-12);
+  EXPECT_TRUE(dynamic.getLinearVelocity().isZero(1e-12));
+  EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
+}
+
+TEST(World, RigidBodyStaticSetterClearsKinematicMode)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d::Zero();
+  auto body = world.addRigidBody("body", options);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+  body.setKinematic(true);
+  ASSERT_TRUE(body.isKinematic());
+  ASSERT_FALSE(body.isStatic());
+
+  body.setStatic(true);
+  EXPECT_TRUE(body.isStatic());
+  EXPECT_FALSE(body.isKinematic());
+
+  const Eigen::Vector3d initialPosition = body.getTranslation();
+  world.step();
+
+  EXPECT_TRUE(body.getTranslation().isApprox(initialPosition, 1e-12));
+  EXPECT_TRUE(
+      body.getLinearVelocity().isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
 // Test that a dynamic body dropped onto a static ground comes to rest on it
 // (gravity + contact response + positional correction keep it from sinking).
 TEST(World, RigidBodyRestsOnStaticGround)
@@ -4081,6 +4205,8 @@ TEST(World, RigidIpcContactStageAdvancesMeshBodyFromRuntimeDynamics)
   EXPECT_EQ(stats.lineSearchMisses, 0u);
   EXPECT_EQ(stats.lineSearchIndeterminateCount, 0u);
   EXPECT_EQ(stats.lineSearchZeroStepCount, 0u);
+  EXPECT_EQ(stats.sufficientDecreaseChecks, stats.acceptedSteps);
+  EXPECT_EQ(stats.sufficientDecreaseBacktracks, 0u);
   EXPECT_TRUE(stats.resultApplied);
   EXPECT_FALSE(stats.nonConvergedResultSkipped);
 
@@ -4144,6 +4270,12 @@ TEST(World, RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics)
 // freeze, interpenetrate, or fly apart.
 TEST(World, RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The multi-step rigid IPC stack gate is too slow under coverage; "
+         "normal CI runs the full regression.";
+#endif
+
   namespace sx = dart::simulation::experimental;
   sx::World world;
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -4270,6 +4402,7 @@ TEST(World, RigidIpcContactStageSeparatesActivatedMeshBarrier)
   EXPECT_EQ(stats.lineSearchHits, 0u);
   EXPECT_EQ(stats.lineSearchIndeterminateCount, 0u);
   EXPECT_EQ(stats.lineSearchZeroStepCount, 0u);
+  EXPECT_GT(stats.sufficientDecreaseChecks, 0u);
   // The activated barrier pushes the body off the surface.
   EXPECT_GT(body.getTranslation().z(), initialHeight);
   EXPECT_GT(body.getLinearVelocity().z(), 0.0);
@@ -4351,6 +4484,55 @@ TEST(World, RigidIpcContactStageSlidingContactDoesNotFreeze)
   // The slide decelerated substantially but has not frozen or reversed.
   EXPECT_LT(box.getLinearVelocity().x(), 0.2);
   EXPECT_GT(box.getLinearVelocity().x(), 0.0);
+}
+
+TEST(World, RigidIpcAdaptiveStiffnessPersistsAcrossSingleStepCalls)
+{
+  namespace sx = dart::simulation::experimental;
+
+  struct Outcome
+  {
+    Eigen::Vector3d position = Eigen::Vector3d::Zero();
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  constexpr int kSteps = 12;
+  const auto run = [](bool batched) -> Outcome {
+    sx::World world;
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.mass = 1.0;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.258);
+    boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto box = world.addRigidBody("box", boxOptions);
+    box.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+
+    if (batched) {
+      world.step(kSteps);
+    } else {
+      for (int step = 0; step < kSteps; ++step) {
+        world.step();
+      }
+    }
+
+    return Outcome{box.getTranslation(), box.getLinearVelocity()};
+  };
+
+  const Outcome singleStepCalls = run(false);
+  const Outcome batchedCall = run(true);
+
+  EXPECT_TRUE(singleStepCalls.position.isApprox(batchedCall.position, 1e-10));
+  EXPECT_TRUE(singleStepCalls.linearVelocity.isApprox(
+      batchedCall.linearVelocity, 1e-10));
 }
 
 // Test that lagged friction in the opt-in rigid IPC stage produces an
@@ -4476,6 +4658,94 @@ TEST(World, RigidIpcContactStageReportsUnsupportedShapes)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.0, 1e-12);
 }
 
+// Test that shape-less kinematic bodies still advance by prescribed velocity in
+// the IPC pipeline even though they do not contribute contact rows.
+TEST(World, RigidIpcContactStageAdvancesShapelessKinematicBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  kinematicOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto kinematicBody
+      = world.addRigidBody("kinematic_shapeless", kinematicOptions);
+  kinematicBody.setKinematic(true);
+  EXPECT_FALSE(kinematicBody.hasCollisionShape());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.bodyCount, 1u);
+  EXPECT_EQ(stats.dynamicBodyCount, 0u);
+  EXPECT_EQ(stats.surfaceCount, 0u);
+  EXPECT_EQ(stats.skippedUnsupportedShapeCount, 1u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::NoDofs);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_FALSE(stats.nonConvergedResultSkipped);
+  EXPECT_NEAR(kinematicBody.getTranslation().x(), 10.2, 1e-12);
+  EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), 2.0, 1e-12);
+}
+
+// Test that kinematic writeback is independent of whether the body has a rigid
+// IPC-supported collision surface. Unsupported kinematic shapes still advance
+// by prescribed velocity; they simply do not contribute rigid IPC contact rows.
+TEST(World, RigidIpcContactStageAdvancesUnsupportedKinematicBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  dynamicOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(
+      sx::CollisionShape::makeMesh(
+          {Eigen::Vector3d(0.0, 0.0, 0.0),
+           Eigen::Vector3d(1.0, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 1.0, 0.0)},
+          {Eigen::Vector3i(0, 1, 2)}));
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  kinematicOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto kinematicBody
+      = world.addRigidBody("kinematic_capsule", kinematicOptions);
+  kinematicBody.setCollisionShape(sx::CollisionShape::makeCapsule(0.1, 0.5));
+  kinematicBody.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.bodyCount, 2u);
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_EQ(stats.surfaceCount, 1u);
+  EXPECT_EQ(stats.skippedUnsupportedShapeCount, 1u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::MaxIterations);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_TRUE(stats.nonConvergedResultSkipped);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(kinematicBody.getTranslation().x(), 10.2, 1e-12);
+  EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), 2.0, 1e-12);
+}
+
 // Test that the opt-in IPC stage validates runtime collision geometry before
 // handing it to internal barrier and CCD loops.
 TEST(World, RigidIpcContactStageSkipsInvalidRuntimeGeometry)
@@ -4583,6 +4853,322 @@ TEST(World, RigidIpcContactStageSkipsUnconvergedSolveResult)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.0, 1e-12);
 }
 
+// Test that the opt-in rigid IPC stage still advances kinematic obstacles when
+// a rejected shared solve had no active contact rows.
+TEST(World, RigidIpcContactStageAdvancesKinematicWritebackWithoutActiveContact)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  dynamicOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(
+      sx::CollisionShape::makeMesh(
+          {Eigen::Vector3d(0.0, 0.0, 0.0),
+           Eigen::Vector3d(1.0, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 1.0, 0.0)},
+          {Eigen::Vector3i(0, 1, 2)}));
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  kinematicOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto kinematicBody = world.addRigidBody("kinematic", kinematicOptions);
+  kinematicBody.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  kinematicBody.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_EQ(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::MaxIterations);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_TRUE(stats.nonConvergedResultSkipped);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(kinematicBody.getTranslation().x(), 10.2, 1e-12);
+  EXPECT_NEAR(kinematicBody.getTranslation().y(), 0.0, 1e-12);
+  EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), 2.0, 1e-12);
+}
+
+// Test that the opt-in rigid IPC stage does not advance kinematic obstacles
+// when a rejected shared solve had active contact rows but no accepted step.
+TEST(World, RigidIpcContactStageSkipsKinematicWritebackWithActiveContact)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = Eigen::Vector3d(0.215, 0.0, 0.0);
+  kinematicOptions.linearVelocity = Eigen::Vector3d(-0.1, 0.0, 0.0);
+  auto kinematicBody = world.addRigidBody("kinematic", kinematicOptions);
+  kinematicBody.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  kinematicBody.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::MaxIterations);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_TRUE(stats.nonConvergedResultSkipped);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(kinematicBody.getTranslation().x(), 0.215, 1e-12);
+  EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), -0.1, 1e-12);
+}
+
+// Test that a rejected shared solve only blocks kinematic writeback for the
+// supported kinematic bodies that participated in active rows.
+TEST(World, RigidIpcContactStageAdvancesUninvolvedKinematicAfterRejectedSolve)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  sx::RigidBodyOptions blockingOptions;
+  blockingOptions.position = Eigen::Vector3d(0.215, 0.0, 0.0);
+  blockingOptions.linearVelocity = Eigen::Vector3d(-0.1, 0.0, 0.0);
+  auto blockingKinematic
+      = world.addRigidBody("blocking_kinematic", blockingOptions);
+  blockingKinematic.setCollisionShape(
+      sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  blockingKinematic.setKinematic(true);
+
+  sx::RigidBodyOptions uninvolvedOptions;
+  uninvolvedOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  uninvolvedOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto uninvolvedKinematic
+      = world.addRigidBody("uninvolved_kinematic", uninvolvedOptions);
+  uninvolvedKinematic.setCollisionShape(
+      sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  uninvolvedKinematic.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::MaxIterations);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_TRUE(stats.nonConvergedResultSkipped);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(blockingKinematic.getTranslation().x(), 0.215, 1e-12);
+  EXPECT_NEAR(blockingKinematic.getLinearVelocity().x(), -0.1, 1e-12);
+  EXPECT_NEAR(uninvolvedKinematic.getTranslation().x(), 10.2, 1e-12);
+  EXPECT_NEAR(uninvolvedKinematic.getLinearVelocity().x(), 2.0, 1e-12);
+}
+
+// Test that a fast kinematic obstacle cannot bypass conservative CCD by
+// starting and ending outside the activation distance while crossing a dynamic
+// body mid-step.
+TEST(World, RigidIpcContactStageBlocksKinematicSweepThroughDynamicBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(
+      sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
+
+  sx::RigidBodyOptions wallOptions;
+  wallOptions.position = Eigen::Vector3d(-0.3, 0.0, 0.0);
+  wallOptions.linearVelocity = Eigen::Vector3d(0.6, 0.0, 0.0);
+  auto wall = world.addRigidBody("kinematic_wall", wallOptions);
+  wall.setCollisionShape(sx::CollisionShape::makeBox({0.04, 0.2, 0.2}));
+  wall.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_EQ(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::LineSearchBlocked);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_TRUE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_GT(stats.lineSearchHits, 0u);
+  EXPECT_LT(stats.lastLineSearchStepBound, 1.0);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(wall.getTranslation().x(), -0.3, 1e-12);
+  EXPECT_NEAR(wall.getLinearVelocity().x(), 0.6, 1e-12);
+}
+
+// Test that a kinematic obstacle limited to a collision-free prefix by CCD does
+// not write the full prescribed end pose when dynamic DOFs are present.
+TEST(World, RigidIpcContactStageBlocksKinematicLimitedLineSearch)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(
+      sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
+
+  sx::RigidBodyOptions wallOptions;
+  wallOptions.position = Eigen::Vector3d(-0.12, 0.0, 0.0);
+  wallOptions.linearVelocity = Eigen::Vector3d(0.1, 0.0, 0.0);
+  auto wall = world.addRigidBody("kinematic_wall", wallOptions);
+  wall.setCollisionShape(sx::CollisionShape::makeBox({0.04, 0.2, 0.2}));
+  wall.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::LineSearchBlocked);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_TRUE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_GT(stats.lineSearchHits, 0u);
+  EXPECT_GT(stats.lastLineSearchStepBound, 0.0);
+  EXPECT_LT(stats.lastLineSearchStepBound, 1.0);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(wall.getTranslation().x(), -0.12, 1e-12);
+  EXPECT_NEAR(wall.getLinearVelocity().x(), 0.1, 1e-12);
+}
+
+// Test that a zero-step kinematic CCD block is not treated as a resting plateau
+// and does not write the prescribed end pose.
+TEST(World, RigidIpcContactStageDoesNotMaskBlockedKinematicSweepAsResting)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(
+      sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
+
+  sx::RigidBodyOptions wallOptions;
+  wallOptions.position = Eigen::Vector3d(-0.09, 0.0, 0.0);
+  wallOptions.linearVelocity = Eigen::Vector3d(0.1, 0.0, 0.0);
+  auto wall = world.addRigidBody("kinematic_wall", wallOptions);
+  wall.setCollisionShape(sx::CollisionShape::makeBox({0.04, 0.2, 0.2}));
+  wall.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::LineSearchBlocked);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_TRUE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_GT(stats.lineSearchZeroStepCount, 0u);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(wall.getTranslation().x(), -0.09, 1e-12);
+  EXPECT_NEAR(wall.getLinearVelocity().x(), 0.1, 1e-12);
+}
+
+// Test that a zero-step non-kinematic block does not become a no-op resting
+// writeback for pure tangential motion at exact contact; that is valid motion
+// to preserve, not a resting velocity to erase.
+TEST(World, RigidIpcContactStagePreservesTangentialVelocityOnZeroStepBlock)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.1}));
+  ground.setFriction(0.0);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 1.0;
+  bodyOptions.position = Eigen::Vector3d(0.0, 0.0, 0.05);
+  bodyOptions.linearVelocity = Eigen::Vector3d(0.2, 0.0, 0.0);
+  auto body = world.addRigidBody("body", bodyOptions);
+  body.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  body.setFriction(0.0);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::LineSearchBlocked);
+  EXPECT_TRUE(stats.failed);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_GT(stats.lineSearchZeroStepCount, 0u);
+  EXPECT_TRUE(body.getTranslation().isApprox(Eigen::Vector3d(0.0, 0.0, 0.05)));
+  EXPECT_NEAR(body.getLinearVelocity().x(), 0.2, 1e-12);
+  EXPECT_NEAR(body.getLinearVelocity().z(), 0.0, 1e-12);
+}
+
 // Test that the default World step pipeline can select the experimental rigid
 // IPC solver family without double-applying the legacy free-rigid velocity and
 // position stages.
@@ -4617,6 +5203,200 @@ TEST(World, StepUsesSelectedRigidIpcSolver)
   EXPECT_EQ(world.getFrame(), 1u);
   EXPECT_NEAR(body.getTranslation().x(), 0.12, 1e-8);
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.2, 1e-8);
+}
+
+// A kinematic rigid body is advanced by its prescribed (linear + angular)
+// velocity each step by the rigid IPC stage, with the velocity preserved (it is
+// not integrated under gravity or zeroed by contact response).
+TEST(World, RigidIpcKinematicBodyAdvancesAtPrescribedVelocity)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81)); // ignored for kinematic
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.mass = 1.0;
+  options.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  options.angularVelocity = Eigen::Vector3d(0.0, 0.0, 2.0);
+  auto body = world.addRigidBody("kinematic", options);
+  body.setCollisionShape(sx::CollisionShape::makeBox({0.2, 0.2, 0.2}));
+  body.setKinematic(true);
+  EXPECT_TRUE(body.isKinematic());
+  EXPECT_FALSE(body.isStatic());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  // Advanced by the prescribed linear velocity (no gravity fall) and rotated by
+  // omega*dt = 0.2 rad about z.
+  EXPECT_NEAR(body.getTranslation().x(), 0.1, 1e-9);
+  EXPECT_NEAR(body.getTranslation().z(), 0.0, 1e-9);
+  EXPECT_NEAR(body.getLinearVelocity().x(), 1.0, 1e-9);
+  EXPECT_NEAR(body.getAngularVelocity().z(), 2.0, 1e-9);
+  const Eigen::AngleAxisd rotated{Eigen::Quaterniond(body.getRotation())};
+  EXPECT_NEAR(rotated.angle(), 0.2, 1e-6);
+}
+
+// Kinematic-only rigid IPC writeback must preserve frame hierarchy ordering so
+// child local transforms are computed against the parent's advanced pose.
+TEST(World, RigidIpcKinematicOnlyWritebackOrdersParentBeforeChild)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0);
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  parentOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto parent = world.addRigidBody("parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  parent.setKinematic(true);
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(20.0, 0.0, 0.0);
+  childOptions.linearVelocity = Eigen::Vector3d::Zero();
+  auto child = world.addRigidBody("child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  child.setKinematic(true);
+  child.setParentFrame(parent);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const Eigen::Vector3d expectedParentPosition(11.0, 0.0, 0.0);
+  const Eigen::Vector3d expectedChildPosition(20.0, 0.0, 0.0);
+  Eigen::Isometry3d expectedChildLocalTransform = Eigen::Isometry3d::Identity();
+  expectedChildLocalTransform.translation()
+      = expectedChildPosition - expectedParentPosition;
+
+  EXPECT_TRUE(parent.getTranslation().isApprox(expectedParentPosition, 1e-12));
+  EXPECT_TRUE(child.getTranslation().isApprox(expectedChildPosition, 1e-12));
+  EXPECT_TRUE(
+      child.getLocalTransform().isApprox(expectedChildLocalTransform, 1e-12));
+}
+
+// Fig. 13 mechanism (linear form): a kinematic conveyor floor moving in +x
+// drags a resting free box forward through lagged Coulomb friction. The moving
+// obstacle's surface motion must enter the friction term for this to happen.
+TEST(World, RigidIpcKinematicConveyorDragsRestingBox)
+{
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The multi-step rigid IPC conveyor gate is too slow under coverage; "
+         "normal CI runs the full regression.";
+#endif
+
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions floorOptions;
+  floorOptions.position = Eigen::Vector3d(0.0, 0.0, -0.1);
+  floorOptions.linearVelocity = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto floor = world.addRigidBody("conveyor", floorOptions);
+  floor.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.1}));
+  floor.setKinematic(true);
+  floor.setFriction(1.0);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.1 + 1e-3);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  box.setFriction(1.0);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBoxZ = box.getTranslation().z();
+  for (int s = 0; s < 100; ++s) {
+    world.step(executor, pipeline);
+    EXPECT_FALSE(ipcStage.getLastStats().failed) << "step " << s;
+    minBoxZ = std::min(minBoxZ, box.getTranslation().z());
+  }
+
+  // Dragged forward by the moving floor (started at rest), in the floor's
+  // direction, without ever penetrating the floor top (z = 0, box half 0.1).
+  EXPECT_GT(box.getTranslation().x(), 0.02);
+  EXPECT_GT(box.getLinearVelocity().x(), 0.0);
+  EXPECT_GT(minBoxZ, 0.1 - 5e-3);
+}
+
+// Fig. 13 (Turntable): a free box resting on a kinematic turntable rotating
+// about the vertical axis is carried around by surface friction. The rotating
+// obstacle's tangential surface motion drags the box (mu = 1), so a box
+// starting on the +x axis is pulled toward +y (counter-clockwise) while staying
+// seated on the table -- the rotational analogue of the conveyor drag.
+TEST(World, RigidIpcKinematicTurntableCarriesRestingBox)
+{
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The multi-step rigid IPC turntable gate is too slow under coverage; "
+         "normal CI runs the full regression.";
+#endif
+
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions tableOptions;
+  tableOptions.position = Eigen::Vector3d(0.0, 0.0, -0.1);
+  tableOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 1.0); // CCW about z
+  auto table = world.addRigidBody("turntable", tableOptions);
+  table.setCollisionShape(sx::CollisionShape::makeBox({0.6, 0.6, 0.1}));
+  table.setKinematic(true);
+  table.setFriction(1.0);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.3, 0.0, 0.1 + 1e-3);
+  auto box = world.addRigidBody("rider", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  box.setFriction(1.0);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  double minBoxZ = box.getTranslation().z();
+  double maxBoxY = 0.0;
+  int failCount = 0;
+  for (int s = 0; s < 120; ++s) {
+    world.step(executor, pipeline);
+    if (ipcStage.getLastStats().failed) {
+      ++failCount;
+    }
+    minBoxZ = std::min(minBoxZ, box.getTranslation().z());
+    maxBoxY = std::max(maxBoxY, box.getTranslation().y());
+  }
+
+  // Carried tangentially (CCW) by the rotating table: a box on the +x axis is
+  // dragged well toward +y with positive tangential velocity, and never
+  // penetrates the table top (z = 0, box half 0.1). A `failed` step is a
+  // conservative solver skip (the safe, no-penetration path), not an
+  // intersection violation, so the asserted invariant is intersection-freedom
+  // plus a meaningful tangential drag rather than zero skips.
+  EXPECT_GT(maxBoxY, 0.05);
+  EXPECT_GT(box.getLinearVelocity().y(), 0.0);
+  EXPECT_GT(minBoxZ, 0.1 - 5e-3);
+  EXPECT_LE(failCount, 3);
 }
 
 // Test that public fixed joints reject the IPC rigid-body solver instead of
@@ -4739,6 +5519,40 @@ TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
   EXPECT_TRUE(body.getTransform().isApprox(expectedWorldTransform));
 }
 
+// Test that the default non-IPC pipeline preserves kinematic rigid bodies as
+// prescribed obstacles while keeping them immune to forces and gravity.
+TEST(World, StepPreservesKinematicRigidBodyWithDefaultSolver)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const Eigen::Vector3d initialPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond initialOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d linearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d angularVelocity(0.0, 0.0, 0.4);
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.5);
+
+  sx::RigidBodyOptions options;
+  options.position = initialPosition;
+  options.orientation = initialOrientation;
+  options.linearVelocity = linearVelocity;
+  options.angularVelocity = angularVelocity;
+  auto body = world.addRigidBody("kinematic_body", options);
+  body.setKinematic(true);
+  body.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  body.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  world.step();
+
+  EXPECT_TRUE(body.getTranslation().isApprox(initialPosition));
+  EXPECT_TRUE(body.getQuaternion().isApprox(initialOrientation));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(linearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(angularVelocity));
+}
+
 // Test that rigid-body frame ancestry is represented in the integration graph
 // so a parallel executor cannot run a child integration while its parent rigid
 // body is updating frame properties.
@@ -4819,6 +5633,44 @@ TEST(World, RigidBodyIntegrationStageSkipsStaticBodies)
   EXPECT_TRUE(body.getAngularVelocity().isApprox(initialAngularVelocity));
 }
 
+// Test that the direct rigid-body integration stage also preserves kinematic
+// bodies when custom pipelines bypass the default IPC contact stage.
+TEST(World, RigidBodyIntegrationStageSkipsKinematicBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  const Eigen::Vector3d initialPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond initialOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d initialLinearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d initialAngularVelocity(0.4, 0.1, -0.2);
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.position = initialPosition;
+  options.orientation = initialOrientation;
+  options.linearVelocity = initialLinearVelocity;
+  options.angularVelocity = initialAngularVelocity;
+  auto body = world.addRigidBody("kinematic_body", options);
+  body.setKinematic(true);
+  body.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  body.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyIntegrationStage stage(1);
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(body.getTranslation().isApprox(initialPosition));
+  EXPECT_TRUE(body.getQuaternion().isApprox(initialOrientation));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(initialLinearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(initialAngularVelocity));
+}
+
 // Test that the batched SoA integration stage also preserves static-body state
 // while continuing to integrate dynamic rigid bodies in the same batch.
 TEST(World, BatchedRigidBodyIntegrationStageSkipsStaticBodies)
@@ -4863,6 +5715,57 @@ TEST(World, BatchedRigidBodyIntegrationStageSkipsStaticBodies)
   EXPECT_TRUE(staticBody.getQuaternion().isApprox(staticOrientation));
   EXPECT_TRUE(staticBody.getLinearVelocity().isApprox(staticLinearVelocity));
   EXPECT_TRUE(staticBody.getAngularVelocity().isApprox(staticAngularVelocity));
+  EXPECT_TRUE(dynamicBody.getTranslation().isApprox(
+      dynamicPosition + dynamicLinearVelocity * dt));
+  EXPECT_TRUE(dynamicBody.getLinearVelocity().isApprox(dynamicLinearVelocity));
+}
+
+// Test that the batched SoA integration stage preserves kinematic-body state
+// while continuing to integrate dynamic rigid bodies in the same batch.
+TEST(World, BatchedRigidBodyIntegrationStageSkipsKinematicBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  const Eigen::Vector3d kinematicPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond kinematicOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d kinematicLinearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d kinematicAngularVelocity(0.4, 0.1, -0.2);
+
+  sx::World world;
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = kinematicPosition;
+  kinematicOptions.orientation = kinematicOrientation;
+  kinematicOptions.linearVelocity = kinematicLinearVelocity;
+  kinematicOptions.angularVelocity = kinematicAngularVelocity;
+  auto kinematicBody = world.addRigidBody("kinematic_body", kinematicOptions);
+  kinematicBody.setKinematic(true);
+  kinematicBody.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  kinematicBody.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  const Eigen::Vector3d dynamicPosition(-1.0, -2.0, 4.0);
+  const Eigen::Vector3d dynamicLinearVelocity(0.5, 1.0, -2.0);
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = dynamicPosition;
+  dynamicOptions.linearVelocity = dynamicLinearVelocity;
+  auto dynamicBody = world.addRigidBody("dynamic_body", dynamicOptions);
+
+  constexpr double dt = 0.5;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::BatchedRigidBodyIntegrationStage stage;
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(kinematicBody.getTranslation().isApprox(kinematicPosition));
+  EXPECT_TRUE(kinematicBody.getQuaternion().isApprox(kinematicOrientation));
+  EXPECT_TRUE(
+      kinematicBody.getLinearVelocity().isApprox(kinematicLinearVelocity));
+  EXPECT_TRUE(
+      kinematicBody.getAngularVelocity().isApprox(kinematicAngularVelocity));
   EXPECT_TRUE(dynamicBody.getTranslation().isApprox(
       dynamicPosition + dynamicLinearVelocity * dt));
   EXPECT_TRUE(dynamicBody.getLinearVelocity().isApprox(dynamicLinearVelocity));

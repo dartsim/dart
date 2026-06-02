@@ -527,6 +527,7 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
             "sx_rigid_ipc",
             "sx_rigid_ipc_slide",
             "sx_rigid_ipc_incline",
+            "sx_rigid_ipc_edge_drop",
             "sx_rigid_ipc_pile",
             "sx_rigid_ipc_tunnel",
         },

@@ -525,12 +525,12 @@ void RigidBody::setStatic(bool isStatic)
 
   auto& registry
       = dart::simulation::experimental::detail::registryOf(*getWorld());
+  const auto entity = detail::toRegistryEntity(getEntity());
   if (isStatic) {
-    registry.emplace_or_replace<comps::StaticBodyTag>(
-        detail::toRegistryEntity(getEntity()));
+    registry.remove<comps::KinematicBodyTag>(entity);
+    registry.emplace_or_replace<comps::StaticBodyTag>(entity);
   } else {
-    registry.remove<comps::StaticBodyTag>(
-        detail::toRegistryEntity(getEntity()));
+    registry.remove<comps::StaticBodyTag>(entity);
   }
 }
 
@@ -542,6 +542,34 @@ bool RigidBody::isStatic() const
 
   return dart::simulation::experimental::detail::registryOf(*getWorld())
       .all_of<comps::StaticBodyTag>(detail::toRegistryEntity(getEntity()));
+}
+
+//==============================================================================
+void RigidBody::setKinematic(bool isKinematic)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(*getWorld());
+  const auto entity = detail::toRegistryEntity(getEntity());
+  if (isKinematic) {
+    // Kinematic and static are mutually exclusive: a kinematic body is advanced
+    // by its prescribed velocity, not held immovable.
+    registry.remove<comps::StaticBodyTag>(entity);
+    registry.emplace_or_replace<comps::KinematicBodyTag>(entity);
+  } else {
+    registry.remove<comps::KinematicBodyTag>(entity);
+  }
+}
+
+//==============================================================================
+bool RigidBody::isKinematic() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return dart::simulation::experimental::detail::registryOf(*getWorld()).all_of<comps::KinematicBodyTag>(
+      detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
