@@ -1,0 +1,86 @@
+# Forward-compatibility coverage against the newest GCC/Clang releases.
+#
+# This replaces the former Docker-based "Alt Linux repro" job: its only durable
+# value was compiling DART with a substantially newer gcc/glibc/libstdc++ than
+# the stock Ubuntu toolchain (the pixi environment pins no compiler, so every
+# other Linux job uses the runner's system compiler). We get that same
+# forward-compat signal here with no container and none of the rolling-image /
+# DinD flakiness, by installing the latest GCC and Clang on a hosted runner and
+# building + testing through the existing pixi tasks.
+
+name: CI Newest Toolchain (Linux)
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  schedule:
+    # Run every Monday at 05:00 UTC (matches the former Alt Linux schedule).
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  newest-toolchain:
+    name: ${{ matrix.compiler }} (newest)
+    runs-on: ubuntu-24.04
+    # Advisory: a brand-new compiler release may surface transient breakage, so
+    # this should not block merges (the former Alt Linux job was likewise
+    # continue-on-error).
+    continue-on-error: true
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cc: gcc-14
+            cxx: g++-14
+          - compiler: clang
+            cc: clang-19
+            cxx: clang++-19
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install newest ${{ matrix.compiler }}
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            sudo apt-get update
+            sudo apt-get install -y gcc-14 g++-14
+          else
+            # apt.llvm.org provides the newest Clang releases.
+            wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+            chmod +x /tmp/llvm.sh
+            sudo /tmp/llvm.sh 19
+            sudo apt-get install -y clang-19
+          fi
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+
+      - name: Configure, build tests, and run ctest
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          set -euo pipefail
+          "${CC}" --version
+          # CC/CXX are honored by the `config` task's cmake invocation (it does
+          # not pin a compiler), so the whole tree is compiled with the newest
+          # toolchain.
+          pixi run config
+          pixi run build-tests
+          pixi run -- bash -c 'ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2'
