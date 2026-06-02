@@ -24,8 +24,8 @@ The handle classes (`Frame`, `FreeFrame`, `FixedFrame`, `RigidBody`,
 ReadWriteComps<comps::...>>`, naming component types in the public base.
 3. **`comps`/`ecs` includes** pulled in to make the above compile.
 
-The `audit-dart7-promotion-surface` check reports the current leak set (10 of 27
-promotion-target headers as of this writing). `entity.hpp` (the opaque `Entity`
+The `audit-dart7-promotion-surface` check reports the current leak set (run it
+for the live count). `entity.hpp` (the opaque `Entity`
 token) and the `detail/entity_conversion.hpp` seam already exist; the
 `FreeFrame`/`FixedFrame` constructors already use `Entity`. The remaining leak is
 dominated by the `EntityObjectWith<...comps...>` public base.
@@ -76,33 +76,30 @@ point of use, so this tends to collapse back into option A or B.
 Adopt **Option B**. It is the smallest change that fully de-ECS-es the public
 handle surface while preserving storage and validation.
 
-## Migration sequence (each step builds + tests green)
+## Migration approach
 
-1. **Done (this PR family):** `Entity` token + `detail/entity_conversion.hpp`;
-   `FreeFrame`/`FixedFrame` constructors take `Entity`.
-2. **Introduce the minimal public handle base** (identity + validity, no
-   template, no `comps`/`entt`) and the internal validated-access helper. Keep
-   `EntityObject`/`EntityObjectWith` as the internal helper.
-3. **Migrate `getEntity()`** to an internal accessor; repoint the ~96 internal
-   call sites. Public handles expose `Entity entity()` instead.
-4. **Convert `Frame`** to the new base (clears `frame/frame.hpp`), then the
-   `body/`, `multibody/`, and `constraint/` handles, one header at a time.
-5. **`world.hpp` pimpl:** move the `entt::registry` member behind an opaque impl;
-   drop `<entt/entt.hpp>` and `getRegistry()` from the public header (retain an
-   internal/test-only accessor).
-6. **WS2 (now unblocked):** explicit public-header install allowlist; make EnTT
-   and Taskflow **private** package dependencies; add negative installed-package
-   smokes.
-7. **WS3 enforcement:** flip `audit-dart7-promotion-surface --strict` into a CI
-   gate once the promotion set reports zero leaks.
+The design is applied in dependency order so each change stays small while ECS
+storage and the compile-time validation are preserved throughout: introduce the
+opaque `Entity` token and conversion seam; migrate `getEntity()` to an internal
+accessor so the internal callers move behind the seam without churn; replace the
+public `EntityObjectWith<...comps...>` inheritance with the minimal identity base
+(starting at the shared `Frame`, then the `body`/`multibody`/`constraint`
+handles); then move the `world.hpp` `entt::registry` member behind an opaque
+impl. The package-shape and boundary-enforcement follow-ups (private
+EnTT/Taskflow, an explicit install allowlist, and a `--strict` audit gate) build
+on a zero-leak promoted surface.
 
-## Verification per step
+The per-step sequencing, status, and gates are tracked in PLAN-041
+([`../plans/dashboard.md`](../plans/dashboard.md) and
+[`../plans/041-official-simulation-api-promotion.md`](../plans/041-official-simulation-api-promotion.md)),
+not in this design doc.
 
-`pixi run build-simulation-experimental-tests` + `ctest -L simulation-experimental`
-(49/49), `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`,
-`pixi run audit-dart7-promotion-surface` (leak count must not regress), and
-`pixi run lint`. The audit leak count is the running progress metric: it should
-strictly decrease across steps 4–5 and reach zero before WS3.
+## Verification
+
+Each implementation step keeps the experimental gates green:
+`pixi run build-simulation-experimental-tests` + `ctest -L simulation-experimental`,
+`pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`,
+`pixi run audit-dart7-promotion-surface`, and `pixi run lint`.
 
 ## Risk and review notes
 
