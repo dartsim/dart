@@ -1,0 +1,26 @@
+# https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-codeql-code-scanning-in-your-ci-system#specifying-paths-to-scan
+#
+# Limit CodeQL analysis to first-party sources and ignore vendored or generated
+# content that lives under build artifacts or virtual environments.
+# C++ manual-build SARIF can still include dependency headers; codeql.yml filters
+# those external findings before upload.
+
+name: dart-codeql-config
+
+paths:
+  - "dart/**"
+  - "python/**"
+  - "tests/**"
+  - "examples/**"
+  - "tutorials/**"
+  - "docs/**"
+
+paths-ignore:
+  - ".git/**"
+  - ".github/**"
+  - ".pixi/**"
+  - "build/**"
+  - "dist/**"
+  - ".cache/**"
+  - "**/third-party/**"
+  - "**/external/**"

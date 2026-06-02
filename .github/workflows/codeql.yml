@@ -1,0 +1,144 @@
+# https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-codeql
+#
+# Trimmed CodeQL setup for the DART 6 LTS line. The C++ analysis uses the
+# classic DART 6 pixi build (matching ci_ubuntu.yml) under build-mode: manual so
+# CodeQL can trace compilation; Python uses build-mode: none.
+
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - "release-6.17"
+      - "release-6.16"
+    paths-ignore:
+      - "docs/**"
+      - ".github/workflows/update_lockfiles.yml"
+      - ".readthedocs.yml"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
+  pull_request:
+    branches:
+      - "release-6.17"
+      - "release-6.16"
+    paths-ignore:
+      - "docs/**"
+      - ".github/workflows/update_lockfiles.yml"
+      - ".readthedocs.yml"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
+  # Note: no `schedule:` trigger. GitHub only runs scheduled workflows from the
+  # default branch (main), so a cron here on the release line would never scan
+  # release-6.17/release-6.16 and would give a false sense of weekly coverage.
+  # Scanning runs on every push/PR to the release branches; use workflow_dispatch
+  # for an on-demand scan.
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  analyze:
+    name: Security | CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BUILD_TYPE: Release
+      DART_VERBOSE: ON
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: c-cpp
+            build_mode: manual
+            run_build: true
+          - language: python
+            build_mode: none
+            run_build: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        if: matrix.run_build
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        if: matrix.run_build
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 1.0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          config-file: ./.github/codeql/config.yml
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build_mode }}
+
+      - name: Build (DART 6 classic, manual mode)
+        if: matrix.run_build
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          pixi run build
+
+      - name: CodeQL Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          output: sarif-results
+          upload: failure-only
+
+      - name: Filter external dependency alerts
+        run: |
+          shopt -s nullglob
+          sarif_files=(sarif-results/*.sarif)
+
+          if (( ${#sarif_files[@]} == 0 )); then
+            echo "No CodeQL SARIF files found." >&2
+            exit 1
+          fi
+
+          for sarif in "${sarif_files[@]}"; do
+            tmp="${sarif}.tmp"
+            jq '
+              def primary_uri:
+                .locations[0].physicalLocation.artifactLocation.uri // "";
+
+              def generated_or_dependency_path:
+                gsub("\\\\"; "/")
+                | (
+                  test("(^|/)(\\.pixi|build|dist|\\.cache)(/|$)")
+                  or test("(^|/)(third-party|external)(/|$)")
+                );
+
+              (.runs[]?.results) |= ((. // []) | map(
+                select(
+                  (primary_uri | generated_or_dependency_path)
+                  | not
+                )
+              ))
+            ' "$sarif" > "$tmp"
+            mv "$tmp" "$sarif"
+          done
+
+      - name: Upload filtered CodeQL results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif-results
+          wait-for-processing: "true"
