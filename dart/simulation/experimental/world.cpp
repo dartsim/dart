@@ -234,6 +234,19 @@ bool hasMultibodyStructures(const World& world)
 }
 
 //==============================================================================
+bool isRigidBodyFixedJoint(
+    const entt::registry& registry, const comps::Joint& joint)
+{
+  if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
+      || joint.childLink == entt::null || joint.parentLink == joint.childLink) {
+    return false;
+  }
+
+  return registry.all_of<comps::RigidBodyTag>(joint.parentLink)
+         && registry.all_of<comps::RigidBodyTag>(joint.childLink);
+}
+
+//==============================================================================
 bool hasRigidBodyFixedJoints(const World& world)
 {
   const auto& registry = world.getRegistry();
@@ -241,13 +254,7 @@ bool hasRigidBodyFixedJoints(const World& world)
   for (auto entity : view) {
     (void)entity;
     const auto& joint = view.get<comps::Joint>(entity);
-    if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
-        || joint.childLink == entt::null) {
-      continue;
-    }
-
-    if (registry.all_of<comps::RigidBodyTag>(joint.parentLink)
-        && registry.all_of<comps::RigidBodyTag>(joint.childLink)) {
+    if (isRigidBodyFixedJoint(registry, joint)) {
       return true;
     }
   }
@@ -1711,6 +1718,64 @@ Joint World::addRigidBodyFixedJoint(
   }
 
   return Joint(detail::fromRegistryEntity(jointEntity), this);
+}
+
+//==============================================================================
+std::optional<Joint> World::getRigidBodyFixedJoint(std::string_view name)
+{
+  auto view = m_registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name && isRigidBodyFixedJoint(m_registry, joint)) {
+      return Joint(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasRigidBodyFixedJoint(std::string_view name) const
+{
+  const auto view = m_registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name && isRigidBodyFixedJoint(m_registry, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+std::size_t World::getRigidBodyFixedJointCount() const
+{
+  std::size_t count = 0;
+  const auto view = m_registry.view<comps::Joint>();
+  for (auto entity : view) {
+    (void)entity;
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyFixedJoint(m_registry, joint)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+std::vector<Joint> World::getRigidBodyFixedJoints()
+{
+  std::vector<Joint> joints;
+  joints.reserve(getRigidBodyFixedJointCount());
+  const auto view = m_registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyFixedJoint(m_registry, joint)) {
+      joints.emplace_back(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return joints;
 }
 
 //==============================================================================

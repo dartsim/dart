@@ -76,6 +76,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     device is present), an in-viewer GPU toggle panel, and a startup status
     line. The `config-py` build task forwards the experimental CUDA opt-in so
     the lean compute-only `build-cuda`/`test-cuda` paths are unaffected.
+  - Added public `World` lookup/list/count accessors for experimental
+    rigid-body fixed joints, plus matching dartpy bindings and py-demo
+    diagnostics, so users can recover fixed-joint handles and inspect their
+    rigid endpoints after construction or save/load without touching ECS
+    internals.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a

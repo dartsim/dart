@@ -184,6 +184,10 @@ def test_experimental_api_exposes_python_names_only():
             "getMultibodyCount",
             "addRigidBody",
             "addRigidBodyFixedJoint",
+            "getRigidBodyFixedJoint",
+            "hasRigidBodyFixedJoint",
+            "getRigidBodyFixedJoints",
+            "getRigidBodyFixedJointCount",
             "getRigidBody",
             "hasRigidBody",
             "getRigidBodyCount",
@@ -279,6 +283,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "shape_index_a",
         "local_point_a",
         "has_multibody",
+        "has_rigid_body_fixed_joint",
+        "num_rigid_body_fixed_joints",
         "is_valid",
     ):
         assert member in stub
@@ -293,6 +299,10 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def getMultibody(",
         "def hasMultibody(",
         "def addRigidBodyFixedJoint(",
+        "def getRigidBodyFixedJoint(",
+        "def hasRigidBodyFixedJoint(",
+        "def getRigidBodyFixedJoints(",
+        "def getRigidBodyFixedJointCount(",
         "def get_parent_rigid_body(",
         "def get_child_rigid_body(",
         "def has_multibody_count(",
@@ -467,6 +477,14 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.num_dofs == 0
     assert joint.parent_rigid_body.name == "base"
     assert joint.child_rigid_body.name == "link"
+    assert world.has_rigid_body_fixed_joint("base_to_link")
+    assert not world.has_rigid_body_fixed_joint("missing")
+    assert world.num_rigid_body_fixed_joints == 1
+    assert world.get_rigid_body_fixed_joint("base_to_link").child_rigid_body == link
+    assert world.get_rigid_body_fixed_joint("missing") is None
+    fixed_joints = world.get_rigid_body_fixed_joints()
+    assert len(fixed_joints) == 1
+    assert fixed_joints[0].parent_rigid_body == base
     with pytest.raises(Exception, match="not a multibody Link"):
         _ = joint.parent_link
     with pytest.raises(Exception, match="not a multibody Link"):
