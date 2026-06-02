@@ -110,8 +110,13 @@ Non-`detail/` headers that include `entt`/`registry` or expose `getRegistry`
 (must be cleaned or hidden before promotion):
 
 - Promote-target handles to **clean**: `world.hpp`, `body/rigid_body.hpp`,
-  `body/collision_body.hpp`, `frame/frame.hpp`, `multibody/{joint,link,multibody}.hpp`,
-  `constraint/loop_closure.hpp`.
+  `body/collision_body.hpp`, `frame/frame.hpp`, `frame/free_frame.hpp`,
+  `frame/fixed_frame.hpp`, `multibody/{joint,link,multibody}.hpp`,
+  `constraint/loop_closure.hpp`. `frame/free_frame.hpp` and
+  `frame/fixed_frame.hpp` need cleanup even once their `entt::entity`
+  constructors are removed, because they still inherit
+  `EntityObjectWith<...comps::...>` via `frame.hpp`; they are clean only after
+  the shared `Frame`/`EntityObjectWith` base is de-ECS'd.
 - Internals to **hide** (stop installing): `common/ecs_utils.hpp`, all `comps/*`,
   `ecs/*`, `io/{serializer,category_serializer,binary_io}.hpp`,
   `space/{auto_mapper,component_mapper,vector_mapper}.hpp`,
