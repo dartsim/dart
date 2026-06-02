@@ -502,12 +502,21 @@ its own line so status updates remain git-history friendly.
 - Dimension: Release transition
 - Next step: Land the reviewed promotion contract, then start the readiness
   audit and package-facade work before any broad `experimental/` source-tree
-  move. The intended path is DART 7 official API promotion, not a DART 8 middle
-  step.
+  move. The readiness audit must keep the promoted `World` double-backed and
+  explicitly defer public scalar precision selectors (`sx.World(dtype=...)`,
+  `sx.World[...]`, scalar-specific aliases, or a public C++ scalar-template
+  facade) until DART 7 rigid-body and multibody simulation is in good shape for
+  humanoid locomotion and manipulation and a separate scalar-instantiation plan
+  proves the required ownership, binding, serialization, collision,
+  differentiability, package, and migration gates. Keep implementation choices
+  from becoming a one-way door for future scalar support where this is cheap,
+  but do not spend the promotion cycle on public scalar families. The intended
+  path is DART 7 official API promotion, not a DART 8 middle step.
 - Gate: The planning PR passes the docs-only gates; implementation PRs must keep
   API-boundary checks, C++/Python tests, package/export smokes, and CUDA/full
   gates green according to the touched scope. The promoted public API must hide
-  ECS, component, solver-registry, backend, and implementation-folder details.
+  ECS, component, solver-registry, backend, implementation-folder, tensor
+  framework, and unplanned scalar-instantiation details.
 
 ### PLAN-050: Experimental World Split
 
