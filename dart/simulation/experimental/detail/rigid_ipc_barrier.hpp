@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp>
+#include <dart/simulation/experimental/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
@@ -52,8 +52,7 @@ struct RigidIpcBarrierOptions
   bool projectReducedHessianToPsd = true;
 };
 
-using RigidIpcPrimitiveBarrierResult
-    = deformable_contact::PrimitiveBarrierResult;
+using RigidIpcPrimitiveBarrierResult = newton_barrier::PrimitiveBarrierResult;
 using RigidIpcVector6d = Eigen::Matrix<double, 6, 1>;
 using RigidIpcVector12d = Eigen::Matrix<double, 12, 1>;
 using RigidIpcMatrix12d = Eigen::Matrix<double, 12, 12>;

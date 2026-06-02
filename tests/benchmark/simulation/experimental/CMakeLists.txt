@@ -60,6 +60,11 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   )
 
   dart_experimental_add_benchmark(
+    bm_affine_body_dynamics
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_affine_body_dynamics.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_vbd_vertex_block_kernel
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_vertex_block_kernel.cpp
   )
