@@ -33,14 +33,17 @@
 #include "dart/simulation/experimental/frame/frame.hpp"
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/link.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
 
 #include <Eigen/Geometry>
+#include <entt/entt.hpp>
 
 #include <vector>
 
@@ -193,17 +196,13 @@ Eigen::Isometry3d getFrameLocalTransform(
 } // namespace
 
 //==============================================================================
-Frame::Frame(entt::entity entity, World* world)
-  : EntityObjectWith<
-        TagComps<comps::FrameTag>,
-        ReadOnlyComps<>,
-        WriteOnlyComps<>,
-        ReadWriteComps<comps::FrameState, comps::FrameCache>>()
+Frame::Frame(Entity entity, World* world) : m_entity(entity), m_world(world) {}
+
+//==============================================================================
+bool Frame::isWorld() const
 {
-  // Initialize base EntityObject with entity/world
-  // Virtual inheritance requires explicit initialization
-  m_entity = entity;
-  m_world = world;
+  // The default-constructed Entity sentinel (value == 0xFFFFFFFF) marks world.
+  return m_entity == Entity{};
 }
 
 //==============================================================================
@@ -216,7 +215,8 @@ Eigen::Isometry3d Frame::getLocalTransform() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
-  return getFrameLocalTransform(m_world->getRegistry(), m_entity);
+  return getFrameLocalTransform(
+      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
@@ -226,18 +226,21 @@ Frame Frame::getParentFrame() const
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
   // World frame: parent is itself
-  if (m_entity == entt::null) {
+  if (isWorld()) {
     return Frame::world();
   }
 
+  const auto enttEntity = detail::toRegistryEntity(m_entity);
+
   // Get parent from FrameState component (common to all frame types)
-  auto* frameState = tryGetReadOnly<comps::FrameState>();
+  const auto* frameState
+      = m_world->getRegistry().try_get<comps::FrameState>(enttEntity);
   DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
       InvalidOperationException,
       "Entity does not have FrameState component");
 
-  return Frame(frameState->parentFrame, m_world);
+  return Frame(detail::fromRegistryEntity(frameState->parentFrame), m_world);
 }
 
 //==============================================================================
@@ -250,8 +253,9 @@ std::string_view Frame::getName() const
     return "world";
   }
 
+  const auto enttEntity = detail::toRegistryEntity(m_entity);
   if (const auto* name
-      = m_world->getRegistry().try_get<comps::Name>(m_entity)) {
+      = m_world->getRegistry().try_get<comps::Name>(enttEntity)) {
     return name->name;
   }
 
@@ -268,13 +272,16 @@ void Frame::setParentFrame(const Frame& parent)
       !parent.isValid(), InvalidArgumentException, "Invalid parent frame");
 
   // World frame cannot change parent
-  if (m_entity == entt::null) {
+  if (isWorld()) {
     DART_EXPERIMENTAL_THROW_T(
         InvalidOperationException, "Cannot set parent of world frame");
   }
 
+  const auto enttEntity = detail::toRegistryEntity(m_entity);
+  auto& registry = m_world->getRegistry();
+
   // Get FrameState component (common to FreeFrame and FixedFrame)
-  auto* frameState = tryGetMutable<comps::FrameState>();
+  auto* frameState = registry.try_get<comps::FrameState>(enttEntity);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
@@ -282,19 +289,16 @@ void Frame::setParentFrame(const Frame& parent)
       "Cannot change parent frame of Link. Links are connected through "
       "joints in a fixed tree structure.");
 
-  if (m_world && m_entity != entt::null) {
-    auto& registry = m_world->getRegistry();
-    if (registry.valid(m_entity) && registry.all_of<comps::Link>(m_entity)) {
-      DART_EXPERIMENTAL_THROW_T(
-          InvalidOperationException,
-          "Cannot change parent frame of Link. Links are connected through "
-          "joints in a fixed tree structure.");
-    }
+  if (registry.valid(enttEntity) && registry.all_of<comps::Link>(enttEntity)) {
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "Cannot change parent frame of Link. Links are connected through "
+        "joints in a fixed tree structure.");
   }
 
   const auto parentEntity = parent.getEntity();
 
-  if (parentEntity != entt::null) {
+  if (!parent.isWorld()) {
     DART_EXPERIMENTAL_THROW_T_IF(
         m_world != parent.m_world,
         InvalidArgumentException,
@@ -309,7 +313,7 @@ void Frame::setParentFrame(const Frame& parent)
   // Prevent cycles by walking up the prospective parent's ancestry.
   Frame ancestor = parent;
   std::size_t depth = 0;
-  while (ancestor.getEntity() != entt::null) {
+  while (!ancestor.isWorld()) {
     if (ancestor.getEntity() == m_entity) {
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException, "Cannot create cyclic frame hierarchy");
@@ -330,8 +334,13 @@ void Frame::setParentFrame(const Frame& parent)
     }
   }
 
-  // Update parent in FrameState component
-  frameState->parentFrame = parentEntity;
+  // Update parent in FrameState component (parentFrame is entt::entity
+  // internally; world frame is represented as entt::null)
+  if (parent.isWorld()) {
+    frameState->parentFrame = entt::null;
+  } else {
+    frameState->parentFrame = detail::toRegistryEntity(parentEntity);
+  }
 
   markSubtreeTransformCacheDirty();
 }
@@ -343,14 +352,18 @@ const Eigen::Isometry3d& Frame::getTransform() const
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
   // World frame: return identity
-  if (m_entity == entt::null) {
+  if (isWorld()) {
     static const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
     return identity;
   }
 
+  const auto enttEntity = detail::toRegistryEntity(m_entity);
+
   // Frames with lazy evaluation (FreeFrame, FixedFrame) use FrameCache
-  // Use getCacheMutable() for cache updates in const method
-  auto* cache = getCacheMutable<comps::FrameCache>();
+  // const_cast is safe: cache mutation does not change observable state
+  auto* cache = const_cast<Frame*>(this)
+                    ->m_world->getRegistry()
+                    .try_get<comps::FrameCache>(enttEntity);
   DART_EXPERIMENTAL_THROW_T_IF(
       !cache,
       InvalidOperationException,
@@ -361,7 +374,7 @@ const Eigen::Isometry3d& Frame::getTransform() const
     auto parent = getParentFrame();
     cache->worldTransform
         = parent.getTransform()
-          * getFrameLocalTransform(m_world->getRegistry(), m_entity);
+          * getFrameLocalTransform(m_world->getRegistry(), enttEntity);
     cache->needTransformUpdate = false;
   }
 
@@ -423,7 +436,8 @@ Eigen::Isometry3d Frame::getTransform(const Frame& relativeTo) const
   // Optimization: transform to parent is just the local transform
   auto parent = getParentFrame();
   if (!parent.isWorld() && relativeTo.m_entity == parent.m_entity) {
-    return getFrameLocalTransform(m_world->getRegistry(), m_entity);
+    return getFrameLocalTransform(
+        m_world->getRegistry(), detail::toRegistryEntity(m_entity));
   }
 
   // General case: compute via world transforms
@@ -480,16 +494,17 @@ Eigen::Isometry3d Frame::getTransform(
 //==============================================================================
 Frame Frame::world()
 {
-  // Return a special frame representing the world
-  // Uses entt::null entity and nullptr world as markers
-  return Frame(entt::null, nullptr);
+  // Return a special frame representing the world.
+  // The default-constructed Entity sentinel (0xFFFFFFFF) marks the world frame;
+  // nullptr world is also a marker.
+  return Frame(Entity{}, nullptr);
 }
 
 //==============================================================================
 bool Frame::isValid() const
 {
-  // World frame is valid (entity is null, world can be null or non-null)
-  if (m_entity == entt::null) {
+  // World frame is valid (entity sentinel, world can be null or non-null)
+  if (isWorld()) {
     return true;
   }
 
@@ -498,14 +513,16 @@ bool Frame::isValid() const
     return false;
   }
 
+  const auto enttEntity = detail::toRegistryEntity(m_entity);
+
   // Check if entity exists in registry
   auto& registry = m_world->getRegistry();
-  if (!registry.valid(m_entity)) {
+  if (!registry.valid(enttEntity)) {
     return false;
   }
 
   // Check if entity has FrameTag
-  if (!registry.all_of<comps::FrameTag>(m_entity)) {
+  if (!registry.all_of<comps::FrameTag>(enttEntity)) {
     return false;
   }
 
@@ -519,7 +536,8 @@ void Frame::markSubtreeTransformCacheDirty()
     return;
   }
 
-  markSubtreeCacheDirty(m_world->getRegistry(), m_entity);
+  markSubtreeCacheDirty(
+      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
 }
 
 } // namespace dart::simulation::experimental

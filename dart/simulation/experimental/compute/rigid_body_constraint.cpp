@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/comps/contact_material.hpp"
 #include "dart/simulation/experimental/comps/frame_types.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
@@ -181,8 +182,8 @@ RigidBodyContactProblem assembleRigidBodyContactProblem(
   RigidBodyContactProblem problem;
   problem.constraints.reserve(contacts.size());
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
 
     // This assembly handles rigid-body pairs only; contacts involving
     // multibody links are resolved by the articulated contact solve for now.

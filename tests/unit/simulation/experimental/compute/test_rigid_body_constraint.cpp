@@ -11,6 +11,7 @@
 #include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_constraint.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
@@ -119,12 +120,13 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
   expectVectorExactlyEqual(problem.hi, repeated.hi);
   expectVectorExactlyEqual(problem.findex, repeated.findex);
 
-  EXPECT_EQ(problem.constraints[0].bodyA, ground.getEntity());
-  EXPECT_EQ(problem.constraints[0].bodyB, lower.getEntity());
+  using sx::detail::toRegistryEntity;
+  EXPECT_EQ(problem.constraints[0].bodyA, toRegistryEntity(ground.getEntity()));
+  EXPECT_EQ(problem.constraints[0].bodyB, toRegistryEntity(lower.getEntity()));
   EXPECT_TRUE(problem.constraints[0].staticA);
   EXPECT_FALSE(problem.constraints[0].staticB);
-  EXPECT_EQ(problem.constraints[1].bodyA, lower.getEntity());
-  EXPECT_EQ(problem.constraints[1].bodyB, upper.getEntity());
+  EXPECT_EQ(problem.constraints[1].bodyA, toRegistryEntity(lower.getEntity()));
+  EXPECT_EQ(problem.constraints[1].bodyB, toRegistryEntity(upper.getEntity()));
   EXPECT_FALSE(problem.constraints[1].staticA);
   EXPECT_FALSE(problem.constraints[1].staticB);
 
@@ -195,8 +197,10 @@ TEST(RigidBodyConstraint, TreatsKinematicBodiesAsPrescribed)
 
   ASSERT_EQ(problem.constraints.size(), 1u);
   const auto& constraint = problem.constraints[0];
-  EXPECT_EQ(constraint.bodyA, kinematic.getEntity());
-  EXPECT_EQ(constraint.bodyB, dynamic.getEntity());
+  EXPECT_EQ(
+      constraint.bodyA, sx::detail::toRegistryEntity(kinematic.getEntity()));
+  EXPECT_EQ(
+      constraint.bodyB, sx::detail::toRegistryEntity(dynamic.getEntity()));
   EXPECT_TRUE(constraint.staticA);
   EXPECT_FALSE(constraint.staticB);
   EXPECT_DOUBLE_EQ(constraint.invMassA, 0.0);

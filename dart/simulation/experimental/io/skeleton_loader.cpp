@@ -33,6 +33,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/link.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -541,7 +542,9 @@ void setParentToJointTransform(Link& link, const Eigen::Isometry3d& transform)
       "Cannot set parent-to-joint transform on an invalid loaded Link");
 
   auto& registry = world->getRegistry();
-  auto& linkComp = registry.get<comps::Link>(link.getEntity());
+  auto& linkComp = registry.get<comps::Link>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          link.getEntity()));
   linkComp.transformFromParentToJoint = transform;
 }
 
@@ -699,7 +702,7 @@ Multibody addSkeleton(
         "BodyNode '{}' has no parent joint",
         bodyNode.getName());
 
-    Link link(entt::null, nullptr);
+    Link link(Entity{}, nullptr);
     if (parentLink == nullptr) {
       const std::string anchorName = uniqueName(
           options.rootAnchorPrefix + bodyNode.getName(), usedLinkNames);

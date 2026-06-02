@@ -36,6 +36,7 @@
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/experimental/io/detail/rigid_ipc_fixture.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -3098,7 +3099,7 @@ RigidIpcReplayState populateRigidIpcReplayWorld(
           && std::isfinite(*source.kinematicMaxTime)
           && *source.kinematicMaxTime >= 0.0) {
         auto& tag = world.getRegistry().get<comps::KinematicBodyTag>(
-            body.getEntity());
+            rigid_detail::toRegistryEntity(body.getEntity()));
         tag.maxTime = *source.kinematicMaxTime;
       }
     }

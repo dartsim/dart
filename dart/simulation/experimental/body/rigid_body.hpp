@@ -36,9 +36,8 @@
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
-
-#include <entt/entt.hpp>
 
 #include <optional>
 #include <string>
@@ -67,7 +66,7 @@ class DART_EXPERIMENTAL_API RigidBody : public Frame
 {
 public:
   /// Constructor (typically called by World::addRigidBody)
-  RigidBody(entt::entity entity, World* world);
+  RigidBody(Entity entity, World* world);
 
   /// Get the name of the rigid body
   [[nodiscard]] std::string getName() const;

@@ -34,9 +34,8 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/export.hpp>
-
-#include <entt/entt.hpp>
 
 #include <optional>
 #include <string>
@@ -61,10 +60,14 @@ public:
   CollisionBody() = default;
 
   /// Construct a handle to the given entity in the given World.
-  CollisionBody(entt::entity entity, World* world);
+  CollisionBody(Entity entity, World* world);
 
-  /// Get the underlying entity ID.
-  [[nodiscard]] entt::entity getEntity() const;
+  /// Get the opaque entity token.
+  ///
+  /// Returns the backend-neutral `Entity` token. Internal code that needs the
+  /// raw ECS handle should call
+  /// `detail::toRegistryEntity(body.getEntity())`.
+  [[nodiscard]] Entity getEntity() const;
 
   /// Get the owning World pointer.
   [[nodiscard]] World* getWorld() const;
@@ -88,7 +91,7 @@ public:
   [[nodiscard]] std::optional<Link> asLink() const;
 
 private:
-  entt::entity m_entity{entt::null};
+  Entity m_entity{}; ///< Opaque entity token (default-constructed = invalid)
   World* m_world{nullptr};
 };
 

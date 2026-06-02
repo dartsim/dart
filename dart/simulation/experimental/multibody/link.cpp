@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -160,28 +161,31 @@ void validateCollisionShape(const CollisionShape& shape, const char* ownerName)
 } // namespace
 
 //==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
+Link::Link(Entity entity, World* world) : Frame(entity, world) {}
 
 //==============================================================================
 std::string_view Link::getName() const
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  const auto& linkComp = getWorld()->getRegistry().get<comps::Link>(
+      detail::toRegistryEntity(getEntity()));
   return linkComp.name;
 }
 
 //==============================================================================
 Joint Link::getParentJoint() const
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
+  const auto& linkComp = getWorld()->getRegistry().get<comps::Link>(
+      detail::toRegistryEntity(getEntity()));
+  return Joint(detail::fromRegistryEntity(linkComp.parentJoint), getWorld());
 }
 
 //==============================================================================
 double Link::getMass() const
 {
-  return getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.mass;
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .mass.mass;
 }
 
 //==============================================================================
@@ -192,13 +196,19 @@ void Link::setMass(double mass)
       InvalidArgumentException,
       "Link mass must be positive and finite");
 
-  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.mass = mass;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .mass.mass = mass;
 }
 
 //==============================================================================
 Eigen::Matrix3d Link::getInertia() const
 {
-  return getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.inertia;
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .mass.inertia;
 }
 
 //==============================================================================
@@ -209,8 +219,10 @@ void Link::setInertia(const Eigen::Matrix3d& inertia)
       InvalidArgumentException,
       "Link inertia must be symmetric positive definite");
 
-  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.inertia
-      = inertia;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .mass.inertia = inertia;
 }
 
 //==============================================================================
@@ -218,7 +230,7 @@ Eigen::Vector3d Link::getCenterOfMass() const
 {
   return getWorld()
       ->getRegistry()
-      .get<comps::Link>(getEntity())
+      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
       .mass.localCenterOfMass;
 }
 
@@ -230,8 +242,10 @@ void Link::setCenterOfMass(const Eigen::Vector3d& centerOfMass)
       InvalidArgumentException,
       "Link center of mass must contain only finite values");
 
-  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.localCenterOfMass
-      = centerOfMass;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .mass.localCenterOfMass = centerOfMass;
 }
 
 //==============================================================================
@@ -254,7 +268,8 @@ void Link::applyForce(
   // point into the link frame, build the wrench [torque; force] at the point,
   // then transport it to the link origin and accumulate in the link frame.
   const Eigen::Isometry3d& worldTransform = getWorldTransform();
-  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(
+      detail::toRegistryEntity(getEntity()));
 
   Eigen::Isometry3d pointTransform = Eigen::Isometry3d::Identity();
   pointTransform.translation()
@@ -271,8 +286,8 @@ void Link::applyForce(
 std::optional<CollisionShape> Link::getCollisionShape() const
 {
   const auto& registry = getWorld()->getRegistry();
-  if (const auto* geometry
-      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+  if (const auto* geometry = registry.try_get<comps::CollisionGeometry>(
+          detail::toRegistryEntity(getEntity()))) {
     if (const auto* shape = geometry->getPrimaryShape()) {
       return *shape;
     }
@@ -284,8 +299,8 @@ std::optional<CollisionShape> Link::getCollisionShape() const
 std::vector<CollisionShape> Link::getCollisionShapes() const
 {
   const auto& registry = getWorld()->getRegistry();
-  if (const auto* geometry
-      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+  if (const auto* geometry = registry.try_get<comps::CollisionGeometry>(
+          detail::toRegistryEntity(getEntity()))) {
     return geometry->shapes;
   }
   return {};
@@ -297,11 +312,12 @@ void Link::setCollisionShape(const CollisionShape& shape)
   validateCollisionShape(shape, "Link");
 
   auto& registry = getWorld()->getRegistry();
-  const auto* existing
-      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  const auto* existing = registry.try_get<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()));
   comps::CollisionGeometry geometry{{shape}};
   geometry.revision = existing ? existing->revision + 1 : 1;
-  registry.emplace_or_replace<comps::CollisionGeometry>(getEntity(), geometry);
+  registry.emplace_or_replace<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()), geometry);
 }
 
 //==============================================================================
@@ -310,8 +326,8 @@ void Link::addCollisionShape(const CollisionShape& shape)
   validateCollisionShape(shape, "Link");
 
   auto& registry = getWorld()->getRegistry();
-  auto& geometry
-      = registry.get_or_emplace<comps::CollisionGeometry>(getEntity());
+  auto& geometry = registry.get_or_emplace<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()));
   geometry.shapes.push_back(shape);
   ++geometry.revision;
 }
@@ -320,8 +336,8 @@ void Link::addCollisionShape(const CollisionShape& shape)
 bool Link::hasCollisionShape() const
 {
   const auto& registry = getWorld()->getRegistry();
-  const auto* geometry
-      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  const auto* geometry = registry.try_get<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()));
   return geometry != nullptr && geometry->hasShapes();
 }
 

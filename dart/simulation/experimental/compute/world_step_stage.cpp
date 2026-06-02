@@ -57,6 +57,7 @@
 #include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
@@ -487,10 +488,10 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
 {
   std::optional<comps::RigidAvbdContactConfig> merged;
   for (const Contact& contact : contacts) {
-    const auto* configA
-        = enabledRigidAvbdContactConfig(registry, contact.bodyA.getEntity());
-    const auto* configB
-        = enabledRigidAvbdContactConfig(registry, contact.bodyB.getEntity());
+    const auto* configA = enabledRigidAvbdContactConfig(
+        registry, detail::toRegistryEntity(contact.bodyA.getEntity()));
+    const auto* configB = enabledRigidAvbdContactConfig(
+        registry, detail::toRegistryEntity(contact.bodyB.getEntity()));
     if (configA == nullptr && configB == nullptr) {
       return std::nullopt;
     }
@@ -849,8 +850,8 @@ void resolveRigidBodyContactPositions(
   constexpr double allowance = 1e-4;
   constexpr double correctionFactor = 0.2;
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
     if (!registry.all_of<comps::RigidBodyTag>(entityA)
         || !registry.all_of<comps::RigidBodyTag>(entityB)) {
       continue;
@@ -8019,8 +8020,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   std::vector<NormalConstraint> constraints;
   constraints.reserve(contacts.size());
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
 
     // This sequential-impulse solver handles rigid-body pairs only; contacts
     // involving multibody links are resolved by the articulated contact solve.

@@ -43,6 +43,7 @@
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/multibody_constraint.hpp"
 #include "dart/simulation/experimental/compute/unified_constraint.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -1018,8 +1019,8 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
 
   std::vector<LinkContact> linkContacts;
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
     const auto& links = structure.links;
     const bool aInBody
         = std::find(links.begin(), links.end(), entityA) != links.end();
