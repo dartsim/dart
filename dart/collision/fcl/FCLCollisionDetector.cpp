@@ -976,19 +976,22 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     // Use mesh since FCL doesn't support pyramid shape.
     geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::getTransform3Identity());
   } else if (PlaneShape::getStaticType() == shapeType) {
-    if (FCLCollisionDetector::PRIMITIVE == type) {
-      DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
-      auto plane = static_cast<const PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
-      const double offset = plane->getOffset();
+    DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
+    const auto plane = static_cast<const PlaneShape*>(shape.get());
+    const Eigen::Vector3d normal = plane->getNormal();
+    const double offset = plane->getOffset();
 
-      geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
-    } else {
-      geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
-      dtwarn
-          << "[FCLCollisionDetector] PlaneShape is not supported by "
-          << "FCLCollisionDetector. We create a thin box mesh instead, where "
-          << "the size is [1000 0 1000].\n";
+    geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
+
+    if (FCLCollisionDetector::MESH == type) {
+      static bool warned = false;
+      if (!warned) {
+        dtwarn << "[FCLCollisionDetector] PlaneShape requested with primitive "
+               << "shape type MESH. Using analytic halfspace instead of the "
+               << "previous thin-box fallback to keep plane collisions "
+               << "reliable.\n";
+        warned = true;
+      }
     }
   } else if (MeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const MeshShape*>(shape.get()));

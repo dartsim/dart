@@ -36,6 +36,8 @@
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
+
 namespace dart {
 namespace collision {
 
@@ -52,7 +54,8 @@ BulletCollisionGroup::BulletCollisionGroup(
         mBulletProadphaseAlg.get(),
         mBulletCollisionConfiguration.get()))
 {
-  // Do nothing
+  btGImpactCollisionAlgorithm::registerAlgorithm(
+      static_cast<btCollisionDispatcher*>(mBulletDispatcher.get()));
 }
 
 //==============================================================================

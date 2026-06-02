@@ -37,6 +37,7 @@
 #include <dart/constraint/ConstraintSolver.hpp>
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
@@ -105,9 +106,6 @@ void runIssue1234Test(
   const auto box
       = std::make_shared<dart::dynamics::BoxShape>(bb.getMax() - bb.getMin());
 
-  const auto sphere = std::make_shared<dart::dynamics::SphereShape>(
-      bb.getMax()[0] - bb.getMin()[0]);
-
   std::size_t numTests = 0;
   std::size_t numPasses = 0;
 
@@ -165,4 +163,15 @@ TEST(DISABLED_Issue1234, ODE)
 {
   runIssue1234Test(
       [] { return dart::collision::OdeCollisionDetector::create(); });
+}
+
+//==============================================================================
+TEST(Issue1234, Fcl)
+{
+  runIssue1234Test([] {
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    detector->setPrimitiveShapeType(
+        dart::collision::FCLCollisionDetector::PRIMITIVE);
+    return detector;
+  });
 }
