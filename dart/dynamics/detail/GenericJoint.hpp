@@ -44,6 +44,8 @@
 #include <dart/math/ConfigurationSpace.hpp>
 #include <dart/math/Helpers.hpp>
 
+#include <cmath>
+
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
     dterr << "[GenericJoint::" #func "] Mismatch beteween size of "            \
@@ -74,6 +76,65 @@
     return;                                                                    \
   Base::mAspectProperties.mField = value;                                      \
   Joint::incrementVersion();
+
+namespace dart {
+namespace dynamics {
+namespace detail {
+
+template <typename Derived>
+inline void assertFiniteState(
+    const Eigen::MatrixBase<Derived>& values,
+    const Joint* joint,
+    const char* context,
+    const char* valueName)
+{
+#ifndef NDEBUG
+  const bool finite = values.array().isFinite().all();
+  if (!finite) {
+    DART_ERROR(
+        "Non-finite {} passed to {} for Joint [{}] ({}).",
+        valueName,
+        context,
+        joint->getName(),
+        static_cast<const void*>(joint));
+  }
+  DART_ASSERT(finite);
+#else
+  (void)values;
+  (void)joint;
+  (void)context;
+  (void)valueName;
+#endif
+}
+
+inline void assertFiniteState(
+    double value,
+    const Joint* joint,
+    const char* context,
+    const char* valueName)
+{
+#ifndef NDEBUG
+  const bool finite = std::isfinite(value);
+  if (!finite) {
+    DART_ERROR(
+        "Non-finite {} passed to {} for Joint [{}] ({}).",
+        valueName,
+        context,
+        joint->getName(),
+        static_cast<const void*>(joint));
+  }
+  DART_ASSERT(finite);
+#else
+  (void)value;
+  (void)joint;
+  (void)context;
+  (void)valueName;
+#endif
+}
+
+} // namespace detail
+} // namespace dynamics
+} // namespace dart
 
 namespace dart {
 namespace dynamics {
@@ -483,6 +544,8 @@ void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
     return;
   }
 
+  detail::assertFiniteState(position, this, "setPosition", "position");
+
   if (this->mAspectState.mPositions[index] == position)
     return;
   // TODO(JS): Above code should be changed something like:
@@ -696,6 +759,8 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getInitialPositions() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
 {
+  detail::assertFiniteState(positions, this, "setPositions", "positions");
+
   if (this->mAspectState.mPositions == positions)
     return;
 
@@ -715,6 +780,8 @@ GenericJoint<ConfigSpaceT>::getPositionsStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(const Vector& velocities)
 {
+  detail::assertFiniteState(velocities, this, "setVelocities", "velocities");
+
   if (this->mAspectState.mVelocities == velocities)
     return;
 
@@ -734,6 +801,8 @@ GenericJoint<ConfigSpaceT>::getVelocitiesStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
 {
+  detail::assertFiniteState(accels, this, "setAccelerations", "accelerations");
+
   if (this->mAspectState.mAccelerations == accels)
     return;
 
@@ -757,6 +826,8 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
     GenericJoint_REPORT_OUT_OF_RANGE(setVelocity, index);
     return;
   }
+
+  detail::assertFiniteState(velocity, this, "setVelocity", "velocity");
 
   if (this->mAspectState.mVelocities[index] == velocity)
     return;
@@ -967,6 +1038,9 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
     GenericJoint_REPORT_OUT_OF_RANGE(setAcceleration, index);
     return;
   }
+
+  detail::assertFiniteState(
+      acceleration, this, "setAcceleration", "acceleration");
 
   if (this->mAspectState.mAccelerations[index] == acceleration)
     return;
