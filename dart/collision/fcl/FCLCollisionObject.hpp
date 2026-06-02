@@ -36,8 +36,9 @@
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
-#include <cstddef>
 #include <string>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {

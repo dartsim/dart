@@ -356,7 +356,8 @@ TEST_P(CollisionGroupsTest, DestroyedMetaSkeletonSubscriptionDoesNotDangle)
     auto metaGroup = dart::dynamics::Group::create(
         "meta", std::vector<dart::dynamics::BodyNode*>{pair.second});
     collisionGroup->subscribeTo(
-        std::static_pointer_cast<const dart::dynamics::MetaSkeleton>(metaGroup));
+        std::static_pointer_cast<const dart::dynamics::MetaSkeleton>(
+            metaGroup));
     collisionGroup->collide(); // update(): registers the body's ShapeFrame
     EXPECT_EQ(collisionGroup->getNumShapeFrames(), 1u);
     // metaGroup is destroyed here; pair.second and its ShapeFrame stay alive.

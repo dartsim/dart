@@ -41,6 +41,7 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 #include <atomic>
+
 #include <cstddef>
 
 namespace dart {
