@@ -227,7 +227,7 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
     localAnchorA = worldA.inverse() * worldAnchor;
     localAnchorB = worldB.inverse() * worldAnchor;
     targetRelativeOrientation = normalizeAvbdRigidOrientation(
-        orientationB * orientationA.conjugate());
+        orientationA.conjugate() * orientationB);
 
     joint->hasRigidBodyFixedJointAnchors = true;
     joint->rigidBodyFixedJointLocalAnchorParent = localAnchorA;

@@ -52,6 +52,18 @@ using Vec3 = Eigen::Vector3d;
 namespace sx = dart::simulation::experimental;
 
 //==============================================================================
+Eigen::Quaterniond rotationX(double angle)
+{
+  return Eigen::Quaterniond(Eigen::AngleAxisd(angle, Vec3::UnitX()));
+}
+
+//==============================================================================
+Eigen::Quaterniond rotationY(double angle)
+{
+  return Eigen::Quaterniond(Eigen::AngleAxisd(angle, Vec3::UnitY()));
+}
+
+//==============================================================================
 Eigen::Quaterniond rotationZ(double angle)
 {
   return Eigen::Quaterniond(Eigen::AngleAxisd(angle, Vec3::UnitZ()));
@@ -903,6 +915,28 @@ TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedAngularRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidAngularPairTargetUsesParentLocalOrientation)
+{
+  vbd::AvbdRigidBodyState parent;
+  parent.orientation = rotationY(0.8);
+
+  const Eigen::Quaterniond parentInitial = rotationZ(-0.4);
+  const Eigen::Quaterniond childInitial = rotationX(0.7);
+  vbd::AvbdRigidAngularPairRow row;
+  row.targetRelativeOrientation = parentInitial.conjugate() * childInitial;
+
+  const Eigen::Quaterniond expected
+      = parent.orientation * parentInitial.conjugate() * childInitial;
+  EXPECT_NEAR(
+      (vbd::avbdRigidAngularPairTargetOrientationB(parent, row)
+           .toRotationMatrix()
+       - expected.toRotationMatrix())
+          .norm(),
+      0.0,
+      1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidPointJointAngularRowsDriveOrientationsTogether)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
@@ -1677,7 +1711,7 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
   EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
   EXPECT_NEAR(
       (config.targetRelativeOrientation.toRotationMatrix()
-       - (linkOptions.orientation * baseOptions.orientation.conjugate())
+       - (baseOptions.orientation.conjugate() * linkOptions.orientation)
              .toRotationMatrix())
           .norm(),
       0.0,

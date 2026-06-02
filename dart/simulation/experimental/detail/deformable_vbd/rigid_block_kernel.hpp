@@ -328,8 +328,8 @@ inline Eigen::Quaterniond avbdRigidAngularPairTargetOrientationB(
     const AvbdRigidBodyState& stateA, const AvbdRigidAngularPairRow& row)
 {
   return normalizeAvbdRigidOrientation(
-      row.targetRelativeOrientation
-      * normalizeAvbdRigidOrientation(stateA.orientation));
+      normalizeAvbdRigidOrientation(stateA.orientation)
+      * row.targetRelativeOrientation);
 }
 
 //==============================================================================
