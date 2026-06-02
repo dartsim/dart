@@ -84,7 +84,9 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   12: Merged DART 7 format: mainline versions 6-10 plus the branch collision
 //      geometry record layout, storing capsule/cylinder half-height in
 //      CollisionShape::halfExtents.z()
-constexpr std::uint32_t kBinaryFormatVersion = 12;
+//   13: Joint stores captured rigid-body fixed-joint local anchors and target
+//      relative orientation.
+constexpr std::uint32_t kBinaryFormatVersion = 13;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

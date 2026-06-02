@@ -405,6 +405,16 @@ void autoDeserialize(std::istream& in, T& component)
       detail::readTrivialList(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       readIsometry3d(in, field);
+    } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
+      double w = 1.0;
+      double x = 0.0;
+      double y = 0.0;
+      double z = 0.0;
+      readPOD(in, w);
+      readPOD(in, x);
+      readPOD(in, y);
+      readPOD(in, z);
+      field = Eigen::Quaterniond(w, x, y, z);
     } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
       readVectorXd(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
@@ -477,6 +487,11 @@ void autoSerialize(
           writePOD(out, field(i, j));
         }
       }
+    } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
+      writePOD(out, field.w());
+      writePOD(out, field.x());
+      writePOD(out, field.y());
+      writePOD(out, field.z());
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       writePOD(out, field);
     } else {
@@ -513,6 +528,16 @@ void autoDeserialize(std::istream& in, T& value)
           }
         }
       }
+    } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
+      double w = 1.0;
+      double x = 0.0;
+      double y = 0.0;
+      double z = 0.0;
+      readPOD(in, w);
+      readPOD(in, x);
+      readPOD(in, y);
+      readPOD(in, z);
+      field = Eigen::Quaterniond(w, x, y, z);
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       readPOD(in, field);
     } else {

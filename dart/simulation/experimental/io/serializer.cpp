@@ -195,6 +195,47 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
                                  : Eigen::VectorXd::Constant(dof, infinity);
 }
 
+void deserializeJointV2ToV12(std::istream& input, comps::Joint& joint)
+{
+  readPOD(input, joint.type);
+  readPOD(input, joint.actuatorType);
+  readString(input, joint.name);
+  readVectorXd(input, joint.position);
+  readVectorXd(input, joint.velocity);
+  readVectorXd(input, joint.acceleration);
+  readVectorXd(input, joint.torque);
+
+  readVectorXd(input, joint.springStiffness);
+  readVectorXd(input, joint.dampingCoefficient);
+  readVectorXd(input, joint.restPosition);
+  readVectorXd(input, joint.armature);
+  readVectorXd(input, joint.coulombFriction);
+  readVectorXd(input, joint.commandVelocity);
+
+  readVectorXd(input, joint.limits.lower);
+  readVectorXd(input, joint.limits.upper);
+  readVectorXd(input, joint.limits.velocityLower);
+  readVectorXd(input, joint.limits.velocityUpper);
+  readVectorXd(input, joint.limits.effortLower);
+  readVectorXd(input, joint.limits.effortUpper);
+
+  readVector3d(input, joint.axis);
+  readVector3d(input, joint.axis2);
+  readPOD(input, joint.pitch);
+
+  std::uint32_t parentLink = static_cast<std::uint32_t>(entt::null);
+  std::uint32_t childLink = static_cast<std::uint32_t>(entt::null);
+  readPOD(input, parentLink);
+  readPOD(input, childLink);
+  joint.parentLink = static_cast<entt::entity>(parentLink);
+  joint.childLink = static_cast<entt::entity>(childLink);
+
+  joint.hasRigidBodyFixedJointAnchors = false;
+  joint.rigidBodyFixedJointLocalAnchorParent.setZero();
+  joint.rigidBodyFixedJointLocalAnchorChild.setZero();
+  joint.rigidBodyFixedJointTargetRelativeOrientation.setIdentity();
+}
+
 void initializeCollisionShapeDefaults(CollisionShape& shape)
 {
   shape.localTransform = Eigen::Isometry3d::Identity();
@@ -327,11 +368,26 @@ void deserializeBranchV11CollisionGeometry(
   geometry.revision = 0;
 }
 
+void deserializeLegacyMassProperties(
+    std::istream& input, comps::MassProperties& mass)
+{
+  readPOD(input, mass.mass);
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i; j < 3; ++j) {
+      readPOD(input, mass.inertia(i, j));
+      if (i != j) {
+        mass.inertia(j, i) = mass.inertia(i, j);
+      }
+    }
+  }
+  readVector3d(input, mass.localCenterOfMass);
+}
+
 void deserializeLinkV8(
     std::istream& input, comps::Link& link, std::uint32_t formatVersion)
 {
   readString(input, link.name);
-  autoDeserialize(input, link.mass);
+  deserializeLegacyMassProperties(input, link.mass);
 
   link.transformFromParentToJoint = Eigen::Isometry3d::Identity();
   readIsometry3d(input, link.transformFromParentJoint);
@@ -390,6 +446,10 @@ private:
   {
     if (formatVersion == 1u) {
       deserializeJointV1(input, component);
+      return;
+    }
+    if (formatVersion < 13u) {
+      deserializeJointV2ToV12(input, component);
       return;
     }
 
