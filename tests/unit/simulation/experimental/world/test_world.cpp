@@ -5079,6 +5079,12 @@ TEST(World, RigidIpcKinematicOnlyWritebackOrdersParentBeforeChild)
 // obstacle's surface motion must enter the friction term for this to happen.
 TEST(World, RigidIpcKinematicConveyorDragsRestingBox)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The multi-step rigid IPC conveyor gate is too slow under coverage; "
+         "normal CI runs the full regression.";
+#endif
+
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
@@ -5126,6 +5132,12 @@ TEST(World, RigidIpcKinematicConveyorDragsRestingBox)
 // seated on the table -- the rotational analogue of the conveyor drag.
 TEST(World, RigidIpcKinematicTurntableCarriesRestingBox)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The multi-step rigid IPC turntable gate is too slow under coverage; "
+         "normal CI runs the full regression.";
+#endif
+
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
