@@ -3,6 +3,8 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import ast
+import builtins
 import importlib
 import keyword
 import os
@@ -70,6 +72,166 @@ def _rename_placeholder(text: str, name: str) -> str:
     return pattern.sub(repl, text)
 
 
+_BUILTIN_NAMES = frozenset(dir(builtins))
+
+
+def _stmt_defined_names(stmt: ast.stmt) -> list[str]:
+    """Return the names a statement binds in its enclosing namespace."""
+
+    if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return [stmt.name]
+    if isinstance(stmt, ast.Assign):
+        return [t.id for t in stmt.targets if isinstance(t, ast.Name)]
+    if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+        return [stmt.target.id]
+    if isinstance(stmt, (ast.Import, ast.ImportFrom)):
+        return [alias.asname or alias.name.split(".")[0] for alias in stmt.names]
+    return []
+
+
+def _strip_enclosing_qualifier(value: ast.expr, class_names: frozenset[str]) -> ast.expr:
+    """Drop redundant ``EnclosingClass.`` qualifiers from an expression.
+
+    ``nanobind`` fully qualifies nested references (e.g.
+    ``LinkageCriteria.ExpansionPolicy.INCLUDE``). Inside the class body the
+    enclosing class name is not yet bound, so the simple name
+    (``ExpansionPolicy.INCLUDE``) is what is actually in scope.
+    """
+
+    class _Stripper(ast.NodeTransformer):
+        def visit_Attribute(self, node: ast.Attribute) -> ast.expr:
+            self.generic_visit(node)
+            if isinstance(node.value, ast.Name) and node.value.id in class_names:
+                return ast.copy_location(ast.Name(id=node.attr, ctx=ast.Load()), node)
+            return node
+
+    return _Stripper().visit(value)
+
+
+def _loaded_root_names(value: ast.expr) -> set[str]:
+    """Return the identifiers an expression reads (roots of attribute chains)."""
+
+    return {
+        node.id
+        for node in ast.walk(value)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+    }
+
+
+def _fix_forward_references(text: str) -> str:
+    """Make stub class bodies importable despite forward references.
+
+    ``nanobind``'s stub generator emits class-level statements that reference
+    names defined later. That is harmless for type checkers (which never execute
+    the stub) but raises ``NameError`` when Sphinx autodoc imports the generated
+    module, silently dropping the whole module from the API reference. Several
+    shapes occur and are handled below:
+
+    * ``get_size = getSize`` placed before the overriding ``def getSize`` in a
+      derived class -> moved after the definition it points at.
+    * ``INCLUDE: ... = LinkageCriteria.ExpansionPolicy.INCLUDE`` -> the redundant
+      enclosing-class qualifier is dropped so the in-scope name resolves.
+    * ``Tangent: TypeAlias = SO3Tangent`` where ``SO3Tangent`` is defined later
+      at module scope -> rewritten as a string forward reference.
+    * any remaining value referencing a not-yet-bound name -> neutralised
+      (annotation kept, value dropped or replaced with ``...``) so the class
+      body still imports.
+    """
+
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return text
+
+    module_defs: dict[str, int] = {}
+    for index, stmt in enumerate(tree.body):
+        for name in _stmt_defined_names(stmt):
+            module_defs.setdefault(name, index)
+
+    changed = False
+
+    def _process_class(node: ast.ClassDef, enclosing: frozenset[str], threshold: int):
+        nonlocal changed
+        class_names = enclosing | {node.name}
+
+        for stmt in node.body:
+            if isinstance(stmt, ast.ClassDef):
+                _process_class(stmt, class_names, threshold)
+
+        local_first: dict[str, int] = {}
+        for index, stmt in enumerate(node.body):
+            for name in _stmt_defined_names(stmt):
+                local_first.setdefault(name, index)
+
+        def _available(name: str, index: int) -> bool:
+            return (
+                0 <= local_first.get(name, -1) < index
+                or 0 <= module_defs.get(name, -1) < threshold
+                or name in _BUILTIN_NAMES
+            )
+
+        kept: list[ast.stmt] = []
+        deferred: list[ast.stmt] = []
+        for index, stmt in enumerate(node.body):
+            value = getattr(stmt, "value", None)
+            if isinstance(stmt, (ast.Assign, ast.AnnAssign)) and value is not None:
+                stripped = _strip_enclosing_qualifier(value, class_names)
+                if ast.dump(stripped) != ast.dump(value):
+                    stmt.value = value = stripped
+                    changed = True
+
+                if isinstance(value, ast.Name) and local_first.get(value.id, -1) > index:
+                    # Alias to a name defined later in this class; move it past.
+                    deferred.append(stmt)
+                    changed = True
+                    continue
+
+                unresolved = [r for r in _loaded_root_names(value) if not _available(r, index)]
+                if unresolved:
+                    if isinstance(value, ast.Name):
+                        stmt.value = ast.copy_location(ast.Constant(value=value.id), value)
+                    elif isinstance(stmt, ast.AnnAssign):
+                        stmt.value = None
+                    else:
+                        stmt.value = ast.copy_location(ast.Constant(value=...), value)
+                    changed = True
+            kept.append(stmt)
+
+        if deferred:
+            node.body = kept + deferred
+
+    for module_index, node in enumerate(tree.body):
+        if isinstance(node, ast.ClassDef):
+            _process_class(node, frozenset(), module_index)
+
+    if not changed:
+        return text
+
+    return ast.unparse(tree) + "\n"
+
+
+def _neutralize_dynamic_submodule_imports(text: str) -> str:
+    """Replace imports of runtime-only ``dartpy`` submodules with placeholders.
+
+    Some submodules have no stub of their own -- e.g.
+    ``dartpy.simulation_experimental.diff``, a pure-Python PyTorch bridge that
+    ``dartpy/__init__.py`` attaches at runtime. The flat stub modules cannot host
+    real submodules, so ``import dartpy.<parent>.<child> as <alias>`` raises
+    ImportError when autodoc imports the stub. Bind the alias to an empty
+    placeholder module instead so the import resolves and the attribute exists.
+    """
+
+    pattern = re.compile(
+        r"(?m)^(?P<indent>[ \t]*)import dartpy\.(?P<path>\w+(?:\.\w+)+) as (?P<alias>\w+)[ \t]*$"
+    )
+
+    def repl(match: re.Match[str]) -> str:
+        indent, path, alias = match.group("indent", "path", "alias")
+        return f'{indent}{alias} = __import__("types").ModuleType("dartpy.{path}")'
+
+    return pattern.sub(repl, text)
+
+
 def _sanitize_stub_source(text: str) -> str:
     """Rename invalid identifiers originating from the stub generator."""
 
@@ -93,7 +255,8 @@ def _sanitize_stub_source(text: str) -> str:
     for placeholder in ("std", "dart"):
         text = _rename_placeholder(text, placeholder)
 
-    return _strip_class_bases(text)
+    text = _neutralize_dynamic_submodule_imports(text)
+    return _fix_forward_references(_strip_class_bases(text))
 
 
 def _prepare_stub_modules(package: str) -> bool:
