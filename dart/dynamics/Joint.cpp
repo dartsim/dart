@@ -196,7 +196,11 @@ const std::string& Joint::getName() const
 //==============================================================================
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
+  if (mAspectProperties.mActuatorType == _actuatorType)
+    return;
+
   mAspectProperties.mActuatorType = _actuatorType;
+  resetCommands();
 }
 
 //==============================================================================
@@ -546,6 +550,15 @@ bool Joint::checkSanity(bool _printWarnings) const
 double Joint::getPotentialEnergy() const
 {
   return computePotentialEnergy();
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::integratePositions(
+    const Eigen::VectorXd& q0, const Eigen::VectorXd& v, double dt) const
+{
+  Eigen::VectorXd result(getNumDofs());
+  integratePositions(q0, v, dt, result);
+  return result;
 }
 
 //==============================================================================

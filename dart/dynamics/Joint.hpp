@@ -135,7 +135,8 @@ public:
   /// Gets a string representing the joint type
   virtual const std::string& getType() const = 0;
 
-  /// Set actuator type
+  /// Set actuator type. Switching types clears any cached commands so stale
+  /// inputs do not leak across actuator modes.
   void setActuatorType(ActuatorType _actuatorType);
 
   /// Get actuator type
@@ -597,6 +598,29 @@ public:
 
   /// Integrate positions using Euler method
   virtual void integratePositions(double _dt) = 0;
+
+  /// Integrate positions using Euler method, without reading or modifying this
+  /// Joint's internal state.
+  ///
+  /// This is useful for applications such as inverse kinematics where an
+  /// integration step should only depend on the provided initial position
+  /// (q0), the provided velocity (v), and the timestep (dt).
+  ///
+  /// @param[in] q0 The initial generalized coordinates of this Joint. Must have
+  /// the same size as getNumDofs().
+  /// @param[in] v The generalized velocity to integrate. Must have the same
+  /// size as getNumDofs().
+  /// @param[in] dt The timestep to integrate over.
+  /// @param[out] result The integrated generalized coordinates.
+  virtual void integratePositions(
+      const Eigen::VectorXd& q0,
+      const Eigen::VectorXd& v,
+      double dt,
+      Eigen::VectorXd& result) const = 0;
+
+  /// Convenience overload for integratePositions(q0, v, dt, result).
+  Eigen::VectorXd integratePositions(
+      const Eigen::VectorXd& q0, const Eigen::VectorXd& v, double dt) const;
 
   /// Integrate velocities using Euler method
   virtual void integrateVelocities(double _dt) = 0;
