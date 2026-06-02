@@ -1,0 +1,97 @@
+# Linux toolchain coverage: build + test DART under specific compiler
+# toolchains that the normal jobs do not exercise.
+#
+# This replaces the former Docker-based "Alt Linux repro" job, whose only
+# durable value was compiling DART with a substantially newer gcc/glibc/libstdc++
+# than the stock Ubuntu toolchain (the pixi environment pins no compiler, so
+# every other Linux job uses the runner's system compiler). We get that same
+# forward-compat signal with no container and none of the rolling-image / DinD
+# flakiness, by installing the requested compiler on a hosted runner and building
+# + testing through the existing pixi tasks.
+#
+# To add a toolchain (e.g. an oldest-supported gcc, or a pinned compiler), add a
+# row to the matrix below: { name, family (gcc|clang), version, cc, cxx }.
+
+name: CI Toolchain (Linux)
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  schedule:
+    # Run every Monday at 05:00 UTC (matches the former Alt Linux schedule).
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  toolchain:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    # Advisory: a brand-new compiler release may surface transient breakage, so
+    # this should not block merges (the former Alt Linux job was likewise
+    # continue-on-error).
+    continue-on-error: true
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc (newest)
+            family: gcc
+            version: "14"
+            cc: gcc-14
+            cxx: g++-14
+          - name: clang (newest)
+            family: clang
+            version: "19"
+            cc: clang-19
+            cxx: clang++-19
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install ${{ matrix.cc }}
+        env:
+          FAMILY: ${{ matrix.family }}
+          VERSION: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          if [ "${FAMILY}" = "gcc" ]; then
+            sudo apt-get update
+            sudo apt-get install -y "gcc-${VERSION}" "g++-${VERSION}"
+          else
+            # apt.llvm.org provides the newest Clang releases.
+            wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+            chmod +x /tmp/llvm.sh
+            sudo /tmp/llvm.sh "${VERSION}"
+            sudo apt-get install -y "clang-${VERSION}"
+          fi
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+
+      - name: Configure, build tests, and run ctest
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          set -euo pipefail
+          "${CC}" --version
+          # CC/CXX are honored by the `config` task's cmake invocation (it does
+          # not pin a compiler), so the whole tree is compiled with the selected
+          # toolchain.
+          pixi run config
+          pixi run build-tests
+          pixi run -- bash -c 'ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2'
