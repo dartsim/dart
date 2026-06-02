@@ -488,15 +488,22 @@ its own line so status updates remain git-history friendly.
 - Next step: Consume the PLAN-042 namespace/source-layout decision, then start
   the simulation-specific readiness audit, promoted-header manifest,
   Python import-layout transaction, and installed-package smoke design before
-  any broad `experimental/` source-tree move. The intended path is DART 7
-  official API promotion, not a DART 8 middle step.
+  any broad `experimental/` source-tree move. The readiness audit must keep the
+  promoted `World` double-backed and explicitly defer public scalar precision
+  selectors (`sx.World(dtype=...)`, `sx.World[...]`, scalar-specific aliases, or
+  a public C++ scalar-template facade) until DART 7 rigid-body and multibody
+  simulation is in good shape for humanoid locomotion and manipulation and a
+  separate scalar-instantiation plan proves the required ownership, binding,
+  serialization, collision, differentiability, package, and migration gates. The
+  intended path is DART 7 official API promotion, not a DART 8 middle step.
 - Gate: The planning PR passes the docs-only gates; implementation PRs must keep
   promotion-aware API-boundary checks, C++/Python tests, package/export smokes,
   stub/API-doc regeneration, and CUDA/full gates green according to the touched
   scope. The promoted public API must hide ECS, component, solver-registry,
-  backend, and implementation-folder details, and the installed package must
-  expose only final headers, final CMake targets/components, and final dartpy
-  module paths once promotion is claimed.
+  backend, implementation-folder, tensor framework, and unplanned
+  scalar-instantiation details, and the installed package must expose only final
+  headers, final CMake targets/components, and final dartpy module paths once
+  promotion is claimed.
 
 ### PLAN-042: DART 7 Public API And Source Layout
 

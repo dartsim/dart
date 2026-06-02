@@ -93,6 +93,19 @@ The plan incorporates three focused review perspectives before implementation:
   force implementation-only dependencies through public CMake targets or
   component files. Keep reduced-build and package smoke tests in the gate while
   the old option still exists.
+- **Scalar precision**: DART 7 promotion keeps the public `World` facade
+  double-backed. Public scalar-type support is deferred until the promoted
+  rigid-body and multibody stack is in good shape for humanoid locomotion and
+  manipulation. The promotion work should keep scalar support from becoming a
+  one-way door by avoiding unnecessary storage, handle, package, and API-boundary
+  commitments, but it should not add `sx.World(dtype=...)` or
+  `sx.World[...]` during promotion unless a dedicated scalar-instantiation plan
+  proves C++ ownership, bindings, stubs, serialization, collision,
+  differentiability, and package gates for every advertised scalar. If that
+  future plan makes precision public, the primary Python construction spelling
+  is `sx.World(dtype=sx.float64)` (or `WorldOptions(dtype=...)`) with concrete
+  scalar-specific implementation classes underneath as needed;
+  `sx.World[sx.float64]` is not the common runtime API.
 
 ## Workstreams
 
@@ -103,7 +116,8 @@ The plan incorporates three focused review perspectives before implementation:
    namespace/source-layout decision before freezing final public names. This step
    also decides whether PLAN-042's `check-simulation-public-header-allowlist`
    and `check-dartpy-import-layout` are new scripts or extensions of existing
-   API-boundary checks; it does not move source files.
+   API-boundary checks, and records the scalar-precision policy from the
+   simulation experimental API design docs; it does not move source files.
 2. **Build and package shape** - choose the final target/component/export-macro
    shape before the first promoted API PR. Make the official baseline API
    non-optional in default builds, update install/export rules, and add package
@@ -225,6 +239,11 @@ Open maintainer decisions before implementation:
   (recommended) versus a deprecate-then-remove transition.
 - Confirm the classic-world quarantine target name and that it stops exporting
   `dart::simulation::World`, or remove the classic implementation outright.
+- Confirm no public scalar-precision selector is added during DART 7 promotion.
+  A later scalar-instantiation plan may reopen precision after the DART 7
+  rigid-body and multibody baseline is ready for humanoid locomotion and
+  manipulation, but must keep the promoted `World` identity stable and prove its
+  own scalar-specific gates first.
 
 Current intended sequence:
 
@@ -336,6 +355,13 @@ Review these before implementation PRs:
 - The top-level `dartpy.World` decision is explicit: removed, deprecated, or
   identical to `dartpy.simulation.World`, with tests, stubs, docs, and wheel
   import smokes covering the chosen behavior.
+- The promoted DART 7 `World` API is documented as double-backed. No
+  `sx.World(dtype=...)`, `sx.World[...]`, scalar-specific `World` aliases, or
+  public C++ scalar-template facade is shipped unless a separate
+  scalar-instantiation plan supplies concrete ownership, dtype, identity,
+  serialization, collision, differentiability, package, and migration gates
+  after the DART 7 rigid-body and multibody locomotion/manipulation baseline is
+  strong enough to make scalar precision the next bounded design priority.
 - If migration aliases exist, the compatibility matrix covers
   `import dartpy.simulation`, `import dartpy.simulation_experimental`,
   `from dartpy import simulation_experimental as sx`, `sx.diff`, and

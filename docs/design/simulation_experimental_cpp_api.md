@@ -96,6 +96,35 @@ benchmark reports, or developer docs. They should not become required public
 type names, solver names, namespace names, or object identities unless a later
 design promotes a backend API intentionally.
 
+### Scalar Precision Policy
+
+The current `World` facade should remain double-precision unless a later
+scalar-instantiation design proves otherwise. The existing scalar-generic
+compute lessons remain useful for internal kernels, SIMD, autodiff experiments,
+and future explicit instantiations, but they are not themselves a public
+`World` precision contract.
+
+Keep scalar-generic internals from becoming a one-way door where reasonable:
+avoid hard-coding storage, handle, package, or boundary decisions that would
+make a future scalar-instantiation plan unnecessarily invasive.
+
+Do not promote scalar precision by forking the user-facing `World` identity or
+by making backend/runtime precision names part of the required public type name.
+A later public scalar-precision design must first define:
+
+- concrete C++ instantiation ownership for `World`, options, handles, state,
+  derivative, serialization, and package/export symbols;
+- finite-difference, determinism, collision, Python, and installed-package
+  gates for every advertised scalar;
+- migration behavior for existing double-backed code; and
+- API-boundary checks proving no solver, backend, ECS, or tensor-framework
+  implementation type leaks into promoted headers.
+
+Until those gates exist, scalar-generic rewrites should instantiate only the
+supported public scalar and keep alternate precision or autodiff scalar choices
+behind internal tests, benchmarks, or explicitly experimental developer
+surfaces.
+
 ### One World, Multiple Runtime Intents
 
 The same `World` should support full physics and kinematics-only workflows.

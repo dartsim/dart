@@ -33,39 +33,25 @@
 #pragma once
 
 #include <dart/simulation/experimental/entity.hpp>
-#include <dart/simulation/experimental/frame/frame.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+#include <entt/entt.hpp>
 
-namespace dart::simulation::experimental {
+#include <cstdint>
 
-/// FreeFrame - freely positionable frame
-///
-/// A FreeFrame can be positioned and oriented freely in space relative
-/// to its parent frame. The transform can be set independently by the user.
-///
-/// Use cases:
-/// - Moving coordinate frames
-/// - User-controlled reference frames
-/// - Camera frames
-/// - Target frames for IK
-///
-/// DART6 equivalent: SimpleFrame (with modifiable transform)
-class DART_EXPERIMENTAL_API FreeFrame : public Frame
+namespace dart::simulation::experimental::detail {
+
+/// Internal seam converting the public opaque `Entity` token to the ECS entity
+/// handle. Keep all `Entity` <-> `entt::entity` conversions here so public
+/// headers never depend on the storage backend.
+[[nodiscard]] inline entt::entity toRegistryEntity(Entity entity)
 {
-public:
-  /// Constructor (package-private, use World::addFreeFrame)
-  FreeFrame(Entity entity, World* world);
+  return static_cast<entt::entity>(entity.value);
+}
 
-  //--------------------------------------------------------------------------
-  // Transform API
-  //--------------------------------------------------------------------------
+/// Internal seam converting an ECS entity handle to the public opaque `Entity`.
+[[nodiscard]] inline Entity fromRegistryEntity(entt::entity entity)
+{
+  return Entity{static_cast<std::uint32_t>(entity)};
+}
 
-  /// Set the fixed local transform offset
-  ///
-  /// @param transform New fixed transform offset from parent frame
-  void setLocalTransform(const Eigen::Isometry3d& transform);
-};
-
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation::experimental::detail
