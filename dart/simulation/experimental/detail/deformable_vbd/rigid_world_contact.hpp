@@ -40,6 +40,7 @@
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 
 #include <entt/entt.hpp>
 
@@ -390,8 +391,8 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
   for (std::size_t contactIndex = 0; contactIndex < contacts.size();
        ++contactIndex) {
     const Contact& contact = contacts[contactIndex];
-    const entt::entity entityA = contact.bodyA.getEntity();
-    const entt::entity entityB = contact.bodyB.getEntity();
+    const entt::entity entityA = toRegistryEntity(contact.bodyA.getEntity());
+    const entt::entity entityB = toRegistryEntity(contact.bodyB.getEntity());
     if (entityA == entt::null || entityB == entt::null || entityA == entityB
         || contact.depth <= 0.0 || !std::isfinite(contact.depth)
         || !contact.point.allFinite() || !contact.normal.allFinite()

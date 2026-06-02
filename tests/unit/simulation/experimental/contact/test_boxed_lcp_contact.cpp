@@ -138,8 +138,13 @@ TEST(AvbdContact, CompoundShapeFeatureKeysUseContactedShapeIndex)
   const std::vector<sx::Contact> contacts = world.collide();
   ASSERT_FALSE(contacts.empty());
   const sx::Contact& contact = contacts.front();
-  const bool compoundIsA = contact.bodyA.getEntity() == compound.getEntity();
-  ASSERT_TRUE(compoundIsA || contact.bodyB.getEntity() == compound.getEntity());
+  const bool compoundIsA
+      = sx::detail::toRegistryEntity(contact.bodyA.getEntity())
+        == compound.getEntity();
+  ASSERT_TRUE(
+      compoundIsA
+      || sx::detail::toRegistryEntity(contact.bodyB.getEntity())
+             == compound.getEntity());
   const std::size_t compoundShapeIndex
       = compoundIsA ? contact.shapeIndexA : contact.shapeIndexB;
   const Eigen::Vector3d compoundLocalPoint

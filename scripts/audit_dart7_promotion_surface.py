@@ -75,10 +75,15 @@ LEAK_PATTERNS = {
     "entt-include": re.compile(r"#\s*include\s*<entt[/>]"),
     "entt-symbol": re.compile(r"\bentt::"),
     "getRegistry": re.compile(r"\bgetRegistry\b"),
-    "comps-include": re.compile(
-        r"#\s*include\s*[<\"]dart/simulation/experimental/comps/"
+    # Any include of an internal-only experimental directory is a leak in a
+    # promoted header. Derived from INTERNAL_DIRS so every internal path is
+    # covered (comps/ecs/detail/diff/compute/io/common/space), not just a
+    # hardcoded subset: a promoted header must not require hidden internals.
+    "internal-include": re.compile(
+        r"#\s*include\s*[<\"]dart/simulation/experimental/("
+        + "|".join(INTERNAL_DIRS)
+        + r")/"
     ),
-    "ecs-include": re.compile(r"#\s*include\s*[<\"]dart/simulation/experimental/ecs/"),
     "comps-symbol": re.compile(r"\bcomps::"),
     "entity-object-base": re.compile(r"\bEntityObject(With)?\b"),
 }
