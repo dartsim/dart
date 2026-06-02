@@ -344,7 +344,7 @@ TEST_F(JOINTS, PLANAR_JOINT)
 }
 
 //==============================================================================
-TEST_F(Joints, PlanarJointIsometry2dHelpers)
+TEST_F(JOINTS, PlanarJointIsometry2dHelpers)
 {
   SkeletonPtr skel = Skeleton::create("planar_helpers");
   auto pair = skel->createJointAndBodyNodePair<PlanarJoint>();
@@ -1608,7 +1608,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 }
 
 //==============================================================================
-TEST_F(Joints, IntegratePositionsStateIndependent)
+TEST_F(JOINTS, IntegratePositionsStateIndependent)
 {
   constexpr double dt = 0.25;
   constexpr double tol = 1e-12;
@@ -1693,7 +1693,7 @@ TEST_F(Joints, IntegratePositionsStateIndependent)
 }
 
 //==============================================================================
-TEST_F(Joints, JacobianMethodGradientConversionDoesNotModifySkeletonState)
+TEST_F(JOINTS, JacobianMethodGradientConversionDoesNotModifySkeletonState)
 {
   SkeletonPtr skel = Skeleton::create("ik_stateless_integration");
   auto [joint, body] = skel->createJointAndBodyNodePair<BallJoint>();
@@ -1719,4 +1719,3 @@ TEST_F(Joints, JacobianMethodGradientConversionDoesNotModifySkeletonState)
   EXPECT_VECTOR_NEAR(positionsBefore, skel->getPositions(), 0.0);
   EXPECT_VECTOR_NEAR(velocitiesBefore, skel->getVelocities(), 0.0);
 }
-
