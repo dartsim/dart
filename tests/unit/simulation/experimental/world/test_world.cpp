@@ -5449,9 +5449,9 @@ TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
   EXPECT_TRUE(body.getTransform().isApprox(expectedWorldTransform));
 }
 
-// Test that the default non-IPC pipeline advances kinematic rigid bodies by
-// their prescribed velocity while keeping them immune to forces and gravity.
-TEST(World, StepAdvancesKinematicRigidBodyWithDefaultSolver)
+// Test that the default non-IPC pipeline preserves kinematic rigid bodies as
+// prescribed obstacles while keeping them immune to forces and gravity.
+TEST(World, StepPreservesKinematicRigidBodyWithDefaultSolver)
 {
   namespace sx = dart::simulation::experimental;
 
@@ -5477,15 +5477,8 @@ TEST(World, StepAdvancesKinematicRigidBodyWithDefaultSolver)
 
   world.step();
 
-  const Eigen::Vector3d expectedPosition
-      = initialPosition + linearVelocity * world.getTimeStep();
-  const Eigen::Quaterniond expectedOrientation(
-      Eigen::AngleAxisd(
-          0.25 + angularVelocity.z() * world.getTimeStep(),
-          Eigen::Vector3d::UnitZ()));
-
-  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition));
-  EXPECT_TRUE(body.getQuaternion().isApprox(expectedOrientation));
+  EXPECT_TRUE(body.getTranslation().isApprox(initialPosition));
+  EXPECT_TRUE(body.getQuaternion().isApprox(initialOrientation));
   EXPECT_TRUE(body.getLinearVelocity().isApprox(linearVelocity));
   EXPECT_TRUE(body.getAngularVelocity().isApprox(angularVelocity));
 }

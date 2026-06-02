@@ -7847,8 +7847,9 @@ void RigidBodyPositionStage::execute(
       comps::FrameState,
       comps::FrameCache>();
   for (auto entity : view) {
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
-      continue; // Static bodies do not move under this stage.
+    if (registry.all_of<comps::StaticBodyTag>(entity)
+        || registry.all_of<comps::KinematicBodyTag>(entity)) {
+      continue; // Static and kinematic bodies do not move under this stage.
     }
     integrateRigidBodyPosition(registry, entity, timeStep);
   }
