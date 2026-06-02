@@ -263,6 +263,15 @@ inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
          * (point - transform->position);
 }
 
+// All shapes of a compound body share one contact-feature id namespace, so each
+// shape is given a disjoint block of feature ids of this size (the full
+// single-shape box+cylinder+capsule range). The per-type packer offsets only
+// reserve room for a single shape of each type, so a box at one shape index
+// would otherwise alias a cylinder/capsule at another and collapse distinct
+// shapes onto the same warm-start row.
+inline constexpr std::uint64_t kAvbdRigidWorldShapeFeatureStride
+    = kAvbdCapsuleContactFeatureIdOffset + kAvbdCapsuleContactFeatureCodeCount;
+
 //==============================================================================
 inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     const entt::registry& registry,
@@ -289,17 +298,21 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
     return endpoint;
   }
 
-  // Pass the colliding shape index into the feature-id packers: each shape
-  // gets a disjoint feature-id sub-range, so contacts on distinct shapes of one
-  // compound body keep separate warm-start rows instead of aliasing onto
-  // shape 0.
+  // Offset every shape's feature id into its own disjoint block so distinct
+  // shapes of one compound body never share a warm-start row. The per-type
+  // packers are called with local index 0 — their box/cylinder/capsule offsets
+  // keep the shape types disjoint within a block — and the shapeBlock term
+  // provides the cross-shape separation the per-type index multiplier cannot,
+  // since each type's offset only reserves room for a single shape.
+  const std::uint64_t shapeBlock
+      = shapeIndex * kAvbdRigidWorldShapeFeatureStride;
   if (shape.type == CollisionShapeType::Box && shape.halfExtents.allFinite()
       && (shape.halfExtents.array() > 0.0).all()) {
     const std::uint64_t featureCode
         = avbdBoxContactFeatureCode(localPoint, shape.halfExtents);
     endpoint.feature = packAvbdContactFeatureId(
         avbdBoxContactFeatureKind(featureCode),
-        packAvbdBoxContactFeatureId(shapeIndex, featureCode));
+        shapeBlock + packAvbdBoxContactFeatureId(0, featureCode));
   } else if (
       shape.type == CollisionShapeType::Cylinder && std::isfinite(shape.radius)
       && shape.radius > 0.0 && shape.halfExtents.allFinite()
@@ -308,7 +321,7 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
         localPoint, shape.radius, shape.halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCylinderContactFeatureKind(featureCode),
-        packAvbdCylinderContactFeatureId(shapeIndex, featureCode));
+        shapeBlock + packAvbdCylinderContactFeatureId(0, featureCode));
   } else if (
       shape.type == CollisionShapeType::Capsule && std::isfinite(shape.radius)
       && shape.radius > 0.0 && shape.halfExtents.allFinite()
@@ -317,7 +330,7 @@ inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
         = avbdCapsuleContactFeatureCode(localPoint, shape.halfExtents.z());
     endpoint.feature = packAvbdContactFeatureId(
         avbdCapsuleContactFeatureKind(featureCode),
-        packAvbdCapsuleContactFeatureId(shapeIndex, featureCode));
+        shapeBlock + packAvbdCapsuleContactFeatureId(0, featureCode));
   }
   return endpoint;
 }
