@@ -2718,6 +2718,8 @@ void World::loadBinary(std::istream& input)
 
   if (m_simulationMode) {
     updateKinematics();
+    detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+        m_registry);
   }
 }
 

@@ -437,6 +437,70 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
 }
 
 //==============================================================================
+// Saving after simulation mode should also preserve the public fixed joint. A
+// loaded simulation-mode world cannot re-enter simulation mode, so loadBinary()
+// must rebuild the private AVBD row config directly.
+TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+
+  world.enterSimulationMode();
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+  ASSERT_TRUE(restored.isSimulationMode());
+
+  auto restoredBase = restored.getRigidBody("base");
+  auto restoredLink = restored.getRigidBody("link");
+  ASSERT_TRUE(restoredBase.has_value());
+  ASSERT_TRUE(restoredLink.has_value());
+
+  auto& registry = restored.getRegistry();
+  entt::entity jointEntity = entt::null;
+  auto jointView = registry.view<sx::comps::Joint, sx::comps::Name>();
+  for (const entt::entity entity : jointView) {
+    const auto& name = jointView.get<sx::comps::Name>(entity);
+    if (name.name == "base_to_link") {
+      jointEntity = entity;
+      break;
+    }
+  }
+  ASSERT_TRUE(jointEntity != entt::null);
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_NEAR(
+      (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  restoredLink->setTransform(driftedPose);
+
+  restored.step();
+
+  EXPECT_LT(std::abs(restoredLink->getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
 // The no-contact fixed-joint path should also route angular rows through the
 // private AVBD projection instead of only correcting point-anchor drift.
 TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
