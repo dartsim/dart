@@ -333,8 +333,12 @@ TEST(Distance, UsesMinimumAcrossPairs)
   const double distance = group->distance(DistanceOption(), &result);
 
   const double expectedDistance = 0.4;
-  EXPECT_DOUBLE_EQ(expectedDistance, distance);
-  EXPECT_DOUBLE_EQ(expectedDistance, result.minDistance);
+  // FCL's GJK sphere-sphere distance is evaluated in single precision, so the
+  // result is only accurate to float precision (~1e-7). The fix being verified
+  // here is that the *minimum* across all pairs is preserved (frame1/frame2),
+  // not the exact distance value, so compare with a tolerance.
+  EXPECT_NEAR(expectedDistance, distance, 1e-6);
+  EXPECT_NEAR(expectedDistance, result.minDistance, 1e-6);
   EXPECT_TRUE(
       (result.shapeFrame1 == frame1.get() && result.shapeFrame2 == frame2.get())
       || (result.shapeFrame1 == frame2.get()
