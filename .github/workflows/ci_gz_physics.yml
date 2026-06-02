@@ -9,6 +9,12 @@ on:
   pull_request:
     branches:
       - "release-*"
+      # main is included so the required "GZ Physics Tests" status always
+      # reports on main PRs. The heavy gz-physics suite stays a manual canary on
+      # main (see test_gazebo's condition below): the job reports "skipped"
+      # there, which branch protection treats as passing, so main PRs are no
+      # longer blocked waiting for a context that never runs.
+      - "main"
   workflow_dispatch:
 
 concurrency:
@@ -36,12 +42,20 @@ jobs:
 
   test_gazebo:
     needs: changes
+    # Run the full gz-physics suite only where it is part of required coverage:
+    # release-line pushes/PRs (the DART 6 support lane), the manual migration
+    # canary (workflow_dispatch), and scheduled runs. On main PRs the job is
+    # intentionally skipped so the required "GZ Physics Tests" context still
+    # reports (a skipped required check passes branch protection) without
+    # running the heavy suite on every main PR.
     if: >-
       (needs.changes.outputs.full_ci == 'true' ||
       needs.changes.outputs.core_branch_push == 'true') &&
       (github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
-      needs.changes.outputs.code == 'true')
+      (needs.changes.outputs.code == 'true' &&
+      (startsWith(github.base_ref, 'release-') ||
+      startsWith(github.ref, 'refs/heads/release-'))))
     name: GZ Physics Tests
     runs-on: ubuntu-latest
     env:

@@ -227,18 +227,18 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 ### Core CI Workflows
 
-| Workflow             | Purpose               | Platforms      | Trigger                               | Doc-only skip |
-| -------------------- | --------------------- | -------------- | ------------------------------------- | ------------- |
-| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | Any branch push, PR, manual           | No            |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | Branch push core; PR/main full        | Yes           |
-| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule       | Yes           |
-| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule       | Yes           |
-| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                      | N/A           |
-| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                  | N/A           |
-| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | Path-scoped PR; trusted GPU runtime   | N/A           |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Release-branch push/PR; manual canary | Yes           |
-| `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual         | N/A           |
-| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule   | Yes           |
+| Workflow             | Purpose               | Platforms      | Trigger                                                  | Doc-only skip |
+| -------------------- | --------------------- | -------------- | -------------------------------------------------------- | ------------- |
+| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | Any branch push, PR, manual                              | No            |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | Branch push core; PR/main full                           | Yes           |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule                          | Yes           |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule                          | Yes           |
+| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                                         | N/A           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                                     | N/A           |
+| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | Path-scoped PR; trusted GPU runtime                      | N/A           |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Release push/PR; main PR (skipped report); manual canary | Yes           |
+| `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual                            | N/A           |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule                      | Yes           |
 
 ### CI Tiering Policy
 
@@ -258,7 +258,14 @@ Guardrails:
 
 - Keep gz-physics compatibility required for release-line PRs that maintain the
   DART 6 support lane. On `main`/DART 7, use `ci_gz_physics.yml` as a manual
-  migration canary when downstream compatibility evidence is needed.
+  migration canary when downstream compatibility evidence is needed. The
+  `GZ Physics Tests` context is required by `main` branch protection, so
+  `ci_gz_physics.yml` also triggers on `main` PRs solely to report that context:
+  the `test_gazebo` job is skipped there (a skipped required check passes branch
+  protection), keeping `main` PRs unblocked without running the heavy suite on
+  every PR. The full suite still runs on release pushes/PRs, the manual canary
+  (`workflow_dispatch`), and schedules. Without this, a required context that
+  never reports leaves every `main` PR blocked pending an admin merge.
 - Treat core branch-push CI as early feedback only. It should be useful enough
   before a PR exists, but it is not a substitute for the required PR tier.
 - Do not move a job from required PR coverage to continuous-only coverage
