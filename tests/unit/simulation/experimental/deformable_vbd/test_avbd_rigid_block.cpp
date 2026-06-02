@@ -1303,6 +1303,61 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotPersistsFeatureScopedRows)
 }
 
 //==============================================================================
+// A compound body carries several collision shapes; a contact on a secondary
+// shape must be encoded in that shape's own feature-id sub-range (using the
+// shape's local frame and index), not aliased onto shape 0. Without per-shape
+// scoping the two contacts below would collapse to the same warm-start row.
+// Regression for the multi-shape CollisionGeometry endpoint fix.
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotScopesFeatureToCollidingShape)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  auto compound = world.addRigidBody("compound");
+  compound.addCollisionShape(sx::CollisionShape::makeBox(Vec3(1.0, 1.0, 1.0)));
+  sx::CollisionShape offsetBox
+      = sx::CollisionShape::makeBox(Vec3(0.5, 0.5, 0.5));
+  offsetBox.localTransform.translation() = Vec3(4.0, 0.0, 0.0);
+  compound.addCollisionShape(offsetBox);
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Vec3(2.0, 0.0, 0.0);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const sx::CollisionBody compoundBody(compound.getEntity(), &world);
+  const sx::CollisionBody sphereBody(sphere.getEntity(), &world);
+
+  // Same +x face hit, but on different shapes of the compound body: the first
+  // on the primary box (shape 0), the second on the offset box (shape 1). The
+  // offset point expressed in shape 1's local frame is (0.5, 0.1, 0.0), i.e.
+  // its own +x face.
+  sx::Contact onShape0{
+      compoundBody, sphereBody, Vec3(1.0, 0.1, 0.0), Vec3::UnitX(), 0.1};
+  onShape0.shapeIndexA = 0;
+  sx::Contact onShape1{
+      compoundBody, sphereBody, Vec3(4.5, 0.1, 0.0), Vec3::UnitX(), 0.1};
+  onShape1.shapeIndexA = 1;
+  const std::vector<sx::Contact> contacts{onShape0, onShape1};
+
+  const vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+
+  ASSERT_EQ(snapshot.contacts.size(), 2u);
+  // Distinct shapes must not alias onto the same feature id.
+  EXPECT_NE(
+      snapshot.contacts[0].endpointA.feature,
+      snapshot.contacts[1].endpointA.feature);
+  // Both contacts resolve to a box face once mapped into their own shape frame.
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[0].endpointA.feature),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[1].endpointA.feature),
+      vbd::AvbdContactFeatureKind::Face);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCylinderFeatureIds)
 {
   sx::World world;
