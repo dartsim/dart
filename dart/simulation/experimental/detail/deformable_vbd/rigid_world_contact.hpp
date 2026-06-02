@@ -222,6 +222,59 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
 }
 
 //==============================================================================
+inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+    entt::registry& registry)
+{
+  std::size_t configured = 0;
+  const auto view = registry.view<comps::Joint>(
+      entt::exclude<AvbdRigidWorldPointJointConfig>);
+
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
+        || joint.childLink == entt::null
+        || joint.parentLink == joint.childLink) {
+      continue;
+    }
+
+    const auto* configA
+        = registry.try_get<comps::RigidAvbdContactConfig>(joint.parentLink);
+    const auto* configB
+        = registry.try_get<comps::RigidAvbdContactConfig>(joint.childLink);
+    if ((configA == nullptr || !configA->enabled)
+        && (configB == nullptr || !configB->enabled)) {
+      continue;
+    }
+
+    double startStiffness = 0.0;
+    double maxStiffness = std::numeric_limits<double>::infinity();
+    const auto absorb = [&](const comps::RigidAvbdContactConfig& config) {
+      if (!config.enabled) {
+        return;
+      }
+      startStiffness = std::max(startStiffness, config.startStiffness);
+      maxStiffness = std::min(maxStiffness, config.maxStiffness);
+    };
+    if (configA != nullptr) {
+      absorb(*configA);
+    }
+    if (configB != nullptr) {
+      absorb(*configB);
+    }
+    if (maxStiffness < startStiffness) {
+      maxStiffness = startStiffness;
+    }
+
+    if (configureAvbdRigidWorldFixedJointFromCurrentPose(
+            registry, entity, startStiffness, maxStiffness)) {
+      ++configured;
+    }
+  }
+
+  return configured;
+}
+
+//==============================================================================
 inline Eigen::Isometry3d avbdRigidWorldContactFrameLocalTransform(
     const entt::registry& registry, entt::entity entity)
 {

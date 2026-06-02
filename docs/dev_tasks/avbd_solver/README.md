@@ -189,8 +189,10 @@ Paper audit:
     The internal contact-stage AVBD opt-in can also project those fixed-joint
     rows with or without active contact rows. A private current-pose bridge can
     now derive AVBD local anchors and target relative orientation for
-    rigid-body-linked fixed joints, and it explicitly rejects multibody link
-    endpoints until those bodies have a real articulated AVBD state path.
+    rigid-body-linked fixed joints. Missing private AVBD fixed-joint configs are
+    initialized from the simulation-entry pose only for opt-in rigid bodies, and
+    multibody link endpoints are explicitly rejected until those bodies have a
+    real articulated AVBD state path.
     Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, and
@@ -254,7 +256,8 @@ numbers.
    snapshot/step point-joint append/solve/apply coverage plus fixed-joint ECS
    extraction through the step helper and the internal contact-stage velocity
    projection with or without active contacts, plus an explicit rigid-body
-   fixed-joint current-pose config bridge, have narrow CPU paths.
+   fixed-joint current-pose config bridge and simulation-entry config
+   initialization for opt-in rigid bodies, have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

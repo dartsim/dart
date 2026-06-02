@@ -215,6 +215,56 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
 }
 
 //==============================================================================
+// Missing private fixed-joint configs should be initialized from the
+// design-time pose on opt-in rigid bodies when simulation mode starts, not
+// re-baselined from later drift.
+TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = world.getRegistry();
+  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      link.getEntity());
+
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = base.getEntity();
+  joint.childLink = link.getEntity();
+
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  world.enterSimulationMode();
+
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_NEAR(
+      (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  link.setTransform(driftedPose);
+
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
 // The no-contact fixed-joint path should also route angular rows through the
 // private AVBD projection instead of only correcting point-anchor drift.
 TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)

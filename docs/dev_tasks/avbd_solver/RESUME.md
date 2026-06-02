@@ -102,8 +102,10 @@ fixed-joint ECS extractor plus step-helper overload for rigid-body-linked joint
 entities, plus internal contact-stage velocity-projection coverage for those
 fixed-joint rows with or without active contacts. This checkpoint adds a private
 fixed-joint pose bridge that converts a rigid-body-linked fixed joint's current
-pose into AVBD local anchors and target relative orientation, plus regression
-coverage that multibody links are not silently treated as rigid AVBD bodies.
+pose into AVBD local anchors and target relative orientation, initializes
+missing private AVBD fixed-joint configs for opt-in rigid bodies at simulation
+entry, and adds regression coverage that multibody links are not silently
+treated as rigid AVBD bodies.
 
 ## Immediate Next Step
 
@@ -120,7 +122,8 @@ private cylinder side/cap/rim and capsule side/top-cap/bottom-cap endpoint
 features, and private point-joint linear/angular/combined rows with step-start
 previous constraint values and private World snapshot/step append/solve/apply
 coverage plus fixed-joint ECS extraction through the step helper and an
-explicit current-pose rigid-body fixed-joint config bridge exist.
+explicit current-pose rigid-body fixed-joint config bridge plus simulation-entry
+config initialization for opt-in rigid bodies exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row

@@ -51,6 +51,7 @@
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure_spec.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/experimental/diff/physical_parameter.hpp"
 #include "dart/simulation/experimental/diff/step_derivatives.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
@@ -1703,6 +1704,8 @@ void World::enterSimulationMode()
 
   // Initial bake so that cached transforms are up-to-date.
   updateKinematics();
+  detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+      m_registry);
 }
 
 //==============================================================================
