@@ -293,4 +293,29 @@ std::size_t deformablePsdResidentBufferAllocationCount() noexcept
   return residentDeviceBuffer().allocationCount();
 }
 
+namespace {
+
+// Register the CUDA PSD accelerator with the backend-neutral core control at
+// load time, so the runtime (and the dartpy bindings) can toggle GPU offload
+// without the public API naming CUDA. Consumers that want the accelerated path
+// force-link this static library (see the dartpy whole-archive link) so this
+// registrar runs.
+struct CudaPsdAcceleratorRegistrar
+{
+  CudaPsdAcceleratorRegistrar()
+  {
+    setDeformablePsdAccelerator(
+        {&isCudaRuntimeAvailable,
+         []() -> bool {
+           installCudaDeformablePsdBackend();
+           return true;
+         },
+         &restoreDefaultDeformablePsdBackend});
+  }
+};
+
+const CudaPsdAcceleratorRegistrar g_cudaPsdAcceleratorRegistrar;
+
+} // namespace
+
 } // namespace dart::simulation::experimental::compute::cuda

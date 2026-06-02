@@ -194,6 +194,8 @@ Springer, 2006.
 | `gjk-1988`                         | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                                                  | collision                          | implemented | —        | adopt     |
 | `ipc-2020`                         | Li et al., "Incremental Potential Contact" (2020)                                                                          | contact                            | in-progress | high     | adopt     |
 | `rigid-ipc-2021`                   | Ferguson et al., "Intersection-free Rigid Body Dynamics" (2021)                                                            | contact                            | in-progress | high     | adopt     |
+| `lan-2022-abd`                     | Lan et al., "Affine Body Dynamics" (2022)                                                                                  | contact/dynamics                   | planned     | high     | adopt     |
+| `chen-2022-unified-newton-barrier` | Chen et al., "A Unified Newton Barrier Method for Multibody Dynamics" (2022)                                               | contact/integration/multibody      | planned     | high     | adopt     |
 | `lan-2022-pdipc`                   | Lan et al., "Penetration-free Projective Dynamics on the GPU" (2022)                                                       | contact/integration/GPU            | planned     | high     | evaluate  |
 | `chen-2023-spb`                    | Chen, Diaz & Yuksel, "Shortest Path to Boundary for Self-Intersecting Meshes" (2023)                                       | contact/collision                  | planned     | high     | evaluate  |
 | `werling-2021`                     | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
@@ -410,6 +412,93 @@ Related public resources:
   smoothed friction, same-domain rigid method selection, CPU/GPU benchmark
   packets, comparison baselines, and headless Filament evidence for promoted
   scenes.
+
+### `lan-2022-abd`
+
+Lei Lan, Danny M. Kaufman, Minchen Li, Chenfanfu Jiang, and Yin Yang.
+"Affine Body Dynamics: Fast, Stable & Intersection-free Simulation of Stiff
+Materials." _ACM Transactions on Graphics_, 41(4), Article 67, 2022. DOI:
+[10.1145/3528223.3530064](https://doi.org/10.1145/3528223.3530064).
+
+Related public resources:
+
+- Paper: [arxiv.org/abs/2201.10022](https://arxiv.org/abs/2201.10022)
+- Presentation deck used for PLAN-083:
+  [Multibody ABD deck](https://games-1312234642.cos.ap-guangzhou.myqcloud.com/pdf/Games2022242%E6%9D%8E%E6%97%BB%E8%BE%B0.pdf)
+
+```bib
+@article{Lan2022ABD,
+  author = {Lei Lan and Danny M. Kaufman and Minchen Li and Chenfanfu Jiang and Yin Yang},
+  title = {Affine Body Dynamics: Fast, Stable \& Intersection-free Simulation of Stiff Materials},
+  journal = {ACM Transactions on Graphics},
+  volume = {41},
+  number = {4},
+  articleno = {67},
+  year = {2022},
+  doi = {10.1145/3528223.3530064}
+}
+```
+
+- **Type:** paper · **Topic:** contact/dynamics · **Status:** planned · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-083`](https://github.com/dartsim/dart/blob/main/docs/plans/083-unified-newton-barrier-multibody.md)
+  as the planned affine/stiff-body representation track, coordinated with
+  [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-rigid-implicit-barrier-contact.md).
+- **Notes:** ABD is the planned reduced stiff-body branch of DART's unified
+  Newton-barrier family. It treats a stiff body as a compact affine coordinate
+  system with an orthogonality stiffness, preserving IPC-style
+  nonintersection/friction guarantees while avoiding the expensive curved
+  trajectory machinery of exact rigid IPC.
+
+  DART should evaluate ABD as an additional internal method family, not as an
+  immediate replacement for the existing exact/reduced rigid IPC path. A
+  promoted ABD slice must prove correctness against rigid IPC fixtures, current
+  DART rigid contact scenes, and the paper/deck benchmarks before any default
+  solver behavior changes. Public APIs should use DART-owned names such as
+  affine stiff-body dynamics rather than exposing `ABD` as a user-facing solver
+  identity.
+
+### `chen-2022-unified-newton-barrier`
+
+Yunuo Chen, Minchen Li, Lei Lan, Hao Su, Yin Yang, and Chenfanfu Jiang. "A
+Unified Newton Barrier Method for Multibody Dynamics." _ACM Transactions on
+Graphics_, 41(4), Article 66, 2022. DOI:
+[10.1145/3528223.3530076](https://doi.org/10.1145/3528223.3530076).
+
+Related public resources:
+
+- Paper PDF supplied for PLAN-083:
+  [UCSD-hosted PDF](https://cseweb.ucsd.edu/~haosu/Other_Doc/papers_212s4-yaml25_finalppr.pdf)
+
+```bib
+@article{Chen2022UnifiedNewtonBarrier,
+  author = {Yunuo Chen and Minchen Li and Lei Lan and Hao Su and Yin Yang and Chenfanfu Jiang},
+  title = {A Unified Newton Barrier Method for Multibody Dynamics},
+  journal = {ACM Transactions on Graphics},
+  volume = {41},
+  number = {4},
+  articleno = {66},
+  year = {2022},
+  doi = {10.1145/3528223.3530076}
+}
+```
+
+- **Type:** paper · **Topic:** contact/integration/multibody · **Status:** planned · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-083`](https://github.com/dartsim/dart/blob/main/docs/plans/083-unified-newton-barrier-multibody.md)
+  as the cross-variant plan for consolidating deformable IPC, rigid IPC, ABD,
+  articulation constraints, restitution, CPU/GPU evidence, and py-demos examples.
+- **Notes:** This paper is the target for DART's unified Newton-barrier
+  multibody direction. It combines IPC-style contact/friction, affine/stiff
+  bodies, deformables, codimensional geometry, linear equality constraints
+  through change of variables, nonlinear equality penalties, inequality barrier
+  ranges, BDF-2 integration, and semi-implicit Rayleigh damping for restitution.
+
+  DART should implement the method as a DART-owned solver family inside the
+  experimental `World`, using PLAN-081 and PLAN-082 as variant owners and
+  PLAN-083 as the shared API/kernel/benchmark plan. Completion requires mapped
+  figure/table/unit-test coverage, py-demos examples, CPU and GPU benchmark
+  packets, and explicit comparisons against DART incumbents, upstream
+  references, and paper-reported numbers. The paper and deck remain references
+  and baselines, not runtime dependencies.
 
 ### `lan-2022-pdipc`
 

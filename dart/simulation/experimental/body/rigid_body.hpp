@@ -42,6 +42,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace dart::simulation::experimental {
 
@@ -210,6 +211,13 @@ public:
   /// `World::collide()` collision queries. Dimensions must be positive.
   void setCollisionShape(const CollisionShape& shape);
 
+  /// Add a collision shape without replacing existing shapes.
+  ///
+  /// Multiple shapes attached to one body are treated as a compound collision
+  /// geometry by `World::collide()`. Shapes on the same body do not collide
+  /// with each other.
+  void addCollisionShape(const CollisionShape& shape);
+
   /// Set whether this static collision shape acts as a one-sided z-up ground
   /// barrier for experimental deformable bodies.
   ///
@@ -246,7 +254,12 @@ public:
   [[nodiscard]] bool isDeformableObstacleBarrierOnly() const;
 
   /// Get this body's collision shape, if one is attached.
+  ///
+  /// For compound collision geometry this returns the first attached shape.
   [[nodiscard]] std::optional<CollisionShape> getCollisionShape() const;
+
+  /// Get all collision shapes attached to this body.
+  [[nodiscard]] std::vector<CollisionShape> getCollisionShapes() const;
 
   /// Return whether this body has a collision shape attached.
   [[nodiscard]] bool hasCollisionShape() const;

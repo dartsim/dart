@@ -332,6 +332,11 @@ DART-owned implementation.
   target type: `test`, `benchmark`, `example`, `manual`, or `not-applicable`.
 - Public DART APIs should keep DART-owned names and avoid exposing upstream
   IPC solver vocabulary as user-facing solver selectors.
+- PLAN-083 is the cross-variant Newton-barrier owner. Before adding another
+  deformable-local distance, barrier, tangent, CCD, friction, PSD, sparse
+  Newton, diagnostics, benchmark, or visual-evidence primitive, check whether it
+  should become a shared internal contract with rigid IPC or the planned ABD
+  track instead.
 
 ## Immediate Next Steps
 

@@ -40,9 +40,13 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <entt/entity/entity.hpp> // entt::entity and entt::null for the
+                                  // link-contact structs below
 #include <entt/fwd.hpp>
 
+#include <span>
 #include <string_view>
+#include <vector>
 
 namespace dart::simulation::experimental::comps {
 struct MultibodyStructure;
@@ -152,6 +156,114 @@ computeMultibodyLinkWorldJacobian(
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
+/// One contact acting on a single link of a multibody, oriented so the normal
+/// points from the obstacle into the link. The obstacle is either immovable
+/// (`otherBody == entt::null` and `otherLink == entt::null`, a one-sided
+/// solve), a dynamic rigid body that receives the equal-and-opposite impulse,
+/// another link in the same multibody whose point Jacobian is subtracted from
+/// the primary link's point Jacobian, or another link in a different multibody
+/// whose articulated end is carried separately.
+struct LinkContact
+{
+  entt::entity link = entt::null;
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ(); ///< world, into the link
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();   ///< world contact point
+  double depth = 0.0;
+  double friction = 1.0;    ///< combined Coulomb friction coefficient
+  double restitution = 0.0; ///< combined normal restitution coefficient
+  entt::entity otherBody = entt::null; ///< dynamic rigid-body obstacle, or null
+  entt::entity otherLink
+      = entt::null; ///< same-multibody link obstacle, or null
+  entt::entity otherMultibody
+      = entt::null; ///< owner of cross-multibody otherLink, or null
+};
+
+/// One link contact after Jacobian and inverse-mass precomputation, ready for
+/// the velocity-level solve.
+///
+/// Each Jacobian maps a world-space contact impulse along its direction into
+/// the owning multibody's generalized-velocity space (`J^T d`, size DOF). The
+/// denominators are the diagonal Delassus entries `J M^-1 J^T`, where `J` is
+/// either the primary link's point Jacobian, the relative point Jacobian
+/// against another link in the same multibody, or the primary side of a
+/// cross-multibody contact. Dynamic rigid obstacles and cross-multibody
+/// articulated ends augment the denominator with their point inverse mass. A
+/// contact that cannot move either body (e.g. a fixed-base link against an
+/// immovable obstacle) is left inactive.
+struct MultibodyLinkContactRow
+{
+  Eigen::VectorXd normalJacobian;
+  Eigen::VectorXd tangentJacobian1;
+  Eigen::VectorXd tangentJacobian2;
+  Eigen::VectorXd otherNormalJacobian;
+  Eigen::VectorXd otherTangentJacobian1;
+  Eigen::VectorXd otherTangentJacobian2;
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+  Eigen::Vector3d tangent1 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d tangent2 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  double normalDenominator = 0.0;
+  double tangentDenominator1 = 0.0;
+  double tangentDenominator2 = 0.0;
+  double bias = 0.0; ///< Baumgarte penetration-recovery velocity target
+  double restitutionTarget = 0.0;
+  double friction = 1.0;
+  /// Pre-solve boxed-LCP right-hand sides (`w = A*lambda - b` convention), the
+  /// velocity-level targets the unified constraint solve drives to. The normal
+  /// row uses `-v_n + max(bias, restitutionTarget)` (matching the Gauss-Seidel
+  /// normal update); the tangent rows drive the tangential relative velocity to
+  /// zero (`-v_t`). Computed once from the staged pre-solve velocity.
+  double normalRhs = 0.0;
+  double tangentRhs1 = 0.0;
+  double tangentRhs2 = 0.0;
+  double normalImpulse = 0.0;
+  double tangentImpulse1 = 0.0;
+  double tangentImpulse2 = 0.0;
+  double restitution = 0.0;
+  entt::entity otherBody = entt::null;
+  entt::entity otherLink = entt::null;
+  entt::entity otherMultibody = entt::null;
+  int otherMultibodyIndex = -1;
+  double otherInvMass = 0.0;
+  Eigen::Matrix3d otherInvInertia = Eigen::Matrix3d::Zero();
+  Eigen::Vector3d otherArm = Eigen::Vector3d::Zero();
+  bool active = false;
+};
+
+/// The assembled link-contact rows for one multibody plus its joint-space
+/// inverse mass, the operator the contact impulses act through.
+struct MultibodyLinkContactProblem
+{
+  std::vector<MultibodyLinkContactRow> rows;
+  Eigen::MatrixXd inverseMass; ///< joint-space M^-1 (size DOF x DOF)
+};
+
+/// Assemble the link-contact rows for a single multibody at its current
+/// configuration.
+///
+/// Builds the multibody's dynamics tree, joint-space inverse mass, and per-link
+/// body Jacobians, then precomputes each contact's point Jacobian, normal and
+/// tangent directions, diagonal Delassus denominators, Baumgarte bias, and
+/// restitution target (plus a dynamic rigid obstacle's coupling for a two-sided
+/// contact). This is the link-side counterpart of
+/// `assembleRigidBodyContactProblem`; the velocity solve consumes the returned
+/// rows and inverse mass. Contacts whose link is not part of `structure`, or
+/// that cannot move either body, are skipped (left inactive).
+///
+/// `nextVelocity` is the staged generalized velocity (joint construction order)
+/// used as the pre-solve baseline for the restitution target. For a multibody
+/// with no movable degrees of freedom the returned problem is empty.
+///
+/// @throws InvalidArgumentException if `nextVelocity` does not match the
+///         multibody's movable degree-of-freedom count.
+[[nodiscard]] DART_EXPERIMENTAL_API MultibodyLinkContactProblem
+assembleMultibodyLinkContactProblem(
+    const entt::registry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& nextVelocity,
+    double timeStep,
+    std::span<const LinkContact> linkContacts);
+
 /// Fixed-base articulated-body forward-dynamics stage.
 ///
 /// For each multibody, this stage computes generalized joint accelerations from
@@ -178,6 +290,73 @@ public:
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Computes unconstrained articulated-body velocities without advancing
+/// positions.
+///
+/// This is the velocity half of the semi-implicit multibody step. It leaves the
+/// solved generalized velocities in a transient internal staging component so
+/// contact/constraint stages can operate before positions are written back.
+class DART_EXPERIMENTAL_API MultibodyVelocityStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Resolves current link-vs-rigid-body contacts against staged multibody
+/// velocities.
+///
+/// This stage preserves the existing link-contact solve while making it an
+/// explicit velocity-level stage between unconstrained velocity integration and
+/// position write-back.
+class DART_EXPERIMENTAL_API MultibodyContactStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Applies multibody velocity limits and advances joint positions from the
+/// staged semi-implicit velocities.
+class DART_EXPERIMENTAL_API MultibodyPositionStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Resolves all rigid-rigid and articulated link-vs-rigid-body contacts with a
+/// single coupled boxed-LCP, replacing the separate `RigidBodyContactStage` and
+/// `MultibodyContactStage` velocity-level passes.
+///
+/// Each step it queries collisions once, assembles the rigid-rigid contact
+/// problem and each multibody's link-contact problem (recomputing the dynamics
+/// tree and inverse mass in-stage, never cached across stages), stacks them
+/// into one unified system whose shared-dynamic-obstacle coupling is
+/// consistent, and solves it jointly (with a rank-deficient fallback). Rigid
+/// impulses are applied to body velocities and link impulses to each
+/// multibody's staged generalized velocity (`PendingMultibodyVelocity`), so a
+/// position stage can run afterwards; a rigid positional projection then
+/// removes residual penetration. This is a semi-implicit-pipeline stage only —
+/// the variational path keeps its own contact handling.
+class DART_EXPERIMENTAL_API UnifiedConstraintStage final : public WorldStepStage
+{
+public:
+  explicit UnifiedConstraintStage(std::size_t frictionIterations = 8);
+
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+
+  [[nodiscard]] std::size_t getFrictionIterations() const noexcept;
+
+private:
+  std::size_t m_frictionIterations;
 };
 
 } // namespace dart::simulation::experimental::compute

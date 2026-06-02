@@ -1,0 +1,1002 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/io/skeleton_to_multibody.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
+#include <dart/simulation/experimental/world.hpp>
+
+#include <dart/simulation/world.hpp>
+
+#include <dart/dynamics/ball_joint.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/euler_joint.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/planar_joint.hpp>
+#include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/prismatic_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/screw_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/universal_joint.hpp>
+#include <dart/dynamics/weld_joint.hpp>
+
+#include <dart/math/tri_mesh.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <gtest/gtest.h>
+
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace sx = dart::simulation::experimental;
+namespace dd = dart::dynamics;
+
+namespace {
+
+const Eigen::Vector3d kGravity(0.0, 0.0, -9.81);
+
+double maxAbsDiff(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b)
+{
+  EXPECT_EQ(a.rows(), b.rows());
+  EXPECT_EQ(a.cols(), b.cols());
+  return (a - b).cwiseAbs().maxCoeff();
+}
+
+Eigen::Isometry3d translation(double x, double y, double z)
+{
+  Eigen::Isometry3d t = Eigen::Isometry3d::Identity();
+  t.translation() = Eigen::Vector3d(x, y, z);
+  return t;
+}
+
+/// Build a planar double pendulum as a legacy revolute serial chain. The first
+/// joint sits at the world origin; the second joint is offset one link-length
+/// down the first link. Each link's center of mass is offset from its body
+/// origin, exercising the loader's frame re-expression.
+dd::SkeletonPtr makeDoublePendulum()
+{
+  auto skeleton = dd::Skeleton::create("double_pendulum");
+
+  auto [joint1, body1]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  joint1->setName("joint1");
+  joint1->setAxis(Eigen::Vector3d::UnitY());
+  body1->setName("body1");
+  body1->setMass(2.0);
+  body1->setMomentOfInertia(0.05, 0.05, 0.02, 0.0, 0.0, 0.0);
+  body1->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.5));
+
+  auto [joint2, body2]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(body1);
+  joint2->setName("joint2");
+  joint2->setAxis(Eigen::Vector3d::UnitY());
+  joint2->setTransformFromParentBodyNode(translation(0.0, 0.0, -1.0));
+  body2->setName("body2");
+  body2->setMass(1.0);
+  body2->setMomentOfInertia(0.03, 0.03, 0.01, 0.0, 0.0, 0.0);
+  body2->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.5));
+
+  skeleton->setGravity(kGravity);
+  return skeleton;
+}
+
+// Asserts the converted multibody reproduces the legacy skeleton's joint-space
+// mass matrix, gravity forces, and Coriolis forces at the given configuration
+// and velocity. Use this for joint types whose experimental generalized
+// coordinate ordering coincides with the legacy ordering.
+void expectLegacyDynamicsParity(
+    dd::Skeleton& skeleton, const Eigen::VectorXd& q, const Eigen::VectorXd& dq)
+{
+  skeleton.setGravity(kGravity);
+  skeleton.setPositions(q);
+  skeleton.setVelocities(dq);
+
+  const Eigen::MatrixXd legacyMass = skeleton.getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton.getGravityForces();
+  const Eigen::VectorXd legacyCoriolis = skeleton.getCoriolisForces();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody = sx::io::buildMultibodyFromSkeleton(world, skeleton);
+
+  EXPECT_EQ(multibody.getDOFCount(), skeleton.getNumDofs());
+  EXPECT_LE(maxAbsDiff(multibody.getMassMatrix(), legacyMass), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getGravityForces(), legacyGravity), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getCoriolisForces(), legacyCoriolis), 1e-9);
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SkeletonToMultibody, DoublePendulumStructure)
+{
+  auto skeleton = makeDoublePendulum();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  // One extra link beyond the skeleton's bodies: the synthetic world base.
+  EXPECT_EQ(multibody.getLinkCount(), skeleton->getNumBodyNodes() + 1);
+  EXPECT_EQ(multibody.getJointCount(), skeleton->getNumBodyNodes());
+  EXPECT_EQ(multibody.getDOFCount(), skeleton->getNumDofs());
+  EXPECT_EQ(multibody.getDOFCount(), 2u);
+
+  EXPECT_TRUE(multibody.getLink("base").has_value());
+  EXPECT_TRUE(multibody.getLink("body1").has_value());
+  EXPECT_TRUE(multibody.getLink("body2").has_value());
+  EXPECT_TRUE(multibody.getJoint("joint1").has_value());
+  EXPECT_TRUE(multibody.getJoint("joint2").has_value());
+}
+
+//==============================================================================
+// DART 6 parity: the converted multibody reproduces the legacy skeleton's
+// joint-space mass matrix, gravity forces, and Coriolis forces at a shared,
+// non-trivial configuration and velocity.
+TEST(SkeletonToMultibody, DoublePendulumMatchesLegacyDynamics)
+{
+  auto skeleton = makeDoublePendulum();
+
+  Eigen::VectorXd q(2);
+  q << 0.3, -0.5;
+  Eigen::VectorXd dq(2);
+  dq << 0.7, 0.2;
+  skeleton->setPositions(q);
+  skeleton->setVelocities(dq);
+
+  const Eigen::MatrixXd legacyMass = skeleton->getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton->getGravityForces();
+  const Eigen::VectorXd legacyCoriolis = skeleton->getCoriolisForces();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  EXPECT_LE(maxAbsDiff(multibody.getMassMatrix(), legacyMass), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getGravityForces(), legacyGravity), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getCoriolisForces(), legacyCoriolis), 1e-9);
+}
+
+//==============================================================================
+// A prismatic joint with an offset interior joint reproduces the legacy mass
+// matrix and gravity forces.
+TEST(SkeletonToMultibody, PrismaticChainMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("prismatic_chain");
+
+  auto [joint1, body1]
+      = skeleton->createJointAndBodyNodePair<dd::PrismaticJoint>(nullptr);
+  joint1->setName("slider");
+  joint1->setAxis(Eigen::Vector3d::UnitZ());
+  body1->setName("body1");
+  body1->setMass(1.5);
+  body1->setMomentOfInertia(0.02, 0.02, 0.02, 0.0, 0.0, 0.0);
+
+  auto [joint2, body2]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(body1);
+  joint2->setName("hinge");
+  joint2->setAxis(Eigen::Vector3d::UnitX());
+  joint2->setTransformFromParentBodyNode(translation(0.0, 0.0, -0.8));
+  body2->setName("body2");
+  body2->setMass(0.75);
+  body2->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+  body2->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.3));
+
+  skeleton->setGravity(kGravity);
+
+  Eigen::VectorXd q(2);
+  q << 0.2, 0.4;
+  skeleton->setPositions(q);
+
+  const Eigen::MatrixXd legacyMass = skeleton->getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton->getGravityForces();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  EXPECT_EQ(multibody.getDOFCount(), 2u);
+  EXPECT_LE(maxAbsDiff(multibody.getMassMatrix(), legacyMass), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getGravityForces(), legacyGravity), 1e-9);
+}
+
+//==============================================================================
+// A welded (fixed) base maps to a fixed joint beneath the synthetic world base
+// and the actuated child still reproduces the legacy dynamics. The weld offset
+// is non-trivial, exercising the fixed-joint placement path.
+TEST(SkeletonToMultibody, FixedBaseChainMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("fixed_base_arm");
+
+  Eigen::Isometry3d weldOffset = Eigen::Isometry3d::Identity();
+  weldOffset.translation() = Eigen::Vector3d(0.1, 0.0, 0.2);
+  weldOffset.linear()
+      = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitX()).toRotationMatrix();
+
+  auto [base, baseBody]
+      = skeleton->createJointAndBodyNodePair<dd::WeldJoint>(nullptr);
+  base->setName("weld");
+  base->setTransformFromParentBodyNode(weldOffset);
+  baseBody->setName("base_link");
+  baseBody->setMass(3.0);
+  baseBody->setMomentOfInertia(0.1, 0.1, 0.1, 0.0, 0.0, 0.0);
+
+  auto [hinge, armBody]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(baseBody);
+  hinge->setName("hinge");
+  hinge->setAxis(Eigen::Vector3d::UnitY());
+  hinge->setTransformFromParentBodyNode(translation(0.0, 0.0, -0.4));
+  armBody->setName("arm");
+  armBody->setMass(1.25);
+  armBody->setMomentOfInertia(0.02, 0.02, 0.01, 0.0, 0.0, 0.0);
+  armBody->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.25));
+
+  skeleton->setGravity(kGravity);
+  Eigen::VectorXd q(1);
+  q << 0.35;
+  skeleton->setPositions(q);
+
+  const Eigen::MatrixXd legacyMass = skeleton->getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton->getGravityForces();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  EXPECT_EQ(multibody.getDOFCount(), 1u);
+  EXPECT_EQ(multibody.getLinkCount(), skeleton->getNumBodyNodes() + 1);
+  EXPECT_LE(maxAbsDiff(multibody.getMassMatrix(), legacyMass), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getGravityForces(), legacyGravity), 1e-9);
+}
+
+//==============================================================================
+// Exercises a non-identity frame re-expression. The root joint's parent-side
+// transform is a pure rotation, so the motion axis is rotated by M.linear();
+// the interior joint's transform also rotates, so the first link's inertia and
+// center of mass are re-expressed by a rotation R != I. A non-diagonal inertia
+// and an offset center of mass ensure a transpose/sign error cannot hide.
+TEST(SkeletonToMultibody, RotatedFramesMatchLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("rotated");
+
+  Eigen::Isometry3d rootOffset = Eigen::Isometry3d::Identity();
+  rootOffset.linear()
+      = Eigen::AngleAxisd(0.4, Eigen::Vector3d(1.0, 1.0, 0.0).normalized())
+            .toRotationMatrix();
+
+  auto [joint1, body1]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  joint1->setName("joint1");
+  joint1->setAxis(Eigen::Vector3d(0.0, 1.0, 1.0).normalized());
+  joint1->setTransformFromParentBodyNode(rootOffset);
+  body1->setName("body1");
+  body1->setMass(2.0);
+  // Non-diagonal, non-isotropic (diagonally dominant, hence SPD) inertia.
+  body1->setMomentOfInertia(0.08, 0.06, 0.05, 0.01, 0.005, 0.002);
+  body1->setLocalCOM(Eigen::Vector3d(0.1, -0.05, -0.3));
+
+  Eigen::Isometry3d interiorOffset = Eigen::Isometry3d::Identity();
+  interiorOffset.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  interiorOffset.translation() = Eigen::Vector3d(0.2, 0.0, -0.6);
+
+  // A non-identity child-side transform (C) exercises the C^-1 term of the
+  // placement (the child body frame does not coincide with the joint frame).
+  Eigen::Isometry3d childTransform = Eigen::Isometry3d::Identity();
+  childTransform.linear()
+      = Eigen::AngleAxisd(-0.2, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  childTransform.translation() = Eigen::Vector3d(0.0, 0.1, -0.05);
+
+  auto [joint2, body2]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(body1);
+  joint2->setName("joint2");
+  joint2->setAxis(Eigen::Vector3d::UnitZ());
+  joint2->setTransformFromParentBodyNode(interiorOffset);
+  joint2->setTransformFromChildBodyNode(childTransform);
+  body2->setName("body2");
+  body2->setMass(1.0);
+  body2->setMomentOfInertia(0.03, 0.03, 0.02, 0.0, 0.0, 0.0);
+  body2->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.4));
+
+  skeleton->setGravity(kGravity);
+  Eigen::VectorXd q(2);
+  q << 0.3, -0.2;
+  Eigen::VectorXd dq(2);
+  dq << 0.5, -0.4;
+  skeleton->setPositions(q);
+  skeleton->setVelocities(dq);
+
+  const Eigen::MatrixXd legacyMass = skeleton->getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton->getGravityForces();
+  const Eigen::VectorXd legacyCoriolis = skeleton->getCoriolisForces();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  EXPECT_LE(maxAbsDiff(multibody.getMassMatrix(), legacyMass), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getGravityForces(), legacyGravity), 1e-9);
+  EXPECT_LE(maxAbsDiff(multibody.getCoriolisForces(), legacyCoriolis), 1e-9);
+}
+
+//==============================================================================
+TEST(SkeletonToMultibody, ScrewMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("screw");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::ScrewJoint>(nullptr);
+  joint->setName("screw");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  joint->setPitch(0.05); // translation per revolution (legacy convention)
+  body->setName("nut");
+  body->setMass(1.5);
+  body->setMomentOfInertia(0.02, 0.02, 0.01, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.1, 0.0, -0.2));
+
+  Eigen::VectorXd q(1);
+  q << 0.6;
+  Eigen::VectorXd dq(1);
+  dq << 0.4;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+TEST(SkeletonToMultibody, UniversalMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("universal");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::UniversalJoint>(nullptr);
+  joint->setName("universal");
+  joint->setAxis1(Eigen::Vector3d::UnitY());
+  joint->setAxis2(Eigen::Vector3d::UnitX());
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.03, 0.02, 0.01, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.4));
+
+  Eigen::VectorXd q(2);
+  q << 0.3, -0.5;
+  Eigen::VectorXd dq(2);
+  dq << 0.2, 0.6;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+TEST(SkeletonToMultibody, BallMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("ball");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::BallJoint>(nullptr);
+  joint->setName("ball");
+  body->setName("body");
+  body->setMass(1.2);
+  body->setMomentOfInertia(0.04, 0.03, 0.02, 0.005, 0.002, 0.001);
+  body->setLocalCOM(Eigen::Vector3d(0.05, -0.05, -0.3));
+
+  Eigen::VectorXd q(3);
+  q << 0.2, -0.3, 0.15; // rotation vector (exponential coordinates)
+  Eigen::VectorXd dq(3);
+  dq << 0.3, 0.1, -0.2; // body angular velocity
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+TEST(SkeletonToMultibody, PlanarMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("planar");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::PlanarJoint>(nullptr);
+  joint->setName("planar"); // default XY plane
+  body->setName("body");
+  body->setMass(0.9);
+  body->setMomentOfInertia(0.02, 0.02, 0.03, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.1, 0.05, 0.0));
+
+  Eigen::VectorXd q(3);
+  q << 0.2, -0.15, 0.4;
+  Eigen::VectorXd dq(3);
+  dq << 0.1, 0.2, 0.3;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+// The free joint maps a floating base. The experimental floating joint uses
+// [linear; angular] / [translation; rotation] coordinates while the legacy free
+// joint uses [angular; linear] / [rotation; translation], so the dynamics
+// quantities relate by the 3-block swap S.
+TEST(SkeletonToMultibody, FreeMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("free");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::FreeJoint>(nullptr);
+  joint->setName("free");
+  body->setName("body");
+  body->setMass(2.0);
+  body->setMomentOfInertia(0.05, 0.04, 0.03, 0.01, 0.005, 0.002);
+  body->setLocalCOM(Eigen::Vector3d(0.1, -0.05, 0.2));
+
+  Eigen::VectorXd q(6);
+  q << 0.1, 0.2, -0.15, 0.3, -0.2, 0.5; // legacy [rotation; translation]
+  Eigen::VectorXd dq(6);
+  dq << 0.2, -0.1, 0.3, 0.4, 0.1, -0.2; // legacy [angular; linear]
+  skeleton->setGravity(kGravity);
+  skeleton->setPositions(q);
+  skeleton->setVelocities(dq);
+
+  const Eigen::MatrixXd legacyMass = skeleton->getMassMatrix();
+  const Eigen::VectorXd legacyGravity = skeleton->getGravityForces();
+
+  // The experimental floating joint uses a body-frame [linear; angular] twist,
+  // while the legacy free joint uses a parent-frame [angular; linear] velocity
+  // (its relative Jacobian is diag(R^T, R^T)). The generalized bases relate by
+  // the orthogonal change G = [[0, R^T], [R^T, 0]], R = the body world
+  // rotation. Kinetic-energy invariance gives M_exp = G M_legacy G^T; force
+  // covariance gives f_exp = G f_legacy.
+  const Eigen::Matrix3d rotation
+      = skeleton->getBodyNode(0)->getWorldTransform().linear();
+  Eigen::MatrixXd swap = Eigen::MatrixXd::Zero(6, 6);
+  swap.block<3, 3>(0, 3) = rotation.transpose();
+  swap.block<3, 3>(3, 0) = rotation.transpose();
+
+  sx::World world;
+  world.setGravity(kGravity);
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  EXPECT_EQ(multibody.getDOFCount(), 6u);
+  EXPECT_LE(
+      maxAbsDiff(
+          multibody.getMassMatrix(), swap * legacyMass * swap.transpose()),
+      1e-9);
+  EXPECT_LE(
+      maxAbsDiff(multibody.getGravityForces(), swap * legacyGravity), 1e-9);
+
+  // The Coriolis force does not transform by G alone (G is configuration
+  // dependent, so the coordinate change adds a dG/dt term); each basis carries
+  // its own correct Coriolis term. Verify the velocity mapping physically
+  // instead: the body's spatial velocity (body Jacobian * generalized velocity)
+  // must match the legacy body's spatial velocity.
+  const auto link = multibody.getLink("body");
+  const auto freeJoint = multibody.getJoint("free");
+  ASSERT_TRUE(link.has_value());
+  ASSERT_TRUE(freeJoint.has_value());
+  const Eigen::VectorXd bodyTwistExp
+      = multibody.getJacobian(*link) * freeJoint->getVelocity();
+  const Eigen::VectorXd bodyTwistLegacy
+      = skeleton->getBodyNode(0)->getSpatialVelocity();
+  EXPECT_LE((bodyTwistExp - bodyTwistLegacy).cwiseAbs().maxCoeff(), 1e-9);
+}
+
+//==============================================================================
+// Per-coordinate joint properties (limits, damping, spring, friction) of a
+// revolute joint are carried into the experimental joint.
+TEST(SkeletonToMultibody, CopiesRevoluteJointProperties)
+{
+  auto skeleton = dd::Skeleton::create("properties");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  joint->setName("hinge");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  joint->setPositionLowerLimit(0, -1.2);
+  joint->setPositionUpperLimit(0, 1.5);
+  joint->setVelocityLowerLimit(0, -3.0);
+  joint->setVelocityUpperLimit(0, 3.0);
+  joint->setForceLowerLimit(0, -10.0);
+  joint->setForceUpperLimit(0, 10.0);
+  joint->setDampingCoefficient(0, 0.7);
+  joint->setSpringStiffness(0, 5.0);
+  joint->setRestPosition(0, 0.25);
+  joint->setCoulombFriction(0, 0.4);
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+
+  sx::World world;
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  const auto hinge = multibody.getJoint("hinge");
+  ASSERT_TRUE(hinge.has_value());
+  EXPECT_NEAR(hinge->getPositionLowerLimits()[0], -1.2, 1e-12);
+  EXPECT_NEAR(hinge->getPositionUpperLimits()[0], 1.5, 1e-12);
+  EXPECT_NEAR(hinge->getVelocityLowerLimits()[0], -3.0, 1e-12);
+  EXPECT_NEAR(hinge->getVelocityUpperLimits()[0], 3.0, 1e-12);
+  EXPECT_NEAR(hinge->getEffortLowerLimits()[0], -10.0, 1e-12);
+  EXPECT_NEAR(hinge->getEffortUpperLimits()[0], 10.0, 1e-12);
+  EXPECT_NEAR(hinge->getDampingCoefficient()[0], 0.7, 1e-12);
+  EXPECT_NEAR(hinge->getSpringStiffness()[0], 5.0, 1e-12);
+  EXPECT_NEAR(hinge->getRestPosition()[0], 0.25, 1e-12);
+  EXPECT_NEAR(hinge->getCoulombFriction()[0], 0.4, 1e-12);
+
+  // copy_joint_properties = false leaves the experimental defaults.
+  sx::World plain;
+  sx::io::SkeletonToMultibodyOptions options;
+  options.copyJointProperties = false;
+  sx::Multibody bare
+      = sx::io::buildMultibodyFromSkeleton(plain, *skeleton, options);
+  const auto bareHinge = bare.getJoint("hinge");
+  ASSERT_TRUE(bareHinge.has_value());
+  EXPECT_EQ(bareHinge->getDampingCoefficient()[0], 0.0);
+  EXPECT_EQ(bareHinge->getSpringStiffness()[0], 0.0);
+}
+
+//==============================================================================
+// Every skeleton in a legacy world is converted into its own multibody, named
+// after its source skeleton.
+TEST(SkeletonToMultibody, BuildsMultibodiesFromWorld)
+{
+  auto legacyWorld = dart::simulation::World::create();
+  legacyWorld->addSkeleton(makeDoublePendulum()); // "double_pendulum", 2 DOF
+
+  auto slider = dd::Skeleton::create("slider");
+  auto [joint, body]
+      = slider->createJointAndBodyNodePair<dd::PrismaticJoint>(nullptr);
+  joint->setName("slide");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+  legacyWorld->addSkeleton(slider);
+
+  sx::World world;
+  const std::vector<sx::Multibody> multibodies
+      = sx::io::buildMultibodiesFromWorld(world, *legacyWorld);
+
+  EXPECT_EQ(multibodies.size(), 2u);
+  EXPECT_EQ(world.getMultibodyCount(), 2u);
+  EXPECT_TRUE(world.getMultibody("double_pendulum").has_value());
+  EXPECT_TRUE(world.getMultibody("slider").has_value());
+  EXPECT_EQ(multibodies[0].getDOFCount(), 2u);
+  EXPECT_EQ(multibodies[1].getDOFCount(), 1u);
+}
+
+//==============================================================================
+// Box, capsule, cylinder, plane, and triangular mesh collision shapes are
+// translated onto links, with full box extents halved, mesh scale applied, and
+// shape-node offsets preserved as CollisionShape local transforms.
+TEST(SkeletonToMultibody, TranslatesCollisionShapes)
+{
+  auto skeleton = dd::Skeleton::create("collision");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  joint->setName("hinge");
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+
+  auto boxShape
+      = std::make_shared<dd::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
+  auto* shapeNode = body->createShapeNode(boxShape);
+  shapeNode->createCollisionAspect();
+  auto* secondShapeNode = body->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::SphereShape>(0.05));
+  secondShapeNode->setRelativeTransform(translation(0.2, -0.1, 0.3));
+
+  sx::World world;
+  sx::Multibody multibody
+      = sx::io::buildMultibodyFromSkeleton(world, *skeleton);
+
+  const auto link = multibody.getLink("body");
+  ASSERT_TRUE(link.has_value());
+  ASSERT_TRUE(link->hasCollisionShape());
+  const auto shape = link->getCollisionShape();
+  ASSERT_TRUE(shape.has_value());
+  EXPECT_EQ(shape->type, sx::CollisionShapeType::Box);
+  EXPECT_LE(
+      (shape->halfExtents - Eigen::Vector3d(0.1, 0.15, 0.2))
+          .cwiseAbs()
+          .maxCoeff(),
+      1e-12);
+  EXPECT_TRUE(
+      shape->localTransform.isApprox(Eigen::Isometry3d::Identity(), 1e-12));
+  const auto shapes = link->getCollisionShapes();
+  ASSERT_EQ(shapes.size(), 2u);
+  EXPECT_EQ(shapes[0].type, sx::CollisionShapeType::Box);
+  EXPECT_EQ(shapes[1].type, sx::CollisionShapeType::Sphere);
+  EXPECT_DOUBLE_EQ(shapes[1].radius, 0.05);
+  EXPECT_TRUE(
+      shapes[1].localTransform.isApprox(translation(0.2, -0.1, 0.3), 1e-12));
+
+  // load_collision_shapes = false skips translation.
+  sx::World plain;
+  sx::io::SkeletonToMultibodyOptions options;
+  options.loadCollisionShapes = false;
+  sx::Multibody bare
+      = sx::io::buildMultibodyFromSkeleton(plain, *skeleton, options);
+  const auto bareLink = bare.getLink("body");
+  ASSERT_TRUE(bareLink.has_value());
+  EXPECT_FALSE(bareLink->hasCollisionShape());
+
+  // An offset collision shape keeps the shape-node local transform.
+  auto offsetSkeleton = dd::Skeleton::create("offset_collision");
+  auto [offsetJoint, offsetBody]
+      = offsetSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  offsetJoint->setName("hinge");
+  offsetJoint->setAxis(Eigen::Vector3d::UnitZ());
+  offsetBody->setName("body");
+  offsetBody->setMass(1.0);
+  offsetBody->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+  auto* offsetShapeNode = offsetBody->createShapeNode(
+      std::make_shared<dd::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+  offsetShapeNode->createCollisionAspect();
+  offsetShapeNode->setRelativeTransform(translation(0.1, 0.0, -0.2));
+
+  sx::World offsetWorld;
+  sx::Multibody offsetMultibody
+      = sx::io::buildMultibodyFromSkeleton(offsetWorld, *offsetSkeleton);
+  const auto offsetLink = offsetMultibody.getLink("body");
+  ASSERT_TRUE(offsetLink.has_value());
+  ASSERT_TRUE(offsetLink->hasCollisionShape());
+  const auto offsetShape = offsetLink->getCollisionShape();
+  ASSERT_TRUE(offsetShape.has_value());
+  EXPECT_EQ(offsetShape->type, sx::CollisionShapeType::Box);
+  EXPECT_TRUE(
+      offsetShape->localTransform.isApprox(translation(0.1, 0.0, -0.2), 1e-12));
+
+  // A capsule preserves radius, cylindrical-section half-height, and offset.
+  auto capsuleSkeleton = dd::Skeleton::create("capsule_collision");
+  auto [capsuleJoint, capsuleBody]
+      = capsuleSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  capsuleJoint->setName("joint");
+  capsuleBody->setName("body");
+  auto* capsuleShapeNode
+      = capsuleBody->createShapeNodeWith<dd::CollisionAspect>(
+          std::make_shared<dd::CapsuleShape>(0.2, 0.8));
+  capsuleShapeNode->setRelativeTransform(translation(-0.1, 0.2, 0.3));
+
+  sx::World capsuleWorld;
+  auto capsuleMultibody
+      = sx::io::buildMultibodyFromSkeleton(capsuleWorld, *capsuleSkeleton);
+  const auto capsuleLink = capsuleMultibody.getLink("body");
+  ASSERT_TRUE(capsuleLink.has_value());
+  ASSERT_TRUE(capsuleLink->hasCollisionShape());
+  const auto capsuleShape = capsuleLink->getCollisionShape();
+  ASSERT_TRUE(capsuleShape.has_value());
+  EXPECT_EQ(capsuleShape->type, sx::CollisionShapeType::Capsule);
+  EXPECT_DOUBLE_EQ(capsuleShape->radius, 0.2);
+  EXPECT_TRUE(
+      capsuleShape->halfExtents.isApprox(Eigen::Vector3d(0.2, 0.2, 0.4)));
+  EXPECT_TRUE(capsuleShape->localTransform.isApprox(
+      translation(-0.1, 0.2, 0.3), 1e-12));
+
+  // A cylinder shares the radius/half-height representation with a capsule.
+  auto cylinderSkeleton = dd::Skeleton::create("cylinder_collision");
+  auto [cylinderJoint, cylinderBody]
+      = cylinderSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(
+          nullptr);
+  cylinderJoint->setName("joint");
+  cylinderBody->setName("body");
+  auto* cylinderShapeNode
+      = cylinderBody->createShapeNodeWith<dd::CollisionAspect>(
+          std::make_shared<dd::CylinderShape>(0.3, 0.7));
+  cylinderShapeNode->setRelativeTransform(translation(0.25, -0.1, 0.15));
+
+  sx::World cylinderWorld;
+  auto cylinderMultibody
+      = sx::io::buildMultibodyFromSkeleton(cylinderWorld, *cylinderSkeleton);
+  const auto cylinderLink = cylinderMultibody.getLink("body");
+  ASSERT_TRUE(cylinderLink.has_value());
+  ASSERT_TRUE(cylinderLink->hasCollisionShape());
+  const auto cylinderShape = cylinderLink->getCollisionShape();
+  ASSERT_TRUE(cylinderShape.has_value());
+  EXPECT_EQ(cylinderShape->type, sx::CollisionShapeType::Cylinder);
+  EXPECT_DOUBLE_EQ(cylinderShape->radius, 0.3);
+  EXPECT_TRUE(
+      cylinderShape->halfExtents.isApprox(Eigen::Vector3d(0.3, 0.3, 0.35)));
+  EXPECT_TRUE(cylinderShape->localTransform.isApprox(
+      translation(0.25, -0.1, 0.15), 1e-12));
+
+  // A plane carries a normal and signed offset.
+  auto planeSkeleton = dd::Skeleton::create("plane_collision");
+  auto [planeJoint, planeBody]
+      = planeSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  planeJoint->setName("joint");
+  planeBody->setName("body");
+  auto* planeShapeNode = planeBody->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.2));
+  planeShapeNode->setRelativeTransform(translation(-0.15, 0.2, 0.05));
+
+  sx::World planeWorld;
+  auto planeMultibody
+      = sx::io::buildMultibodyFromSkeleton(planeWorld, *planeSkeleton);
+  const auto planeLink = planeMultibody.getLink("body");
+  ASSERT_TRUE(planeLink.has_value());
+  ASSERT_TRUE(planeLink->hasCollisionShape());
+  const auto planeShape = planeLink->getCollisionShape();
+  ASSERT_TRUE(planeShape.has_value());
+  EXPECT_EQ(planeShape->type, sx::CollisionShapeType::Plane);
+  EXPECT_TRUE(planeShape->normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_DOUBLE_EQ(planeShape->offset, 0.2);
+  EXPECT_TRUE(planeShape->localTransform.isApprox(
+      translation(-0.15, 0.2, 0.05), 1e-12));
+
+  // A triangular MeshShape carries scaled vertices and triangle indices.
+  auto meshSkeleton = dd::Skeleton::create("mesh_collision");
+  auto [meshJoint, meshBody]
+      = meshSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  meshJoint->setName("joint");
+  meshBody->setName("body");
+  auto legacyMesh = std::make_shared<dart::math::TriMesh<double>>();
+  legacyMesh->addVertex(-1.0, -1.0, 0.0);
+  legacyMesh->addVertex(1.0, -1.0, 0.0);
+  legacyMesh->addVertex(-1.0, 1.0, 0.0);
+  legacyMesh->addVertex(1.0, 1.0, 0.0);
+  legacyMesh->addTriangle(0, 1, 2);
+  legacyMesh->addTriangle(1, 3, 2);
+  auto* meshShapeNode = meshBody->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::MeshShape>(
+          Eigen::Vector3d(2.0, 1.0, 1.0), legacyMesh));
+  meshShapeNode->setRelativeTransform(translation(0.1, 0.2, -0.05));
+
+  sx::World meshWorld;
+  auto meshMultibody
+      = sx::io::buildMultibodyFromSkeleton(meshWorld, *meshSkeleton);
+  const auto meshLink = meshMultibody.getLink("body");
+  ASSERT_TRUE(meshLink.has_value());
+  ASSERT_TRUE(meshLink->hasCollisionShape());
+  const auto meshShape = meshLink->getCollisionShape();
+  ASSERT_TRUE(meshShape.has_value());
+  EXPECT_EQ(meshShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(meshShape->vertices.size(), 4u);
+  ASSERT_EQ(meshShape->triangles.size(), 2u);
+  EXPECT_TRUE(
+      meshShape->vertices[1].isApprox(Eigen::Vector3d(2.0, -1.0, 0.0), 1e-12));
+  EXPECT_EQ(meshShape->triangles[1], Eigen::Vector3i(1, 3, 2));
+  EXPECT_TRUE(
+      meshShape->localTransform.isApprox(translation(0.1, 0.2, -0.05), 1e-12));
+
+  // A legacy ConvexMeshShape reuses the experimental triangular mesh carrier.
+  auto convexSkeleton = dd::Skeleton::create("convex_mesh_collision");
+  auto [convexJoint, convexBody]
+      = convexSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  convexJoint->setName("joint");
+  convexBody->setName("body");
+  auto convexMesh = std::make_shared<dd::ConvexMeshShape::TriMeshType>();
+  convexMesh->addVertex(0.0, 0.0, 0.0);
+  convexMesh->addVertex(1.0, 0.0, 0.0);
+  convexMesh->addVertex(0.0, 1.0, 0.0);
+  convexMesh->addVertex(0.0, 0.0, 1.0);
+  convexMesh->addTriangle(0, 1, 2);
+  convexMesh->addTriangle(0, 1, 3);
+  convexMesh->addTriangle(0, 2, 3);
+  convexMesh->addTriangle(1, 2, 3);
+  auto* convexShapeNode = convexBody->createShapeNodeWith<dd::CollisionAspect>(
+      std::make_shared<dd::ConvexMeshShape>(convexMesh));
+  convexShapeNode->setRelativeTransform(translation(-0.05, 0.15, 0.25));
+
+  sx::World convexWorld;
+  auto convexMultibody
+      = sx::io::buildMultibodyFromSkeleton(convexWorld, *convexSkeleton);
+  const auto convexLink = convexMultibody.getLink("body");
+  ASSERT_TRUE(convexLink.has_value());
+  ASSERT_TRUE(convexLink->hasCollisionShape());
+  const auto convexShape = convexLink->getCollisionShape();
+  ASSERT_TRUE(convexShape.has_value());
+  EXPECT_EQ(convexShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(convexShape->vertices.size(), 4u);
+  ASSERT_EQ(convexShape->triangles.size(), 4u);
+  EXPECT_TRUE(
+      convexShape->vertices[3].isApprox(Eigen::Vector3d(0.0, 0.0, 1.0), 1e-12));
+  EXPECT_EQ(convexShape->triangles[3], Eigen::Vector3i(1, 2, 3));
+  EXPECT_TRUE(convexShape->localTransform.isApprox(
+      translation(-0.05, 0.15, 0.25), 1e-12));
+
+  // A HeightmapShape is triangulated into the experimental mesh carrier.
+  auto heightmapSkeleton = dd::Skeleton::create("heightmap_collision");
+  auto [heightmapJoint, heightmapBody]
+      = heightmapSkeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(
+          nullptr);
+  heightmapJoint->setName("joint");
+  heightmapBody->setName("body");
+  auto heightmap = std::make_shared<dd::HeightmapShaped>();
+  heightmap->setScale(Eigen::Vector3d(0.5, 0.25, 2.0));
+  const std::vector<double> heights = {0.0, 1.0, 2.0, 3.0};
+  heightmap->setHeightField(2u, 2u, heights);
+  auto* heightmapShapeNode
+      = heightmapBody->createShapeNodeWith<dd::CollisionAspect>(heightmap);
+  heightmapShapeNode->setRelativeTransform(translation(0.05, -0.15, 0.2));
+
+  sx::World heightmapWorld;
+  auto heightmapMultibody
+      = sx::io::buildMultibodyFromSkeleton(heightmapWorld, *heightmapSkeleton);
+  const auto heightmapLink = heightmapMultibody.getLink("body");
+  ASSERT_TRUE(heightmapLink.has_value());
+  ASSERT_TRUE(heightmapLink->hasCollisionShape());
+  const auto heightmapShape = heightmapLink->getCollisionShape();
+  ASSERT_TRUE(heightmapShape.has_value());
+  EXPECT_EQ(heightmapShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(heightmapShape->vertices.size(), 4u);
+  ASSERT_EQ(heightmapShape->triangles.size(), 2u);
+  EXPECT_TRUE(heightmapShape->vertices[0].isApprox(
+      Eigen::Vector3d(-0.25, 0.125, 0.0), 1e-12));
+  EXPECT_TRUE(heightmapShape->vertices[3].isApprox(
+      Eigen::Vector3d(0.25, -0.125, 6.0), 1e-12));
+  EXPECT_EQ(heightmapShape->triangles[0], Eigen::Vector3i(0, 1, 2));
+  EXPECT_EQ(heightmapShape->triangles[1], Eigen::Vector3i(1, 3, 2));
+  EXPECT_TRUE(heightmapShape->localTransform.isApprox(
+      translation(0.05, -0.15, 0.2), 1e-12));
+
+  // A SoftMeshShape snapshots the soft body's point-mass mesh into the
+  // experimental mesh carrier.
+  auto softSkeleton = dd::Skeleton::create("soft_mesh_collision");
+  auto [softJoint, softBody]
+      = softSkeleton
+            ->createJointAndBodyNodePair<dd::FreeJoint, dd::SoftBodyNode>(
+                nullptr);
+  softJoint->setName("joint");
+  softBody->setName("body");
+  dd::SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.2, 0.3, 0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0);
+  ASSERT_GT(softBody->getNumShapeNodes(), 0u);
+  auto* softShapeNode = softBody->getShapeNode(0);
+  softShapeNode->setRelativeTransform(translation(-0.2, 0.05, 0.1));
+
+  sx::World softWorld;
+  auto softMultibody
+      = sx::io::buildMultibodyFromSkeleton(softWorld, *softSkeleton);
+  const auto softLink = softMultibody.getLink("body");
+  ASSERT_TRUE(softLink.has_value());
+  ASSERT_TRUE(softLink->hasCollisionShape());
+  const auto softShape = softLink->getCollisionShape();
+  ASSERT_TRUE(softShape.has_value());
+  EXPECT_EQ(softShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(softShape->vertices.size(), softBody->getNumPointMasses());
+  ASSERT_EQ(softShape->triangles.size(), softBody->getNumFaces());
+  ASSERT_GT(softShape->vertices.size(), 0u);
+  ASSERT_GT(softShape->triangles.size(), 0u);
+  EXPECT_TRUE(softShape->vertices[0].isApprox(
+      softBody->getPointMass(0)->getRestingPosition(), 1e-12));
+  EXPECT_EQ(softShape->triangles[0], softBody->getFace(0));
+  EXPECT_TRUE(
+      softShape->localTransform.isApprox(translation(-0.2, 0.05, 0.1), 1e-12));
+}
+
+//==============================================================================
+// A valid first body followed by an unsupported (Euler) joint must reject the
+// whole skeleton and leave the World with no partial multibody: the plan pass
+// validates everything before any World state is created.
+TEST(SkeletonToMultibody, RejectsUnsupportedJointType)
+{
+  auto skeleton = dd::Skeleton::create("mixed");
+
+  auto [hinge, link]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  hinge->setName("hinge");
+  hinge->setAxis(Eigen::Vector3d::UnitY());
+  link->setName("link");
+  link->setMass(1.0);
+  link->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+
+  auto [euler, eulerBody]
+      = skeleton->createJointAndBodyNodePair<dd::EulerJoint>(link);
+  euler->setName("euler");
+  eulerBody->setName("euler_link");
+  eulerBody->setMass(1.0);
+  eulerBody->setMomentOfInertia(0.01, 0.01, 0.01, 0.0, 0.0, 0.0);
+
+  sx::World world;
+  EXPECT_THROW(
+      sx::io::buildMultibodyFromSkeleton(world, *skeleton),
+      sx::InvalidOperationException);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
+}
+
+//==============================================================================
+// A moving root joint with a rotated and translated parent-side offset is
+// carried by the pre-joint offset (transformToParent) and reproduces the legacy
+// dynamics.
+TEST(SkeletonToMultibody, OffsetRootMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("offset_root");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(nullptr);
+  joint->setName("hinge");
+  joint->setAxis(Eigen::Vector3d::UnitY());
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.linear()
+      = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  offset.translation() = Eigen::Vector3d(0.5, 0.0, 0.2);
+  joint->setTransformFromParentBodyNode(offset);
+  body->setName("body");
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.02, 0.02, 0.01, 0.0, 0.0, 0.0);
+  body->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.3));
+
+  Eigen::VectorXd q(1);
+  q << 0.4;
+  Eigen::VectorXd dq(1);
+  dq << 0.5;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}
+
+//==============================================================================
+// A branching parent (two revolute children at different parent-side offsets)
+// loads and reproduces the legacy dynamics. Each child joint carries its own
+// transformToParent, so no synthetic intermediate links are needed.
+TEST(SkeletonToMultibody, BranchingTreeMatchesLegacyDynamics)
+{
+  auto skeleton = dd::Skeleton::create("branch");
+
+  auto [weld, root]
+      = skeleton->createJointAndBodyNodePair<dd::WeldJoint>(nullptr);
+  weld->setName("weld");
+  root->setName("root");
+  root->setMass(3.0);
+  root->setMomentOfInertia(0.1, 0.1, 0.1, 0.0, 0.0, 0.0);
+
+  auto [hinge1, link1]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(root);
+  hinge1->setName("hinge1");
+  hinge1->setAxis(Eigen::Vector3d::UnitY());
+  hinge1->setTransformFromParentBodyNode(translation(0.3, 0.0, 0.0));
+  link1->setName("link1");
+  link1->setMass(1.0);
+  link1->setMomentOfInertia(0.02, 0.02, 0.01, 0.0, 0.0, 0.0);
+  link1->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.25));
+
+  auto [hinge2, link2]
+      = skeleton->createJointAndBodyNodePair<dd::RevoluteJoint>(root);
+  hinge2->setName("hinge2");
+  hinge2->setAxis(Eigen::Vector3d::UnitX());
+  hinge2->setTransformFromParentBodyNode(translation(-0.3, 0.0, 0.1));
+  link2->setName("link2");
+  link2->setMass(0.8);
+  link2->setMomentOfInertia(0.015, 0.015, 0.008, 0.0, 0.0, 0.0);
+  link2->setLocalCOM(Eigen::Vector3d(0.0, 0.0, -0.2));
+
+  Eigen::VectorXd q(2);
+  q << 0.4, -0.3;
+  Eigen::VectorXd dq(2);
+  dq << 0.2, 0.5;
+  expectLegacyDynamicsParity(*skeleton, q, dq);
+}

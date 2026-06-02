@@ -2972,6 +2972,227 @@ TEST(World, CollisionQueryReportsContacts)
   EXPECT_TRUE(world.collide().empty());
 }
 
+// Test that CollisionShape local transforms offset the native collision object
+// relative to its owning body.
+TEST(World, CollisionQueryUsesShapeLocalTransform)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto bodyA = world.addRigidBody("a");
+  sx::CollisionShape offsetSphere = sx::CollisionShape::makeSphere(0.5);
+  offsetSphere.localTransform.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  bodyA.setCollisionShape(offsetSphere);
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.position = Eigen::Vector3d(1.8, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  // The body origins are too far apart for radius-0.5 spheres, but the first
+  // sphere is centered at x=1 in body A's frame, producing 0.2 penetration.
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.2, 1e-6);
+}
+
+// Test that the collision query still reports sparse contacts after candidate
+// pair generation is pruned by the native broad phase.
+TEST(World, CollisionQueryFindsSparseBroadPhaseCandidate)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  for (int i = 0; i < 20; ++i) {
+    sx::RigidBodyOptions farOptions;
+    farOptions.position = Eigen::Vector3d(10.0 + 3.0 * i, 0.0, 0.0);
+    auto farBody = world.addRigidBody("far_" + std::to_string(i), farOptions);
+    farBody.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+  }
+
+  auto nearA = world.addRigidBody("near_a");
+  nearA.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  sx::RigidBodyOptions nearBOptions;
+  nearBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto nearB = world.addRigidBody("near_b", nearBOptions);
+  nearB.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  for (const auto& contact : contacts) {
+    const auto nameA = contact.bodyA.getName();
+    const auto nameB = contact.bodyB.getName();
+    EXPECT_TRUE(
+        (nameA == "near_a" && nameB == "near_b")
+        || (nameA == "near_b" && nameB == "near_a"));
+  }
+}
+
+// Test that repeated collision queries update cached native object poses and
+// rebuild when collision geometry changes.
+TEST(World, CollisionQueryCacheUpdatesTransformsAndShapes)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto bodyA = world.addRigidBody("a");
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions bodyBOptions;
+  bodyBOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", bodyBOptions);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  ASSERT_FALSE(world.collide().empty());
+
+  Eigen::Isometry3d farPose = Eigen::Isometry3d::Identity();
+  farPose.translation() = Eigen::Vector3d(3.0, 0.0, 0.0);
+  bodyB.setTransform(farPose);
+  EXPECT_TRUE(world.collide().empty());
+
+  Eigen::Isometry3d nearPose = Eigen::Isometry3d::Identity();
+  nearPose.translation() = Eigen::Vector3d(0.8, 0.0, 0.0);
+  bodyB.setTransform(nearPose);
+  ASSERT_FALSE(world.collide().empty());
+
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.1));
+  EXPECT_TRUE(world.collide().empty());
+
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  EXPECT_FALSE(world.collide().empty());
+}
+
+// Test that multiple shapes on the same rigid body behave as compound
+// collision geometry and do not self-collide.
+TEST(World, CollisionQuerySupportsCompoundRigidBodyShapes)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto compound = world.addRigidBody("compound");
+  compound.addCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  compound.addCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::CollisionShape offsetSphere = sx::CollisionShape::makeSphere(0.5);
+  offsetSphere.localTransform.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  compound.addCollisionShape(offsetSphere);
+
+  ASSERT_EQ(compound.getCollisionShapes().size(), 3u);
+  ASSERT_TRUE(compound.getCollisionShape().has_value());
+  EXPECT_EQ(compound.getCollisionShape()->type, sx::CollisionShapeType::Sphere);
+
+  EXPECT_TRUE(world.collide().empty());
+
+  sx::RigidBodyOptions targetOptions;
+  targetOptions.position = Eigen::Vector3d(2.8, 0.0, 0.0);
+  auto target = world.addRigidBody("target", targetOptions);
+  target.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  for (const auto& contact : contacts) {
+    EXPECT_NE(contact.bodyA.getEntity(), contact.bodyB.getEntity());
+  }
+
+  compound.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  const auto replacedShapes = compound.getCollisionShapes();
+  ASSERT_EQ(replacedShapes.size(), 1u);
+  EXPECT_EQ(replacedShapes.front().type, sx::CollisionShapeType::Box);
+}
+
+// Test that capsule shapes are bridged into the native collision query.
+TEST(World, CollisionQuerySupportsCapsuleShape)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto capsule = world.addRigidBody("capsule");
+  capsule.setCollisionShape(sx::CollisionShape::makeCapsule(0.25, 1.0));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
+}
+
+// Test that cylinder shapes are bridged into the native collision query.
+TEST(World, CollisionQuerySupportsCylinderShape)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto cylinder = world.addRigidBody("cylinder");
+  cylinder.setCollisionShape(sx::CollisionShape::makeCylinder(0.25, 1.0));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
+}
+
+// Test that plane shapes are bridged into the native collision query.
+TEST(World, CollisionQuerySupportsPlaneShape)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto plane = world.addRigidBody("plane");
+  plane.setCollisionShape(
+      sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.2);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
+}
+
+// Test that triangular mesh shapes are bridged into the native collision query.
+TEST(World, CollisionQuerySupportsMeshShape)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto mesh = world.addRigidBody("mesh");
+  mesh.setCollisionShape(
+      sx::CollisionShape::makeMesh(
+          {Eigen::Vector3d(-1.0, -1.0, 0.0),
+           Eigen::Vector3d(1.0, -1.0, 0.0),
+           Eigen::Vector3d(-1.0, 1.0, 0.0),
+           Eigen::Vector3d(1.0, 1.0, 0.0)},
+          {Eigen::Vector3i(0, 1, 2), Eigen::Vector3i(1, 3, 2)}));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.2);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
+}
+
 // Test that multibody links with collision shapes participate in collision
 // queries and are reported as CollisionBody links (not rigid bodies).
 TEST(World, CollisionQueryIncludesMultibodyLinks)
@@ -3057,6 +3278,124 @@ TEST(World, CollisionQueryRefreshesDirtyLinkTransforms)
         = sawMovedLink || contact.bodyA.isLink() || contact.bodyB.isLink();
   }
   EXPECT_TRUE(sawMovedLink);
+}
+
+// Test that collision-query options can filter self-collision pairs within a
+// multibody while preserving the default same-multibody contact behavior.
+TEST(World, CollisionQueryCanFilterSameMultibodyLinkPairs)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  base.setCollisionShape(sx::CollisionShape::makeSphere(0.75));
+
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitX();
+  auto link = robot.addLink("link", base, spec);
+  link.setCollisionShape(sx::CollisionShape::makeSphere(0.75));
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  world.enterSimulationMode();
+
+  bool sawSameMultibodyPair = false;
+  const auto defaultContacts = world.collide();
+  for (const auto& contact : defaultContacts) {
+    const bool bothLinks = contact.bodyA.isLink() && contact.bodyB.isLink();
+    const bool namesMatch = (contact.bodyA.getName() == "base"
+                             && contact.bodyB.getName() == "link")
+                            || (contact.bodyA.getName() == "link"
+                                && contact.bodyB.getName() == "base");
+    sawSameMultibodyPair = sawSameMultibodyPair || (bothLinks && namesMatch);
+  }
+  EXPECT_TRUE(sawSameMultibodyPair);
+
+  sx::CollisionQueryOptions options;
+  options.includeSameMultibodyLinkPairs = false;
+  EXPECT_TRUE(world.collide(options).empty());
+
+  Eigen::Isometry3d nearPose = Eigen::Isometry3d::Identity();
+  nearPose.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  obstacle.setTransform(nearPose);
+
+  const auto filteredContacts = world.collide(options);
+  ASSERT_FALSE(filteredContacts.empty());
+  for (const auto& contact : filteredContacts) {
+    EXPECT_TRUE(contact.bodyA.isRigidBody() || contact.bodyB.isRigidBody());
+  }
+}
+
+// Test that collision-query options can independently filter body-type pairs
+// while keeping all filters enabled by default.
+TEST(World, CollisionQueryCanFilterBodyTypePairs)
+{
+  namespace sx = dart::simulation::experimental;
+
+  {
+    sx::World world;
+
+    auto bodyA = world.addRigidBody("rigid_a");
+    bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions bodyBOptions;
+    bodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    auto bodyB = world.addRigidBody("rigid_b", bodyBOptions);
+    bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    ASSERT_FALSE(world.collide().empty());
+
+    sx::CollisionQueryOptions options;
+    options.includeRigidBodyPairs = false;
+    EXPECT_TRUE(world.collide(options).empty());
+  }
+
+  {
+    sx::World world;
+
+    auto robot = world.addMultibody("robot");
+    auto link = robot.addLink("link");
+    link.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    auto body = world.addRigidBody("rigid", bodyOptions);
+    body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.enterSimulationMode();
+    ASSERT_FALSE(world.collide().empty());
+
+    sx::CollisionQueryOptions options;
+    options.includeRigidBodyLinkPairs = false;
+    EXPECT_TRUE(world.collide(options).empty());
+  }
+
+  {
+    sx::World world;
+
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    base.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::JointSpec spec;
+    spec.name = "child";
+    auto child = robot.addLink("child", base, spec);
+    child.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.enterSimulationMode();
+    ASSERT_FALSE(world.collide().empty());
+
+    sx::CollisionQueryOptions options;
+    options.includeLinkPairs = false;
+    EXPECT_TRUE(world.collide(options).empty());
+  }
 }
 
 // Test that a multibody link with a collision shape rests on a static ground
@@ -3167,6 +3506,103 @@ TEST(World, MultibodyLinkPushesDynamicRigidBody)
   // velocity m1 v0 / (m1 + m2).
   const double commonVelocity = initialMomentum / (strikerMass + boxMass);
   EXPECT_NEAR(box.getLinearVelocity().x(), commonVelocity, 0.1);
+}
+
+// Test same-multibody link-vs-link contact: two sibling prismatic links overlap
+// and approach along their shared rail. The unified contact stage routes the
+// pair as one relative-Jacobian link row, so the links separate instead of
+// passing through each other.
+TEST(World, MultibodySiblingLinksResolveContact)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("sibling_robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec lowerSpec;
+  lowerSpec.name = "lower";
+  lowerSpec.type = sx::JointType::Prismatic;
+  lowerSpec.axis = Eigen::Vector3d::UnitZ();
+  auto lower = robot.addLink("lower", base, lowerSpec);
+  lower.setMass(1.0);
+  lower.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  sx::JointSpec upperSpec;
+  upperSpec.name = "upper";
+  upperSpec.type = sx::JointType::Prismatic;
+  upperSpec.axis = Eigen::Vector3d::UnitZ();
+  auto upper = robot.addLink("upper", base, upperSpec);
+  upper.setMass(1.0);
+  upper.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  auto lowerJoint = lower.getParentJoint();
+  auto upperJoint = upper.getParentJoint();
+  lowerJoint.setPosition(Eigen::VectorXd::Constant(1, 0.0));
+  upperJoint.setPosition(Eigen::VectorXd::Constant(1, 0.35));
+  lowerJoint.setVelocity(Eigen::VectorXd::Constant(1, 0.5));
+  upperJoint.setVelocity(Eigen::VectorXd::Constant(1, -0.5));
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  const double relativeVelocity
+      = upperJoint.getVelocity()[0] - lowerJoint.getVelocity()[0];
+  EXPECT_GE(relativeVelocity, -1e-9);
+  EXPECT_LT(lowerJoint.getVelocity()[0], 0.5);
+  EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
+}
+
+// Test cross-multibody link-vs-link contact: two separate fixed-base
+// articulated bodies overlap and approach along their prismatic rails. The
+// unified row carries both articulated ends, so the impulse changes both
+// multibodies' staged velocities.
+TEST(World, CrossMultibodyLinksResolveContact)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  const auto addRobot = [&](std::string_view name, double z, double velocity) {
+    auto robot = world.addMultibody(name);
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "slider";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitZ();
+    auto link = robot.addLink("link", base, spec);
+    link.setMass(1.0);
+    link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, z));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
+    return link;
+  };
+
+  auto lower = addRobot("lower_robot", 0.0, 0.5);
+  auto upper = addRobot("upper_robot", 0.35, -0.5);
+  auto lowerJoint = lower.getParentJoint();
+  auto upperJoint = upper.getParentJoint();
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  const double relativeVelocity
+      = upperJoint.getVelocity()[0] - lowerJoint.getVelocity()[0];
+  EXPECT_GE(relativeVelocity, -1e-9);
+  EXPECT_LT(lowerJoint.getVelocity()[0], 0.5);
+  EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
 }
 
 // Test that Coulomb friction at a link contact decelerates a sliding link. A
@@ -3465,6 +3901,107 @@ TEST(World, RigidBodyContactFrictionDeceleratesSlidingBody)
   EXPECT_LT(velocityX, 0.5);
   EXPECT_GT(velocityX, -0.2);
   EXPECT_GT(slider.getTranslation().x(), 0.0);
+}
+
+// Test that a coupled stack settles: two spheres stacked on a static ground
+// generate two contacts (ground-sphere1 and sphere1-sphere2) that share the
+// middle sphere, so the contact-space inverse-mass matrix is a non-singular
+// 2x2 with a non-zero off-diagonal. The coupled boxed-LCP solve makes the
+// bottom contact carry both spheres' weight in one solve, so the lower sphere
+// does not sink under the load of the upper one.
+TEST(World, RigidBodyContactCoupledStackRests)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  // Static ground box with its top face at z = 0.
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+  // Lower sphere dropped just above its resting height (center z = 0.5).
+  sx::RigidBodyOptions lowerOptions;
+  lowerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.55);
+  auto lower = world.addRigidBody("lower", lowerOptions);
+  lower.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  // Upper sphere stacked directly above (resting center z = 1.5), perfectly
+  // aligned so the contact normals are vertical and the stack stays upright.
+  sx::RigidBodyOptions upperOptions;
+  upperOptions.position = Eigen::Vector3d(0.0, 0.0, 1.6);
+  auto upper = world.addRigidBody("upper", upperOptions);
+  upper.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(1000);
+
+  // Both spheres should settle near their stacked resting heights without the
+  // lower one sinking into the ground, and essentially stop moving.
+  EXPECT_NEAR(lower.getTranslation().z(), 0.5, 2e-2);
+  EXPECT_NEAR(upper.getTranslation().z(), 1.5, 4e-2);
+  EXPECT_LT(std::abs(lower.getLinearVelocity().z()), 0.1);
+  EXPECT_LT(std::abs(upper.getLinearVelocity().z()), 0.1);
+  EXPECT_TRUE(
+      ground.getTranslation().isApprox(Eigen::Vector3d(0.0, 0.0, -0.5)));
+}
+
+// Test that friction solved inside the coupled contact LCP turns a sliding
+// sphere into a rolling one. A single sphere on the ground is one contact, so
+// the contact-space matrix is non-singular and the solver takes the full
+// coupled normal+friction path (not the rank-deficient box-on-plane fallback).
+// Coulomb friction drives the contact-point slip to zero, converting forward
+// sliding into forward rolling without reversing the body.
+TEST(World, RigidBodyContactFrictionRollsSlidingSphere)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  // Large static ground so the sphere stays on it while rolling, top at z = 0.
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(20.0, 20.0, 0.5)));
+
+  // A sphere resting on the ground (center at z = 0.5) sliding in +x with no
+  // initial spin.
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  sphereOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setFriction(1.0);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(300);
+
+  const Eigen::Vector3d linear = sphere.getLinearVelocity();
+  const Eigen::Vector3d angular = sphere.getAngularVelocity();
+  // Velocity of the contact point (sphere bottom, arm = (0, 0, -r)).
+  const Eigen::Vector3d contactVelocity
+      = linear + angular.cross(Eigen::Vector3d(0.0, 0.0, -0.5));
+
+  // Friction (solved in the LCP) has driven the tangential slip at the contact
+  // to nearly zero -- the sphere is rolling, not sliding. (The exact rolling
+  // speed depends on the body inertia, so assert the slip and direction rather
+  // than a specific velocity.)
+  EXPECT_LT(std::hypot(contactVelocity.x(), contactVelocity.y()), 0.2);
+  // The body slowed from 2.0 m/s but kept moving forward (never reversed).
+  EXPECT_GT(linear.x(), 0.05);
+  EXPECT_LT(linear.x(), 1.95);
+  // It picked up forward spin (rolling: slip ~ 0 with v.x > 0 implies w.y > 0)
+  // and translated forward, and stayed resting on the ground.
+  EXPECT_GT(angular.y(), 0.05);
+  EXPECT_GT(sphere.getTranslation().x(), 0.3);
+  EXPECT_NEAR(sphere.getTranslation().z(), 0.5, 5e-2);
 }
 
 // Test that the opt-in rigid IPC stage can build its internal objective from
@@ -3943,11 +4480,11 @@ TEST(World, RigidIpcContactStageSkipsInvalidRuntimeGeometry)
 
   auto& registry = world.getRegistry();
   registry.emplace_or_replace<sx::comps::CollisionGeometry>(
-      invalidBox.getEntity(), sx::comps::CollisionGeometry{box});
+      invalidBox.getEntity(), sx::comps::CollisionGeometry{{box}});
   registry.emplace_or_replace<sx::comps::CollisionGeometry>(
-      invalidMesh.getEntity(), sx::comps::CollisionGeometry{mesh});
+      invalidMesh.getEntity(), sx::comps::CollisionGeometry{{mesh}});
   registry.emplace_or_replace<sx::comps::CollisionGeometry>(
-      nonFiniteMesh.getEntity(), sx::comps::CollisionGeometry{nonFinite});
+      nonFiniteMesh.getEntity(), sx::comps::CollisionGeometry{{nonFinite}});
 
   sx::compute::SequentialExecutor executor;
   sx::compute::RigidIpcContactStage ipcStage;
