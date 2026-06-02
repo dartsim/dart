@@ -3,7 +3,7 @@ file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
 dart_add_utils_headers(${hdrs})
-dart_add_utils_headers(${srcs})
+dart_add_utils_sources(${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils_sdf headers" ${hdrs})
