@@ -54,6 +54,28 @@
     readout, fixed-scale CPU/GPU history plots against the 60 FPS budget, the
     active backend, and frame counters, building on the existing GUI
     `ProfileAccumulator` without a separate timing system.
+  - Restyled the `dart::gui` Dear ImGui viewer with a cohesive modern dark
+    theme (VS Code/Blender/Unity-inspired) in place of the stock `StyleColorsDark`
+    look: cool neutral surfaces, a single restrained blue accent used for
+    selection/focus/active state, VS Code-style active-tab accent overlines,
+    flat hairline-bordered widgets with soft rounding, pill scrollbars, and more
+    breathable spacing. Centralized in `configureImGuiStyle` so every panel, the
+    perf HUD, and the docked regions share one look; colors are scale-independent
+    while metrics still scale with `--gui-scale`/DPI.
+  - Enabled GPU (CUDA) deformable solve in the Python demos: `pixi run -e cuda
+py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
+    deformable projected-Newton PSD projection to the GPU by default. New
+    backend-neutral dartpy functions
+    `simulation_experimental.is_accelerated_deformable_solve_available()`,
+    `set_accelerated_deformable_solve(enabled)`, and
+    `is_accelerated_deformable_solve_enabled()` expose the process-wide toggle.
+    The CUDA sidecar registers itself with a backend-neutral core control, so the
+    public API never names a device technology and is a safe no-op on non-CUDA
+    builds, leaving the default environment unchanged. The demo runner adds `--gpu`/`--no-gpu`
+    flags and a `DART_PY_DEMOS_GPU` env override (default `auto`: on when a CUDA
+    device is present), an in-viewer GPU toggle panel, and a startup status
+    line. The `config-py` build task forwards the experimental CUDA opt-in so
+    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a

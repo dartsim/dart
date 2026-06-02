@@ -42,6 +42,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/deformable_psd_backend.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/diff/physical_parameter.hpp>
@@ -101,6 +102,29 @@ namespace dart::python_nb {
 namespace {
 
 namespace sim = dart::simulation::experimental;
+
+// Backend-neutral acceleration control for the deformable solve, exposed to
+// Python as a process-wide toggle. The interactive deformable solver
+// PSD-projects its per-element Hessian blocks through the core PSD backend; an
+// optional accelerator (registered by a device sidecar when one is compiled in,
+// e.g. the experimental CUDA build) can offload that hotspot. These thin
+// wrappers forward to the backend-neutral core control so the binding never
+// names a device technology; with no accelerator registered they are safe
+// no-ops that report acceleration as unavailable and stay on the CPU backend.
+bool acceleratedDeformableSolveAvailable()
+{
+  return sim::compute::isDeformablePsdAccelerationAvailable();
+}
+
+bool setAcceleratedDeformableSolve(bool enabled)
+{
+  return sim::compute::setDeformablePsdAccelerated(enabled);
+}
+
+bool acceleratedDeformableSolveEnabled()
+{
+  return sim::compute::isDeformablePsdAccelerated();
+}
 
 Eigen::Quaterniond toQuaternionWxyz(const nb::handle& value)
 {
@@ -2777,6 +2801,30 @@ void defSimulationExperimentalModule(nb::module_& m)
                                     : std::string("False"));
         return format_repr("World", fields);
       });
+
+  // Backend-neutral acceleration control for the deformable solve.
+  // Process-wide: the deformable projected-Newton PSD projection is the one
+  // interactive hotspot an optional device sidecar can offload. With no
+  // accelerator registered these are safe no-ops reporting acceleration as
+  // unavailable.
+  m.def(
+      "is_accelerated_deformable_solve_available",
+      &acceleratedDeformableSolveAvailable,
+      "Whether a deformable-solve accelerator (e.g. an experimental device "
+      "backend) is registered and reports an available device at runtime.");
+  m.def(
+      "set_accelerated_deformable_solve",
+      &setAcceleratedDeformableSolve,
+      nb::arg("enabled"),
+      "Enable or disable accelerated (device-offloaded) deformable PSD "
+      "projection, process-wide. Returns the resulting enabled state (False "
+      "when no accelerator is available, so the call is a safe no-op that "
+      "stays "
+      "on the CPU backend).");
+  m.def(
+      "is_accelerated_deformable_solve_enabled",
+      &acceleratedDeformableSolveEnabled,
+      "Whether the accelerated deformable PSD backend is currently installed.");
 }
 
 } // namespace dart::python_nb
