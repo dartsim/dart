@@ -3869,6 +3869,52 @@ TEST(World, RigidBodyContactTreatsKinematicBodyAsStaticObstacle)
   EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
 }
 
+TEST(World, BoxedLcpContactTreatsKinematicBodyAsStaticObstacle)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  obstacle.setKinematic(true);
+  ASSERT_TRUE(obstacle.isKinematic());
+  ASSERT_FALSE(obstacle.isStatic());
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+  auto dynamic = world.addRigidBody("dynamic", dynamicOptions);
+  dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  const auto& contact = contacts.front();
+  constexpr double kinematicSpeed = 5.0;
+  if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+    obstacle.setLinearVelocity(kinematicSpeed * contact.normal);
+  } else {
+    ASSERT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+    obstacle.setLinearVelocity(-kinematicSpeed * contact.normal);
+  }
+
+  const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+
+  world.setTimeStep(0.001);
+  world.step();
+
+  EXPECT_TRUE(obstacle.isKinematic());
+  EXPECT_TRUE(
+      obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+  EXPECT_NEAR(obstacle.getLinearVelocity().norm(), kinematicSpeed, 1e-12);
+  EXPECT_TRUE(dynamic.getLinearVelocity().isZero(1e-12));
+  EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
+}
+
 TEST(World, RigidBodyStaticSetterClearsKinematicMode)
 {
   namespace sx = dart::simulation::experimental;
