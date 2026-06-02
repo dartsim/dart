@@ -390,6 +390,10 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   auto link = world.addRigidBody("link", linkOptions);
   (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
 
+  Eigen::Isometry3d designPose = Eigen::Isometry3d::Identity();
+  designPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  link.setTransform(designPose);
+
   std::stringstream data;
   world.saveBinary(data);
 
@@ -424,10 +428,6 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   EXPECT_NEAR(
       (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
   EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
-
-  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
-  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
-  restoredLink->setTransform(driftedPose);
 
   restored.step();
 

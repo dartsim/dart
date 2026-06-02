@@ -173,7 +173,7 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
     return false;
   }
 
-  const auto* joint = registry.try_get<comps::Joint>(jointEntity);
+  auto* joint = registry.try_get<comps::Joint>(jointEntity);
   if (joint == nullptr || joint->type != comps::JointType::Fixed
       || joint->parentLink == entt::null || joint->childLink == entt::null
       || joint->parentLink == joint->childLink) {
@@ -199,23 +199,49 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
     return false;
   }
 
-  const Eigen::Quaterniond orientationA
-      = normalizeAvbdRigidOrientation(transformA.orientation);
-  const Eigen::Quaterniond orientationB
-      = normalizeAvbdRigidOrientation(transformB.orientation);
-  const Eigen::Isometry3d worldA = avbdRigidWorldContactToIsometry(
-      AvbdRigidBodyState{transformA.position, orientationA});
-  const Eigen::Isometry3d worldB = avbdRigidWorldContactToIsometry(
-      AvbdRigidBodyState{transformB.position, orientationB});
-  const Eigen::Vector3d worldAnchor = worldB.translation();
+  Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  if (joint->hasRigidBodyFixedJointAnchors) {
+    if (!joint->rigidBodyFixedJointLocalAnchorParent.allFinite()
+        || !joint->rigidBodyFixedJointLocalAnchorChild.allFinite()
+        || !joint->rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+                .allFinite()
+        || joint->rigidBodyFixedJointTargetRelativeOrientation.norm() == 0.0) {
+      return false;
+    }
+    localAnchorA = joint->rigidBodyFixedJointLocalAnchorParent;
+    localAnchorB = joint->rigidBodyFixedJointLocalAnchorChild;
+    targetRelativeOrientation = normalizeAvbdRigidOrientation(
+        joint->rigidBodyFixedJointTargetRelativeOrientation);
+  } else {
+    const Eigen::Quaterniond orientationA
+        = normalizeAvbdRigidOrientation(transformA.orientation);
+    const Eigen::Quaterniond orientationB
+        = normalizeAvbdRigidOrientation(transformB.orientation);
+    const Eigen::Isometry3d worldA = avbdRigidWorldContactToIsometry(
+        AvbdRigidBodyState{transformA.position, orientationA});
+    const Eigen::Isometry3d worldB = avbdRigidWorldContactToIsometry(
+        AvbdRigidBodyState{transformB.position, orientationB});
+    const Eigen::Vector3d worldAnchor = worldB.translation();
+    localAnchorA = worldA.inverse() * worldAnchor;
+    localAnchorB = worldB.inverse() * worldAnchor;
+    targetRelativeOrientation = normalizeAvbdRigidOrientation(
+        orientationB * orientationA.conjugate());
+
+    joint->hasRigidBodyFixedJointAnchors = true;
+    joint->rigidBodyFixedJointLocalAnchorParent = localAnchorA;
+    joint->rigidBodyFixedJointLocalAnchorChild = localAnchorB;
+    joint->rigidBodyFixedJointTargetRelativeOrientation
+        = targetRelativeOrientation;
+  }
 
   auto& config = registry.emplace_or_replace<AvbdRigidWorldPointJointConfig>(
       jointEntity);
   config.enabled = true;
-  config.localAnchorA = worldA.inverse() * worldAnchor;
-  config.localAnchorB = worldB.inverse() * worldAnchor;
-  config.targetRelativeOrientation
-      = normalizeAvbdRigidOrientation(orientationB * orientationA.conjugate());
+  config.localAnchorA = localAnchorA;
+  config.localAnchorB = localAnchorB;
+  config.targetRelativeOrientation = targetRelativeOrientation;
   config.startStiffness = startStiffness;
   config.maxStiffness = maxStiffness;
   return true;
