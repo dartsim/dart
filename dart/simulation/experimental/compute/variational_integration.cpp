@@ -22,6 +22,7 @@
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -1833,7 +1834,7 @@ ComputeStageMetadata MultibodyVariationalIntegrationStage::getMetadata()
 void MultibodyVariationalIntegrationStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 

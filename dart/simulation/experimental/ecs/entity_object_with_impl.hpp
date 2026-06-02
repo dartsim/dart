@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 namespace dart::simulation::experimental {
@@ -54,7 +55,8 @@ EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::getReadOnly() const
       "this class. "
       "Add it to one of these lists.");
 
-  return m_world->getRegistry().template get<Component>(m_entity);
+  return dart::simulation::experimental::detail::registryOf(*m_world)
+      .template get<Component>(m_entity);
 }
 
 //==============================================================================
@@ -74,7 +76,8 @@ Component& EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::getMutable()
       "this class. "
       "Add it to one of these lists or use getReadOnly().");
 
-  return m_world->getRegistry().template get<Component>(m_entity);
+  return dart::simulation::experimental::detail::registryOf(*m_world)
+      .template get<Component>(m_entity);
 }
 
 //==============================================================================
@@ -95,7 +98,8 @@ EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::tryGetReadOnly() const
       "this class. "
       "Add it to one of these lists.");
 
-  return m_world->getRegistry().template try_get<Component>(m_entity);
+  return dart::simulation::experimental::detail::registryOf(*m_world)
+      .template try_get<Component>(m_entity);
 }
 
 //==============================================================================
@@ -116,7 +120,8 @@ EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::tryGetMutable()
       "this class. "
       "Add it to one of these lists or use tryGetReadOnly().");
 
-  return m_world->getRegistry().template try_get<Component>(m_entity);
+  return dart::simulation::experimental::detail::registryOf(*m_world)
+      .template try_get<Component>(m_entity);
 }
 
 //==============================================================================

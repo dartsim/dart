@@ -47,6 +47,7 @@
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -755,7 +756,7 @@ TEST(World, SyncKinematicsRefreshesFrameHierarchy)
 
   world.enterSimulationMode();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   EXPECT_FALSE(registry
                    .get<sx::comps::FrameCache>(
                        dart::simulation::experimental::detail::toRegistryEntity(
@@ -920,7 +921,7 @@ TEST(World, FrameReadsRefreshDescendantsAfterParentLocalTransformChange)
   updatedParentTransform.translate(Eigen::Vector3d(3.0, 0.0, 0.0));
   parent.setLocalTransform(updatedParentTransform);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   EXPECT_TRUE(registry
                   .get<sx::comps::FrameCache>(
                       dart::simulation::experimental::detail::toRegistryEntity(
@@ -960,7 +961,7 @@ TEST(World, StepRefreshesFrameHierarchy)
 
   EXPECT_TRUE(world.isSimulationMode());
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   EXPECT_FALSE(registry
                    .get<sx::comps::FrameCache>(
                        dart::simulation::experimental::detail::toRegistryEntity(
@@ -4503,7 +4504,7 @@ TEST(World, RigidIpcContactStageSkipsInvalidRuntimeGeometry)
        Eigen::Vector3d(std::numeric_limits<double>::infinity(), 1.0, 0.0)},
       {Eigen::Vector3i(0, 1, 2)});
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& toReg = dart::simulation::experimental::detail::toRegistryEntity;
   registry.emplace_or_replace<sx::comps::CollisionGeometry>(
       toReg(invalidBox.getEntity()), sx::comps::CollisionGeometry{{box}});

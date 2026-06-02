@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -62,7 +63,8 @@ World* CollisionBody::getWorld() const
 bool CollisionBody::isValid() const
 {
   return m_world != nullptr
-         && m_world->getRegistry().valid(detail::toRegistryEntity(m_entity));
+         && dart::simulation::experimental::detail::registryOf(*m_world).valid(
+             detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
@@ -71,7 +73,8 @@ std::string CollisionBody::getName() const
   if (!isValid()) {
     return {};
   }
-  const auto& registry = m_world->getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
   if (const auto* name
       = registry.try_get<comps::Name>(detail::toRegistryEntity(m_entity))) {
     return name->name;
@@ -83,16 +86,17 @@ std::string CollisionBody::getName() const
 bool CollisionBody::isRigidBody() const
 {
   return isValid()
-         && m_world->getRegistry().all_of<comps::RigidBodyTag>(
-             detail::toRegistryEntity(m_entity));
+         && dart::simulation::experimental::detail::registryOf(*m_world)
+                .all_of<comps::RigidBodyTag>(
+                    detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
 bool CollisionBody::isLink() const
 {
   return isValid()
-         && m_world->getRegistry().all_of<comps::Link>(
-             detail::toRegistryEntity(m_entity));
+         && dart::simulation::experimental::detail::registryOf(*m_world)
+                .all_of<comps::Link>(detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================

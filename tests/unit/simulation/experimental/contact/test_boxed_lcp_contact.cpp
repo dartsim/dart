@@ -47,6 +47,7 @@
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 
@@ -154,7 +155,9 @@ TEST(AvbdContact, CompoundShapeFeatureKeysUseContactedShapeIndex)
 
   const dvbd::AvbdRigidWorldContactSnapshot snapshot
       = dvbd::buildAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), contacts, dvbd::AvbdRigidWorldContactOptions{});
+          dart::simulation::experimental::detail::registryOf(world),
+          contacts,
+          dvbd::AvbdRigidWorldContactOptions{});
   ASSERT_FALSE(snapshot.contacts.empty());
   const auto& manifold = snapshot.contacts.front();
   const dvbd::AvbdContactEndpointId compoundEndpoint
@@ -181,9 +184,10 @@ TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
   avbd->setGravity(Eigen::Vector3d::Zero());
   auto sphere = avbd->getRigidBody("sphere");
   ASSERT_TRUE(sphere.has_value());
-  avbd->getRegistry().emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
-      dart::simulation::experimental::detail::toRegistryEntity(
-          sphere->getEntity()));
+  dart::simulation::experimental::detail::registryOf(*avbd)
+      .emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+          dart::simulation::experimental::detail::toRegistryEntity(
+              sphere->getEntity()));
   avbd->enterSimulationMode();
 
   avbd->step();
@@ -211,7 +215,7 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
   spherePose.translation() = Eigen::Vector3d(0.25, 0.0, 0.49);
   sphere->setTransform(spherePose);
 
-  auto& registry = avbd->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*avbd);
   const auto& toReg = dart::simulation::experimental::detail::toRegistryEntity;
   registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
       toReg(sphere->getEntity()));
@@ -255,7 +259,7 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
@@ -295,7 +299,7 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
   linkOptions.orientation = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ());
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
@@ -339,7 +343,7 @@ TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
   linkOptions.position = Eigen::Vector3d(11.0, 0.0, 0.0);
   auto link = world->addRigidBody("joint_link", linkOptions);
 
-  auto& registry = world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*world);
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;

@@ -37,6 +37,7 @@
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -131,7 +132,8 @@ Multibody::Multibody(Entity entity, World* world)
 std::string_view Multibody::getName() const
 {
   const auto& nameComp = safeGet<comps::Name>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
   return nameComp.name;
 }
 
@@ -143,13 +145,16 @@ void Multibody::setName(std::string_view name)
 
   DART_EXPERIMENTAL_THROW_T_IF(
       hasOtherEntityWithName<comps::MultibodyTag>(
-          m_world->getRegistry(), detail::toRegistryEntity(m_entity), name),
+          dart::simulation::experimental::detail::registryOf(*m_world),
+          detail::toRegistryEntity(m_entity),
+          name),
       InvalidArgumentException,
       "Multibody '{}' already exists",
       name);
 
   auto& nameComp = safeGet<comps::Name>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
   nameComp.name = name;
 }
 
@@ -157,7 +162,8 @@ void Multibody::setName(std::string_view name)
 std::size_t Multibody::getLinkCount() const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
   return structure.links.size();
 }
 
@@ -165,7 +171,8 @@ std::size_t Multibody::getLinkCount() const
 std::size_t Multibody::getJointCount() const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
   return structure.joints.size();
 }
 
@@ -174,8 +181,10 @@ std::size_t Multibody::getDOFCount() const
 {
   std::size_t dof = 0;
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
-  const auto& registry = m_world->getRegistry();
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
 
   for (const auto& jointEntity : structure.joints) {
     const auto& joint = safeGet<comps::Joint>(registry, jointEntity);
@@ -189,8 +198,10 @@ std::size_t Multibody::getDOFCount() const
 std::optional<Link> Multibody::getLink(std::string_view name) const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
-  const auto& registry = m_world->getRegistry();
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
 
   for (const auto& linkEntity : structure.links) {
     const auto& nameComp = safeGet<comps::Name>(registry, linkEntity);
@@ -206,8 +217,10 @@ std::optional<Link> Multibody::getLink(std::string_view name) const
 std::optional<Joint> Multibody::getJoint(std::string_view name) const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
-  const auto& registry = m_world->getRegistry();
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
 
   for (const auto& jointEntity : structure.joints) {
     const auto& nameComp = safeGet<comps::Name>(registry, jointEntity);
@@ -223,7 +236,8 @@ std::optional<Joint> Multibody::getJoint(std::string_view name) const
 std::vector<Link> Multibody::getLinks() const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
 
   std::vector<Link> links;
   links.reserve(structure.links.size());
@@ -238,7 +252,8 @@ std::vector<Link> Multibody::getLinks() const
 std::vector<Joint> Multibody::getJoints() const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
 
   std::vector<Joint> joints;
   joints.reserve(structure.joints.size());
@@ -253,8 +268,10 @@ std::vector<Joint> Multibody::getJoints() const
 std::vector<std::string> Multibody::getLinkNames() const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
-  const auto& registry = m_world->getRegistry();
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
 
   std::vector<std::string> names;
   names.reserve(structure.links.size());
@@ -269,8 +286,10 @@ std::vector<std::string> Multibody::getLinkNames() const
 std::vector<std::string> Multibody::getJointNames() const
 {
   const auto& structure = safeGet<comps::MultibodyStructure>(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
-  const auto& registry = m_world->getRegistry();
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
 
   std::vector<std::string> names;
   names.reserve(structure.joints.size());
@@ -297,8 +316,11 @@ World* Multibody::getWorld() const
 bool Multibody::isValid() const
 {
   const auto entity = detail::toRegistryEntity(m_entity);
-  return m_world != nullptr && m_world->getRegistry().valid(entity)
-         && m_world->getRegistry().all_of<comps::MultibodyTag>(entity);
+  return m_world != nullptr
+         && dart::simulation::experimental::detail::registryOf(*m_world).valid(
+             entity)
+         && dart::simulation::experimental::detail::registryOf(*m_world)
+                .all_of<comps::MultibodyTag>(entity);
 }
 
 Link Multibody::addLink(std::string_view name)
@@ -309,7 +331,7 @@ Link Multibody::addLink(std::string_view name)
       InvalidArgumentException,
       "Cannot create Link in simulation mode");
 
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
 
@@ -366,7 +388,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
       "design mode.");
 
   // Validate parent link exists
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   auto parentEntity = detail::toRegistryEntity(options.parentLink.getEntity());
 
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -555,7 +577,7 @@ Link Multibody::addLink(
 //==============================================================================
 Eigen::MatrixXd Multibody::getMassMatrix() const
 {
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyDynamicsTerms(
@@ -576,7 +598,7 @@ Eigen::MatrixXd Multibody::getInverseMassMatrix() const
 //==============================================================================
 Eigen::VectorXd Multibody::getCoriolisForces() const
 {
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyDynamicsTerms(
@@ -587,7 +609,7 @@ Eigen::VectorXd Multibody::getCoriolisForces() const
 //==============================================================================
 Eigen::VectorXd Multibody::getGravityForces() const
 {
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyDynamicsTerms(
@@ -598,7 +620,7 @@ Eigen::VectorXd Multibody::getGravityForces() const
 //==============================================================================
 Eigen::VectorXd Multibody::getCoriolisAndGravityForces() const
 {
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   const compute::MultibodyDynamicsTerms terms
@@ -611,7 +633,7 @@ Eigen::VectorXd Multibody::getCoriolisAndGravityForces() const
 Eigen::VectorXd Multibody::computeInverseDynamics(
     const Eigen::VectorXd& desiredAcceleration) const
 {
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyInverseDynamics(
@@ -645,7 +667,7 @@ Eigen::MatrixXd Multibody::getJacobian(const Link& link) const
       InvalidArgumentException,
       "Link belongs to a different world");
 
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyLinkJacobian(
@@ -660,7 +682,7 @@ Eigen::MatrixXd Multibody::getWorldJacobian(const Link& link) const
       InvalidArgumentException,
       "Link belongs to a different world");
 
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   const auto& structure = safeGet<comps::MultibodyStructure>(
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyLinkWorldJacobian(
@@ -677,7 +699,7 @@ void Multibody::setGroundContact(
     double dampingCoefficient,
     std::size_t dualUpdateCadence)
 {
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   auto& contact = registry.emplace_or_replace<comps::VariationalContact>(
       detail::toRegistryEntity(m_entity));
   contact.planeNormal = planeNormal;
@@ -705,7 +727,7 @@ void Multibody::addGroundContactPoint(
       link.getWorld() != m_world,
       InvalidArgumentException,
       "addGroundContactPoint: link belongs to a different world");
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   auto* contact = registry.try_get<comps::VariationalContact>(
       detail::toRegistryEntity(m_entity));
   DART_EXPERIMENTAL_THROW_T_IF(

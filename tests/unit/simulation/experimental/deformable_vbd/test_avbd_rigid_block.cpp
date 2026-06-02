@@ -30,6 +30,7 @@
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Eigenvalues>
@@ -1157,7 +1158,9 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
   options.maxStiffness = 700.0;
   const vbd::AvbdRigidWorldContactSnapshot snapshot
       = vbd::buildAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), contacts, options);
+          dart::simulation::experimental::detail::registryOf(world),
+          contacts,
+          options);
 
   ASSERT_EQ(snapshot.entities.size(), 2u);
   ASSERT_EQ(snapshot.states.size(), snapshot.entities.size());
@@ -1301,7 +1304,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotPersistsFeatureScopedRows)
       {boxBody, sphereBodyA, Vec3(1.0, -0.1, 0.0), Vec3::UnitX(), 0.3}};
 
   const vbd::AvbdRigidWorldContactSnapshot snapshot
-      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(snapshot.contacts.size(), contacts.size());
   EXPECT_EQ(snapshot.contacts[0].row, 0u);
@@ -1362,7 +1366,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotScopesFeatureToCollidingShape)
   const std::vector<sx::Contact> contacts{onShape0, onShape1};
 
   const vbd::AvbdRigidWorldContactSnapshot snapshot
-      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(snapshot.contacts.size(), 2u);
   // Distinct shapes must not alias onto the same feature id.
@@ -1422,7 +1427,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotKeepsCompoundShapeTypesDisjoint)
   const std::vector<sx::Contact> contacts{onBox, onCylinder};
 
   const vbd::AvbdRigidWorldContactSnapshot snapshot
-      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(snapshot.contacts.size(), 2u);
   EXPECT_EQ(
@@ -1471,7 +1477,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotScopesUnsupportedShapesByIndex)
   const std::vector<sx::Contact> contacts{onShape0, onShape1};
 
   const vbd::AvbdRigidWorldContactSnapshot snapshot
-      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(snapshot.contacts.size(), 2u);
   // Spheres have no face/edge code, so both fall back to a body feature — but
@@ -1520,7 +1527,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCylinderFeatureIds)
        0.3}};
 
   const vbd::AvbdRigidWorldContactSnapshot snapshot
-      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(snapshot.contacts.size(), contacts.size());
   EXPECT_EQ(snapshot.contacts[0].row, 0u);
@@ -1581,7 +1589,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCapsuleFeatureIds)
       {capsuleBody, sphereBodyC, Vec3(0.0, 0.0, -2.1), -Vec3::UnitZ(), 0.3}};
 
   const vbd::AvbdRigidWorldContactSnapshot snapshot
-      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(snapshot.contacts.size(), contacts.size());
   EXPECT_EQ(snapshot.contacts[0].row, 0u);
@@ -1623,7 +1632,8 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
 
   vbd::AvbdRigidWorldContactSnapshot snapshot
       = vbd::buildAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), std::span<const sx::Contact>());
+          dart::simulation::experimental::detail::registryOf(world),
+          std::span<const sx::Contact>());
 
   std::vector<vbd::AvbdRigidWorldPointJointInput> joints(1);
   joints[0].bodyA = dart::simulation::experimental::detail::toRegistryEntity(
@@ -1637,7 +1647,9 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
   joints[0].maxStiffness = 1000.0;
   EXPECT_EQ(
       vbd::appendAvbdRigidWorldPointJoints(
-          world.getRegistry(), joints, snapshot),
+          dart::simulation::experimental::detail::registryOf(world),
+          joints,
+          snapshot),
       1u);
   ASSERT_EQ(snapshot.joints.size(), 1u);
 
@@ -1680,7 +1692,9 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
 
   const vbd::AvbdRigidWorldContactApplyResult applyResult
       = vbd::applyAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), snapshot, /*timeStep=*/1.0);
+          dart::simulation::experimental::detail::registryOf(world),
+          snapshot,
+          /*timeStep=*/1.0);
   EXPECT_EQ(applyResult.bodies, 1u);
   EXPECT_NEAR(link.getTransform().translation().x(), 0.0, 0.25);
   EXPECT_LT(std::abs(link.getAngularVelocity().z()), 0.65);
@@ -1725,7 +1739,7 @@ TEST(AvbdRigidBlock, RigidWorldContactStepSolvesPointJointRows)
 
   const vbd::AvbdRigidWorldContactStepResult result
       = vbd::runAvbdRigidWorldContactStep(
-          world.getRegistry(),
+          dart::simulation::experimental::detail::registryOf(world),
           std::span<const sx::Contact>(),
           joints,
           normalInventory,
@@ -1763,7 +1777,7 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
   linkOptions.orientation = rotationZ(0.6);
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
@@ -1849,7 +1863,9 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
   contactOptions.startStiffness = 200.0;
   vbd::AvbdRigidWorldContactSnapshot snapshot
       = vbd::buildAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), world.collide(), contactOptions);
+          dart::simulation::experimental::detail::registryOf(world),
+          world.collide(),
+          contactOptions);
   ASSERT_FALSE(snapshot.contacts.empty());
 
   const std::size_t sphereIndex = findEntityIndex(
@@ -1906,7 +1922,9 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotApplyWritesDynamicBodyState)
   contactOptions.startStiffness = 200.0;
   vbd::AvbdRigidWorldContactSnapshot snapshot
       = vbd::buildAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), world.collide(), contactOptions);
+          dart::simulation::experimental::detail::registryOf(world),
+          world.collide(),
+          contactOptions);
   ASSERT_FALSE(snapshot.contacts.empty());
 
   const std::size_t sphereIndex = findEntityIndex(
@@ -1932,7 +1950,9 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotApplyWritesDynamicBodyState)
   const double writebackTimeStep = 0.5;
   const vbd::AvbdRigidWorldContactApplyResult applyResult
       = vbd::applyAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), snapshot, writebackTimeStep);
+          dart::simulation::experimental::detail::registryOf(world),
+          snapshot,
+          writebackTimeStep);
 
   EXPECT_EQ(applyResult.bodies, 1u);
   EXPECT_NEAR(
@@ -1978,7 +1998,7 @@ TEST(AvbdRigidBlock, RigidWorldContactStepSolvesAndWritesDynamicBody)
   const double timeStep = 0.5;
   const vbd::AvbdRigidWorldContactStepResult result
       = vbd::runAvbdRigidWorldContactStep(
-          world.getRegistry(),
+          dart::simulation::experimental::detail::registryOf(world),
           contacts,
           normalInventory,
           frictionInventory,
@@ -2017,7 +2037,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotSkipsStaticPairs)
   ASSERT_FALSE(contacts.empty());
 
   const vbd::AvbdRigidWorldContactSnapshot snapshot
-      = vbd::buildAvbdRigidWorldContactSnapshot(world.getRegistry(), contacts);
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world), contacts);
 
   EXPECT_TRUE(snapshot.entities.empty());
   EXPECT_TRUE(snapshot.contacts.empty());

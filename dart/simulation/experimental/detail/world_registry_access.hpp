@@ -30,39 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/frame/fixed_frame.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/common/exceptions.hpp"
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/detail/entity_conversion.hpp"
-#include "dart/simulation/experimental/detail/world_registry_access.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/fwd.hpp>
 
-namespace dart::simulation::experimental {
+#include <entt/entt.hpp>
 
-//==============================================================================
-FixedFrame::FixedFrame(Entity entity, World* world) : Frame(entity, world)
-{
-  // Validate entity has FixedFrameProperties
-#ifndef NDEBUG
-  auto& registry = dart::simulation::experimental::detail::registryOf(*world);
-  const auto enttEntity = detail::toRegistryEntity(entity);
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !registry.all_of<comps::FixedFrameProperties>(enttEntity),
-      InvalidArgumentException,
-      "Entity does not have FixedFrameProperties component");
-#endif
-}
+namespace dart::simulation::experimental::detail {
 
-//==============================================================================
-void FixedFrame::setLocalTransform(const Eigen::Isometry3d& transform)
-{
-  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
-  auto& props = registry.get<comps::FixedFrameProperties>(
-      detail::toRegistryEntity(m_entity));
-  props.localTransform = transform;
+/// Internal escape hatch returning the ECS registry that backs a `World`.
+///
+/// This replaces the former public `World` registry accessor member so the
+/// promoted public `world.hpp` names no EnTT symbols. It is the retained DART 7
+/// implementation seam for subsystem bring-up and tests; it is NOT part of the
+/// promoted public surface and lives in `detail/`. It is built on the
+/// `friend` `storageOf` accessor, so it reaches the privately-held storage
+/// without widening the public API.
+[[nodiscard]] entt::registry& registryOf(World& world);
 
-  markSubtreeTransformCacheDirty();
-}
+/// See the non-const overload.
+[[nodiscard]] const entt::registry& registryOf(const World& world);
 
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation::experimental::detail

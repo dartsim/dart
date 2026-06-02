@@ -40,6 +40,7 @@
 #include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -164,7 +165,8 @@ void saveLegacyWorldWithCurrentEntities(
   io::writePOD(output, magicNumber);
   io::writePOD(output, legacyVersion);
 
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   std::vector<entt::entity> entities;
   auto nameView = registry.view<comps::Name>();
   for (auto entity : nameView) {
@@ -428,7 +430,7 @@ TEST(Serialization, LoadsLegacyV1JointRecord)
   auto joint = link.getParentJoint();
   joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
   joint.setVelocity(Eigen::VectorXd::Constant(1, -0.75));
-  world1.getRegistry()
+  dart::simulation::experimental::detail::registryOf(world1)
       .get<comps::Joint>(
           dart::simulation::experimental::detail::toRegistryEntity(
               joint.getEntity()))
@@ -464,9 +466,11 @@ TEST(Serialization, LoadsLegacyV1JointRecord)
   EXPECT_DOUBLE_EQ(jointRestored->getEffortLowerLimits()[0], -3.0);
   EXPECT_DOUBLE_EQ(jointRestored->getEffortUpperLimits()[0], 3.0);
 
-  const auto& jointComp = world2.getRegistry().get<comps::Joint>(
-      dart::simulation::experimental::detail::toRegistryEntity(
-          jointRestored->getEntity()));
+  const auto& jointComp
+      = dart::simulation::experimental::detail::registryOf(world2)
+            .get<comps::Joint>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    jointRestored->getEntity()));
   EXPECT_EQ(jointComp.actuatorType, comps::ActuatorType::Force);
   EXPECT_TRUE(jointComp.springStiffness.isZero());
   EXPECT_TRUE(jointComp.dampingCoefficient.isZero());
@@ -502,9 +506,11 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
   Eigen::Matrix<double, 6, 1> externalForce;
   externalForce << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0;
 
-  auto& linkComp = world1.getRegistry().get<comps::Link>(
-      dart::simulation::experimental::detail::toRegistryEntity(
-          link.getEntity()));
+  auto& linkComp
+      = dart::simulation::experimental::detail::registryOf(world1)
+            .get<comps::Link>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    link.getEntity()));
   linkComp.transformFromParentToJoint = unsavedParentToJoint;
   linkComp.transformFromParentJoint = legacyJointToLink;
   linkComp.worldTransform = worldTransform;
@@ -521,9 +527,11 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
   auto linkRestored = mbRestored->getLink("link");
   ASSERT_TRUE(linkRestored.has_value());
 
-  const auto& restoredLinkComp = world2.getRegistry().get<comps::Link>(
-      dart::simulation::experimental::detail::toRegistryEntity(
-          linkRestored->getEntity()));
+  const auto& restoredLinkComp
+      = dart::simulation::experimental::detail::registryOf(world2)
+            .get<comps::Link>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    linkRestored->getEntity()));
   EXPECT_TRUE(restoredLinkComp.transformFromParentToJoint.isApprox(
       Eigen::Isometry3d::Identity()));
   EXPECT_TRUE(
@@ -540,9 +548,11 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
 
   auto baseRestored = mbRestored->getLink("base");
   ASSERT_TRUE(baseRestored.has_value());
-  const auto& restoredBaseComp = world2.getRegistry().get<comps::Link>(
-      dart::simulation::experimental::detail::toRegistryEntity(
-          baseRestored->getEntity()));
+  const auto& restoredBaseComp
+      = dart::simulation::experimental::detail::registryOf(world2)
+            .get<comps::Link>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    baseRestored->getEntity()));
   ASSERT_EQ(restoredBaseComp.childJoints.size(), 1u);
   EXPECT_EQ(
       restoredBaseComp.childJoints.front(),
@@ -1235,7 +1245,7 @@ TEST(Serialization, CacheNotSerialized)
 
   // Verify cache is clean
   {
-    auto& registry = world.getRegistry();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
     auto entity = dart::simulation::experimental::detail::toRegistryEntity(
         frame.getEntity());
     ASSERT_TRUE(registry.valid(entity)) << "Entity should be valid";
@@ -1260,7 +1270,7 @@ TEST(Serialization, CacheNotSerialized)
   world2.loadBinary(ss);
 
   // Check the registry directly for the restored FreeFrame
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view
       = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
 
@@ -1339,7 +1349,7 @@ TEST(Serialization, StateSerializedCorrectly)
   world2.loadBinary(ss);
 
   // Check that we have 2 FreeFrames
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view
       = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
   EXPECT_EQ(std::ranges::distance(view), 2)
@@ -1402,7 +1412,7 @@ TEST(Serialization, PropertiesSerializedCorrectly)
   world2.loadBinary(ss);
 
   // Find the FixedFrame
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view
       = registry2.view<dart::simulation::experimental::comps::FixedFrameTag>();
   EXPECT_FALSE(view.empty()) << "Should have restored FixedFrame";
@@ -1447,7 +1457,7 @@ TEST(Serialization, RoundTripConsistency)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss1);
 
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view = registry2.view<
       dart::simulation::experimental::comps::Name,
       dart::simulation::experimental::comps::FreeFrameProperties,
@@ -1501,7 +1511,7 @@ TEST(Serialization, CloneDeepCopy)
   dart::simulation::experimental::World clone;
   clone.loadBinary(ss);
 
-  auto& cloneReg = clone.getRegistry();
+  auto& cloneReg = dart::simulation::experimental::detail::registryOf(clone);
   auto cloneView = cloneReg.view<
       dart::simulation::experimental::comps::Name,
       dart::simulation::experimental::comps::FreeFrameProperties>();
@@ -1523,7 +1533,8 @@ TEST(Serialization, CloneDeepCopy)
     }
   }
 
-  const auto& originalReg = world.getRegistry();
+  const auto& originalReg
+      = dart::simulation::experimental::detail::registryOf(world);
   auto originalView = originalReg.view<
       dart::simulation::experimental::comps::Name,
       dart::simulation::experimental::comps::FreeFrameProperties>();
@@ -1558,7 +1569,7 @@ TEST(Serialization, CloneResetCounters)
   clone.loadBinary(ss);
 
   auto nextFrame = clone.addFreeFrame();
-  auto& cloneReg = clone.getRegistry();
+  auto& cloneReg = dart::simulation::experimental::detail::registryOf(clone);
   const auto& nextFrameName
       = cloneReg
             .get<dart::simulation::experimental::comps::Name>(

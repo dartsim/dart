@@ -52,8 +52,11 @@
 #include "dart/simulation/experimental/constraint/loop_closure.hpp"
 #include "dart/simulation/experimental/constraint/loop_closure_spec.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
+#include "dart/simulation/experimental/detail/world_storage.hpp"
 #include "dart/simulation/experimental/diff/physical_parameter.hpp"
 #include "dart/simulation/experimental/diff/step_derivatives.hpp"
+#include "dart/simulation/experimental/diff/step_gradient.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
@@ -227,14 +230,14 @@ bool isValidRigidBodySolver(RigidBodySolver solver)
 //==============================================================================
 bool hasMultibodyStructures(const World& world)
 {
-  const auto view = world.getRegistry().view<comps::MultibodyStructure>();
+  const auto view = detail::registryOf(world).view<comps::MultibodyStructure>();
   return view.begin() != view.end();
 }
 
 //==============================================================================
 void validateLoopClosureKinematicsPolicySupport(const World& world)
 {
-  auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
+  auto view = detail::registryOf(world).view<comps::LoopClosure, comps::Name>();
   for (auto entity : view) {
     const auto& closure = view.get<comps::LoopClosure>(entity);
     if (!closure.runtimePolicy.enabled
@@ -262,7 +265,7 @@ void validateLoopClosureKinematicsPolicySupport(const World& world)
 void validateLoopClosureDynamicsPolicySupport(
     const World& world, bool variationalSelected)
 {
-  auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
+  auto view = detail::registryOf(world).view<comps::LoopClosure, comps::Name>();
   for (auto entity : view) {
     const auto& closure = view.get<comps::LoopClosure>(entity);
     if (!closure.runtimePolicy.enabled
@@ -273,8 +276,8 @@ void validateLoopClosureDynamicsPolicySupport(
 
     const auto& name = view.get<comps::Name>(entity);
     if (variationalSelected) {
-      const auto binding
-          = compute::bindVariationalLoopClosure(world.getRegistry(), entity);
+      const auto binding = compute::bindVariationalLoopClosure(
+          detail::registryOf(world), entity);
       DART_EXPERIMENTAL_THROW_T_IF(
           binding.status
               == compute::VariationalLoopClosureBinding::Status::Unsupported,
@@ -1171,11 +1174,15 @@ Eigen::Isometry3d toIsometry(
 
 } // namespace
 
-World::World() = default;
+World::World() : m_storage(std::make_unique<detail::WorldStorage>())
+{
+  // Empty.
+}
 
 //==============================================================================
 World::World(const WorldOptions& options)
-  : m_gravity(options.gravity),
+  : m_storage(std::make_unique<detail::WorldStorage>()),
+    m_gravity(options.gravity),
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
@@ -1195,21 +1202,33 @@ World::World(const WorldOptions& options)
 World::~World() = default;
 
 //==============================================================================
-entt::registry& World::getRegistry()
+detail::WorldStorage& detail::storageOf(World& world)
 {
-  return m_registry;
+  return *world.m_storage;
 }
 
 //==============================================================================
-const entt::registry& World::getRegistry() const
+const detail::WorldStorage& detail::storageOf(const World& world)
 {
-  return m_registry;
+  return *world.m_storage;
+}
+
+//==============================================================================
+entt::registry& detail::registryOf(World& world)
+{
+  return detail::storageOf(world).registry;
+}
+
+//==============================================================================
+const entt::registry& detail::registryOf(const World& world)
+{
+  return detail::storageOf(world).registry;
 }
 
 //==============================================================================
 void World::clear()
 {
-  m_registry.clear();
+  m_storage->registry.clear();
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
@@ -1217,8 +1236,8 @@ void World::clear()
   m_differentiable = false;
   m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
   m_contactGradientMode = ContactGradientMode::Analytic;
-  m_stepDerivatives.reset();
-  m_differentiableParameters.clear();
+  m_storage->stepDerivatives.reset();
+  m_storage->differentiableParameters.clear();
   m_time = 0.0;
   m_frame = 0;
   m_freeFrameCounter = 0;
@@ -1271,7 +1290,7 @@ FreeFrame World::addFreeFrame(std::string_view name, const Frame& parent)
       false,
       actualName);
 
-  return FreeFrame(detail::fromRegistryEntity(entity), this);
+  return FreeFrame(entity, this);
 }
 
 //==============================================================================
@@ -1307,11 +1326,11 @@ FixedFrame World::addFixedFrame(
       true,
       actualName);
 
-  return FixedFrame(detail::fromRegistryEntity(entity), this);
+  return FixedFrame(entity, this);
 }
 
 //==============================================================================
-entt::entity World::createFrameEntity(
+Entity World::createFrameEntity(
     std::string_view name,
     const Frame& parentFrame,
     const Eigen::Isometry3d& localTransform,
@@ -1332,35 +1351,37 @@ entt::entity World::createFrameEntity(
     actualName = std::string(name);
   }
 
-  auto entity = m_registry.create();
-  m_registry.emplace<comps::Name>(entity, actualName);
-  m_registry.emplace<comps::FrameTag>(entity);
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, actualName);
+  m_storage->registry.emplace<comps::FrameTag>(entity);
 
   if (isFixedFrame) {
-    m_registry.emplace<comps::FixedFrameTag>(entity);
+    m_storage->registry.emplace<comps::FixedFrameTag>(entity);
   } else {
-    m_registry.emplace<comps::FreeFrameTag>(entity);
+    m_storage->registry.emplace<comps::FreeFrameTag>(entity);
   }
 
-  auto& state = m_registry.emplace<comps::FrameState>(entity);
+  auto& state = m_storage->registry.emplace<comps::FrameState>(entity);
   state.parentFrame = parentFrame.isWorld()
                           ? entt::null
                           : detail::toRegistryEntity(parentFrame.getEntity());
 
-  auto& cache = m_registry.emplace<comps::FrameCache>(entity);
+  auto& cache = m_storage->registry.emplace<comps::FrameCache>(entity);
   cache.worldTransform = Eigen::Isometry3d::Identity();
   cache.needTransformUpdate = true;
 
   if (isFixedFrame) {
-    auto& props = m_registry.emplace<comps::FixedFrameProperties>(entity);
+    auto& props
+        = m_storage->registry.emplace<comps::FixedFrameProperties>(entity);
     props.localTransform = localTransform;
   } else {
-    auto& props = m_registry.emplace<comps::FreeFrameProperties>(entity);
+    auto& props
+        = m_storage->registry.emplace<comps::FreeFrameProperties>(entity);
     props.localTransform = localTransform;
   }
 
   outName = actualName;
-  return entity;
+  return detail::fromRegistryEntity(entity);
 }
 
 //==============================================================================
@@ -1392,20 +1413,22 @@ Multibody World::addMultibody(std::string_view name)
   if (name.empty()) {
     do {
       candidateName = std::format("multibody_{:03d}", ++m_multibodyCounter);
-    } while (hasEntityWithName<comps::MultibodyTag>(m_registry, candidateName));
+    } while (hasEntityWithName<comps::MultibodyTag>(
+        m_storage->registry, candidateName));
   } else {
     candidateName = std::string(name);
     DART_EXPERIMENTAL_THROW_T_IF(
-        hasEntityWithName<comps::MultibodyTag>(m_registry, candidateName),
+        hasEntityWithName<comps::MultibodyTag>(
+            m_storage->registry, candidateName),
         InvalidArgumentException,
         "Multibody '{}' already exists",
         candidateName);
   }
 
-  auto entity = m_registry.create();
-  m_registry.emplace<comps::Name>(entity, candidateName);
-  m_registry.emplace<comps::MultibodyTag>(entity);
-  m_registry.emplace<comps::MultibodyStructure>(entity);
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, candidateName);
+  m_storage->registry.emplace<comps::MultibodyTag>(entity);
+  m_storage->registry.emplace<comps::MultibodyStructure>(entity);
 
   return Multibody(detail::fromRegistryEntity(entity), this);
 }
@@ -1413,7 +1436,7 @@ Multibody World::addMultibody(std::string_view name)
 //==============================================================================
 std::optional<Multibody> World::getMultibody(std::string_view name)
 {
-  auto view = m_registry.view<comps::MultibodyTag, comps::Name>();
+  auto view = m_storage->registry.view<comps::MultibodyTag, comps::Name>();
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
@@ -1426,13 +1449,13 @@ std::optional<Multibody> World::getMultibody(std::string_view name)
 //==============================================================================
 bool World::hasMultibody(std::string_view name) const
 {
-  return hasEntityWithName<comps::MultibodyTag>(m_registry, name);
+  return hasEntityWithName<comps::MultibodyTag>(m_storage->registry, name);
 }
 
 //==============================================================================
 std::size_t World::getMultibodyCount() const
 {
-  return countEntities<comps::MultibodyTag>(m_registry);
+  return countEntities<comps::MultibodyTag>(m_storage->registry);
 }
 
 //==============================================================================
@@ -1447,20 +1470,22 @@ LoopClosure World::addLoopClosure(
     do {
       candidateName
           = std::format("loop_closure_{:03d}", ++m_loopClosureCounter);
-    } while (hasEntityWithName<comps::LoopClosure>(m_registry, candidateName));
+    } while (hasEntityWithName<comps::LoopClosure>(
+        m_storage->registry, candidateName));
   } else {
     candidateName = std::string(name);
     DART_EXPERIMENTAL_THROW_T_IF(
-        hasEntityWithName<comps::LoopClosure>(m_registry, candidateName),
+        hasEntityWithName<comps::LoopClosure>(
+            m_storage->registry, candidateName),
         InvalidArgumentException,
         "LoopClosure '{}' already exists",
         candidateName);
   }
 
-  auto entity = m_registry.create();
-  m_registry.emplace<comps::Name>(entity, candidateName);
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, candidateName);
 
-  auto& closure = m_registry.emplace<comps::LoopClosure>(entity);
+  auto& closure = m_storage->registry.emplace<comps::LoopClosure>(entity);
   closure.family = spec.family;
   closure.frameA = resolveLoopClosureFrame(*this, spec.frameA, "frameA");
   closure.frameB = resolveLoopClosureFrame(*this, spec.frameB, "frameB");
@@ -1474,7 +1499,7 @@ LoopClosure World::addLoopClosure(
 //==============================================================================
 std::optional<LoopClosure> World::getLoopClosure(std::string_view name)
 {
-  auto view = m_registry.view<comps::LoopClosure, comps::Name>();
+  auto view = m_storage->registry.view<comps::LoopClosure, comps::Name>();
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
@@ -1487,13 +1512,13 @@ std::optional<LoopClosure> World::getLoopClosure(std::string_view name)
 //==============================================================================
 bool World::hasLoopClosure(std::string_view name) const
 {
-  return hasEntityWithName<comps::LoopClosure>(m_registry, name);
+  return hasEntityWithName<comps::LoopClosure>(m_storage->registry, name);
 }
 
 //==============================================================================
 std::size_t World::getLoopClosureCount() const
 {
-  return countEntities<comps::LoopClosure>(m_registry);
+  return countEntities<comps::LoopClosure>(m_storage->registry);
 }
 
 //==============================================================================
@@ -1506,11 +1531,13 @@ RigidBody World::addRigidBody(
   if (name.empty()) {
     do {
       candidateName = std::format("rigid_body_{:03d}", ++m_rigidBodyCounter);
-    } while (hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName));
+    } while (hasEntityWithName<comps::RigidBodyTag>(
+        m_storage->registry, candidateName));
   } else {
     candidateName = std::string(name);
     DART_EXPERIMENTAL_THROW_T_IF(
-        hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName),
+        hasEntityWithName<comps::RigidBodyTag>(
+            m_storage->registry, candidateName),
         InvalidArgumentException,
         "RigidBody '{}' already exists",
         candidateName);
@@ -1523,7 +1550,7 @@ RigidBody World::addRigidBody(
   const auto initialTransform = toIsometry(options.position, orientation);
 
   std::string actualName;
-  auto entity = createFrameEntity(
+  const Entity entity = createFrameEntity(
       candidateName,
       parent,
       initialTransform,
@@ -1531,34 +1558,35 @@ RigidBody World::addRigidBody(
       "rigid_body",
       false,
       actualName);
+  const auto enttEntity = detail::toRegistryEntity(entity);
 
-  m_registry.emplace<comps::RigidBodyTag>(entity);
+  m_storage->registry.emplace<comps::RigidBodyTag>(enttEntity);
 
-  auto& transform = m_registry.emplace<comps::Transform>(entity);
+  auto& transform = m_storage->registry.emplace<comps::Transform>(enttEntity);
   transform.position = options.position;
   transform.orientation = orientation;
 
-  auto& velocity = m_registry.emplace<comps::Velocity>(entity);
+  auto& velocity = m_storage->registry.emplace<comps::Velocity>(enttEntity);
   velocity.linear = options.linearVelocity;
   velocity.angular = options.angularVelocity;
 
-  auto& mass = m_registry.emplace<comps::MassProperties>(entity);
+  auto& mass = m_storage->registry.emplace<comps::MassProperties>(enttEntity);
   mass.mass = options.mass;
   mass.inertia = options.inertia;
 
-  m_registry.emplace<comps::Force>(entity);
+  m_storage->registry.emplace<comps::Force>(enttEntity);
 
   if (options.isStatic) {
-    m_registry.emplace<comps::StaticBodyTag>(entity);
+    m_storage->registry.emplace<comps::StaticBodyTag>(enttEntity);
   }
 
-  return RigidBody(detail::fromRegistryEntity(entity), this);
+  return RigidBody(entity, this);
 }
 
 //==============================================================================
 std::optional<RigidBody> World::getRigidBody(std::string_view name)
 {
-  auto view = m_registry.view<comps::RigidBodyTag, comps::Name>();
+  auto view = m_storage->registry.view<comps::RigidBodyTag, comps::Name>();
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
@@ -1571,13 +1599,13 @@ std::optional<RigidBody> World::getRigidBody(std::string_view name)
 //==============================================================================
 bool World::hasRigidBody(std::string_view name) const
 {
-  return hasEntityWithName<comps::RigidBodyTag>(m_registry, name);
+  return hasEntityWithName<comps::RigidBodyTag>(m_storage->registry, name);
 }
 
 //==============================================================================
 std::size_t World::getRigidBodyCount() const
 {
-  return countEntities<comps::RigidBodyTag>(m_registry);
+  return countEntities<comps::RigidBodyTag>(m_storage->registry);
 }
 
 //==============================================================================
@@ -1592,46 +1620,51 @@ DeformableBody World::addDeformableBody(
     do {
       candidateName
           = std::format("deformable_body_{:03d}", ++m_deformableBodyCounter);
-    } while (
-        hasEntityWithName<comps::DeformableBodyTag>(m_registry, candidateName));
+    } while (hasEntityWithName<comps::DeformableBodyTag>(
+        m_storage->registry, candidateName));
   } else {
     candidateName = std::string(name);
     DART_EXPERIMENTAL_THROW_T_IF(
-        hasEntityWithName<comps::DeformableBodyTag>(m_registry, candidateName),
+        hasEntityWithName<comps::DeformableBodyTag>(
+            m_storage->registry, candidateName),
         InvalidArgumentException,
         "DeformableBody '{}' already exists",
         candidateName);
   }
 
-  auto entity = m_registry.create();
-  m_registry.emplace<comps::Name>(entity, candidateName);
-  m_registry.emplace<comps::DeformableBodyTag>(entity);
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, candidateName);
+  m_storage->registry.emplace<comps::DeformableBodyTag>(entity);
 
-  auto& state = m_registry.emplace<comps::DeformableNodeState>(entity);
+  auto& state = m_storage->registry.emplace<comps::DeformableNodeState>(entity);
   state.positions = std::move(data.positions);
   state.previousPositions = state.positions;
   state.velocities = std::move(data.velocities);
   state.masses = std::move(data.masses);
   state.fixed = std::move(data.fixed);
 
-  auto& model = m_registry.emplace<comps::DeformableSpringModel>(entity);
+  auto& model
+      = m_storage->registry.emplace<comps::DeformableSpringModel>(entity);
   model.edges = std::move(data.edges);
   model.stiffness = data.stiffness;
   model.damping = data.damping;
 
-  auto& topology = m_registry.emplace<comps::DeformableMeshTopology>(entity);
+  auto& topology
+      = m_storage->registry.emplace<comps::DeformableMeshTopology>(entity);
   topology.restPositions = std::move(data.restPositions);
   topology.surfaceTriangles = std::move(data.surfaceTriangles);
   topology.tetrahedra = std::move(data.tetrahedra);
   topology.tetrahedronRestVolumes = std::move(data.tetrahedronRestVolumes);
 
-  auto& material = m_registry.emplace<comps::DeformableMaterial>(entity);
+  auto& material
+      = m_storage->registry.emplace<comps::DeformableMaterial>(entity);
   material = data.material;
 
   if (!data.boundaryConditions.dirichlet.empty()
       || !data.boundaryConditions.neumann.empty()) {
     auto& boundaryConditions
-        = m_registry.emplace<comps::DeformableBoundaryConditions>(entity);
+        = m_storage->registry.emplace<comps::DeformableBoundaryConditions>(
+            entity);
     boundaryConditions = std::move(data.boundaryConditions);
   }
 
@@ -1641,7 +1674,7 @@ DeformableBody World::addDeformableBody(
 //==============================================================================
 std::optional<DeformableBody> World::getDeformableBody(std::string_view name)
 {
-  auto view = m_registry.view<comps::DeformableBodyTag, comps::Name>();
+  auto view = m_storage->registry.view<comps::DeformableBodyTag, comps::Name>();
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
@@ -1654,20 +1687,20 @@ std::optional<DeformableBody> World::getDeformableBody(std::string_view name)
 //==============================================================================
 bool World::hasDeformableBody(std::string_view name) const
 {
-  return hasEntityWithName<comps::DeformableBodyTag>(m_registry, name);
+  return hasEntityWithName<comps::DeformableBodyTag>(m_storage->registry, name);
 }
 
 //==============================================================================
 std::size_t World::getDeformableBodyCount() const
 {
-  return countEntities<comps::DeformableBodyTag>(m_registry);
+  return countEntities<comps::DeformableBodyTag>(m_storage->registry);
 }
 
 //==============================================================================
 void World::configureDeformableSolver(
     std::string_view name, const DeformableSolverOptions& options)
 {
-  auto view = m_registry.view<comps::DeformableBodyTag, comps::Name>();
+  auto view = m_storage->registry.view<comps::DeformableBodyTag, comps::Name>();
   for (auto entity : view) {
     if (view.get<comps::Name>(entity).name != name) {
       continue;
@@ -1675,7 +1708,7 @@ void World::configureDeformableSolver(
     // Translate the public, solver-agnostic options into the internal opt-in
     // inner-solver component. The mapping lives here (the World step pipeline
     // owns the concrete solver) so the public facade stays algorithm-neutral.
-    m_registry.emplace_or_replace<comps::DeformableVbdConfig>(
+    m_storage->registry.emplace_or_replace<comps::DeformableVbdConfig>(
         entity,
         comps::DeformableVbdConfig{/*enabled=*/true,
                                    options.iterations,
@@ -1794,10 +1827,10 @@ StepDerivatives World::getStepDerivatives() const
 
 #ifdef DART_HAS_DIFF
   DART_EXPERIMENTAL_THROW_T_IF(
-      !m_stepDerivatives.has_value(),
+      !m_storage->stepDerivatives.has_value(),
       InvalidOperationException,
       "World::getStepDerivatives() has no derivatives yet; call step() first");
-  return *m_stepDerivatives;
+  return *m_storage->stepDerivatives;
 #else
   DART_EXPERIMENTAL_THROW_T(
       InvalidOperationException,
@@ -1854,7 +1887,7 @@ void World::addDifferentiableParameter(
 
   const auto entity = detail::toRegistryEntity(selector.body.getEntity());
   DART_EXPERIMENTAL_THROW_T_IF(
-      !m_registry.all_of<comps::RigidBodyTag>(entity),
+      !m_storage->registry.all_of<comps::RigidBodyTag>(entity),
       InvalidArgumentException,
       "World::addDifferentiableParameter(): the selector's body is not a valid "
       "rigid body");
@@ -1874,7 +1907,7 @@ void World::addDifferentiableParameter(
       "center of mass at the body origin, so the gradient is identically zero. "
       "Supported: MASS, INERTIA, FRICTION");
 
-  m_differentiableParameters.emplace_back(entity, selector.parameter);
+  m_storage->differentiableParameters.emplace_back(entity, selector.parameter);
 #endif
 }
 
@@ -1888,7 +1921,7 @@ void World::addDifferentiableParameter(
 //==============================================================================
 std::size_t World::getNumDifferentiableParameters() const noexcept
 {
-  return m_differentiableParameters.size();
+  return m_storage->differentiableParameters.size();
 }
 
 namespace {
@@ -1920,7 +1953,7 @@ std::vector<entt::entity> collectDynamicRigidBodies(
 //==============================================================================
 std::size_t World::getNumDofs() const
 {
-  return 3 * collectDynamicRigidBodies(m_registry).size();
+  return 3 * collectDynamicRigidBodies(m_storage->registry).size();
 }
 
 //==============================================================================
@@ -1933,13 +1966,14 @@ std::size_t World::getNumEfforts() const
 Eigen::VectorXd World::getStateVector() const
 {
   const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_registry);
+      = collectDynamicRigidBodies(m_storage->registry);
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   Eigen::VectorXd state(2 * dofs);
   for (std::size_t k = 0; k < bodies.size(); ++k) {
     const auto base = 3 * static_cast<Eigen::Index>(k);
-    const auto& transform = m_registry.get<comps::Transform>(bodies[k]);
-    const auto& velocity = m_registry.get<comps::Velocity>(bodies[k]);
+    const auto& transform
+        = m_storage->registry.get<comps::Transform>(bodies[k]);
+    const auto& velocity = m_storage->registry.get<comps::Velocity>(bodies[k]);
     state.segment<3>(base) = transform.position;
     state.segment<3>(dofs + base) = velocity.linear;
   }
@@ -1950,7 +1984,7 @@ Eigen::VectorXd World::getStateVector() const
 void World::setStateVector(const Eigen::VectorXd& state)
 {
   const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_registry);
+      = collectDynamicRigidBodies(m_storage->registry);
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   DART_EXPERIMENTAL_THROW_T_IF(
       state.size() != 2 * dofs,
@@ -1960,8 +1994,8 @@ void World::setStateVector(const Eigen::VectorXd& state)
       state.size());
   for (std::size_t k = 0; k < bodies.size(); ++k) {
     const auto base = 3 * static_cast<Eigen::Index>(k);
-    auto& transform = m_registry.get<comps::Transform>(bodies[k]);
-    auto& velocity = m_registry.get<comps::Velocity>(bodies[k]);
+    auto& transform = m_storage->registry.get<comps::Transform>(bodies[k]);
+    auto& velocity = m_storage->registry.get<comps::Velocity>(bodies[k]);
     transform.position = state.segment<3>(base);
     velocity.linear = state.segment<3>(dofs + base);
   }
@@ -1971,12 +2005,12 @@ void World::setStateVector(const Eigen::VectorXd& state)
 Eigen::VectorXd World::getControlVector() const
 {
   const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_registry);
+      = collectDynamicRigidBodies(m_storage->registry);
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   Eigen::VectorXd control(dofs);
   for (std::size_t k = 0; k < bodies.size(); ++k) {
     const auto base = 3 * static_cast<Eigen::Index>(k);
-    const auto& force = m_registry.get<comps::Force>(bodies[k]);
+    const auto& force = m_storage->registry.get<comps::Force>(bodies[k]);
     control.segment<3>(base) = force.force;
   }
   return control;
@@ -1986,7 +2020,7 @@ Eigen::VectorXd World::getControlVector() const
 void World::setControlVector(const Eigen::VectorXd& control)
 {
   const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_registry);
+      = collectDynamicRigidBodies(m_storage->registry);
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   DART_EXPERIMENTAL_THROW_T_IF(
       control.size() != dofs,
@@ -1996,7 +2030,7 @@ void World::setControlVector(const Eigen::VectorXd& control)
       control.size());
   for (std::size_t k = 0; k < bodies.size(); ++k) {
     const auto base = 3 * static_cast<Eigen::Index>(k);
-    auto& force = m_registry.get<comps::Force>(bodies[k]);
+    auto& force = m_storage->registry.get<comps::Force>(bodies[k]);
     force.force = control.segment<3>(base);
   }
 }
@@ -2222,8 +2256,10 @@ void World::captureStepDerivatives()
       const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
       const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
 
-      const bool rigidA = m_registry.all_of<comps::RigidBodyTag>(entityA);
-      const bool rigidB = m_registry.all_of<comps::RigidBodyTag>(entityB);
+      const bool rigidA
+          = m_storage->registry.all_of<comps::RigidBodyTag>(entityA);
+      const bool rigidB
+          = m_storage->registry.all_of<comps::RigidBodyTag>(entityB);
       DART_EXPERIMENTAL_THROW_T_IF(
           !rigidA || !rigidB,
           NotImplementedException,
@@ -2237,24 +2273,24 @@ void World::captureStepDerivatives()
     // parameter Jacobian ∂x'/∂θ alongside the state/control Jacobians;
     // otherwise skip the extra FD work and leave parameterJacobian empty.
     StepDerivatives contactDerivatives
-        = m_differentiableParameters.empty()
+        = m_storage->differentiableParameters.empty()
               ? detail::contactStepDerivatives(
-                    m_registry,
+                    m_storage->registry,
                     contacts,
                     m_gravity,
                     m_timeStep,
                     m_contactGradientMode)
               : detail::contactStepDerivativesWithParameters(
-                    m_registry,
+                    m_storage->registry,
                     contacts,
                     m_gravity,
                     m_timeStep,
-                    m_differentiableParameters,
+                    m_storage->differentiableParameters,
                     m_contactGradientMode);
     // Non-empty only when a dynamic rigid body is in scope. When empty (e.g. a
     // pure multibody scene under BoxedLcp), fall through to the WS1 path below.
     if (contactDerivatives.stateJacobian.size() != 0) {
-      m_stepDerivatives = std::move(contactDerivatives);
+      m_storage->stepDerivatives = std::move(contactDerivatives);
       return;
     }
   }
@@ -2264,18 +2300,19 @@ void World::captureStepDerivatives()
   // prismatic, screw, universal, planar, ball (Spherical), and free (Floating)
   // joints. Assemble tau from the joint efforts in construction (DOF) order and
   // compute the analytic Jacobian at the current (pre-step) state.
-  auto view = m_registry.view<comps::MultibodyStructure>();
+  auto view = m_storage->registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
 
     Eigen::VectorXd tau;
     std::vector<double> torques;
     for (const auto linkEntity : structure.links) {
-      const auto& link = m_registry.get<comps::Link>(linkEntity);
+      const auto& link = m_storage->registry.get<comps::Link>(linkEntity);
       if (link.parentJoint == entt::null) {
         continue;
       }
-      const auto& joint = m_registry.get<comps::Joint>(link.parentJoint);
+      const auto& joint
+          = m_storage->registry.get<comps::Joint>(link.parentJoint);
       for (Eigen::Index d = 0; d < joint.torque.size(); ++d) {
         torques.push_back(joint.torque[d]);
       }
@@ -2286,8 +2323,8 @@ void World::captureStepDerivatives()
     tau = Eigen::Map<const Eigen::VectorXd>(
         torques.data(), static_cast<Eigen::Index>(torques.size()));
 
-    m_stepDerivatives = detail::contactFreeStepDerivatives(
-        m_registry, structure, m_gravity, m_timeStep, tau);
+    m_storage->stepDerivatives = detail::contactFreeStepDerivatives(
+        m_storage->registry, structure, m_gravity, m_timeStep, tau);
     return; // WS1: one multibody.
   }
 #endif
@@ -2329,7 +2366,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
   std::vector<ShapeEntrySpec> specs;
 
   const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
-    auto view = m_registry.view<comps::MultibodyStructure>();
+    auto view = m_storage->registry.view<comps::MultibodyStructure>();
     for (auto multibody : view) {
       const auto& structure = view.get<comps::MultibodyStructure>(multibody);
       if (std::find(structure.links.begin(), structure.links.end(), linkEntity)
@@ -2406,7 +2443,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
   };
 
   // Rigid bodies pose their collision shapes from the rigid-body transform.
-  auto rigidBodyView = m_registry.view<
+  auto rigidBodyView = m_storage->registry.view<
       comps::CollisionGeometry,
       comps::Transform,
       comps::RigidBodyTag>();
@@ -2423,7 +2460,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
   // Multibody links pose their collision shapes through the frame accessor so
   // dirty joint-driven caches are refreshed before the query.
   auto linkView
-      = m_registry
+      = m_storage->registry
             .view<comps::CollisionGeometry, comps::Link, comps::FrameCache>();
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
@@ -2532,7 +2569,7 @@ void World::saveBinary(std::ostream& output) const
 
   io::EntityMap entityMap;
   io::SerializerRegistry::instance().saveAllEntities(
-      output, m_registry, entityMap);
+      output, m_storage->registry, entityMap);
 
   const std::uint8_t simulationFlag = m_simulationMode ? 1 : 0;
   io::writePOD(output, simulationFlag);
@@ -2563,7 +2600,7 @@ void World::loadBinary(std::istream& input)
 
   io::EntityMap entityMap;
   io::SerializerRegistry::instance().loadAllEntities(
-      input, m_registry, entityMap, formatVersion);
+      input, m_storage->registry, entityMap, formatVersion);
 
   // World metadata (optional for forward-compatibility)
   if (input.peek() != std::char_traits<char>::eof()) {
@@ -2606,14 +2643,14 @@ void World::loadBinary(std::istream& input)
   }
 
   // Ensure all frame entities have cache components (not serialized)
-  auto frameView = m_registry.view<comps::FrameTag>();
+  auto frameView = m_storage->registry.view<comps::FrameTag>();
   for (auto entity : frameView) {
-    if (!m_registry.any_of<comps::FrameCache>(entity)) {
-      auto& cache = m_registry.emplace<comps::FrameCache>(entity);
+    if (!m_storage->registry.any_of<comps::FrameCache>(entity)) {
+      auto& cache = m_storage->registry.emplace<comps::FrameCache>(entity);
       cache.worldTransform = Eigen::Isometry3d::Identity();
       cache.needTransformUpdate = true;
     } else {
-      auto& cache = m_registry.get<comps::FrameCache>(entity);
+      auto& cache = m_storage->registry.get<comps::FrameCache>(entity);
       cache.needTransformUpdate = true;
     }
   }
@@ -2629,22 +2666,27 @@ void World::loadBinary(std::istream& input)
 void World::resetCountersFromRegistry()
 {
   m_freeFrameCounter = std::max(
-      m_freeFrameCounter, countEntities<comps::FreeFrameTag>(m_registry));
+      m_freeFrameCounter,
+      countEntities<comps::FreeFrameTag>(m_storage->registry));
   m_fixedFrameCounter = std::max(
-      m_fixedFrameCounter, countEntities<comps::FixedFrameTag>(m_registry));
+      m_fixedFrameCounter,
+      countEntities<comps::FixedFrameTag>(m_storage->registry));
   m_multibodyCounter = std::max(
-      m_multibodyCounter, countEntities<comps::MultibodyTag>(m_registry));
+      m_multibodyCounter,
+      countEntities<comps::MultibodyTag>(m_storage->registry));
   m_loopClosureCounter = std::max(
-      m_loopClosureCounter, countEntities<comps::LoopClosure>(m_registry));
+      m_loopClosureCounter,
+      countEntities<comps::LoopClosure>(m_storage->registry));
   m_rigidBodyCounter = std::max(
-      m_rigidBodyCounter, countEntities<comps::RigidBodyTag>(m_registry));
+      m_rigidBodyCounter,
+      countEntities<comps::RigidBodyTag>(m_storage->registry));
   m_deformableBodyCounter = std::max(
       m_deformableBodyCounter,
-      countEntities<comps::DeformableBodyTag>(m_registry));
-  m_linkCounter
-      = std::max(m_linkCounter, countEntities<comps::Link>(m_registry));
-  m_jointCounter
-      = std::max(m_jointCounter, countEntities<comps::Joint>(m_registry));
+      countEntities<comps::DeformableBodyTag>(m_storage->registry));
+  m_linkCounter = std::max(
+      m_linkCounter, countEntities<comps::Link>(m_storage->registry));
+  m_jointCounter = std::max(
+      m_jointCounter, countEntities<comps::Joint>(m_storage->registry));
 }
 
 } // namespace dart::simulation::experimental
