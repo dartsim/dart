@@ -147,9 +147,8 @@ Paper audit:
     `World::collide()` contacts into those manifold points, run them through
     the private serial rigid row solve, write dynamic rigid-body state back to
     the ECS, and exercise the combined private build/solve/writeback wrapper in
-    focused tests, but contact-stage activation, full row-family generation,
-    articulated blocks, parallel dual/stiffness updates, and GPU parity remain
-    missing.
+    focused tests, but full row-family generation, articulated blocks, parallel
+    dual/stiffness updates, and GPU parity remain missing.
 - [ ] Phase A3: CPU 6-DOF rigid/articulated AVBD blocks.
   - First internal 6-DOF rigid block foundation started:
     `AvbdRigidBodyBlock`, quaternion tangent-step helpers,

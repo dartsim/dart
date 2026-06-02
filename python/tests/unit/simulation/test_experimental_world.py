@@ -272,6 +272,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "variable_names",
         "link_names",
         "joint_names",
+        "shape_index_a",
+        "local_point_a",
         "has_multibody",
         "is_valid",
     ):
@@ -2372,7 +2374,16 @@ def test_experimental_compound_collision_shapes():
 
     target = world.add_rigid_body("target", position=(2.8, 0.0, 0.0))
     target.set_collision_shape(sx.CollisionShape.sphere(0.5))
-    assert len(world.collide()) >= 1
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    contact = contacts[0]
+    if contact.body_a.name == "compound":
+        assert contact.shape_index_a == 2
+        assert np.isfinite(contact.local_point_a).all()
+    else:
+        assert contact.body_b.name == "compound"
+        assert contact.shape_index_b == 2
+        assert np.isfinite(contact.local_point_b).all()
 
     compound.set_collision_shape(sx.CollisionShape.box((0.1, 0.2, 0.3)))
     assert len(compound.collision_shapes) == 1
