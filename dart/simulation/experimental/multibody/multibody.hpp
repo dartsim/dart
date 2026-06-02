@@ -76,6 +76,13 @@ struct JointSpec
   /// direction). Must not be parallel to `axis` for those joint types.
   Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
 
+  /// Transform from the parent link frame to the joint input frame, applied
+  /// before the joint motion. Identity (the default) anchors the joint at the
+  /// parent link's frame origin; a non-identity value offsets the joint from
+  /// the parent origin (for example, a child joint partway along a parent link,
+  /// or sibling joints at different locations on a branching parent).
+  Eigen::Isometry3d transformToParent = Eigen::Isometry3d::Identity();
+
   /// Transform from the parent-joint frame (after joint motion) to the child
   /// link frame. This places the child link relative to its joint, giving the
   /// chain spatial extent (for example, the length of a pendulum link). The
@@ -122,6 +129,10 @@ struct LinkOptions
   /// Secondary joint axis (Universal: second rotation axis; Planar: in-plane
   /// direction). Must not be parallel to `axis` for those joint types.
   Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+
+  /// Transform from the parent link frame to the joint input frame, applied
+  /// before the joint motion. See JointSpec::transformToParent.
+  Eigen::Isometry3d transformToParent = Eigen::Isometry3d::Identity();
 
   /// Transform from the parent-joint frame (after joint motion) to the child
   /// link frame. See JointSpec::transformFromParent.

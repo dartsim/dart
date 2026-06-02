@@ -892,7 +892,7 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       renderEnvironmentSource.find("fogOptions.enabled = true"),
       std::string::npos);
   EXPECT_NE(
-      renderEnvironmentSource.find("ambientOcclusionOptions.intensity = 0.32f"),
+      renderEnvironmentSource.find("ambientOcclusionOptions.intensity = 0.62f"),
       std::string::npos);
   EXPECT_NE(
       renderEnvironmentSource.find(

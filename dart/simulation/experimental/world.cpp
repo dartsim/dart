@@ -72,6 +72,7 @@
 #include <array>
 #include <format>
 #include <istream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -118,6 +119,43 @@ bool hasEntityWithName(const entt::registry& registry, std::string_view name)
 } // namespace
 
 namespace dart::simulation::experimental {
+
+namespace ncol = dart::collision::native;
+
+struct World::CollisionQueryCache
+{
+  struct Key
+  {
+    entt::entity entity;
+    std::size_t shapeIndex;
+    std::uint64_t geometryRevision;
+    entt::entity multibody;
+    bool isLink;
+
+    bool operator==(const Key&) const = default;
+  };
+
+  struct ObjectEntry
+  {
+    entt::entity entity;
+    entt::entity multibody;
+    bool isLink;
+    ncol::CollisionObject object;
+  };
+
+  void clear()
+  {
+    collisionWorld.clear();
+    keys.clear();
+    entries.clear();
+    entryByObjectId.clear();
+  }
+
+  ncol::CollisionWorld collisionWorld;
+  std::vector<Key> keys;
+  std::vector<ObjectEntry> entries;
+  std::vector<std::size_t> entryByObjectId;
+};
 
 namespace {
 
@@ -186,40 +224,10 @@ bool isValidRigidBodySolver(RigidBodySolver solver)
 }
 
 //==============================================================================
-void addDefaultDynamicsStages(
-    compute::WorldStepPipeline& pipeline,
-    RigidBodySolver rigidBodySolver,
-    compute::RigidBodyVelocityStage& rigidBodyVelocity,
-    compute::RigidBodyContactStage& rigidBodyContact,
-    compute::RigidBodyPositionStage& rigidBodyPosition,
-    compute::RigidIpcContactStage& rigidIpcContact,
-    compute::WorldStepStage& multibodyStage,
-    compute::DeformableDynamicsStage& deformableDynamics)
+bool hasMultibodyStructures(const World& world)
 {
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !isValidRigidBodySolver(rigidBodySolver),
-      InvalidArgumentException,
-      "Rigid-body solver is invalid");
-
-  // The sequential solver is split into force/velocity, contact impulse, and
-  // position stages. The IPC stage assembles its own dynamics objective and
-  // writes both pose and velocity back, so it replaces that split free-rigid
-  // sequence rather than only the contact stage. `multibodyStage` is the
-  // caller-selected multibody integrator (forward dynamics or variational).
-  switch (rigidBodySolver) {
-    case RigidBodySolver::SequentialImpulse:
-      pipeline.addStage(rigidBodyVelocity)
-          .addStage(rigidBodyContact)
-          .addStage(multibodyStage)
-          .addStage(deformableDynamics)
-          .addStage(rigidBodyPosition);
-      return;
-    case RigidBodySolver::Ipc:
-      pipeline.addStage(rigidIpcContact)
-          .addStage(multibodyStage)
-          .addStage(deformableDynamics);
-      return;
-  }
+  const auto view = world.getRegistry().view<comps::MultibodyStructure>();
+  return view.begin() != view.end();
 }
 
 //==============================================================================
@@ -283,6 +291,130 @@ void validateLoopClosureDynamicsPolicySupport(
         name.name);
   }
 }
+
+//==============================================================================
+struct WorldStepPipelineStages
+{
+  compute::RigidBodyVelocityStage rigidBodyVelocity;
+  compute::RigidBodyContactStage rigidBodyContact;
+  compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::RigidIpcContactStage rigidIpcContact;
+  compute::MultibodyVelocityStage multibodyVelocity;
+  compute::MultibodyContactStage multibodyContact;
+  compute::MultibodyPositionStage multibodyPosition;
+  compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::UnifiedConstraintStage unifiedConstraint;
+  compute::MultibodyVariationalIntegrationStage multibodyVariational;
+  compute::DeformableDynamicsStage deformableDynamics;
+  compute::KinematicsStage kinematics;
+  compute::WorldStepPipeline pipeline;
+
+  compute::WorldStepPipeline& buildDefault(
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool useUnifiedConstraints)
+  {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !isValidRigidBodySolver(rigidBodySolver),
+        InvalidArgumentException,
+        "Rigid-body solver is invalid");
+
+    switch (rigidBodySolver) {
+      case RigidBodySolver::SequentialImpulse:
+        if (variationalSelected) {
+          appendVariationalDynamicsStages();
+        } else if (useUnifiedConstraints) {
+          appendSemiImplicitUnifiedStages();
+        } else {
+          appendSemiImplicitRigidBodyStages();
+        }
+        break;
+      case RigidBodySolver::Ipc:
+        appendIpcDynamicsStages(variationalSelected);
+        break;
+    }
+    pipeline.addStage(kinematics);
+    return pipeline;
+  }
+
+  compute::WorldStepPipeline& buildWithFinalStage(
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool useUnifiedConstraints,
+      compute::WorldStepStage& finalStage)
+  {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !isValidRigidBodySolver(rigidBodySolver),
+        InvalidArgumentException,
+        "Rigid-body solver is invalid");
+
+    switch (rigidBodySolver) {
+      case RigidBodySolver::SequentialImpulse:
+        if (variationalSelected) {
+          appendVariationalDynamicsStages();
+        } else if (useUnifiedConstraints) {
+          appendSemiImplicitUnifiedStages();
+        } else {
+          appendSemiImplicitRigidBodyStages();
+        }
+        break;
+      case RigidBodySolver::Ipc:
+        appendIpcDynamicsStages(variationalSelected);
+        break;
+    }
+    pipeline.addStage(finalStage);
+    return pipeline;
+  }
+
+private:
+  void appendVariationalDynamicsStages()
+  {
+    // Integrate rigid-body positions after the multibody stage so two-sided
+    // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
+    // the multibody solve) take effect in the same step's pose update.
+    pipeline.addStage(rigidBodyVelocity)
+        .addStage(rigidBodyContact)
+        .addStage(multibodyVariational)
+        .addStage(deformableDynamics)
+        .addStage(rigidBodyPosition);
+  }
+
+  void appendIpcDynamicsStages(bool variationalSelected)
+  {
+    compute::WorldStepStage& multibodyStage
+        = variationalSelected
+              ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+              : static_cast<compute::WorldStepStage&>(multibodyDynamics);
+    pipeline.addStage(rigidIpcContact)
+        .addStage(multibodyStage)
+        .addStage(deformableDynamics);
+  }
+
+  void appendSemiImplicitRigidBodyStages()
+  {
+    pipeline.addStage(rigidBodyVelocity)
+        .addStage(rigidBodyContact)
+        .addStage(multibodyDynamics)
+        .addStage(deformableDynamics)
+        .addStage(rigidBodyPosition);
+  }
+
+  void appendSemiImplicitUnifiedStages()
+  {
+    // When articulated bodies are present, one coupled boxed-LCP over all
+    // rigid-rigid and articulated link contacts replaces the separate
+    // RigidBodyContactStage + MultibodyContactStage passes. Positions-last is
+    // preserved (both velocity stages precede the solve, both position stages
+    // follow), and the joint velocity-limit clamp stays post-solve in
+    // MultibodyPositionStage.
+    pipeline.addStage(rigidBodyVelocity)
+        .addStage(multibodyVelocity)
+        .addStage(unifiedConstraint)
+        .addStage(rigidBodyPosition)
+        .addStage(multibodyPosition)
+        .addStage(deformableDynamics);
+  }
+};
 
 //==============================================================================
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
@@ -1096,6 +1228,9 @@ void World::clear()
   m_deformableBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
+  if (m_collisionQueryCache) {
+    m_collisionQueryCache->clear();
+  }
 }
 
 //==============================================================================
@@ -1971,93 +2106,42 @@ MultibodyOptions World::getMultibodyOptions() const
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::RigidIpcContactStage rigidIpcContact;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::MultibodyVariationalIntegrationStage multibodyVariational;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::KinematicsStage kinematics;
-  compute::WorldStepStage& multibodyStage
-      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
-            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-  compute::WorldStepPipeline pipeline;
-  // Integrate rigid-body positions after the multibody stage so two-sided
-  // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
-  // the multibody solve) take effect in the same step's pose update.
-  addDefaultDynamicsStages(
-      pipeline,
+  WorldStepPipelineStages stages;
+  compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
-      rigidBodyVelocity,
-      rigidBodyContact,
-      rigidBodyPosition,
-      rigidIpcContact,
-      multibodyStage,
-      deformableDynamics);
-  pipeline.addStage(kinematics);
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasMultibodyStructures(*this));
   step(executor, pipeline);
-  m_lastDeformableSolverDiagnostics
-      = makeDeformableSolverDiagnostics(deformableDynamics.getLastStats());
+  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+      stages.deformableDynamics.getLastStats());
 }
 
 //==============================================================================
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::RigidIpcContactStage rigidIpcContact;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::MultibodyVariationalIntegrationStage multibodyVariational;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::KinematicsStage kinematics;
-  compute::WorldStepStage& multibodyStage
-      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
-            ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-            : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-  compute::WorldStepPipeline pipeline;
-  // Integrate rigid-body positions after the multibody stage so two-sided
-  // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
-  // the multibody solve) take effect in the same step's pose update.
-  addDefaultDynamicsStages(
-      pipeline,
+  WorldStepPipelineStages stages;
+  compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
-      rigidBodyVelocity,
-      rigidBodyContact,
-      rigidBodyPosition,
-      rigidIpcContact,
-      multibodyStage,
-      deformableDynamics);
-  pipeline.addStage(kinematics);
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasMultibodyStructures(*this));
   step(count, executor, pipeline);
-  m_lastDeformableSolverDiagnostics
-      = makeDeformableSolverDiagnostics(deformableDynamics.getLastStats());
+  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+      stages.deformableDynamics.getLastStats());
 }
 
 //==============================================================================
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepStage& stage)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::RigidIpcContactStage rigidIpcContact;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::WorldStepPipeline pipeline;
-  addDefaultDynamicsStages(
-      pipeline,
+  WorldStepPipelineStages stages;
+  compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
       m_rigidBodySolver,
-      rigidBodyVelocity,
-      rigidBodyContact,
-      rigidBodyPosition,
-      rigidIpcContact,
-      multibodyDynamics,
-      deformableDynamics);
-  pipeline.addStage(stage);
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasMultibodyStructures(*this),
+      stage);
   step(executor, pipeline);
+  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+      stages.deformableDynamics.getLastStats());
 }
 
 //==============================================================================
@@ -2066,24 +2150,15 @@ void World::step(
     compute::ComputeExecutor& executor,
     compute::WorldStepStage& stage)
 {
-  compute::RigidBodyVelocityStage rigidBodyVelocity;
-  compute::RigidBodyContactStage rigidBodyContact;
-  compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::RigidIpcContactStage rigidIpcContact;
-  compute::MultibodyForwardDynamicsStage multibodyDynamics;
-  compute::DeformableDynamicsStage deformableDynamics;
-  compute::WorldStepPipeline pipeline;
-  addDefaultDynamicsStages(
-      pipeline,
+  WorldStepPipelineStages stages;
+  compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
       m_rigidBodySolver,
-      rigidBodyVelocity,
-      rigidBodyContact,
-      rigidBodyPosition,
-      rigidIpcContact,
-      multibodyDynamics,
-      deformableDynamics);
-  pipeline.addStage(stage);
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasMultibodyStructures(*this),
+      stage);
   step(count, executor, pipeline);
+  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+      stages.deformableDynamics.getLastStats());
 }
 
 //==============================================================================
@@ -2236,22 +2311,34 @@ const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
 //==============================================================================
 std::vector<Contact> World::collide()
 {
-  namespace ncol = dart::collision::native;
+  return collide(CollisionQueryOptions{});
+}
 
-  ncol::CollisionWorld collisionWorld;
-
-  // Build one native collision object per shape-bearing rigid body, remembering
-  // which experimental entity each object came from.
-  struct ObjectEntry
+//==============================================================================
+std::vector<Contact> World::collide(const CollisionQueryOptions& options)
+{
+  struct ShapeEntrySpec
   {
-    entt::entity entity;
-    ncol::CollisionObject object;
+    CollisionQueryCache::Key key;
+    const CollisionShape* shape;
+    Eigen::Isometry3d pose;
   };
-  std::vector<ObjectEntry> entries;
+  std::vector<ShapeEntrySpec> specs;
 
-  const auto addEntry = [&](entt::entity entity,
-                            const CollisionShape& collisionShape,
-                            const Eigen::Isometry3d& pose) {
+  const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
+    auto view = m_registry.view<comps::MultibodyStructure>();
+    for (auto multibody : view) {
+      const auto& structure = view.get<comps::MultibodyStructure>(multibody);
+      if (std::find(structure.links.begin(), structure.links.end(), linkEntity)
+          != structure.links.end()) {
+        return multibody;
+      }
+    }
+    return static_cast<entt::entity>(entt::null);
+  };
+
+  const auto makeNativeShape =
+      [](const CollisionShape& collisionShape) -> std::unique_ptr<ncol::Shape> {
     std::unique_ptr<ncol::Shape> shape;
     switch (collisionShape.type) {
       case CollisionShapeType::Sphere:
@@ -2261,28 +2348,61 @@ std::vector<Contact> World::collide()
         shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
         break;
       case CollisionShapeType::Capsule:
-        // The native engine has no capsule primitive; approximate it with its
-        // axis-aligned bounding box for rigid-rigid queries. Deformable-vs-
-        // capsule contact uses the analytic capsule obstacle barrier instead.
-        shape = std::make_unique<ncol::BoxShape>(Eigen::Vector3d(
-            collisionShape.radius,
-            collisionShape.radius,
-            collisionShape.halfExtents.z() + collisionShape.radius));
+        shape = std::make_unique<ncol::CapsuleShape>(
+            collisionShape.radius, 2.0 * collisionShape.halfExtents.z());
         break;
       case CollisionShapeType::Cylinder:
         shape = std::make_unique<ncol::CylinderShape>(
             collisionShape.radius, 2.0 * collisionShape.halfExtents.z());
+        break;
+      case CollisionShapeType::Plane:
+        shape = std::make_unique<ncol::PlaneShape>(
+            collisionShape.normal, collisionShape.offset);
         break;
       case CollisionShapeType::Mesh:
         shape = std::make_unique<ncol::MeshShape>(
             collisionShape.vertices, collisionShape.triangles);
         break;
     }
-    entries.push_back(
-        {entity, collisionWorld.createObject(std::move(shape), pose)});
+    return shape;
   };
 
-  // Rigid bodies pose their collision shape from the rigid-body transform.
+  const auto addSpecs = [&](entt::entity entity,
+                            entt::entity multibody,
+                            bool isLink,
+                            const comps::CollisionGeometry& geometry,
+                            const Eigen::Isometry3d& pose) {
+    for (std::size_t i = 0; i < geometry.shapes.size(); ++i) {
+      const auto& shape = geometry.shapes[i];
+      specs.push_back(
+          ShapeEntrySpec{
+              CollisionQueryCache::Key{
+                  entity, i, geometry.revision, multibody, isLink},
+              &shape,
+              pose * shape.localTransform});
+    }
+  };
+
+  const auto includesPair = [&](const CollisionQueryCache::ObjectEntry& a,
+                                const CollisionQueryCache::ObjectEntry& b) {
+    if (a.entity == b.entity) {
+      return false;
+    }
+
+    if (a.isLink && b.isLink) {
+      return options.includeLinkPairs
+             && (options.includeSameMultibodyLinkPairs
+                 || a.multibody == entt::null || a.multibody != b.multibody);
+    }
+
+    if (a.isLink || b.isLink) {
+      return options.includeRigidBodyLinkPairs;
+    }
+
+    return options.includeRigidBodyPairs;
+  };
+
+  // Rigid bodies pose their collision shapes from the rigid-body transform.
   auto rigidBodyView = m_registry.view<
       comps::CollisionGeometry,
       comps::Transform,
@@ -2294,10 +2414,10 @@ std::vector<Contact> World::collide()
     Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     pose.linear() = transform.orientation.normalized().toRotationMatrix();
     pose.translation() = transform.position;
-    addEntry(entity, geometry.shape, pose);
+    addSpecs(entity, entt::null, false, geometry, pose);
   }
 
-  // Multibody links pose their collision shape through the frame accessor so
+  // Multibody links pose their collision shapes through the frame accessor so
   // dirty joint-driven caches are refreshed before the query.
   auto linkView
       = m_registry
@@ -2305,36 +2425,91 @@ std::vector<Contact> World::collide()
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
     const Link link(entity, this);
-    addEntry(entity, geometry.shape, link.getWorldTransform());
+    const entt::entity multibody = findMultibodyOwningLink(entity);
+    addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
   }
 
-  // Pairwise narrow-phase queries. Each pair's bodies are known here, so the
-  // contacts map back to the right rigid bodies without relying on the result
-  // carrying object identity. This is O(n^2); a future slice can use the native
-  // broad phase to prune candidate pairs.
-  const auto option = ncol::CollisionOption::fullContacts();
-  std::vector<Contact> contacts;
-  for (std::size_t i = 0; i < entries.size(); ++i) {
-    for (std::size_t j = i + 1; j < entries.size(); ++j) {
-      ncol::CollisionResult result;
-      if (!collisionWorld.collide(
-              entries[i].object, entries[j].object, option, result)) {
-        continue;
-      }
+  if (!m_collisionQueryCache) {
+    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+  }
+  auto& cache = *m_collisionQueryCache;
 
-      for (std::size_t k = 0; k < result.numContacts(); ++k) {
-        const auto& point = result.getContact(k);
-        // The native narrow phase reports the normal pointing from the second
-        // object toward the first; the public Contact convention points from
-        // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
-        contacts.push_back(
-            Contact{
-                CollisionBody(entries[i].entity, this),
-                CollisionBody(entries[j].entity, this),
-                point.position,
-                -point.normal,
-                point.depth});
+  const bool rebuildCache = cache.keys.size() != specs.size()
+                            || !std::equal(
+                                specs.begin(),
+                                specs.end(),
+                                cache.keys.begin(),
+                                [](const ShapeEntrySpec& spec,
+                                   const CollisionQueryCache::Key& key) {
+                                  return spec.key == key;
+                                });
+
+  if (rebuildCache) {
+    cache.clear();
+    cache.collisionWorld.reserveObjects(specs.size());
+    cache.keys.reserve(specs.size());
+    cache.entries.reserve(specs.size());
+    for (const auto& spec : specs) {
+      ncol::CollisionObject object = cache.collisionWorld.createObject(
+          makeNativeShape(*spec.shape), spec.pose);
+      const std::size_t entryIndex = cache.entries.size();
+      const std::size_t objectId = object.getId();
+      if (objectId >= cache.entryByObjectId.size()) {
+        cache.entryByObjectId.resize(
+            objectId + 1, std::numeric_limits<std::size_t>::max());
       }
+      cache.entryByObjectId[objectId] = entryIndex;
+      cache.keys.push_back(spec.key);
+      cache.entries.push_back(
+          CollisionQueryCache::ObjectEntry{
+              spec.key.entity, spec.key.multibody, spec.key.isLink, object});
+    }
+  } else {
+    for (std::size_t i = 0; i < specs.size(); ++i) {
+      auto& object = cache.entries[i].object;
+      object.setTransform(specs[i].pose);
+      cache.collisionWorld.updateObject(object);
+    }
+  }
+
+  // Broad-phase-pruned narrow-phase queries. Each candidate pair's bodies are
+  // known here, so the contacts map back to the right experimental bodies
+  // without relying on the result carrying object identity.
+  const auto option = ncol::CollisionOption::fullContacts();
+  const auto candidatePairs = cache.collisionWorld.buildBroadPhaseSnapshot();
+  std::vector<Contact> contacts;
+  for (const auto& pair : candidatePairs.pairs) {
+    if (pair.first >= cache.entryByObjectId.size()
+        || pair.second >= cache.entryByObjectId.size()) {
+      continue;
+    }
+    const std::size_t i = cache.entryByObjectId[pair.first];
+    const std::size_t j = cache.entryByObjectId[pair.second];
+    if (i >= cache.entries.size() || j >= cache.entries.size()) {
+      continue;
+    }
+    if (!includesPair(cache.entries[i], cache.entries[j])) {
+      continue;
+    }
+
+    ncol::CollisionResult result;
+    if (!cache.collisionWorld.collide(
+            cache.entries[i].object, cache.entries[j].object, option, result)) {
+      continue;
+    }
+
+    for (std::size_t k = 0; k < result.numContacts(); ++k) {
+      const auto& point = result.getContact(k);
+      // The native narrow phase reports the normal pointing from the second
+      // object toward the first; the public Contact convention points from
+      // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
+      contacts.push_back(
+          Contact{
+              CollisionBody(cache.entries[i].entity, this),
+              CollisionBody(cache.entries[j].entity, this),
+              point.position,
+              -point.normal,
+              point.depth});
     }
   }
 
