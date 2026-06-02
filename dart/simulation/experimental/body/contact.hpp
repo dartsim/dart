@@ -36,6 +36,8 @@
 
 #include <Eigen/Core>
 
+#include <limits>
+
 #include <cstddef>
 
 namespace dart::simulation::experimental {
@@ -49,19 +51,18 @@ namespace dart::simulation::experimental {
 /// coordinates.
 struct Contact
 {
+  static constexpr std::size_t UnknownShapeIndex
+      = std::numeric_limits<std::size_t>::max();
+
   CollisionBody bodyA;
   CollisionBody bodyB;
   Eigen::Vector3d point = Eigen::Vector3d::Zero();
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
   double depth = 0.0;
-
-  /// Index of the colliding shape within each body's collision geometry
-  /// (`CollisionGeometry::shapes[shapeIndexA]` for `bodyA`, likewise for
-  /// `bodyB`). Lets downstream consumers identify which shape of a compound
-  /// body produced the contact. Defaults to 0, the only shape of a
-  /// single-shape body.
-  std::size_t shapeIndexA = 0;
-  std::size_t shapeIndexB = 0;
+  std::size_t shapeIndexA = UnknownShapeIndex;
+  std::size_t shapeIndexB = UnknownShapeIndex;
+  Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
 };
 
 } // namespace dart::simulation::experimental

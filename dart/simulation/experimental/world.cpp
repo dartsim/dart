@@ -2503,17 +2503,17 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
       // The native narrow phase reports the normal pointing from the second
       // object toward the first; the public Contact convention points from
       // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
-      Contact contact{
-          CollisionBody(cache.entries[i].entity, this),
-          CollisionBody(cache.entries[j].entity, this),
-          point.position,
-          -point.normal,
-          point.depth};
-      // cache.keys is filled in lockstep with cache.entries, so keys[i]/[j]
-      // identify which shape of each compound body produced this contact.
-      contact.shapeIndexA = cache.keys[i].shapeIndex;
-      contact.shapeIndexB = cache.keys[j].shapeIndex;
-      contacts.push_back(contact);
+      contacts.push_back(
+          Contact{
+              CollisionBody(cache.entries[i].entity, this),
+              CollisionBody(cache.entries[j].entity, this),
+              point.position,
+              -point.normal,
+              point.depth,
+              specs[i].key.shapeIndex,
+              specs[j].key.shapeIndex,
+              specs[i].pose.inverse() * point.position,
+              specs[j].pose.inverse() * point.position});
     }
   }
 
