@@ -1344,10 +1344,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotScopesFeatureToCollidingShape)
   auto sphere = world.addRigidBody("sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-  const sx::CollisionBody compoundBody(
-      sx::detail::fromRegistryEntity(compound.getEntity()), &world);
-  const sx::CollisionBody sphereBody(
-      sx::detail::fromRegistryEntity(sphere.getEntity()), &world);
+  const sx::CollisionBody compoundBody(compound.getEntity(), &world);
+  const sx::CollisionBody sphereBody(sphere.getEntity(), &world);
 
   // Same +x face hit, but on different shapes of the compound body: the first
   // on the primary box (shape 0), the second on the offset box (shape 1). The
@@ -1408,10 +1406,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotKeepsCompoundShapeTypesDisjoint)
   auto sphere = world.addRigidBody("sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-  const sx::CollisionBody compoundBody(
-      sx::detail::fromRegistryEntity(compound.getEntity()), &world);
-  const sx::CollisionBody sphereBody(
-      sx::detail::fromRegistryEntity(sphere.getEntity()), &world);
+  const sx::CollisionBody compoundBody(compound.getEntity(), &world);
+  const sx::CollisionBody sphereBody(sphere.getEntity(), &world);
 
   // -x face of the box at shape index 1 (shape-local (-0.5, 0.1, 0.0)).
   sx::Contact onBox{
@@ -1461,10 +1457,8 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotScopesUnsupportedShapesByIndex)
   auto other = world.addRigidBody("other", otherOptions);
   other.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-  const sx::CollisionBody compoundBody(
-      sx::detail::fromRegistryEntity(compound.getEntity()), &world);
-  const sx::CollisionBody otherBody(
-      sx::detail::fromRegistryEntity(other.getEntity()), &world);
+  const sx::CollisionBody compoundBody(compound.getEntity(), &world);
+  const sx::CollisionBody otherBody(other.getEntity(), &world);
 
   sx::Contact onShape0{
       compoundBody, otherBody, Vec3(0.5, 0.0, 0.0), Vec3::UnitX(), 0.1};
