@@ -196,15 +196,22 @@ void ShapeNode::remove()
 //==============================================================================
 void ShapeNode::stageForRemoval()
 {
-  bool wasCollidable = false;
-  if (has<CollisionAspect>()) {
-    const auto* collision = get<CollisionAspect>();
-    wasCollidable = collision != nullptr && collision->getCollidable();
-  }
+  // Only raise the collision-shape removed signal on the first removal, while
+  // the node is still attached. A repeated remove()/stageForRemoval() on a node
+  // that is kept alive by an external reference would otherwise notify
+  // listeners of the same removal more than once; Node::stageForRemoval() is a
+  // no-op once the node is already detached.
+  if (!isRemoved()) {
+    bool wasCollidable = false;
+    if (has<CollisionAspect>()) {
+      const auto* collision = get<CollisionAspect>();
+      wasCollidable = collision != nullptr && collision->getCollidable();
+    }
 
-  BodyNode* bodyNode = getBodyNodePtr().get();
-  if (wasCollidable && bodyNode) {
-    bodyNode->handleCollisionShapeStateChange(this, true, false);
+    BodyNode* bodyNode = getBodyNodePtr().get();
+    if (wasCollidable && bodyNode) {
+      bodyNode->handleCollisionShapeStateChange(this, true, false);
+    }
   }
 
   Node::stageForRemoval();
