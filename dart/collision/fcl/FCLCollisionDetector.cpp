@@ -1096,9 +1096,26 @@ bool collisionCallback(
   ::fcl::collide(o1, o2, fclRequest, fclResult);
 
   if (result) {
+    const bool usingMeshContacts
+        = (collData->primitiveShapeType == FCLCollisionDetector::MESH);
+    const bool forcingMeshFallback
+        = usingMeshContacts
+          && collData->contactPointComputationMethod
+                 == FCLCollisionDetector::FCL;
+
     // Post processing -- converting fcl contact information to ours if needed
-    if (FCLCollisionDetector::DART == collData->contactPointComputationMethod
-        && FCLCollisionDetector::MESH == collData->primitiveShapeType) {
+    if (usingMeshContacts) {
+      if (forcingMeshFallback) {
+        static bool warned = false;
+        if (!warned) {
+          dtwarn << "[FCLCollisionDetector] FCL mesh contact-point computation "
+                 << "is known to be inaccurate (see "
+                 << "flexible-collision-library/fcl#106); falling back to "
+                 << "DART's mesh contact handler.\n";
+          warned = true;
+        }
+      }
+
       postProcessDART(fclResult, o1, o2, option, *result);
     } else {
       postProcessFCL(fclResult, o1, o2, option, *result);
