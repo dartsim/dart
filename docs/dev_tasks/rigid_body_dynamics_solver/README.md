@@ -48,6 +48,19 @@ solver** under a multi-solver, multi-physics architecture.
       friction, mimic/coupler, armature).
 - [ ] Phase 5: loop closures & improvements.
 
+### DART 7 B2 gate — rigid open-chain dynamics parity
+
+- [x] World-parity harness:
+      `tests/unit/simulation/experimental/world/test_world_parity.cpp` compares
+      classic `dart::simulation::World` vs
+      `dart::simulation::experimental::World` on shared open-chain scenes
+      (gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
+      and a held-torque controlled scene), within documented tolerances. Runs
+      under `pixi run test-simulation-experimental`. All open-chain scenarios
+      reach parity on `main` to machine epsilon; contact/constraint parity (B3)
+      is deferred to the unified solver (PR #2838). See `RESUME.md` for the
+      per-scenario table and deferred items.
+
 ## Goal
 
 A user can build a rigid-body / articulated scene on the experimental `World`,
