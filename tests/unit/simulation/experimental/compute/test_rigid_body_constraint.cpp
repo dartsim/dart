@@ -218,7 +218,9 @@ TEST(RigidBodyConstraint, TreatsKinematicBodiesAsPrescribed)
   const Eigen::Vector3d dynamicLinearBefore = dynamic.getLinearVelocity();
 
   sx::compute::applyRigidBodyContactImpulse(
-      dart::simulation::experimental::detail::registryOf(world), constraint, Eigen::Vector3d::UnitZ());
+      dart::simulation::experimental::detail::registryOf(world),
+      constraint,
+      Eigen::Vector3d::UnitZ());
 
   EXPECT_TRUE(
       kinematic.getLinearVelocity().isApprox(kinematicLinearBefore, 1e-12));

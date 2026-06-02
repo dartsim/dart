@@ -1641,7 +1641,8 @@ bool isCurrentPoseRigidSurfaceCcdObstacle(
 //==============================================================================
 bool hasCurrentKinematicStepTrace(const World& world, const entt::entity entity)
 {
-  const auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
   return trace != nullptr && trace->frame == world.getFrame();
 }
@@ -7124,7 +7125,8 @@ sxdetail::RigidIpcPose integrateRigidIpcKinematicPose(
     const entt::entity entity,
     const sxdetail::RigidIpcPose& startPose)
 {
-  const auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   const auto& velocity = registry.get<comps::Velocity>(entity);
   double timeStep = world.getTimeStep();
   if (const auto* tag = registry.try_get<comps::KinematicBodyTag>(entity);

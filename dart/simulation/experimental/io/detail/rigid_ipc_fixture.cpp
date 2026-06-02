@@ -3099,8 +3099,9 @@ RigidIpcReplayState populateRigidIpcReplayWorld(
       if (source.kinematicMaxTime.has_value()
           && std::isfinite(*source.kinematicMaxTime)
           && *source.kinematicMaxTime >= 0.0) {
-        auto& tag = dart::simulation::experimental::detail::registryOf(world).get<comps::KinematicBodyTag>(
-            rigid_detail::toRegistryEntity(body.getEntity()));
+        auto& tag = dart::simulation::experimental::detail::registryOf(world)
+                        .get<comps::KinematicBodyTag>(
+                            rigid_detail::toRegistryEntity(body.getEntity()));
         tag.maxTime = *source.kinematicMaxTime;
       }
     }

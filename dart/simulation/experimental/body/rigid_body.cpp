@@ -550,7 +550,8 @@ void RigidBody::setKinematic(bool isKinematic)
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  auto& registry = dart::simulation::experimental::detail::registryOf(*getWorld());
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*getWorld());
   const auto entity = detail::toRegistryEntity(getEntity());
   if (isKinematic) {
     // Kinematic and static are mutually exclusive: a kinematic body is advanced
@@ -568,8 +569,8 @@ bool RigidBody::isKinematic() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return dart::simulation::experimental::detail::registryOf(*getWorld()).all_of<comps::KinematicBodyTag>(
-      detail::toRegistryEntity(getEntity()));
+  return dart::simulation::experimental::detail::registryOf(*getWorld())
+      .all_of<comps::KinematicBodyTag>(detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
