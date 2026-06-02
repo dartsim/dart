@@ -54,7 +54,12 @@ std::pair<SkeletonPtr, BodyNode*> makeBodyNode()
 
 TEST(BodyNodeCollisionSignals, FiresOnCreateAndRemove)
 {
-  auto [skel, bn] = makeBodyNode();
+  // Keep the pair (its first element owns the Skeleton) alive for the test;
+  // bind bn to a plain variable so the lambdas below capture a regular variable
+  // rather than a structured binding (capturing a structured binding is a
+  // C++20 extension and DART 6 builds as C++17).
+  auto skelAndBn = makeBodyNode();
+  BodyNode* const bn = skelAndBn.second;
 
   int added = 0;
   int removed = 0;
@@ -93,7 +98,12 @@ TEST(BodyNodeCollisionSignals, FiresOnCreateAndRemove)
 
 TEST(BodyNodeCollisionSignals, FiresOnCollidableToggle)
 {
-  auto [skel, bn] = makeBodyNode();
+  // Keep the pair (its first element owns the Skeleton) alive for the test;
+  // bind bn to a plain variable so the lambdas below capture a regular variable
+  // rather than a structured binding (capturing a structured binding is a
+  // C++20 extension and DART 6 builds as C++17).
+  auto skelAndBn = makeBodyNode();
+  BodyNode* const bn = skelAndBn.second;
 
   int added = 0;
   int removed = 0;
@@ -138,7 +148,12 @@ TEST(BodyNodeCollisionSignals, FiresOnCollidableToggle)
 
 TEST(BodyNodeCollisionSignals, FiresOnAspectLifecycle)
 {
-  auto [skel, bn] = makeBodyNode();
+  // Keep the pair (its first element owns the Skeleton) alive for the test;
+  // bind bn to a plain variable so the lambdas below capture a regular variable
+  // rather than a structured binding (capturing a structured binding is a
+  // C++20 extension and DART 6 builds as C++17).
+  auto skelAndBn = makeBodyNode();
+  BodyNode* const bn = skelAndBn.second;
 
   int added = 0;
   int removed = 0;
@@ -176,7 +191,12 @@ TEST(BodyNodeCollisionSignals, FiresOnAspectLifecycle)
 
 TEST(BodyNodeCollisionSignals, FiresOnShapeReplacement)
 {
-  auto [skel, bn] = makeBodyNode();
+  // Keep the pair (its first element owns the Skeleton) alive for the test;
+  // bind bn to a plain variable so the lambdas below capture a regular variable
+  // rather than a structured binding (capturing a structured binding is a
+  // C++20 extension and DART 6 builds as C++17).
+  auto skelAndBn = makeBodyNode();
+  BodyNode* const bn = skelAndBn.second;
 
   int added = 0;
   int removed = 0;
