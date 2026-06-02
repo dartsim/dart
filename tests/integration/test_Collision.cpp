@@ -1706,6 +1706,60 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
+TEST_F(Collision, ContactBodyNodeAccessors)
+{
+  // For collision objects backed by ShapeNodes, Contact::getShapeNode*/
+  // getBodyNodePtr* resolve to the owning shape node and body node. (The
+  // SimpleFrame case, where these return null, is covered by the ShapeFrame
+  // ordering tests above.)
+  auto detector = FCLCollisionDetector::create();
+
+  auto skelA = Skeleton::create("skelA");
+  auto skelB = Skeleton::create("skelB");
+  auto pairA = skelA->createJointAndBodyNodePair<FreeJoint>();
+  auto pairB = skelB->createJointAndBodyNodePair<FreeJoint>();
+  BodyNode* bnA = pairA.second;
+  BodyNode* bnB = pairB.second;
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto* snA = bnA->createShapeNodeWith<CollisionAspect>(box);
+  auto* snB = bnB->createShapeNodeWith<CollisionAspect>(box);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  pairA.first->setTransform(tf);
+  tf.translation()[0] = 0.5; // overlap the unit boxes
+  pairB.first->setTransform(tf);
+
+  CollisionOption option;
+  option.enableContact = true;
+  CollisionResult result;
+  auto groupA = detector->createCollisionGroup(snA);
+  auto groupB = detector->createCollisionGroup(snB);
+  ASSERT_TRUE(groupA->collide(groupB.get(), option, &result));
+  ASSERT_GE(result.getNumContacts(), 1u);
+
+  const auto& contact = result.getContact(0);
+
+  ASSERT_NE(contact.getShapeNode1(), nullptr);
+  ASSERT_NE(contact.getShapeNode2(), nullptr);
+  EXPECT_EQ(contact.getShapeFrame1(), contact.getShapeNode1());
+  EXPECT_EQ(contact.getShapeFrame2(), contact.getShapeNode2());
+
+  const ConstBodyNodePtr bn1 = contact.getBodyNodePtr1();
+  const ConstBodyNodePtr bn2 = contact.getBodyNodePtr2();
+  ASSERT_TRUE(bn1);
+  ASSERT_TRUE(bn2);
+
+  // The two collision objects are snA and snB (in some canonical order).
+  EXPECT_TRUE(
+      (contact.getShapeNode1() == snA && contact.getShapeNode2() == snB)
+      || (contact.getShapeNode1() == snB && contact.getShapeNode2() == snA));
+  EXPECT_TRUE(
+      (bn1.get() == bnA && bn2.get() == bnB)
+      || (bn1.get() == bnB && bn2.get() == bnA));
+}
+
+//==============================================================================
 TEST_F(Collision, CreateCollisionGroupFromVariousObject)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
