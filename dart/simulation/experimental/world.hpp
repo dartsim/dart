@@ -181,6 +181,11 @@ public:
   //--------------------------------------------------------------------------
   // Multibody management
   //--------------------------------------------------------------------------
+  /// Create an articulated multibody container in design mode.
+  ///
+  /// @throws InvalidOperationException if public rigid-body fixed joints
+  ///         already exist, because the mixed multibody pipeline does not yet
+  ///         project those fixed-joint rows.
   Multibody addMultibody(std::string_view name);
   std::optional<Multibody> getMultibody(std::string_view name);
   bool hasMultibody(std::string_view name) const;
@@ -211,9 +216,10 @@ public:
   /// @throws InvalidArgumentException if either body is invalid, belongs to a
   ///         different World, both handles refer to the same body, or the name
   ///         is already used by another joint.
-  /// @throws InvalidOperationException if the World is in simulation mode or
-  ///         configured for the IPC rigid-body solver, or if the internal
-  ///         fixed-joint row configuration fails.
+  /// @throws InvalidOperationException if the World is in simulation mode,
+  ///         configured for the IPC rigid-body solver, already contains
+  ///         multibody structures, or if the internal fixed-joint row
+  ///         configuration fails.
   Joint addRigidBodyFixedJoint(
       std::string_view name, const RigidBody& parent, const RigidBody& child);
   std::optional<RigidBody> getRigidBody(std::string_view name);

@@ -4628,6 +4628,37 @@ TEST(World, RigidBodyFixedJointsRejectIpcSolver)
       jointFirst.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
 }
 
+// Test that public fixed joints reject mixed multibody worlds instead of
+// accepting a joint that the unified contact pipeline will not project.
+TEST(World, RigidBodyFixedJointsRejectUnifiedMultibodyPipeline)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+
+  sx::World multibodyFirst;
+  (void)multibodyFirst.addMultibody("robot");
+  auto multibodyFirstParent
+      = multibodyFirst.addRigidBody("parent", parentOptions);
+  auto multibodyFirstChild = multibodyFirst.addRigidBody("child", childOptions);
+  EXPECT_THROW(
+      multibodyFirst.addRigidBodyFixedJoint(
+          "fixed", multibodyFirstParent, multibodyFirstChild),
+      sx::InvalidOperationException);
+
+  sx::World jointFirst;
+  auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
+  auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
+  (void)jointFirst.addRigidBodyFixedJoint(
+      "fixed", jointFirstParent, jointFirstChild);
+
+  EXPECT_THROW(jointFirst.addMultibody("robot"), sx::InvalidOperationException);
+  EXPECT_EQ(jointFirst.getMultibodyCount(), 0u);
+}
+
 // Test that invalid solver selections are rejected instead of silently falling
 // through to a different rigid-body pipeline.
 TEST(World, SetRigidBodySolverRejectsInvalidEnum)

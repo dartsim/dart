@@ -254,16 +254,25 @@ bool hasRigidBodyFixedJoints(const World& world)
 }
 
 //==============================================================================
-void validateRigidBodyFixedJointSolverSupport(
+void validateRigidBodyFixedJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
-  if (solver != RigidBodySolver::Ipc || !hasRigidBodyFixedJoints(world)) {
+  if (!hasRigidBodyFixedJoints(world)) {
     return;
   }
 
-  DART_EXPERIMENTAL_THROW_T(
+  if (solver == RigidBodySolver::Ipc) {
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "Rigid-body fixed joints are not supported by the IPC rigid-body "
+        "solver");
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      hasMultibodyStructures(world),
       InvalidOperationException,
-      "Rigid-body fixed joints are not supported by the IPC rigid-body solver");
+      "Rigid-body fixed joints are not supported in worlds with multibody "
+      "structures");
 }
 
 //==============================================================================
@@ -1420,6 +1429,11 @@ Frame World::resolveParentFrame(const Frame& parent) const
 Multibody World::addMultibody(std::string_view name)
 {
   ensureDesignMode();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      hasRigidBodyFixedJoints(*this),
+      InvalidOperationException,
+      "Multibody structures are not supported in worlds with rigid-body "
+      "fixed joints");
 
   std::string candidateName;
   if (name.empty()) {
@@ -1629,6 +1643,11 @@ Joint World::addRigidBodyFixedJoint(
       m_rigidBodySolver == RigidBodySolver::Ipc,
       InvalidOperationException,
       "Rigid-body fixed joints are not supported by the IPC rigid-body solver");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      hasMultibodyStructures(*this),
+      InvalidOperationException,
+      "Rigid-body fixed joints are not supported in worlds with multibody "
+      "structures");
 
   std::string actualName;
   if (name.empty()) {
@@ -1836,7 +1855,7 @@ void World::enterSimulationMode()
       "World is already in simulation mode");
 
   validateLoopClosureKinematicsPolicySupport(*this);
-  validateRigidBodyFixedJointSolverSupport(*this, m_rigidBodySolver);
+  validateRigidBodyFixedJointPipelineSupport(*this, m_rigidBodySolver);
   m_simulationMode = true;
 
   // Initial bake so that cached transforms are up-to-date.
@@ -1870,7 +1889,7 @@ void World::setRigidBodySolver(RigidBodySolver solver)
       InvalidArgumentException,
       "Rigid-body solver is invalid");
 
-  validateRigidBodyFixedJointSolverSupport(*this, solver);
+  validateRigidBodyFixedJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
 }
 
@@ -2310,7 +2329,7 @@ void World::step(
   validateLoopClosureDynamicsPolicySupport(
       *this,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
-  validateRigidBodyFixedJointSolverSupport(*this, m_rigidBodySolver);
+  validateRigidBodyFixedJointPipelineSupport(*this, m_rigidBodySolver);
 
   if (!m_simulationMode) {
     enterSimulationMode();
