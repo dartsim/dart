@@ -7623,21 +7623,76 @@ bool canApplyRestingContactNoOp(
   }
 
   constexpr double kStationaryVelocityTolerance = 1e-10;
+  constexpr double kContactPowerTolerance = 1e-12;
   bool sawDynamicContactBody = false;
-  for (const auto& constraint : result.assembly.activeConstraints) {
+  std::vector<double> contactPowerSum(bodies.size(), 0.0);
+  std::vector<bool> sawNonStationaryContactBody(bodies.size(), false);
+  std::vector<bool> stationaryContactBody(bodies.size(), false);
+  const auto accumulateContactPower = [&](const auto& constraint) {
     const std::array<std::size_t, 2> bodyIndices{
         constraint.bodyA, constraint.bodyB};
-    for (const std::size_t bodyIndex : bodyIndices) {
+    for (std::size_t localBody = 0; localBody < bodyIndices.size();
+         ++localBody) {
+      const std::size_t bodyIndex = bodyIndices[localBody];
       if (bodyIndex >= bodies.size() || !bodies[bodyIndex].surface.dynamic) {
         continue;
       }
 
       sawDynamicContactBody = true;
       const auto& velocity = bodies[bodyIndex].initialVelocity;
-      if (!velocity.allFinite()
-          || velocity.norm() > kStationaryVelocityTolerance) {
+      if (!velocity.allFinite()) {
         return false;
       }
+      if (velocity.norm() <= kStationaryVelocityTolerance) {
+        stationaryContactBody[bodyIndex] = true;
+        continue;
+      }
+      sawNonStationaryContactBody[bodyIndex] = true;
+
+      const auto gradient = constraint.reduced.gradient.template segment<6>(
+          static_cast<Eigen::Index>(6 * localBody));
+      if (!gradient.allFinite()) {
+        return false;
+      }
+      const double barrierPower = gradient.dot(velocity);
+      if (!std::isfinite(barrierPower)) {
+        return false;
+      }
+      contactPowerSum[bodyIndex] += barrierPower;
+    }
+    return true;
+  };
+
+  for (const auto& constraint : result.assembly.activeConstraints) {
+    if (!accumulateContactPower(constraint)) {
+      return false;
+    }
+  }
+  for (const auto& constraint : result.assembly.activeFrictionConstraints) {
+    if (!accumulateContactPower(constraint)) {
+      return false;
+    }
+  }
+
+  const std::size_t nonStationaryContactBodyCount
+      = static_cast<std::size_t>(std::count(
+          sawNonStationaryContactBody.begin(),
+          sawNonStationaryContactBody.end(),
+          true));
+  const bool denseFrictionalContactNetwork
+      = nonStationaryContactBodyCount > 1u
+        && !result.assembly.activeFrictionConstraints.empty();
+  for (std::size_t bodyIndex = 0; bodyIndex < bodies.size(); ++bodyIndex) {
+    if (!stationaryContactBody[bodyIndex]
+        && !sawNonStationaryContactBody[bodyIndex]) {
+      continue;
+    }
+    if (!sawNonStationaryContactBody[bodyIndex]) {
+      continue;
+    }
+    if (contactPowerSum[bodyIndex] <= kContactPowerTolerance
+        && !denseFrictionalContactNetwork) {
+      return false;
     }
   }
 

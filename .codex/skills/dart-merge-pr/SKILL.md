@@ -31,6 +31,7 @@ Monitor and merge PR after explicit maintainer/user approval: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/contributing.md
+@docs/onboarding/testing.md
 
 ## Workflow
 
@@ -40,16 +41,22 @@ Monitor and merge PR after explicit maintainer/user approval: $ARGUMENTS
    gh pr view <PR> --json state,isDraft,mergeable,mergeStateStatus,reviewDecision,headRefOid,title,url
    gh pr checks <PR> --json name,state,bucket,link,workflow
    ```
-3. If any required check is pending, watch quietly until it passes or fails.
-4. If any check fails, use `/dart-fix-ci` or `$dart-fix-ci`; do not merge.
-5. Confirm merge method from repository settings. DART uses squash/rebase, not merge commits.
-6. Ask for explicit maintainer/user approval before any merge action.
-7. Merge only after that approval, when checks are green, the PR is not draft,
+3. Run local pre-merge validation on the current head after the latest pushed
+   change: `pixi run test-all` and `pixi run -e cuda test-all`. Do not
+   substitute the default-environment run for the CUDA-environment run; if CUDA
+   cannot execute, record that command's skip or blocker explicitly.
+4. If any required check is pending, watch quietly until it passes or fails.
+5. If any local validation or hosted check fails, use `/dart-fix-ci` or
+   `$dart-fix-ci`; do not merge.
+6. Confirm merge method from repository settings. DART uses squash/rebase, not merge commits.
+7. Ask for explicit maintainer/user approval before any merge action.
+8. Merge only after that approval, when local validation and hosted checks are green, the PR is not draft,
    and GitHub reports it mergeable.
-8. Use the current head SHA when merging so a moved branch cannot be merged accidentally.
-9. For squash merges, use the recent DART title convention:
-   - commit title: `<PR title> (#<PR number>)`
-   - no agent prefix
+9. Use the current head SHA when merging so a moved branch cannot be merged accidentally.
+10. For squash merges, use the recent DART title convention:
+
+- commit title: `<PR title> (#<PR number>)`
+- no agent prefix
 
 ## Notes
 
@@ -61,6 +68,7 @@ Monitor and merge PR after explicit maintainer/user approval: $ARGUMENTS
 
 ## Output
 
+- Local validation state for `pixi run test-all` and `pixi run -e cuda test-all`
 - Final CI state
 - Merge method and merge commit SHA
 - Whether the PR is merged or what blocks it
