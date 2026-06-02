@@ -20,11 +20,11 @@ jobs:
       matrix:
         base: [main, release-6.16]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ matrix.base }}
       - name: Set up pixi
-        uses: prefix-dev/setup-pixi@v0.9.1
+        uses: prefix-dev/setup-pixi@v0.9.6
         with:
           run-install: false
       - name: Update lockfiles
@@ -32,7 +32,7 @@ jobs:
           pixi global install pixi-diff-to-markdown
           pixi update --json --no-install | pixi-diff-to-markdown >> diff.md
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update pixi lockfile
