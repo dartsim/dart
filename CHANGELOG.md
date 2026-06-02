@@ -600,6 +600,33 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     reproduced on a cartpole. All gradients are finite-difference-of-step
     verified; no solver, reverse-pass cache, ECS, or tensor-backend types are
     exposed publicly.
+  - Added the first internal experimental AVBD rigid-body contact-stage
+    activation for supported free rigid-body contacts. The first World slice
+    routes privately opted-in rigid contacts through private 6-DOF AVBD
+    point-pair rows as a velocity-level projection while unsupported envelopes
+    fall back to the existing sequential-impulse path; no AVBD row storage or
+    solver registry is exposed through the public facade. The private rigid
+    contact snapshot now also derives box face/edge/corner and capsule
+    side/top-cap/bottom-cap endpoint feature IDs and scopes contact row ordinals
+    per canonical endpoint pair so unrelated contact manifolds do not perturb
+    warm-start identity. Added private rigid point-joint linear, angular, and
+    combined AVBD row builders so fixed-anchor joint translation and orientation
+    rows can share the rigid row driver; the builders seed step-start constraint
+    values for AVBD alpha regularization. This is not articulated World joint
+    wiring yet.
+  - Extended the private AVBD rigid contact feature identity path with cylinder
+    side/cap/rim endpoint features, so cylinder contacts warm-start across
+    same-feature motion but reset when they move between barrel, cap, and rim
+    manifolds. Capsule side/top-cap/bottom-cap endpoint features provide the
+    same private warm-start partitioning for capsule contacts.
+  - Added a private AVBD rigid World point-joint snapshot path that appends
+    world-space point-joint inputs to the same rigid snapshot/solve/apply
+    wrapper and combined step helper with persistent linear and angular joint
+    row inventories. A detail-only fixed-joint ECS extractor and step-helper
+    overload can now feed that private path for rigid-body-linked joint
+    entities, and the internal contact-stage AVBD opt-in can project those
+    fixed joint rows with or without active contact rows. Public multibody
+    joint wiring is still out of scope.
   - Added an experimental computation-graph substrate with sequential and
     parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
@@ -670,6 +697,65 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     DART frame geometry.
   - Added experimental rigid-body derived dynamic quantities in C++ and dartpy:
     linear/angular momentum, kinetic energy, and gravitational potential energy.
+  - Added an optional pre-joint (parent-side) offset to the experimental
+    multibody joint (`JointSpec`/`LinkOptions::transformToParent`, dartpy
+    `JointSpec.transform_to_parent`). The joint relative transform is now
+    `transformToParent * jointMotion(q) * transformFromParent`, matching the
+    legacy `A * Q(q) * C^-1` form, so a joint can be anchored away from the
+    parent link's frame origin (offset joints, and sibling joints at different
+    locations on a branching parent). The default identity preserves existing
+    behavior; the change threads through the forward dynamics, forward
+    kinematics, and the variational integrator (the motion subspace is
+    unaffected).
+  - Extended the experimental rigid-body contact boxed-LCP to solve Coulomb
+    friction jointly with the normal impulses. Each contact now contributes
+    three rows -- a normal row and two friction-tangent rows whose bounds are
+    coupled to the solved normal impulse through the solver's friction index
+    (`|lambda_t| <= mu * lambda_n`) -- so normal and friction are resolved in
+    one consistent solve instead of a normal solve followed by a separate
+    Gauss-Seidel friction sweep. A single isolated contact with no tangential
+    motion leaves the friction rows inactive (the elastic-collision velocity
+    swap stays exact); a rank-deficient contact set (a box resting flat on a
+    plane) falls back to the coupled normal-only solve plus the sequential
+    friction sweep. Verified by the existing drop/rest/bounce/friction tests
+    and a new sliding-sphere test that checks friction drives the contact slip
+    to zero (rolling) through the coupled solve.
+  - Replaced the experimental rigid-body contact stage's per-contact
+    sequential normal impulses with a coupled boxed-LCP solve over all
+    rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the
+    contact-space inverse-mass (Delassus) operator and drives each contact's
+    normal approach velocity to its restitution target in one consistent
+    solve, so coupled contacts (a stack, where the lower contact must carry
+    the weight above it) resolve together rather than through a single
+    Gauss-Seidel sweep. A single isolated contact reduces to the previous
+    closed-form impulse exactly, and a rank-deficient contact set (a box
+    resting flat on a plane) falls back to an uncoupled diagonal projection;
+    the proven friction pass and positional correction are unchanged. Verified
+    by the existing drop/rest/bounce/friction tests and a new coupled
+    two-sphere-stack rest test.
+  - Added an experimental model-loading bridge that builds a `Multibody` from a
+    legacy `dynamics::Skeleton`: C++ `io::buildMultibodyFromSkeleton(world,
+skeleton, options)` and dartpy `build_multibody_from_skeleton` /
+    `SkeletonToMultibodyOptions`. It maps weld, revolute, prismatic, screw,
+    universal, ball, free (floating base), and planar joints in arbitrary trees
+    on a fixed base — including offset and branching joints, by placing each
+    joint with the new pre-joint offset (transformToParent = A, transformFromParent
+    = C^-1) so each link frame coincides with its legacy body frame. It converts
+    the screw pitch and free-joint coordinate conventions, carries
+    revolute/prismatic joint properties (position/velocity/effort limits,
+    damping, spring stiffness and rest position, Coulomb friction), and
+    reproduces the legacy skeleton's mass matrix and Coriolis/gravity dynamics.
+    Combined with `dart::io` URDF/SDF parsing this loads a model file into the
+    experimental World, and `io::buildMultibodiesFromWorld` (dartpy
+    `build_multibodies_from_world`) loads every skeleton of a legacy
+    `simulation::World` as its own multibody (a whole scene). Sphere, box,
+    capsule, cylinder, plane, triangular `MeshShape`, `ConvexMeshShape`,
+    `HeightmapShape`, and `SoftMeshShape` collision shapes are carried onto the
+    links with their shape-node offsets preserved (gated by
+    `loadCollisionShapes`). Other collision shape types and rotated parent-side
+    offsets on
+    ball/free/planar joints are not yet translated (the former is skipped; the
+    latter raises a descriptive error).
   - Added experimental articulated-body forward dynamics for fixed-base
     multibodies: `World::step()` now integrates revolute and prismatic joint
     accelerations from joint efforts, gravity, and Coriolis/centrifugal terms
@@ -813,11 +899,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     `getDampingCoefficient`/`setDampingCoefficient`; dartpy
     `joint.spring_stiffness`, `joint.rest_position`, `joint.damping_coefficient`).
   - Added experimental rigid-body collision queries: attach a `CollisionShape`
-    (sphere or box) to a rigid body and call `World::collide()` to get contact
-    points (position, world-frame normal, penetration depth) via the maintained
-    native collision engine. dartpy adds `CollisionShape`, `CollisionShapeType`,
-    `Contact`, `body.set_collision_shape`/`collision_shape`/`has_collision_shape`,
-    and `world.collide()`.
+    (sphere, box, capsule, cylinder, plane, or triangular mesh) to a rigid body and call
+    `World::collide()` to get contact points (position, world-frame normal,
+    penetration depth) via the maintained native collision engine. dartpy adds
+    `CollisionShape`, `CollisionShapeType`, `Contact`,
+    `body.set_collision_shape`/`collision_shape`/`has_collision_shape`, and
+    `world.collide()`.
   - Generalized experimental collision queries to multibody links: links can now
     carry collision shapes (`Link::setCollisionShape`/`getCollisionShape`/
     `hasCollisionShape`, dartpy `link.set_collision_shape`/`collision_shape`/
@@ -826,6 +913,26 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     handle (a rigid body or a link) via `body_a`/`body_b`, with
     `name`/`is_rigid_body`/`is_link`/`as_rigid_body`/`as_link`. The rigid-body
     contact response stage skips link pairs (their response is a later slice).
+  - Experimental rigid bodies and links can now carry multiple collision shapes
+    as compound geometry. `setCollisionShape` remains a replace-with-one API,
+    while `addCollisionShape` appends shapes and `getCollisionShapes` returns
+    the full list (dartpy: `add_collision_shape`, `collision_shapes`). Model
+    loading imports every representable collision shape node on a body, binary
+    serialization stores the full shape list, and `World::collide()` skips
+    same-entity shape pairs so compound pieces do not self-collide.
+  - Added `CollisionQueryOptions` for experimental collision queries, including
+    an explicit `includeSameMultibodyLinkPairs` / dartpy
+    `include_same_multibody_link_pairs` switch to filter same-multibody link
+    self-collision pairs without changing the default query behavior.
+    Collision queries can also independently include or exclude rigid-body,
+    rigid-body/link, and link/link body-type pairs while keeping the default
+    all-pairs behavior.
+  - `World::collide()` now uses the native collision broad phase to prune
+    candidate pairs before narrow-phase contact generation while preserving the
+    same `Contact` reporting semantics.
+  - `World::collide()` now keeps a persistent native collision world between
+    queries, updating cached object transforms and rebuilding only when the
+    experimental collision geometry topology changes.
   - Added an experimental articulated contact response: multibody links with
     collision shapes now rest on static rigid-body obstacles. `World::step()`
     resolves each link-vs-static contact with a unilateral normal impulse using

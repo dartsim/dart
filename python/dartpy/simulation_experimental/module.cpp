@@ -59,6 +59,7 @@
 #include <dart/simulation/experimental/io/gmsh_tet_mesh.hpp>
 #include <dart/simulation/experimental/io/obj_triangle_mesh.hpp>
 #include <dart/simulation/experimental/io/skeleton_loader.hpp>
+#include <dart/simulation/experimental/io/skeleton_to_multibody.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -249,6 +250,37 @@ Eigen::VectorXd toVectorX(const std::vector<double>& values)
   return vector;
 }
 
+std::vector<Eigen::Vector3d> toVector3List(const nb::handle& value)
+{
+  const auto sequence = nb::cast<nb::sequence>(value);
+  std::vector<Eigen::Vector3d> result;
+  const nb::ssize_t length = nb::len(sequence);
+  result.reserve(static_cast<std::size_t>(length));
+  for (nb::ssize_t i = 0; i < length; ++i) {
+    result.push_back(toVector3(sequence[i]));
+  }
+  return result;
+}
+
+std::vector<Eigen::Vector3i> toTriangleList(const nb::handle& value)
+{
+  const auto sequence = nb::cast<nb::sequence>(value);
+  std::vector<Eigen::Vector3i> result;
+  const nb::ssize_t length = nb::len(sequence);
+  result.reserve(static_cast<std::size_t>(length));
+  for (nb::ssize_t i = 0; i < length; ++i) {
+    const auto triangle = nb::cast<nb::sequence>(sequence[i]);
+    if (nb::len(triangle) != 3) {
+      throw nb::type_error("Expected triangle indices with length 3");
+    }
+    result.emplace_back(
+        nb::cast<int>(triangle[0]),
+        nb::cast<int>(triangle[1]),
+        nb::cast<int>(triangle[2]));
+  }
+  return result;
+}
+
 std::string toOptionalName(const nb::handle& value)
 {
   if (value.is_none()) {
@@ -271,36 +303,6 @@ Eigen::Isometry3d toIsometry(const nb::handle& value)
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.matrix() = matrix;
   return transform;
-}
-
-Eigen::Vector3i toVector3i(const nb::handle& value)
-{
-  const auto data = nb::cast<std::array<int, 3>>(value);
-  return Eigen::Vector3i(data[0], data[1], data[2]);
-}
-
-std::vector<Eigen::Vector3d> toVector3List(const nb::handle& value)
-{
-  const auto sequence = nb::cast<nb::sequence>(value);
-  const auto length = static_cast<nb::ssize_t>(nb::len(sequence));
-  std::vector<Eigen::Vector3d> vectors;
-  vectors.reserve(static_cast<std::size_t>(length));
-  for (nb::ssize_t i = 0; i < length; ++i) {
-    vectors.push_back(toVector3(sequence[i]));
-  }
-  return vectors;
-}
-
-std::vector<Eigen::Vector3i> toVector3iList(const nb::handle& value)
-{
-  const auto sequence = nb::cast<nb::sequence>(value);
-  const auto length = static_cast<nb::ssize_t>(nb::len(sequence));
-  std::vector<Eigen::Vector3i> vectors;
-  vectors.reserve(static_cast<std::size_t>(length));
-  for (nb::ssize_t i = 0; i < length; ++i) {
-    vectors.push_back(toVector3i(sequence[i]));
-  }
-  return vectors;
 }
 
 sim::Frame toFrameHandle(const nb::handle& value)
@@ -557,48 +559,122 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
       .value("BOX", sim::CollisionShapeType::Box)
+      .value("MESH", sim::CollisionShapeType::Mesh)
       .value("CAPSULE", sim::CollisionShapeType::Capsule)
       .value("CYLINDER", sim::CollisionShapeType::Cylinder)
-      .value("MESH", sim::CollisionShapeType::Mesh);
+      .value("PLANE", sim::CollisionShapeType::Plane);
 
   nb::class_<sim::CollisionShape>(m, "CollisionShape")
-      .def_static("sphere", &sim::CollisionShape::makeSphere, nb::arg("radius"))
+      .def_static(
+          "sphere",
+          [](double radius, const nb::handle& localTransform) {
+            sim::CollisionShape shape = sim::CollisionShape::makeSphere(radius);
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
+          nb::arg("radius"),
+          nb::arg("local_transform") = nb::none())
       .def_static(
           "box",
-          [](const nb::handle& halfExtents) {
-            return sim::CollisionShape::makeBox(toVector3(halfExtents));
+          [](const nb::handle& halfExtents, const nb::handle& localTransform) {
+            sim::CollisionShape shape
+                = sim::CollisionShape::makeBox(toVector3(halfExtents));
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
           },
-          nb::arg("half_extents"))
+          nb::arg("half_extents"),
+          nb::arg("local_transform") = nb::none())
       .def_static(
           "capsule",
-          &sim::CollisionShape::makeCapsule,
+          [](double radius,
+             double halfHeight,
+             const nb::handle& localTransform) {
+            sim::CollisionShape shape
+                = sim::CollisionShape::makeCapsule(radius, halfHeight);
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
           nb::arg("radius"),
-          nb::arg("half_height"))
+          nb::arg("half_height"),
+          nb::arg("local_transform") = nb::none())
       .def_static(
           "cylinder",
-          &sim::CollisionShape::makeCylinder,
+          [](double radius,
+             double halfHeight,
+             const nb::handle& localTransform) {
+            sim::CollisionShape shape
+                = sim::CollisionShape::makeCylinder(radius, halfHeight);
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
           nb::arg("radius"),
-          nb::arg("half_height"))
+          nb::arg("half_height"),
+          nb::arg("local_transform") = nb::none())
+      .def_static(
+          "plane",
+          [](const nb::handle& normal,
+             double offset,
+             const nb::handle& localTransform) {
+            sim::CollisionShape shape
+                = sim::CollisionShape::makePlane(toVector3(normal), offset);
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
+          },
+          nb::arg("normal"),
+          nb::arg("offset"),
+          nb::arg("local_transform") = nb::none())
       .def_static(
           "mesh",
-          [](const nb::handle& vertices, const nb::handle& triangles) {
-            return sim::CollisionShape::makeMesh(
-                toVector3List(vertices), toVector3iList(triangles));
+          [](const nb::handle& vertices,
+             const nb::handle& triangles,
+             const nb::handle& localTransform) {
+            sim::CollisionShape shape = sim::CollisionShape::makeMesh(
+                toVector3List(vertices), toTriangleList(triangles));
+            if (!localTransform.is_none()) {
+              shape.localTransform = toIsometry(localTransform);
+            }
+            return shape;
           },
           nb::arg("vertices"),
-          nb::arg("triangles"))
+          nb::arg("triangles"),
+          nb::arg("local_transform") = nb::none())
       .def_prop_ro(
           "type", [](const sim::CollisionShape& self) { return self.type; })
       .def_prop_ro(
           "radius", [](const sim::CollisionShape& self) { return self.radius; })
       .def_prop_ro(
+          "height",
+          [](const sim::CollisionShape& self) {
+            return 2.0 * self.halfExtents.z();
+          })
+      .def_prop_ro(
+          "half_height",
+          [](const sim::CollisionShape& self) { return self.halfExtents.z(); })
+      .def_prop_ro(
           "half_extents",
           [](const sim::CollisionShape& self) { return self.halfExtents; })
       .def_prop_ro(
+          "normal", [](const sim::CollisionShape& self) { return self.normal; })
+      .def_prop_ro(
+          "offset", [](const sim::CollisionShape& self) { return self.offset; })
+      .def_prop_ro(
           "vertices",
           [](const sim::CollisionShape& self) { return self.vertices; })
-      .def_prop_ro("triangles", [](const sim::CollisionShape& self) {
-        return self.triangles;
+      .def_prop_ro(
+          "triangles",
+          [](const sim::CollisionShape& self) { return self.triangles; })
+      .def_prop_ro("local_transform", [](const sim::CollisionShape& self) {
+        return self.localTransform.matrix();
       });
 
   nb::enum_<sim::ClosureKinematicsPolicy>(m, "ClosureKinematicsPolicy")
@@ -722,7 +798,8 @@ void defSimulationExperimentalModule(nb::module_& m)
                       sim::JointType type,
                       const nb::handle& axis,
                       const nb::handle& axis2,
-                      const nb::handle& transform_from_parent) {
+                      const nb::handle& transform_from_parent,
+                      const nb::handle& transform_to_parent) {
             sim::JointSpec spec;
             spec.name = std::move(name);
             spec.type = type;
@@ -737,13 +814,17 @@ void defSimulationExperimentalModule(nb::module_& m)
             if (!transform_from_parent.is_none()) {
               spec.transformFromParent = toIsometry(transform_from_parent);
             }
+            if (!transform_to_parent.is_none()) {
+              spec.transformToParent = toIsometry(transform_to_parent);
+            }
             return spec;
           }),
           nb::arg("name") = "",
           nb::arg("type") = sim::JointType::Revolute,
           nb::arg("axis") = nb::none(),
           nb::arg("axis2") = nb::none(),
-          nb::arg("transform_from_parent") = nb::none())
+          nb::arg("transform_from_parent") = nb::none(),
+          nb::arg("transform_to_parent") = nb::none())
       .def_rw("name", &sim::JointSpec::name)
       .def_rw("type", &sim::JointSpec::type)
       .def_prop_rw(
@@ -769,6 +850,14 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           [](sim::JointSpec& self, const nb::handle& transform) {
             self.transformFromParent = toIsometry(transform);
+          })
+      .def_prop_rw(
+          "transform_to_parent",
+          [](const sim::JointSpec& self) {
+            return self.transformToParent.matrix();
+          },
+          [](sim::JointSpec& self, const nb::handle& transform) {
+            self.transformToParent = toIsometry(transform);
           })
       .def("__repr__", [](const sim::JointSpec& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -1060,7 +1149,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "set_collision_shape",
           &sim::Link::setCollisionShape,
           nb::arg("shape"))
+      .def(
+          "add_collision_shape",
+          &sim::Link::addCollisionShape,
+          nb::arg("shape"))
       .def_prop_ro("collision_shape", &sim::Link::getCollisionShape)
+      .def_prop_ro("collision_shapes", &sim::Link::getCollisionShapes)
       .def_prop_ro("has_collision_shape", &sim::Link::hasCollisionShape)
       .def_prop_ro("is_valid", &sim::Link::isValid)
       .def("__repr__", [](const sim::Link& self) {
@@ -1463,6 +1557,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           "set_collision_shape",
           &sim::RigidBody::setCollisionShape,
           nb::arg("shape"))
+      .def(
+          "add_collision_shape",
+          &sim::RigidBody::addCollisionShape,
+          nb::arg("shape"))
       .def_prop_rw(
           "is_deformable_surface_ccd_obstacle",
           &sim::RigidBody::isDeformableSurfaceCcdObstacle,
@@ -1476,6 +1574,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::RigidBody::isDeformableGroundBarrier,
           &sim::RigidBody::setDeformableGroundBarrier)
       .def_prop_ro("collision_shape", &sim::RigidBody::getCollisionShape)
+      .def_prop_ro("collision_shapes", &sim::RigidBody::getCollisionShapes)
       .def_prop_ro("has_collision_shape", &sim::RigidBody::hasCollisionShape)
       .def_prop_ro("linear_momentum", &sim::RigidBody::getLinearMomentum)
       .def_prop_ro("angular_momentum", &sim::RigidBody::getAngularMomentum)
@@ -1614,6 +1713,53 @@ void defSimulationExperimentalModule(nb::module_& m)
           "normal", [](const sim::Contact& self) { return self.normal; })
       .def_prop_ro(
           "depth", [](const sim::Contact& self) { return self.depth; });
+
+  nb::class_<sim::CollisionQueryOptions>(m, "CollisionQueryOptions")
+      .def(
+          "__init__",
+          [](sim::CollisionQueryOptions* self,
+             bool includeSameMultibodyLinkPairs,
+             bool includeRigidBodyPairs,
+             bool includeRigidBodyLinkPairs,
+             bool includeLinkPairs) {
+            sim::CollisionQueryOptions options;
+            options.includeSameMultibodyLinkPairs
+                = includeSameMultibodyLinkPairs;
+            options.includeRigidBodyPairs = includeRigidBodyPairs;
+            options.includeRigidBodyLinkPairs = includeRigidBodyLinkPairs;
+            options.includeLinkPairs = includeLinkPairs;
+            new (self) sim::CollisionQueryOptions(options);
+          },
+          nb::arg("include_same_multibody_link_pairs") = true,
+          nb::kw_only(),
+          nb::arg("include_rigid_body_pairs") = true,
+          nb::arg("include_rigid_body_link_pairs") = true,
+          nb::arg("include_link_pairs") = true)
+      .def_rw(
+          "include_same_multibody_link_pairs",
+          &sim::CollisionQueryOptions::includeSameMultibodyLinkPairs)
+      .def_rw(
+          "include_rigid_body_pairs",
+          &sim::CollisionQueryOptions::includeRigidBodyPairs)
+      .def_rw(
+          "include_rigid_body_link_pairs",
+          &sim::CollisionQueryOptions::includeRigidBodyLinkPairs)
+      .def_rw(
+          "include_link_pairs", &sim::CollisionQueryOptions::includeLinkPairs)
+      .def("__repr__", [](const sim::CollisionQueryOptions& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "include_same_multibody_link_pairs",
+            repr_bool(self.includeSameMultibodyLinkPairs));
+        fields.emplace_back(
+            "include_rigid_body_pairs", repr_bool(self.includeRigidBodyPairs));
+        fields.emplace_back(
+            "include_rigid_body_link_pairs",
+            repr_bool(self.includeRigidBodyLinkPairs));
+        fields.emplace_back(
+            "include_link_pairs", repr_bool(self.includeLinkPairs));
+        return format_repr("CollisionQueryOptions", fields);
+      });
 
   nb::class_<sim::StepDerivatives>(m, "StepDerivatives")
       .def_prop_ro(
@@ -2050,6 +2196,48 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::io::DeformableSceneDiagnostics::maxDisplacement)
       .def_ro("min_z", &sim::io::DeformableSceneDiagnostics::minZ)
       .def_ro("max_z", &sim::io::DeformableSceneDiagnostics::maxZ);
+
+  nb::class_<sim::io::SkeletonToMultibodyOptions>(
+      m, "SkeletonToMultibodyOptions")
+      .def(nb::init<>())
+      .def_rw("name", &sim::io::SkeletonToMultibodyOptions::name)
+      .def_rw(
+          "base_link_name", &sim::io::SkeletonToMultibodyOptions::baseLinkName)
+      .def_rw("copy_state", &sim::io::SkeletonToMultibodyOptions::copyState)
+      .def_rw(
+          "copy_joint_properties",
+          &sim::io::SkeletonToMultibodyOptions::copyJointProperties)
+      .def_rw(
+          "load_collision_shapes",
+          &sim::io::SkeletonToMultibodyOptions::loadCollisionShapes);
+
+  m.def(
+      "build_multibody_from_skeleton",
+      [](sim::World& world,
+         const dart::dynamics::Skeleton& skeleton,
+         const sim::io::SkeletonToMultibodyOptions& options) {
+        return sim::io::buildMultibodyFromSkeleton(world, skeleton, options);
+      },
+      nb::arg("world"),
+      nb::arg("skeleton"),
+      nb::arg("options") = sim::io::SkeletonToMultibodyOptions{},
+      // The returned Multibody handle holds a raw World*, so keep the World
+      // alive as long as the handle lives, matching World.add_multibody.
+      nb::keep_alive<0, 1>());
+
+  m.def(
+      "build_multibodies_from_world",
+      [](sim::World& world,
+         const dart::simulation::World& legacyWorld,
+         const sim::io::SkeletonToMultibodyOptions& options) {
+        return sim::io::buildMultibodiesFromWorld(world, legacyWorld, options);
+      },
+      nb::arg("world"),
+      nb::arg("legacy_world"),
+      nb::arg("options") = sim::io::SkeletonToMultibodyOptions{});
+  // The returned handles reference `world`; the caller must keep it alive (a
+  // returned list is not weak-referenceable, so no keep_alive edge is
+  // attached).
 
   m.def(
       "add_skeleton",
@@ -2572,7 +2760,12 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "num_differentiable_parameters",
           &sim::World::getNumDifferentiableParameters)
-      .def("collide", &sim::World::collide)
+      .def(
+          "collide",
+          [](sim::World& self, const sim::CollisionQueryOptions& options) {
+            return self.collide(options);
+          },
+          nb::arg("options") = sim::CollisionQueryOptions{})
       .def("clear", &sim::World::clear)
       .def("__repr__", [](const sim::World& self) {
         std::vector<std::pair<std::string, std::string>> fields;

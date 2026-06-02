@@ -42,7 +42,10 @@
 #include <limits>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental::io {
 
@@ -66,6 +69,56 @@ void registerComponentIfNeeded(SerializerRegistry& registry)
           std::make_unique<CategoryComponentSerializer<ComponentT>>());
     }
   }
+}
+
+void clearMeshCollisionShape(CollisionShape& shape)
+{
+  shape.vertices.clear();
+  shape.triangles.clear();
+}
+
+void writeMeshCollisionGeometry(
+    std::ostream& output, const CollisionShape& shape)
+{
+  std::size_t vertexCount = shape.vertices.size();
+  writePOD(output, vertexCount);
+  for (const auto& vertex : shape.vertices) {
+    writeVector3d(output, vertex);
+  }
+
+  std::size_t triangleCount = shape.triangles.size();
+  writePOD(output, triangleCount);
+  for (const auto& triangle : shape.triangles) {
+    writePOD(output, triangle[0]);
+    writePOD(output, triangle[1]);
+    writePOD(output, triangle[2]);
+  }
+}
+
+void readMeshCollisionGeometry(std::istream& input, CollisionShape& shape)
+{
+  std::size_t vertexCount = 0;
+  readPOD(input, vertexCount);
+  shape.vertices.resize(vertexCount);
+  for (auto& vertex : shape.vertices) {
+    readVector3d(input, vertex);
+  }
+
+  std::size_t triangleCount = 0;
+  readPOD(input, triangleCount);
+  shape.triangles.resize(triangleCount);
+  for (auto& triangle : shape.triangles) {
+    readPOD(input, triangle[0]);
+    readPOD(input, triangle[1]);
+    readPOD(input, triangle[2]);
+  }
+}
+
+void setSingleCollisionShape(
+    comps::CollisionGeometry& geometry, CollisionShape shape)
+{
+  geometry.shapes.clear();
+  geometry.shapes.push_back(std::move(shape));
 }
 
 Eigen::VectorXd symmetricLowerBound(const Eigen::VectorXd& upperBound)
@@ -142,14 +195,136 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
                                  : Eigen::VectorXd::Constant(dof, infinity);
 }
 
-void deserializeCollisionGeometryV2(
+void initializeCollisionShapeDefaults(CollisionShape& shape)
+{
+  shape.localTransform = Eigen::Isometry3d::Identity();
+  shape.normal = Eigen::Vector3d::UnitZ();
+  shape.offset = 0.0;
+  clearMeshCollisionShape(shape);
+}
+
+void deserializeCollisionGeometryPreV7(
     std::istream& input, comps::CollisionGeometry& geometry)
 {
-  readPOD(input, geometry.shape.type);
-  readPOD(input, geometry.shape.radius);
-  readVector3d(input, geometry.shape.halfExtents);
-  geometry.shape.vertices.clear();
-  geometry.shape.triangles.clear();
+  CollisionShape shape;
+  readPOD(input, shape.type);
+  readPOD(input, shape.radius);
+  readVector3d(input, shape.halfExtents);
+  initializeCollisionShapeDefaults(shape);
+  setSingleCollisionShape(geometry, std::move(shape));
+}
+
+void deserializeCollisionGeometryV7ToV10(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  CollisionShape shape;
+  readPOD(input, shape.type);
+  readPOD(input, shape.radius);
+  readVector3d(input, shape.halfExtents);
+  shape.localTransform = Eigen::Isometry3d::Identity();
+  shape.normal = Eigen::Vector3d::UnitZ();
+  shape.offset = 0.0;
+  readMeshCollisionGeometry(input, shape);
+  setSingleCollisionShape(geometry, std::move(shape));
+}
+
+void serializeCollisionShape(std::ostream& output, const CollisionShape& shape)
+{
+  writePOD(output, shape.type);
+  writePOD(output, shape.radius);
+  writeVector3d(output, shape.halfExtents);
+  writeIsometry3d(output, shape.localTransform);
+  writeVector3d(output, shape.normal);
+  writePOD(output, shape.offset);
+  writeMeshCollisionGeometry(output, shape);
+}
+
+void deserializeCollisionShape(std::istream& input, CollisionShape& shape)
+{
+  readPOD(input, shape.type);
+  readPOD(input, shape.radius);
+  readVector3d(input, shape.halfExtents);
+  readIsometry3d(input, shape.localTransform);
+  readVector3d(input, shape.normal);
+  readPOD(input, shape.offset);
+  readMeshCollisionGeometry(input, shape);
+}
+
+CollisionShapeType deserializeBranchV11CollisionShapeType(std::istream& input)
+{
+  std::uint32_t rawType = 0;
+  readPOD(input, rawType);
+  switch (rawType) {
+    case 0u:
+      return CollisionShapeType::Sphere;
+    case 1u:
+      return CollisionShapeType::Box;
+    case 2u:
+      return CollisionShapeType::Capsule;
+    case 3u:
+      return CollisionShapeType::Cylinder;
+    case 4u:
+      return CollisionShapeType::Plane;
+    case 5u:
+      return CollisionShapeType::Mesh;
+    default:
+      throw std::runtime_error(
+          std::format("Unsupported legacy CollisionShapeType {}", rawType));
+  }
+}
+
+void deserializeBranchV11CollisionShape(
+    std::istream& input, CollisionShape& shape)
+{
+  shape.type = deserializeBranchV11CollisionShapeType(input);
+  readPOD(input, shape.radius);
+  double legacyHeight = 1.0;
+  readPOD(input, legacyHeight);
+  readVector3d(input, shape.halfExtents);
+  readIsometry3d(input, shape.localTransform);
+  readVector3d(input, shape.normal);
+  readPOD(input, shape.offset);
+  readMeshCollisionGeometry(input, shape);
+
+  if (shape.type == CollisionShapeType::Capsule
+      || shape.type == CollisionShapeType::Cylinder) {
+    shape.halfExtents
+        = Eigen::Vector3d(shape.radius, shape.radius, 0.5 * legacyHeight);
+  }
+}
+
+void serializeCollisionGeometry(
+    std::ostream& output, const comps::CollisionGeometry& geometry)
+{
+  std::size_t shapeCount = geometry.shapes.size();
+  writePOD(output, shapeCount);
+  for (const auto& shape : geometry.shapes) {
+    serializeCollisionShape(output, shape);
+  }
+}
+
+void deserializeCollisionGeometry(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  std::size_t shapeCount = 0;
+  readPOD(input, shapeCount);
+  geometry.shapes.resize(shapeCount);
+  for (auto& shape : geometry.shapes) {
+    deserializeCollisionShape(input, shape);
+  }
+  geometry.revision = 0;
+}
+
+void deserializeBranchV11CollisionGeometry(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  std::size_t shapeCount = 0;
+  readPOD(input, shapeCount);
+  geometry.shapes.resize(shapeCount);
+  for (auto& shape : geometry.shapes) {
+    deserializeBranchV11CollisionShape(input, shape);
+  }
+  geometry.revision = 0;
 }
 
 void deserializeLinkV8(
@@ -244,15 +419,15 @@ private:
   void saveComponent(
       std::ostream& output,
       const comps::CollisionGeometry& component,
-      const EntityMap& entityMap) const override
+      const EntityMap& /*entityMap*/) const override
   {
-    autoSerialize(output, component, entityMap);
+    serializeCollisionGeometry(output, component);
   }
 
   void loadComponent(
       std::istream& input, comps::CollisionGeometry& component) const override
   {
-    autoDeserialize(input, component);
+    deserializeCollisionGeometry(input, component);
   }
 
   void loadComponent(
@@ -260,10 +435,16 @@ private:
       comps::CollisionGeometry& component,
       std::uint32_t formatVersion) const override
   {
-    // CollisionShape mesh vertices/triangles were added to the serialized
-    // CollisionGeometry in binary format version 7.
     if (formatVersion < 7u) {
-      deserializeCollisionGeometryV2(input, component);
+      deserializeCollisionGeometryPreV7(input, component);
+      return;
+    }
+    if (formatVersion <= 10u) {
+      deserializeCollisionGeometryV7ToV10(input, component);
+      return;
+    }
+    if (formatVersion == 11u) {
+      deserializeBranchV11CollisionGeometry(input, component);
       return;
     }
 

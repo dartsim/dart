@@ -30,7 +30,8 @@
  */
 
 #include <dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp>
-#include <dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp>
+#include <dart/simulation/experimental/detail/newton_barrier/friction_kernel.hpp>
+#include <dart/simulation/experimental/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Cholesky>
@@ -304,40 +305,6 @@ RigidIpcMatrix12d projectToPsd(const RigidIpcMatrix12d& matrix)
          * solver.eigenvectors().transpose();
 }
 
-struct SmoothFrictionNormResult
-{
-  double value = 0.0;
-  double firstDerivative = 0.0;
-  double secondDerivative = 0.0;
-  bool dynamicBranch = false;
-};
-
-SmoothFrictionNormResult smoothFrictionNorm(
-    const double norm, const double staticDisplacement)
-{
-  SmoothFrictionNormResult result;
-  if (!(norm >= 0.0) || !std::isfinite(norm) || !(staticDisplacement > 0.0)
-      || !std::isfinite(staticDisplacement)) {
-    return result;
-  }
-
-  if (norm > staticDisplacement) {
-    result.value = norm;
-    result.firstDerivative = 1.0;
-    result.secondDerivative = 0.0;
-    result.dynamicBranch = true;
-    return result;
-  }
-
-  const double invEps = 1.0 / staticDisplacement;
-  const double invEpsSquared = invEps * invEps;
-  result.value = norm * norm * (1.0 - norm * invEps / 3.0) * invEps
-                 + staticDisplacement / 3.0;
-  result.firstDerivative = 2.0 * norm * invEps - norm * norm * invEpsSquared;
-  result.secondDerivative = 2.0 * invEps - 2.0 * norm * invEpsSquared;
-  return result;
-}
-
 template <int Columns>
 RigidIpcFrictionPotentialResult computeProjectedFrictionPotential(
     const Eigen::Matrix<double, 2, Columns>& projection,
@@ -345,47 +312,21 @@ RigidIpcFrictionPotentialResult computeProjectedFrictionPotential(
     const RigidIpcFrictionOptions& options)
 {
   RigidIpcFrictionPotentialResult result;
-  if (!projection.allFinite() || !displacement.allFinite()) {
-    return result;
-  }
-
   const double weight = options.coefficient * options.laggedNormalForce;
-  if (!(weight > 0.0) || !std::isfinite(weight)
-      || !(options.staticFrictionDisplacement > 0.0)
-      || !std::isfinite(options.staticFrictionDisplacement)) {
+  const auto potential = newton_barrier::projectedFrictionPotential<Columns>(
+      projection, displacement, weight, options.staticFrictionDisplacement);
+  if (!potential.active) {
     return result;
   }
 
-  result.tangentialDisplacement = projection * displacement;
-  result.tangentialDisplacementNorm = result.tangentialDisplacement.norm();
-
-  const SmoothFrictionNormResult smooth = smoothFrictionNorm(
-      result.tangentialDisplacementNorm, options.staticFrictionDisplacement);
-  result.weight = weight;
-  result.value = weight * smooth.value;
+  result.value = potential.value;
+  result.gradient.template head<Columns>() = potential.gradient;
+  result.hessian.template topLeftCorner<Columns, Columns>() = potential.hessian;
+  result.tangentialDisplacement = potential.tangentialDisplacement;
+  result.tangentialDisplacementNorm = potential.tangentialDisplacementNorm;
+  result.weight = potential.weight;
   result.active = true;
-  result.dynamicBranch = smooth.dynamicBranch;
-
-  Eigen::Vector2d tangentGradient = Eigen::Vector2d::Zero();
-  Eigen::Matrix2d tangentHessian = Eigen::Matrix2d::Zero();
-  if (result.tangentialDisplacementNorm > 0.0) {
-    const Eigen::Vector2d direction
-        = result.tangentialDisplacement / result.tangentialDisplacementNorm;
-    tangentGradient = smooth.firstDerivative * direction;
-    tangentHessian
-        = (smooth.firstDerivative / result.tangentialDisplacementNorm)
-              * Eigen::Matrix2d::Identity()
-          + (smooth.secondDerivative
-             - smooth.firstDerivative / result.tangentialDisplacementNorm)
-                * (direction * direction.transpose());
-  } else {
-    tangentHessian = smooth.secondDerivative * Eigen::Matrix2d::Identity();
-  }
-
-  result.gradient.template head<Columns>()
-      = weight * projection.transpose() * tangentGradient;
-  result.hessian.template topLeftCorner<Columns, Columns>()
-      = weight * projection.transpose() * tangentHessian * projection;
+  result.dynamicBranch = potential.dynamicBranch;
   result.hessian
       = 0.5 * (result.hessian + RigidIpcMatrix12d(result.hessian.transpose()));
   return result;
@@ -1140,7 +1081,7 @@ RigidIpcPrimitiveBarrierResult rigidIpcPointTriangleBarrierAtTime(
   const Eigen::Vector3d triangleCWorld = transformRigidIpcPoint(
       triangleC, trianglePoseStart, trianglePoseEnd, time);
 
-  return deformable_contact::pointTriangleBarrier(
+  return newton_barrier::pointTriangleBarrier(
       pointWorld,
       triangleAWorld,
       triangleBWorld,
@@ -1167,7 +1108,7 @@ RigidIpcPrimitiveBarrierResult rigidIpcPointEdgeBarrierAtTime(
   const Eigen::Vector3d edgeBWorld
       = transformRigidIpcPoint(edgeB, edgePoseStart, edgePoseEnd, time);
 
-  return deformable_contact::pointEdgeBarrier(
+  return newton_barrier::pointEdgeBarrier(
       pointWorld,
       edgeAWorld,
       edgeBWorld,
@@ -1192,7 +1133,7 @@ RigidIpcReducedBarrierResult rigidIpcPointTriangleReducedBarrier(
   const Eigen::Vector3d triangleCWorld
       = transformRigidIpcPoint(triangleC, trianglePose);
   const RigidIpcPrimitiveBarrierResult primitive
-      = deformable_contact::pointTriangleBarrier(
+      = newton_barrier::pointTriangleBarrier(
           pointWorld,
           triangleAWorld,
           triangleBWorld,
@@ -1222,7 +1163,7 @@ RigidIpcReducedBarrierResult rigidIpcPointEdgeReducedBarrier(
   const Eigen::Vector3d edgeAWorld = transformRigidIpcPoint(edgeA, edgePose);
   const Eigen::Vector3d edgeBWorld = transformRigidIpcPoint(edgeB, edgePose);
   const RigidIpcPrimitiveBarrierResult primitive
-      = deformable_contact::pointEdgeBarrier(
+      = newton_barrier::pointEdgeBarrier(
           pointWorld,
           edgeAWorld,
           edgeBWorld,
@@ -1253,7 +1194,7 @@ RigidIpcReducedBarrierResult rigidIpcEdgeEdgeReducedBarrier(
   const Eigen::Vector3d edgeB0World = transformRigidIpcPoint(edgeB0, edgeBPose);
   const Eigen::Vector3d edgeB1World = transformRigidIpcPoint(edgeB1, edgeBPose);
   const RigidIpcPrimitiveBarrierResult primitive
-      = deformable_contact::edgeEdgeBarrier(
+      = newton_barrier::edgeEdgeBarrier(
           edgeA0World,
           edgeA1World,
           edgeB0World,
@@ -1283,7 +1224,7 @@ RigidIpcReducedBarrierResult rigidIpcPointPointReducedBarrier(
   const Eigen::Vector3d pointBWorld
       = transformRigidIpcPoint(pointB, pointBPose);
   const RigidIpcPrimitiveBarrierResult primitive
-      = deformable_contact::pointPointBarrier(
+      = newton_barrier::pointPointBarrier(
           pointAWorld,
           pointBWorld,
           options.squaredActivationDistance,
@@ -1312,8 +1253,8 @@ RigidIpcFrictionPotentialResult rigidIpcPointPointFrictionPotential(
     return result;
   }
 
-  const auto stencil = deformable_contact::pointPointTangentStencil(
-      laggedPointA, laggedPointB);
+  const auto stencil
+      = newton_barrier::pointPointTangentStencil(laggedPointA, laggedPointB);
   Eigen::Matrix<double, 6, 1> displacement;
   displacement.head<3>() = pointA - laggedPointA;
   displacement.tail<3>() = pointB - laggedPointB;
@@ -1337,7 +1278,7 @@ RigidIpcFrictionPotentialResult rigidIpcPointEdgeFrictionPotential(
     return result;
   }
 
-  const auto stencil = deformable_contact::pointEdgeTangentStencil(
+  const auto stencil = newton_barrier::pointEdgeTangentStencil(
       laggedPoint, laggedEdgeA, laggedEdgeB);
   Eigen::Matrix<double, 9, 1> displacement;
   displacement.segment<3>(0) = point - laggedPoint;
@@ -1366,7 +1307,7 @@ RigidIpcFrictionPotentialResult rigidIpcEdgeEdgeFrictionPotential(
     return result;
   }
 
-  const auto stencil = deformable_contact::edgeEdgeTangentStencil(
+  const auto stencil = newton_barrier::edgeEdgeTangentStencil(
       laggedEdgeA0, laggedEdgeA1, laggedEdgeB0, laggedEdgeB1);
   RigidIpcVector12d displacement;
   displacement.segment<3>(0) = edgeA0 - laggedEdgeA0;
@@ -1396,7 +1337,7 @@ RigidIpcFrictionPotentialResult rigidIpcPointTriangleFrictionPotential(
     return result;
   }
 
-  const auto stencil = deformable_contact::pointTriangleTangentStencil(
+  const auto stencil = newton_barrier::pointTriangleTangentStencil(
       laggedPoint, laggedTriangleA, laggedTriangleB, laggedTriangleC);
   RigidIpcVector12d displacement;
   displacement.segment<3>(0) = point - laggedPoint;
@@ -1595,7 +1536,7 @@ RigidIpcPrimitiveBarrierResult rigidIpcEdgeEdgeBarrierAtTime(
   const Eigen::Vector3d edgeB1World
       = transformRigidIpcPoint(edgeB1, edgeBPoseStart, edgeBPoseEnd, time);
 
-  return deformable_contact::edgeEdgeBarrier(
+  return newton_barrier::edgeEdgeBarrier(
       edgeA0World,
       edgeA1World,
       edgeB0World,
@@ -1619,7 +1560,7 @@ RigidIpcPrimitiveBarrierResult rigidIpcPointPointBarrierAtTime(
   const Eigen::Vector3d pointBWorld
       = transformRigidIpcPoint(pointB, pointBPoseStart, pointBPoseEnd, time);
 
-  return deformable_contact::pointPointBarrier(
+  return newton_barrier::pointPointBarrier(
       pointAWorld,
       pointBWorld,
       options.squaredActivationDistance,
@@ -2151,7 +2092,7 @@ double computeInitialRigidIpcBarrierStiffness(
   if (d0Squared >= squaredActivationDistance) {
     d0Squared = 0.5 * squaredActivationDistance;
   }
-  const auto probe = deformable_contact::c2ClampedLogBarrier(
+  const auto probe = newton_barrier::c2ClampedLogBarrier(
       d0Squared, squaredActivationDistance);
   const double minStiffnessRaw = 4.0 * d0Squared * probe.secondDerivative;
   if (!(minStiffnessRaw > 0.0) || !std::isfinite(minStiffnessRaw)) {

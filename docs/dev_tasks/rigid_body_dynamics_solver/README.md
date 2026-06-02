@@ -19,16 +19,22 @@ solver** under a multi-solver, multi-physics architecture.
       callers to clear or update explicitly.
 - [x] Phase 0.3: rigid-body quantities (linear/angular momentum, kinetic and
       potential energy).
-- [x] Phase 1: articulated-body forward dynamics (RNEA-based, fixed-base,
-      revolute/prismatic; joint effort/acceleration, link mass/inertia, link
-      offset; verified vs analytical pendulum, free-fall, and energy
-      conservation). Remaining: floating base, other joint types, public
-      mass-matrix/Coriolis/Jacobian accessors.
-- [ ] Phase 2: collision bridge (started: `CollisionShape` sphere/box on rigid
-      bodies + `World::collide()` query bridging to the native engine, returning
-      `Contact` points; C++ + dartpy + tests. Remaining: capsule/cylinder/plane/
-      mesh, link shapes, self-collision/filtering, broad-phase pruning,
-      persistent collision world).
+- [x] Phase 1: articulated-body forward dynamics (RNEA-based, including the
+      later floating-base and supported joint-type slices; joint
+      effort/acceleration, link mass/inertia, link offsets, and public dynamics
+      accessors; verified vs analytical dynamics and DART-6 parity checks).
+- [x] Phase 2: collision bridge (`CollisionShape` sphere/box/capsule/
+      cylinder/plane/triangular mesh on rigid bodies and links, plus
+      `MeshShape`/`ConvexMeshShape`/`HeightmapShape`/`SoftMeshShape`
+      model-loading translation, multiple collision shapes per body/link, and
+      `World::collide()` query bridging to the native engine, returning
+      `Contact` points; C++ + dartpy + tests. Filtering covers
+      `CollisionQueryOptions::includeSameMultibodyLinkPairs` /
+      dartpy `include_same_multibody_link_pairs`; body-type filtering now
+      covers rigid-body, rigid-body/link, and link/link pairs; broad-phase
+      pruning now uses native collision candidate pairs; `World::collide()`
+      now persists the native collision world across queries and only rebuilds
+      when collision geometry changes).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
       contact solver between free rigid bodies with accumulated normal impulses,
       restitution, two-tangent Coulomb friction, positional correction, and a
@@ -55,7 +61,9 @@ solvers, couplers, ECS storage, or execution backends.
 - No second solver or non-rigid domain implementation yet (architecture must
   _allow_ it; see roadmap "multi-solver readiness").
 - No public solver/coupler/domain types or registries.
-- No model-format loading into the experimental world yet.
+- No direct file-based loader in the experimental library yet; compose through
+  legacy `dart::io::readSkeleton`/`readWorld` and the experimental
+  skeleton-to-multibody bridge.
 - Do not modify `/home/js/multiphysics-api-design.md` (external user doc).
 - Do not name solvers/presets/examples after other engines; use method/approach
   names. Do not reference specific external engines by name in core code or
@@ -79,11 +87,10 @@ solvers, couplers, ECS storage, or execution backends.
 
 ## Immediate Next Steps
 
-1. Finish the PR #2705 convention re-alignment and verification against current
-   `origin/main`.
-2. Add the required dart-gui example that steps and renders the experimental
-   `World`.
-3. Continue remaining contact-LCP and model-loading work from `RESUME.md`.
+1. Keep the local `feature/experimental-model-loader` branch clean and validated
+   while it carries the model-loading/contact follow-up commits ahead of origin.
+2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
+   iteration, and other scaling work around the unified contact solve.
 
 ## Relationship To The API-Design Dev Task
 

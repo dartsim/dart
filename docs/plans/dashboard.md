@@ -131,11 +131,19 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Prioritize the DART 7 release gates for the experimental World:
-  model loading beyond the basic legacy bridge, parity scenes, open-chain
-  dynamics, contacts/constraints, and serialization evidence; track slice-level
-  work in
-  `docs/dev_tasks/rigid_body_dynamics_solver/`.
+- Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25). The
+  active line now carries the model-loading bridge from legacy
+  `dynamics::Skeleton` / `simulation::World` into experimental `Multibody`
+  objects, including the `addSkeleton()` / `addWorld()` URI-loading facades,
+  joint-family/property transfer, branching and root offsets, collision shape
+  import with local transforms, compound shapes, broad-phase-pruned collision
+  queries, and a persistent native collision-query world. The semi-implicit
+  default pipeline also now runs one unified boxed-LCP over rigid-rigid and
+  articulated link contacts. Continue the remaining Subsystem A polish in
+  `docs/dev_tasks/rigid_body_dynamics_solver/`: warm starting, friction-cone
+  iteration, and scaling work around the unified contact solve; keep richer
+  model-loading diagnostics, visual/material import, actuator, mimic/coupler,
+  loop-closure, integrator, and COM-Jacobian work as separate deferred slices.
 - Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.
@@ -162,7 +170,11 @@ its own line so status updates remain git-history friendly.
   GPU-accelerated IPC sidecar in
   [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md):
   first source/code audit, then a CPU-verifiable projective IPC slice and
-  fast-CCD validation before any A-Jacobi, GPU-culling, or speedup claim.
+  fast-CCD validation before any A-Jacobi, GPU-culling, or speedup claim. Use
+  PLAN-083 to decide which distance, barrier, tangent, CCD, friction, PSD,
+  sparse-Newton, diagnostics, benchmark, and visual-evidence primitives should
+  become shared Newton-barrier infrastructure rather than another
+  deformable-local variant.
 - Gate: Full IPC-parity progress is not complete until the implementation
   distinguishes the first point-mass/static-ground slice from full IPC, keeps
   IPC naming backend-neutral, proves mesh contact, barrier, distance, CCD,
@@ -207,7 +219,9 @@ its own line so status updates remain git-history friendly.
   commands, and full fixture/test/benchmark/visual parity. Keep the
   simultaneous-impact intake as a PLAN-082 sidecar until solver-neutral scenes
   prove a restitution/order-uncertainty gap not already covered by rigid IPC or
-  AVBD-style finite-time contact.
+  AVBD-style finite-time contact. Coordinate any shared primitive extraction or
+  ABD replacement decision through PLAN-083 before changing the rigid IPC
+  correctness-oracle role.
 - Gate: Full rigid IPC progress is not complete until the implementation covers
   every manifest row with DART-owned tests, examples, benchmarks, comparison
   packets, CPU/GPU evidence where applicable, and headless Filament visual
@@ -218,6 +232,31 @@ its own line so status updates remain git-history friendly.
   `check-api-boundaries`. A simultaneous-impact operator additionally requires
   the sidecar literature matrix, corpus evidence, IPC/AVBD comparison, and
   public-boundary review before promotion.
+
+### PLAN-083: Unified Newton-Barrier Multibody Solver
+
+- Owner doc:
+  [`083-unified-newton-barrier-multibody.md`](083-unified-newton-barrier-multibody.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Continue Phase 2 in
+  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
+  use the PLAN-083
+  [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+  sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
+  SPB, and VBD/OGC-adjacent obligations in the right owners; promote the first
+  ABD benchmark packet from smoke shape to a comparison manifest row now that
+  affine barrier and friction primitive derivative oracles are stable.
+  Generalize PSD projection and projected-Newton contracts when the ABD slice
+  creates a second-use contract.
+- Gate: Unified Newton-barrier progress is not complete until every cited
+  paper/deck figure, unit test, benchmark table, and comparison scene is mapped
+  to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
+  GPU parity evidence, and explicit reference/paper-number comparisons; public
+  APIs remain DART-owned and backend-neutral; `pixi run lint`, docs gates,
+  focused C++/Python tests, benchmark smokes, and `check-api-boundaries` stay
+  green for each promoted slice.
 
 ### PLAN-104: Vertex Block Descent Solver
 
@@ -277,9 +316,37 @@ its own line so status updates remain git-history friendly.
   their generalized tangential dual into the current 12D tangent stencil. The
   first private rigid foundation adds a 6-DOF block accumulator, world-frame
   quaternion tangent update, inertia term, block solve, scalar rigid
-  point-attachment row, and two-body point-pair row stamping. It is not a
-  scene-level parity claim. The next local slice is dynamic/rigid contact
-  manifold IDs, rigid contact/joint rows, or rigid/articulated World wiring.
+  point-attachment row, two-body point-pair row stamping, and private
+  point-pair contact/friction row constructors plus paired friction-cone
+  projection, with a private serial row driver for point attachments,
+  contact-normal point pairs, and paired friction tangent rows, and a private
+  rigid contact-manifold row builder for active contact points. Private
+  dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
+  normal/friction row descriptor helpers have started, and private
+  World-contact snapshot/solve/writeback helpers now translate rigid-body
+  `World::collide()` contacts into manifold-point inputs, run them through the
+  private serial rigid row solve, and write dynamic rigid-body state back to the
+  ECS through a combined private wrapper in focused tests. The first
+  contact-stage AVBD activation is now available behind the internal
+  `RigidAvbdContactConfig`: supported free rigid-body contacts route through
+  the private 6-DOF AVBD row solve as a velocity-level projection while
+  unsupported envelopes fall back to the existing sequential-impulse path. The
+  private rigid contact snapshot now derives box face/edge/corner endpoint
+  feature IDs and scopes row ordinals per canonical endpoint pair for narrower
+  warm-start persistence, cylinder side/cap/rim and capsule
+  side/top-cap/bottom-cap endpoint features extend the same private identity
+  path beyond boxes, and the private rigid row path now has point-joint linear,
+  angular, and combined row builders for fixed-anchor
+  translation and orientation constraints, with step-start previous values
+  seeded for AVBD alpha regularization. Those private point-joint rows can now
+  be appended to the World rigid snapshot/solve/apply wrapper and combined step
+  helper from world-space point-joint inputs, and a private fixed-joint ECS
+  extractor can feed the step helper for rigid-body-linked joint entities. The
+  internal contact-stage AVBD opt-in can project those fixed-joint rows with or
+  without active contacts. Public multibody joint extraction is not wired yet.
+  The next local slice is full narrow-phase feature extraction,
+  contact-complete rigid joint rows, or broader rigid/articulated World
+  integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
