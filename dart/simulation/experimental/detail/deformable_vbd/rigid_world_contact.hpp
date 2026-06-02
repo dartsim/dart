@@ -237,21 +237,29 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
       continue;
     }
 
+    if (!registry.all_of<
+            comps::RigidBodyTag,
+            comps::Transform,
+            comps::MassProperties>(joint.parentLink)
+        || !registry.all_of<
+            comps::RigidBodyTag,
+            comps::Transform,
+            comps::MassProperties>(joint.childLink)) {
+      continue;
+    }
+
     const auto* configA
         = registry.try_get<comps::RigidAvbdContactConfig>(joint.parentLink);
     const auto* configB
         = registry.try_get<comps::RigidAvbdContactConfig>(joint.childLink);
-    if ((configA == nullptr || !configA->enabled)
-        && (configB == nullptr || !configB->enabled)) {
-      continue;
-    }
-
     double startStiffness = 0.0;
     double maxStiffness = std::numeric_limits<double>::infinity();
+    bool hasEnabledConfig = false;
     const auto absorb = [&](const comps::RigidAvbdContactConfig& config) {
       if (!config.enabled) {
         return;
       }
+      hasEnabledConfig = true;
       startStiffness = std::max(startStiffness, config.startStiffness);
       maxStiffness = std::min(maxStiffness, config.maxStiffness);
     };
@@ -260,6 +268,11 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
     }
     if (configB != nullptr) {
       absorb(*configB);
+    }
+    if (!hasEnabledConfig) {
+      const comps::RigidAvbdContactConfig defaultConfig;
+      startStiffness = defaultConfig.startStiffness;
+      maxStiffness = defaultConfig.maxStiffness;
     }
     if (maxStiffness < startStiffness) {
       maxStiffness = startStiffness;

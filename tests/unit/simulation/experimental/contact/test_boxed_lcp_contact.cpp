@@ -44,9 +44,11 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
+#include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 
@@ -55,6 +57,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <sstream>
 #include <vector>
 
 #include <cmath>
@@ -338,6 +341,18 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   EXPECT_EQ(joint.getType(), sx::JointType::Fixed);
   EXPECT_EQ(joint.getDOFCount(), 0u);
   EXPECT_THROW(
+      {
+        auto parentLink = joint.getParentLink();
+        (void)parentLink;
+      },
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      {
+        auto childLink = joint.getChildLink();
+        (void)childLink;
+      },
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
       world.addRigidBodyFixedJoint("base_to_link", base, link),
       sx::InvalidArgumentException);
 
@@ -353,6 +368,72 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   EXPECT_THROW(
       world.addRigidBodyFixedJoint("late_joint", base, link),
       sx::InvalidOperationException);
+}
+
+//==============================================================================
+// Saving a public fixed joint before simulation should not lose the AVBD row
+// config permanently; loading and entering simulation mode restores it from the
+// saved rigid-body poses.
+TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+
+  auto restoredBase = restored.getRigidBody("base");
+  auto restoredLink = restored.getRigidBody("link");
+  ASSERT_TRUE(restoredBase.has_value());
+  ASSERT_TRUE(restoredLink.has_value());
+
+  auto& registry = restored.getRegistry();
+  entt::entity jointEntity = entt::null;
+  auto jointView = registry.view<sx::comps::Joint, sx::comps::Name>();
+  for (const entt::entity entity : jointView) {
+    const auto& name = jointView.get<sx::comps::Name>(entity);
+    if (name.name == "base_to_link") {
+      jointEntity = entity;
+      break;
+    }
+  }
+  ASSERT_TRUE(jointEntity != entt::null);
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+
+  restored.enterSimulationMode();
+
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_NEAR(
+      (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  restoredLink->setTransform(driftedPose);
+
+  restored.step();
+
+  EXPECT_LT(std::abs(restoredLink->getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
 
 //==============================================================================

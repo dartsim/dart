@@ -459,6 +459,10 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.name == "base_to_link"
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
+    with pytest.raises(Exception, match="not a multibody Link"):
+        _ = joint.parent_link
+    with pytest.raises(Exception, match="not a multibody Link"):
+        _ = joint.child_link
     with pytest.raises(Exception, match="already exists"):
         world.add_rigid_body_fixed_joint("base_to_link", base, link)
 
