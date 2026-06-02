@@ -138,18 +138,17 @@ Adding a backend should be an implementation improvement, not an API fork.
 
 ### World Scalar Precision
 
-For DART 7 promotion, `sx.World()` and `sx.World(time_step=...)` remain the
-double-backed public path. Do not add a public precision selector until the C++
-core, bindings, stubs, serialization, collision, differentiability, and package
-gates can prove that every advertised scalar is real end to end. Public scalar
-type support is deferred until the DART 7 rigid-body and multibody simulation
-stack is in good shape for humanoid locomotion and manipulation; precision
-syntax should not distract from that baseline.
+`sx.World()` and `sx.World(time_step=...)` remain the double-backed public path
+unless a later scalar-instantiation design proves otherwise. Do not add a public
+precision selector until the C++ core, bindings, stubs, serialization,
+collision, differentiability, and package gates can prove that every advertised
+scalar is real end to end.
 
-While deferred, keep the API shape from becoming a one-way door. Avoid binding,
-stub, serialization, and package decisions that would make later scalar support
-unnecessarily invasive, but keep the user-facing path simple and double-backed
-until a dedicated scalar-instantiation plan starts.
+Keep the API shape from becoming a one-way door. Avoid binding, stub,
+serialization, and package decisions that would make later scalar support
+unnecessarily invasive, while keeping the user-facing path simple and
+double-backed until a dedicated scalar-instantiation design changes the public
+contract.
 
 If scalar precision becomes public later, prefer constructor or options syntax:
 

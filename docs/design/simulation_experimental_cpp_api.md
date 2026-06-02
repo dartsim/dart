@@ -98,20 +98,15 @@ design promotes a backend API intentionally.
 
 ### Scalar Precision Policy
 
-The DART 7 promotion path should treat the current `World` facade as
-double-precision unless a later scalar-instantiation plan proves otherwise.
-Public scalar-type support is lower priority than getting the DART 7
-rigid-body and multibody simulation stack into good shape for humanoid
-locomotion and manipulation. Until that baseline is strong, scalar precision is
-a deferred design track, not a release-blocking API feature.
+The current `World` facade should remain double-precision unless a later
+scalar-instantiation design proves otherwise. The existing scalar-generic
+compute lessons remain useful for internal kernels, SIMD, autodiff experiments,
+and future explicit instantiations, but they are not themselves a public
+`World` precision contract.
 
-The existing scalar-generic compute lessons remain useful for internal kernels,
-SIMD, autodiff experiments, and future explicit instantiations, but they are not
-themselves a public `World` precision contract. Keep those internal choices
-non-one-way-door where reasonable: avoid hard-coding storage, handle, package,
-or boundary decisions that would make a future scalar-instantiation plan
-unnecessarily invasive, but do not spend DART 7 promotion effort on public
-scalar families before the locomotion/manipulation baseline is ready.
+Keep scalar-generic internals from becoming a one-way door where reasonable:
+avoid hard-coding storage, handle, package, or boundary decisions that would
+make a future scalar-instantiation plan unnecessarily invasive.
 
 Do not promote scalar precision by forking the user-facing `World` identity or
 by making backend/runtime precision names part of the required public type name.
