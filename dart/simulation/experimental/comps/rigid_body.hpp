@@ -34,6 +34,8 @@
 
 #include <dart/simulation/experimental/comps/component_category.hpp>
 
+#include <limits>
+
 namespace dart::simulation::experimental::comps {
 
 /// Tag marking entity as a RigidBody
@@ -52,6 +54,23 @@ struct RigidBodyTag
 struct StaticBodyTag
 {
   DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
+};
+
+/// Internal opt-in configuration for the first AVBD rigid contact World slice.
+///
+/// This component is intentionally not surfaced through the public `World`
+/// facade. When every rigid contact in the contact stage has at least one body
+/// with an enabled config, supported free rigid-body contacts route through the
+/// private 6-DOF AVBD point-pair row projection. Unsupported envelopes fall
+/// back to the default sequential-impulse path.
+struct RigidAvbdContactConfig
+{
+  bool enabled = true;
+  double startStiffness = 1e5;
+  double alpha = 0.0;
+  double beta = 1000.0;
+  double gamma = 0.99;
+  double maxStiffness = std::numeric_limits<double>::infinity();
 };
 
 } // namespace dart::simulation::experimental::comps

@@ -47,6 +47,142 @@ const sx::comps::MultibodyStructure& structureOf(sx::World& world)
   return registry.get<sx::comps::MultibodyStructure>(*view.begin());
 }
 
+void expectPassiveChainEnergyDrift(
+    double dt,
+    int steps,
+    int sampleEvery,
+    double maxViBand,
+    double minSeBand,
+    double slopeAdvantage)
+{
+  constexpr int kLinks = 10;
+
+  // Build the identical passive chain into a fresh world (released bent, so the
+  // configuration -- and thus the mass matrix -- varies strongly as it swings).
+  const auto buildChain = [](sx::World& world) {
+    auto robot = world.addMultibody("chain");
+    auto parent = robot.addLink("base");
+    for (int i = 0; i < kLinks; ++i) {
+      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+      offset.translation() = Eigen::Vector3d(i == 0 ? 0.0 : 0.3, 0.0, 0.0);
+      sx::JointSpec spec;
+      spec.name = "j" + std::to_string(i);
+      spec.type = sx::JointType::Revolute;
+      spec.axis = Eigen::Vector3d::UnitY();
+      spec.transformFromParent = offset;
+      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+      link.setMass(0.7);
+      link.setInertia(Eigen::Vector3d(0.02, 0.02, 0.02).asDiagonal());
+      parent = link;
+    }
+    return robot;
+  };
+
+  // Least-squares slope of y vs sample index (per-sample units).
+  const auto slope = [](const std::vector<double>& y) {
+    const double n = static_cast<double>(y.size());
+    double sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (std::size_t i = 0; i < y.size(); ++i) {
+      const double x = static_cast<double>(i);
+      sx += x;
+      sy += y[i];
+      sxx += x * x;
+      sxy += x * y[i];
+    }
+    return (n * sxy - sx * sy) / (n * sxx - sx * sx);
+  };
+
+  // Variational-integrator rollout (direct, so we control the solve).
+  std::vector<double> viDev;
+  double viBand = 0.0;
+  {
+    sx::World world;
+    auto robot = buildChain(world);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    for (auto joint : robot.getJoints()) {
+      joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
+    }
+    world.updateKinematics();
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+    const double e0
+        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+    ASSERT_GT(std::abs(e0), 1e-6);
+    sxc::MultibodyVariationalState state;
+    for (int k = 0; k < steps; ++k) {
+      sxc::integrateMultibodyVariational(
+          registry, structure, gravity, dt, state);
+      if (k % sampleEvery == 0) {
+        const double e = sxc::computeMultibodyMechanicalEnergy(
+            registry, structure, gravity);
+        ASSERT_FALSE(std::isnan(e));
+        const double dev = (e - e0) / std::abs(e0);
+        viDev.push_back(dev);
+        viBand = std::max(viBand, std::abs(dev));
+      }
+    }
+  }
+
+  // Semi-implicit Euler rollout (default family) on the same scene.
+  std::vector<double> seDev;
+  double seBand = 0.0;
+  {
+    sx::World world; // default method == "semi-implicit"
+    auto robot = buildChain(world);
+    world.setTimeStep(dt);
+    world.enterSimulationMode();
+    for (auto joint : robot.getJoints()) {
+      joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
+    }
+    world.updateKinematics();
+    auto& registry = world.getRegistry();
+    const auto& structure = structureOf(world);
+    const Eigen::Vector3d gravity = world.getGravity();
+    const double e0
+        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+    for (int k = 0; k < steps; ++k) {
+      world.step();
+      if (k % sampleEvery == 0) {
+        const double e = sxc::computeMultibodyMechanicalEnergy(
+            registry, structure, gravity);
+        ASSERT_FALSE(std::isnan(e));
+        const double dev = (e - e0) / std::abs(e0);
+        seDev.push_back(dev);
+        seBand = std::max(seBand, std::abs(dev));
+      }
+    }
+  }
+
+  const double viSlope = std::abs(slope(viDev));
+  const double seSlope = std::abs(slope(seDev));
+  // Net fitted energy trend over the whole run (per-sample slope x #samples).
+  const double viTrend = viSlope * static_cast<double>(viDev.size());
+
+  // The VI conserves substantially better than semi-implicit Euler on this
+  // scene. The *band* is trajectory-sensitive (the chain is chaotic, so the
+  // per-step root -- found to 1e-10 either way -- compounds into a slightly
+  // different rollout under Anderson acceleration vs the plain step); the
+  // no-secular-drift *slope* below is the falsifiable gate per the plan, and
+  // thresholds are tuned to recorded measurements.
+
+  // (1) Bounded band: VI energy oscillation stays small.
+  EXPECT_LT(viBand, maxViBand) << "VI energy band " << viBand << " too large";
+  // (2) Contrast: semi-implicit Euler on the same scene drifts measurably.
+  EXPECT_GT(seBand, minSeBand)
+      << "semi-implicit Euler did not drift beyond the band as expected; band "
+      << seBand;
+  // (3) No secular drift: the VI's net fitted energy trend is a small fraction
+  //     of its oscillation band (slope ~= 0 within the oscillation noise).
+  EXPECT_LT(viTrend, 0.25 * viBand) << "VI net energy trend " << viTrend
+                                    << " is not small vs band " << viBand;
+  // (4) The VI's drift slope is smaller than semi-implicit Euler's.
+  EXPECT_LT(viSlope * slopeAdvantage, seSlope)
+      << "VI slope " << viSlope << " not >=" << slopeAdvantage
+      << "x better than semi-implicit slope " << seSlope;
+}
+
 } // namespace
 
 // A vertical prismatic joint under gravity is a constant-force linear system,
@@ -496,138 +632,32 @@ TEST(VariationalIntegration, MaintainsDistanceLoopClosure)
 // The no-secular-drift slope is the falsifiable headline gate.
 TEST(VariationalIntegration, PassiveChainEnergyHasNoSecularDrift)
 {
-  constexpr int kLinks = 10;
-  const double dt = 1e-3;
-  const int steps = 100000;
-  const int sampleEvery = 1000;
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The 100k-step paper-reproduction gate is too slow under coverage; "
+         "PassiveChainEnergyCoverageSmoke covers the coverage CI path.";
+#endif
+  expectPassiveChainEnergyDrift(
+      /*dt=*/1e-3,
+      /*steps=*/100000,
+      /*sampleEvery=*/1000,
+      /*maxViBand=*/1.5e-2,
+      /*minSeBand=*/5e-2,
+      /*slopeAdvantage=*/50.0);
+}
 
-  // Build the identical passive chain into a fresh world (released bent, so the
-  // configuration -- and thus the mass matrix -- varies strongly as it swings).
-  const auto buildChain = [](sx::World& world) {
-    auto robot = world.addMultibody("chain");
-    auto parent = robot.addLink("base");
-    for (int i = 0; i < kLinks; ++i) {
-      Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
-      offset.translation() = Eigen::Vector3d(i == 0 ? 0.0 : 0.3, 0.0, 0.0);
-      sx::JointSpec spec;
-      spec.name = "j" + std::to_string(i);
-      spec.type = sx::JointType::Revolute;
-      spec.axis = Eigen::Vector3d::UnitY();
-      spec.transformFromParent = offset;
-      auto link = robot.addLink("l" + std::to_string(i), parent, spec);
-      link.setMass(0.7);
-      link.setInertia(Eigen::Vector3d(0.02, 0.02, 0.02).asDiagonal());
-      parent = link;
-    }
-    return robot;
-  };
-
-  // Least-squares slope of y vs sample index (per-sample units).
-  const auto slope = [](const std::vector<double>& y) {
-    const double n = static_cast<double>(y.size());
-    double sx = 0, sy = 0, sxx = 0, sxy = 0;
-    for (std::size_t i = 0; i < y.size(); ++i) {
-      const double x = static_cast<double>(i);
-      sx += x;
-      sy += y[i];
-      sxx += x * x;
-      sxy += x * y[i];
-    }
-    return (n * sxy - sx * sy) / (n * sxx - sx * sx);
-  };
-
-  // Variational-integrator rollout (direct, so we control the solve).
-  std::vector<double> viDev;
-  double viBand = 0.0;
-  {
-    sx::World world;
-    auto robot = buildChain(world);
-    world.setTimeStep(dt);
-    world.enterSimulationMode();
-    for (auto joint : robot.getJoints()) {
-      joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
-    }
-    world.updateKinematics();
-    auto& registry = world.getRegistry();
-    const auto& structure = structureOf(world);
-    const Eigen::Vector3d gravity = world.getGravity();
-    const double e0
-        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
-    ASSERT_GT(std::abs(e0), 1e-6);
-    sxc::MultibodyVariationalState state;
-    for (int k = 0; k < steps; ++k) {
-      sxc::integrateMultibodyVariational(
-          registry, structure, gravity, dt, state);
-      if (k % sampleEvery == 0) {
-        const double e = sxc::computeMultibodyMechanicalEnergy(
-            registry, structure, gravity);
-        ASSERT_FALSE(std::isnan(e));
-        const double dev = (e - e0) / std::abs(e0);
-        viDev.push_back(dev);
-        viBand = std::max(viBand, std::abs(dev));
-      }
-    }
-  }
-
-  // Semi-implicit Euler rollout (default family) on the same scene.
-  std::vector<double> seDev;
-  double seBand = 0.0;
-  {
-    sx::World world; // default method == "semi-implicit"
-    auto robot = buildChain(world);
-    world.setTimeStep(dt);
-    world.enterSimulationMode();
-    for (auto joint : robot.getJoints()) {
-      joint.setPosition(Eigen::VectorXd::Constant(1, 0.4));
-    }
-    world.updateKinematics();
-    auto& registry = world.getRegistry();
-    const auto& structure = structureOf(world);
-    const Eigen::Vector3d gravity = world.getGravity();
-    const double e0
-        = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
-    for (int k = 0; k < steps; ++k) {
-      world.step();
-      if (k % sampleEvery == 0) {
-        const double e = sxc::computeMultibodyMechanicalEnergy(
-            registry, structure, gravity);
-        ASSERT_FALSE(std::isnan(e));
-        const double dev = (e - e0) / std::abs(e0);
-        seDev.push_back(dev);
-        seBand = std::max(seBand, std::abs(dev));
-      }
-    }
-  }
-
-  const double viSlope = std::abs(slope(viDev));
-  const double seSlope = std::abs(slope(seDev));
-  // Net fitted energy trend over the whole run (per-sample slope x #samples).
-  const double viTrend = viSlope * static_cast<double>(viDev.size());
-
-  // Measured (deterministic) on this scene: viBand ~= 0.0109, seBand ~= 0.39,
-  // viSlope ~= 6e-6, seSlope ~= 4e-3 -- the VI conserves orders of magnitude
-  // better. The *band* at 1e5 steps is trajectory-sensitive (the chain is
-  // chaotic, so the per-step root -- found to 1e-10 either way -- compounds
-  // into a slightly different rollout under Anderson acceleration vs the plain
-  // step); the no-secular-drift *slope* below is the falsifiable gate per the
-  // plan, and thresholds are tuned to recorded measurements.
-
-  // (1) Bounded band: VI energy oscillation stays small (here ~1.1%), in stark
-  //     contrast to semi-implicit Euler's ~39% drift below.
-  EXPECT_LT(viBand, 1.5e-2) << "VI energy band " << viBand << " too large";
-  // (2) Contrast: semi-implicit Euler on the same scene drifts far beyond 1%.
-  EXPECT_GT(seBand, 5e-2)
-      << "semi-implicit Euler did not drift beyond the band as expected; band "
-      << seBand;
-  // (3) No secular drift: the VI's net fitted energy trend is a small fraction
-  //     of its oscillation band (slope ~= 0 within the oscillation noise).
-  EXPECT_LT(viTrend, 0.25 * viBand) << "VI net energy trend " << viTrend
-                                    << " is not small vs band " << viBand;
-  // (4) The VI's drift slope is at least 50x smaller than semi-implicit
-  // Euler's.
-  EXPECT_LT(viSlope * 50.0, seSlope)
-      << "VI slope " << viSlope << " not >=50x better than semi-implicit slope "
-      << seSlope;
+// Coverage smoke for the same passive-chain scene. This keeps the coverage job
+// below its timeout while the paper-sized acceptance gate above remains active
+// in non-coverage builds.
+TEST(VariationalIntegration, PassiveChainEnergyCoverageSmoke)
+{
+  expectPassiveChainEnergyDrift(
+      /*dt=*/5e-3,
+      /*steps=*/2000,
+      /*sampleEvery=*/100,
+      /*maxViBand=*/3e-2,
+      /*minSeBand=*/5e-2,
+      /*slopeAdvantage=*/20.0);
 }
 
 // Phase B2 gate: the holonomic constraint Jacobian J = dg/dq used by the

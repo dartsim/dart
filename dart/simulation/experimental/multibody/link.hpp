@@ -42,6 +42,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dart::simulation::experimental {
 
@@ -165,13 +166,25 @@ public:
   //--------------------------------------------------------------------------
 
   /// Get the collision shape attached to this link, if any.
+  ///
+  /// For compound collision geometry this returns the first attached shape.
   [[nodiscard]] std::optional<CollisionShape> getCollisionShape() const;
+
+  /// Get all collision shapes attached to this link.
+  [[nodiscard]] std::vector<CollisionShape> getCollisionShapes() const;
 
   /// Set (or replace) the collision shape attached to this link.
   ///
   /// Once a link has a collision shape it participates in `World::collide()`,
   /// posed by the link's forward-kinematics world transform.
   void setCollisionShape(const CollisionShape& shape);
+
+  /// Add a collision shape without replacing existing shapes.
+  ///
+  /// Multiple shapes attached to one link are treated as a compound collision
+  /// geometry by `World::collide()`. Shapes on the same link do not collide
+  /// with each other.
+  void addCollisionShape(const CollisionShape& shape);
 
   /// Return whether this link has a collision shape.
   [[nodiscard]] bool hasCollisionShape() const;

@@ -30,6 +30,70 @@ design.
 - Publish the Gazebo support window, branch/version matrix, and sunset date or
   sunset trigger before DART 7 removes legacy API surfaces from main.
 
+### DART 6.16 Support Packet
+
+This packet is the published support window for the DART 6.16 compatibility
+line. It exists so downstream users — primarily Gazebo via `gz-physics` — know
+which branch to track, what fixes to expect, and when the line will close. The
+companion CI lane split (keeping required gz-physics validation on
+`release-6.16` while main's gz-physics workflow stays a manual migration canary)
+is a separate maintainer-gated branch-protection change and is **not** in scope
+for this document update.
+
+**Gazebo support window**
+
+- Pinned gz-physics branch: `gz-physics9_9.0.0` (the branch cloned by the
+  `pixi.toml` Gazebo integration task; see `feature.gazebo.tasks` `download-gz`).
+- Validation command: `pixi run -e gazebo test-gz`, run on `release-6.16` or a
+  release branch when compatibility surfaces change. Main-branch runs are
+  migration canaries, not a DART 7 API design constraint.
+- DART version compatibility floor for the pinned gz-physics checkout: DART
+  6.10+ (`scripts/patch_gz_physics.py` `MIN_COMPATIBLE_VERSION = (6, 10)`,
+  `MAX_COMPATIBLE_VERSION = (7, 0)`), so DART 7's generated
+  `DARTConfigVersion.cmake` still satisfies pinned gz-physics `find_package`
+  requests during migration.
+
+**Branch / version matrix**
+
+| Branch         | DART line       | Public API target      | gz-physics pin                         | Backport policy                                              |
+| -------------- | --------------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| `release-6.16` | DART 6 (6.16.x) | Established DART 6 API | `gz-physics9_9.0.0`                    | Compatibility-critical fixes only (see scope below)          |
+| `main`         | DART 7 (7.0.0)  | DART 7 clean-break API | `gz-physics9_9.0.0` (migration canary) | DART 7 development; no DART 6 compatibility shims by default |
+
+**Backport scope (release-6.16)**
+
+Backport only:
+
+- critical bug fixes,
+- build fixes,
+- security fixes,
+- Gazebo/gz-physics compatibility fixes that released downstream users need.
+
+Do not backport normal DART 7 features. Each backport should record the
+gz-physics compatibility evidence (`pixi run -e gazebo test-gz`) when it touches
+a compatibility surface, or note why gz-physics is unaffected.
+
+**Sunset condition (trigger-based)**
+
+The DART 6.16 support line sunsets on a trigger, not a fixed calendar date:
+
+- **Trigger:** DART 7.0.0 is published to package managers **and** a maintainer
+  decision sets a support tail. After DART 7.0.0 is published, DART 6.16 enters
+  a maintenance-only tail of **N months** (security/critical-only), after which
+  the line is closed.
+- **N is a maintainer decision** and is intentionally left unset here. A typical
+  starting point for discussion is 6–12 months after DART 7.0.0 publication, but
+  the concrete value, and whether the tail is security-only or also build/compat,
+  **requires maintainer sign-off** before it is treated as policy.
+- Until DART 7.0.0 is published and N is decided, `release-6.16` remains the
+  active compatibility line and the sunset clock has not started.
+
+> Maintainer sign-off needed: (1) the value of **N** (support-tail length after
+> DART 7.0.0 publication) and the tail's fix scope; (2) the Gazebo CI lane split
+> (required gz-physics validation pinned to `release-6.16`; main's gz-physics
+> workflow demoted to a manual canary), which is a separate branch-protection
+> change outside this PR.
+
 ## DART 7: Clean-Break Release
 
 - `main` targets DART 7.0.0 as a clean break from the DART 6 public API, with a
@@ -56,13 +120,18 @@ design.
 3. **DART 6.16 support packet**: audit fixes on main against `release-6.16` and
    backport only compatibility-critical patches needed for the old API/Gazebo
    line.
-4. **Parity implementation**: prioritize experimental-world model loading,
-   rigid dynamics, contacts/constraints, serialization, and the parity suite
-   ahead of additional research solver breadth.
-5. **Promotion and removal**: port in-repo examples, tutorials, tests,
+4. **Official simulation API promotion**: make PLAN-041 the release-critical
+   path. Freeze the supported ECS-backed world subset, resolve the classic
+   `dart::simulation::World` collision, promote stable C++ and Python facades,
+   and keep parity gates attached to the promotion claim rather than deferring
+   the official API to DART 8.
+5. **Consumer migration and removal**: port in-repo examples, tutorials, tests,
    benchmarks, and Python stubs to the promoted API; then remove the classic
-   `World`, DART 6 C++ API shims, legacy dartpy compatibility modules, and
-   gz-only compatibility surfaces from main.
+   `World`, DART 6 C++ API shims, legacy dartpy compatibility modules,
+   experimental import paths, and gz-only compatibility surfaces from main.
+6. **Physical restructuring**: move `dart/` and `python/` files out of
+   experimental locations only after the official facade is green, keeping
+   mechanical moves isolated from semantic API changes.
 
 ### DART 7 Checkable Gates
 
@@ -74,7 +143,7 @@ design.
 | Serialization/replay parity  | World topology, state, model assets, and record/replay round-trip with bounded error.                                                | Serialization/replay tests for promoted world APIs.                                                                                                             |
 | Stable public API promotion  | Promoted APIs hide ECS storage, component types, solver registries, backend details, and implementation escape hatches.              | `pixi run check-api-boundaries`, generated stubs, docs, and migration snippets.                                                                                 |
 | First simulation works       | README Python, C++ package-project, and Pixi source first-success commands are verified or blocked.                                  | Run the README quick starts, `pixi run test-published-package-quickstarts`, and `pixi run check-dart7-artifacts`.                                               |
-| Core build and tests         | Lint, C++ build, Python build, and focused or full test suites pass for the changed release scope.                                   | `pixi run lint`, `pixi run build`, `pixi run test-unit`, `pixi run test-py`, or `pixi run test-all`.                                                            |
+| Core build and tests         | Lint, C++ build, Python build, and focused or full test suites pass for the changed release scope.                                   | `pixi run lint`, `pixi run build`, `pixi run test-unit`, `pixi run test-py`, `pixi run test-all`, and on Linux CUDA hosts `pixi run -e cuda test-all`.          |
 | LCP/contact baseline         | Solver contract and benchmark smoke evidence are recorded before algorithm or compute-scaling promises.                              | `ctest --test-dir build/default/cpp/Release -R UNIT_math_lcp_math_lcp_all_solvers_smoke`; `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE`. |
 | GUI transition               | Any GUI promotion stays aligned with the Filament migration gates and keeps backend details hidden.                                  | Filament gates in the GUI plan/design docs.                                                                                                                     |
 | DART 6.16 support policy     | Gazebo branch/version matrix, backport scope, and sunset date or sunset trigger are published.                                       | `pixi run -e gazebo test-gz` on `release-6.16` or release branches when compatibility surfaces change.                                                          |

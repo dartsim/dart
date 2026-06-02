@@ -35,10 +35,10 @@ Research-focused means three things:
    evaluate a new algorithm should be inside DART, not in a one-off fork.
 3. DART should scale with the computing platforms researchers actually use.
    Multi-core CPU support is a first-class direction, SIMD is already part of
-   the codebase, and GPU acceleration needs an explicit roadmap. CUDA support is
-   still TBD; the choice between SYCL portability and focused CUDA kernels
-   should be made from benchmarkable algorithm needs, packaging impact, and
-   maintenance cost. Scalability work should be judged by real research
+   the codebase, and DART 7 includes private opt-in CUDA support for selected
+   experimental simulation workloads. Future GPU expansion should still be made
+   from benchmarkable algorithm needs, packaging impact, security boundaries,
+   and maintenance cost. Scalability work should be judged by real research
    workloads, not by backend availability alone.
 
 The intended result is that DART becomes the default reference platform when
@@ -140,8 +140,8 @@ DART is ready for sustained autonomous agent work when:
 - each major roadmap item names its verification evidence;
 - research-facing APIs are clean, package/source-build paths are verified, and
   new algorithms can be benchmarked against existing baselines;
-- compute scalability work has an evidence-backed CPU/GPU roadmap, including a
-  CUDA-vs-SYCL decision framework before GPU APIs become public commitments;
+- compute scalability work has an evidence-backed CPU/GPU roadmap, including
+  private CUDA validation gates before any GPU APIs become public commitments;
 - `dart-next` or an equivalent workflow can select one bounded next task without
   hidden maintainer context;
 - generated AI adapters and documentation checks keep the workflow surfaces in

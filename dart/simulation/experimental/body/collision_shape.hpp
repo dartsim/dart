@@ -33,6 +33,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <utility>
 #include <vector>
@@ -48,19 +49,24 @@ enum class CollisionShapeType
   Box,
   Mesh,
   Capsule,
-  // Appended last so the serialized ordinals of the earlier types are stable.
+  // Appended after the original primitive set so serialized ordinals for
+  // Sphere/Box/Mesh/Capsule stay stable.
   Cylinder,
+  // Appended after Cylinder so existing serialized ordinals stay stable.
+  Plane,
 };
 
 /// Public value object describing a body's collision geometry.
 ///
 /// This is a backend-neutral facade: the experimental World maps it onto the
-/// maintained native collision engine when running collision queries. The shape
-/// is expressed in the owning body's frame, centered at the body frame origin.
+/// maintained native collision engine when running collision queries.
+/// `localTransform` expresses the shape frame in the owning body/link frame; it
+/// defaults to identity, so existing call sites keep a shape centered at the
+/// body/link frame origin.
 ///
 /// Only the fields relevant to `type` are used. Prefer the named constructors
-/// (`makeSphere`, `makeBox`, `makeCapsule`, `makeCylinder`, `makeMesh`) for
-/// clarity.
+/// (`makeSphere`, `makeBox`, `makeCapsule`, `makeCylinder`, `makePlane`,
+/// `makeMesh`) for clarity.
 struct CollisionShape
 {
   /// Geometric family selecting which fields below are used.
@@ -69,16 +75,29 @@ struct CollisionShape
   /// Sphere radius (used when type == Sphere). Must be positive.
   double radius = 0.5;
 
-  /// Box half extents along the body x/y/z axes (used when type == Box). Each
-  /// component must be positive. For a Capsule or Cylinder, `halfExtents.z()`
-  /// doubles as the axial half-height along body z; this reuse keeps the
-  /// serialized layout stable.
+  /// Box half extents along the shape x/y/z axes (used when type == Box).
+  /// Each component must be positive. For a Capsule or Cylinder,
+  /// `halfExtents.z()` is the axial half-height along shape z; this reuse keeps
+  /// the serialized layout stable.
   Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
 
-  /// Mesh vertices in the body frame (used when type == Mesh).
+  /// Shape-frame pose expressed in the owning body/link frame.
+  Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
+
+  /// Plane normal in the shape frame (used when type == Plane). Must be finite
+  /// and nonzero; the named constructor normalizes it.
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+
+  /// Plane offset along the shape-frame normal (used when type == Plane). Must
+  /// be finite.
+  double offset = 0.0;
+
+  /// Mesh vertices in the shape frame (used when type == Mesh). Each vertex
+  /// must be finite.
   std::vector<Eigen::Vector3d> vertices;
 
-  /// Mesh triangle indices into `vertices` (used when type == Mesh).
+  /// Mesh triangle indices into `vertices` (used when type == Mesh). Each index
+  /// must reference an existing vertex.
   std::vector<Eigen::Vector3i> triangles;
 
   /// Create a sphere collision shape.
@@ -100,7 +119,7 @@ struct CollisionShape
     return shape;
   }
 
-  /// Create a triangle mesh collision shape in the body frame.
+  /// Create a triangle mesh collision shape in the shape frame.
   [[nodiscard]] static CollisionShape makeMesh(
       std::vector<Eigen::Vector3d> vertices,
       std::vector<Eigen::Vector3i> triangles)
@@ -109,6 +128,17 @@ struct CollisionShape
     shape.type = CollisionShapeType::Mesh;
     shape.vertices = std::move(vertices);
     shape.triangles = std::move(triangles);
+    return shape;
+  }
+
+  /// Create a plane collision shape.
+  [[nodiscard]] static CollisionShape makePlane(
+      const Eigen::Vector3d& normal, double offset)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Plane;
+    shape.normal = normal.normalized();
+    shape.offset = offset;
     return shape;
   }
 

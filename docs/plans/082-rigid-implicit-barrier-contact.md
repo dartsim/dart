@@ -131,6 +131,11 @@
   [`../dev_tasks/rigid_body_dynamics_solver/`](../dev_tasks/rigid_body_dynamics_solver/)
 - Active rigid IPC implementation tracker:
   [`../dev_tasks/rigid_ipc_solver/`](../dev_tasks/rigid_ipc_solver/)
+- Unified Newton-barrier family:
+  [`083-unified-newton-barrier-multibody.md`](083-unified-newton-barrier-multibody.md)
+  owns the cross-variant IPC/ABD consolidation plan. PLAN-082 remains the rigid
+  IPC variant owner and correctness oracle until an affine/stiff-body path beats
+  it on matched fixtures.
 - Simultaneous-impact intake and go/no-go sidecar:
   [`082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md`](082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md)
 - Research catalog:
@@ -171,10 +176,11 @@
    focused tests, C++ benchmarks, fixture replay examples, comparison baselines,
    profiling packets, and headless Filament evidence. GPU work remains private
    and benchmark-gated until the algorithm has a representative workload.
-8. **Unified IPC direction** - Keep rigid and deformable IPC work aligned around
-   shared barrier, CCD, projected-Newton, friction, diagnostics, and corpus
-   verification primitives so the next algorithm family can reuse them rather
-   than adding another isolated solver stack.
+8. **Unified Newton-barrier direction** - Follow PLAN-083 for shared barrier,
+   CCD, projected-Newton, friction, diagnostics, CPU/GPU benchmark, and corpus
+   verification primitives. Rigid IPC remains the exact/reduced-coordinate
+   reference path; ABD or other stiff-body variants must prove matched
+   correctness and performance before replacing any rigid IPC responsibility.
 9. **Simultaneous-impact intake** - Keep the explicit event-level
    simultaneous-impact papers as a benchmark/go-no-go sidecar rather than a new
    solver commitment. Promote an impact operator only if solver-neutral DART
@@ -203,6 +209,9 @@
   current DART rigid contact path, the audited reference implementation, and
   the paper-reported scene families; regressions or slower rows need an
   explicit accepted tradeoff rather than a parity claim.
+- Any shared primitive promoted by PLAN-083 has cross-variant tests proving
+  rigid IPC behavior remains unchanged or that the new behavior is explicitly
+  accepted against the audited fixture manifest.
 - Simultaneous-impact promotion requires the sidecar's literature matrix,
   solver-neutral corpus, IPC/AVBD comparison, and public-boundary review before
   any event-level operator becomes a PLAN-082 workstream.
@@ -221,3 +230,5 @@
   AVBD-style finite-time contact do not cover.
 - A maintainer decides a manifest family should be manual, out of scope, or
   promoted earlier than this plan's sequencing.
+- PLAN-083 changes the shared Newton-barrier primitive contract or promotes ABD
+  from evaluation to replacement for a rigid IPC responsibility.

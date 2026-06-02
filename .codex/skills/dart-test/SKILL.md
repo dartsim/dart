@@ -16,6 +16,7 @@ Load this skill when writing or debugging tests.
 ```bash
 pixi run test         # Quick test run
 pixi run test-all     # Full validation
+pixi run -e cuda test-all # CUDA-enabled full validation on Linux CUDA hosts
 pixi run test-unit    # Unit tests
 pixi run test-py      # Python tests
 ```
@@ -45,6 +46,7 @@ Before submitting PR:
 ```bash
 pixi run lint         # Must pass
 pixi run test-all     # Must pass
+pixi run -e cuda test-all # Must pass on Linux CUDA hosts
 ```
 
 ## Debugging Test Failures
@@ -65,3 +67,10 @@ gh run view <RUN_ID> --log-failed
   the experimental simulation suite:
   `pixi run build-simulation-experimental-tests` (target `dart_experimental_tests`)
   before `ctest -L simulation-experimental`.
+- `pixi run test-all` is the default-environment full gate. On Linux hosts with
+  a visible NVIDIA CUDA runtime, also run `pixi run -e cuda test-all`; the CUDA
+  run preserves the `cuda` Pixi environment and executes the CUDA CTest +
+  benchmark smoke path when the runtime is detected.
+- The CUDA Pixi config auto-detects visible GPU compute capabilities for
+  `DART_CUDA_ARCHITECTURES`; unsupported PTX/toolchain errors usually mean the
+  generated CUDA architecture flags need to be checked before blaming test code.

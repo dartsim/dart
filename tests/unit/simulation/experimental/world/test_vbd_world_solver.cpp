@@ -607,6 +607,126 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsIgnoreUnusedFrictionCoefficient)
 }
 
 //==============================================================================
+// Optional AVBD row family toggles are often enabled globally. A body should
+// still take the supported AVBD mass-spring row path when one requested family
+// has active rows and another requested family is empty for that body.
+TEST(VbdWorldSolver, AvbdMassSpringRowsAllowEmptyRequestedFamilies)
+{
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    addGroundBarrier(world);
+
+    sx::DeformableBodyOptions options;
+    options.positions = {Eigen::Vector3d(0.0, 0.0, -0.01)};
+    options.masses = {1.0};
+    world.addDeformableBody("point", options);
+
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 8;
+    cfg.contactStiffness = 100.0;
+    cfg.useAvbdContactNormalRows = true;
+    cfg.useAvbdFiniteStiffnessRows = true;
+    cfg.avbdBeta = 2000.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 500.0;
+    enableVbdConfig(world, cfg);
+
+    compute::DeformableDynamicsStage stage;
+    stepOnce(world, stage);
+
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.vbdBodyCount, 1u);
+    EXPECT_GT(stats.vbdAvbdContactNormalRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  }
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    sx::DeformableBodyOptions options = makeChainOptions(4, 0.25);
+    options.fixedNodes.clear();
+    world.addDeformableBody("chain", options);
+
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 8;
+    cfg.useAvbdAttachmentRows = true;
+    cfg.useAvbdFiniteStiffnessRows = true;
+    cfg.avbdFiniteStiffnessStart = 20.0;
+    cfg.avbdBeta = 2000.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 500.0;
+    enableVbdConfig(world, cfg);
+
+    compute::DeformableDynamicsStage stage;
+    stepOnce(world, stage);
+
+    const auto& stats = stage.getLastStats();
+    EXPECT_EQ(stats.vbdBodyCount, 1u);
+    EXPECT_EQ(stats.vbdAvbdContactNormalRows, 0u);
+    EXPECT_EQ(stats.vbdAvbdAttachmentRows, 0u);
+    EXPECT_GT(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  }
+}
+
+//==============================================================================
+// Ground-barrier AVBD rows should only exist inside the static-contact
+// activation band. Nodes high above the ground must keep the contact-free VBD
+// step instead of carrying an inactive hard-row stiffness block.
+TEST(VbdWorldSolver, AvbdContactNormalRowsSkipInactiveGroundRows)
+{
+  const auto stepPoint
+      = [](bool withGround, compute::DeformableSolverStats* statsOut) {
+          sx::World world;
+          world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+          world.setTimeStep(0.01);
+          if (withGround) {
+            addGroundBarrier(world);
+          }
+
+          sx::DeformableBodyOptions options;
+          options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+          options.masses = {1.0};
+          world.addDeformableBody("point", options);
+
+          sx::comps::DeformableVbdConfig cfg;
+          cfg.enabled = true;
+          cfg.iterations = 8;
+          cfg.contactStiffness = 100.0;
+          cfg.useAvbdContactNormalRows = true;
+          cfg.avbdBeta = 2000.0;
+          cfg.avbdMaxStiffness = 500.0;
+          enableVbdConfig(world, cfg);
+
+          compute::DeformableDynamicsStage stage;
+          stepOnce(world, stage);
+          if (statsOut != nullptr) {
+            *statsOut = stage.getLastStats();
+          }
+
+          const auto body = world.getDeformableBody("point");
+          if (!body.has_value()) {
+            ADD_FAILURE() << "missing point body";
+            return 0.0;
+          }
+          return body->getPosition(0).z();
+        };
+
+  compute::DeformableSolverStats groundStats;
+  const double contactFreeZ = stepPoint(false, nullptr);
+  const double groundZ = stepPoint(true, &groundStats);
+
+  EXPECT_EQ(groundStats.vbdBodyCount, 1u);
+  EXPECT_EQ(groundStats.vbdAvbdContactNormalRows, 0u);
+  EXPECT_NEAR(groundZ, contactFreeZ, 1e-12);
+}
+
+//==============================================================================
 // The current finite-stiffness AVBD World slices are intentionally narrow. The
 // mass-spring row path supports static contact/friction rows and explicit
 // self-contact row opt-ins, while the pure tet material row path can coexist

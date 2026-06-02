@@ -31,6 +31,7 @@ Resume unfinished work: $ARGUMENTS
 @AGENTS.md
 @docs/dev_tasks/README.md
 @docs/ai/sessions.md
+@docs/ai/verification.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/contributing.md
 
@@ -54,12 +55,17 @@ and ask.
 
 - Propose a 3-6 step plan before editing.
 - Continue with minimal scope and preserve existing user changes.
+- For active solver/paper implementations, keep the plan or dev-task resume
+  surface explicit about the completed slice, the next missing paper-parity
+  gap, and why focused green tests are not a full paper-completion claim.
 - If the task is being completed, promote any durable dashboard, evidence
   matrix, API inventory, migration map, or long-lived decision out of
   `docs/dev_tasks/<task>/` into `docs/plans/` or `docs/onboarding/`, then
   remove the dev-task folder completely in the completing change.
 - Run `pixi run lint` before committing.
-- Run relevant tests; use `pixi run test-all` before done when feasible.
+- Run relevant tests; use `pixi run test-all` before done when feasible, and
+  also `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA
+  runtime.
 - Push with `git push -u origin HEAD` and create/update the PR only after
   explicit maintainer/user approval.
 - For already-published PRs, prefer additive follow-up commits. Amend or

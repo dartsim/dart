@@ -50,7 +50,24 @@ finite-stiffness, self-contact normal, and self-contact friction families.
 Unsupported mixed spring-plus-tet, mass-spring self-contact without the
 self-contact AVBD flag, Chebyshev, Rayleigh-damped, parallel, and
 unsupported-row requests have explicit fallback coverage that keeps them on the
-existing VBD path.
+existing VBD path. The first internal rigid contact-stage AVBD activation is
+now guarded by `RigidAvbdContactConfig`: supported free rigid-body contacts use
+the private World-contact snapshot and 6-DOF row solve as a velocity projection
+consumed by the standard rigid position stage, while unsupported envelopes fall
+back to sequential impulses. The private rigid contact snapshot also derives box
+face/edge/corner endpoint feature IDs plus cylinder side/cap/rim and capsule
+side/top-cap/bottom-cap endpoint feature IDs and scopes row ordinals per
+canonical endpoint pair so unrelated manifolds do not perturb row identity. The
+private rigid block path also has
+point-joint linear, angular, and combined row builders for fixed-anchor
+translation and orientation constraints, with step-start previous constraint
+values seeded for AVBD alpha regularization. Those private point-joint rows can
+now be appended to the World rigid snapshot/solve/apply wrapper and combined
+step helper from world-space point-joint inputs; a private fixed-joint ECS
+extractor plus step-helper overload now covers rigid-body-linked joint
+entities, and the internal contact-stage AVBD opt-in can now project those
+fixed-joint rows with or without active contacts. Public multibody joint
+extraction is still not wired.
 
 ## Current Branch
 
@@ -60,16 +77,47 @@ families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
 tangent rows, static box feature IDs, static half-space tangent dual projection,
 self-contact tangent dual projection, supported World self-contact
-normal/friction rows, and combined static/self-contact friction row coexistence
-coverage.
+normal/friction rows, combined static/self-contact friction row coexistence
+coverage, and the first private 6-DOF rigid block plus contact/friction
+point-pair row foundation. Private rigid point-pair friction tangent pairs now
+reuse the deformable friction semantics for lagged-dual static/dynamic
+switching and circular Coulomb-cone projection, and a private serial rigid row
+driver now sweeps point attachments, contact-normal point pairs, and paired
+friction tangent rows. A private rigid contact-manifold row builder now turns
+active contact points with stable endpoint feature IDs into warm-started normal
+and paired tangent rows for that driver. A private World-contact snapshot helper
+now translates rigid-body `World::collide()` contacts into those
+manifold-point inputs and verifies that they can drive the private serial rigid
+row solve plus dynamic rigid-body ECS writeback through a combined private
+wrapper. The current branch additionally adds the first internal
+`RigidAvbdContactConfig` contact-stage activation for supported free rigid-body
+contacts as a velocity-level projection and box-feature/pair-scoped rigid
+contact row identity for the private snapshot path, plus private point-joint
+linear, angular, and combined row builders with World snapshot/step
+append/solve/apply coverage for world-space point-joint inputs and a private
+fixed-joint ECS extractor plus step-helper overload for rigid-body-linked joint
+entities, plus internal contact-stage velocity-projection coverage for those
+fixed-joint rows with or without active contacts.
 
 ## Immediate Next Step
 
-Continue the next bounded AVBD contact/friction slice: dynamic/rigid contact
-manifold IDs or the first rigid/articulated AVBD block foundation are the
-preferred row-family gaps. Keep the supported envelope narrow and preserve
-fallback coverage for topology mixes, damping/acceleration, parallel solves, and
-unsupported requested row combinations.
+Continue the next bounded AVBD contact/friction or rigid-block slice: full
+narrow-phase feature extraction, contact-complete rigid joint rows, or
+rigid/articulated World wiring are the preferred row-family gaps now that
+private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
+normal/friction row descriptor helpers plus private rigid contact/friction
+point-pair constructors, paired friction-cone helpers, and a private serial
+rigid row driver plus private rigid contact-manifold row builder and
+World-contact snapshot/solve/writeback helpers plus a combined private wrapper,
+first internal contact-stage activation, box-feature/pair-scoped row identity,
+private cylinder side/cap/rim and capsule side/top-cap/bottom-cap endpoint
+features, and private point-joint linear/angular/combined rows with step-start
+previous constraint values and private World snapshot/step append/solve/apply
+coverage plus fixed-joint ECS extraction through the step helper exist.
+Keep the supported envelope narrow and preserve fallback coverage for topology
+mixes,
+damping/acceleration, parallel solves, and unsupported requested row
+combinations.
 
 ## Context That Would Be Lost
 
@@ -98,9 +146,40 @@ unsupported requested row combinations.
   self-contact scenes generate AVBD self-contact normal rows and matching
   self-contact friction rows when material friction is positive. A combined
   static/self-contact friction regression now guards both row families in one
-  supported World solve. This does not imply hard-contact/friction completeness,
-  full contact-manifold friction persistence, dynamic/rigid contact manifolds,
-  rigid/soft coupling, or GPU parity.
+  supported World solve. The first private rigid foundation now has a 6-DOF
+  block accumulator, world-frame quaternion tangent update, inertia term, block
+  solve, scalar rigid point-attachment row, and two-body point-pair row
+  stamping. Point-pair rows also carry a scalar offset with private
+  rigid-contact normal and bounded friction tangent constructors plus paired
+  tangent static/dynamic switching and circular Coulomb-cone projection for
+  future contact-manifold generation, and a private serial rigid row driver can
+  sweep point attachments, contact-normal point pairs, and paired friction
+  tangent rows. A private rigid contact-manifold row builder now converts active
+  contact points with stable endpoint feature IDs into warm-started normal and
+  paired tangent rows for that driver. A private World-contact snapshot helper
+  now converts rigid-body `World::collide()` output into manifold-point inputs
+  for that builder, runs them through the private serial rigid row solve, and
+  writes dynamic rigid-body state back to the ECS through a combined private
+  wrapper in focused tests. The first internal contact-stage activation now
+  predicts rigid inertial targets from current velocities, solves supported
+  opted-in contacts through the private 6-DOF rows, and projects the solved
+  displacement back into rigid velocity. This does not imply
+  hard-contact/friction completeness, full contact-manifold friction
+  persistence, broad dynamic/rigid feature persistence, rigid/articulated
+  joints, rigid/soft coupling, or GPU parity. Private dynamic/rigid contact
+  identity helpers now pack contact feature kind/index IDs, canonicalize
+  two-endpoint contact row keys, derive private box face/edge/corner endpoint
+  feature IDs and cylinder side/cap/rim plus capsule side/top-cap/bottom-cap
+  endpoint features for rigid snapshots, scope row ordinals per canonical
+  endpoint pair, and create normal/friction/joint-linear/joint-angular row
+  descriptors, with private point-joint rows now seeding step-start previous
+  constraint values and
+  participating in the private World snapshot/solve/apply wrapper and combined
+  step helper from world-space point-joint inputs, plus private fixed-joint ECS
+  extraction through the step helper and internal contact-stage velocity
+  projection for rigid-body-linked joint entities with or without active
+  contacts, but full narrow-phase feature extraction and public articulated
+  World joint wiring are not solved yet.
 
 ## How to Resume
 
@@ -108,6 +187,8 @@ unsupported requested row combinations.
 git status --short --branch
 pixi run build-simulation-experimental-tests
 build/default/cpp/Release/bin/test_avbd_constraint
+build/default/cpp/Release/bin/test_avbd_rigid_block
+build/default/cpp/Release/bin/test_boxed_lcp_contact --gtest_filter='AvbdContact.*:BoxedLcpContact.MethodSelectorReflectsConstruction'
 build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_filter='VbdCombinedDescent.AvbdSelfContact*'
 build/default/cpp/Release/bin/test_vbd_attachment
 build/default/cpp/Release/bin/test_vbd_finite_stiffness

@@ -1,0 +1,146 @@
+# Unified Newton-Barrier Multibody - Dev Task
+
+## Current Status
+
+- [x] Phase 1: promote shared world-primitive math into an internal
+      Newton-barrier owner.
+  - [x] Add `detail/newton_barrier` owners for primitive distances, clamped-log
+        barriers, and tangent stencils.
+  - [x] Preserve `detail/deformable_contact` compatibility forwarding so active
+        deformable IPC branches keep compiling during reconciliation.
+  - [x] Update rigid IPC primitive calls to consume the Newton-barrier owner
+        directly.
+  - [x] Add cross-variant primitive tests for old/new alias parity, rigid
+        consumer parity, and the internal namespace boundary.
+  - [x] Record smoke output from the existing distance, barrier, tangent, and
+        rigid IPC benchmark binaries without renaming them.
+- [x] Phase 2: add the ABD first-slice internal prototype: affine body state,
+      affine surface adapter, orthogonality energy, affine primitive/friction
+      chain rules, rigid-equivalence tests, and first benchmark packet shape.
+  - [x] Add internal `AffineBodyState` and `AffineSurfaceAdapter` owners under
+        `detail/` with 12-DOF affine state vectorization and per-vertex
+        Jacobians.
+  - [x] Map shared Newton-barrier point-triangle, point-edge, edge-edge, and
+        point-point primitive rows through affine Jacobians.
+  - [x] Add stiff affine orthogonality energy with analytic gradient/Hessian
+        coverage.
+  - [x] Add rigid-equivalence oracle by projecting affine gradients and
+        Hessians onto the rigid tangent space, including the rotation-vector
+        curvature term needed to match PLAN-082 rigid IPC.
+  - [x] Add the first ABD benchmark packet shape with a matched rigid IPC
+        point-triangle oracle row and orthogonality-energy row.
+  - [x] Add reduced friction equivalence rows through affine tangent stencils
+        for point-point, point-edge, edge-edge, and point-triangle primitives.
+- [ ] Phase 3: generalize second-use PSD projection and projected-Newton
+      contracts when ABD or another solver-family slice needs the shared
+      contract; use the PLAN-083 variant consolidation map to keep IPC-family
+      responsibilities in the right owner while promoting only proven
+      second-use contracts.
+- [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
+      CPU/GPU evidence, and visual evidence rows.
+- [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
+      slices exist and have correctness/performance evidence.
+
+## Goal
+
+Implement PLAN-083 incrementally until DART owns the shared Newton-barrier
+primitive layer, affine stiff-body track, CPU/GPU evidence, paper/deck parity
+rows, and py-demos examples behind DART-owned experimental `World` capabilities
+without exposing upstream solver names, registries, ECS storage, or backend
+resources as public API.
+
+## Non-Goals For Current Internal Slices
+
+- No public API changes.
+- No dartpy binding changes.
+- No scene, fixture, or py-demos migration.
+- No rigid curved-trajectory CCD move.
+- No sparse Newton loop merge.
+- No rigid IPC default behavior change.
+- No ABD runtime stage.
+- No GPU speedup claim.
+
+## Key Decisions
+
+- Phase 1 is an internal ownership and contract slice, not a behavior change.
+- The old `deformable_contact` include paths remain as forwarding
+  compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
+- Rigid IPC should include the new Newton-barrier owner directly because it is
+  the second active consumer and the reduced-coordinate correctness oracle.
+- Existing benchmark binary names stay stable for performance-history
+  continuity.
+- ABD starts only after the primitive contract has cross-variant tests.
+- The first ABD chain-rule slice uses the affine map `x = a + A X`, so its
+  Hessian has no transform-curvature term. Rigid Hessian equivalence projects
+  onto the rigid tangent space and adds the rotation-vector exponential
+  curvature term before comparing against rigid IPC.
+- The first second-use friction contract is the shared tangent-displacement
+  friction kernel under `detail/newton_barrier`, consumed by rigid IPC and the
+  affine primitive-family friction rows.
+- Public docs and APIs keep method/capability names DART-owned; internal tests
+  and manifests may cite IPC, rigid IPC, ABD, and paper row provenance.
+
+## Immediate Next Steps
+
+1. Promote the first benchmark packet from smoke shape to a comparison manifest
+   row now that barrier and friction derivative oracles are stable.
+2. Add a two-body affine contact micro-solve only if the manifest row needs a
+   solved-state residual before Phase 3 shared projected-Newton work.
+3. Keep runtime stepping, py-demos, and GPU claims out of scope until the
+   internal ABD oracle and benchmark packet exist.
+
+## Validation Gates For Current Slices
+
+```bash
+pixi run lint
+pixi run build-simulation-experimental-tests
+pixi run test-simulation-experimental
+pixi run check-api-boundaries
+pixi run bm bm_ipc_distance_kernels -- --benchmark_min_time=0.05s
+pixi run bm bm_ipc_barrier_kernel -- --benchmark_min_time=0.05s
+pixi run bm bm_ipc_tangent_stencil -- --benchmark_min_time=0.05s
+pixi run bm bm_rigid_ipc_solver -- --benchmark_min_time=0.05s
+```
+
+CUDA evidence is required only if the slice touches the PSD wrapper or another
+GPU-backed path:
+
+```bash
+pixi run -e cuda test-cuda
+```
+
+Phase 1 local evidence:
+
+- `pixi run lint`
+- `pixi run build-simulation-experimental-tests`
+- `pixi run test-simulation-experimental`
+- `pixi run check-api-boundaries`
+- `pixi run bm bm_ipc_distance_kernels -- --benchmark_min_time=0.05s`
+- `pixi run bm bm_ipc_barrier_kernel -- --benchmark_min_time=0.05s`
+- `pixi run bm bm_ipc_tangent_stencil -- --benchmark_min_time=0.05s`
+- `pixi run bm bm_rigid_ipc_solver -- --benchmark_min_time=0.05s`
+
+Phase 2 local evidence so far:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run test-simulation-experimental` (46/46)
+- `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`
+
+## Owner Docs
+
+- PLAN-083 owner:
+  [`../../plans/083-unified-newton-barrier-multibody.md`](../../plans/083-unified-newton-barrier-multibody.md)
+- IPC-family variant consolidation:
+  [`../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md`](../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+- Implementation roadmap:
+  [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
+- Primitive promotion slice:
+  [`../../plans/083-unified-newton-barrier-multibody/primitive-promotion-slice.md`](../../plans/083-unified-newton-barrier-multibody/primitive-promotion-slice.md)
+- ABD first-slice design:
+  [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md)
+- Shared primitive audit:
+  [`../../plans/083-unified-newton-barrier-multibody/shared-primitive-audit.md`](../../plans/083-unified-newton-barrier-multibody/shared-primitive-audit.md)
+- Deformable IPC variant:
+  [`../../plans/081-deformable-implicit-barrier-solver.md`](../../plans/081-deformable-implicit-barrier-solver.md)
+- Rigid IPC variant:
+  [`../../plans/082-rigid-implicit-barrier-contact.md`](../../plans/082-rigid-implicit-barrier-contact.md)

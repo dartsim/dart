@@ -63,6 +63,9 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   endif()
   dart_experimental_add_unit_test_dir(deformable_vbd ${CMAKE_CURRENT_SOURCE_DIR}/deformable_vbd)
   dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/world)
+  if(TARGET test_skeleton_loader)
+    target_link_libraries(test_skeleton_loader PRIVATE ${PROJECT_NAME}-io)
+  endif()
   dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/frame)
   dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
   dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
@@ -76,6 +79,12 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   # configurations where the test is not registered.
   if(TEST test_variational_integration)
     set_tests_properties(test_variational_integration PROPERTIES TIMEOUT 3600)
+    if(DART_CODECOV)
+      target_compile_definitions(
+        test_variational_integration
+        PRIVATE DART_CODECOV=1
+      )
+    endif()
   endif()
 
   # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only

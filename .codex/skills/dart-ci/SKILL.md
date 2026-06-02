@@ -49,28 +49,30 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 
 ## Workflow Architecture
 
-| Workflow            | Purpose                 | Platforms |
-| ------------------- | ----------------------- | --------- |
-| `ci_lint.yml`       | Formatting              | Ubuntu    |
-| `ci_ubuntu.yml`     | Build + test + coverage | Ubuntu    |
-| `ci_macos.yml`      | Build + test            | macOS     |
-| `ci_windows.yml`    | Build + test            | Windows   |
-| `ci_freebsd.yml`    | Build + test (VM)       | FreeBSD   |
-| `ci_gz_physics.yml` | Gazebo integration      | Ubuntu    |
-| `ci_cuda.yml`       | CUDA build/import gate  | Ubuntu    |
+| Workflow            | Purpose                 | Platforms  |
+| ------------------- | ----------------------- | ---------- |
+| `ci_lint.yml`       | Formatting              | Ubuntu     |
+| `ci_ubuntu.yml`     | Build + test + coverage | Ubuntu     |
+| `ci_macos.yml`      | Build + test            | macOS      |
+| `ci_windows.yml`    | Build + test            | Windows    |
+| `ci_freebsd.yml`    | Build + test (VM)       | FreeBSD    |
+| `ci_gz_physics.yml` | Gazebo integration      | Ubuntu     |
+| `ci_cuda.yml`       | CUDA compile + smoke    | Ubuntu/GPU |
 
-## Runner Policy (no self-hosted GPU runner)
+## CUDA Runner Policy
 
-Prefer GitHub-hosted runners. The project does **not** maintain a self-hosted
-GPU runner — they are too tedious to maintain. Consequences:
+The project has a trusted `ubuntu-latest-gpu` runner for same-repository CUDA
+runtime validation, but it must never run untrusted fork-PR code. Consequences:
 
-- GPU CI is **build/import only**: `ci_cuda.yml`'s `CUDA Build` job compiles the
-  CUDA targets on `ubuntu-latest` (nvcc compiles without a GPU).
-- Hardware-specific runtime evidence (e.g. the Phase 5 GPU go/no-go packet) is
-  produced **manually on a developer CUDA host**, not in CI, and recorded in a
-  durable doc (`docs/design/scalable_compute_decisions.md`).
-- Do **not** add a `runs-on: [self-hosted, ...]` GPU job.
-  `pixi run check-phase5-cuda-workflow` enforces this for `ci_cuda.yml`.
+- Same-repository PRs, protected branch pushes, and manual dispatches use the
+  GPU runner and run `pixi run --locked -e cuda test-cuda`.
+- Fork PRs use a GitHub-hosted fallback and compile CUDA targets without
+  running GPU-only steps.
+- Local CUDA validation is `pixi run -e cuda test-all` on Linux hosts with a
+  visible NVIDIA CUDA runtime; local Pixi config auto-detects visible GPU
+  compute capabilities for `DART_CUDA_ARCHITECTURES`.
+- `pixi run check-phase5-cuda-workflow` enforces the trusted-event GPU guard
+  and fork-PR hosted fallback in `ci_cuda.yml`.
 
 ## Fast Iteration Loop
 

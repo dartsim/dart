@@ -24,7 +24,9 @@ Read these files first:
    - bug fixes that apply to the current release line: branch from
      `origin/release-6.16` first, then cherry-pick or reapply to `main`
 4. **Implement** - Keep commits focused, follow code style
-5. **Verify** - Run `pixi run lint` before committing, then `pixi run test-all`
+5. **Verify** - Run `pixi run lint` before committing, then
+   `pixi run test-all`; on Linux hosts with a visible NVIDIA CUDA runtime, also
+   run `pixi run -e cuda test-all`
 6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
    (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`); follow

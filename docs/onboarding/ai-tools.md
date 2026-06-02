@@ -531,8 +531,9 @@ ready for review once all of these are true on the current head:
 
 - Codex review has no unresolved actionable threads, or the latest Codex result
   is a no-issues comment/reaction.
-- Local `pixi run test-all` passed after the last pushed change, and the
-  worktree is clean.
+- Local validation passed after the last pushed change, and the worktree is
+  clean: default `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux
+  hosts with a visible NVIDIA CUDA runtime.
 - PR metadata is correct: base, milestone, title, template, and testing
   evidence match the current branch.
 
@@ -599,7 +600,8 @@ After identifying an AI-generated review comment to address:
    `gh pr comment <PR> --body "@codex review"`
 7. **Monitor for results**:
    - New review comments → repeat from step 1
-   - "No issues" or 👍 reaction + local `pixi run test-all` on the current head
+   - "No issues" or 👍 reaction + local validation on the current head: default
+     `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts
      → draft PR is ready for human review
 
 Apply the same no-inline-reply handling to `github-code-quality[bot]` findings:
@@ -671,7 +673,8 @@ For agents iterating on automated reviews, the complete loop is:
 7. Monitor CI: `gh pr checks <PR>`
 8. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
 9. If new review has comments → go to step 2
-10. If no new comments AND local `pixi run test-all` passed on the current head
+10. If no new comments AND local validation passed on the current head (default
+    `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts)
     → mark draft PRs ready for human review after approval
 11. Keep monitoring hosted CI until required checks pass before merge
 ```
@@ -708,7 +711,8 @@ when nothing is pending, any check fails, or the head SHA moves.
 **Stop conditions:**
 
 - Codex review returns no comments (or only 👍 reactions)
-- Local `pixi run test-all` passes on the current head for draft-ready state
+- Local validation passes on the current head for draft-ready state: default
+  `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts
 - All required CI checks pass for merge-ready state
 - Pre-existing failures (e.g., `simulation-experimental` "Not Run") can be ignored
 

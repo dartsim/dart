@@ -32,7 +32,6 @@
 
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 
-#include "dart/simulation/experimental/body/contact.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/collision_geometry.hpp"
@@ -44,6 +43,7 @@
 #include "dart/simulation/experimental/compute/compute_executor.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/deformable_psd_backend.hpp"
+#include "dart/simulation/experimental/compute/rigid_body_constraint.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/detail/boxed_lcp_contact.hpp"
@@ -56,9 +56,13 @@
 #include "dart/simulation/experimental/detail/deformable_vbd/avbd_row_inventory.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/experimental/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
+
+#include <dart/math/lcp/lcp_types.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
@@ -113,6 +117,29 @@ Eigen::Isometry3d toIsometry(
   localTransform.linear() = orientation.toRotationMatrix();
   localTransform.translation() = transform.position;
   return localTransform;
+}
+
+//==============================================================================
+std::optional<comps::Transform> collisionShapeWorldTransform(
+    const comps::Transform& bodyTransform, const CollisionShape& shape)
+{
+  if (!bodyTransform.position.allFinite()
+      || !bodyTransform.orientation.coeffs().allFinite()
+      || !shape.localTransform.matrix().allFinite()) {
+    return std::nullopt;
+  }
+
+  const Eigen::Quaterniond bodyOrientation
+      = normalizeOrIdentity(bodyTransform.orientation);
+  const Eigen::Quaterniond shapeOrientation(shape.localTransform.linear());
+
+  comps::Transform result;
+  result.position = bodyTransform.position
+                    + bodyOrientation.toRotationMatrix()
+                          * shape.localTransform.translation();
+  result.orientation = bodyOrientation * shapeOrientation.normalized();
+  result.orientation.normalize();
+  return result;
 }
 
 //==============================================================================
@@ -413,6 +440,57 @@ void integrateRigidBody(
   integrateRigidBodyVelocity(
       registry, entity, assembledForce, force.torque, timeStep);
   integrateRigidBodyPosition(registry, entity, timeStep);
+}
+
+//==============================================================================
+const comps::RigidAvbdContactConfig* enabledRigidAvbdContactConfig(
+    const entt::registry& registry, entt::entity entity)
+{
+  const auto* config = registry.try_get<comps::RigidAvbdContactConfig>(entity);
+  if (config == nullptr || !config->enabled) {
+    return nullptr;
+  }
+  return config;
+}
+
+//==============================================================================
+std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
+    const entt::registry& registry, std::span<const Contact> contacts)
+{
+  std::optional<comps::RigidAvbdContactConfig> merged;
+  for (const Contact& contact : contacts) {
+    const auto* configA
+        = enabledRigidAvbdContactConfig(registry, contact.bodyA.getEntity());
+    const auto* configB
+        = enabledRigidAvbdContactConfig(registry, contact.bodyB.getEntity());
+    if (configA == nullptr && configB == nullptr) {
+      return std::nullopt;
+    }
+
+    const auto absorb = [&](const comps::RigidAvbdContactConfig& config) {
+      if (!merged.has_value()) {
+        merged = config;
+        return;
+      }
+
+      merged->startStiffness
+          = std::max(merged->startStiffness, config.startStiffness);
+      merged->alpha = std::max(merged->alpha, config.alpha);
+      merged->beta = std::max(merged->beta, config.beta);
+      merged->gamma = std::max(merged->gamma, config.gamma);
+      merged->maxStiffness
+          = std::min(merged->maxStiffness, config.maxStiffness);
+    };
+
+    if (configA != nullptr) {
+      absorb(*configA);
+    }
+    if (configB != nullptr) {
+      absorb(*configB);
+    }
+  }
+
+  return merged;
 }
 
 } // namespace
@@ -1523,27 +1601,31 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto* shape = geometry.getPrimaryShape();
+    if (shape == nullptr) {
+      continue;
+    }
     const auto& transform = view.get<comps::Transform>(entity);
-    if (!transform.position.allFinite()) {
+    const auto shapeTransform = collisionShapeWorldTransform(transform, *shape);
+    if (!shapeTransform.has_value()) {
       continue;
     }
 
     SurfaceContactSnapshot snapshot;
-    if (geometry.shape.type == CollisionShapeType::Box) {
-      if (!geometry.shape.halfExtents.allFinite()
-          || (geometry.shape.halfExtents.array() <= 0.0).any()) {
+    if (shape->type == CollisionShapeType::Box) {
+      if (!shape->halfExtents.allFinite()
+          || (shape->halfExtents.array() <= 0.0).any()) {
         continue;
       }
       snapshot = makeStaticBoxSurfaceCcdSnapshot(
-          entity, geometry.shape.halfExtents, transform);
+          entity, shape->halfExtents, *shapeTransform);
       ++stats.staticRigidSurfaceCcdBoxCount;
-    } else if (geometry.shape.type == CollisionShapeType::Sphere) {
-      if (!std::isfinite(geometry.shape.radius)
-          || geometry.shape.radius <= 0.0) {
+    } else if (shape->type == CollisionShapeType::Sphere) {
+      if (!std::isfinite(shape->radius) || shape->radius <= 0.0) {
         continue;
       }
       snapshot = makeStaticSphereSurfaceCcdSnapshot(
-          entity, geometry.shape.radius, transform);
+          entity, shape->radius, *shapeTransform);
       ++stats.staticRigidSurfaceCcdSphereCount;
     } else {
       continue;
@@ -1660,21 +1742,38 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto* shape = geometry.getPrimaryShape();
+    if (shape == nullptr) {
+      continue;
+    }
     const auto& transform = view.get<comps::Transform>(entity);
     const auto& velocity = view.get<comps::Velocity>(entity);
-    if (geometry.shape.type != CollisionShapeType::Box
-        || !geometry.shape.halfExtents.allFinite()
-        || (geometry.shape.halfExtents.array() <= 0.0).any()
-        || !transform.position.allFinite() || !velocity.linear.allFinite()
-        || !velocity.angular.allFinite()) {
+    if (shape->type != CollisionShapeType::Box
+        || !shape->halfExtents.allFinite()
+        || (shape->halfExtents.array() <= 0.0).any()
+        || !velocity.linear.allFinite() || !velocity.angular.allFinite()) {
+      continue;
+    }
+    const auto startShapeTransform
+        = collisionShapeWorldTransform(transform, *shape);
+    if (!startShapeTransform.has_value()) {
       continue;
     }
 
     const auto endTransform
         = predictRigidBodyEndTransform(transform, velocity, timeStep);
-    const auto& halfExtents = geometry.shape.halfExtents;
+    const auto endShapeTransform
+        = collisionShapeWorldTransform(endTransform, *shape);
+    if (!endShapeTransform.has_value()) {
+      continue;
+    }
+    const auto& halfExtents = shape->halfExtents;
     const std::size_t samples = movingRigidSurfaceCcdSampleCount(
-        halfExtents, transform, endTransform, velocity.angular, timeStep);
+        halfExtents,
+        *startShapeTransform,
+        *endShapeTransform,
+        velocity.angular,
+        timeStep);
 
     // Keep consecutive sample boxes overlapping. The natural (uncapped) spacing
     // is one box min-half-extent, so the boxes overlap with margin; once the
@@ -1683,7 +1782,7 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     // spacing to bridge the gap. inflation is 0 in the common (uncapped) case.
     const double minHalfExtent = halfExtents.minCoeff();
     const double linearMotion
-        = (endTransform.position - transform.position).norm();
+        = (endShapeTransform->position - startShapeTransform->position).norm();
     const double angularMotion
         = halfExtents.norm() * velocity.angular.norm() * timeStep;
     const double motion = linearMotion + angularMotion;
@@ -1698,18 +1797,19 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     }
 
     const Eigen::Quaterniond startOrientation
-        = normalizeOrIdentity(transform.orientation);
+        = normalizeOrIdentity(startShapeTransform->orientation);
     const Eigen::Quaterniond endOrientation
-        = normalizeOrIdentity(endTransform.orientation);
+        = normalizeOrIdentity(endShapeTransform->orientation);
 
     for (std::size_t k = 0; k < samples; ++k) {
       // samples is always >= 2, so the denominator is never zero.
       const double fraction
           = static_cast<double>(k) / static_cast<double>(samples - 1);
       comps::Transform sampleTransform;
-      sampleTransform.position
-          = transform.position
-            + fraction * (endTransform.position - transform.position);
+      sampleTransform.position = startShapeTransform->position
+                                 + fraction
+                                       * (endShapeTransform->position
+                                          - startShapeTransform->position);
       sampleTransform.orientation
           = startOrientation.slerp(fraction, endOrientation);
 
@@ -1825,42 +1925,50 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
   std::vector<StaticGroundBarrier> barriers;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto* shape = geometry.getPrimaryShape();
+    if (shape == nullptr) {
+      continue;
+    }
     const auto& transform = view.get<comps::Transform>(entity);
+    const auto shapeTransform = collisionShapeWorldTransform(transform, *shape);
+    if (!shapeTransform.has_value()) {
+      continue;
+    }
 
-    switch (geometry.shape.type) {
+    switch (shape->type) {
       case CollisionShapeType::Sphere: {
-        const double radius = geometry.shape.radius;
-        if (!(radius > 0.0) || !std::isfinite(radius)
-            || !transform.position.allFinite()) {
+        const double radius = shape->radius;
+        if (!(radius > 0.0) || !std::isfinite(radius)) {
           break;
         }
 
         StaticGroundBarrier barrier;
         barrier.shape = StaticGroundBarrier::Shape::Sphere;
-        barrier.center = transform.position;
+        barrier.center = shapeTransform->position;
         barrier.radius = radius;
-        barrier.top = transform.position.z() + radius;
+        barrier.top = shapeTransform->position.z() + radius;
         barriers.push_back(barrier);
         break;
       }
       case CollisionShapeType::Box: {
-        if (!geometry.shape.halfExtents.allFinite()
-            || (geometry.shape.halfExtents.array() <= 0.0).any()
-            || !transform.position.allFinite()) {
+        if (!shape->halfExtents.allFinite()
+            || (shape->halfExtents.array() <= 0.0).any()) {
           break;
         }
 
         StaticGroundBarrier barrier;
         barrier.shape = StaticGroundBarrier::Shape::Box;
-        barrier.center = transform.position;
-        barrier.rotation
-            = normalizeOrIdentity(transform.orientation).toRotationMatrix();
-        barrier.halfExtents = geometry.shape.halfExtents;
+        barrier.center = shapeTransform->position;
+        barrier.rotation = normalizeOrIdentity(shapeTransform->orientation)
+                               .toRotationMatrix();
+        barrier.halfExtents = shape->halfExtents;
         barriers.push_back(barrier);
         break;
       }
       case CollisionShapeType::Capsule:
       case CollisionShapeType::Cylinder:
+      case CollisionShapeType::Plane:
+        break;
       case CollisionShapeType::Mesh:
         break;
     }
@@ -1890,15 +1998,18 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
   std::vector<SphereObstacleBarrier> obstacles;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto* shape = geometry.getPrimaryShape();
+    if (shape == nullptr) {
+      continue;
+    }
     const auto& transform = view.get<comps::Transform>(entity);
-    if (geometry.shape.type != CollisionShapeType::Sphere
-        || !(geometry.shape.radius > 0.0)
-        || !std::isfinite(geometry.shape.radius)
-        || !transform.position.allFinite()) {
+    const auto shapeTransform = collisionShapeWorldTransform(transform, *shape);
+    if (shape->type != CollisionShapeType::Sphere || !(shape->radius > 0.0)
+        || !std::isfinite(shape->radius) || !shapeTransform.has_value()) {
       continue;
     }
     obstacles.push_back(
-        SphereObstacleBarrier{transform.position, geometry.shape.radius});
+        SphereObstacleBarrier{shapeTransform->position, shape->radius});
   }
   return obstacles;
 }
@@ -1917,18 +2028,23 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
   std::vector<BoxObstacleBarrier> obstacles;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto* shape = geometry.getPrimaryShape();
+    if (shape == nullptr) {
+      continue;
+    }
     const auto& transform = view.get<comps::Transform>(entity);
-    if (geometry.shape.type != CollisionShapeType::Box
-        || !geometry.shape.halfExtents.allFinite()
-        || (geometry.shape.halfExtents.array() <= 0.0).any()
-        || !transform.position.allFinite()
-        || !transform.orientation.coeffs().allFinite()) {
+    const auto shapeTransform = collisionShapeWorldTransform(transform, *shape);
+    if (shape->type != CollisionShapeType::Box
+        || !shape->halfExtents.allFinite()
+        || (shape->halfExtents.array() <= 0.0).any()
+        || !shapeTransform.has_value()) {
       continue;
     }
     BoxObstacleBarrier obstacle;
-    obstacle.center = transform.position;
-    obstacle.rotation = transform.orientation.normalized().toRotationMatrix();
-    obstacle.halfExtents = geometry.shape.halfExtents;
+    obstacle.center = shapeTransform->position;
+    obstacle.rotation
+        = normalizeOrIdentity(shapeTransform->orientation).toRotationMatrix();
+    obstacle.halfExtents = shape->halfExtents;
     obstacles.push_back(obstacle);
   }
   return obstacles;
@@ -1949,22 +2065,28 @@ std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
   std::vector<CapsuleObstacleBarrier> obstacles;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto* shape = geometry.getPrimaryShape();
+    if (shape == nullptr) {
+      continue;
+    }
     const auto& transform = view.get<comps::Transform>(entity);
-    const double radius = geometry.shape.radius;
-    const double halfHeight = geometry.shape.halfExtents.z();
-    if (geometry.shape.type != CollisionShapeType::Capsule || !(radius > 0.0)
+    const auto shapeTransform = collisionShapeWorldTransform(transform, *shape);
+    const double radius = shape->radius;
+    const double halfHeight = shape->halfExtents.z();
+    if (shape->type != CollisionShapeType::Capsule || !(radius > 0.0)
         || !std::isfinite(radius) || !(halfHeight > 0.0)
-        || !std::isfinite(halfHeight) || !transform.position.allFinite()
-        || !transform.orientation.coeffs().allFinite()) {
+        || !std::isfinite(halfHeight) || !shapeTransform.has_value()) {
       continue;
     }
     // The capsule axis is the body z axis; map its two segment endpoints into
     // the world frame.
     const Eigen::Vector3d axis
-        = transform.orientation.normalized().toRotationMatrix().col(2);
+        = normalizeOrIdentity(shapeTransform->orientation)
+              .toRotationMatrix()
+              .col(2);
     CapsuleObstacleBarrier obstacle;
-    obstacle.pointA = transform.position - halfHeight * axis;
-    obstacle.pointB = transform.position + halfHeight * axis;
+    obstacle.pointA = shapeTransform->position - halfHeight * axis;
+    obstacle.pointB = shapeTransform->position + halfHeight * axis;
     obstacle.radius = radius;
     obstacles.push_back(obstacle);
   }
@@ -4435,6 +4557,7 @@ void runVbdDeformableSolve(
   // unchanged; a vertex pressed into ground and an obstacle at once resolves to
   // the nearer constraint and recovers over steps.
   const std::vector<dvbd::ContactPlane>* contactPlanes = nullptr;
+  bool hasActiveContactPlanes = false;
   const bool anyStaticContact
       = !barriers.empty() || !sphereObstacles.empty() || !boxObstacles.empty();
   if (config.contactStiffness > 0.0 && anyStaticContact) {
@@ -4461,7 +4584,7 @@ void runVbdDeformableSolve(
       const auto groundTop = staticGroundTopAt(position, barriers);
       if (groundTop.has_value()) {
         const double gap = position.z() - *groundTop;
-        if (gap < bestGap) {
+        if (gap < band && gap < bestGap) {
           bestGap = gap;
           bestNormal = Eigen::Vector3d::UnitZ();
           bestOffset = *groundTop;
@@ -4531,6 +4654,7 @@ void runVbdDeformableSolve(
         plane.stiffness = config.contactStiffness;
         vbdScratch.contactObjectIds[i] = bestObjectId;
         vbdScratch.contactFeatureIds[i] = bestFeatureId;
+        hasActiveContactPlanes = true;
       }
     }
     contactPlanes = &vbdScratch.contactPlanes;
@@ -4602,26 +4726,30 @@ void runVbdDeformableSolve(
       break;
     }
   }
-  const bool wantsAvbdRows
-      = config.useAvbdContactNormalRows || config.useAvbdSelfContactNormalRows
-        || config.useAvbdAttachmentRows || config.useAvbdFiniteStiffnessRows;
+  const bool hasRequestedAvbdContactNormalRows
+      = config.useAvbdContactNormalRows && hasActiveContactPlanes;
+  const bool hasRequestedAvbdAttachmentRows
+      = config.useAvbdAttachmentRows && hasFixedNodes;
+  const bool hasRequestedAvbdFiniteStiffnessRows
+      = config.useAvbdFiniteStiffnessRows && !vbdScratch.springs.empty();
   const bool useAvbdFrictionRows = config.useAvbdContactNormalRows
-                                   && contactPlanes != nullptr
+                                   && hasActiveContactPlanes
                                    && frictionCoeff > 0.0;
   const bool useAvbdSelfContactRows
       = config.useAvbdSelfContactNormalRows && selfContact != nullptr;
+  const bool hasRequestedAvbdMassSpringRows
+      = hasRequestedAvbdContactNormalRows || useAvbdSelfContactRows
+        || hasRequestedAvbdAttachmentRows
+        || hasRequestedAvbdFiniteStiffnessRows;
   const bool useAvbdSelfContactFrictionRows
       = useAvbdSelfContactRows && frictionCoeff > 0.0;
   const bool hasUnsupportedAvbdFrictionSource
       = frictionCoeff > 0.0
-        && ((contactPlanes != nullptr && !useAvbdFrictionRows)
+        && ((hasActiveContactPlanes && !useAvbdFrictionRows)
             || (selfContact != nullptr && !useAvbdSelfContactFrictionRows));
   const bool canUseAvbdMassSpringRows
-      = wantsAvbdRows
-        && (!config.useAvbdContactNormalRows || contactPlanes != nullptr)
-        && (!config.useAvbdAttachmentRows || hasFixedNodes)
-        && (!config.useAvbdFiniteStiffnessRows || !vbdScratch.springs.empty())
-        && vbdScratch.tets.empty() && !hasUnsupportedAvbdFrictionSource
+      = hasRequestedAvbdMassSpringRows && vbdScratch.tets.empty()
+        && !hasUnsupportedAvbdFrictionSource
         && (selfContact == nullptr || useAvbdSelfContactRows)
         && config.workerThreads <= 1 && !options.useChebyshev
         && options.rayleighDamping <= 0.0;
@@ -7016,6 +7144,16 @@ void copySphereToRigidIpcSurface(
 bool copyCollisionShapeToRigidIpcSurface(
     const CollisionShape& shape, sxdetail::RigidIpcBarrierSurface& surface)
 {
+  const auto applyLocalTransform = [&]() {
+    if (!shape.localTransform.matrix().allFinite()) {
+      return false;
+    }
+    for (Eigen::Vector3d& vertex : surface.vertices) {
+      vertex = shape.localTransform * vertex;
+    }
+    return true;
+  };
+
   switch (shape.type) {
     case CollisionShapeType::Mesh:
       if (!isValidRigidIpcMeshShape(shape)) {
@@ -7023,19 +7161,19 @@ bool copyCollisionShapeToRigidIpcSurface(
       }
       surface.vertices = shape.vertices;
       surface.triangles = shape.triangles;
-      return true;
+      return applyLocalTransform();
     case CollisionShapeType::Box:
       if (!isPositiveFiniteVector(shape.halfExtents)) {
         return false;
       }
       copyBoxToRigidIpcSurface(shape.halfExtents, surface);
-      return true;
+      return applyLocalTransform();
     case CollisionShapeType::Sphere:
       if (!(shape.radius > 0.0) || !std::isfinite(shape.radius)) {
         return false;
       }
       copySphereToRigidIpcSurface(shape.radius, surface);
-      return true;
+      return applyLocalTransform();
     case CollisionShapeType::Capsule:
       // Capsule rigid-IPC surfaces are not supported yet; deformable-vs-capsule
       // contact uses the analytic capsule obstacle barrier.
@@ -7043,6 +7181,8 @@ bool copyCollisionShapeToRigidIpcSurface(
     case CollisionShapeType::Cylinder:
       // Cylinder rigid-IPC surfaces are not supported yet; triangulate before
       // enabling this path so the barrier mesh has explicit surface vertices.
+      return false;
+    case CollisionShapeType::Plane:
       return false;
   }
 
@@ -7128,7 +7268,14 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
     body.surface.pose = body.initialPose;
     body.surface.dynamic = !registry.all_of<comps::StaticBodyTag>(entity);
     body.surface.frictionCoefficient = frictionOf(registry, entity);
-    if (!copyCollisionShapeToRigidIpcSurface(geometry.shape, body.surface)) {
+    bool copiedSurface = false;
+    for (const CollisionShape& shape : geometry.shapes) {
+      if (copyCollisionShapeToRigidIpcSurface(shape, body.surface)) {
+        copiedSurface = true;
+        break;
+      }
+    }
+    if (!copiedSurface) {
       ++stats.skippedUnsupportedShapeCount;
       continue;
     }
@@ -7294,10 +7441,31 @@ void RigidBodyPositionStage::execute(
 }
 
 //==============================================================================
+struct RigidBodyContactStage::AvbdScratch
+{
+  void clear()
+  {
+    normalInventory.records().clear();
+    frictionInventory.records().clear();
+    jointLinearInventory.records().clear();
+    jointAngularInventory.records().clear();
+  }
+
+  dvbd::AvbdScalarRowInventory normalInventory;
+  dvbd::AvbdScalarRowInventory frictionInventory;
+  dvbd::AvbdScalarRowInventory jointLinearInventory;
+  dvbd::AvbdScalarRowInventory jointAngularInventory;
+};
+
+//==============================================================================
 RigidBodyContactStage::RigidBodyContactStage(std::size_t iterations)
-  : m_iterations(std::max<std::size_t>(1, iterations))
+  : m_iterations(std::max<std::size_t>(1, iterations)),
+    m_avbdScratch(std::make_unique<AvbdScratch>())
 {
 }
+
+//==============================================================================
+RigidBodyContactStage::~RigidBodyContactStage() = default;
 
 //==============================================================================
 std::string_view RigidBodyContactStage::getName() const noexcept
@@ -7318,11 +7486,137 @@ ComputeStageMetadata RigidBodyContactStage::getMetadata() const noexcept
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
   const auto contacts = world.collide();
+  auto& registry = world.getRegistry();
+
+  const auto projectAvbdRigidPointJoints = [&]() {
+    const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
+        = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
+    if (joints.empty()) {
+      return false;
+    }
+
+    if (m_avbdScratch == nullptr) {
+      m_avbdScratch = std::make_unique<AvbdScratch>();
+    }
+
+    dvbd::AvbdRigidWorldContactSnapshot snapshot;
+    const std::size_t appendedJoints
+        = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+    if (appendedJoints == 0u) {
+      return false;
+    }
+
+    const double timeStep = world.getTimeStep();
+    dvbd::predictAvbdRigidWorldContactInertialTargets(
+        registry, snapshot, timeStep);
+
+    dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
+    solveOptions.descent.iterations = m_iterations;
+    solveOptions.descent.regularization = 1e-12;
+    const dvbd::AvbdRigidWorldContactSolveResult solveResult
+        = dvbd::solveAvbdRigidWorldContactSnapshot(
+            snapshot,
+            m_avbdScratch->normalInventory,
+            m_avbdScratch->frictionInventory,
+            m_avbdScratch->jointLinearInventory,
+            m_avbdScratch->jointAngularInventory,
+            timeStep,
+            solveOptions);
+    if (solveResult.jointLinearRows == 0u
+        && solveResult.jointAngularRows == 0u) {
+      return false;
+    }
+
+    const dvbd::AvbdRigidWorldContactApplyResult projection
+        = dvbd::applyAvbdRigidWorldContactVelocityProjection(
+            registry, snapshot, timeStep);
+    return projection.bodies != 0u;
+  };
+
   if (contacts.empty()) {
+    if (projectAvbdRigidPointJoints()) {
+      return;
+    }
+
+    if (m_avbdScratch != nullptr) {
+      m_avbdScratch->clear();
+    }
     return;
   }
 
-  auto& registry = world.getRegistry();
+  // Internal AVBD rigid contact path (PLAN-104 AVBD): when every active contact
+  // has at least one body carrying the private opt-in config, assemble the
+  // contact manifold into 6-DOF point-pair rows, solve against the
+  // velocity-predicted inertial target, then project the solved displacement
+  // back into velocities. The standard rigid position stage still advances
+  // poses, so default pipeline ordering is unchanged. Unsupported envelopes
+  // fall through to the sequential-impulse path below.
+  if (const auto avbdConfig = rigidAvbdContactStageConfig(registry, contacts)) {
+    if (m_avbdScratch == nullptr) {
+      m_avbdScratch = std::make_unique<AvbdScratch>();
+    }
+
+    dvbd::AvbdRigidWorldContactOptions contactOptions;
+    contactOptions.startStiffness = std::max(0.0, avbdConfig->startStiffness);
+    contactOptions.maxStiffness
+        = std::max(contactOptions.startStiffness, avbdConfig->maxStiffness);
+    dvbd::AvbdRigidWorldContactSnapshot snapshot
+        = dvbd::buildAvbdRigidWorldContactSnapshot(
+            registry, contacts, contactOptions);
+    const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
+        = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
+    const std::size_t appendedJoints
+        = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+
+    if (snapshot.contacts.size() == contacts.size()
+        && (!snapshot.contacts.empty() || appendedJoints != 0u)) {
+      const double timeStep = world.getTimeStep();
+      dvbd::predictAvbdRigidWorldContactInertialTargets(
+          registry, snapshot, timeStep);
+
+      dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
+      solveOptions.warmStart.alpha = avbdConfig->alpha;
+      solveOptions.warmStart.gamma = avbdConfig->gamma;
+      solveOptions.warmStart.maxStiffness = contactOptions.maxStiffness;
+      solveOptions.row.alpha = avbdConfig->alpha;
+      solveOptions.row.beta = avbdConfig->beta;
+      solveOptions.row.maxStiffness = contactOptions.maxStiffness;
+      solveOptions.friction.alpha = avbdConfig->alpha;
+      solveOptions.friction.beta = avbdConfig->beta;
+      solveOptions.friction.maxStiffness = contactOptions.maxStiffness;
+      solveOptions.descent.iterations = m_iterations;
+      solveOptions.descent.regularization = 1e-12;
+
+      const dvbd::AvbdRigidWorldContactSolveResult solveResult
+          = dvbd::solveAvbdRigidWorldContactSnapshot(
+              snapshot,
+              m_avbdScratch->normalInventory,
+              m_avbdScratch->frictionInventory,
+              m_avbdScratch->jointLinearInventory,
+              m_avbdScratch->jointAngularInventory,
+              timeStep,
+              solveOptions);
+      if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u
+          || solveResult.jointLinearRows != 0u
+          || solveResult.jointAngularRows != 0u) {
+        const dvbd::AvbdRigidWorldContactApplyResult projection
+            = dvbd::applyAvbdRigidWorldContactVelocityProjection(
+                registry, snapshot, timeStep);
+        if (projection.bodies != 0u) {
+          return;
+        }
+      }
+    }
+
+    m_avbdScratch->clear();
+  }
+
+  if (projectAvbdRigidPointJoints()) {
+    // Keep the AVBD joint projection active while ordinary contacts continue
+    // through the selected non-AVBD contact solver below.
+  } else if (m_avbdScratch != nullptr) {
+    m_avbdScratch->clear();
+  }
 
   // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the frictionless
   // normal Delassus system with the pivoting Dantzig solver, applying the

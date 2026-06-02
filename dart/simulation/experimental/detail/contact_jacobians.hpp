@@ -42,9 +42,9 @@
 // public facade header: it takes the ECS/registry and contact types, which must
 // never appear in a public signature. It lives under `detail/` so Doxygen and
 // the API-boundary checks treat it as internal, and it is not part of the DART
-// 8 promotion target. In-tree tests may include it directly; the entry point is
-// marked DART_EXPERIMENTAL_API so the diff test can link it across the
-// experimental .so (DART applies strict symbol visibility).
+// 7 public-facade promotion target. In-tree tests may include it directly; the
+// entry point is marked DART_EXPERIMENTAL_API so the diff test can link it
+// across the experimental .so (DART applies strict symbol visibility).
 
 #include <dart/simulation/experimental/fwd.hpp>
 
