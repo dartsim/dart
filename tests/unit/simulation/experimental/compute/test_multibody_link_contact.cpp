@@ -383,6 +383,55 @@ TEST(MultibodyLinkContact, CouplesDynamicRigidObstacleRow)
 }
 
 //==============================================================================
+TEST(MultibodyLinkContact, TreatsKinematicRigidObstacleAsOneSided)
+{
+  PrismaticLegWorld scene;
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.mass = 1.0;
+  obstacleOptions.inertia = Eigen::Matrix3d::Identity();
+  obstacleOptions.position = Eigen::Vector3d(0.1, 0.2, -0.3);
+  obstacleOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, 3.0);
+  auto obstacle = scene.world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setKinematic(true);
+
+  sx::compute::LinkContact contact;
+  contact.link = scene.link;
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.point = Eigen::Vector3d::Zero();
+  contact.depth = 0.0;
+  contact.friction = 0.75;
+  contact.restitution = 0.0;
+  contact.otherBody = obstacle.getEntity();
+
+  Eigen::VectorXd nextVelocity(1);
+  nextVelocity << -0.4;
+
+  const std::vector<sx::compute::LinkContact> contacts{contact};
+  const auto problem = sx::compute::assembleMultibodyLinkContactProblem(
+      scene.world.getRegistry(),
+      scene.structure(),
+      nextVelocity,
+      0.01,
+      contacts);
+
+  ASSERT_EQ(problem.rows.size(), 1u);
+  const auto& row = problem.rows[0];
+  EXPECT_TRUE(row.active);
+  EXPECT_TRUE(row.otherBody == entt::null);
+  EXPECT_DOUBLE_EQ(row.otherInvMass, 0.0);
+  EXPECT_TRUE(row.otherInvInertia.isZero(0.0));
+  EXPECT_TRUE(row.otherArm.isZero(0.0));
+
+  EXPECT_DOUBLE_EQ(
+      row.normalDenominator,
+      row.normalJacobian.dot(problem.inverseMass * row.normalJacobian));
+  EXPECT_DOUBLE_EQ(row.normalRhs, 0.4);
+  EXPECT_DOUBLE_EQ(row.tangentRhs1, -row.tangentJacobian1.dot(nextVelocity));
+  EXPECT_DOUBLE_EQ(row.tangentRhs2, -row.tangentJacobian2.dot(nextVelocity));
+}
+
+//==============================================================================
 TEST(MultibodyLinkContact, RejectsWrongVelocityDimension)
 {
   PrismaticLegWorld scene;
