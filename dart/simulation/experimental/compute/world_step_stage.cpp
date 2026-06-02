@@ -1665,13 +1665,16 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
     if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
       continue;
     }
-    if (hasCurrentKinematicStepTrace(world, entity)) {
-      continue;
-    }
-
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
+      continue;
+    }
+    // Current-frame kinematic boxes move to the swept moving collector; other
+    // supported shapes stay as current-pose snapshots until they gain swept
+    // snapshot support.
+    if (hasCurrentKinematicStepTrace(world, entity)
+        && shape->type == CollisionShapeType::Box) {
       continue;
     }
     const auto& transform = view.get<comps::Transform>(entity);

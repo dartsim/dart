@@ -3032,6 +3032,51 @@ TEST(DeformableBody, KinematicSurfaceCcdObstacleUsesRealizedPoseInIpcPipeline)
 }
 
 //==============================================================================
+// Kinematic spheres are advanced by the rigid IPC stage, but moving rigid
+// surface-CCD snapshots currently support boxes only. Keep the realized
+// current-pose sphere snapshot active so deformables still get a conservative
+// limiter until swept-sphere snapshots are implemented.
+TEST(DeformableBody, KinematicSurfaceCcdSphereKeepsCurrentPoseSnapshot)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const Eigen::Vector3d velocity(1.0, 0.0, 0.0);
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d::Zero();
+  auto sphere = world.addRigidBody("kinematic_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sphere.setDeformableSurfaceCcdObstacle(true);
+  sphere.setLinearVelocity(velocity);
+  sphere.setKinematic(true);
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::RigidIpcContactStage ipcStage;
+  compute::DeformableDynamicsStage deformableStage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage).addStage(deformableStage);
+  world.step(executor, pipeline);
+
+  expectVectorNear(sphere.getTranslation(), velocity * world.getTimeStep());
+  const auto& stats = deformableStage.getLastStats();
+  EXPECT_EQ(stats.staticRigidSurfaceCcdSphereCount, 1u);
+  EXPECT_EQ(stats.staticRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_EQ(stats.movingRigidSurfaceCcdBoxCount, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
+
+  const Eigen::Vector3d finalPosition = body.getPosition(0);
+  EXPECT_GT(finalPosition.x(), -1.0);
+  EXPECT_LT(finalPosition.x(), -0.4);
+}
+
+//==============================================================================
 // The IPC trace must cover the realized kinematic start->end sweep. A
 // final-pose snapshot at x = 2 would not block this deformable point, but the
 // realized corridor from x = -2 to x = 2 crosses its path and must limit it.
