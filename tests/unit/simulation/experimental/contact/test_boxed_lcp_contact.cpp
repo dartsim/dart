@@ -501,6 +501,58 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
 }
 
 //==============================================================================
+// Public fixed joints should remain active when ordinary, non-AVBD-opted
+// contacts involve the fixed body. The contact still falls through to the
+// selected default contact solver while the fixed-joint rows project
+// independently.
+TEST(AvbdContact, PublicFixedJointProjectsWithDefaultContactOnFixedBody)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d(1.0, 0.0, 0.49);
+  auto link = world.addRigidBody("link", linkOptions);
+  link.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(1.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
+
+  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+  world.enterSimulationMode();
+
+  auto& registry = world.getRegistry();
+  EXPECT_FALSE(
+      registry.all_of<sx::comps::RigidAvbdContactConfig>(link.getEntity()));
+  EXPECT_FALSE(
+      registry.all_of<sx::comps::RigidAvbdContactConfig>(ground.getEntity()));
+  ASSERT_FALSE(world.collide().empty());
+
+  Eigen::Isometry3d driftedPose = link.getTransform();
+  driftedPose.translation().x() = 1.25;
+  link.setTransform(driftedPose);
+  const double driftBeforeStep = std::abs(link.getTranslation().x() - 1.0);
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), driftBeforeStep);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
 // The no-contact fixed-joint path should also route angular rows through the
 // private AVBD projection instead of only correcting point-anchor drift.
 TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
