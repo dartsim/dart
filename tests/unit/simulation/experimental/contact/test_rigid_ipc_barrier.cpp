@@ -1733,6 +1733,52 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveBacktracksForSufficientDecrease)
 }
 
 //==============================================================================
+TEST(RigidIpcBarrier, ProjectedNewtonBacktrackingRechecksKinematicSweep)
+{
+  expdetail::RigidIpcBarrierSurface dynamicPoint;
+  dynamicPoint.body = 0u;
+  dynamicPoint.dynamic = true;
+  dynamicPoint.pose.position = Eigen::Vector3d(0.2, 0.0, 0.0);
+  dynamicPoint.vertices.push_back(Eigen::Vector3d::Zero());
+
+  expdetail::RigidIpcBarrierSurface kinematicPoint;
+  kinematicPoint.body = 1u;
+  kinematicPoint.dynamic = false;
+  kinematicPoint.kinematic = true;
+  kinematicPoint.kinematicStartPose.position = Eigen::Vector3d::Zero();
+  kinematicPoint.pose.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+  kinematicPoint.vertices.push_back(Eigen::Vector3d::Zero());
+
+  expdetail::RigidIpcBodyDynamicsTerm dynamics;
+  dynamics.active = true;
+  dynamics.targetPose = dynamicPoint.pose;
+  dynamics.diagonalWeights.setOnes();
+  dynamics.generalizedForce[0] = 1.0;
+
+  expdetail::RigidIpcProjectedNewtonSolveOptions options;
+  options.barrier.squaredActivationDistance = 1e-6;
+  options.dynamicsTerms.resize(2);
+  options.dynamicsTerms[0] = dynamics;
+  options.newton.hessianRegularization = 0.0;
+  options.newton.gradientTolerance = 0.0;
+  options.newton.sufficientDecreaseFactor = 0.8;
+  options.stepTolerance = 1e-12;
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> surfaces{
+      dynamicPoint, kinematicPoint};
+  const auto result
+      = expdetail::solveRigidIpcProjectedNewtonBarrierSystem(surfaces, options);
+
+  EXPECT_TRUE(result.converged);
+  EXPECT_FALSE(result.failed);
+  EXPECT_EQ(result.stats.acceptedSteps, 1u);
+  EXPECT_GT(result.stats.sufficientDecreaseBacktracks, 0u);
+  EXPECT_GT(result.stats.lineSearchHits, 0u);
+  EXPECT_GT(result.surfaces.front().pose.position.x(), 1.0);
+  EXPECT_NEAR(result.surfaces.front().pose.position.x(), 1.2, 1e-12);
+}
+
+//==============================================================================
 TEST(RigidIpcBarrier, ProjectedNewtonSolveAcceptsDecreasingArmijoFallback)
 {
   expdetail::RigidIpcBarrierSurface surface;

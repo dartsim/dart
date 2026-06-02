@@ -2338,6 +2338,23 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
                                         && surfaces[lineSearch.bodyB].kinematic;
           return bodyAIsKinematic || bodyBIsKinematic;
         };
+  const auto kinematicCandidateAllowsFullStep
+      = [&](const std::vector<RigidIpcBarrierSurface>& candidateSurfaces) {
+          if (!hasKinematic || !options.useLineSearch) {
+            return true;
+          }
+          const std::vector<RigidIpcBarrierSurface> lineSearchStart
+              = makeKinematicLineSearchStart();
+          result.lineSearch = computeRigidIpcLineSearchStepBound(
+              lineSearchStart, candidateSurfaces, options.lineSearch);
+          recordSolveLineSearchStats(result);
+          if (result.lineSearch.limited) {
+            ++result.stats.lineSearchLimitedSteps;
+          }
+          return result.lineSearch.allowsPositiveStep()
+                 && (!result.lineSearch.limited
+                     || result.lineSearch.stepBound >= 1.0);
+        };
 
   for (std::size_t frictionIteration = 0;
        frictionIteration < frictionIterationCount;
@@ -2506,6 +2523,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
         std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
         bool hasDecreasingCandidate = false;
+        bool hasUnsafeKinematicCandidate = false;
         double bestDecreasingValue = currentValue;
         double bestDecreasingScale = 1.0;
         for (std::size_t backtrack = 0;
@@ -2515,6 +2533,15 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
               = result.surfaces;
           applyRigidIpcNewtonDelta(
               candidateSurfaces, result.assembly, trialScale * step.delta);
+          if (!kinematicCandidateAllowsFullStep(candidateSurfaces)) {
+            hasUnsafeKinematicCandidate = true;
+            if (backtrack == newtonOptions.maxBacktrackingIterations) {
+              break;
+            }
+            trialScale *= backtrackingScale;
+            ++result.stats.sufficientDecreaseBacktracks;
+            continue;
+          }
           const RigidIpcBarrierAssembly candidateAssembly
               = assembleRigidIpcObjectiveSystem(
                   candidateSurfaces,
@@ -2552,11 +2579,17 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           if (hasDecreasingCandidate) {
             // Lagged friction and active-set changes can make Armijo too strict
             // for the finite budget even when a feasible candidate lowers the
-            // assembled objective. Keep that progress instead of reporting an
-            // unsafe line-search failure; CCD blocking is handled above.
+            // assembled objective. Keep that progress instead of reporting a
+            // line-search failure; per-candidate CCD already filtered unsafe
+            // kinematic backtracking states.
             acceptedSurfaces = std::move(bestDecreasingSurfaces);
             trialScale = bestDecreasingScale;
             acceptedCandidate = true;
+          } else if (hasUnsafeKinematicCandidate) {
+            result.status
+                = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
+            result.failed = true;
+            return result;
           } else {
             result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
             return result;
