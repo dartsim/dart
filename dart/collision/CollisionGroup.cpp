@@ -275,11 +275,26 @@ void CollisionGroup::update()
 {
   removeDeletedShapeFrames();
 
-  for (auto& entry : mSkeletonSources)
-    updateSkeletonSource(entry);
+  // Update each source. When a source's MetaSkeleton/BodyNode has been
+  // destroyed, updateSkeletonSource()/updateBodyNodeSource() removes all of its
+  // collision objects; erase the now-stale source afterward so a later update()
+  // does not re-enter the expired path and dereference the freed ObjectInfo
+  // pointers still held in the source's mObjects (use-after-free).
+  for (auto it = mSkeletonSources.begin(); it != mSkeletonSources.end();) {
+    updateSkeletonSource(*it);
+    if (!it->second.mSource.lock())
+      it = mSkeletonSources.erase(it);
+    else
+      ++it;
+  }
 
-  for (auto& entry : mBodyNodeSources)
-    updateBodyNodeSource(entry);
+  for (auto it = mBodyNodeSources.begin(); it != mBodyNodeSources.end();) {
+    updateBodyNodeSource(*it);
+    if (!it->second.mSource.lock())
+      it = mBodyNodeSources.erase(it);
+    else
+      ++it;
+  }
 }
 
 //==============================================================================

@@ -326,6 +326,51 @@ TEST_P(CollisionGroupsTest, MetaSkeletonSubscription)
   EXPECT_FALSE(collisionGroup->collide());
 }
 
+//==============================================================================
+// Regression: a subscribed non-owning MetaSkeleton (Group) is destroyed while
+// its BodyNodes and ShapeFrames remain alive. The first update() must remove
+// the expired source's collision objects AND erase the stale source, so a
+// subsequent update() does not re-enter the expired path and dereference the
+// freed ObjectInfo pointers (use-after-free).
+TEST_P(CollisionGroupsTest, DestroyedMetaSkeletonSubscriptionDoesNotDangle)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
+    std::cout << "Skipping test for [" << GetParam() << "], because it is not "
+              << "available" << std::endl;
+    return;
+  }
+
+  auto cd
+      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+  auto collisionGroup = cd->createCollisionGroup();
+
+  // The Skeleton (and therefore the BodyNode and its ShapeFrame) outlives the
+  // non-owning Group MetaSkeleton that gets subscribed.
+  auto skel = dart::dynamics::Skeleton::create("skel");
+  auto pair = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto sphere = std::make_shared<dart::dynamics::SphereShape>(0.4);
+  pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+
+  {
+    auto metaGroup = dart::dynamics::Group::create(
+        "meta", std::vector<dart::dynamics::BodyNode*>{pair.second});
+    collisionGroup->subscribeTo(
+        std::static_pointer_cast<const dart::dynamics::MetaSkeleton>(metaGroup));
+    collisionGroup->collide(); // update(): registers the body's ShapeFrame
+    EXPECT_EQ(collisionGroup->getNumShapeFrames(), 1u);
+    // metaGroup is destroyed here; pair.second and its ShapeFrame stay alive.
+  }
+
+  // First update removes the expired source's objects and erases the source.
+  collisionGroup->collide();
+  EXPECT_EQ(collisionGroup->getNumShapeFrames(), 0u);
+
+  // A second update must be safe (no use-after-free on the freed objects).
+  collisionGroup->collide();
+  EXPECT_EQ(collisionGroup->getNumShapeFrames(), 0u);
+}
+
 TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 {
   if (!dart::collision::CollisionDetector::getFactory()->canCreate(
