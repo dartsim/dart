@@ -901,6 +901,61 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayAdvancesParsedKinematicBody)
   EXPECT_EQ(ipcStage.getLastStats().dynamicBodyCount, 0u);
 }
 
+TEST(RigidIpcFixtureReplay, RuntimeReplayStopsKinematicBodyAtMaxTime)
+{
+  const expio::RigidIpcFixture fixture = loadFixture(R"json(
+{
+  "scene_type": "distance_barrier_rb_problem",
+  "timestep": 0.1,
+  "rigid_body_problem": {
+    "gravity": [0.0, 0.0, 0.0],
+    "rigid_bodies": [{
+      "polygons": [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]],
+      "type": "kinematic",
+      "linear_velocity": [2.0, 0.0, 0.0],
+      "angular_velocity": [0.0, 0.0, 90.0],
+      "kinematic_max_time": 0.15
+    }]
+  }
+}
+)json");
+
+  sx::World world;
+  const expio::RigidIpcReplayState state
+      = expio::populateRigidIpcReplayWorld(world, fixture);
+
+  ASSERT_EQ(state.bodies.size(), 1u);
+  ASSERT_TRUE(state.bodies[0].kinematicMaxTime.has_value());
+  EXPECT_DOUBLE_EQ(*state.bodies[0].kinematicMaxTime, 0.15);
+
+  const auto body = world.getRigidBody(state.bodies[0].bodyName);
+  ASSERT_TRUE(body.has_value());
+  EXPECT_TRUE(body->isKinematic());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  world.step(executor, pipeline);
+  EXPECT_TRUE(body->getTranslation().isApprox(Eigen::Vector3d(0.2, 0.0, 0.0)));
+  EXPECT_TRUE(body->getTransform().linear().isApprox(
+      Eigen::AngleAxisd(0.05 * std::numbers::pi, Eigen::Vector3d::UnitZ())
+          .toRotationMatrix()));
+
+  world.step(executor, pipeline);
+  EXPECT_TRUE(body->getTranslation().isApprox(Eigen::Vector3d(0.3, 0.0, 0.0)));
+  EXPECT_TRUE(body->getTransform().linear().isApprox(
+      Eigen::AngleAxisd(0.075 * std::numbers::pi, Eigen::Vector3d::UnitZ())
+          .toRotationMatrix()));
+
+  world.step(executor, pipeline);
+  EXPECT_TRUE(body->getTranslation().isApprox(Eigen::Vector3d(0.3, 0.0, 0.0)));
+  EXPECT_TRUE(body->getTransform().linear().isApprox(
+      Eigen::AngleAxisd(0.075 * std::numbers::pi, Eigen::Vector3d::UnitZ())
+          .toRotationMatrix()));
+}
+
 TEST(RigidIpcFixtureReplay, RuntimeReplayCarriesFrictionIntoRigidIpcStage)
 {
   struct SlideOutcome

@@ -7106,7 +7106,17 @@ sxdetail::RigidIpcPose integrateRigidIpcKinematicPose(
 {
   const auto& registry = world.getRegistry();
   const auto& velocity = registry.get<comps::Velocity>(entity);
-  const double timeStep = world.getTimeStep();
+  double timeStep = world.getTimeStep();
+  if (const auto* tag = registry.try_get<comps::KinematicBodyTag>(entity);
+      tag != nullptr && tag->maxTime.has_value()
+      && std::isfinite(*tag->maxTime)) {
+    const double remainingTime = *tag->maxTime - world.getTime();
+    if (!(remainingTime > 0.0)) {
+      timeStep = 0.0;
+    } else {
+      timeStep = std::min(timeStep, remainingTime);
+    }
+  }
 
   sxdetail::RigidIpcPose endPose = startPose;
   if (!(timeStep > 0.0) || !std::isfinite(timeStep)) {

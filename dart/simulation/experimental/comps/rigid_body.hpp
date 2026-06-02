@@ -36,6 +36,7 @@
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 
 #include <limits>
+#include <optional>
 
 #include <cstddef>
 
@@ -70,6 +71,8 @@ struct StaticBodyTag
 /// **Internal Implementation Detail** - Not exposed in public API
 struct KinematicBodyTag
 {
+  /// Optional world time at which fixture-replay kinematic motion stops.
+  std::optional<double> maxTime;
 };
 
 /// Runtime-only trace of a kinematic body's realized motion during the current

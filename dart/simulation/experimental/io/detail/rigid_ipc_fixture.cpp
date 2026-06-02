@@ -33,6 +33,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
@@ -3093,6 +3094,13 @@ RigidIpcReplayState populateRigidIpcReplayWorld(
     RigidBody body = world.addRigidBody(bodyName, bodyOptions);
     if (source.mode == RigidIpcBodyMode::Kinematic) {
       body.setKinematic(true);
+      if (source.kinematicMaxTime.has_value()
+          && std::isfinite(*source.kinematicMaxTime)
+          && *source.kinematicMaxTime >= 0.0) {
+        auto& tag = world.getRegistry().get<comps::KinematicBodyTag>(
+            body.getEntity());
+        tag.maxTime = *source.kinematicMaxTime;
+      }
     }
     body.setForce(source.force);
     body.setTorque(source.torque);
