@@ -4657,6 +4657,43 @@ TEST(World, RigidIpcContactStageReportsUnsupportedShapes)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.0, 1e-12);
 }
 
+// Test that shape-less kinematic bodies still advance by prescribed velocity in
+// the IPC pipeline even though they do not contribute contact rows.
+TEST(World, RigidIpcContactStageAdvancesShapelessKinematicBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  kinematicOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto kinematicBody
+      = world.addRigidBody("kinematic_shapeless", kinematicOptions);
+  kinematicBody.setKinematic(true);
+  EXPECT_FALSE(kinematicBody.hasCollisionShape());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.bodyCount, 1u);
+  EXPECT_EQ(stats.dynamicBodyCount, 0u);
+  EXPECT_EQ(stats.surfaceCount, 0u);
+  EXPECT_EQ(stats.skippedUnsupportedShapeCount, 1u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::NoDofs);
+  EXPECT_FALSE(stats.converged);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_FALSE(stats.nonConvergedResultSkipped);
+  EXPECT_NEAR(kinematicBody.getTranslation().x(), 10.2, 1e-12);
+  EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), 2.0, 1e-12);
+}
+
 // Test that kinematic writeback is independent of whether the body has a rigid
 // IPC-supported collision surface. Unsupported kinematic shapes still advance
 // by prescribed velocity; they simply do not contribute rigid IPC contact rows.

@@ -7396,7 +7396,6 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
   const auto& registry = world.getRegistry();
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::CollisionGeometry,
       comps::Transform,
       comps::Velocity,
       comps::MassProperties,
@@ -7408,14 +7407,17 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
   std::vector<RigidIpcRuntimeBody> bodies;
   bodies.reserve(view.size_hint());
   for (const auto entity : view) {
-    ++stats.bodyCount;
-
-    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
-    const auto& transform = view.get<comps::Transform>(entity);
-    const auto& velocity = view.get<comps::Velocity>(entity);
-
     const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
     const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+    const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
+    if (geometry == nullptr && !isKinematic) {
+      continue;
+    }
+
+    ++stats.bodyCount;
+
+    const auto& transform = view.get<comps::Transform>(entity);
+    const auto& velocity = view.get<comps::Velocity>(entity);
 
     RigidIpcRuntimeBody body;
     body.entity = entity;
@@ -7437,10 +7439,12 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
           = integrateRigidIpcKinematicPose(world, entity, body.initialPose);
     }
     bool copiedSurface = false;
-    for (const CollisionShape& shape : geometry.shapes) {
-      if (copyCollisionShapeToRigidIpcSurface(shape, body.surface)) {
-        copiedSurface = true;
-        break;
+    if (geometry != nullptr) {
+      for (const CollisionShape& shape : geometry->shapes) {
+        if (copyCollisionShapeToRigidIpcSurface(shape, body.surface)) {
+          copiedSurface = true;
+          break;
+        }
       }
     }
     if (!copiedSurface) {
