@@ -280,18 +280,26 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  // Create a new collision group, merging the two groups into
-  auto groupForFiltering
+  // Create a new collision group, merging the two groups into.
+  //
+  // This is retained in mGroupForFiltering (rather than a local) so the
+  // BulletCollisionObjects it owns outlive this call: the Contacts stored in
+  // `result` keep raw pointers into this group (see Contact::collisionObject1/2
+  // and the getShapeFrame/getShapeNode/getBodyNodePtr helpers), so callers must
+  // be able to inspect them after collide() returns. Resetting the member frees
+  // the previous group (and its objects, broadphase proxies, and overlapping
+  // pairs) before building the new one, so no memory is leaked across calls.
+  mGroupForFiltering
       = std::make_unique<BulletCollisionGroup>(shared_from_this());
-  auto bulletCollisionWorld = groupForFiltering->getBulletCollisionWorld();
+  auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   std::unique_ptr<detail::BulletOverlapFilterCallback> filterCallback(
       new detail::BulletOverlapFilterCallback(
           option.collisionFilter, group1, group2));
   bulletPairCache->setOverlapFilterCallback(filterCallback.get());
 
-  groupForFiltering->addShapeFramesOf(group1, group2);
-  groupForFiltering->updateEngineData();
+  mGroupForFiltering->addShapeFramesOf(group1, group2);
+  mGroupForFiltering->updateEngineData();
 
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
@@ -303,10 +311,10 @@ bool BulletCollisionDetector::collide(
     hasCollision = isCollision(bulletCollisionWorld);
   }
 
+  // The overlap filter callback is owned by this call and must not outlive it,
+  // so detach it from the (retained) pair cache before it is destroyed.
   bulletPairCache->setOverlapFilterCallback(nullptr);
   filterCallback.reset();
-
-  groupForFiltering->removeAllShapeFrames();
 
   return hasCollision;
 }
