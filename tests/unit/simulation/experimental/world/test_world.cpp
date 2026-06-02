@@ -4810,6 +4810,58 @@ TEST(World, RigidIpcContactStageSkipsKinematicWritebackWithActiveContact)
   EXPECT_NEAR(kinematicBody.getLinearVelocity().x(), -0.1, 1e-12);
 }
 
+// Test that a rejected shared solve only blocks kinematic writeback for the
+// supported kinematic bodies that participated in active rows.
+TEST(World, RigidIpcContactStageAdvancesUninvolvedKinematicAfterRejectedSolve)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  auto dynamicBody = world.addRigidBody("dynamic", dynamicOptions);
+  dynamicBody.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  sx::RigidBodyOptions blockingOptions;
+  blockingOptions.position = Eigen::Vector3d(0.215, 0.0, 0.0);
+  blockingOptions.linearVelocity = Eigen::Vector3d(-0.1, 0.0, 0.0);
+  auto blockingKinematic
+      = world.addRigidBody("blocking_kinematic", blockingOptions);
+  blockingKinematic.setCollisionShape(
+      sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  blockingKinematic.setKinematic(true);
+
+  sx::RigidBodyOptions uninvolvedOptions;
+  uninvolvedOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  uninvolvedOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto uninvolvedKinematic
+      = world.addRigidBody("uninvolved_kinematic", uninvolvedOptions);
+  uninvolvedKinematic.setCollisionShape(
+      sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  uninvolvedKinematic.setKinematic(true);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(0);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_EQ(stats.status, sx::compute::RigidIpcSolveStatus::MaxIterations);
+  EXPECT_FALSE(stats.resultApplied);
+  EXPECT_TRUE(stats.nonConvergedResultSkipped);
+  EXPECT_TRUE(dynamicBody.getTranslation().isZero(1e-12));
+  EXPECT_NEAR(blockingKinematic.getTranslation().x(), 0.215, 1e-12);
+  EXPECT_NEAR(blockingKinematic.getLinearVelocity().x(), -0.1, 1e-12);
+  EXPECT_NEAR(uninvolvedKinematic.getTranslation().x(), 10.2, 1e-12);
+  EXPECT_NEAR(uninvolvedKinematic.getLinearVelocity().x(), 2.0, 1e-12);
+}
+
 // Test that a fast kinematic obstacle cannot bypass conservative CCD by
 // starting and ending outside the activation distance while crossing a dynamic
 // body mid-step.
