@@ -39,6 +39,7 @@
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -427,8 +428,11 @@ TEST(Serialization, LoadsLegacyV1JointRecord)
   auto joint = link.getParentJoint();
   joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
   joint.setVelocity(Eigen::VectorXd::Constant(1, -0.75));
-  world1.getRegistry().get<comps::Joint>(joint.getEntity()).acceleration
-      = Eigen::VectorXd::Constant(1, 1.25);
+  world1.getRegistry()
+      .get<comps::Joint>(
+          dart::simulation::experimental::detail::toRegistryEntity(
+              joint.getEntity()))
+      .acceleration = Eigen::VectorXd::Constant(1, 1.25);
   joint.setForce(Eigen::VectorXd::Constant(1, 2.25));
   joint.setPositionLimits(
       Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
@@ -460,8 +464,9 @@ TEST(Serialization, LoadsLegacyV1JointRecord)
   EXPECT_DOUBLE_EQ(jointRestored->getEffortLowerLimits()[0], -3.0);
   EXPECT_DOUBLE_EQ(jointRestored->getEffortUpperLimits()[0], 3.0);
 
-  const auto& jointComp
-      = world2.getRegistry().get<comps::Joint>(jointRestored->getEntity());
+  const auto& jointComp = world2.getRegistry().get<comps::Joint>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          jointRestored->getEntity()));
   EXPECT_EQ(jointComp.actuatorType, comps::ActuatorType::Force);
   EXPECT_TRUE(jointComp.springStiffness.isZero());
   EXPECT_TRUE(jointComp.dampingCoefficient.isZero());
@@ -525,14 +530,20 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
 
   auto jointRestored = mbRestored->getJoint("joint");
   ASSERT_TRUE(jointRestored.has_value());
-  EXPECT_EQ(restoredLinkComp.parentJoint, jointRestored->getEntity());
+  EXPECT_EQ(
+      restoredLinkComp.parentJoint,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          jointRestored->getEntity()));
 
   auto baseRestored = mbRestored->getLink("base");
   ASSERT_TRUE(baseRestored.has_value());
   const auto& restoredBaseComp
       = world2.getRegistry().get<comps::Link>(baseRestored->getEntity());
   ASSERT_EQ(restoredBaseComp.childJoints.size(), 1u);
-  EXPECT_EQ(restoredBaseComp.childJoints.front(), jointRestored->getEntity());
+  EXPECT_EQ(
+      restoredBaseComp.childJoints.front(),
+      dart::simulation::experimental::detail::toRegistryEntity(
+          jointRestored->getEntity()));
 }
 
 // Test save/load preserves names

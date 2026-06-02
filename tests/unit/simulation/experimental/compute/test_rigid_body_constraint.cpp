@@ -11,6 +11,7 @@
 #include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_constraint.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
@@ -85,16 +86,28 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
 
   std::vector<sx::Contact> contacts;
   sx::Contact groundLower;
-  groundLower.bodyA = sx::CollisionBody(ground.getEntity(), &world);
-  groundLower.bodyB = sx::CollisionBody(lower.getEntity(), &world);
+  groundLower.bodyA = sx::CollisionBody(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          ground.getEntity()),
+      &world);
+  groundLower.bodyB = sx::CollisionBody(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          lower.getEntity()),
+      &world);
   groundLower.point = Eigen::Vector3d(0.0, 0.0, 0.0);
   groundLower.normal = Eigen::Vector3d::UnitZ();
   groundLower.depth = 0.02;
   contacts.push_back(groundLower);
 
   sx::Contact lowerUpper;
-  lowerUpper.bodyA = sx::CollisionBody(lower.getEntity(), &world);
-  lowerUpper.bodyB = sx::CollisionBody(upper.getEntity(), &world);
+  lowerUpper.bodyA = sx::CollisionBody(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          lower.getEntity()),
+      &world);
+  lowerUpper.bodyB = sx::CollisionBody(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          upper.getEntity()),
+      &world);
   lowerUpper.point = Eigen::Vector3d(0.0, 0.0, 1.0);
   lowerUpper.normal = Eigen::Vector3d::UnitZ();
   lowerUpper.depth = 0.03;

@@ -179,7 +179,7 @@ Joint Link::getParentJoint() const
 {
   const auto& linkComp
       = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
+  return Joint(detail::fromRegistryEntity(linkComp.parentJoint), getWorld());
 }
 
 //==============================================================================

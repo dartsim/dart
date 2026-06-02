@@ -12,6 +12,7 @@
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -101,7 +102,8 @@ struct PrismaticLegWorld
     auto leg = robot.addLink("leg", base, spec);
     leg.setMass(1.0);
 
-    multibody = robot.getEntity();
+    multibody = dart::simulation::experimental::detail::toRegistryEntity(
+        robot.getEntity());
     link = leg.getEntity();
   }
 
@@ -141,7 +143,8 @@ struct TwoPrismaticLinksWorld
     auto upperLink = robot.addLink("upper", base, upperSpec);
     upperLink.setMass(1.0);
 
-    multibody = robot.getEntity();
+    multibody = dart::simulation::experimental::detail::toRegistryEntity(
+        robot.getEntity());
     lower = lowerLink.getEntity();
     upper = upperLink.getEntity();
   }

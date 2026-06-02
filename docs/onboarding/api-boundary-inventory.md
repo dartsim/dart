@@ -15,7 +15,7 @@ documented downstream migration or removal condition is satisfied.
 ## Summary
 
 - C++ public headers scanned: 478
-- C++ headers with exposed implementation debt: 111
+- C++ headers with exposed implementation debt: 115
 - C++ headers with compatibility signals: 51
 - dartpy binding sources scanned: 164
 - dartpy binding sources with allowlisted compatibility debt: 8
@@ -36,7 +36,7 @@ documented downstream migration or removal condition is satisfied.
 | sensor                  | 3       | 3         | 0             | 0            | 0            |
 | simd                    | 16      | 11        | 0             | 0            | 5            |
 | simulation              | 4       | 2         | 1             | 0            | 1            |
-| simulation/experimental | 77      | 0         | 1             | 69           | 7            |
+| simulation/experimental | 77      | 0         | 1             | 65           | 11           |
 | top-level               | 3       | 2         | 1             | 0            | 0            |
 | utils                   | 19      | 10        | 7             | 0            | 2            |
 
@@ -145,10 +145,14 @@ documented downstream migration or removal condition is satisfied.
 | dart/simd/math.hpp                                         | simd                    | 5                | 32                 | `#include <dart/simd/detail/math/constants.hpp>`<br>`#include <dart/simd/detail/math/exp_impl.hpp>`                                                 |
 | dart/simd/memory.hpp                                       | simd                    | 0                | 1                  | `std::size_t aligned_bytes = detail::alignUpToPowerOfTwo(bytes, Alignment);`                                                                        |
 | dart/simd/simd.hpp                                         | simd                    | 21               | 0                  | `#include <dart/simd/detail/scalar/operations.hpp>`<br>`#include <dart/simd/detail/scalar/vec.hpp>`                                                 |
+| dart/simulation/experimental/body/collision_body.hpp       | simulation/experimental | 0                | 1                  | `/// \`detail::toRegistryEntity(body.getEntity())\`.`                                                                                               |
 | dart/simulation/experimental/common/logging.hpp            | simulation/experimental | 0                | 7                  | `detail::log(`<br>`::dart::simulation::experimental::common::detail::log( \`                                                                        |
+| dart/simulation/experimental/constraint/loop_closure.hpp   | simulation/experimental | 0                | 1                  | `/// \`detail::toRegistryEntity(closure.getEntity())\`.`                                                                                            |
 | dart/simulation/experimental/io/auto_serialization.hpp     | simulation/experimental | 0                | 38                 | `} else if constexpr (detail::IsVector3dList<FieldType>) {`<br>`detail::writeVector3dList(out, field);`                                             |
 | dart/simulation/experimental/io/binary_io.hpp              | simulation/experimental | 0                | 8                  | `template <detail::TriviallyCopyable T>`<br>`detail::writeBytes(out, detail::asBytes(value));`                                                      |
 | dart/simulation/experimental/io/serializer.hpp             | simulation/experimental | 0                | 1                  | `requires detail::HasSerializableFlag<ComponentT>`                                                                                                  |
+| dart/simulation/experimental/multibody/joint.hpp           | simulation/experimental | 0                | 1                  | `/// \`detail::toRegistryEntity(joint.getEntity())\`.`                                                                                              |
+| dart/simulation/experimental/multibody/multibody.hpp       | simulation/experimental | 0                | 1                  | `/// \`detail::toRegistryEntity(multibody.getEntity())\`.`                                                                                          |
 | dart/simulation/experimental/space/auto_mapper.hpp         | simulation/experimental | 0                | 9                  | `if constexpr (detail::ArithmeticField<FieldType>) {`<br>`} else if constexpr (detail::IsometryField<FieldType>) {`                                 |
 | dart/simulation/experimental/space/component_mapper.hpp    | simulation/experimental | 0                | 4                  | `if constexpr (detail::ArithmeticField<Field>) {`<br>`else if constexpr (detail::EigenVectorField<Field>) {`                                        |
 | dart/simulation/experimental/world.hpp                     | simulation/experimental | 0                | 2                  | `friend class io::detail::SkeletonLoaderWorldAccess;`<br>`/// Jacobian (\`detail::contactStepDerivatives\`), reducing to the contact-free`          |

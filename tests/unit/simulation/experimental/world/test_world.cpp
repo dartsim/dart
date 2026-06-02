@@ -46,6 +46,7 @@
 #include <dart/simulation/experimental/compute/world_batch.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -3782,10 +3783,15 @@ TEST(World, RigidBodyContactIgnoresStoredStaticVelocity)
   ASSERT_FALSE(contacts.empty());
   const auto& contact = contacts.front();
   constexpr double staticSpeed = 5.0;
-  if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+  if (contact.bodyA.getEntity()
+      == dart::simulation::experimental::detail::fromRegistryEntity(
+          obstacle.getEntity())) {
     obstacle.setLinearVelocity(staticSpeed * contact.normal);
   } else {
-    ASSERT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+    ASSERT_EQ(
+        contact.bodyB.getEntity(),
+        dart::simulation::experimental::detail::fromRegistryEntity(
+            obstacle.getEntity()));
     obstacle.setLinearVelocity(-staticSpeed * contact.normal);
   }
 

@@ -41,13 +41,13 @@
 namespace dart::simulation::experimental {
 
 //==============================================================================
-CollisionBody::CollisionBody(entt::entity entity, World* world)
+CollisionBody::CollisionBody(Entity entity, World* world)
   : m_entity(entity), m_world(world)
 {
 }
 
 //==============================================================================
-entt::entity CollisionBody::getEntity() const
+Entity CollisionBody::getEntity() const
 {
   return m_entity;
 }
@@ -61,7 +61,8 @@ World* CollisionBody::getWorld() const
 //==============================================================================
 bool CollisionBody::isValid() const
 {
-  return m_world != nullptr && m_world->getRegistry().valid(m_entity);
+  return m_world != nullptr
+         && m_world->getRegistry().valid(detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
@@ -71,7 +72,8 @@ std::string CollisionBody::getName() const
     return {};
   }
   const auto& registry = m_world->getRegistry();
-  if (const auto* name = registry.try_get<comps::Name>(m_entity)) {
+  if (const auto* name
+      = registry.try_get<comps::Name>(detail::toRegistryEntity(m_entity))) {
     return name->name;
   }
   return {};
@@ -81,13 +83,16 @@ std::string CollisionBody::getName() const
 bool CollisionBody::isRigidBody() const
 {
   return isValid()
-         && m_world->getRegistry().all_of<comps::RigidBodyTag>(m_entity);
+         && m_world->getRegistry().all_of<comps::RigidBodyTag>(
+             detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
 bool CollisionBody::isLink() const
 {
-  return isValid() && m_world->getRegistry().all_of<comps::Link>(m_entity);
+  return isValid()
+         && m_world->getRegistry().all_of<comps::Link>(
+             detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
@@ -96,7 +101,7 @@ std::optional<RigidBody> CollisionBody::asRigidBody() const
   if (!isRigidBody()) {
     return std::nullopt;
   }
-  return RigidBody(detail::fromRegistryEntity(m_entity), m_world);
+  return RigidBody(m_entity, m_world);
 }
 
 //==============================================================================
@@ -105,7 +110,7 @@ std::optional<Link> CollisionBody::asLink() const
   if (!isLink()) {
     return std::nullopt;
   }
-  return Link(detail::fromRegistryEntity(m_entity), m_world);
+  return Link(m_entity, m_world);
 }
 
 } // namespace dart::simulation::experimental

@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/loop_closure.hpp"
 #include "dart/simulation/experimental/comps/name.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -50,7 +51,7 @@ const comps::LoopClosure& getLoopClosureComponent(const LoopClosure& closure)
       "Invalid loop closure handle");
 
   return closure.getWorld()->getRegistry().get<comps::LoopClosure>(
-      closure.getEntity());
+      detail::toRegistryEntity(closure.getEntity()));
 }
 
 comps::LoopClosure& getMutableLoopClosureComponent(const LoopClosure& closure)
@@ -61,7 +62,7 @@ comps::LoopClosure& getMutableLoopClosureComponent(const LoopClosure& closure)
       "Invalid loop closure handle");
 
   return closure.getWorld()->getRegistry().get<comps::LoopClosure>(
-      closure.getEntity());
+      detail::toRegistryEntity(closure.getEntity()));
 }
 
 bool isValidClosureKinematicsPolicy(ClosureKinematicsPolicy policy)
@@ -111,7 +112,7 @@ Eigen::Vector3d computeWorldRotationResidual(
 } // namespace
 
 //==============================================================================
-LoopClosure::LoopClosure(entt::entity entity, World* world)
+LoopClosure::LoopClosure(Entity entity, World* world)
   : m_entity(entity), m_world(world)
 {
 }
@@ -122,7 +123,8 @@ std::string_view LoopClosure::getName() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid loop closure handle");
 
-  const auto& name = m_world->getRegistry().get<comps::Name>(m_entity);
+  const auto& name = m_world->getRegistry().get<comps::Name>(
+      detail::toRegistryEntity(m_entity));
   return name.name;
 }
 
@@ -203,7 +205,7 @@ LoopClosureResidual LoopClosure::computeResidual() const
 }
 
 //==============================================================================
-entt::entity LoopClosure::getEntity() const
+Entity LoopClosure::getEntity() const
 {
   return m_entity;
 }
@@ -217,8 +219,10 @@ World* LoopClosure::getWorld() const
 //==============================================================================
 bool LoopClosure::isValid() const
 {
-  return m_world != nullptr && m_world->getRegistry().valid(m_entity)
-         && m_world->getRegistry().all_of<comps::LoopClosure>(m_entity);
+  return m_world != nullptr
+         && m_world->getRegistry().valid(detail::toRegistryEntity(m_entity))
+         && m_world->getRegistry().all_of<comps::LoopClosure>(
+             detail::toRegistryEntity(m_entity));
 }
 
 } // namespace dart::simulation::experimental

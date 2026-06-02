@@ -116,11 +116,12 @@ ActuatorType toPublicActuatorType(comps::ActuatorType type)
   return ActuatorType::Force;
 }
 
-comps::Joint& getJointComponent(World* world, entt::entity entity)
+comps::Joint& getJointComponent(World* world, Entity entityToken)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       world == nullptr, InvalidArgumentException, "Invalid joint handle");
 
+  const auto entity = detail::toRegistryEntity(entityToken);
   auto& registry = world->getRegistry();
   DART_EXPERIMENTAL_THROW_T_IF(
       !registry.valid(entity) || !registry.all_of<comps::Joint>(entity),
@@ -210,10 +211,7 @@ void markSubtreeTransformCacheDirty(entt::registry& registry, entt::entity root)
 } // namespace
 
 //==============================================================================
-Joint::Joint(entt::entity entity, World* world)
-  : m_entity(entity), m_world(world)
-{
-}
+Joint::Joint(Entity entity, World* world) : m_entity(entity), m_world(world) {}
 
 //==============================================================================
 std::string_view Joint::getName() const
@@ -560,7 +558,7 @@ Link Joint::getChildLink() const
 }
 
 //==============================================================================
-entt::entity Joint::getEntity() const
+Entity Joint::getEntity() const
 {
   return m_entity;
 }
@@ -568,8 +566,9 @@ entt::entity Joint::getEntity() const
 //==============================================================================
 bool Joint::isValid() const
 {
-  return m_world != nullptr && m_world->getRegistry().valid(m_entity)
-         && m_world->getRegistry().all_of<comps::Joint>(m_entity);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  return m_world != nullptr && m_world->getRegistry().valid(entity)
+         && m_world->getRegistry().all_of<comps::Joint>(entity);
 }
 
 } // namespace dart::simulation::experimental

@@ -29,6 +29,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Eigenvalues>
@@ -1181,19 +1182,27 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
     const vbd::AvbdRigidContactManifoldPoint& manifoldPoint
         = snapshot.contacts[i];
     const sx::Contact& sourceContact = contacts[i];
-    const std::size_t bodyA
-        = findEntityIndex(snapshot.entities, sourceContact.bodyA.getEntity());
-    const std::size_t bodyB
-        = findEntityIndex(snapshot.entities, sourceContact.bodyB.getEntity());
+    const std::size_t bodyA = findEntityIndex(
+        snapshot.entities,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyA.getEntity()));
+    const std::size_t bodyB = findEntityIndex(
+        snapshot.entities,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyB.getEntity()));
 
     EXPECT_EQ(manifoldPoint.bodyA, bodyA);
     EXPECT_EQ(manifoldPoint.bodyB, bodyB);
     EXPECT_EQ(
         manifoldPoint.endpointA.object,
-        vbd::avbdRigidWorldContactObjectId(sourceContact.bodyA.getEntity()));
+        vbd::avbdRigidWorldContactObjectId(
+            dart::simulation::experimental::detail::toRegistryEntity(
+                sourceContact.bodyA.getEntity())));
     EXPECT_EQ(
         manifoldPoint.endpointB.object,
-        vbd::avbdRigidWorldContactObjectId(sourceContact.bodyB.getEntity()));
+        vbd::avbdRigidWorldContactObjectId(
+            dart::simulation::experimental::detail::toRegistryEntity(
+                sourceContact.bodyB.getEntity())));
     const auto expectEndpointFeature
         = [&](const vbd::AvbdContactEndpointId& endpoint, entt::entity entity) {
             if (entity == ground.getEntity()) {
@@ -1215,9 +1224,13 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotBuildsManifoldRows)
             }
           };
     expectEndpointFeature(
-        manifoldPoint.endpointA, sourceContact.bodyA.getEntity());
+        manifoldPoint.endpointA,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyA.getEntity()));
     expectEndpointFeature(
-        manifoldPoint.endpointB, sourceContact.bodyB.getEntity());
+        manifoldPoint.endpointB,
+        dart::simulation::experimental::detail::toRegistryEntity(
+            sourceContact.bodyB.getEntity()));
     EXPECT_NEAR((manifoldPoint.point - sourceContact.point).norm(), 0.0, 1e-12);
     EXPECT_NEAR(
         (manifoldPoint.normalFromAtoB - sourceContact.normal).norm(),
@@ -1273,9 +1286,18 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotPersistsFeatureScopedRows)
   auto sphereB = world.addRigidBody("sphere_b", sphereOptions);
   sphereB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-  const sx::CollisionBody boxBody(box.getEntity(), &world);
-  const sx::CollisionBody sphereBodyA(sphereA.getEntity(), &world);
-  const sx::CollisionBody sphereBodyB(sphereB.getEntity(), &world);
+  const sx::CollisionBody boxBody(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          box.getEntity()),
+      &world);
+  const sx::CollisionBody sphereBodyA(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          sphereA.getEntity()),
+      &world);
+  const sx::CollisionBody sphereBodyB(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          sphereB.getEntity()),
+      &world);
   const std::vector<sx::Contact> contacts{
       {boxBody, sphereBodyA, Vec3(1.0, 0.1, 0.0), Vec3::UnitX(), 0.1},
       {boxBody, sphereBodyB, Vec3(0.0, 1.0, 0.1), Vec3::UnitY(), 0.2},
@@ -1322,9 +1344,18 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCylinderFeatureIds)
   auto sphereB = world.addRigidBody("sphere_b", sphereOptions);
   sphereB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-  const sx::CollisionBody cylinderBody(cylinder.getEntity(), &world);
-  const sx::CollisionBody sphereBodyA(sphereA.getEntity(), &world);
-  const sx::CollisionBody sphereBodyB(sphereB.getEntity(), &world);
+  const sx::CollisionBody cylinderBody(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          cylinder.getEntity()),
+      &world);
+  const sx::CollisionBody sphereBodyA(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          sphereA.getEntity()),
+      &world);
+  const sx::CollisionBody sphereBodyB(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          sphereB.getEntity()),
+      &world);
   const std::vector<sx::Contact> contacts{
       {cylinderBody, sphereBodyA, Vec3(1.1, 0.0, 0.0), Vec3::UnitX(), 0.1},
       {cylinderBody, sphereBodyB, Vec3(0.0, 0.0, 2.1), Vec3::UnitZ(), 0.2},
@@ -1386,10 +1417,22 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCapsuleFeatureIds)
   auto sphereC = world.addRigidBody("sphere_c", sphereOptions);
   sphereC.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-  const sx::CollisionBody capsuleBody(capsule.getEntity(), &world);
-  const sx::CollisionBody sphereBodyA(sphereA.getEntity(), &world);
-  const sx::CollisionBody sphereBodyB(sphereB.getEntity(), &world);
-  const sx::CollisionBody sphereBodyC(sphereC.getEntity(), &world);
+  const sx::CollisionBody capsuleBody(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          capsule.getEntity()),
+      &world);
+  const sx::CollisionBody sphereBodyA(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          sphereA.getEntity()),
+      &world);
+  const sx::CollisionBody sphereBodyB(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          sphereB.getEntity()),
+      &world);
+  const sx::CollisionBody sphereBodyC(
+      dart::simulation::experimental::detail::fromRegistryEntity(
+          sphereC.getEntity()),
+      &world);
   const std::vector<sx::Contact> contacts{
       {capsuleBody, sphereBodyA, Vec3(1.1, 0.0, 0.0), Vec3::UnitX(), 0.1},
       {capsuleBody, sphereBodyB, Vec3(0.0, 0.0, 2.1), Vec3::UnitZ(), 0.2},
