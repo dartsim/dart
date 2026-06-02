@@ -358,6 +358,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   EXPECT_EQ(joint.getName(), "base_to_link");
   EXPECT_EQ(joint.getType(), sx::JointType::Fixed);
   EXPECT_EQ(joint.getDOFCount(), 0u);
+  EXPECT_EQ(joint.getParentRigidBody().getName(), "base");
+  EXPECT_EQ(joint.getChildRigidBody().getName(), "link");
   EXPECT_THROW(
       {
         auto parentLink = joint.getParentLink();
@@ -434,6 +436,10 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
     }
   }
   ASSERT_TRUE(jointEntity != entt::null);
+  sx::Joint restoredJoint(
+      sx::detail::fromRegistryEntity(jointEntity), &restored);
+  EXPECT_EQ(restoredJoint.getParentRigidBody().getName(), "base");
+  EXPECT_EQ(restoredJoint.getChildRigidBody().getName(), "link");
   ASSERT_FALSE(
       registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
 

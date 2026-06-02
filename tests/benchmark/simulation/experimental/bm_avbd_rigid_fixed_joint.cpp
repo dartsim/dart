@@ -81,6 +81,29 @@ std::unique_ptr<sx::World> makeRigidFixedJointWorld(std::size_t linkCount)
   return world;
 }
 
+std::vector<sx::Joint> makeRigidFixedJoints(
+    sx::World& world, std::size_t jointCount)
+{
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto parent = world.addRigidBody("endpoint_base", baseOptions);
+
+  std::vector<sx::Joint> joints;
+  joints.reserve(jointCount);
+  for (std::size_t i = 0; i < jointCount; ++i) {
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position
+        = Eigen::Vector3d(static_cast<double>(i + 1), 0.0, 0.0);
+    auto child
+        = world.addRigidBody("endpoint_link_" + std::to_string(i), bodyOptions);
+    joints.push_back(world.addRigidBodyFixedJoint(
+        "endpoint_fixed_" + std::to_string(i), parent, child));
+    parent = child;
+  }
+
+  return joints;
+}
+
 } // namespace
 
 //==============================================================================
@@ -95,6 +118,25 @@ static void BM_AvbdRigidFixedJointCreate(benchmark::State& state)
   state.counters["fixed_joints"] = static_cast<double>(linkCount);
 }
 BENCHMARK(BM_AvbdRigidFixedJointCreate)->Arg(1)->Arg(8)->Arg(32);
+
+//==============================================================================
+static void BM_AvbdRigidFixedJointEndpointAccess(benchmark::State& state)
+{
+  sx::World world;
+  const auto jointCount = static_cast<std::size_t>(state.range(0));
+  auto joints = makeRigidFixedJoints(world, jointCount);
+
+  for (auto _ : state) {
+    for (const sx::Joint& joint : joints) {
+      auto parent = joint.getParentRigidBody();
+      auto child = joint.getChildRigidBody();
+      benchmark::DoNotOptimize(parent.isValid());
+      benchmark::DoNotOptimize(child.isValid());
+    }
+  }
+  state.counters["fixed_joints"] = static_cast<double>(jointCount);
+}
+BENCHMARK(BM_AvbdRigidFixedJointEndpointAccess)->Arg(1)->Arg(8)->Arg(32);
 
 //==============================================================================
 static void BM_AvbdRigidFixedJointStep(benchmark::State& state)
