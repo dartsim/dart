@@ -94,7 +94,12 @@ Connection::~Connection()
 //==============================================================================
 bool Connection::isConnected() const
 {
-  return !mWeakConnectionBody.expired();
+  // The body may still be alive (e.g. captured in a Signal::raise() snapshot)
+  // after being disconnected, so consult its connected flag rather than relying
+  // on the weak pointer's expiry alone.
+  if (auto connectionBody = mWeakConnectionBody.lock())
+    return connectionBody->isConnected();
+  return false;
 }
 
 //==============================================================================

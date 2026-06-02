@@ -44,6 +44,18 @@ ConnectionBodyBase::~ConnectionBodyBase()
   // Do nothing
 }
 
+//==============================================================================
+void ConnectionBodyBase::markDisconnected()
+{
+  mConnected.store(false, std::memory_order_relaxed);
+}
+
+//==============================================================================
+bool ConnectionBodyBase::isConnected() const
+{
+  return mConnected.load(std::memory_order_relaxed);
+}
+
 } // namespace detail
 } // namespace signal
 

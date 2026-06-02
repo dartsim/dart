@@ -460,6 +460,39 @@ TEST(Signal, DisconnectOtherDuringRaiseNonVoid)
 }
 
 //==============================================================================
+TEST(Signal, IsConnectedFalseAfterDisconnectDuringRaise)
+{
+  // When a slot disconnects another connection during raise(), the public
+  // Connection::isConnected() of the disconnected connection must report false
+  // immediately, even though raise() keeps the underlying body alive in its
+  // snapshot for the duration of the call. Use the same order-independent
+  // mutual-disconnect pattern as DisconnectOtherDuringRaise so the result does
+  // not depend on the set's iteration order.
+  Signal<void()> signal;
+
+  Connection connA;
+  Connection connB;
+  bool observedDisconnectedDuringRaise = false;
+
+  connA = signal.connect([&]() {
+    connB.disconnect();
+    // connB was just disconnected while still captured in the raise() snapshot;
+    // its body is alive but must report as disconnected.
+    observedDisconnectedDuringRaise = !connB.isConnected();
+  });
+  connB = signal.connect([&]() {
+    connA.disconnect();
+    observedDisconnectedDuringRaise = !connA.isConnected();
+  });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+
+  EXPECT_TRUE(observedDisconnectedDuringRaise);
+}
+
+//==============================================================================
 TEST(Signal, ConcurrentUsage)
 {
   constexpr int kNumThreads = 4;
