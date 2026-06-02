@@ -33,11 +33,11 @@
 #pragma once
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 
 #include <Eigen/Core>
-#include <entt/entt.hpp>
 
 #include <optional>
 #include <string>
@@ -90,7 +90,7 @@ public:
   ///
   /// @param entity The entity ID in the registry
   /// @param world Pointer to the World owning this entity
-  Link(entt::entity entity, World* world);
+  Link(Entity entity, World* world);
 
   /// Get the name of this link
   ///

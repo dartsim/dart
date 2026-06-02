@@ -34,11 +34,10 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/comps/frame_types.hpp>
-#include <dart/simulation/experimental/ecs/entity_object.hpp>
+#include <dart/simulation/experimental/entity.hpp>
+#include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Geometry>
-#include <entt/entt.hpp>
 
 #include <string_view>
 
@@ -50,17 +49,17 @@ namespace dart::simulation::experimental {
 /// participate in kinematic queries such as transform, velocity, and
 /// acceleration computations. Frames form a hierarchical tree structure.
 ///
-/// This is a lightweight handle class that wraps an entt::entity with
-/// convenient methods for frame-related operations. It's inspired by DART 6's
-/// Frame class but adapted for the ECS architecture.
+/// This is a lightweight handle class that stores an opaque `Entity` token
+/// and a `World*`. The promoted DART 7 public surface does not depend on
+/// the ECS storage backend; all registry access is performed in the `.cpp`
+/// through the internal `detail/entity_conversion.hpp` seam.
 ///
 /// ## What is a Frame?
 ///
 /// A Frame can be:
 /// - **Link**: Most common - rigid bodies in articulated systems
 /// - **Joint Frame**: Origin/axis of a joint (future)
-/// - **SimpleFrame**: User-defined frame with fixed offset from parent
-/// (future)
+/// - **SimpleFrame**: User-defined frame with fixed offset from parent (future)
 /// - **ShapeFrame**: Frame attached to collision/visual shapes (future)
 /// - **World Frame**: Root of all frame hierarchies
 ///
@@ -90,26 +89,13 @@ namespace dart::simulation::experimental {
 ///
 /// @see LinkComponent, FrameTag
 class DART_EXPERIMENTAL_API Frame
-  : public EntityObjectWith<
-        TagComps<comps::FrameTag>,
-        ReadOnlyComps<>,
-        WriteOnlyComps<>,
-        ReadWriteComps<comps::FrameState, comps::FrameCache>>
 {
 public:
-  // Allow internal classes to access getEntity() for ECS operations
-  friend class World;
-  friend class FreeFrame;
-  friend class FixedFrame;
-  friend class Multibody;
-
-  /// Construct a Frame handle from an entity and world
+  /// Construct a Frame handle from an opaque entity token and world.
   ///
-  /// @param entity Entity ID in the ECS registry
-  /// @param world Pointer to the owning World instance
-  ///
-  /// @note The entity must have FrameTag and LinkComponent (for Phase 1)
-  Frame(entt::entity entity, World* world);
+  /// @param entity Opaque entity token obtained from the World API.
+  /// @param world  Pointer to the owning World instance.
+  Frame(Entity entity, World* world);
 
   /// Virtual destructor
   virtual ~Frame() = default;
@@ -278,7 +264,7 @@ public:
   [[nodiscard]] static Frame world();
 
   //--------------------------------------------------------------------------
-  // Validity and Internal Access
+  // Validity and Identity
   //--------------------------------------------------------------------------
 
   /// Check if this Frame handle is valid
@@ -295,10 +281,7 @@ public:
   /// Check if this is the world frame
   ///
   /// @return true if this is the world frame, false otherwise
-  [[nodiscard]] bool isWorld() const
-  {
-    return m_entity == entt::null;
-  }
+  [[nodiscard]] bool isWorld() const;
 
   /// Check if two frames refer to the same entity
   ///
@@ -341,22 +324,24 @@ public:
     return !(*this == other);
   }
 
-  /// Get the underlying entity ID
+  /// Get the backend-neutral `Entity` token for this frame.
   ///
-  /// This is primarily for testing and internal use. External users should
-  /// generally use Frame methods rather than accessing the entity directly.
+  /// This is primarily for identity comparisons and for passing a frame
+  /// back to World APIs. Internal code that requires the registry entity
+  /// should convert via `detail::toRegistryEntity(frame.getEntity())`.
   ///
-  /// @return Entity ID in the ECS registry
-  [[nodiscard]] entt::entity getEntity() const
+  /// @return Opaque entity token
+  [[nodiscard]] Entity getEntity() const
   {
     return m_entity;
   }
 
-  // Note: m_entity and m_world are inherited from EntityObject<Frame>
-
 protected:
   /// Mark this frame and all descendant frame transform caches dirty.
   void markSubtreeTransformCacheDirty();
+
+  Entity m_entity; ///< Opaque entity token (null sentinel = world frame)
+  World* m_world;  ///< Owning World instance (nullptr = world frame)
 };
 
 } // namespace dart::simulation::experimental

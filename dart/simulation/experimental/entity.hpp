@@ -32,40 +32,25 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/entity.hpp>
-#include <dart/simulation/experimental/frame/frame.hpp>
-
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+#include <cstdint>
 
 namespace dart::simulation::experimental {
 
-/// FreeFrame - freely positionable frame
+/// Opaque, backend-neutral identifier for an object owned by a `World`.
 ///
-/// A FreeFrame can be positioned and oriented freely in space relative
-/// to its parent frame. The transform can be set independently by the user.
-///
-/// Use cases:
-/// - Moving coordinate frames
-/// - User-controlled reference frames
-/// - Camera frames
-/// - Target frames for IK
-///
-/// DART6 equivalent: SimpleFrame (with modifiable transform)
-class DART_EXPERIMENTAL_API FreeFrame : public Frame
+/// The promoted DART 7 public simulation API uses `Entity` instead of the
+/// underlying ECS entity type so that public headers do not depend on the
+/// storage backend. The numeric `value` is an implementation detail: treat
+/// `Entity` as an opaque token obtained from, and passed back to, the `World`
+/// and handle APIs. Convert between `Entity` and the internal ECS entity only
+/// through the internal `detail/entity_conversion.hpp` seam.
+struct Entity
 {
-public:
-  /// Constructor (package-private, use World::addFreeFrame)
-  FreeFrame(Entity entity, World* world);
+  /// Backend-encoded identifier. Implementation detail; do not interpret. The
+  /// default value is a non-addressable sentinel for a null/invalid entity.
+  std::uint32_t value = 0xFFFFFFFFu;
 
-  //--------------------------------------------------------------------------
-  // Transform API
-  //--------------------------------------------------------------------------
-
-  /// Set the fixed local transform offset
-  ///
-  /// @param transform New fixed transform offset from parent frame
-  void setLocalTransform(const Eigen::Isometry3d& transform);
+  friend bool operator==(const Entity&, const Entity&) = default;
 };
 
 } // namespace dart::simulation::experimental

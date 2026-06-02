@@ -34,11 +34,11 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <entt/entt.hpp>
 
 #include <optional>
 #include <string>
@@ -145,7 +145,7 @@ struct LinkOptions
 /// Multibody represents an articulated rigid body system
 ///
 /// This is a lightweight handle class that references entity data stored
-/// in the World's entt::registry. It provides convenient API to access
+/// in the World's ECS registry. It provides convenient API to access
 /// and modify Multibody properties without owning the data.
 ///
 /// A Multibody consists of multiple rigid Links connected by Joints.
@@ -165,9 +165,9 @@ class DART_EXPERIMENTAL_API Multibody
 public:
   /// Construct a Multibody handle
   ///
-  /// @param entity The entity ID in the registry
+  /// @param entity The opaque entity token in the registry
   /// @param world Pointer to the World owning this entity
-  Multibody(entt::entity entity, World* world);
+  Multibody(Entity entity, World* world);
 
   /// Get the name of this Multibody
   ///
@@ -230,10 +230,12 @@ public:
   /// Joint names are unique within this Multibody.
   [[nodiscard]] std::vector<std::string> getJointNames() const;
 
-  /// Get the entity ID (for advanced users)
+  /// Get the opaque entity token (for advanced users).
   ///
-  /// @return The entity ID
-  [[nodiscard]] entt::entity getEntity() const;
+  /// Returns the backend-neutral `Entity` token. Internal code that needs the
+  /// raw ECS handle should call
+  /// `detail::toRegistryEntity(multibody.getEntity())`.
+  [[nodiscard]] Entity getEntity() const;
 
   /// Get the World pointer (for advanced users)
   ///
@@ -417,8 +419,8 @@ public:
       const Link& link, const Eigen::Vector3d& localPoint);
 
 private:
-  entt::entity m_entity; ///< Entity ID in the registry
-  World* m_world;        ///< Non-owning pointer to World
+  Entity m_entity; ///< Opaque entity token
+  World* m_world;  ///< Non-owning pointer to World
 };
 
 } // namespace dart::simulation::experimental
