@@ -86,28 +86,16 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
 
   std::vector<sx::Contact> contacts;
   sx::Contact groundLower;
-  groundLower.bodyA = sx::CollisionBody(
-      dart::simulation::experimental::detail::fromRegistryEntity(
-          ground.getEntity()),
-      &world);
-  groundLower.bodyB = sx::CollisionBody(
-      dart::simulation::experimental::detail::fromRegistryEntity(
-          lower.getEntity()),
-      &world);
+  groundLower.bodyA = sx::CollisionBody(ground.getEntity(), &world);
+  groundLower.bodyB = sx::CollisionBody(lower.getEntity(), &world);
   groundLower.point = Eigen::Vector3d(0.0, 0.0, 0.0);
   groundLower.normal = Eigen::Vector3d::UnitZ();
   groundLower.depth = 0.02;
   contacts.push_back(groundLower);
 
   sx::Contact lowerUpper;
-  lowerUpper.bodyA = sx::CollisionBody(
-      dart::simulation::experimental::detail::fromRegistryEntity(
-          lower.getEntity()),
-      &world);
-  lowerUpper.bodyB = sx::CollisionBody(
-      dart::simulation::experimental::detail::fromRegistryEntity(
-          upper.getEntity()),
-      &world);
+  lowerUpper.bodyA = sx::CollisionBody(lower.getEntity(), &world);
+  lowerUpper.bodyB = sx::CollisionBody(upper.getEntity(), &world);
   lowerUpper.point = Eigen::Vector3d(0.0, 0.0, 1.0);
   lowerUpper.normal = Eigen::Vector3d::UnitZ();
   lowerUpper.depth = 0.03;
@@ -132,12 +120,13 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
   expectVectorExactlyEqual(problem.hi, repeated.hi);
   expectVectorExactlyEqual(problem.findex, repeated.findex);
 
-  EXPECT_EQ(problem.constraints[0].bodyA, ground.getEntity());
-  EXPECT_EQ(problem.constraints[0].bodyB, lower.getEntity());
+  using sx::detail::toRegistryEntity;
+  EXPECT_EQ(problem.constraints[0].bodyA, toRegistryEntity(ground.getEntity()));
+  EXPECT_EQ(problem.constraints[0].bodyB, toRegistryEntity(lower.getEntity()));
   EXPECT_TRUE(problem.constraints[0].staticA);
   EXPECT_FALSE(problem.constraints[0].staticB);
-  EXPECT_EQ(problem.constraints[1].bodyA, lower.getEntity());
-  EXPECT_EQ(problem.constraints[1].bodyB, upper.getEntity());
+  EXPECT_EQ(problem.constraints[1].bodyA, toRegistryEntity(lower.getEntity()));
+  EXPECT_EQ(problem.constraints[1].bodyB, toRegistryEntity(upper.getEntity()));
   EXPECT_FALSE(problem.constraints[1].staticA);
   EXPECT_FALSE(problem.constraints[1].staticB);
 

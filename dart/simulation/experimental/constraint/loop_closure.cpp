@@ -137,13 +137,17 @@ LoopClosureFamily LoopClosure::getFamily() const
 //==============================================================================
 Frame LoopClosure::getFrameA() const
 {
-  return Frame(getLoopClosureComponent(*this).frameA, m_world);
+  return Frame(
+      detail::fromRegistryEntity(getLoopClosureComponent(*this).frameA),
+      m_world);
 }
 
 //==============================================================================
 Frame LoopClosure::getFrameB() const
 {
-  return Frame(getLoopClosureComponent(*this).frameB, m_world);
+  return Frame(
+      detail::fromRegistryEntity(getLoopClosureComponent(*this).frameB),
+      m_world);
 }
 
 //==============================================================================

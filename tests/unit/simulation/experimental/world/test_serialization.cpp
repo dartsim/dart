@@ -502,7 +502,9 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
   Eigen::Matrix<double, 6, 1> externalForce;
   externalForce << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0;
 
-  auto& linkComp = world1.getRegistry().get<comps::Link>(link.getEntity());
+  auto& linkComp = world1.getRegistry().get<comps::Link>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          link.getEntity()));
   linkComp.transformFromParentToJoint = unsavedParentToJoint;
   linkComp.transformFromParentJoint = legacyJointToLink;
   linkComp.worldTransform = worldTransform;
@@ -519,8 +521,9 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
   auto linkRestored = mbRestored->getLink("link");
   ASSERT_TRUE(linkRestored.has_value());
 
-  const auto& restoredLinkComp
-      = world2.getRegistry().get<comps::Link>(linkRestored->getEntity());
+  const auto& restoredLinkComp = world2.getRegistry().get<comps::Link>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          linkRestored->getEntity()));
   EXPECT_TRUE(restoredLinkComp.transformFromParentToJoint.isApprox(
       Eigen::Isometry3d::Identity()));
   EXPECT_TRUE(
@@ -537,8 +540,9 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
 
   auto baseRestored = mbRestored->getLink("base");
   ASSERT_TRUE(baseRestored.has_value());
-  const auto& restoredBaseComp
-      = world2.getRegistry().get<comps::Link>(baseRestored->getEntity());
+  const auto& restoredBaseComp = world2.getRegistry().get<comps::Link>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          baseRestored->getEntity()));
   ASSERT_EQ(restoredBaseComp.childJoints.size(), 1u);
   EXPECT_EQ(
       restoredBaseComp.childJoints.front(),
@@ -1232,7 +1236,8 @@ TEST(Serialization, CacheNotSerialized)
   // Verify cache is clean
   {
     auto& registry = world.getRegistry();
-    auto entity = frame.getEntity();
+    auto entity = dart::simulation::experimental::detail::toRegistryEntity(
+        frame.getEntity());
     ASSERT_TRUE(registry.valid(entity)) << "Entity should be valid";
     ASSERT_TRUE(
         registry.all_of<dart::simulation::experimental::comps::FrameCache>(
@@ -1557,7 +1562,8 @@ TEST(Serialization, CloneResetCounters)
   const auto& nextFrameName
       = cloneReg
             .get<dart::simulation::experimental::comps::Name>(
-                nextFrame.getEntity())
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    nextFrame.getEntity()))
             .name;
   EXPECT_EQ(nextFrameName, "free_frame_003");
 

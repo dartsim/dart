@@ -756,9 +756,15 @@ TEST(World, SyncKinematicsRefreshesFrameHierarchy)
   world.enterSimulationMode();
 
   auto& registry = world.getRegistry();
-  EXPECT_FALSE(registry.get<sx::comps::FrameCache>(parent.getEntity())
+  EXPECT_FALSE(registry
+                   .get<sx::comps::FrameCache>(
+                       dart::simulation::experimental::detail::toRegistryEntity(
+                           parent.getEntity()))
                    .needTransformUpdate);
-  EXPECT_FALSE(registry.get<sx::comps::FrameCache>(child.getEntity())
+  EXPECT_FALSE(registry
+                   .get<sx::comps::FrameCache>(
+                       dart::simulation::experimental::detail::toRegistryEntity(
+                           child.getEntity()))
                    .needTransformUpdate);
   EXPECT_TRUE(child.getTransform().isApprox(parentTransform * childOffset));
 
@@ -768,9 +774,15 @@ TEST(World, SyncKinematicsRefreshesFrameHierarchy)
 
   world.sync(sx::WorldSyncStage::Kinematics);
 
-  EXPECT_FALSE(registry.get<sx::comps::FrameCache>(parent.getEntity())
+  EXPECT_FALSE(registry
+                   .get<sx::comps::FrameCache>(
+                       dart::simulation::experimental::detail::toRegistryEntity(
+                           parent.getEntity()))
                    .needTransformUpdate);
-  EXPECT_FALSE(registry.get<sx::comps::FrameCache>(child.getEntity())
+  EXPECT_FALSE(registry
+                   .get<sx::comps::FrameCache>(
+                       dart::simulation::experimental::detail::toRegistryEntity(
+                           child.getEntity()))
                    .needTransformUpdate);
   EXPECT_TRUE(
       child.getTransform().isApprox(updatedParentTransform * childOffset));
@@ -909,9 +921,15 @@ TEST(World, FrameReadsRefreshDescendantsAfterParentLocalTransformChange)
   parent.setLocalTransform(updatedParentTransform);
 
   auto& registry = world.getRegistry();
-  EXPECT_TRUE(registry.get<sx::comps::FrameCache>(parent.getEntity())
+  EXPECT_TRUE(registry
+                  .get<sx::comps::FrameCache>(
+                      dart::simulation::experimental::detail::toRegistryEntity(
+                          parent.getEntity()))
                   .needTransformUpdate);
-  EXPECT_TRUE(registry.get<sx::comps::FrameCache>(child.getEntity())
+  EXPECT_TRUE(registry
+                  .get<sx::comps::FrameCache>(
+                      dart::simulation::experimental::detail::toRegistryEntity(
+                          child.getEntity()))
                   .needTransformUpdate);
   EXPECT_TRUE(
       child.getTransform().isApprox(updatedParentTransform * childOffset));
@@ -943,9 +961,15 @@ TEST(World, StepRefreshesFrameHierarchy)
   EXPECT_TRUE(world.isSimulationMode());
 
   auto& registry = world.getRegistry();
-  EXPECT_FALSE(registry.get<sx::comps::FrameCache>(parent.getEntity())
+  EXPECT_FALSE(registry
+                   .get<sx::comps::FrameCache>(
+                       dart::simulation::experimental::detail::toRegistryEntity(
+                           parent.getEntity()))
                    .needTransformUpdate);
-  EXPECT_FALSE(registry.get<sx::comps::FrameCache>(child.getEntity())
+  EXPECT_FALSE(registry
+                   .get<sx::comps::FrameCache>(
+                       dart::simulation::experimental::detail::toRegistryEntity(
+                           child.getEntity()))
                    .needTransformUpdate);
   EXPECT_TRUE(
       child.getTransform().isApprox(updatedParentTransform * childOffset));
@@ -3783,15 +3807,10 @@ TEST(World, RigidBodyContactIgnoresStoredStaticVelocity)
   ASSERT_FALSE(contacts.empty());
   const auto& contact = contacts.front();
   constexpr double staticSpeed = 5.0;
-  if (contact.bodyA.getEntity()
-      == dart::simulation::experimental::detail::fromRegistryEntity(
-          obstacle.getEntity())) {
+  if (contact.bodyA.getEntity() == obstacle.getEntity()) {
     obstacle.setLinearVelocity(staticSpeed * contact.normal);
   } else {
-    ASSERT_EQ(
-        contact.bodyB.getEntity(),
-        dart::simulation::experimental::detail::fromRegistryEntity(
-            obstacle.getEntity()));
+    ASSERT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
     obstacle.setLinearVelocity(-staticSpeed * contact.normal);
   }
 
@@ -4485,12 +4504,14 @@ TEST(World, RigidIpcContactStageSkipsInvalidRuntimeGeometry)
       {Eigen::Vector3i(0, 1, 2)});
 
   auto& registry = world.getRegistry();
+  const auto& toReg = dart::simulation::experimental::detail::toRegistryEntity;
   registry.emplace_or_replace<sx::comps::CollisionGeometry>(
-      invalidBox.getEntity(), sx::comps::CollisionGeometry{{box}});
+      toReg(invalidBox.getEntity()), sx::comps::CollisionGeometry{{box}});
   registry.emplace_or_replace<sx::comps::CollisionGeometry>(
-      invalidMesh.getEntity(), sx::comps::CollisionGeometry{{mesh}});
+      toReg(invalidMesh.getEntity()), sx::comps::CollisionGeometry{{mesh}});
   registry.emplace_or_replace<sx::comps::CollisionGeometry>(
-      nonFiniteMesh.getEntity(), sx::comps::CollisionGeometry{{nonFinite}});
+      toReg(nonFiniteMesh.getEntity()),
+      sx::comps::CollisionGeometry{{nonFinite}});
 
   sx::compute::SequentialExecutor executor;
   sx::compute::RigidIpcContactStage ipcStage;

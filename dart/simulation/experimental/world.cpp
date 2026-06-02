@@ -497,7 +497,7 @@ entt::entity resolveLoopClosureFrame(
       "LoopClosureSpec.{} belongs to a different world",
       fieldName);
 
-  return frame.getEntity();
+  return detail::toRegistryEntity(frame.getEntity());
 }
 
 //==============================================================================
@@ -1343,7 +1343,9 @@ entt::entity World::createFrameEntity(
   }
 
   auto& state = m_registry.emplace<comps::FrameState>(entity);
-  state.parentFrame = parentFrame.getEntity();
+  state.parentFrame = parentFrame.isWorld()
+                          ? entt::null
+                          : detail::toRegistryEntity(parentFrame.getEntity());
 
   auto& cache = m_registry.emplace<comps::FrameCache>(entity);
   cache.worldTransform = Eigen::Isometry3d::Identity();
@@ -1365,7 +1367,7 @@ entt::entity World::createFrameEntity(
 Frame World::resolveParentFrame(const Frame& parent) const
 {
   if (parent.isWorld()) {
-    return Frame(entt::null, const_cast<World*>(this));
+    return Frame(Entity{}, const_cast<World*>(this));
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -1516,7 +1518,7 @@ RigidBody World::addRigidBody(
 
   validateRigidBodyOptions(options);
 
-  Frame parent = Frame(entt::null, this);
+  Frame parent = Frame(Entity{}, this);
   const auto orientation = normalizeOrIdentity(options.orientation);
   const auto initialTransform = toIsometry(options.position, orientation);
 

@@ -189,8 +189,7 @@ void validateInertia(const Eigen::Matrix3d& inertia)
 namespace dart::simulation::experimental {
 
 //==============================================================================
-RigidBody::RigidBody(Entity entity, World* world)
-  : Frame(detail::toRegistryEntity(entity), world)
+RigidBody::RigidBody(Entity entity, World* world) : Frame(entity, world)
 {
   // Frame base constructor handles entity and world
 }
@@ -199,7 +198,8 @@ RigidBody::RigidBody(Entity entity, World* world)
 std::string RigidBody::getName() const
 {
   const auto& registry = getWorld()->getRegistry();
-  if (const auto* name = registry.try_get<comps::Name>(getEntity())) {
+  if (const auto* name
+      = registry.try_get<comps::Name>(detail::toRegistryEntity(getEntity()))) {
     return name->name;
   }
   return "";
@@ -229,8 +229,10 @@ void RigidBody::setTransform(const Eigen::Isometry3d& transform)
       "RigidBody transform rotation must be orthonormal");
 
   auto& registry = getWorld()->getRegistry();
-  auto& freeFrame = registry.get<comps::FreeFrameProperties>(getEntity());
-  auto& rigidTransform = registry.get<comps::Transform>(getEntity());
+  auto& freeFrame = registry.get<comps::FreeFrameProperties>(
+      detail::toRegistryEntity(getEntity()));
+  auto& rigidTransform
+      = registry.get<comps::Transform>(detail::toRegistryEntity(getEntity()));
 
   const Eigen::Isometry3d parentTransform = getParentFrame().getTransform();
   freeFrame.localTransform = parentTransform.inverse() * transform;
@@ -248,7 +250,10 @@ Eigen::Vector3d RigidBody::getLinearVelocity() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().get<comps::Velocity>(getEntity()).linear;
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
+      .linear;
 }
 
 //==============================================================================
@@ -259,7 +264,10 @@ void RigidBody::setLinearVelocity(const Eigen::Vector3d& velocity)
 
   validateFiniteVector(velocity, "linear velocity");
 
-  getWorld()->getRegistry().get<comps::Velocity>(getEntity()).linear = velocity;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
+      .linear = velocity;
 }
 
 //==============================================================================
@@ -268,7 +276,10 @@ Eigen::Vector3d RigidBody::getAngularVelocity() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().get<comps::Velocity>(getEntity()).angular;
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
+      .angular;
 }
 
 //==============================================================================
@@ -279,8 +290,10 @@ void RigidBody::setAngularVelocity(const Eigen::Vector3d& velocity)
 
   validateFiniteVector(velocity, "angular velocity");
 
-  getWorld()->getRegistry().get<comps::Velocity>(getEntity()).angular
-      = velocity;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Velocity>(detail::toRegistryEntity(getEntity()))
+      .angular = velocity;
 }
 
 //==============================================================================
@@ -289,7 +302,10 @@ double RigidBody::getMass() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().get<comps::MassProperties>(getEntity()).mass;
+  return getWorld()
+      ->getRegistry()
+      .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
+      .mass;
 }
 
 //==============================================================================
@@ -300,7 +316,10 @@ void RigidBody::setMass(double mass)
 
   validateMass(mass);
 
-  getWorld()->getRegistry().get<comps::MassProperties>(getEntity()).mass = mass;
+  getWorld()
+      ->getRegistry()
+      .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
+      .mass = mass;
 }
 
 //==============================================================================
@@ -311,7 +330,7 @@ Eigen::Matrix3d RigidBody::getInertia() const
 
   return getWorld()
       ->getRegistry()
-      .get<comps::MassProperties>(getEntity())
+      .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .inertia;
 }
 
@@ -323,8 +342,10 @@ void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
 
   validateInertia(inertia);
 
-  getWorld()->getRegistry().get<comps::MassProperties>(getEntity()).inertia
-      = inertia;
+  getWorld()
+      ->getRegistry()
+      .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
+      .inertia = inertia;
 }
 
 //==============================================================================
@@ -333,7 +354,10 @@ Eigen::Vector3d RigidBody::getForce() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().get<comps::Force>(getEntity()).force;
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .force;
 }
 
 //==============================================================================
@@ -344,7 +368,10 @@ void RigidBody::setForce(const Eigen::Vector3d& force)
 
   validateFiniteVector(force, "force");
 
-  getWorld()->getRegistry().get<comps::Force>(getEntity()).force = force;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .force = force;
 }
 
 //==============================================================================
@@ -355,7 +382,10 @@ void RigidBody::applyForce(const Eigen::Vector3d& force)
 
   validateFiniteVector(force, "force");
 
-  getWorld()->getRegistry().get<comps::Force>(getEntity()).force += force;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .force += force;
 }
 
 //==============================================================================
@@ -364,7 +394,10 @@ void RigidBody::clearForce()
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  getWorld()->getRegistry().get<comps::Force>(getEntity()).force.setZero();
+  getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .force.setZero();
 }
 
 //==============================================================================
@@ -373,7 +406,10 @@ Eigen::Vector3d RigidBody::getTorque() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().get<comps::Force>(getEntity()).torque;
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .torque;
 }
 
 //==============================================================================
@@ -384,7 +420,10 @@ void RigidBody::setTorque(const Eigen::Vector3d& torque)
 
   validateFiniteVector(torque, "torque");
 
-  getWorld()->getRegistry().get<comps::Force>(getEntity()).torque = torque;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .torque = torque;
 }
 
 //==============================================================================
@@ -395,7 +434,10 @@ void RigidBody::applyTorque(const Eigen::Vector3d& torque)
 
   validateFiniteVector(torque, "torque");
 
-  getWorld()->getRegistry().get<comps::Force>(getEntity()).torque += torque;
+  getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .torque += torque;
 }
 
 //==============================================================================
@@ -404,7 +446,10 @@ void RigidBody::clearTorque()
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  getWorld()->getRegistry().get<comps::Force>(getEntity()).torque.setZero();
+  getWorld()
+      ->getRegistry()
+      .get<comps::Force>(detail::toRegistryEntity(getEntity()))
+      .torque.setZero();
 }
 
 //==============================================================================
@@ -414,8 +459,10 @@ Eigen::Vector3d RigidBody::getLinearMomentum() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  const auto& mass = registry.get<comps::MassProperties>(getEntity());
-  const auto& velocity = registry.get<comps::Velocity>(getEntity());
+  const auto& mass = registry.get<comps::MassProperties>(
+      detail::toRegistryEntity(getEntity()));
+  const auto& velocity
+      = registry.get<comps::Velocity>(detail::toRegistryEntity(getEntity()));
   return mass.mass * velocity.linear;
 }
 
@@ -426,9 +473,12 @@ Eigen::Vector3d RigidBody::getAngularMomentum() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  const auto& mass = registry.get<comps::MassProperties>(getEntity());
-  const auto& velocity = registry.get<comps::Velocity>(getEntity());
-  const auto& transform = registry.get<comps::Transform>(getEntity());
+  const auto& mass = registry.get<comps::MassProperties>(
+      detail::toRegistryEntity(getEntity()));
+  const auto& velocity
+      = registry.get<comps::Velocity>(detail::toRegistryEntity(getEntity()));
+  const auto& transform
+      = registry.get<comps::Transform>(detail::toRegistryEntity(getEntity()));
 
   const Eigen::Matrix3d rotation
       = transform.orientation.normalized().toRotationMatrix();
@@ -444,9 +494,12 @@ double RigidBody::getKineticEnergy() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  const auto& mass = registry.get<comps::MassProperties>(getEntity());
-  const auto& velocity = registry.get<comps::Velocity>(getEntity());
-  const auto& transform = registry.get<comps::Transform>(getEntity());
+  const auto& mass = registry.get<comps::MassProperties>(
+      detail::toRegistryEntity(getEntity()));
+  const auto& velocity
+      = registry.get<comps::Velocity>(detail::toRegistryEntity(getEntity()));
+  const auto& transform
+      = registry.get<comps::Transform>(detail::toRegistryEntity(getEntity()));
 
   const Eigen::Matrix3d rotation
       = transform.orientation.normalized().toRotationMatrix();
@@ -466,8 +519,10 @@ double RigidBody::getPotentialEnergy() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  const auto& mass = registry.get<comps::MassProperties>(getEntity());
-  const auto& transform = registry.get<comps::Transform>(getEntity());
+  const auto& mass = registry.get<comps::MassProperties>(
+      detail::toRegistryEntity(getEntity()));
+  const auto& transform
+      = registry.get<comps::Transform>(detail::toRegistryEntity(getEntity()));
   return -mass.mass * getWorld()->getGravity().dot(transform.position);
 }
 
@@ -479,9 +534,11 @@ void RigidBody::setStatic(bool isStatic)
 
   auto& registry = getWorld()->getRegistry();
   if (isStatic) {
-    registry.emplace_or_replace<comps::StaticBodyTag>(getEntity());
+    registry.emplace_or_replace<comps::StaticBodyTag>(
+        detail::toRegistryEntity(getEntity()));
   } else {
-    registry.remove<comps::StaticBodyTag>(getEntity());
+    registry.remove<comps::StaticBodyTag>(
+        detail::toRegistryEntity(getEntity()));
   }
 }
 
@@ -491,7 +548,8 @@ bool RigidBody::isStatic() const
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return getWorld()->getRegistry().all_of<comps::StaticBodyTag>(getEntity());
+  return getWorld()->getRegistry().all_of<comps::StaticBodyTag>(
+      detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -505,7 +563,8 @@ void RigidBody::setRestitution(double restitution)
       "RigidBody restitution must be in [0, 1]");
 
   auto& registry = getWorld()->getRegistry();
-  auto& material = registry.get_or_emplace<comps::ContactMaterial>(getEntity());
+  auto& material = registry.get_or_emplace<comps::ContactMaterial>(
+      detail::toRegistryEntity(getEntity()));
   material.restitution = restitution;
 }
 
@@ -516,8 +575,8 @@ double RigidBody::getRestitution() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  if (const auto* material
-      = registry.try_get<comps::ContactMaterial>(getEntity())) {
+  if (const auto* material = registry.try_get<comps::ContactMaterial>(
+          detail::toRegistryEntity(getEntity()))) {
     return material->restitution;
   }
   return 0.0;
@@ -534,7 +593,8 @@ void RigidBody::setFriction(double friction)
       "RigidBody friction must be non-negative and finite");
 
   auto& registry = getWorld()->getRegistry();
-  auto& material = registry.get_or_emplace<comps::ContactMaterial>(getEntity());
+  auto& material = registry.get_or_emplace<comps::ContactMaterial>(
+      detail::toRegistryEntity(getEntity()));
   material.friction = friction;
 }
 
@@ -545,8 +605,8 @@ double RigidBody::getFriction() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  if (const auto* material
-      = registry.try_get<comps::ContactMaterial>(getEntity())) {
+  if (const auto* material = registry.try_get<comps::ContactMaterial>(
+          detail::toRegistryEntity(getEntity()))) {
     return material->friction;
   }
   return 1.0;
@@ -561,11 +621,12 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
   validateCollisionShape(shape, "RigidBody");
 
   auto& registry = getWorld()->getRegistry();
-  const auto* existing
-      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  const auto* existing = registry.try_get<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()));
   comps::CollisionGeometry geometry{{shape}};
   geometry.revision = existing ? existing->revision + 1 : 1;
-  registry.emplace_or_replace<comps::CollisionGeometry>(getEntity(), geometry);
+  registry.emplace_or_replace<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()), geometry);
 }
 
 //==============================================================================
@@ -577,8 +638,8 @@ void RigidBody::addCollisionShape(const CollisionShape& shape)
   validateCollisionShape(shape, "RigidBody");
 
   auto& registry = getWorld()->getRegistry();
-  auto& geometry
-      = registry.get_or_emplace<comps::CollisionGeometry>(getEntity());
+  auto& geometry = registry.get_or_emplace<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()));
   geometry.shapes.push_back(shape);
   ++geometry.revision;
 }
@@ -591,9 +652,11 @@ void RigidBody::setDeformableGroundBarrier(bool enabled)
 
   auto& registry = getWorld()->getRegistry();
   if (enabled) {
-    registry.get_or_emplace<comps::DeformableGroundBarrierTag>(getEntity());
+    registry.get_or_emplace<comps::DeformableGroundBarrierTag>(
+        detail::toRegistryEntity(getEntity()));
   } else {
-    registry.remove<comps::DeformableGroundBarrierTag>(getEntity());
+    registry.remove<comps::DeformableGroundBarrierTag>(
+        detail::toRegistryEntity(getEntity()));
   }
 }
 
@@ -604,7 +667,7 @@ bool RigidBody::isDeformableGroundBarrier() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   return getWorld()->getRegistry().all_of<comps::DeformableGroundBarrierTag>(
-      getEntity());
+      detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -616,9 +679,10 @@ void RigidBody::setDeformableSurfaceCcdObstacle(bool enabled)
   auto& registry = getWorld()->getRegistry();
   if (enabled) {
     registry.get_or_emplace<comps::DeformableSurfaceCcdObstacleTag>(
-        getEntity());
+        detail::toRegistryEntity(getEntity()));
   } else {
-    registry.remove<comps::DeformableSurfaceCcdObstacleTag>(getEntity());
+    registry.remove<comps::DeformableSurfaceCcdObstacleTag>(
+        detail::toRegistryEntity(getEntity()));
   }
 }
 
@@ -630,7 +694,8 @@ bool RigidBody::isDeformableSurfaceCcdObstacle() const
 
   return getWorld()
       ->getRegistry()
-      .all_of<comps::DeformableSurfaceCcdObstacleTag>(getEntity());
+      .all_of<comps::DeformableSurfaceCcdObstacleTag>(
+          detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -641,9 +706,11 @@ void RigidBody::setDeformableObstacleBarrierOnly(bool enabled)
 
   auto& registry = getWorld()->getRegistry();
   if (enabled) {
-    registry.get_or_emplace<comps::DeformableObstacleNoCcdTag>(getEntity());
+    registry.get_or_emplace<comps::DeformableObstacleNoCcdTag>(
+        detail::toRegistryEntity(getEntity()));
   } else {
-    registry.remove<comps::DeformableObstacleNoCcdTag>(getEntity());
+    registry.remove<comps::DeformableObstacleNoCcdTag>(
+        detail::toRegistryEntity(getEntity()));
   }
 }
 
@@ -654,7 +721,7 @@ bool RigidBody::isDeformableObstacleBarrierOnly() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   return getWorld()->getRegistry().all_of<comps::DeformableObstacleNoCcdTag>(
-      getEntity());
+      detail::toRegistryEntity(getEntity()));
 }
 
 //==============================================================================
@@ -664,8 +731,8 @@ std::optional<CollisionShape> RigidBody::getCollisionShape() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  if (const auto* geometry
-      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+  if (const auto* geometry = registry.try_get<comps::CollisionGeometry>(
+          detail::toRegistryEntity(getEntity()))) {
     if (const auto* shape = geometry->getPrimaryShape()) {
       return *shape;
     }
@@ -680,8 +747,8 @@ std::vector<CollisionShape> RigidBody::getCollisionShapes() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  if (const auto* geometry
-      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+  if (const auto* geometry = registry.try_get<comps::CollisionGeometry>(
+          detail::toRegistryEntity(getEntity()))) {
     return geometry->shapes;
   }
   return {};
@@ -694,11 +761,11 @@ bool RigidBody::hasCollisionShape() const
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   const auto& registry = getWorld()->getRegistry();
-  const auto* geometry
-      = registry.try_get<comps::CollisionGeometry>(getEntity());
+  const auto* geometry = registry.try_get<comps::CollisionGeometry>(
+      detail::toRegistryEntity(getEntity()));
   return geometry != nullptr && geometry->hasShapes();
 }
 
-// getEntity() and isValid() inherited from Frame
+// detail::toRegistryEntity(getEntity()) and isValid() inherited from Frame
 
 } // namespace dart::simulation::experimental
