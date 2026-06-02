@@ -18,15 +18,15 @@ This is the **start of the B2 evidence**, scoped to OPEN-CHAIN (no-contact)
 rigid dynamics, which does not depend on the unified contact/constraint solver
 (PR #2838). Per-scenario results on current `main`:
 
-| Gate facet  | Scenario (test case)                                              | Result | Tolerance |
-| ----------- | ---------------------------------------------------------------- | ------ | --------- |
-| Gravity     | Free rigid body free-fall (single + repeated step)               | PASS   | 1e-12     |
-| Gravity     | Two-link revolute chain under gravity (single + repeated)        | PASS   | 1e-10     |
-| Integration | Revolute pendulum (single + repeated short horizon)              | PASS   | 1e-10     |
-| Integration | Prismatic free-fall joint (single + repeated)                    | PASS   | 1e-10     |
-| Drift       | Revolute pendulum, 1e4 steps                                     | PASS   | 1e-9      |
-| Drift       | Double pendulum (chaotic), 1e4 steps                             | PASS   | 1e-9      |
-| Controls    | Single revolute, held torque (single + 200 steps)               | PASS   | 1e-9      |
+| Gate facet  | Scenario (test case)                                      | Result | Tolerance |
+| ----------- | --------------------------------------------------------- | ------ | --------- |
+| Gravity     | Free rigid body free-fall (single + repeated step)        | PASS   | 1e-12     |
+| Gravity     | Two-link revolute chain under gravity (single + repeated) | PASS   | 1e-10     |
+| Integration | Revolute pendulum (single + repeated short horizon)       | PASS   | 1e-10     |
+| Integration | Prismatic free-fall joint (single + repeated)             | PASS   | 1e-10     |
+| Drift       | Revolute pendulum, 1e4 steps                              | PASS   | 1e-9      |
+| Drift       | Double pendulum (chaotic), 1e4 steps                      | PASS   | 1e-9      |
+| Controls    | Single revolute, held torque (single + 200 steps)         | PASS   | 1e-9      |
 
 All open-chain scenarios reach parity on current `main` — the two code paths
 agree to **machine epsilon** (measured ~1e-14..1e-17 deltas; a development probe
