@@ -550,6 +550,13 @@ Eigen::VectorXd Joint::getEffortUpperLimits() const
 Link Joint::getParentLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.parentLink == entt::null
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::Link>(jointComp.parentLink),
+      InvalidArgumentException,
+      "Joint '{}' parent endpoint is not a multibody Link",
+      jointComp.name);
   return Link(detail::fromRegistryEntity(jointComp.parentLink), m_world);
 }
 
@@ -557,6 +564,13 @@ Link Joint::getParentLink() const
 Link Joint::getChildLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.childLink == entt::null
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::Link>(jointComp.childLink),
+      InvalidArgumentException,
+      "Joint '{}' child endpoint is not a multibody Link",
+      jointComp.name);
   return Link(detail::fromRegistryEntity(jointComp.childLink), m_world);
 }
 
