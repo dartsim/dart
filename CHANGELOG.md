@@ -571,6 +571,19 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Documentation and onboarding improvements (developer guides, CI/testing workflows, IK and servo docs, RTD updates, and translations). ([#2059](https://github.com/dartsim/dart/pull/2059), [#2062](https://github.com/dartsim/dart/pull/2062), [#2089](https://github.com/dartsim/dart/pull/2089), [#2095](https://github.com/dartsim/dart/pull/2095), [#2112](https://github.com/dartsim/dart/pull/2112), [#2156](https://github.com/dartsim/dart/pull/2156), [#2171](https://github.com/dartsim/dart/pull/2171), [#2173](https://github.com/dartsim/dart/pull/2173), [#2174](https://github.com/dartsim/dart/pull/2174), [#2183](https://github.com/dartsim/dart/pull/2183), [#2191](https://github.com/dartsim/dart/pull/2191), [#2196](https://github.com/dartsim/dart/pull/2196), [#2199](https://github.com/dartsim/dart/pull/2199), [#2203](https://github.com/dartsim/dart/pull/2203), [#2213](https://github.com/dartsim/dart/pull/2213), [#2215](https://github.com/dartsim/dart/pull/2215), [#2302](https://github.com/dartsim/dart/pull/2302), [#2303](https://github.com/dartsim/dart/pull/2303), [#2312](https://github.com/dartsim/dart/pull/2312), [#2087](https://github.com/dartsim/dart/pull/2087))
   - Maintenance merges and stability fixes for release branches and simulation-experimental builds. ([#2145](https://github.com/dartsim/dart/pull/2145), [#2188](https://github.com/dartsim/dart/pull/2188), [#2301](https://github.com/dartsim/dart/pull/2301), [#2341](https://github.com/dartsim/dart/pull/2341), [#2357](https://github.com/dartsim/dart/pull/2357), [#2223](https://github.com/dartsim/dart/pull/2223), [#2228](https://github.com/dartsim/dart/pull/2228), [#2236](https://github.com/dartsim/dart/pull/2236))
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
+  - Fixed the Read the Docs dartpy autodoc stub fallback so the generated stubs
+    import cleanly. Class-body forward references emitted by `nanobind`
+    (snake_case method aliases placed before the method, enclosing-class-qualified
+    nested enum members, and aliases to module classes defined later) are now
+    reordered or rewritten, and runtime-only submodules such as
+    `dartpy.simulation_experimental.diff` are bound to placeholder modules. The
+    `dartpy`, `gui`, `simulation_experimental`, and `io` API reference pages no
+    longer fail to import with `NameError`.
+  - Made `clang-format` discovery resilient to toolchain upgrades by dropping a
+    stale `CLANG_FORMAT_EXECUTABLE` cache entry when the cached binary no longer
+    exists, so the `format`/`check-format` targets re-resolve against the current
+    toolchain instead of failing with a dangling dependency when the pinned
+    `clang-format` version changes under an existing build tree.
 
 - Simulation
   - Added opt-in analytic differentiable simulation to the experimental `World`

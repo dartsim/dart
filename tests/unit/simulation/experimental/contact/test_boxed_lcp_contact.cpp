@@ -160,9 +160,12 @@ TEST(AvbdContact, CompoundShapeFeatureKeysUseContactedShapeIndex)
 
   const std::uint64_t featureCode = dvbd::avbdBoxContactFeatureCode(
       compoundLocalPoint, secondary.halfExtents);
+  // Each shape occupies a disjoint feature-id block (shapeIndex * stride) so
+  // distinct shapes never alias, even across shape types.
   const std::uint64_t expectedFeature = dvbd::packAvbdContactFeatureId(
       dvbd::avbdBoxContactFeatureKind(featureCode),
-      dvbd::packAvbdBoxContactFeatureId(compoundShapeIndex, featureCode));
+      compoundShapeIndex * dvbd::kAvbdRigidWorldShapeFeatureStride
+          + dvbd::packAvbdBoxContactFeatureId(0, featureCode));
   EXPECT_EQ(compoundEndpoint.feature, expectedFeature);
 }
 
