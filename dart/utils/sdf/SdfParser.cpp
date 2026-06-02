@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
@@ -714,6 +715,7 @@ SDFBodyNode readBodyNode(
   // Name attribute
   std::string name = getAttributeString(bodyNodeElement, "name");
   properties.mName = name;
+  const std::string bodyName = name;
 
   //--------------------------------------------------------------------------
   // gravity
@@ -741,6 +743,8 @@ SDFBodyNode readBodyNode(
 
   //--------------------------------------------------------------------------
   // inertia
+  constexpr double kMinReasonableMass = 1e-9; // 1 microgram
+  bool massSpecified = false;
   if (hasElement(bodyNodeElement, "inertial")) {
     tinyxml2::XMLElement* inertiaElement
         = getElement(bodyNodeElement, "inertial");
@@ -748,7 +752,25 @@ SDFBodyNode readBodyNode(
     // mass
     if (hasElement(inertiaElement, "mass")) {
       double mass = getValueDouble(inertiaElement, "mass");
+      if (mass <= 0.0) {
+        DART_WARN(
+            "[SdfParser] Link [{}] has non-positive mass [{}]. Clamping to {} "
+            "to continue parsing.",
+            bodyName,
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
+      } else if (mass < kMinReasonableMass) {
+        DART_WARN(
+            "[SdfParser] Link [{}] has a very small mass [{} kg]; clamping to "
+            "{} to avoid numerical issues.",
+            bodyName,
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
+      }
       properties.mInertia.setMass(mass);
+      massSpecified = true;
     }
 
     // offset
@@ -771,7 +793,32 @@ SDFBodyNode readBodyNode(
       double iyz = getValueDouble(moiElement, "iyz");
 
       properties.mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
+    } else if (massSpecified) {
+      // Keep the inertia physically meaningful by matching the moment scale
+      // to the specified mass; geometry is unknown, so use an isotropic guess.
+      const double mass = properties.mInertia.getMass();
+      properties.mInertia.setMoment(Eigen::Matrix3d::Identity() * mass);
+      DART_WARN(
+          "[SdfParser] Link [{}] defines <mass> but no <inertia>; using an "
+          "isotropic inertia tensor (mass * I). Provide <inertia> for "
+          "physically correct behavior.",
+          bodyName);
     }
+
+    if (!massSpecified) {
+      DART_WARN(
+          "[SdfParser] Link [{}] is missing <mass>; using default mass of 1 "
+          "kg. "
+          "Specify <inertial><mass> to avoid unstable simulation.",
+          bodyName);
+    }
+  } else {
+    DART_WARN(
+        "[SdfParser] Link [{}] is missing <inertial>; using default "
+        "mass/inertia "
+        "(1 kg, unit inertia). Specify <inertial> to avoid unstable "
+        "simulation.",
+        bodyName);
   }
 
   SDFBodyNode sdfBodyNode;
@@ -1242,7 +1289,7 @@ static void reportMissingElement(
   DART_ASSERT(0);
 }
 
-static void readAxisElement(
+static bool readAxisElement(
     tinyxml2::XMLElement* axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
     Eigen::Vector3d& axis,
@@ -1254,6 +1301,8 @@ static void readAxisElement(
     double& friction,
     double& spring_stiffness)
 {
+  bool hasFinitePositionLimit = false;
+
   // use_parent_model_frame
   bool useParentModelFrame = false;
   if (hasElement(axisElement, "use_parent_model_frame"))
@@ -1298,11 +1347,13 @@ static void readAxisElement(
     // lower
     if (hasElement(limitElement, "lower")) {
       lower = getValueDouble(limitElement, "lower");
+      hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(lower);
     }
 
     // upper
     if (hasElement(limitElement, "upper")) {
       upper = getValueDouble(limitElement, "upper");
+      hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(upper);
     }
   }
 
@@ -1321,6 +1372,8 @@ static void readAxisElement(
     // Apply the same logic to the rest position.
     rest = initial;
   }
+
+  return hasFinitePositionLimit;
 }
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
@@ -1346,7 +1399,7 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
     tinyxml2::XMLElement* axisElement
         = getElement(_revoluteJointElement, "axis");
 
-    readAxisElement(
+    const bool hasLimitedAxis = readAxisElement(
         axisElement,
         _parentModelFrame,
         newRevoluteJoint.mAxis,
@@ -1357,6 +1410,7 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
         newRevoluteJoint.mDampingCoefficients[0],
         newRevoluteJoint.mFrictions[0],
         newRevoluteJoint.mSpringStiffnesses[0]);
+    newRevoluteJoint.mIsPositionLimitEnforced = hasLimitedAxis;
   } else {
     reportMissingElement("readRevoluteJoint", "axis", "joint", _name);
   }
@@ -1378,7 +1432,7 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
   if (hasElement(_jointElement, "axis")) {
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
-    readAxisElement(
+    const bool hasLimitedAxis = readAxisElement(
         axisElement,
         _parentModelFrame,
         newPrismaticJoint.mAxis,
@@ -1389,6 +1443,7 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
         newPrismaticJoint.mDampingCoefficients[0],
         newPrismaticJoint.mFrictions[0],
         newPrismaticJoint.mSpringStiffnesses[0]);
+    newPrismaticJoint.mIsPositionLimitEnforced = hasLimitedAxis;
   } else {
     reportMissingElement("readPrismaticJoint", "axis", "joint", _name);
   }
@@ -1410,7 +1465,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
   if (hasElement(_jointElement, "axis")) {
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
-    readAxisElement(
+    const bool hasLimitedAxis = readAxisElement(
         axisElement,
         _parentModelFrame,
         newScrewJoint.mAxis,
@@ -1421,6 +1476,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
         newScrewJoint.mDampingCoefficients[0],
         newScrewJoint.mFrictions[0],
         newScrewJoint.mSpringStiffnesses[0]);
+    newScrewJoint.mIsPositionLimitEnforced = hasLimitedAxis;
   } else {
     reportMissingElement("readScrewJoint", "axis", "joint", _name);
   }
@@ -1442,13 +1498,15 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
   DART_ASSERT(_jointElement != nullptr);
 
   dynamics::UniversalJoint::Properties newUniversalJoint;
+  bool hasLimitedAxis1 = false;
+  bool hasLimitedAxis2 = false;
 
   //--------------------------------------------------------------------------
   // axis
   if (hasElement(_jointElement, "axis")) {
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
-    readAxisElement(
+    hasLimitedAxis1 = readAxisElement(
         axisElement,
         _parentModelFrame,
         newUniversalJoint.mAxis[0],
@@ -1468,7 +1526,7 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
   if (hasElement(_jointElement, "axis2")) {
     tinyxml2::XMLElement* axis2Element = getElement(_jointElement, "axis2");
 
-    readAxisElement(
+    hasLimitedAxis2 = readAxisElement(
         axis2Element,
         _parentModelFrame,
         newUniversalJoint.mAxis[1],
@@ -1482,6 +1540,9 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
   } else {
     reportMissingElement("readUniversalJoint", "axis2", "joint", _name);
   }
+
+  newUniversalJoint.mIsPositionLimitEnforced
+      = hasLimitedAxis1 || hasLimitedAxis2;
 
   return newUniversalJoint;
 }
