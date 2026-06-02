@@ -5,6 +5,7 @@ __all__: list[str] = [
     "ClosureDynamicsPolicy",
     "ClosureKinematicsPolicy",
     "CollisionBody",
+    "CollisionQueryOptions",
     "CollisionShape",
     "CollisionShapeType",
     "Contact",
@@ -47,6 +48,7 @@ __all__: list[str] = [
     "RigidBodySolver",
     "RootJointType",
     "SkeletonLoadOptions",
+    "SkeletonToMultibodyOptions",
     "StateSpace",
     "StateVariable",
     "StepDerivatives",
@@ -55,12 +57,17 @@ __all__: list[str] = [
     "WorldSyncStage",
     "add_skeleton",
     "add_world",
+    "build_multibodies_from_world",
+    "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
+    "is_accelerated_deformable_solve_available",
+    "is_accelerated_deformable_solve_enabled",
     "load_deformable_scene",
     "load_gmsh_tet_mesh",
     "load_obj_triangle_mesh",
     "load_point_set",
     "load_seg_line_mesh",
+    "set_accelerated_deformable_solve",
 ]
 
 
@@ -73,6 +80,8 @@ from typing import Annotated, overload
 import numpy
 from numpy.typing import NDArray
 
+import dartpy.dynamics
+import dartpy.simulation
 import dartpy.simulation_experimental.diff as diff
 
 
@@ -160,21 +169,38 @@ class CollisionShapeType(enum.Enum):
 
     CYLINDER = 4
 
+    PLANE = 5
+
 class CollisionShape:
     @staticmethod
-    def sphere(radius: float) -> CollisionShape: ...
+    def sphere(
+        radius: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
 
     @staticmethod
-    def box(half_extents: object) -> CollisionShape: ...
+    def box(
+        half_extents: object, local_transform: object | None = None
+    ) -> CollisionShape: ...
 
     @staticmethod
-    def capsule(radius: float, half_height: float) -> CollisionShape: ...
+    def capsule(
+        radius: float, half_height: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
 
     @staticmethod
-    def cylinder(radius: float, half_height: float) -> CollisionShape: ...
+    def cylinder(
+        radius: float, half_height: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
 
     @staticmethod
-    def mesh(vertices: object, triangles: object) -> CollisionShape: ...
+    def plane(
+        normal: object, offset: float, local_transform: object | None = None
+    ) -> CollisionShape: ...
+
+    @staticmethod
+    def mesh(
+        vertices: object, triangles: object, local_transform: object | None = None
+    ) -> CollisionShape: ...
 
     @property
     def type(self) -> CollisionShapeType: ...
@@ -183,13 +209,28 @@ class CollisionShape:
     def radius(self) -> float: ...
 
     @property
+    def height(self) -> float: ...
+
+    @property
+    def half_height(self) -> float: ...
+
+    @property
     def half_extents(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def normal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def offset(self) -> float: ...
 
     @property
     def vertices(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
 
     @property
     def triangles(self) -> list[Annotated[NDArray[numpy.int32], dict(shape=(3), order='C')]]: ...
+
+    @property
+    def local_transform(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4, 4), order='F')]: ...
 
 class ClosureKinematicsPolicy(enum.Enum):
     RESIDUAL_ONLY = 0
@@ -258,7 +299,7 @@ class StateSpace:
     def __repr__(self) -> str: ...
 
 class JointSpec:
-    def __init__(self, name: str = ..., type: JointType = JointType.REVOLUTE, axis: object | None = ..., axis2: object | None = ..., transform_from_parent: object | None = ...) -> None: ...
+    def __init__(self, name: str = ..., type: JointType = JointType.REVOLUTE, axis: object | None = ..., axis2: object | None = ..., transform_from_parent: object | None = ..., transform_to_parent: object | None = ...) -> None: ...
 
     @property
     def name(self) -> str: ...
@@ -289,6 +330,12 @@ class JointSpec:
 
     @transform_from_parent.setter
     def transform_from_parent(self, arg: object, /) -> None: ...
+
+    @property
+    def transform_to_parent(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4, 4), order='F')]: ...
+
+    @transform_to_parent.setter
+    def transform_to_parent(self, arg: object, /) -> None: ...
 
     def __repr__(self) -> str: ...
 
@@ -519,8 +566,13 @@ class Link(Frame):
 
     def set_collision_shape(self, shape: CollisionShape) -> None: ...
 
+    def add_collision_shape(self, shape: CollisionShape) -> None: ...
+
     @property
     def collision_shape(self) -> CollisionShape | None: ...
+
+    @property
+    def collision_shapes(self) -> list[CollisionShape]: ...
 
     @property
     def has_collision_shape(self) -> bool: ...
@@ -825,6 +877,8 @@ class RigidBody(Frame):
 
     def set_collision_shape(self, shape: CollisionShape) -> None: ...
 
+    def add_collision_shape(self, shape: CollisionShape) -> None: ...
+
     @property
     def is_deformable_surface_ccd_obstacle(self) -> bool: ...
 
@@ -845,6 +899,9 @@ class RigidBody(Frame):
 
     @property
     def collision_shape(self) -> CollisionShape | None: ...
+
+    @property
+    def collision_shapes(self) -> list[CollisionShape]: ...
 
     @property
     def has_collision_shape(self) -> bool: ...
@@ -942,6 +999,35 @@ class Contact:
 
     @property
     def depth(self) -> float: ...
+
+class CollisionQueryOptions:
+    def __init__(self, include_same_multibody_link_pairs: bool = ..., *, include_rigid_body_pairs: bool = ..., include_rigid_body_link_pairs: bool = ..., include_link_pairs: bool = ...) -> None: ...
+
+    @property
+    def include_same_multibody_link_pairs(self) -> bool: ...
+
+    @include_same_multibody_link_pairs.setter
+    def include_same_multibody_link_pairs(self, arg: bool, /) -> None: ...
+
+    @property
+    def include_rigid_body_pairs(self) -> bool: ...
+
+    @include_rigid_body_pairs.setter
+    def include_rigid_body_pairs(self, arg: bool, /) -> None: ...
+
+    @property
+    def include_rigid_body_link_pairs(self) -> bool: ...
+
+    @include_rigid_body_link_pairs.setter
+    def include_rigid_body_link_pairs(self, arg: bool, /) -> None: ...
+
+    @property
+    def include_link_pairs(self) -> bool: ...
+
+    @include_link_pairs.setter
+    def include_link_pairs(self, arg: bool, /) -> None: ...
+
+    def __repr__(self) -> str: ...
 
 class StepDerivatives:
     @property
@@ -1531,6 +1617,43 @@ class DeformableSceneDiagnostics:
     @property
     def max_z(self) -> float: ...
 
+class SkeletonToMultibodyOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @name.setter
+    def name(self, arg: str, /) -> None: ...
+
+    @property
+    def base_link_name(self) -> str: ...
+
+    @base_link_name.setter
+    def base_link_name(self, arg: str, /) -> None: ...
+
+    @property
+    def copy_state(self) -> bool: ...
+
+    @copy_state.setter
+    def copy_state(self, arg: bool, /) -> None: ...
+
+    @property
+    def copy_joint_properties(self) -> bool: ...
+
+    @copy_joint_properties.setter
+    def copy_joint_properties(self, arg: bool, /) -> None: ...
+
+    @property
+    def load_collision_shapes(self) -> bool: ...
+
+    @load_collision_shapes.setter
+    def load_collision_shapes(self, arg: bool, /) -> None: ...
+
+def build_multibody_from_skeleton(world: World, skeleton: dartpy.dynamics.Skeleton, options: SkeletonToMultibodyOptions = ...) -> Multibody: ...
+
+def build_multibodies_from_world(world: World, legacy_world: dartpy.simulation.World, options: SkeletonToMultibodyOptions = ...) -> list[Multibody]: ...
+
 @overload
 def add_skeleton(world: World, skeleton: object, options: SkeletonLoadOptions = ...) -> Multibody: ...
 @overload
@@ -1695,8 +1818,14 @@ class World:
     @property
     def num_differentiable_parameters(self) -> int: ...
 
-    def collide(self) -> list[Contact]: ...
+    def collide(self, options: CollisionQueryOptions = ...) -> list[Contact]: ...
 
     def clear(self) -> None: ...
 
     def __repr__(self) -> str: ...
+
+def is_accelerated_deformable_solve_available() -> bool: ...
+
+def set_accelerated_deformable_solve(enable: bool) -> bool: ...
+
+def is_accelerated_deformable_solve_enabled() -> bool: ...

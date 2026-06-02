@@ -2302,6 +2302,162 @@ def test_experimental_collision_query():
     assert len(world.collide()) == 0
 
 
+def test_experimental_collision_shape_local_transform():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    body_a = world.add_rigid_body("a")
+    body_a.set_collision_shape(
+        sx.CollisionShape.sphere(0.5, _translation_transform(1.0, 0.0, 0.0))
+    )
+    body_b = world.add_rigid_body("b", position=(1.8, 0.0, 0.0))
+    body_b.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert np.allclose(
+        np.array(body_a.collision_shape.local_transform),
+        np.array(_translation_transform(1.0, 0.0, 0.0)),
+    )
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.2, abs=1e-6)
+
+
+def test_experimental_compound_collision_shapes():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    compound = world.add_rigid_body("compound")
+    compound.add_collision_shape(sx.CollisionShape.sphere(0.5))
+    compound.add_collision_shape(sx.CollisionShape.sphere(0.5))
+    compound.add_collision_shape(
+        sx.CollisionShape.sphere(0.5, _translation_transform(2.0, 0.0, 0.0))
+    )
+
+    assert compound.has_collision_shape
+    assert compound.collision_shape.type == sx.CollisionShapeType.SPHERE
+    assert len(compound.collision_shapes) == 3
+    assert len(world.collide()) == 0
+
+    target = world.add_rigid_body("target", position=(2.8, 0.0, 0.0))
+    target.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    assert len(world.collide()) >= 1
+
+    compound.set_collision_shape(sx.CollisionShape.box((0.1, 0.2, 0.3)))
+    assert len(compound.collision_shapes) == 1
+    assert compound.collision_shape.type == sx.CollisionShapeType.BOX
+
+    link_world = sx.World()
+    robot = link_world.add_multibody("robot")
+    base = robot.add_link("base")
+    base.add_collision_shape(sx.CollisionShape.sphere(0.25))
+    base.add_collision_shape(
+        sx.CollisionShape.box(
+            (0.1, 0.2, 0.3), _translation_transform(1.0, 0.0, 0.0)
+        )
+    )
+    assert base.has_collision_shape
+    assert len(base.collision_shapes) == 2
+    assert base.collision_shape.type == sx.CollisionShapeType.SPHERE
+
+
+def test_experimental_collision_shape_capsule():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    capsule = world.add_rigid_body("capsule")
+    shape = sx.CollisionShape.capsule(radius=0.25, half_height=0.5)
+    capsule.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.45, 0.0, 0.0))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    assert capsule.collision_shape.type == sx.CollisionShapeType.CAPSULE
+    assert capsule.collision_shape.radius == pytest.approx(0.25)
+    assert capsule.collision_shape.height == pytest.approx(1.0)
+    assert capsule.collision_shape.half_height == pytest.approx(0.5)
+    assert capsule.collision_shape.half_extents.tolist() == pytest.approx(
+        [0.25, 0.25, 0.5]
+    )
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
+
+
+def test_experimental_collision_shape_cylinder():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    cylinder = world.add_rigid_body("cylinder")
+    shape = sx.CollisionShape.cylinder(radius=0.25, half_height=0.5)
+    cylinder.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.45, 0.0, 0.0))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    assert cylinder.collision_shape.type == sx.CollisionShapeType.CYLINDER
+    assert cylinder.collision_shape.radius == pytest.approx(0.25)
+    assert cylinder.collision_shape.height == pytest.approx(1.0)
+    assert cylinder.collision_shape.half_height == pytest.approx(0.5)
+    assert cylinder.collision_shape.half_extents.tolist() == pytest.approx(
+        [0.25, 0.25, 0.5]
+    )
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
+
+
+def test_experimental_collision_shape_plane():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    plane = world.add_rigid_body("plane")
+    shape = sx.CollisionShape.plane((0.0, 0.0, 1.0), 0.0)
+    plane.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.2))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    assert plane.collision_shape.type == sx.CollisionShapeType.PLANE
+    np.testing.assert_allclose(plane.collision_shape.normal, (0.0, 0.0, 1.0))
+    assert plane.collision_shape.offset == pytest.approx(0.0)
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
+
+
+def test_experimental_collision_shape_mesh():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    mesh = world.add_rigid_body("mesh")
+    shape = sx.CollisionShape.mesh(
+        [
+            (-1.0, -1.0, 0.0),
+            (1.0, -1.0, 0.0),
+            (-1.0, 1.0, 0.0),
+            (1.0, 1.0, 0.0),
+        ],
+        [(0, 1, 2), (1, 3, 2)],
+    )
+    mesh.set_collision_shape(shape)
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.2))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    assert mesh.collision_shape.type == sx.CollisionShapeType.MESH
+    assert len(mesh.collision_shape.vertices) == 4
+    assert len(mesh.collision_shape.triangles) == 2
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    assert contacts[0].depth == pytest.approx(0.05, abs=1e-6)
+
+
 def test_experimental_mesh_collision_shape_public_surface():
     sx = _simulation_experimental()
 
@@ -2387,6 +2543,97 @@ def test_experimental_collision_query_includes_links():
                 assert body.as_rigid_body() is None
     assert saw_link
     assert saw_rigid_body
+
+
+def test_experimental_collision_query_can_filter_same_multibody_link_pairs():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    robot = world.add_multibody("robot")
+    base = robot.add_link("base")
+    base.set_collision_shape(sx.CollisionShape.sphere(0.75))
+
+    link = robot.add_link(
+        "link",
+        parent=base,
+        joint=sx.JointSpec(name="slider", type=sx.JointType.PRISMATIC),
+    )
+    link.set_collision_shape(sx.CollisionShape.sphere(0.75))
+
+    obstacle = world.add_rigid_body("obstacle", position=(10.0, 0.0, 0.0))
+    obstacle.set_collision_shape(sx.CollisionShape.sphere(0.25))
+
+    world.enter_simulation_mode()
+
+    default_contacts = world.collide()
+    assert any(
+        contact.body_a.is_link
+        and contact.body_b.is_link
+        and {contact.body_a.name, contact.body_b.name} == {"base", "link"}
+        for contact in default_contacts
+    )
+
+    options = sx.CollisionQueryOptions(include_same_multibody_link_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_same_multibody_link_pairs=False" in repr(options)
+
+    obstacle.transform = _translation_transform(0.2, 0.0, 0.0)
+
+    filtered_contacts = world.collide(options)
+    assert len(filtered_contacts) >= 1
+    assert all(
+        contact.body_a.is_rigid_body or contact.body_b.is_rigid_body
+        for contact in filtered_contacts
+    )
+
+
+def test_experimental_collision_query_can_filter_body_type_pairs():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    body_a = world.add_rigid_body("rigid_a")
+    body_a.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body_b = world.add_rigid_body("rigid_b", position=(0.4, 0.0, 0.0))
+    body_b.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert len(world.collide()) >= 1
+
+    options = sx.CollisionQueryOptions(include_rigid_body_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_rigid_body_pairs=False" in repr(options)
+
+    world = sx.World()
+    robot = world.add_multibody("robot")
+    link = robot.add_link("link")
+    link.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body = world.add_rigid_body("rigid", position=(0.4, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    world.enter_simulation_mode()
+    assert len(world.collide()) >= 1
+
+    options = sx.CollisionQueryOptions(include_rigid_body_link_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_rigid_body_link_pairs=False" in repr(options)
+
+    world = sx.World()
+    robot = world.add_multibody("robot")
+    base = robot.add_link("base")
+    base.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    child = robot.add_link(
+        "child",
+        parent=base,
+        joint=sx.JointSpec(name="child", type=sx.JointType.FIXED),
+    )
+    child.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    world.enter_simulation_mode()
+    assert len(world.collide()) >= 1
+
+    options = sx.CollisionQueryOptions(include_link_pairs=False)
+    assert len(world.collide(options)) == 0
+    assert "include_link_pairs=False" in repr(options)
 
 
 def test_experimental_contact_stops_approaching_bodies():

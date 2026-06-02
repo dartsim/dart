@@ -143,11 +143,14 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
   (`Servo`/`Acceleration`/`Locked`/`Mimic`) are defined but rejected by the
   forward dynamics. C++ + dartpy tests.
 - Phase 2 (partial) — collision query bridge: public `CollisionShape`
-  (sphere/box) attachable to rigid bodies, public `Contact`, and
+  (sphere/box/capsule/cylinder/plane/triangular mesh) attachable to rigid bodies, public
+  `Contact`, and
   `World::collide()` bridging to `dart/collision/native` via pairwise
   narrow-phase queries (returns contact point/normal/depth; the native normal is
-  negated so `Contact.normal` points bodyA→bodyB). C++ + dartpy + tests. New
-  files: `body/collision_shape.hpp`, `body/contact.hpp`,
+  negated so `Contact.normal` points bodyA→bodyB). Shape-node local transforms
+  are preserved by `CollisionShape::localTransform`, capsules/cylinders carry
+  height, and planes carry normal/offset. C++ + dartpy + tests. New files:
+  `body/collision_shape.hpp`, `body/contact.hpp`,
   `comps/collision_geometry.{hpp,cpp}`. The experimental lib now PRIVATE-links
   `dart-collision-native`.
 - Phase 3 (partial) — contact solver: `World::step()` resolves contacts between
@@ -167,9 +170,9 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
 
 Historical gates passed at each slice: `pixi run lint`, focused C++ tests
 (`test_world`, `test_serialization`, `test_compute_graph`), and
-`test_experimental_world.py`. The current re-alignment merge is in progress on
-the `feature/experimental-rigid-body-dynamics` branch and still needs local
-verification before pushing.
+`test_experimental_world.py`. The current `feature/experimental-model-loader`
+branch has been reconciled with `origin/main` and locally validated; it is not
+associated with a hosted PR yet.
 
 Key implementation note: each link's center of mass is assumed at the link frame
 origin; the joint motion subspace is transformed by the post-joint link offset
@@ -178,46 +181,558 @@ correct gravity torques. See `compute/multibody_dynamics.cpp`.
 
 ## Current Branch
 
-Working in `/home/js/dev/dartsim/dart/task_2` on
-`feature/experimental-rigid-body-dynamics` (PR #2705). `origin/main`
-`b7f5380679c` has been merged locally; conflict resolution and verification are
-still in progress.
+PR #2705 (the rigid-body MVP) **merged to `main` on 2026-05-25** (merge commit
+`003c2d0e39`). The MVP convention re-alignment and the GUI example (Subsystem C)
+are done and on `main`.
+
+Current work is on branch `feature/experimental-model-loader` in
+`/home/js/dev/dartsim/dart/task_1` — Subsystem B (model loading), the
+`dynamics::Skeleton` → experimental `Multibody` bridge
+(`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`).
+
+### Local branch state
+
+The branch is ahead of `origin/feature/experimental-model-loader` with local
+model-loading/contact follow-up commits plus the latest merge from `origin/main`
+(`a806d68cd3a3a79441314d4599b6991adc580d26`). Current slices on the branch cover
+cross-multibody/link contacts, row-island unified constraints, preserved
+collision shape offsets, capsule/cylinder/plane/mesh-like collision shape
+support, and multiple collision shapes per body/link. As of 2026-06-01, `gh pr
+list --head feature/experimental-model-loader` reports no associated PR.
+
+Current validation for the reconciled model-loading/collision-shape line:
+`pixi run update-api-boundary-inventory`,
+`pixi run check-api-boundary-inventory`,
+`pixi run build-simulation-experimental-tests`,
+`pixi run test-simulation-experimental` (52/52),
+`pixi run test-py` (486 passed, 9 skipped), `pixi run lint`,
+`pixi run test-all`, and `pixi run -e cuda test-all` all passed. The docs build
+still emits four non-fatal autodoc warnings from generated dartpy stubs around
+`LocalResource.get_size = getSize`; they did not fail either default or CUDA
+`test-all`.
+
+### Committed: pre-joint offset on `JointSpec`
+
+`JointSpec`/`LinkOptions::transformToParent` (dartpy `transform_to_parent`) adds
+a parent-side offset so the experimental joint matches legacy exactly:
+`child_in_parent = transformToParent · jointMotion(q) · transformFromParent`
+(legacy `A · Q(q) · C^-1`). Threaded through the forward dynamics, FK, and the
+variational integrator; the motion subspace is unchanged (`S_child =
+Ad(G_post^-1) · S_jointframe` is independent of the pre-offset). Default identity
+is a verified no-op (full experimental suite 38/38); a new
+`test_pre_joint_offset.cpp` covers FK and the fixed-base translation-invariance
+of the dynamics. This unlocks branching at an offset, offset roots, and
+arbitrary trees.
+
+### Committed: loader refactored onto the pre-joint offset + branching
+
+`buildMultibodyFromSkeleton` now maps each joint with
+`transformToParent = A` (legacy `getTransformFromParentBodyNode`) and
+`transformFromParent = C^-1` (inverse `getTransformFromChildBodyNode`), so each
+experimental link frame coincides with its legacy body frame — axis, mass,
+center of mass, and inertia map across directly with no reframing. The
+synthetic-base `O_b` reframing, `outgoingJointOffset`, and the
+`M`/`kAnchorTolerance` anchor check are gone. This adds **branching parents**
+(sibling joints at different offsets, each carrying its own `transformToParent`)
+and **offset/rotated roots**, verified by `BranchingTreeMatchesLegacyDynamics`
+and `OffsetRootMatchesLegacyDynamics` (C++) and a dartpy branching parity test.
+Ball/free/planar still require identity-rotation parent/child offsets
+(translation is fine). Full experimental suite 39/39; Python loader suite 9/9.
+
+**(DONE) `readWorld` / multi-skeleton.** `io::buildMultibodiesFromWorld(world,
+legacyWorld, options)` (dartpy `build_multibodies_from_world`) converts every
+skeleton of a legacy `simulation::World` into its own multibody, named after the
+skeleton. C++ + dartpy tests. (A file-based one-call loader can wrap
+`dart::io::readWorld` + this, but would pull `dart-io` into the experimental
+lib's link, so it is left to the caller for now.)
+
+**(DONE) Collision shape offsets plus capsule/cylinder/plane support.** The
+loader translates the first sphere, box, capsule, cylinder, or plane collision
+shape of each body (a shape node with a collision aspect) onto the link, gated by
+`loadCollisionShapes`.
+`CollisionShape::localTransform` preserves shape-node offsets, the binary format
+serializes that transform, and `World::collide()` poses native shapes as
+`worldTransform * shape.localTransform`. Capsules and cylinders carry radius
+plus height, and planes carry normal plus offset, through C++, dartpy,
+serialization, and the native collision query. Triangular `MeshShape` and
+`ConvexMeshShape` instances carry their vertex/index buffers through the
+model-loading bridge as experimental mesh collision shapes; `HeightmapShape`
+instances are triangulated into the same carrier, and `SoftMeshShape` instances
+snapshot their point-mass mesh into that carrier. Triangular meshes also
+round-trip through C++, dartpy, serialization, and native collision queries.
+Multiple shapes per body/link are stored as compound collision geometry,
+serialized in binary format v11, exposed in C++/dartpy, imported from all
+representable collision shape nodes in the model-loading bridge, and skipped for
+same-entity self collision in `World::collide()`. Deformable obstacle barriers
+still consume the first sphere/box shape only.
+
+**(DONE) First collision-query filtering option.** `CollisionQueryOptions`
+adds an explicit `includeSameMultibodyLinkPairs` switch (dartpy:
+`include_same_multibody_link_pairs`) for `World::collide()`. The default remains
+`true` so existing same-multibody self-contact queries and articulated solver
+paths are unchanged; setting it to `false` filters link-vs-link pairs within the
+same multibody while preserving rigid-body, link-vs-rigid-body, and
+cross-multibody link contacts. Covered by C++ and dartpy tests.
+
+**(DONE) Broad-phase pruning for `World::collide()`.** Experimental collision
+queries now build the native collision world's AABB broad-phase snapshot and
+only run narrow-phase contact generation for candidate pairs. Contact reporting,
+same-entity compound-shape skipping, and same-multibody link filtering semantics
+are preserved. Covered by the existing collision-query suite plus a sparse
+far-body regression.
+
+**(DONE) Body-type filtering for `World::collide()`.** `CollisionQueryOptions`
+now includes explicit rigid-body, rigid-body/link, and link/link switches
+(dartpy: `include_rigid_body_pairs`, `include_rigid_body_link_pairs`,
+`include_link_pairs`) while preserving the existing same-multibody link subset
+filter and the default all-pairs behavior. Covered by C++ and dartpy tests.
+
+**(DONE) Persistent native collision world for `World::collide()`.** Collision
+queries now keep a native collision world cache across calls, update cached
+object transforms/AABBs for repeated queries, and rebuild only when the
+experimental collision geometry revision or topology changes. Covered by the
+collision-query suite plus a transform-update and shape-invalidation regression.
+
+**Resume here — Subsystem A (the remaining headline gap):**
+
+**Subsystem A — coupled boxed-LCP.** Reorder the `World::step` pipeline to
+(1) all velocity integration, (2) one unified contact/constraint solve over all
+bodies via `dart/math/lcp`, (3) all position integration. Multi-session; touches
+the core step loop and every passing test — do it as its own slice with the
+suite as the guardrail, revert if it destabilizes (as the first universal-joint
+attempt was).
+
+**(DONE) Safe first increment — coupled normal boxed-LCP in
+`RigidBodyContactStage`** (commit `1d2340f1006`). The stage's per-contact
+sequential normal impulses are replaced by a coupled boxed-LCP solve over all
+rigid-rigid contacts: it assembles the contact-space inverse-mass (Delassus)
+operator `A` (diagonal = the old `effectiveMass`; off-diagonal = coupling
+through a body shared by two contacts, summed over each contact's two signed
+ends) and solves `A lambda = b` with `b[i] = restitutionTarget_i - approach_i`,
+`0 <= lambda`, under the solvers' `w = A lambda - b` convention, via the
+`dart/math/lcp` Dantzig solver. A single isolated contact is a 1x1 system equal
+to the previous closed form, so the 1e-9 elastic-swap guardrail is intact; a
+rank-deficient set (the near-coplanar contacts of a box resting flat on a
+plane) drives a non-positive pivot, so `earlyTermination` turns that into a
+clean failure (no console warning) and the solve falls back to an uncoupled
+diagonal projection. The friction pass (now a separate Gauss-Seidel sweep
+bounded by the solved normal impulse) and the positional correction are
+unchanged. Code: `world_step_stage.cpp` `RigidBodyContactStage::execute`.
+Verified by the drop/rest/bounce/friction guardrails plus a new coupled
+two-sphere-stack rest test (`RigidBodyContactCoupledStackRests`, non-singular
+2x2 off-diagonal coupling); full experimental suite 39/39, lint clean.
+
+**(DONE) Friction inside the LCP via `findex`.** The contact LCP now has three
+rows per contact (normal + two friction tangents). The friction rows store the
+coefficient `mu` in `hi`, set `lo = -mu`, and point `findex` at the contact's
+normal row (global index `3*i`); the ODE Dantzig solver scales that bound by the
+solved normal impulse to enforce `|lambda_t| <= mu*lambda_n`, so normal and
+friction are solved jointly. The Delassus assembly generalized cleanly: the same
+per-end formula with the row/column direction (normal or tangent) substituted,
+giving `effectiveMass`/`tangentMass1`/`tangentMass2` on the block diagonal. The
+right-hand side is `restitutionTarget - approach_n` for the normal row and
+`-approach_t` for the tangent rows (drive tangential velocity to zero). On the
+success path the solved normal+friction impulse is applied in one shot. The
+rank-deficient fallback now solves the **coupled normal-only** LCP (the
+normal-row block of the assembled operator) and only then the proven sequential
+friction sweep — extracting the normal block matters because adding friction
+rows makes the box-on-plane system fail the pivot more often, and the bare
+diagonal projection under-supported the box (large corner lever arms) and
+starved friction. Verified by the drop/rest/bounce/friction guardrails, the
+stack test, the 1e-9 swap, and a new `RigidBodyContactFrictionRollsSlidingSphere`
+test (single contact = coupled success path; friction drives the contact slip to
+zero so the sphere rolls). Full experimental suite 39/39, `test_world` 104/104,
+lint clean.
+
+**Next (remaining Subsystem A): the full pipeline reorder.** Velocity-integrate
+everything, then ONE unified boxed-LCP over rigid-rigid AND multibody-link
+contacts, then position-integrate — subsuming the separate `RigidBodyContactStage`
+and `simulateMultibody` contact passes so the friction cone couples across the
+rigid/articulated split. **This is a multi-slice refactor of the core step loop,
+not a safe increment** — design + adversarial review done (below); execute as
+individually-reviewed gated PRs, suite as guardrail, revert per slice.
+
+Validated plan (read-only design workflow + two adversarial critiques):
+
+- **Target**: `[Velocity] RigidBodyVelocity + MultibodyVelocity` → `[Solve]
+UnifiedConstraintStage (one boxed LCP)` → `[Position] RigidBodyPosition +
+MultibodyPosition`, then Deformable, Kinematics. The hard part is splitting
+  `simulateMultibody` (`multibody_dynamics.cpp:637`), which today fuses the qddot
+  velocity solve + link-contact GS + manifold position integration into one
+  per-multibody call.
+- **Unification math**: both solves are the same Delassus form. Generalize the
+  rigid `delassusEntry` (`world_step_stage.cpp:5181`) to "sum over shared
+  bodies", where a shared _link_ contributes `J_i^T M^-1 J_j` (the existing
+  `J^T M^-1 J` denominator at `multibody_dynamics.cpp:928`). Link-vs-link then
+  falls out mathematically but still needs new collision routing
+  (`multibody_dynamics.cpp:1282-1316` currently drops both-in-body pairs).
+- **Slicing** (each green on `pixi run test-all`): (0) factor the **four**
+  `World::step` pipeline builders (`world.cpp:1592/1619/1646/1665`) into one
+  helper — two append a caller stage and skip the variational branch, so
+  preserve that divergence; (1) extract the manifold **position-integration
+  tail** (`multibody_dynamics.cpp:1042-1107`) into a free
+  `integrateMultibodyPositions(...)` in a new `compute/multibody_constraint.*`
+  (cleanest, purely-mechanical seam — the recommended FIRST slice); (2) add
+  `MultibodyVelocityStage`/`MultibodyPositionStage` + reorder, link contacts
+  still in their own stage; (3+4, **merged** — do not bisect the link-contact
+  set across two solvers) unify rigid + link-static + link-dynamic-rigid into
+  `UnifiedConstraintStage`; (5a) same-multibody link-vs-link routing via
+  relative Jacobians; (5b) cross-multibody link-vs-link, which needs a
+  multi-block row ownership/application model.
+- **(DONE locally, commit `d7f3a17c98f`) Slice 1 — multibody position integration
+  helper.** Added `compute/multibody_constraint.{hpp,cpp}` with
+  `integrateMultibodyPositions(registry, structure, nextVelocity, timeStep)`,
+  wired `simulateMultibody` to call it after velocity limits, and added
+  `test_multibody_constraint` for direct spherical/floating manifold integration
+  and position-limit clamping. This is behavior-preserving: it does not reorder
+  `World::step`, move contact solving, or split velocity integration yet.
+  Verified with `cmake --build build/default/cpp/Release --target
+dart-simulation-experimental test_multibody_constraint test_world
+test_skeleton_to_multibody`, focused CTest over the new/adjacent tests, and
+  full `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (40/40).
+- **(DONE locally, commit `0684f723132`) Slice 0 — `World::step` pipeline
+  builder factor.** Factored the four default/custom-stage pipeline builders in
+  `world.cpp` through one stack-owned `WorldStepPipelineStages` helper. This
+  preserves the current order, including the default overloads' variational
+  multibody branch and the custom-stage overloads' existing semi-implicit
+  multibody stage. Verified with focused build + `test_world`, full
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (40/40), and `pixi run lint`.
+- **(DONE locally) Slice 2 — semi-implicit multibody
+  velocity/contact/position split.** Added `MultibodyVelocityStage`,
+  `MultibodyContactStage`, and `MultibodyPositionStage`, with an internal
+  transient staged-velocity component so link-contact impulses and velocity
+  limits still act before positions are written back. The default
+  semi-implicit pipeline is now all velocity work first, then rigid/link
+  contact stages, then rigid/multibody position stages, followed by deformable
+  dynamics and kinematics; the variational branch keeps its previous ordering.
+  Verified with focused build + CTest for `test_multibody_constraint`,
+  `test_world`, and `test_skeleton_to_multibody`, plus full
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (40/40), and `pixi run lint`.
+- **(DONE locally) Slice 3a — rigid-only LCP assembly seam and determinism
+  gate.** Extracted rigid contact problem assembly into
+  `compute/rigid_body_constraint.{hpp,cpp}` so `RigidBodyContactStage` now solves
+  the same assembled `A,b,lo,hi,findex` returned by a focused helper. Added
+  `test_rigid_body_constraint` to lock the rigid-only row ordering, normal
+  coupling block, Coulomb `findex` bounds, and element-exact repeat assembly for
+  a multibody-free stack scene. Verified with focused build + CTest for
+  `test_rigid_body_constraint` and `test_world`, plus full
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (41/41), and `pixi run lint`.
+- **(DONE locally) Slice 3b — multibody link-contact assembly seam (the
+  link-side comparator).** Extracted the link-contact row assembly (point
+  Jacobians, normal/tangent directions, diagonal Delassus denominators,
+  Baumgarte bias, restitution target, two-sided dynamic-rigid-obstacle coupling)
+  out of `solveMultibodyLinkContacts` into a public
+  `assembleMultibodyLinkContactProblem(registry, structure, nextVelocity,
+  timeStep, linkContacts)` in `compute/multibody_dynamics.{hpp,cpp}`, returning
+  `MultibodyLinkContactProblem{rows, inverseMass}` (the joint-space M^-1 the
+  unify needs to form `J_i^T M^-1 J_j` cross-coupling). Promoted the anonymous
+  `LinkContact`/`ContactRow` to public `LinkContact` / `MultibodyLinkContactRow`,
+  and shared the relative-velocity math through a file-local
+  `linkContactRelativeVelocity` helper used by both the restitution baseline and
+  the unchanged 8-iteration Gauss-Seidel sweep. This is the link-side
+  counterpart of slice 3a's `assembleRigidBodyContactProblem`: the unify (3c)
+  stacks both assemblers' rows into one boxed-LCP, comparing the rigid sub-block
+  against `assembleRigidBodyContactProblem` and the link sub-block against this.
+  **Behavior-preserving** — no `World::step` reorder, no solve-math change; the
+  assembler computes `inverseMass` once and the solve consumes it (no recompute).
+  An independent code-review pass confirmed byte-for-byte equivalence against
+  `HEAD`. The assembler lives in `multibody_dynamics.*` (it needs the internal
+  dynamics tree / mass matrix / body Jacobians); `multibody_constraint.*` stays
+  the pure position-integration home. Added `test_multibody_link_contact`
+  locking the one-sided row (orthonormal contact frame, denominator
+  self-consistency, Baumgarte bias, restitution target), the two-sided obstacle
+  coupling (unit inverse mass / identity inverse inertia / arm, strict
+  denominator increase), element-exact repeat assembly, and the
+  velocity-dimension-mismatch throw. Verified with focused build + CTest for
+  `test_multibody_link_contact`, `test_multibody_constraint`,
+  `test_rigid_body_constraint`, `test_world`, and `test_skeleton_to_multibody`,
+  plus full `ctest --test-dir build/default/cpp/Release --output-on-failure -L
+simulation-experimental` (42/42), and `pixi run lint`.
+- **Slice 3c — `UnifiedConstraintStage` (the unify). Validated design + 3-way
+  adversarial critique** (workflow `unify-contact-solve-design`, 14 agents).
+  Decomposed into 7 individually-gated sub-slices; ONLY the last (3c-ii.2) flips
+  the pipeline — everything before ships net-new, dead, unit-tested code (zero
+  behavior risk). Hard correctness pins from the critiques: (a) construct
+  `LcpOptions` as `solver.getDefaultOptions(); o.earlyTermination = true;`
+  verbatim — never default-construct (it flips `succeeded()`, hence the fallback
+  decision, in exactly the rank-deficient cases bit-identity must cover);
+  (b) a dynamic obstacle shared between a rigid contact and a link contact must
+  have ONE inverse mass/inertia injected into the rigid diagonal, link diagonal,
+  AND all cross terms (the two legacy paths normalize differently and zero
+  differently on LDLT failure, which would make A asymmetric); (c) compact
+  inactive link rows BEFORE computing global findex; (d) the rank-deficient
+  fallback's normal-row gather enumerates in ASCENDING global-row order so the
+  multibody-free case reproduces the legacy `i*3` stride byte-for-byte; (e) fill
+  shared-obstacle cross terms over ALL NINE direction pairs (rigid
+  `unitOrthogonal` vs link `cross` tangent frames are misaligned). Rigid
+  bit-identity is guaranteed ONLY for multibody-free and disjoint-mixed worlds;
+  shared-obstacle mixed scenes change at FP level (simultaneous vs sequential
+  solve) and are tolerance-based. Variational path is untouched (keeps
+  `RigidBodyContactStage`); the `method != Variational` gate is structural.
+  - **(DONE locally) Slice 3c-i.2 — unified problem types + within-domain
+    assembler.** Added `compute/unified_constraint.{hpp,cpp}` with
+    `UnifiedConstraintProblem` (global `delassus/rhs/lo/hi/findex` + `RowOwner`
+    provenance + verbatim `rigidConstraints` copy + per-multibody
+    `UnifiedMultibodyBlock`s) and the pure function
+    `assembleUnifiedConstraintProblem(rigidProblem, multibodyContacts)`. It
+    copies the rigid `A,b,lo,hi,findex` VERBATIM into the leading block, compacts
+    each multibody's active link rows, lays out three-row triples after the rigid
+    block, fills the full dense within-multibody `J_i^T M_k^-1 J_j` coupling (the
+    diagonal reproduces the stored row denominators bit-identically for
+    obstacle-free contacts), and sets link `lo/hi/findex` against the COMPACTED
+    global indices. Cross terms are zero (deferred to 3c-i.3). Extended
+    `MultibodyLinkContactRow` with `normalRhs/tangentRhs1/tangentRhs2` (the
+    pre-solve boxed-LCP targets) computed in `assembleMultibodyLinkContactProblem`
+    so the unified assembler stays a pure function of the sub-problems; the GS
+    solve ignores them, so 3b behavior is unchanged. NO pipeline change. Added
+    `test_unified_constraint` (multibody-free reproduces
+    `assembleRigidBodyContactProblem` byte-for-byte; rigid-free single-multibody
+    dense block equals `J_i^T M^-1 J_j` with the diagonal == denominators and a
+    non-trivial off-diagonal; findex range/self/normal-target asserts; fixed-base
+    inactive-row compaction → non-singular) and extended the 3b test for the new
+    rhs fields. Verified focused build + CTest for `test_unified_constraint`,
+    `test_multibody_link_contact`, `test_rigid_body_constraint`,
+    `test_multibody_constraint`, `test_world`, `test_skeleton_to_multibody`, full
+    `ctest -L simulation-experimental` (43/43), and `pixi run lint`.
+  - **(DONE locally) Slice 3c-i.3 — shared-obstacle cross terms + single-source
+    inertia.** `assembleUnifiedConstraintProblem` now fills the coupling through
+    a dynamic rigid body shared between contacts, reusing one `sharedBodyEntry`
+    kernel that mirrors the rigid `delassusEntry` exactly: a link contact's own
+    obstacle self-term (the diagonal completes to the stored denominator),
+    link<->link coupling through a shared obstacle, and rigid<->link coupling
+    through a body that is both a rigid-contact participant and a link obstacle —
+    over ALL nine direction pairs (the rigid `unitOrthogonal` and link `cross`
+    tangent frames are misaligned, so tangential coupling is generally nonzero).
+    Cross terms are added only for pairs with at least one link row, so the
+    verbatim rigid-rigid block is untouched. A shared body's `(invMass,
+invInertia)` is reconciled to the rigid path's canonical value (the rigid and
+    link assemblers normalize / handle LDLT failure differently). Still a pure
+    function; NO pipeline change. Added the `CouplesSharedDynamicObstacle`
+    test: an obstacle touched by both a rigid contact (on a static ground) and a
+    prismatic leg, asserting the 3x3 cross block equals the analytic shared-body
+    term over all nine direction pairs, global symmetry to 1e-12, the rigid block
+    unchanged, reconciliation equality, and the link diagonal completing to the
+    stored denominator. Verified focused build + `test_unified_constraint`
+    (5/5), full `ctest -L simulation-experimental` (43/43), `pixi run lint`.
+  - **(DONE locally) Slice 3c-i.4 — unified solver + impulse application.** Added
+    `solveUnifiedConstraintProblem` (joint Dantzig solve with the PINNED options
+    `solver.getDefaultOptions(); earlyTermination = true;` — never
+    default-constructed — returning `{lambda, succeeded}`) and
+    `applyUnifiedConstraintImpulses(registry, problem, lambda,
+multibodyVelocities)` which applies the solved global impulses to rigid
+    bodies (`applyRigidBodyContactImpulse` verbatim) and to each multibody's
+    staged generalized velocity (`M_k^-1 J^T lambda`), plus the
+    equal-and-opposite Newton impulse to a dynamic obstacle; a body shared
+    between a rigid contact and a link obstacle accumulates both. Normal impulses
+    clamped non-negative; all applied post-solve so order is irrelevant. Still no
+    pipeline change. Added four tests: boxed-LCP KKT + Coulomb cone on a sliding
+    box, head-on rigid contact driven to zero relative normal velocity, a
+    one-sided link contact reaching the `max(bias, restitution)` target, and the
+    exact equal-and-opposite Newton impulse delivered to a two-sided obstacle.
+    Verified focused build + `test_unified_constraint` (9/9), full
+    `ctest -L simulation-experimental` (43/43), `pixi run lint`.
+  - **(DONE locally) Slice 3c-i.5 — generalized rank-deficient fallback.** Added
+    `applyUnifiedConstraintFallback` (coupled NORMAL-only boxed-LCP over the
+    `{findex<0}` rows gathered in ASCENDING global-row order — so a
+    multibody-free set reproduces the legacy `i*3` stride — with a
+    diagonal-projection last resort, then a sequential Coulomb friction sweep
+    bounded by each contact's solved normal impulse over rigid contacts then link
+    contacts, reading live velocities each pass: rigid friction via
+    `comps::Velocity`, link friction via `M_k^-1 J^T` + the obstacle's
+    `comps::Velocity`) and `resolveUnifiedConstraints` (joint solve → apply, else
+    fallback; returns whether the joint solve succeeded). No pipeline change.
+    Added tests: the fallback stops a head-on rigid contact identically to the
+    joint solve; the fallback's friction opposes a sliding box without reversing
+    it; `resolveUnifiedConstraints` takes the joint path on a full-rank contact;
+    and the fallback arrests a four-coplanar box-on-plane (the canonical
+    rank-deficient set, exercised directly since this configuration's joint solve
+    happens to succeed). Verified focused build + `test_unified_constraint`
+    (13/13), full `ctest -L simulation-experimental` (43/43), `pixi run lint`.
+  - **(DONE locally) Slice 3c-ii.1 — the `UnifiedConstraintStage` class (dead,
+    not wired).** Added `UnifiedConstraintStage` (declared in
+    `multibody_dynamics.hpp`, defined in `multibody_dynamics.cpp` for access to
+    the anonymous routing/staging helpers `collectMultibodyLinkContacts`,
+    `gatherMultibodyVelocity`, `PendingMultibodyVelocity`). Its `execute`
+    queries collisions once, assembles the rigid-rigid problem and each
+    multibody's link problem (recomputing the dynamics tree / `M^-1` in-stage,
+    never cached; `PendingMultibodyVelocity` created from `gatherMultibodyVelocity`
+    when absent, mirroring `MultibodyContactStage`), stacks them via
+    `assembleUnifiedConstraintProblem`, calls `resolveUnifiedConstraints` over the
+    staged generalized velocities (collected in lockstep with the contacts so the
+    blocks line up), writes each resolved velocity back to `PendingMultibodyVelocity`,
+    then runs the rigid positional projection verbatim from
+    `RigidBodyContactStage`. Defaults to 8 friction iterations (matching both
+    `RigidBodyContactStage` and the link GS). NOT wired into any pipeline.
+    Unit-tested via direct `execute` (`test_unified_constraint_stage`): a sphere
+    overlapping a static ground has its descent arrested and is projected out of
+    penetration, and a contact-free body is untouched. (The link-side
+    orchestration and the bit-identity / tolerance baselines are validated by the
+    full emergent suite at the flip, where the stage actually runs.) Verified
+    focused build + `test_unified_constraint_stage` (2/2) + `test_world`
+    (104/104), full `ctest -L simulation-experimental` (44/44), `pixi run lint`.
+  - **(DONE locally) Slice 3c-ii.2 — the pipeline flip (the behavior-changing
+    slice).** `appendSemiImplicitSplitStages()` (`world.cpp`) now wires the
+    semi-implicit order as `RigidBodyVelocityStage`, `MultibodyVelocityStage`,
+    `UnifiedConstraintStage`, `RigidBodyPositionStage`, `MultibodyPositionStage`,
+    then `DeformableDynamicsStage`:
+    the single `UnifiedConstraintStage` replaces the separate
+    `RigidBodyContactStage` + `MultibodyContactStage` passes. Positions-last and
+    the post-solve velocity-limit clamp (in `MultibodyPositionStage`) are
+    preserved. The variational branch and both legacy stage classes are left
+    intact (the variational path still uses `RigidBodyContactStage`). The whole
+    emergent suite — rigid drop/rest/stack/friction/bounce, link-rest, two-sided
+    striker momentum — now runs through the unified boxed-LCP and stays within
+    its existing tolerances. Verified: full `ctest -L simulation-experimental`
+    (44/44, including `test_unified_constraint_stage`), and an independent
+    code-review pass APPROVED with zero behavior-changing defects (verified
+    positions-last, the lockstep block/velocity write-back including the
+    zero-active-row case, the byte-identical rigid positional projection running
+    exactly once, the `PendingMultibodyVelocity` lifecycle, and that the single
+    `collide()` call is a consistency improvement).
+  - **Known environmental blocker (NOT from this work):** `pixi run test-all`
+    cannot complete the **dartpy (Python bindings) build** in this environment —
+    `python/dartpy/.../tri_mesh.cpp`, `hierarchical_ik.cpp`, etc. fail with
+    `_POSIX_C_SOURCE`/`_XOPEN_SOURCE` redefined in `pyconfig.h` under `-Werror`
+    (the system `features.h` uses `202405L`/`800`, newer than Python 3.12's
+    `200809L`/`700`). Confirmed pre-existing: the dartpy build fails identically
+    with this slice's change stashed. It blocks the Python half of `test-all`
+    for the whole repo; address separately (e.g. include `<Python.h>` first in the
+    affected binding TUs, or relax `-Werror=cpp` for dartpy).
+  - **Slice 3c is complete locally** (assembler → cross terms → solver/apply →
+    fallback → stage → flip, six gated commits). The default semi-implicit
+    pipeline now resolves rigid-rigid and articulated link contacts in ONE
+    coupled boxed-LCP. Remaining Subsystem A work is **slice 5 (link-vs-link
+    two-sided contacts + the new collision routing)** and optional islands /
+    warm-starting / friction-cone polish (all explicit follow-ups).
+  - **(DONE locally) Slice 5a — same-multibody link-vs-link contacts.**
+    `LinkContact` now carries `otherLink` for a link obstacle owned by the same
+    `MultibodyStructure`. `collectMultibodyLinkContacts` accepts both-in-body
+    collision pairs and orients one contact row into the primary link; the
+    assembler subtracts the obstacle link's contact-point Jacobian from the
+    primary link's Jacobian, so the existing unified block naturally sees
+    `J_rel M^-1 J_rel^T` and the solved impulse updates both links through the
+    same staged generalized velocity. Dynamic rigid `otherBody` coupling remains
+    unchanged and is intentionally ignored when `otherLink` is set. Added
+    assembler coverage for the `[1, -1]` relative Jacobian on two sibling
+    prismatic links and an emergent world test where overlapping sibling links
+    stop approaching and separate through the default `UnifiedConstraintStage`.
+    Focused validation passed:
+    `build-simulation-experimental-tests`, `test_multibody_link_contact`,
+    selected `test_world` link-contact cases, selected `test_unified_constraint`
+    cases, and `test_unified_constraint_stage`; full
+    `ctest -L simulation-experimental` passed (44/44), and `pixi run lint`
+    passed.
+  - **(DONE locally) Slice 5b — cross-multibody link-vs-link contacts.** A
+    cross-multibody link row is owned by one multibody but now carries
+    `otherLink` + `otherMultibody` as a second articulated end. The stage hoists
+    multibody contact collection so both the owner and the other multibody get
+    solve blocks and staged velocities, completes the other side's contact-point
+    Jacobians after all blocks are assembled, and routes the solved normal and
+    friction impulses with opposite signs into both staged velocity vectors.
+    `assembleUnifiedConstraintProblem` resolves `otherMultibodyIndex`, adds the
+    cross-block articulated Delassus terms without perturbing the existing
+    primary-primary block, and both the direct apply path and rank-deficient
+    fallback update the second articulated end. Added assembler/apply coverage
+    for the second articulated end and an emergent world test where two separate
+    prismatic multibodies collide and stop approaching. Focused validation
+    passed: `build-simulation-experimental-tests`, selected
+    `test_unified_constraint`, selected `test_world`, and
+    `test_multibody_link_contact`; full
+    `ctest -L simulation-experimental` passed (44/44). Final validation passed:
+    `pixi run lint`, post-lint `pixi run build-simulation-experimental-tests`,
+    and post-lint `ctest -L simulation-experimental` (44/44).
+  - **(DONE locally) Slice 5c — row-islanded unified LCP solve.**
+    `solveUnifiedConstraintProblem` now decomposes independent row islands before
+    calling Dantzig: rows are connected by nonzero Delassus entries or by
+    `findex` normal/friction references, each island is solved with the same
+    pinned `getDefaultOptions(); earlyTermination = true` settings, and the
+    local lambdas are scattered back into the global impulse vector. Fully
+    coupled systems still use the original monolithic solve, and any island
+    failure returns `succeeded=false` so the existing global fallback remains the
+    recovery path. Added a regression with two independent contact islands where
+    the second island's friction rows must remap global `findex=3` to local row
+    zero. Focused validation passed: `build-simulation-experimental-tests`,
+    selected `test_unified_constraint`; full
+    `ctest -L simulation-experimental` passed (44/44). Final validation passed:
+    `pixi run lint`, post-lint `pixi run build-simulation-experimental-tests`,
+    and post-lint `ctest -L simulation-experimental` (44/44).
+- **Blockers the critiques verified (address before the relevant slice):**
+  - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
+    position stage runs until every velocity-writing stage has. A naive Slice-2
+    order (`RigidBodyPosition` before `MultibodyPosition`) violates it.
+  - _Per-multibody loop hoist._ The stage loops over multibodies and calls
+    `simulateMultibody` per body; a single LCP must hoist that loop and index
+    per-multibody solve contexts.
+  - _Velocity clamp placement._ The joint velocity-limit clamp runs **after** the
+    contact solve today (`multibody_dynamics.cpp:1021`); keep it post-solve, not
+    in the velocity stage.
+  - _Per-row restitution/Baumgarte._ Rigid uses threshold `1e-3`, no bias; link
+    uses `1e-2` + Baumgarte (`multibody_dynamics.cpp:961,980`). Carry a per-row
+    threshold + bias (0 for rigid rows) so the rigid `1e-9` swap stays
+    bit-identical and link resting/restitution is preserved — do NOT collapse to
+    one global convention.
+  - _Friction `findex` stride._ The rank-deficient fallback extracts the
+    normal-only block by striding `i*3` (`world_step_stage.cpp:5288-5392`); that
+    breaks once dense link rows interleave. Recompute `findex` against the
+    unified global row index and rework the fallback for link rows.
+  - _Fallback friction over links._ The fallback's sequential Coulomb sweep only
+    samples/applies rigid `comps::Velocity`; it has no link `M^-1 J^T` path, so
+    it would silently skip link friction. Generalize before merging link contacts.
+  - _M^-1 lifetime._ Do NOT cache `M^-1`/`DynamicsTree` in an EnTT component
+    across stages (reference-invalidation hazard); recompute `M^-1` once in the
+    solve stage (the project favors bit-stability over the micro-opt).
+  - _Determinism gate._ The rigid-only assembly helper and
+    `test_rigid_body_constraint` now lock row order and element-exact
+    `A,b,lo,hi,findex` repeat assembly for a multibody-free world; the unify
+    slice should compare its rigid sub-block against that helper.
+  - _Out of scope initially_: the variational integrator path
+    (`variational_integration.cpp:1101`) keeps its own contact handling — gate
+    `UnifiedConstraintStage` on `method != Variational`. Joint limits stay
+    post-integration clamps; motors stay the pre-contact equality solve.
+    Warm-starting remains a deliberate non-goal until it has a separate
+    evidence-backed slice.
+
+Then: optional **friction-cone polish** — the ODE `findex` bound is frozen once
+per solve (a one-shot decoupling approximation); a true cone or an outer
+normal/friction iteration would tighten coupled stacking friction if a scene
+needs it. Warm-starting is also available as a separate scaling polish slice.
 
 ## Immediate Next Step
 
-**Blocker — land the MVP PR #2705.** Finish the local main merge and verification:
-the integration convention is now #2698-style pure/persistent force inputs plus
-a transient gravity force-assembly buffer for default `World::step()`. Next,
-build and run the focused C++/Python gates, fix fallout, add the required
-dart-gui example (Subsystem C), then push only after maintainer approval.
+**MVP done (PR #2705 merged).** The #2698 convention re-alignment shipped and
+the required dart-gui example (Subsystem C) is on `main`
+(`examples/demos/scenes/experimental_rigid_body_gui.cpp` plus the Python `sx_*`
+demos). The blocker described in earlier sessions is resolved.
 
-**All joint types are now implemented and verified** (fixed, revolute,
-prismatic, screw, universal, planar, ball, free) with a floating base via a
-`Free` joint, including the config-dependent-subspace `cJ` term and SO(3)/SE(3)
-manifold integration. The two remaining roadmap subsystems are each a dedicated
-multi-session effort with a specific architectural prerequisite, detailed below.
+**All joint types are implemented and verified** (fixed, revolute, prismatic,
+screw, universal, planar, ball, free) with a floating base via a `Free` joint,
+including the config-dependent-subspace `cJ` term and SO(3)/SE(3) manifold
+integration. **Subsystem B (model loading) and the Subsystem A unified contact
+solve are both well underway** — see below. The immediate next step is to decide
+whether to publish `feature/experimental-model-loader` as a new PR or continue
+locally with a smaller follow-up slice such as visual geometry/material loading,
+richer load diagnostics, or warm-starting/friction-cone polish.
 
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
-What works today: rigid-body-vs-rigid-body and rigid-body-vs-static contacts
-(`RigidBodyContactStage`, sequential impulse + friction + restitution +
-positional correction); link-vs-static-rigid-body one-sided articulated contact
-(inside `simulateMultibody`). **Missing:** link-vs-dynamic-rigid-body and
-link-vs-link (two-sided) contacts, and a coupled simultaneous boxed-LCP/PGS
-solve over all contacts at once.
+What works today: the default semi-implicit pipeline velocity-integrates rigid
+and articulated bodies, runs one `UnifiedConstraintStage` boxed-LCP over
+rigid-rigid, link-vs-static-rigid, link-vs-dynamic-rigid, and same-multibody
+link-vs-link and cross-multibody link-vs-link rows, then position-integrates.
+Rigid positional correction still runs after the unified velocity solve.
+**Missing:** remaining scaling/polish work (warm starting / friction-cone
+iteration).
 
-- **Pipeline ordering (partly addressed):** the default `World::step` pipeline is
-  now `RigidBodyVelocityStage` → `RigidBodyContactStage` →
-  `MultibodyForwardDynamicsStage` → `RigidBodyPositionStage` → `KinematicsStage`
-  (rigid-body position integration moved after the multibody stage so two-sided
-  link-vs-rigid impulses land the same step). A fully coupled solve still wants
-  the stronger split: **(1) all velocity integration (rigid + multibody
-  unconstrained `qddot`→`qdot`), (2) one unified contact/constraint solve over
-  all bodies, (3) all position integration** — so rigid-rigid and link contacts
-  are resolved jointly rather than in separate Gauss-Seidel passes. This touches
-  the core step loop and all passing tests, so do it as its own slice with the
-  suite as the guardrail (revert if it destabilizes, as was done for the first
-  universal-joint attempt).
+- **Pipeline ordering (done for semi-implicit):** the default semi-implicit
+  `World::step` pipeline now runs `RigidBodyVelocityStage` →
+  `MultibodyVelocityStage` → `UnifiedConstraintStage` →
+  `RigidBodyPositionStage` → `MultibodyPositionStage` →
+  `DeformableDynamicsStage` → `KinematicsStage`. The variational branch keeps
+  its dedicated path.
 - **After reordering:** assemble every contact as a constraint row with a
   Jacobian that maps the contact impulse to each involved body's velocity —
   rigid bodies via `invMass`/`invWorldInertia` + arm (already in
@@ -236,9 +751,9 @@ lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
   `MultibodyForwardDynamicsStage` in `World::step`, so these impulses reach the
   rigid body's pose in the same step (no lag; addressed a P1 review note).
   Verified by total X-momentum conservation when a prismatic striker link hits a
-  free body (C++ + dartpy). **Still remaining:** link-vs-link
-  contacts and the coupled simultaneous boxed-LCP (both need the pipeline
-  reordering above).
+  free body (C++ + dartpy). The later unified pipeline supersedes this
+  per-multibody solve for the default semi-implicit path. **Still remaining:**
+  cross-multibody link-vs-link contacts and scaling polish.
 
 ### Subsystem B — model loading (URDF/SDF/MJCF) into the experimental World
 
@@ -260,35 +775,46 @@ still need the remaining translation layer:
   URDF/Skeleton COM offsets directly (no reframing). Verified by an offset-COM
   pendulum (C++ + dartpy). Child-joint origins relative to the body frame still
   map onto `transformFromParent` as today.
-- **DONE first C++/dartpy bridge:** `simulation::experimental::io::addSkeleton`
-  /`addWorld` and dartpy `simulation_experimental.add_skeleton()`/`add_world()`
-  now translate already-parsed legacy `dynamics::Skeleton` and
-  `simulation::World` objects into experimental `World`/`Multibody` handles for
-  Weld/Revolute/Prismatic/Screw/Universal/Ball/Planar/Free tree joints. It maps
-  names, synthetic root anchors, parent-joint transforms, axes, screw pitch,
-  joint state/limits, actuator family, passive spring/damping/friction, mass,
-  inertia, local COM offsets, and one centered collidable Box/Sphere/Capsule/
-  Cylinder/Mesh shape per link when the legacy shape maps exactly to the
-  experimental `CollisionShape` facade. URI-loading overloads accept explicit
-  `dart::io::ReadOptions`, including dartpy bindings for format selection, SDF
-  default root-joint selection, and URDF package directories.
-  `test_skeleton_loader` verifies structure/property transfer,
-  classic-vs-experimental pendulum stepping from a loaded Skeleton, higher-DOF
-  joint-family coverage, basic collision-shape transfer, default Skeleton/World
-  URI loading, multi-skeleton legacy-World import, and honest rejection of
-  unsupported legacy-only joints or unrepresentable collision shapes; the dartpy
-  regression covers the already-parsed handoff, URI-string loading, shape
-  transfer, world import, and `SkeletonLoadOptions`.
-- **Remaining:** remaining legacy-only joint families, collision shape source
-  offsets, multiple collision shapes, visual geometry, materials, resource
-  retriever bindings, diagnostics, and richer load-result ergonomics.
+- **(DONE) C++/dartpy model-loading bridge.**
+  `simulation::experimental::io::buildMultibodyFromSkeleton()` /
+  `buildMultibodiesFromWorld()` provide the lower-level translation pass, while
+  `addSkeleton()` / `addWorld()` and dartpy
+  `simulation_experimental.add_skeleton()` / `add_world()` compose that bridge
+  with `dart::io::readSkeleton()` / `readWorld()` URI loading and optional
+  `ReadOptions` / `SkeletonLoadOptions`.
+  - **Frame-mapping decision.** The importer places each experimental link frame
+    on that link's outgoing joint frame, adds a synthetic fixed root anchor when
+    needed, and computes each child joint's parent-to-joint transform with mass,
+    inertia, COM, axes, and joint state re-expressed in the placed frame. For
+    moving joints the residual parent-side mapping must be translation-free;
+    that check rejects currently unrepresentable legacy layouts honestly.
+  - **(DONE) Joint families and properties.** Weld, revolute, prismatic, screw,
+    universal, ball-to-spherical, planar, and free-to-floating tree joints are
+    mapped, including names, synthetic root anchors, axes, screw pitch, state,
+    actuator family, revolute/prismatic limits, damping, springs, friction, mass,
+    inertia, and local COM offsets. C++ and dartpy tests cover structure/property
+    transfer, classic-vs-experimental pendulum stepping, higher-DOF joint-family
+    parity, URI loading, already-parsed handoff, and multi-skeleton world import.
+  - **(DONE) Collision shapes.** Sphere, box, capsule, cylinder, plane, and
+    triangular mesh collision shapes are translated with shape-node local
+    transforms preserved on `CollisionShape`. Convex meshes reuse the mesh
+    carrier, heightmaps are triangulated into that carrier, and soft meshes
+    snapshot their point-mass mesh into it. Multiple representable collision
+    shape nodes per body/link are imported, serialized, exposed in C++/dartpy,
+    and collided as compound geometry without same-entity self contacts.
+  - **Remaining:** visual geometry, materials, resource-retriever bindings,
+    richer diagnostics/load-result ergonomics, multi-DOF joint-property force
+    application, rotated parent-offset handling for ball/free/planar coordinate
+    re-expression, and deformable obstacle queries beyond the first sphere/box
+    barrier.
 
-### Subsystem C — MVP GUI example (required for the MVP)
+### Subsystem C — MVP GUI example (DONE)
 
-Today the only experimental example is **headless**
-(`python/examples/experimental_rigid_body/main.py`). The MVP needs at least one
-**GUI** example that steps the experimental rigid-body `World` and renders it
-live.
+Landed on `main`: `examples/demos/scenes/experimental_rigid_body_gui.cpp` steps
+the experimental rigid-body `World` and renders it live in `dart-demos`, and the
+Python `sx_*` demos (`python/examples/demos/scenes/sx_articulated.py`,
+`sx_floating_base.py`) cover it from dartpy. The historical note below is kept
+for context.
 
 Grounding (verified in-tree):
 
@@ -317,9 +843,6 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 2:** capsule/cylinder/plane/mesh shapes, self-collision/filtering,
-  broad-phase pruning, a persistent collision world instead of rebuilding per
-  `collide()`.
 - **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
   mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,
@@ -384,9 +907,10 @@ response)** and beyond.
    sphere shape descends under gravity and rests on a static rigid ground
    (penetration stops, normal velocity -> 0).
 
-When committing this session's work: create a feature branch, run the pre-commit
-checklist (`pixi run lint`, build, tests), and open a PR with milestone
-`DART 7.0`.
+When publishing this branch: preserve the local merge commit from `origin/main`,
+push only after explicit maintainer approval, and open a PR with milestone
+`DART 7.0`. The branch already has the default and CUDA `test-all` gates passing
+after the merge.
 
 ## Context That Would Be Lost
 
@@ -412,8 +936,8 @@ checklist (`pixi run lint`, build, tests), and open a PR with milestone
 ## How To Resume
 
 ```bash
-cd /home/js/dev/dartsim/dart/task_2
-git status && git log -3 --oneline
+cd /home/js/dev/dartsim/dart/task_1
+git status -sb && git log -3 --oneline
 ```
 
 Then read, in order:

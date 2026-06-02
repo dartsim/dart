@@ -77,4 +77,38 @@ setDeformablePsdBlockProjector(DeformablePsdBlockProjector projector);
 [[nodiscard]] DART_EXPERIMENTAL_API DeformablePsdBlockProjector
 deformablePsdBlockProjector();
 
+/// A registered acceleration backend for the deformable PSD projection.
+///
+/// An optional sidecar (compiled only when an accelerated backend is enabled)
+/// may register itself here so the runtime can switch the PSD projection
+/// between the built-in CPU path and the accelerated path. Backend-neutral by
+/// design: the public API names the capability, not the device technology.
+struct DeformablePsdAccelerator
+{
+  /// True when the accelerator reports an available device at runtime.
+  bool (*available)() = nullptr;
+  /// Install the accelerated projector; returns whether it became active.
+  bool (*enable)() = nullptr;
+  /// Restore the built-in CPU projector and release accelerator resources.
+  void (*disable)() = nullptr;
+};
+
+/// Register (or clear, with a default-constructed value) the optional
+/// accelerated PSD projector. Intended to be called once during setup by an
+/// accelerator sidecar, not concurrently with a running solve.
+DART_EXPERIMENTAL_API void setDeformablePsdAccelerator(
+    const DeformablePsdAccelerator& accelerator);
+
+/// Whether a registered accelerator reports an available device at runtime.
+[[nodiscard]] DART_EXPERIMENTAL_API bool isDeformablePsdAccelerationAvailable();
+
+/// Switch the deformable PSD projection to the registered accelerator (when
+/// @p enabled and available) or back to the CPU backend. Process-wide. Returns
+/// whether acceleration is active after the call (false when unavailable, so
+/// the call is a safe no-op that stays on the CPU backend).
+DART_EXPERIMENTAL_API bool setDeformablePsdAccelerated(bool enabled);
+
+/// Whether the accelerated PSD projector is currently installed.
+[[nodiscard]] DART_EXPERIMENTAL_API bool isDeformablePsdAccelerated();
+
 } // namespace dart::simulation::experimental::compute

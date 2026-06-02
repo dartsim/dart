@@ -359,8 +359,11 @@ if(DART_BUILD_GUI)
     # The docking variant provides the multi-viewport dockspace API
     # (IMGUI_HAS_DOCK) required by the standalone dartsim editor. The version
     # matches the system ImGui that DART already builds against.
-    # Minimum required: v1.80 for stable table API
-    set(IMGUI_MIN_VERSION "1.80")
+    # Minimum required: v1.92. The dart::gui viewer theme uses ImGui style slots
+    # and fields from the 1.89-1.91 series (e.g. ImGuiCol_NavCursor, 1.91.4) and
+    # enforces this minimum at compile time in
+    # dart/gui/detail/imgui_overlay.cpp; older system ImGui is not supported.
+    set(IMGUI_MIN_VERSION "1.92")
     set(IMGUI_TARGET_VERSION "v1.92.8-docking")
 
     message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")

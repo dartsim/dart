@@ -47,6 +47,7 @@
 #include <entt/entt.hpp>
 
 #include <iosfwd>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -69,6 +70,26 @@ enum class RigidBodySolver
 {
   SequentialImpulse,
   Ipc,
+};
+
+/// Options controlling `World::collide()` query filtering.
+struct CollisionQueryOptions
+{
+  /// Include contacts between different links that belong to the same
+  /// multibody. Enabled by default to preserve explicit self-contact queries
+  /// and the articulated same-multibody contact solver path.
+  bool includeSameMultibodyLinkPairs = true;
+
+  /// Include contacts between two rigid bodies.
+  bool includeRigidBodyPairs = true;
+
+  /// Include contacts between a rigid body and a multibody link.
+  bool includeRigidBodyLinkPairs = true;
+
+  /// Include contacts between two multibody links. If this is enabled,
+  /// `includeSameMultibodyLinkPairs` can still filter the same-multibody
+  /// subset.
+  bool includeLinkPairs = true;
 };
 
 /// A read-only snapshot of the deformable solver's per-step diagnostics, folded
@@ -455,13 +476,24 @@ public:
   // Collision queries
   //--------------------------------------------------------------------------
 
-  /// Run a collision query over all rigid bodies that have a collision shape.
+  /// Run a collision query over all bodies that have a collision shape.
   ///
   /// This is a query, not a solver: it reports contact points (position,
   /// world-frame normal from bodyA toward bodyB, and penetration depth) using
-  /// the current body world transforms. It does not modify body state. Bodies
-  /// without a collision shape are ignored.
+  /// the current body world transforms. It does not modify body state. Rigid
+  /// bodies and multibody links without a collision shape are ignored.
   [[nodiscard]] std::vector<Contact> collide();
+
+  /// Run a collision query with explicit filtering options.
+  ///
+  /// Body-type switches can include or exclude rigid-body pairs,
+  /// rigid-body/link pairs, and link/link pairs independently.
+  ///
+  /// `includeSameMultibodyLinkPairs=false` filters link-vs-link contacts within
+  /// the same multibody while preserving rigid-body pairs, link-vs-rigid-body
+  /// pairs, and link-vs-link contacts across different multibodies.
+  [[nodiscard]] std::vector<Contact> collide(
+      const CollisionQueryOptions& options);
 
   //--------------------------------------------------------------------------
   // Serialization
@@ -487,6 +519,7 @@ private:
   friend class io::detail::SkeletonLoaderWorldAccess;
 
   Frame resolveParentFrame(const Frame& parent) const;
+  struct CollisionQueryCache;
   entt::entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -552,6 +585,7 @@ private:
   std::size_t m_deformableBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
+  mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
 };
 
 } // namespace dart::simulation::experimental

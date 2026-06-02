@@ -40,6 +40,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdint>
 
 namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 
@@ -283,6 +284,201 @@ TEST(VbdContact, AvbdBoxContactFeatureCodeSeparatesBoxManifolds)
   EXPECT_NE(
       vbd::packAvbdBoxContactFeatureId(0, positiveXFace),
       vbd::packAvbdBoxContactFeatureId(0, positiveYFace));
+
+  EXPECT_EQ(
+      vbd::avbdBoxContactFeatureKind(positiveXFace),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdBoxContactFeatureKind(positiveXPositiveYEdge),
+      vbd::AvbdContactFeatureKind::Edge);
+  EXPECT_EQ(
+      vbd::avbdBoxContactFeatureKind(positiveCorner),
+      vbd::AvbdContactFeatureKind::Vertex);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdCylinderContactFeatureCodeSeparatesManifolds)
+{
+  const double radius = 1.0;
+  const double halfHeight = 2.0;
+
+  const std::uint64_t side = vbd::avbdCylinderContactFeatureCode(
+      Vec3(1.2, 0.0, 0.0), radius, halfHeight);
+  const std::uint64_t sideInside = vbd::avbdCylinderContactFeatureCode(
+      Vec3(0.95, 0.0, 0.0), radius, halfHeight);
+  const std::uint64_t topCap = vbd::avbdCylinderContactFeatureCode(
+      Vec3(0.0, 0.0, 2.2), radius, halfHeight);
+  const std::uint64_t bottomCap = vbd::avbdCylinderContactFeatureCode(
+      Vec3(0.0, 0.0, -2.2), radius, halfHeight);
+  const std::uint64_t topRim = vbd::avbdCylinderContactFeatureCode(
+      Vec3(1.2, 0.0, 2.2), radius, halfHeight);
+  const std::uint64_t bottomRim = vbd::avbdCylinderContactFeatureCode(
+      Vec3(1.2, 0.0, -2.2), radius, halfHeight);
+
+  EXPECT_EQ(sideInside, side);
+  EXPECT_NE(topCap, side);
+  EXPECT_NE(bottomCap, topCap);
+  EXPECT_NE(topRim, topCap);
+  EXPECT_NE(bottomRim, topRim);
+
+  EXPECT_NE(
+      vbd::packAvbdCylinderContactFeatureId(0, side),
+      vbd::packAvbdBoxContactFeatureId(0, side));
+  EXPECT_NE(
+      vbd::packAvbdCylinderContactFeatureId(0, side),
+      vbd::packAvbdCylinderContactFeatureId(1, side));
+
+  EXPECT_EQ(
+      vbd::avbdCylinderContactFeatureKind(side),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdCylinderContactFeatureKind(topCap),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdCylinderContactFeatureKind(topRim),
+      vbd::AvbdContactFeatureKind::Edge);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdCapsuleContactFeatureCodeSeparatesManifolds)
+{
+  const double halfHeight = 2.0;
+
+  const std::uint64_t side
+      = vbd::avbdCapsuleContactFeatureCode(Vec3(1.2, 0.0, 0.0), halfHeight);
+  const std::uint64_t sideInside
+      = vbd::avbdCapsuleContactFeatureCode(Vec3(0.95, 0.0, 0.0), halfHeight);
+  const std::uint64_t topCap
+      = vbd::avbdCapsuleContactFeatureCode(Vec3(0.0, 0.0, 2.2), halfHeight);
+  const std::uint64_t bottomCap
+      = vbd::avbdCapsuleContactFeatureCode(Vec3(0.0, 0.0, -2.2), halfHeight);
+
+  EXPECT_EQ(sideInside, side);
+  EXPECT_NE(topCap, side);
+  EXPECT_NE(bottomCap, topCap);
+
+  EXPECT_NE(
+      vbd::packAvbdCapsuleContactFeatureId(0, side),
+      vbd::packAvbdCylinderContactFeatureId(0, side));
+  EXPECT_NE(
+      vbd::packAvbdCapsuleContactFeatureId(0, side),
+      vbd::packAvbdCapsuleContactFeatureId(1, side));
+
+  EXPECT_EQ(
+      vbd::avbdCapsuleContactFeatureKind(side),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdCapsuleContactFeatureKind(topCap),
+      vbd::AvbdContactFeatureKind::Face);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdContactFeatureIdsRoundTripKindAndIndex)
+{
+  const std::uint64_t vertex
+      = vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 42);
+  const std::uint64_t edge
+      = vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Edge, 42);
+  const std::uint64_t face
+      = vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 7);
+
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(vertex), vbd::AvbdContactFeatureKind::Vertex);
+  EXPECT_EQ(vbd::avbdContactFeatureLocalIndex(vertex), 42u);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(edge), vbd::AvbdContactFeatureKind::Edge);
+  EXPECT_EQ(vbd::avbdContactFeatureLocalIndex(edge), 42u);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(face), vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(vbd::avbdContactFeatureLocalIndex(face), 7u);
+  EXPECT_NE(vertex, edge);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdContactManifoldRowKeyCanonicalizesBodyOrder)
+{
+  const vbd::AvbdContactEndpointId first{
+      17,
+      vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 3)};
+  const vbd::AvbdContactEndpointId second{
+      4, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 9)};
+
+  const vbd::AvbdScalarRowKey forward = vbd::makeAvbdContactManifoldRowKey(
+      vbd::AvbdScalarRowRole::ContactNormal,
+      first,
+      second,
+      /*row=*/2,
+      /*axis=*/0);
+  const vbd::AvbdScalarRowKey reverse = vbd::makeAvbdContactManifoldRowKey(
+      vbd::AvbdScalarRowRole::ContactNormal,
+      second,
+      first,
+      /*row=*/2,
+      /*axis=*/0);
+  const vbd::AvbdScalarRowKey tangent = vbd::makeAvbdContactManifoldRowKey(
+      vbd::AvbdScalarRowRole::FrictionTangent,
+      first,
+      second,
+      /*row=*/2,
+      /*axis=*/1);
+
+  EXPECT_EQ(forward, reverse);
+  EXPECT_EQ(forward.objectA, second.object);
+  EXPECT_EQ(forward.featureA, second.feature);
+  EXPECT_EQ(forward.objectB, first.object);
+  EXPECT_EQ(forward.featureB, first.feature);
+  EXPECT_NE(forward, tangent);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdContactDescriptorsUseCanonicalKeysAndBounds)
+{
+  const vbd::AvbdContactEndpointId first{
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Edge, 4)};
+  const vbd::AvbdContactEndpointId second{
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
+
+  const vbd::AvbdScalarRowDescriptor normal
+      = vbd::makeAvbdContactNormalRowDescriptor(
+          first, second, /*startStiffness=*/80.0, /*maxStiffness=*/400.0);
+  const vbd::AvbdScalarRowDescriptor reverseNormal
+      = vbd::makeAvbdContactNormalRowDescriptor(
+          second, first, /*startStiffness=*/80.0, /*maxStiffness=*/400.0);
+  const vbd::AvbdScalarRowDescriptor firstTangent
+      = vbd::makeAvbdContactFrictionRowDescriptor(
+          first,
+          second,
+          /*axis=*/0,
+          /*forceLimit=*/6.0,
+          /*startStiffness=*/80.0,
+          /*maxStiffness=*/400.0);
+  const vbd::AvbdScalarRowDescriptor secondTangent
+      = vbd::makeAvbdContactFrictionRowDescriptor(
+          first,
+          second,
+          /*axis=*/1,
+          /*forceLimit=*/6.0,
+          /*startStiffness=*/80.0,
+          /*maxStiffness=*/400.0);
+
+  EXPECT_EQ(normal.key, reverseNormal.key);
+  EXPECT_EQ(normal.key.role, vbd::AvbdScalarRowRole::ContactNormal);
+  EXPECT_EQ(normal.key.objectA, second.object);
+  EXPECT_EQ(normal.key.featureA, second.feature);
+  EXPECT_EQ(normal.kind, vbd::AvbdScalarRowKind::HardConstraint);
+  EXPECT_DOUBLE_EQ(normal.bounds.lower, 0.0);
+  EXPECT_TRUE(std::isinf(normal.bounds.upper));
+  EXPECT_DOUBLE_EQ(normal.startStiffness, 80.0);
+  EXPECT_DOUBLE_EQ(normal.maxStiffness, 400.0);
+
+  EXPECT_EQ(firstTangent.key.role, vbd::AvbdScalarRowRole::FrictionTangent);
+  EXPECT_EQ(firstTangent.key.objectA, second.object);
+  EXPECT_EQ(firstTangent.key.axis, 0u);
+  EXPECT_EQ(secondTangent.key.axis, 1u);
+  EXPECT_DOUBLE_EQ(firstTangent.bounds.lower, -6.0);
+  EXPECT_DOUBLE_EQ(firstTangent.bounds.upper, 6.0);
+  EXPECT_NE(normal.key, firstTangent.key);
+  EXPECT_NE(firstTangent.key, secondTangent.key);
 }
 
 //==============================================================================
