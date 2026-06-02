@@ -277,25 +277,34 @@ bool BulletCollisionDetector::collide(
     return false;
 
   // Create a new collision group, merging the two groups into
-  mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
-  auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
+  auto groupForFiltering
+      = std::make_unique<BulletCollisionGroup>(shared_from_this());
+  auto bulletCollisionWorld = groupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback = new detail::BulletOverlapFilterCallback(
-      option.collisionFilter, group1, group2);
-  bulletPairCache->setOverlapFilterCallback(filterCallback);
+  std::unique_ptr<detail::BulletOverlapFilterCallback> filterCallback(
+      new detail::BulletOverlapFilterCallback(
+          option.collisionFilter, group1, group2));
+  bulletPairCache->setOverlapFilterCallback(filterCallback.get());
 
-  mGroupForFiltering->addShapeFramesOf(group1, group2);
-  mGroupForFiltering->updateEngineData();
+  groupForFiltering->addShapeFramesOf(group1, group2);
+  groupForFiltering->updateEngineData();
 
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
+  bool hasCollision = false;
   if (result) {
     reportContacts(bulletCollisionWorld, option, *result);
-
-    return result->isCollision();
+    hasCollision = result->isCollision();
   } else {
-    return isCollision(bulletCollisionWorld);
+    hasCollision = isCollision(bulletCollisionWorld);
   }
+
+  bulletPairCache->setOverlapFilterCallback(nullptr);
+  filterCallback.reset();
+
+  groupForFiltering->removeAllShapeFrames();
+
+  return hasCollision;
 }
 
 //==============================================================================

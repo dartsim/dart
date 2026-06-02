@@ -90,9 +90,23 @@ void BulletCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
   auto casted = static_cast<BulletCollisionObject*>(object);
+  auto* btObject = casted->getBulletCollisionObject();
+  auto* proxy = btObject->getBroadphaseHandle();
+  auto* pairCache
+      = mBulletCollisionWorld->getBroadphase()->getOverlappingPairCache();
 
-  mBulletCollisionWorld->removeCollisionObject(
-      casted->getBulletCollisionObject());
+  if (proxy && pairCache) {
+    pairCache->cleanProxyFromPairs(proxy, mBulletDispatcher.get());
+    pairCache->removeOverlappingPairsContainingProxy(
+        proxy, mBulletDispatcher.get());
+  }
+
+  mBulletCollisionWorld->removeCollisionObject(btObject);
+
+  if (mBulletProadphaseAlg) {
+    auto* dbvt = static_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get());
+    dbvt->resetPool(mBulletDispatcher.get());
+  }
 
   initializeEngineData();
 }
@@ -102,6 +116,11 @@ void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   for (const auto& info : mObjectInfoList)
     removeCollisionObjectFromEngine(info->mObject.get());
+
+  if (mBulletProadphaseAlg) {
+    auto* dbvt = static_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get());
+    dbvt->resetPool(mBulletDispatcher.get());
+  }
 
   initializeEngineData();
 }

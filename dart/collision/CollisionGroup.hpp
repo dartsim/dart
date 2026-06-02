@@ -419,6 +419,8 @@ private:
   class ShapeFrameObserver final : public common::Observer
   {
   public:
+    explicit ShapeFrameObserver(CollisionGroup* group = nullptr);
+
     /// Add a shape frame to this observer
     void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
@@ -438,6 +440,8 @@ private:
     void handleDestructionNotification(const common::Subject* subject) override;
 
   private:
+    CollisionGroup* mGroup;
+
     /// A map from a subject pointer to its corresponding ShapeFrame pointer.
     /// This needs to be stored because by the time a Subject is being
     /// destructed, it can no longer be cast back to its ShapeFrame.
@@ -455,6 +459,9 @@ private:
   /// if it is unsubscribed from all sources.
   void removeShapeFrameInternal(
       const dynamics::ShapeFrame* shapeFrame, const void* source);
+
+  friend class ShapeFrameObserver;
+  void handleShapeFrameDestruction(const dynamics::ShapeFrame* shapeFrame);
 
   /// Set this to true to have this CollisionGroup check for updates
   /// automatically. Default is true.

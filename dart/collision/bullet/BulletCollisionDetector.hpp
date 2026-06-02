@@ -157,8 +157,6 @@ private:
 private:
   std::map<dynamics::ConstShapePtr, ShapeInfo> mShapeMap;
 
-  std::unique_ptr<BulletCollisionGroup> mGroupForFiltering;
-
   static Registrar<BulletCollisionDetector> mRegistrar;
 };
 
