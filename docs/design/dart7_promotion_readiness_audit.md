@@ -52,7 +52,7 @@ install(
 )
 ```
 
-This installs **all 117 `*.hpp`** under `experimental/`, including `detail/`,
+This installs **all 127 `*.hpp`** under `experimental/`, including `detail/`,
 `comps/`, `ecs/`, and `compute/` implementation headers. There is no public-header
 allowlist today.
 
@@ -77,7 +77,11 @@ A promoted public API must not require either.
   implementation-only and excluded from promotion.
 - The header includes `<entt/entt.hpp>` directly.
 
-### D. Header inventory by subdirectory (117 total)
+### D. Header inventory by subdirectory (127 total)
+
+Counts are a snapshot and drift as the tree grows; run
+`pixi run audit-dart7-promotion-surface` for the live inventory, classification,
+and (transitive) leak set.
 
 | Subdir        | hpp | Disposition | Notes                                                                                                                                                                                                                   |
 | ------------- | --- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -89,10 +93,10 @@ A promoted public API must not require either.
 | `space/`      | 4   | MIXED       | `StateSpace` PROMOTE; `auto_mapper`/`component_mapper`/`vector_mapper` HIDE (registry mappers).                                                                                                                         |
 | `common/`     | 9   | MIXED       | `constants`/`exceptions`/`diagnostics` may be public; `ecs_utils` HIDE; `macros`/`assert`/`logging`/`profiling`/`type_list` are support headers to keep internal unless needed.                                         |
 | `comps/`      | 16  | HIDE        | ECS component storage. Never public.                                                                                                                                                                                    |
-| `compute/`    | 17  | HIDE\*\*    | Executors/kernels/backends. Only backend-neutral extension points (`ComputeExecutor`, `WorldStepPipeline`, `WorldStepStage`, profiles, metadata) are promotion candidates, and only with benchmark + boundary evidence. |
+| `compute/`    | 20  | HIDE\*\*    | Executors/kernels/backends. Only backend-neutral extension points (`ComputeExecutor`, `WorldStepPipeline`, `WorldStepStage`, profiles, metadata) are promotion candidates, and only with benchmark + boundary evidence. |
 | `ecs/`        | 4   | HIDE        | Entity-object base machinery.                                                                                                                                                                                           |
-| `io/`         | 9   | HIDE\*\*\*  | Binary serializers. `World::saveBinary`/`loadBinary` is the public surface; the serializer headers stay internal.                                                                                                       |
-| `detail/`     | 27  | HIDE        | Already `detail/` (solvers: boxed-LCP, rigid IPC, deformable VBD/IPC, elasticity). Never public.                                                                                                                        |
+| `io/`         | 11  | HIDE\*\*\*  | Binary serializers. `World::saveBinary`/`loadBinary` is the public surface; the serializer headers stay internal.                                                                                                       |
+| `detail/`     | 33  | HIDE        | Already `detail/` (solvers: boxed-LCP, rigid IPC, deformable VBD/IPC, elasticity). Never public.                                                                                                                        |
 | `diff/`       | 4   | SEPARATE    | Differentiable simulation (PLAN-110), opt-in behind `DART_BUILD_DIFF`; not part of the core promotion subset.                                                                                                           |
 
 `*` PROMOTE handles currently leak `entt` (include or signature) and need
