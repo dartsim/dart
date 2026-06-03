@@ -113,11 +113,22 @@ if(Eigen3_VERSION VERSION_LESS 3.4)
 endif()
 
 # EnTT - Entity Component System library
-dart_experimental_find_package(
-  NAME EnTT
-  PACKAGE EnTT
-  VERSION 3.14
-  REQUIRED
+# Use the fallback-capable finder so clean environments (containers, wheel
+# builds) auto-fetch EnTT instead of FATAL_ERRORing on a plain
+# find_package(... REQUIRED). Mirrors dart/collision/native/CMakeLists.txt.
+if(NOT TARGET EnTT::EnTT)
+  dart_find_package(EnTT)
+endif()
+if(NOT TARGET EnTT::EnTT)
+  message(FATAL_ERROR "EnTT >= 3.14 is required for simulation-experimental")
+endif()
+# Keep EnTT in the tracked-deps summary so the status line still prints it.
+list(APPEND DART_EXPERIMENTAL_DEPS_FOUND EnTT)
+set(
+  DART_EXPERIMENTAL_DEPS_FOUND
+  "${DART_EXPERIMENTAL_DEPS_FOUND}"
+  CACHE INTERNAL
+  "List of found dependencies"
 )
 
 # spdlog - Logging library
@@ -128,10 +139,21 @@ dart_experimental_find_package(
 )
 
 # Taskflow - Parallel task programming library
-dart_experimental_find_package(
-  NAME Taskflow
-  PACKAGE Taskflow
-  REQUIRED
+# Use the fallback-capable finder so clean environments auto-fetch Taskflow
+# instead of FATAL_ERRORing on a plain find_package(... REQUIRED).
+if(NOT TARGET Taskflow::Taskflow)
+  dart_find_package(Taskflow)
+endif()
+if(NOT TARGET Taskflow::Taskflow)
+  message(FATAL_ERROR "Taskflow is required for simulation-experimental")
+endif()
+# Keep Taskflow in the tracked-deps summary so the status line still prints it.
+list(APPEND DART_EXPERIMENTAL_DEPS_FOUND Taskflow)
+set(
+  DART_EXPERIMENTAL_DEPS_FOUND
+  "${DART_EXPERIMENTAL_DEPS_FOUND}"
+  CACHE INTERNAL
+  "List of found dependencies"
 )
 
 #==============================================================================
