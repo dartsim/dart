@@ -132,6 +132,14 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 // A frozen frictionless normal contact: the geometry (which bodies, the world
 // normal, the lever arms) is captured once at the pre-step state and held fixed
 // while the body positions/velocities are perturbed for finite differencing of
@@ -141,8 +149,8 @@ struct FrozenContact
 {
   entt::entity bodyA{entt::null};
   entt::entity bodyB{entt::null};
-  bool staticA = false;
-  bool staticB = false;
+  bool prescribedA = false;
+  bool prescribedB = false;
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
   Eigen::Vector3d tangent1 = Eigen::Vector3d::UnitX();
   Eigen::Vector3d tangent2 = Eigen::Vector3d::UnitY();
@@ -277,8 +285,8 @@ ContactScene buildScene(
 {
   ContactScene scene;
 
-  const auto registerBody = [&](entt::entity entity, bool isStatic) {
-    if (isStatic) {
+  const auto registerBody = [&](entt::entity entity, bool isPrescribed) {
+    if (isPrescribed) {
       return;
     }
     if (scene.bodyColumn.find(entity) == scene.bodyColumn.end()) {
@@ -296,9 +304,11 @@ ContactScene buildScene(
         || !registry.all_of<comps::RigidBodyTag>(entityB)) {
       continue;
     }
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
-    if (staticA && staticB) {
+    const bool prescribedA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool prescribedB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
+    if (prescribedA && prescribedB) {
       continue;
     }
 
@@ -308,8 +318,8 @@ ContactScene buildScene(
     FrozenContact frozen;
     frozen.bodyA = entityA;
     frozen.bodyB = entityB;
-    frozen.staticA = staticA;
-    frozen.staticB = staticB;
+    frozen.prescribedA = prescribedA;
+    frozen.prescribedB = prescribedB;
     frozen.normal = contact.normal;
     frozen.tangent1 = contact.normal.unitOrthogonal();
     frozen.tangent2 = contact.normal.cross(frozen.tangent1);
@@ -320,8 +330,8 @@ ContactScene buildScene(
     frozen.friction = std::sqrt(
         frictionOf(registry, entityA) * frictionOf(registry, entityB));
 
-    registerBody(entityA, staticA);
-    registerBody(entityB, staticB);
+    registerBody(entityA, prescribedA);
+    registerBody(entityB, prescribedB);
     scene.contacts.push_back(frozen);
   }
 
@@ -337,7 +347,7 @@ ContactScene buildScene(
       comps::MassProperties,
       comps::Force>();
   for (const auto entity : dynamicView) {
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+    if (hasPrescribedRigidBodyContactResponse(registry, entity)) {
       continue;
     }
     registerBody(entity, false);
@@ -447,13 +457,13 @@ ContactTerms computeTerms(
             rowBlocks.push_back({body, value});
             terms.rowsOfBody[static_cast<std::size_t>(body)].push_back(row);
           };
-    if (!contact.staticB) {
+    if (!contact.prescribedB) {
       addBlock(
           static_cast<Eigen::Index>(scene.bodyColumn.at(contact.bodyB)),
           +1.0,
           contact.armB);
     }
-    if (!contact.staticA) {
+    if (!contact.prescribedA) {
       addBlock(
           static_cast<Eigen::Index>(scene.bodyColumn.at(contact.bodyA)),
           -1.0,

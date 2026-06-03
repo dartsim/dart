@@ -119,6 +119,36 @@ std::unique_ptr<sx::World> buildScene()
 }
 
 //==============================================================================
+// Kinematic obstacle variant: the kinematic sphere overlaps a dynamic sphere,
+// but it is a prescribed contact participant. The derivative state/control
+// layout should therefore include only the dynamic sphere.
+std::unique_ptr<sx::World> buildKinematicObstacleScene()
+{
+  sx::WorldOptions options;
+  options.timeStep = kTimeStep;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto obstacle = world->addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(kSphereRadius));
+  obstacle.setFriction(0.0);
+  obstacle.setKinematic(true);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = kSphereMass;
+  dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+  auto dynamic = world->addRigidBody("dynamic", dynamicOptions);
+  dynamic.setCollisionShape(sx::CollisionShape::makeSphere(kSphereRadius));
+  dynamic.setFriction(0.0);
+
+  return world;
+}
+
+//==============================================================================
 void applyState(sx::World& world, const BodyState& state)
 {
   auto sphere = world.getRigidBody("sphere");
@@ -350,6 +380,34 @@ TEST(DiffPublicContactJacobian, ClampingContactMatchesFiniteDifference)
   // vertical velocity (∂vz'/∂vz ≈ 0), unlike the free-falling horizontal axes.
   EXPECT_NEAR(analytic.stateJacobian(5, 5), 0.0, 1e-6);
   EXPECT_NEAR(analytic.stateJacobian(3, 3), 1.0, 1e-6);
+}
+
+//==============================================================================
+// Kinematic rigid bodies are prescribed in the forward boxed-LCP contact solve.
+// The contact-aware derivative assembly must use the same classification so
+// the public derivative state contains only the dynamic body.
+TEST(DiffPublicContactJacobian, KinematicObstacleExcludedFromDerivativeState)
+{
+  auto world = buildKinematicObstacleScene();
+
+  const auto obstacle = world->getRigidBody("obstacle");
+  const auto dynamic = world->getRigidBody("dynamic");
+  ASSERT_TRUE(obstacle.has_value());
+  ASSERT_TRUE(dynamic.has_value());
+  ASSERT_TRUE(obstacle->isKinematic());
+  ASSERT_FALSE(dynamic->isKinematic());
+
+  const auto contacts = world->collide();
+  ASSERT_FALSE(contacts.empty())
+      << "expected active dynamic/kinematic rigid contact";
+
+  world->step();
+  const sx::StepDerivatives analytic = world->getStepDerivatives();
+
+  EXPECT_EQ(analytic.stateJacobian.rows(), 6);
+  EXPECT_EQ(analytic.stateJacobian.cols(), 6);
+  EXPECT_EQ(analytic.controlJacobian.rows(), 6);
+  EXPECT_EQ(analytic.controlJacobian.cols(), 3);
 }
 
 //==============================================================================

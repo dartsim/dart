@@ -43,10 +43,15 @@
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
+#include <dart/simulation/experimental/multibody/joint.hpp>
+#include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 
@@ -55,6 +60,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <sstream>
 #include <vector>
 
 #include <cmath>
@@ -154,7 +160,9 @@ TEST(AvbdContact, CompoundShapeFeatureKeysUseContactedShapeIndex)
 
   const dvbd::AvbdRigidWorldContactSnapshot snapshot
       = dvbd::buildAvbdRigidWorldContactSnapshot(
-          world.getRegistry(), contacts, dvbd::AvbdRigidWorldContactOptions{});
+          dart::simulation::experimental::detail::registryOf(world),
+          contacts,
+          dvbd::AvbdRigidWorldContactOptions{});
   ASSERT_FALSE(snapshot.contacts.empty());
   const auto& manifold = snapshot.contacts.front();
   const dvbd::AvbdContactEndpointId compoundEndpoint
@@ -181,9 +189,10 @@ TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
   avbd->setGravity(Eigen::Vector3d::Zero());
   auto sphere = avbd->getRigidBody("sphere");
   ASSERT_TRUE(sphere.has_value());
-  avbd->getRegistry().emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
-      dart::simulation::experimental::detail::toRegistryEntity(
-          sphere->getEntity()));
+  dart::simulation::experimental::detail::registryOf(*avbd)
+      .emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+          dart::simulation::experimental::detail::toRegistryEntity(
+              sphere->getEntity()));
   avbd->enterSimulationMode();
 
   avbd->step();
@@ -211,7 +220,7 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
   spherePose.translation() = Eigen::Vector3d(0.25, 0.0, 0.49);
   sphere->setTransform(spherePose);
 
-  auto& registry = avbd->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*avbd);
   const auto& toReg = dart::simulation::experimental::detail::toRegistryEntity;
   registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
       toReg(sphere->getEntity()));
@@ -255,7 +264,7 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
@@ -278,6 +287,296 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
 }
 
 //==============================================================================
+// Missing private fixed-joint configs should be initialized from the
+// design-time pose on opt-in rigid bodies when simulation mode starts, not
+// re-baselined from later drift.
+TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(link.getEntity()));
+
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
+  joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
+
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  world.enterSimulationMode();
+
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_NEAR(
+      (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  link.setTransform(driftedPose);
+
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// The public facade should create the fixed-joint row config without exposing
+// ECS or AVBD detail components to users.
+TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyFixedJoint("base_to_link", base, link);
+  EXPECT_EQ(joint.getName(), "base_to_link");
+  EXPECT_EQ(joint.getType(), sx::JointType::Fixed);
+  EXPECT_EQ(joint.getDOFCount(), 0u);
+  EXPECT_EQ(joint.getParentRigidBody().getName(), "base");
+  EXPECT_EQ(joint.getChildRigidBody().getName(), "link");
+  EXPECT_THROW(
+      {
+        auto parentLink = joint.getParentLink();
+        (void)parentLink;
+      },
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      {
+        auto childLink = joint.getChildLink();
+        (void)childLink;
+      },
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      world.addRigidBodyFixedJoint("base_to_link", base, link),
+      sx::InvalidArgumentException);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  link.setTransform(driftedPose);
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_THROW(
+      world.addRigidBodyFixedJoint("late_joint", base, link),
+      sx::InvalidOperationException);
+}
+
+//==============================================================================
+// Saving a public fixed joint before simulation should not lose the AVBD row
+// config permanently; loading and entering simulation mode restores it from the
+// saved rigid-body poses.
+TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+
+  Eigen::Isometry3d designPose = Eigen::Isometry3d::Identity();
+  designPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  link.setTransform(designPose);
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+
+  auto restoredBase = restored.getRigidBody("base");
+  auto restoredLink = restored.getRigidBody("link");
+  ASSERT_TRUE(restoredBase.has_value());
+  ASSERT_TRUE(restoredLink.has_value());
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(restored);
+  entt::entity jointEntity = entt::null;
+  auto jointView = registry.view<sx::comps::Joint, sx::comps::Name>();
+  for (const entt::entity entity : jointView) {
+    const auto& name = jointView.get<sx::comps::Name>(entity);
+    if (name.name == "base_to_link") {
+      jointEntity = entity;
+      break;
+    }
+  }
+  ASSERT_TRUE(jointEntity != entt::null);
+  sx::Joint restoredJoint(
+      sx::detail::fromRegistryEntity(jointEntity), &restored);
+  EXPECT_EQ(restoredJoint.getParentRigidBody().getName(), "base");
+  EXPECT_EQ(restoredJoint.getChildRigidBody().getName(), "link");
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+
+  restored.enterSimulationMode();
+
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_NEAR(
+      (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+
+  restored.step();
+
+  EXPECT_LT(std::abs(restoredLink->getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// Saving after simulation mode should also preserve the public fixed joint. A
+// loaded simulation-mode world cannot re-enter simulation mode, so loadBinary()
+// must rebuild the private AVBD row config directly.
+TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+
+  world.enterSimulationMode();
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+  ASSERT_TRUE(restored.isSimulationMode());
+
+  auto restoredBase = restored.getRigidBody("base");
+  auto restoredLink = restored.getRigidBody("link");
+  ASSERT_TRUE(restoredBase.has_value());
+  ASSERT_TRUE(restoredLink.has_value());
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(restored);
+  entt::entity jointEntity = entt::null;
+  auto jointView = registry.view<sx::comps::Joint, sx::comps::Name>();
+  for (const entt::entity entity : jointView) {
+    const auto& name = jointView.get<sx::comps::Name>(entity);
+    if (name.name == "base_to_link") {
+      jointEntity = entity;
+      break;
+    }
+  }
+  ASSERT_TRUE(jointEntity != entt::null);
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_NEAR(
+      (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  restoredLink->setTransform(driftedPose);
+
+  restored.step();
+
+  EXPECT_LT(std::abs(restoredLink->getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// Public fixed joints should remain active when ordinary, non-AVBD-opted
+// contacts involve the fixed body. The contact still falls through to the
+// selected default contact solver while the fixed-joint rows project
+// independently.
+TEST(AvbdContact, PublicFixedJointProjectsWithDefaultContactOnFixedBody)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d(1.0, 0.0, 0.49);
+  auto link = world.addRigidBody("link", linkOptions);
+  link.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(1.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
+
+  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+  world.enterSimulationMode();
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  EXPECT_FALSE(registry.all_of<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(link.getEntity())));
+  EXPECT_FALSE(registry.all_of<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(ground.getEntity())));
+  ASSERT_FALSE(world.collide().empty());
+
+  Eigen::Isometry3d driftedPose = link.getTransform();
+  driftedPose.translation().x() = 1.25;
+  link.setTransform(driftedPose);
+  const double driftBeforeStep = std::abs(link.getTranslation().x() - 1.0);
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), driftBeforeStep);
+  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
 // The no-contact fixed-joint path should also route angular rows through the
 // private AVBD projection instead of only correcting point-anchor drift.
 TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
@@ -295,7 +594,7 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
   linkOptions.orientation = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ());
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
@@ -339,7 +638,7 @@ TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
   linkOptions.position = Eigen::Vector3d(11.0, 0.0, 0.0);
   auto link = world->addRigidBody("joint_link", linkOptions);
 
-  auto& registry = world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*world);
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;

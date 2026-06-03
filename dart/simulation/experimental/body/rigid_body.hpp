@@ -186,6 +186,28 @@ public:
   /// Return whether the body is static.
   [[nodiscard]] bool isStatic() const;
 
+  /// Set whether the body is kinematic (prescribed motion).
+  ///
+  /// A kinematic body is advanced by its prescribed linear/angular velocity
+  /// each step and acts as a moving support/driver: it receives no contact or
+  /// dynamics response and is unaffected by gravity, but its moving surface
+  /// drags contacting dynamic bodies through friction (a conveyor or a
+  /// turntable) and its swept motion is honored by the conservative CCD so
+  /// resting dynamic bodies stay intersection-free. Honored by the rigid IPC
+  /// contact solver (World::RigidBodySolver::Ipc); under the default
+  /// sequential-impulse solver a kinematic body behaves like a static one.
+  /// Setting a body kinematic clears its static flag.
+  ///
+  /// Supported motion is tangential/co-moving relative to the bodies it touches
+  /// (drag). A kinematic body prescribed to move *normally into* a dynamic body
+  /// faster than the barrier can push it aside is not guaranteed
+  /// intersection-free, since prescribed motion cannot be slowed by contact;
+  /// robust normal pushing is future work.
+  void setKinematic(bool isKinematic);
+
+  /// Return whether the body is kinematic.
+  [[nodiscard]] bool isKinematic() const;
+
   /// Set the body's restitution (bounciness) coefficient in [0, 1].
   ///
   /// The contact solver combines two bodies' restitution by taking the maximum.

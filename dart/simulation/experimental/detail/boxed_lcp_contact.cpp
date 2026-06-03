@@ -110,6 +110,14 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 // Per-contact constraint, mirroring the sequential-impulse stage so the two
 // paths assemble the same physics: a normal row plus two tangential friction
 // rows spanning the contact plane (box Coulomb model).
@@ -172,8 +180,10 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
       continue;
     }
 
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const bool staticA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool staticB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
     if (staticA && staticB) {
       continue;
     }

@@ -37,6 +37,7 @@
 #include "dart/simulation/experimental/comps/joint.hpp"
 #include "dart/simulation/experimental/comps/link.hpp"
 #include "dart/simulation/experimental/compute/compute_executor.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Geometry>
@@ -162,7 +163,7 @@ void WorldKinematicsGraph::rebuild()
   m_graph.clear();
   m_entityNodes.clear();
 
-  auto& registry = m_world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(m_world);
   auto frameView
       = registry.view<comps::FrameTag, comps::FrameState, comps::FrameCache>();
 

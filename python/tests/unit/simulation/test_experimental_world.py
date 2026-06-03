@@ -161,6 +161,8 @@ def test_experimental_api_exposes_python_names_only():
             "set_velocity",
             "get_parent_link",
             "get_child_link",
+            "get_parent_rigid_body",
+            "get_child_rigid_body",
             "getName",
             "getType",
             "getAxis",
@@ -171,6 +173,8 @@ def test_experimental_api_exposes_python_names_only():
             "setVelocity",
             "getParentLink",
             "getChildLink",
+            "getParentRigidBody",
+            "getChildRigidBody",
             "isValid",
         ),
         sx.World: (
@@ -179,6 +183,7 @@ def test_experimental_api_exposes_python_names_only():
             "hasMultibody",
             "getMultibodyCount",
             "addRigidBody",
+            "addRigidBodyFixedJoint",
             "getRigidBody",
             "hasRigidBody",
             "getRigidBodyCount",
@@ -287,6 +292,9 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def set_runtime_policy(",
         "def getMultibody(",
         "def hasMultibody(",
+        "def addRigidBodyFixedJoint(",
+        "def get_parent_rigid_body(",
+        "def get_child_rigid_body(",
         "def has_multibody_count(",
         "def get_rigid_body_count(",
     )
@@ -445,6 +453,40 @@ def test_experimental_world_smoke():
     assert world.num_rigid_bodies == 0
 
 
+def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
+    sx = _simulation_experimental()
+
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    base = world.add_rigid_body("base")
+    base.is_static = True
+    link = world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
+
+    joint = world.add_rigid_body_fixed_joint("base_to_link", base, link)
+    assert joint.name == "base_to_link"
+    assert joint.type == sx.JointType.FIXED
+    assert joint.num_dofs == 0
+    assert joint.parent_rigid_body.name == "base"
+    assert joint.child_rigid_body.name == "link"
+    with pytest.raises(Exception, match="not a multibody Link"):
+        _ = joint.parent_link
+    with pytest.raises(Exception, match="not a multibody Link"):
+        _ = joint.child_link
+    with pytest.raises(Exception, match="already exists"):
+        world.add_rigid_body_fixed_joint("base_to_link", base, link)
+
+    drifted_pose = np.eye(4)
+    drifted_pose[:3, 3] = (1.25, 0.0, 0.0)
+    link.transform = drifted_pose
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert float(link.translation[0]) == pytest.approx(1.0, abs=0.05)
+    assert float(link.linear_velocity[0]) < 0.0
+    with pytest.raises(Exception, match="simulation mode"):
+        world.add_rigid_body_fixed_joint("late_joint", base, link)
+
+
 def test_experimental_multibody_link_joint_common_path():
     sx = _simulation_experimental()
 
@@ -531,6 +573,10 @@ def test_experimental_multibody_link_joint_common_path():
     assert joint.velocity.tolist() == pytest.approx([0.0])
     assert joint.parent_link.name == "base"
     assert joint.child_link.name == "forearm"
+    with pytest.raises(Exception, match="not a rigid body"):
+        _ = joint.parent_rigid_body
+    with pytest.raises(Exception, match="not a rigid body"):
+        _ = joint.child_rigid_body
     assert arm.get_joint("elbow").child_link.name == "forearm"
     assert arm.get_joint("missing") is None
 
@@ -2498,6 +2544,39 @@ def test_experimental_mesh_collision_shape_public_surface():
     assert body.collision_shape.type == sx.CollisionShapeType.MESH
 
 
+def test_experimental_mesh_collision_shape_drives_rigid_ipc_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    # A unit tetrahedron mesh authored from Python vertex/triangle lists.
+    vertices = [
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
+    ]
+    triangles = [
+        (0, 2, 1),
+        (0, 1, 3),
+        (0, 3, 2),
+        (1, 2, 3),
+    ]
+
+    body = world.add_rigid_body("tet", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.mesh(vertices, triangles))
+
+    assert body.has_collision_shape
+    assert body.collision_shape.type == sx.CollisionShapeType.MESH
+
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, 0.0)
+    body.force = (2.0, 0.0, 0.0)
+    world.enter_simulation_mode()
+    world.step()
+    assert body.transform[0, 3] > 0.0
+
+
 def test_experimental_cylinder_collision_shape_public_surface_and_query():
     sx = _simulation_experimental()
 
@@ -2517,6 +2596,58 @@ def test_experimental_cylinder_collision_shape_public_surface_and_query():
     for contact in contacts:
         names = {contact.body_a.name, contact.body_b.name}
         assert names == {"cylinder", "sphere"}
+
+
+def test_experimental_kinematic_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, -9.81)
+    world.time_step = 0.1
+
+    body = world.add_rigid_body("kinematic", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.box((0.2, 0.2, 0.2)))
+    body.linear_velocity = (1.0, 0.0, 0.0)
+
+    assert not body.is_kinematic
+    body.is_kinematic = True
+    assert body.is_kinematic
+    assert not body.is_static
+
+    world.enter_simulation_mode()
+    world.step()
+
+    # Advanced by its prescribed velocity (ignoring gravity), velocity preserved.
+    assert body.transform[0, 3] == pytest.approx(0.1, abs=1e-9)
+    assert body.transform[2, 3] == pytest.approx(0.0, abs=1e-9)
+    np.testing.assert_allclose(body.linear_velocity, [1.0, 0.0, 0.0], atol=1e-9)
+
+
+def test_experimental_static_setter_clears_kinematic_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.rigid_body_solver = sx.RigidBodySolver.IPC
+    world.gravity = (0.0, 0.0, 0.0)
+    world.time_step = 0.1
+
+    body = world.add_rigid_body("body", position=(0.0, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.box((0.2, 0.2, 0.2)))
+    body.linear_velocity = (1.0, 0.0, 0.0)
+    body.is_kinematic = True
+    assert body.is_kinematic
+    assert not body.is_static
+
+    body.is_static = True
+    assert body.is_static
+    assert not body.is_kinematic
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert body.transform[0, 3] == pytest.approx(0.0, abs=1e-9)
+    np.testing.assert_allclose(body.linear_velocity, [1.0, 0.0, 0.0], atol=1e-9)
 
 
 def test_experimental_collision_query_includes_links():
