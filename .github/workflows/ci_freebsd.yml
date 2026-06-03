@@ -76,7 +76,11 @@ jobs:
           # build tree, so skip the (slow, timeout-risking under TCG) copy back
           # from the VM. Mirrors the former vmactions `copyback: false`.
           sync_files: runner-to-vm
-          # Commands run as a passwordless-sudo user via the default (sh) shell.
+          # Run the build script under sh: the action otherwise uses the guest
+          # account's default shell (csh on FreeBSD), which cannot execute this
+          # POSIX `set -e` script. Mirrors the former vmactions `usesh: true`.
+          shell: sh
+          # Commands run as a passwordless-sudo user.
           run: |
             set -e
             # Install build dependencies from pkg.
