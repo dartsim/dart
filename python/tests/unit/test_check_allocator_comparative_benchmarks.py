@@ -46,6 +46,9 @@ def _complete_rows():
         _row("BM_Stack_DART/256/1024/repeats:5_median", 40.0),
         _row("BM_Stack_Foonathan/256/1024/repeats:5_median", 50.0),
         _row("BM_Stack_StdPmr/256/1024/repeats:5_median", 70.0),
+        _row("BM_StlVector_DART/1000/repeats:5_median", 20.0),
+        _row("BM_StlVector_Foonathan/1000/repeats:5_median", 30.0),
+        _row("BM_StlVector_StdPmr/1000/repeats:5_median", 60.0),
     ]
 
 
@@ -57,6 +60,7 @@ def test_collect_timings_normalizes_aggregate_names():
     assert timings["BM_Pool/32/1024"]["DART"] == 90.0
     assert timings["BM_Pool/32/1024"]["Foonathan"] == 100.0
     assert timings["BM_Stack/256/1024"]["StdPmr"] == 70.0
+    assert timings["BM_StlVector/1000"]["DART"] == 20.0
 
 
 def test_evaluate_comparisons_accepts_dart_faster_than_foonathan():
@@ -71,6 +75,7 @@ def test_evaluate_comparisons_accepts_dart_faster_than_foonathan():
     assert {row["benchmark"] for row in passes} == {
         "BM_Pool/32/1024",
         "BM_Stack/256/1024",
+        "BM_StlVector/1000",
     }
 
 
@@ -88,7 +93,10 @@ def test_evaluate_comparisons_rejects_dart_slower_than_foonathan():
     assert failures[0]["benchmark"] == "BM_Pool/32/1024"
     assert failures[0]["baseline"] == "Foonathan"
     assert failures[0]["ratio"] == 1.2
-    assert {row["benchmark"] for row in passes} == {"BM_Stack/256/1024"}
+    assert {row["benchmark"] for row in passes} == {
+        "BM_Stack/256/1024",
+        "BM_StlVector/1000",
+    }
 
 
 def test_evaluate_comparisons_rejects_equal_time_by_default():
@@ -141,7 +149,7 @@ def test_evaluate_comparisons_can_check_stdpmr_too():
     )
 
     assert failures == []
-    assert len(passes) == 4
+    assert len(passes) == 6
 
 
 def test_main_input_path_skips_benchmark_execution(tmp_path, monkeypatch, capsys):
@@ -159,7 +167,7 @@ def test_main_input_path_skips_benchmark_execution(tmp_path, monkeypatch, capsys
 
     assert module.main(["--input", str(input_path)]) == 0
     captured = capsys.readouterr()
-    assert "2 comparative allocator checks performed" in captured.out
+    assert "3 comparative allocator checks performed" in captured.out
 
 
 def test_main_reports_failures(tmp_path, monkeypatch, capsys):

@@ -31,12 +31,12 @@ from pathlib import Path
 _UNIT_TO_NS = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
 
 DEFAULT_FILTER = (
-    "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk)_"
+    "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector)_"
     "(DART|Foonathan|StdPmr)"
 )
 
 _COMPARATIVE_RE = re.compile(
-    r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk))"
+    r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector))"
     r"_(DART|Foonathan|StdPmr)(/.*)?$"
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
