@@ -725,6 +725,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `world.gravity`, applying a uniform gravitational acceleration (default
     `(0, 0, -9.81)`) to dynamic rigid bodies through a transient step force
     buffer without storing it in any per-body force accumulator.
+  - Added experimental World memory hooks:
+    `WorldOptions::baseAllocator`, `WorldOptions::frameScratchInitialCapacity`,
+    `World::getMemoryManager()`, and `World::getMemoryDiagnostics()` give each
+    experimental World a `MemoryManager` root and report per-step frame-scratch
+    usable capacity, usage, peak usage, overflow count, overflow bytes, and
+    reset count.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

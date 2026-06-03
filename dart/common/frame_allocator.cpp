@@ -43,7 +43,8 @@ FrameAllocator::FrameAllocator(
     mCur(nullptr),
     mEnd(nullptr),
     mBuffer(static_cast<char*>(baseAllocator.allocate(initialCapacity))),
-    mCapacity(mBuffer ? initialCapacity : 0)
+    mCapacity(mBuffer ? initialCapacity : 0),
+    mOverflowBytes(0)
 {
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
@@ -82,8 +83,9 @@ void FrameAllocator::print(std::ostream& os, int indent) const
 {
   const std::string spaces(indent, ' ');
   os << spaces << "[FrameAllocator] capacity: " << mCapacity
-     << " used: " << used() << " overflow: " << mOverflowAllocations.size()
-     << "\n";
+     << " usable: " << usableCapacity() << " used: " << used()
+     << " overflow: " << mOverflowAllocations.size()
+     << " overflow bytes: " << mOverflowBytes << "\n";
 }
 
 //==============================================================================
@@ -101,18 +103,19 @@ void* FrameAllocator::allocateAlignedSlow(
   void* pointer = reinterpret_cast<void*>(overflowAligned);
 
   mOverflowAllocations.push_back({raw, totalSize});
+  mOverflowBytes += totalSize;
   return pointer;
 }
 
 //==============================================================================
 void FrameAllocator::resetSlow() noexcept
 {
-  size_t totalOverflow = 0;
+  const size_t totalOverflow = mOverflowBytes;
   for (const auto& entry : mOverflowAllocations) {
     mBaseAllocator.deallocate(entry.ptr, entry.allocatedSize);
-    totalOverflow += entry.allocatedSize;
   }
   mOverflowAllocations.clear();
+  mOverflowBytes = 0;
 
   const size_t usedBytes
       = (mBuffer && mCur) ? static_cast<size_t>(mCur - mBuffer) : 0;
@@ -139,6 +142,24 @@ size_t FrameAllocator::capacity() const noexcept
 }
 
 //==============================================================================
+size_t FrameAllocator::usableCapacity() const noexcept
+{
+  if (!mBuffer || !mEnd) {
+    return 0;
+  }
+
+  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+  const auto* alignedBase
+      = reinterpret_cast<const char*>((addr + 31) & ~uintptr_t{31});
+  if (alignedBase >= mEnd) {
+    return 0;
+  }
+
+  const auto usableBytes = static_cast<size_t>(mEnd - alignedBase);
+  return usableBytes & ~size_t{31};
+}
+
+//==============================================================================
 size_t FrameAllocator::used() const noexcept
 {
   if (!mBuffer) {
@@ -156,6 +177,12 @@ size_t FrameAllocator::used() const noexcept
 size_t FrameAllocator::overflowCount() const noexcept
 {
   return mOverflowAllocations.size();
+}
+
+//==============================================================================
+size_t FrameAllocator::overflowBytes() const noexcept
+{
+  return mOverflowBytes;
 }
 
 } // namespace dart::common
