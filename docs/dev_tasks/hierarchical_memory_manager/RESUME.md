@@ -14,14 +14,15 @@ integration workstream.
 
 ## Current Branch
 
-`feature/hierarchical-memory-manager-world-root` - PR branch for the first
-memory-manager slice.
+`feature/hierarchical-memory-manager-world-root` - PR #2869 branch for the
+first memory-manager slice. The branch is published and currently tracks
+`origin/feature/hierarchical-memory-manager-world-root`.
 
 ## Immediate Next Step
 
-Finish PR review/CI for the first slice, then start allocator correctness and
-benchmark work against `std::allocator`/`std::pmr` and foonathan/memory before
-expanding hot-loop allocator use.
+Finish PR #2869 review/CI for the first slice, then start allocator correctness
+and benchmark work against `std::allocator`/`std::pmr` and foonathan/memory
+before expanding hot-loop allocator use.
 
 ## Latest Local Validation
 
@@ -29,7 +30,7 @@ expanding hot-loop allocator use.
 - `pixi run build`
 - `cmake --build build/default/cpp/Release --target test_world`
 - `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
-- `pixi run test-simulation-experimental` (final rerun: 60/60 passed)
+- `pixi run test-simulation-experimental` (post-merge rerun: 61/61 passed)
 
 ## Context That Would Be Lost
 
