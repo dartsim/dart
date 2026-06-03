@@ -34,6 +34,8 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
+#include "dart/simulation/experimental/ecs/component_access.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -216,7 +218,8 @@ Eigen::Isometry3d Frame::getLocalTransform() const
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
   return getFrameLocalTransform(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
@@ -230,11 +233,8 @@ Frame Frame::getParentFrame() const
     return Frame::world();
   }
 
-  const auto enttEntity = detail::toRegistryEntity(m_entity);
-
   // Get parent from FrameState component (common to all frame types)
-  const auto* frameState
-      = m_world->getRegistry().try_get<comps::FrameState>(enttEntity);
+  const auto* frameState = ecs::tryGetReadOnly<Frame, comps::FrameState>(*this);
   DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
       InvalidOperationException,
@@ -255,7 +255,8 @@ std::string_view Frame::getName() const
 
   const auto enttEntity = detail::toRegistryEntity(m_entity);
   if (const auto* name
-      = m_world->getRegistry().try_get<comps::Name>(enttEntity)) {
+      = dart::simulation::experimental::detail::registryOf(*m_world)
+            .try_get<comps::Name>(enttEntity)) {
     return name->name;
   }
 
@@ -278,10 +279,10 @@ void Frame::setParentFrame(const Frame& parent)
   }
 
   const auto enttEntity = detail::toRegistryEntity(m_entity);
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
 
   // Get FrameState component (common to FreeFrame and FixedFrame)
-  auto* frameState = registry.try_get<comps::FrameState>(enttEntity);
+  auto* frameState = ecs::tryGetMutable<Frame, comps::FrameState>(*this);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
@@ -360,10 +361,9 @@ const Eigen::Isometry3d& Frame::getTransform() const
   const auto enttEntity = detail::toRegistryEntity(m_entity);
 
   // Frames with lazy evaluation (FreeFrame, FixedFrame) use FrameCache
-  // const_cast is safe: cache mutation does not change observable state
-  auto* cache = const_cast<Frame*>(this)
-                    ->m_world->getRegistry()
-                    .try_get<comps::FrameCache>(enttEntity);
+  // getCacheMutable const_casts internally: cache mutation does not change
+  // observable state
+  auto* cache = ecs::getCacheMutable<Frame, comps::FrameCache>(*this);
   DART_EXPERIMENTAL_THROW_T_IF(
       !cache,
       InvalidOperationException,
@@ -374,7 +374,9 @@ const Eigen::Isometry3d& Frame::getTransform() const
     auto parent = getParentFrame();
     cache->worldTransform
         = parent.getTransform()
-          * getFrameLocalTransform(m_world->getRegistry(), enttEntity);
+          * getFrameLocalTransform(
+              dart::simulation::experimental::detail::registryOf(*m_world),
+              enttEntity);
     cache->needTransformUpdate = false;
   }
 
@@ -437,7 +439,8 @@ Eigen::Isometry3d Frame::getTransform(const Frame& relativeTo) const
   auto parent = getParentFrame();
   if (!parent.isWorld() && relativeTo.m_entity == parent.m_entity) {
     return getFrameLocalTransform(
-        m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+        dart::simulation::experimental::detail::registryOf(*m_world),
+        detail::toRegistryEntity(m_entity));
   }
 
   // General case: compute via world transforms
@@ -516,7 +519,7 @@ bool Frame::isValid() const
   const auto enttEntity = detail::toRegistryEntity(m_entity);
 
   // Check if entity exists in registry
-  auto& registry = m_world->getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(*m_world);
   if (!registry.valid(enttEntity)) {
     return false;
   }
@@ -537,7 +540,8 @@ void Frame::markSubtreeTransformCacheDirty()
   }
 
   markSubtreeCacheDirty(
-      m_world->getRegistry(), detail::toRegistryEntity(m_entity));
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      detail::toRegistryEntity(m_entity));
 }
 
 } // namespace dart::simulation::experimental

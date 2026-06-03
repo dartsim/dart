@@ -1401,7 +1401,16 @@ TEST(RigidIpcBarrier, LineSearchRejectsInitialSeparationViolation)
 }
 
 //==============================================================================
-TEST(RigidIpcBarrier, LineSearchTreatsIterationExhaustionAsUnsafe)
+// When the conservative CCD exhausts its iteration budget on a pair (here
+// forced with maxIterations = 1), it cannot prove a definitive hit/miss -- but
+// every advance it took was a provably contact-free sub-step, so the time it
+// reached is a valid lower bound on the true time of impact. The line search
+// uses that as a conservative POSITIVE step bound (limiting, not blocking) so
+// the solve can still advance, while staying strictly before the true crossing.
+// Here the point sweeps from z = 0.5 through the triangle at z = 0 (true TOI =
+// 0.5), so the reported bound must be positive and < 0.5 -- intersection-free,
+// not frozen.
+TEST(RigidIpcBarrier, LineSearchUsesProvenSafeTimeOnIterationExhaustion)
 {
   expdetail::RigidIpcBarrierSurface pointStart;
   pointStart.vertices.push_back(Eigen::Vector3d(0.25, 0.25, 0.0));
@@ -1423,11 +1432,14 @@ TEST(RigidIpcBarrier, LineSearchTreatsIterationExhaustionAsUnsafe)
   const auto result
       = expdetail::computeRigidIpcLineSearchStepBound(start, end, options);
 
+  EXPECT_GT(result.stats.indeterminate, 0u); // the ACCD did exhaust its budget
   EXPECT_TRUE(result.limited);
-  EXPECT_TRUE(result.indeterminate);
-  EXPECT_FALSE(result.allowsPositiveStep());
-  EXPECT_EQ(result.stepBound, 0.0);
-  EXPECT_GT(result.stats.indeterminate, 0u);
+  // A provably-safe positive bound, not a frozen zero step.
+  EXPECT_TRUE(result.allowsPositiveStep());
+  EXPECT_FALSE(result.indeterminate);
+  EXPECT_GT(result.stepBound, 0.0);
+  // Strictly before the true crossing at t = 0.5 (intersection-free guarantee).
+  EXPECT_LT(result.stepBound, 0.5);
 }
 
 //==============================================================================
@@ -1684,6 +1696,120 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveFollowsBodyDynamicsTerm)
   EXPECT_EQ(result.assembly.activeDynamicsTerms, 1u);
   EXPECT_NEAR(result.surfaces.front().pose.position.x(), 0.5, 1e-12);
   EXPECT_NEAR(result.stats.finalGradientNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(RigidIpcBarrier, ProjectedNewtonSolveBacktracksForSufficientDecrease)
+{
+  expdetail::RigidIpcBarrierSurface surface;
+  surface.dynamic = true;
+
+  expdetail::RigidIpcBodyDynamicsTerm dynamics;
+  dynamics.active = true;
+  dynamics.diagonalWeights.setOnes();
+  dynamics.diagonalWeights[0] = 2.0;
+  dynamics.generalizedForce[0] = 1.0;
+
+  expdetail::RigidIpcProjectedNewtonSolveOptions options;
+  options.dynamicsTerms.push_back(dynamics);
+  options.newton.hessianRegularization = 0.0;
+  options.newton.gradientTolerance = 0.0;
+  options.newton.sufficientDecreaseFactor = 0.8;
+  options.stepTolerance = 0.13;
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 1> surfaces{surface};
+  const auto result
+      = expdetail::solveRigidIpcProjectedNewtonBarrierSystem(surfaces, options);
+
+  EXPECT_TRUE(result.converged);
+  EXPECT_FALSE(result.failed);
+  EXPECT_EQ(result.stats.acceptedSteps, 1u);
+  EXPECT_EQ(result.stats.sufficientDecreaseChecks, 3u);
+  EXPECT_EQ(result.stats.sufficientDecreaseBacktracks, 2u);
+  EXPECT_NEAR(result.lastStep.stats.stepScale, 0.25, 1e-14);
+  EXPECT_NEAR(result.lastStep.stats.stepNorm, 0.125, 1e-14);
+  EXPECT_NEAR(result.surfaces.front().pose.position.x(), 0.125, 1e-12);
+  EXPECT_LT(result.stats.finalValue, result.stats.initialValue);
+}
+
+//==============================================================================
+TEST(RigidIpcBarrier, ProjectedNewtonBacktrackingRechecksKinematicSweep)
+{
+  expdetail::RigidIpcBarrierSurface dynamicPoint;
+  dynamicPoint.body = 0u;
+  dynamicPoint.dynamic = true;
+  dynamicPoint.pose.position = Eigen::Vector3d(0.2, 0.0, 0.0);
+  dynamicPoint.vertices.push_back(Eigen::Vector3d::Zero());
+
+  expdetail::RigidIpcBarrierSurface kinematicPoint;
+  kinematicPoint.body = 1u;
+  kinematicPoint.dynamic = false;
+  kinematicPoint.kinematic = true;
+  kinematicPoint.kinematicStartPose.position = Eigen::Vector3d::Zero();
+  kinematicPoint.pose.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+  kinematicPoint.vertices.push_back(Eigen::Vector3d::Zero());
+
+  expdetail::RigidIpcBodyDynamicsTerm dynamics;
+  dynamics.active = true;
+  dynamics.targetPose = dynamicPoint.pose;
+  dynamics.diagonalWeights.setOnes();
+  dynamics.generalizedForce[0] = 1.0;
+
+  expdetail::RigidIpcProjectedNewtonSolveOptions options;
+  options.barrier.squaredActivationDistance = 1e-6;
+  options.dynamicsTerms.resize(2);
+  options.dynamicsTerms[0] = dynamics;
+  options.newton.hessianRegularization = 0.0;
+  options.newton.gradientTolerance = 0.0;
+  options.newton.sufficientDecreaseFactor = 0.8;
+  options.stepTolerance = 1e-12;
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 2> surfaces{
+      dynamicPoint, kinematicPoint};
+  const auto result
+      = expdetail::solveRigidIpcProjectedNewtonBarrierSystem(surfaces, options);
+
+  EXPECT_TRUE(result.converged);
+  EXPECT_FALSE(result.failed);
+  EXPECT_EQ(result.stats.acceptedSteps, 1u);
+  EXPECT_GT(result.stats.sufficientDecreaseBacktracks, 0u);
+  EXPECT_GT(result.stats.lineSearchHits, 0u);
+  EXPECT_GT(result.surfaces.front().pose.position.x(), 1.0);
+  EXPECT_NEAR(result.surfaces.front().pose.position.x(), 1.2, 1e-12);
+}
+
+//==============================================================================
+TEST(RigidIpcBarrier, ProjectedNewtonSolveAcceptsDecreasingArmijoFallback)
+{
+  expdetail::RigidIpcBarrierSurface surface;
+  surface.dynamic = true;
+
+  expdetail::RigidIpcBodyDynamicsTerm dynamics;
+  dynamics.active = true;
+  dynamics.diagonalWeights.setOnes();
+  dynamics.diagonalWeights[0] = 2.0;
+  dynamics.generalizedForce[0] = 1.0;
+
+  expdetail::RigidIpcProjectedNewtonSolveOptions options;
+  options.dynamicsTerms.push_back(dynamics);
+  options.newton.hessianRegularization = 0.0;
+  options.newton.gradientTolerance = 0.0;
+  options.newton.sufficientDecreaseFactor = 0.8;
+  options.newton.maxBacktrackingIterations = 0;
+  options.stepTolerance = 1.0;
+
+  const std::array<expdetail::RigidIpcBarrierSurface, 1> surfaces{surface};
+  const auto result
+      = expdetail::solveRigidIpcProjectedNewtonBarrierSystem(surfaces, options);
+
+  EXPECT_TRUE(result.converged);
+  EXPECT_FALSE(result.failed);
+  EXPECT_EQ(result.stats.acceptedSteps, 1u);
+  EXPECT_EQ(result.stats.sufficientDecreaseChecks, 1u);
+  EXPECT_EQ(result.stats.sufficientDecreaseBacktracks, 0u);
+  EXPECT_NEAR(result.lastStep.stats.stepScale, 1.0, 1e-14);
+  EXPECT_NEAR(result.surfaces.front().pose.position.x(), 0.5, 1e-12);
+  EXPECT_LT(result.stats.finalValue, result.stats.initialValue);
 }
 
 //==============================================================================

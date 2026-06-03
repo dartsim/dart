@@ -67,6 +67,16 @@ PROMOTE_DIRS = (
     "constraint",
 )
 
+# Specific headers under an otherwise-internal directory that ARE part of the
+# promoted public surface, because public World methods return them by value
+# (so consumers including only world.hpp must get a complete type). Keep this
+# list minimal and explicit; the rest of the directory stays internal. These
+# headers are themselves audited as promotion targets (they must not leak ECS).
+PROMOTE_FILES = {
+    "diff/step_derivatives.hpp",
+    "diff/step_gradient.hpp",
+}
+
 # ECS-storage leak markers that must not appear in a promoted public header.
 # Both includes and symbol usage count: handles expose ECS not only via
 # includes but also via the EntityObject/EntityObjectWith template base and
@@ -75,15 +85,6 @@ LEAK_PATTERNS = {
     "entt-include": re.compile(r"#\s*include\s*<entt[/>]"),
     "entt-symbol": re.compile(r"\bentt::"),
     "getRegistry": re.compile(r"\bgetRegistry\b"),
-    # Any include of an internal-only experimental directory is a leak in a
-    # promoted header. Derived from INTERNAL_DIRS so every internal path is
-    # covered (comps/ecs/detail/diff/compute/io/common/space), not just a
-    # hardcoded subset: a promoted header must not require hidden internals.
-    "internal-include": re.compile(
-        r"#\s*include\s*[<\"]dart/simulation/experimental/("
-        + "|".join(INTERNAL_DIRS)
-        + r")/"
-    ),
     "comps-symbol": re.compile(r"\bcomps::"),
     "entity-object-base": re.compile(r"\bEntityObject(With)?\b"),
 }
@@ -92,6 +93,8 @@ LEAK_PATTERNS = {
 def classify(relpath: Path) -> str:
     """Return 'promote' or 'internal' for an experimental header path."""
     parts = relpath.parts
+    if relpath.as_posix() in PROMOTE_FILES:
+        return "promote"
     if len(parts) == 1:
         return "promote" if relpath.name in PROMOTE_TOPLEVEL else "internal"
     top = parts[0]
@@ -104,7 +107,18 @@ def classify(relpath: Path) -> str:
 
 def find_leaks(text: str) -> list[str]:
     """Return the sorted direct leak-marker names present in the header text."""
-    return sorted(name for name, pat in LEAK_PATTERNS.items() if pat.search(text))
+    names = [name for name, pat in LEAK_PATTERNS.items() if pat.search(text)]
+    # A promoted header must not include an experimental header that classifies
+    # as internal. This is computed via classify() rather than a hardcoded
+    # directory regex so that headers explicitly promoted out of an internal
+    # directory (PROMOTE_FILES, e.g. the diff value types returned by public
+    # World methods) are not falsely flagged when a promoted header includes
+    # them; every other internal include is still caught.
+    for match in EXPERIMENTAL_INCLUDE.finditer(text):
+        if classify(Path(match.group(1))) == "internal":
+            names.append("internal-include")
+            break
+    return sorted(set(names))
 
 
 # Include of another experimental header. Leaks are followed transitively
@@ -217,11 +231,18 @@ def main() -> int:
             print(f"  - {rel}")
         print()
 
-    print(
-        "Keystone blocker: world.hpp holds an entt::registry member, so EnTT/"
-        "Taskflow stay public deps and internals stay installed until the "
-        "Workstream 5 opaque-ownership refactor removes it."
-    )
+    if any(rel == "world.hpp" for rel, _own, _via in promote_leaking):
+        print(
+            "Keystone blocker: world.hpp holds an entt::registry member, so EnTT/"
+            "Taskflow stay public deps and internals stay installed until the "
+            "Workstream 5 opaque-ownership refactor removes it."
+        )
+    elif not promote_leaking:
+        print(
+            "Keystone cleared: world.hpp no longer exposes the EnTT registry "
+            "(Workstream 5 opaque-ownership refactor complete); EnTT/Taskflow can "
+            "move to private deps and the internal headers can leave the install set."
+        )
 
     if args.strict and promote_leaking:
         print()

@@ -38,6 +38,7 @@ from .scenes.loop_closure import SCENE as LOOP_CLOSURE
 from .scenes.rigid_body import SCENE as RIGID_BODY
 from .scenes.rigid_fixed_joint import SCENE as RIGID_FIXED_JOINT
 from .scenes.rigid_ipc import SCENE as RIGID_IPC
+from .scenes.rigid_ipc_edge_drop import SCENE as RIGID_IPC_EDGE_DROP
 from .scenes.rigid_ipc_incline import SCENE as RIGID_IPC_INCLINE
 from .scenes.rigid_ipc_pile import SCENE as RIGID_IPC_PILE
 from .scenes.rigid_ipc_slide import SCENE as RIGID_IPC_SLIDE
@@ -71,6 +72,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_IPC,
         RIGID_IPC_SLIDE,
         RIGID_IPC_INCLINE,
+        RIGID_IPC_EDGE_DROP,
         RIGID_IPC_PILE,
         RIGID_IPC_TUNNEL,
         VARIATIONAL_CHAIN,

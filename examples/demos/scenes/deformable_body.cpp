@@ -36,6 +36,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/comps/deformable_body.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -586,7 +587,7 @@ sx::DeformableBodyOptions makeVbdClothOptions(
 // is absent.
 void enableVbdSolver(sx::World& world, std::size_t iterations)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
     registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(
         entity, sx::comps::DeformableVbdConfig{true, iterations, 0.0});

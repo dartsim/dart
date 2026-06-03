@@ -16,6 +16,7 @@
 #include <dart/simulation/experimental/compute/rigid_body_constraint.hpp>
 #include <dart/simulation/experimental/compute/unified_constraint.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -100,7 +101,7 @@ sx::compute::RigidBodyContactProblem buildRigidStackProblem(sx::World& world)
   contacts.push_back(lowerUpper);
 
   return sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
 }
 
 } // namespace
@@ -177,7 +178,7 @@ TEST(UnifiedConstraint, RigidFreeLinkBlockMatchesWithinMultibodyCoupling)
   nextVelocity << -0.3;
 
   const std::vector<sx::compute::LinkContact> linkContacts{near, far};
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = registry.get<sx::comps::MultibodyStructure>(
       dart::simulation::experimental::detail::toRegistryEntity(
           robot.getEntity()));
@@ -310,7 +311,7 @@ TEST(UnifiedConstraint, CrossMultibodyLinkRowAddsSecondArticulatedEnd)
   cross.depth = 0.0;
   cross.friction = 0.5;
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structureA = registry.get<sx::comps::MultibodyStructure>(robotA);
   const auto& structureB = registry.get<sx::comps::MultibodyStructure>(robotB);
 
@@ -416,7 +417,7 @@ TEST(UnifiedConstraint, FallbackFrictionUpdatesCrossMultibodyOtherEnd)
   probe.point = cross.point;
   probe.friction = cross.friction;
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structureA = registry.get<sx::comps::MultibodyStructure>(robotA);
   const auto& structureB = registry.get<sx::comps::MultibodyStructure>(robotB);
   std::vector<sx::compute::LinkContact> contactsA{cross};
@@ -511,7 +512,8 @@ TEST(UnifiedConstraint, FindexReferencesValidNormalRows)
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << -0.5;
   const std::vector<sx::compute::LinkContact> linkContacts{contact};
-  auto& registry = linkWorld.getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(linkWorld);
   const auto& structure = registry.get<sx::comps::MultibodyStructure>(
       dart::simulation::experimental::detail::toRegistryEntity(
           robot.getEntity()));
@@ -587,7 +589,7 @@ TEST(UnifiedConstraint, CompactsInactiveLinkRows)
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << -0.5;
   const std::vector<sx::compute::LinkContact> linkContacts{active, inactive};
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = registry.get<sx::comps::MultibodyStructure>(
       dart::simulation::experimental::detail::toRegistryEntity(
           robot.getEntity()));
@@ -657,7 +659,7 @@ TEST(UnifiedConstraint, CouplesSharedDynamicObstacleAcrossDomains)
   groundObstacle.depth = 0.01;
   rigidContacts.push_back(groundObstacle);
   const auto rigid = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), rigidContacts);
+      dart::simulation::experimental::detail::registryOf(world), rigidContacts);
   ASSERT_EQ(rigid.constraints.size(), 1u);
   ASSERT_EQ(
       rigid.constraints[0].bodyB,
@@ -679,7 +681,7 @@ TEST(UnifiedConstraint, CouplesSharedDynamicObstacleAcrossDomains)
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << -0.4;
   const std::vector<sx::compute::LinkContact> linkContacts{legObstacle};
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = registry.get<sx::comps::MultibodyStructure>(
       dart::simulation::experimental::detail::toRegistryEntity(
           robot.getEntity()));
@@ -780,7 +782,7 @@ TEST(UnifiedConstraint, SolvedSolutionSatisfiesBoxedLcpConditions)
   contacts.push_back(groundBox);
 
   const auto rigid = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
   const auto unified
       = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
@@ -852,7 +854,7 @@ TEST(UnifiedConstraint, SolveAndApplyStopsHeadOnRigidContact)
   contacts.push_back(contact);
 
   const auto rigid = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
   const auto unified
       = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
@@ -861,12 +863,12 @@ TEST(UnifiedConstraint, SolveAndApplyStopsHeadOnRigidContact)
 
   std::vector<Eigen::VectorXd> noMultibodyVelocities;
   sx::compute::applyUnifiedConstraintImpulses(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       unified,
       solution.lambda,
       std::span<Eigen::VectorXd>(noMultibodyVelocities));
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d velocityLeft
       = registry
             .get<sx::comps::Velocity>(
@@ -911,7 +913,7 @@ TEST(UnifiedConstraint, SolveAndApplyDrivesLinkContactToTarget)
   nextVelocity << -0.5;
   const double timeStep = 0.01;
   const std::vector<sx::compute::LinkContact> linkContacts{contact};
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = registry.get<sx::comps::MultibodyStructure>(
       dart::simulation::experimental::detail::toRegistryEntity(
           robot.getEntity()));
@@ -931,7 +933,7 @@ TEST(UnifiedConstraint, SolveAndApplyDrivesLinkContactToTarget)
 
   std::vector<Eigen::VectorXd> multibodyVelocities{nextVelocity};
   sx::compute::applyUnifiedConstraintImpulses(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       unified,
       solution.lambda,
       std::span<Eigen::VectorXd>(multibodyVelocities));
@@ -979,7 +981,7 @@ TEST(UnifiedConstraint, SolveAndApplyDeliversNewtonImpulseToObstacle)
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << -1.0;
   const std::vector<sx::compute::LinkContact> linkContacts{contact};
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto& structure = registry.get<sx::comps::MultibodyStructure>(
       dart::simulation::experimental::detail::toRegistryEntity(
           robot.getEntity()));
@@ -999,7 +1001,7 @@ TEST(UnifiedConstraint, SolveAndApplyDeliversNewtonImpulseToObstacle)
 
   std::vector<Eigen::VectorXd> multibodyVelocities{nextVelocity};
   sx::compute::applyUnifiedConstraintImpulses(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       unified,
       solution.lambda,
       std::span<Eigen::VectorXd>(multibodyVelocities));
@@ -1055,19 +1057,19 @@ TEST(UnifiedConstraint, FallbackStopsHeadOnRigidContact)
   contacts.push_back(contact);
 
   const auto rigid = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
   const auto unified
       = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
 
   std::vector<Eigen::VectorXd> noMultibodyVelocities;
   sx::compute::applyUnifiedConstraintFallback(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       unified,
       std::span<Eigen::VectorXd>(noMultibodyVelocities),
       8);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double relativeNormal
       = (registry
              .get<sx::comps::Velocity>(
@@ -1111,20 +1113,20 @@ TEST(UnifiedConstraint, FallbackFrictionOpposesSlidingWithoutReversing)
   contacts.push_back(contact);
 
   const auto rigid = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
   const auto unified
       = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
 
   std::vector<Eigen::VectorXd> noMultibodyVelocities;
   sx::compute::applyUnifiedConstraintFallback(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       unified,
       std::span<Eigen::VectorXd>(noMultibodyVelocities),
       16);
 
   const Eigen::Vector3d boxVelocity
-      = world.getRegistry()
+      = dart::simulation::experimental::detail::registryOf(world)
             .get<sx::comps::Velocity>(
                 dart::simulation::experimental::detail::toRegistryEntity(
                     box.getEntity()))
@@ -1161,20 +1163,20 @@ TEST(UnifiedConstraint, ResolveUsesJointSolveWhenWellPosed)
   contacts.push_back(contact);
 
   const auto rigid = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
   const auto unified
       = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
 
   std::vector<Eigen::VectorXd> noMultibodyVelocities;
   const bool jointSolved = sx::compute::resolveUnifiedConstraints(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       unified,
       std::span<Eigen::VectorXd>(noMultibodyVelocities),
       8);
   EXPECT_TRUE(jointSolved); // a single contact is full-rank
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double relativeNormal
       = (registry
              .get<sx::comps::Velocity>(
@@ -1224,7 +1226,7 @@ TEST(UnifiedConstraint, FallbackResolvesCoplanarBoxOnPlane)
   }
 
   const auto rigid = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   ASSERT_EQ(rigid.constraints.size(), 4u);
   const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
   const auto unified
@@ -1232,14 +1234,14 @@ TEST(UnifiedConstraint, FallbackResolvesCoplanarBoxOnPlane)
 
   std::vector<Eigen::VectorXd> noMultibodyVelocities;
   sx::compute::applyUnifiedConstraintFallback(
-      world.getRegistry(),
+      dart::simulation::experimental::detail::registryOf(world),
       unified,
       std::span<Eigen::VectorXd>(noMultibodyVelocities),
       8);
 
   // The fallback arrests the box's descent and never injects upward velocity.
   const double boxVerticalVelocity
-      = world.getRegistry()
+      = dart::simulation::experimental::detail::registryOf(world)
             .get<sx::comps::Velocity>(
                 dart::simulation::experimental::detail::toRegistryEntity(
                     box.getEntity()))

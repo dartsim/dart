@@ -32,6 +32,11 @@ Cases covered:
   barrier solve on a two-body point contact.
 - `BM_RigidIpcLineSearchStepBound` — conservative curved-CCD line-search bound
   for a crossing triangle pair.
+- `BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_{000,001}` — compact
+  audited large rigid-body hash-grid data rows. The benchmark computes
+  conservative swept scene bounds from per-body pose/local-bound records,
+  verifies those bounds contain the upstream exact scene bounds, and emits JSON
+  profile counters for body/source primitive counts and bound slack.
 
 ## Comparison baselines (the bar to beat)
 
@@ -139,6 +144,55 @@ starting, active-set reuse) follow from here.
     or fewer active-primitive evaluations, not skipping projection. Do not
     re-try the LDLT fast path without first confirming the active Hessians are
     usually PSD.
+
+## Robustness findings on dense simultaneous contacts (the many-body gate)
+
+- **[RESOLVED, partial] CCD-indeterminacy froze dense resting contacts.** A
+  friction-arch attempt (Fig. 11; wedge voussoirs over a ground box) settled for
+  2-3 steps then stuck in persistent `LineSearchBlocked` (`failed=1`, `lsZero=0`,
+  adaptive `kappa` healthy ~1.1e4 -- so not a gap-0 setup artifact and not a
+  factorization failure). Isolated with per-step `RigidIpcSolverStats`: the
+  conservative curved ACCD line search exhausted its iteration budget on a couple
+  of tight, slowly-converging pairs and returned `Indeterminate`, which the line
+  search treated as a zero step -> the whole solve reported blocked and was
+  skipped, freezing the scene. More ACCD iterations did NOT help (the pairs stay
+  indeterminate -- asymptotic creep), so it was not mere budget starvation.
+
+  Fix (landed, fix-lever #1): every conservative ACCD advance is a provably
+  contact-free sub-step, so the time it reached before exhausting is a valid
+  LOWER BOUND on the true time of impact. `curvedAccdAdvance` now reports that
+  `timeOfImpact` on the `Indeterminate` exit, and the line search
+  (`recordLineSearchCandidate`) uses it as a conservative POSITIVE step bound
+  (limiting, like a hit) instead of a frozen zero step -- blocking only if zero
+  safe progress was proven. This keeps the intersection-free guarantee (the bound
+  is a proven lower bound on the TOI, strictly before any crossing -- covered by
+  `LineSearchUsesProvenSafeTimeOnIterationExhaustion`) while letting dense resting
+  contacts advance. Result: the minimal friction arch stands in equilibrium
+  (Fig. 11), and the
+  two-box stack converges faster (fewer frozen retries). The line-search CCD
+  budget was also raised (64 -> 256) so tight pairs reach a larger safe bound
+  before falling back.
+
+- **[RESOLVED, partial] Larger arches reached exact contact and surfaced a
+  persistent failed solve.** With the indeterminacy fix alone, a 5-block arch
+  settled for 3 steps then stuck (isolated with per-step `RigidIpcSolverStats`):
+  step 4+ was `LineSearchBlocked` with `lsZero=1`, `indet=0` -- exactly one
+  primitive pair reached `distance <= 0` (a `Hit` at TOI 0), so the line search
+  correctly blocked to avoid penetration. The telling stat:
+  `barrierStiffness` stayed at its initial ~1.1e4 with
+  `barrierStiffnessIncreases=0` -- the adaptive kappa never increased, so the
+  soft barrier let that interface creep to exact contact, and then it deadlocked
+  (at-contact -> blocked -> no applied step -> no kappa update -> still at
+  contact).
+
+  Fix (landed, runtime robustness): a zero-step line-search block now gives
+  adaptive kappa one bounded retry path before failing, the opt-in runtime stage
+  carries raised kappa forward while contacts remain active, and an exact
+  zero-progress resting-contact plateau writes back the unchanged safe pose
+  rather than surfacing as a persistent failure. The five-voussoir Fig. 11 arch
+  is now shipped as `FiveVoussoirFrictionArchStandsInEquilibrium`. Broader dense
+  multi-body scenes -- 3D packing (Fig. 14), wrecking ball (Fig. 8), and larger
+  production scene sets -- still need corpus coverage and performance work.
 
 ## Optimization roadmap (CPU and GPU)
 

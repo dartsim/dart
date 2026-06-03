@@ -876,6 +876,7 @@ void defSimulationExperimentalModule(nb::module_& m)
   auto jointClass = nb::class_<sim::Joint>(m, "Joint");
   auto linkClass = nb::class_<sim::Link, sim::Frame>(m, "Link");
   auto loopClosureClass = nb::class_<sim::LoopClosure>(m, "LoopClosure");
+  auto rigidBodyClass = nb::class_<sim::RigidBody, sim::Frame>(m, "RigidBody");
 
   frameClass.def_static("world", &sim::Frame::world)
       .def(
@@ -1091,6 +1092,8 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("effort_upper_limits", &sim::Joint::getEffortUpperLimits)
       .def_prop_ro("parent_link", &sim::Joint::getParentLink)
       .def_prop_ro("child_link", &sim::Joint::getChildLink)
+      .def_prop_ro("parent_rigid_body", &sim::Joint::getParentRigidBody)
+      .def_prop_ro("child_rigid_body", &sim::Joint::getChildRigidBody)
       .def_prop_ro("is_valid", &sim::Joint::isValid)
       .def("__repr__", [](const sim::Joint& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -1482,7 +1485,7 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("Multibody", fields);
       });
 
-  nb::class_<sim::RigidBody, sim::Frame>(m, "RigidBody")
+  rigidBodyClass
       .def(
           "apply_force",
           [](sim::RigidBody& self, const nb::handle& force) {
@@ -1545,6 +1548,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           })
       .def_prop_rw(
           "is_static", &sim::RigidBody::isStatic, &sim::RigidBody::setStatic)
+      .def_prop_rw(
+          "is_kinematic",
+          &sim::RigidBody::isKinematic,
+          &sim::RigidBody::setKinematic)
       .def_prop_rw(
           "restitution",
           &sim::RigidBody::getRestitution,

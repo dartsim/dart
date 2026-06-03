@@ -37,6 +37,7 @@
 #include "dart/simulation/experimental/comps/name.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_integration_kernel.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -75,7 +76,8 @@ bool allFinite(const Eigen::Matrix3d& value)
 // ordered sequence.
 std::vector<std::string> rigidBodyNames(const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view
       = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
   std::vector<std::string> names;
@@ -249,7 +251,8 @@ void integrateOrientationsBatch(
 //==============================================================================
 RigidBodyStateBatch extractRigidBodyState(const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view
       = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
 
@@ -304,7 +307,7 @@ void applyRigidBodyState(World& world, const RigidBodyStateBatch& state)
       "RigidBodyStateBatch arrays are inconsistent with bodyCount {}",
       state.bodyCount);
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto view
       = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
 
@@ -532,7 +535,8 @@ void integrateRigidBodyStateBatchLinear(
 //==============================================================================
 RigidBodyModelBatch extractRigidBodyModelBatch(const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   // Use the same view as extractRigidBodyState so the model order matches the
   // state order body-for-body, then fetch the mass per entity.
   auto view

@@ -399,6 +399,8 @@ struct RigidIpcSolverStats
   std::size_t lineSearchMisses = 0;
   std::size_t lineSearchIndeterminateCount = 0;
   std::size_t lineSearchZeroStepCount = 0;
+  std::size_t sufficientDecreaseChecks = 0;
+  std::size_t sufficientDecreaseBacktracks = 0;
   bool converged = false;
   bool failed = false;
   bool resultApplied = false;
@@ -408,6 +410,30 @@ struct RigidIpcSolverStats
   {
     *this = {};
   }
+};
+
+/// Configuration for the opt-in rigid IPC world-step stage.
+struct RigidIpcContactStageOptions
+{
+  /// Maximum projected-Newton iterations per stage execution. Zero is valid
+  /// for tests that need to exercise the non-converged application policy.
+  std::size_t maxIterations = 8;
+
+  /// IPC barrier activation distance (`dHat`) in world units. Non-finite or
+  /// non-positive values fall back to the default distance.
+  double activationDistance = 1e-2;
+
+  /// Number of lagged friction outer passes. Zero disables lagged friction.
+  std::size_t frictionIterations = 1;
+
+  /// Static-friction speed bound (`epsv`) in world units per second. The stage
+  /// converts this to the solver's per-step displacement threshold using the
+  /// world timestep. Zero disables lagged friction.
+  double staticFrictionSpeedBound = 1e-3;
+
+  /// Absolute momentum-balance tolerance for stopping lagged friction passes.
+  /// Zero requires the configured number of friction passes.
+  double frictionConvergenceTolerance = 0.0;
 };
 
 /// Opt-in rigid IPC world-step stage for free rigid bodies.
@@ -420,16 +446,22 @@ class DART_EXPERIMENTAL_API RigidIpcContactStage final : public WorldStepStage
 {
 public:
   explicit RigidIpcContactStage(std::size_t maxIterations = 8);
+  explicit RigidIpcContactStage(RigidIpcContactStageOptions options);
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] std::size_t getMaxIterations() const noexcept;
+  [[nodiscard]] double getActivationDistance() const noexcept;
+  [[nodiscard]] std::size_t getFrictionIterations() const noexcept;
+  [[nodiscard]] double getStaticFrictionSpeedBound() const noexcept;
+  [[nodiscard]] double getFrictionConvergenceTolerance() const noexcept;
+  [[nodiscard]] RigidIpcContactStageOptions getOptions() const noexcept;
   [[nodiscard]] const RigidIpcSolverStats& getLastStats() const noexcept;
 
 private:
-  std::size_t m_maxIterations;
+  RigidIpcContactStageOptions m_options;
   RigidIpcSolverStats m_lastStats;
 };
 

@@ -1,5 +1,1473 @@
 # Resume: Rigid IPC Solver
 
+## Session 2026-06-01: generic hash-grid source row
+
+Delivered a bounded Phase 2/6 algorithm-manifest slice:
+
+- Added DART-owned swept primitive broad-phase coverage in
+  `SpatialHashBroadPhase.SweptPrimitiveCandidatePairsMatchBruteForce`: swept
+  point, edge, and triangle AABBs produce the same candidate pairs with native
+  spatial hash as with brute force, including expected point-edge and
+  edge-triangle overlaps.
+- Marked the remaining audited CCD/barrier test-source row,
+  `tests/ccd/test_hash_grid.cpp`, implemented in the generated manifest. All
+  audited upstream test-source rows in the current manifest are now
+  implemented.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_spatial_hash`
+- `./build/default/cpp/Release/bin/test_spatial_hash --gtest_color=no --gtest_filter=SpatialHashBroadPhase.SweptPrimitiveCandidatePairsMatchBruteForce`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: generated point-edge TOI source rows
+
+Delivered a bounded Phase 2/6 algorithm-manifest slice:
+
+- Added deterministic generated point-edge TOI coverage in
+  `RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi`: generated
+  midpoint/interior/flipped-edge impacts are synthesized from expected
+  time-of-impact and edge-coordinate parameters, verified against the residual
+  equations, and recovered by the interval-subdivision query; a parallel miss
+  row remains non-colliding.
+- Marked the audited collision-generator, edge-vertex CCD, and generic TOI
+  source rows implemented in the generated manifest:
+  `tests/ccd/collision_generator.cpp`,
+  `tests/ccd/collision_generator.hpp`,
+  `tests/ccd/test_edge_vertex_ccd.cpp`, and
+  `tests/ccd/test_time_of_impact.cpp`. The generic hash-grid source row remains
+  planned.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_fixture`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter="RigidIpcCcdCase.GeneratedPointEdgeLinearImpactsMatchExpectedToi:RigidIpcCcdCase.EvaluatesUpstreamStyleRigidToiRows"`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: card-tent fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/friction/card-house/card-tent.json`: two inclined card bodies
+  stand on a fixed frictional support, activate rigid IPC contact, stay finite,
+  preserve upright height, and report no meaningful native overlap in
+  `RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction`.
+- Marked that upstream card-tent fixture row implemented in the generated
+  manifest. Larger card-house rows remain planned until they have matching DART
+  evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: 25-stone arch fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/friction/arch/arch-25-stones.json`: a generated 25-voussoir
+  frictional arch stands on a fixed support, activates rigid IPC contact, stays
+  finite, preserves support clearance, and keeps the keystone from collapsing in
+  `RigidIpcPaperExperiments.TwentyFiveVoussoirFrictionArchFixtureRowStands`.
+- Marked that upstream 25-stone arch fixture row implemented in the generated
+  manifest. Larger arch rows and the Fig. 11 visual alias remain planned until
+  they have matching DART evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TwentyFiveVoussoirFrictionArchFixtureRowStands`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: rolling-cone friction fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/friction/rolling/cone.json`: a tilted cone advances over a fixed
+  frictional plane, activates rigid IPC contact, stays finite, preserves
+  clearance, and develops angular velocity in
+  `RigidIpcPaperExperiments.RollingConeFixtureRowAdvancesWithContact`.
+- Marked that upstream rolling-cone friction fixture row implemented in the
+  generated manifest. The oloid rolling fixture row remains planned until it has
+  matching DART evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RollingConeFixtureRowAdvancesWithContact`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: 8K tessellated-plane fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/tessellated-plane/8K-triangles.json`: a cube starts
+  near a fixed generated 8192-triangle mesh plane, activates rigid IPC contact,
+  stays finite, and preserves nonnegative clearance in
+  `RigidIpcPaperExperiments.CubeContactsEightKTrianglePlaneFixtureRow`.
+- Marked that upstream 8K tessellated-plane unit-test fixture row implemented
+  in the generated manifest. The earlier two-triangle tessellated-plane rows now
+  point at their own runtime coverage while noting that the 8K topology has
+  separate evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CubeContactsEightKTrianglePlaneFixtureRow`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben spike-in-hole fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/spike-in-hole.json`: an inverted spike
+  advances through a fixed hole mesh under the upstream velocity direction,
+  activates rigid IPC contact, stays finite, and reports no meaningful native
+  overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenSpikeInHoleFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. This retires the audited Erleben unit-test fixture rows
+  tracked in the current P0 manifest slice.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSpikeInHoleFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben wedge-in-crack fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/wedge-in-crack.json`: an inverted wedge
+  advances through a fixed crack mesh under the upstream velocity and force
+  direction, activates rigid IPC contact, stays finite, and reports no
+  meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenWedgeInCrackFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. The hole row remains planned until it has
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenWedgeInCrackFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben spike-in-crack fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/spike-in-crack.json`: an inverted spike
+  advances through a fixed crack mesh under the upstream velocity and force
+  direction, activates rigid IPC contact, stays finite, and reports no
+  meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenSpikeInCrackFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. The hole row remains planned until it has
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSpikeInCrackFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben spike-and-wedge fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/spike-and-wedge.json`: an inverted spike
+  rests on a fixed upright wedge, activates rigid IPC contact, stays finite,
+  and reports no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenSpikeAndWedgeFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. Crack and hole Erleben rows remain planned until they
+  have topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSpikeAndWedgeFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben wedges fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/wedges.json`: an inverted wedge rests on a
+  fixed upright wedge, activates rigid IPC contact, stays finite, and reports
+  no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenWedgesFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. Other Erleben rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenWedgesFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben spikes fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/spikes.json`: an inverted spike rests on a
+  fixed upright spike, activates rigid IPC contact, stays finite, and reports
+  no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenSpikesFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. Other Erleben rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSpikesFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben sliding-wedge fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/sliding-wedge.json`: an inverted wedge slides
+  across a fixed plane, activates rigid IPC contact, stays finite, advances
+  laterally, and reports no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenSlidingWedgeFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. Other Erleben rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSlidingWedgeFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben sliding-spike fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/sliding-spike.json`: an inverted spike slides
+  across a fixed plane, activates rigid IPC contact, stays finite, advances
+  laterally, and reports no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenSlidingSpikeFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. Other Erleben rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenSlidingSpikeFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben internal-edges fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/internal-edges.json`: a cube falls under
+  gravity onto a fixed internal-edge mesh, activates rigid IPC contact, stays
+  finite, and reports no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenInternalEdgesFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. Other Erleben rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenInternalEdgesFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: Erleben cliff-edges fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/erleben/cliff-edges.json`: a cube falls under gravity
+  onto a fixed cliff-edge mesh, activates rigid IPC contact, stays finite, and
+  reports no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.ErlebenCliffEdgesFixtureRowStaysSeparated`.
+- Marked that upstream Erleben unit-test fixture row implemented in the
+  generated manifest. Other Erleben rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.ErlebenCliffEdgesFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: two-triangle tet fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/tessellated-plane/two-triangles-tet.json`: a
+  tetrahedral corner falls onto a fixed two-triangle mesh plane, activates rigid
+  IPC contact, stays finite, and reports no meaningful native overlap after each
+  step in
+  `RigidIpcPaperExperiments.TetCornerFallsOnTwoTrianglePlaneFixtureRow`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. The 8K tessellated-plane row remains planned until it has
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TetCornerFallsOnTwoTrianglePlaneFixtureRow`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: tet-corner fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/tet-corner.json`: a tetrahedral corner falls under
+  gravity into a fixed three-wall and support-plane corner, activates rigid IPC
+  contact, stays finite, and reports no meaningful native overlap after each
+  step in `RigidIpcPaperExperiments.TetCornerFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Edge-edge rows remain
+  planned until they have topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TetCornerFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: vertex-vertex fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/vertex-vertex.json`: a tetrahedral corner vertex
+  falls under gravity toward a separate fixed tetrahedral corner vertex above a
+  fixed support plane, activates rigid IPC contact, stays finite, and reports no
+  meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.VertexVertexFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Edge-edge and
+  tet-corner rows remain planned until they have topology-specific DART runtime
+  evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.VertexVertexFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: vertex-face fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/vertex-face.json`: a tetrahedral pyramid vertex falls
+  under gravity toward a separate fixed tetrahedral pyramid face, activates
+  rigid IPC contact, stays finite, and reports no meaningful native overlap
+  after each step in
+  `RigidIpcPaperExperiments.VertexFaceFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Vertex-vertex,
+  edge-edge, and tet-corner rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.VertexFaceFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-06-01: face-vertex fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/face-vertex.json`: a tetrahedral pyramid face falls
+  under gravity toward a separate fixed tetrahedral pyramid vertex, activates
+  rigid IPC contact, stays finite, and reports no meaningful native overlap
+  after each step in
+  `RigidIpcPaperExperiments.FaceVertexFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Vertex-face,
+  vertex-vertex, edge-edge, and tet-corner rows remain planned until they have
+  topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.FaceVertexFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: cube-falling-on-edge fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/cube-falling-on-edge.json`: a tilted cube falls under
+  gravity onto a separate tilted fixed box edge, activates rigid IPC contact,
+  stays finite, and reports no meaningful native overlap after each step in
+  `RigidIpcPaperExperiments.CubeFallingOnEdgeFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. Edge-edge, vertex/face, and tet-corner rows remain planned until
+  they have topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CubeFallingOnEdgeFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: five-cubes fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/5-cubes.json`: five aligned cubes fall under gravity
+  onto a fixed support, activate stacked rigid IPC contacts, stay finite, and
+  preserve nonnegative support and cube-cube clearance in
+  `RigidIpcPaperExperiments.FiveCubesFixtureRowStacksWithoutPenetration`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Edge-feature and
+  tessellated stress rows remain planned until they have matching DART runtime
+  evidence. A stricter exploratory variant using a two-triangle support did not
+  satisfy clearance, so that evidence was not used.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.FiveCubesFixtureRowStacksWithoutPenetration`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: large-mass-ratio fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/large-mass-ratio.json`: a large heavy cube falls
+  toward a small cube resting above a fixed mesh plane, the large-small gap
+  closes into the activation range, and both contacts preserve nonnegative
+  clearance with finite state in
+  `RigidIpcPaperExperiments.LargeMassRatioFixtureRowStaysSeparated`.
+- Marked that upstream 3D unit-test fixture row and its non-visual Fig. 16
+  paper-unit alias implemented in the generated manifest. Broader stacked and
+  edge-feature 3D unit-test fixture rows remain planned until they have matching
+  DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.LargeMassRatioFixtureRowStaysSeparated`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: two-triangle plane fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for
+  `fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`: a cube falls
+  onto a fixed two-triangle mesh plane, activates rigid IPC contact, stays
+  finite, and preserves nonnegative clearance in
+  `RigidIpcPaperExperiments.CubeSettlesOnTwoTrianglePlaneFixtureRow`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. The two-triangle tet row and 8K tessellated-plane row remain
+  planned until they have matching topology-specific DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.CubeSettlesOnTwoTrianglePlaneFixtureRow`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: Dzhanibekov wing-nut fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned no-contact runtime coverage for
+  `fixtures/3D/unit-tests/rotation/dzhanibekov.json`: a wing-nut-like rigid
+  mesh with zero gravity, an initial tilt, and high angular velocity remains
+  finite, does not translate, and advances orientation in
+  `RigidIpcPaperExperiments.DzhanibekovWingNutFixtureRowAdvancesSafely`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. Contacting edge/vertex unit-test rows remain planned until they
+  have matching DART runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.DzhanibekovWingNutFixtureRowAdvancesSafely`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: spinning-cube-over-plane fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned no-contact runtime coverage for
+  `fixtures/3D/unit-tests/spinning-cube-over-plane.json`: a cube with zero
+  gravity and high angular velocity spins above a fixed near plane, remains
+  finite, and preserves nonnegative clearance in
+  `RigidIpcPaperExperiments.SpinningCubeOverPlaneFixtureRowAdvancesSafely`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. Contacting edge/vertex unit-test rows remain planned until they
+  have matching DART runtime evidence; an exploratory edge-edge runtime probe
+  failed locally and was not retired.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SpinningCubeOverPlaneFixtureRowAdvancesSafely`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: torque rotation fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned no-contact runtime coverage for
+  `fixtures/3D/unit-tests/rotation/torque-test.json`: a disk-like free body
+  with zero gravity and applied torque remains finite, does not translate, and
+  gains angular velocity about the torque axis in
+  `RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest. The Dzhanibekov wing-nut row remains planned until it has
+  geometry-specific runtime evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: scaled-sphere and ellipsoid rotation rows
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned no-contact runtime coverage for the audited scaled-sphere /
+  ellipsoid rotation rows:
+  `fixtures/3D/unit-tests/rotation/rotating-sphere.json`,
+  `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-major.json`,
+  `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-intermediate.json`, and
+  `fixtures/3D/unit-tests/rotation/rotating-ellipsoid-minor.json`.
+- Each row uses a scaled ellipsoid mesh with zero gravity and row-specific
+  angular velocity, then verifies the opt-in rigid IPC runtime stage advances
+  orientation, keeps finite state, and does not translate.
+- Marked those four upstream 3D unit-test fixture rows implemented in the
+  generated manifest. Dzhanibekov and torque rotation rows remain planned until
+  they have matching geometry/force evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter='RigidIpcPaperExperiments.RotatingScaledSphereFixtureRowAdvancesWithoutContact:RigidIpcPaperExperiments.RotatingEllipsoidMajorFixtureRowAdvancesWithoutContact:RigidIpcPaperExperiments.RotatingEllipsoidIntermediateFixtureRowAdvancesWithoutContact:RigidIpcPaperExperiments.RotatingEllipsoidMinorFixtureRowAdvancesWithoutContact'`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: rotating-cube fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned coverage for
+  `fixtures/3D/unit-tests/rotation/rotating-cube.json`: a free cube with zero
+  gravity and angular velocity advances orientation through the opt-in rigid IPC
+  runtime stage, stays finite, and does not translate in
+  `RigidIpcPaperExperiments.RotatingCubeFixtureRowAdvancesWithoutContact`.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.RotatingCubeFixtureRowAdvancesWithoutContact`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: high-speed tunneling fixture row
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned coverage for `fixtures/3D/unit-tests/tunneling.json`: a
+  rotated cube with a large time-step velocity toward a fixed wall remains
+  intersection-free, and the opt-in rigid IPC runtime stage reports a
+  conservative CCD line-search hit in
+  `RigidIpcPaperExperiments.HighSpeedCubeDoesNotTunnelThroughWall`.
+- Generalized the fixture manifest's implemented-row map so non-friction
+  fixture rows can be retired with the same explicit test evidence path.
+- Marked that upstream 3D unit-test fixture row implemented in the generated
+  manifest.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.HighSpeedCubeDoesNotTunnelThroughWall`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: low-friction turntable fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added DART-owned coverage for
+  `fixtures/3D/friction/turntable/turntable-mu=0.1.json`: a cube resting on a
+  rotating kinematic cylinder remains intersection-free while `mu=0.1` contact
+  friction carries it tangentially in
+  `RigidIpcPaperExperiments.TurntableLowFrictionFixtureRowCarriesRider`.
+- Marked that upstream 3D friction fixture row implemented in the generated
+  manifest.
+- Kept `mu=0.0` and the Fig. 13 paper visual aliases planned until they have
+  matching no-friction evidence and headless visual/example coverage.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TurntableLowFrictionFixtureRowCarriesRider`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: moderate-friction turntable fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added DART-owned coverage for
+  `fixtures/3D/friction/turntable/turntable-mu=0.5.json`: a cube resting on a
+  rotating kinematic cylinder remains intersection-free while `mu=0.5` contact
+  friction carries it tangentially in
+  `RigidIpcPaperExperiments.TurntableModerateFrictionFixtureRowCarriesRider`.
+- Marked that upstream 3D friction fixture row implemented in the generated
+  manifest.
+- Kept `mu=0.0`, `mu=0.1`, and the Fig. 13 paper visual aliases planned until
+  they have matching coefficient-specific evidence and headless visual/example
+  coverage.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TurntableModerateFrictionFixtureRowCarriesRider`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: high-friction turntable fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added DART-owned coverage for
+  `fixtures/3D/friction/turntable/turntable-mu=1.0.json`: a cube resting on a
+  rotating kinematic cylinder remains intersection-free while `mu=1.0` contact
+  friction carries it tangentially in
+  `RigidIpcPaperExperiments.TurntableHighFrictionFixtureRowCarriesRider`.
+- Marked that upstream 3D friction fixture row implemented in the generated
+  manifest.
+- Kept the lower-friction turntable fixture rows and Fig. 13 paper visual
+  aliases planned. A direct `mu=0.0` check still showed small tangential drift,
+  and the paper aliases still require DART examples plus headless visual
+  evidence.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TurntableHighFrictionFixtureRowCarriesRider`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: spolling coin friction fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Marked `fixtures/3D/friction/spolling-coin.json` implemented in the generated
+  manifest. The owning DART coverage is
+  `RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration`:
+  a spinning disk remains intersection-free on a frictional support while
+  contact friction dissipates angular velocity.
+- Kept the Fig. 7 paper visual alias
+  `fixtures/paper-figures/07-spolling-coint.json` planned. It still needs a
+  DART example plus headless visual evidence before retirement.
+
+Validation in this slice:
+
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: sliding friction fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added exact DART-owned coverage for `fixtures/3D/friction/sliding.json`:
+  a cube with initial tangential velocity and `mu=0.05` remains
+  intersection-free and is observably braked relative to a frictionless run in
+  `RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction`.
+- Marked that upstream 3D friction fixture row implemented in the generated
+  manifest.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: rigid-body hash-grid source row
+
+Delivered a bounded Phase 6 algorithm-source manifest slice:
+
+- Marked the audited source row `tests/ccd/test_rigid_body_hash_grid.cpp`
+  implemented in the generated manifest. Its concrete upstream coverage is the
+  large rigid-body hash-grid scene-bounds experiment, which DART now owns as
+  `BM_RigidIpcLargeHashgridSceneBounds`.
+- Kept the generic `tests/ccd/test_hash_grid.cpp` row planned. DART still needs
+  brute-force-vs-culled broad-phase parity coverage before that row should be
+  retired.
+
+Validation in this slice:
+
+- `pixi run bm --target bm_rigid_ipc_solver --build-type Release -- --benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/rigid_ipc_large_hashgrid_source_row.json --benchmark_out_format=json`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: high-friction incline fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added exact DART-owned coverage for the audited high-friction incline row:
+  `mu=1.0` against `tan(theta)=0.5` remains intersection-free and settles
+  without sustained down-slope slide in
+  `RigidIpcPaperExperiments.FrictionThresholdHighFixtureRowSticks`.
+- Marked
+  `fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=1.json`
+  implemented in the generated manifest.
+- Kept the `mu=0.5` at-threshold rows planned. They still need matching DART
+  stick evidence before retirement.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.FrictionThresholdHighFixtureRowSticks`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: below-threshold friction fixture row
+
+Delivered a bounded Phase 4/6 friction-manifest slice:
+
+- Added exact DART-owned Fig. 18 coverage for the audited below-threshold
+  high-school-physics row: `mu=0.49` against `tan(theta)=0.5` remains
+  intersection-free and keeps sliding down-slope in
+  `RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides`.
+- Marked the upstream 3D friction fixture row
+  `fixtures/3D/friction/incline-plane/slopeTest_highSchoolPhysics_mu=0.49.json`
+  and its Fig. 18 paper alias implemented in the generated manifest.
+- Kept the `mu=0.5` at-threshold rows planned. Direct verification showed the
+  current runtime does not yet provide stick evidence for that exact row, so it
+  should not be retired until the solver behavior or acceptance criterion is
+  tightened.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_paper_experiments`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.FrictionThresholdBelowFixtureRowSlides`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: barrier and rigid TOI source rows
+
+Delivered a bounded Phase 6 algorithm-source audit slice:
+
+- Marked the upstream barrier derivative source row
+  `tests/barrier/test_barriers.cpp` as `implemented` in the generated manifest.
+  The owning DART coverage is `IpcBarrierKernel.*` plus
+  `RigidIpcBarrier.*`/`RigidIpcCcdGeometry.*`.
+- Marked the upstream rigid-body time-of-impact source row
+  `tests/ccd/test_rigid_body_time_of_impact.cpp` as `implemented` in the
+  generated manifest. The owning DART coverage is `RigidIpcCcdCase.*`, including
+  parser, residual, interval-subdivision, rotational-trajectory, kinematic, and
+  conservative-TOI corpus regressions.
+- Kept the remaining six `test-source` rows planned: collision-generator helper
+  files, generic edge-vertex/generic TOI tests, generic hash-grid tests, and
+  rigid-body hash-grid source coverage still need tighter DART matches before
+  retirement.
+
+Validation in this slice:
+
+- `./build/default/cpp/Release/bin/test_barrier_kernel --gtest_color=no`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no --gtest_filter='RigidIpcBarrier.*:RigidIpcCcdGeometry.*'`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter='RigidIpcCcdCase.*'`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: large hash-grid benchmark evidence
+
+Delivered a bounded Phase 6 benchmark-evidence slice:
+
+- Added `tests/fixtures/rigid_ipc/large_hashgrid_bounds.tsv`, a compact
+  audited fixture for the remaining
+  `tests/data/large-rb-hashgrid/large-rb-hashgrid-000..001.json` rows. It
+  records upstream source hashes, body/source primitive counts, per-body
+  pose/local-bound records, and upstream exact scene bounds without vendoring
+  the full upstream JSON data.
+- Added
+  `BM_RigidIpcLargeHashgridSceneBounds/large_rb_hashgrid_{000,001}` to
+  `bm_rigid_ipc_solver`. The benchmark computes conservative swept scene
+  bounds from the compact per-body records, verifies those bounds contain the
+  upstream exact scene bounds, and emits profile counters.
+- Updated the rigid IPC manifest generator so all 405 `test-data` rows are now
+  emitted as `implemented`. Broader Phase 6 remains open on fixture, algorithm,
+  benchmark-script, comparison, and visual-evidence rows.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target bm_rigid_ipc_solver`
+- `pixi run bm --target bm_rigid_ipc_solver --build-type Release -- --benchmark_filter=BM_RigidIpcLargeHashgridSceneBounds --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/rigid_ipc_large_hashgrid_benchmark_pixi.json --benchmark_out_format=json`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: large hash-grid manifest semantics
+
+Delivered a bounded Phase 6 manifest cleanup slice:
+
+- Reclassified the remaining
+  `tests/data/large-rb-hashgrid/large-rb-hashgrid-000..001.json` rows as
+  planned broad-phase benchmark rows instead of direct CCD TOI rows.
+- Recorded the upstream provenance gap: the audited rigid-ipc hash-grid source
+  keeps the large-scene benchmark commented out, so DART should not retire
+  those rows until it has matching scene-bounds coverage and reproducible
+  profile evidence.
+- Kept Phase 6 open: the two large-rigid-body hash-grid data rows remain
+  planned, now with accurate benchmark-target evidence requirements.
+
+Validation in this slice:
+
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: audited kinematic CCD manifest retirement
+
+Delivered a bounded Phase 6 manifest slice:
+
+- Extended the audited kinematic zero-time-hit regression from
+  `tests/data/kinematic/ccd-test-000..002.json` through
+  `tests/data/kinematic/ccd-test-012.json`.
+- Updated the rigid IPC fixture manifest generator so all audited kinematic
+  direct-CCD rows are emitted as `implemented`.
+- Added a checked-in wrecking-ball direct-CCD corpus fixture and
+  conservative-TOI regression for
+  `tests/data/wrecking-ball/ccd-test-000..385.json`: if DART reports a TOI,
+  replaying only through that bound does not report another hit.
+- Updated the rigid IPC fixture manifest generator so all tracked wrecking-ball
+  direct-CCD rows are emitted as `implemented`.
+- Kept Phase 6 open: the remaining manifest corpus and broader CCD data rows
+  still need matching DART tests, examples, benchmarks, or evidence before row
+  retirement.
+
+Validation in this slice:
+
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_fixture && ./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits --gtest_break_on_failure`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_fixture && ./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedWreckingBallCorpusConservatively --gtest_break_on_failure`
+- `cmake --build build/default/cpp/Release --target test_rigid_ipc_fixture && ./build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_filter=RigidIpcCcdCase.EvaluatesFirstAuditedWreckingBallRowsConservatively --gtest_break_on_failure`
+- `pixi run lint`
+- `pixi run build`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: implemented manifest status for first kinematic CCD rows
+
+Delivered a bounded Phase 6 manifest slice:
+
+- Updated the rigid IPC fixture manifest generator so
+  `tests/data/kinematic/ccd-test-000..002.json` are emitted as `implemented`
+  rows with the owning zero-time-hit DART regression and command recorded in the
+  row metadata.
+- Added generator unit coverage that proves the first audited kinematic rows are
+  promoted while the next uncovered kinematic row remains planned.
+- Kept Phase 6 open: the rest of the kinematic corpus and broader CCD data rows
+  still need matching DART evidence before row retirement.
+
+Validation in this slice:
+
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: kinematic CCD rows avoid zero-time hits
+
+Delivered a bounded Phase 2c CCD parity slice:
+
+- Fixed the internal interval-root CCD result reporting so a terminal root box
+  whose lower time edge is `0` only reports `t=0` when the primitives are
+  actually touching at the start pose. Separated starts now receive a positive
+  conservative lower bound instead of a zero-time hit.
+- Added first audited kinematic upstream row coverage for
+  `tests/data/kinematic/ccd-test-000..002.json`, proving the current DART
+  evaluator preserves the upstream guard against zero-time hits for separated
+  rows.
+- Kept Phase 2c open: this does not yet claim rigorous interval arithmetic or
+  full corpus reference semantics.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no'`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: implemented manifest status for first root CCD rows
+
+Delivered a bounded Phase 6 manifest slice:
+
+- Updated the rigid IPC fixture manifest generator so
+  `tests/data/ccd-test-000..003.json` are emitted as `implemented` rows with the
+  owning DART regression and command recorded in the row metadata.
+- Added generator unit coverage that proves those audited root rows are promoted
+  while uncovered CCD rows remain planned.
+- Kept Phase 6 open: every remaining planned manifest row still needs matching
+  DART tests, examples, benchmarks, comparison packets, and evidence before it
+  can be retired.
+
+Validation in this slice:
+
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: reusable one-step fixture runtime replay
+
+Delivered a bounded fixture/runtime helper slice for Phases 1 and 5:
+
+- Added `populateAndStepRigidIpcReplayWorld(...)` in the internal rigid IPC
+  fixture module. The helper populates an experimental `World`, applies parsed
+  fixture solver metadata to the supplied `RigidIpcContactStageOptions`, runs
+  exactly one opt-in `RigidIpcContactStage` step, and can return the resulting
+  `RigidIpcSolverStats`.
+- Added runtime coverage proving the helper applies fixture-owned barrier and
+  lagged-friction policy over caller defaults: a replay scene whose caller
+  supplies an inactive narrow band becomes active through parsed `dHat`, while
+  parsed zero friction iterations suppress active friction rows.
+- Closed Phase 1/1b in the dev-task checklist. The broader rigid IPC task
+  remains open on CCD corpus parity, dense-contact robustness/convergence,
+  broader friction coverage, persisted scene policy, mixed coupling, and
+  manifest-row completion.
+
+Validation in this slice:
+
+- `pixi run lint`
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayHelperAppliesStagePolicy'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `git diff --check`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: legacy VTK fixture mesh replay
+
+Delivered a bounded fixture-import slice for Phase 1:
+
+- Audited the upstream IPC comparison scripts at the pinned rigid-ipc commit and
+  confirmed the current comparison-script importer already covers every
+  command/body-row option present in that corpus.
+- Added legacy VTK `UNSTRUCTURED_GRID` mesh loading to rigid IPC fixture replay.
+  The loader supports ASCII and binary point data, accepts triangle/polygon/quad
+  surface cells, triangulates supported surface cells, and attaches the result
+  as the same native mesh collision shape used by the existing OBJ/OFF/MSH/STL
+  paths.
+- Expanded the mesh-format replay regression with binary and ASCII VTK tetra
+  surfaces, covering the remaining mesh extension present in the audited
+  upstream corpus.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.LoadsOffStlMshAndVtkMeshAssets'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: reusable rigid IPC fixture stage policy
+
+Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:
+
+- Added `applyRigidIpcFixtureStageOptions(...)` in the internal rigid IPC
+  fixture module. The helper applies parsed `dHat`, lagged-friction iteration
+  count, `epsv`/static-friction speed, and absolute velocity-convergence
+  tolerance to `RigidIpcContactStageOptions` while preserving caller-provided
+  options when fixture metadata is missing, invalid, or only relative.
+- Reused that helper in the runtime fixture replay solver-settings regression
+  instead of open-coding the metadata mapping in the test.
+- Added direct helper coverage proving exact fixture metadata is applied and
+  invalid/relative metadata leaves existing stage policy unchanged.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixture.AppliesFixtureMetadataToStageOptions:RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: rigid IPC fixture kinematic replay
+
+Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:
+
+- Changed `populateRigidIpcReplayWorld(...)` so fixture bodies parsed as
+  `RigidIpcBodyMode::Kinematic` become runtime kinematic bodies via
+  `RigidBody::setKinematic(true)` instead of staying static. Fully fixed-DOF
+  rows still populate as static unless the fixture explicitly marks the body
+  kinematic.
+- Updated replay coverage to assert parsed kinematic fixture bodies are
+  runtime-kinematic, not static.
+- Added a runtime replay regression that loads an inline-polygon kinematic
+  fixture body, steps a `RigidIpcContactStage`, and verifies the stage advances
+  both prescribed linear and angular motion even when no dynamic bodies are
+  present.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.PopulatesWorldWithFixtureStateAndMetadata:RigidIpcFixtureReplay.RuntimeReplayAdvancesParsedKinematicBody'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: rigid IPC runtime friction tolerances
+
+Delivered another bounded stage-policy slice for Phases 1, 4, and 5:
+
+- Extended `RigidIpcContactStageOptions` with
+  `staticFrictionSpeedBound` (`epsv`) and
+  `frictionConvergenceTolerance`. Defaults preserve the existing runtime stage
+  behavior: static friction uses `1e-3 * dt`, and zero convergence tolerance
+  requires the configured lagged-friction pass count.
+- Routed those options into the opt-in runtime projected-Newton solve. The
+  stage converts static-friction speed to the solver's per-step static-friction
+  displacement and passes the absolute friction convergence tolerance through
+  to the internal lagged-friction early-stop check.
+- Expanded the fixture replay stage-policy regression so parsed
+  `friction_constraints.static_friction_speed_bound` and
+  `ipc_solver.velocity_conv_tol` can drive `RigidIpcContactStageOptions`.
+  Coverage now proves zero static-friction speed disables runtime friction rows
+  and a high convergence tolerance stops lagged-friction passes after the first
+  active pass.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter=World.RigidIpcContactStage*'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: rigid IPC stage options for fixture solver metadata
+
+Delivered a bounded stage-policy slice for Phases 1, 4, and 5:
+
+- Added `RigidIpcContactStageOptions` with max projected-Newton iterations,
+  barrier activation distance (`dHat`), and lagged-friction iteration count.
+  The existing max-iteration constructor remains supported, while the options
+  constructor keeps the stage policy explicit for callers that load solver
+  metadata from fixtures or comparison scripts.
+- Routed the options into the opt-in runtime IPC stage so `dHat` controls the
+  barrier active band and zero friction iterations disable lagged friction rows
+  without disabling barrier contact.
+- Added a fixture replay regression that parses `distance_barrier_constraint`
+  and `friction_constraints` metadata, applies it to `RigidIpcContactStage`,
+  and verifies narrow-band contact stays inactive while zero friction iterations
+  suppress runtime friction rows on an otherwise active contact.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter=World.RigidIpcContactStage*'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: fixture replay rigid IPC friction coverage
+
+Delivered a bounded fixture/runtime bridge slice for Phases 1 and 4:
+
+- Added a fixture replay regression that parses two equivalent inline-polygon
+  scenes with zero vs positive `coefficient_friction`, populates experimental
+  `World` instances through `populateRigidIpcReplayWorld(...)`, and steps them
+  with the opt-in `RigidIpcContactStage`.
+- The regression verifies replayed friction metadata remains attached to the
+  created bodies, the frictionless scene reports no active friction constraints,
+  and the frictional scene reports active friction passes while braking
+  tangential slide without reversing it.
+- Updated the rigid IPC dev-task checklist and changelog to record this as
+  fixture replay IPC runtime coverage. The broader rigid IPC task remains open.
+
+Validation in this slice:
+
+- `pixi run build-simulation-experimental-tests`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCarriesFrictionIntoRigidIpcStage'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
+## Session 2026-05-31: current-main merge + sufficient-decrease line search
+
+Branch `feature/rigid-ipc-paper-parity` was reconciled with current
+`origin/main` by local merge commit `46e4af0f5a3`
+(`Merge origin/main into rigid IPC paper parity`). The merge conflict was limited
+to the Python experimental binding/stub surface and preserved both newer
+`CollisionShapeType.CAPSULE` / `CollisionShape.capsule(...)` and this branch's
+`CollisionShapeType.MESH` / `CollisionShape.mesh(...)`. No push or PR mutation
+has been made from this session.
+
+Delivered a bounded solver-quality slice for Phase 3:
+
+- Added sufficient-decrease backtracking to
+  `solveRigidIpcProjectedNewtonBarrierSystem(...)`. The solve now evaluates the
+  assembled objective for feasible Newton candidates after conservative CCD
+  scaling and backtracks with an Armijo-style criterion before mutating copied
+  poses.
+- Added aggregate internal diagnostics for sufficient-decrease objective checks
+  and backtracks, and surfaced those counters through the opt-in runtime stage
+  stats.
+- Made the policy safe for lagged-friction/active-set cases: if the finite
+  Armijo budget misses strict sufficient decrease but found a finite
+  objective-decreasing candidate, the solve accepts that best decreasing
+  candidate; if no candidate decreases the objective, the bounded solve stops as
+  non-converged rather than reporting an unsafe CCD line-search failure.
+- Added focused regressions for both the strict Armijo backtracking path and the
+  finite-budget decreasing-candidate fallback.
+
+Validation in this session:
+
+- `pixi run lint`
+- `pixi run build-simulation-experimental-tests`
+- `pixi run build-py`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no'`
+- `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no'`
+
+## Session 2026-05-30: paper-parity examples + Filament rendering fidelity
+
+Branch `feature/rigid-ipc-paper-parity` off `main` (the rigid IPC manifest work
+is now merged to `main` via PR #2777). Delivered, each built + verified +
+committed:
+
+- **Paper-parity C++ experiment suite**
+  (`tests/unit/simulation/experimental/contact/test_rigid_ipc_paper_experiments.cpp`).
+  Encodes the rigid-ipc paper figures the free-body stage can express, asserting
+  the two IPC invariants (intersection-free + Coulomb threshold):
+  - Fig. 18 high-school friction test via tilted gravity over flat ground
+    (slide below tan(theta)=0.5, stick above; friction monotonically resists,
+    slide-vs-rest discriminated by final speed since the scaffold allows a few cm
+    of transient creep near the exact threshold).
+  - Fig. 7 spolling coin: a spun triangulated disk braked by friction,
+    intersection-free.
+  - Figs. 16/17 Erleben degenerate edge-on-face drop settles without
+    penetration/divergence.
+- **Filament rendering fidelity** (`dart/gui/detail/render_environment.cpp`):
+  WINDOWED (real-GPU) views gain GTAO (bent normals, HIGH) + bloom +
+  screen-space contact shadows + 4x MSAA + a 4096/4-cascade shadow atlas. Both
+  modes gain cheap shader-space FXAA + temporal dithering. NOTE: an adversarial
+  review flagged that enabling the GPU-heavy screen-space passes in HEADLESS
+  risked the CI software rasterizer (llvmpipe); they were reverted to
+  windowed-only, and headless keeps the original light shadow cost (2048 / 3
+  cascades) plus FXAA + dithering. Verified by before/after headless captures and
+  the headless demos-cycle smoke.
+- **Python mesh `CollisionShape` binding**: `CollisionShape.mesh(vertices,
+triangles)` + `CollisionShapeType.MESH` (closing the Python gap vs C++
+  `makeMesh`); unit-tested through the rigid IPC path; stub regenerated.
+- **New py-demo** `sx_rigid_ipc_edge_drop` (Figs. 16/17 degenerate drop),
+  verified real-time (~24 ms/step, ~42 fps physics-only) and in the demos-cycle
+  smoke (10 passed). The existing `sx_rigid_ipc_incline` already covers Fig. 18.
+
+KINEMATIC / SCRIPTED BODY SUPPORT — LANDED (Fig. 13 turntable). A kinematic body
+(`RigidBody::setKinematic`) advances by its prescribed velocity and acts as a
+moving support/driver: the barrier/dynamics see it at its end pose, the
+projected-Newton solve overrides the lagged-friction pose to the start pose (so a
+moving obstacle drags its contacts) and sweeps start->end in the line search
+(anti-tunneling for a moving obstacle). All overrides are gated on `hasKinematic`,
+so non-kinematic scenes are byte-identical (14 runtime + 51 barrier tests
+unchanged). Verified: prescribed-velocity advance, conveyor friction-drag, and a
+turntable carrying a resting box CCW (Fig. 13). LIMITATION (documented): supported
+motion is tangential/co-moving (drag); a kinematic body prescribed to move
+normally INTO a dynamic body faster than the barrier can push it aside is not
+guaranteed intersection-free (prescribed motion cannot be slowed by contact) — the
+free box's inertial anchor overwhelms the barrier and the obstacle passes through.
+The Python `RigidBody.is_kinematic` binding is landed (tested). Follow-ups: robust
+normal-pushing, and a real-time kinematic demo (a box-on-box turntable measured
+~100-190 ms/step as the rider's contact set grows, so it is covered by the C++
+`RigidIpcKinematicTurntableCarriesRestingBox` regression rather than shipped as a
+demo). The `KinematicBodyTag` is runtime-only (not serialized).
+
+Dense-contact robustness -- improved (unfroze the friction arch, Fig. 11).
+Dense resting contacts used to settle a few steps then freeze: the conservative
+curved ACCD line search exhausted its iteration budget on a couple of tight pairs
+(`Indeterminate`), which the line search treated as a zero step ->
+`LineSearchBlocked` every step. Fix (`rigid_ipc_ccd.cpp` + `rigid_ipc_barrier.cpp`):
+`curvedAccdAdvance` now reports the conservatively-reached `timeOfImpact` on the
+`Indeterminate` exit (a proven lower bound on the true TOI), and the line search
+uses it as a positive limiting step instead of blocking -- intersection-free
+preserved, blocking only on zero proven progress. The line-search CCD budget was
+raised 64 -> 256. Follow-up fix: zero-step line-search blocks now give adaptive
+kappa a bounded retry path, the runtime stage carries raised kappa forward across
+active-contact steps, and exact zero-progress resting-contact plateaus write back
+the unchanged safe pose instead of surfacing as persistent failed solves. Result:
+the five-voussoir `FiveVoussoirFrictionArchStandsInEquilibrium` test (Fig. 11)
+now holds, the two-box stack converges faster, and
+`LineSearchUsesProvenSafeTimeOnIterationExhaustion` asserts the safe-time
+contract.
+
+Still out of scope: articulated paper scenes (lock box, mechanisms, bolt,
+punching press, wrecking-ball/anchor chains, card house) need joints; the larger
+many-body scenes (3D packing, 560-box wrecking ball) are gated on broader corpus
+coverage plus the ~3-orders-of-magnitude per-step
+perf gap.
+
 ## Last Session Summary
 
 Created PLAN-082's rigid IPC implementation surface: a dedicated plan, active
@@ -99,12 +1567,22 @@ active-friction diagnostics from the opt-in runtime stage.
 
 ## Current Branch
 
-`feature/rigid-ipc-manifest` - local branch, pushed to
-`origin/feature/rigid-ipc-manifest`, currently `0 behind` / `67 ahead` of
-`origin/main` after merging the latest `origin/main` three times (the parallel
-deformable IPC effort PLAN-081, PR #2762 py-demos, and the Eigen 5 / pixi
-upgrade #2765/#2768). Push is authorized (sole maintainer, no PR-review gating).
-This session added, on top of the earlier uncommitted work (now the checkpoint
+CURRENT (2026-05-30): `feature/rigid-ipc-paper-parity`, branched off `main`,
+pushed to `origin/feature/rigid-ipc-paper-parity`. All earlier rigid IPC manifest
+
+- solver work is now merged to `main` (PR #2777). This branch's commits (all
+  pushed): rigid IPC paper-parity experiment suite; Filament rendering fidelity;
+  Python mesh `CollisionShape` binding + `sx_rigid_ipc_edge_drop` demo; kinematic
+  (prescribed-motion) rigid-body support + turntable/conveyor regressions; Python
+  `is_kinematic` binding; dev-task doc updates. See the dated session summary at the
+  top of this file for details. Push is authorized (sole maintainer, no PR-review
+  gating).
+
+HISTORICAL (pre-merge `feature/rigid-ipc-manifest`): pushed to
+`origin/feature/rigid-ipc-manifest`, was `0 behind` / `67 ahead` of `origin/main`
+after merging the latest `origin/main` three times (PLAN-081 deformable IPC, PR
+#2762 py-demos, Eigen 5 / pixi upgrade #2765/#2768) before being merged via #2777.
+That session added, on top of the earlier uncommitted work (now the checkpoint
 commit "Add opt-in experimental rigid IPC contact stage with lagged friction"):
 
 - Phase 4d runtime friction-behavior regression.
@@ -361,19 +1839,36 @@ remain open fallback slices.
 - The first implementation rows should come from P0 correctness fixtures:
   `fixtures/3D/unit-tests/tunneling.json`, direct `tests/data/ccd-test-*`, and
   one simple paper-facing fixture.
+- The five-voussoir Fig. 11 friction arch is now a runtime regression for dense
+  exact-contact resting plateaus. The opt-in stage retries zero-step line-search
+  blocks by raising adaptive kappa, carries raised kappa forward while contacts
+  remain active, and treats an exact zero-progress resting-contact plateau as a
+  safe unchanged-pose write-back instead of a persistent failed solve.
 
 ## How To Resume
 
 ```bash
 cd /home/js/dev/dartsim/dart/task_6
-git checkout feature/rigid-ipc-manifest
-git status && git log -3 --oneline
+# Latest work is on this branch (off main); main has everything through #2777.
+git checkout feature/rigid-ipc-paper-parity   # or: git checkout main
+git status && git log -8 --oneline
 pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc
 pixi run build-simulation-experimental-tests
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_barrier$'
-pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_continuous_collision_step|test_deformable_body)$'
+pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_paper_experiments$'
+pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_world$'   # incl. RigidIpcKinematic* regressions
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_fixture$'
 pixi run test-simulation-experimental
+# Rendering / demos (needs a full `pixi run build` first to relink dartpy):
+pixi run build
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py -q
 ```
 
-Then continue from the README's "Immediate Next Steps".
+Next high-value slices (none started): (1) robust normal-push for kinematic
+obstacles (the documented limitation); (2) the IPC performance climb (the
+~3-orders-of-magnitude per-step gap gates the remaining many-body paper scenes
+-- 3D packing, wrecking ball, and larger corpus rows -- plus a real-time
+turntable/conveyor demo); (3)
+articulated paper scenes (lock box, mechanisms, bolt, punching press, chains)
+need a joint/articulation path the free-body rigid IPC stage does not have.
+Otherwise continue from the README's "Immediate Next Steps".

@@ -20,6 +20,7 @@
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/variational_integration.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -77,7 +78,7 @@ Chain makeChain(int n)
   }
   world.updateKinematics();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<sx::comps::MultibodyStructure>();
   chain.structure = &registry.get<sx::comps::MultibodyStructure>(*view.begin());
   chain.gravity = world.getGravity();
@@ -109,7 +110,8 @@ void BM_VariationalStep(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
   Chain chain = makeChain(n);
-  auto& registry = chain.world->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*chain.world);
   for (auto _ : state) {
     state.PauseTiming();
     resetToInitial(registry, chain);
@@ -136,7 +138,8 @@ void BM_ArticulatedInverseMass(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
   Chain chain = makeChain(n);
-  auto& registry = chain.world->getRegistry();
+  auto& registry
+      = dart::simulation::experimental::detail::registryOf(*chain.world);
   const Eigen::VectorXd impulse = Eigen::VectorXd::Ones(n);
   for (auto _ : state) {
     benchmark::DoNotOptimize(

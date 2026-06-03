@@ -330,6 +330,20 @@ public:
   /// @return Child Link handle
   [[nodiscard]] Link getChildLink() const;
 
+  /// Get the parent rigid body for a public rigid-body fixed joint.
+  ///
+  /// @return Parent RigidBody handle
+  /// @throws InvalidArgumentException if this joint does not connect rigid
+  /// bodies.
+  [[nodiscard]] RigidBody getParentRigidBody() const;
+
+  /// Get the child rigid body for a public rigid-body fixed joint.
+  ///
+  /// @return Child RigidBody handle
+  /// @throws InvalidArgumentException if this joint does not connect rigid
+  /// bodies.
+  [[nodiscard]] RigidBody getChildRigidBody() const;
+
   /// Get the opaque entity token for this joint.
   ///
   /// Returns the backend-neutral `Entity` token. Internal code that needs the

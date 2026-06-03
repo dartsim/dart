@@ -525,6 +525,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_ipc",
             "rigid_ipc_slide",
             "rigid_ipc_incline",
+            "rigid_ipc_edge_drop",
             "rigid_ipc_pile",
             "rigid_ipc_tunnel",
         },
