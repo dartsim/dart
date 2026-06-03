@@ -30,9 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/space/component_mapper.hpp"
 #include "dart/simulation/experimental/space/state_space.hpp"
 #include "dart/simulation/experimental/space/vector_mapper.hpp"
+#include "dart/simulation/experimental/world.hpp"
 
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
@@ -180,6 +182,35 @@ TEST(VectorMapper, RoundTripWithPositionMapper)
   EXPECT_DOUBLE_EQ(pos2.x, 40.0);
   EXPECT_DOUBLE_EQ(pos2.y, 50.0);
   EXPECT_DOUBLE_EQ(pos2.z, 60.0);
+}
+
+TEST(VectorMapper, RoundTripWithWorldRegistryFieldMapper)
+{
+  StateSpace space;
+  space.addVariable("position_x", 1);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  mapper.addMapper(
+      "position_x",
+      std::make_unique<FieldMapper<Position, double>>(&Position::x));
+
+  World world;
+  auto& registry = detail::registryOf(world);
+  auto entity = registry.create();
+
+  registry.emplace<Position>(entity, Position{1.0, 2.0, 3.0});
+
+  auto vec = mapper.toVector(registry);
+
+  ASSERT_EQ(vec.size(), 1);
+  EXPECT_DOUBLE_EQ(vec[0], 1.0);
+
+  const std::vector<double> updated{9.0};
+  mapper.fromVector(registry, std::span<const double>(updated));
+
+  const auto& pos = registry.get<Position>(entity);
+  EXPECT_DOUBLE_EQ(pos.x, 9.0);
 }
 
 TEST(VectorMapper, ToEigenConversion)

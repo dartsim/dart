@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 #include <dart/simulation/experimental/space/component_mapper.hpp>
 #include <dart/simulation/experimental/space/state_space.hpp>
@@ -95,10 +96,18 @@ public:
   [[nodiscard]] std::vector<double> toVector(
       const entt::registry& registry) const;
 
+  /// Extract World-owned ECS state to vector
+  [[nodiscard]] std::vector<double> toVector(
+      const detail::WorldRegistry& registry) const;
+
   /// Extract ECS state to Eigen vector
   /// @param registry ECS registry containing state
   /// @return Eigen::VectorXd
   [[nodiscard]] Eigen::VectorXd toEigen(const entt::registry& registry) const;
+
+  /// Extract World-owned ECS state to Eigen vector
+  [[nodiscard]] Eigen::VectorXd toEigen(
+      const detail::WorldRegistry& registry) const;
 
   /// Extract ECS state into pre-allocated vector (in-place)
   /// Avoids allocation for repeated calls
@@ -107,20 +116,34 @@ public:
   void toVector(
       const entt::registry& registry, std::vector<double>& output) const;
 
+  /// Extract World-owned ECS state into pre-allocated vector (in-place)
+  void toVector(
+      const detail::WorldRegistry& registry, std::vector<double>& output) const;
+
   /// Extract ECS state into pre-allocated Eigen vector (in-place)
   /// @param registry ECS registry containing state
   /// @param output Output vector (must be size >= getDimension())
   void toEigen(const entt::registry& registry, Eigen::VectorXd& output) const;
+
+  /// Extract World-owned ECS state into pre-allocated Eigen vector (in-place)
+  void toEigen(
+      const detail::WorldRegistry& registry, Eigen::VectorXd& output) const;
 
   /// Write vector to ECS state
   /// @param registry ECS registry to modify
   /// @param vec Input vector view
   void fromVector(entt::registry& registry, std::span<const double> vec);
 
+  /// Write vector to World-owned ECS state
+  void fromVector(detail::WorldRegistry& registry, std::span<const double> vec);
+
   /// Write Eigen vector to ECS state
   /// @param registry ECS registry to modify
   /// @param vec Input Eigen vector
   void fromEigen(entt::registry& registry, const Eigen::VectorXd& vec);
+
+  /// Write Eigen vector to World-owned ECS state
+  void fromEigen(detail::WorldRegistry& registry, const Eigen::VectorXd& vec);
 
   /// Get total dimension
   [[nodiscard]] size_t getDimension() const
@@ -142,6 +165,26 @@ public:
       const std::string& variableName, std::unique_ptr<ComponentMapper> mapper);
 
 private:
+  template <typename Registry>
+  [[nodiscard]] std::vector<double> toVectorImpl(
+      const Registry& registry) const;
+
+  template <typename Registry>
+  [[nodiscard]] Eigen::VectorXd toEigenImpl(const Registry& registry) const;
+
+  template <typename Registry>
+  void toVectorImpl(
+      const Registry& registry, std::vector<double>& output) const;
+
+  template <typename Registry>
+  void toEigenImpl(const Registry& registry, Eigen::VectorXd& output) const;
+
+  template <typename Registry>
+  void fromVectorImpl(Registry& registry, std::span<const double> vec);
+
+  template <typename Registry>
+  void fromEigenImpl(Registry& registry, const Eigen::VectorXd& vec);
+
   StateSpace m_space;
   std::vector<std::unique_ptr<ComponentMapper>> m_mappers;
 };

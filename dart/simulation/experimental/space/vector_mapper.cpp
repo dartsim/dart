@@ -52,22 +52,25 @@ VectorMapper::VectorMapper(StateSpace space) : m_space(std::move(space))
 
 VectorMapper::~VectorMapper() = default;
 
-std::vector<double> VectorMapper::toVector(const entt::registry& registry) const
+template <typename Registry>
+std::vector<double> VectorMapper::toVectorImpl(const Registry& registry) const
 {
   std::vector<double> result(m_space.getDimension());
   toVector(registry, result);
   return result;
 }
 
-Eigen::VectorXd VectorMapper::toEigen(const entt::registry& registry) const
+template <typename Registry>
+Eigen::VectorXd VectorMapper::toEigenImpl(const Registry& registry) const
 {
   Eigen::VectorXd result(m_space.getDimension());
   toEigen(registry, result);
   return result;
 }
 
-void VectorMapper::toVector(
-    const entt::registry& registry, std::vector<double>& output) const
+template <typename Registry>
+void VectorMapper::toVectorImpl(
+    const Registry& registry, std::vector<double>& output) const
 {
   if (output.size() < m_space.getDimension()) {
     throw std::invalid_argument(
@@ -95,8 +98,9 @@ void VectorMapper::toVector(
   }
 }
 
-void VectorMapper::toEigen(
-    const entt::registry& registry, Eigen::VectorXd& output) const
+template <typename Registry>
+void VectorMapper::toEigenImpl(
+    const Registry& registry, Eigen::VectorXd& output) const
 {
   if (std::cmp_less(output.size(), m_space.getDimension())) {
     throw std::invalid_argument(
@@ -114,8 +118,9 @@ void VectorMapper::toEigen(
   std::ranges::copy(temp, output.data());
 }
 
-void VectorMapper::fromVector(
-    entt::registry& registry, std::span<const double> vec)
+template <typename Registry>
+void VectorMapper::fromVectorImpl(
+    Registry& registry, std::span<const double> vec)
 {
   if (vec.size() < m_space.getDimension()) {
     throw std::invalid_argument(
@@ -139,8 +144,8 @@ void VectorMapper::fromVector(
   }
 }
 
-void VectorMapper::fromEigen(
-    entt::registry& registry, const Eigen::VectorXd& vec)
+template <typename Registry>
+void VectorMapper::fromEigenImpl(Registry& registry, const Eigen::VectorXd& vec)
 {
   if (std::cmp_less(vec.size(), m_space.getDimension())) {
     throw std::invalid_argument(
@@ -153,6 +158,76 @@ void VectorMapper::fromEigen(
   fromVector(
       registry,
       std::span<const double>(vec.data(), static_cast<size_t>(vec.size())));
+}
+
+std::vector<double> VectorMapper::toVector(const entt::registry& registry) const
+{
+  return toVectorImpl(registry);
+}
+
+std::vector<double> VectorMapper::toVector(
+    const detail::WorldRegistry& registry) const
+{
+  return toVectorImpl(registry);
+}
+
+Eigen::VectorXd VectorMapper::toEigen(const entt::registry& registry) const
+{
+  return toEigenImpl(registry);
+}
+
+Eigen::VectorXd VectorMapper::toEigen(
+    const detail::WorldRegistry& registry) const
+{
+  return toEigenImpl(registry);
+}
+
+void VectorMapper::toVector(
+    const entt::registry& registry, std::vector<double>& output) const
+{
+  toVectorImpl(registry, output);
+}
+
+void VectorMapper::toVector(
+    const detail::WorldRegistry& registry, std::vector<double>& output) const
+{
+  toVectorImpl(registry, output);
+}
+
+void VectorMapper::toEigen(
+    const entt::registry& registry, Eigen::VectorXd& output) const
+{
+  toEigenImpl(registry, output);
+}
+
+void VectorMapper::toEigen(
+    const detail::WorldRegistry& registry, Eigen::VectorXd& output) const
+{
+  toEigenImpl(registry, output);
+}
+
+void VectorMapper::fromVector(
+    entt::registry& registry, std::span<const double> vec)
+{
+  fromVectorImpl(registry, vec);
+}
+
+void VectorMapper::fromVector(
+    detail::WorldRegistry& registry, std::span<const double> vec)
+{
+  fromVectorImpl(registry, vec);
+}
+
+void VectorMapper::fromEigen(
+    entt::registry& registry, const Eigen::VectorXd& vec)
+{
+  fromEigenImpl(registry, vec);
+}
+
+void VectorMapper::fromEigen(
+    detail::WorldRegistry& registry, const Eigen::VectorXd& vec)
+{
+  fromEigenImpl(registry, vec);
 }
 
 void VectorMapper::addMapper(

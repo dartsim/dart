@@ -15,7 +15,7 @@ documented downstream migration or removal condition is satisfied.
 ## Summary
 
 - C++ public headers scanned: 476
-- C++ headers with exposed implementation debt: 122
+- C++ headers with exposed implementation debt: 123
 - C++ headers with compatibility signals: 51
 - dartpy binding sources scanned: 164
 - dartpy binding sources with allowlisted compatibility debt: 8
@@ -36,7 +36,7 @@ documented downstream migration or removal condition is satisfied.
 | sensor                  | 3       | 3         | 0             | 0            | 0            |
 | simd                    | 16      | 11        | 0             | 0            | 5            |
 | simulation              | 4       | 2         | 1             | 0            | 1            |
-| simulation/experimental | 75      | 0         | 1             | 56           | 18           |
+| simulation/experimental | 75      | 0         | 1             | 55           | 19           |
 | top-level               | 3       | 2         | 1             | 0            | 0            |
 | utils                   | 19      | 10        | 7             | 0            | 2            |
 
@@ -160,8 +160,9 @@ documented downstream migration or removal condition is satisfied.
 | dart/simulation/experimental/io/serializer.hpp                   | simulation/experimental | 1                | 11                 | `#include <dart/simulation/experimental/detail/world_registry_types.hpp>`<br>`const ::dart::simulation::experimental::detail::WorldRegistry& registry,`   |
 | dart/simulation/experimental/multibody/joint.hpp                 | simulation/experimental | 0                | 1                  | `/// \`detail::toRegistryEntity(joint.getEntity())\`.`                                                                                                    |
 | dart/simulation/experimental/multibody/multibody.hpp             | simulation/experimental | 0                | 1                  | `/// \`detail::toRegistryEntity(multibody.getEntity())\`.`                                                                                                |
-| dart/simulation/experimental/space/auto_mapper.hpp               | simulation/experimental | 0                | 9                  | `if constexpr (detail::ArithmeticField<FieldType>) {`<br>`} else if constexpr (detail::IsometryField<FieldType>) {`                                       |
-| dart/simulation/experimental/space/component_mapper.hpp          | simulation/experimental | 0                | 4                  | `if constexpr (detail::ArithmeticField<Field>) {`<br>`else if constexpr (detail::EigenVectorField<Field>) {`                                              |
+| dart/simulation/experimental/space/auto_mapper.hpp               | simulation/experimental | 0                | 11                 | `if constexpr (detail::ArithmeticField<FieldType>) {`<br>`} else if constexpr (detail::IsometryField<FieldType>) {`                                       |
+| dart/simulation/experimental/space/component_mapper.hpp          | simulation/experimental | 1                | 14                 | `#include <dart/simulation/experimental/detail/world_registry_types.hpp>`<br>`const detail::WorldRegistry&, std::vector<double>&, size_t) const`          |
+| dart/simulation/experimental/space/vector_mapper.hpp             | simulation/experimental | 1                | 6                  | `#include <dart/simulation/experimental/detail/world_registry_types.hpp>`<br>`const detail::WorldRegistry& registry) const;`                              |
 | dart/simulation/experimental/world.hpp                           | simulation/experimental | 0                | 7                  | `friend class io::detail::SkeletonLoaderWorldAccess;`<br>`/// Internal storage seam. \`detail::storageOf\` reaches the privately-held,`                   |
 | dart/simulation/world.hpp                                        | simulation              | 1                | 0                  | `#include <dart/simulation/detail/world-impl.hpp>`                                                                                                        |
 | dart/utils/mesh_loader.hpp                                       | utils                   | 1                | 0                  | `#include <dart/dynamics/detail/assimp_input_resource_adaptor.hpp>`                                                                                       |

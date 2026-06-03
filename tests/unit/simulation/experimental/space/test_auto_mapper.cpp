@@ -32,9 +32,11 @@
 
 #include "dart/simulation/experimental/common/constants.hpp"
 #include "dart/simulation/experimental/comps/component_category.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/space/auto_mapper.hpp"
 #include "dart/simulation/experimental/space/state_space.hpp"
 #include "dart/simulation/experimental/space/vector_mapper.hpp"
+#include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -244,6 +246,39 @@ TEST(AutoMapper, RoundTripMultipleFields)
   mapper.fromVector(registry, vec1);
 
   // Verify
+  const auto& modified = registry.get<JointState>(entity);
+  EXPECT_DOUBLE_EQ(modified.position, 10.0);
+  EXPECT_DOUBLE_EQ(modified.velocity, 20.0);
+  EXPECT_DOUBLE_EQ(modified.acceleration, 30.0);
+  EXPECT_DOUBLE_EQ(modified.effort, 40.0);
+}
+
+TEST(AutoMapper, RoundTripWithWorldRegistry)
+{
+  StateSpace space;
+  space.addVariable("joint_states", 4);
+  space.finalize();
+
+  VectorMapper mapper(std::move(space));
+  mapper.addMapper("joint_states", makeAutoMapper<JointState>());
+
+  World world;
+  auto& registry = ::dart::simulation::experimental::detail::registryOf(world);
+  auto entity = registry.create();
+
+  registry.emplace<JointState>(entity, JointState{1.0, 2.0, 3.0, 4.0});
+
+  auto vec = mapper.toVector(registry);
+
+  ASSERT_EQ(vec.size(), 4);
+  EXPECT_DOUBLE_EQ(vec[0], 1.0);
+  EXPECT_DOUBLE_EQ(vec[1], 2.0);
+  EXPECT_DOUBLE_EQ(vec[2], 3.0);
+  EXPECT_DOUBLE_EQ(vec[3], 4.0);
+
+  const std::vector<double> updated{10.0, 20.0, 30.0, 40.0};
+  mapper.fromVector(registry, std::span<const double>(updated));
+
   const auto& modified = registry.get<JointState>(entity);
   EXPECT_DOUBLE_EQ(modified.position, 10.0);
   EXPECT_DOUBLE_EQ(modified.velocity, 20.0);

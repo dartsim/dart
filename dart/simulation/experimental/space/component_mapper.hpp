@@ -32,12 +32,15 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
+
 #include <Eigen/Core>
 #include <entt/entt.hpp>
 
 #include <concepts>
 #include <functional>
 #include <span>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -98,6 +101,17 @@ public:
       std::vector<double>& vec,
       size_t offset) const = 0;
 
+  /// Extract component data from a World-owned allocator-aware registry.
+  ///
+  /// Custom mappers may override this when they are used with World-owned
+  /// registries. Built-in mappers support both registry types.
+  virtual size_t toVector(
+      const detail::WorldRegistry&, std::vector<double>&, size_t) const
+  {
+    throw std::invalid_argument(
+        "ComponentMapper does not support WorldRegistry extraction");
+  }
+
   /// Write vector data back to components
   /// @param registry ECS registry to modify
   /// @param vec Input vector containing data
@@ -105,6 +119,14 @@ public:
   /// @return Number of elements read
   virtual size_t fromVector(
       entt::registry& registry, std::span<const double> vec, size_t offset) = 0;
+
+  /// Write vector data back to a World-owned allocator-aware registry.
+  virtual size_t fromVector(
+      detail::WorldRegistry&, std::span<const double>, size_t)
+  {
+    throw std::invalid_argument(
+        "ComponentMapper does not support WorldRegistry injection");
+  }
 
   /// Get dimension (number of scalars) this mapper handles
   [[nodiscard]] virtual size_t getDimension() const = 0;
@@ -125,11 +147,24 @@ public:
   {
   }
 
+  /// Constructor for World-owned allocator-aware registries.
+  ScalarMapper(
+      std::function<double(const detail::WorldRegistry&)> getValue,
+      std::function<void(detail::WorldRegistry&, double)> setValue)
+    : m_getWorldValue(std::move(getValue)), m_setWorldValue(std::move(setValue))
+  {
+  }
+
   size_t toVector(
       const entt::registry& registry,
       std::vector<double>& vec,
       size_t offset) const override
   {
+    if (!m_getValue) {
+      throw std::invalid_argument(
+          "ScalarMapper does not support entt::registry extraction");
+    }
+
     vec[offset] = m_getValue(registry);
     return 1;
   }
@@ -139,7 +174,38 @@ public:
       std::span<const double> vec,
       size_t offset) override
   {
+    if (!m_setValue) {
+      throw std::invalid_argument(
+          "ScalarMapper does not support entt::registry injection");
+    }
+
     m_setValue(registry, vec[offset]);
+    return 1;
+  }
+
+  size_t toVector(
+      const detail::WorldRegistry& registry,
+      std::vector<double>& vec,
+      size_t offset) const override
+  {
+    if (!m_getWorldValue) {
+      return ComponentMapper::toVector(registry, vec, offset);
+    }
+
+    vec[offset] = m_getWorldValue(registry);
+    return 1;
+  }
+
+  size_t fromVector(
+      detail::WorldRegistry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    if (!m_setWorldValue) {
+      return ComponentMapper::fromVector(registry, vec, offset);
+    }
+
+    m_setWorldValue(registry, vec[offset]);
     return 1;
   }
 
@@ -151,6 +217,8 @@ public:
 private:
   std::function<double(const entt::registry&)> m_getValue;
   std::function<void(entt::registry&, double)> m_setValue;
+  std::function<double(const detail::WorldRegistry&)> m_getWorldValue;
+  std::function<void(detail::WorldRegistry&, double)> m_setWorldValue;
 };
 
 /// Mapper for a vector of scalars from multiple entities
@@ -168,7 +236,46 @@ public:
       std::vector<double>& vec,
       size_t offset) const override
   {
-    auto view = registry.view<Component>();
+    return toVectorImpl(registry, vec, offset);
+  }
+
+  size_t toVector(
+      const detail::WorldRegistry& registry,
+      std::vector<double>& vec,
+      size_t offset) const override
+  {
+    return toVectorImpl(registry, vec, offset);
+  }
+
+  size_t fromVector(
+      entt::registry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    return fromVectorImpl(registry, vec, offset);
+  }
+
+  size_t fromVector(
+      detail::WorldRegistry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    return fromVectorImpl(registry, vec, offset);
+  }
+
+  [[nodiscard]] size_t getDimension() const override
+  {
+    // Dimension must be computed at runtime based on number of entities
+    // For now, return 0 to indicate dynamic sizing
+    return 0;
+  }
+
+private:
+  template <typename Registry>
+  size_t toVectorImpl(
+      const Registry& registry, std::vector<double>& vec, size_t offset) const
+  {
+    auto view = registry.template view<Component>();
     size_t count = 0;
 
     for (auto entity : view) {
@@ -192,12 +299,11 @@ public:
     return count;
   }
 
-  size_t fromVector(
-      entt::registry& registry,
-      std::span<const double> vec,
-      size_t offset) override
+  template <typename Registry>
+  size_t fromVectorImpl(
+      Registry& registry, std::span<const double> vec, size_t offset)
   {
-    auto view = registry.view<Component>();
+    auto view = registry.template view<Component>();
     size_t count = 0;
 
     for (auto entity : view) {
@@ -221,14 +327,6 @@ public:
     return count;
   }
 
-  [[nodiscard]] size_t getDimension() const override
-  {
-    // Dimension must be computed at runtime based on number of entities
-    // For now, return 0 to indicate dynamic sizing
-    return 0;
-  }
-
-private:
   Field Component::* m_fieldPtr;
 };
 

@@ -722,7 +722,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     reset count.
   - Routed the experimental World's internal EnTT registry, component storage,
     and differentiable-parameter list through the World free allocator, with
-    free-list alignment fixes for Eigen-backed component storage.
+    state mapper support for World-owned registries and free-list alignment
+    fixes for Eigen-backed component storage.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.
