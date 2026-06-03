@@ -204,9 +204,20 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart io)
 # EnTT and Taskflow are PRIVATE implementation dependencies (the promoted public
 # headers do not include or name them, verified by
-# scripts/audit_dart7_promotion_surface.py --strict). They are intentionally
-# NOT registered as component dependency packages, so the installed component
-# config does not make a downstream find_package(dart) re-run their finders.
+# scripts/audit_dart7_promotion_surface.py --strict and the public-header
+# smoke). How they appear in the installed component interface depends on the
+# library kind:
+#   * Shared builds drop PRIVATE link deps from INTERFACE_LINK_LIBRARIES, so a
+#     downstream find_package(dart) needs neither finder; we deliberately do NOT
+#     register them as component dependency packages (the common case).
+#   * Static builds export a target's PRIVATE link deps as $<LINK_ONLY:...> in
+#     the component interface, so a downstream find_package(dart) needs the
+#     EnTT::EnTT / Taskflow imported targets to exist for linking. This is
+#     link-only: it carries no include/usage requirements, so it does not
+#     re-expose any entt/taskflow headers on the public surface.
+if(NOT BUILD_SHARED_LIBS)
+  add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT Taskflow)
+endif()
 
 # Promoted public surface for dart::simulation::experimental. This is the single
 # source of truth for which headers ship in the installed package; it is shared
