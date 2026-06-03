@@ -409,7 +409,7 @@ dart_option(
 dart_option(
   DART_BUILD_SIMULATION_EXPERIMENTAL
   "Build experimental simulation module (dart::simulation::experimental)"
-  OFF
+  ON
   CATEGORY build
 )
 dart_option(

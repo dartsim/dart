@@ -172,6 +172,91 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
     )
   endif()
 
+  # These in-tree tests intentionally poke ECS internals and include
+  # <entt/entt.hpp> directly. The experimental library no longer re-exports
+  # EnTT (it is a PRIVATE dependency now that the public surface is entt-free),
+  # so link it explicitly here for the targets that need it. Guard each with
+  # if(TARGET ...) because some are gated by DART_BUILD_DIFF.
+  foreach(
+    _entt_test
+    test_multibody_link_contact
+    test_unified_constraint
+    test_variational_integration
+    test_auto_mapper
+    test_vector_mapper
+    test_vbd_world_solver
+    test_diff_smooth_jacobian
+  )
+    if(TARGET ${_entt_test})
+      target_link_libraries(${_entt_test} PRIVATE EnTT::EnTT)
+    endif()
+  endforeach()
+
+  # Negative public-header self-containment smoke test.
+  #
+  # Generate a TU that includes EVERY promoted public header (the exact install
+  # allowlist, shared via the DART_EXPERIMENTAL_PUBLIC_HEADERS cache variable so
+  # it cannot drift) and instantiates a World. It is compiled by a target that
+  # links the experimental library but NOT EnTT::EnTT/Taskflow. Because those
+  # are PRIVATE dependencies of the library, their include directories are
+  # absent here, so any promoted header that (transitively) pulled in
+  # <entt/...> or <taskflow/...> would fail to compile with "file not found".
+  if(DART_EXPERIMENTAL_PUBLIC_HEADERS)
+    set(_smoke_includes "")
+    foreach(_hdr IN LISTS DART_EXPERIMENTAL_PUBLIC_HEADERS)
+      string(
+        APPEND _smoke_includes
+        "#include <dart/simulation/experimental/${_hdr}>\n"
+      )
+    endforeach()
+    set(DART_EXPERIMENTAL_PUBLIC_HEADER_INCLUDES "${_smoke_includes}")
+    set(_smoke_src "${CMAKE_CURRENT_BINARY_DIR}/public_header_smoke.cpp")
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/public_headers/public_header_smoke.cpp.in
+      ${_smoke_src}
+      @ONLY
+    )
+    add_executable(test_experimental_public_header_smoke ${_smoke_src})
+    # Link ONLY the experimental library. EnTT/Taskflow are PRIVATE to it, so
+    # this target does NOT inherit their link interface.
+    target_link_libraries(
+      test_experimental_public_header_smoke
+      PRIVATE dart-simulation-experimental
+    )
+    # EnTT and Taskflow are header-only and live in $CONDA_PREFIX/include, the
+    # same directory Eigen/spdlog ship in, so dropping the link interface is not
+    # enough to hide their headers from the include path. Add a poison directory
+    # with the HIGHEST priority (BEFORE): any <entt/...>/<taskflow/...> reachable
+    # from a promoted header then resolves to a header that #errors, failing the
+    # build before the real headers are ever found. Eigen/spdlog are unaffected.
+    target_include_directories(
+      test_experimental_public_header_smoke
+      BEFORE
+      PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/public_headers/poison
+    )
+    set_target_properties(
+      test_experimental_public_header_smoke
+      PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+        FOLDER "simulation-experimental/tests"
+    )
+    add_test(
+      NAME test_experimental_public_header_smoke
+      COMMAND $<TARGET_FILE:test_experimental_public_header_smoke>
+    )
+    set_tests_properties(
+      test_experimental_public_header_smoke
+      PROPERTIES LABELS "simulation-experimental"
+    )
+    set(
+      DART_ALL_TESTS
+      ${DART_ALL_TESTS}
+      test_experimental_public_header_smoke
+      CACHE INTERNAL
+      "List of all tests"
+    )
+  endif()
+
   # Create meta target for all unit tests
   # DART_ALL_TESTS now contains only the tests added by this module
   add_custom_target(

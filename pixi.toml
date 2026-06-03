@@ -234,6 +234,9 @@ check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runt
 audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
 check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
 audit-dart7-promotion-surface = { cmd = "python scripts/audit_dart7_promotion_surface.py" }
+# Enforcement gate: fail if any promoted public header reintroduces an ECS leak
+# (which would re-expose EnTT through the public surface). The tree is clean.
+check-dart7-promotion-surface = { cmd = "python scripts/audit_dart7_promotion_surface.py --strict" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 lint-compute-backend-boundaries = { cmd = [
@@ -361,6 +364,7 @@ check-lint = { depends-on = [
   "audit-collision-compat-facades",
   "check-docs-policy",
   "check-dart7-clean-break-policy",
+  "check-dart7-promotion-surface",
   "check-api-boundaries",
   "check-compute-backend-boundaries",
   "check-no-gpu-runtime-dependencies",
@@ -609,6 +613,38 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
 ], args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
+] }
+
+# Negative public-header self-containment smoke test (PLAN-041 / U-WS2).
+# Builds and runs test_experimental_public_header_smoke, a TU that includes
+# every promoted public header but is compiled WITHOUT entt/taskflow on its
+# include path (EnTT/Taskflow are PRIVATE deps of the experimental library). If
+# any promoted header leaks <entt/...>, the build fails with "file not found".
+check-experimental-public-header-smoke = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py --target test_experimental_public_header_smoke
+ctest --test-dir "${BUILD_DIR}" --output-on-failure -R '^test_experimental_public_header_smoke$'
+""",
+], depends-on = [
+  { task = "config", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+# Aggregate experimental public-surface gates: the source-level strict audit and
+# the build-tree no-entt-on-include-path compile smoke.
+check-experimental-public-headers = { depends-on = [
+  "check-dart7-promotion-surface",
+  "check-experimental-public-header-smoke",
 ] }
 
 build-cuda = { cmd = [

@@ -11,18 +11,28 @@ This operationalizes ``docs/design/dart7_promotion_readiness_audit.md`` (the
 PLAN-041 Workstream 1 readiness audit) as a runnable check so the inventory
 does not drift.
 
-Keystone finding: ``dart/simulation/experimental/world.hpp`` declares an
-``entt::registry`` data member and includes ``<entt/entt.hpp>`` directly, so any
-consumer of the public ``world.hpp`` needs the full EnTT type. EnTT/Taskflow
-therefore cannot become private package dependencies, and the internal headers
-cannot be removed from the install set, until the opaque-ownership/pimpl
-refactor (Workstream 5) removes that member. Run this audit to see the current
-leak set that Workstream 5 must clear.
+History: the original keystone blocker was that
+``dart/simulation/experimental/world.hpp`` declared an ``entt::registry`` data
+member and included ``<entt/entt.hpp>`` directly, so any consumer of the public
+``world.hpp`` needed the full EnTT type. The Workstream 5 opaque-ownership
+refactor removed that member (``world.hpp`` now holds an opaque
+``std::unique_ptr<detail::WorldStorage>``), so the leak set is empty: EnTT and
+Taskflow are now PRIVATE dependencies and only the promoted public headers are
+installed (see ``dart/simulation/experimental/CMakeLists.txt``).
 
-By default this script is informational and always exits 0. Pass ``--strict``
-to exit nonzero when any promotion-target header still leaks ECS storage; that
-mode is intended for a future Workstream 3 enforcement gate, once the handles
-have been cleaned, not for the current tree.
+This audit is now an enforcement gate. By default it is informational and
+always exits 0; pass ``--strict`` (used in CI / ``pixi run
+check-experimental-public-headers``) to exit nonzero if any promotion-target
+header reintroduces an EnTT/Taskflow leak, which would re-expose those private
+backends through the public surface.
+
+The strict gate also cross-checks the CMake install allowlist (the
+``dart_experimental_public_headers*`` lists in
+``dart/simulation/experimental/CMakeLists.txt``) against the set of headers this
+audit classifies as promotion targets, and fails on any asymmetric difference.
+That closes a silent drift path: a header auto-promoted by the audit's
+directory/file rules but not added to the install list would be audited yet
+shipped non-self-contained (or vice versa).
 """
 
 from __future__ import annotations
@@ -87,6 +97,12 @@ LEAK_PATTERNS = {
     "getRegistry": re.compile(r"\bgetRegistry\b"),
     "comps-symbol": re.compile(r"\bcomps::"),
     "entity-object-base": re.compile(r"\bEntityObject(With)?\b"),
+    # Taskflow is the other PRIVATE backend dependency: the documented intent is
+    # that a promoted public header leaks neither EnTT NOR Taskflow. Gate both
+    # the include and the tf:: symbol so a Taskflow type named in a public
+    # declaration is caught the same way an entt:: type is.
+    "taskflow-include": re.compile(r"#\s*include\s*<taskflow[/>]"),
+    "taskflow-symbol": re.compile(r"\btf::"),
 }
 
 
@@ -158,15 +174,54 @@ def transitive_leak_sources(
     return found
 
 
+# Path (relative to the repo root) of the CMake file that owns the single source
+# of truth for the installed public-header allowlist.
+EXPERIMENTAL_CMAKE = EXPERIMENTAL_ROOT / "CMakeLists.txt"
+
+# Matches a `set(dart_experimental_public_headers[_<suffix>] ... )` block. The
+# aggregate lists (dart_experimental_public_headers, DART_EXPERIMENTAL_PUBLIC_
+# HEADERS) only reference other variables via ${...} and carry no literal .hpp
+# tokens, so they contribute nothing to the parsed set; only the per-group
+# leaf lists (…_toplevel/_body/…) hold the actual relpaths. Case-insensitive so
+# the exported CACHE variable name is tolerated too.
+_CMAKE_SET_BLOCK = re.compile(
+    r"set\s*\(\s*(dart_experimental_public_headers\w*)\b(.*?)\)",
+    re.IGNORECASE | re.DOTALL,
+)
+# A bare .hpp relpath token (e.g. body/rigid_body.hpp or world.hpp). Excludes
+# ${...} variable references and CMake keywords, which never contain ".hpp".
+_CMAKE_HPP_TOKEN = re.compile(r"[A-Za-z0-9_./-]+\.hpp")
+# Strip CMake line comments (# to end-of-line) before tokenizing so a commented
+# header is not counted as installed.
+_CMAKE_COMMENT = re.compile(r"#[^\n]*")
+
+
+def parse_cmake_install_allowlist(cmake_text: str) -> set[str]:
+    """Return the installed public-header relpaths declared in the CMake file.
+
+    Parses every ``set(dart_experimental_public_headers* ...)`` block and
+    collects the literal ``*.hpp`` relpath tokens it contains. Robust to line
+    comments, arbitrary whitespace/newlines, and the per-directory grouping; the
+    aggregate variable lists contribute nothing because they only reference
+    other variables (no literal ``.hpp`` tokens).
+    """
+    found: set[str] = set()
+    for block in _CMAKE_SET_BLOCK.finditer(cmake_text):
+        body = _CMAKE_COMMENT.sub("", block.group(2))
+        for token in _CMAKE_HPP_TOKEN.findall(body):
+            found.add(Path(token).as_posix())
+    return found
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--strict",
         action="store_true",
         help=(
-            "Exit nonzero if any promotion-target header leaks ECS storage "
-            "(future Workstream 3 enforcement; the current tree is expected "
-            "to leak)."
+            "Exit nonzero if any promotion-target header leaks ECS storage. "
+            "This is the active enforcement gate: the current tree is clean "
+            "(0 leakers), so any new leak fails the check."
         ),
     )
     args = parser.parse_args()
@@ -244,14 +299,68 @@ def main() -> int:
             "move to private deps and the internal headers can leave the install set."
         )
 
-    if args.strict and promote_leaking:
+    # Cross-check: the CMake install allowlist must EXACTLY equal the set of
+    # headers this audit classifies as promotion targets. The audit promotes by
+    # directory/file rule, while CMake installs a hardcoded filename list; they
+    # agree today, but a future header auto-promoted by the rules (e.g. a new
+    # body/*.hpp) but not added to the install list would be audited yet shipped
+    # non-self-contained. Asserting set-equality closes that silent drift path.
+    audit_promoted: set[str] = set(promote_clean)
+    audit_promoted.update(rel for rel, _own, _via in promote_leaking)
+
+    cmake_path = root / EXPERIMENTAL_CMAKE
+    cmake_mismatch = False
+    if not cmake_path.is_file():
         print()
+        print(f"error: {EXPERIMENTAL_CMAKE} not found (cannot cross-check install set)")
+        cmake_mismatch = True
+    else:
+        installed = parse_cmake_install_allowlist(
+            cmake_path.read_text(encoding="utf-8")
+        )
+        missing_from_install = sorted(audit_promoted - installed)
+        extra_in_install = sorted(installed - audit_promoted)
+        print("Install-allowlist cross-check (CMake vs audit promotion rules)")
+        print(f"  promoted by audit rules    : {len(audit_promoted)}")
+        print(f"  installed by CMake list    : {len(installed)}")
+        if missing_from_install or extra_in_install:
+            cmake_mismatch = True
+            if missing_from_install:
+                print(
+                    "  MISSING from install (audit-promoted but not installed -> "
+                    "package would be non-self-contained):"
+                )
+                for rel in missing_from_install:
+                    print(f"    - {rel}")
+            if extra_in_install:
+                print(
+                    "  EXTRA in install (installed but not an audit promotion "
+                    "target -> stale/over-broad allowlist):"
+                )
+                for rel in extra_in_install:
+                    print(f"    + {rel}")
+        else:
+            print("  MATCH: install allowlist == audit promotion set")
+    print()
+
+    exit_code = 0
+    if args.strict and promote_leaking:
         print(
             f"strict: {len(promote_leaking)} promotion-target header(s) still "
             "leak ECS storage"
         )
-        return 1
-    return 0
+        exit_code = 1
+    if cmake_mismatch:
+        # Always a hard failure under --strict (the active CI gate); under the
+        # default informational run it is printed above but does not change the
+        # exit code, matching the leak-reporting contract.
+        if args.strict:
+            print(
+                "strict: install allowlist and audit promotion set disagree "
+                "(see diff above)"
+            )
+            exit_code = 1
+    return exit_code
 
 
 if __name__ == "__main__":

@@ -112,6 +112,31 @@ geometry must be modeled explicitly through public world objects; do not add
 hidden default contact surfaces or expose contact-barrier tuning on body options
 without a design update.
 
+#### Experimental package shape (`dart::simulation::experimental`)
+
+The experimental simulation module builds by default
+(`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`) and ships only a small, explicit
+public subset:
+
+- Only the promoted public headers are installed, via an explicit
+  `install(FILES ...)` allowlist in
+  `dart/simulation/experimental/CMakeLists.txt`
+  (`dart_experimental_public_headers`). The implementation-internal directories
+  (`comps/`, `compute/`, `common/`, `detail/`, `diff/`, `ecs/`, `io/`,
+  `space/`) are not installed. New internal directories are excluded by default;
+  promoting a header means adding it to the allowlist on purpose.
+- `EnTT` and `Taskflow` are PRIVATE implementation dependencies. They are not in
+  the link interface and are not registered as component dependency packages, so
+  a downstream `find_package(dart)` does not need or re-run their finders. The
+  promoted headers must not include or name them.
+- Two guards keep this true:
+  `pixi run check-dart7-promotion-surface` (strict source-level audit, fails if
+  any promoted header reintroduces an ECS/EnTT leak) and
+  `pixi run check-experimental-public-header-smoke` (a build-tree TU that
+  includes every promoted header but is compiled without entt/taskflow on its
+  include path, so a leaked `<entt/...>` include fails with "file not found").
+  `pixi run check-experimental-public-headers` runs both.
+
 ### Internal API
 
 Internal API may change without compatibility guarantees. It includes:

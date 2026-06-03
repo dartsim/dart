@@ -117,8 +117,8 @@ target_compile_features(${target_name} PUBLIC cxx_std_20)
 
 target_link_libraries(
   ${target_name}
-  PUBLIC dart Eigen3::Eigen EnTT::EnTT spdlog::spdlog
-  PRIVATE ${PROJECT_NAME}-collision-native ${PROJECT_NAME}-io
+  PUBLIC dart Eigen3::Eigen spdlog::spdlog
+  PRIVATE EnTT::EnTT ${PROJECT_NAME}-collision-native ${PROJECT_NAME}-io
 )
 
 if(TARGET Taskflow::Taskflow)
@@ -202,12 +202,117 @@ endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart io)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT Taskflow)
+# EnTT and Taskflow are PRIVATE implementation dependencies (the promoted public
+# headers do not include or name them, verified by
+# scripts/audit_dart7_promotion_surface.py --strict). They are intentionally
+# NOT registered as component dependency packages, so the installed component
+# config does not make a downstream find_package(dart) re-run their finders.
+
+# Promoted public surface for dart::simulation::experimental. This is the single
+# source of truth for which headers ship in the installed package; it is shared
+# (via the DART_EXPERIMENTAL_PUBLIC_HEADERS cache variable below) with the
+# public-header self-containment smoke test in
+# tests/unit/simulation/experimental/public_headers. It must stay in lockstep
+# with the promotion allowlist in scripts/audit_dart7_promotion_surface.py
+# (PROMOTE_*).
+# Only these headers are installed; the implementation-internal directories
+# (comps/, compute/, common/, detail/, diff/, ecs/, io/, space/) stay hidden.
+# diff/step_derivatives.hpp and diff/step_gradient.hpp are not promotion targets
+# in their own right, but world.hpp includes them by value, so they are part of
+# the public include closure and must ship too.
+set(
+  dart_experimental_public_headers_toplevel
+  world.hpp
+  world_options.hpp
+  world_sync_stage.hpp
+  entity.hpp
+  fwd.hpp
+  export.hpp
+  version.hpp
+)
+set(
+  dart_experimental_public_headers_body
+  body/collision_body.hpp
+  body/collision_shape.hpp
+  body/contact.hpp
+  body/deformable_body.hpp
+  body/deformable_body_options.hpp
+  body/rigid_body.hpp
+  body/rigid_body_options.hpp
+)
+set(
+  dart_experimental_public_headers_multibody
+  multibody/joint.hpp
+  multibody/joint_type.hpp
+  multibody/link.hpp
+  multibody/multibody.hpp
+  multibody/multibody_options.hpp
+)
+set(
+  dart_experimental_public_headers_frame
+  frame/fixed_frame.hpp
+  frame/frame.hpp
+  frame/free_frame.hpp
+)
+set(
+  dart_experimental_public_headers_constraint
+  constraint/loop_closure.hpp
+  constraint/loop_closure_family.hpp
+  constraint/loop_closure_residual.hpp
+  constraint/loop_closure_runtime_policy.hpp
+  constraint/loop_closure_spec.hpp
+)
+set(
+  dart_experimental_public_headers_diff
+  diff/step_derivatives.hpp
+  diff/step_gradient.hpp
+)
+set(
+  dart_experimental_public_headers
+  ${dart_experimental_public_headers_toplevel}
+  ${dart_experimental_public_headers_body}
+  ${dart_experimental_public_headers_multibody}
+  ${dart_experimental_public_headers_frame}
+  ${dart_experimental_public_headers_constraint}
+  ${dart_experimental_public_headers_diff}
+)
+# Export the allowlist (relative to this dir) so the public-header
+# self-containment smoke test in the test tree can include exactly the same set
+# without the lists drifting apart.
+set(
+  DART_EXPERIMENTAL_PUBLIC_HEADERS
+  ${dart_experimental_public_headers}
+  CACHE INTERNAL
+  "Promoted public headers of dart::simulation::experimental (allowlist)"
+)
 
 install(
-  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+  FILES ${dart_experimental_public_headers_toplevel}
   DESTINATION include/dart/simulation/experimental
   COMPONENT headers
-  FILES_MATCHING
-  PATTERN "*.hpp"
+)
+install(
+  FILES ${dart_experimental_public_headers_body}
+  DESTINATION include/dart/simulation/experimental/body
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_multibody}
+  DESTINATION include/dart/simulation/experimental/multibody
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_frame}
+  DESTINATION include/dart/simulation/experimental/frame
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_constraint}
+  DESTINATION include/dart/simulation/experimental/constraint
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_diff}
+  DESTINATION include/dart/simulation/experimental/diff
+  COMPONENT headers
 )
