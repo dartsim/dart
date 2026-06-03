@@ -367,6 +367,7 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   ASSERT_TRUE(foundJoint.has_value());
   EXPECT_EQ(foundJoint->getParentRigidBody().getName(), "base");
   EXPECT_EQ(foundJoint->getChildRigidBody().getName(), "link");
+  EXPECT_FALSE(world.getRigidBodyFixedJoint("missing").has_value());
   const auto fixedJoints = world.getRigidBodyFixedJoints();
   ASSERT_EQ(fixedJoints.size(), 1u);
   EXPECT_EQ(fixedJoints.front().getName(), "base_to_link");
