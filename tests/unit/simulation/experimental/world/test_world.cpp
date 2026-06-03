@@ -53,10 +53,13 @@
 #include <dart/simulation/experimental/version.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <new>
 #include <numbers>
 #include <string>
 #include <string_view>
@@ -182,6 +185,58 @@ private:
   dart::simulation::experimental::compute::SequentialExecutor sequential;
 };
 
+class CountingMemoryAllocator final : public dart::common::MemoryAllocator
+{
+public:
+  [[nodiscard]] std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  [[nodiscard]] void* allocate(std::size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return ::operator new(bytes, std::nothrow);
+  }
+
+  void deallocate(void* pointer, std::size_t /*bytes*/) override
+  {
+    ++deallocationCount;
+    ::operator delete(pointer);
+  }
+
+  std::size_t allocationCount{0};
+  std::size_t deallocationCount{0};
+};
+
+class FrameScratchStage final
+  : public dart::simulation::experimental::compute::WorldStepStage
+{
+public:
+  explicit FrameScratchStage(std::size_t bytes) : bytesToAllocate(bytes) {}
+
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "frame_scratch";
+  }
+
+  void execute(
+      dart::simulation::experimental::World& world,
+      dart::simulation::experimental::compute::ComputeExecutor&) override
+  {
+    if (bytesToAllocate == 0) {
+      lastAllocation = nullptr;
+      return;
+    }
+
+    lastAllocation = world.getMemoryManager().getFrameAllocator().allocate(
+        bytesToAllocate);
+  }
+
+  std::size_t bytesToAllocate;
+  void* lastAllocation{nullptr};
+};
+
 } // namespace
 
 // Test World construction
@@ -191,6 +246,73 @@ TEST(World, Construction)
   dart::simulation::experimental::World world;
   (void)world;       // Suppress unused variable warning
   EXPECT_TRUE(true); // If we get here, construction succeeded
+}
+
+TEST(World, MemoryManagerOptionsAndDiagnostics)
+{
+  namespace sx = dart::simulation::experimental;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  options.frameScratchInitialCapacity = 4096;
+
+  sx::World world(options);
+
+  EXPECT_EQ(&world.getMemoryManager().getBaseAllocator(), &allocator);
+  EXPECT_GT(allocator.allocationCount, 0u);
+
+  const auto diagnostics = world.getMemoryDiagnostics();
+  EXPECT_EQ(diagnostics.frameScratchCapacityBytes, 4096u);
+  EXPECT_EQ(diagnostics.frameScratchUsedBytes, 0u);
+  EXPECT_EQ(diagnostics.frameScratchPeakUsedBytes, 0u);
+  EXPECT_EQ(diagnostics.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(diagnostics.frameScratchResetCount, 0u);
+
+  options.frameScratchInitialCapacity = 0;
+  EXPECT_THROW(
+      {
+        sx::World invalid(options);
+        (void)invalid;
+      },
+      sx::InvalidArgumentException);
+}
+
+TEST(World, FrameScratchResetsAtStepBoundary)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.frameScratchInitialCapacity = 1024;
+  sx::World world(options);
+
+  dart::simulation::experimental::compute::SequentialExecutor executor;
+  FrameScratchStage scratch(96);
+
+  world.step(executor, scratch);
+  ASSERT_NE(scratch.lastAllocation, nullptr);
+
+  const auto first = world.getMemoryDiagnostics();
+  EXPECT_EQ(first.frameScratchResetCount, 1u);
+  EXPECT_EQ(first.frameScratchOverflowCount, 0u);
+  EXPECT_GE(first.frameScratchUsedBytes, scratch.bytesToAllocate);
+  EXPECT_EQ(first.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+
+  scratch.bytesToAllocate = 0;
+  world.step(executor, scratch);
+
+  const auto second = world.getMemoryDiagnostics();
+  EXPECT_EQ(second.frameScratchResetCount, 2u);
+  EXPECT_EQ(second.frameScratchUsedBytes, 0u);
+  EXPECT_EQ(second.frameScratchOverflowCount, 0u);
+  EXPECT_GE(second.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+
+  world.clear();
+  const auto cleared = world.getMemoryDiagnostics();
+  EXPECT_EQ(cleared.frameScratchUsedBytes, 0u);
+  EXPECT_EQ(cleared.frameScratchPeakUsedBytes, 0u);
+  EXPECT_EQ(cleared.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(cleared.frameScratchResetCount, 0u);
 }
 
 // Test version information

@@ -66,7 +66,8 @@ public:
   /// @param[in] baseAllocator: (optional) The most low level allocator to be
   /// used by all the underlying memory allocators.
   explicit MemoryManager(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
+      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
+      size_t frameAllocatorInitialCapacity = 65536);
 
   /// Destructor
   ~MemoryManager();
@@ -77,12 +78,15 @@ public:
 
   /// Returns the free list allocator
   [[nodiscard]] FreeListAllocator& getFreeListAllocator();
+  [[nodiscard]] const FreeListAllocator& getFreeListAllocator() const;
 
   /// Returns the pool allocator
   [[nodiscard]] PoolAllocator& getPoolAllocator();
+  [[nodiscard]] const PoolAllocator& getPoolAllocator() const;
 
   /// Returns the frame allocator (bump allocator with arena semantics)
   [[nodiscard]] FrameAllocator& getFrameAllocator();
+  [[nodiscard]] const FrameAllocator& getFrameAllocator() const;
 
   /// Allocates @c size bytes of uninitialized storage.
   ///

@@ -662,6 +662,24 @@ bool hasValidBoundaryEndTime(double value)
 }
 
 //==============================================================================
+std::size_t validateFrameScratchInitialCapacity(std::size_t capacity)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      capacity == 0,
+      InvalidArgumentException,
+      "WorldOptions.frameScratchInitialCapacity must be positive");
+
+  return capacity;
+}
+
+//==============================================================================
+common::MemoryAllocator& resolveBaseAllocator(const WorldOptions& options)
+{
+  return options.baseAllocator ? *options.baseAllocator
+                               : common::MemoryAllocator::GetDefault();
+}
+
+//==============================================================================
 bool boundaryRangesOverlap(
     double startA, double endA, double startB, double endB)
 {
@@ -1175,7 +1193,11 @@ World::World() = default;
 
 //==============================================================================
 World::World(const WorldOptions& options)
-  : m_gravity(options.gravity),
+  : m_memoryManager(
+        resolveBaseAllocator(options),
+        validateFrameScratchInitialCapacity(
+            options.frameScratchInitialCapacity)),
+    m_gravity(options.gravity),
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
@@ -1207,6 +1229,31 @@ const entt::registry& World::getRegistry() const
 }
 
 //==============================================================================
+common::MemoryManager& World::getMemoryManager()
+{
+  return m_memoryManager;
+}
+
+//==============================================================================
+const common::MemoryManager& World::getMemoryManager() const
+{
+  return m_memoryManager;
+}
+
+//==============================================================================
+WorldMemoryDiagnostics World::getMemoryDiagnostics() const
+{
+  WorldMemoryDiagnostics diagnostics = m_memoryDiagnostics;
+  const auto& frameAllocator = m_memoryManager.getFrameAllocator();
+  diagnostics.frameScratchCapacityBytes = frameAllocator.capacity();
+  diagnostics.frameScratchUsedBytes = frameAllocator.used();
+  diagnostics.frameScratchOverflowCount = frameAllocator.overflowCount();
+  diagnostics.frameScratchPeakUsedBytes = std::max(
+      diagnostics.frameScratchPeakUsedBytes, diagnostics.frameScratchUsedBytes);
+  return diagnostics;
+}
+
+//==============================================================================
 void World::clear()
 {
   m_registry.clear();
@@ -1221,6 +1268,8 @@ void World::clear()
   m_differentiableParameters.clear();
   m_time = 0.0;
   m_frame = 0;
+  m_memoryManager.getFrameAllocator().reset();
+  m_memoryDiagnostics = {};
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
   m_multibodyCounter = 0;
@@ -2065,6 +2114,27 @@ void World::updateKinematics(compute::ComputeExecutor& executor)
 }
 
 //==============================================================================
+void World::resetFrameScratchForStep()
+{
+  m_memoryManager.getFrameAllocator().reset();
+  ++m_memoryDiagnostics.frameScratchResetCount;
+  refreshMemoryDiagnostics();
+}
+
+//==============================================================================
+void World::refreshMemoryDiagnostics()
+{
+  const auto& frameAllocator = m_memoryManager.getFrameAllocator();
+  m_memoryDiagnostics.frameScratchCapacityBytes = frameAllocator.capacity();
+  m_memoryDiagnostics.frameScratchUsedBytes = frameAllocator.used();
+  m_memoryDiagnostics.frameScratchOverflowCount
+      = frameAllocator.overflowCount();
+  m_memoryDiagnostics.frameScratchPeakUsedBytes = std::max(
+      m_memoryDiagnostics.frameScratchPeakUsedBytes,
+      m_memoryDiagnostics.frameScratchUsedBytes);
+}
+
+//==============================================================================
 void World::step()
 {
   compute::SequentialExecutor executor;
@@ -2177,6 +2247,8 @@ void World::step(
     enterSimulationMode();
   }
 
+  resetFrameScratchForStep();
+
   // Differentiable opt-in: record the analytic contact-free step Jacobians at
   // the pre-step state before integration. This is a single predictable branch;
   // when off (the default) nothing extra runs and the forward result is
@@ -2189,6 +2261,7 @@ void World::step(
 
   m_time += m_timeStep;
   ++m_frame;
+  refreshMemoryDiagnostics();
 }
 
 //==============================================================================
