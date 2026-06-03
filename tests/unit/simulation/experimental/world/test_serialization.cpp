@@ -103,6 +103,58 @@ void writeLegacyJointV1(
   io::writePOD(output, mappedChild);
 }
 
+// Writes a Joint in the legacy V2..V12 layout, i.e. exactly what
+// serializer.cpp's deserializeJointV2ToV12() reads back. This intentionally
+// omits the rigid-body fixed-joint anchor fields that were appended to the
+// Joint component in format version 13; emitting the current (auto-serialized)
+// layout under a <13 version header would leave those trailing bytes in the
+// stream and desynchronize the reader.
+void writeLegacyJointV2ToV12(
+    std::ostream& output,
+    const dart::simulation::experimental::comps::Joint& joint,
+    const dart::simulation::experimental::io::EntityMap& entityMap)
+{
+  namespace io = dart::simulation::experimental::io;
+
+  io::writePOD(output, joint.type);
+  io::writePOD(output, joint.actuatorType);
+  io::writeString(output, joint.name);
+
+  io::writeVectorXd(output, joint.position);
+  io::writeVectorXd(output, joint.velocity);
+  io::writeVectorXd(output, joint.acceleration);
+  io::writeVectorXd(output, joint.torque);
+
+  io::writeVectorXd(output, joint.springStiffness);
+  io::writeVectorXd(output, joint.dampingCoefficient);
+  io::writeVectorXd(output, joint.restPosition);
+  io::writeVectorXd(output, joint.armature);
+  io::writeVectorXd(output, joint.coulombFriction);
+  io::writeVectorXd(output, joint.commandVelocity);
+
+  io::writeVectorXd(output, joint.limits.lower);
+  io::writeVectorXd(output, joint.limits.upper);
+  io::writeVectorXd(output, joint.limits.velocityLower);
+  io::writeVectorXd(output, joint.limits.velocityUpper);
+  io::writeVectorXd(output, joint.limits.effortLower);
+  io::writeVectorXd(output, joint.limits.effortUpper);
+
+  io::writeVector3d(output, joint.axis);
+  io::writeVector3d(output, joint.axis2);
+  io::writePOD(output, joint.pitch);
+
+  const auto mappedParent
+      = joint.parentLink != entt::null
+            ? static_cast<std::uint32_t>(entityMap.at(joint.parentLink))
+            : static_cast<std::uint32_t>(entt::null);
+  const auto mappedChild
+      = joint.childLink != entt::null
+            ? static_cast<std::uint32_t>(entityMap.at(joint.childLink))
+            : static_cast<std::uint32_t>(entt::null);
+  io::writePOD(output, mappedParent);
+  io::writePOD(output, mappedChild);
+}
+
 void writeMassPropertiesV8(
     std::ostream& output,
     const dart::simulation::experimental::comps::MassProperties& mass)
@@ -199,9 +251,14 @@ void saveLegacyWorldWithCurrentEntities(
     io::writePOD(output, componentTypes.size());
     for (const auto& typeName : componentTypes) {
       io::writeString(output, typeName);
-      if (legacyVersion == 1u && typeName == comps::Joint::getTypeName()) {
-        writeLegacyJointV1(
-            output, registry.get<comps::Joint>(entity), entityMap);
+      if (typeName == comps::Joint::getTypeName()) {
+        if (legacyVersion == 1u) {
+          writeLegacyJointV1(
+              output, registry.get<comps::Joint>(entity), entityMap);
+        } else {
+          writeLegacyJointV2ToV12(
+              output, registry.get<comps::Joint>(entity), entityMap);
+        }
       } else if (typeName == comps::Link::getTypeName()) {
         writeLegacyLinkV8(
             output,
