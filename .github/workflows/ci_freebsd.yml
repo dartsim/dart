@@ -51,7 +51,10 @@ jobs:
         uses: cross-platform-actions/action@v1.2.0
         with:
           operating_system: freebsd
-          version: "15.0"
+          # 14.3 is a stable production release with a prebuilt image in the
+          # builder version this action pins. (15.0's image is not published to
+          # the action's storage yet, so it fails setup with BlobNotFound.)
+          version: "14.3"
           memory: 6G
           # Sync the checkout into the VM only; nothing downstream consumes the
           # build tree, so skip the (slow, timeout-risking under TCG) copy back
