@@ -44,6 +44,8 @@
 #include <dart/simulation/experimental/world_options.hpp>
 #include <dart/simulation/experimental/world_sync_stage.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Geometry>
 
 #include <iosfwd>
@@ -156,6 +158,29 @@ struct DeformableSolverDiagnostics
   /// ``convergedActiveContactCount > 0`` (otherwise it is 0).
   double minActiveContactDistance = 0.0;
   std::size_t convergedActiveContactCount = 0;
+};
+
+/// Snapshot of the experimental World's CPU memory hierarchy diagnostics.
+///
+/// This first slice reports only the World-owned frame allocator used for
+/// per-step scratch. Persistent allocator and ECS storage diagnostics are
+/// intentionally left for the allocator/EnTT integration workstream.
+struct WorldMemoryDiagnostics
+{
+  /// Current usable frame-scratch arena capacity after alignment padding.
+  std::size_t frameScratchCapacityBytes = 0;
+  /// Bytes consumed in the current simulation frame, including overflow blocks.
+  std::size_t frameScratchUsedBytes = 0;
+  /// Maximum frame-scratch bytes observed since construction or clear().
+  std::size_t frameScratchPeakUsedBytes = 0;
+  /// Number of overflow allocations the frame allocator holds for the current
+  /// frame. Nonzero means the current step exceeded the reserved arena.
+  std::size_t frameScratchOverflowCount = 0;
+  /// Bytes currently held by overflow allocations for the current frame.
+  std::size_t frameScratchOverflowBytes = 0;
+  /// Number of times the World reset frame scratch at step boundaries since
+  /// construction or clear().
+  std::size_t frameScratchResetCount = 0;
 };
 
 class DART_EXPERIMENTAL_API World
@@ -476,6 +501,21 @@ public:
       compute::ComputeExecutor& executor,
       compute::WorldStepPipeline& pipeline);
 
+  //--------------------------------------------------------------------------
+  // Memory
+  //--------------------------------------------------------------------------
+  /// Returns the memory manager owned by this World.
+  ///
+  /// Components and stages should borrow allocators from this manager instead
+  /// of owning allocator roots. This mirrors the classic World ownership model
+  /// while leaving the later EnTT storage allocator integration behind an
+  /// internal implementation boundary.
+  [[nodiscard]] common::MemoryManager& getMemoryManager();
+  [[nodiscard]] const common::MemoryManager& getMemoryManager() const;
+
+  /// Returns current frame-scratch diagnostics for this World.
+  [[nodiscard]] WorldMemoryDiagnostics getMemoryDiagnostics() const;
+
   /// Diagnostics from the deformable solve on the most recent ``step`` that
   /// used the built-in pipeline (the ``step()`` / ``step(count)`` /
   /// ``step(executor)`` overloads). For a multi-step call it reflects the last
@@ -568,6 +608,8 @@ private:
 
   void ensureDesignMode() const;
   void resetCountersFromRegistry();
+  void resetFrameScratchForStep();
+  void refreshMemoryDiagnostics();
 
   /// Record the analytic step Jacobians at the current (pre-step) state into
   /// the cached step derivatives. Under `ContactSolverMethod::BoxedLcp` this
@@ -584,6 +626,7 @@ private:
   void setRigidIpcAdaptiveBarrierStiffnessLowerBound(double value) noexcept;
   void resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept;
 
+  common::MemoryManager m_memoryManager;
   /// Opaque, ECS-typed state (the EnTT registry, the registered differentiable
   /// parameters, and the cached step Jacobians). Held by pointer so the
   /// promoted public `world.hpp` names no EnTT symbols; the complete type lives
@@ -602,6 +645,7 @@ private:
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
+  WorldMemoryDiagnostics m_memoryDiagnostics{};
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   enum class MultibodyIntegrationMethod
   {

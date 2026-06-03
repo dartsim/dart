@@ -96,6 +96,7 @@ jobs:
         if: matrix.run_build
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
+          DART_PARALLEL_JOBS: "2"
         run: |
           BUILD_DIR="build/default/cpp/${{ matrix.cmake_build_type }}"
           pixi run python scripts/cmake_build.py \

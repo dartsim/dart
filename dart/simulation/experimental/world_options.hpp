@@ -32,7 +32,11 @@
 
 #pragma once
 
+#include <dart/common/memory_allocator.hpp>
+
 #include <Eigen/Core>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
@@ -95,9 +99,11 @@ enum class ContactGradientMode
 /// Construction-time options for a `World`.
 ///
 /// `WorldOptions` is a plain value object: it carries the initial time step,
-/// gravity, whether the world opts in to differentiable simulation, and which
-/// contact-solver method the rigid-body contact stage uses. It does not expose
-/// any solver, backend, or ECS type, so it is safe as a public facade surface.
+/// gravity, whether the world opts in to differentiable simulation, which
+/// contact-solver method the rigid-body contact stage uses, and the root CPU
+/// allocator knobs for the World-owned memory hierarchy. It does not expose any
+/// solver, backend, or ECS storage type, so it is safe as a public facade
+/// surface.
 ///
 /// Differentiability is opt-in and defaults off. When `differentiable` is false
 /// the step executes the identical non-differentiable code path with no extra
@@ -121,6 +127,16 @@ struct WorldOptions
   /// behavior). Affects ONLY the gradient; the forward step is identical for
   /// every value. See `ContactGradientMode` for the per-mode semantics.
   ContactGradientMode contactGradientMode = ContactGradientMode::Analytic;
+
+  /// Optional base allocator for the World's memory hierarchy. If null, the
+  /// default DART memory allocator is used. The pointed-to allocator must
+  /// outlive the World because the World-owned MemoryManager borrows it.
+  common::MemoryAllocator* baseAllocator = nullptr;
+
+  /// Initial bytes reserved for per-step frame scratch. The frame allocator may
+  /// grow if a step exceeds this size; a later bake/build reserve path should
+  /// size this high enough that steady-state simulation does not grow it.
+  std::size_t frameScratchInitialCapacity = 65536;
 };
 
 } // namespace dart::simulation::experimental
