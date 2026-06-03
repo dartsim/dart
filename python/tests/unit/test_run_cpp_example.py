@@ -105,6 +105,26 @@ def test_normalize_target_mentions_planned_dart6_replacements(
     assert "pixi run demos -- --list" in message
 
 
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    [
+        # Hyphen-spelled removed demos (the FILAMENT_ALL_SCENES spelling) must
+        # still reach the removal/placeholder guidance instead of falling
+        # through to a nonexistent CMake target.
+        ("rigid-cubes", "DART 6 demo scene has been removed"),
+        ("atlas-simbicon", "pixi run demos -- --scene planned_simbicon_walking"),
+        ("rigid-body", "pixi run demos -- --scene rigid_body"),
+    ],
+)
+def test_normalize_target_canonicalizes_hyphen_demo_ids(
+    run_cpp_example, target, expected
+):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    assert expected in str(exc.value)
+
+
 @pytest.mark.parametrize("target", ["py-demos", "py_demos", "pydemos"])
 def test_normalize_target_redirects_py_demos(run_cpp_example, target):
     # `py-demos` is the Python demos viewer (its own `pixi run py-demos` task),

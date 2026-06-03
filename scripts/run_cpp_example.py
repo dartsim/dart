@@ -239,7 +239,13 @@ def _normalize_target(target: str) -> str:
             "  pixi run py-demos -- --scene <id> # launch a specific scene\n"
             "The C++ demos viewer is a separate app: pixi run ex demos"
         )
-    placeholder_scene = _DART6_DEMO_PLACEHOLDER_SCENE_IDS.get(target)
+    # DART 6 demo ids were historically spelled with hyphens (the spelling
+    # FILAMENT_ALL_SCENES still uses), so canonicalize to the underscore scene-id
+    # form before the demo-scene lookups below. Without this, e.g.
+    # `pixi run ex rigid-cubes` would skip the removal guidance and fall through
+    # to building a nonexistent CMake target.
+    canonical = target.replace("-", "_")
+    placeholder_scene = _DART6_DEMO_PLACEHOLDER_SCENE_IDS.get(canonical)
     if placeholder_scene is not None:
         raise SystemExit(
             f"The '{target}' DART 6 demo scene has been removed from "
@@ -247,16 +253,16 @@ def _normalize_target(target: str) -> str:
             f"  pixi run demos -- --scene {placeholder_scene}\n"
             "Run `pixi run demos -- --list` for the current World demo catalog."
         )
-    if target in _REMOVED_DART6_DEMOS_SCENE_IDS:
+    if canonical in _REMOVED_DART6_DEMOS_SCENE_IDS:
         raise SystemExit(
             f"The '{target}' DART 6 demo scene has been removed from "
             "dart-demos. Run `pixi run demos -- --list` for the current "
             "World demo catalog."
         )
-    if target in _DEMOS_SCENE_IDS:
+    if canonical in _DEMOS_SCENE_IDS:
         raise SystemExit(
             f"The '{target}' GUI example is now a scene in the dart-demos app. "
-            f"Run it with: pixi run demos -- --scene {target}"
+            f"Run it with: pixi run demos -- --scene {canonical}"
         )
     return target
 
