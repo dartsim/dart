@@ -35,6 +35,7 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 
+#include <limits>
 #include <memory>
 
 #include <cstddef>
@@ -48,9 +49,15 @@ bool isPowerOfTwo(size_t value)
   return value != 0 && (value & (value - 1)) == 0;
 }
 
-size_t roundUpToAlignment(size_t bytes, size_t alignment)
+bool roundUpToAlignment(size_t bytes, size_t alignment, size_t& rounded)
 {
-  return (bytes + alignment - 1) & ~(alignment - 1);
+  const size_t mask = alignment - 1;
+  if (bytes > std::numeric_limits<size_t>::max() - mask) {
+    return false;
+  }
+
+  rounded = (bytes + mask) & ~mask;
+  return true;
 }
 
 } // namespace
@@ -112,7 +119,11 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
     return nullptr;
   }
 
-  bytes = roundUpToAlignment(bytes, alignof(std::max_align_t));
+  size_t roundedBytes = 0;
+  if (!roundUpToAlignment(bytes, alignof(std::max_align_t), roundedBytes)) {
+    return nullptr;
+  }
+  bytes = roundedBytes;
 
   // Ensure that the first memory block doesn't have the previous block
   DART_ASSERT(mFirstMemoryBlock->mPrev == nullptr);
@@ -197,7 +208,12 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
     return;
   }
 
-  bytes = roundUpToAlignment(bytes, alignof(std::max_align_t));
+  size_t roundedBytes = 0;
+  if (!roundUpToAlignment(bytes, alignof(std::max_align_t), roundedBytes)) {
+    DART_ASSERT(false);
+    return;
+  }
+  bytes = roundedBytes;
 
   unsigned char* block_addr
       = static_cast<unsigned char*>(pointer) - sizeof(MemoryBlockHeader);

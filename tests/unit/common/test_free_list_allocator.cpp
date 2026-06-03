@@ -36,6 +36,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -106,6 +107,15 @@ TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
 
   allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, AllocateRejectsAlignmentRoundingOverflow)
+{
+  FreeListAllocator allocator;
+
+  EXPECT_EQ(
+      allocator.allocate(std::numeric_limits<std::size_t>::max()), nullptr);
 }
 
 //==============================================================================
