@@ -2,44 +2,57 @@
 
 ## Last Session Summary
 
-Started the zero-allocation simulation-loop work by creating a dev-task tracker
-and landing the first implementation slice: experimental `World` now owns a
+The first memory-manager slice has landed: experimental `World` owns a
 `dart::common::MemoryManager`, accepts root allocator/frame-scratch options,
 exposes memory diagnostics, and resets frame scratch at step boundaries. The
-tracker records the hard allocator-quality gate: DART allocators need
-correctness tests and benchmarks proving they beat standard C++ allocators and
-foonathan/memory on DART-relevant workloads before broad hot-loop adoption. It
-also records EnTT registry/component-storage allocation as a required
-integration workstream. A follow-up on PR #2869 added frame allocator overflow
-byte accounting so World diagnostics report total frame-scratch demand rather
-than primary-arena usage alone. A second review follow-up made diagnostic
-capacity report the usable aligned arena budget so sizing from diagnostics does
-not hide alignment padding. The current follow-up branch wires the experimental
-World's internal EnTT registry, component storage, and differentiable-parameter
-list through the World's active free allocator. That exposed and fixed a
-FreeListAllocator split-alignment bug: odd-sized free-list allocations must be
-rounded so subsequent max-aligned Eigen-backed component storage remains
-properly aligned.
+allocator-quality gate remains active: DART allocators must beat standard C++
+allocators and foonathan/memory on DART-relevant workloads before broad
+hot-loop adoption.
+
+Follow-up allocator work added alignment-aware `MemoryAllocator`/`StlAllocator`
+paths for over-aligned objects and allocator-aware EnTT registries, fixed
+free-list split alignment and overflow edge cases, allowed EnTT view internals
+to default-construct `StlAllocator` under Clang, and added `FixedPoolAllocator`
+for fixed-size slot workloads. The local comparative allocator benchmark now
+passes all DART/Foonathan and DART/StdPmr median ratios when fixed-size pool
+rows use `FixedPoolAllocator`, while mixed size-classed workloads remain on
+`PoolAllocator`.
+
+The stacked registry branch wires the experimental World's internal EnTT
+registry, component storage, and differentiable-parameter list through the
+World's active free allocator. It also adds initial
+`enterSimulationMode()` reservation/no-growth tests for current World-owned ECS
+storage and first private step-scratch component paths. Broader solver scratch
+coverage and EnTT allocator benchmarks remain open.
 
 ## Current Branch
 
-`feature/world-registry-allocator` - stacked follow-up branch for the
-allocator-backed experimental World registry slice.
+`feature/world-registry-allocator` - stacked PR #2872 branch for the
+allocator-backed experimental World registry slice. It builds on PR #2871
+(`feature/aligned-memory-allocator`).
 
 ## Immediate Next Step
 
-Finish review/CI for the stacked registry allocator slice, then add bake-time
-registry/component storage reservation and no-growth ECS tests before claiming
-zero allocations for ECS-backed world data.
+Finish review/CI for PR #2871, keep this stacked branch rebased-by-merge onto
+that allocator branch, and resolve any #2872 CI failures. Next allocator work
+should land the strict comparative benchmark gate, broaden
+`FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
+registry/component storage, and extend no-growth ECS tests to broader contact
+and remaining solver scratch step paths.
 
 ## Latest Local Validation
 
 - `pixi run lint`
-- `pixi run build`
-- `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager test_world`
-- `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`
-- `cmake --build build/default/cpp/Release --target UNIT_common_frame_allocator UNIT_common_memory_manager test_world`
-- `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_frame_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`
+- `cmake --build build/default/cpp/Release --target UNIT_common_stl_allocator -j2 && ctest --test-dir build/default/cpp/Release -R '^UNIT_common_stl_allocator$' --output-on-failure`
+- `clang++ --gcc-toolchain=/usr -std=gnu++20 -I. -Ibuild/default/cpp/Release -I.pixi/envs/default/include -fsyntax-only` with an allocator-aware `entt::basic_registry` multi-component `view` instantiation.
+- `cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_pool_allocator -j2`
+- `ctest --test-dir build/default/cpp/Release -R '^UNIT_common_pool_allocator$' --output-on-failure`
+- `build/default/cpp/Release/bin/bm_allocators_comparative --benchmark_min_time=0.1s --benchmark_out=.benchmark_results/allocator-comparative-current-head.json --benchmark_out_format=json`
+- Local parser over `.benchmark_results/allocator-comparative-current-head.json`:
+  all DART/Foonathan and DART/StdPmr median ratios passed (`< 1.0`),
+  including fixed pool, mixed pool, frame, realistic, steady-state, and STL
+  vector workloads.
+- `cmake --build build/default/cpp/Release --target dartsim -j2`
 - `pixi run test-simulation-experimental` (61/61 passed)
 
 ## Context That Would Be Lost
@@ -57,6 +70,9 @@ zero allocations for ECS-backed world data.
   Compare against `std::allocator`/`std::pmr` and foonathan/memory; if DART
   cannot beat foonathan/memory for required DART workloads, record a dependency
   decision instead of forcing an inferior in-house allocator.
+- Use `FixedPoolAllocator` for fixed-size node/slot workloads. Keep
+  `PoolAllocator` as the size-classed small-object allocator for mixed
+  workloads.
 - EnTT registry/storage allocation is first-class scope. Future work should
   inspect the active EnTT version's `basic_registry` and `basic_storage`
   allocator hooks and keep EnTT allocator types hidden from public World API.
@@ -71,6 +87,6 @@ git status -sb
 git diff --stat
 ```
 
-Then continue the registry slice: inspect
-`dart/simulation/experimental/world.*`,
-`dart/simulation/experimental/world_options.hpp`, and the focused world tests.
+Then continue the stacked PRs: #2871 allocator correctness/performance, #2872
+allocator-backed experimental World registry, and the comparative benchmark
+gate branch.

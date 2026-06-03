@@ -525,6 +525,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added alignment-aware `dart::common::MemoryAllocator` and `StlAllocator`
     paths so over-aligned objects and allocator-aware EnTT registries can be
     backed by DART allocators.
+  - Added `dart::common::FixedPoolAllocator` for fixed-size slot workloads and
+    routed the fixed-size allocator comparison benchmark through it, while
+    keeping mixed-size pool workloads on `PoolAllocator`.
   - Fixed the scheduled/manual collision benchmark guard artifact upload so `.benchmark_results/collision_check_*.json` files are retained by GitHub Actions.
   - Added a performance dashboard that runs DART's Google Benchmark suites and
     publishes per-benchmark history to GitHub Pages via

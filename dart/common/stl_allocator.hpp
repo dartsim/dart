@@ -60,7 +60,7 @@ public:
   };
 
   /// Default constructor
-  explicit StlAllocator(
+  StlAllocator(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault()) noexcept;
 
   /// Copy constructor
