@@ -90,6 +90,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    # Fail fast on a regression instead of waiting for the ~6h default kill.
+    # Sized generously for a first cold-sccache Windows Ninja wheel build; Linux/macOS
+    # wheels already use Ninja and finish well under this bound.
+    timeout-minutes: 120
     defaults:
       run:
         shell: bash
