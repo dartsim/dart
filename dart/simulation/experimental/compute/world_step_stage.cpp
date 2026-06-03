@@ -8714,6 +8714,33 @@ const DeformableSolverStats& DeformableDynamicsStage::getLastStats()
 }
 
 //==============================================================================
+void reserveDeformableDynamicsRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t deformableBodyCount)
+{
+  auto& contactScratchStorage
+      = registry.storage<DeformableContactSolverScratch>();
+  auto& vbdScratchStorage = registry.storage<DeformableVbdScratch>();
+  contactScratchStorage.reserve(deformableBodyCount);
+  vbdScratchStorage.reserve(deformableBodyCount);
+
+  if (deformableBodyCount == 0u) {
+    return;
+  }
+
+  auto view = registry.view<comps::DeformableBodyTag>();
+  for (auto entity : view) {
+    if (!registry.all_of<DeformableContactSolverScratch>(entity)) {
+      registry.emplace<DeformableContactSolverScratch>(entity);
+      registry.remove<DeformableContactSolverScratch>(entity);
+    }
+    if (!registry.all_of<DeformableVbdScratch>(entity)) {
+      registry.emplace<DeformableVbdScratch>(entity);
+      registry.remove<DeformableVbdScratch>(entity);
+    }
+  }
+}
+
+//==============================================================================
 std::string_view BatchedRigidBodyIntegrationStage::getName() const noexcept
 {
   return "batched_rigid_body_integration";

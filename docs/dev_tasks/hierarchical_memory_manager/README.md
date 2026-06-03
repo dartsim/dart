@@ -9,7 +9,8 @@
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Initial registry/component-storage wiring and `enterSimulationMode()`
-      reservation/no-growth tests for current World-owned ECS storage are
+      reservation/no-growth tests for current World-owned ECS storage and the
+      first multibody/deformable private step-scratch components are
       implemented; broader solver scratch coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked.
@@ -95,7 +96,7 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 1. Add allocator correctness tests and benchmark coverage for DART allocators
    against `std::allocator`/`std::pmr` and foonathan/memory.
 2. Extend bake-time registry/component storage reservation and no-growth ECS
-   tests to broader multibody, contact, and deformable ECS-backed step paths.
+   tests to broader contact and remaining solver scratch step paths.
 3. Benchmark the allocator-backed EnTT registry/component-storage path against
    standard C++ allocators and foonathan/memory on DART-relevant workloads.
 4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with

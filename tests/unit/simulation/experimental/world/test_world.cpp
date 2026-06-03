@@ -32,6 +32,8 @@
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/contact.hpp>
+#include <dart/simulation/experimental/body/deformable_body.hpp>
+#include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/collision_geometry.hpp>
@@ -399,6 +401,56 @@ TEST(World, EnterSimulationModeReservesRegistryStorageForKinematicIpcSteps)
       = entt::type_hash<sx::comps::KinematicBodyStepTrace>::value();
   ASSERT_TRUE(capacities.contains(traceStorageId));
   EXPECT_GE(capacities.at(traceStorageId), 1u);
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+}
+
+TEST(World, EnterSimulationModeReservesRegistryStorageForMultibodySteps)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(3.0);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+}
+
+TEST(World, EnterSimulationModeReservesRegistryStorageForDeformableSteps)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.masses = {1.0};
+  options.edgeStiffness = 0.0;
+  world.addDeformableBody("particle", options);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
 
   for (int i = 0; i < 4; ++i) {
     world.step();

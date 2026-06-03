@@ -1891,6 +1891,28 @@ void MultibodyPositionStage::execute(
 }
 
 //==============================================================================
+void reserveMultibodyDynamicsRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t multibodyCount)
+{
+  auto& pendingVelocityStorage = registry.storage<PendingMultibodyVelocity>();
+  pendingVelocityStorage.reserve(multibodyCount);
+
+  if (multibodyCount == 0u) {
+    return;
+  }
+
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    if (registry.all_of<PendingMultibodyVelocity>(entity)) {
+      continue;
+    }
+
+    registry.emplace<PendingMultibodyVelocity>(entity);
+    registry.remove<PendingMultibodyVelocity>(entity);
+  }
+}
+
+//==============================================================================
 UnifiedConstraintStage::UnifiedConstraintStage(std::size_t frictionIterations)
   : m_frictionIterations(std::max<std::size_t>(1, frictionIterations))
 {

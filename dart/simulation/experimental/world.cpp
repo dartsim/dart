@@ -129,6 +129,13 @@ namespace dart::simulation::experimental {
 
 namespace ncol = dart::collision::native;
 
+namespace compute {
+void reserveDeformableDynamicsRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t deformableBodyCount);
+void reserveMultibodyDynamicsRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t multibodyCount);
+} // namespace compute
+
 struct World::CollisionQueryCache
 {
   struct Key
@@ -1488,10 +1495,15 @@ void World::reserveRegistryStorageForSimulation()
     auto deformableBodies = registry.view<comps::DeformableBodyTag>();
     reserveAndPrimeDefaultComponentStorage<comps::DeformableSolverScratch>(
         registry, deformableBodies, deformableBodyCount);
+    compute::reserveDeformableDynamicsRegistryStorage(
+        registry, deformableBodyCount);
   }
 
   const auto multibodyCount
       = existingComponentStorageSize<comps::MultibodyStructure>(registry);
+  if (multibodyCount > 0u) {
+    compute::reserveMultibodyDynamicsRegistryStorage(registry, multibodyCount);
+  }
   if (m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
       && multibodyCount > 0u) {
     auto multibodies = registry.view<comps::MultibodyStructure>();
