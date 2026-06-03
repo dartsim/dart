@@ -61,13 +61,21 @@ public:
   /// Returns the default memory manager
   [[nodiscard]] static MemoryManager& GetDefault();
 
-  /// Constructor
+  /// Constructor using the default frame allocator capacity.
   ///
   /// @param[in] baseAllocator: (optional) The most low level allocator to be
   /// used by all the underlying memory allocators.
   explicit MemoryManager(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
-      size_t frameAllocatorInitialCapacity = 65536);
+      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
+
+  /// Constructor using an explicit initial frame allocator capacity.
+  ///
+  /// @param[in] baseAllocator: The most low level allocator to be used by all
+  /// the underlying memory allocators.
+  /// @param[in] frameAllocatorInitialCapacity: Initial frame allocator arena
+  /// capacity in bytes.
+  explicit MemoryManager(
+      MemoryAllocator& baseAllocator, size_t frameAllocatorInitialCapacity);
 
   /// Destructor
   ~MemoryManager();

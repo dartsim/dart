@@ -44,6 +44,13 @@ MemoryManager& MemoryManager::GetDefault()
 }
 
 //==============================================================================
+MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
+  : MemoryManager(baseAllocator, 65536)
+{
+  // Do nothing
+}
+
+//==============================================================================
 MemoryManager::MemoryManager(
     MemoryAllocator& baseAllocator, size_t frameAllocatorInitialCapacity)
   : mBaseAllocator(baseAllocator)
