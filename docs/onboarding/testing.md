@@ -317,6 +317,18 @@ python scripts/compare_benchmarks.py baseline.json optimized.json
 The tool supports `--metric cpu_time|real_time` and `--aggregate` options.
 See the script's `--help` for details.
 
+Allocator benchmarks also have focused gates:
+
+```bash
+pixi run bm-check
+pixi run bm-allocator-comparative-check
+```
+
+`bm-check` compares DART allocator workloads against the default allocator.
+`bm-allocator-comparative-check` runs `bm_allocators_comparative` and fails
+when DART does not beat the selected foonathan/memory or `std::pmr` baseline on
+matching workloads.
+
 ## Adding New Tests
 
 ### Naming Conventions

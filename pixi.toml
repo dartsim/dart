@@ -1324,6 +1324,9 @@ bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
 bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
   "config",
 ] }
+bm-allocator-comparative-check = { cmd = "python scripts/check_allocator_comparative_benchmarks.py", depends-on = [
+  "config",
+] }
 bm-compute-check = { cmd = "python scripts/check_compute_graph_benchmarks.py", depends-on = [
   "config",
 ] }
