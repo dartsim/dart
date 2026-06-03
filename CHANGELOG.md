@@ -75,7 +75,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     flags and a `DART_PY_DEMOS_GPU` env override (default `auto`: on when a CUDA
     device is present), an in-viewer GPU toggle panel, and a startup status
     line. The `config-py` build task forwards the experimental CUDA opt-in so
-    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected.
+    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected, and it
+    resets stale CMake compiler cache metadata before CMake can auto-rerun with
+    default options and drop the `dartpy` target.
   - Added public `World` lookup/list/count accessors for experimental
     rigid-body fixed joints, plus matching dartpy bindings and py-demo
     diagnostics, so users can recover fixed-joint handles and inspect their
