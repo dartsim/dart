@@ -153,7 +153,12 @@ private:
   {
     void* pointer;
     size_t size;
+    size_t alignment;
+    bool isOutstandingAllocation;
   };
+
+  bool releaseDelegatedAllocation(
+      void* pointer, size_t bytes, size_t alignment);
 
   /// The base allocator
   MemoryAllocator& mBaseAllocator;
