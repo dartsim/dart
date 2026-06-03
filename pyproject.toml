@@ -47,10 +47,6 @@ metadata.version.regex = "<version>(?P<value>[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.(dev|
 version = ">=3.22.1"
 # CMake build type
 build-type = "Release"
-# Use Ninja on every platform. Ninja is already the conventional scikit-build-core
-# default on Linux/macOS; pinning it here switches the Windows wheel build off the
-# MSBuild generator (which ignored sccache and timed out) onto Ninja + sccache.
-generator = "Ninja"
 
 [tool.scikit-build.cmake.define]
 # Build configuration for wheels (static linking, minimal dependencies)
