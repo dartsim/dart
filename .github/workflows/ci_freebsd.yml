@@ -53,8 +53,11 @@ jobs:
           operating_system: freebsd
           version: "15.0"
           memory: 6G
-          # Commands run as a passwordless-sudo user via the default (sh) shell;
-          # the checkout is synced into the VM automatically.
+          # Sync the checkout into the VM only; nothing downstream consumes the
+          # build tree, so skip the (slow, timeout-risking under TCG) copy back
+          # from the VM. Mirrors the former vmactions `copyback: false`.
+          sync_files: runner-to-vm
+          # Commands run as a passwordless-sudo user via the default (sh) shell.
           run: |
             set -e
             # Install build dependencies from pkg.
