@@ -169,13 +169,15 @@ struct WorldMemoryDiagnostics
 {
   /// Current frame-scratch arena capacity.
   std::size_t frameScratchCapacityBytes = 0;
-  /// Bytes consumed in the current simulation frame.
+  /// Bytes consumed in the current simulation frame, including overflow blocks.
   std::size_t frameScratchUsedBytes = 0;
   /// Maximum frame-scratch bytes observed since construction or clear().
   std::size_t frameScratchPeakUsedBytes = 0;
   /// Number of overflow allocations the frame allocator holds for the current
   /// frame. Nonzero means the current step exceeded the reserved arena.
   std::size_t frameScratchOverflowCount = 0;
+  /// Bytes currently held by overflow allocations for the current frame.
+  std::size_t frameScratchOverflowBytes = 0;
   /// Number of times the World reset frame scratch at step boundaries since
   /// construction or clear().
   std::size_t frameScratchResetCount = 0;

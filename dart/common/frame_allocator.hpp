@@ -156,6 +156,8 @@ public:
 
   [[nodiscard]] size_t overflowCount() const noexcept;
 
+  [[nodiscard]] size_t overflowBytes() const noexcept;
+
 private:
   struct OverflowEntry
   {
@@ -174,6 +176,7 @@ private:
 
   char* mBuffer;
   size_t mCapacity;
+  size_t mOverflowBytes;
   std::vector<OverflowEntry> mOverflowAllocations;
 };
 

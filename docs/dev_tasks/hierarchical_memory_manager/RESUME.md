@@ -10,7 +10,9 @@ tracker records the hard allocator-quality gate: DART allocators need
 correctness tests and benchmarks proving they beat standard C++ allocators and
 foonathan/memory on DART-relevant workloads before broad hot-loop adoption. It
 also records EnTT registry/component-storage allocation as a required
-integration workstream.
+integration workstream. A follow-up on PR #2869 added frame allocator overflow
+byte accounting so World diagnostics report total frame-scratch demand rather
+than primary-arena usage alone.
 
 ## Current Branch
 
@@ -28,9 +30,9 @@ before expanding hot-loop allocator use.
 
 - `pixi run lint`
 - `pixi run build`
-- `cmake --build build/default/cpp/Release --target test_world`
-- `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
-- `pixi run test-simulation-experimental` (post-merge rerun: 61/61 passed)
+- `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world`
+- `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_frame_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`
+- `pixi run test-simulation-experimental` (61/61 passed)
 
 ## Context That Would Be Lost
 

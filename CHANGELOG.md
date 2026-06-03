@@ -715,7 +715,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `WorldOptions::baseAllocator`, `WorldOptions::frameScratchInitialCapacity`,
     `World::getMemoryManager()`, and `World::getMemoryDiagnostics()` give each
     experimental World a `MemoryManager` root and report per-step frame-scratch
-    capacity, usage, peak usage, overflow count, and reset count.
+    capacity, usage, peak usage, overflow count, overflow bytes, and reset
+    count.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

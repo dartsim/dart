@@ -268,6 +268,7 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
   EXPECT_EQ(diagnostics.frameScratchUsedBytes, 0u);
   EXPECT_EQ(diagnostics.frameScratchPeakUsedBytes, 0u);
   EXPECT_EQ(diagnostics.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(diagnostics.frameScratchOverflowBytes, 0u);
   EXPECT_EQ(diagnostics.frameScratchResetCount, 0u);
 
   options.frameScratchInitialCapacity = 0;
@@ -296,6 +297,7 @@ TEST(World, FrameScratchResetsAtStepBoundary)
   const auto first = world.getMemoryDiagnostics();
   EXPECT_EQ(first.frameScratchResetCount, 1u);
   EXPECT_EQ(first.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(first.frameScratchOverflowBytes, 0u);
   EXPECT_GE(first.frameScratchUsedBytes, scratch.bytesToAllocate);
   EXPECT_EQ(first.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
 
@@ -306,6 +308,7 @@ TEST(World, FrameScratchResetsAtStepBoundary)
   EXPECT_EQ(second.frameScratchResetCount, 2u);
   EXPECT_EQ(second.frameScratchUsedBytes, 0u);
   EXPECT_EQ(second.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(second.frameScratchOverflowBytes, 0u);
   EXPECT_GE(second.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
 
   world.clear();
@@ -313,7 +316,40 @@ TEST(World, FrameScratchResetsAtStepBoundary)
   EXPECT_EQ(cleared.frameScratchUsedBytes, 0u);
   EXPECT_EQ(cleared.frameScratchPeakUsedBytes, 0u);
   EXPECT_EQ(cleared.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(cleared.frameScratchOverflowBytes, 0u);
   EXPECT_EQ(cleared.frameScratchResetCount, 0u);
+}
+
+TEST(World, FrameScratchDiagnosticsIncludeOverflowBytes)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.frameScratchInitialCapacity = 128;
+  sx::World world(options);
+
+  dart::simulation::experimental::compute::SequentialExecutor executor;
+  FrameScratchStage scratch(512);
+
+  world.step(executor, scratch);
+  ASSERT_NE(scratch.lastAllocation, nullptr);
+
+  const auto first = world.getMemoryDiagnostics();
+  EXPECT_EQ(first.frameScratchResetCount, 1u);
+  EXPECT_EQ(first.frameScratchOverflowCount, 1u);
+  EXPECT_GE(first.frameScratchOverflowBytes, scratch.bytesToAllocate);
+  EXPECT_GE(first.frameScratchUsedBytes, first.frameScratchOverflowBytes);
+  EXPECT_EQ(first.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+
+  scratch.bytesToAllocate = 0;
+  world.step(executor, scratch);
+
+  const auto second = world.getMemoryDiagnostics();
+  EXPECT_EQ(second.frameScratchResetCount, 2u);
+  EXPECT_EQ(second.frameScratchUsedBytes, 0u);
+  EXPECT_EQ(second.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(second.frameScratchOverflowBytes, 0u);
+  EXPECT_GE(second.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
 }
 
 // Test version information

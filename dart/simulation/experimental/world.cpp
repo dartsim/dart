@@ -1309,9 +1309,11 @@ WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 {
   WorldMemoryDiagnostics diagnostics = m_memoryDiagnostics;
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
+  const auto overflowBytes = frameAllocator.overflowBytes();
   diagnostics.frameScratchCapacityBytes = frameAllocator.capacity();
-  diagnostics.frameScratchUsedBytes = frameAllocator.used();
+  diagnostics.frameScratchUsedBytes = frameAllocator.used() + overflowBytes;
   diagnostics.frameScratchOverflowCount = frameAllocator.overflowCount();
+  diagnostics.frameScratchOverflowBytes = overflowBytes;
   diagnostics.frameScratchPeakUsedBytes = std::max(
       diagnostics.frameScratchPeakUsedBytes, diagnostics.frameScratchUsedBytes);
   return diagnostics;
@@ -2321,10 +2323,13 @@ void World::resetFrameScratchForStep()
 void World::refreshMemoryDiagnostics()
 {
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
+  const auto overflowBytes = frameAllocator.overflowBytes();
   m_memoryDiagnostics.frameScratchCapacityBytes = frameAllocator.capacity();
-  m_memoryDiagnostics.frameScratchUsedBytes = frameAllocator.used();
+  m_memoryDiagnostics.frameScratchUsedBytes
+      = frameAllocator.used() + overflowBytes;
   m_memoryDiagnostics.frameScratchOverflowCount
       = frameAllocator.overflowCount();
+  m_memoryDiagnostics.frameScratchOverflowBytes = overflowBytes;
   m_memoryDiagnostics.frameScratchPeakUsedBytes = std::max(
       m_memoryDiagnostics.frameScratchPeakUsedBytes,
       m_memoryDiagnostics.frameScratchUsedBytes);
