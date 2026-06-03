@@ -53,6 +53,15 @@ struct alignas(64) OverAlignedComponent
   double values[8] = {};
 };
 
+struct RegistryTag
+{
+};
+
+struct RegistryVelocity
+{
+  double values[3] = {};
+};
+
 template <typename T>
 void expectAligned(T* pointer)
 {
@@ -139,6 +148,26 @@ TEST(StlAllocatorTest, SupportsAllocatorAwareEnttRegistryStorage)
   auto& storage = registry.storage<OverAlignedComponent>();
   StlAllocator<OverAlignedComponent> componentAllocator(registryAllocator);
   EXPECT_TRUE(storage.get_allocator() == componentAllocator);
+
+  registry.destroy(entity);
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, SupportsAllocatorAwareEnttRegistryViews)
+{
+  FreeListAllocator backing;
+  StlAllocator<entt::entity> registryAllocator(backing);
+  entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+      registryAllocator);
+
+  const entt::entity entity = registry.create();
+  registry.emplace<RegistryTag>(entity);
+  registry.emplace<OverAlignedComponent>(entity);
+  registry.emplace<RegistryVelocity>(entity);
+
+  auto view
+      = registry.view<RegistryTag, OverAlignedComponent, RegistryVelocity>();
+  EXPECT_EQ(view.size_hint(), 1u);
 
   registry.destroy(entity);
 }
