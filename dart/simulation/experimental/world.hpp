@@ -599,6 +599,7 @@ private:
       std::string& outName);
 
   void ensureDesignMode() const;
+  void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
   void resetFrameScratchForStep();
   void refreshMemoryDiagnostics();

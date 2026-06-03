@@ -729,6 +729,54 @@ common::MemoryAllocator& resolveBaseAllocator(const WorldOptions& options)
 }
 
 //==============================================================================
+void reserveExistingRegistryStorages(detail::WorldRegistry& registry)
+{
+  auto& entities = registry.storage<entt::entity>();
+  entities.reserve(entities.size());
+
+  for (auto&& [id, storage] : registry.storage()) {
+    (void)id;
+    storage.reserve(storage.size());
+  }
+}
+
+//==============================================================================
+template <typename Component, typename EntityRange>
+void reserveAndPrimeDefaultComponentStorage(
+    detail::WorldRegistry& registry,
+    EntityRange&& entities,
+    std::size_t capacity)
+{
+  auto& storage = registry.template storage<Component>();
+  storage.reserve(capacity);
+
+  for (const auto entity : entities) {
+    if (registry.template all_of<Component>(entity)) {
+      continue;
+    }
+
+    registry.template emplace<Component>(entity);
+    registry.template remove<Component>(entity);
+  }
+}
+
+//==============================================================================
+template <typename Component>
+std::size_t existingComponentStorageSize(
+    const detail::WorldRegistry& registry) noexcept
+{
+  const auto* storage = registry.template storage<Component>();
+  return storage == nullptr ? 0u : storage->size();
+}
+
+//==============================================================================
+template <typename... Components>
+void ensureRegistryStorages(detail::WorldRegistry& registry)
+{
+  (static_cast<void>(registry.template storage<Components>()), ...);
+}
+
+//==============================================================================
 bool boundaryRangesOverlap(
     double startA, double endA, double startB, double endB)
 {
@@ -1374,6 +1422,113 @@ void World::ensureDesignMode() const
 }
 
 //==============================================================================
+void World::reserveRegistryStorageForSimulation()
+{
+  auto& registry = m_storage->registry;
+
+  // Creating queried storage objects is part of the bake boundary: EnTT's
+  // non-const view/all_of paths materialize missing component pools even when
+  // no entity owns that component. Doing this here keeps repeated steps from
+  // changing the registry storage set; absent components keep zero payload
+  // capacity.
+  ensureRegistryStorages<
+      comps::Name,
+      comps::ContactMaterial,
+      comps::CollisionGeometry,
+      comps::DeformableGroundBarrierTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::DeformableObstacleNoCcdTag,
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::KinematicBodyTag,
+      comps::KinematicBodyStepTrace,
+      comps::RigidAvbdContactConfig,
+      comps::MultibodyTag,
+      comps::MultibodyStructure,
+      comps::LoopClosure,
+      comps::Link,
+      comps::Joint,
+      comps::FrameTag,
+      comps::FixedFrameTag,
+      comps::FreeFrameTag,
+      comps::FrameState,
+      comps::FrameCache,
+      comps::FixedFrameProperties,
+      comps::FreeFrameProperties,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force,
+      comps::DeformableBodyTag,
+      comps::DeformableNodeState,
+      comps::DeformableSpringModel,
+      comps::DeformableMeshTopology,
+      comps::DeformableMaterial,
+      comps::DeformableBoundaryConditions,
+      comps::DeformableVbdConfig,
+      comps::DeformableSolverScratch,
+      comps::VariationalContact,
+      comps::VariationalContactDualState,
+      compute::MultibodyVariationalState,
+      detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(registry);
+
+  reserveExistingRegistryStorages(registry);
+
+  const auto kinematicBodyCount
+      = existingComponentStorageSize<comps::KinematicBodyTag>(registry);
+  if (kinematicBodyCount > 0u) {
+    auto kinematicBodies = registry.view<comps::KinematicBodyTag>();
+    reserveAndPrimeDefaultComponentStorage<comps::KinematicBodyStepTrace>(
+        registry, kinematicBodies, kinematicBodyCount);
+  }
+
+  const auto deformableBodyCount
+      = existingComponentStorageSize<comps::DeformableBodyTag>(registry);
+  if (deformableBodyCount > 0u) {
+    auto deformableBodies = registry.view<comps::DeformableBodyTag>();
+    reserveAndPrimeDefaultComponentStorage<comps::DeformableSolverScratch>(
+        registry, deformableBodies, deformableBodyCount);
+  }
+
+  const auto multibodyCount
+      = existingComponentStorageSize<comps::MultibodyStructure>(registry);
+  if (m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+      && multibodyCount > 0u) {
+    auto multibodies = registry.view<comps::MultibodyStructure>();
+    reserveAndPrimeDefaultComponentStorage<compute::MultibodyVariationalState>(
+        registry, multibodies, multibodyCount);
+  }
+
+  const auto variationalContactCount
+      = existingComponentStorageSize<comps::VariationalContact>(registry);
+  if (variationalContactCount > 0u) {
+    auto variationalContacts = registry.view<comps::VariationalContact>();
+    auto& variationalDualStorage
+        = registry.storage<comps::VariationalContactDualState>();
+    variationalDualStorage.reserve(variationalContactCount);
+    for (const auto entity : variationalContacts) {
+      const auto& contact
+          = variationalContacts.get<comps::VariationalContact>(entity);
+      if (contact.dualUpdateCadence == 0 || contact.pointLinkIndices.empty()
+          || registry.all_of<comps::VariationalContactDualState>(entity)) {
+        continue;
+      }
+
+      registry.emplace<comps::VariationalContactDualState>(entity);
+      registry.remove<comps::VariationalContactDualState>(entity);
+    }
+  }
+
+  const auto jointCount = existingComponentStorageSize<comps::Joint>(registry);
+  if (jointCount > 0u) {
+    registry.storage<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>()
+        .reserve(jointCount);
+  }
+
+  reserveExistingRegistryStorages(registry);
+}
+
+//==============================================================================
 FreeFrame World::addFreeFrame()
 {
   return addFreeFrame("", Frame::world());
@@ -1965,6 +2120,7 @@ void World::enterSimulationMode()
   updateKinematics();
   detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
       m_storage->registry);
+  reserveRegistryStorageForSimulation();
 }
 
 //==============================================================================

@@ -38,6 +38,7 @@
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
@@ -62,6 +63,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <map>
 #include <new>
 #include <numbers>
 #include <string>
@@ -252,6 +254,44 @@ struct alignas(64) RegistryAllocatorComponent
   std::uint64_t value;
 };
 
+using RegistryStorageCapacities = std::map<entt::id_type, std::size_t>;
+
+RegistryStorageCapacities registryStorageCapacities(
+    const dart::simulation::experimental::detail::WorldRegistry& registry)
+{
+  RegistryStorageCapacities capacities;
+  const auto* entityStorage = registry.storage<entt::entity>();
+  EXPECT_NE(entityStorage, nullptr);
+  capacities.emplace(
+      entt::type_hash<entt::entity>::value(),
+      entityStorage == nullptr ? 0u : entityStorage->capacity());
+  for (auto&& [id, storage] : registry.storage()) {
+    capacities.emplace(id, storage.capacity());
+  }
+  return capacities;
+}
+
+void expectRegistryStorageCapacitiesUnchanged(
+    const RegistryStorageCapacities& expected,
+    const dart::simulation::experimental::detail::WorldRegistry& registry)
+{
+  const auto actual = registryStorageCapacities(registry);
+  EXPECT_EQ(actual.size(), expected.size());
+
+  for (const auto& [id, capacity] : actual) {
+    if (!expected.contains(id)) {
+      ADD_FAILURE() << "unexpected storage id " << id << " capacity "
+                    << capacity;
+    }
+  }
+
+  for (const auto& [id, capacity] : expected) {
+    const auto it = actual.find(id);
+    ASSERT_NE(it, actual.end()) << "missing storage id " << id;
+    EXPECT_EQ(it->second, capacity) << "storage id " << id;
+  }
+}
+
 } // namespace
 
 // Test World construction
@@ -338,6 +378,32 @@ TEST(World, RegistryUsesWorldFreeAllocator)
   EXPECT_EQ(
       storage.differentiableParameters.get_allocator(),
       expectedParameterAllocator);
+}
+
+TEST(World, EnterSimulationModeReservesRegistryStorageForKinematicIpcSteps)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+
+  auto body = world.addRigidBody("kinematic");
+  body.setKinematic(true);
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+  const auto traceStorageId
+      = entt::type_hash<sx::comps::KinematicBodyStepTrace>::value();
+  ASSERT_TRUE(capacities.contains(traceStorageId));
+  EXPECT_GE(capacities.at(traceStorageId), 1u);
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
