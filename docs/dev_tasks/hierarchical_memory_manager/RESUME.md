@@ -38,6 +38,9 @@ zero allocations for ECS-backed world data.
 - `pixi run build`
 - `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager test_world`
 - `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`
+- `cmake --build build/default/cpp/Release --target UNIT_common_frame_allocator UNIT_common_memory_manager test_world`
+- `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_frame_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`
+- `pixi run test-simulation-experimental` (61/61 passed)
 
 ## Context That Would Be Lost
 
@@ -68,5 +71,6 @@ git status -sb
 git diff --stat
 ```
 
-Then continue the first slice: inspect `dart/simulation/experimental/world.*`,
+Then continue the registry slice: inspect
+`dart/simulation/experimental/world.*`,
 `dart/simulation/experimental/world_options.hpp`, and the focused world tests.
