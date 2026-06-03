@@ -56,6 +56,15 @@ jobs:
           self-hosted-install: false
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
 
+      # The Ninja generator (used by the pixi build/test tasks) needs cl.exe and the
+      # MSVC environment on PATH; unlike the old Visual Studio generator it does not
+      # auto-discover MSVC. This action exports the x64 MSVC env to $GITHUB_ENV /
+      # $GITHUB_PATH, which GitHub propagates to all later run: steps in this job.
+      - name: Activate MSVC environment (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Configure environment for compiler cache
         shell: powershell
         run: |
