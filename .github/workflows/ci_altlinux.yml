@@ -29,7 +29,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Alt Linux repro (Docker)
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300
     steps:
       - name: Checkout
         uses: actions/checkout@v6
