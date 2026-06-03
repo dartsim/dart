@@ -88,7 +88,10 @@ public:
 
   /// Allocates object(s) without calling the constructor.
   ///
-  /// This is identical to @c static_cast<T*>(allocate(n * sizeof(T))).
+  /// This is identical to @c static_cast<T*>(allocate(n * sizeof(T))) and can
+  /// be released with deallocate(pointer, n * sizeof(T)). For over-aligned
+  /// storage, use the aligned allocate()/deallocate() overloads or
+  /// construct()/destroy() instead.
   ///
   /// @param[in] n: The number of objects to allocate.
   template <typename T>

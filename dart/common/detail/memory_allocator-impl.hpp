@@ -44,7 +44,7 @@ namespace dart::common {
 template <typename T>
 T* MemoryAllocator::allocateAs(size_t n) noexcept
 {
-  return static_cast<T*>(allocate(n * sizeof(T), alignof(T)));
+  return static_cast<T*>(allocate(n * sizeof(T)));
 }
 
 //==============================================================================

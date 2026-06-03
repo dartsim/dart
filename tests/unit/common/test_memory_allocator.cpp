@@ -133,7 +133,8 @@ TEST(MemoryAllocatorTest, DefaultAllocatorSupportsOverAlignedObjects)
 {
   auto& allocator = MemoryAllocator::GetDefault();
 
-  auto* raw = allocator.allocateAs<OverAlignedObject>();
+  auto* raw = static_cast<OverAlignedObject*>(allocator.allocate(
+      sizeof(OverAlignedObject), alignof(OverAlignedObject)));
   expectAligned(raw);
   allocator.deallocate(
       raw, sizeof(OverAlignedObject), alignof(OverAlignedObject));
@@ -141,6 +142,15 @@ TEST(MemoryAllocatorTest, DefaultAllocatorSupportsOverAlignedObjects)
   auto* object = allocator.construct<OverAlignedObject>();
   expectAligned(object);
   allocator.destroy(object);
+}
+
+TEST(MemoryAllocatorTest, AllocateAsPreservesByteDeallocateCompatibility)
+{
+  auto& allocator = MemoryAllocator::GetDefault();
+
+  auto* raw = allocator.allocateAs<OverAlignedObject>();
+  ASSERT_NE(raw, nullptr);
+  allocator.deallocate(raw, sizeof(OverAlignedObject));
 }
 
 TEST(MemoryAllocatorTest, BaseAlignedFallbackRejectsUnsupportedOverAlignment)
