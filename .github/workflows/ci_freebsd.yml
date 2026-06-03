@@ -47,6 +47,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # cross-platform-actions runs host tools (notably `fdisk`) to create and
+      # size the VM disk image, but the `fdisk` package is not present on the
+      # ubuntu-24.04 runner image by default, so the action fails immediately
+      # with "Unable to locate executable file: fdisk". Install it and make sure
+      # /usr/sbin is on PATH for the action.
+      - name: Install host tools for the FreeBSD VM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fdisk
+          echo /usr/sbin >> "$GITHUB_PATH"
+
       - name: Build and test DART on FreeBSD
         uses: cross-platform-actions/action@v1.2.0
         with:
