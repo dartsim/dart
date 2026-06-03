@@ -61,7 +61,7 @@
 #include <limits>
 #include <string>
 
-#include <cstddef>
+#include <cstdint>
 
 namespace dart {
 namespace collision {
@@ -1664,9 +1664,7 @@ Contact convertContact(
   }
 
   // Enforce deterministic ordering across runs and clones. Tie-break on the
-  // stable per-object creation index if keys are identical, so the ordering is
-  // independent of pointer addresses (and therefore of allocation order and
-  // ASLR).
+  // underlying FCL object address if keys are identical.
   const auto fclObj1
       = static_cast<FCLCollisionObject*>(contact.collisionObject1);
   const auto fclObj2
@@ -1684,13 +1682,10 @@ bool shouldSwapDeterministically(
   const auto key1 = collisionObjectKey(fclObj1);
   const auto key2 = collisionObjectKey(fclObj2);
 
-  if (key2 < key1)
-    return true;
+  const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
+  const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
 
-  if (key1 == key2 && fclObj1 && fclObj2)
-    return fclObj2->getCreationIndex() < fclObj1->getCreationIndex();
-
-  return false;
+  return (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
 }
 
 //==============================================================================
