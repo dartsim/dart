@@ -31,6 +31,7 @@
  */
 
 #include <cuda_runtime.h>
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
 
 #include <cmath>
 #include <cstddef>
@@ -166,10 +167,8 @@ cudaError_t launchProjectSymmetricBlocksToPsdKernel(
     return cudaSuccess;
   }
 
-  constexpr int blockSize = 128;
-  const auto gridSize = static_cast<unsigned int>(
-      (blockCount + static_cast<std::size_t>(blockSize) - 1)
-      / static_cast<std::size_t>(blockSize));
+  constexpr unsigned int blockSize = 128;
+  const unsigned int gridSize = launchGrid1D(blockCount, blockSize);
 
   projectSymmetricBlocksToPsdKernel<<<gridSize, blockSize>>>(
       blocks, static_cast<int>(dimension), blockCount);
