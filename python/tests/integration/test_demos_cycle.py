@@ -521,6 +521,14 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "contact",
             "rigid_body",
         },
+        "Planned World Ports": {
+            "planned_inverse_kinematics",
+            "planned_simbicon_walking",
+            "planned_operational_space_control",
+            "planned_robot_puppets",
+            "planned_collision_sandbox",
+            "planned_mobile_manipulation",
+        },
         "Rigid IPC": {
             "rigid_ipc",
             "rigid_ipc_slide",

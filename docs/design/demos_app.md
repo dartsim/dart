@@ -34,7 +34,9 @@ and C++ `dart-demos` now present World solver demos without DART 6 scene ids or
 experimental/sx labels. Python carries the broader catalog (World rigid body,
 Rigid IPC, Variational Integrators, Differentiable, Vertex Block Descent, and
 IPC Deformable); C++ keeps the smaller companion set needed for native
-viewer/smoke coverage. Renderer regression coverage is independent (see below),
+viewer/smoke coverage. A shared `Planned World Ports` category keeps important
+DART 6 concepts visible as launchable placeholders only; it does not keep legacy
+scene implementations. Renderer regression coverage is independent (see below),
 so deleting DART 6 demo scene files does not remove renderer fixture coverage.
 
 ## Architecture
@@ -56,8 +58,9 @@ stable `id`, display `title`, `category`, and one-line `summary` — in
 `examples/demos/registry.cpp`. The registry vector order defines display order;
 categories appear in first-appearance order. World demos use solver/domain
 categories rather than a catch-all bucket so the navigator scales as the catalog
-grows. Adding an example is: one scene file, one header declaration, one
-registry entry, one CMake source line.
+grows. Placeholder rows belong in `Planned World Ports` until a real
+World-native scene exists. Adding an example is: one scene file, one header
+declaration, one registry entry, one CMake source line.
 
 The factory is lazy (built when the scene is first selected), so launch stays
 fast and an asset/remote-load failure affects only that scene. The host

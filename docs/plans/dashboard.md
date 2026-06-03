@@ -651,8 +651,11 @@ its own line so status updates remain git-history friendly.
 - Dimension: Easy start
 - Next step: Implemented — `dart-demos` is now the smaller C++ World demo app
   with `rigid_body`, `deformable_body`, and `vbd_deformable` runtime-switchable
-  scenes (cycle smoke `EXAMPLE_dart_demos_cycle_headless_smoke`); `hello_world`
-  stays the standalone template; tooling/docs/CHANGELOG updated. The
+  scenes plus lightweight `Planned World Ports` placeholders for high-value DART
+  6 concepts that still need World-native ports (IK, SIMBICON walking,
+  operational-space control, robot puppets, collision sandbox, mobile
+  manipulation); `hello_world` stays the standalone template;
+  tooling/docs/CHANGELOG updated. The
   `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
   internal test fixtures (see the design doc's "examples vs renderer fixtures"
   decision), so PLAN-101's `--scene` smoke gate is unaffected.
@@ -671,8 +674,9 @@ its own line so status updates remain git-history friendly.
 - Next step: Phases 1–4 landed and the catalog has been pruned for DART 7:
   `py-demos` is the World demo surface (World rigid body, Rigid IPC,
   Variational Integrators, Differentiable, Vertex Block Descent, and IPC
-  Deformable categories) running through `dartpy.gui.run_demos`; C++
-  `dart-demos` is the smaller World-only companion. The old DART 6 demo scenes
+  Deformable categories, plus `Planned World Ports` placeholders) running
+  through `dartpy.gui.run_demos`; C++ `dart-demos` is the smaller World-only
+  companion with matching planned-port placeholders. The old DART 6 demo scenes
   and cross-language golden parity fixtures are removed from the demo surfaces.
   The `docs/dev_tasks/examples_strategy/` folder is retired; residual follow-ups
   are tracked in PLAN-103's Landed State + retire-later checklist.

@@ -52,7 +52,18 @@ def test_normalize_target_passthrough(run_cpp_example, capsys):
 
 
 @pytest.mark.parametrize(
-    "target", ["rigid_body", "deformable_body", "vbd_deformable"]
+    "target",
+    [
+        "rigid_body",
+        "planned_inverse_kinematics",
+        "planned_simbicon_walking",
+        "planned_operational_space_control",
+        "planned_robot_puppets",
+        "planned_collision_sandbox",
+        "planned_mobile_manipulation",
+        "deformable_body",
+        "vbd_deformable",
+    ],
 )
 def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
     with pytest.raises(SystemExit) as exc:
@@ -63,13 +74,34 @@ def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
     assert f"--scene {target}" in message
 
 
-@pytest.mark.parametrize("target", ["boxes", "atlas_simbicon", "wam_ikfast"])
+@pytest.mark.parametrize("target", ["boxes"])
 def test_normalize_target_rejects_removed_dart6_demos(run_cpp_example, target):
     with pytest.raises(SystemExit) as exc:
         run_cpp_example._normalize_target(target)
 
     message = str(exc.value)
     assert "DART 6 demo scene has been removed" in message
+    assert "pixi run demos -- --list" in message
+
+
+@pytest.mark.parametrize(
+    ("target", "replacement"),
+    [
+        ("atlas_simbicon", "planned_simbicon_walking"),
+        ("collision_sandbox", "planned_collision_sandbox"),
+        ("operational_space_control", "planned_operational_space_control"),
+        ("wam_ikfast", "planned_inverse_kinematics"),
+    ],
+)
+def test_normalize_target_mentions_planned_dart6_replacements(
+    run_cpp_example, target, replacement
+):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "DART 6 demo scene has been removed" in message
+    assert f"pixi run demos -- --scene {replacement}" in message
     assert "pixi run demos -- --list" in message
 
 

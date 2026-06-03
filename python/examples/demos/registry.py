@@ -35,6 +35,12 @@ from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SC
 from .scenes.ipc_deformable_seg_strand import SCENE as IPC_DEFORMABLE_SEG_STRAND
 from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
 from .scenes.loop_closure import SCENE as LOOP_CLOSURE
+from .scenes.planned import COLLISION_SANDBOX as PLANNED_COLLISION_SANDBOX
+from .scenes.planned import INVERSE_KINEMATICS as PLANNED_INVERSE_KINEMATICS
+from .scenes.planned import MOBILE_MANIPULATION as PLANNED_MOBILE_MANIPULATION
+from .scenes.planned import OPERATIONAL_SPACE_CONTROL as PLANNED_OSC
+from .scenes.planned import ROBOT_PUPPETS as PLANNED_ROBOT_PUPPETS
+from .scenes.planned import SIMBICON_WALKING as PLANNED_SIMBICON_WALKING
 from .scenes.rigid_body import SCENE as RIGID_BODY
 from .scenes.rigid_fixed_joint import SCENE as RIGID_FIXED_JOINT
 from .scenes.rigid_ipc import SCENE as RIGID_IPC
@@ -62,6 +68,15 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         CONTACT,
         RIGID_BODY,
         RIGID_FIXED_JOINT,
+        # High-value DART 6 examples that should return as World-native demos.
+        # These lightweight placeholders keep the roadmap visible without
+        # keeping legacy DART 6 scene implementations in the catalog.
+        PLANNED_INVERSE_KINEMATICS,
+        PLANNED_SIMBICON_WALKING,
+        PLANNED_OSC,
+        PLANNED_ROBOT_PUPPETS,
+        PLANNED_COLLISION_SANDBOX,
+        PLANNED_MOBILE_MANIPULATION,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
         # a drop, friction (flat + inclined), a multi-body pile, then the
         # intersection-free (no-tunneling) guarantee. Only scenes that run in

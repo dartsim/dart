@@ -41,6 +41,7 @@ from examples.demos.scenes import (
     ipc_deformable_scripted_dirichlet,
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
+    planned,
     rigid_body,
     rigid_fixed_joint,
     rigid_ipc,
@@ -234,6 +235,28 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def test_planned_world_port_placeholders_expose_status_panels() -> None:
+    for scene in [
+        planned.INVERSE_KINEMATICS,
+        planned.SIMBICON_WALKING,
+        planned.OPERATIONAL_SPACE_CONTROL,
+        planned.ROBOT_PUPPETS,
+        planned.COLLISION_SANDBOX,
+        planned.MOBILE_MANIPULATION,
+    ]:
+        setup = scene.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [scene.title]
+        assert setup.info["planned_world_port"] == scene.id
+
+        setup.panels[0].build(builder, object())
+
+        assert "text:status: planned World demo" in builder.events
+        assert any(event.startswith("text:legacy seeds: ") for event in builder.events)
+        assert any(event.startswith("text:target: ") for event in builder.events)
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:

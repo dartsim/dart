@@ -78,6 +78,15 @@ The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.
 
+## Planned World Ports
+
+The **`Planned World Ports`** category keeps important DART 6 demo concepts
+visible without keeping the removed DART 6 implementations in the catalog. These
+entries are lightweight launchable placeholders with status panels. They track
+World-native follow-ups for inverse kinematics, SIMBICON walking,
+operational-space control, robot puppets, collision sandbox workflows, and
+mobile manipulation.
+
 ## IPC Deformable scenes
 
 The dedicated **`IPC Deformable`** category groups the deformable-body

@@ -39,6 +39,11 @@
     catalog. The old DART 6 demo scene modules and cross-language golden parity
     fixtures were removed; remaining scene ids/categories use World, IPC,
     differentiable, variational, and VBD names without experimental/sx labels.
+    High-value DART 6 examples that still need World-native ports now appear as
+    lightweight `Planned World Ports` placeholders so IK, SIMBICON walking,
+    operational-space control, robot puppets, collision sandbox, and
+    mobile-manipulation follow-ups stay visible without keeping legacy scene
+    implementations.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`

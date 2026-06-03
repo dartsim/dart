@@ -30,8 +30,12 @@ pixi run demos -- --scene rigid_body # launch with a specific scene selected
 ```
 
 In the app, use the **Demos** sidebar to switch scenes. Scenes are grouped into
-ordered World-solver categories: World Rigid Body, IPC Deformable, and Vertex
-Block Descent.
+ordered World-solver categories: World Rigid Body, IPC Deformable, Vertex Block
+Descent, and Planned World Ports. The planned ports are launchable placeholders
+for high-value DART 6 concepts that still need World-native implementations
+(IK, SIMBICON walking, operational-space control, robot puppets, collision
+sandbox, and mobile manipulation); they do not keep the removed DART 6 scene
+code.
 
 `dart-demos` accepts the same options as other GUI programs (`--headless`,
 `--frames`, `--screenshot <path>`, `--width`, `--height`, `--backend`,

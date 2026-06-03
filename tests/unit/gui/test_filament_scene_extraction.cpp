@@ -986,23 +986,31 @@ TEST(FilamentSceneExtraction, DemoCatalogGroupsNonContiguousCategories)
       {"rigid_ipc", "Rigid IPC", "Rigid IPC", "contact", factory},
       {"rigid_body", "Rigid Body", "World Rigid Body", "rigid", factory},
       {"deformable_body", "Deformable Body", "IPC Deformable", "soft", factory},
+      {"planned_inverse_kinematics",
+       "Inverse Kinematics",
+       "Planned World Ports",
+       "ik",
+       factory},
       {"floating_base", "Floating Base", "World Rigid Body", "joints", factory},
   };
 
   const auto groups = dart::gui::detail::groupDemoScenesByCategory(scenes);
 
-  ASSERT_EQ(groups.size(), 3u);
+  ASSERT_EQ(groups.size(), 4u);
   EXPECT_EQ(groups[0].category, "World Rigid Body");
   ASSERT_EQ(groups[0].sceneIndices.size(), 3u);
   EXPECT_EQ(groups[0].sceneIndices[0], 0u);
   EXPECT_EQ(groups[0].sceneIndices[1], 2u);
-  EXPECT_EQ(groups[0].sceneIndices[2], 4u);
+  EXPECT_EQ(groups[0].sceneIndices[2], 5u);
   EXPECT_EQ(groups[1].category, "Rigid IPC");
   ASSERT_EQ(groups[1].sceneIndices.size(), 1u);
   EXPECT_EQ(groups[1].sceneIndices[0], 1u);
   EXPECT_EQ(groups[2].category, "IPC Deformable");
   ASSERT_EQ(groups[2].sceneIndices.size(), 1u);
   EXPECT_EQ(groups[2].sceneIndices[0], 3u);
+  EXPECT_EQ(groups[3].category, "Planned World Ports");
+  ASSERT_EQ(groups[3].sceneIndices.size(), 1u);
+  EXPECT_EQ(groups[3].sceneIndices[0], 4u);
 }
 
 TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)

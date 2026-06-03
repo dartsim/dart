@@ -98,9 +98,30 @@ EXAMPLE_SPECS = {
 # World-scene demos hosted by `dart-demos`.
 _DEMOS_SCENE_IDS = (
     "rigid_body",
+    "planned_inverse_kinematics",
+    "planned_simbicon_walking",
+    "planned_operational_space_control",
+    "planned_robot_puppets",
+    "planned_collision_sandbox",
+    "planned_mobile_manipulation",
     "deformable_body",
     "vbd_deformable",
 )
+
+_DART6_DEMO_PLACEHOLDER_SCENE_IDS = {
+    "atlas_puppet": "planned_robot_puppets",
+    "atlas_simbicon": "planned_simbicon_walking",
+    "biped_stand": "planned_simbicon_walking",
+    "collision_sandbox": "planned_collision_sandbox",
+    "fetch": "planned_mobile_manipulation",
+    "g1_puppet": "planned_robot_puppets",
+    "hubo_puppet": "planned_robot_puppets",
+    "operational_space_control": "planned_operational_space_control",
+    "point_cloud": "planned_collision_sandbox",
+    "polyhedron_visual": "planned_collision_sandbox",
+    "vehicle": "planned_mobile_manipulation",
+    "wam_ikfast": "planned_inverse_kinematics",
+}
 
 _REMOVED_DART6_DEMOS_SCENE_IDS = (
     "add_delete_skels",
@@ -217,6 +238,14 @@ def _normalize_target(target: str) -> str:
             "  pixi run py-demos -- --list       # list the scene catalog\n"
             "  pixi run py-demos -- --scene <id> # launch a specific scene\n"
             "The C++ demos viewer is a separate app: pixi run ex demos"
+        )
+    placeholder_scene = _DART6_DEMO_PLACEHOLDER_SCENE_IDS.get(target)
+    if placeholder_scene is not None:
+        raise SystemExit(
+            f"The '{target}' DART 6 demo scene has been removed from "
+            "dart-demos. A planned World-native placeholder is available:\n"
+            f"  pixi run demos -- --scene {placeholder_scene}\n"
+            "Run `pixi run demos -- --list` for the current World demo catalog."
         )
     if target in _REMOVED_DART6_DEMOS_SCENE_IDS:
         raise SystemExit(

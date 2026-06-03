@@ -8,7 +8,9 @@ C++ `dart-demos` (PLAN-102) is now the smaller World-only C++ companion.
 ## Layout
 
 - [`demos/`](demos/) — the scene-registry runner (`dart-demos` Python) and its
-  scene modules; this is where new example content lands.
+  scene modules; this is where new example content lands. High-value DART 6
+  concepts that still need World-native ports appear as lightweight
+  `Planned World Ports` placeholders.
 - A notebook gallery for Colab (PLAN-012) will live in `python/tutorials/` and
   import the scene modules from `demos/` (single source).
 
