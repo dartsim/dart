@@ -2347,22 +2347,24 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
     const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc)
 {
-  //
-  setAccelerationsStatic(
-      getInvProjArtInertiaImplicit()
-      * (mTotalForce
-         - getRelativeJacobianStatic().transpose() * artInertia
-               * math::AdInvT(this->getRelativeTransform(), spatialAcc)));
+  // Compute accelerations first.
+  Vector accelerations
+      = getInvProjArtInertiaImplicit()
+        * (mTotalForce
+           - getRelativeJacobianStatic().transpose() * artInertia
+                 * math::AdInvT(this->getRelativeTransform(), spatialAcc));
 
-  // Verification
-  const Vector accelerations = getAccelerationsStatic();
+  // Guard: check for non-finite values BEFORE calling the setter, which
+  // asserts finiteness (assertFiniteState) under debug builds.
   if (math::isNan(accelerations) || math::isInf(accelerations)) {
     dtwarn << "[GenericJoint::updateAccelerationDynamic] Non-finite joint "
               "accelerations detected for joint ["
            << this->getName()
            << "]. Setting accelerations to zero to avoid instability.\n";
-    setAccelerationsStatic(Vector::Zero());
+    accelerations.setZero();
   }
+
+  setAccelerationsStatic(accelerations);
 }
 
 //==============================================================================

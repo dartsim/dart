@@ -304,3 +304,43 @@ TEST(Distance, SphereSphere)
   auto dart = DARTCollisionDetector::create();
   testSphereSphere(dart);
 }
+
+//==============================================================================
+TEST(Distance, UsesMinimumAcrossPairs)
+{
+  auto fcl = FCLCollisionDetector::create();
+
+  auto frame1 = SimpleFrame::createShared(Frame::World());
+  auto frame2 = SimpleFrame::createShared(Frame::World());
+  auto frame3 = SimpleFrame::createShared(Frame::World());
+  auto frame4 = SimpleFrame::createShared(Frame::World());
+
+  auto sphere = std::make_shared<SphereShape>(0.1);
+  frame1->setShape(sphere);
+  frame2->setShape(sphere);
+  frame3->setShape(sphere);
+  frame4->setShape(sphere);
+
+  frame1->setTranslation(Eigen::Vector3d::Zero());
+  frame2->setTranslation(Eigen::Vector3d(0.6, 0.0, 0.0));
+  frame3->setTranslation(Eigen::Vector3d(5.0, 0.0, 0.0));
+  frame4->setTranslation(Eigen::Vector3d(6.0, 0.0, 0.0));
+
+  auto group = fcl->createCollisionGroup(
+      frame1.get(), frame2.get(), frame3.get(), frame4.get());
+
+  DistanceResult result;
+  const double distance = group->distance(DistanceOption(), &result);
+
+  const double expectedDistance = 0.4;
+  // FCL's GJK sphere-sphere distance is evaluated in single precision, so the
+  // result is only accurate to float precision (~1e-7). The fix being verified
+  // here is that the *minimum* across all pairs is preserved (frame1/frame2),
+  // not the exact distance value, so compare with a tolerance.
+  EXPECT_NEAR(expectedDistance, distance, 1e-6);
+  EXPECT_NEAR(expectedDistance, result.minDistance, 1e-6);
+  EXPECT_TRUE(
+      (result.shapeFrame1 == frame1.get() && result.shapeFrame2 == frame2.get())
+      || (result.shapeFrame1 == frame2.get()
+          && result.shapeFrame2 == frame1.get()));
+}

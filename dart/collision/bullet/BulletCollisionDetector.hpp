@@ -157,6 +157,15 @@ private:
 private:
   std::map<dynamics::ConstShapePtr, ShapeInfo> mShapeMap;
 
+  /// The merged collision group used for the most recent collide() call.
+  ///
+  /// This is retained as a member so that the BulletCollisionObjects it owns
+  /// outlive collide(): the Contacts stored in a CollisionResult keep raw
+  /// CollisionObject pointers into this group (Contact::collisionObject1/2 and
+  /// the getShapeFrame/getShapeNode/getBodyNodePtr helpers), so the objects
+  /// must remain valid after collide() returns. The group (and therefore its
+  /// objects, broadphase proxies, and overlapping pairs) is replaced and freed
+  /// on the next collide() call, so no leak is introduced.
   std::unique_ptr<BulletCollisionGroup> mGroupForFiltering;
 
   static Registrar<BulletCollisionDetector> mRegistrar;

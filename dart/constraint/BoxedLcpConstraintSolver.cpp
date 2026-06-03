@@ -45,6 +45,7 @@
 #include <iostream>
 
 #include <cassert>
+#include <cmath>
 
 namespace dart {
 namespace constraint {
@@ -158,6 +159,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mA.setZero(n, nSkip);
 #endif
   mX.resize(n);
+  mX.setZero();
   mB.resize(n);
   mW.setZero(n); // set w to 0
   mLo.resize(n);
@@ -279,9 +281,11 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (success && mX.hasNaN())
     success = false;
 
+  bool fallbackSuccess = false;
+  bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
-    mSecondaryBoxedLcpSolver->solve(
+    fallbackSuccess = mSecondaryBoxedLcpSolver->solve(
         n,
         mABackup.data(),
         mXBackup.data(),
@@ -292,14 +296,48 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         mFIndexBackup.data(),
         false);
     mX = mXBackup;
+    fallbackRan = true;
   }
 
-  if (mX.hasNaN()) {
-    dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
-          << "values: " << mX.transpose() << ". We're setting it zero for "
-          << "safety. Consider using more robust solver such as PGS as a "
-          << "secondary solver. If this happens even with PGS solver, please "
-          << "report this as a bug.\n";
+  // Capture the NaN state of the solution BEFORE any scrubbing so that
+  // usability is decided from the pre-scrub state. Scrubbing NaN entries must
+  // not be allowed to turn a failed solve into an apparently usable one.
+  const bool hadNaN = mX.hasNaN();
+
+  // Treat a finite fallback solution as usable even if the solver reported
+  // failure to avoid discarding potentially valid impulses. Note this uses the
+  // pre-scrub NaN state (hadNaN), NOT a post-scrub recheck, so a failed
+  // fallback that wrote NaNs cannot be promoted to success by scrubbing.
+  const bool finalSuccess
+      = success || fallbackSuccess || (fallbackRan && !hadNaN);
+
+  if (finalSuccess) {
+    // The solution will be used. If an otherwise-usable solution (e.g. a
+    // successful fallback) carries stray NaNs, scrub just those entries to 0
+    // so the remaining finite impulses can propagate.
+    if (hadNaN) {
+      for (int i = 0; i < mX.size(); ++i) {
+        if (std::isnan(mX[i]))
+          mX[i] = 0.0;
+      }
+    }
+  } else {
+    // Fail safe: the solve genuinely failed (including a failed fallback that
+    // produced NaNs), so zero the ENTIRE solution rather than propagating
+    // partial finite impulses.
+    if (hadNaN) {
+      dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
+            << "values: " << mX.transpose() << ". We're setting it zero for "
+            << "safety. Consider using more robust solver such as PGS as a "
+            << "secondary solver. If this happens even with PGS solver, please "
+            << "report this as a bug.\n";
+    } else {
+      dterr << "[BoxedLcpConstraintSolver] Primary LCP solver failed to find a "
+            << "solution. The constraint impulses are set to zero for safety. "
+            << "Consider configuring a secondary solver (e.g., PGS) to provide "
+            << "a fallback when Dantzig fails.\n";
+    }
+
     mX.setZero();
   }
 

@@ -39,15 +39,24 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <cassert>
+#include <cstdint>
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
 CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
-  : mCollisionDetector(collisionDetector), mUpdateAutomatically(true)
+  : mCollisionDetector(collisionDetector),
+    mUpdateAutomatically(true),
+    mObserver(this)
 {
   DART_ASSERT(mCollisionDetector);
+}
+
+//==============================================================================
+CollisionGroup::ShapeFrameObserver::ShapeFrameObserver(CollisionGroup* group)
+  : mGroup(group)
+{
 }
 
 //==============================================================================
@@ -266,11 +275,26 @@ void CollisionGroup::update()
 {
   removeDeletedShapeFrames();
 
-  for (auto& entry : mSkeletonSources)
-    updateSkeletonSource(entry);
+  // Update each source. When a source's MetaSkeleton/BodyNode has been
+  // destroyed, updateSkeletonSource()/updateBodyNodeSource() removes all of its
+  // collision objects; erase the now-stale source afterward so a later update()
+  // does not re-enter the expired path and dereference the freed ObjectInfo
+  // pointers still held in the source's mObjects (use-after-free).
+  for (auto it = mSkeletonSources.begin(); it != mSkeletonSources.end();) {
+    updateSkeletonSource(*it);
+    if (!it->second.mSource.lock())
+      it = mSkeletonSources.erase(it);
+    else
+      ++it;
+  }
 
-  for (auto& entry : mBodyNodeSources)
-    updateBodyNodeSource(entry);
+  for (auto it = mBodyNodeSources.begin(); it != mBodyNodeSources.end();) {
+    updateBodyNodeSource(*it);
+    if (!it->second.mSource.lock())
+      it = mBodyNodeSources.erase(it);
+    else
+      ++it;
+  }
 }
 
 //==============================================================================
@@ -314,6 +338,31 @@ void CollisionGroup::removeDeletedShapeFrames()
 }
 
 //==============================================================================
+std::size_t CollisionGroup::computeMetaSkeletonVersion(
+    const dynamics::MetaSkeleton& metaSkeleton)
+{
+  if (const auto* skeleton
+      = dynamic_cast<const dynamics::Skeleton*>(&metaSkeleton)) {
+    return skeleton->getVersion();
+  }
+
+  const std::size_t numBodies = metaSkeleton.getNumBodyNodes();
+  std::size_t seed = numBodies;
+
+  for (std::size_t i = 0u; i < numBodies; ++i) {
+    const auto* bodyNode = metaSkeleton.getBodyNode(i);
+    const auto bodyNodeHash
+        = static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(bodyNode));
+    const auto bodyNodeVersion = bodyNode ? bodyNode->getVersion() : 0u;
+
+    seed ^= bodyNodeHash + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+    seed ^= bodyNodeVersion + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+  }
+
+  return seed;
+}
+
+//==============================================================================
 void CollisionGroup::updateEngineData()
 {
   for (const auto& info : mObjectInfoList)
@@ -349,8 +398,17 @@ void CollisionGroup::ShapeFrameObserver::removeAllShapeFrames()
 void CollisionGroup::ShapeFrameObserver::handleDestructionNotification(
     const common::Subject* subject)
 {
-  mDeletedFrames.insert(mMap[subject]);
-  mMap.erase(subject);
+  auto it = mMap.find(subject);
+  if (it == mMap.end())
+    return;
+
+  const dynamics::ShapeFrame* frame = it->second;
+  mMap.erase(it);
+
+  if (mGroup)
+    mGroup->handleShapeFrameDestruction(frame);
+  else
+    mDeletedFrames.insert(frame);
 }
 
 //==============================================================================
@@ -432,18 +490,12 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
     // This skeleton no longer exists, so we should remove all its contents from
     // the CollisionGroup.
     for (const auto& object : source.mObjects)
-      removeShapeFrameInternal(object.second->mFrame, object.first);
+      removeShapeFrameInternal(object.second->mFrame, entry.first);
 
     return true;
   }
 
-  // Note: Right now we can only subscribe to Skeletons, not MetaSkeletons, so
-  // we can safely do a static_cast here. Eventually this static_cast should not
-  // be needed, if we can figure out a versioning system for MetaSkeleton.
-  const dynamics::Skeleton* skeleton
-      = dynamic_cast<const dynamics::Skeleton*>(meta.get());
-
-  const std::size_t currentSkeletonVersion = skeleton->getVersion();
+  const std::size_t currentSkeletonVersion = computeMetaSkeletonVersion(*meta);
   // If the version hasn't changed, then there will be nothing to update.
   if (currentSkeletonVersion == source.mLastKnownVersion)
     return false;
@@ -456,8 +508,8 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
   // Check each child to see if its version number has changed. If it has, then
   // check to see if any of its ShapeFrames need to be updated, added, or
   // removed from the CollisionGroup.
-  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
-    const dynamics::BodyNode* bn = skeleton->getBodyNode(i);
+  for (std::size_t i = 0; i < meta->getNumBodyNodes(); ++i) {
+    const dynamics::BodyNode* bn = meta->getBodyNode(i);
     const std::size_t currentVersion = bn->getVersion();
 
     unusedChildren.erase(bn);
@@ -524,7 +576,8 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
     }
   }
 
-  // Remove from this group any BodyNodes that no longer belong to the skeleton
+  // Remove from this group any BodyNodes that no longer belong to the meta
+  // skeleton
   for (const auto& unusedChild : unusedChildren) {
     for (const dynamics::ShapeFrame* unusedFrame : unusedChild.second.mFrames) {
       updateNeeded = true;
@@ -616,6 +669,17 @@ bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
   }
 
   return false;
+}
+
+//==============================================================================
+void CollisionGroup::handleShapeFrameDestruction(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  if (!shapeFrame)
+    return;
+
+  mObserver.mDeletedFrames.insert(shapeFrame);
+  removeDeletedShapeFrames();
 }
 
 } // namespace collision

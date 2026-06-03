@@ -57,6 +57,7 @@
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <algorithm>
+#include <vector>
 
 namespace dart {
 namespace collision {
@@ -276,26 +277,43 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  // Create a new collision group, merging the two groups into
-  mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
+  // Create a new collision group, merging the two groups into.
+  //
+  // This is retained in mGroupForFiltering (rather than a local) so the
+  // BulletCollisionObjects it owns outlive this call: the Contacts stored in
+  // `result` keep raw pointers into this group (see Contact::collisionObject1/2
+  // and the getShapeFrame/getShapeNode/getBodyNodePtr helpers), so callers must
+  // be able to inspect them after collide() returns. Resetting the member frees
+  // the previous group (and its objects, broadphase proxies, and overlapping
+  // pairs) before building the new one, so no memory is leaked across calls.
+  mGroupForFiltering
+      = std::make_unique<BulletCollisionGroup>(shared_from_this());
   auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback = new detail::BulletOverlapFilterCallback(
-      option.collisionFilter, group1, group2);
-  bulletPairCache->setOverlapFilterCallback(filterCallback);
+  std::unique_ptr<detail::BulletOverlapFilterCallback> filterCallback(
+      new detail::BulletOverlapFilterCallback(
+          option.collisionFilter, group1, group2));
+  bulletPairCache->setOverlapFilterCallback(filterCallback.get());
 
   mGroupForFiltering->addShapeFramesOf(group1, group2);
   mGroupForFiltering->updateEngineData();
 
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
+  bool hasCollision = false;
   if (result) {
     reportContacts(bulletCollisionWorld, option, *result);
-
-    return result->isCollision();
+    hasCollision = result->isCollision();
   } else {
-    return isCollision(bulletCollisionWorld);
+    hasCollision = isCollision(bulletCollisionWorld);
   }
+
+  // The overlap filter callback is owned by this call and must not outlive it,
+  // so detach it from the (retained) pair cache before it is destroyed.
+  bulletPairCache->setOverlapFilterCallback(nullptr);
+  filterCallback.reset();
+
+  return hasCollision;
 }
 
 //==============================================================================
@@ -500,8 +518,20 @@ BulletCollisionDetector::createBulletCollisionShape(
   } else if (const auto ellipsoid = shape->as<EllipsoidShape>()) {
     const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
-    auto bulletCollisionShape = createBulletEllipsoidMesh(
-        radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
+    std::unique_ptr<btCollisionShape> bulletCollisionShape;
+    if (ellipsoid->isSphere()) {
+      // A true sphere uses a primitive btSphereShape so it rolls smoothly
+      // instead of stepping over the facets of a mesh approximation.
+      bulletCollisionShape = std::make_unique<btSphereShape>(radii[0]);
+    } else {
+      // A non-spherical ellipsoid keeps the convex mesh approximation, which is
+      // geometrically accurate. Approximating it with a union of spheres
+      // (btMultiSphereShape) reports contacts for points outside the true
+      // ellipsoid surface (e.g. radii (2, 1, 1) becomes a capsule-like volume),
+      // introducing false-positive collisions and constraints.
+      bulletCollisionShape = createBulletEllipsoidMesh(
+          radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
+    }
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
@@ -542,6 +572,7 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     auto bulletCollisionShape
         = std::make_unique<btStaticPlaneShape>(convertVector3(normal), offset);
+    bulletCollisionShape->setMargin(btScalar(0.0));
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
