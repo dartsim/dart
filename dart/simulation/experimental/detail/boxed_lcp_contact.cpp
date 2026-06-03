@@ -37,6 +37,7 @@
 #include "dart/simulation/experimental/comps/contact_material.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_types.hpp>
@@ -109,6 +110,14 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 // Per-contact constraint, mirroring the sequential-impulse stage so the two
 // paths assemble the same physics: a normal row plus two tangential friction
 // rows spanning the contact plane (box Coulomb model).
@@ -161,8 +170,8 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
   };
 
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
 
     // Rigid-body pairs only; articulated-link contacts are out of scope for
     // this slice (handled by the multibody solve).
@@ -171,8 +180,10 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
       continue;
     }
 
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const bool staticA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool staticB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
     if (staticA && staticB) {
       continue;
     }

@@ -87,6 +87,23 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
     endif()
   endif()
 
+  # These rigid IPC gates remain active in normal CI, but coverage
+  # instrumentation can make the paper-sized rollouts exceed the default ctest
+  # timeout. Keep compiling the target under Codecov, then skip the heavyweight
+  # runtime corpus and give test_world access to coverage-specific guards.
+  if(DART_CODECOV)
+    if(TEST test_rigid_ipc_paper_experiments)
+      set_tests_properties(
+        test_rigid_ipc_paper_experiments
+        PROPERTIES DISABLED TRUE
+      )
+    endif()
+    if(TEST test_world)
+      set_tests_properties(test_world PROPERTIES TIMEOUT 3600)
+      target_compile_definitions(test_world PRIVATE DART_CODECOV=1)
+    endif()
+  endif()
+
   # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only
   # the always-compiled WorldOptions core, so it runs in both build configs. The
   # FD-vs-analytic Jacobian test exercises the detail-only differentiable code

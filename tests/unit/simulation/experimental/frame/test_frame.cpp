@@ -32,6 +32,8 @@
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -52,8 +54,9 @@ TEST(Frame, LazyEvaluation)
   World world;
   auto freeFrame = world.addFreeFrame("test");
 
-  auto& registry = world.getRegistry();
-  auto entity = freeFrame.getEntity();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto entity = dart::simulation::experimental::detail::toRegistryEntity(
+      freeFrame.getEntity());
 
   // Set transform but don't query world transform yet
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -87,8 +90,9 @@ TEST(Frame, CacheInvalidation)
   World world;
   auto freeFrame = world.addFreeFrame("test");
 
-  auto& registry = world.getRegistry();
-  auto entity = freeFrame.getEntity();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto entity = dart::simulation::experimental::detail::toRegistryEntity(
+      freeFrame.getEntity());
 
   // Trigger cache computation
   [[maybe_unused]] auto T1 = freeFrame.getTransform();
@@ -219,9 +223,11 @@ TEST(Frame, ReparentInvalidatesSubtreeCaches)
   T_grand.translate(Eigen::Vector3d(0, 2, 0));
   grandchild.setLocalTransform(T_grand);
 
-  auto& registry = world.getRegistry();
-  auto childEntity = child.getEntity();
-  auto grandEntity = grandchild.getEntity();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto childEntity = dart::simulation::experimental::detail::toRegistryEntity(
+      child.getEntity());
+  auto grandEntity = dart::simulation::experimental::detail::toRegistryEntity(
+      grandchild.getEntity());
 
   // Prime caches
   [[maybe_unused]] auto grandWorld = grandchild.getTransform();
@@ -258,8 +264,9 @@ TEST(Frame, FixedFrameCaching)
   EXPECT_TRUE(T1.isApprox(T));
 
   // Check that cache is clean after query
-  auto& registry = world.getRegistry();
-  auto entity = fixedFrame.getEntity();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto entity = dart::simulation::experimental::detail::toRegistryEntity(
+      fixedFrame.getEntity());
   {
     const auto& cache = registry.get<comps::FrameCache>(entity);
     EXPECT_FALSE(cache.needTransformUpdate)
@@ -283,8 +290,9 @@ TEST(Frame, FixedFrameCacheInvalidation)
 
   [[maybe_unused]] auto T_cached = fixedFrame.getTransform();
 
-  auto& registry = world.getRegistry();
-  auto entity = fixedFrame.getEntity();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto entity = dart::simulation::experimental::detail::toRegistryEntity(
+      fixedFrame.getEntity());
   {
     const auto& cache = registry.get<comps::FrameCache>(entity);
     EXPECT_FALSE(cache.needTransformUpdate) << "Cache should be clean";

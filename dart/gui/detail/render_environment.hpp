@@ -70,7 +70,7 @@ struct SceneLights
 
 ::filament::Skybox* createNeutralSkybox(::filament::Engine& engine);
 
-void configureWindowedViewQuality(::filament::View& view);
+void configureViewQuality(::filament::View& view, bool headless);
 
 void configureMainView(
     ::filament::View& view,

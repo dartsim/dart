@@ -43,7 +43,9 @@
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/multibody_constraint.hpp"
 #include "dart/simulation/experimental/compute/unified_constraint.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -71,6 +73,14 @@ using detail::skew;
 using detail::spatialInertia;
 using detail::Subspace;
 using detail::Vector6;
+
+//==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
 
 //==============================================================================
 // SO(3) exponential map: a rotation vector (axis * angle) to a rotation matrix.
@@ -980,7 +990,7 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
     return registry.all_of<comps::Link>(entity);
   };
   const auto isDynamic = [&](entt::entity entity) {
-    return !registry.all_of<comps::StaticBodyTag>(entity);
+    return !hasPrescribedRigidBodyContactResponse(registry, entity);
   };
   const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
     auto view = registry.view<comps::MultibodyStructure>();
@@ -1010,8 +1020,8 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
 
   std::vector<LinkContact> linkContacts;
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
     const auto& links = structure.links;
     const bool aInBody
         = std::find(links.begin(), links.end(), entityA) != links.end();
@@ -1460,7 +1470,8 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
     if (contact.otherLink == entt::null && contact.otherBody != entt::null
         && registry.all_of<comps::MassProperties, comps::Transform>(
             contact.otherBody)
-        && !registry.all_of<comps::StaticBodyTag>(contact.otherBody)) {
+        && !hasPrescribedRigidBodyContactResponse(
+            registry, contact.otherBody)) {
       const auto& otherMass
           = registry.get<comps::MassProperties>(contact.otherBody);
       const auto& otherTransform
@@ -1717,7 +1728,7 @@ ComputeStageMetadata MultibodyForwardDynamicsStage::getMetadata() const noexcept
 void MultibodyForwardDynamicsStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
@@ -1765,7 +1776,7 @@ ComputeStageMetadata MultibodyVelocityStage::getMetadata() const noexcept
 void MultibodyVelocityStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
@@ -1804,7 +1815,7 @@ ComputeStageMetadata MultibodyContactStage::getMetadata() const noexcept
 //==============================================================================
 void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
   const std::vector<Contact> contacts = world.collide();
 
@@ -1851,7 +1862,7 @@ ComputeStageMetadata MultibodyPositionStage::getMetadata() const noexcept
 void MultibodyPositionStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
 
   auto view = registry.view<comps::MultibodyStructure>();
@@ -1909,7 +1920,7 @@ std::size_t UnifiedConstraintStage::getFrictionIterations() const noexcept
 void UnifiedConstraintStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
   const std::vector<Contact> contacts = world.collide();
   if (contacts.empty()) {

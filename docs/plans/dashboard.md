@@ -65,9 +65,18 @@ its own line so status updates remain git-history friendly.
 - Horizon: Later
 - Dimension: Algorithm extensibility
 - Next step: Use the LCP v0 contract, tests, benchmark, and `lcp_physics`
-  example as the template when the next algorithm family is selected.
+  example as the template when the next algorithm family is selected. For
+  solver or multi-physics papers, first apply the solver-family intake
+  checklist in [`solver-family-intake.md`](solver-family-intake.md)
+  so the work routes to an existing family, shares common collision,
+  kinematics, and optimization components, and defines apples-to-apples
+  evidence plus a user-facing configuration shape.
 - Gate: LCP contract docs, focused tests, smoke benchmark, API-boundary
-  exclusions, and baseline example evidence are recorded.
+  exclusions, baseline example evidence, and the solver-family intake checklist
+  in [`solver-family-intake.md`](solver-family-intake.md) are recorded
+  before a new solver family or paper implementation starts; for solvers, that
+  checklist includes simple `World` defaults, method-specific advanced options,
+  validation, serialization expectations, and diagnostics.
 
 ### PLAN-030: Compute Scalability Roadmap
 
@@ -240,23 +249,29 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue Phase 2 in
+- Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
-  use the PLAN-083
+  Phase 1 promoted shared distance/barrier/tangent/friction primitives into
+  `detail/newton_barrier`, Phase 2 has internal ABD barrier/friction derivative
+  oracles, and the next move is to promote the first ABD benchmark packet from
+  smoke shape to a comparison manifest row. Use the PLAN-083
   [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
   sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, and VBD/OGC-adjacent obligations in the right owners; promote the first
-  ABD benchmark packet from smoke shape to a comparison manifest row now that
-  affine barrier and friction primitive derivative oracles are stable.
-  Generalize PSD projection and projected-Newton contracts when the ABD slice
-  creates a second-use contract.
+  SPB, and VBD/OGC-adjacent obligations in the right owners. Generalize PSD
+  projection, projected-Newton, line-search, diagnostics, and benchmark schemas
+  only when second-use evidence proves a shared contract.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
-  GPU parity evidence, and explicit reference/paper-number comparisons; public
-  APIs remain DART-owned and backend-neutral; `pixi run lint`, docs gates,
-  focused C++/Python tests, benchmark smokes, and `check-api-boundaries` stay
-  green for each promoted slice.
+  GPU parity evidence, and explicit reference/paper-number comparisons; every
+  new IPC-family solver or component records the solver-family intake checklist
+  from [`solver-family-intake.md`](solver-family-intake.md) before
+  adding a duplicate primitive or user-facing option; public APIs and solver
+  options remain DART-owned, easy on the common `World` path, validated,
+  serializable where result-affecting, and backend-neutral; `pixi run lint`,
+  docs gates, focused C++/Python tests,
+  benchmark smokes, and `check-api-boundaries` stay green for each promoted
+  slice.
 
 ### PLAN-104: Vertex Block Descent Solver
 
@@ -470,9 +485,9 @@ its own line so status updates remain git-history friendly.
 - Dimension: Release transition
 - Next step: Follow the DART 7 implementation order in the release roadmap:
   finish policy alignment and Gazebo lane split, publish the DART 6.16 support
-  packet, then treat PLAN-041 official simulation API promotion as the
-  release-critical path. Keep research-solver breadth out of the DART 7 release
-  blocker set unless a promoted API depends on it.
+  packet, then settle PLAN-042 public API/source-layout topology before freezing
+  PLAN-041 official simulation API promotion. Keep research-solver breadth out
+  of the DART 7 release blocker set unless a promoted API depends on it.
 - Gate: DART 7 is not release-ready until the clean-break gates in the release
   roadmap have direct evidence, package metadata no longer implies DART
   6/gz-physics compatibility, and DART 6.16 support scope plus sunset trigger
@@ -485,14 +500,45 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Release transition
-- Next step: Land the reviewed promotion contract, then start the readiness
-  audit and package-facade work before any broad `experimental/` source-tree
-  move. The intended path is DART 7 official API promotion, not a DART 8 middle
-  step.
+- Next step: Consume the PLAN-042 namespace/source-layout decision, then start
+  the simulation-specific readiness audit, promoted-header manifest,
+  Python import-layout transaction, and installed-package smoke design before
+  any broad `experimental/` source-tree move. The readiness audit must keep the
+  promoted `World` double-backed and explicitly defer public scalar precision
+  selectors (`sx.World(dtype=...)`, `sx.World[...]`, scalar-specific aliases, or
+  a public C++ scalar-template facade) until DART 7 rigid-body and multibody
+  simulation is in good shape for humanoid locomotion and manipulation and a
+  separate scalar-instantiation plan proves the required ownership, binding,
+  serialization, collision, differentiability, package, and migration gates. The
+  intended path is DART 7 official API promotion, not a DART 8 middle step.
 - Gate: The planning PR passes the docs-only gates; implementation PRs must keep
-  API-boundary checks, C++/Python tests, package/export smokes, and CUDA/full
-  gates green according to the touched scope. The promoted public API must hide
-  ECS, component, solver-registry, backend, and implementation-folder details.
+  promotion-aware API-boundary checks, C++/Python tests, package/export smokes,
+  stub/API-doc regeneration, and CUDA/full gates green according to the touched
+  scope. The promoted public API must hide ECS, component, solver-registry,
+  backend, implementation-folder, tensor framework, and unplanned
+  scalar-instantiation details, and the installed package must expose only final
+  headers, final CMake targets/components, and final dartpy module paths once
+  promotion is claimed.
+
+### PLAN-042: DART 7 Public API And Source Layout
+
+- Owner doc:
+  [`042-dart7-public-api-and-source-layout.md`](042-dart7-public-api-and-source-layout.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Review and accept or revise the initial PLAN-042 decision/audit
+  packet before PLAN-041 freezes promoted World names. The default packet
+  recommends `dart.World(...)` after `import dartpy as dart` as a root
+  convenience alias to canonical `dart.simulation.World`, explicit C++
+  `dart::simulation::World` without an initial `dart::World` facade,
+  `check-simulation-public-header-allowlist`, `check-dartpy-import-layout`, and
+  no official dependency on `DART_BUILD_SIMULATION_EXPERIMENTAL` or
+  `dart-simulation-experimental`.
+- Gate: The planning PR passes the docs-only gates; follow-up implementation
+  PRs must prove final examples, stubs/docs, package exports, API boundaries,
+  C++/Python tests, feature-off source/wheel behavior, case-insensitive header
+  behavior, and negative smokes for removed DART 6 or experimental paths.
 
 ### PLAN-050: Experimental World Split
 

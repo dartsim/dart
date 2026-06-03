@@ -32,8 +32,11 @@
 
 #include "dart/simulation/experimental/multibody/joint.hpp"
 
+#include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -115,12 +118,13 @@ ActuatorType toPublicActuatorType(comps::ActuatorType type)
   return ActuatorType::Force;
 }
 
-comps::Joint& getJointComponent(World* world, entt::entity entity)
+comps::Joint& getJointComponent(World* world, Entity entityToken)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       world == nullptr, InvalidArgumentException, "Invalid joint handle");
 
-  auto& registry = world->getRegistry();
+  const auto entity = detail::toRegistryEntity(entityToken);
+  auto& registry = dart::simulation::experimental::detail::registryOf(*world);
   DART_EXPERIMENTAL_THROW_T_IF(
       !registry.valid(entity) || !registry.all_of<comps::Joint>(entity),
       InvalidArgumentException,
@@ -209,10 +213,7 @@ void markSubtreeTransformCacheDirty(entt::registry& registry, entt::entity root)
 } // namespace
 
 //==============================================================================
-Joint::Joint(entt::entity entity, World* world)
-  : m_entity(entity), m_world(world)
-{
-}
+Joint::Joint(Entity entity, World* world) : m_entity(entity), m_world(world) {}
 
 //==============================================================================
 std::string_view Joint::getName() const
@@ -340,7 +341,9 @@ void Joint::setPosition(const Eigen::VectorXd& position)
   validateJointStateVector(position, jointComp.getDOF(), "position");
 
   jointComp.position = position;
-  markSubtreeTransformCacheDirty(m_world->getRegistry(), jointComp.childLink);
+  markSubtreeTransformCacheDirty(
+      dart::simulation::experimental::detail::registryOf(*m_world),
+      jointComp.childLink);
 }
 
 //==============================================================================
@@ -548,18 +551,60 @@ Eigen::VectorXd Joint::getEffortUpperLimits() const
 Link Joint::getParentLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
-  return Link(jointComp.parentLink, m_world);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.parentLink == entt::null
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::Link>(jointComp.parentLink),
+      InvalidArgumentException,
+      "Joint '{}' parent endpoint is not a multibody Link",
+      jointComp.name);
+  return Link(detail::fromRegistryEntity(jointComp.parentLink), m_world);
 }
 
 //==============================================================================
 Link Joint::getChildLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
-  return Link(jointComp.childLink, m_world);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.childLink == entt::null
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::Link>(jointComp.childLink),
+      InvalidArgumentException,
+      "Joint '{}' child endpoint is not a multibody Link",
+      jointComp.name);
+  return Link(detail::fromRegistryEntity(jointComp.childLink), m_world);
 }
 
 //==============================================================================
-entt::entity Joint::getEntity() const
+RigidBody Joint::getParentRigidBody() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.parentLink == entt::null
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::RigidBodyTag>(jointComp.parentLink),
+      InvalidArgumentException,
+      "Joint '{}' parent endpoint is not a rigid body",
+      jointComp.name);
+  return RigidBody(detail::fromRegistryEntity(jointComp.parentLink), m_world);
+}
+
+//==============================================================================
+RigidBody Joint::getChildRigidBody() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.childLink == entt::null
+          || !dart::simulation::experimental::detail::registryOf(*m_world)
+                  .all_of<comps::RigidBodyTag>(jointComp.childLink),
+      InvalidArgumentException,
+      "Joint '{}' child endpoint is not a rigid body",
+      jointComp.name);
+  return RigidBody(detail::fromRegistryEntity(jointComp.childLink), m_world);
+}
+
+//==============================================================================
+Entity Joint::getEntity() const
 {
   return m_entity;
 }
@@ -567,8 +612,12 @@ entt::entity Joint::getEntity() const
 //==============================================================================
 bool Joint::isValid() const
 {
-  return m_world != nullptr && m_world->getRegistry().valid(m_entity)
-         && m_world->getRegistry().all_of<comps::Joint>(m_entity);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  return m_world != nullptr
+         && dart::simulation::experimental::detail::registryOf(*m_world).valid(
+             entity)
+         && dart::simulation::experimental::detail::registryOf(*m_world)
+                .all_of<comps::Joint>(entity);
 }
 
 } // namespace dart::simulation::experimental

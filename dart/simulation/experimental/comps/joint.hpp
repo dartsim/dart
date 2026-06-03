@@ -131,7 +131,7 @@ enum class JointType
   ///      forwardKinematics; std::function<Eigen::MatrixXd(const
   ///      Eigen::VectorXd&)> jacobian;
   ///    };
-  ///    world.getRegistry().emplace<NeuralJointComponent>(jointEntity);
+  ///    dart::simulation::experimental::detail::registryOf(world).emplace<NeuralJointComponent>(jointEntity);
   ///    @endcode
   ///
   /// 3. Implementing custom ECS systems to handle the custom joint behavior
@@ -179,7 +179,7 @@ struct JointLimits
 /// are used depending on the joint type:
 ///
 /// Field usage by joint type:
-/// - Fixed:      (no geometric parameters)
+/// - Fixed:      rigidBodyFixedJointLocalAnchor* for public rigid-body joints
 /// - Revolute:   axis
 /// - Prismatic:  axis
 /// - Screw:      axis, pitch
@@ -229,6 +229,13 @@ struct Joint
 
   entt::entity parentLink = entt::null;
   entt::entity childLink = entt::null;
+
+  bool hasRigidBodyFixedJointAnchors = false;
+  Eigen::Vector3d rigidBodyFixedJointLocalAnchorParent
+      = Eigen::Vector3d::Zero();
+  Eigen::Vector3d rigidBodyFixedJointLocalAnchorChild = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond rigidBodyFixedJointTargetRelativeOrientation
+      = Eigen::Quaterniond::Identity();
 
   static constexpr auto entityFields()
   {

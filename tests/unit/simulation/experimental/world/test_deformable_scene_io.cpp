@@ -31,6 +31,7 @@
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/deformable_body.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -566,8 +567,8 @@ TEST(DeformableSceneIo, RejectsInvalidBoundaryComponentState)
   options.dirichletBoundaryConditions.push_back(condition);
   world.addDeformableBody("boundary", options);
 
-  auto view
-      = world.getRegistry().view<sx::comps::DeformableBoundaryConditions>();
+  auto view = dart::simulation::experimental::detail::registryOf(world)
+                  .view<sx::comps::DeformableBoundaryConditions>();
   ASSERT_NE(view.begin(), view.end());
   auto& boundary
       = view.get<sx::comps::DeformableBoundaryConditions>(*view.begin());

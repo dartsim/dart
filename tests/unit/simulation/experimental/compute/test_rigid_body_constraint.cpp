@@ -11,6 +11,8 @@
 #include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_constraint.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
@@ -101,9 +103,9 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
   contacts.push_back(lowerUpper);
 
   const auto problem = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
   const auto repeated = sx::compute::assembleRigidBodyContactProblem(
-      world.getRegistry(), contacts);
+      dart::simulation::experimental::detail::registryOf(world), contacts);
 
   ASSERT_EQ(problem.constraints.size(), 2u);
   ASSERT_EQ(problem.delassus.rows(), 6);
@@ -119,12 +121,13 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
   expectVectorExactlyEqual(problem.hi, repeated.hi);
   expectVectorExactlyEqual(problem.findex, repeated.findex);
 
-  EXPECT_EQ(problem.constraints[0].bodyA, ground.getEntity());
-  EXPECT_EQ(problem.constraints[0].bodyB, lower.getEntity());
+  using sx::detail::toRegistryEntity;
+  EXPECT_EQ(problem.constraints[0].bodyA, toRegistryEntity(ground.getEntity()));
+  EXPECT_EQ(problem.constraints[0].bodyB, toRegistryEntity(lower.getEntity()));
   EXPECT_TRUE(problem.constraints[0].staticA);
   EXPECT_FALSE(problem.constraints[0].staticB);
-  EXPECT_EQ(problem.constraints[1].bodyA, lower.getEntity());
-  EXPECT_EQ(problem.constraints[1].bodyB, upper.getEntity());
+  EXPECT_EQ(problem.constraints[1].bodyA, toRegistryEntity(lower.getEntity()));
+  EXPECT_EQ(problem.constraints[1].bodyB, toRegistryEntity(upper.getEntity()));
   EXPECT_FALSE(problem.constraints[1].staticA);
   EXPECT_FALSE(problem.constraints[1].staticB);
 
@@ -157,4 +160,72 @@ TEST(RigidBodyConstraint, AssemblesRigidOnlyStackRowsDeterministically)
   EXPECT_DOUBLE_EQ(problem.lo[5], -0.5);
   EXPECT_DOUBLE_EQ(problem.hi[5], 0.5);
   EXPECT_EQ(problem.findex[5], 3);
+}
+
+//==============================================================================
+TEST(RigidBodyConstraint, TreatsKinematicBodiesAsPrescribed)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.mass = 2.0;
+  kinematicOptions.inertia = 2.0 * Eigen::Matrix3d::Identity();
+  kinematicOptions.position = Eigen::Vector3d::Zero();
+  kinematicOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, 3.0);
+  kinematicOptions.angularVelocity = Eigen::Vector3d(0.0, 4.0, 0.0);
+  auto kinematic = world.addRigidBody("kinematic", kinematicOptions);
+  kinematic.setKinematic(true);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 4.0;
+  dynamicOptions.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  dynamicOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -2.0);
+  auto dynamic = world.addRigidBody("dynamic", dynamicOptions);
+
+  sx::Contact contact;
+  contact.bodyA = sx::CollisionBody(kinematic.getEntity(), &world);
+  contact.bodyB = sx::CollisionBody(dynamic.getEntity(), &world);
+  contact.point = Eigen::Vector3d(0.0, 0.0, 0.5);
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.depth = 0.01;
+
+  const std::vector<sx::Contact> contacts{contact};
+  const auto problem = sx::compute::assembleRigidBodyContactProblem(
+      dart::simulation::experimental::detail::registryOf(world), contacts);
+
+  ASSERT_EQ(problem.constraints.size(), 1u);
+  const auto& constraint = problem.constraints[0];
+  EXPECT_EQ(
+      constraint.bodyA, sx::detail::toRegistryEntity(kinematic.getEntity()));
+  EXPECT_EQ(
+      constraint.bodyB, sx::detail::toRegistryEntity(dynamic.getEntity()));
+  EXPECT_TRUE(constraint.staticA);
+  EXPECT_FALSE(constraint.staticB);
+  EXPECT_DOUBLE_EQ(constraint.invMassA, 0.0);
+  EXPECT_TRUE(constraint.invInertiaA.isZero(0.0));
+  EXPECT_DOUBLE_EQ(constraint.invMassB, 0.25);
+  EXPECT_TRUE(
+      constraint.invInertiaB.isApprox(Eigen::Matrix3d::Identity(), 1e-12));
+
+  EXPECT_DOUBLE_EQ(problem.delassus(0, 0), 0.25);
+  EXPECT_DOUBLE_EQ(problem.rhs[0], 2.0);
+
+  const Eigen::Vector3d kinematicLinearBefore = kinematic.getLinearVelocity();
+  const Eigen::Vector3d kinematicAngularBefore = kinematic.getAngularVelocity();
+  const Eigen::Vector3d dynamicLinearBefore = dynamic.getLinearVelocity();
+
+  sx::compute::applyRigidBodyContactImpulse(
+      dart::simulation::experimental::detail::registryOf(world),
+      constraint,
+      Eigen::Vector3d::UnitZ());
+
+  EXPECT_TRUE(
+      kinematic.getLinearVelocity().isApprox(kinematicLinearBefore, 1e-12));
+  EXPECT_TRUE(
+      kinematic.getAngularVelocity().isApprox(kinematicAngularBefore, 1e-12));
+  EXPECT_TRUE(dynamic.getLinearVelocity().isApprox(
+      dynamicLinearBefore + Eigen::Vector3d(0.0, 0.0, 0.25), 1e-12));
 }

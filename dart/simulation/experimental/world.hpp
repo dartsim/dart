@@ -39,12 +39,14 @@
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/diff/step_gradient.hpp>
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/multibody/multibody_options.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 #include <dart/simulation/experimental/world_sync_stage.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Geometry>
-#include <entt/entt.hpp>
 
 #include <iosfwd>
 #include <memory>
@@ -61,6 +63,16 @@ namespace dart::simulation::experimental {
 namespace io::detail {
 class SkeletonLoaderWorldAccess;
 } // namespace io::detail
+
+namespace detail {
+struct WorldStorage;
+[[nodiscard]] WorldStorage& storageOf(World& world);
+[[nodiscard]] const WorldStorage& storageOf(const World& world);
+} // namespace detail
+
+namespace compute {
+class RigidIpcContactStage;
+} // namespace compute
 
 struct WorldOptions;
 
@@ -148,6 +160,29 @@ struct DeformableSolverDiagnostics
   std::size_t convergedActiveContactCount = 0;
 };
 
+/// Snapshot of the experimental World's CPU memory hierarchy diagnostics.
+///
+/// This first slice reports only the World-owned frame allocator used for
+/// per-step scratch. Persistent allocator and ECS storage diagnostics are
+/// intentionally left for the allocator/EnTT integration workstream.
+struct WorldMemoryDiagnostics
+{
+  /// Current usable frame-scratch arena capacity after alignment padding.
+  std::size_t frameScratchCapacityBytes = 0;
+  /// Bytes consumed in the current simulation frame, including overflow blocks.
+  std::size_t frameScratchUsedBytes = 0;
+  /// Maximum frame-scratch bytes observed since construction or clear().
+  std::size_t frameScratchPeakUsedBytes = 0;
+  /// Number of overflow allocations the frame allocator holds for the current
+  /// frame. Nonzero means the current step exceeded the reserved arena.
+  std::size_t frameScratchOverflowCount = 0;
+  /// Bytes currently held by overflow allocations for the current frame.
+  std::size_t frameScratchOverflowBytes = 0;
+  /// Number of times the World reset frame scratch at step boundaries since
+  /// construction or clear().
+  std::size_t frameScratchResetCount = 0;
+};
+
 class DART_EXPERIMENTAL_API World
 {
 public:
@@ -181,6 +216,11 @@ public:
   //--------------------------------------------------------------------------
   // Multibody management
   //--------------------------------------------------------------------------
+  /// Create an articulated multibody container in design mode.
+  ///
+  /// @throws InvalidOperationException if public rigid-body fixed joints
+  ///         already exist, because the mixed multibody pipeline does not yet
+  ///         project those fixed-joint rows.
   Multibody addMultibody(std::string_view name);
   std::optional<Multibody> getMultibody(std::string_view name);
   bool hasMultibody(std::string_view name) const;
@@ -201,6 +241,22 @@ public:
   RigidBody addRigidBody(
       std::string_view name,
       const RigidBodyOptions& options = RigidBodyOptions{});
+  /// Create a fixed constraint between two free rigid bodies.
+  ///
+  /// The current relative pose is captured when the joint is created. During
+  /// simulation steps the experimental rigid-body constraint path projects the
+  /// child body back toward that captured pose. This is design-mode only:
+  /// create bodies and fixed joints before `enterSimulationMode()`.
+  ///
+  /// @throws InvalidArgumentException if either body is invalid, belongs to a
+  ///         different World, both handles refer to the same body, or the name
+  ///         is already used by another joint.
+  /// @throws InvalidOperationException if the World is in simulation mode,
+  ///         configured for the IPC rigid-body solver, already contains
+  ///         multibody structures, or if the internal fixed-joint row
+  ///         configuration fails.
+  Joint addRigidBodyFixedJoint(
+      std::string_view name, const RigidBody& parent, const RigidBody& child);
   std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;
@@ -247,6 +303,7 @@ public:
   ///
   /// The default remains SequentialImpulse. Ipc is experimental and currently
   /// handles free mesh-like rigid bodies through the internal rigid IPC stage.
+  /// Throws if Ipc is selected while public rigid-body fixed joints exist.
   void setRigidBodySolver(RigidBodySolver solver);
 
   /// Get the solver family used by the default rigid-body step pipeline.
@@ -485,6 +542,21 @@ public:
   /// @throws InvalidArgumentException if `index` is out of range.
   void restoreReplayFrame(std::size_t index);
 
+  //--------------------------------------------------------------------------
+  // Memory
+  //--------------------------------------------------------------------------
+  /// Returns the memory manager owned by this World.
+  ///
+  /// Components and stages should borrow allocators from this manager instead
+  /// of owning allocator roots. This mirrors the classic World ownership model
+  /// while leaving the later EnTT storage allocator integration behind an
+  /// internal implementation boundary.
+  [[nodiscard]] common::MemoryManager& getMemoryManager();
+  [[nodiscard]] const common::MemoryManager& getMemoryManager() const;
+
+  /// Returns current frame-scratch diagnostics for this World.
+  [[nodiscard]] WorldMemoryDiagnostics getMemoryDiagnostics() const;
+
   /// Diagnostics from the deformable solve on the most recent ``step`` that
   /// used the built-in pipeline (the ``step()`` / ``step(count)`` /
   /// ``step(executor)`` overloads). For a multi-step call it reflects the last
@@ -508,18 +580,6 @@ public:
   /// The current multibody solver/integration configuration. The
   /// `integrationFamily` defaults to `"semi-implicit"`.
   [[nodiscard]] MultibodyOptions getMultibodyOptions() const;
-
-  //--------------------------------------------------------------------------
-  // Registry access
-  //--------------------------------------------------------------------------
-  /// @internal
-  /// DART 7 implementation escape hatch for tests and subsystem bring-up.
-  /// This is not part of the DART 7 public World facade promotion target;
-  /// prefer public handles and accessors for user-facing code.
-  entt::registry& getRegistry();
-  /// @internal
-  /// See the non-const overload.
-  const entt::registry& getRegistry() const;
 
   //--------------------------------------------------------------------------
   // Collision queries
@@ -566,10 +626,19 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::RigidIpcContactStage;
+
+  /// Internal storage seam. `detail::storageOf` reaches the privately-held,
+  /// ECS-typed `WorldStorage` without exposing it on the public surface; the
+  /// internal `detail::registryOf` escape hatch is built on top of it.
+  /// Friending these `detail` free functions names no EnTT symbols, so it is
+  /// leak-free.
+  friend detail::WorldStorage& detail::storageOf(World& world);
+  friend const detail::WorldStorage& detail::storageOf(const World& world);
 
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
-  entt::entity createFrameEntity(
+  Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
       const Eigen::Isometry3d& localTransform,
@@ -581,9 +650,12 @@ private:
   void ensureDesignMode() const;
   void resetCountersFromRegistry();
   void recordReplayFrame();
+  void resetFrameScratchForStep();
+  void refreshMemoryDiagnostics();
 
   /// Record the analytic step Jacobians at the current (pre-step) state into
-  /// `m_stepDerivatives`. Under `ContactSolverMethod::BoxedLcp` this captures
+  /// the cached step derivatives. Under `ContactSolverMethod::BoxedLcp` this
+  /// captures
   /// the active contacts from `collide()` and routes through the contact-aware
   /// Jacobian (`detail::contactStepDerivatives`), reducing to the contact-free
   /// result when there are no active contacts and throwing
@@ -592,8 +664,19 @@ private:
   /// differentiable support is compiled (`DART_BUILD_DIFF`); callers gate on
   /// `m_differentiable`.
   void captureStepDerivatives();
+  double getRigidIpcAdaptiveBarrierStiffnessLowerBound() const noexcept;
+  void setRigidIpcAdaptiveBarrierStiffnessLowerBound(double value) noexcept;
+  void resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept;
 
-  entt::registry m_registry;
+  common::MemoryManager m_memoryManager;
+  /// Opaque, ECS-typed state (the EnTT registry, the registered differentiable
+  /// parameters, and the cached step Jacobians). Held by pointer so the
+  /// promoted public `world.hpp` names no EnTT symbols; the complete type lives
+  /// in the internal `detail/world_storage.hpp`. Because this is a `unique_ptr`
+  /// to an incomplete type, `~World()` (and the move operations, were they
+  /// enabled) must be declared here and defined out-of-line in `world.cpp`.
+  /// Always non-null after construction.
+  std::unique_ptr<detail::WorldStorage> m_storage;
   bool m_simulationMode{false};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
@@ -604,6 +687,8 @@ private:
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
+  WorldMemoryDiagnostics m_memoryDiagnostics{};
+  double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,
@@ -612,20 +697,6 @@ private:
   MultibodyIntegrationMethod m_multibodyIntegrationMethod{
       MultibodyIntegrationMethod::SemiImplicit};
   std::size_t m_frame{0};
-
-  /// Cached explicit Jacobians of the most recent differentiable step.
-  /// Populated only when `m_differentiable` is true and differentiable support
-  /// is compiled
-  /// (`DART_BUILD_DIFF`); always empty otherwise.
-  std::optional<StepDerivatives> m_stepDerivatives;
-
-  /// Registered differentiable physical parameters, in registration order. Each
-  /// entry pairs the owning rigid-body entity with the parameter to
-  /// differentiate. Columns of `StepDerivatives::parameterJacobian` follow this
-  /// order. Stored in both build configs (the public registration API exists
-  /// either way); only consumed when differentiable support is compiled.
-  std::vector<std::pair<entt::entity, PhysicalParameter>>
-      m_differentiableParameters;
 
   std::size_t m_freeFrameCounter{0};
   std::size_t m_fixedFrameCounter{0};

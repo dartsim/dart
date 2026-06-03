@@ -32,9 +32,26 @@
 
 #pragma once
 
-// Convenience header that includes all entity object components
-// For template method implementations, include entity_object_with_impl.hpp in
-// .cpp files
+#include <dart/simulation/experimental/entity.hpp>
 
-#include <dart/simulation/experimental/ecs/entity_object_base.hpp>
-#include <dart/simulation/experimental/ecs/entity_object_with.hpp>
+#include <entt/entt.hpp>
+
+#include <cstdint>
+
+namespace dart::simulation::experimental::detail {
+
+/// Internal seam converting the public opaque `Entity` token to the ECS entity
+/// handle. Keep all `Entity` <-> `entt::entity` conversions here so public
+/// headers never depend on the storage backend.
+[[nodiscard]] inline entt::entity toRegistryEntity(Entity entity)
+{
+  return static_cast<entt::entity>(entity.value);
+}
+
+/// Internal seam converting an ECS entity handle to the public opaque `Entity`.
+[[nodiscard]] inline Entity fromRegistryEntity(entt::entity entity)
+{
+  return Entity{static_cast<std::uint32_t>(entity)};
+}
+
+} // namespace dart::simulation::experimental::detail

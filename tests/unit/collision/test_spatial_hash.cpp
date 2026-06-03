@@ -51,6 +51,51 @@ Aabb makeUnboundedAabb()
       Eigen::Vector3d(-inf, -inf, -inf), Eigen::Vector3d(inf, inf, inf));
 }
 
+template <std::size_t N>
+Aabb makeAabbContaining(const std::array<Eigen::Vector3d, N>& points)
+{
+  Eigen::Vector3d min = points[0];
+  Eigen::Vector3d max = points[0];
+  for (const Eigen::Vector3d& point : points) {
+    min = min.cwiseMin(point);
+    max = max.cwiseMax(point);
+  }
+  return Aabb(min, max);
+}
+
+Aabb makeSweptEdgeAabb(
+    const Eigen::Vector3d& startA,
+    const Eigen::Vector3d& startB,
+    const Eigen::Vector3d& endA,
+    const Eigen::Vector3d& endB)
+{
+  Aabb aabb = makeAabbContaining(std::array{startA, startB, endA, endB});
+  aabb.expand(0.05);
+  return aabb;
+}
+
+Aabb makeSweptPointAabb(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end)
+{
+  Aabb aabb = makeAabbContaining(std::array{start, end});
+  aabb.expand(0.05);
+  return aabb;
+}
+
+Aabb makeSweptTriangleAabb(
+    const Eigen::Vector3d& startA,
+    const Eigen::Vector3d& startB,
+    const Eigen::Vector3d& startC,
+    const Eigen::Vector3d& endA,
+    const Eigen::Vector3d& endB,
+    const Eigen::Vector3d& endC)
+{
+  Aabb aabb = makeAabbContaining(
+      std::array{startA, startB, startC, endA, endB, endC});
+  aabb.expand(0.05);
+  return aabb;
+}
+
 } // namespace
 
 TEST(SpatialHashBroadPhase, DefaultConstruction)
@@ -374,6 +419,66 @@ TEST(SpatialHashBroadPhase, ConsistentWithBruteForce)
 
   EXPECT_EQ(hashPairs.size(), brutePairs.size());
   EXPECT_EQ(hashPairs, brutePairs);
+}
+
+TEST(SpatialHashBroadPhase, SweptPrimitiveCandidatePairsMatchBruteForce)
+{
+  struct SweptPrimitive
+  {
+    std::size_t id;
+    Aabb sweptAabb;
+  };
+
+  const auto primitives = std::to_array<SweptPrimitive>({
+      SweptPrimitive{
+          0,
+          makeSweptEdgeAabb(
+              Eigen::Vector3d(-2.0, 0.0, 0.0),
+              Eigen::Vector3d(0.0, 0.0, 0.0),
+              Eigen::Vector3d(0.0, 0.0, 0.0),
+              Eigen::Vector3d(2.0, 0.0, 0.0))},
+      SweptPrimitive{
+          1,
+          makeSweptPointAabb(
+              Eigen::Vector3d(0.0, -1.0, 0.0), Eigen::Vector3d(0.0, 1.0, 0.0))},
+      SweptPrimitive{
+          2,
+          makeSweptEdgeAabb(
+              Eigen::Vector3d(5.0, -0.5, 0.0),
+              Eigen::Vector3d(6.0, -0.5, 0.0),
+              Eigen::Vector3d(5.0, 0.5, 0.0),
+              Eigen::Vector3d(6.0, 0.5, 0.0))},
+      SweptPrimitive{
+          3,
+          makeSweptTriangleAabb(
+              Eigen::Vector3d(1.0, -0.4, -0.2),
+              Eigen::Vector3d(1.4, 0.0, 0.1),
+              Eigen::Vector3d(1.0, 0.4, -0.1),
+              Eigen::Vector3d(1.2, -0.4, -0.2),
+              Eigen::Vector3d(1.6, 0.0, 0.1),
+              Eigen::Vector3d(1.2, 0.4, -0.1))},
+  });
+
+  SpatialHashBroadPhase hash(0.5);
+  BruteForceBroadPhase brute;
+  for (const SweptPrimitive& primitive : primitives) {
+    hash.add(primitive.id, primitive.sweptAabb);
+    brute.add(primitive.id, primitive.sweptAabb);
+  }
+
+  auto hashPairs = hash.queryPairs();
+  auto brutePairs = brute.queryPairs();
+  std::sort(hashPairs.begin(), hashPairs.end());
+  std::sort(brutePairs.begin(), brutePairs.end());
+
+  EXPECT_EQ(hashPairs, brutePairs);
+  ASSERT_EQ(hashPairs.size(), 2u);
+  EXPECT_NE(
+      std::find(hashPairs.begin(), hashPairs.end(), BroadPhasePair(0u, 1u)),
+      hashPairs.end());
+  EXPECT_NE(
+      std::find(hashPairs.begin(), hashPairs.end(), BroadPhasePair(0u, 3u)),
+      hashPairs.end());
 }
 
 TEST(SpatialHashBroadPhase, QueryOverlappingConsistent)

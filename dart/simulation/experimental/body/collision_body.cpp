@@ -34,19 +34,21 @@
 
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {
 
 //==============================================================================
-CollisionBody::CollisionBody(entt::entity entity, World* world)
+CollisionBody::CollisionBody(Entity entity, World* world)
   : m_entity(entity), m_world(world)
 {
 }
 
 //==============================================================================
-entt::entity CollisionBody::getEntity() const
+Entity CollisionBody::getEntity() const
 {
   return m_entity;
 }
@@ -60,7 +62,9 @@ World* CollisionBody::getWorld() const
 //==============================================================================
 bool CollisionBody::isValid() const
 {
-  return m_world != nullptr && m_world->getRegistry().valid(m_entity);
+  return m_world != nullptr
+         && dart::simulation::experimental::detail::registryOf(*m_world).valid(
+             detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
@@ -69,8 +73,10 @@ std::string CollisionBody::getName() const
   if (!isValid()) {
     return {};
   }
-  const auto& registry = m_world->getRegistry();
-  if (const auto* name = registry.try_get<comps::Name>(m_entity)) {
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(*m_world);
+  if (const auto* name
+      = registry.try_get<comps::Name>(detail::toRegistryEntity(m_entity))) {
     return name->name;
   }
   return {};
@@ -80,13 +86,17 @@ std::string CollisionBody::getName() const
 bool CollisionBody::isRigidBody() const
 {
   return isValid()
-         && m_world->getRegistry().all_of<comps::RigidBodyTag>(m_entity);
+         && dart::simulation::experimental::detail::registryOf(*m_world)
+                .all_of<comps::RigidBodyTag>(
+                    detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================
 bool CollisionBody::isLink() const
 {
-  return isValid() && m_world->getRegistry().all_of<comps::Link>(m_entity);
+  return isValid()
+         && dart::simulation::experimental::detail::registryOf(*m_world)
+                .all_of<comps::Link>(detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================

@@ -14,6 +14,8 @@
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
@@ -50,9 +52,13 @@ TEST(UnifiedConstraintStage, ArrestsAndSeparatesOverlappingRigidContact)
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
 
   ASSERT_FALSE(world.collide().empty());
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double verticalBefore
-      = registry.get<sx::comps::Transform>(ball.getEntity()).position.z();
+      = registry
+            .get<sx::comps::Transform>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    ball.getEntity()))
+            .position.z();
 
   sx::compute::UnifiedConstraintStage stage;
   sx::compute::SequentialExecutor executor;
@@ -60,12 +66,20 @@ TEST(UnifiedConstraintStage, ArrestsAndSeparatesOverlappingRigidContact)
 
   // No restitution: the approaching normal velocity is driven to zero.
   EXPECT_NEAR(
-      registry.get<sx::comps::Velocity>(ball.getEntity()).linear.z(),
+      registry
+          .get<sx::comps::Velocity>(
+              dart::simulation::experimental::detail::toRegistryEntity(
+                  ball.getEntity()))
+          .linear.z(),
       0.0,
       1e-9);
   // The positional projection pushes the penetrating sphere upward.
   EXPECT_GT(
-      registry.get<sx::comps::Transform>(ball.getEntity()).position.z(),
+      registry
+          .get<sx::comps::Transform>(
+              dart::simulation::experimental::detail::toRegistryEntity(
+                  ball.getEntity()))
+          .position.z(),
       verticalBefore);
 }
 
@@ -88,9 +102,12 @@ TEST(UnifiedConstraintStage, LeavesContactFreeBodiesUntouched)
   sx::compute::SequentialExecutor executor;
   stage.execute(world, executor);
 
-  EXPECT_TRUE(world.getRegistry()
-                  .get<sx::comps::Velocity>(body.getEntity())
-                  .linear.isApprox(Eigen::Vector3d(1.0, -2.0, 3.0), 1e-12));
+  EXPECT_TRUE(
+      dart::simulation::experimental::detail::registryOf(world)
+          .get<sx::comps::Velocity>(
+              dart::simulation::experimental::detail::toRegistryEntity(
+                  body.getEntity()))
+          .linear.isApprox(Eigen::Vector3d(1.0, -2.0, 3.0), 1e-12));
 }
 
 } // namespace

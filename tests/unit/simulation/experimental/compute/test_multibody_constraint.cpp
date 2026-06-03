@@ -11,6 +11,8 @@
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/compute/multibody_constraint.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -50,9 +52,10 @@ TEST(MultibodyConstraint, IntegratesSphericalAndFloatingManifolds)
   Eigen::VectorXd nextVelocity(9);
   nextVelocity << angularVelocity, floatingVelocity;
 
-  auto& registry = world.getRegistry();
-  const auto& structure
-      = registry.get<sx::comps::MultibodyStructure>(robot.getEntity());
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const auto& structure = registry.get<sx::comps::MultibodyStructure>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          robot.getEntity()));
   sx::compute::integrateMultibodyPositions(
       registry, structure, nextVelocity, dt);
 
@@ -98,9 +101,10 @@ TEST(MultibodyConstraint, AppliesPositionLimitsAfterLinearIntegration)
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << 20.0;
 
-  auto& registry = world.getRegistry();
-  const auto& structure
-      = registry.get<sx::comps::MultibodyStructure>(robot.getEntity());
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const auto& structure = registry.get<sx::comps::MultibodyStructure>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          robot.getEntity()));
   sx::compute::integrateMultibodyPositions(
       registry, structure, nextVelocity, 0.1);
 
@@ -132,9 +136,10 @@ TEST(MultibodyConstraint, RejectsWrongVelocityDimensionBeforeMutation)
   velocity << -0.2;
   joint.setVelocity(velocity);
 
-  auto& registry = world.getRegistry();
-  const auto& structure
-      = registry.get<sx::comps::MultibodyStructure>(robot.getEntity());
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const auto& structure = registry.get<sx::comps::MultibodyStructure>(
+      dart::simulation::experimental::detail::toRegistryEntity(
+          robot.getEntity()));
   const Eigen::VectorXd wrongSize = Eigen::VectorXd::Zero(2);
   EXPECT_THROW(
       sx::compute::integrateMultibodyPositions(

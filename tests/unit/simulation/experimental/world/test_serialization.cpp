@@ -39,6 +39,8 @@
 #include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -84,6 +86,48 @@ void writeLegacyJointV1(
   io::writeVectorXd(output, joint.limits.lower);
   io::writeVectorXd(output, joint.limits.upper);
   io::writeVectorXd(output, joint.limits.velocityUpper);
+  io::writeVectorXd(output, joint.limits.effortUpper);
+  io::writeVector3d(output, joint.axis);
+  io::writeVector3d(output, joint.axis2);
+  io::writePOD(output, joint.pitch);
+
+  const auto mappedParent
+      = joint.parentLink != entt::null
+            ? static_cast<std::uint32_t>(entityMap.at(joint.parentLink))
+            : static_cast<std::uint32_t>(entt::null);
+  const auto mappedChild
+      = joint.childLink != entt::null
+            ? static_cast<std::uint32_t>(entityMap.at(joint.childLink))
+            : static_cast<std::uint32_t>(entt::null);
+  io::writePOD(output, mappedParent);
+  io::writePOD(output, mappedChild);
+}
+
+void writeLegacyJointV2ToV12(
+    std::ostream& output,
+    const dart::simulation::experimental::comps::Joint& joint,
+    const dart::simulation::experimental::io::EntityMap& entityMap)
+{
+  namespace io = dart::simulation::experimental::io;
+
+  io::writePOD(output, joint.type);
+  io::writePOD(output, joint.actuatorType);
+  io::writeString(output, joint.name);
+  io::writeVectorXd(output, joint.position);
+  io::writeVectorXd(output, joint.velocity);
+  io::writeVectorXd(output, joint.acceleration);
+  io::writeVectorXd(output, joint.torque);
+  io::writeVectorXd(output, joint.springStiffness);
+  io::writeVectorXd(output, joint.dampingCoefficient);
+  io::writeVectorXd(output, joint.restPosition);
+  io::writeVectorXd(output, joint.armature);
+  io::writeVectorXd(output, joint.coulombFriction);
+  io::writeVectorXd(output, joint.commandVelocity);
+  io::writeVectorXd(output, joint.limits.lower);
+  io::writeVectorXd(output, joint.limits.upper);
+  io::writeVectorXd(output, joint.limits.velocityLower);
+  io::writeVectorXd(output, joint.limits.velocityUpper);
+  io::writeVectorXd(output, joint.limits.effortLower);
   io::writeVectorXd(output, joint.limits.effortUpper);
   io::writeVector3d(output, joint.axis);
   io::writeVector3d(output, joint.axis2);
@@ -163,7 +207,8 @@ void saveLegacyWorldWithCurrentEntities(
   io::writePOD(output, magicNumber);
   io::writePOD(output, legacyVersion);
 
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   std::vector<entt::entity> entities;
   auto nameView = registry.view<comps::Name>();
   for (auto entity : nameView) {
@@ -198,6 +243,10 @@ void saveLegacyWorldWithCurrentEntities(
       io::writeString(output, typeName);
       if (legacyVersion == 1u && typeName == comps::Joint::getTypeName()) {
         writeLegacyJointV1(
+            output, registry.get<comps::Joint>(entity), entityMap);
+      } else if (
+          legacyVersion < 13u && typeName == comps::Joint::getTypeName()) {
+        writeLegacyJointV2ToV12(
             output, registry.get<comps::Joint>(entity), entityMap);
       } else if (typeName == comps::Link::getTypeName()) {
         writeLegacyLinkV8(
@@ -427,8 +476,11 @@ TEST(Serialization, LoadsLegacyV1JointRecord)
   auto joint = link.getParentJoint();
   joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
   joint.setVelocity(Eigen::VectorXd::Constant(1, -0.75));
-  world1.getRegistry().get<comps::Joint>(joint.getEntity()).acceleration
-      = Eigen::VectorXd::Constant(1, 1.25);
+  dart::simulation::experimental::detail::registryOf(world1)
+      .get<comps::Joint>(
+          dart::simulation::experimental::detail::toRegistryEntity(
+              joint.getEntity()))
+      .acceleration = Eigen::VectorXd::Constant(1, 1.25);
   joint.setForce(Eigen::VectorXd::Constant(1, 2.25));
   joint.setPositionLimits(
       Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
@@ -461,7 +513,10 @@ TEST(Serialization, LoadsLegacyV1JointRecord)
   EXPECT_DOUBLE_EQ(jointRestored->getEffortUpperLimits()[0], 3.0);
 
   const auto& jointComp
-      = world2.getRegistry().get<comps::Joint>(jointRestored->getEntity());
+      = dart::simulation::experimental::detail::registryOf(world2)
+            .get<comps::Joint>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    jointRestored->getEntity()));
   EXPECT_EQ(jointComp.actuatorType, comps::ActuatorType::Force);
   EXPECT_TRUE(jointComp.springStiffness.isZero());
   EXPECT_TRUE(jointComp.dampingCoefficient.isZero());
@@ -497,7 +552,11 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
   Eigen::Matrix<double, 6, 1> externalForce;
   externalForce << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0;
 
-  auto& linkComp = world1.getRegistry().get<comps::Link>(link.getEntity());
+  auto& linkComp
+      = dart::simulation::experimental::detail::registryOf(world1)
+            .get<comps::Link>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    link.getEntity()));
   linkComp.transformFromParentToJoint = unsavedParentToJoint;
   linkComp.transformFromParentJoint = legacyJointToLink;
   linkComp.worldTransform = worldTransform;
@@ -515,7 +574,10 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
   ASSERT_TRUE(linkRestored.has_value());
 
   const auto& restoredLinkComp
-      = world2.getRegistry().get<comps::Link>(linkRestored->getEntity());
+      = dart::simulation::experimental::detail::registryOf(world2)
+            .get<comps::Link>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    linkRestored->getEntity()));
   EXPECT_TRUE(restoredLinkComp.transformFromParentToJoint.isApprox(
       Eigen::Isometry3d::Identity()));
   EXPECT_TRUE(
@@ -525,14 +587,23 @@ TEST(Serialization, LoadsLegacyV8LinkRecord)
 
   auto jointRestored = mbRestored->getJoint("joint");
   ASSERT_TRUE(jointRestored.has_value());
-  EXPECT_EQ(restoredLinkComp.parentJoint, jointRestored->getEntity());
+  EXPECT_EQ(
+      restoredLinkComp.parentJoint,
+      dart::simulation::experimental::detail::toRegistryEntity(
+          jointRestored->getEntity()));
 
   auto baseRestored = mbRestored->getLink("base");
   ASSERT_TRUE(baseRestored.has_value());
   const auto& restoredBaseComp
-      = world2.getRegistry().get<comps::Link>(baseRestored->getEntity());
+      = dart::simulation::experimental::detail::registryOf(world2)
+            .get<comps::Link>(
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    baseRestored->getEntity()));
   ASSERT_EQ(restoredBaseComp.childJoints.size(), 1u);
-  EXPECT_EQ(restoredBaseComp.childJoints.front(), jointRestored->getEntity());
+  EXPECT_EQ(
+      restoredBaseComp.childJoints.front(),
+      dart::simulation::experimental::detail::toRegistryEntity(
+          jointRestored->getEntity()));
 }
 
 // Test save/load preserves names
@@ -1220,8 +1291,9 @@ TEST(Serialization, CacheNotSerialized)
 
   // Verify cache is clean
   {
-    auto& registry = world.getRegistry();
-    auto entity = frame.getEntity();
+    auto& registry = dart::simulation::experimental::detail::registryOf(world);
+    auto entity = dart::simulation::experimental::detail::toRegistryEntity(
+        frame.getEntity());
     ASSERT_TRUE(registry.valid(entity)) << "Entity should be valid";
     ASSERT_TRUE(
         registry.all_of<dart::simulation::experimental::comps::FrameCache>(
@@ -1244,7 +1316,7 @@ TEST(Serialization, CacheNotSerialized)
   world2.loadBinary(ss);
 
   // Check the registry directly for the restored FreeFrame
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view
       = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
 
@@ -1323,7 +1395,7 @@ TEST(Serialization, StateSerializedCorrectly)
   world2.loadBinary(ss);
 
   // Check that we have 2 FreeFrames
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view
       = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
   EXPECT_EQ(std::ranges::distance(view), 2)
@@ -1386,7 +1458,7 @@ TEST(Serialization, PropertiesSerializedCorrectly)
   world2.loadBinary(ss);
 
   // Find the FixedFrame
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view
       = registry2.view<dart::simulation::experimental::comps::FixedFrameTag>();
   EXPECT_FALSE(view.empty()) << "Should have restored FixedFrame";
@@ -1431,7 +1503,7 @@ TEST(Serialization, RoundTripConsistency)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss1);
 
-  auto& registry2 = world2.getRegistry();
+  auto& registry2 = dart::simulation::experimental::detail::registryOf(world2);
   auto view = registry2.view<
       dart::simulation::experimental::comps::Name,
       dart::simulation::experimental::comps::FreeFrameProperties,
@@ -1485,7 +1557,7 @@ TEST(Serialization, CloneDeepCopy)
   dart::simulation::experimental::World clone;
   clone.loadBinary(ss);
 
-  auto& cloneReg = clone.getRegistry();
+  auto& cloneReg = dart::simulation::experimental::detail::registryOf(clone);
   auto cloneView = cloneReg.view<
       dart::simulation::experimental::comps::Name,
       dart::simulation::experimental::comps::FreeFrameProperties>();
@@ -1507,7 +1579,8 @@ TEST(Serialization, CloneDeepCopy)
     }
   }
 
-  const auto& originalReg = world.getRegistry();
+  const auto& originalReg
+      = dart::simulation::experimental::detail::registryOf(world);
   auto originalView = originalReg.view<
       dart::simulation::experimental::comps::Name,
       dart::simulation::experimental::comps::FreeFrameProperties>();
@@ -1542,14 +1615,198 @@ TEST(Serialization, CloneResetCounters)
   clone.loadBinary(ss);
 
   auto nextFrame = clone.addFreeFrame();
-  auto& cloneReg = clone.getRegistry();
+  auto& cloneReg = dart::simulation::experimental::detail::registryOf(clone);
   const auto& nextFrameName
       = cloneReg
             .get<dart::simulation::experimental::comps::Name>(
-                nextFrame.getEntity())
+                dart::simulation::experimental::detail::toRegistryEntity(
+                    nextFrame.getEntity()))
             .name;
   EXPECT_EQ(nextFrameName, "free_frame_003");
 
   auto nextMb = clone.addMultibody("");
   EXPECT_EQ(nextMb.getName(), "multibody_002");
+}
+
+// ---------------------------------------------------------------------------
+// Checkpoint / replay parity (PLAN-080 serialization/replay gate).
+//
+// The cases above prove that world *state* round-trips through
+// saveBinary/loadBinary. These cases prove the stronger replay guarantee that
+// checkpoint/restore and deterministic replay depend on: a world saved
+// mid-trajectory and reloaded reproduces the original trajectory when stepped.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Builds a fixed-base two-link revolute chain that evolves deterministically:
+// nonzero initial joint velocities integrate the joint positions every step
+// (independent of link inertia), and gravity acts in the joint plane. The
+// tests guard that the state actually changes so the parity check is not
+// trivially satisfied by a static scene.
+void buildReplayChain(dart::simulation::experimental::World& world)
+{
+  namespace sx = dart::simulation::experimental;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto mb = world.addMultibody("chain");
+  auto base = mb.addLink("base");
+  auto link1 = mb.addLink(
+      "link1",
+      base,
+      sx::JointSpec{
+          .name = "joint1",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d(0, 1, 0)});
+  auto link2 = mb.addLink(
+      "link2",
+      link1,
+      sx::JointSpec{
+          .name = "joint2",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d(0, 1, 0)});
+
+  link1.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.3));
+  link2.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.2));
+  link1.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, 0.7));
+  link2.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, -1.1));
+}
+
+// Gathers the chain's generalized state (joint positions and velocities) via
+// the public handle API. getStateVector() is the differentiable rigid-body
+// reduction (3 * dynamic rigid bodies) and is empty for a pure-multibody
+// scene, so compare joint state instead.
+Eigen::VectorXd chainState(dart::simulation::experimental::World& world)
+{
+  auto mb = world.getMultibody("chain").value();
+  const auto j1 = mb.getJoint("joint1").value();
+  const auto j2 = mb.getJoint("joint2").value();
+  Eigen::VectorXd s(4);
+  s << j1.getPosition()[0], j1.getVelocity()[0], j2.getPosition()[0],
+      j2.getVelocity()[0];
+  return s;
+}
+
+// A single dynamic rigid body that free-falls under gravity. getStateVector()
+// is populated for dynamic rigid bodies (the differentiable [q; q̇] reduction),
+// so the rigid-body integration path can be checked with the state vector
+// directly, complementing the multibody joint-state path above.
+void buildFallingBody(dart::simulation::experimental::World& world)
+{
+  namespace sx = dart::simulation::experimental;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.position = Eigen::Vector3d(0.0, 0.0, 5.0);
+  options.linearVelocity = Eigen::Vector3d(0.3, -0.2, 0.0);
+  world.addRigidBody("ball", options);
+}
+
+// Deterministic CPU integration of identical state should agree to round-off;
+// this tight tolerance guards against benign platform summation-order
+// differences without hiding a real divergence.
+constexpr double kReplayTol = 1e-10;
+
+} // namespace
+
+// A world checkpointed mid-trajectory and reloaded must continue identically to
+// the still-running original instance.
+TEST(Serialization, CheckpointReloadContinuesIdentically)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World worldA;
+  buildReplayChain(worldA);
+  worldA.enterSimulationMode();
+
+  const Eigen::VectorXd initial = chainState(worldA);
+  worldA.step(25); // advance to a mid-trajectory checkpoint
+
+  const Eigen::VectorXd checkpoint = chainState(worldA);
+  EXPECT_GT((checkpoint - initial).norm(), 1e-6)
+      << "Scene must evolve, otherwise the parity check is trivial";
+
+  // Reload the checkpoint into a fresh world.
+  std::stringstream ss;
+  worldA.saveBinary(ss);
+  sx::World worldB;
+  worldB.loadBinary(ss);
+
+  EXPECT_LT((chainState(worldB) - checkpoint).norm(), kReplayTol)
+      << "Reloaded state must match the checkpoint";
+
+  // Continue both worlds and require identical trajectories.
+  worldA.step(25);
+  worldB.step(25);
+
+  EXPECT_LT((chainState(worldB) - chainState(worldA)).norm(), kReplayTol)
+      << "Reloaded world must continue identically to the original instance";
+  EXPECT_DOUBLE_EQ(worldB.getTime(), worldA.getTime());
+}
+
+// A checkpoint-and-reload mid-run must match an uninterrupted reference run:
+// saving and loading does not perturb the trajectory.
+TEST(Serialization, CheckpointReloadMatchesUninterruptedRun)
+{
+  namespace sx = dart::simulation::experimental;
+
+  // Reference: run K + M steps without ever serializing.
+  sx::World reference;
+  buildReplayChain(reference);
+  reference.enterSimulationMode();
+  reference.step(40);
+  const Eigen::VectorXd referenceState = chainState(reference);
+
+  // Checkpointed: run K, serialize, reload into a fresh world, run M.
+  sx::World original;
+  buildReplayChain(original);
+  original.enterSimulationMode();
+  original.step(15);
+
+  std::stringstream ss;
+  original.saveBinary(ss);
+  sx::World resumed;
+  resumed.loadBinary(ss);
+  resumed.step(25);
+
+  EXPECT_LT((chainState(resumed) - referenceState).norm(), kReplayTol)
+      << "Checkpoint+reload mid-run must match the uninterrupted reference run";
+  EXPECT_DOUBLE_EQ(resumed.getTime(), reference.getTime());
+}
+
+// Same replay guarantee for the rigid-body integration path, checked through
+// the world state vector [q; q̇] which is populated for dynamic rigid bodies.
+TEST(Serialization, RigidBodyCheckpointReloadContinuesIdentically)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World worldA;
+  buildFallingBody(worldA);
+  worldA.enterSimulationMode();
+
+  const Eigen::VectorXd initial = worldA.getStateVector();
+  ASSERT_EQ(initial.size(), 6) // [pos(3); linVel(3)] for one dynamic body
+      << "One dynamic rigid body should expose a size-6 state vector";
+  worldA.step(25); // advance to a mid-trajectory checkpoint
+
+  const Eigen::VectorXd checkpoint = worldA.getStateVector();
+  EXPECT_GT((checkpoint - initial).norm(), 1e-6)
+      << "Falling body must evolve under gravity";
+
+  std::stringstream ss;
+  worldA.saveBinary(ss);
+  sx::World worldB;
+  worldB.loadBinary(ss);
+
+  ASSERT_EQ(worldB.getStateVector().size(), checkpoint.size());
+  EXPECT_LT((worldB.getStateVector() - checkpoint).norm(), kReplayTol)
+      << "Reloaded rigid-body state must match the checkpoint";
+
+  worldA.step(25);
+  worldB.step(25);
+
+  EXPECT_LT(
+      (worldB.getStateVector() - worldA.getStateVector()).norm(), kReplayTol)
+      << "Reloaded world must continue identically for the rigid-body path";
+  EXPECT_DOUBLE_EQ(worldB.getTime(), worldA.getTime());
 }

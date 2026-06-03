@@ -33,8 +33,12 @@
 #pragma once
 
 #include <dart/simulation/experimental/comps/component_category.hpp>
+#include <dart/simulation/experimental/comps/dynamics.hpp>
 
 #include <limits>
+#include <optional>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental::comps {
 
@@ -54,6 +58,34 @@ struct RigidBodyTag
 struct StaticBodyTag
 {
   DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
+};
+
+/// Tag marking a rigid body as kinematic (prescribed motion): the rigid IPC
+/// contact stage advances it by its prescribed (linear/angular) velocity each
+/// step and treats it as a moving obstacle -- contacting dynamic bodies cannot
+/// penetrate it and are dragged by its surface friction -- but it receives no
+/// contact or dynamics degrees of freedom and is unaffected by gravity or
+/// collision response. Runtime-only configuration; intentionally not
+/// serialized.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct KinematicBodyTag
+{
+  /// Optional world time at which fixture-replay kinematic motion stops.
+  std::optional<double> maxTime;
+};
+
+/// Runtime-only trace of a kinematic body's realized motion during the current
+/// world step. Rigid IPC writes this when it advances a kinematic body before
+/// deformable dynamics so the deformable CCD stage can limit against the swept
+/// current-step motion instead of only the final pose.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct KinematicBodyStepTrace
+{
+  std::size_t frame = 0u;
+  Transform startTransform;
+  Transform endTransform;
 };
 
 /// Internal opt-in configuration for the first AVBD rigid contact World slice.

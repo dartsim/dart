@@ -35,7 +35,9 @@
 // code path and is registered only when DART_BUILD_DIFF is ON.
 
 #include <dart/simulation/experimental/comps/multibody.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/detail/smooth_jacobians.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -308,10 +310,11 @@ sim::StepDerivatives analyticDerivatives(
   // The detail function reads the multibody structure component from the
   // registry; the World exposes the registry through its internal accessor.
   return sim::detail::contactFreeStepDerivatives(
-      world.getRegistry(),
-      world.getRegistry()
+      dart::simulation::experimental::detail::registryOf(world),
+      dart::simulation::experimental::detail::registryOf(world)
           .get<dart::simulation::experimental::comps::MultibodyStructure>(
-              mb->getEntity()),
+              dart::simulation::experimental::detail::toRegistryEntity(
+                  mb->getEntity())),
       world.getGravity(),
       world.getTimeStep(),
       tau);

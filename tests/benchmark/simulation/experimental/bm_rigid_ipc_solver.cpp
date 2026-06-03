@@ -46,6 +46,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/detail/rigid_ipc_barrier.hpp>
+#include <dart/simulation/experimental/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Core>
@@ -53,8 +54,16 @@
 #include <benchmark/benchmark.h>
 
 #include <array>
+#include <filesystem>
+#include <fstream>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
+
+#include <cstdint>
 
 namespace sx = dart::simulation::experimental;
 namespace sxdetail = dart::simulation::experimental::detail;
@@ -323,6 +332,273 @@ void runWorldStepComparison(benchmark::State& state, sx::RigidBodySolver solver)
   state.counters["boxes"] = static_cast<double>(boxCount);
 }
 
+struct LargeHashgridBodyBounds
+{
+  std::size_t vertexCount{0};
+  std::size_t edgeCount{0};
+  std::size_t faceCount{0};
+  Eigen::Vector3d localMin = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localMax = Eigen::Vector3d::Zero();
+  double radius{0.0};
+  sxdetail::RigidIpcPose poseT0;
+  sxdetail::RigidIpcPose poseT1;
+};
+
+struct LargeHashgridSceneBounds
+{
+  std::string upstreamPath;
+  std::string sha256;
+  std::size_t bodyCount{0};
+  std::size_t vertexCount{0};
+  std::size_t edgeCount{0};
+  std::size_t faceCount{0};
+  Eigen::Vector3d exactMin = Eigen::Vector3d::Zero();
+  Eigen::Vector3d exactMax = Eigen::Vector3d::Zero();
+  std::vector<LargeHashgridBodyBounds> bodies;
+};
+
+struct LargeHashgridAabb
+{
+  Eigen::Vector3d minimum
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d maximum
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+};
+
+template <typename T>
+T readTsvValue(std::istringstream& input, const std::string& line)
+{
+  T value{};
+  if (!(input >> value)) {
+    throw std::runtime_error("Malformed rigid IPC large hashgrid row: " + line);
+  }
+  return value;
+}
+
+Eigen::Vector3d readTsvVector3(
+    std::istringstream& input, const std::string& line)
+{
+  return {
+      readTsvValue<double>(input, line),
+      readTsvValue<double>(input, line),
+      readTsvValue<double>(input, line)};
+}
+
+std::filesystem::path largeHashgridFixturePath()
+{
+  return std::filesystem::path(__FILE__)
+             .parent_path()
+             .parent_path()
+             .parent_path()
+             .parent_path()
+         / "fixtures" / "rigid_ipc" / "large_hashgrid_bounds.tsv";
+}
+
+std::vector<LargeHashgridSceneBounds> loadLargeHashgridScenes()
+{
+  const auto path = largeHashgridFixturePath();
+  std::ifstream input(path);
+  if (!input) {
+    throw std::runtime_error(
+        "Could not open rigid IPC large hashgrid fixture: " + path.string());
+  }
+
+  std::vector<LargeHashgridSceneBounds> scenes;
+  scenes.reserve(2);
+
+  LargeHashgridSceneBounds* currentScene = nullptr;
+  std::string line;
+  while (std::getline(input, line)) {
+    if (line.empty() || line.front() == '#') {
+      continue;
+    }
+
+    std::istringstream row(line);
+    const std::string kind = readTsvValue<std::string>(row, line);
+    if (kind == "scene") {
+      LargeHashgridSceneBounds scene;
+      scene.upstreamPath = readTsvValue<std::string>(row, line);
+      scene.sha256 = readTsvValue<std::string>(row, line);
+      scene.bodyCount = readTsvValue<std::size_t>(row, line);
+      scene.vertexCount = readTsvValue<std::size_t>(row, line);
+      scene.edgeCount = readTsvValue<std::size_t>(row, line);
+      scene.faceCount = readTsvValue<std::size_t>(row, line);
+      scene.exactMin = readTsvVector3(row, line);
+      scene.exactMax = readTsvVector3(row, line);
+      scene.bodies.reserve(scene.bodyCount);
+      scenes.push_back(std::move(scene));
+      currentScene = &scenes.back();
+      continue;
+    }
+
+    if (kind != "body") {
+      throw std::runtime_error(
+          "Unknown rigid IPC large hashgrid fixture row kind: " + kind);
+    }
+    if (currentScene == nullptr) {
+      throw std::runtime_error(
+          "Rigid IPC large hashgrid body row appears before any scene row");
+    }
+
+    const std::string upstreamPath = readTsvValue<std::string>(row, line);
+    if (upstreamPath != currentScene->upstreamPath) {
+      throw std::runtime_error(
+          "Rigid IPC large hashgrid body row path does not match scene");
+    }
+
+    const auto bodyIndex = readTsvValue<std::size_t>(row, line);
+    if (bodyIndex != currentScene->bodies.size()) {
+      throw std::runtime_error(
+          "Rigid IPC large hashgrid body rows are not contiguous");
+    }
+
+    LargeHashgridBodyBounds body;
+    body.vertexCount = readTsvValue<std::size_t>(row, line);
+    body.edgeCount = readTsvValue<std::size_t>(row, line);
+    body.faceCount = readTsvValue<std::size_t>(row, line);
+    body.localMin = readTsvVector3(row, line);
+    body.localMax = readTsvVector3(row, line);
+    body.radius = readTsvValue<double>(row, line);
+    body.poseT0.position = readTsvVector3(row, line);
+    body.poseT0.rotation = readTsvVector3(row, line);
+    body.poseT1.position = readTsvVector3(row, line);
+    body.poseT1.rotation = readTsvVector3(row, line);
+    currentScene->bodies.push_back(body);
+  }
+
+  for (const auto& scene : scenes) {
+    if (scene.bodies.size() != scene.bodyCount) {
+      throw std::runtime_error(
+          "Rigid IPC large hashgrid scene body count mismatch: "
+          + scene.upstreamPath);
+    }
+  }
+
+  return scenes;
+}
+
+const std::vector<LargeHashgridSceneBounds>& largeHashgridScenes()
+{
+  static const std::vector<LargeHashgridSceneBounds> scenes
+      = loadLargeHashgridScenes();
+  return scenes;
+}
+
+const LargeHashgridSceneBounds& findLargeHashgridScene(
+    const std::string_view upstreamPath)
+{
+  for (const auto& scene : largeHashgridScenes()) {
+    if (scene.upstreamPath == upstreamPath) {
+      return scene;
+    }
+  }
+
+  throw std::runtime_error(
+      "Missing rigid IPC large hashgrid scene fixture for "
+      + std::string(upstreamPath));
+}
+
+std::array<Eigen::Vector3d, 8> localAabbCorners(
+    const Eigen::Vector3d& minimum, const Eigen::Vector3d& maximum)
+{
+  std::array<Eigen::Vector3d, 8> corners;
+  std::size_t index = 0;
+  for (int x = 0; x < 2; ++x) {
+    for (int y = 0; y < 2; ++y) {
+      for (int z = 0; z < 2; ++z) {
+        corners[index++]
+            = {x == 0 ? minimum.x() : maximum.x(),
+               y == 0 ? minimum.y() : maximum.y(),
+               z == 0 ? minimum.z() : maximum.z()};
+      }
+    }
+  }
+  return corners;
+}
+
+void includePoint(LargeHashgridAabb& bounds, const Eigen::Vector3d& point)
+{
+  bounds.minimum = bounds.minimum.cwiseMin(point);
+  bounds.maximum = bounds.maximum.cwiseMax(point);
+}
+
+void includeSphere(
+    LargeHashgridAabb& bounds,
+    const Eigen::Vector3d& center,
+    const double radius)
+{
+  const Eigen::Vector3d extent = Eigen::Vector3d::Constant(radius);
+  includePoint(bounds, center - extent);
+  includePoint(bounds, center + extent);
+}
+
+void includeBodyBounds(
+    LargeHashgridAabb& bounds, const LargeHashgridBodyBounds& body)
+{
+  if ((body.poseT0.rotation.array() == body.poseT1.rotation.array()).all()) {
+    const auto corners = localAabbCorners(body.localMin, body.localMax);
+    for (const auto& pose : {body.poseT0, body.poseT1}) {
+      for (const auto& corner : corners) {
+        includePoint(bounds, sxdetail::transformRigidIpcPoint(corner, pose));
+      }
+    }
+    return;
+  }
+
+  includeSphere(bounds, body.poseT0.position, body.radius);
+  includeSphere(bounds, body.poseT1.position, body.radius);
+}
+
+LargeHashgridAabb computeLargeHashgridSceneBounds(
+    const LargeHashgridSceneBounds& scene)
+{
+  LargeHashgridAabb bounds;
+  for (const auto& body : scene.bodies) {
+    includeBodyBounds(bounds, body);
+  }
+  return bounds;
+}
+
+std::string formatVector(const Eigen::Vector3d& value)
+{
+  std::ostringstream output;
+  output << value.transpose();
+  return output.str();
+}
+
+void requireContainsExactBounds(
+    const LargeHashgridSceneBounds& scene, const LargeHashgridAabb& bounds)
+{
+  constexpr double tolerance = 1e-9;
+  if ((bounds.minimum.array() > scene.exactMin.array() + tolerance).any()
+      || (bounds.maximum.array() < scene.exactMax.array() - tolerance).any()) {
+    throw std::runtime_error(
+        "Rigid IPC large hashgrid benchmark bounds for " + scene.upstreamPath
+        + " do not contain upstream exact bounds. computed min="
+        + formatVector(bounds.minimum) + " max=" + formatVector(bounds.maximum)
+        + " exact min=" + formatVector(scene.exactMin)
+        + " max=" + formatVector(scene.exactMax));
+  }
+}
+
+void recordLargeHashgridCounters(
+    benchmark::State& state,
+    const LargeHashgridSceneBounds& scene,
+    const LargeHashgridAabb& bounds)
+{
+  const double slack = (scene.exactMin - bounds.minimum).sum()
+                       + (bounds.maximum - scene.exactMax).sum();
+
+  state.counters["bodies"] = static_cast<double>(scene.bodyCount);
+  state.counters["source_vertices"] = static_cast<double>(scene.vertexCount);
+  state.counters["source_edges"] = static_cast<double>(scene.edgeCount);
+  state.counters["source_faces"] = static_cast<double>(scene.faceCount);
+  state.counters["bbox_diag"] = (bounds.maximum - bounds.minimum).norm();
+  state.counters["conservative_slack"] = slack;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * scene.bodies.size()));
+}
+
 } // namespace
 
 //==============================================================================
@@ -344,3 +620,30 @@ static void BM_RigidWorldStep_Ipc(benchmark::State& state)
   runWorldStepComparison(state, sx::RigidBodySolver::Ipc);
 }
 BENCHMARK(BM_RigidWorldStep_Ipc)->Arg(1)->Arg(2)->Arg(4);
+
+//==============================================================================
+// Large rigid-body hash-grid corpus from the audited rigid-ipc data rows. This
+// benchmark computes conservative swept scene bounds from compact per-body
+// records and verifies those bounds contain the upstream exact scene bounds.
+static void BM_RigidIpcLargeHashgridSceneBounds(
+    benchmark::State& state, const char* upstreamPath)
+{
+  const auto& scene = findLargeHashgridScene(upstreamPath);
+  LargeHashgridAabb bounds;
+  for (auto _ : state) {
+    bounds = computeLargeHashgridSceneBounds(scene);
+    benchmark::DoNotOptimize(bounds.minimum.data());
+    benchmark::DoNotOptimize(bounds.maximum.data());
+  }
+
+  requireContainsExactBounds(scene, bounds);
+  recordLargeHashgridCounters(state, scene, bounds);
+}
+BENCHMARK_CAPTURE(
+    BM_RigidIpcLargeHashgridSceneBounds,
+    large_rb_hashgrid_000,
+    "tests/data/large-rb-hashgrid/large-rb-hashgrid-000.json");
+BENCHMARK_CAPTURE(
+    BM_RigidIpcLargeHashgridSceneBounds,
+    large_rb_hashgrid_001,
+    "tests/data/large-rb-hashgrid/large-rb-hashgrid-001.json");

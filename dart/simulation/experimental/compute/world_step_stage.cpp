@@ -57,7 +57,9 @@
 #include "dart/simulation/experimental/detail/deformable_vbd/block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
+#include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/rigid_ipc_barrier.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
@@ -95,6 +97,34 @@ namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
 namespace sxdetail = dart::simulation::experimental::detail;
 
 namespace {
+
+constexpr double kDefaultRigidIpcContactStageActivationDistance = 1e-2;
+
+[[nodiscard]] RigidIpcContactStageOptions
+makeRigidIpcContactStageOptionsForMaxIterations(const std::size_t maxIterations)
+{
+  RigidIpcContactStageOptions options;
+  options.maxIterations = maxIterations;
+  return options;
+}
+
+[[nodiscard]] RigidIpcContactStageOptions sanitizeRigidIpcContactStageOptions(
+    RigidIpcContactStageOptions options)
+{
+  if (!std::isfinite(options.activationDistance)
+      || options.activationDistance <= 0.0) {
+    options.activationDistance = kDefaultRigidIpcContactStageActivationDistance;
+  }
+  if (!std::isfinite(options.staticFrictionSpeedBound)
+      || options.staticFrictionSpeedBound < 0.0) {
+    options.staticFrictionSpeedBound = 1e-3;
+  }
+  if (!std::isfinite(options.frictionConvergenceTolerance)
+      || options.frictionConvergenceTolerance < 0.0) {
+    options.frictionConvergenceTolerance = 0.0;
+  }
+  return options;
+}
 
 //==============================================================================
 Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
@@ -421,13 +451,21 @@ void integrateRigidBodyPosition(
 }
 
 //==============================================================================
+bool isPrescribedRigidBodyIntegrationBody(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 void integrateRigidBody(
     entt::registry& registry,
     entt::entity entity,
     const Eigen::Vector3d& gravity,
     const double timeStep)
 {
-  if (registry.all_of<comps::StaticBodyTag>(entity)) {
+  if (isPrescribedRigidBodyIntegrationBody(registry, entity)) {
     return;
   }
 
@@ -459,10 +497,10 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
 {
   std::optional<comps::RigidAvbdContactConfig> merged;
   for (const Contact& contact : contacts) {
-    const auto* configA
-        = enabledRigidAvbdContactConfig(registry, contact.bodyA.getEntity());
-    const auto* configB
-        = enabledRigidAvbdContactConfig(registry, contact.bodyB.getEntity());
+    const auto* configA = enabledRigidAvbdContactConfig(
+        registry, detail::toRegistryEntity(contact.bodyA.getEntity()));
+    const auto* configB = enabledRigidAvbdContactConfig(
+        registry, detail::toRegistryEntity(contact.bodyB.getEntity()));
     if (configA == nullptr && configB == nullptr) {
       return std::nullopt;
     }
@@ -594,7 +632,7 @@ ComputeStageMetadata RigidBodyIntegrationStage::getMetadata() const noexcept
 //==============================================================================
 void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto rigidBodyView = registry.view<
       comps::RigidBodyTag,
       comps::Transform,
@@ -688,7 +726,8 @@ struct RigidBodyForceBatch
 RigidBodyForceBatch assembleRigidBodyForces(
     const World& world, bool includeGravity)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view
       = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
 
@@ -706,7 +745,7 @@ RigidBodyForceBatch assembleRigidBodyForces(
     Eigen::Vector3d assembledForce = applied.force;
     Eigen::Vector3d assembledTorque = applied.torque;
 
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+    if (isPrescribedRigidBodyIntegrationBody(registry, entity)) {
       assembledForce.setZero();
       assembledTorque.setZero();
     } else if (includeGravity) {
@@ -728,7 +767,7 @@ RigidBodyForceBatch assembleRigidBodyForces(
 }
 
 //==============================================================================
-void restoreStaticRigidBodyState(
+void restorePrescribedRigidBodyState(
     const entt::registry& registry,
     const std::vector<entt::entity>& entities,
     const RigidBodyStateBatch& source,
@@ -741,7 +780,7 @@ void restoreStaticRigidBodyState(
       "Rigid-body batch state does not match the rigid-body entity count");
 
   for (std::size_t i = 0; i < entities.size(); ++i) {
-    if (!registry.all_of<comps::StaticBodyTag>(entities[i])) {
+    if (!isPrescribedRigidBodyIntegrationBody(registry, entities[i])) {
       continue;
     }
 
@@ -798,6 +837,14 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
+bool hasPrescribedRigidBodyContactResponse(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
 // Positional correction (projection) for rigid-body normal contacts: removes
 // residual penetration beyond a small allowance without injecting velocity, so
 // resting stacks do not sink. Shared by the sequential-impulse and boxed-LCP
@@ -813,8 +860,8 @@ void resolveRigidBodyContactPositions(
   constexpr double allowance = 1e-4;
   constexpr double correctionFactor = 0.2;
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
     if (!registry.all_of<comps::RigidBodyTag>(entityA)
         || !registry.all_of<comps::RigidBodyTag>(entityB)) {
       continue;
@@ -825,8 +872,10 @@ void resolveRigidBodyContactPositions(
       continue;
     }
 
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const bool staticA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool staticB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
     const double invMassA
         = staticA ? 0.0
                   : inverseMass(registry.get<comps::MassProperties>(entityA));
@@ -1582,27 +1631,54 @@ SurfaceContactSnapshot makeStaticSphereSurfaceCcdSnapshot(
 }
 
 //==============================================================================
+bool isCurrentPoseRigidSurfaceCcdObstacle(
+    const entt::registry& registry, const entt::entity entity)
+{
+  return registry.all_of<comps::StaticBodyTag>(entity)
+         || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
+bool hasCurrentKinematicStepTrace(const World& world, const entt::entity entity)
+{
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
+  const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
+  return trace != nullptr && trace->frame == world.getFrame();
+}
+
+//==============================================================================
 std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
     const World& world, DeformableSolverStats& stats)
 {
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
 
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   // Barrier-only obstacles keep their contact barrier but are excluded from the
   // CCD limiter, so a deformable can slide tangentially against them (and be
   // decelerated by friction) instead of having its whole step over-limited.
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>(entt::exclude<comps::DeformableObstacleNoCcdTag>);
 
   std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
+      continue;
+    }
+    // Current-frame kinematic boxes move to the swept moving collector; other
+    // supported shapes stay as current-pose snapshots until they gain swept
+    // snapshot support.
+    if (hasCurrentKinematicStepTrace(world, entity)
+        && shape->type == CollisionShapeType::Box) {
       continue;
     }
     const auto& transform = view.get<comps::Transform>(entity);
@@ -1705,10 +1781,11 @@ std::size_t movingRigidSurfaceCcdSampleCount(
 // Collect conservative static box snapshots that tile each MOVING rigid box
 // obstacle's swept motion over the step. Each snapshot is an ordinary static
 // pose, so the existing static-style limiter and
-// interBodySurfaceContactStepBound handle them unchanged. The obstacle end pose
-// is predicted from velocity, so the deformable is limited against where the
-// obstacle will be even though the deformable stage runs before
-// RigidBodyPositionStage.
+// interBodySurfaceContactStepBound handle them unchanged. Free-rigid obstacle
+// end poses are predicted from velocity because deformable dynamics runs before
+// RigidBodyPositionStage. Kinematic obstacle end poses come from the current
+// step trace written by rigid IPC, so deformables are limited against the
+// realized start->current motion instead of a future frame.
 //
 // This treats the swept volume as a static blocker for the step (timing-
 // agnostic): it is more conservative than a timing-aware sweep for fast
@@ -1727,11 +1804,13 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
 {
   ++stats.movingRigidSurfaceCcdSnapshotBuilds;
 
-  const auto& registry = world.getRegistry();
-  // Moving obstacles are free (non-static) rigid bodies integrated by
-  // RigidBodyPositionStage. entt::exclude<StaticBodyTag> keeps this set
-  // disjoint from collectStaticRigidSurfaceCcdObstacles so no body is limited
-  // or counted twice. comps::Velocity is required to predict the end pose.
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
+  // Moving obstacles are free rigid bodies integrated by RigidBodyPositionStage
+  // or kinematic bodies already advanced by the rigid IPC stage. Static bodies
+  // stay in collectStaticRigidSurfaceCcdObstacles. Kinematic bodies only enter
+  // this moving set when rigid IPC left a current-frame trace; otherwise they
+  // remain current-pose obstacles.
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
@@ -1748,20 +1827,29 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     }
     const auto& transform = view.get<comps::Transform>(entity);
     const auto& velocity = view.get<comps::Velocity>(entity);
+    const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+    const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
+    if (isKinematic && (trace == nullptr || trace->frame != world.getFrame())) {
+      continue;
+    }
     if (shape->type != CollisionShapeType::Box
         || !shape->halfExtents.allFinite()
         || (shape->halfExtents.array() <= 0.0).any()
         || !velocity.linear.allFinite() || !velocity.angular.allFinite()) {
       continue;
     }
+    const comps::Transform startTransform
+        = isKinematic ? trace->startTransform : transform;
+    const comps::Transform endTransform
+        = isKinematic
+              ? trace->endTransform
+              : predictRigidBodyEndTransform(transform, velocity, timeStep);
     const auto startShapeTransform
-        = collisionShapeWorldTransform(transform, *shape);
+        = collisionShapeWorldTransform(startTransform, *shape);
     if (!startShapeTransform.has_value()) {
       continue;
     }
 
-    const auto endTransform
-        = predictRigidBodyEndTransform(transform, velocity, timeStep);
     const auto endShapeTransform
         = collisionShapeWorldTransform(endTransform, *shape);
     if (!endShapeTransform.has_value()) {
@@ -1914,7 +2002,8 @@ std::optional<StaticGroundContact> boxContactAt(
 //==============================================================================
 std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
       comps::StaticBodyTag,
@@ -1987,16 +2076,20 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
 std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
     const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>();
 
   std::vector<SphereObstacleBarrier> obstacles;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
@@ -2017,16 +2110,20 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
 //==============================================================================
 std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>();
 
   std::vector<BoxObstacleBarrier> obstacles;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
@@ -2054,16 +2151,20 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
 std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
     const World& world)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::StaticBodyTag,
       comps::DeformableSurfaceCcdObstacleTag,
       comps::CollisionGeometry,
       comps::Transform>();
 
   std::vector<CapsuleObstacleBarrier> obstacles;
   for (const auto entity : view) {
+    if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
+      continue;
+    }
+
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
     if (shape == nullptr) {
@@ -6965,7 +7066,12 @@ void advanceDeformableBody(
 struct RigidIpcRuntimeBody
 {
   entt::entity entity = entt::null;
+  bool kinematic = false;
+  bool hasSupportedSurface = false;
+  std::size_t surfaceIndex = std::numeric_limits<std::size_t>::max();
   sxdetail::RigidIpcPose initialPose;
+  sxdetail::RigidIpcVector6d initialVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
   sxdetail::RigidIpcBarrierSurface surface;
   sxdetail::RigidIpcBodyDynamicsTerm dynamicsTerm;
 };
@@ -6999,6 +7105,58 @@ sxdetail::RigidIpcPose toRigidIpcPose(const comps::Transform& transform)
   pose.position = transform.position;
   pose.rotation = rotationVectorFromQuaternion(transform.orientation);
   return pose;
+}
+
+//==============================================================================
+comps::Transform toTransform(const sxdetail::RigidIpcPose& pose)
+{
+  comps::Transform transform;
+  transform.position = pose.position;
+  transform.orientation = quaternionFromRotationVector(pose.rotation);
+  return transform;
+}
+
+//==============================================================================
+// Advance a kinematic body's pose by its prescribed (world-frame) linear and
+// angular velocity over one timestep: x_end = x + v*dt, R_end =
+// exp(omega*dt)*R.
+sxdetail::RigidIpcPose integrateRigidIpcKinematicPose(
+    const World& world,
+    const entt::entity entity,
+    const sxdetail::RigidIpcPose& startPose)
+{
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
+  const auto& velocity = registry.get<comps::Velocity>(entity);
+  double timeStep = world.getTimeStep();
+  if (const auto* tag = registry.try_get<comps::KinematicBodyTag>(entity);
+      tag != nullptr && tag->maxTime.has_value()
+      && std::isfinite(*tag->maxTime)) {
+    const double remainingTime = *tag->maxTime - world.getTime();
+    if (!(remainingTime > 0.0)) {
+      timeStep = 0.0;
+    } else {
+      timeStep = std::min(timeStep, remainingTime);
+    }
+  }
+
+  sxdetail::RigidIpcPose endPose = startPose;
+  if (!(timeStep > 0.0) || !std::isfinite(timeStep)) {
+    return endPose;
+  }
+  endPose.position = startPose.position + velocity.linear * timeStep;
+
+  const Eigen::Vector3d rotationDelta = velocity.angular * timeStep;
+  const double angle = rotationDelta.norm();
+  if (std::isfinite(angle) && angle > 1e-12) {
+    const Eigen::Quaterniond startQuat
+        = quaternionFromRotationVector(startPose.rotation);
+    const Eigen::Quaterniond deltaQuat(
+        Eigen::AngleAxisd(angle, rotationDelta / angle));
+    endPose.rotation
+        = rotationVectorFromQuaternion((deltaQuat * startQuat).normalized());
+  }
+  return endPose;
 }
 
 //==============================================================================
@@ -7215,14 +7373,19 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
     const entt::entity entity,
     const sxdetail::RigidIpcPose& pose)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
+  const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+  // Static and kinematic bodies both have prescribed motion: they contribute no
+  // dynamics objective (no inertial target) and feel no gravity in the solve.
+  const bool prescribedMotion = isStatic || isKinematic;
   const auto& velocity = registry.get<comps::Velocity>(entity);
   const auto& mass = registry.get<comps::MassProperties>(entity);
   const auto& force = registry.get<comps::Force>(entity);
 
   sxdetail::RigidIpcBodyDynamicsState state;
-  state.active = !isStatic;
+  state.active = !prescribedMotion;
   state.pose = pose;
   state.velocity.head<3>() = velocity.linear;
   state.velocity.tail<3>() = velocity.angular;
@@ -7230,7 +7393,7 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
   state.inertia = mass.inertia;
   state.generalizedForce.head<3>() = force.force;
   state.generalizedForce.tail<3>() = force.torque;
-  if (!isStatic && mass.mass > 0.0 && std::isfinite(mass.mass)) {
+  if (!prescribedMotion && mass.mass > 0.0 && std::isfinite(mass.mass)) {
     state.generalizedForce.head<3>() += mass.mass * world.getGravity();
   }
 
@@ -7241,10 +7404,10 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
     const World& world, RigidIpcSolverStats& stats)
 {
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
-      comps::CollisionGeometry,
       comps::Transform,
       comps::Velocity,
       comps::MassProperties,
@@ -7256,36 +7419,63 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
   std::vector<RigidIpcRuntimeBody> bodies;
   bodies.reserve(view.size_hint());
   for (const auto entity : view) {
+    const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
+    const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+    const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
+    if (geometry == nullptr && !isKinematic) {
+      continue;
+    }
+
     ++stats.bodyCount;
 
-    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto& transform = view.get<comps::Transform>(entity);
+    const auto& velocity = view.get<comps::Velocity>(entity);
 
     RigidIpcRuntimeBody body;
     body.entity = entity;
+    body.kinematic = isKinematic;
     body.initialPose = toRigidIpcPose(transform);
+    body.initialVelocity.head<3>() = velocity.linear;
+    body.initialVelocity.tail<3>() = velocity.angular;
     body.surface.body = bodies.size();
     body.surface.pose = body.initialPose;
-    body.surface.dynamic = !registry.all_of<comps::StaticBodyTag>(entity);
+    body.surface.dynamic = !isStatic && !isKinematic;
+    body.surface.kinematic = isKinematic;
+    body.surface.kinematicStartPose = body.initialPose;
     body.surface.frictionCoefficient = frictionOf(registry, entity);
+    if (isKinematic) {
+      // The obstacle advances under its prescribed velocity over the step; the
+      // solver evaluates the barrier/dynamics at this end pose while the line
+      // search and lagged friction use the start->end motion.
+      body.surface.pose
+          = integrateRigidIpcKinematicPose(world, entity, body.initialPose);
+    }
     bool copiedSurface = false;
-    for (const CollisionShape& shape : geometry.shapes) {
-      if (copyCollisionShapeToRigidIpcSurface(shape, body.surface)) {
-        copiedSurface = true;
-        break;
+    if (geometry != nullptr) {
+      for (const CollisionShape& shape : geometry->shapes) {
+        if (copyCollisionShapeToRigidIpcSurface(shape, body.surface)) {
+          copiedSurface = true;
+          break;
+        }
       }
     }
     if (!copiedSurface) {
       ++stats.skippedUnsupportedShapeCount;
-      continue;
+      if (!isKinematic) {
+        continue;
+      }
     }
 
-    body.dynamicsTerm
-        = makeRuntimeRigidIpcDynamicsTerm(world, entity, body.initialPose);
-    if (body.surface.dynamic) {
-      ++stats.dynamicBodyCount;
+    if (copiedSurface) {
+      body.hasSupportedSurface = true;
+      body.surfaceIndex = stats.surfaceCount;
+      body.dynamicsTerm
+          = makeRuntimeRigidIpcDynamicsTerm(world, entity, body.initialPose);
+      if (body.surface.dynamic) {
+        ++stats.dynamicBodyCount;
+      }
+      ++stats.surfaceCount;
     }
-    ++stats.surfaceCount;
     bodies.push_back(std::move(body));
   }
 
@@ -7305,12 +7495,26 @@ std::size_t findRuntimeBodyIndex(
 }
 
 //==============================================================================
+void clearKinematicBodyStepTraces(World& world)
+{
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto view = registry.view<comps::KinematicBodyStepTrace>();
+  std::vector<entt::entity> tracedEntities;
+  for (const auto entity : view) {
+    tracedEntities.push_back(entity);
+  }
+  for (const auto entity : tracedEntities) {
+    registry.remove<comps::KinematicBodyStepTrace>(entity);
+  }
+}
+
+//==============================================================================
 void applyRigidIpcPoseToRuntimeBody(
     World& world,
     const RigidIpcRuntimeBody& body,
     const sxdetail::RigidIpcPose& pose)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto& transform = registry.get<comps::Transform>(body.entity);
   auto& velocity = registry.get<comps::Velocity>(body.entity);
 
@@ -7334,30 +7538,251 @@ void applyRigidIpcPoseToRuntimeBody(
 }
 
 //==============================================================================
+// Advance a kinematic obstacle to its prescribed end-of-step pose. Unlike the
+// dynamic write-back this preserves the body's velocity (the prescribed
+// kinematic velocity), so the obstacle keeps moving at a constant rate.
+void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
+{
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto& transform = registry.get<comps::Transform>(body.entity);
+
+  comps::KinematicBodyStepTrace trace;
+  trace.frame = world.getFrame();
+  trace.startTransform = toTransform(body.initialPose);
+  trace.endTransform = toTransform(body.surface.pose);
+  registry.emplace_or_replace<comps::KinematicBodyStepTrace>(
+      body.entity, std::move(trace));
+
+  transform.position = body.surface.pose.position;
+  transform.orientation
+      = quaternionFromRotationVector(body.surface.pose.rotation);
+
+  auto& props = registry.get<comps::FreeFrameProperties>(body.entity);
+  const auto worldTransform = toIsometry(transform, transform.orientation);
+  const auto& frameState = registry.get<comps::FrameState>(body.entity);
+  props.localTransform
+      = computeFrameWorldTransform(registry, frameState.parentFrame).inverse()
+        * worldTransform;
+
+  auto& cache = registry.get<comps::FrameCache>(body.entity);
+  cache.needTransformUpdate = true;
+}
+
+//==============================================================================
 void applyRigidIpcRuntimeResult(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& bodies,
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
 {
-  auto& registry = world.getRegistry();
-  std::vector<entt::entity> dynamicEntities;
-  dynamicEntities.reserve(bodies.size());
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  std::vector<entt::entity> writebackEntities;
+  writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
-    if (body.surface.dynamic) {
-      dynamicEntities.push_back(body.entity);
+    if (body.surface.dynamic || body.kinematic) {
+      writebackEntities.push_back(body.entity);
     }
   }
 
   const auto orderedEntities
-      = orderRigidBodiesParentBeforeChild(registry, dynamicEntities);
+      = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
   for (const auto entity : orderedEntities) {
     const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
-    if (bodyIndex >= bodies.size() || bodyIndex >= result.surfaces.size()) {
+    if (bodyIndex >= bodies.size()) {
       continue;
     }
-    applyRigidIpcPoseToRuntimeBody(
-        world, bodies[bodyIndex], result.surfaces[bodyIndex].pose);
+    const auto& body = bodies[bodyIndex];
+    if (body.kinematic) {
+      applyKinematicRuntimeBody(world, body);
+    } else if (body.surface.dynamic && body.hasSupportedSurface) {
+      if (body.surfaceIndex >= result.surfaces.size()) {
+        continue;
+      }
+      applyRigidIpcPoseToRuntimeBody(
+          world, body, result.surfaces[body.surfaceIndex].pose);
+    }
   }
+}
+
+//==============================================================================
+void applyRigidIpcKinematicRuntimeBodies(
+    World& world,
+    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const std::vector<entt::entity>& blockedKinematicEntities)
+{
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  std::vector<entt::entity> writebackEntities;
+  writebackEntities.reserve(bodies.size());
+  for (const auto& body : bodies) {
+    if (body.kinematic
+        && std::find(
+               blockedKinematicEntities.begin(),
+               blockedKinematicEntities.end(),
+               body.entity)
+               == blockedKinematicEntities.end()) {
+      writebackEntities.push_back(body.entity);
+    }
+  }
+
+  const auto orderedEntities
+      = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
+  for (const auto entity : orderedEntities) {
+    const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
+    if (bodyIndex >= bodies.size()) {
+      continue;
+    }
+    applyKinematicRuntimeBody(world, bodies[bodyIndex]);
+  }
+}
+
+//==============================================================================
+void applyRigidIpcKinematicRuntimeBodies(
+    World& world, const std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  applyRigidIpcKinematicRuntimeBodies(
+      world, bodies, std::vector<entt::entity>{});
+}
+
+//==============================================================================
+void blockRejectedRigidIpcKinematicBody(
+    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    const std::size_t solverBodyIndex,
+    std::vector<entt::entity>& blockedEntities)
+{
+  if (solverBodyIndex >= solverBodies.size()
+      || !solverBodies[solverBodyIndex].kinematic) {
+    return;
+  }
+
+  const entt::entity entity = solverBodies[solverBodyIndex].entity;
+  if (std::find(blockedEntities.begin(), blockedEntities.end(), entity)
+      == blockedEntities.end()) {
+    blockedEntities.push_back(entity);
+  }
+}
+
+//==============================================================================
+std::vector<entt::entity> blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
+    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+{
+  std::vector<entt::entity> blockedEntities;
+  const auto blockBodyPair = [&](const std::size_t bodyA,
+                                 const std::size_t bodyB) {
+    blockRejectedRigidIpcKinematicBody(solverBodies, bodyA, blockedEntities);
+    blockRejectedRigidIpcKinematicBody(solverBodies, bodyB, blockedEntities);
+  };
+
+  for (const auto& constraint : result.assembly.activeConstraints) {
+    blockBodyPair(constraint.bodyA, constraint.bodyB);
+  }
+  for (const auto& constraint : result.assembly.activeFrictionConstraints) {
+    blockBodyPair(constraint.bodyA, constraint.bodyB);
+  }
+  if (result.lineSearch.limited || !result.lineSearch.allowsPositiveStep()) {
+    blockBodyPair(result.lineSearch.bodyA, result.lineSearch.bodyB);
+  }
+
+  return blockedEntities;
+}
+
+//==============================================================================
+void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
+    World& world,
+    const std::vector<RigidIpcRuntimeBody>& runtimeBodies,
+    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+{
+  // Rejected dynamic solve results are discarded, but kinematic bodies that did
+  // not participate in active IPC rows or the limiting CCD pair still have an
+  // independent prescribed motion. Block only the involved supported surfaces;
+  // unsupported kinematic bodies never entered the solve and remain
+  // advanceable.
+  applyRigidIpcKinematicRuntimeBodies(
+      world,
+      runtimeBodies,
+      blockedKinematicEntitiesAfterRejectedRigidIpcSolve(solverBodies, result));
+}
+
+//==============================================================================
+bool canApplyRestingContactNoOp(
+    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+{
+  if (!result.failed
+      || result.status
+             != sxdetail::RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked
+      || result.stats.acceptedSteps != 0u
+      || result.stats.lineSearchZeroStepCount == 0u
+      || result.assembly.activeConstraints.empty()) {
+    return false;
+  }
+
+  constexpr double kStationaryVelocityTolerance = 1e-10;
+  constexpr double kContactPowerTolerance = 1e-12;
+  bool sawDynamicContactBody = false;
+  std::vector<double> contactPowerSum(bodies.size(), 0.0);
+  std::vector<bool> sawNonStationaryContactBody(bodies.size(), false);
+  std::vector<bool> stationaryContactBody(bodies.size(), false);
+  const auto accumulateContactPower = [&](const auto& constraint) {
+    const std::array<std::size_t, 2> bodyIndices{
+        constraint.bodyA, constraint.bodyB};
+    for (std::size_t localBody = 0; localBody < bodyIndices.size();
+         ++localBody) {
+      const std::size_t bodyIndex = bodyIndices[localBody];
+      if (bodyIndex >= bodies.size() || !bodies[bodyIndex].surface.dynamic) {
+        continue;
+      }
+
+      sawDynamicContactBody = true;
+      const auto& velocity = bodies[bodyIndex].initialVelocity;
+      if (!velocity.allFinite()) {
+        return false;
+      }
+      if (velocity.norm() <= kStationaryVelocityTolerance) {
+        stationaryContactBody[bodyIndex] = true;
+        continue;
+      }
+      sawNonStationaryContactBody[bodyIndex] = true;
+
+      const auto gradient = constraint.reduced.gradient.template segment<6>(
+          static_cast<Eigen::Index>(6 * localBody));
+      if (!gradient.allFinite()) {
+        return false;
+      }
+      const double barrierPower = gradient.dot(velocity);
+      if (!std::isfinite(barrierPower)) {
+        return false;
+      }
+      contactPowerSum[bodyIndex] += barrierPower;
+    }
+    return true;
+  };
+
+  for (const auto& constraint : result.assembly.activeConstraints) {
+    if (!accumulateContactPower(constraint)) {
+      return false;
+    }
+  }
+  for (const auto& constraint : result.assembly.activeFrictionConstraints) {
+    if (!accumulateContactPower(constraint)) {
+      return false;
+    }
+  }
+
+  for (std::size_t bodyIndex = 0; bodyIndex < bodies.size(); ++bodyIndex) {
+    if (!stationaryContactBody[bodyIndex]
+        && !sawNonStationaryContactBody[bodyIndex]) {
+      continue;
+    }
+    if (!sawNonStationaryContactBody[bodyIndex]) {
+      continue;
+    }
+    if (std::abs(contactPowerSum[bodyIndex]) <= kContactPowerTolerance) {
+      return false;
+    }
+  }
+
+  return sawDynamicContactBody;
 }
 
 } // namespace
@@ -7381,14 +7806,15 @@ ComputeStageMetadata RigidBodyVelocityStage::getMetadata() const noexcept
 void RigidBodyVelocityStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto timeStep = world.getTimeStep();
   const auto forces = assembleRigidBodyForces(world, true);
 
   for (std::size_t i = 0; i < forces.entities.size(); ++i) {
     const auto entity = forces.entities[i];
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
-      continue; // Static bodies do not accelerate.
+    if (registry.all_of<comps::StaticBodyTag>(entity)
+        || registry.all_of<comps::KinematicBodyTag>(entity)) {
+      continue; // Static and kinematic bodies do not accelerate.
     }
 
     const Eigen::Vector3d force(
@@ -7422,7 +7848,7 @@ ComputeStageMetadata RigidBodyPositionStage::getMetadata() const noexcept
 void RigidBodyPositionStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto timeStep = world.getTimeStep();
 
   auto view = registry.view<
@@ -7433,8 +7859,9 @@ void RigidBodyPositionStage::execute(
       comps::FrameState,
       comps::FrameCache>();
   for (auto entity : view) {
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
-      continue; // Static bodies do not move.
+    if (registry.all_of<comps::StaticBodyTag>(entity)
+        || registry.all_of<comps::KinematicBodyTag>(entity)) {
+      continue; // Static and kinematic bodies do not move under this stage.
     }
     integrateRigidBodyPosition(registry, entity, timeStep);
   }
@@ -7486,7 +7913,7 @@ ComputeStageMetadata RigidBodyContactStage::getMetadata() const noexcept
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
   const auto contacts = world.collide();
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
 
   const auto projectAvbdRigidPointJoints = [&]() {
     const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
@@ -7668,8 +8095,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   std::vector<NormalConstraint> constraints;
   constraints.reserve(contacts.size());
   for (const auto& contact : contacts) {
-    const auto entityA = contact.bodyA.getEntity();
-    const auto entityB = contact.bodyB.getEntity();
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
 
     // This sequential-impulse solver handles rigid-body pairs only; contacts
     // involving multibody links are resolved by the articulated contact solve.
@@ -7683,8 +8110,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     const auto& massA = registry.get<comps::MassProperties>(entityA);
     const auto& massB = registry.get<comps::MassProperties>(entityB);
 
-    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
-    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+    const bool staticA
+        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+    const bool staticB
+        = hasPrescribedRigidBodyContactResponse(registry, entityB);
 
     NormalConstraint constraint;
     constraint.bodyA = entityA;
@@ -7858,7 +8287,14 @@ std::size_t RigidBodyContactStage::getIterations() const noexcept
 
 //==============================================================================
 RigidIpcContactStage::RigidIpcContactStage(const std::size_t maxIterations)
-  : m_maxIterations(maxIterations)
+  : RigidIpcContactStage(
+        makeRigidIpcContactStageOptionsForMaxIterations(maxIterations))
+{
+}
+
+//==============================================================================
+RigidIpcContactStage::RigidIpcContactStage(RigidIpcContactStageOptions options)
+  : m_options(sanitizeRigidIpcContactStageOptions(options))
 {
 }
 
@@ -7879,6 +8315,7 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
        {"rigid_body.velocity", ComputeAccessMode::ReadWrite},
        {"rigid_body.mass", ComputeAccessMode::Read},
        {"rigid_body.force", ComputeAccessMode::Read},
+       {"rigid_body.kinematic_step_trace", ComputeAccessMode::ReadWrite},
        {"collision_geometry", ComputeAccessMode::Read}}};
 }
 
@@ -7886,17 +8323,33 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
 void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
 {
   m_lastStats.reset();
+  clearKinematicBodyStepTraces(world);
 
   const auto runtimeBodies = collectRigidIpcRuntimeBodies(world, m_lastStats);
-  if (runtimeBodies.empty() || m_lastStats.dynamicBodyCount == 0u) {
+
+  if (runtimeBodies.empty()) {
     return;
+  }
+  if (m_lastStats.dynamicBodyCount == 0u) {
+    // Kinematic-only scenes have no solve acceptance gate, so advance
+    // prescribed bodies directly.
+    applyRigidIpcKinematicRuntimeBodies(world, runtimeBodies);
+    return;
+  }
+
+  std::vector<RigidIpcRuntimeBody> solverBodies;
+  solverBodies.reserve(m_lastStats.surfaceCount);
+  for (const auto& body : runtimeBodies) {
+    if (body.hasSupportedSurface) {
+      solverBodies.push_back(body);
+    }
   }
 
   std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
-  surfaces.reserve(runtimeBodies.size());
-  dynamicsTerms.reserve(runtimeBodies.size());
-  for (const auto& body : runtimeBodies) {
+  surfaces.reserve(solverBodies.size());
+  dynamicsTerms.reserve(solverBodies.size());
+  for (const auto& body : solverBodies) {
     surfaces.push_back(body.surface);
     dynamicsTerms.push_back(body.dynamicsTerm);
   }
@@ -7912,7 +8365,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
   double massSum = 0.0;
   std::size_t massCount = 0;
-  for (const auto& body : runtimeBodies) {
+  for (const auto& body : solverBodies) {
     const Eigen::Matrix3d rotation
         = sxdetail::rigidIpcRotationVectorToMatrix(body.surface.pose.rotation);
     for (const Eigen::Vector3d& localVertex : body.surface.vertices) {
@@ -7943,18 +8396,32 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       = massCount > 0u ? massSum / static_cast<double>(massCount) : 1.0;
 
   sxdetail::RigidIpcProjectedNewtonSolveOptions options;
-  constexpr double activationDistance = 1e-2;
   options.barrier.squaredActivationDistance
-      = activationDistance * activationDistance;
-  options.barrier.stiffness = 1.0;
+      = m_options.activationDistance * m_options.activationDistance;
+  options.barrier.stiffness
+      = std::max(1.0, world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
+  // The conservative line search runs a curved ACCD per candidate primitive
+  // pair. If the ACCD exhausts its iteration budget on a tight, slowly
+  // converging pair it returns Indeterminate, which the line search treats as a
+  // zero step -- so the whole solve reports LineSearchBlocked and is skipped.
+  // Dense resting contacts (stacks, piles, arches) routinely produce such pairs
+  // once they settle into compression, freezing the solve even though the
+  // contacts are advanceable. Give the ACCD a larger budget so those pairs
+  // resolve to a real Hit/Miss instead. This only increases CCD accuracy -- a
+  // real contact still limits the step -- so it cannot weaken the
+  // intersection-free guarantee; well-separated scenes converge well under the
+  // cap and are unaffected.
+  options.lineSearch.maxIterations = 256;
   options.adaptiveStiffness.enabled = true;
   options.adaptiveStiffness.averageMass = averageMass;
   options.adaptiveStiffness.bboxDiagonal = bboxDiagonal;
   options.friction.coefficient = 1.0;
   options.friction.staticFrictionDisplacement
-      = std::max(0.0, 1e-3 * world.getTimeStep());
+      = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
   options.dynamicsTerms = std::move(dynamicsTerms);
-  options.maxIterations = m_maxIterations;
+  options.maxIterations = m_options.maxIterations;
+  options.frictionIterations = m_options.frictionIterations;
+  options.frictionConvergenceTolerance = m_options.frictionConvergenceTolerance;
   // The apply policy below writes back a not-fully-converged result when it
   // made progress, relying on every accepted Newton step having passed the
   // conservative line-search feasibility check. That guarantee only holds with
@@ -7979,6 +8446,17 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       },
       getMetadata());
   executor.execute(graph);
+
+  const bool lineSearchBlocked
+      = result.status
+        == sxdetail::RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
+  const bool hasKinematicRuntimeBody = std::any_of(
+      solverBodies.begin(), solverBodies.end(), [](const auto& body) {
+        return body.kinematic;
+      });
+  const bool restingContactBlocked
+      = !hasKinematicRuntimeBody && lineSearchBlocked
+        && canApplyRestingContactNoOp(solverBodies, result);
 
   m_lastStats.status = toPublicRigidIpcSolveStatus(result.status);
   m_lastStats.activeConstraints = result.assembly.activeConstraints.size();
@@ -8012,12 +8490,33 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.lineSearchIndeterminateCount
       = result.stats.lineSearchIndeterminateCount;
   m_lastStats.lineSearchZeroStepCount = result.stats.lineSearchZeroStepCount;
+  m_lastStats.sufficientDecreaseChecks = result.stats.sufficientDecreaseChecks;
+  m_lastStats.sufficientDecreaseBacktracks
+      = result.stats.sufficientDecreaseBacktracks;
   m_lastStats.converged = result.converged;
-  m_lastStats.failed = result.failed;
+  m_lastStats.failed = result.failed && !restingContactBlocked;
+
+  if (result.assembly.activeConstraints.empty()) {
+    world.resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
+  } else if (
+      std::isfinite(result.stats.barrierStiffness)
+      && result.stats.barrierStiffness > 0.0) {
+    world.setRigidIpcAdaptiveBarrierStiffnessLowerBound(
+        result.stats.barrierStiffness);
+  }
 
   // A failed solve (conservative line search blocked the step, or the
-  // factorization failed) never writes back: applying it could penetrate.
-  if (result.failed) {
+  // factorization failed) normally never writes back: applying it could
+  // penetrate. The exception is an exact resting-contact plateau where the
+  // line search blocked before any accepted step and the active dynamic contact
+  // bodies were either stationary or constrained by contact-gradient work.
+  // Writing back the unchanged current pose is safe in that narrow case (it
+  // introduces no new motion) and avoids reporting a persistent failure for a
+  // static dense contact. Pure tangential or friction-only motion must be
+  // preserved by leaving the runtime state untouched.
+  if (result.failed && !restingContactBlocked) {
+    applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
+        world, runtimeBodies, solverBodies, result);
     return;
   }
   // Otherwise apply the last intersection-free iterate the bounded solve
@@ -8027,11 +8526,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // gradient tolerance) is a valid, penetration-free forward step that the next
   // substep re-solves from -- like the reference IPC, which advances with the
   // optimizer's feasible iterate rather than discarding a non-converged step.
-  // (Unlike the reference this iterate is not Armijo energy-minimized; the
-  // sufficient-decrease guarantee is a documented follow-up.) A solve that made
-  // no progress at all (e.g. a zero iteration budget) is still skipped.
-  if (!result.converged && !result.madeProgress()) {
+  // The internal solve applies sufficient-decrease backtracking when the
+  // assembled objective admits it, and otherwise stops at the last feasible
+  // decreasing iterate. A solve that made no progress at all (e.g. a zero
+  // iteration budget) is still skipped.
+  if (!result.converged && !result.madeProgress() && !restingContactBlocked) {
     m_lastStats.nonConvergedResultSkipped = true;
+    applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
+        world, runtimeBodies, solverBodies, result);
     return;
   }
 
@@ -8042,7 +8544,37 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
 //==============================================================================
 std::size_t RigidIpcContactStage::getMaxIterations() const noexcept
 {
-  return m_maxIterations;
+  return m_options.maxIterations;
+}
+
+//==============================================================================
+double RigidIpcContactStage::getActivationDistance() const noexcept
+{
+  return m_options.activationDistance;
+}
+
+//==============================================================================
+std::size_t RigidIpcContactStage::getFrictionIterations() const noexcept
+{
+  return m_options.frictionIterations;
+}
+
+//==============================================================================
+double RigidIpcContactStage::getStaticFrictionSpeedBound() const noexcept
+{
+  return m_options.staticFrictionSpeedBound;
+}
+
+//==============================================================================
+double RigidIpcContactStage::getFrictionConvergenceTolerance() const noexcept
+{
+  return m_options.frictionConvergenceTolerance;
+}
+
+//==============================================================================
+RigidIpcContactStageOptions RigidIpcContactStage::getOptions() const noexcept
+{
+  return m_options;
 }
 
 //==============================================================================
@@ -8068,6 +8600,7 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
        {"deformable_body.model", ComputeAccessMode::Read},
        {"deformable_body.topology", ComputeAccessMode::Read},
        {"deformable_body.boundary_conditions", ComputeAccessMode::Read},
+       {"rigid_body.kinematic_step_trace", ComputeAccessMode::Read},
        {"static_collision_geometry", ComputeAccessMode::Read}}};
 }
 
@@ -8077,7 +8610,7 @@ void DeformableDynamicsStage::execute(
 {
   m_lastStats.reset();
 
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
@@ -8202,7 +8735,7 @@ ComputeStageMetadata BatchedRigidBodyIntegrationStage::getMetadata()
 void BatchedRigidBodyIntegrationStage::execute(
     World& world, ComputeExecutor& executor)
 {
-  auto& registry = world.getRegistry();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto forces = assembleRigidBodyForces(world, true);
   const auto& entities = forces.entities;
 
@@ -8225,7 +8758,7 @@ void BatchedRigidBodyIntegrationStage::execute(
       getMetadata());
   executor.execute(graph);
 
-  restoreStaticRigidBodyState(registry, entities, initialState, state);
+  restorePrescribedRigidBodyState(registry, entities, initialState, state);
   applyRigidBodyState(world, state);
 
   // Restore frame-cache consistency the same way the per-entity integrator

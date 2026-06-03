@@ -34,10 +34,10 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/multibody/joint_type.hpp>
 
 #include <Eigen/Core>
-#include <entt/entt.hpp>
 
 #include <string>
 #include <string_view>
@@ -70,7 +70,7 @@ enum class ActuatorType
 ///
 /// Unlike traditional OOP physics engines, the experimental stack uses a single
 /// generic Joint class with ECS architecture. All joint type-specific data is
-/// stored in JointComponent in the centralized entt::registry. The handle
+/// stored in JointComponent in the centralized ECS registry. The handle
 /// provides a unified interface regardless of joint type (revolute, prismatic,
 /// ball, etc.).
 ///
@@ -101,9 +101,9 @@ class DART_EXPERIMENTAL_API Joint
 public:
   /// Constructor (typically called by Link::getParentJoint)
   ///
-  /// @param entity The entity ID in the registry
+  /// @param entity The opaque entity token in the registry
   /// @param world Pointer to the World owning this entity
-  Joint(entt::entity entity, World* world);
+  Joint(Entity entity, World* world);
 
   /// Get the name of this joint
   ///
@@ -330,10 +330,26 @@ public:
   /// @return Child Link handle
   [[nodiscard]] Link getChildLink() const;
 
-  /// Get the underlying ECS entity handle
+  /// Get the parent rigid body for a public rigid-body fixed joint.
   ///
-  /// @return The entity ID
-  [[nodiscard]] entt::entity getEntity() const;
+  /// @return Parent RigidBody handle
+  /// @throws InvalidArgumentException if this joint does not connect rigid
+  /// bodies.
+  [[nodiscard]] RigidBody getParentRigidBody() const;
+
+  /// Get the child rigid body for a public rigid-body fixed joint.
+  ///
+  /// @return Child RigidBody handle
+  /// @throws InvalidArgumentException if this joint does not connect rigid
+  /// bodies.
+  [[nodiscard]] RigidBody getChildRigidBody() const;
+
+  /// Get the opaque entity token for this joint.
+  ///
+  /// Returns the backend-neutral `Entity` token. Internal code that needs the
+  /// raw ECS handle should call
+  /// `detail::toRegistryEntity(joint.getEntity())`.
+  [[nodiscard]] Entity getEntity() const;
 
   /// Check if this handle is valid (entity still exists)
   ///
@@ -346,8 +362,8 @@ public:
   // - Computing joint transforms
 
 private:
-  entt::entity m_entity; ///< Entity ID in the registry
-  World* m_world;        ///< Non-owning pointer to World
+  Entity m_entity; ///< Opaque entity token
+  World* m_world;  ///< Non-owning pointer to World
 };
 
 } // namespace dart::simulation::experimental

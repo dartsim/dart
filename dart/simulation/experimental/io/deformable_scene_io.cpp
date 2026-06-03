@@ -34,6 +34,7 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/deformable_body.hpp"
 #include "dart/simulation/experimental/comps/name.hpp"
+#include "dart/simulation/experimental/detail/world_registry_access.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Geometry>
@@ -859,7 +860,8 @@ DeformableSceneDiagnostics collectDeformableSceneDiagnostics(const World& world)
   diagnostics.minZ = std::numeric_limits<double>::infinity();
   diagnostics.maxZ = -std::numeric_limits<double>::infinity();
 
-  const auto& registry = world.getRegistry();
+  const auto& registry
+      = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<
       comps::DeformableBodyTag,
       comps::DeformableNodeState,

@@ -233,6 +233,7 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runtime_isolation.py" }
 audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
 check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
+audit-dart7-promotion-surface = { cmd = "python scripts/audit_dart7_promotion_surface.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 lint-compute-backend-boundaries = { cmd = [
@@ -753,6 +754,31 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
   # only); override with DART_CUDA_HOST_LIBDIR if your distro differs.
   DART_CUDA_HOST_LIBDIR_VALUE=${DART_CUDA_HOST_LIBDIR:-/usr/lib/x86_64-linux-gnu}
   export LDFLAGS="-L${DART_CUDA_HOST_LIBDIR_VALUE} ${LDFLAGS:-}"
+  CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME}
+  CMAKE_CACHE=${CMAKE_BUILD_DIR}/CMakeCache.txt
+  if [ -f "${CMAKE_CACHE}" ]; then
+    cached_c_compiler=
+    cached_cxx_compiler=
+    cached_cuda_compiler=
+    cached_cuda_host_compiler=
+    while IFS='=' read -r cache_key cache_value; do
+      case "${cache_key}" in
+        CMAKE_C_COMPILER:*) cached_c_compiler=${cache_value} ;;
+        CMAKE_CXX_COMPILER:*) cached_cxx_compiler=${cache_value} ;;
+        CMAKE_CUDA_COMPILER:*) cached_cuda_compiler=${cache_value} ;;
+        CMAKE_CUDA_HOST_COMPILER:*) cached_cuda_host_compiler=${cache_value} ;;
+      esac
+    done < "${CMAKE_CACHE}"
+    if [ "${cached_c_compiler}" != "${DART_CUDA_HOST_CC_VALUE}" ] \
+      || [ "${cached_cxx_compiler}" != "${DART_CUDA_HOST_CXX_VALUE}" ] \
+      || [ "${cached_cuda_compiler}" != "${CONDA_PREFIX}/bin/nvcc" ] \
+      || { [ -n "${cached_cuda_host_compiler}" ] \
+        && [ "${cached_cuda_host_compiler}" != "${DART_CUDA_HOST_CXX_VALUE}" ]; }; then
+      echo "CMake compiler cache changed for ${CMAKE_BUILD_DIR}; resetting cache metadata."
+      rm -f "${CMAKE_CACHE}"
+      rm -rf "${CMAKE_BUILD_DIR}/CMakeFiles"
+    fi
+  fi
 fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}

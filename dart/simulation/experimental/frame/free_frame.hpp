@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/entity.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 
 #include <Eigen/Dense>
@@ -51,17 +52,11 @@ namespace dart::simulation::experimental {
 /// - Target frames for IK
 ///
 /// DART6 equivalent: SimpleFrame (with modifiable transform)
-class DART_EXPERIMENTAL_API FreeFrame
-  : public Frame,
-    public EntityObjectWith<
-        TagComps<comps::FreeFrameTag>,
-        ReadOnlyComps<>,
-        WriteOnlyComps<>,
-        ReadWriteComps<comps::FreeFrameProperties>>
+class DART_EXPERIMENTAL_API FreeFrame : public Frame
 {
 public:
   /// Constructor (package-private, use World::addFreeFrame)
-  FreeFrame(entt::entity entity, World* world);
+  FreeFrame(Entity entity, World* world);
 
   //--------------------------------------------------------------------------
   // Transform API

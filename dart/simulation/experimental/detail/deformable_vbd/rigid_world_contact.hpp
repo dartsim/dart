@@ -40,6 +40,7 @@
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 
 #include <entt/entt.hpp>
 
@@ -158,6 +159,159 @@ inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
       = normalizeAvbdRigidOrientation(state.orientation).toRotationMatrix();
   transform.translation() = state.position;
   return transform;
+}
+
+//==============================================================================
+inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
+    entt::registry& registry,
+    entt::entity jointEntity,
+    double startStiffness = 1.0,
+    double maxStiffness = std::numeric_limits<double>::infinity())
+{
+  if (!registry.valid(jointEntity) || !std::isfinite(startStiffness)
+      || startStiffness < 0.0 || std::isnan(maxStiffness)
+      || maxStiffness < startStiffness) {
+    return false;
+  }
+
+  auto* joint = registry.try_get<comps::Joint>(jointEntity);
+  if (joint == nullptr || joint->type != comps::JointType::Fixed
+      || joint->parentLink == entt::null || joint->childLink == entt::null
+      || joint->parentLink == joint->childLink) {
+    return false;
+  }
+
+  if (!registry.all_of<
+          comps::RigidBodyTag,
+          comps::Transform,
+          comps::MassProperties>(joint->parentLink)
+      || !registry.all_of<
+          comps::RigidBodyTag,
+          comps::Transform,
+          comps::MassProperties>(joint->childLink)) {
+    return false;
+  }
+
+  const auto& transformA = registry.get<comps::Transform>(joint->parentLink);
+  const auto& transformB = registry.get<comps::Transform>(joint->childLink);
+  if (!transformA.position.allFinite() || !transformB.position.allFinite()
+      || !transformA.orientation.coeffs().allFinite()
+      || !transformB.orientation.coeffs().allFinite()) {
+    return false;
+  }
+
+  Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  if (joint->hasRigidBodyFixedJointAnchors) {
+    if (!joint->rigidBodyFixedJointLocalAnchorParent.allFinite()
+        || !joint->rigidBodyFixedJointLocalAnchorChild.allFinite()
+        || !joint->rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+                .allFinite()
+        || joint->rigidBodyFixedJointTargetRelativeOrientation.norm() == 0.0) {
+      return false;
+    }
+    localAnchorA = joint->rigidBodyFixedJointLocalAnchorParent;
+    localAnchorB = joint->rigidBodyFixedJointLocalAnchorChild;
+    targetRelativeOrientation = normalizeAvbdRigidOrientation(
+        joint->rigidBodyFixedJointTargetRelativeOrientation);
+  } else {
+    const Eigen::Quaterniond orientationA
+        = normalizeAvbdRigidOrientation(transformA.orientation);
+    const Eigen::Quaterniond orientationB
+        = normalizeAvbdRigidOrientation(transformB.orientation);
+    const Eigen::Isometry3d worldA = avbdRigidWorldContactToIsometry(
+        AvbdRigidBodyState{transformA.position, orientationA});
+    const Eigen::Isometry3d worldB = avbdRigidWorldContactToIsometry(
+        AvbdRigidBodyState{transformB.position, orientationB});
+    const Eigen::Vector3d worldAnchor = worldB.translation();
+    localAnchorA = worldA.inverse() * worldAnchor;
+    localAnchorB = worldB.inverse() * worldAnchor;
+    targetRelativeOrientation = normalizeAvbdRigidOrientation(
+        orientationA.conjugate() * orientationB);
+
+    joint->hasRigidBodyFixedJointAnchors = true;
+    joint->rigidBodyFixedJointLocalAnchorParent = localAnchorA;
+    joint->rigidBodyFixedJointLocalAnchorChild = localAnchorB;
+    joint->rigidBodyFixedJointTargetRelativeOrientation
+        = targetRelativeOrientation;
+  }
+
+  auto& config = registry.emplace_or_replace<AvbdRigidWorldPointJointConfig>(
+      jointEntity);
+  config.enabled = true;
+  config.localAnchorA = localAnchorA;
+  config.localAnchorB = localAnchorB;
+  config.targetRelativeOrientation = targetRelativeOrientation;
+  config.startStiffness = startStiffness;
+  config.maxStiffness = maxStiffness;
+  return true;
+}
+
+//==============================================================================
+inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+    entt::registry& registry)
+{
+  std::size_t configured = 0;
+  const auto view = registry.view<comps::Joint>(
+      entt::exclude<AvbdRigidWorldPointJointConfig>);
+
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
+        || joint.childLink == entt::null
+        || joint.parentLink == joint.childLink) {
+      continue;
+    }
+
+    if (!registry.all_of<
+            comps::RigidBodyTag,
+            comps::Transform,
+            comps::MassProperties>(joint.parentLink)
+        || !registry.all_of<
+            comps::RigidBodyTag,
+            comps::Transform,
+            comps::MassProperties>(joint.childLink)) {
+      continue;
+    }
+
+    const auto* configA
+        = registry.try_get<comps::RigidAvbdContactConfig>(joint.parentLink);
+    const auto* configB
+        = registry.try_get<comps::RigidAvbdContactConfig>(joint.childLink);
+    double startStiffness = 0.0;
+    double maxStiffness = std::numeric_limits<double>::infinity();
+    bool hasEnabledConfig = false;
+    const auto absorb = [&](const comps::RigidAvbdContactConfig& config) {
+      if (!config.enabled) {
+        return;
+      }
+      hasEnabledConfig = true;
+      startStiffness = std::max(startStiffness, config.startStiffness);
+      maxStiffness = std::min(maxStiffness, config.maxStiffness);
+    };
+    if (configA != nullptr) {
+      absorb(*configA);
+    }
+    if (configB != nullptr) {
+      absorb(*configB);
+    }
+    if (!hasEnabledConfig) {
+      const comps::RigidAvbdContactConfig defaultConfig;
+      startStiffness = defaultConfig.startStiffness;
+      maxStiffness = defaultConfig.maxStiffness;
+    }
+    if (maxStiffness < startStiffness) {
+      maxStiffness = startStiffness;
+    }
+
+    if (configureAvbdRigidWorldFixedJointFromCurrentPose(
+            registry, entity, startStiffness, maxStiffness)) {
+      ++configured;
+    }
+  }
+
+  return configured;
 }
 
 //==============================================================================
@@ -409,8 +563,8 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
   for (std::size_t contactIndex = 0; contactIndex < contacts.size();
        ++contactIndex) {
     const Contact& contact = contacts[contactIndex];
-    const entt::entity entityA = contact.bodyA.getEntity();
-    const entt::entity entityB = contact.bodyB.getEntity();
+    const entt::entity entityA = toRegistryEntity(contact.bodyA.getEntity());
+    const entt::entity entityB = toRegistryEntity(contact.bodyB.getEntity());
     if (entityA == entt::null || entityB == entt::null || entityA == entityB
         || contact.depth <= 0.0 || !std::isfinite(contact.depth)
         || !contact.point.allFinite() || !contact.normal.allFinite()
