@@ -124,7 +124,8 @@ Eigen::Matrix3d rotationRightJacobianInverse(const Eigen::Vector3d& phi)
 
 //==============================================================================
 std::vector<CoordinateRef> collectCoordinates(
-    const entt::registry& registry, const comps::MultibodyStructure& structure)
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
 {
   std::vector<CoordinateRef> coordinates;
   for (const auto linkEntity : structure.links) {
@@ -157,7 +158,7 @@ struct TermDerivative
 
 //==============================================================================
 StepDerivatives contactFreeStepDerivatives(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,

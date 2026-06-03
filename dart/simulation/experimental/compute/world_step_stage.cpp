@@ -174,7 +174,7 @@ std::optional<comps::Transform> collisionShapeWorldTransform(
 
 //==============================================================================
 Eigen::Isometry3d getLocalFrameTransform(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* fixed
       = registry.try_get<comps::FixedFrameProperties>(entity)) {
@@ -190,7 +190,7 @@ Eigen::Isometry3d getLocalFrameTransform(
 
 //==============================================================================
 Eigen::Isometry3d computeFrameWorldTransform(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (entity == entt::null) {
     return Eigen::Isometry3d::Identity();
@@ -233,7 +233,7 @@ std::size_t findEntityIndex(
 
 //==============================================================================
 entt::entity findNearestRigidBodyAncestor(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     entt::entity entity,
     const std::vector<entt::entity>& rigidBodyEntities)
 {
@@ -256,7 +256,7 @@ entt::entity findNearestRigidBodyAncestor(
 
 //==============================================================================
 bool hasRigidBodyFrameDependency(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const std::vector<entt::entity>& rigidBodyEntities)
 {
   for (const auto entity : rigidBodyEntities) {
@@ -273,7 +273,7 @@ bool hasRigidBodyFrameDependency(
 
 //==============================================================================
 void appendRigidBodyParentBeforeChild(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const std::vector<entt::entity>& rigidBodyEntities,
     std::vector<int>& visitState,
     std::vector<entt::entity>& ordered,
@@ -312,7 +312,7 @@ void appendRigidBodyParentBeforeChild(
 
 //==============================================================================
 std::vector<entt::entity> orderRigidBodiesParentBeforeChild(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const std::vector<entt::entity>& rigidBodyEntities)
 {
   std::vector<entt::entity> ordered;
@@ -394,7 +394,7 @@ void integrateAngularVelocity(
 // Update a body's velocity from an already-assembled force/torque buffer. Does
 // not move the body or mutate the persistent force component.
 void integrateRigidBodyVelocity(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     entt::entity entity,
     const Eigen::Vector3d& force,
     const Eigen::Vector3d& torque,
@@ -420,7 +420,7 @@ void integrateRigidBodyVelocity(
 //==============================================================================
 // Advance a body's pose from its current velocity and refresh its frame cache.
 void integrateRigidBodyPosition(
-    entt::registry& registry, entt::entity entity, const double timeStep)
+    detail::WorldRegistry& registry, entt::entity entity, const double timeStep)
 {
   auto& transform = registry.get<comps::Transform>(entity);
   const auto& velocity = registry.get<comps::Velocity>(entity);
@@ -452,7 +452,7 @@ void integrateRigidBodyPosition(
 
 //==============================================================================
 bool isPrescribedRigidBodyIntegrationBody(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   return registry.all_of<comps::StaticBodyTag>(entity)
          || registry.all_of<comps::KinematicBodyTag>(entity);
@@ -460,7 +460,7 @@ bool isPrescribedRigidBodyIntegrationBody(
 
 //==============================================================================
 void integrateRigidBody(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     entt::entity entity,
     const Eigen::Vector3d& gravity,
     const double timeStep)
@@ -482,7 +482,7 @@ void integrateRigidBody(
 
 //==============================================================================
 const comps::RigidAvbdContactConfig* enabledRigidAvbdContactConfig(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   const auto* config = registry.try_get<comps::RigidAvbdContactConfig>(entity);
   if (config == nullptr || !config->enabled) {
@@ -493,7 +493,7 @@ const comps::RigidAvbdContactConfig* enabledRigidAvbdContactConfig(
 
 //==============================================================================
 std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
-    const entt::registry& registry, std::span<const Contact> contacts)
+    const detail::WorldRegistry& registry, std::span<const Contact> contacts)
 {
   std::optional<comps::RigidAvbdContactConfig> merged;
   for (const Contact& contact : contacts) {
@@ -768,7 +768,7 @@ RigidBodyForceBatch assembleRigidBodyForces(
 
 //==============================================================================
 void restorePrescribedRigidBodyState(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const std::vector<entt::entity>& entities,
     const RigidBodyStateBatch& source,
     RigidBodyStateBatch& target)
@@ -819,7 +819,7 @@ Eigen::Matrix3d inverseWorldInertia(
 }
 
 //==============================================================================
-double restitutionOf(const entt::registry& registry, entt::entity entity)
+double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
     return material->restitution;
@@ -828,7 +828,7 @@ double restitutionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
-double frictionOf(const entt::registry& registry, entt::entity entity)
+double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
     return material->friction;
@@ -838,7 +838,7 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 
 //==============================================================================
 bool hasPrescribedRigidBodyContactResponse(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   return registry.all_of<comps::StaticBodyTag>(entity)
          || registry.all_of<comps::KinematicBodyTag>(entity);
@@ -853,7 +853,7 @@ bool hasPrescribedRigidBodyContactResponse(
 // contacts. Only rigid-body/rigid-body pairs with at least one dynamic body
 // are corrected.
 void resolveRigidBodyContactPositions(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     double /*timeStep*/)
 {
@@ -1632,7 +1632,7 @@ SurfaceContactSnapshot makeStaticSphereSurfaceCcdSnapshot(
 
 //==============================================================================
 bool isCurrentPoseRigidSurfaceCcdObstacle(
-    const entt::registry& registry, const entt::entity entity)
+    const detail::WorldRegistry& registry, const entt::entity entity)
 {
   return registry.all_of<comps::StaticBodyTag>(entity)
          || registry.all_of<comps::KinematicBodyTag>(entity);

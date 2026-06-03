@@ -235,7 +235,8 @@ struct VarTree
 };
 
 VarTree buildVarTree(
-    const entt::registry& registry, const comps::MultibodyStructure& structure)
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
 {
   const auto& linkEntities = structure.links;
   VarTree tree;
@@ -295,7 +296,7 @@ VarTree buildVarTree(
 // effort: commanded effort (Force actuator, clamped to limits) minus passive
 // spring and damping forces. Coriolis/gravity are handled by the integrator.
 void gatherState(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const VarTree& tree,
     Eigen::VectorXd& position,
     Eigen::VectorXd& velocity,
@@ -363,7 +364,7 @@ std::vector<Vector6> currentSpatialVelocities(
 // Evaluate the forced discrete Euler-Lagrange residual f(qNext) in O(n) via a
 // forward (average-velocity) sweep and a backward (momentum/impulse) sweep.
 Eigen::VectorXd computeResidual(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     VarTree& tree,
     const Eigen::VectorXd& nextPosition,
     const MultibodyVariationalState& state,
@@ -810,7 +811,7 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
 // and calls the hook. Returns an empty vector when no hook is set, so the
 // no-contact path does no work and stays numerically identical.
 Eigen::VectorXd evaluateContactForce(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const VarTree& tree,
     const Eigen::VectorXd& nextPosition,
     double timeStep,
@@ -1236,7 +1237,7 @@ VariationalContactHook makeVariationalLinkSphereContactHook(
 
 //==============================================================================
 VariationalSolveReport integrateMultibodyVariational(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
@@ -1666,7 +1667,7 @@ VariationalSolveReport integrateMultibodyVariational(
 
 //==============================================================================
 double computeMultibodyMechanicalEnergy(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity)
 {
@@ -1696,7 +1697,7 @@ double computeMultibodyMechanicalEnergy(
 
 //==============================================================================
 Eigen::VectorXd computeMultibodyInverseMassProduct(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& impulse)
 {
@@ -1716,7 +1717,7 @@ Eigen::VectorXd computeMultibodyInverseMassProduct(
 
 //==============================================================================
 VariationalConstraintLinearization computeVariationalConstraintLinearization(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const std::vector<VariationalLoopConstraint>& constraints)
 {
@@ -1735,7 +1736,7 @@ VariationalConstraintLinearization computeVariationalConstraintLinearization(
 
 //==============================================================================
 VariationalLoopClosureBinding bindVariationalLoopClosure(
-    const entt::registry& registry, entt::entity closureEntity)
+    const detail::WorldRegistry& registry, entt::entity closureEntity)
 {
   using Status = VariationalLoopClosureBinding::Status;
   VariationalLoopClosureBinding binding;

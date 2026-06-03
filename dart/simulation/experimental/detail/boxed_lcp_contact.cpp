@@ -92,7 +92,7 @@ Eigen::Matrix3d inverseWorldInertiaOf(
 }
 
 //==============================================================================
-double restitutionOf(const entt::registry& registry, entt::entity entity)
+double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
     return material->restitution;
@@ -101,7 +101,7 @@ double restitutionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
-double frictionOf(const entt::registry& registry, entt::entity entity)
+double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
     return material->friction;
@@ -111,7 +111,7 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 
 //==============================================================================
 bool hasPrescribedRigidBodyContactResponse(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   return registry.all_of<comps::StaticBodyTag>(entity)
          || registry.all_of<comps::KinematicBodyTag>(entity);
@@ -140,7 +140,7 @@ struct NormalContact
 
 //==============================================================================
 BoxedLcpContactSnapshot solveBoxedLcpContacts(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     double timeStep)
 {

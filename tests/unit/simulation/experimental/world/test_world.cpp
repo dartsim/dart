@@ -48,6 +48,7 @@
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/detail/world_registry_access.hpp>
+#include <dart/simulation/experimental/detail/world_storage.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -55,6 +56,7 @@
 #include <dart/simulation/experimental/world.hpp>
 
 #include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -66,6 +68,8 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <cstdint>
 
 namespace {
 
@@ -238,6 +242,16 @@ public:
   void* lastAllocation{nullptr};
 };
 
+struct alignas(64) RegistryAllocatorComponent
+{
+  explicit RegistryAllocatorComponent(std::uint64_t input) noexcept
+    : value(input)
+  {
+  }
+
+  std::uint64_t value;
+};
+
 } // namespace
 
 // Test World construction
@@ -280,6 +294,50 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
         (void)invalid;
       },
       sx::InvalidArgumentException);
+}
+
+TEST(World, RegistryUsesWorldFreeAllocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto& freeAllocator = world.getMemoryManager().getFreeAllocator();
+  auto& registry = sx::detail::registryOf(world);
+
+  const common::StlAllocator<entt::entity> expectedEntityAllocator{
+      freeAllocator};
+  EXPECT_EQ(registry.get_allocator(), expectedEntityAllocator);
+
+  auto registryAllocator = registry.get_allocator();
+  auto* allocatedEntity = registryAllocator.allocate(1);
+  ASSERT_NE(allocatedEntity, nullptr);
+#if !defined(NDEBUG)
+  EXPECT_TRUE(world.getMemoryManager().hasAllocated(
+      allocatedEntity, sizeof(entt::entity)));
+#else
+  EXPECT_FALSE(world.getMemoryManager().hasAllocated(
+      allocatedEntity, sizeof(entt::entity)));
+#endif
+  registryAllocator.deallocate(allocatedEntity, 1);
+
+  const auto entity = registry.create();
+  const auto& component
+      = registry.emplace<RegistryAllocatorComponent>(entity, 7u);
+  EXPECT_EQ(component.value, 7u);
+
+  const common::StlAllocator<RegistryAllocatorComponent>
+      expectedComponentAllocator{freeAllocator};
+  EXPECT_EQ(
+      registry.storage<RegistryAllocatorComponent>().get_allocator(),
+      expectedComponentAllocator);
+
+  const auto& storage = sx::detail::storageOf(world);
+  const common::StlAllocator<sx::detail::WorldStorage::DifferentiableParameter>
+      expectedParameterAllocator{freeAllocator};
+  EXPECT_EQ(
+      storage.differentiableParameters.get_allocator(),
+      expectedParameterAllocator);
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)

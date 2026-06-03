@@ -48,6 +48,11 @@ bool isPowerOfTwo(size_t value)
   return value != 0 && (value & (value - 1)) == 0;
 }
 
+size_t roundUpToAlignment(size_t bytes, size_t alignment)
+{
+  return (bytes + alignment - 1) & ~(alignment - 1);
+}
+
 } // namespace
 
 //==============================================================================
@@ -106,6 +111,8 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   if (bytes == 0) {
     return nullptr;
   }
+
+  bytes = roundUpToAlignment(bytes, alignof(std::max_align_t));
 
   // Ensure that the first memory block doesn't have the previous block
   DART_ASSERT(mFirstMemoryBlock->mPrev == nullptr);
@@ -189,6 +196,8 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
   if (pointer == nullptr || bytes == 0) {
     return;
   }
+
+  bytes = roundUpToAlignment(bytes, alignof(std::max_align_t));
 
   unsigned char* block_addr
       = static_cast<unsigned char*>(pointer) - sizeof(MemoryBlockHeader);

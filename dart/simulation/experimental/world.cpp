@@ -95,10 +95,10 @@
 namespace {
 
 template <typename... Components>
-std::size_t countEntities(const entt::registry& registry)
+std::size_t countEntities(const auto& registry)
 {
   std::size_t count = 0;
-  auto view = registry.view<Components...>();
+  auto view = registry.template view<Components...>();
   for (auto entity : view) {
     (void)entity;
     ++count;
@@ -107,10 +107,11 @@ std::size_t countEntities(const entt::registry& registry)
 }
 
 template <typename Component>
-bool hasEntityWithName(const entt::registry& registry, std::string_view name)
+bool hasEntityWithName(const auto& registry, std::string_view name)
 {
-  auto view
-      = registry.view<Component, dart::simulation::experimental::comps::Name>();
+  auto view = registry.template view<
+      Component,
+      dart::simulation::experimental::comps::Name>();
   for (auto entity : view) {
     const auto& info
         = view.template get<dart::simulation::experimental::comps::Name>(
@@ -1237,7 +1238,10 @@ Eigen::Isometry3d toIsometry(
 
 } // namespace
 
-World::World() : m_storage(std::make_unique<detail::WorldStorage>())
+World::World()
+  : m_storage(
+        std::make_unique<detail::WorldStorage>(
+            m_memoryManager.getFreeAllocator()))
 {
   // Empty.
 }
@@ -1248,7 +1252,9 @@ World::World(const WorldOptions& options)
         resolveBaseAllocator(options),
         validateFrameScratchInitialCapacity(
             options.frameScratchInitialCapacity)),
-    m_storage(std::make_unique<detail::WorldStorage>()),
+    m_storage(
+        std::make_unique<detail::WorldStorage>(
+            m_memoryManager.getFreeAllocator())),
     m_gravity(options.gravity),
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
@@ -1269,6 +1275,14 @@ World::World(const WorldOptions& options)
 World::~World() = default;
 
 //==============================================================================
+detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
+  : registry(detail::WorldRegistryAllocator{allocator}),
+    differentiableParameters(DifferentiableParameterAllocator{allocator})
+{
+  // Empty.
+}
+
+//==============================================================================
 detail::WorldStorage& detail::storageOf(World& world)
 {
   return *world.m_storage;
@@ -1281,13 +1295,13 @@ const detail::WorldStorage& detail::storageOf(const World& world)
 }
 
 //==============================================================================
-entt::registry& detail::registryOf(World& world)
+detail::WorldRegistry& detail::registryOf(World& world)
 {
   return detail::storageOf(world).registry;
 }
 
 //==============================================================================
-const entt::registry& detail::registryOf(const World& world)
+const detail::WorldRegistry& detail::registryOf(const World& world)
 {
   return detail::storageOf(world).registry;
 }
@@ -2142,18 +2156,17 @@ namespace {
 // Collect dynamic (non-static) rigid bodies in registry iteration order. This
 // is the same view and order the translational contact Jacobian uses, so the
 // state/control vectors line up with getStepDerivatives()'s [q; q̇] layout.
-std::vector<entt::entity> collectDynamicRigidBodies(
-    const entt::registry& registry)
+std::vector<entt::entity> collectDynamicRigidBodies(const auto& registry)
 {
   std::vector<entt::entity> bodies;
-  auto view = registry.view<
+  auto view = registry.template view<
       comps::RigidBodyTag,
       comps::Transform,
       comps::Velocity,
       comps::MassProperties,
       comps::Force>();
   for (const auto entity : view) {
-    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+    if (registry.template all_of<comps::StaticBodyTag>(entity)) {
       continue;
     }
     bodies.push_back(entity);

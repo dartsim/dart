@@ -116,6 +116,30 @@ const FreeListAllocator& MemoryManager::getFreeListAllocator() const
 }
 
 //==============================================================================
+MemoryAllocator& MemoryManager::getFreeAllocator()
+{
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+    return *mFreeListAllocatorWithDebug;
+  }
+
+  DART_ASSERT(mFreeListAllocator != nullptr);
+  return *mFreeListAllocator;
+}
+
+//==============================================================================
+const MemoryAllocator& MemoryManager::getFreeAllocator() const
+{
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+    return *mFreeListAllocatorWithDebug;
+  }
+
+  DART_ASSERT(mFreeListAllocator != nullptr);
+  return *mFreeListAllocator;
+}
+
+//==============================================================================
 PoolAllocator& MemoryManager::getPoolAllocator()
 {
   if (mUseDebugAllocators) {

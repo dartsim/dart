@@ -73,13 +73,13 @@ namespace dart::simulation::experimental {
 /// @param loc Source location for error reporting (auto-filled)
 /// @return Reference to the component
 /// @throws InvalidArgumentException if component doesn't exist
-template <typename T>
+template <typename T, typename Registry>
 const T& safeGet(
-    const entt::registry& registry,
+    const Registry& registry,
     entt::entity entity,
     const std::source_location loc = std::source_location::current())
 {
-  const T* component = registry.try_get<T>(entity);
+  const T* component = registry.template try_get<T>(entity);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !component,
@@ -95,13 +95,13 @@ const T& safeGet(
 }
 
 /// Mutable version of safeGet
-template <typename T>
+template <typename T, typename Registry>
 T& safeGet(
-    entt::registry& registry,
+    Registry& registry,
     entt::entity entity,
     const std::source_location loc = std::source_location::current())
 {
-  T* component = registry.try_get<T>(entity);
+  T* component = registry.template try_get<T>(entity);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !component,

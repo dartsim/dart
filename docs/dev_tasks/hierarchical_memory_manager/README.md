@@ -8,6 +8,8 @@
       allocators against standard C++ allocators and foonathan/memory.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
+      Initial registry/component-storage wiring is implemented; bake-time
+      reservation and no-growth ECS tests remain open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
@@ -45,6 +47,14 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   work must either instantiate the registry/storage with a DART allocator or
   provide an equivalent EnTT storage integration that preserves public API
   boundaries.
+- The active EnTT version supports stateful allocator propagation through
+  `entt::basic_registry`: the experimental World now constructs its internal
+  registry and component storages with a `dart::common::StlAllocator` borrowing
+  the World's active free allocator.
+- Free-list allocations must preserve at least `std::max_align_t` alignment
+  after every split. EnTT component storage surfaced this as an Eigen
+  `FrameCache` alignment failure when a max-aligned component allocation
+  followed an odd-sized allocation.
 - Broad hot-loop adoption is blocked until allocator correctness tests and
   benchmarks prove DART's allocators beat both standard C++ allocators and
   foonathan/memory on DART-relevant workloads. If DART cannot beat
@@ -83,8 +93,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 1. Add allocator correctness tests and benchmark coverage for DART allocators
    against `std::allocator`/`std::pmr` and foonathan/memory.
-2. Design and benchmark EnTT registry/storage allocator integration before
-   claiming zero allocations for ECS-backed world data.
-3. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
+2. Add bake-time registry/component storage reservation and no-growth ECS tests
+   before claiming zero allocations for ECS-backed world data.
+3. Benchmark the allocator-backed EnTT registry/component-storage path against
+   standard C++ allocators and foonathan/memory on DART-relevant workloads.
+4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload.

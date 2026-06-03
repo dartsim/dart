@@ -41,6 +41,7 @@
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 
 #include <entt/entt.hpp>
 
@@ -163,7 +164,7 @@ inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
 
 //==============================================================================
 inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     entt::entity jointEntity,
     double startStiffness = 1.0,
     double maxStiffness = std::numeric_limits<double>::infinity())
@@ -250,7 +251,7 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
 
 //==============================================================================
 inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
-    entt::registry& registry)
+    ::dart::simulation::experimental::detail::WorldRegistry& registry)
 {
   std::size_t configured = 0;
   const auto view = registry.view<comps::Joint>(
@@ -316,7 +317,8 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
 
 //==============================================================================
 inline Eigen::Isometry3d avbdRigidWorldContactFrameLocalTransform(
-    const entt::registry& registry, entt::entity entity)
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
 {
   if (const auto* props
       = registry.try_get<comps::FreeFrameProperties>(entity)) {
@@ -333,7 +335,8 @@ inline Eigen::Isometry3d avbdRigidWorldContactFrameLocalTransform(
 
 //==============================================================================
 inline Eigen::Isometry3d avbdRigidWorldContactFrameWorldTransform(
-    const entt::registry& registry, entt::entity entity)
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
 {
   if (entity == entt::null || !registry.valid(entity)) {
     return Eigen::Isometry3d::Identity();
@@ -360,7 +363,8 @@ inline Eigen::Isometry3d avbdRigidWorldContactFrameWorldTransform(
 
 //==============================================================================
 inline void avbdRigidWorldContactMarkFrameSubtreeDirty(
-    entt::registry& registry, entt::entity root)
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity root)
 {
   if (root == entt::null || !registry.valid(root)) {
     return;
@@ -402,7 +406,8 @@ namespace detail {
 
 //==============================================================================
 inline double avbdRigidWorldContactFriction(
-    const entt::registry& registry, entt::entity entity)
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
 {
   const auto* material = registry.try_get<comps::ContactMaterial>(entity);
   if (material == nullptr || !std::isfinite(material->friction)) {
@@ -413,7 +418,7 @@ inline double avbdRigidWorldContactFriction(
 
 //==============================================================================
 inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     entt::entity entity,
     const Eigen::Vector3d& point)
 {
@@ -428,7 +433,7 @@ inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
 
 //==============================================================================
 inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     entt::entity entity,
     std::size_t shapeIndex,
     const Eigen::Vector3d& localPoint,
@@ -514,7 +519,7 @@ inline std::uint32_t findAvbdRigidWorldBodyIndex(
 
 //==============================================================================
 inline std::uint32_t ensureAvbdRigidWorldBodyIndex(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     AvbdRigidWorldContactSnapshot& snapshot,
     entt::entity entity)
 {
@@ -549,7 +554,7 @@ inline std::uint32_t ensureAvbdRigidWorldBodyIndex(
 
 //==============================================================================
 inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     const AvbdRigidWorldContactOptions& options = {})
 {
@@ -630,7 +635,7 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
 
 //==============================================================================
 inline std::size_t appendAvbdRigidWorldPointJoints(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot)
 {
@@ -697,7 +702,7 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
 
 //==============================================================================
 inline void predictAvbdRigidWorldContactInertialTargets(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     AvbdRigidWorldContactSnapshot& snapshot,
     double timeStep)
 {
@@ -857,7 +862,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
 //==============================================================================
 inline AvbdRigidWorldContactApplyResult
 applyAvbdRigidWorldContactVelocityProjection(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     const AvbdRigidWorldContactSnapshot& snapshot,
     double timeStep)
 {
@@ -907,7 +912,7 @@ applyAvbdRigidWorldContactVelocityProjection(
 
 //==============================================================================
 inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     const AvbdRigidWorldContactSnapshot& snapshot,
     double timeStep)
 {
@@ -976,7 +981,7 @@ inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     std::span<const AvbdRigidWorldPointJointInput> joints,
     AvbdScalarRowInventory& normalInventory,
@@ -1021,7 +1026,8 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 
 //==============================================================================
 inline std::vector<AvbdRigidWorldPointJointInput>
-extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
+extractAvbdRigidWorldPointJointInputs(
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry)
 {
   std::vector<AvbdRigidWorldPointJointInput> inputs;
   const auto view
@@ -1080,7 +1086,7 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
@@ -1106,7 +1112,7 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
