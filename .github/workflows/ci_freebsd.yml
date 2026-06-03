@@ -2,10 +2,16 @@
 #
 # This replaces the former Docker-wrapped QEMU harness (docker/freebsd/* +
 # scripts/freebsd.py, which built and ran a `dartsim/freebsd-vm` image). The
-# vmactions/freebsd-vm action boots a real FreeBSD VM directly on the hosted
+# cross-platform-actions action boots a real FreeBSD VM directly on the hosted
 # runner with no Docker, syncs the checkout in, and runs the build/test inline.
 # Dependencies come from pkg; the cmake/ctest invocation mirrors the previous
 # job's configuration.
+#
+# Uses cross-platform-actions rather than vmactions/freebsd-vm: the latter
+# downloads its `anyvm` provisioning helper at run time, which started failing
+# the host dependency install with a fast `sudo` exit 1. cross-platform-actions
+# provisions from a pinned, prebuilt VM image instead, so there is no run-time
+# download of a mutable helper.
 
 name: CI FreeBSD (VM)
 
@@ -42,19 +48,21 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Build and test DART on FreeBSD
-        uses: vmactions/freebsd-vm@v1
+        uses: cross-platform-actions/action@v1.2.0
         with:
-          release: "15.0"
-          usesh: true
-          copyback: false
-          prepare: |
-            ASSUME_ALWAYS_YES=yes pkg update -f
-            ASSUME_ALWAYS_YES=yes pkg install -y \
+          operating_system: freebsd
+          version: "15.0"
+          memory: 6G
+          # Commands run as a passwordless-sudo user via the default (sh) shell;
+          # the checkout is synced into the VM automatically.
+          run: |
+            set -e
+            # Install build dependencies from pkg.
+            sudo pkg update -f
+            sudo pkg install -y \
               assimp boost-libs cmake eigen fcl libfmt git gmake googletest \
               libccd ninja octomap ode-double pkgconf spdlog tinyxml2 \
               ros-urdfdom ros-urdfdom_headers
-          run: |
-            set -e
             # DART's source tree does not natively target FreeBSD, so apply the
             # FreeBSD source-compatibility patches (formerly applied by the
             # docker/freebsd harness) before configuring. They are -p0 patches
