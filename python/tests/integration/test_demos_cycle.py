@@ -130,6 +130,16 @@ def test_registry_has_scenes() -> None:
 def test_runner_cycle_returns_zero() -> None:
     if not _gui_run_demos_available():
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+    if not _simulation_experimental_has("World"):
+        # The pruned catalog is World-only, so every scene's factory needs the
+        # experimental World binding. Builds with
+        # DART_BUILD_SIMULATION_EXPERIMENTAL=OFF still ship the GUI runner but no
+        # World, leaving no scene to render (and no prior scene to fall back to),
+        # so the cycle can only skip here rather than exercise the runner.
+        pytest.skip(
+            "simulation_experimental.World unavailable "
+            "(experimental simulation disabled in this build)"
+        )
     rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
     assert rc == 0
 

@@ -475,18 +475,18 @@ jobs:
           BUILD_TYPE=Release \
           pixi run build-examples
 
-      - name: Run headless rendering test (rigid_cubes)
+      - name: Run headless rendering test (rigid_body)
         run: |
           mkdir -p /tmp/headless_output
           xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" \
             ./build/default/cpp/Release/bin/dart-demos \
-            --scene rigid_cubes \
+            --scene rigid_body \
             --headless --frames 10 \
-            --screenshot /tmp/headless_output/rigid_cubes.ppm
+            --screenshot /tmp/headless_output/rigid_body.ppm
           echo "Captured image:"
           ls -la /tmp/headless_output/
-          test -f /tmp/headless_output/rigid_cubes.ppm
-          test "$(head -c 2 /tmp/headless_output/rigid_cubes.ppm)" = "P6"
+          test -f /tmp/headless_output/rigid_body.ppm
+          test "$(head -c 2 /tmp/headless_output/rigid_body.ppm)" = "P6"
           echo "Headless rendering test passed!"
 
   filament-gui-smoke:
