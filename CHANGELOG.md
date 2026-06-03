@@ -84,7 +84,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     flags and a `DART_PY_DEMOS_GPU` env override (default `auto`: on when a CUDA
     device is present), an in-viewer GPU toggle panel, and a startup status
     line. The `config-py` build task forwards the experimental CUDA opt-in so
-    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected.
+    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected, and it
+    resets stale CMake compiler cache metadata before CMake can auto-rerun with
+    default options and drop the `dartpy` target.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
