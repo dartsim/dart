@@ -52,7 +52,7 @@ def test_normalize_target_passthrough(run_cpp_example, capsys):
 
 
 @pytest.mark.parametrize(
-    "target", ["atlas_simbicon", "collision_sandbox", "wam_ikfast", "g1_puppet"]
+    "target", ["rigid_body", "deformable_body", "vbd_deformable"]
 )
 def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
     with pytest.raises(SystemExit) as exc:
@@ -61,6 +61,16 @@ def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
     message = str(exc.value)
     assert "dart-demos" in message
     assert f"--scene {target}" in message
+
+
+@pytest.mark.parametrize("target", ["boxes", "atlas_simbicon", "wam_ikfast"])
+def test_normalize_target_rejects_removed_dart6_demos(run_cpp_example, target):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "DART 6 demo scene has been removed" in message
+    assert "pixi run demos -- --list" in message
 
 
 @pytest.mark.parametrize("target", ["py-demos", "py_demos", "pydemos"])

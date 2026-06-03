@@ -35,6 +35,10 @@
     `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
     template, and the headless `csv_logger`, `headless_simulation`,
     `speed_test`, and `unified_loading` examples stay standalone.
+  - Pruned `pixi run demos` and `pixi run py-demos` to the DART 7 World demo
+    catalog. The old DART 6 demo scene modules and cross-language golden parity
+    fixtures were removed; remaining scene ids/categories use World, IPC,
+    differentiable, variational, and VBD names without experimental/sx labels.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`

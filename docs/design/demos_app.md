@@ -1,16 +1,17 @@
-# dart-demos Example App Architecture
+# dart-demos World App Architecture
 
-Durable architecture and rationale for `dart-demos`, the application that
-consolidates DART's GUI examples into a single window. Roadmap state lives in
-`docs/plans/dashboard.md` (PLAN-102); user instructions live in
+Durable architecture and rationale for `dart-demos`, the C++ World demo
+application. Roadmap state lives in `docs/plans/dashboard.md` (PLAN-102); user
+instructions live in
 `examples/README.md`.
 
 ## Problem
 
-DART's C++ examples had grown to ~43 directories under `examples/`, each a
-standalone executable with its own `main.cpp` and CMake target. Surveying DART's
-capabilities meant building and launching many binaries, and adding an example
-touched several places. The proliferation did not scale.
+DART's C++ GUI example catalog was originally consolidated from many standalone
+executables into one `dart-demos` scene runner. With DART 7 moving to the World
+solver as the official simulation surface, keeping the old DART 6 demo catalog
+in `dart-demos` became misleading. The app now demonstrates the current World
+solver surface directly instead of preserving the historical DART 6 examples.
 
 ## Outcome
 
@@ -18,26 +19,23 @@ touched several places. The proliferation did not scale.
 
 - **`hello_world`** — the minimal, copy-pasteable standalone template for an
   executable CMake project that links DART.
-- **`demos`** — the `dart-demos` application: one window hosting most GUI
-  examples as scenes the user picks from a categorized sidebar and switches
-  between at runtime.
+- **`demos`** — the `dart-demos` application: one window hosting C++ World
+  solver scenes the user picks from a categorized sidebar and switches between
+  at runtime.
 - A few standalone programs that do not fit the single-window model: the headless
   CLI examples (`csv_logger`, `headless_simulation`, `speed_test`,
-  `unified_loading`); `gui_scene_diagnostics` (a headless GUI-descriptor
-  inspector); and `atlas_simbicon`, `collision_sandbox`, `wam_ikfast` (see
-  Standalone exceptions).
+  `unified_loading`) and `gui_scene_diagnostics` (a headless GUI-descriptor
+  inspector).
 
-## Strategy: Python-first, C++ frozen
+## Strategy: World-only Demos
 
-Per PLAN-103, Python is DART's primary, growing example surface; this C++
-`dart-demos` app is **frozen** (maintained, not grown). New example content is
-authored Python-first (`pixi run py-demos`, the headless runner, capture
-helpers, and the Colab notebook gallery), and only a small golden subset is
-mirrored in C++ and kept honest by a thin parity smoke. `dart-demos` is retired
-only later, when the Python surface covers the breadth and the `dartsim` editor
-(PLAN-101) can open curated example scenes interactively; the retire-later
-checklist lives in PLAN-103. Renderer regression coverage is independent (see
-below), so a future retirement loses no renderer coverage.
+Per PLAN-103, Python is DART's primary, growing example surface. Both `py-demos`
+and C++ `dart-demos` now present World solver demos without DART 6 scene ids or
+experimental/sx labels. Python carries the broader catalog (World rigid body,
+Rigid IPC, Variational Integrators, Differentiable, Vertex Block Descent, and
+IPC Deformable); C++ keeps the smaller companion set needed for native
+viewer/smoke coverage. Renderer regression coverage is independent (see below),
+so deleting DART 6 demo scene files does not remove renderer fixture coverage.
 
 ## Architecture
 
@@ -56,10 +54,10 @@ dart::gui::ApplicationOptions dart::examples::demos::make<Name>Scene();
 Scenes are declared in `examples/demos/scenes.hpp` and registered — with a
 stable `id`, display `title`, `category`, and one-line `summary` — in
 `examples/demos/registry.cpp`. The registry vector order defines display order;
-categories appear in first-appearance order. Experimental-world Python scenes
-should use solver/domain categories rather than a catch-all bucket so the
-navigator scales as the catalog grows. Adding an example is: one scene file,
-one header declaration, one registry entry, one CMake source line.
+categories appear in first-appearance order. World demos use solver/domain
+categories rather than a catch-all bucket so the navigator scales as the catalog
+grows. Adding an example is: one scene file, one header declaration, one
+registry entry, one CMake source line.
 
 The factory is lazy (built when the scene is first selected), so launch stays
 fast and an asset/remote-load failure affects only that scene. The host
@@ -97,13 +95,10 @@ scenes return `SceneSetup` objects with optional `pre_step`, `force_drag`, and
 `ScenePanel` callbacks; those callbacks render through the renderer-neutral
 `PanelBuilder`/`PanelContext` abstraction rather than direct ImGui calls.
 
-The Python catalog is broad enough that navigation needs domain focus, not only
-search. When an sx/experimental scene is active, the `Demos` navigator starts in
-`Experimental focus`, showing simulation-experimental and solver-focused
-categories while keeping the full legacy DART API catalog one checkbox away.
-Users can also replace a queued sidebar switch by clicking a different target
-before the candidate starts, so the UI does not trap the user on a stale pending
-row while the transactional activation path decides what to load.
+The Python catalog is broad enough that navigation needs domain categories, not
+only search. Users can replace a queued sidebar switch by clicking a different
+target before the candidate starts, so the UI does not trap the user on a stale
+pending row while the transactional activation path decides what to load.
 
 `pixi run py-demo-capture` drives the same Filament render path headlessly,
 including optional ImGui panels via `--show-ui`, and writes screenshots, frame
@@ -114,7 +109,7 @@ drops warm-up frame-output images captured before the UI becomes visible, so
 recorded PNG sequences and MP4s start from a useful workspace frame.
 
 External-force interactions are a user-facing scene state, not just an input
-callback. The common sx bridge panel shows whether force application is idle,
+callback. The common World bridge panel shows whether force application is idle,
 disabled, rejected for a static/unmapped target, or actively applying force; it
 also exposes target and magnitude so a single headless `--show-ui` capture can
 prove what the viewport spring/arrow is doing.
@@ -147,24 +142,19 @@ splitters.
 ### Build layout
 
 `examples/demos/` builds the `dart-demos` executable via the shared
-`dart_build_gui_example` helper, linking `dart-io` (scene asset loading) and
-`dart-simulation-experimental` (the experimental rigid-body scene). Collision
-backends (ODE/Bullet) are selected through runtime factories and need no extra
-link.
+`dart_build_gui_example` helper, linking `dart-io`, `dart-collision-native`, and
+`dart-simulation-experimental` while the World implementation still lives in
+that component.
 
-## Standalone exceptions
+## Standalone examples
 
 These remain standalone rather than demos scenes:
 
-- **`atlas_simbicon`, `collision_sandbox`** — their controller and
-  pair-registry source files are compiled directly by the test suite
-  (`tests/integration/CMakeLists.txt`, `tests/unit/collision/CMakeLists.txt`).
-  Keeping them as multi-file standalone examples keeps those sources available to
-  the tests without duplicating them into a merged scene.
-- **`wam_ikfast`** — depends on a generated IKFast library selected via
-  `DART_WAM_IKFAST_LIB_PATH` at configure time.
 - **`gui_scene_diagnostics`** — a headless GUI-descriptor inspector, not a
   viewer scene.
+- **`csv_logger`, `headless_simulation`, `speed_test`, `unified_loading`** —
+  CLI/headless programs rather than interactive viewer scenes.
+- **`hello_world`** — the standalone minimal CMake template.
 
 ## Examples vs renderer test fixtures
 
@@ -183,8 +173,8 @@ the renderer.
 
 ## Non-goals
 
-- Not a scene editor (authoring/undo/redo/project I/O on the experimental World
-  is `dartsim`'s role; see `dartsim_gui_simulator.md`).
+- Not a scene editor (authoring/undo/redo/project I/O is `dartsim`'s role; see
+  `dartsim_gui_simulator.md`).
 - No renderer/backend changes; demos builds on `dart::gui`.
 - No Python-side scene authoring API; `py-demos` is an examples workspace for
   playback, controls, diagnostics, and capture, not an editor.

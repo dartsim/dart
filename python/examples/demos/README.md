@@ -1,14 +1,14 @@
 # dart-demos (Python)
 
 A scene-registry runner that hosts DART's Python demo scenes in the shared
-Filament viewer. This is the Python-first surface from PLAN-103; C++
-`dart-demos` (PLAN-102) stays frozen.
+Filament viewer. This is the Python-first World demo surface from PLAN-103; C++
+`dart-demos` (PLAN-102) is the smaller World-only C++ companion.
 
 ## Run
 
 ```bash
 pixi run py-demos                                # default: run the first scene
-pixi run py-demos -- --scene sx_articulated      # select a scene by id
+pixi run py-demos -- --scene articulated         # select a scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle through every scene
 pixi run py-demos -- --list                      # print the scene catalog
 ```
@@ -17,7 +17,7 @@ Or directly (without pixi), from the repo root:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:python \
-    .pixi/envs/default/bin/python -m examples.demos --scene hello_world --frames 5
+    .pixi/envs/default/bin/python -m examples.demos --scene articulated --frames 5
 ```
 
 ## CLI
@@ -44,7 +44,7 @@ pixels and is not evidence for layout, camera, lighting, or material quality.
 Capture one frame:
 
 ```bash
-pixi run py-demo-capture -- --scene sx_articulated --frames 2 \
+pixi run py-demo-capture -- --scene articulated --frames 2 \
     --width 640 --height 360
 ```
 
@@ -54,7 +54,7 @@ show the docked workspace and drops early warm-up frames before ImGui is visible
 from the converted frame sequence. Capture the docked ImGui workspace:
 
 ```bash
-pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 \
+pixi run py-demo-capture -- --scene articulated --show-ui --frames 2 \
     --width 1280 --height 720
 ```
 
@@ -70,7 +70,7 @@ Capture a short frame sequence and request MP4 encoding when `ffmpeg` is
 available:
 
 ```bash
-pixi run py-demo-capture -- --scene sx_articulated --frames 24 \
+pixi run py-demo-capture -- --scene articulated --frames 24 \
     --width 640 --height 360 --video
 ```
 
@@ -78,14 +78,13 @@ The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.
 
-## IPC Deformable (sx) scenes
+## IPC Deformable scenes
 
-The dedicated **`IPC Deformable (sx)`** category groups the deformable-body
+The dedicated **`IPC Deformable`** category groups the deformable-body
 scenes driven by the `dartpy.simulation_experimental` IPC solver
 (point-mass/spring with IPC-style clamped-log barriers, sparse projected Newton,
 lagged smoothed-Coulomb friction, and conservative CCD). They live in their own
-category so the IPC showcases stay together instead of mixing into the general
-`Experimental` (sx) scenes:
+category so the IPC showcases stay together:
 
 | Scene id                            | Shows                                                 | IPC capability exercised                   |
 | ----------------------------------- | ----------------------------------------------------- | ------------------------------------------ |

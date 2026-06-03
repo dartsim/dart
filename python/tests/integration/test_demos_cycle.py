@@ -469,8 +469,8 @@ def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
 def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     """The IPC deformable scenes live in their own dedicated menu category.
 
-    The five IPC showcases must group under ``IPC Deformable (sx)`` (not the
-    general ``Experimental`` sx category), so the viewer renders them together.
+    The IPC showcases must group under ``IPC Deformable`` so the viewer renders
+    them together.
     """
 
     scenes = make_demo_scenes()
@@ -502,41 +502,39 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
 
     for scene_id in expected_ipc:
-        assert by_id[scene_id].category == "IPC Deformable (sx)"
+        assert by_id[scene_id].category == "IPC Deformable"
 
-    # Every scene in the dedicated category is an IPC deformable scene, and
-    # none of them leaked back into the general Experimental category.
-    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable (sx)"]
+    # Every scene in the dedicated category is an IPC deformable scene.
+    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable"]
     assert set(ipc_category) == expected_ipc
-    experimental = [s.id for s in scenes if s.category == "Experimental"]
-    assert not any(s.startswith("ipc_deformable_") for s in experimental)
+    assert not any(s.category == "Experimental" for s in scenes)
 
 
-def test_experimental_world_scenes_use_solver_focused_categories() -> None:
+def test_world_scenes_use_solver_focused_categories() -> None:
     scenes = make_demo_scenes()
     by_id = {scene.id: scene for scene in scenes}
 
     expected = {
-        "Experimental Rigid Body (sx)": {
-            "sx_articulated",
-            "sx_floating_base",
-            "sx_contact",
-            "experimental_rigid_body_gui",
+        "World Rigid Body": {
+            "articulated",
+            "floating_base",
+            "contact",
+            "rigid_body",
         },
-        "Rigid IPC (sx)": {
-            "sx_rigid_ipc",
-            "sx_rigid_ipc_slide",
-            "sx_rigid_ipc_incline",
-            "sx_rigid_ipc_pile",
-            "sx_rigid_ipc_tunnel",
+        "Rigid IPC": {
+            "rigid_ipc",
+            "rigid_ipc_slide",
+            "rigid_ipc_incline",
+            "rigid_ipc_pile",
+            "rigid_ipc_tunnel",
         },
-        "Variational Integrators (sx)": {
-            "sx_variational_chain",
-            "sx_variational_tumbler",
-            "sx_variational_contact",
-            "sx_loop_closure",
+        "Variational Integrators": {
+            "variational_chain",
+            "variational_tumbler",
+            "variational_contact",
+            "loop_closure",
         },
-        "Vertex Block Descent (sx)": {
+        "Vertex Block Descent": {
             "vbd_cloth",
             "vbd_net",
             "vbd_beam",
@@ -550,14 +548,8 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         for scene_id in scene_ids:
             assert by_id[scene_id].category == category
 
-    old_experimental = [
-        scene.id for scene in scenes if scene.category == "Experimental"
-    ]
-    assert not any(
-        scene_id.startswith(("sx_", "vbd_"))
-        or scene_id == "experimental_rigid_body_gui"
-        for scene_id in old_experimental
-    )
+    assert not any(scene.category == "Experimental" for scene in scenes)
+    assert not any(scene.id.startswith("sx_") for scene in scenes)
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
@@ -693,7 +685,7 @@ def test_py_demo_capture_records_ui_force_drag_artifacts(
     rc = capture_py_demo.main(
         [
             "--scene",
-            "sx_rigid_ipc_slide",
+            "rigid_ipc_slide",
             "--force-drag-target",
             "ipc_slide_box_visual",
             "--force-drag-frame",

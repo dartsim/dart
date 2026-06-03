@@ -2,18 +2,16 @@
 
 ## Overview
 
-DART's C++ examples are organized around one consolidated application plus a few
+DART's C++ examples are organized around the DART 7 World demo app plus a few
 standalone programs:
 
-- **`dart-demos`** (`examples/demos/`) — a single GUI application that hosts most
-  examples as scenes. Pick a scene from the categorized sidebar and switch
-  between them at runtime, without relaunching. This is the place to browse
-  DART's capabilities.
+- **`dart-demos`** (`examples/demos/`) — a single GUI application for the DART 7
+  World solver demos. Pick a scene from the categorized sidebar and switch
+  between them at runtime, without relaunching.
 - **`hello_world`** (`examples/hello_world/`) — kept standalone as the minimal,
   copy-pasteable template for setting up an executable, CMake-based C++ project
-  that links DART. Every other interactive GUI example is now a scene in
-  `dart-demos`. `gui_scene_diagnostics` is a headless GUI-descriptor inspector
-  rather than a viewer scene.
+  that links DART. `gui_scene_diagnostics` is a headless GUI-descriptor
+  inspector rather than a viewer scene.
 - **Headless / CLI examples**: `csv_logger`, `headless_simulation`,
   `speed_test`, and `unified_loading` are console programs and stay standalone.
 
@@ -28,12 +26,12 @@ From inside the DART repo:
 
 ```bash
 pixi run demos                     # launch the Demos app (interactive)
-pixi run demos -- --scene boxes    # launch with a specific scene selected
+pixi run demos -- --scene rigid_body # launch with a specific scene selected
 ```
 
 In the app, use the **Demos** sidebar to switch scenes. Scenes are grouped into
-ordered categories: Getting Started, Visualization, Rigid Body, Collision,
-Constraints & Joints, Control & IK, Soft Bodies, and Robots.
+ordered World-solver categories: World Rigid Body, IPC Deformable, and Vertex
+Block Descent.
 
 `dart-demos` accepts the same options as other GUI programs (`--headless`,
 `--frames`, `--screenshot <path>`, `--width`, `--height`, `--backend`,
@@ -45,7 +43,8 @@ exits; it backs the headless smoke test.
 1. Add `examples/demos/scenes/<name>.cpp` defining
    `dart::gui::ApplicationOptions dart::examples::demos::make<Name>Scene();`
    (build the world, panels, gizmos, handlers, and camera, then return the
-   options). See an existing scene such as `scenes/boxes.cpp` for the pattern.
+   options). See an existing scene such as `scenes/rigid_body.cpp` for the
+   pattern.
 2. Declare it in `examples/demos/scenes.hpp`.
 3. Register it (id, title, category, summary, factory) in
    `examples/demos/registry.cpp`, placed within its category group.

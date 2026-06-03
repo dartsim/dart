@@ -950,7 +950,7 @@ TEST(FilamentSceneExtraction, DemoCatalogSearchMatchesSceneMetadata)
   const dart::gui::DemoSceneEntry scene{
       "ipc_deformable_fem_buckle",
       "IPC FEM Buckle",
-      "IPC Deformable (sx)",
+      "IPC Deformable",
       "Self-contact buckling demo",
       factory};
 
@@ -965,28 +965,15 @@ TEST(FilamentSceneExtraction, DemoCatalogSearchMatchesSceneMetadata)
       dart::gui::detail::demoSceneMatchesSearch(
           scene, dart::gui::detail::normalizedDemoSearchText("SELF-CONTACT")));
   EXPECT_TRUE(dart::gui::detail::demoSceneMatchesSearch(scene, ""));
-  EXPECT_TRUE(dart::gui::detail::demoSceneMatchesExperimentalFocus(scene));
   EXPECT_TRUE(
       dart::gui::detail::demoSceneVisibleInNavigator(
-          scene, dart::gui::detail::normalizedDemoSearchText("FEM"), true));
+          scene, dart::gui::detail::normalizedDemoSearchText("FEM")));
   EXPECT_FALSE(
       dart::gui::detail::demoSceneMatchesSearch(
           scene, dart::gui::detail::normalizedDemoSearchText("cartpole")));
-
-  const dart::gui::DemoSceneEntry legacyScene{
-      "boxes", "Boxes", "Rigid Body", "stacked boxes", factory};
-  EXPECT_FALSE(
-      dart::gui::detail::demoSceneMatchesExperimentalFocus(legacyScene));
-  EXPECT_TRUE(
-      dart::gui::detail::demoSceneVisibleInNavigator(
-          legacyScene,
-          dart::gui::detail::normalizedDemoSearchText("boxes"),
-          false));
   EXPECT_FALSE(
       dart::gui::detail::demoSceneVisibleInNavigator(
-          legacyScene,
-          dart::gui::detail::normalizedDemoSearchText("boxes"),
-          true));
+          scene, dart::gui::detail::normalizedDemoSearchText("cartpole")));
 }
 
 TEST(FilamentSceneExtraction, DemoCatalogGroupsNonContiguousCategories)
@@ -995,27 +982,27 @@ TEST(FilamentSceneExtraction, DemoCatalogGroupsNonContiguousCategories)
     return dart::gui::ApplicationOptions{};
   };
   const std::vector<dart::gui::DemoSceneEntry> scenes{
-      {"hello_world", "Hello World", "Getting Started", "intro", factory},
-      {"sx_contact", "Contact sx", "Experimental", "contact", factory},
-      {"boxes", "Boxes", "Rigid Body", "rigid", factory},
-      {"empty", "Empty", "Getting Started", "empty", factory},
-      {"sx_articulated", "Articulated sx", "Experimental", "joints", factory},
+      {"articulated", "Articulated", "World Rigid Body", "joints", factory},
+      {"rigid_ipc", "Rigid IPC", "Rigid IPC", "contact", factory},
+      {"rigid_body", "Rigid Body", "World Rigid Body", "rigid", factory},
+      {"deformable_body", "Deformable Body", "IPC Deformable", "soft", factory},
+      {"floating_base", "Floating Base", "World Rigid Body", "joints", factory},
   };
 
   const auto groups = dart::gui::detail::groupDemoScenesByCategory(scenes);
 
   ASSERT_EQ(groups.size(), 3u);
-  EXPECT_EQ(groups[0].category, "Getting Started");
-  ASSERT_EQ(groups[0].sceneIndices.size(), 2u);
+  EXPECT_EQ(groups[0].category, "World Rigid Body");
+  ASSERT_EQ(groups[0].sceneIndices.size(), 3u);
   EXPECT_EQ(groups[0].sceneIndices[0], 0u);
-  EXPECT_EQ(groups[0].sceneIndices[1], 3u);
-  EXPECT_EQ(groups[1].category, "Experimental");
-  ASSERT_EQ(groups[1].sceneIndices.size(), 2u);
+  EXPECT_EQ(groups[0].sceneIndices[1], 2u);
+  EXPECT_EQ(groups[0].sceneIndices[2], 4u);
+  EXPECT_EQ(groups[1].category, "Rigid IPC");
+  ASSERT_EQ(groups[1].sceneIndices.size(), 1u);
   EXPECT_EQ(groups[1].sceneIndices[0], 1u);
-  EXPECT_EQ(groups[1].sceneIndices[1], 4u);
-  EXPECT_EQ(groups[2].category, "Rigid Body");
+  EXPECT_EQ(groups[2].category, "IPC Deformable");
   ASSERT_EQ(groups[2].sceneIndices.size(), 1u);
-  EXPECT_EQ(groups[2].sceneIndices[0], 2u);
+  EXPECT_EQ(groups[2].sceneIndices[0], 3u);
 }
 
 TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
@@ -1061,10 +1048,7 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
       std::string::npos);
   EXPECT_NE(
       applicationSource.find("groupDemoScenesByCategory"), std::string::npos);
-  EXPECT_NE(applicationSource.find("Experimental focus"), std::string::npos);
-  EXPECT_NE(
-      applicationSource.find("demoSidebarExperimentalFocus"),
-      std::string::npos);
+  EXPECT_EQ(applicationSource.find("Experimental focus"), std::string::npos);
   EXPECT_NE(applicationSource.find("visibleSceneCount"), std::string::npos);
   EXPECT_EQ(applicationSource.find("categoryEnd"), std::string::npos);
   EXPECT_NE(applicationSource.find("categoryHasActive"), std::string::npos);

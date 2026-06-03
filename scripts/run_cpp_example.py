@@ -84,8 +84,8 @@ EXAMPLE_SPECS = {
     "dartsim": ExampleSpec(
         "dartsim", "dartsim", ("filament", "simulation-experimental")
     ),
-    # The consolidated demos app. Its scenes that drive the experimental World
-    # need that component built as well.
+    # The consolidated World demos app needs the current World implementation
+    # component built as well.
     "demos": ExampleSpec(
         "dart-demos", "dart-demos", ("filament", "simulation-experimental")
     ),
@@ -95,47 +95,54 @@ EXAMPLE_SPECS = {
     },
 }
 
-# Former standalone GUI examples that are now scenes in `dart-demos`.
+# World-scene demos hosted by `dart-demos`.
 _DEMOS_SCENE_IDS = (
-    "empty",
-    "shapes",
-    "simple_frames",
-    "drag_and_drop",
-    "polyhedron_visual",
-    "imgui",
-    "heightmap",
-    "point_cloud",
-    "boxes",
-    "rigid_cubes",
+    "rigid_body",
+    "deformable_body",
+    "vbd_deformable",
+)
+
+_REMOVED_DART6_DEMOS_SCENE_IDS = (
     "add_delete_skels",
-    "rigid_chain",
-    "simulation_event_handler",
-    "rigid_shapes",
-    "experimental_rigid_body",
-    "experimental_deformable",
-    "capsule_ground_contact",
-    "hardcoded_design",
-    "box_stacking",
-    "coupler_constraint",
-    "mimic_pendulums",
-    "rigid_loop",
-    "free_joint_cases",
-    "lcp_physics",
-    "tinkertoy",
-    "hybrid_dynamics",
-    "joint_constraints",
-    "biped_stand",
-    "operational_space_control",
     "atlas_puppet",
     "atlas_simbicon",
-    "hubo_puppet",
-    "mixed_chain",
-    "soft_bodies",
-    "fetch",
-    "vehicle",
-    "g1_puppet",
-    "human_joint_limits",
+    "biped_stand",
+    "box_stacking",
+    "boxes",
+    "capsule_ground_contact",
     "collision_sandbox",
+    "coupler_constraint",
+    "drag_and_drop",
+    "empty",
+    "experimental_deformable",
+    "experimental_rigid_body",
+    "experimental_vbd",
+    "fetch",
+    "free_joint_cases",
+    "g1_puppet",
+    "hardcoded_design",
+    "heightmap",
+    "hubo_puppet",
+    "human_joint_limits",
+    "hybrid_dynamics",
+    "imgui",
+    "joint_constraints",
+    "lcp_physics",
+    "mimic_pendulums",
+    "mixed_chain",
+    "operational_space_control",
+    "point_cloud",
+    "polyhedron_visual",
+    "rigid_chain",
+    "rigid_cubes",
+    "rigid_loop",
+    "rigid_shapes",
+    "shapes",
+    "simple_frames",
+    "simulation_event_handler",
+    "soft_bodies",
+    "tinkertoy",
+    "vehicle",
     "wam_ikfast",
 )
 
@@ -210,6 +217,12 @@ def _normalize_target(target: str) -> str:
             "  pixi run py-demos -- --list       # list the scene catalog\n"
             "  pixi run py-demos -- --scene <id> # launch a specific scene\n"
             "The C++ demos viewer is a separate app: pixi run ex demos"
+        )
+    if target in _REMOVED_DART6_DEMOS_SCENE_IDS:
+        raise SystemExit(
+            f"The '{target}' DART 6 demo scene has been removed from "
+            "dart-demos. Run `pixi run demos -- --list` for the current "
+            "World demo catalog."
         )
     if target in _DEMOS_SCENE_IDS:
         raise SystemExit(

@@ -3,8 +3,7 @@
 Per PLAN-103, Python is DART's primary, growing example surface. The consolidated
 home is the `dart-demos` Python app: one runner, one registry, many scenes
 hosted by the shared Filament viewer — see [`demos/README.md`](demos/README.md).
-C++ `dart-demos`
-(PLAN-102) is frozen.
+C++ `dart-demos` (PLAN-102) is now the smaller World-only C++ companion.
 
 ## Layout
 
@@ -17,17 +16,17 @@ C++ `dart-demos`
 
 ```bash
 pixi run py-demos                                # run the first scene
-pixi run py-demos -- --scene sx_articulated      # select a scene by id
+pixi run py-demos -- --scene articulated         # select a scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle every scene and exit
 pixi run py-demos -- --list                      # print the catalog
-pixi run py-demo-capture -- --scene sx_articulated --show-ui --video
+pixi run py-demo-capture -- --scene articulated --show-ui --video
 ```
 
 Without pixi, from the repo root:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:python \
-    .pixi/envs/default/bin/python -m examples.demos --scene hello_world --frames 5
+    .pixi/envs/default/bin/python -m examples.demos --scene articulated --frames 5
 ```
 
 ## Add a scene
