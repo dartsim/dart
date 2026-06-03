@@ -40,6 +40,7 @@
 #include <gtest/gtest.h>
 
 #include <span>
+#include <stdexcept>
 using namespace dart::simulation::experimental;
 
 // Test component
@@ -211,6 +212,23 @@ TEST(VectorMapper, RoundTripWithWorldRegistryFieldMapper)
 
   const auto& pos = registry.get<Position>(entity);
   EXPECT_DOUBLE_EQ(pos.x, 9.0);
+}
+
+TEST(VectorMapper, WorldRegistryRequiresWorldCapableMapper)
+{
+  StateSpace space;
+  space.addVariable("position", 3);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  mapper.addMapper("position", std::make_unique<PositionMapper>());
+
+  World world;
+  auto& registry = detail::registryOf(world);
+  auto entity = registry.create();
+  registry.emplace<Position>(entity, Position{1.0, 2.0, 3.0});
+
+  EXPECT_THROW((void)mapper.toVector(registry), std::invalid_argument);
 }
 
 TEST(VectorMapper, ToEigenConversion)

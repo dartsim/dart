@@ -35,14 +35,57 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <format>
 #include <iterator>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 #include <cstddef>
 
 namespace dart::simulation::experimental {
+
+namespace {
+
+template <typename Registry>
+constexpr bool IsWorldRegistry
+    = std::same_as<std::remove_cvref_t<Registry>, detail::WorldRegistry>;
+
+const WorldRegistryComponentMapper* requireWorldRegistryMapper(
+    const ComponentMapper& mapper, const std::string& variableName)
+{
+  const auto* worldMapper
+      = dynamic_cast<const WorldRegistryComponentMapper*>(&mapper);
+  if (worldMapper == nullptr) {
+    throw std::invalid_argument(
+        std::format(
+            "Mapper for variable '{}' does not support WorldRegistry; "
+            "custom mappers used with World-owned registries must also "
+            "implement WorldRegistryComponentMapper",
+            variableName));
+  }
+
+  return worldMapper;
+}
+
+WorldRegistryComponentMapper* requireWorldRegistryMapper(
+    ComponentMapper& mapper, const std::string& variableName)
+{
+  auto* worldMapper = dynamic_cast<WorldRegistryComponentMapper*>(&mapper);
+  if (worldMapper == nullptr) {
+    throw std::invalid_argument(
+        std::format(
+            "Mapper for variable '{}' does not support WorldRegistry; "
+            "custom mappers used with World-owned registries must also "
+            "implement WorldRegistryComponentMapper",
+            variableName));
+  }
+
+  return worldMapper;
+}
+
+} // namespace
 
 VectorMapper::VectorMapper(StateSpace space) : m_space(std::move(space))
 {
@@ -85,7 +128,14 @@ void VectorMapper::toVectorImpl(
 
   for (size_t i = 0; i < m_mappers.size(); ++i) {
     if (m_mappers[i]) {
-      size_t written = m_mappers[i]->toVector(registry, output, offset);
+      size_t written = 0;
+      if constexpr (IsWorldRegistry<Registry>) {
+        const auto* worldMapper = requireWorldRegistryMapper(
+            std::as_const(*m_mappers[i]), variables[i].name);
+        written = worldMapper->toVector(registry, output, offset);
+      } else {
+        written = m_mappers[i]->toVector(registry, output, offset);
+      }
       offset += written;
     } else {
       // No mapper for this variable, fill with zeros
@@ -135,7 +185,14 @@ void VectorMapper::fromVectorImpl(
 
   for (size_t i = 0; i < m_mappers.size(); ++i) {
     if (m_mappers[i]) {
-      size_t read = m_mappers[i]->fromVector(registry, vec, offset);
+      size_t read = 0;
+      if constexpr (IsWorldRegistry<Registry>) {
+        auto* worldMapper
+            = requireWorldRegistryMapper(*m_mappers[i], variables[i].name);
+        read = worldMapper->fromVector(registry, vec, offset);
+      } else {
+        read = m_mappers[i]->fromVector(registry, vec, offset);
+      }
       offset += read;
     } else {
       // No mapper for this variable, skip

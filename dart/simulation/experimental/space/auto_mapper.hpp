@@ -222,7 +222,8 @@ constexpr size_t getFieldDimension()
 /// Automatically generated mapper for PropertyComponents
 /// Uses Boost.PFR to extract all fields to/from vectors
 template <comps::IsPropertyComponent Component>
-class AutoPropertyMapper : public ComponentMapper
+class AutoPropertyMapper : public ComponentMapper,
+                           public WorldRegistryComponentMapper
 {
 public:
   size_t toVector(

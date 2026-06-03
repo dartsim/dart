@@ -101,17 +101,6 @@ public:
       std::vector<double>& vec,
       size_t offset) const = 0;
 
-  /// Extract component data from a World-owned allocator-aware registry.
-  ///
-  /// Custom mappers may override this when they are used with World-owned
-  /// registries. Built-in mappers support both registry types.
-  virtual size_t toVector(
-      const detail::WorldRegistry&, std::vector<double>&, size_t) const
-  {
-    throw std::invalid_argument(
-        "ComponentMapper does not support WorldRegistry extraction");
-  }
-
   /// Write vector data back to components
   /// @param registry ECS registry to modify
   /// @param vec Input vector containing data
@@ -120,21 +109,38 @@ public:
   virtual size_t fromVector(
       entt::registry& registry, std::span<const double> vec, size_t offset) = 0;
 
-  /// Write vector data back to a World-owned allocator-aware registry.
-  virtual size_t fromVector(
-      detail::WorldRegistry&, std::span<const double>, size_t)
-  {
-    throw std::invalid_argument(
-        "ComponentMapper does not support WorldRegistry injection");
-  }
-
   /// Get dimension (number of scalars) this mapper handles
   [[nodiscard]] virtual size_t getDimension() const = 0;
 };
 
+/// Optional interface for mappers that support World-owned registries.
+///
+/// Custom ComponentMapper implementations that should operate on
+/// detail::WorldRegistry must also implement this interface. Keeping it
+/// separate preserves the existing ComponentMapper contract for plain
+/// entt::registry users while making allocator-aware World registry support
+/// explicit.
+class WorldRegistryComponentMapper
+{
+public:
+  virtual ~WorldRegistryComponentMapper() = default;
+
+  /// Extract component data from a World-owned allocator-aware registry.
+  virtual size_t toVector(
+      const detail::WorldRegistry& registry,
+      std::vector<double>& vec,
+      size_t offset) const = 0;
+
+  /// Write vector data back to a World-owned allocator-aware registry.
+  virtual size_t fromVector(
+      detail::WorldRegistry& registry,
+      std::span<const double> vec,
+      size_t offset) = 0;
+};
+
 /// Mapper for a single scalar variable
 /// Useful for simple components with single values
-class ScalarMapper : public ComponentMapper
+class ScalarMapper : public ComponentMapper, public WorldRegistryComponentMapper
 {
 public:
   /// Constructor
@@ -189,7 +195,8 @@ public:
       size_t offset) const override
   {
     if (!m_getWorldValue) {
-      return ComponentMapper::toVector(registry, vec, offset);
+      throw std::invalid_argument(
+          "ScalarMapper does not support WorldRegistry extraction");
     }
 
     vec[offset] = m_getWorldValue(registry);
@@ -202,7 +209,8 @@ public:
       size_t offset) override
   {
     if (!m_setWorldValue) {
-      return ComponentMapper::fromVector(registry, vec, offset);
+      throw std::invalid_argument(
+          "ScalarMapper does not support WorldRegistry injection");
     }
 
     m_setWorldValue(registry, vec[offset]);
@@ -224,7 +232,7 @@ private:
 /// Mapper for a vector of scalars from multiple entities
 /// Extracts data from all entities that have a specific component
 template <typename Component, typename Field>
-class FieldMapper : public ComponentMapper
+class FieldMapper : public ComponentMapper, public WorldRegistryComponentMapper
 {
 public:
   /// Constructor

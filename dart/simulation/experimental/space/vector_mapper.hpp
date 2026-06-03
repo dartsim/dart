@@ -161,6 +161,8 @@ public:
   /// Links a StateSpace variable to a ComponentMapper for extraction
   /// @param variableName Name of variable in StateSpace
   /// @param mapper ComponentMapper to use for this variable
+  /// @note Mappers used with World-owned registries must also implement
+  /// WorldRegistryComponentMapper.
   void addMapper(
       const std::string& variableName, std::unique_ptr<ComponentMapper> mapper);
 
