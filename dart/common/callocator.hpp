@@ -56,7 +56,14 @@ public:
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
   // Documentation inherited
+  [[nodiscard]] void* allocate(
+      size_t bytes, size_t alignment) noexcept override;
+
+  // Documentation inherited
   void deallocate(void* pointer, size_t bytes) override;
+
+  // Documentation inherited
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override;
 
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;

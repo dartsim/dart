@@ -36,6 +36,7 @@
 #include <dart/common/memory_allocator.hpp>
 
 #include <memory>
+#include <type_traits>
 
 namespace dart::common {
 
@@ -50,6 +51,7 @@ public:
   using size_type = typename std::allocator_traits<Base>::size_type;
   using pointer = typename std::allocator_traits<Base>::pointer;
   using const_pointer = typename std::allocator_traits<Base>::const_pointer;
+  using is_always_equal = std::false_type;
 
   template <typename U>
   struct rebind
@@ -93,6 +95,12 @@ public:
     return std::allocator_traits<Base>::max_size(*this);
   }
 
+  template <typename U>
+  [[nodiscard]] bool operator==(const StlAllocator<U>& other) const noexcept;
+
+  template <typename U>
+  [[nodiscard]] bool operator!=(const StlAllocator<U>& other) const noexcept;
+
   /// Prints state of the memory allocator
   void print(std::ostream& os = std::cout, int indent = 0) const;
 
@@ -104,7 +112,7 @@ public:
 private:
   template <typename U>
   friend class StlAllocator;
-  MemoryAllocator& mBaseAllocator;
+  MemoryAllocator* mBaseAllocator;
 };
 
 } // namespace dart::common

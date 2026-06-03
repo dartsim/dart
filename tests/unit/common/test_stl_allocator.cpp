@@ -32,12 +32,35 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#include <dart/common/free_list_allocator.hpp>
+#include <dart/common/pool_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
 
+#include <entt/entity/registry.hpp>
 #include <gtest/gtest.h>
+
+#include <vector>
+
+#include <cstdint>
 
 using namespace dart;
 using namespace common;
+
+namespace {
+
+struct alignas(64) OverAlignedComponent
+{
+  double values[8] = {};
+};
+
+template <typename T>
+void expectAligned(T* pointer)
+{
+  ASSERT_NE(pointer, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(pointer) % alignof(T), 0u);
+}
+
+} // namespace
 
 //==============================================================================
 TEST(StlAllocatorTest, Basics)
@@ -50,4 +73,72 @@ TEST(StlAllocatorTest, Basics)
   a.deallocate(o1, 1);
   a.deallocate(o2, 1);
   a.print();
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, ComparesUnderlyingAllocatorIdentity)
+{
+  FreeListAllocator first;
+  FreeListAllocator second;
+
+  StlAllocator<int> firstInts(first);
+  StlAllocator<double> firstDoubles(firstInts);
+  StlAllocator<int> secondInts(second);
+
+  EXPECT_TRUE(firstInts == firstDoubles);
+  EXPECT_FALSE(firstInts != firstDoubles);
+  EXPECT_FALSE(firstInts == secondInts);
+  EXPECT_TRUE(firstInts != secondInts);
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, SupportsOverAlignedVectorStorage)
+{
+  FreeListAllocator backing;
+  StlAllocator<OverAlignedComponent> allocator(backing);
+
+  std::vector<OverAlignedComponent, StlAllocator<OverAlignedComponent>> values(
+      allocator);
+  values.resize(4);
+
+  expectAligned(values.data());
+  for (auto& value : values) {
+    expectAligned(&value);
+  }
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, SupportsPoolBackedOverAlignedVectorStorage)
+{
+  PoolAllocator backing;
+  StlAllocator<OverAlignedComponent> allocator(backing);
+
+  std::vector<OverAlignedComponent, StlAllocator<OverAlignedComponent>> values(
+      allocator);
+  values.resize(8);
+
+  expectAligned(values.data());
+  for (auto& value : values) {
+    expectAligned(&value);
+  }
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, SupportsAllocatorAwareEnttRegistryStorage)
+{
+  FreeListAllocator backing;
+  StlAllocator<entt::entity> registryAllocator(backing);
+  entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+      registryAllocator);
+
+  const entt::entity entity = registry.create();
+  auto& component = registry.emplace<OverAlignedComponent>(entity);
+
+  expectAligned(&component);
+
+  auto& storage = registry.storage<OverAlignedComponent>();
+  StlAllocator<OverAlignedComponent> componentAllocator(registryAllocator);
+  EXPECT_TRUE(storage.get_allocator() == componentAllocator);
+
+  registry.destroy(entity);
 }

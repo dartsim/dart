@@ -63,7 +63,14 @@ public:
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
   // Documentation inherited
+  [[nodiscard]] void* allocate(
+      size_t bytes, size_t alignment) noexcept override;
+
+  // Documentation inherited
   void deallocate(void* pointer, size_t bytes) override;
+
+  // Documentation inherited
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override;
 
   /// Returns true if there is no memory allocated by the internal allocator.
   [[nodiscard]] bool isEmpty() const;

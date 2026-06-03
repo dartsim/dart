@@ -40,8 +40,19 @@
 #include <utility>
 #include <vector>
 
+#include <cstdint>
+
 using namespace dart;
 using namespace common;
+
+namespace {
+
+struct alignas(64) OverAlignedObject
+{
+  double values[8] = {};
+};
+
+} // namespace
 
 //==============================================================================
 TEST(FreeListAllocatorTest, Constructors)
@@ -58,6 +69,18 @@ TEST(FreeListAllocatorTest, Constructors)
 
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
+{
+  FreeListAllocator allocator;
+
+  auto* ptr = allocator.allocate(sizeof(OverAlignedObject), 64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
+
+  allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
 }
 
 //==============================================================================

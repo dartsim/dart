@@ -39,6 +39,8 @@
 #include <sstream>
 #include <string>
 
+#include <cstdint>
+
 using namespace dart::common;
 
 namespace {
@@ -61,6 +63,18 @@ public:
     // Do nothing.
   }
 };
+
+struct alignas(64) OverAlignedObject
+{
+  double values[8] = {};
+};
+
+template <typename T>
+void expectAligned(T* pointer)
+{
+  ASSERT_NE(pointer, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(pointer) % alignof(T), 0u);
+}
 
 } // namespace
 
@@ -113,4 +127,26 @@ TEST(MemoryAllocatorTest, BasePrintFallbackWritesMessages)
   EXPECT_NE(
       viaStream.str().find("[*::print is not implemented]"), std::string::npos);
 #endif // !DART_OS_WINDOWS
+}
+
+TEST(MemoryAllocatorTest, DefaultAllocatorSupportsOverAlignedObjects)
+{
+  auto& allocator = MemoryAllocator::GetDefault();
+
+  auto* raw = allocator.allocateAs<OverAlignedObject>();
+  expectAligned(raw);
+  allocator.deallocate(
+      raw, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+
+  auto* object = allocator.construct<OverAlignedObject>();
+  expectAligned(object);
+  allocator.destroy(object);
+}
+
+TEST(MemoryAllocatorTest, BaseAlignedFallbackRejectsUnsupportedOverAlignment)
+{
+  BareMemoryAllocator allocator;
+  MemoryAllocator& base = allocator;
+
+  EXPECT_EQ(base.allocate(sizeof(OverAlignedObject), 64), nullptr);
 }

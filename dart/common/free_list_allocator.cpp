@@ -37,7 +37,18 @@
 
 #include <memory>
 
+#include <cstddef>
+
 namespace dart::common {
+
+namespace {
+
+bool isPowerOfTwo(size_t value)
+{
+  return value != 0 && (value & (value - 1)) == 0;
+}
+
+} // namespace
 
 //==============================================================================
 FreeListAllocator::FreeListAllocator(
@@ -156,6 +167,20 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
+void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
+{
+  if (bytes == 0 || !isPowerOfTwo(alignment)) {
+    return nullptr;
+  }
+
+  if (alignment <= alignof(std::max_align_t)) {
+    return allocate(bytes);
+  }
+
+  return mBaseAllocator.allocate(bytes, alignment);
+}
+
+//==============================================================================
 void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 {
   DART_UNUSED(bytes, pointer);
@@ -189,6 +214,22 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
   mTotalAllocatedSize -= bytes;
 
   DART_TRACE("Deallocated {} bytes.", bytes);
+}
+
+//==============================================================================
+void FreeListAllocator::deallocate(
+    void* pointer, size_t bytes, size_t alignment)
+{
+  if (pointer == nullptr || bytes == 0) {
+    return;
+  }
+
+  if (alignment <= alignof(std::max_align_t)) {
+    deallocate(pointer, bytes);
+    return;
+  }
+
+  mBaseAllocator.deallocate(pointer, bytes, alignment);
 }
 
 //==============================================================================

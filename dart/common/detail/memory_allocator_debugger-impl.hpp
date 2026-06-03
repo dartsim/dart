@@ -111,6 +111,23 @@ void* MemoryAllocatorDebugger<T>::allocate(size_t bytes) noexcept
 
 //==============================================================================
 template <typename T>
+void* MemoryAllocatorDebugger<T>::allocate(
+    size_t bytes, size_t alignment) noexcept
+{
+  void* newPtr = mInternalAllocator.allocate(bytes, alignment);
+
+  if (newPtr) {
+    std::lock_guard<std::mutex> lock(mMutex);
+    mSize += bytes;
+    mPeak = std::max(mPeak, mSize);
+    mMapPointerToSize[newPtr] = bytes;
+  }
+
+  return newPtr;
+}
+
+//==============================================================================
+template <typename T>
 void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
 {
   std::lock_guard<std::mutex> lock(mMutex);
@@ -135,6 +152,37 @@ void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
   }
 
   mInternalAllocator.deallocate(pointer, bytes);
+  mMapPointerToSize.erase(it);
+  mSize -= bytes;
+}
+
+//==============================================================================
+template <typename T>
+void MemoryAllocatorDebugger<T>::deallocate(
+    void* pointer, size_t bytes, size_t alignment)
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+
+  auto it = mMapPointerToSize.find(pointer);
+  if (it == mMapPointerToSize.end()) {
+    DART_DEBUG(
+        "Cannot deallocate memory {} not allocated by this allocator.",
+        pointer);
+    return;
+  }
+
+  auto allocatedSize = it->second;
+  if (bytes != allocatedSize) {
+    DART_DEBUG(
+        "Cannot deallocate memory at {} of {} bytes that is different from the "
+        "allocated size {}, which is a critical bug.",
+        pointer,
+        bytes,
+        allocatedSize);
+    return;
+  }
+
+  mInternalAllocator.deallocate(pointer, bytes, alignment);
   mMapPointerToSize.erase(it);
   mSize -= bytes;
 }

@@ -83,7 +83,8 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
 PoolAllocator::~PoolAllocator()
 {
   for (const auto i : std::views::iota(0, mCurrentMemoryBlockIndex)) {
-    mBaseAllocator.deallocate(mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE);
+    mBaseAllocator.deallocate(
+        mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE, mMemoryBlocks[i].mAlignment);
   }
   mBaseAllocator.deallocate(
       mMemoryBlocks, mMemoryBlocksSize * sizeof(MemoryBlock));
@@ -126,10 +127,15 @@ void* PoolAllocator::allocateSlow(int heapIndex) noexcept
   }
 
   MemoryBlock* newBlock = mMemoryBlocks + mCurrentMemoryBlockIndex;
-  newBlock->mMemoryUnits
-      = static_cast<MemoryUnit*>(mBaseAllocator.allocate(BLOCK_SIZE));
   const size_t unitSize = mUnitSizes[heapIndex];
   DART_ASSERT(unitSize > 0);
+  const size_t blockAlignment = blockAlignmentForUnitSize(unitSize);
+  newBlock->mMemoryUnits = static_cast<MemoryUnit*>(
+      mBaseAllocator.allocate(BLOCK_SIZE, blockAlignment));
+  if (newBlock->mMemoryUnits == nullptr) {
+    return nullptr;
+  }
+  newBlock->mAlignment = blockAlignment;
   const unsigned int unitCount = BLOCK_SIZE / unitSize;
   DART_ASSERT(unitCount > 0);
   auto* memoryUnitsBeginChar = reinterpret_cast<char*>(newBlock->mMemoryUnits);

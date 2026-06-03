@@ -72,6 +72,20 @@ public:
   [[nodiscard]] virtual void* allocate(size_t bytes) noexcept = 0;
   // Note: Virtual runtime allocation cannot be constexpr by design.
 
+  /// Allocates @c size bytes of uninitialized storage with a minimum alignment.
+  ///
+  /// Implementations that cannot satisfy over-aligned requests return nullptr.
+  /// The returned pointer must be deallocated with the matching aligned
+  /// deallocate() overload.
+  ///
+  /// @param[in] bytes: The byte size to allocate storage for.
+  /// @param[in] alignment: The minimum requested pointer alignment.
+  /// @return On success, the pointer to the beginning of newly allocated
+  /// memory.
+  /// @return On failure, a null pointer
+  [[nodiscard]] virtual void* allocate(size_t bytes, size_t alignment) noexcept;
+  // Note: Virtual runtime allocation cannot be constexpr by design.
+
   /// Allocates object(s) without calling the constructor.
   ///
   /// This is identical to @c static_cast<T*>(allocate(n * sizeof(T))).
@@ -86,6 +100,14 @@ public:
   /// @param[in] pointer: Pointer obtained from allocate().
   /// @param[in] bytes: The bytes of the allocated memory.
   virtual void deallocate(void* pointer, size_t bytes) = 0;
+  // Note: Virtual runtime deallocation cannot be constexpr by design.
+
+  /// Deallocates storage obtained by the aligned allocate() overload.
+  ///
+  /// @param[in] pointer: Pointer obtained from aligned allocate().
+  /// @param[in] bytes: The bytes of the allocated memory.
+  /// @param[in] alignment: The alignment used for the allocation.
+  virtual void deallocate(void* pointer, size_t bytes, size_t alignment);
   // Note: Virtual runtime deallocation cannot be constexpr by design.
 
   /// Allocates uninitialized storage and constructs an object of type T to the

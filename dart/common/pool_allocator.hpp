@@ -39,6 +39,7 @@
 #include <dart/export.hpp>
 
 #include <array>
+#include <limits>
 
 namespace dart::common {
 
@@ -77,15 +78,39 @@ public:
   // Documentation inherited
   [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
   {
-    if (bytes == 0) [[unlikely]] {
+    const size_t unitSize = effectiveUnitSize(bytes, alignof(MemoryUnit));
+    if (unitSize == 0) [[unlikely]] {
       return nullptr;
     }
 
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
+    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
       return mBaseAllocator.allocate(bytes);
     }
 
-    const int heapIndex = mMapSizeToHeapIndex[bytes];
+    const int heapIndex = mMapSizeToHeapIndex[unitSize];
+
+    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
+      mFreeMemoryUnits[heapIndex] = unit->mNext;
+      return unit;
+    }
+
+    return allocateSlow(heapIndex);
+  }
+
+  // Documentation inherited
+  [[nodiscard]] inline void* allocate(
+      size_t bytes, size_t alignment) noexcept override
+  {
+    const size_t unitSize = effectiveUnitSize(bytes, alignment);
+    if (unitSize == 0) [[unlikely]] {
+      return nullptr;
+    }
+
+    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
+      return mBaseAllocator.allocate(bytes, alignment);
+    }
+
+    const int heapIndex = mMapSizeToHeapIndex[unitSize];
 
     if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
       mFreeMemoryUnits[heapIndex] = unit->mNext;
@@ -98,16 +123,36 @@ public:
   // Documentation inherited
   inline void deallocate(void* pointer, size_t bytes) override
   {
-    if (pointer == nullptr || bytes == 0) [[unlikely]] {
+    const size_t unitSize = effectiveUnitSize(bytes, alignof(MemoryUnit));
+    if (pointer == nullptr || unitSize == 0) [[unlikely]] {
       return;
     }
 
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
+    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
       mBaseAllocator.deallocate(pointer, bytes);
       return;
     }
 
-    const int heapIndex = mMapSizeToHeapIndex[bytes];
+    const int heapIndex = mMapSizeToHeapIndex[unitSize];
+    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
+    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
+    mFreeMemoryUnits[heapIndex] = releasedUnit;
+  }
+
+  // Documentation inherited
+  inline void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    const size_t unitSize = effectiveUnitSize(bytes, alignment);
+    if (pointer == nullptr || unitSize == 0) [[unlikely]] {
+      return;
+    }
+
+    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
+      mBaseAllocator.deallocate(pointer, bytes, alignment);
+      return;
+    }
+
+    const int heapIndex = mMapSizeToHeapIndex[unitSize];
     MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
     releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
     mFreeMemoryUnits[heapIndex] = releasedUnit;
@@ -125,9 +170,49 @@ private:
   struct MemoryBlock
   {
     MemoryUnit* mMemoryUnits;
+    size_t mAlignment;
   };
 
   [[nodiscard]] void* allocateSlow(int heapIndex) noexcept;
+
+  [[nodiscard]] static constexpr bool isPowerOfTwo(size_t value) noexcept
+  {
+    return value != 0 && (value & (value - 1)) == 0;
+  }
+
+  [[nodiscard]] static constexpr size_t roundUp(
+      size_t bytes, size_t alignment) noexcept
+  {
+    return (bytes + alignment - 1) & ~(alignment - 1);
+  }
+
+  [[nodiscard]] static constexpr size_t effectiveUnitSize(
+      size_t bytes, size_t alignment) noexcept
+  {
+    if (bytes == 0 || !isPowerOfTwo(alignment)) {
+      return 0;
+    }
+
+    const size_t effectiveAlignment
+        = alignment < alignof(MemoryUnit) ? alignof(MemoryUnit) : alignment;
+    const size_t minimumSize
+        = bytes < sizeof(MemoryUnit) ? sizeof(MemoryUnit) : bytes;
+    if (minimumSize
+        > std::numeric_limits<size_t>::max() - (effectiveAlignment - 1)) {
+      return 0;
+    }
+    return roundUp(minimumSize, effectiveAlignment);
+  }
+
+  [[nodiscard]] static constexpr size_t blockAlignmentForUnitSize(
+      size_t unitSize) noexcept
+  {
+    size_t alignment = alignof(MemoryUnit);
+    while (unitSize % (alignment * 2) == 0) {
+      alignment *= 2;
+    }
+    return alignment;
+  }
 
   inline static constexpr int HEAP_COUNT = 128;
 

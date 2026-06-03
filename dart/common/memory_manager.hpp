@@ -93,6 +93,16 @@ public:
   /// @return On failure, a null pointer
   [[nodiscard]] void* allocate(Type type, size_t bytes);
 
+  /// Allocates @c size bytes of aligned uninitialized storage.
+  ///
+  /// @param[in] type: The memory allocator type.
+  /// @param[in] bytes: The byte size to allocate storage for.
+  /// @param[in] alignment: The minimum requested pointer alignment.
+  /// @return On success, the pointer to the beginning of newly allocated
+  /// memory.
+  /// @return On failure, a null pointer
+  [[nodiscard]] void* allocate(Type type, size_t bytes, size_t alignment);
+
   /// Allocates @c size bytes of uninitialized storage using FreeListAllocator.
   ///
   /// @param[in] bytes: The byte size to allocate storage for.
@@ -119,6 +129,9 @@ public:
   /// @param[in] pointer: Pointer obtained from allocate().
   /// @param[in] bytes: The bytes of the allocated memory.
   void deallocate(Type type, void* pointer, size_t bytes);
+  // Note: Deallocates runtime memory; constexpr is not applicable.
+
+  void deallocate(Type type, void* pointer, size_t bytes, size_t alignment);
   // Note: Deallocates runtime memory; constexpr is not applicable.
 
   void deallocateUsingFree(void* pointer, size_t bytes);

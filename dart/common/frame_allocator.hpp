@@ -97,7 +97,19 @@ public:
     return allocateAlignedSlow(bytes, 32);
   }
 
+  [[nodiscard]] inline void* allocate(
+      size_t bytes, size_t alignment) noexcept override
+  {
+    return allocateAligned(bytes, alignment);
+  }
+
   inline void deallocate(void* /*pointer*/, size_t /*bytes*/) override
+  {
+    // Arena semantics: memory is freed in bulk on reset()
+  }
+
+  inline void deallocate(
+      void* /*pointer*/, size_t /*bytes*/, size_t /*alignment*/) override
   {
     // Arena semantics: memory is freed in bulk on reset()
   }

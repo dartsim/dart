@@ -40,6 +40,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+
 using namespace dart;
 using namespace common;
 
@@ -145,6 +147,11 @@ struct LifecycleTracker
 int LifecycleTracker::constructCount = 0;
 int LifecycleTracker::destructCount = 0;
 
+struct alignas(64) OverAlignedObject
+{
+  double values[8] = {};
+};
+
 //==============================================================================
 TEST(MemoryManagerTest, ConstructAndDestroy)
 {
@@ -160,6 +167,28 @@ TEST(MemoryManagerTest, ConstructAndDestroy)
   // Destroy using Free type dispatch
   mm.destroy<LifecycleTracker>(MemoryManager::Type::Free, obj);
   EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, ConstructAndDestroyOverAlignedObject)
+{
+  auto mm = MemoryManager();
+
+  auto* poolObject = mm.construct<OverAlignedObject>(MemoryManager::Type::Pool);
+  ASSERT_NE(poolObject, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(poolObject) % 64u, 0u);
+  mm.destroy(MemoryManager::Type::Pool, poolObject);
+
+  auto* freeObject = mm.construct<OverAlignedObject>(MemoryManager::Type::Free);
+  ASSERT_NE(freeObject, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(freeObject) % 64u, 0u);
+  mm.destroy(MemoryManager::Type::Free, freeObject);
+
+  auto* frameObject
+      = mm.construct<OverAlignedObject>(MemoryManager::Type::Frame);
+  ASSERT_NE(frameObject, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(frameObject) % 64u, 0u);
+  mm.destroy(MemoryManager::Type::Frame, frameObject);
 }
 
 //==============================================================================
