@@ -12,7 +12,9 @@ foonathan/memory on DART-relevant workloads before broad hot-loop adoption. It
 also records EnTT registry/component-storage allocation as a required
 integration workstream. A follow-up on PR #2869 added frame allocator overflow
 byte accounting so World diagnostics report total frame-scratch demand rather
-than primary-arena usage alone.
+than primary-arena usage alone. A second review follow-up made diagnostic
+capacity report the usable aligned arena budget so sizing from diagnostics does
+not hide alignment padding.
 
 ## Current Branch
 
@@ -30,7 +32,7 @@ before expanding hot-loop allocator use.
 
 - `pixi run lint`
 - `pixi run build`
-- `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world`
+- `cmake --build build/default/cpp/Release --target UNIT_common_frame_allocator UNIT_common_memory_manager test_world`
 - `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_frame_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`
 - `pixi run test-simulation-experimental` (61/61 passed)
 

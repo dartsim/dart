@@ -167,7 +167,7 @@ struct DeformableSolverDiagnostics
 /// intentionally left for the allocator/EnTT integration workstream.
 struct WorldMemoryDiagnostics
 {
-  /// Current frame-scratch arena capacity.
+  /// Current usable frame-scratch arena capacity after alignment padding.
   std::size_t frameScratchCapacityBytes = 0;
   /// Bytes consumed in the current simulation frame, including overflow blocks.
   std::size_t frameScratchUsedBytes = 0;

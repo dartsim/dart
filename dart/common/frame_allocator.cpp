@@ -83,7 +83,8 @@ void FrameAllocator::print(std::ostream& os, int indent) const
 {
   const std::string spaces(indent, ' ');
   os << spaces << "[FrameAllocator] capacity: " << mCapacity
-     << " used: " << used() << " overflow: " << mOverflowAllocations.size()
+     << " usable: " << usableCapacity() << " used: " << used()
+     << " overflow: " << mOverflowAllocations.size()
      << " overflow bytes: " << mOverflowBytes << "\n";
 }
 
@@ -138,6 +139,24 @@ void FrameAllocator::resetSlow() noexcept
 size_t FrameAllocator::capacity() const noexcept
 {
   return mCapacity;
+}
+
+//==============================================================================
+size_t FrameAllocator::usableCapacity() const noexcept
+{
+  if (!mBuffer || !mEnd) {
+    return 0;
+  }
+
+  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+  const auto* alignedBase
+      = reinterpret_cast<const char*>((addr + 31) & ~uintptr_t{31});
+  if (alignedBase >= mEnd) {
+    return 0;
+  }
+
+  const auto usableBytes = static_cast<size_t>(mEnd - alignedBase);
+  return usableBytes & ~size_t{31};
 }
 
 //==============================================================================

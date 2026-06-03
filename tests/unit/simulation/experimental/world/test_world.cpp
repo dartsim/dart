@@ -264,7 +264,9 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
   EXPECT_GT(allocator.allocationCount, 0u);
 
   const auto diagnostics = world.getMemoryDiagnostics();
-  EXPECT_EQ(diagnostics.frameScratchCapacityBytes, 4096u);
+  EXPECT_LE(diagnostics.frameScratchCapacityBytes, 4096u);
+  EXPECT_GE(diagnostics.frameScratchCapacityBytes + 32u, 4096u);
+  EXPECT_EQ(diagnostics.frameScratchCapacityBytes % 32u, 0u);
   EXPECT_EQ(diagnostics.frameScratchUsedBytes, 0u);
   EXPECT_EQ(diagnostics.frameScratchPeakUsedBytes, 0u);
   EXPECT_EQ(diagnostics.frameScratchOverflowCount, 0u);
@@ -278,6 +280,37 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
         (void)invalid;
       },
       sx::InvalidArgumentException);
+}
+
+TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.frameScratchInitialCapacity = 128;
+  sx::World world(options);
+
+  const auto initial = world.getMemoryDiagnostics();
+  EXPECT_LE(
+      initial.frameScratchCapacityBytes, options.frameScratchInitialCapacity);
+  EXPECT_GE(
+      initial.frameScratchCapacityBytes + 32u,
+      options.frameScratchInitialCapacity);
+  ASSERT_GT(initial.frameScratchCapacityBytes, 0u);
+  EXPECT_EQ(initial.frameScratchCapacityBytes % 32u, 0u);
+
+  dart::simulation::experimental::compute::SequentialExecutor executor;
+  FrameScratchStage scratch(initial.frameScratchCapacityBytes);
+
+  world.step(executor, scratch);
+  ASSERT_NE(scratch.lastAllocation, nullptr);
+
+  const auto diagnostics = world.getMemoryDiagnostics();
+  EXPECT_EQ(diagnostics.frameScratchResetCount, 1u);
+  EXPECT_EQ(
+      diagnostics.frameScratchUsedBytes, initial.frameScratchCapacityBytes);
+  EXPECT_EQ(diagnostics.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(diagnostics.frameScratchOverflowBytes, 0u);
 }
 
 TEST(World, FrameScratchResetsAtStepBoundary)
