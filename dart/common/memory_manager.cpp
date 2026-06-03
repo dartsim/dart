@@ -45,6 +45,14 @@ MemoryManager& MemoryManager::GetDefault()
 
 //==============================================================================
 MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
+  : MemoryManager(baseAllocator, 65536)
+{
+  // Do nothing
+}
+
+//==============================================================================
+MemoryManager::MemoryManager(
+    MemoryAllocator& baseAllocator, size_t frameAllocatorInitialCapacity)
   : mBaseAllocator(baseAllocator)
 {
 #if !defined(NDEBUG)
@@ -61,7 +69,8 @@ MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
     mPoolAllocator = std::make_unique<PoolAllocator>(*mFreeListAllocator);
   }
 
-  mFrameAllocator = std::make_unique<FrameAllocator>(mBaseAllocator);
+  mFrameAllocator = std::make_unique<FrameAllocator>(
+      mBaseAllocator, frameAllocatorInitialCapacity);
 }
 
 //==============================================================================
@@ -95,6 +104,18 @@ FreeListAllocator& MemoryManager::getFreeListAllocator()
 }
 
 //==============================================================================
+const FreeListAllocator& MemoryManager::getFreeListAllocator() const
+{
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+    return mFreeListAllocatorWithDebug->getInternalAllocator();
+  }
+
+  DART_ASSERT(mFreeListAllocator != nullptr);
+  return *mFreeListAllocator;
+}
+
+//==============================================================================
 PoolAllocator& MemoryManager::getPoolAllocator()
 {
   if (mUseDebugAllocators) {
@@ -107,7 +128,26 @@ PoolAllocator& MemoryManager::getPoolAllocator()
 }
 
 //==============================================================================
+const PoolAllocator& MemoryManager::getPoolAllocator() const
+{
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
+    return mPoolAllocatorWithDebug->getInternalAllocator();
+  }
+
+  DART_ASSERT(mPoolAllocator != nullptr);
+  return *mPoolAllocator;
+}
+
+//==============================================================================
 FrameAllocator& MemoryManager::getFrameAllocator()
+{
+  DART_ASSERT(mFrameAllocator != nullptr);
+  return *mFrameAllocator;
+}
+
+//==============================================================================
+const FrameAllocator& MemoryManager::getFrameAllocator() const
 {
   DART_ASSERT(mFrameAllocator != nullptr);
   return *mFrameAllocator;

@@ -164,9 +164,14 @@ public:
 
   [[nodiscard]] size_t capacity() const noexcept;
 
+  /// Returns the usable arena bytes after alignment padding.
+  [[nodiscard]] size_t usableCapacity() const noexcept;
+
   [[nodiscard]] size_t used() const noexcept;
 
   [[nodiscard]] size_t overflowCount() const noexcept;
+
+  [[nodiscard]] size_t overflowBytes() const noexcept;
 
 private:
   struct OverflowEntry
@@ -186,6 +191,7 @@ private:
 
   char* mBuffer;
   size_t mCapacity;
+  size_t mOverflowBytes;
   std::vector<OverflowEntry> mOverflowAllocations;
 };
 
